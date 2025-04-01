@@ -983,15 +983,15 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(animateReturn);
   });
 
-  // Add microphone button handler
-  const micButtonElement = document.getElementById('micButton');
-  micButtonElement.addEventListener('click', () => {
-    if (microphoneStream) {
-      stopMicrophone();
-    } else {
-      setupMicrophone();
-    }
-  });
+  // Add microphone button handler (temporarily commented)
+  // const micButtonElement = document.getElementById('micButton');
+  // micButtonElement.addEventListener('click', () => {
+  //   if (microphoneStream) {
+  //     stopMicrophone();
+  //   } else {
+  //     setupMicrophone();
+  //   }
+  // });
 
   document.getElementById('xrButton').addEventListener('click', () => {
     isXRMode = !isXRMode;
