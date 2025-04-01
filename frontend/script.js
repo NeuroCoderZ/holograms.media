@@ -893,7 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ensure a minimum scale if the screen is very large
     scale = Math.max(scale, 0.3); // Minimum scale to prevent it from becoming too tiny
 
-    return scale * 0.6;
+    return scale * 0.5;
   }
 
   const initialScale = calculateInitialScale();
