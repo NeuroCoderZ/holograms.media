@@ -661,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const xrButton = document.getElementById('xrButton');
   const gestureRecordButton = document.getElementById('gestureRecordButton');
   const scanButton = document.getElementById('scanButton');
-  const promptButton = document.getElementById('promptButton');
+  const promptButton = document.getElementById('promptListButton');
   const bluetoothButton = document.getElementById('bluetoothButton');
   const toggleCameraButton = document.getElementById('toggleCameraButton');
   const micButton = document.getElementById('micButton');
@@ -677,6 +677,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const promptText = document.getElementById('promptText');
   const submitPromptButton = document.getElementById('submitPrompt');
   loadInitialFilesAndSetupEditor();
+  
+  // Toggle file editor
+  const toggleFilesButton = document.getElementById('toggleFilesButton');
+  const integratedFileEditor = document.getElementById('integratedFileEditor');
+  if (toggleFilesButton && integratedFileEditor) {
+      toggleFilesButton.addEventListener('click', () => {
+          const isVisible = integratedFileEditor.style.display !== 'none';
+          integratedFileEditor.style.display = isVisible ? 'none' : 'block';
+      });
+  }
 
   fileButton.addEventListener('click', () => {
     fileInput.click();
@@ -883,7 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ensure a minimum scale if the screen is very large
     scale = Math.max(scale, 0.3); // Minimum scale to prevent it from becoming too tiny
 
-    return scale;
+    return scale * 0.6;
   }
 
   const initialScale = calculateInitialScale();
@@ -1228,8 +1238,8 @@ async function loadInitialFilesAndSetupEditor() {
         frame.className = 'version-frame';
         frame.setAttribute('data-version-id', version.version_id);
         frame.innerHTML = `
-          <img src="placeholder.png" alt="Version Preview" 
-               style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; background-color: #555;">
+          <img src="" alt="Version Preview" 
+               style="width: 60px; height: 60px; object-fit: cover; border-radius: 3px; background-color: #555; margin-right: 10px;">
           <p>${version.prompt.substring(0, 30)}${version.prompt.length > 30 ? '...' : ''}</p>
           <p>ID: ${version.version_id.substring(0, 8)}...</p>
         `;
