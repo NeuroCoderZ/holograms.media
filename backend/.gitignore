@@ -1,0 +1,17 @@
+node_modules/
+.DS_Store
+*.log
+*.swp
+*.swo
+.vscode/
+.idea/
+.history
+*.secret
+*.private
+.env
+/build/
+/dist/
+tmp/
+*.bak
+Thumbs.db
+.cache/
