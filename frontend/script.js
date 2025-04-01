@@ -1238,10 +1238,11 @@ async function loadInitialFilesAndSetupEditor() {
         frame.className = 'version-frame';
         frame.setAttribute('data-version-id', version.version_id);
         frame.innerHTML = `
-          <img src="" alt="Version Preview" 
-               style="width: 60px; height: 60px; object-fit: cover; border-radius: 3px; background-color: #555; margin-right: 10px;">
-          <p>${version.prompt.substring(0, 30)}${version.prompt.length > 30 ? '...' : ''}</p>
-          <p>ID: ${version.version_id.substring(0, 8)}...</p>
+          <div style="width: 60px; height: 60px; background-color: #444; border-radius: 3px; margin-right: 10px; flex-shrink: 0;"></div>
+          <div class="version-text">
+            <p>${version.prompt ? version.prompt.substring(0, 30) + (version.prompt.length > 30 ? '...' : '') : 'No prompt'}</p>
+            <p>ID: ${version.version_id.substring(0, 8)}...</p>
+          </div>
         `;
         frame.addEventListener('click', () => {
           switchToVersion(version.version_id, version.branch);
