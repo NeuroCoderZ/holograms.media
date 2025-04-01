@@ -31,19 +31,6 @@
 </head>
 <body>
 
-  <!-- Левая панель: Файлы и Редактор -->
-  <div id="filePanel" class="panel left-panel"> <!-- Добавлены классы -->
-    <h3>Project Files</h3>
-    <ul id="fileList">
-      <li data-file="script.js" style="font-weight: bold;">script.js</li>
-      <li data-file="style.css">style.css</li>
-      <li data-file="index.html">index.html</li>
-    </ul>
-    <div id="fileEditor">
-      <textarea id="fileContent" rows="15" spellcheck="false"></textarea>
-      <button id="saveFile">Save</button>
-    </div>
-  </div>
 
   <!-- Центральная область -->
   <div class="main-area">
@@ -51,17 +38,19 @@
     <div id="grid-container"></div>
     <!-- Панель Кнопок (под голограммой) -->
     <div id="button-container">
-        <button id="fileButton" class="control-button" aria-label="Upload File"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 12h-6v6h-2v-6H5v-2h6V4h2v6h6v2z"/></svg></button>
+        <button id="fileButton" class="control-button" aria-label="Upload File">+</button>
         <input type="file" id="fileInput" accept="audio/*" style="display: none;">
-        <button id="playButton" class="control-button" disabled aria-label="Play"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-        <button id="pauseButton" class="control-button" disabled aria-label="Pause"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
-        <button id="stopButton" class="control-button" disabled aria-label="Stop"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg></button>
-        <button id="micButton" class="control-button" aria-label="Microphone"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9v6c0 .55.45 1 1 1s1-.45 1-1V5c0-.55-.45-1-1-1s-1 .45-1 1zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.47 6 6.93V21h2v-2.07c3.39-.46 6-3.4 6-6.93h-2z"/></svg></button>
-        <button id="scanButton" class="control-button" aria-label="Scan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4.5C7.5 4.5 4.5 7.5 4.5 12S7.5 19.5 12 19.5 19.5 16.5 19.5 12 16.5 4.5 12 4.5zm0 13c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/></svg></button>
-        <button id="promptButton" class="control-button" aria-label="Prompt"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm8-6H8v-2h6v2zm-6-3h10v2H8v-2zm0-3h10v2H8v-2z"/></svg></button>
-        <button id="bluetoothButton" class="control-button" aria-label="Bluetooth"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg></button>
-        <button id="xrButton" class="control-button" aria-label="XR Mode"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM5 7h4v4H5zm6 0h4v4h-4zm6 0h4v4h-4zM5 13h4v4H5zm6 0h4v4h-4zm6 0h4v4h-4z"/></svg></button>
-        <button id="gestureRecordButton" class="control-button" aria-label="Record Gesture"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 9v6h2v5h6v-5h2V9h-2V4h-6v5H7zm4-3h2v2h-2V6zM9 8h2v2H9V8zm6 8h-2v2h2v-2zm-6 0H9v2h2v-2z"/></svg></button>
+        <button id="playButton" class="control-button" disabled aria-label="Play">▶</button>
+        <button id="pauseButton" class="control-button" disabled aria-label="Pause">⏸</button>
+        <button id="stopButton" class="control-button" disabled aria-label="Stop">■</button>
+        <button id="fullscreenButton" class="control-button" aria-label="Fullscreen">[ ]</button>
+        <button id="xrButton" class="control-button" aria-label="XR Mode">XR</button>
+        <button id="gestureRecordButton" class="control-button" aria-label="Record Gesture">✋</button>
+        <button id="scanButton" class="control-button" aria-label="Scan">QR</button>
+        <button id="promptListButton" class="control-button" aria-label="Prompt List">📄</button>
+        <button id="bluetoothButton" class="control-button" aria-label="Bluetooth">🎧</button>
+        <button id="triaButton" class="control-button" aria-label="Tria AI">T</button>
+        <button id="telegramLinkButton" class="control-button" aria-label="Telegram Link">➤</button>
     </div>
   </div>
 
@@ -71,8 +60,24 @@
     <div id="versionTimeline">
       <div id="versionFrames"></div>
     </div>
+    
+    <!-- Интегрированный редактор файлов (скрыт по умолчанию) -->
+    <div id="integratedFileEditor" style="display: none; border-top: 1px solid var(--panel-border); padding: var(--padding); max-height: 200px; overflow-y: auto;">
+        <h3>Project Files</h3>
+        <ul id="fileList">
+            <li data-file="script.js">script.js</li>
+            <li data-file="style.css">style.css</li>
+            <li data-file="index.html">index.html</li>
+        </ul>
+        <div id="fileEditor">
+            <textarea id="fileContent" rows="8" spellcheck="false"></textarea>
+            <button id="saveFile">Save</button>
+        </div>
+    </div>
+
     <!-- Панель Промпта -->
     <div id="promptBar">
+        <button id="toggleFilesButton" class="control-button" style="margin-right: 5px; padding: 4px 8px; min-width: auto;"></></button>
         <input type="text" id="topPromptInput" placeholder="What would you like to change?">
         <select id="modelSelect">
           <option value="r1">DeepSeek R1</option>
