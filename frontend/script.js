@@ -135,13 +135,13 @@ let mainSequencerGroup = new THREE.Group();
 const leftSequencerGroup = createSequencerGrid(
   GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   0x9400d3,
-  new THREE.Vector3(-GRID_WIDTH / 2 - 65, 0, -GRID_DEPTH / 2),
+  new THREE.Vector3(-GRID_WIDTH / 2, 0, -GRID_DEPTH / 2),
   true
 );
 const rightSequencerGroup = createSequencerGrid(
   GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   0xFF0000,
-  new THREE.Vector3(GRID_WIDTH / 2 - 65, 0, -GRID_DEPTH / 2),
+  new THREE.Vector3(GRID_WIDTH / 2, 0, -GRID_DEPTH / 2),
   false
 );
 
@@ -859,7 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('timeline-canvas').height = timelineHeight;
   }
 
-  mainSequencerGroup.position.set(0, -TIMELINE_OFFSET, 65); // Center rotation point in Z
+  mainSequencerGroup.position.set(0, -TIMELINE_OFFSET, 0); // Center rotation point in Z
 
   function calculateInitialScale() {
     const screenWidth = window.innerWidth;
