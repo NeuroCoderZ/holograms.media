@@ -1382,8 +1382,7 @@ async function loadInitialFilesAndSetupEditor() {
     
     // Update camera and renderer
     if (!isXRMode) {
-      const gridContainer = document.getElementById('grid-container');
-      const containerWidth = gridContainer.clientWidth;
+      const containerWidth = gridContainer.clientWidth; // Используем gridContainer из внешней области видимости
       const containerHeight = gridContainer.clientHeight;
       const visibleWidth = containerWidth;
       const visibleHeight = containerHeight;
