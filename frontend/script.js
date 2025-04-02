@@ -828,11 +828,14 @@ document.addEventListener('DOMContentLoaded', () => {
   gridPointLight.position.set(0, TIMELINE_OFFSET / 2, 500);
   scene.add(gridPointLight);
 
-  const aspect = window.innerWidth / window.innerHeight;
-  const orthoLeft = -window.innerWidth / 2;
-  const orthoRight = window.innerWidth / 2;
-  const orthoTop = window.innerHeight / 2;
-  const orthoBottom = -window.innerHeight / 2;
+  const gridContainer = document.getElementById('grid-container');
+  const containerWidth = gridContainer.clientWidth;
+  const containerHeight = gridContainer.clientHeight;
+  const aspect = containerWidth / containerHeight;
+  const orthoLeft = -containerWidth / 2;
+  const orthoRight = containerWidth / 2;
+  const orthoTop = containerHeight / 2;
+  const orthoBottom = -containerHeight / 2;
   const orthoCamera = new THREE.OrthographicCamera(
     orthoLeft, orthoRight, orthoTop, orthoBottom,
     -10000, 10000
@@ -851,7 +854,7 @@ document.addEventListener('DOMContentLoaded', () => {
     alpha: false // НЕ прозрачный фон, чтобы scene.background работал
   });
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(containerWidth, containerHeight);
   const gridContainer = document.getElementById('grid-container');
   if (gridContainer) {
     gridContainer.appendChild(renderer.domElement);
@@ -871,9 +874,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   mainSequencerGroup.position.set(0, 0, 0); // Центрирование по Y
 
-  function calculateInitialScale() {
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
+  function calculateInitialScale(containerWidth, containerHeight) {
+    const screenWidth = containerWidth;
+    const screenHeight = containerHeight;
     const hologramWidth = GRID_WIDTH * 2;
     const hologramHeight = GRID_HEIGHT;
 
@@ -896,7 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return scale * 0.5;
   }
 
-  const initialScale = calculateInitialScale();
+  const initialScale = calculateInitialScale(containerWidth, containerHeight);
   mainSequencerGroup.scale.setScalar(initialScale);
 
   mainSequencerGroup.rotation.set(0, 0, 0);
@@ -1374,13 +1377,16 @@ async function loadInitialFilesAndSetupEditor() {
 
   window.addEventListener('resize', () => {
     // Recalculate scale based on new window dimensions
-    const newScale = calculateInitialScale();
+    const newScale = calculateInitialScale(containerWidth, containerHeight);
     mainSequencerGroup.scale.setScalar(newScale);
     
     // Update camera and renderer
     if (!isXRMode) {
-      const visibleWidth = window.innerWidth;
-      const visibleHeight = window.innerHeight;
+      const gridContainer = document.getElementById('grid-container');
+      const containerWidth = gridContainer.clientWidth;
+      const containerHeight = gridContainer.clientHeight;
+      const visibleWidth = containerWidth;
+      const visibleHeight = containerHeight;
       
       orthoCamera.left = -visibleWidth / 2;
       orthoCamera.right = visibleWidth / 2;
@@ -1392,7 +1398,7 @@ async function loadInitialFilesAndSetupEditor() {
       xrCamera.updateProjectionMatrix();
     }
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(containerWidth, containerHeight);
 
     // Update timeline dimensions
     timelineWidth = document.getElementById('timeline-container') ? document.getElementById('timeline-container').clientWidth : 0;
