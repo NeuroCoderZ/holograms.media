@@ -869,7 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('timeline-canvas').height = timelineHeight;
   }
 
-  mainSequencerGroup.position.set(0, -TIMELINE_OFFSET, 0); // Center rotation point in Z
+  mainSequencerGroup.position.set(0, 0, 0); // Центрирование по Y
 
   function calculateInitialScale() {
     const screenWidth = window.innerWidth;
@@ -983,15 +983,8 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(animateReturn);
   });
 
-  // Add microphone button handler (temporarily commented)
-  // const micButtonElement = document.getElementById('micButton');
-  // micButtonElement.addEventListener('click', () => {
-  //   if (microphoneStream) {
-  //     stopMicrophone();
-  //   } else {
-  //     setupMicrophone();
-  //   }
-  // });
+  // Закомментированный код для микрофона не влияет на отображение кнопок
+  // Временная заглушка для будущей реализации
 
   document.getElementById('xrButton').addEventListener('click', () => {
     isXRMode = !isXRMode;
@@ -1233,15 +1226,16 @@ async function loadInitialFilesAndSetupEditor() {
       const versionFrames = document.getElementById('versionFrames');
       versionFrames.innerHTML = '';
       
-      versions.forEach(version => {
+      versions.reverse(); // Показываем сначала старые версии
+      
+      versions.forEach((version, index) => {
         const frame = document.createElement('div');
         frame.className = 'version-frame';
         frame.setAttribute('data-version-id', version.version_id);
         frame.innerHTML = `
           <div style="width: 60px; height: 60px; background-color: #444; border-radius: 3px; margin-right: 10px; flex-shrink: 0;"></div>
           <div class="version-text">
-            <p>${version.prompt ? version.prompt.substring(0, 30) + (version.prompt.length > 30 ? '...' : '') : 'No prompt'}</p>
-            <p>ID: ${version.version_id.substring(0, 8)}...</p>
+            <p>V${index + 1}: ${version.prompt ? version.prompt.substring(0, 25) + (version.prompt.length > 25 ? '...' : '') : 'No prompt'}</p>
           </div>
         `;
         frame.addEventListener('click', () => {
