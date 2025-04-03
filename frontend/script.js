@@ -897,6 +897,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialScale = calculateInitialScale(containerWidth, containerHeight);
   mainSequencerGroup.scale.setScalar(initialScale);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
+  console.log('==> DOMContentLoaded - Set Position Y:', mainSequencerGroup.position.y);
+  console.log('==> DOMContentLoaded - Set Position Y:', mainSequencerGroup.position.y);
   console.log('Set Position Y:', mainSequencerGroup.position.y);
   console.log('Set Position Y:', mainSequencerGroup.position.y);
   console.log('Centering:', { initialScale, GRID_HEIGHT, posY: mainSequencerGroup.position.y });
@@ -941,6 +943,14 @@ document.addEventListener('DOMContentLoaded', () => {
         -Math.PI/2,
         Math.PI/2
       );
+      console.log('==> Pan - Rotation:', { 
+        x: mainSequencerGroup.rotation.x, 
+        y: mainSequencerGroup.rotation.y 
+      });
+      console.log('==> Pan - Rotation:', { 
+        x: mainSequencerGroup.rotation.x, 
+        y: mainSequencerGroup.rotation.y 
+      });
       mainSequencerGroup.rotation.z = 0; // Prevent Z rotation
     } else {
       xrCamera.rotation.x = THREE.MathUtils.clamp(
@@ -1376,6 +1386,8 @@ async function loadInitialFilesAndSetupEditor() {
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(containerWidth, containerHeight);
     mainSequencerGroup.scale.setScalar(newScale);
+    console.log('==> Resize - New Scale:', newScale);
+    console.log('==> Resize - New Scale:', newScale);
     
     // Update camera and renderer
     if (!isXRMode) {
