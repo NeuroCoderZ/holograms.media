@@ -1369,14 +1369,22 @@ async function loadInitialFilesAndSetupEditor() {
   });
 
   window.addEventListener('resize', () => {
+    // Получаем актуальные размеры контейнера
+    const containerWidth = gridContainer.clientWidth;
+    const containerHeight = gridContainer.clientHeight;
+    
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(containerWidth, containerHeight);
     mainSequencerGroup.scale.setScalar(newScale);
     
     // Update camera and renderer
     if (!isXRMode) {
-      const containerWidth = gridContainer.clientWidth; // Используем gridContainer из внешней области видимости
-      const containerHeight = gridContainer.clientHeight;
+      // Обновляем параметры ортокамеры с новыми размерами
+      orthoCamera.left = -containerWidth / 2;
+      orthoCamera.right = containerWidth / 2;
+      orthoCamera.top = containerHeight / 2;
+      orthoCamera.bottom = -containerHeight / 2;
+      orthoCamera.updateProjectionMatrix();
       const visibleWidth = containerWidth;
       const visibleHeight = containerHeight;
       
