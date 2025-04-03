@@ -899,6 +899,8 @@ document.addEventListener('DOMContentLoaded', () => {
   mainSequencerGroup.scale.setScalar(initialScale);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
   console.log('==> DOMContentLoaded - Set Position Y:', mainSequencerGroup.position.y);
+  mainSequencerGroup.position.x = 0;
+  console.log('==> DOMContentLoaded - Set Position X:', mainSequencerGroup.position.x);
   console.log('==> DOMContentLoaded - Set Position Y:', mainSequencerGroup.position.y);
   console.log('==> DOMContentLoaded - Set Position Y:', mainSequencerGroup.position.y);
   console.log('Set Position Y:', mainSequencerGroup.position.y);
@@ -1244,8 +1246,7 @@ async function loadInitialFilesAndSetupEditor() {
       const versionFrames = document.getElementById('versionFrames');
       versionFrames.innerHTML = '';
       
-      
-      versions.reverse();
+      versions.reverse(); // Reverse the array before processing
       versions.forEach((version, index) => {
         const frame = document.createElement('div');
         frame.className = 'version-frame';
@@ -1265,7 +1266,8 @@ async function loadInitialFilesAndSetupEditor() {
       });
       setTimeout(() => {
           versionFrames.scrollTop = versionFrames.scrollHeight;
-      }, 0);
+          console.log('==> Scrolled timeline to bottom');
+      }, 100);
     } catch (error) {
       console.error('Ошибка загрузки версий:', error);
       alert('Не удалось загрузить версии с сервера');
