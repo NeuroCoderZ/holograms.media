@@ -1223,16 +1223,17 @@ async function loadInitialFilesAndSetupEditor() {
       const versionFrames = document.getElementById('versionFrames');
       versionFrames.innerHTML = '';
       
-      versions.reverse(); // Показываем сначала старые версии
       
       versions.forEach((version, index) => {
         const frame = document.createElement('div');
         frame.className = 'version-frame';
         frame.setAttribute('data-version-id', version.version_id);
         frame.innerHTML = `
-          <div style="width: 60px; height: 60px; background-color: #444; border-radius: 3px; margin-right: 10px; flex-shrink: 0;"></div>
+          <div class="version-placeholder">
+            <span class="version-label">V${index + 1}</span>
+          </div>
           <div class="version-text">
-            <p>V${index + 1}: ${version.prompt ? version.prompt.substring(0, 25) + (version.prompt.length > 25 ? '...' : '') : 'No prompt'}</p>
+            <p>${version.prompt || 'No prompt'}</p>
           </div>
         `;
         frame.addEventListener('click', () => {
@@ -1240,6 +1241,9 @@ async function loadInitialFilesAndSetupEditor() {
         });
         versionFrames.appendChild(frame);
       });
+    
+      // Прокручиваем контейнер версий вниз
+      versionFrames.scrollTop = versionFrames.scrollHeight;
     } catch (error) {
       console.error('Ошибка загрузки версий:', error);
       alert('Не удалось загрузить версии с сервера');
