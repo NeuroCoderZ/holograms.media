@@ -1230,7 +1230,7 @@ async function loadInitialFilesAndSetupEditor() {
         frame.setAttribute('data-version-id', version.version_id);
         frame.innerHTML = `
           <div class="version-placeholder">
-            <span class="version-label">V${index + 1}</span>
+            <span class="version-label">В${index + 1}</span>
           </div>
           <div class="version-text">
             <p>${version.prompt || 'No prompt'}</p>
@@ -1241,8 +1241,6 @@ async function loadInitialFilesAndSetupEditor() {
         });
         versionFrames.appendChild(frame);
       });
-    
-      // Прокручиваем контейнер версий вниз
       versionFrames.scrollTop = versionFrames.scrollHeight;
     } catch (error) {
       console.error('Ошибка загрузки версий:', error);

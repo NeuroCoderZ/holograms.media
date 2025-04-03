@@ -77,13 +77,14 @@
 
     <!-- Панель Промпта -->
     <div id="promptBar">
-        <button id="toggleFilesButton" class="control-button" style="margin-right: 5px; padding: 4px 8px; min-width: auto;"></button>
-        <textarea id="topPromptInput" rows="3" placeholder="What would you like to change?"></textarea>
-        <select id="modelSelect">
-          <option value="r1">DeepSeek R1</option>
-          <option value="gemini">Gemini Flash 2.0</option>
-        </select>
-        <button id="submitTopPrompt">Apply</button>
+        <textarea id="topPromptInput" rows="3" placeholder="Что бы вы хотели изменить?"></textarea>
+        <div class="prompt-controls">
+          <select id="modelSelect">
+            <option value="r1">DeepSeek R1</option>
+            <option value="gemini">Gemini Flash 2.0</option>
+          </select>
+          <button id="submitTopPrompt">Apply</button>
+        </div>
     </div>
   </div>
 
