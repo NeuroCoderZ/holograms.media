@@ -893,6 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const initialScale = calculateInitialScale(containerWidth, containerHeight);
   mainSequencerGroup.scale.setScalar(initialScale);
+  mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
 
   mainSequencerGroup.rotation.set(0, 0, 0);
   scene.add(mainSequencerGroup);
