@@ -850,8 +850,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
-    alpha: false // НЕ прозрачный фон, чтобы scene.background работал
+    alpha: false // НЕ прозрачный фон
   });
+  scene.background = new THREE.Color(0x000000);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(containerWidth, containerHeight);
   if (gridContainer) {
