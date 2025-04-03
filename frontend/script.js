@@ -891,12 +891,14 @@ document.addEventListener('DOMContentLoaded', () => {
   
     console.log('Calculated Scale:', scale);
     console.log('Calculated Scale:', scale);
+    console.log('==> calculateInitialScale - Scale:', scale);
     return scale; // ВОЗВРАЩАЕМ ЧИСТЫЙ МАСШТАБ БЕЗ * 0.5
   }
 
   const initialScale = calculateInitialScale(containerWidth, containerHeight);
   mainSequencerGroup.scale.setScalar(initialScale);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
+  console.log('==> DOMContentLoaded - Set Position Y:', mainSequencerGroup.position.y);
   console.log('==> DOMContentLoaded - Set Position Y:', mainSequencerGroup.position.y);
   console.log('==> DOMContentLoaded - Set Position Y:', mainSequencerGroup.position.y);
   console.log('Set Position Y:', mainSequencerGroup.position.y);
@@ -943,6 +945,10 @@ document.addEventListener('DOMContentLoaded', () => {
         -Math.PI/2,
         Math.PI/2
       );
+      console.log('==> Pan - Rotation:', { 
+        x: mainSequencerGroup.rotation.x, 
+        y: mainSequencerGroup.rotation.y 
+      });
       console.log('==> Pan - Rotation:', { 
         x: mainSequencerGroup.rotation.x, 
         y: mainSequencerGroup.rotation.y 
@@ -1386,6 +1392,7 @@ async function loadInitialFilesAndSetupEditor() {
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(containerWidth, containerHeight);
     mainSequencerGroup.scale.setScalar(newScale);
+    console.log('==> Resize - New Scale:', newScale);
     console.log('==> Resize - New Scale:', newScale);
     console.log('==> Resize - New Scale:', newScale);
     
