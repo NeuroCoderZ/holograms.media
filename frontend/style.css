@@ -290,7 +290,6 @@ body {
   align-items: stretch;
   padding: var(--padding);
   background-color: var(--color-pure-black);
-  border-top: 1px solid var(--color-dark-border);
 }
 
 #promptBar > * {
@@ -332,12 +331,17 @@ body {
 }
 #modelSelect { /* Стили селекта */
   padding: 6px; margin-right: 5px; font-size: 0.9em;
-  background-color: var(--color-pure-black); color: var(--color-primary); border: 1px solid var(--color-dark-border); border-radius: 3px;
+  background-color: var(--color-pure-black); color: var(--color-primary); border-radius: 3px;
   height: 30px; /* Фикс высоты */
 }
 #submitTopPrompt { /* Стили кнопки */
-  padding: 6px 12px; font-size: 0.9em; background-color: #00cc00; color: #000000;
-  border: none; border-radius: 3px; cursor: pointer; height: 30px; /* Фикс высоты */
+  padding: 6px 12px; font-size: 0.9em; 
+  background-color: #00cc00; 
+  color: #000000 !important;
+  border: none; 
+  border-radius: 3px; 
+  cursor: pointer; 
+  height: 30px; /* Фикс высоты */
 }
 
 
