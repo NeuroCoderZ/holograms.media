@@ -324,7 +324,6 @@ body {
   font-size: 0.9em;
   background-color: var(--color-pure-black); 
   color: var(--color-primary); 
-  
   border-radius: 3px;
   min-height: 120px;
   resize: none;
