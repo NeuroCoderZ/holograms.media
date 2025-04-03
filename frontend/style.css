@@ -6,6 +6,8 @@
   --padding: clamp(10px, 2vmin, 15px);
 
   /* Цвета из твоей версии */
+  --color-pure-black: #000000;
+  --color-dark-border: #282828;
   --color-bg: #121212;
   --color-primary: #e0e0e0;
   --panel-bg: #1e1e1e;
@@ -58,7 +60,7 @@ html, body {
   padding: 0;
   overflow: hidden;
   font-family: 'Roboto', sans-serif;
-  background-color: var(--color-bg);
+  background-color: var(--color-pure-black);
   color: var(--color-primary);
 }
 
@@ -75,12 +77,13 @@ body {
   flex-direction: column;
   position: relative;
   overflow: hidden;
+  background-color: var(--color-pure-black);
 }
 
 #grid-container {
   flex-grow: 1;
   position: relative;
-  background-color: var(--color-bg);
+  background-color: var(--color-pure-black);
   min-height: 0;
   width: calc(100% - var(--timeline-width)); /* Учитываем ширину правой панели */
 }
@@ -162,8 +165,8 @@ body {
 /* Правая панель */
 .panel.right-panel {
   width: var(--timeline-width);
-  background-color: var(--panel-bg);
-  border-left: 1px solid var(--panel-border);
+  background-color: var(--color-pure-black);
+  border-left: 1px solid var(--color-dark-border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -194,10 +197,10 @@ body {
 
 /* Интегрированный редактор файлов */
 #integratedFileEditor {
-  border-top: 1px solid var(--panel-border);
+  border-top: 1px solid var(--color-dark-border);
   padding: var(--padding);
   overflow-y: auto;
-  background-color: var(--panel-bg);
+  background-color: var(--color-pure-black);
   max-height: 30vh; /* Ограничиваем высоту, чтобы промпт был виден */
   flex-shrink: 0; /* Не сжиматься */
 }
@@ -208,8 +211,8 @@ body {
 #integratedFileEditor div#fileEditor { display: flex; flex-direction: column; }
 #integratedFileEditor textarea#fileContent {
   flex-grow: 1; width: 100%; box-sizing: border-box; margin-bottom: 10px;
-  background-color: var(--input-bg); color: var(--color-primary);
-  border: 1px solid var(--input-border); border-radius: 5px;
+  background-color: var(--color-pure-black); color: var(--color-primary);
+  border: 1px solid var(--color-dark-border); border-radius: 5px;
   font-family: monospace; font-size: 0.8em; padding: 10px;
   resize: none; overflow: auto; white-space: pre; min-height: 100px; /* Мин высота */
 }
@@ -225,7 +228,8 @@ body {
   flex-shrink: 0;
   display: flex; align-items: center;
   padding: var(--padding);
-  border-top: 1px solid var(--panel-border);
+  background-color: var(--color-pure-black);
+  border-top: 1px solid var(--color-dark-border);
   min-height: 40px; /* Минимальная высота */
 }
 #toggleFilesButton { /* Стили кнопки показа файлов */
@@ -238,12 +242,12 @@ body {
 #toggleFilesButton:hover { background-color: var(--button-hover-bg); color: var(--color-primary); }
 #topPromptInput { /* Стили инпута */
   flex-grow: 1; padding: 6px; margin-right: 5px; font-size: 0.9em;
-  background-color: var(--input-bg); color: var(--color-primary); border: 1px solid var(--input-border); border-radius: 3px;
+  background-color: var(--color-pure-black); color: var(--color-primary); border: 1px solid var(--color-dark-border); border-radius: 3px;
   min-height: 28px; /* Фикс высоты */
 }
 #modelSelect { /* Стили селекта */
   padding: 6px; margin-right: 5px; font-size: 0.9em;
-  background-color: var(--input-bg); color: var(--color-primary); border: 1px solid var(--input-border); border-radius: 3px;
+  background-color: var(--color-pure-black); color: var(--color-primary); border: 1px solid var(--color-dark-border); border-radius: 3px;
   height: 30px; /* Фикс высоты */
 }
 #submitTopPrompt { /* Стили кнопки */
@@ -266,8 +270,8 @@ body {
 }
 .modal.active { display: flex; }
 .modal-content {
-  background-color: var(--panel-bg); color: var(--color-primary);
-  padding: calc(var(--padding) * 1.5); border: 1px solid var(--panel-border);
+  background-color: var(--color-pure-black); color: var(--color-primary);
+  padding: calc(var(--padding) * 1.5); border: 1px solid var(--color-dark-border);
   border-radius: 5px; width: 80%; max-width: 500px; position: relative;
 }
 .close {
@@ -277,8 +281,8 @@ body {
 .close:hover, .close:focus { color: var(--color-primary); }
 .modal h2 { margin-top: 0; margin-bottom: 15px; }
 .modal textarea {
-  width: 100%; background-color: var(--input-bg); color: var(--color-primary);
-  border: 1px solid var(--input-border); border-radius: 3px; padding: 10px;
+  width: 100%; background-color: var(--color-pure-black); color: var(--color-primary);
+  border: 1px solid var(--color-dark-border); border-radius: 3px; padding: 10px;
   font-family: inherit; margin-bottom: 10px;
 }
 .modal canvas { display: block; margin: 10px auto; border: 1px solid var(--input-border); }

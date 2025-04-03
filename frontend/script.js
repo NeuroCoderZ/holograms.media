@@ -1253,19 +1253,8 @@ async function loadInitialFilesAndSetupEditor() {
       console.log('Переключено на версию:', versionId, 'Данные:', response.data);
       
       // Применяем сохраненный цвет фона
-      const customData = response.data.customData;
-      if (customData && typeof customData.backgroundColor === 'string' && customData.backgroundColor.startsWith('#')) {
-          try {
-              scene.background = new THREE.Color(customData.backgroundColor);
-              console.log(`Цвет фона изменен на ${customData.backgroundColor}`);
-          } catch (colorError) {
-              console.error("Не удалось применить цвет фона:", colorError);
-              // Сбрасываем на цвет по умолчанию при ошибке
-              scene.background = new THREE.Color(0x1a1a1a);
-          }
-      } else {
-          console.log("Цвет фона в данных версии не найден, фон не изменен.");
-      }
+      scene.background = new THREE.Color(0x000000);
+      console.log(`Цвет фона установлен на #000000`);
       
       const files = response.data.files;
       // Отображаем сгенерированный код в редакторе
