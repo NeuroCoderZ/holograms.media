@@ -1241,7 +1241,9 @@ async function loadInitialFilesAndSetupEditor() {
         });
         versionFrames.appendChild(frame);
       });
-      versionFrames.scrollTop = versionFrames.scrollHeight;
+      setTimeout(() => {
+          versionFrames.scrollTop = versionFrames.scrollHeight;
+      }, 0);
     } catch (error) {
       console.error('Ошибка загрузки версий:', error);
       alert('Не удалось загрузить версии с сервера');
