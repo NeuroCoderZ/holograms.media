@@ -51,7 +51,16 @@
 
 /* Общие стили */
 * { box-sizing: border-box; }
-html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Roboto', sans-serif; background-color: var(--color-bg); color: var(--color-primary); }
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-primary);
+}
 
 /* ОСНОВНОЙ МАКЕТ С FLEXBOX */
 body {
@@ -66,7 +75,6 @@ body {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  background-color: var(--color-bg);
 }
 
 #grid-container {
