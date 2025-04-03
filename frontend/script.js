@@ -1225,6 +1225,7 @@ async function loadInitialFilesAndSetupEditor() {
       versionFrames.innerHTML = '';
       
       
+      versions.reverse();
       versions.forEach((version, index) => {
         const frame = document.createElement('div');
         frame.className = 'version-frame';
