@@ -74,7 +74,7 @@ body {
 .main-area {
   flex-grow: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Сначала холст, потом кнопки */
   position: relative;
   overflow: hidden;
   background-color: var(--color-pure-black);
@@ -86,17 +86,16 @@ body {
   min-height: 0;
   width: calc(100% - var(--timeline-width)); /* Учитываем ширину правой панели */
 }
-#grid-container canvas {
+#grid-container canvas { /* Убираем z-index */
   position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;
-  z-index: 1;
 }
 
 /* --- СТИЛИ ДЛЯ ПАНЕЛИ КНОПОК --- */
 #button-container {
   background-color: transparent;
-  height: var(--control-panel-height);
+  height: var(--control-panel-height); /* Фиксированная высота */
   padding: 0 var(--padding);
-  flex-shrink: 0;
+  flex-shrink: 0; /* Не сжиматься */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -105,8 +104,8 @@ body {
   scrollbar-width: none;
   -ms-overflow-style: none;
   touch-action: pan-x;
-  position: relative;
-  z-index: 2;
+  /* Убираем position и z-index */
+  border-top: 1px solid var(--color-dark-border); /* Добавим границу сверху */
 }
 #button-container::-webkit-scrollbar {
   display: none;
