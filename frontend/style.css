@@ -3,7 +3,7 @@
   --base-size: clamp(8px, 1.5vmin, 14px);
   --button-spacing: clamp(5px, 1vmin, 10px);
   /* --timeline-width: clamp(250px, 25vw, 350px); */ /* Ширина правой панели теперь определяется .right-panel */
-  --padding: clamp(10px, 2vmin, 15px);
+  --padding: clamp(5px, 1vmin, 8px);
 
   /* Цвета из твоей версии */
   --color-pure-black: #000000;
@@ -177,7 +177,7 @@ body {
   flex-grow: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--padding);
+  padding: var(--padding) var(--padding) 0;
   scrollbar-width: thin;
   scrollbar-color: #555 #333;
   min-height: 50px;
@@ -191,8 +191,8 @@ body {
 .version-frame {
   display: flex;
   align-items: flex-start;
-  margin-bottom: var(--padding);
-  padding: 10px;
+  margin-bottom: calc(var(--padding) / 2);
+  padding: var(--padding);
   border: 1px solid var(--color-dark-border);
   border-radius: 5px;
   cursor: pointer;
@@ -286,11 +286,30 @@ body {
 /* Панель промпта */
 #promptBar {
   flex-shrink: 0;
-  display: flex; align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   padding: var(--padding);
   background-color: var(--color-pure-black);
   border-top: 1px solid var(--color-dark-border);
-  min-height: 40px; /* Минимальная высота */
+}
+
+#promptBar > * {
+  margin-bottom: var(--padding);
+}
+
+#promptBar > *:last-child {
+  margin-bottom: 0;
+}
+
+.prompt-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.prompt-controls select {
+  flex-grow: 1;
 }
 #toggleFilesButton { /* Стили кнопки показа файлов */
     background: none; border: 1px solid var(--input-border); color: var(--color-icon);
@@ -309,8 +328,8 @@ body {
   color: var(--color-primary); 
   border: 1px solid var(--color-dark-border); 
   border-radius: 3px;
-  min-height: 60px;
-  resize: vertical;
+  min-height: 100px;
+  resize: none;
 }
 #modelSelect { /* Стили селекта */
   padding: 6px; margin-right: 5px; font-size: 0.9em;
