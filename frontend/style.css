@@ -1,14 +1,11 @@
 :root {
-  /* Размеры */
+  /* Размеры из твоей версии */
   --base-size: clamp(8px, 1.5vmin, 14px);
-  --button-size: clamp(38px, 6vmin, 50px); /* Уменьшили кнопки */
   --button-spacing: clamp(5px, 1vmin, 10px);
-  --control-panel-height: calc(var(--button-size) + var(--padding)*2);
-  --timeline-width: clamp(250px, 25vw, 350px); /* Ширина правой панели */
-  --left-panel-width: clamp(200px, 20vw, 300px);
+  /* --timeline-width: clamp(250px, 25vw, 350px); */ /* Ширина правой панели теперь определяется .right-panel */
   --padding: clamp(10px, 2vmin, 15px);
 
-  /* Цвета */
+  /* Цвета из твоей версии */
   --color-bg: #121212;
   --color-primary: #e0e0e0;
   --panel-bg: #1e1e1e;
@@ -18,168 +15,268 @@
   --button-action-bg: #007bff;
   --button-action-hover: #0056b3;
   --button-hover-bg: rgba(255, 255, 255, 0.08);
-  --color-icon: #b0b0b0;
-  --color-icon-active: #ffffff;
+  --color-icon: #b0b0b0; /* Цвет неактивной иконки/текста кнопки */
+  --color-icon-active: var(--color-primary); /* Цвет активной иконки/текста кнопки */
+  --color-icon-disabled: #555; /* Темно-серый для disabled */
+
+  /* --- Переменные из Websim CSS (адаптированные) --- */
+  --button-size: clamp(38px, 8vmin, 55px); /* Адаптивный размер кнопки */
+  --button-margin: clamp(6px, 1.5vmin, 14px); /* Отступы для контейнера кнопок */
+  --icon-size: calc(var(--button-size) * 0.55); /* Размер иконки внутри кнопки */
+  --text-size: calc(var(--button-size) * 0.35); /* Размер текста для текстовых кнопок */
+  --control-panel-height: calc(var(--button-size) + var(--button-margin) * 2); /* Высота панели кнопок */
+  --timeline-width: clamp(250px, 25vw, 350px); /* Ширина правой панели */
+
 }
+
+/* --- Оптимизации для разных экранов (из Websim) --- */
+@media screen and (min-width: 1024px) {
+  :root {
+    --button-size: clamp(45px, 5vmin, 60px);
+    --button-spacing: clamp(6px, 1vmin, 14px);
+    --button-margin: clamp(8px, 2vmin, 16px);
+  }
+}
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+ :root {
+    --button-size: clamp(42px, 6vmin, 58px);
+ }
+}
+@media screen and (orientation: landscape) {
+  :root {
+    --button-size: clamp(35px, 7vh, 50px);
+  }
+}
+/* --- Конец оптимизаций --- */
 
 /* Общие стили */
 * { box-sizing: border-box; }
 html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Roboto', sans-serif; background-color: var(--color-bg); color: var(--color-primary); }
 
-/* --- ОСНОВНОЙ МАКЕТ С FLEXBOX --- */
+/* ОСНОВНОЙ МАКЕТ С FLEXBOX */
 body {
   display: flex;
-  height: 100vh; /* Важно для flex */
+  height: 100vh;
 }
 
-/* --- Левая панель (Файлы) --- */
-.panel.left-panel {
-  width: var(--left-panel-width);
-  background-color: var(--panel-bg);
-  border-right: 1px solid var(--panel-border);
-  padding: var(--padding);
+/* Центральная область */
+.main-area {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  flex-shrink: 0; /* Не сжиматься */
-}
-#filePanel h3 { margin-top: 0; margin-bottom: 10px; font-size: 1em; }
-#fileList { list-style: none; padding: 0; margin: 0 0 10px 0; }
-#fileList li { padding: 5px; cursor: pointer; border-radius: 3px; font-size: 0.9em; margin-bottom: 3px;}
-#fileList li:hover { background-color: var(--button-hover-bg); }
-#fileList li[style*="bold"] { background-color: rgba(0, 123, 255, 0.3); font-weight: bold; }
-
-#fileEditor { flex-grow: 1; display: flex; flex-direction: column; }
-#fileContent { /* textarea */
-  flex-grow: 1; width: 100%; box-sizing: border-box; margin-bottom: 10px;
-  background-color: var(--input-bg); color: var(--color-primary);
-  border: 1px solid var(--input-border); border-radius: 5px;
-  font-family: monospace; font-size: 0.85em; padding: 10px;
-  resize: none; overflow: auto; white-space: pre;
-}
-#saveFile {
-  padding: 5px 10px; background-color: var(--button-action-bg); color: white;
-  border: none; border-radius: 5px; cursor: pointer; align-self: flex-end;
-  transition: background-color 0.3s;
-}
-#saveFile:hover { background-color: var(--button-action-hover); }
-
-/* --- Центральная область --- */
-.main-area {
-  flex-grow: 1; /* Занимает все оставшееся место */
-  display: flex;
-  flex-direction: column; /* Голограмма над кнопками */
-  position: relative; /* Для позиционирования canvas */
+  position: relative;
   overflow: hidden;
 }
+
 #grid-container {
-  flex-grow: 1; /* Занимает все место над кнопками */
+  flex-grow: 1;
   position: relative;
   background-color: var(--color-bg);
-  min-height: 0; /* Для flex */
+  min-height: 0;
+  width: calc(100% - var(--timeline-width)); /* Учитываем ширину правой панели */
 }
 #grid-container canvas {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;
 }
+
+/* --- СТИЛИ ДЛЯ ПАНЕЛИ КНОПОК --- */
 #button-container {
-  height: var(--control-panel-height);
-  flex-shrink: 0; /* Не сжиматься */
-  display: flex; justify-content: center; align-items: center;
-  gap: var(--button-spacing); padding: 0 var(--padding); /* Добавили отступы по бокам */
-  background-color: var(--panel-bg); border-top: 1px solid var(--panel-border);
-  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+  background-color: transparent;
+  border-top: none;
+  height: var(--control-panel-height); /* Фиксированная высота */
+  padding: 0 var(--padding); /* Только боковые отступы */
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--button-spacing);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  touch-action: pan-x;
 }
-#button-container::-webkit-scrollbar { display: none; }
-.control-button { /* Стили кнопок без изменений */ }
-.control-button svg { /* Стили иконок */ fill: var(--color-icon); opacity: 0.7; width: calc(var(--button-size) * 0.5); height: calc(var(--button-size) * 0.5); }
-.control-button:hover svg { opacity: 1; }
-.control-button:hover { background-color: var(--button-hover-bg); }
-.control-button.active svg { opacity: 1; fill: var(--color-icon-active); }
-.control-button:disabled svg { opacity: 0.3; }
-.control-button:disabled { cursor: not-allowed; }
+#button-container::-webkit-scrollbar {
+  display: none;
+}
+/* --- КОНЕЦ СТИЛЕЙ ПАНЕЛИ --- */
 
 
-/* --- Правая панель (Таймлайн и Промпт) --- */
+/* --- СТИЛИ ДЛЯ КНОПОК (Адаптация Websim) --- */
+.control-button {
+  flex: 0 0 var(--button-size);
+  width: var(--button-size);
+  height: var(--button-size);
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-icon); /* Серый по умолчанию */
+  transition: color 0.3s ease, background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+}
+
+.control-button svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  transition: transform 0.2s ease;
+  fill: currentColor;
+}
+
+.control-button#xrButton,
+.control-button#triaButton { /* ID текстовых кнопок */
+  font-size: var(--text-size);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.control-button:hover:not(:disabled) { /* Hover только для активных */
+  color: var(--color-primary);
+  background-color: var(--button-hover-bg);
+}
+
+.control-button.active {
+  color: var(--color-icon-active);
+  background-color: var(--button-hover-bg); /* Можно убрать фон для active если не нужно */
+}
+
+.control-button:disabled {
+  color: var(--color-icon-disabled); /* Темно-серый */
+  cursor: not-allowed;
+  background-color: transparent;
+}
+/* --- КОНЕЦ СТИЛЕЙ КНОПОК --- */
+
+
+/* Правая панель */
 .panel.right-panel {
   width: var(--timeline-width);
   background-color: var(--panel-bg);
   border-left: 1px solid var(--panel-border);
   display: flex;
-  flex-direction: column; /* Таймлайн над промптом */
-  overflow: hidden; /* Управляем скроллом внутри */
+  flex-direction: column;
+  overflow: hidden;
   flex-shrink: 0;
+  height: 100vh; /* На всю высоту */
 }
 #versionTimeline {
-  flex-grow: 1; /* Занимает большую часть панели */
-  overflow-y: auto; /* Вертикальный скролл для версий */
-  overflow-x: hidden; /* Горизонтальный не нужен */
+  flex-grow: 1; /* Занимает доступное место */
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--padding);
   scrollbar-width: thin; scrollbar-color: #555 #333;
+  min-height: 50px; /* Минимальная высота, чтобы было видно */
 }
 #versionTimeline::-webkit-scrollbar { width: 5px; }
 #versionTimeline::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
 #versionTimeline::-webkit-scrollbar-track { background: #333; }
 
-/* #versionFrames теперь не нужен, рендерим прямо в #versionTimeline */
+/* Стили для версии */
 .version-frame {
-  display: flex; /* Превью слева, текст справа */
-  align-items: flex-start; /* Выравнивание по верху */
-  margin-bottom: var(--padding);
-  padding: 8px;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  display: flex; align-items: flex-start; margin-bottom: var(--padding);
+  padding: 8px; background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 5px; cursor: pointer; transition: background-color 0.2s;
 }
 .version-frame:hover { background-color: var(--button-hover-bg); }
-.version-frame img {
-  width: 60px; /* Уменьшили превью */
-  height: 60px;
-  flex-shrink: 0;
-  margin-right: 10px;
-  object-fit: cover; border-radius: 3px; background-color: #555;
-}
-.version-frame .version-text { /* Контейнер для текста */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* Чтобы текст не вылезал */
-}
+.version-frame .version-text { display: flex; flex-direction: column; overflow: hidden; }
 .version-frame p { margin: 0 0 4px 0; font-size: 12px; white-space: normal; }
-.version-frame p:last-child { font-size: 10px; color: grey; margin-bottom: 0; }
 
-/* Панель промпта внизу правой панели */
+/* Интегрированный редактор файлов */
+#integratedFileEditor {
+  border-top: 1px solid var(--panel-border);
+  padding: var(--padding);
+  overflow-y: auto;
+  background-color: var(--panel-bg);
+  max-height: 30vh; /* Ограничиваем высоту, чтобы промпт был виден */
+  flex-shrink: 0; /* Не сжиматься */
+}
+#integratedFileEditor h3 { margin-top: 0; margin-bottom: 10px; font-size: 0.9em; }
+#integratedFileEditor ul#fileList { list-style: none; padding: 0; margin: 0 0 10px 0;}
+#integratedFileEditor li { padding: 5px; cursor: pointer; border-radius: 3px; font-size: 0.9em; margin-bottom: 3px;}
+#integratedFileEditor li:hover { background-color: var(--button-hover-bg); }
+#integratedFileEditor div#fileEditor { display: flex; flex-direction: column; }
+#integratedFileEditor textarea#fileContent {
+  flex-grow: 1; width: 100%; box-sizing: border-box; margin-bottom: 10px;
+  background-color: var(--input-bg); color: var(--color-primary);
+  border: 1px solid var(--input-border); border-radius: 5px;
+  font-family: monospace; font-size: 0.8em; padding: 10px;
+  resize: none; overflow: auto; white-space: pre; min-height: 100px; /* Мин высота */
+}
+#integratedFileEditor button#saveFile {
+  padding: 5px 10px; background-color: var(--button-action-bg); color: white;
+  border: none; border-radius: 5px; cursor: pointer; align-self: flex-end;
+  transition: background-color 0.3s;
+}
+#integratedFileEditor button#saveFile:hover { background-color: var(--button-action-hover); }
+
+/* Панель промпта */
 #promptBar {
-  height: var(--prompt-height);
   flex-shrink: 0;
   display: flex; align-items: center;
-  padding: 0 var(--padding) var(--padding) var(--padding);
+  padding: var(--padding);
   border-top: 1px solid var(--panel-border);
+  min-height: 40px; /* Минимальная высота */
 }
-#topPromptInput { flex-grow: 1; padding: 6px; margin-right: 5px; font-size: 0.9em; /* Уменьшили */ /* Остальные стили наследуются */}
-#modelSelect { padding: 6px; margin-right: 5px; font-size: 0.9em; /* Уменьшили */}
-#submitTopPrompt { padding: 6px 12px; font-size: 0.9em; /* Уменьшили */}
+#toggleFilesButton { /* Стили кнопки показа файлов */
+    background: none; border: 1px solid var(--input-border); color: var(--color-icon);
+    padding: 4px 8px; min-width: auto; margin-right: 5px; cursor: pointer;
+    height: 28px; /* Фикс высоты */
+    line-height: 1; /* Фикс высоты */
+    border-radius: 3px;
+}
+#toggleFilesButton:hover { background-color: var(--button-hover-bg); color: var(--color-primary); }
+#topPromptInput { /* Стили инпута */
+  flex-grow: 1; padding: 6px; margin-right: 5px; font-size: 0.9em;
+  background-color: var(--input-bg); color: var(--color-primary); border: 1px solid var(--input-border); border-radius: 3px;
+  min-height: 28px; /* Фикс высоты */
+}
+#modelSelect { /* Стили селекта */
+  padding: 6px; margin-right: 5px; font-size: 0.9em;
+  background-color: var(--input-bg); color: var(--color-primary); border: 1px solid var(--input-border); border-radius: 3px;
+  height: 30px; /* Фикс высоты */
+}
+#submitTopPrompt { /* Стили кнопки */
+  padding: 6px 12px; font-size: 0.9em; background-color: var(--button-action-bg); color: white;
+  border: none; border-radius: 3px; cursor: pointer; height: 30px; /* Фикс высоты */
+}
+#submitTopPrompt:hover { background-color: var(--button-action-hover); }
+
 
 /* --- Скрытые и Модальные окна --- */
-#version-buttons { display: none; }
-#camera-view { display: none; }
-#previewCanvas { display: none; }
+#camera-view, #previewCanvas { display: none; }
 .finger-dot, .finger-line { display: none; }
+.modal { display: none; /* ... остальные стили модальных окон ... */ }
+.modal.active { display: flex; }
+/* ... подробные стили .modal-content, .close и т.д. из твоей предыдущей версии ... */
 .modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background-color: rgba(0, 0, 0, 0.7);
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  justify-content: center; align-items: center; z-index: 1000;
 }
 .modal.active { display: flex; }
-.modal-content { /* Стили без изменений */ }
-.close { /* Стили без изменений */ }
-.modal h2 { margin-top: 0; }
-.modal textarea, .modal canvas { /* Стили без изменений */ }
-.modal button { /* Стили без изменений */ }
-.modal button:disabled { /* Стили без изменений */ }
+.modal-content {
+  background-color: var(--panel-bg); color: var(--color-primary);
+  padding: calc(var(--padding) * 1.5); border: 1px solid var(--panel-border);
+  border-radius: 5px; width: 80%; max-width: 500px; position: relative;
+}
+.close {
+  position: absolute; top: 5px; right: 10px; color: #aaa;
+  font-size: 28px; font-weight: bold; cursor: pointer;
+}
+.close:hover, .close:focus { color: var(--color-primary); }
+.modal h2 { margin-top: 0; margin-bottom: 15px; }
+.modal textarea {
+  width: 100%; background-color: var(--input-bg); color: var(--color-primary);
+  border: 1px solid var(--input-border); border-radius: 3px; padding: 10px;
+  font-family: inherit; margin-bottom: 10px;
+}
+.modal canvas { display: block; margin: 10px auto; border: 1px solid var(--input-border); }
+.modal button {
+  padding: 8px 15px; background-color: var(--button-action-bg); color: white;
+  border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;
+}
+.modal button:hover { background-color: var(--button-action-hover); }
+.modal button:disabled { background-color: #555; cursor: not-allowed; }
+/* --- Конец стилей модальных окон --- */
