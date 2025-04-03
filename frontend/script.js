@@ -889,12 +889,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Добавляем минимальный масштаб
     scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
   
+    console.log('Calculated Scale:', scale);
     return scale; // ВОЗВРАЩАЕМ ЧИСТЫЙ МАСШТАБ БЕЗ * 0.5
   }
 
   const initialScale = calculateInitialScale(containerWidth, containerHeight);
   mainSequencerGroup.scale.setScalar(initialScale);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
+  console.log('Set Position Y:', mainSequencerGroup.position.y);
   console.log('Centering:', { initialScale, GRID_HEIGHT, posY: mainSequencerGroup.position.y });
 
   mainSequencerGroup.rotation.set(0, 0, 0);
