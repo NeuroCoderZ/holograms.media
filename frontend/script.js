@@ -676,7 +676,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const gestureStatus = document.getElementById('gestureStatus');
   const promptText = document.getElementById('promptText');
   const submitPromptButton = document.getElementById('submitPrompt');
-  loadInitialFilesAndSetupEditor();
   
   // Toggle file editor
   const toggleFilesButton = document.getElementById('toggleFilesButton');
@@ -855,7 +854,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(containerWidth, containerHeight);
-  const gridContainer = document.getElementById('grid-container');
   if (gridContainer) {
     gridContainer.appendChild(renderer.domElement);
   }
@@ -878,25 +876,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const screenWidth = containerWidth;
     const screenHeight = containerHeight;
     const hologramWidth = GRID_WIDTH * 2;
-    const hologramHeight = GRID_HEIGHT;
-
-    // Calculate scale based on width and height, prioritize fitting within viewport
-    let widthScale = (screenWidth * TARGET_WIDTH_PERCENTAGE) / hologramWidth;
-    let heightScale = (screenHeight * 0.7) / hologramHeight; // Use 70% of screen height for vertical space
-
-    // Adjust for landscape orientation to maximize horizontal space
-    if (screenWidth > screenHeight) {
-      widthScale = (screenWidth * 0.95) / hologramWidth; // Slightly wider in landscape
-      heightScale = (screenHeight * 0.85) / hologramHeight; // Allow a bit more height in landscape
-    }
-
-    // Use the smaller scale to ensure hologram fits within both dimensions
+    const hologramHeight = GRID_HEIGHT; // Убедись, что GRID_HEIGHT определена глобально
+  
+    // Рассчитываем масштабы по ширине и высоте
+    let widthScale = (screenWidth * TARGET_WIDTH_PERCENTAGE) / hologramWidth; // TARGET_WIDTH_PERCENTAGE ~0.95?
+    let heightScale = (screenHeight * 0.8) / hologramHeight; // Используем 80% высоты
+  
+    // Используем МЕНЬШИЙ из масштабов, чтобы вписать объект
     let scale = Math.min(widthScale, heightScale);
-
-    // Ensure a minimum scale if the screen is very large
-    scale = Math.max(scale, 0.3); // Minimum scale to prevent it from becoming too tiny
-
-    return scale * 0.5;
+  
+    // Добавляем минимальный масштаб
+    scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
+  
+    return scale; // ВОЗВРАЩАЕМ ЧИСТЫЙ МАСШТАБ БЕЗ * 0.5
   }
 
   const initialScale = calculateInitialScale(containerWidth, containerHeight);
