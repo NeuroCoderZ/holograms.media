@@ -134,13 +134,13 @@ let fingerPositions = []; // Array to store current finger positions
 let mainSequencerGroup = new THREE.Group();
 const leftSequencerGroup = createSequencerGrid(
   GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
-  0x9400d3,
+  semitones[semitones.length - 1].color, // Цвет последнего (фиолетового) полутона
   new THREE.Vector3(-GRID_WIDTH / 2, 0, -GRID_DEPTH / 2),
   true
 );
 const rightSequencerGroup = createSequencerGrid(
   GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
-  0xFF0000,
+  semitones[0].color, // Цвет первого (красного) полутона
   new THREE.Vector3(GRID_WIDTH / 2, 0, -GRID_DEPTH / 2),
   false
 );
