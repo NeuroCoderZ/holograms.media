@@ -148,6 +148,15 @@ body {
   height: var(--icon-size);
 }
 
+/* Стили для изображений внутри кнопок */
+.control-button img {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  max-width: 70%;
+  max-height: 70%;
+  object-fit: contain;
+}
+
 .control-button#xrButton,
 .control-button#triaButton { /* ID текстовых кнопок */
   font-size: var(--text-size);
