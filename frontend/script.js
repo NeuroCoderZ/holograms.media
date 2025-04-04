@@ -888,9 +888,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Добавляем минимальный масштаб
     scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
   
-    console.log('Calculated Scale:', scale);
-    console.log('Calculated Scale:', scale);
-    console.log('==> calculateInitialScale - Scale:', scale);
     return scale; // ВОЗВРАЩАЕМ ЧИСТЫЙ МАСШТАБ БЕЗ * 0.5
   }
 
