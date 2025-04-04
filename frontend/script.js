@@ -1382,26 +1382,34 @@ async function loadInitialFilesAndSetupEditor() {
 
   window.addEventListener('resize', () => {
     // Получаем актуальные размеры контейнера
-    const containerWidth = gridContainer.clientWidth;
-    const containerHeight = gridContainer.clientHeight;
-    
+    const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
+    const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
+    // Ширина окна браузера минус ширина панелей
+    const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
+    // Используем всю доступную высоту окна
+    const availableHeight = window.innerHeight;
+
+    // Обновляем размеры gridContainer (если нужно для других целей)
+    gridContainer.style.width = `${availableWidth}px`;
+    gridContainer.style.height = `${availableHeight}px`; // Возможно, это не нужно, если body/main-area уже 100vh
+
     // Recalculate scale based on new window dimensions
-    const newScale = calculateInitialScale(containerWidth, containerHeight);
+    const newScale = calculateInitialScale(availableWidth, availableHeight); // Используем доступные размеры
     mainSequencerGroup.scale.setScalar(newScale);
-    
+
     // Update camera and renderer
     if (!isXRMode) {
       // Обновляем параметры ортокамеры с новыми размерами
-      orthoCamera.left = -containerWidth / 2;
-      orthoCamera.right = containerWidth / 2;
-      orthoCamera.top = containerHeight / 2;
-      orthoCamera.bottom = -containerHeight / 2;
+      orthoCamera.left = -availableWidth / 2;
+      orthoCamera.right = availableWidth / 2;
+      orthoCamera.top = availableHeight / 2;
+      orthoCamera.bottom = -availableHeight / 2;
       orthoCamera.updateProjectionMatrix();
-      const visibleWidth = containerWidth;
-      const visibleHeight = containerHeight;
+      const visibleWidth = availableWidth; // Исправлено
+      const visibleHeight = availableHeight; // Исправлено
       
-      orthoCamera.left = -visibleWidth / 2;
-      orthoCamera.right = visibleWidth / 2;
+      orthoCamera.left = -visibleWidth / 2; // Исправлено
+      orthoCamera.right = visibleWidth / 2; // Исправлено
       orthoCamera.top = visibleHeight / 2;
       orthoCamera.bottom = -visibleHeight / 2;
       orthoCamera.updateProjectionMatrix();
