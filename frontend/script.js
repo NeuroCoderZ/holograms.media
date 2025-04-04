@@ -1248,13 +1248,24 @@ async function loadInitialFilesAndSetupEditor() {
         });
         versionFrames.appendChild(frame);
       });
-      setTimeout(() => {
-          versionFrames.scrollTop = versionFrames.scrollHeight; // Скролл вниз
-      }, 1000); // Значительно увеличиваем задержку до 1 секунды
+      // Убрали setTimeout, так как теперь скроллом управляет MutationObserver
     } catch (error) {
       console.error('Ошибка загрузки версий:', error);
       alert('Не удалось загрузить версии с сервера');
     }
+  }
+
+  // --- Наблюдатель за изменениями в таймлайне для автоскролла ---
+  const versionFramesContainer = document.getElementById('versionFrames');
+  if (versionFramesContainer) {
+      const observer = new MutationObserver((mutationsList, observer) => {
+          // Скроллим вниз после добавления/удаления элементов
+          versionFramesContainer.scrollTop = versionFramesContainer.scrollHeight;
+      });
+
+      // Настраиваем наблюдатель: следим за добавлением/удалением дочерних узлов
+      observer.observe(versionFramesContainer, { childList: true });
+      console.log("MutationObserver для автоскролла таймлайна активирован.");
   }
 
   async function switchToVersion(versionId, branch) {
