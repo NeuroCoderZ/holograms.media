@@ -194,6 +194,13 @@ function setupCamera() {
   .catch(error => {
     console.error("Error accessing camera:", error);
   });
+
+  // Обработчик для кнопки Telegram
+  if (telegramLinkButton) {
+    telegramLinkButton.addEventListener('click', () => {
+      window.open('https://t.me/+WjtL4ipr-yljNGRi', '_blank', 'noopener,noreferrer');
+    });
+  }
 }
 
 function setupMicrophone() {
@@ -664,6 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const bluetoothButton = document.getElementById('bluetoothButton');
   const toggleCameraButton = document.getElementById('toggleCameraButton');
   const micButton = document.getElementById('micButton');
+  const telegramLinkButton = document.getElementById('telegramLinkButton'); // Находим кнопку
 
   const gestureModal = document.getElementById('gestureModal');
   const promptModal = document.getElementById('promptModal');
