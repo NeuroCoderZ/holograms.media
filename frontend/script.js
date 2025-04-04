@@ -1242,8 +1242,8 @@ async function loadInitialFilesAndSetupEditor() {
         versionFrames.appendChild(frame);
       });
       setTimeout(() => {
-          versionFrames.scrollTop = versionFrames.scrollHeight;
-      }, 250); // Увеличена задержка
+          versionFrames.scrollTop = versionFrames.scrollHeight; // Скролл вниз
+      }, 1000); // Значительно увеличиваем задержку до 1 секунды
     } catch (error) {
       console.error('Ошибка загрузки версий:', error);
       alert('Не удалось загрузить версии с сервера');
