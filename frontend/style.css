@@ -355,6 +355,12 @@ body {
   min-height: 120px;
   resize: none;
   border: none;
+  outline: none; /* Убираем стандартную обводку при фокусе */
+}
+
+#topPromptInput:focus {
+  /* Можно добавить свою кастомную обводку, если нужно, например: */
+  /* box-shadow: 0 0 0 1px var(--color-primary); */
 }
 #modelSelect { /* Стили селекта */
   padding: 6px; margin-right: 5px; font-size: 0.9em;
