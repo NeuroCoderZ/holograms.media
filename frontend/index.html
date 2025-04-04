@@ -26,17 +26,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.8/axios.min.js"></script>
-  <!-- MediaPipe Hands -->
-  <!-- <script src="https://unpkg.com/@mediapipe/hands@0.4.1646424915/hands.js"></script> -->
 </head>
 <body>
 
 
-  <!-- Центральная область -->
-  <div class="main-area">
-    <!-- Область Голограммы -->
-    <div id="grid-container"></div>
-    <!-- Панель Кнопок (под голограммой) -->
+  <!-- Левая панель: Кнопки -->
+  <div class="panel left-panel">
     <div id="button-container">
         <button id="fileButton" class="control-button" title="Загрузить аудиофайл" aria-label="Upload File"><img src="/icons/buttons/1.svg" alt="Upload"></button>
         <input type="file" id="fileInput" accept="audio/*" style="display: none;">
@@ -53,6 +48,17 @@
         <button id="triaButton" class="control-button" title="Активация обучения ИИ Триа" aria-label="Activate Tria Training"><img src="/icons/buttons/12.svg" alt="Tria AI"></button>
         <button id="telegramLinkButton" class="control-button" title="Перейти в Telegram-чат проекта" aria-label="Telegram Project Chat"><img src="/icons/buttons/13.svg" alt="Telegram"></button>
         <button id="installPwaButton" class="control-button" title="Установить на устройство" aria-label="Install PWA"><img src="/icons/buttons/14.svg" alt="Install PWA"></button>
+    </div>
+  </div>
+
+  <!-- Центральная область -->
+  <div class="main-area">
+    <!-- Область Голограммы -->
+    <div id="grid-container"></div>
+    <!-- Область для Жестов -->
+    <div id="gesture-area">
+        <!-- Здесь может быть canvas или просто область для захвата событий -->
+        <p>Gesture Area Placeholder</p>
     </div>
   </div>
 

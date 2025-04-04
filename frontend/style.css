@@ -74,18 +74,31 @@ body {
 .main-area {
   flex-grow: 1;
   display: flex;
-  flex-direction: column; /* Сначала холст, потом кнопки */
+  flex-direction: column;
   position: relative;
   overflow: hidden;
-  background-color: var(--color-pure-black);
 }
 
 #grid-container {
   flex-grow: 1;
   position: relative;
   min-height: 0;
-  width: calc(100% - var(--timeline-width)); /* Учитываем ширину правой панели */
+  width: 100%;
   background-color: transparent;
+}
+
+/* --- СТИЛИ ДЛЯ ОБЛАСТИ ЖЕСТОВ --- */
+#gesture-area {
+  height: 80px;
+  flex-shrink: 0;
+  background-color: #1a1a1a;
+  border-top: 1px solid var(--color-dark-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  position: relative;
+  z-index: 2;
 }
 #grid-container canvas {
   position: absolute; 
@@ -97,27 +110,27 @@ body {
   z-index: 1;
 }
 
-/* --- СТИЛИ ДЛЯ ПАНЕЛИ КНОПОК --- */
-#button-container {
-  background-color: transparent;
-  height: var(--control-panel-height);
-  padding: 0 var(--padding);
-  flex-shrink: 0;
+/* --- СТИЛИ ДЛЯ ЛЕВОЙ ПАНЕЛИ КНОПОК --- */
+.panel.left-panel {
+  width: var(--control-panel-height);
+  background-color: var(--color-pure-black);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  gap: var(--button-spacing);
-  position: relative;
-  z-index: 2;
-  overflow-x: auto;
+  padding: var(--padding) 0;
+  flex-shrink: 0;
+  height: 100vh;
+  overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  touch-action: pan-x;
-  position: relative;
-  z-index: 2;
 }
-#button-container::-webkit-scrollbar {
-  display: none;
+.panel.left-panel::-webkit-scrollbar { display: none; }
+
+#button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--button-spacing);
 }
 /* --- КОНЕЦ СТИЛЕЙ ПАНЕЛИ --- */
 
