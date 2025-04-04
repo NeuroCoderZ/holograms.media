@@ -895,7 +895,6 @@ document.addEventListener('DOMContentLoaded', () => {
   mainSequencerGroup.scale.setScalar(initialScale);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
   mainSequencerGroup.position.x = 0;
-  console.log('Centering:', { initialScale, GRID_HEIGHT, posY: mainSequencerGroup.position.y });
 
   mainSequencerGroup.rotation.set(0, 0, 0);
   scene.add(mainSequencerGroup);
