@@ -1487,21 +1487,30 @@ async function loadInitialFilesAndSetupEditor() {
 
   // --- Обработчик результатов ---
   function onHandsResults(results) {
-    if (results.multiHandLandmarks) {
-        // Временная логика для отладки
-        console.log('Обнаружено рук:', results.multiHandLandmarks.length);
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0]; // Берем первую руку
         
-        // Отображаем landmarks на canvas
-        const canvasElement = document.getElementById('gesture-area');
-        const canvasCtx = canvasElement.getContext('2d');
+        // Координаты кончиков пальцев (нормализованные [0,1])
+        const thumbTip = landmarks[4]; // Большой палец
+        const indexTip = landmarks[8]; // Указательный палец
         
-        canvasCtx.save();
-        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-        drawConnectors(canvasCtx, results.multiHandLandmarks, HAND_CONNECTIONS, 
-                      {color: '#00FF00', lineWidth: 2});
-        drawLandmarks(canvasCtx, results.multiHandLandmarks, 
-                     {color: '#FF0000', lineWidth: 1});
-        canvasCtx.restore();
+        if (thumbTip && indexTip) {
+            // Рассчитываем расстояние между кончиками в 2D
+            const deltaX = thumbTip.x - indexTip.x;
+            const deltaY = thumbTip.y - indexTip.y;
+            const distance = Math.hypot(deltaX, deltaY);
+            
+            // Логируем расстояние для отладки
+            console.log('Расстояние между кончиками:', distance.toFixed(3));
+            
+            // TODO: Здесь будет логика распознавания щипка
+            // Пример: if (distance < 0.05) { /* обработка щипка */ }
+            
+            // TODO: Получение позиции ладони для управления
+            // const palmPosition = landmarks[0]; // Базовый landmark ладони
+        }
+    } else {
+        console.log('Руки не обнаружены');
     }
   }
 });
