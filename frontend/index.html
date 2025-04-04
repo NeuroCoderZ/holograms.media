@@ -42,31 +42,15 @@
         <input type="file" id="fileInput" accept="audio/*" style="display: none;">
         <button id="playButton" class="control-button" title="Воспроизвести" disabled aria-label="Play"><img src="/icons/buttons/2.svg" alt="Play"></button>
         <button id="pauseButton" class="control-button" title="Пауза" disabled aria-label="Pause"><img src="/icons/buttons/3.svg" alt="Pause"></button>
-        <button id="stopButton" class="control-button" title="Стоп" disabled aria-label="Stop">■</button>
-        <button id="micButton" class="control-button" title="Использовать микрофон (Неактивно)" aria-label="Use Microphone">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.39-.98.88C16.58 14.86 14.48 17 12 17s-4.58-2.14-4.93-5.12c-.08-.49-.49-.88-.98-.88-.55 0-1 .45-1 1 0 3.03 2.36 5.54 5.41 5.91L11 21.99V22h2v-.01l.59-.08C16.64 16.54 19 14.03 19 11c0-.55-.45-1-1-1z"/>
-          </svg>
-        </button>
-        <button id="fullscreenButton" class="control-button" title="Полноэкранный режим" aria-label="Fullscreen">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-          </svg>
-        </button>
-        <button id="xrButton" class="control-button" title="Режим AR/VR (Эксперимент)" aria-label="XR Mode">XR</button>
-        <button id="gestureRecordButton" class="control-button" title="Запись жеста (Неактивно)" aria-label="Record Gesture">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 24h2.11l8.1-8.09c.79-.79.79-2.07 0-2.86L16.7 11c-.79-.79-2.07-.79-2.86 0l-8.1 8.1V22c0 1.1.9 2 2 2zM16 1.01 14 3.01 19 8.01 21 6.01c.78-.78.78-2.05 0-2.83L18.83.35c-.78-.78-2.05-.78-2.83 0zM1.03 19.97l4-4c.78-.78 2.05-.78 2.83 0l2.83 2.83c.78.78.78 2.05 0 2.83l-4 4c-.78.78-2.05.78-2.83 0l-2.83-2.83c-.79-.78-.79-2.05 0-2.83z"/></svg>
-        </button>
-        <button id="scanButton" class="control-button" title="Сканировать QR (Неактивно)" aria-label="Scan">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h6v6H4zm8 0h6v6h-6zm-8 8h6v6H4zm13 0h1v1h-1zm2 0h1v1h-1zm-4 1h1v1h-1zm2 0h1v1h-1zm2 0h1v1h-1zm-4 2h1v1h-1zm4 0h1v1h-1zm-2 1h1v1h-1zm2 0h1v1h-1zm-4 1h1v1h-1zm2 0h1v1h-1zm2 0h1v1h-1zm2 0h1v1h-1zM8 18h1v1H8zm-2 2h1v1H6zm4 0h1v1h-1zm-2 1h1v1H8zm-3-2H4v1H2V4h1v1H2v2h1V6H2v2h1V7h1v1H3v1h1v1H3v1h1v1h1v1h1zm2 0h1v1H8zm-1 1H6v1h1v1h1v-1h1v-1H8v-1zm1-2h1v1h1v1h1v-1h1v-1h1v-1h-1v-1h-1v1h-1v1h-1zm2-1h1v1h-1zM8 6h1V4H8zm1 1h1V6H9zm-1 1h1V7H8zm1 1h1V8H9zm-1 1h1V9H8zm3-4h1V4h-1zm1 1h1V6h-1zm-1 1h1V7h-1zm1 1h1V8h-1zm0 1h1V9h-1zm1-4h1V4h-1zm1 1h1V6h-1zm-1 1h1V7h-1zm1 1h1V8h-1zm1 1h1V9h-1zm-5 4h1v1h-1zm2 0h1v1h-1zm-2 1h1v1h-1zm2 0h1v1h-1z"/></svg>
-        </button>
-        <button id="bluetoothButton" class="control-button" title="Подключить Bluetooth (Неактивно)" aria-label="Bluetooth">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M14.88 13.18 11 17.05V6.97l3.88 3.88 1 1.33zm-3.87 5.1.11.11c.28.28.76.31 1.07.07l4.61-3.46c.3-.24.38-.67.17-1.01l-1.02-1.67-.11-.11-4.82-4.81V18.28zM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18.5a8.5 8.5 0 1 1 0-17 8.5 8.5 0 0 1 0 17zM7.12 10.82 11 6.95v10.1l-3.88-3.88-1-1.34z"/></svg>
-        </button>
-        <button id="triaButton" class="control-button" title="Ассистент Триа (В разработке)" aria-label="Tria AI">T</button>
-        <button id="telegramLinkButton" class="control-button" title="Открыть Telegram (Неактивно)" aria-label="Telegram Link">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.999 0C5.372 0 0 5.372 0 12s5.372 12 11.999 12C18.626 24 24 18.626 24 12S18.626 0 11.999 0zm4.667 7.685c-.186 1.984-.961 6.546-1.35 8.642-.186.984-.558 1.302-1.023 1.302-.744 0-1.116-.558-1.767-1.116-.93-.744-1.488-1.21-2.79-2.046l-.093-.093c-1.674-1.116-2.046-.837-2.418-.837-.465 0-1.116-.186-1.767-.558-.744-.372-1.21-.558-1.117-1.21.093-.651.651-1.023.744-1.116.093-.093 1.581-1.488 4.278-3.953 3.023-2.79 3.488-3.023 3.674-3.023.186 0 .465.093.558.279.093.186.093.558-.093.93-.186.372-1.674 1.86-4.836 4.65l-.465.372-.558.465c-.186.186-.279.465-.186.651.093.186.372.279.651.279.372 0 .744-.093 1.116-.279 1.116-.558 1.953-1.116 2.325-1.395.558-.372 1.116-.837 1.767-.93.744-.093.93.186.837.651z"/></svg>
-        </button>
+        <button id="stopButton" class="control-button" title="Стоп" disabled aria-label="Stop"><img src="/icons/buttons/4.svg" alt="Стоп"></button>
+        <button id="micButton" class="control-button" title="Использовать микрофон (Неактивно)" aria-label="Use Microphone"><img src="/icons/buttons/5.svg" alt="Использовать микрофон"></button>
+        <button id="fullscreenButton" class="control-button" title="Полноэкранный режим" aria-label="Fullscreen"><img src="/icons/buttons/6.svg" alt="Полноэкранный режим"></button>
+        <button id="xrButton" class="control-button" title="Режим AR/VR (Эксперимент)" aria-label="XR Mode"><img src="/icons/buttons/7.svg" alt="Режим AR/VR"></button>
+        <button id="gestureRecordButton" class="control-button" title="Запись жеста (Неактивно)" aria-label="Record Gesture"><img src="/icons/buttons/8.svg" alt="Запись жеста"></button>
+        <button id="scanButton" class="control-button" title="Сканировать QR (Неактивно)" aria-label="Scan"><img src="/icons/buttons/9.svg" alt="Сканировать QR"></button>
+        <button id="bluetoothButton" class="control-button" title="Подключить Bluetooth (Неактивно)" aria-label="Bluetooth"><img src="/icons/buttons/10.svg" alt="Bluetooth"></button>
+        <button id="triaButton" class="control-button" title="Ассистент Триа (В разработке)" aria-label="Tria AI"><img src="/icons/buttons/11.svg" alt="Триа AI"></button>
+        <button id="telegramLinkButton" class="control-button" title="Открыть Telegram (Неактивно)" aria-label="Telegram Link"><img src="/icons/buttons/12.svg" alt="Telegram"></button>
     </div>
   </div>
 
