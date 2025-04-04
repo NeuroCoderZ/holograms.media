@@ -1439,5 +1439,61 @@ async function loadInitialFilesAndSetupEditor() {
   }
 
   updateTimelineFromServer();
+  initializeMediaPipeHands(); // Инициализируем MediaPipe
   animate();
+
+  // --- Инициализация MediaPipe Hands ---
+  function initializeMediaPipeHands() {
+    if (typeof Hands === 'undefined') {
+        console.error('MediaPipe Hands library не загружена.');
+        return;
+    }
+    console.log("Инициализация MediaPipe Hands...");
+
+    hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+
+    hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+    });
+
+    hands.onResults(onHandsResults);
+
+    // Инициализация камеры
+    const videoElement = document.getElementById('camera-view');
+    if (videoElement && typeof Camera !== 'undefined') {
+        new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+        }).start();
+        console.log("MediaPipe Camera запущена.");
+    }
+  }
+
+  // --- Обработчик результатов ---
+  function onHandsResults(results) {
+    if (results.multiHandLandmarks) {
+        // Временная логика для отладки
+        console.log('Обнаружено рук:', results.multiHandLandmarks.length);
+        
+        // Отображаем landmarks на canvas
+        const canvasElement = document.getElementById('gesture-area');
+        const canvasCtx = canvasElement.getContext('2d');
+        
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        drawConnectors(canvasCtx, results.multiHandLandmarks, HAND_CONNECTIONS, 
+                      {color: '#00FF00', lineWidth: 2});
+        drawLandmarks(canvasCtx, results.multiHandLandmarks, 
+                     {color: '#FF0000', lineWidth: 1});
+        canvasCtx.restore();
+    }
+  }
 });
