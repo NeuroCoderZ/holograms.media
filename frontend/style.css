@@ -27,7 +27,7 @@
   --icon-size: calc(var(--button-size) * 0.55); /* Размер иконки внутри кнопки */
   --text-size: calc(var(--button-size) * 0.35); /* Размер текста для текстовых кнопок */
   --control-panel-height: calc(var(--button-size) + var(--button-margin) * 2); /* Высота панели кнопок */
-  --timeline-width: clamp(250px, 25vw, 350px); /* Ширина правой панели */
+  --timeline-width: clamp(300px, 30vw, 420px); /* Увеличено: ~+20% */
 
 }
 
@@ -238,11 +238,12 @@ body {
 }
 
 .version-placeholder {
-  width: 50px;
-  height: 50px;
+  width: 60px; /* Немного увеличим ширину плейсхолдера */
+  /* Высота плейсхолдера должна соответствовать высоте 5 строк текста */
+  height: calc(11px * 1.4 * 5 + 10px); /* 5 строк + padding блока version-frame */
   background-color: #222;
   border-radius: 4px;
-  position: relative;
+  position: relative; /* Оставляем для позиционирования лейбла */
   flex-shrink: 0;
   margin-right: 5px;
 }
@@ -259,8 +260,8 @@ body {
   word-wrap: break-word; /* Оставляем перенос */
   font-size: 11px; /* Основа для расчета */
   line-height: 1.4; /* Множитель для расчета высоты и отступа */
-  max-height: calc(11px * 1.4 * 5); /* Высота для 5 строк */
-  overflow-y: auto;
+  height: calc(11px * 1.4 * 5); /* Фиксированная высота для 5 строк */
+  overflow-y: auto; /* Скролл, если текст длиннее 5 строк */
   scrollbar-width: thin;
   scrollbar-color: #555 #222;
 }
