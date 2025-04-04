@@ -1266,8 +1266,8 @@ async function loadInitialFilesAndSetupEditor() {
       });
       setTimeout(() => {
           versionFrames.scrollTop = versionFrames.scrollHeight;
-          console.log('==> Scrolled timeline to bottom');
-      }, 100);
+          console.log('==> Scrolled timeline to bottom (after 250ms)');
+      }, 250); // Увеличена задержка
     } catch (error) {
       console.error('Ошибка загрузки версий:', error);
       alert('Не удалось загрузить версии с сервера');
