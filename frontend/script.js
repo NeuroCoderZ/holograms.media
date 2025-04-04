@@ -661,7 +661,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const xrButton = document.getElementById('xrButton');
   const gestureRecordButton = document.getElementById('gestureRecordButton');
   const scanButton = document.getElementById('scanButton');
-  const promptButton = document.getElementById('promptListButton');
   const bluetoothButton = document.getElementById('bluetoothButton');
   const toggleCameraButton = document.getElementById('toggleCameraButton');
   const micButton = document.getElementById('micButton');
@@ -1034,9 +1033,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Обработчик для кнопки промпта
-  promptButton.addEventListener('click', () => {
-    promptModal.style.display = 'block';
-  });
 
   closePromptModal.addEventListener('click', () => {
     promptModal.style.display = 'none';
