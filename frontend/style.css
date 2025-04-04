@@ -16,8 +16,8 @@
   --input-border: #444444;
   --button-action-bg: #007bff;
   --button-action-hover: #0056b3;
-  --button-hover-bg: rgba(255, 255, 255, 0.08);
-  --color-icon: #b0b0b0; /* Цвет неактивной иконки/текста кнопки */
+  --button-hover-bg: rgba(255, 255, 255, 0.1); /* Чуть ярче ховер */
+  --color-icon: #888888; /* Цвет неактивной иконки/текста кнопки (темнее) */
   --color-icon-active: var(--color-primary); /* Цвет активной иконки/текста кнопки */
   --color-icon-disabled: #555; /* Темно-серый для disabled */
 
@@ -61,7 +61,7 @@ html, body {
   overflow: hidden;
   font-family: 'Roboto', sans-serif;
   background-color: var(--color-pure-black);
-  color: var(--color-primary);
+  color: var(--color-icon-active); /* Hover делает иконку активного цвета */
 }
 
 /* ОСНОВНОЙ МАКЕТ С FLEXBOX */
