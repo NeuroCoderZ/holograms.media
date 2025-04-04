@@ -170,6 +170,11 @@ body {
   cursor: not-allowed;
   background-color: transparent;
 }
+
+/* Увеличиваем кнопку Стоп */
+#stopButton {
+  transform: scale(1.1); /* Немного больше */
+}
 /* --- КОНЕЦ СТИЛЕЙ КНОПОК --- */
 
 
@@ -201,7 +206,7 @@ body {
 .version-frame {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 4px;
+  margin-bottom: calc(11px * 1.4 - 11px); /* Отступ = межстрочный интервал (line-height - font-size) */
   padding: 5px;
   border-radius: 5px;
   cursor: pointer;
@@ -242,10 +247,11 @@ body {
 .version-text p {
   margin: 0;
   white-space: pre-wrap;
-  word-wrap: break-word;
-  max-height: 48px;
+  word-wrap: break-word; /* Оставляем перенос */
+  font-size: 11px; /* Основа для расчета */
+  line-height: 1.4; /* Множитель для расчета высоты и отступа */
+  max-height: calc(11px * 1.4 * 5); /* Высота для 5 строк */
   overflow-y: auto;
-  font-size: 11px;
   scrollbar-width: thin;
   scrollbar-color: #555 #222;
 }
