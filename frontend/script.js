@@ -750,6 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update UI
     playButton.classList.add('active');
     pauseButton.classList.remove('active');
+    stopButton.classList.remove('active'); // Убираем актив у стоп
     stopButton.classList.remove('active');
   });
 
@@ -769,6 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update UI
     playButton.classList.remove('active');
     pauseButton.classList.add('active');
+    // stopButton остается неактивным
   });
 
   stopButton.addEventListener('click', () => {
@@ -790,7 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update UI
     playButton.classList.remove('active');
     pauseButton.classList.remove('active');
-    stopButton.classList.add('active');
+    // stopButton не делаем активным при стопе, это конечное состояние
 
     // Reset playhead position
     const playhead = document.getElementById('playhead');
