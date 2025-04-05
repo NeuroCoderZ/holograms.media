@@ -114,6 +114,17 @@ body {
   z-index: 1;
 }
 
+#gesture-area::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10%; /* Начинаем линию чуть ниже верха */
+  bottom: 10%; /* Заканчиваем чуть выше низа */
+  width: 1px;
+  background-color: rgba(255, 0, 0, 0.5); /* Красная полупрозрачная */
+  pointer-events: none; /* Линия не должна перехватывать события мыши */
+}
+
 /* --- СТИЛИ ДЛЯ ЛЕВОЙ ПАНЕЛИ КНОПОК --- */
 .panel.left-panel {
   width: var(--control-panel-height);
