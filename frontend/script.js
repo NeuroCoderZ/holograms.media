@@ -918,6 +918,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight); // Используем доступные размеры
   mainSequencerGroup.scale.setScalar(initialScale);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
+
+  // --- Отладка итогового масштаба и размеров ---
+  const containerRect = gridContainer.getBoundingClientRect();
+  console.log('Grid Container Rect:', containerRect); // Логи размеров контейнера
+  console.log('Final Scale:', initialScale); // Логи итогового масштаба
+
   mainSequencerGroup.position.x = 0; // Убедимся, что X = 0
   console.log('Centering:', { initialScale, GRID_HEIGHT, posY: mainSequencerGroup.position.y, posX: mainSequencerGroup.position.x });
 
