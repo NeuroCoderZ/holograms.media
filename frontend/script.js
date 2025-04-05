@@ -1411,6 +1411,7 @@ async function loadInitialFilesAndSetupEditor() {
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(availableWidth, availableHeight); // Используем доступные размеры
     mainSequencerGroup.scale.setScalar(newScale);
+    mainSequencerGroup.position.y = -GRID_HEIGHT * newScale / 2; // Пересчитываем позицию Y при ресайзе
 
     // Update camera and renderer
     if (!isXRMode) {
