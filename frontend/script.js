@@ -1461,65 +1461,96 @@ async function loadInitialFilesAndSetupEditor() {
 
   // --- Инициализация MediaPipe Hands ---
   function initializeMediaPipeHands() {
+    // Проверяем, загружена ли библиотека Hands
     if (typeof Hands === 'undefined') {
-        console.error('MediaPipe Hands library не загружена.');
-        return;
+      console.error('Библиотека MediaPipe Hands не загружена. Проверьте подключение скриптов в HTML.');
+      return; // Прерываем выполнение, если библиотека не найдена
     }
     console.log("Инициализация MediaPipe Hands...");
 
-    hands = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-    });
+    // Получаем видео элемент
+    const videoElementForHands = document.getElementById('camera-view');
+    if (!videoElementForHands) {
+      console.error("Видео элемент #camera-view не найден в DOM.");
+      return; // Прерываем, если нет видео элемента
+    }
 
+    // Создаем экземпляр Hands (переменная 'hands' объявлена глобально)
+    hands = new Hands({locateFile: (file) => {
+      // Корректный путь к WASM файлам на CDN jsdelivr
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+    }});
+
+    // Настраиваем параметры Hands
     hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
+      maxNumHands: 1,           // Отслеживать только одну руку
+      modelComplexity: 1,       // 0 = lite, 1 = full (более точная, но требовательная)
+      minDetectionConfidence: 0.7, // Увеличим порог для надежности
+      minTrackingConfidence: 0.7  // Увеличим порог для надежности
     });
 
+    // Устанавливаем обработчик результатов
     hands.onResults(onHandsResults);
 
-    // Инициализация камеры
-    const videoElement = document.getElementById('camera-view');
-    if (videoElement && typeof Camera !== 'undefined') {
-        new Camera(videoElement, {
-            onFrame: async () => {
-                await hands.send({image: videoElement});
-            },
-            width: 640,
-            height: 480
-        }).start();
-        console.log("MediaPipe Camera запущена.");
+    // --- Инициализация Утилиты Камеры ---
+    // Проверяем, загружена ли утилита Camera
+    if (typeof Camera === 'undefined') {
+       console.error('Утилита MediaPipe Camera не загружена. Проверьте подключение camera_utils.js.');
+       return; // Прерываем, если утилита не найдена
     }
+    // Создаем экземпляр Camera (переменная 'camera' объявлена глобально)
+    camera = new Camera(videoElementForHands, {
+      onFrame: async () => {
+        // Отправляем текущий кадр видео в Hands для обработки
+        if (hands) { // Добавляем проверку, что hands инициализирован
+             await hands.send({image: videoElementForHands});
+        }
+      },
+      width: 640,  // Стандартное разрешение для веб-камеры
+      height: 480
+    });
+
+    // Запускаем камеру и обработку кадров
+    camera.start().then(() => {
+      console.log("MediaPipe Camera успешно запущена и начала отправку кадров.");
+    }).catch(err => {
+      console.error("Ошибка запуска MediaPipe Camera:", err);
+    });
   }
 
-  // --- Обработчик результатов ---
+  // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const landmarks = results.multiHandLandmarks[0]; // Берем первую руку
+      const landmarks = results.multiHandLandmarks[0]; // Берем первую найденную руку
+
+      // Экземпляры кончиков пальцев
+      const thumbTip = landmarks[4];
+      const indexTip = landmarks[8];
+      if (thumbTip && indexTip) {
+        // Рассчитаем расстояние для щипкового жеста в 2D координатах
+        const deltaX = thumbTip.x - indexTip.x;
+        const deltaY = thumbTip.y - indexTip.y;
+        const pinchDistance = Math.hypot(deltaX, deltaY);
         
-        // Координаты кончиков пальцев (нормализованные [0,1])
-        const thumbTip = landmarks[4]; // Большой палец
-        const indexTip = landmarks[8]; // Указательный палец
+        // Логирование с большей детализацией
+        console.log(`Расстояние щипка (пальцы 4-8): ${pinchDistance.toFixed(4)}`);
         
-        if (thumbTip && indexTip) {
-            // Рассчитываем расстояние между кончиками в 2D
-            const deltaX = thumbTip.x - indexTip.x;
-            const deltaY = thumbTip.y - indexTip.y;
-            const distance = Math.hypot(deltaX, deltaY);
-            
-            // Логируем расстояние для отладки
-            console.log('Расстояние между кончиками:', distance.toFixed(3));
-            
-            // TODO: Здесь будет логика распознавания щипка
-            // Пример: if (distance < 0.05) { /* обработка щипка */ }
-            
-            // TODO: Получение позиции ладони для управления
-            // const palmPosition = landmarks[0]; // Базовый landmark ладони
+        // Возможная логика для активации щипка (пример порога)
+        if (pinchDistance < 0.05) {
+          console.log("=== Активация щипковой команды! ===");
+          // Можно добавить обработку команды здесь
         }
+      }
+
+      // Координаты базового маркера ладони
+      const palmBase = landmarks[0];
+      if (palmBase) {
+        // Пример: вертикальное положение ладони над камерой в диапазоне [0..1]
+        const normalizedVerticalPos = 1 - palmBase.y;
+        console.log(`Позиция ладони по Y: ${normalizedVerticalPos.toFixed(4)}`);
+      }
     } else {
-        console.log('Руки не обнаружены');
+      // Не показываем вывод "Руки не обнаружены" для снижения спама в консоли
     }
   }
 });
