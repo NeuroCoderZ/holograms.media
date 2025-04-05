@@ -1394,8 +1394,8 @@ async function loadInitialFilesAndSetupEditor() {
     const availableHeight = window.innerHeight;
 
     // Обновляем размеры gridContainer (если нужно для других целей)
-    gridContainer.style.width = `${availableWidth}px`;
-    gridContainer.style.height = `${availableHeight}px`; // Возможно, это не нужно, если body/main-area уже 100vh
+    // gridContainer.style.width = `${availableWidth}px`;
+    // gridContainer.style.height = `${availableHeight}px`; // Возможно, это не нужно, если body/main-area уже 100vh
 
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(availableWidth, availableHeight); // Используем доступные размеры
@@ -1422,15 +1422,8 @@ async function loadInitialFilesAndSetupEditor() {
       xrCamera.updateProjectionMatrix();
     }
 
-    renderer.setSize(containerWidth, containerHeight);
-
-    // Update timeline dimensions
-    timelineWidth = document.getElementById('timeline-container') ? document.getElementById('timeline-container').clientWidth : 0;
-    timelineHeight = document.getElementById('timeline-container') ? document.getElementById('timeline-container').clientHeight : 0;
-    if (document.getElementById('timeline-canvas')) {
-      document.getElementById('timeline-canvas').width = timelineWidth;
-      document.getElementById('timeline-canvas').height = timelineHeight;
-    }
+    // Устанавливаем размер рендерера по доступному пространству
+    renderer.setSize(availableWidth, availableHeight);
   });
 
   function animate() {
