@@ -841,21 +841,29 @@ document.addEventListener('DOMContentLoaded', () => {
   scene.add(gridPointLight);
 
   const gridContainer = document.getElementById('grid-container');
-  const containerWidth = gridContainer.clientWidth;
-  const containerHeight = gridContainer.clientHeight;
-  const aspect = containerWidth / containerHeight;
-  const orthoLeft = -containerWidth / 2;
-  const orthoRight = containerWidth / 2;
-  const orthoTop = containerHeight / 2;
-  const orthoBottom = -containerHeight / 2;
+
+  // --- Вычисляем доступное пространство СРАЗУ ---
+  const leftPanelWidthInitial = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
+  const rightPanelWidthInitial = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
+  const initialAvailableWidth = window.innerWidth - leftPanelWidthInitial - rightPanelWidthInitial;
+  const initialAvailableHeight = window.innerHeight;
+  console.log('Initial Available:', { width: initialAvailableWidth, height: initialAvailableHeight });
+  // --------------------------------------------
+
+  const initialAspect = initialAvailableWidth / initialAvailableHeight;
+  const initialOrthoLeft = -initialAvailableWidth / 2;
+  const initialOrthoRight = initialAvailableWidth / 2;
+  const initialOrthoTop = initialAvailableHeight / 2;
+  const initialOrthoBottom = -initialAvailableHeight / 2;
   const orthoCamera = new THREE.OrthographicCamera(
-    orthoLeft, orthoRight, orthoTop, orthoBottom,
+    initialOrthoLeft, initialOrthoRight, initialOrthoTop, initialOrthoBottom,
     -10000, 10000
   );
   orthoCamera.position.set(0, 0, 1200);
   orthoCamera.lookAt(0, 0, 0);
+  console.log('Initial Camera:', { left: orthoCamera.left, right: orthoCamera.right, top: orthoCamera.top, bottom: orthoCamera.bottom });
 
-  const xrCamera = new THREE.PerspectiveCamera(70, aspect, 0.1, 10000);
+  const xrCamera = new THREE.PerspectiveCamera(70, initialAspect, 0.1, 10000);
   xrCamera.position.set(0, 0, 0);
   xrCamera.lookAt(new THREE.Vector3(0, 0, -1));
 
@@ -867,7 +875,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   scene.background = new THREE.Color(0x000000);
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(containerWidth, containerHeight);
+  // Устанавливаем РАЗМЕР РЕНДЕРЕРА по доступному пространству
+  renderer.setSize(initialAvailableWidth, initialAvailableHeight);
   if (gridContainer) {
     gridContainer.appendChild(renderer.domElement);
   }
@@ -905,10 +914,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return scale; // ВОЗВРАЩАЕМ ЧИСТЫЙ МАСШТАБ БЕЗ * 0.5
   }
 
-  const initialScale = calculateInitialScale(containerWidth, containerHeight);
+  const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight); // Используем доступные размеры
   mainSequencerGroup.scale.setScalar(initialScale);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
-  mainSequencerGroup.position.x = 0;
+  mainSequencerGroup.position.x = 0; // Убедимся, что X = 0
+  console.log('Centering:', { initialScale, GRID_HEIGHT, posY: mainSequencerGroup.position.y, posX: mainSequencerGroup.position.x });
 
   mainSequencerGroup.rotation.set(0, 0, 0);
   scene.add(mainSequencerGroup);
