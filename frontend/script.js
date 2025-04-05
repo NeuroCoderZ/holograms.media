@@ -1520,6 +1520,15 @@ async function loadInitialFilesAndSetupEditor() {
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
+    // Находим canvas и контекст для рисования
+    const gestureCanvas = document.getElementById('gesture-canvas');
+    if (!gestureCanvas) return; // Выходим, если canvas не найден
+    const canvasCtx = gestureCanvas.getContext('2d');
+
+    // Очищаем canvas перед рисованием нового кадра
+    canvasCtx.save();
+    canvasCtx.clearRect(0, 0, gestureCanvas.width, gestureCanvas.height);
+
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       const landmarks = results.multiHandLandmarks[0]; // Берем первую найденную руку
 
@@ -1540,6 +1549,14 @@ async function loadInitialFilesAndSetupEditor() {
           console.log("=== Активация щипковой команды! ===");
           // Можно добавить обработку команды здесь
         }
+
+        // Рисуем руку на canvas
+        if (typeof drawConnectors !== 'undefined' && typeof drawLandmarks !== 'undefined') {
+            drawConnectors(canvasCtx, landmarks, Hands.HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2}); // Зеленые линии
+            drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 3}); // Красные точки
+        } else {
+            console.warn("drawing_utils не загружены, не могу нарисовать руку.");
+        }
       }
 
       // Координаты базового маркера ладони
@@ -1552,5 +1569,6 @@ async function loadInitialFilesAndSetupEditor() {
     } else {
       // Не показываем вывод "Руки не обнаружены" для снижения спама в консоли
     }
+    canvasCtx.restore(); // Восстанавливаем состояние контекста
   }
 });
