@@ -115,6 +115,7 @@ body {
   width: var(--control-panel-height);
   background-color: var(--color-pure-black);
   display: flex;
+  /* border-right: 1px solid red; */ /* Рамка для отладки */
   flex-direction: column;
   align-items: center;
   padding: var(--padding) 0;
