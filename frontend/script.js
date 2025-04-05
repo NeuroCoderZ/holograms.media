@@ -1552,7 +1552,7 @@ async function loadInitialFilesAndSetupEditor() {
 
         // Рисуем руку на canvas
         if (typeof drawConnectors !== 'undefined' && typeof drawLandmarks !== 'undefined') {
-            drawConnectors(canvasCtx, landmarks, Hands.HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2}); // Зеленые линии
+            drawConnectors(canvasCtx, landmarks, Hands.HAND_CONNECTIONS, {color: 'rgba(0, 255, 0, 0.5)', lineWidth: 1}); // Зеленые полупрозрачные, тонкие линии
             drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 3}); // Красные точки
         } else {
             console.warn("drawing_utils не загружены, не могу нарисовать руку.");
