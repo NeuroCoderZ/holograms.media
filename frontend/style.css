@@ -150,7 +150,6 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 5px;
-  color: var(--color-icon); /* Явно задаем базовый цвет (#b0b0b0) для наследования иконками */
 }
 
 .control-button svg {
