@@ -131,6 +131,10 @@ let audioBuffer = null;
 let fingerTrails = []; // Array to store finger trail data
 let fingerPositions = []; // Array to store current finger positions
 
+// --- MediaPipe Hands ---
+let hands = null; // Global reference to MediaPipe Hands controller
+let camera = null; // Global reference to MediaPipe Camera utility
+
 let mainSequencerGroup = new THREE.Group();
 const leftSequencerGroup = createSequencerGrid(
   GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
