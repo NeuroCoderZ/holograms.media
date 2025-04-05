@@ -663,6 +663,7 @@ function drawHandLandmarks(landmarks) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('>>> DOMContentLoaded fired'); // Проверка старта скрипта
   const fileButton = document.getElementById('fileButton');
   const fileInput = document.getElementById('fileInput');
   const playButton = document.getElementById('playButton');
