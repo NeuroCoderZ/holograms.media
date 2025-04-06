@@ -131,6 +131,11 @@ let audioBuffer = null;
 let fingerTrails = []; // Array to store finger trail data
 let fingerPositions = []; // Array to store current finger positions
 
+// --- Gesture Recording ---
+let isGestureRecording = false;
+let gestureTimeoutId = null;
+const GESTURE_RECORDING_DURATION = 20000; // 20 seconds in milliseconds
+
 // --- MediaPipe Hands ---
 let hands = null; // Global reference to MediaPipe Hands controller
 let camera = null; // Global reference to MediaPipe Camera utility
@@ -662,6 +667,51 @@ function drawHandLandmarks(landmarks) {
     });
 }
 
+// --- Gesture Recording Functions ---
+function startGestureRecording() {
+  if (isGestureRecording) {
+    console.log("Запись жеста уже идет.");
+    return;
+  }
+  isGestureRecording = true;
+  const gestureArea = document.getElementById('gesture-area');
+  if (gestureArea) {
+    gestureArea.classList.add('recording');
+    gestureArea.textContent = 'Идет запись жеста... (макс 20 сек)'; // Обновляем текст
+  }
+  console.log("Начало записи жеста.");
+
+  // TODO: Добавить здесь логику сбора данных жеста (например, из MediaPipe)
+
+  // Устанавливаем тайм-аут на 20 секунд
+  gestureTimeoutId = setTimeout(() => {
+    console.log("Время записи жеста истекло.");
+    stopGestureRecording();
+  }, GESTURE_RECORDING_DURATION);
+}
+
+function stopGestureRecording() {
+  if (!isGestureRecording) {
+    return;
+  }
+  isGestureRecording = false;
+  const gestureArea = document.getElementById('gesture-area');
+  if (gestureArea) {
+    gestureArea.classList.remove('recording');
+    gestureArea.textContent = 'Кликните для записи жеста'; // Возвращаем исходный текст
+  }
+  // Очищаем тайм-аут, если остановка произошла до истечения 20 секунд
+  if (gestureTimeoutId) {
+    clearTimeout(gestureTimeoutId);
+    gestureTimeoutId = null;
+  }
+  console.log("Остановка записи жеста.");
+
+  // TODO: Добавить здесь логику обработки/отправки записанных данных жеста
+}
+// --- End Gesture Recording Functions ---
+
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('>>> DOMContentLoaded fired'); // Проверка старта скрипта
   const fileButton = document.getElementById('fileButton');
@@ -677,6 +727,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleCameraButton = document.getElementById('toggleCameraButton');
   const micButton = document.getElementById('micButton');
   const telegramLinkButton = document.getElementById('telegramLinkButton'); // Находим кнопку
+  const gestureArea = document.getElementById('gesture-area'); // Находим область жестов
 
   const gestureModal = document.getElementById('gestureModal');
   const promptModal = document.getElementById('promptModal');
@@ -698,6 +749,23 @@ document.addEventListener('DOMContentLoaded', () => {
           integratedFileEditor.style.display = isVisible ? 'none' : 'block';
       });
   }
+
+  // --- Gesture Area Click Listener ---
+  if (gestureArea) {
+    // Устанавливаем начальный текст
+    gestureArea.textContent = 'Кликните для записи жеста';
+    gestureArea.addEventListener('click', () => {
+      if (!isGestureRecording) {
+        startGestureRecording();
+      } else {
+        // Позволяем остановить запись повторным кликом
+        stopGestureRecording();
+      }
+    });
+  } else {
+    console.warn("Элемент #gesture-area не найден.");
+  }
+  // --- End Gesture Area Click Listener ---
 
   fileButton.addEventListener('click', () => {
     fileInput.click();
