@@ -231,7 +231,11 @@ body {
 }
 
 /* Hover-эффект для ИКОНОК (не для фона кнопки) */
-#telegramLinkButton:hover svg {
+#telegramLinkButton:hover svg,
+#triaButton:hover svg,
+#xrButton:hover svg,
+#gestureRecordButton:hover svg,
+#hologramListButton:hover svg {
   color: #ffffff !important;
 }
 
