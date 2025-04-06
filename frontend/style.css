@@ -191,15 +191,18 @@ body {
 .control-button#triaButton { /* ID текстовых кнопок */
   font-size: var(--text-size);
   font-weight: 600;
+  color: var(--color-icon); /* Явно задаем цвет для inline SVG */
   letter-spacing: 0.5px;
 }
 
 .control-button:hover:not(:disabled) { /* Hover только для активных */
   background-color: var(--button-hover-bg);
+  color: var(--color-icon-active); /* Белый цвет при ховере */
 }
 
 .control-button.active {
   color: var(--color-icon-active); /* Белый цвет текста/SVG для активной */
+  /* filter: brightness(1); */ /* Сбрасываем brightness для активной кнопки */
   background-color: var(--button-hover-bg); /* Можно убрать фон для active если не нужно */
 }
 
