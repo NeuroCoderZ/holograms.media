@@ -38,7 +38,9 @@
   <!-- Левая панель: Кнопки -->
   <div class="panel left-panel">
     <div id="button-container">
-        <button id="fileButton" class="control-button" title="Загрузить аудиофайл" aria-label="Upload File"><img src="/icons/buttons/1.svg" alt="Upload"></button>
+        <button id="fileButton" class="control-button" title="Загрузить аудиофайл" aria-label="Upload File">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>
+        </button>
         <input type="file" id="fileInput" accept="audio/*" style="display: none;">
         <button id="playButton" class="control-button" title="Воспроизвести" disabled aria-label="Play Audio"><img src="/icons/buttons/2.svg" alt="Play"></button>
         <button id="pauseButton" class="control-button" title="Поставить на паузу" disabled aria-label="Pause Audio"><img src="/icons/buttons/3.svg" alt="Pause"></button>
