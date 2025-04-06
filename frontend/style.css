@@ -224,6 +224,17 @@ body {
 /* --- КОНЕЦ СТИЛЕЙ КНОПОК --- */
 
 
+/* Telegram Button */
+#telegramLinkButton {
+  /* Цвет иконки по умолчанию (светло-серый) */
+  color: #b0b0b0 !important;
+}
+
+/* Hover-эффект для ИКОНОК (не для фона кнопки) */
+#telegramLinkButton:hover svg {
+  color: #ffffff !important;
+}
+
 /* Правая панель */
 .panel.right-panel {
   width: var(--timeline-width);
