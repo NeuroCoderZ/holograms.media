@@ -133,20 +133,19 @@ body {
 
 /* --- СТИЛИ ДЛЯ ЛЕВОЙ ПАНЕЛИ КНОПОК --- */
 .panel.left-panel {
-  width: var(--control-panel-height);
-  background-color: var(--color-pure-black);
+  width: var(--control-panel-height); /* Ширина равна высоте старой панели */
+  background-color: var(--color-pure-black); /* Черный фон */
   display: flex;
   /* border-right: 1px solid red; */ /* Рамка для отладки */
-  flex-direction: column;
-  align-items: center;
+  flex-direction: column; /* Кнопки друг под другом */
+  align-items: center; /* Центрируем кнопки по горизонтали */
   padding: var(--padding) 0;
   flex-shrink: 0;
   height: 100vh;
   overflow-y: auto;
-  scrollbar-width: none;
+  scrollbar-width: none; /* Скрыть скроллбар */
   -ms-overflow-style: none;
 }
-.panel.left-panel::-webkit-scrollbar { display: none; }
 
 #button-container {
   display: flex;
