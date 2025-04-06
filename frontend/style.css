@@ -67,7 +67,7 @@ html, body {
 /* ОСНОВНОЙ МАКЕТ С FLEXBOX */
 body {
   display: flex;
-  height: 100vh;
+  height: 100vh; /* Занимаем всю высоту */
 }
 
 /* Центральная область */
@@ -83,26 +83,32 @@ body {
   flex-grow: 1;
   position: relative;
   min-height: 0;
-  width: 100%;
+  width: 100%; /* Занимаем всю доступную ширину main-area */
   background-color: transparent;
 }
 
 /* --- СТИЛИ ДЛЯ ОБЛАСТИ ЖЕСТОВ --- */
 #gesture-area {
-  height: 100px;
-  flex-shrink: 0;
-  background-color: #222;
+  height: 100px; /* Задаем высоту области жестов */
+  flex-shrink: 0; /* Не сжиматься */
+  background-color: var(--color-icon-disabled); /* Темно-серый фон (#555) */
   border-top: 1px solid var(--color-dark-border);
-  border-radius: 8px;
-  margin: 5px;
-  padding: 5px;
+  border-radius: 8px; /* Скругленные углы */
+  margin: 5px; /* Небольшой отступ со всех сторон */
+  padding: 5px; /* Внутренний отступ для canvas */
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Чтобы canvas был внутри */
   align-items: center;
   justify-content: center;
-  color: #555;
-  position: relative;
-  z-index: 2;
+  position: relative; /* Для возможного позиционирования элементов внутри */
+  z-index: 2; /* Выше холста */
+}
+#gesture-area canvas {
+  display: block; /* Убирает отступ снизу у canvas */
+  /* Задаем явные размеры или оставляем управление через JS */
+   max-width: 100%;  /* Максимальная ширина */
+   max-height: 100%; /* Максимальная высота */
+   object-fit: contain; /* Вписываем с сохранением пропорций */
 }
 #grid-container canvas {
   position: absolute; 
@@ -144,9 +150,9 @@ body {
 
 #button-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--button-spacing);
+  flex-direction: column; /* Кнопки друг под другом */
+  align-items: center; /* Центрирование */
+  gap: var(--button-spacing); /* Отступы между кнопками */
 }
 /* --- КОНЕЦ СТИЛЕЙ ПАНЕЛИ --- */
 
