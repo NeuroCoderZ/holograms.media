@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from tenacity import retry, stop_after_attempt, wait_fixed
 from langchain_core.runnables import Runnable
-from langchain_community.chat_models import ChatOpenRouter
+from langchain_openai import ChatOpenAI
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -72,10 +72,10 @@ class OpenRouterChat(Runnable):
             self.client = None
         else:
             try:
-                self.client = ChatOpenRouter(
+                self.client = ChatOpenAI(
                     model=self.model,
                     openai_api_key=self.api_key,
-                    openai_api_base="https://openrouter.ai/api/v1",
+                    base_url="https://openrouter.ai/api/v1",
                     temperature=0.7,
                     max_tokens=500
                 )
