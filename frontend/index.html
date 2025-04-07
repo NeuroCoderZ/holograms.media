@@ -99,9 +99,10 @@
     <div id="promptBar">
         <textarea id="topPromptInput" rows="3" placeholder="Что бы вы хотели изменить?"></textarea>
         <div class="prompt-controls">
-          <select id="modelSelect">
-            <option value="r1">DeepSeek R1</option>
-            <option value="gemini">Gemini Flash 2.0</option>
+          <select id="modelSelect"> <!-- Указываем ПОЛНЫЕ ID моделей OpenRouter -->
+            <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
+            <option value="deepseek/deepseek-chat-v3-0324:free">DeepSeek V3 Chat (Free)</option>
+            <option value="meta-llama/llama-4-maverick:free">Llama 4 Maverick (Free)</option>
           </select>
           <button id="submitTopPrompt">Применить</button>
         </div>
