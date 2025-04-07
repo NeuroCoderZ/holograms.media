@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pymongo
+python-dotenv
+langchain
+langchain-community
+huggingface_hub
+motor
+tenacity
