@@ -741,7 +741,8 @@ document.addEventListener('DOMContentLoaded', () => {
     gestureCanvas.style.position = 'absolute';
     gestureCanvas.style.opacity = '0.8';
     gestureCanvas.style.backgroundColor = 'rgba(0,0,0,0.2)';
-    gestureCanvas.style.width = '100%';
+    gestureCanvas.style.width = '80%';
+    gestureCanvas.style.left = '10%'; // Center the reduced width
     gestureCanvas.style.height = '100%';
     gestureCanvas.style.top = '0';
     gestureCanvas.style.left = '0';
@@ -993,7 +994,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let heightScale = (screenHeight * 0.8) / hologramHeight; // Используем 80% высоты (Возвращаем)
   
     // Используем МЕНЬШИЙ из масштабов, чтобы вписать объект
-    let scale = Math.min(widthScale, heightScale);
+    let scale = Math.min(widthScale, heightScale) * 0.9; // Уменьшаем на 10%
   
     // Добавляем минимальный масштаб
     scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
