@@ -144,13 +144,13 @@ let mainSequencerGroup = new THREE.Group();
 const leftSequencerGroup = createSequencerGrid(
   GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   semitones[semitones.length - 1].color, // Цвет последнего (фиолетового) полутона
-  new THREE.Vector3(-GRID_WIDTH / 2, 0, -GRID_DEPTH / 2),
+  new THREE.Vector3(-GRID_WIDTH, 0, -GRID_DEPTH / 2), // Move left grid further left
   true
 );
 const rightSequencerGroup = createSequencerGrid(
   GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   semitones[0].color, // Цвет первого (красного) полутона
-  new THREE.Vector3(GRID_WIDTH / 2, 0, -GRID_DEPTH / 2),
+  new THREE.Vector3(0, 0, -GRID_DEPTH / 2), // Move right grid to center
   false
 );
 
@@ -994,7 +994,7 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('Grid Container Rect:', containerRect); // Логи размеров контейнера
   console.log('Final Scale:', initialScale); // Логи итогового масштаба
 
-  mainSequencerGroup.position.x = 0; // Убедимся, что X = 0
+  mainSequencerGroup.position.x = -GRID_WIDTH / 2; // Shift entire group left by half grid width
   console.log('Centering:', { initialScale, GRID_HEIGHT, posY: mainSequencerGroup.position.y, posX: mainSequencerGroup.position.x });
 
   mainSequencerGroup.rotation.set(0, 0, 0);
@@ -1488,8 +1488,8 @@ async function loadInitialFilesAndSetupEditor() {
     const newScale = calculateInitialScale(availableWidth, availableHeight); // Используем доступные размеры
     mainSequencerGroup.scale.setScalar(newScale);
     mainSequencerGroup.position.y = -GRID_HEIGHT * newScale / 2; // Пересчитываем позицию Y при ресайзе
-    // Position hologram more to the left (1/3 between panels)
-    mainSequencerGroup.position.x = (leftPanelWidth - rightPanelWidth) / 3;
+    // Center hologram accounting for the left shift
+    mainSequencerGroup.position.x = -GRID_WIDTH / 2 * newScale;
 
     // Update camera and renderer
     if (!isXRMode) {
