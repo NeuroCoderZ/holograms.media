@@ -737,16 +737,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const stopRecordingButton = document.getElementById('stopRecordingButton');
   const gestureCanvas = document.getElementById('gestureCanvas');
   if (gestureCanvas) {
-    gestureCanvas.style.zIndex = '5'; // Below hologram but above background
+    gestureCanvas.style.zIndex = '10'; // Above hologram
     gestureCanvas.style.position = 'absolute';
-    gestureCanvas.style.opacity = '0.7';
-    gestureCanvas.style.backgroundColor = 'rgba(0,0,0,0.1)';
+    gestureCanvas.style.opacity = '0.8';
+    gestureCanvas.style.backgroundColor = 'rgba(0,0,0,0.2)';
     gestureCanvas.style.width = '100%';
     gestureCanvas.style.height = '100%';
     gestureCanvas.style.top = '0';
     gestureCanvas.style.left = '0';
     gestureCanvas.style.pointerEvents = 'none';
-    gestureCanvas.style.mixBlendMode = 'screen'; // Better visibility over dark areas
+    gestureCanvas.style.mixBlendMode = 'lighten'; // Better visibility
+    gestureCanvas.style.display = 'block'; // Ensure it's always visible
   }
   const gestureStatus = document.getElementById('gestureStatus');
   const promptText = document.getElementById('promptText');
@@ -956,7 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
     premultipliedAlpha: false,
     preserveDrawingBuffer: true // Для корректного наложения
   });
-  renderer.domElement.style.zIndex = '10'; // Main hologram layer
+  renderer.domElement.style.zIndex = '5'; // Below gesture area
   renderer.domElement.style.position = 'relative';
   scene.background = new THREE.Color(0x000000);
   renderer.setPixelRatio(window.devicePixelRatio);
