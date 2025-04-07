@@ -124,6 +124,7 @@ async def generate(request: Request):
         if not prompt_text: raise HTTPException(status_code=400, detail="Промпт не предоставлен")
 
         # Update chain with requested model
+        global chain
         if model_type != chain.model:
             chain = OpenRouterChat(model=model_type, api_key=OPENROUTER_API_KEY)
 
