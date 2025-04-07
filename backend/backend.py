@@ -166,7 +166,7 @@ async def generate(request: Request):
         else: print("Блок JS-кода не найден.")
 
         try: # Опциональное сохранение в БД
-             db.responses.insert_one({ "prompt": prompt_text, "prompt_sent": prompt_with_instruction, "result": cleaned_result, "generated_code": generated_code, "model_used": model_type, "timestamp": datetime.now() })
+             db.responses.insert_one({ "prompt": prompt_text, "prompt_sent": prompt_to_send, "result": cleaned_result, "generated_code": generated_code, "model_used": model_type, "timestamp": datetime.now() })
         except Exception as db_error: print(f"Ошибка сохранения в db.responses: {db_error}")
 
         return {"result": cleaned_result, "generatedCode": generated_code}
