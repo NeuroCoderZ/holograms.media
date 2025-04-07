@@ -953,13 +953,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
-    alpha: false, // НЕ прозрачный фон
+    alpha: true, // Прозрачный фон
     premultipliedAlpha: false,
     preserveDrawingBuffer: true // Для корректного наложения
   });
   renderer.domElement.style.zIndex = '5'; // Below gesture area
   renderer.domElement.style.position = 'relative';
-  scene.background = new THREE.Color(0x000000);
+  scene.background = null; // Полностью прозрачный фон
   renderer.setPixelRatio(window.devicePixelRatio);
   // Устанавливаем РАЗМЕР РЕНДЕРЕРА по доступному пространству
   renderer.setSize(initialAvailableWidth, initialAvailableHeight);
