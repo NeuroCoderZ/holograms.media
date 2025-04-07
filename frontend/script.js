@@ -1285,6 +1285,24 @@ async function loadInitialFilesAndSetupEditor() {
       const backgroundColor = generateResponse.data.backgroundColor; // Получаем цвет фона
       const generatedCode = generateResponse.data.generatedCode; // Получаем сгенерированный код
 
+      // --- ШАГ 1.5: ПРИМЕНЕНИЕ СГЕНЕРИРОВАННОГО КОДА ---
+      if (generatedCode) {
+        console.log("Пытаемся выполнить сгенерированный код...");
+        try {
+          // Используем Function constructor вместо прямого eval для некоторой изоляции
+          const executeCode = new Function('scene', 'mainSequencerGroup', 'THREE', generatedCode);
+          executeCode(scene, mainSequencerGroup, THREE); // Передаем нужные объекты в контекст
+          console.log("Сгенерированный код выполнен успешно.");
+        } catch (e) {
+          console.error("Ошибка выполнения сгенерированного кода:", e);
+          alert(`Ошибка выполнения сгенерированного кода:\n${e.message}\n\nПромт: ${prompt}`);
+          // Не прерываем создание версии, но сообщаем об ошибке
+        }
+      } else {
+        console.log("Сгенерированный код отсутствует, применение не требуется.");
+      }
+      // ---------------------------------------------
+
       // Шаг 2: Подготовка данных и создание новой версии через /branches
       const sceneStateObject = JSON.parse(JSON.stringify(scene.toJSON())); // Получаем состояние сцены как объект
       // const previewDataURL = capturePreview(); // Получаем превью (пока не используется бэкендом)
