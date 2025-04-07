@@ -77,7 +77,7 @@ class OpenRouterChat(Runnable):
                     openai_api_key=self.api_key,
                     base_url="https://openrouter.ai/api/v1",
                     temperature=0.7,
-                    max_tokens=500
+                    max_tokens=1500
                 )
             except Exception as e:
                 print(f"OpenRouter client error: {e}")
@@ -128,15 +128,33 @@ async def generate(request: Request):
         if model_type != chain.model:
             chain = OpenRouterChat(model=model_type, api_key=OPENROUTER_API_KEY)
 
-        prompt_with_instruction = (
-            f"Based on the user request \"{prompt_text}\", generate a short JavaScript code snippet "
-            f"using Three.js (assume 'scene' and 'mainSequencerGroup' variables exist) to achieve the goal. "
-            f"Focus on modifying properties of 'mainSequencerGroup' or objects within it. "
-            f"Return ONLY the JavaScript code block itself, like this:\n"
-            f"```javascript\n// Your code\n```\n"
-            f"Also provide a brief explanation BEFORE the code block."
-        )
-        result_text = chain.invoke(prompt_with_instruction)
+        system_instruction = """
+        You are an AI assistant helping modify the 3D scene of the Holograms Media web application.
+        Your task is to generate a SHORT JavaScript code snippet based on the user's request to achieve their goal. Focus on modifying properties of existing objects.
+
+        Available Context:
+        You are working inside a JavaScript function where the following global variables are accessible:
+        - `scene`: A THREE.Scene object.
+        - `mainSequencerGroup`: A THREE.Group object containing the main visualization (left and right sequencers). You should primarily modify its properties (position, rotation, scale) or its children.
+        - `THREE`: The Three.js library namespace (r128).
+        Assume `mainSequencerGroup` might contain children like `leftSequencerGroup`, `rightSequencerGroup`, and an array `columns` with `{ left: THREE.Group, right: THREE.Group, ... }`.
+        TWEEN.js might be available globally.
+
+        Code Requirements:
+        - Use only pure JavaScript (ES6+).
+        - Use only Three.js r128 methods and properties.
+        - DO NOT declare new global variables.
+        - DO NOT use `document.getElementById` or direct DOM manipulation unless explicitly requested for UI changes.
+        - Keep the code SHORT and focused on the specific request.
+
+        Response Format:
+        1. FIRST, provide a BRIEF text explanation (1-2 sentences) of what the code will do.
+        2. THEN, provide ONLY the JavaScript code itself, enclosed in a ```javascript ... ``` block.
+        3. DO NOT add anything else to the response.
+        """
+
+        prompt_to_send = f"{system_instruction}\nUser Request: \"{prompt_text}\"\n\nExplanation and Code:"
+        result_text = chain.invoke(prompt_to_send)
         cleaned_result = result_text.strip()
 
         generated_code = None
