@@ -737,15 +737,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const stopRecordingButton = document.getElementById('stopRecordingButton');
   const gestureCanvas = document.getElementById('gestureCanvas');
   if (gestureCanvas) {
-    gestureCanvas.style.zIndex = '25'; // Выше голограммы (20) и других элементов
-    gestureCanvas.style.position = 'fixed'; // Фиксированное позиционирование
-    gestureCanvas.style.opacity = '1'; // Полная видимость
-    gestureCanvas.style.backgroundColor = 'rgba(0,0,0,0.3)'; // Более темный фон для лучшей видимости
+    gestureCanvas.style.zIndex = '5'; // Below hologram but above background
+    gestureCanvas.style.position = 'absolute';
+    gestureCanvas.style.opacity = '0.7';
+    gestureCanvas.style.backgroundColor = 'rgba(0,0,0,0.1)';
     gestureCanvas.style.width = '100%';
     gestureCanvas.style.height = '100%';
     gestureCanvas.style.top = '0';
     gestureCanvas.style.left = '0';
-    gestureCanvas.style.pointerEvents = 'none'; // Пропускаем события мыши через canvas
+    gestureCanvas.style.pointerEvents = 'none';
+    gestureCanvas.style.mixBlendMode = 'screen'; // Better visibility over dark areas
   }
   const gestureStatus = document.getElementById('gestureStatus');
   const promptText = document.getElementById('promptText');
@@ -955,8 +956,8 @@ document.addEventListener('DOMContentLoaded', () => {
     premultipliedAlpha: false,
     preserveDrawingBuffer: true // Для корректного наложения
   });
-  renderer.domElement.style.zIndex = '15'; // Ниже области жестов (25)
-  renderer.domElement.style.position = 'relative'; // Для работы z-index
+  renderer.domElement.style.zIndex = '10'; // Main hologram layer
+  renderer.domElement.style.position = 'relative';
   scene.background = new THREE.Color(0x000000);
   renderer.setPixelRatio(window.devicePixelRatio);
   // Устанавливаем РАЗМЕР РЕНДЕРЕРА по доступному пространству
