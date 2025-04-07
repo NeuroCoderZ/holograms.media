@@ -737,8 +737,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const stopRecordingButton = document.getElementById('stopRecordingButton');
   const gestureCanvas = document.getElementById('gestureCanvas');
   if (gestureCanvas) {
-    gestureCanvas.style.zIndex = '1'; // Ниже голограммы
+    gestureCanvas.style.zIndex = '15'; // Между голограммой (20) и фоном (10)
     gestureCanvas.style.position = 'relative'; // Для работы z-index
+    gestureCanvas.style.opacity = '0.8'; // Полупрозрачность для лучшей видимости
   }
   const gestureStatus = document.getElementById('gestureStatus');
   const promptText = document.getElementById('promptText');
@@ -948,7 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
     premultipliedAlpha: false,
     preserveDrawingBuffer: true // Для корректного наложения
   });
-  renderer.domElement.style.zIndex = '10'; // Устанавливаем выше других элементов
+  renderer.domElement.style.zIndex = '20'; // Устанавливаем выше других элементов
   renderer.domElement.style.position = 'relative'; // Для работы z-index
   scene.background = new THREE.Color(0x000000);
   renderer.setPixelRatio(window.devicePixelRatio);
