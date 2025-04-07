@@ -736,6 +736,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const startRecordingButton = document.getElementById('startRecordingButton');
   const stopRecordingButton = document.getElementById('stopRecordingButton');
   const gestureCanvas = document.getElementById('gestureCanvas');
+  if (gestureCanvas) {
+    gestureCanvas.style.zIndex = '1'; // Ниже голограммы
+    gestureCanvas.style.position = 'relative'; // Для работы z-index
+  }
   const gestureStatus = document.getElementById('gestureStatus');
   const promptText = document.getElementById('promptText');
   const submitPromptButton = document.getElementById('submitPrompt');
@@ -940,8 +944,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
-    alpha: false // НЕ прозрачный фон
+    alpha: false, // НЕ прозрачный фон
+    premultipliedAlpha: false,
+    preserveDrawingBuffer: true // Для корректного наложения
   });
+  renderer.domElement.style.zIndex = '10'; // Устанавливаем выше других элементов
+  renderer.domElement.style.position = 'relative'; // Для работы z-index
   scene.background = new THREE.Color(0x000000);
   renderer.setPixelRatio(window.devicePixelRatio);
   // Устанавливаем РАЗМЕР РЕНДЕРЕРА по доступному пространству
