@@ -228,6 +228,14 @@ body {
 #telegramLinkButton {
   /* Цвет иконки по умолчанию (светло-серый) */
   color: #b0b0b0 !important;
+  width: 24px !important;
+  height: 24px !important;
+  transform: scale(1.5);
+}
+
+#telegramLinkButton svg {
+  /* Теперь SVG наследует цвет от родителя */
+  fill: currentColor;
 }
 
 /* Hover-эффект для ИКОНОК (не для фона кнопки) */
