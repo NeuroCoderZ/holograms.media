@@ -986,6 +986,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight); // Используем доступные размеры
   mainSequencerGroup.scale.setScalar(initialScale);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
+  // Center between left and right panels initially
+  mainSequencerGroup.position.x = (leftPanelWidthInitial - rightPanelWidthInitial) / 2;
 
   // --- Отладка итогового масштаба и размеров ---
   const containerRect = gridContainer.getBoundingClientRect();
@@ -1486,6 +1488,8 @@ async function loadInitialFilesAndSetupEditor() {
     const newScale = calculateInitialScale(availableWidth, availableHeight); // Используем доступные размеры
     mainSequencerGroup.scale.setScalar(newScale);
     mainSequencerGroup.position.y = -GRID_HEIGHT * newScale / 2; // Пересчитываем позицию Y при ресайзе
+    // Center between left and right panels
+    mainSequencerGroup.position.x = (leftPanelWidth - rightPanelWidth) / 2;
 
     // Update camera and renderer
     if (!isXRMode) {
