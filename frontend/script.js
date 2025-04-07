@@ -738,8 +738,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const gestureCanvas = document.getElementById('gestureCanvas');
   if (gestureCanvas) {
     gestureCanvas.style.zIndex = '15'; // Между голограммой (20) и фоном (10)
-    gestureCanvas.style.position = 'relative'; // Для работы z-index
-    gestureCanvas.style.opacity = '0.8'; // Полупрозрачность для лучшей видимости
+    gestureCanvas.style.position = 'absolute'; // Для правильного позиционирования
+    gestureCanvas.style.opacity = '1'; // Полная видимость
+    gestureCanvas.style.backgroundColor = 'rgba(0,0,0,0.2)'; // Легкий черный фон
+    gestureCanvas.style.width = '100%';
+    gestureCanvas.style.height = '100%';
   }
   const gestureStatus = document.getElementById('gestureStatus');
   const promptText = document.getElementById('promptText');
