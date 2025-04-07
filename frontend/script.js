@@ -737,12 +737,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const stopRecordingButton = document.getElementById('stopRecordingButton');
   const gestureCanvas = document.getElementById('gestureCanvas');
   if (gestureCanvas) {
-    gestureCanvas.style.zIndex = '15'; // Между голограммой (20) и фоном (10)
-    gestureCanvas.style.position = 'absolute'; // Для правильного позиционирования
+    gestureCanvas.style.zIndex = '25'; // Выше голограммы (20) и других элементов
+    gestureCanvas.style.position = 'fixed'; // Фиксированное позиционирование
     gestureCanvas.style.opacity = '1'; // Полная видимость
-    gestureCanvas.style.backgroundColor = 'rgba(0,0,0,0.2)'; // Легкий черный фон
+    gestureCanvas.style.backgroundColor = 'rgba(0,0,0,0.3)'; // Более темный фон для лучшей видимости
     gestureCanvas.style.width = '100%';
     gestureCanvas.style.height = '100%';
+    gestureCanvas.style.top = '0';
+    gestureCanvas.style.left = '0';
+    gestureCanvas.style.pointerEvents = 'none'; // Пропускаем события мыши через canvas
   }
   const gestureStatus = document.getElementById('gestureStatus');
   const promptText = document.getElementById('promptText');
@@ -952,7 +955,7 @@ document.addEventListener('DOMContentLoaded', () => {
     premultipliedAlpha: false,
     preserveDrawingBuffer: true // Для корректного наложения
   });
-  renderer.domElement.style.zIndex = '20'; // Устанавливаем выше других элементов
+  renderer.domElement.style.zIndex = '15'; // Ниже области жестов (25)
   renderer.domElement.style.position = 'relative'; // Для работы z-index
   scene.background = new THREE.Color(0x000000);
   renderer.setPixelRatio(window.devicePixelRatio);
