@@ -2,14 +2,14 @@ import os
 import uuid
 import json
 import re
-from fastapi import FastAPI, Request, HTTPException # Добавлен HTTPException
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse # Добавлен JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from tenacity import retry, stop_after_attempt, wait_fixed
 from langchain_core.runnables import Runnable
-from huggingface_hub import InferenceClient
+from langchain_community.chat_models import ChatOpenRouter
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -59,31 +59,40 @@ async def shutdown_db_client():
         print("Соединение с MongoDB закрыто.")
 
 
-# --- Hugging Face Модель ---
-HF_TOKEN = os.getenv("HF_TOKEN", "HF_TOKEN_REMOVED")
-HF_MODEL_ID = os.getenv("HF_MODEL_ID", "mistralai/Mixtral-8x7B-Instruct-v0.1")
+# --- OpenRouter Модель ---
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+DEFAULT_MODEL = "openrouter/deepseek/deepseek-r1:free"
 
-class HuggingFaceInference(Runnable):
-    def __init__(self, model_id: str, token: str):
-        self.model_id = model_id
-        if not token: print("Warning: Hugging Face token не найден."); self.client = None
+class OpenRouterChat(Runnable):
+    def __init__(self, model: str, api_key: str):
+        self.model = model
+        self.api_key = api_key
+        if not api_key:
+            print("Warning: OpenRouter API key not found")
+            self.client = None
         else:
-            try: self.client = InferenceClient(token=token)
-            except Exception as e: print(f"Ошибка Hugging Face Client: {e}"); self.client = None
+            try:
+                self.client = ChatOpenRouter(
+                    model=self.model,
+                    openai_api_key=self.api_key,
+                    openai_api_base="https://openrouter.ai/api/v1",
+                    temperature=0.7,
+                    max_tokens=500
+                )
+            except Exception as e:
+                print(f"OpenRouter client error: {e}")
+                self.client = None
 
     def invoke(self, prompt: str, **kwargs) -> str:
-        if not self.client: return "Ошибка: Hugging Face client не инициализирован."
+        if not self.client:
+            return "Error: OpenRouter client not initialized"
         try:
-            response = self.client.chat_completion(
-                model=self.model_id, messages=[{"role": "user", "content": prompt}],
-                max_tokens=500, temperature=0.7, tools=[] # Добавлен tools
-            )
-            if response.choices and response.choices[0].message:
-                 return response.choices[0].message.content or "Модель вернула пустой ответ."
-            else: return "Ошибка: Неожиданный формат ответа от модели."
-        except Exception as e: return f"Ошибка при вызове Hugging Face: {str(e)}"
+            response = self.client.invoke(prompt)
+            return response.content or "Model returned empty response"
+        except Exception as e:
+            return f"Error calling OpenRouter: {str(e)}"
 
-chain = HuggingFaceInference(model_id=HF_MODEL_ID, token=HF_TOKEN)
+chain = OpenRouterChat(model=DEFAULT_MODEL, api_key=OPENROUTER_API_KEY)
 
 # --- Маршруты FastAPI ---
 
@@ -111,8 +120,12 @@ async def generate(request: Request):
     try:
         data = await request.json()
         prompt_text = data.get("prompt")
-        model_type = data.get("model", "r1")
+        model_type = data.get("model", DEFAULT_MODEL)
         if not prompt_text: raise HTTPException(status_code=400, detail="Промпт не предоставлен")
+
+        # Update chain with requested model
+        if model_type != chain.model:
+            chain = OpenRouterChat(model=model_type, api_key=OPENROUTER_API_KEY)
 
         prompt_with_instruction = (
             f"Based on the user request \"{prompt_text}\", generate a short JavaScript code snippet "
