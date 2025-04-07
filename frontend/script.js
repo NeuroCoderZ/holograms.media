@@ -955,7 +955,8 @@ document.addEventListener('DOMContentLoaded', () => {
     powerPreference: "high-performance",
     alpha: true, // Прозрачный фон
     premultipliedAlpha: false,
-    preserveDrawingBuffer: true // Для корректного наложения
+    preserveDrawingBuffer: false, // Отключаем сохранение буфера
+    logarithmicDepthBuffer: true // Для лучшего качества глубины
   });
   renderer.domElement.style.zIndex = '5'; // Below gesture area
   renderer.domElement.style.position = 'relative';
@@ -1535,6 +1536,9 @@ async function loadInitialFilesAndSetupEditor() {
 
   function animate() {
     requestAnimationFrame(animate);
+
+    // Явно очищаем буферы перед рендерингом
+    renderer.clear();
 
     if (isPlaying) {
       processAudio();
