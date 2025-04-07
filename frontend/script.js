@@ -741,8 +741,10 @@ document.addEventListener('DOMContentLoaded', () => {
     gestureCanvas.style.position = 'absolute';
     gestureCanvas.style.opacity = '0.8';
     gestureCanvas.style.backgroundColor = 'rgba(0,0,0,0.2)';
-    gestureCanvas.style.width = '80%';
-    gestureCanvas.style.left = '10%'; // Center the reduced width
+    gestureCanvas.width = window.innerWidth * 0.6; // Уменьшаем ширину canvas до 60%
+    gestureCanvas.height = window.innerHeight;
+    gestureCanvas.style.width = '60%';
+    gestureCanvas.style.left = '20%'; // Центрируем уменьшенную область
     gestureCanvas.style.height = '100%';
     gestureCanvas.style.top = '0';
     gestureCanvas.style.left = '0';
@@ -1491,6 +1493,13 @@ async function loadInitialFilesAndSetupEditor() {
   });
 
   window.addEventListener('resize', () => {
+    // Обновляем размеры canvas для жестов
+    const gestureCanvas = document.getElementById('gestureCanvas');
+    if (gestureCanvas) {
+      gestureCanvas.width = window.innerWidth * 0.6;
+      gestureCanvas.height = window.innerHeight;
+    }
+    
     // Получаем актуальные размеры контейнера
     const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
     const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
