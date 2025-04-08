@@ -1277,6 +1277,14 @@ async function loadInitialFilesAndSetupEditor() {
 
   function applyPrompt(prompt, model) {
   console.log(`Отправка промпта "${prompt}" с моделью ${model} на /generate`);
+  
+  const spinner = document.getElementById('loading-spinner');
+  const submitButton = document.getElementById('submitTopPrompt');
+  
+  // Показываем спиннер и блокируем кнопку
+  spinner.style.display = 'block';
+  submitButton.disabled = true;
+
   // Шаг 1: Отправка запроса на /generate
   axios.post('/generate', { prompt, model })
     .then(generateResponse => {
