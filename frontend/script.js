@@ -1698,7 +1698,7 @@ async function loadInitialFilesAndSetupEditor() {
         landmarks.forEach(pt => {
           const dot = document.createElement('div');
           dot.className = 'finger-dot-on-line';
-          dot.style.left = `${pt.x * gestureArea.offsetWidth}px`;
+          dot.style.top = `${pt.y * 100}%`;
           gestureArea.appendChild(dot);
         });
       }
