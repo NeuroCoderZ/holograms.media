@@ -1662,13 +1662,11 @@ async function loadInitialFilesAndSetupEditor() {
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
     // Находим canvas и контекст для рисования
+    // Remove gesture canvas since we're not using it anymore
     const gestureCanvas = document.getElementById('gesture-canvas');
-    if (!gestureCanvas) return; // Выходим, если canvas не найден
-    const canvasCtx = gestureCanvas.getContext('2d');
-
-    // Очищаем canvas перед рисованием нового кадра
-    canvasCtx.save();
-    canvasCtx.clearRect(0, 0, gestureCanvas.width, gestureCanvas.height);
+    if (gestureCanvas) {
+      gestureCanvas.remove();
+    }
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       const landmarks = results.multiHandLandmarks[0]; // Берем первую найденную руку
