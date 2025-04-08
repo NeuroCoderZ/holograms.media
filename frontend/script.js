@@ -1336,6 +1336,10 @@ async function loadInitialFilesAndSetupEditor() {
       // -----------------------------------------
     })
     .catch(error => {
+      // Скрываем спиннер и разблокируем кнопку при ошибке
+      spinner.style.display = 'none';
+      submitButton.disabled = false;
+      
       // Обработка ошибок как от /generate, так и от /branches
       console.error('Ошибка при обработке промпта или создании версии:', error);
       if (error.response) {
