@@ -31,7 +31,7 @@ const SPHERE_RADIUS = 5;
 const COLUMN_ANIMATION_SPEED = 2.0; // Adjust for desired animation speed
 const FPS = 25; // Fixed 25fps update rate
 const TRAIL_DURATION = 500; // 500ms trail duration
-const TRAIL_SEGMENTS = 25; // Number of trail segments 
+const TRAIL_SEGMENTS = 25; // Number of trail segments
 
 // Color configuration constants
 const START_HUE = 0;    // Red
@@ -69,7 +69,7 @@ function degreesToCells(index) {
 const semitones = Array.from({ length: 130 }, (_, i) => {
   // Частота: базовая частота (27.5 Гц) умножается на 2^(i/12)
   const f = BASE_FREQUENCY * Math.pow(2, i / NOTES_PER_OCTAVE);
-  
+
   // Ширина колонки
   const width = degreesToCells(i);
 
@@ -181,8 +181,8 @@ const rightSequencerGroup = createSequencerGrid(
 
 function setupCamera() {
   if (!isXRMode) return;
-  
-  navigator.mediaDevices.getUserMedia({ 
+
+  navigator.mediaDevices.getUserMedia({
     video: {
       facingMode: 'user',
       width: { ideal: window.innerWidth },
@@ -282,11 +282,11 @@ function createLine(start, end, color, opacity) {
 
 function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
   const axisGroup = new THREE.Group();
-  
+
   // X-axis - Red for positive, Purple for negative
   const xAxisGroup = new THREE.Group();
   const xAxisOffset = isLeftGrid ? GRID_WIDTH : 0;
-  
+
   if (isLeftGrid) {
     // Negative X - Purple
     const xAxisNeg = createSphere(0x9400d3, sphereRadius);
@@ -310,7 +310,7 @@ function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
     );
     xAxisGroup.add(xAxisPos, xAxisLinePos);
   }
-  
+
   // Y-axis - Green
   const yAxisGroup = new THREE.Group();
   const yAxis = createSphere(yColor, sphereRadius);
@@ -322,7 +322,7 @@ function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
     1.0
   );
   yAxisGroup.add(yAxis, yAxisLine);
-  
+
   // Z-axis - White
   const zAxisGroup = new THREE.Group();
   const zAxis = createSphere(0xFFFFFF, sphereRadius);
@@ -334,13 +334,13 @@ function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
     1.0
   );
   zAxisGroup.add(zAxis, zAxisLine);
-  
+
   // Position all axes relative to the proper offset
   [xAxisGroup, yAxisGroup, zAxisGroup].forEach(group => {
     group.position.set(xAxisOffset, 0, 0);
     axisGroup.add(group);
   });
-  
+
   return axisGroup;
 }
 
@@ -453,7 +453,7 @@ function updateSequencerColumns(amplitudes, channel) {
       mesh.material.opacity = 1.0;
       mesh.material.transparent = false;
       mesh.material.color = color;
-      
+
       // Direct position update without animation
       const targetDepth = normalizedDB * 260;
       mesh.scale.z = targetDepth;
@@ -525,34 +525,36 @@ function processAudio() {
 
   const now = performance.now();
   const frameInterval = 1000 / FPS; // 40ms for 25fps
-  
+
   if (now - lastFrameTime >= frameInterval) {
     lastFrameTime = now;
 
     if (analyserLeft && analyserRight) {
       const leftLevels = getSemitoneLevels(analyserLeft);
       const rightLevels = getSemitoneLevels(analyserRight);
-      
+
       // Instantly update columns
       columns.forEach((column, i) => {
         const leftDB = leftLevels[i] || 0;
         const rightDB = rightLevels[i] || 0;
-        
+
         // Instant snap to zero if no signal
         if (leftDB <= -100) {
           column.left.children.forEach(mesh => {
             mesh.scale.z = 0.001; // Minimal size instead of true 0
             mesh.position.z = 0;
           });
+
         }
-        
+
         if (rightDB <= -100) {
           column.right.children.forEach(mesh => {
             mesh.scale.z = 0.001;
             mesh.position.z = 0;
           });
+
         }
-        
+
         // Instant update to current levels
         updateColumnMesh(column.left, leftDB, 'left');
         updateColumnMesh(column.right, rightDB, 'right');
@@ -566,13 +568,13 @@ function processAudio() {
 // Helper function to update column meshes
 function updateColumnMesh(columnGroup, dB, side) {
   if (dB <= -100) return; // Skip if silence
-  
+
   const normalizedDB = THREE.MathUtils.clamp(
     (dB + 100) / (130 + 100),
     0,
     1
   );
-  
+
   columnGroup.children.forEach(mesh => {
     mesh.scale.z = normalizedDB * 260;
     mesh.position.z = (normalizedDB * 260) / 2;
@@ -586,16 +588,16 @@ function setupFingerTracking() {
     // Stop any existing stream
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
-        currentStream = null; 
+        currentStream = null;
     }
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
         .then(stream => {
-            currentStream = stream; 
-            videoElement = document.getElementById('camera-view'); 
+            currentStream = stream;
+            videoElement = document.getElementById('camera-view');
             videoElement.srcObject = stream;
 
-            videoElement.onloadeddata = () => { 
+            videoElement.onloadeddata = () => {
                 // Keep video element for handpose but hide it
                 videoElement.style.visibility = 'hidden';
 
@@ -608,7 +610,7 @@ function setupFingerTracking() {
                             return;
                         }
 
-                        model.estimateHands(videoElement).then(hands => { 
+                        model.estimateHands(videoElement).then(hands => {
                             // Clear previous dots and lines
                             document.querySelectorAll('.finger-dot').forEach(el => el.remove());
                             document.querySelectorAll('.finger-line').forEach(el => el.remove());
@@ -616,7 +618,7 @@ function setupFingerTracking() {
                             hands.forEach(hand => {
                                 // Flip, draw landmarks
                                 const landmarks = hand.landmarks.map(landmark => [
-                                    videoElement.offsetWidth - landmark[0], 
+                                    videoElement.offsetWidth - landmark[0],
                                     landmark[1],
                                     landmark[2]
                                 ]);
@@ -648,7 +650,7 @@ function drawHandLandmarks(landmarks) {
             const prevTip = landmarks[index - 1];
             const line = document.createElement('div');
             line.className = 'finger-line';
-            
+
             // Position the start of the line
             line.style.left = `${prevTip[0]}px`;
             line.style.top = `${prevTip[1]}px`;
@@ -658,7 +660,7 @@ function drawHandLandmarks(landmarks) {
             const dy = tip[1] - prevTip[1];
             const length = Math.sqrt(dx * dx + dy * dy);
             const angle = Math.atan2(dy, dx);
-            
+
             line.style.width = `${length}px`;
             line.style.transform = `rotate(${angle}rad)`;
 
@@ -711,7 +713,6 @@ function stopGestureRecording() {
 }
 // --- End Gesture Recording Functions ---
 
-
 document.addEventListener('DOMContentLoaded', () => {
   console.log('>>> DOMContentLoaded fired'); // Проверка старта скрипта
   const fileButton = document.getElementById('fileButton');
@@ -755,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const gestureStatus = document.getElementById('gestureStatus');
   const promptText = document.getElementById('promptText');
   const submitPromptButton = document.getElementById('submitPrompt');
-  
+
   // Toggle file editor
   const toggleFilesButton = document.getElementById('toggleFilesButton');
   const integratedFileEditor = document.getElementById('integratedFileEditor');
@@ -990,17 +991,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const screenHeight = containerHeight;
     const hologramWidth = GRID_WIDTH * 2;
     const hologramHeight = GRID_HEIGHT; // Убедись, что GRID_HEIGHT определена глобально
-  
+
     // Рассчитываем масштабы по ширине и высоте
     let widthScale = (screenWidth * TARGET_WIDTH_PERCENTAGE) / hologramWidth; // TARGET_WIDTH_PERCENTAGE ~0.95?
     let heightScale = (screenHeight * 0.8) / hologramHeight; // Используем 80% высоты (Возвращаем)
-  
+
     // Используем МЕНЬШИЙ из масштабов, чтобы вписать объект
     let scale = Math.min(widthScale, heightScale);
-  
+
     // Добавляем минимальный масштаб
     scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
-  
+
     return scale; // ВОЗВРАЩАЕМ ЧИСТЫЙ МАСШТАБ БЕЗ * 0.5
   }
 
@@ -1014,9 +1015,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const containerRect = gridContainer.getBoundingClientRect();
   console.log('Grid Container Rect:', containerRect); // Логи размеров контейнера
   console.log('Final Scale:', initialScale); // Логи итогового масштаба
-
-  mainSequencerGroup.position.x = -GRID_WIDTH / 2; // Shift entire group left by half grid width
-  console.log('Centering:', { initialScale, GRID_HEIGHT, posY: mainSequencerGroup.position.y, posX: mainSequencerGroup.position.x });
 
   mainSequencerGroup.rotation.set(0, 0, 0);
   scene.add(mainSequencerGroup);
@@ -1041,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', () => {
   hammer.on('pan', ev => {
     const deltaX = ev.deltaX / window.innerWidth;
     const deltaY = ev.deltaY / window.innerHeight;
-    
+
     // Convert screen movement to radians (1:1 ratio)
     const rotationX = deltaY * Math.PI;
     const rotationY = deltaX * Math.PI;
@@ -1049,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isXRMode) {
       // Clamp rotations to ±90 degrees (±π/2 radians)
       mainSequencerGroup.rotation.x = THREE.MathUtils.clamp(
-        rotationX, 
+        rotationX,
         -Math.PI/2,
         Math.PI/2
       );
@@ -1116,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       xrCamera.position.copy(orthoCamera.position);
       xrCamera.rotation.copy(orthoCamera.rotation);
       xrCamera.scale.copy(orthoCamera.scale);
-      
+
       const currentScale = mainSequencerGroup.scale.clone();
       mainSequencerGroup.scale.copy(currentScale);
       mainSequencerGroup.position.set(0,0, 0); // Set position to (0, 0, 0)
@@ -1277,10 +1275,10 @@ async function loadInitialFilesAndSetupEditor() {
 
   function applyPrompt(prompt, model) {
   console.log(`Отправка промпта "${prompt}" с моделью ${model} на /generate`);
-  
+
   const spinner = document.getElementById('loading-spinner');
   const submitButton = document.getElementById('submitTopPrompt');
-  
+
   // Показываем спиннер и блокируем кнопку
   spinner.style.display = 'block';
   submitButton.disabled = true;
@@ -1349,7 +1347,7 @@ async function loadInitialFilesAndSetupEditor() {
       // Скрываем спиннер и разблокируем кнопку при ошибке
       spinner.style.display = 'none';
       submitButton.disabled = false;
-      
+
       // Обработка ошибок как от /generate, так и от /branches
       console.error('Ошибка при обработке промпта или создании версии:', error);
       if (error.response) {
@@ -1375,7 +1373,7 @@ async function loadInitialFilesAndSetupEditor() {
       const versions = response.data.versions;
       const versionFrames = document.getElementById('versionFrames');
       versionFrames.innerHTML = '';
-      
+
       versions.reverse(); // Reverse the array before processing
       versions.forEach((version, index) => {
         const frame = document.createElement('div');
@@ -1420,11 +1418,11 @@ async function loadInitialFilesAndSetupEditor() {
         version_id: versionId
       });
       console.log('Переключено на версию:', versionId, 'Данные:', response.data);
-      
+
       // Применяем сохраненный цвет фона
       scene.background = new THREE.Color(0x000000);
       console.log(`Цвет фона установлен на #000000`);
-      
+
       const files = response.data.files;
       // Отображаем сгенерированный код в редакторе
       if (files && typeof files['generated_code.js'] === 'string') {
@@ -1453,7 +1451,7 @@ async function loadInitialFilesAndSetupEditor() {
               });
           }
       }
-      
+
       const scene_state = response.data.scene_state;
       if (scene_state && typeof scene_state === 'object' && Object.keys(scene_state).length > 0) {
         // Добавляем проверку на наличие основных полей, которые должны быть в scene.toJSON()
@@ -1466,12 +1464,12 @@ async function loadInitialFilesAndSetupEditor() {
         try {
           const parsedData = loader.parse(scene_state);
           console.log("Scene state parsed successfully:", parsedData);
-          
+
           // Удаляем старую сцену и добавляем новую
           scene.remove(mainSequencerGroup);
           mainSequencerGroup = parsedData;
           scene.add(mainSequencerGroup);
-          
+
           console.log("Состояние сцены применено");
         } catch (e) {
           console.error("Ошибка парсинга или применения состояния сцены:", e);
@@ -1533,7 +1531,7 @@ async function loadInitialFilesAndSetupEditor() {
       gestureCanvas.width = window.innerWidth * 0.6;
       gestureCanvas.height = window.innerHeight;
     }
-    
+
     // Получаем актуальные размеры контейнера
     const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
     const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
@@ -1563,7 +1561,7 @@ async function loadInitialFilesAndSetupEditor() {
       orthoCamera.updateProjectionMatrix();
       const visibleWidth = availableWidth; // Исправлено
       const visibleHeight = availableHeight; // Исправлено
-      
+
       orthoCamera.left = -visibleWidth / 2; // Исправлено
       orthoCamera.right = visibleWidth / 2; // Исправлено
       orthoCamera.top = visibleHeight / 2;
@@ -1681,10 +1679,10 @@ async function loadInitialFilesAndSetupEditor() {
         const deltaX = thumbTip.x - indexTip.x;
         const deltaY = thumbTip.y - indexTip.y;
         const pinchDistance = Math.hypot(deltaX, deltaY);
-        
+
         // Логирование с большей детализацией
         console.log(`Расстояние щипка (пальцы 4-8): ${pinchDistance.toFixed(4)}`);
-        
+
         // Возможная логика для активации щипка (пример порога)
         if (pinchDistance < 0.05) {
           console.log("=== Активация щипковой команды! ===");
@@ -1693,10 +1691,10 @@ async function loadInitialFilesAndSetupEditor() {
 
         // Рисуем точки руки на красной линии
         document.querySelectorAll('.finger-dot-on-line').forEach(el => el.remove());
-        
+
         const gestureArea = document.getElementById('gesture-area');
         if (!gestureArea || !landmarks) return;
-        
+
         landmarks.forEach(pt => {
           const dot = document.createElement('div');
           dot.className = 'finger-dot-on-line';
