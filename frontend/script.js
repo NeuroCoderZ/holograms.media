@@ -1689,13 +1689,18 @@ async function loadInitialFilesAndSetupEditor() {
           // Можно добавить обработку команды здесь
         }
 
-        // Рисуем руку на canvas
-        if (typeof drawConnectors !== 'undefined' && typeof drawLandmarks !== 'undefined') {
-            drawConnectors(canvasCtx, landmarks, Hands.HAND_CONNECTIONS, {color: 'rgba(0, 255, 0, 0.5)', lineWidth: 1}); // Зеленые полупрозрачные, тонкие линии
-            drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 3}); // Красные точки
-        } else {
-            console.warn("drawing_utils не загружены, не могу нарисовать руку.");
-        }
+        // Рисуем точки руки на красной линии
+        document.querySelectorAll('.finger-dot-on-line').forEach(el => el.remove());
+        
+        const gestureArea = document.getElementById('gesture-area');
+        if (!gestureArea || !landmarks) return;
+        
+        landmarks.forEach(pt => {
+          const dot = document.createElement('div');
+          dot.className = 'finger-dot-on-line';
+          dot.style.left = `${pt.x * gestureArea.offsetWidth}px`;
+          gestureArea.appendChild(dot);
+        });
       }
 
       // Координаты базового маркера ладони
