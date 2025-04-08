@@ -125,10 +125,10 @@ body {
   content: '';
   position: absolute;
   left: 15px;
-  right: 15px;
-  top: 50%;
-  height: 1px; /* Используем height вместо width для горизонтальной линии */
-  background-color: rgba(255, 0, 0, 0.8); /* Более яркая красная линия */
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: rgba(255, 0, 0, 0.8);
   pointer-events: none;
 }
 
