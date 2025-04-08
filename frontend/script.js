@@ -996,7 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let heightScale = (screenHeight * 0.8) / hologramHeight; // Используем 80% высоты (Возвращаем)
   
     // Используем МЕНЬШИЙ из масштабов, чтобы вписать объект
-    let scale = Math.min(widthScale, heightScale) * 0.9; // Уменьшаем на 10%
+    let scale = Math.min(widthScale, heightScale);
   
     // Добавляем минимальный масштаб
     scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
@@ -1007,8 +1007,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight); // Используем доступные размеры
   mainSequencerGroup.scale.setScalar(initialScale);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
-  // Position hologram more to the left initially (1/3 between panels)
-  mainSequencerGroup.position.x = (leftPanelWidthInitial - rightPanelWidthInitial) / 3;
+  // Center hologram at x=0
+  mainSequencerGroup.position.x = 0;
 
   // --- Отладка итогового масштаба и размеров ---
   const containerRect = gridContainer.getBoundingClientRect();
@@ -1548,8 +1548,8 @@ async function loadInitialFilesAndSetupEditor() {
     const newScale = calculateInitialScale(availableWidth, availableHeight); // Используем доступные размеры
     mainSequencerGroup.scale.setScalar(newScale);
     mainSequencerGroup.position.y = -GRID_HEIGHT * newScale / 2; // Пересчитываем позицию Y при ресайзе
-    // Center hologram accounting for the left shift
-    mainSequencerGroup.position.x = -GRID_WIDTH / 2 * newScale;
+    // Center hologram at x=0
+    mainSequencerGroup.position.x = 0;
 
     // Update camera and renderer
     if (!isXRMode) {
