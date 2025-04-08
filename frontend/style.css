@@ -123,14 +123,25 @@ body {
 
 #gesture-area::before {
   content: '';
-  position: absolute; /* Позиционируем относительно #gesture-area */
-  left: 15px;  /* Смещаем немного от левого края (подбирать значение) */
-  right: 15px; /* Ограничиваем справа с таким же отступом */
-  top: 10%; /* Начинаем линию чуть ниже верха */
-  bottom: 10%; /* Заканчиваем чуть выше низа */
-  width: 1px;
-  background-color: rgba(255, 0, 0, 0.5); /* Красная полупрозрачная */
+  position: absolute;
+  left: 15px;
+  right: 15px;
+  top: 50%;
+  height: 1px; /* Используем height вместо width для горизонтальной линии */
+  background-color: rgba(255, 0, 0, 0.8); /* Более яркая красная линия */
   pointer-events: none;
+}
+
+.finger-dot-on-line {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #00ff00;
+  transform: translate(-50%, -50%);
+  top: 50%;
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* --- СТИЛИ ДЛЯ ЛЕВОЙ ПАНЕЛИ КНОПОК --- */
