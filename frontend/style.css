@@ -1,266 +1,167 @@
 :root {
-  /* Размеры из твоей версии */
+  /* Размеры */
   --base-size: clamp(8px, 1.5vmin, 14px);
   --button-spacing: clamp(5px, 1vmin, 10px);
-  /* --timeline-width: clamp(250px, 25vw, 350px); */ /* Ширина правой панели теперь определяется .right-panel */
   --padding: clamp(5px, 1vmin, 8px);
+  --button-size: clamp(38px, 8vmin, 55px);
+  --button-margin: clamp(6px, 1.5vmin, 14px);
+  --icon-size: calc(var(--button-size) * 0.55);
+  --text-size: calc(var(--button-size) * 0.35);
+  --control-panel-height: calc(var(--button-size) + var(--button-margin) * 2); /* Используется как ширина левой панели */
+  --timeline-width: clamp(300px, 30vw, 420px); /* Ширина правой панели */
 
-  /* Цвета из твоей версии */
+  /* Цвета */
   --color-pure-black: #000000;
   --color-dark-border: #282828;
-  --color-bg: #121212;
-  --color-primary: #e0e0e0;
+  --color-primary: #e0e0e0; /* Основной цвет текста/активных иконок */
   --panel-bg: #1e1e1e;
   --panel-border: #333333;
-  --input-bg: #2a2a2a;
-  --input-border: #444444;
+  --input-bg: #2a2a2a; /* Не используется пока */
+  --input-border: #444444; /* Не используется пока */
   --button-action-bg: #007bff;
   --button-action-hover: #0056b3;
-  --button-hover-bg: transparent; /* Фон кнопки не меняется при ховере */
-  --color-icon: #b0b0b0; /* Цвет неактивной иконки/текста кнопки (СВЕТЛО-СЕРЫЙ) */
-  --color-icon-active: #ffffff; /* Цвет активной иконки/текста кнопки (белый) */
-  --color-icon-disabled: #555; /* Темно-серый для disabled */
-
-  /* --- Переменные из Websim CSS (адаптированные) --- */
-  --button-size: clamp(38px, 8vmin, 55px); /* Адаптивный размер кнопки */
-  --button-margin: clamp(6px, 1.5vmin, 14px); /* Отступы для контейнера кнопок */
-  --icon-size: calc(var(--button-size) * 0.55); /* Размер иконки внутри кнопки */
-  --text-size: calc(var(--button-size) * 0.35); /* Размер текста для текстовых кнопок */
-  --control-panel-height: calc(var(--button-size) + var(--button-margin) * 2); /* Высота панели кнопок */
-  --timeline-width: clamp(300px, 30vw, 420px); /* Увеличено: ~+20% */
-
+  --button-hover-bg: rgba(255, 255, 255, 0.08); /* Фон кнопки при ховере (если нужен) */
+  --color-icon: #b0b0b0; /* Цвет неактивной иконки (СВЕТЛО-СЕРЫЙ) */
+  --color-icon-active: #ffffff; /* Цвет активной иконки (БЕЛЫЙ) */
+  --color-icon-disabled: #555; /* Темно-серый для disabled и области жестов */
+  --placeholder-bg: #222; /* Цвет фона плейсхолдеров версий */
 }
 
-/* --- Оптимизации для разных экранов (из Websim) --- */
+/* Адаптивность */
 @media screen and (min-width: 1024px) {
-  :root {
+  :root { /* Увеличиваем кнопки на больших экранах */
     --button-size: clamp(45px, 5vmin, 60px);
     --button-spacing: clamp(6px, 1vmin, 14px);
     --button-margin: clamp(8px, 2vmin, 16px);
   }
 }
-@media screen and (min-width: 768px) and (max-width: 1023px) {
- :root {
-    --button-size: clamp(42px, 6vmin, 58px);
- }
-}
-@media screen and (orientation: landscape) {
-  :root {
-    --button-size: clamp(35px, 7vh, 50px);
-  }
-}
-/* --- Конец оптимизаций --- */
 
 /* Общие стили */
 * { box-sizing: border-box; }
 html, body {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
+  height: 100%; width: 100%;
+  margin: 0; padding: 0;
   overflow: hidden;
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Roboto', sans-serif; /* Используем Roboto */
   background-color: var(--color-pure-black);
-  color: var(--color-icon-active); /* Hover делает иконку активного цвета */
+  color: var(--color-primary); /* Белый текст по умолчанию */
 }
 
-/* ОСНОВНОЙ МАКЕТ С FLEXBOX */
+/* ОСНОВНОЙ МАКЕТ FLEXBOX */
 body {
   display: flex;
-  height: 100vh; /* Занимаем всю высоту */
+  height: 100vh;
 }
 
-/* Центральная область */
-.main-area {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-}
-
-#grid-container {
-  flex-grow: 1;
-  position: relative;
-  min-height: 0;
-  width: 100%; /* Занимаем всю доступную ширину main-area */
-  background-color: transparent;
-}
-
-/* --- СТИЛИ ДЛЯ ОБЛАСТИ ЖЕСТОВ --- */
-#gesture-area {
-  height: 100px; /* Задаем высоту области жестов */
-  width: 70%; /* Уменьшаем ширину до 70% */
-  margin: 5px auto; /* Центрируем по горизонтали */
-  flex-shrink: 0;
-  background-color: #222; /* Цвет фона как у плейсхолдера версии */
-  border-top: 1px solid var(--color-dark-border);
-  border-radius: 8px; /* Скругленные углы */
-  padding: 5px;
-  display: flex;
-  flex-direction: column; /* Чтобы canvas был внутри */
-  align-items: center;
-  justify-content: center;
-  position: relative; /* Для возможного позиционирования элементов внутри */
-  z-index: 2; /* Выше холста */
-}
-#gesture-area canvas {
-  display: block; /* Убирает отступ снизу у canvas */
-  /* Задаем явные размеры или оставляем управление через JS */
-   max-width: 100%;  /* Максимальная ширина */
-   max-height: 100%; /* Максимальная высота */
-   object-fit: contain; /* Вписываем с сохранением пропорций */
-}
-#grid-container canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  z-index: 1;
-}
-
-#gesture-area::before {
-  content: '';
-  position: absolute;
-  left: 15px;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background-color: rgba(255, 0, 0, 0.8);
-  pointer-events: none;
-}
-
-.finger-dot-on-line {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: #00ff00;
-  transform: translate(-50%, -50%);
-  top: 50%;
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* --- СТИЛИ ДЛЯ ЛЕВОЙ ПАНЕЛИ КНОПОК --- */
+/* Левая панель (Кнопки) */
 .panel.left-panel {
   width: var(--control-panel-height); /* Ширина равна высоте старой панели */
-  background-color: var(--color-pure-black); /* Черный фон */
+  background-color: var(--color-pure-black);
   display: flex;
-  /* border-right: 1px solid red; */ /* Рамка для отладки */
-  flex-direction: column; /* Кнопки друг под другом */
-  align-items: center; /* Центрируем кнопки по горизонтали */
+  flex-direction: column;
+  align-items: center;
   padding: var(--padding) 0;
   flex-shrink: 0;
   height: 100vh;
   overflow-y: auto;
-  scrollbar-width: none; /* Скрыть скроллбар */
+  scrollbar-width: none;
   -ms-overflow-style: none;
+  /* border-right: 1px solid red; */ /* Рамка для отладки */
 }
+.panel.left-panel::-webkit-scrollbar { display: none; }
 
 #button-container {
   display: flex;
-  flex-direction: column; /* Кнопки друг под другом */
-  align-items: center; /* Центрирование */
-  gap: var(--button-spacing); /* Отступы между кнопками */
+  flex-direction: column;
+  align-items: center;
+  gap: var(--button-spacing);
 }
-/* --- КОНЕЦ СТИЛЕЙ ПАНЕЛИ --- */
 
-
-/* --- СТИЛИ ДЛЯ КНОПОК (Адаптация Websim) --- */
-.control-button {
-  flex: 0 0 var(--button-size);
-  width: var(--button-size);
-  height: var(--button-size);
-  padding: 0;
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--color-icon);
-  transition: color 0.3s ease, background-color 0.3s ease;
+/* Центральная область (Голограмма + Жесты) */
+.main-area {
+  flex-grow: 1; /* Занимает оставшееся пространство */
   display: flex;
+  flex-direction: column; /* Холст над областью жестов */
+  position: relative; /* Для позиционирования canvas */
+  overflow: hidden;
+  background-color: var(--color-pure-black); /* Черный фон */
+}
+
+#grid-container {
+  flex-grow: 1; /* Занимает всю доступную высоту */
+  position: relative; /* Для позиционирования canvas */
+  min-height: 0;
+  /* Добавляем Flex для центрирования содержимого (canvas) */
+  display: flex;
+  align-items: center; /* Центрирование по вертикали */
+  justify-content: center; /* Центрирование по горизонтали */
+  width: 100%;
+  background-color: transparent; /* Фон прозрачный */
+}
+
+#grid-container canvas {
+  /* Убираем position: absolute, чтобы Flexbox работал */
+  display: block;
+  /* Ограничиваем максимальный размер */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* Вписываем с сохранением пропорций */
+  z-index: 5; /* Ниже области жестов, но выше фона body */
+}
+
+/* Область жестов */
+#gesture-area {
+  height: 100px;
+  width: 70%; /* Уменьшаем ширину до 70% */
+  margin: 5px auto; /* Центрируем по горизонтали, отступы 5px сверху/снизу */
+  flex-shrink: 0;
+  background-color: var(--color-icon-disabled); /* Темно-серый фон (#555) */
+  border-top: 1px solid var(--color-dark-border);
+  border-radius: 8px; /* Скругленные углы */
+  padding: 5px;
+  display: flex; /* Для центрирования canvas внутри */
   align-items: center;
   justify-content: center;
-  border-radius: 5px;
+  position: relative; /* Для позиционирования ::before и точек */
+  z-index: 10; /* Выше голограммы */
+  overflow: hidden; /* Скрываем то, что может выйти за рамки */
 }
 
-.control-button svg {
-  width: var(--icon-size);
-  height: var(--icon-size);
-  transition: transform 0.2s ease;
-  fill: currentColor;
-  width: var(--icon-size);
-  height: var(--icon-size);
-}
-
-/* Стили для изображений внутри кнопок */
-.control-button img {
-  width: var(--icon-size);
-  height: var(--icon-size);
-  max-width: 70%;
-  max-height: 70%;
+#gesture-area canvas#gesture-canvas { /* Стилизуем canvas внутри */
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
-  filter: brightness(2); /* Временно осветляем черные иконки */
+  /* border: 1px dashed grey; */ /* Убрали рамку отладки */
 }
 
-.control-button#xrButton,
-.control-button#triaButton { /* ID текстовых кнопок */
-  font-size: var(--text-size);
-  font-weight: 600;
-  color: var(--color-icon); /* Явно задаем цвет для inline SVG */
-  letter-spacing: 0.5px;
+/* Красная линия */
+#gesture-area::before {
+  content: '';
+  position: absolute;
+  left: 15px; /* Отступ слева */
+  top: 10%;
+  bottom: 10%;
+  width: 1px;
+  background-color: rgba(255, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 11; /* Выше canvas жестов */
 }
 
-.control-button:hover:not(:disabled) { /* Hover только для активных */
-  background-color: var(--button-hover-bg);
-  color: var(--color-icon-active); /* Белый цвет при ховере */
+/* Точки руки */
+.finger-dot-on-line {
+  position: absolute;
+  width: 8px; /* Чуть меньше */
+  height: 8px;
+  border-radius: 50%;
+  background-color: #00ff00; /* Зеленый */
+  transform: translate(-50%, -50%);
+  top: 50%; /* Позиционируем по центру красной линии */
+  pointer-events: none;
+  z-index: 12; /* Выше красной линии */
 }
 
-.control-button.active {
-  color: var(--color-icon-active); /* Белый цвет текста/SVG для активной */
-  /* filter: brightness(1); */ /* Сбрасываем brightness для активной кнопки */
-  background-color: var(--button-hover-bg); /* Можно убрать фон для active если не нужно */
-}
-
-.control-button:disabled {
-  color: var(--color-icon-disabled); /* Темно-серый */
-  cursor: not-allowed;
-  background-color: transparent;
-}
-
-/* Увеличиваем кнопку Стоп */
-#stopButton {
-  transform: scale(1.1); /* Немного больше */
-}
-/* --- КОНЕЦ СТИЛЕЙ КНОПОК --- */
-
-
-/* Telegram Button */
-#telegramLinkButton {
-  /* Цвет иконки по умолчанию (светло-серый) */
-  color: #b0b0b0 !important;
-  width: 24px !important;
-  height: 24px !important;
-  transform: scale(1.5);
-}
-
-#telegramLinkButton svg {
-  /* Теперь SVG наследует цвет от родителя */
-  fill: currentColor;
-}
-
-/* Hover-эффект для ИКОНОК (не для фона кнопки) */
-#telegramLinkButton:hover svg,
-#triaButton:hover svg,
-#xrButton:hover svg,
-#gestureRecordButton:hover svg,
-#hologramListButton:hover svg {
-  color: #ffffff !important;
-}
-
-/* Правая панель */
+/* Правая панель (Таймлайн + Промпт) */
 .panel.right-panel {
   width: var(--timeline-width);
   background-color: var(--color-pure-black);
@@ -270,98 +171,70 @@ body {
   flex-shrink: 0;
   height: 100vh;
 }
+
 #versionTimeline {
   flex-grow: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 5px;
+  padding: 5px 5px 5px 5px; /* Добавляем отступ слева */
   scrollbar-width: thin;
-  scrollbar-color: #555 #000000;
+  scrollbar-color: var(--color-icon-disabled) var(--color-pure-black); /* Ползунок / Фон трека */
   min-height: 50px;
   background-color: var(--color-pure-black);
 }
 #versionTimeline::-webkit-scrollbar { width: 5px; }
-#versionTimeline::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-#versionTimeline::-webkit-scrollbar-track { background: #000000; }
+#versionTimeline::-webkit-scrollbar-thumb { background: var(--color-icon-disabled); border-radius: 3px; }
+#versionTimeline::-webkit-scrollbar-track { background: var(--color-pure-black); } /* Черный фон трека */
 
 /* Стили для версии */
 .version-frame {
   display: flex;
   align-items: flex-start;
-  margin-bottom: calc(11px * 1.4 - 11px); /* Отступ = межстрочный интервал (line-height - font-size) */
+  margin-bottom: calc(11px * 1.4 - 11px); /* Отступ = межстрочный интервал */
   padding: 5px;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
-.version-frame:hover { background-color: var(--button-hover-bg); }
+.version-frame:hover { background-color: rgba(255, 255, 255, 0.05); } /* Чуть заметнее ховер */
 
 .version-label {
   position: absolute;
-  top: 3px;
-  left: 3px;
+  top: 3px; left: 3px;
   background-color: var(--color-dark-border);
   color: var(--color-primary);
-  border-radius: 10px;
-  padding: 2px 6px;
-  font-size: 9px;
-  font-weight: normal;
-  z-index: 1;
-  opacity: 0.8;
+  border-radius: 10px; padding: 2px 6px;
+  font-size: 9px; font-weight: normal;
+  z-index: 1; opacity: 0.8;
 }
 
 .version-placeholder {
-  width: calc(11px * 1.4 * 5 + 10px); /* Делаем ширину РАВНОЙ высоте */
-  /* Высота плейсхолдера должна соответствовать высоте 5 строк текста */
-  height: calc(11px * 1.4 * 5 + 10px); /* 5 строк + padding блока version-frame */
-  background-color: #222;
-  border-radius: 4px;
-  position: relative; /* Оставляем для позиционирования лейбла */
-  flex-shrink: 0;
-  margin-right: 5px;
+  width: calc(11px * 1.4 * 5 + 10px); /* Ширина = Высота */
+  height: calc(11px * 1.4 * 5 + 10px); /* 5 строк текста + padding */
+  background-color: var(--placeholder-bg); /* Цвет фона плейсхолдера */
+  border-radius: 4px; position: relative;
+  flex-shrink: 0; margin-right: 5px;
 }
 
 .version-text {
-  flex-grow: 1;
-  overflow: hidden;
-  min-width: 0;
+  flex-grow: 1; overflow: hidden; min-width: 0;
 }
 
 .version-text p {
-  margin: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word; /* Оставляем перенос */
-  font-size: 11px; /* Основа для расчета */
-  line-height: 1.4; /* Множитель для расчета высоты и отступа */
-  height: calc(11px * 1.4 * 5); /* Фиксированная высота для 5 строк */
-  overflow-y: auto; /* Скролл, если текст длиннее 5 строк */
-  scrollbar-width: thin;
-  scrollbar-color: #555 #222;
+  margin: 0; white-space: pre-wrap; word-wrap: break-word;
+  font-size: 11px; line-height: 1.4;
+  height: calc(11px * 1.4 * 5); /* Фикс. высота 5 строк */
+  overflow-y: auto; /* Скролл если длиннее */
+  scrollbar-width: thin; scrollbar-color: #555 #222;
 }
-
-.version-text p::-webkit-scrollbar {
-  width: 5px;
-}
-
-.version-text p::-webkit-scrollbar-track {
-  background: #222;
-  border-radius: 3px;
-}
-
-.version-text p::-webkit-scrollbar-thumb {
-  background-color: #555;
-  border-radius: 3px;
-}
-.version-frame p { margin: 0 0 4px 0; font-size: 12px; white-space: normal; }
+.version-text p::-webkit-scrollbar { width: 5px; }
+.version-text p::-webkit-scrollbar-track { background: #222; border-radius: 3px; }
+.version-text p::-webkit-scrollbar-thumb { background-color: #555; border-radius: 3px; }
 
 /* Интегрированный редактор файлов */
 #integratedFileEditor {
-
-  padding: var(--padding);
-  overflow-y: auto;
-  background-color: var(--color-pure-black);
-  max-height: 30vh; /* Ограничиваем высоту, чтобы промпт был виден */
-  flex-shrink: 0; /* Не сжиматься */
+  padding: var(--padding); overflow-y: auto; background-color: var(--color-pure-black);
+  max-height: 30vh; flex-shrink: 0; border-top: 1px solid var(--panel-border);
 }
 #integratedFileEditor h3 { margin-top: 0; margin-bottom: 10px; font-size: 0.9em; }
 #integratedFileEditor ul#fileList { list-style: none; padding: 0; margin: 0 0 10px 0;}
@@ -371,9 +244,9 @@ body {
 #integratedFileEditor textarea#fileContent {
   flex-grow: 1; width: 100%; box-sizing: border-box; margin-bottom: 10px;
   background-color: var(--color-pure-black); color: var(--color-primary);
-  border-radius: 5px;
+  border: 1px solid var(--panel-border); border-radius: 5px;
   font-family: monospace; font-size: 0.8em; padding: 10px;
-  resize: none; overflow: auto; white-space: pre; min-height: 100px; /* Мин высота */
+  resize: none; overflow: auto; white-space: pre; min-height: 100px;
 }
 #integratedFileEditor button#saveFile {
   padding: 5px 10px; background-color: var(--button-action-bg); color: white;
@@ -382,83 +255,109 @@ body {
 }
 #integratedFileEditor button#saveFile:hover { background-color: var(--button-action-hover); }
 
-/* Панель промпта */
+/* Панель Промпта */
 #promptBar {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  padding: 5px;
-  background-color: var(--color-pure-black);
-  border-top: 1px solid var(--color-dark-border);
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: stretch;
+  padding: 5px 5px 5px 5px; /* Добавляем отступ слева */
+  background-color: var(--color-pure-black); border-top: 1px solid var(--color-dark-border);
 }
+#promptBar > * { margin-bottom: var(--padding); }
+#promptBar > *:last-child { margin-bottom: 0; }
 
-#promptBar > * {
-  margin-bottom: var(--padding);
-}
+.prompt-controls { display: flex; align-items: center; gap: 5px; }
+.prompt-controls select { flex-grow: 1; }
 
-#promptBar > *:last-child {
-  margin-bottom: 0;
-}
-
-.prompt-controls {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.prompt-controls select {
-  flex-grow: 1;
-}
-#toggleFilesButton { /* Стили кнопки показа файлов */
-    background: none; border: 1px solid var(--input-border); color: var(--color-icon);
+#toggleFilesButton {
+    background: none; border: 1px solid var(--panel-border); color: var(--color-icon);
     padding: 4px 8px; min-width: auto; margin-right: 5px; cursor: pointer;
-    height: 28px; /* Фикс высоты */
-    line-height: 1; /* Фикс высоты */
-    border-radius: 3px;
+    height: 30px; /* Фикс высоты */
+    line-height: 1; border-radius: 3px;
 }
 #toggleFilesButton:hover { background-color: var(--button-hover-bg); color: var(--color-primary); }
-#topPromptInput { /* Стили инпута */
-  flex-grow: 1;
-  padding: 6px;
-  margin-right: 5px;
-  font-size: 0.9em;
-  background-color: var(--color-pure-black);
-  color: var(--color-primary);
-  border-radius: 3px;
-  min-height: 120px;
-  resize: none;
-  border: none;
+
+#topPromptInput {
+  flex-grow: 1; padding: 6px; margin-right: 5px; font-size: 0.9em;
+  background-color: var(--color-pure-black); color: var(--color-primary);
+  border: 1px solid var(--panel-border); /* Добавим рамку для ясности */
+  border-radius: 3px; min-height: 120px; resize: none;
   outline: none; /* Убираем стандартную обводку при фокусе */
 }
-
 #topPromptInput:focus {
-  /* Можно добавить свою кастомную обводку, если нужно, например: */
-  /* box-shadow: 0 0 0 1px var(--color-primary); */
+  border-color: var(--color-primary); /* Подсветка рамки при фокусе */
 }
-#modelSelect { /* Стили селекта */
+
+#modelSelect {
   padding: 6px; margin-right: 5px; font-size: 0.9em;
-  background-color: var(--color-pure-black); color: var(--color-primary); border-radius: 3px;
-  height: 30px; /* Фикс высоты */
-  border: none;
-}
-#submitTopPrompt { /* Стили кнопки */
-  padding: 6px 12px; font-size: 0.9em;
-  background-color: #00cc00;
-  color: #000000;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  height: 30px; /* Фикс высоты */
+  background-color: var(--color-pure-black); color: var(--color-primary);
+  border: 1px solid var(--panel-border); border-radius: 3px;
+  height: 30px;
 }
 
+#submitTopPrompt {
+  padding: 6px 12px; font-size: 0.9em; background-color: #00cc00; color: #000000;
+  border: none; border-radius: 3px; cursor: pointer; height: 30px;
+}
 
-/* --- Скрытые и Модальные окна --- */
+/* Стили Кнопок (основные) */
+.control-button {
+  flex: 0 0 var(--button-size);
+  width: var(--button-size); height: var(--button-size);
+  padding: 0; background-color: transparent; border: none; cursor: pointer;
+  color: var(--color-icon); /* Светло-серый по умолчанию для SVG */
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 5px;
+  transition: color 0.2s ease; /* Плавный переход цвета */
+}
+
+/* Стили для SVG внутри кнопок */
+.control-button svg {
+  width: var(--icon-size); height: var(--icon-size);
+  fill: currentColor; /* Наследует цвет от .control-button */
+  transition: transform 0.2s ease; /* Анимация для SVG */
+}
+
+/* Стили для IMG внутри кнопок (если остались где-то) */
+.control-button img {
+  width: var(--icon-size); height: var(--icon-size);
+  max-width: 70%; max-height: 70%; object-fit: contain;
+  /* filter: brightness(0.8); */ /* Можно добавить для приглушения, если иконки слишком яркие */
+}
+
+/* Hover-эффект для НУЖНЫХ иконок */
+#telegramLinkButton:hover svg,
+#triaButton:hover svg,
+#xrButton:hover svg,
+#gestureRecordButton:hover svg,
+#hologramListButton:hover svg {
+  color: var(--color-icon-active); /* Белый цвет при наведении */
+}
+
+/* Стили для активной кнопки (если нужно) */
+.control-button.active {
+  color: var(--color-icon-active); /* Белый */
+}
+
+/* Стили для отключенной кнопки */
+.control-button:disabled {
+  color: var(--color-icon-disabled); /* Темно-серый */
+  cursor: not-allowed;
+}
+
+/* Увеличение кнопки Стоп */
+#stopButton svg { /* Применяем scale к SVG внутри */
+  transform: scale(1.1);
+}
+
+/* Увеличение иконки Telegram */
+#telegramLinkButton svg {
+  transform: scale(1.3);
+}
+
+/* Скрытые и Модальные окна */
 #camera-view, #previewCanvas { display: none; }
-.finger-dot, .finger-line { display: none; }
-.modal { display: none; /* ... остальные стили модальных окон ... */ }
-.modal.active { display: flex; }
-/* ... подробные стили .modal-content, .close и т.д. из твоей предыдущей версии ... */
+.modal { display: none; /* ... */ }
+.modal.active { display: flex; /* ... */ }
+/* ... (остальные стили модалок) ... */
 .modal {
   display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background-color: rgba(0, 0, 0, 0.7);
@@ -479,33 +378,24 @@ body {
 .modal textarea {
   width: 100%; background-color: var(--color-pure-black); color: var(--color-primary);
   border: 1px solid var(--color-dark-border); border-radius: 3px; padding: 10px;
-  font-family: inherit; margin-bottom: 10px;
+  font-family: inherit; margin-bottom: 10px; resize: vertical;
 }
-.modal canvas { display: block; margin: 10px auto; border: 1px solid var(--input-border); }
+.modal canvas { display: block; margin: 10px auto; border: 1px solid var(--color-dark-border); }
 .modal button {
   padding: 8px 15px; background-color: var(--button-action-bg); color: white;
   border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;
 }
 .modal button:hover { background-color: var(--button-action-hover); }
 .modal button:disabled { background-color: #555; cursor: not-allowed; }
-/* --- Конец стилей модальных окон --- */
 
-/* --- Стили прелоадера --- */
+/* Прелоадер */
 #loading-spinner {
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
+  display: none; position: fixed; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 50px;
-  height: 50px;
-  border: 5px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
+  width: 50px; height: 50px;
+  border: 5px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
   border-top-color: #fff;
   animation: spin 1s ease-in-out infinite;
-  z-index: 1000;
+  z-index: 1001; /* Выше всего */
 }
-
-@keyframes spin {
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-}
+@keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
