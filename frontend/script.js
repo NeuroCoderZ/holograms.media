@@ -1002,14 +1002,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Добавляем минимальный масштаб
     scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
 
-    return scale; // ВОЗВРАЩАЕМ ЧИСТЫЙ МАСШТАБ БЕЗ * 0.5
+    return scale * 0.8; // ВОЗВРАЩАЕМ ЧИСТЫЙ МАСШТАБ БЕЗ * 0.5
   }
 
   const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight); // Используем доступные размеры
   mainSequencerGroup.scale.setScalar(initialScale);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
-  // Center hologram at x=0
-  mainSequencerGroup.position.x = 0;
+  mainSequencerGroup.position.x = 0; // Устанавливаем mainSequencerGroup.position.x = 0;
 
   // --- Отладка итогового масштаба и размеров ---
   const containerRect = gridContainer.getBoundingClientRect();
@@ -1117,7 +1116,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const currentScale = mainSequencerGroup.scale.clone();
       mainSequencerGroup.scale.copy(currentScale);
-      mainSequencerGroup.position.set(0,0, 0); // Set position to (0, 0, 0)
+      mainSequencerGroup.position.set(0,0, 0); // Устанавливаем mainSequencerGroup.position.x = 0;
     } else {
         // Clear finger dots
         document.querySelectorAll('.finger-dot').forEach(el => el.remove());
@@ -1548,8 +1547,7 @@ async function loadInitialFilesAndSetupEditor() {
     const newScale = calculateInitialScale(availableWidth, availableHeight); // Используем доступные размеры
     mainSequencerGroup.scale.setScalar(newScale);
     mainSequencerGroup.position.y = -GRID_HEIGHT * newScale / 2; // Пересчитываем позицию Y при ресайзе
-    // Center hologram at x=0
-    mainSequencerGroup.position.x = 0;
+    mainSequencerGroup.position.x = 0; // Устанавливаем mainSequencerGroup.position.x = 0;
 
     // Update camera and renderer
     if (!isXRMode) {
