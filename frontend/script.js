@@ -728,6 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleCameraButton = document.getElementById('toggleCameraButton');
   const micButton = document.getElementById('micButton');
   const telegramLinkButton = document.getElementById('telegramLinkButton'); // Находим кнопку
+  const githubButton = document.getElementById('githubButton'); // Находим кнопку
   const gestureArea = document.getElementById('gesture-area'); // Находим область жестов
 
   const gestureModal = document.getElementById('gestureModal');
@@ -1721,4 +1722,9 @@ async function loadInitialFilesAndSetupEditor() {
     }
     canvasCtx.restore(); // Восстанавливаем состояние контекста
   }
+
+  // Обработчик для кнопки GitHub
+  githubButton.addEventListener('click', () => {
+    window.open('https://github.com/NeuroCoderZ/holograms.media', '_blank', 'noopener,noreferrer');
+  });
 });
