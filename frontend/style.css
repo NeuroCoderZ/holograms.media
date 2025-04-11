@@ -289,10 +289,12 @@ body {
   flex-grow: 1; padding: 6px; margin-right: 5px; font-size: 0.9em;
   background-color: var(--color-pure-black); color: var(--color-primary);
   outline: none; 
+  border: none;
   border-radius: 3px; min-height: 120px; resize: none;
 }
 #topPromptInput:focus {
-  border-color: var(--color-primary); /* Подсветка рамки при фокусе */
+  border: none;
+  outline: none;
 }
 
 #modelSelect {
