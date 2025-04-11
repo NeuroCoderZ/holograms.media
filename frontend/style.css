@@ -339,9 +339,11 @@ body {
 }
 
 /* Hover-эффект для НУЖНЫХ иконок */
+#micButton:hover svg,
+#fullscreenButton:hover svg,
+#xrButton:hover svg,
 #telegramLinkButton:hover svg,
 #triaButton:hover svg,
-#xrButton:hover svg,
 #gestureRecordButton:hover svg,
 #hologramListButton:hover svg {
   color: var(--color-icon-active); /* Белый цвет при наведении */
