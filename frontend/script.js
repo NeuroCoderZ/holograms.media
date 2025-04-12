@@ -680,7 +680,7 @@ function startGestureRecording() {
   const gestureArea = document.getElementById('gesture-area');
   if (gestureArea) {
     gestureArea.classList.add('recording');
-    gestureArea.textContent = 'Идет запись жеста... (макс 20 сек)'; // Обновляем текст
+    document.getElementById('gesture-text-label').textContent = 'Идет запись жеста... (макс 20 сек)'; // Обновляем текст
   }
   console.log("Начало записи жеста.");
 
@@ -701,7 +701,7 @@ function stopGestureRecording() {
   const gestureArea = document.getElementById('gesture-area');
   if (gestureArea) {
     gestureArea.classList.remove('recording');
-    gestureArea.textContent = 'Кликните для записи жеста'; // Возвращаем исходный текст
+    document.getElementById('gesture-text-label').textContent = 'Кликните для записи жеста'; // Возвращаем исходный текст
   }
   // Очищаем тайм-аут, если остановка произошла до истечения 20 секунд
   if (gestureTimeoutId) {
@@ -772,7 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Gesture Area Click Listener ---
   if (gestureArea) {
     // Устанавливаем начальный текст
-    gestureArea.textContent = 'Кликните для записи жеста';
+    document.getElementById('gesture-text-label').textContent = 'Кликните для записи жеста';
     gestureArea.addEventListener('click', () => {
       if (!isGestureRecording) {
         startGestureRecording();
