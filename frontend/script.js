@@ -1008,7 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight); // Используем доступные размеры
-  mainSequencerGroup.scale.setScalar(initialScale);
+  mainSequencerGroup.scale.setScalar(initialScale * 1.1);
   mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
   mainSequencerGroup.position.x = 0; // Устанавливаем mainSequencerGroup.position.x = 0;
 
@@ -1547,7 +1547,7 @@ async function loadInitialFilesAndSetupEditor() {
 
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(availableWidth, availableHeight); // Используем доступные размеры
-    mainSequencerGroup.scale.setScalar(newScale);
+    mainSequencerGroup.scale.setScalar(newScale * 1.1);
     mainSequencerGroup.position.y = -GRID_HEIGHT * newScale / 2; // Пересчитываем позицию Y при ресайзе
     mainSequencerGroup.position.x = 0; // Устанавливаем mainSequencerGroup.position.x = 0;
 
@@ -1675,45 +1675,22 @@ async function loadInitialFilesAndSetupEditor() {
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       const landmarks = results.multiHandLandmarks[0]; // Берем первую найденную руку
 
-      // Экземпляры кончиков пальцев
-      const thumbTip = landmarks[4];
-      const indexTip = landmarks[8];
-      if (thumbTip && indexTip) {
-        // Рассчитаем расстояние для щипкового жеста в 2D координатах
-        const deltaX = thumbTip.x - indexTip.x;
-        const deltaY = thumbTip.y - indexTip.y;
-        const pinchDistance = Math.hypot(deltaX, deltaY);
+      // Convert normalized coordinates to canvas pixels
+      const points = landmarks.map(lm => ({
+        x: lm.x * gestureCanvas.width,
+        y: lm.y * gestureCanvas.height,
+        z: lm.z
+      }));
 
-        // Логирование с большей детализацией
-        console.log(`Расстояние щипка (пальцы 4-8): ${pinchDistance.toFixed(4)}`);
-
-        // Возможная логика для активации щипка (пример порога)
-        if (pinchDistance < 0.05) {
-          console.log("=== Активация щипковой команды! ===");
-          // Можно добавить обработку команды здесь
-        }
-
-        // Рисуем точки руки на красной линии
-        document.querySelectorAll('.finger-dot-on-line').forEach(el => el.remove());
-
-        const gestureArea = document.getElementById('gesture-area');
-        if (!gestureArea || !landmarks) return;
-
-        landmarks.forEach(pt => {
-          const dot = document.createElement('div');
-          dot.className = 'finger-dot-on-line';
-          dot.style.top = `${pt.y * 100}%`;
-          gestureArea.appendChild(dot);
-        });
-      }
-
-      // Координаты базового маркера ладони
-      const palmBase = landmarks[0];
-      if (palmBase) {
-        // Пример: вертикальное положение ладони над камерой в диапазоне [0..1]
-        const normalizedVerticalPos = 1 - palmBase.y;
-        console.log(`Позиция ладони по Y: ${normalizedVerticalPos.toFixed(4)}`);
-      }
+      // Draw hand connections and landmarks
+      drawConnectors(canvasCtx, points, HAND_CONNECTIONS, {
+        color: '#00FF00',
+        lineWidth: 1
+      });
+      drawLandmarks(canvasCtx, points, {
+        color: '#FF0000',
+        radius: 2
+      });
     } else {
       // Не показываем вывод "Руки не обнаружены" для снижения спама в консоли
     }
