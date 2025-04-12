@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 // --- Global Variables ---
+let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_HOST = window.location.host;
@@ -1653,6 +1654,8 @@ async function loadInitialFilesAndSetupEditor() {
     // Запускаем камеру и обработку кадров
     camera.start().then(() => {
       console.log("MediaPipe Camera успешно запущена и начала отправку кадров.");
+      isGestureCanvasReady = true;
+      console.log('Флаг isGestureCanvasReady установлен в true');
     }).catch(err => {
       console.error("Ошибка запуска MediaPipe Camera:", err);
     });
@@ -1660,17 +1663,11 @@ async function loadInitialFilesAndSetupEditor() {
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
-    // Находим canvas и контекст для рисования
+    if (!isGestureCanvasReady) { return; }
     const gestureCanvas = document.getElementById('gesture-canvas');
-    if (!gestureCanvas) {
-      console.error("Canvas с ID 'gesture-canvas' не найден.");
-      return;
-    }
+    if (!gestureCanvas) { console.error("Canvas с ID 'gesture-canvas' не найден!"); return; }
     const canvasCtx = gestureCanvas.getContext('2d');
-    if (!canvasCtx) {
-      console.error("Не удалось получить контекст для canvas с ID 'gesture-canvas'.");
-      return;
-    }
+    if (!canvasCtx) { console.error("Контекст для canvas с ID 'gesture-canvas' не найден."); return; }
 
     // Очищаем предыдущие рисунки
     canvasCtx.clearRect(0, 0, gestureCanvas.width, gestureCanvas.height);
