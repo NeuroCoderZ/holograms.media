@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { HAND_CONNECTIONS } from '@mediapipe/hands';
 
 // --- Global Variables ---
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
