@@ -1750,6 +1750,51 @@ async function loadInitialFilesAndSetupEditor() {
             }
         }
         // --- Конец логики жестов ---
+
+        // --- Отрисовка СКЕЛЕТА руки ---
+        try {
+            const handedness = results.multiHandedness[i].label; // Получаем левая/правая
+            // Определим HAND_CONNECTIONS (стандартные для MediaPipe Hands)
+            const HAND_CONNECTIONS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [0, 9], [9, 10], [10, 11], [11, 12], [0, 13], [13, 14], [14, 15], [15, 16], [0, 17], [17, 18], [18, 19], [19, 20], [5, 9], [9, 13], [13, 17]]; // Основные соединения
+
+            // Преобразуем координаты landmarks (0-1) в координаты мира Three.js (ПРИБЛИЗИТЕЛЬНО!)
+            const handPoints3D = landmarks.map(lm => {
+                let normX = lm.x - 0.5; // Центрируем по X
+                let normY = 0.5 - lm.y; // Центрируем и инвертируем Y
+                let worldX = normX * 300; // Масштабируем (подбирать значение)
+                let worldY = normY * 300; // Масштабируем (подбирать значение)
+                let worldZ = (lm.z + 0.2) * -400; // Масштабирование и сдвиг по Z (подбирать значение)
+                return new THREE.Vector3(worldX, worldY, worldZ);
+            });
+
+            // Материалы (белые, полупрозрачные)
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, linewidth: 1 });
+            const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.7 }); // Чуть крупнее точки
+
+            // Геометрии
+            const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => {
+                // Добавим проверку на существование точек перед использованием
+                const p1 = handPoints3D[conn[0]];
+                const p2 = handPoints3D[conn[1]];
+                return (p1 && p2) ? [p1, p2] : [];
+            }));
+            const pointsGeometry = new THREE.BufferGeometry().setFromPoints(handPoints3D);
+
+            // Объекты
+            const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
+            const points = new THREE.Points(pointsGeometry, pointsMaterial);
+
+            // Добавляем в ОСНОВНУЮ сцену
+            scene.add(lines);
+            scene.add(points);
+
+            // Сохраняем ссылки для удаления
+            // Убедись, что 'handSpheres' объявлен глобально: let handSpheres = { left: [], right: [] };
+            if (handedness === 'Left') { handSpheres.left.push(lines); handSpheres.left.push(points); }
+            else { handSpheres.right.push(lines); handSpheres.right.push(points); }
+
+        } catch (drawError) { console.error('Ошибка при отрисовке скелета руки:', drawError); }
+        // --- Конец отрисовки СКЕЛЕТА ---
       }
     }
   }
