@@ -60,7 +60,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--padding) 0;
+  padding: var(--button-spacing);
   flex-shrink: 0;
   height: 100vh;
   overflow-y: auto;
@@ -71,14 +71,12 @@ body {
 .panel.left-panel::-webkit-scrollbar { display: none; }
 
 #button-container {
-  display: flex;
-  flex-wrap: wrap;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  gap: var(--button-spacing);
-  max-height: 100%;
-  padding: var(--button-spacing) 0;
+  display: grid;
+  grid-template-columns: repeat(2, var(--button-size)); /* Два столбца шириной с кнопку */
+  gap: var(--button-spacing); /* Промежуток между кнопками */
+  justify-content: center; /* Центрирование сетки по горизонтали */
+  align-content: flex-start; /* Выравнивание рядов к верху */
+  padding: 0; /* Убираем внутренний padding контейнера, если был */
 }
 
 /* Стилизация скроллбара для Webkit (Chrome, Safari) */
@@ -306,7 +304,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   border-radius: 5px;
   transition: color 0.2s ease; /* Плавный переход цвета */
-  margin: calc(var(--button-spacing) / 2);
+  margin: 0;
 }
 
 /* Стили для SVG внутри кнопок */
