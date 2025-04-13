@@ -1663,7 +1663,9 @@ async function loadInitialFilesAndSetupEditor() {
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
     if (!isGestureCanvasReady) { return; }
+    console.log('Поиск canvas...', document.getElementById('gesture-area')?.innerHTML);
     const gestureCanvas = document.getElementById('gesture-canvas');
+    console.log('Результат поиска:', gestureCanvas);
     if (!gestureCanvas) { console.error("Canvas с ID 'gesture-canvas' не найден!"); return; }
     const canvasCtx = gestureCanvas.getContext('2d');
     if (!canvasCtx) { console.error("Контекст для canvas с ID 'gesture-canvas' не найден."); return; }
