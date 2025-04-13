@@ -129,7 +129,7 @@ body {
   flex-shrink: 0;
   background-color: var(--placeholder-bg); /* Правильный фон */
   border: none; /* Убрана рамка */
-  border-radius: 8px;
+  /* border-radius: 8px; */
   padding: 5px;
   position: relative; /* Нужно для ::before и точек */
   z-index: 10;
@@ -141,7 +141,7 @@ body {
   content: '';
   position: absolute;
   top: 0;
-  left: 10px; /* Небольшой отступ слева */
+  left: 0; /* Небольшой отступ слева */
   width: 2px; /* Толщина линии */
   height: 100%; /* Во всю высоту */
   background-color: red;
@@ -394,7 +394,7 @@ body {
 
 .finger-dot-on-line {
   position: absolute;
-  left: 11px; /* Центрируем на красной линии (10px отступ + 2px ширина / 2 = 11px - половина точки) */
+  left: 1px; /* Центрируем на красной линии (10px отступ + 2px ширина / 2 = 11px - половина точки) */
   width: 6px; /* Размер точки */
   height: 6px; /* Размер точки */
   background-color: white;
