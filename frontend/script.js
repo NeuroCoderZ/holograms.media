@@ -1674,24 +1674,36 @@ async function loadInitialFilesAndSetupEditor() {
     canvasCtx.clearRect(0, 0, gestureCanvas.width, gestureCanvas.height);
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-      const landmarks = results.multiHandLandmarks[0]; // Берем первую найденную руку
+      for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+        const landmarks = results.multiHandLandmarks[i];
+        
+        // --- Код отрисовки ---
+        try {
+          const HAND_CONNECTIONS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [0, 9], [9, 10], [10, 11], [11, 12], [0, 13], [13, 14], [14, 15], [15, 16], [0, 17], [17, 18], [18, 19], [19, 20], [5, 9], [9, 13], [13, 17]];
+          if (typeof drawConnectors === 'function' && typeof drawLandmarks === 'function') {
+            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
+            drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 2});
+          } else { console.warn('drawConnectors/drawLandmarks недоступны.'); }
+        } catch (drawError) { console.error('Ошибка при отрисовке руки:', drawError); }
+        // --- Конец кода отрисовки ---
 
-      // Convert normalized coordinates to canvas pixels
-      const points = landmarks.map(lm => ({
-        x: lm.x * gestureCanvas.width,
-        y: lm.y * gestureCanvas.height,
-        z: lm.z
-      }));
+        // --- Логика жестов ---
+        const thumbTip = landmarks[4];
+        const indexTip = landmarks[8];
+        const palmBase = landmarks[0];
 
-      // Draw hand connections and landmarks
-      drawConnectors(canvasCtx, points, HAND_CONNECTIONS, {
-        color: '#00FF00',
-        lineWidth: 1
-      });
-      drawLandmarks(canvasCtx, points, {
-        color: '#FF0000',
-        radius: 2
-      });
+        if (thumbTip && indexTip && palmBase) {
+          const pinchDistance = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
+          let isPinching = pinchDistance < 0.05;
+          
+          if (isPinching && audioGainNode) {
+            let volume = Math.max(0, Math.min(1, 1 - palmBase.y));
+            audioGainNode.gain.value = volume;
+            console.log(`Hand ${i} ACTIVE: Volume=${volume.toFixed(2)} | PanX=${palmBase.x.toFixed(2)} | DepthZ=${palmBase.z.toFixed(2)}`);
+          }
+        }
+        // --- Конец логики жестов ---
+      }
     } else {
       // Не показываем вывод "Руки не обнаружены" для снижения спама в консоли
     }
