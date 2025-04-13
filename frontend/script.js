@@ -1671,22 +1671,6 @@ async function loadInitialFilesAndSetupEditor() {
         // Удаляем старые точки для этой руки
         document.querySelectorAll('.finger-dot-on-line[data-hand="' + i + '"]').forEach(dot => dot.remove());
 
-        // Логика жестов
-        const thumbTip = landmarks[4];
-        const indexTip = landmarks[8];
-        const palmBase = landmarks[0];
-
-        if (thumbTip && indexTip && palmBase) {
-          const pinchDistance = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
-          let isPinching = pinchDistance < 0.05;
-          
-          if (isPinching && audioGainNode) {
-            let volume = Math.max(0, Math.min(1, 1 - palmBase.y));
-            audioGainNode.gain.value = volume;
-            console.log(`Hand ${i} ACTIVE: Volume=${volume.toFixed(2)} | PanX=${palmBase.x.toFixed(2)} | DepthZ=${palmBase.z.toFixed(2)}`);
-          }
-        }
-
         // Создаем новые точки для кончиков пальцев
         const fingerTips = [4, 8, 12, 16, 20]; // Индексы кончиков пальцев
         fingerTips.forEach(tipIndex => {
@@ -1695,7 +1679,7 @@ async function loadInitialFilesAndSetupEditor() {
             const dot = document.createElement('div');
             dot.className = 'finger-dot-on-line';
             dot.dataset.hand = i;
-            dot.style.top = `${tipLandmark.y * 100}%`;
+            dot.style.top = `${Math.max(0, Math.min(100, tipLandmark.y * 100))}%`;
             document.getElementById('gesture-area')?.appendChild(dot);
           }
         });
