@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { HAND_CONNECTIONS } from '@mediapipe/hands';
 
 // --- Global Variables ---
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
@@ -1662,7 +1663,8 @@ async function loadInitialFilesAndSetupEditor() {
     });
   }
 
-  let handSpheres = { left: [], right: [] }; // Массив для хранения сфер рук
+  let handMeshGroup = new THREE.Group();
+  scene.add(handMeshGroup);
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
@@ -1670,132 +1672,40 @@ async function loadInitialFilesAndSetupEditor() {
     if (!isGestureCanvasReady) { return; }
 
     // Удаляем старые меши рук перед отрисовкой новых
-    handSpheres.left.forEach(obj => leftSequencerGroup.remove(obj));
-    handSpheres.right.forEach(obj => rightSequencerGroup.remove(obj));
-    handSpheres.left = [];
-    handSpheres.right = [];
+    handMeshGroup.clear();
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-      for (let i = 0; i < results.multiHandLandmarks.length; i++) {
-        const landmarks = results.multiHandLandmarks[i];
-        const handedness = results.multiHandedness[i].label; // 'Left' или 'Right'
+      for (const landmarks of results.multiHandLandmarks) {
+        // Преобразуем координаты landmarks (0-1) в координаты мира Three.js (ПРИБЛИЗИТЕЛЬНО!)
+        const handPoints3D = landmarks.map(lm => {
+          let normX = lm.x - 0.5; // Центрируем по X
+          let normY = 0.5 - lm.y; // Центрируем и инвертируем Y
+          let worldX = normX * 300; // Масштабируем (подбирать значение)
+          let worldY = normY * 300; // Масштабируем (подбирать значение)
+          let worldZ = (lm.z + 0.2) * -400; // Масштабирование и сдвиг по Z (подбирать значение)
+          return new THREE.Vector3(worldX, worldY, worldZ);
+        });
 
-        // --- Логика жестов (Восстановлено) ---
-        if (thumbTip && indexTip && palmBase) {
-            const pinchDistance = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
-            let isPinching = pinchDistance < 0.05; // Порог щипка
-            // Закомментируем старые логи, чтобы не спамить, оставим новые
-            // console.log(`Hand ${i} Pinch: ${isPinching} (Dist: ${pinchDistance.toFixed(4)})`);
-            // console.log(`Позиция ладони по Y: ${(1 - palmBase.y).toFixed(4)}`);
+        // Материалы (белые, полупрозрачные)
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, linewidth: 1 });
+        const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.7 }); // Чуть крупнее точки
 
-            if (isPinching && audioGainNode) {
-                let volume = Math.max(0, Math.min(1, 1 - palmBase.y)); // Громкость по Y (инвертировано)
-                audioGainNode.gain.value = volume;
-                console.log(`Hand ${i} ACTIVE: Volume=${volume.toFixed(2)} | PanX=${palmBase.x.toFixed(2)} | DepthZ=${palmBase.z.toFixed(2)}`);
-                // Добавь сюда реальное управление панорамой и третьим параметром, когда они будут готовы
-            }
-        }
-        // --- Конец логики жестов ---
+        // Геометрии
+        const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => {
+          // Добавим проверку на существование точек перед использованием
+          const p1 = handPoints3D[conn[0]];
+          const p2 = handPoints3D[conn[1]];
+          return (p1 && p2) ? [p1, p2] : [];
+        }));
+        const pointsGeometry = new THREE.BufferGeometry().setFromPoints(handPoints3D);
 
-        // --- Отрисовка СКЕЛЕТА руки ---
-        try {
-            const handedness = results.multiHandedness[i].label; // Получаем левая/правая
-            const HAND_CONNECTIONS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [0, 9], [9, 10], [10, 11], [11, 12], [0, 13], [13, 14], [14, 15], [15, 16], [0, 17], [17, 18], [18, 19], [19, 20], [5, 9], [9, 13], [13, 17]];
+        // Объекты
+        const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
+        const points = new THREE.Points(pointsGeometry, pointsMaterial);
 
-            // Преобразуем координаты landmarks (0-1) в координаты мира Three.js (ПРИБЛИЗИТЕЛЬНО!)
-            const handPoints3D = landmarks.map(lm => {
-                let normX = lm.x - 0.5; // Центрируем по X
-                let normY = 0.5 - lm.y; // Центрируем и инвертируем Y
-                let worldX = normX * 200; // Масштабируем (подбирать значение)
-                let worldY = normY * 200; // Масштабируем (подбирать значение)
-                let worldZ = (lm.z + 0.5) * -300; // Примерное масштабирование и сдвиг по Z (подбирать значение)
-                return new THREE.Vector3(worldX, worldY, worldZ);
-            });
-
-            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, linewidth: 1 });
-            const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.6 }); // Увеличил точки
-
-            const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => [handPoints3D[conn[0]], handPoints3D[conn[1]]]));
-            const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
-
-            const pointsGeometry = new THREE.BufferGeometry().setFromPoints(handPoints3D);
-            const points = new THREE.Points(pointsGeometry, pointsMaterial);
-
-            // Добавляем в ОСНОВНУЮ сцену, а не в группы сеток (пока что)
-            scene.add(lines);
-            scene.add(points);
-            // Сохраняем ссылки для удаления
-            if (handedness === 'Left') { handSpheres.left.push(lines); handSpheres.left.push(points); }
-            else { handSpheres.right.push(lines); handSpheres.right.push(points); }
-
-        } catch (drawError) { console.error('Ошибка при отрисовке скелета руки:', drawError); }
-        // --- Конец отрисовки СКЕЛЕТА ---
-
-        // --- Логика жестов (Восстановлено) ---
-        thumbTip = landmarks[4];
-        indexTip = landmarks[8];
-        palmBase = landmarks[0];
-
-        if (thumbTip && indexTip && palmBase) {
-            const pinchDistance = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
-            let isPinching = pinchDistance < 0.05; // Порог щипка
-            // Закомментируем старые логи, чтобы не спамить, оставим новые
-            // console.log(`Hand ${i} Pinch: ${isPinching} (Dist: ${pinchDistance.toFixed(4)})`);
-            // console.log(`Позиция ладони по Y: ${(1 - palmBase.y).toFixed(4)}`);
-
-            if (isPinching && audioGainNode) {
-                let volume = Math.max(0, Math.min(1, 1 - palmBase.y)); // Громкость по Y (инвертировано)
-                audioGainNode.gain.value = volume;
-                console.log(`Hand ${i} ACTIVE: Volume=${volume.toFixed(2)} | PanX=${palmBase.x.toFixed(2)} | DepthZ=${palmBase.z.toFixed(2)}`);
-                // Добавь сюда реальное управление панорамой и третьим параметром, когда они будут готовы
-            }
-        }
-        // --- Конец логики жестов ---
-
-        // --- Отрисовка СКЕЛЕТА руки ---
-        try {
-            const handedness = results.multiHandedness[i].label; // Получаем левая/правая
-            // Определим HAND_CONNECTIONS (стандартные для MediaPipe Hands)
-            const HAND_CONNECTIONS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [0, 9], [9, 10], [10, 11], [11, 12], [0, 13], [13, 14], [14, 15], [15, 16], [0, 17], [17, 18], [18, 19], [19, 20], [5, 9], [9, 13], [13, 17]]; // Основные соединения
-
-            // Преобразуем координаты landmarks (0-1) в координаты мира Three.js (ПРИБЛИЗИТЕЛЬНО!)
-            const handPoints3D = landmarks.map(lm => {
-                let normX = lm.x - 0.5; // Центрируем по X
-                let normY = 0.5 - lm.y; // Центрируем и инвертируем Y
-                let worldX = normX * 300; // Масштабируем (подбирать значение)
-                let worldY = normY * 300; // Масштабируем (подбирать значение)
-                let worldZ = (lm.z + 0.2) * -400; // Масштабирование и сдвиг по Z (подбирать значение)
-                return new THREE.Vector3(worldX, worldY, worldZ);
-            });
-
-            // Материалы (белые, полупрозрачные)
-            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, linewidth: 1 });
-            const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.7 }); // Чуть крупнее точки
-
-            // Геометрии
-            const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => {
-                // Добавим проверку на существование точек перед использованием
-                const p1 = handPoints3D[conn[0]];
-                const p2 = handPoints3D[conn[1]];
-                return (p1 && p2) ? [p1, p2] : [];
-            }));
-            const pointsGeometry = new THREE.BufferGeometry().setFromPoints(handPoints3D);
-
-            // Объекты
-            const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
-            const points = new THREE.Points(pointsGeometry, pointsMaterial);
-
-            // Добавляем в ОСНОВНУЮ сцену
-            scene.add(lines);
-            scene.add(points);
-
-            // Сохраняем ссылки для удаления
-            // Убедись, что 'handSpheres' объявлен глобально: let handSpheres = { left: [], right: [] };
-            if (handedness === 'Left') { handSpheres.left.push(lines); handSpheres.left.push(points); }
-            else { handSpheres.right.push(lines); handSpheres.right.push(points); }
-
-        } catch (drawError) { console.error('Ошибка при отрисовке скелета руки:', drawError); }
-        // --- Конец отрисовки СКЕЛЕТА ---
+        // Добавляем в handMeshGroup
+        handMeshGroup.add(lines);
+        handMeshGroup.add(points);
       }
     }
   }
