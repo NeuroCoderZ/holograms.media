@@ -1718,8 +1718,20 @@ async function loadInitialFilesAndSetupEditor() {
         const points = new THREE.Points(pointsGeometry, pointsMaterial);
 
         // Добавляем в handMeshGroup
-        handMeshGroup.add(lines);
-        handMeshGroup.add(points);
+        let allowRender = true; // По умолчанию рендерим
+        if (areTwoHands) {
+          const palmBaseX = (landmarks[0].x - 0.5) * 2 * GRID_WIDTH; // Вычисляем X центра ладони
+          if (handedness === 'Left' && palmBaseX > 0) {
+            allowRender = false; // Левая рука зашла направо
+          } else if (handedness === 'Right' && palmBaseX < 0) {
+            allowRender = false; // Правая рука зашла налево
+          }
+        }
+
+        if (allowRender) {
+          handMeshGroup.add(lines);
+          handMeshGroup.add(points);
+        }
       }
     }
 
@@ -1744,7 +1756,7 @@ async function loadInitialFilesAndSetupEditor() {
           dot.className = 'finger-dot-on-line';
           // Вычисли позицию Y
           const gestureAreaHeight = gestureArea.clientHeight;
-          const topPosition = (1 - tip.y) * gestureAreaHeight;
+          const topPosition = tip.y * gestureAreaHeight;
           // Вычисли масштаб Z
           const scale = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(tip.z, -0.5, 0.1, 0.5, 1.5), 0.5, 1.5);
           // Установи стили точки
