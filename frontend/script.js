@@ -132,6 +132,8 @@ let audioBuffer = null;
 let fingerTrails = []; // Array to store finger trail data
 let fingerPositions = []; // Array to store current finger positions
 
+let handSpheres = { left: [], right: [] }; // Массив для хранения сфер рук
+
 // --- Gesture Recording ---
 let isGestureRecording = false;
 let gestureTimeoutId = null;
@@ -1666,17 +1668,9 @@ async function loadInitialFilesAndSetupEditor() {
   function onHandsResults(results) {
     if (!isGestureCanvasReady) { return; }
 
-    // Удаляем старые сферы перед добавлением новых
-    handSpheres.left.forEach(sphere => {
-      if (sphere.parent === leftSequencerGroup) {
-        leftSequencerGroup.remove(sphere);
-      }
-    });
-    handSpheres.right.forEach(sphere => {
-      if (sphere.parent === rightSequencerGroup) {
-        rightSequencerGroup.remove(sphere);
-      }
-    });
+    // Удаляем старые меши рук перед отрисовкой новых
+    handSpheres.left.forEach(obj => leftSequencerGroup.remove(obj));
+    handSpheres.right.forEach(obj => rightSequencerGroup.remove(obj));
     handSpheres.left = [];
     handSpheres.right = [];
 
@@ -1706,46 +1700,26 @@ async function loadInitialFilesAndSetupEditor() {
         }
         // --- Конец логики жестов ---
 
-        // --- Отрисовка руки ВНУТРИ 3D сеток (left/rightSequencerGroup) ---
-        const wristPos = landmarks[0];
-        if (wristPos) {
-          const geometry = new THREE.SphereGeometry(3, 8, 8); // Маленькая сфера
-          const material = new THREE.MeshBasicMaterial({ color: handedness === 'Left' ? 0xff0000 : 0x0000ff }); // Красная для Left, Синяя для Right
-          const sphere = new THREE.Mesh(geometry, material);
+        // --- Логика жестов (Восстановлено) ---
+        const thumbTip = landmarks[4];
+        const indexTip = landmarks[8];
+        const palmBase = landmarks[0];
 
-          // Преобразуем нормализованные координаты в 3D-координаты внутри сетки
-          const x = wristPos.x * GRID_WIDTH;
-          const y = (1 - wristPos.y) * GRID_HEIGHT; // Инвертируем Y
-          const z = wristPos.z * GRID_DEPTH;
+        if (thumbTip && indexTip && palmBase) {
+            const pinchDistance = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
+            let isPinching = pinchDistance < 0.05; // Порог щипка
+            // Закомментируем старые логи, чтобы не спамить, оставим новые
+            // console.log(`Hand ${i} Pinch: ${isPinching} (Dist: ${pinchDistance.toFixed(4)})`);
+            // console.log(`Позиция ладони по Y: ${(1 - palmBase.y).toFixed(4)}`);
 
-          // Учитываем сдвиг левой сетки
-          if (handedness === 'Left') {
-            sphere.position.set(x - GRID_WIDTH, y, z - GRID_DEPTH/2);
-            leftSequencerGroup.add(sphere);
-            handSpheres.left.push(sphere);
-          } else {
-            sphere.position.set(x, y, z - GRID_DEPTH/2);
-            rightSequencerGroup.add(sphere);
-            handSpheres.right.push(sphere);
-          }
+            if (isPinching && audioGainNode) {
+                let volume = Math.max(0, Math.min(1, 1 - palmBase.y)); // Громкость по Y (инвертировано)
+                audioGainNode.gain.value = volume;
+                console.log(`Hand ${i} ACTIVE: Volume=${volume.toFixed(2)} | PanX=${palmBase.x.toFixed(2)} | DepthZ=${palmBase.z.toFixed(2)}`);
+                // Добавь сюда реальное управление панорамой и третьим параметром, когда они будут готовы
+            }
         }
-        // --- Конец отрисовки руки ---
-
-        // Удаляем старые точки для этой руки
-        document.querySelectorAll('.finger-dot-on-line[data-hand="' + i + '"]').forEach(dot => dot.remove());
-
-        // Создаем новые точки для кончиков пальцев
-        const fingerTips = [4, 8, 12, 16, 20]; // Индексы кончиков пальцев
-        fingerTips.forEach(tipIndex => {
-          const tipLandmark = landmarks[tipIndex];
-          if (tipLandmark) {
-            const dot = document.createElement('div');
-            dot.className = 'finger-dot-on-line';
-            dot.dataset.hand = i;
-            dot.style.top = `${Math.max(0, Math.min(100, tipLandmark.y * 100))}%`;
-            document.getElementById('gesture-area')?.appendChild(dot);
-          }
-        });
+        // --- Конец логики жестов ---
       }
     }
   }
