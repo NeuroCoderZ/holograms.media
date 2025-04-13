@@ -1623,7 +1623,7 @@ async function loadInitialFilesAndSetupEditor() {
 
     // Настраиваем параметры Hands
     hands.setOptions({
-      maxNumHands: 1,           // Отслеживать только одну руку
+      maxNumHands: 2,           // Отслеживать до двух рук
       modelComplexity: 1,       // 0 = lite, 1 = full (более точная, но требовательная)
       minDetectionConfidence: 0.7, // Увеличим порог для надежности
       minTrackingConfidence: 0.7  // Увеличим порог для надежности
