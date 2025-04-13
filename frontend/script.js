@@ -1700,6 +1700,40 @@ async function loadInitialFilesAndSetupEditor() {
         }
         // --- Конец логики жестов ---
 
+        // --- Отрисовка СКЕЛЕТА руки ---
+        try {
+            const handedness = results.multiHandedness[i].label; // Получаем левая/правая
+            const HAND_CONNECTIONS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [0, 9], [9, 10], [10, 11], [11, 12], [0, 13], [13, 14], [14, 15], [15, 16], [0, 17], [17, 18], [18, 19], [19, 20], [5, 9], [9, 13], [13, 17]];
+
+            // Преобразуем координаты landmarks (0-1) в координаты мира Three.js (ПРИБЛИЗИТЕЛЬНО!)
+            const handPoints3D = landmarks.map(lm => {
+                let normX = lm.x - 0.5; // Центрируем по X
+                let normY = 0.5 - lm.y; // Центрируем и инвертируем Y
+                let worldX = normX * 200; // Масштабируем (подбирать значение)
+                let worldY = normY * 200; // Масштабируем (подбирать значение)
+                let worldZ = (lm.z + 0.5) * -300; // Примерное масштабирование и сдвиг по Z (подбирать значение)
+                return new THREE.Vector3(worldX, worldY, worldZ);
+            });
+
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, linewidth: 1 });
+            const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.6 }); // Увеличил точки
+
+            const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => [handPoints3D[conn[0]], handPoints3D[conn[1]]]));
+            const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
+
+            const pointsGeometry = new THREE.BufferGeometry().setFromPoints(handPoints3D);
+            const points = new THREE.Points(pointsGeometry, pointsMaterial);
+
+            // Добавляем в ОСНОВНУЮ сцену, а не в группы сеток (пока что)
+            scene.add(lines);
+            scene.add(points);
+            // Сохраняем ссылки для удаления
+            if (handedness === 'Left') { handSpheres.left.push(lines); handSpheres.left.push(points); }
+            else { handSpheres.right.push(lines); handSpheres.right.push(points); }
+
+        } catch (drawError) { console.error('Ошибка при отрисовке скелета руки:', drawError); }
+        // --- Конец отрисовки СКЕЛЕТА ---
+
         // --- Логика жестов (Восстановлено) ---
         const thumbTip = landmarks[4];
         const indexTip = landmarks[8];
