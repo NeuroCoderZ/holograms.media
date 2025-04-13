@@ -129,9 +129,9 @@ body {
 #gesture-area::before {
     content: '';
     position: absolute;
-    left: 15px;
-    top: 10%;
-    bottom: 10%;
+    left: 0;
+    top: 0;
+    bottom: 0;
     width: 2px;
     background-color: red;
     pointer-events: none;
@@ -140,7 +140,7 @@ body {
 
 .finger-dot-on-line {
     position: absolute;
-    left: 15px;
+    left: 1px;
     width: 6px;
     height: 6px;
     background-color: lime;
