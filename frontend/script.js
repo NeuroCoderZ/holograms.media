@@ -1677,7 +1677,7 @@ async function loadInitialFilesAndSetupEditor() {
       for (const landmarks of results.multiHandLandmarks) {
         // Преобразуем координаты landmarks (0-1) в координаты мира Three.js (ПРИБЛИЗИТЕЛЬНО!)
         const handPoints3D = landmarks.map(lm => {
-          let normX = lm.x - 0.5; // Центрируем по X
+          let normX = 0.5 - lm.x; // Центрируем по X
           let normY = 0.5 - lm.y; // Центрируем и инвертируем Y
           let worldX = normX * 300; // Масштабируем (подбирать значение)
           let worldY = normY * 300; // Масштабируем (подбирать значение)
