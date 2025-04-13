@@ -1680,10 +1680,6 @@ async function loadInitialFilesAndSetupEditor() {
         const handedness = results.multiHandedness[i].label; // 'Left' или 'Right'
 
         // --- Логика жестов (Восстановлено) ---
-        const thumbTip = landmarks[4];
-        const indexTip = landmarks[8];
-        const palmBase = landmarks[0];
-
         if (thumbTip && indexTip && palmBase) {
             const pinchDistance = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
             let isPinching = pinchDistance < 0.05; // Порог щипка
