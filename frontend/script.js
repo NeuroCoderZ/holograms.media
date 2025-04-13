@@ -1667,7 +1667,28 @@ async function loadInitialFilesAndSetupEditor() {
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       for (let i = 0; i < results.multiHandLandmarks.length; i++) {
         const landmarks = results.multiHandLandmarks[i];
-        
+
+        // --- Логика жестов (Восстановлено) ---
+        const thumbTip = landmarks[4];
+        const indexTip = landmarks[8];
+        const palmBase = landmarks[0];
+
+        if (thumbTip && indexTip && palmBase) {
+            const pinchDistance = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
+            let isPinching = pinchDistance < 0.05; // Порог щипка
+            // Закомментируем старые логи, чтобы не спамить, оставим новые
+            // console.log(`Hand ${i} Pinch: ${isPinching} (Dist: ${pinchDistance.toFixed(4)})`);
+            // console.log(`Позиция ладони по Y: ${(1 - palmBase.y).toFixed(4)}`);
+
+            if (isPinching && audioGainNode) {
+                let volume = Math.max(0, Math.min(1, 1 - palmBase.y)); // Громкость по Y (инвертировано)
+                audioGainNode.gain.value = volume;
+                console.log(`Hand ${i} ACTIVE: Volume=${volume.toFixed(2)} | PanX=${palmBase.x.toFixed(2)} | DepthZ=${palmBase.z.toFixed(2)}`);
+                // Добавь сюда реальное управление панорамой и третьим параметром, когда они будут готовы
+            }
+        }
+        // --- Конец логики жестов ---
+
         // Удаляем старые точки для этой руки
         document.querySelectorAll('.finger-dot-on-line[data-hand="' + i + '"]').forEach(dot => dot.remove());
 
