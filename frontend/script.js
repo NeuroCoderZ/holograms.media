@@ -1673,17 +1673,32 @@ async function loadInitialFilesAndSetupEditor() {
     // Удаляем старые меши рук перед отрисовкой новых
     handMeshGroup.clear();
 
+    const areTwoHands = results.multiHandLandmarks.length === 2;
+
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-      for (const landmarks of results.multiHandLandmarks) {
+      for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+        const landmarks = results.multiHandLandmarks[i];
+        const handedness = results.multiHandedness[i].label;
+
         // Преобразуем координаты landmarks (0-1) в координаты мира Three.js (ПРИБЛИЗИТЕЛЬНО!)
         const handPoints3D = landmarks.map(lm => {
           let normX = 0.5 - lm.x; // Центрируем по X
           let normY = 0.5 - lm.y; // Центрируем и инвертируем Y
-          let worldX = normX * 300; // Масштабируем (подбирать значение)
-          let worldY = normY * 300; // Масштабируем (подбирать значение)
+          let worldX = (lm.x - 0.5) * 2 * GRID_WIDTH; // Масштабируем (подбирать значение)
+          let worldY = (1 - lm.y) * GRID_HEIGHT; // Масштабируем (подбирать значение)
           let worldZ = (lm.z + 0.2) * -400; // Масштабирование и сдвиг по Z (подбирать значение)
           return new THREE.Vector3(worldX, worldY, worldZ);
         });
+
+        if (areTwoHands) {
+          for (let j = 0; j < handPoints3D.length; j++) {
+            if (handedness === 'Left') {
+              handPoints3D[j].x = Math.min(handPoints3D[j].x, 0);
+            } else if (handedness === 'Right') {
+              handPoints3D[j].x = Math.max(handPoints3D[j].x, 0);
+            }
+          }
+        }
 
         // Материалы (белые, полупрозрачные)
         const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, linewidth: 1 });
