@@ -1720,13 +1720,69 @@ async function loadInitialFilesAndSetupEditor() {
         // Теперь handPoints3D содержит координаты с примененным "застреванием" по X
 
         if (areTwoHands) {
-          for (let j = 0; j < handPoints3D.length; j++) {
+          let xOffset = 0; // Смещение по X, которое нужно применить ко всем точкам
+
+          // Находим самую "выступающую" точку по X для текущей руки
+          let mostViolatingX = (handedness === 'Left') ? -Infinity : Infinity;
+          for (const point of handPoints3D) {
             if (handedness === 'Left') {
-              handPoints3D[j].x = Math.min(handPoints3D[j].x, 0);
-            } else if (handedness === 'Right') {
-              handPoints3D[j].x = Math.max(handPoints3D[j].x, 0);
+              mostViolatingX = Math.max(mostViolatingX, point.x); // Ищем максимальный X (самый правый)
+            } else { // handedness === 'Right'
+              mostViolatingX = Math.min(mostViolatingX, point.x); // Ищем минимальный X (самый левый)
             }
           }
+
+          // Рассчитываем необходимое смещение, если рука нарушает границу (X=0)
+          if (handedness === 'Left' && mostViolatingX > 0) {
+            xOffset = -mostViolatingX; // Сдвинуть влево на величину нарушения
+          } else if (handedness === 'Right' && mostViolatingX < 0) {
+            xOffset = -mostViolatingX; // Сдвинуть вправо на величину нарушения
+          }
+
+          // Применяем смещение ко всем точкам руки, если оно есть
+          if (xOffset !== 0) {
+            for (const point of handPoints3D) {
+              point.x += xOffset;
+            }
+          }
+        }
+        // Теперь handPoints3D содержит координаты с примененным "застреванием" по X
+
+        // Логика "застревания" применяется ко всей группе рук ПОСЛЕ отрисовки
+        if (areTwoHands && handMeshGroup.children.length > 0) { // Убедимся, что руки отрисованы
+            let leftHandViolation = 0;  // Насколько левая рука зашла направо (>0)
+            let rightHandViolation = 0; // Насколько правая рука зашла налево (<0)
+
+            // Определяем нарушения для каждой руки (проверяем все точки)
+            for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+                const handedness = results.multiHandedness[i].label;
+                const landmarks = results.multiHandLandmarks[i];
+                const handPoints = landmarks.map(lm => { // Пересчитываем X для проверки
+                     return (0.5 - lm.x) * 2 * GRID_WIDTH;
+                });
+
+                if (handedness === 'Left') {
+                    const maxViolation = Math.max(0, ...handPoints.map(x => x)); // Находим максимальный X, но не меньше 0
+                    if (maxViolation > leftHandViolation) leftHandViolation = maxViolation;
+                } else { // Right hand
+                    const minViolation = Math.min(0, ...handPoints.map(x => x)); // Находим минимальный X, но не больше 0
+                    if (minViolation < rightHandViolation) rightHandViolation = minViolation;
+                }
+            }
+
+            // Если есть нарушения, сдвигаем ВСЮ группу рук
+            // Левая рука "выталкивает" правую, правая "выталкивает" левую
+            const totalOffset = - (leftHandViolation + rightHandViolation); // Считаем суммарный сдвиг
+
+            // Применяем сдвиг к позиции всей группы, где находятся 3D-руки
+            // (Предполагается, что handMeshGroup позиционирована в (0,0,0) сцены,
+            // а точки рук имеют координаты относительно нее)
+            // Если это не так, нужно будет адаптировать логику
+            handMeshGroup.position.x = totalOffset;
+
+        } else {
+             // Если рук не две, сбрасываем смещение группы
+             handMeshGroup.position.x = 0;
         }
 
         // Материалы (белые, полупрозрачные)
