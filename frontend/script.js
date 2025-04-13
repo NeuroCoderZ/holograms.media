@@ -1684,7 +1684,7 @@ async function loadInitialFilesAndSetupEditor() {
         const handPoints3D = landmarks.map(lm => {
           let normX = 0.5 - lm.x; // Центрируем по X
           let normY = 0.5 - lm.y; // Центрируем и инвертируем Y
-          let worldX = (lm.x - 0.5) * 2 * GRID_WIDTH; // Масштабируем (подбирать значение)
+          let worldX = (0.5 - lm.x) * 2 * GRID_WIDTH; // Масштабируем (подбирать значение)
           let worldY = (1 - lm.y) * GRID_HEIGHT; // Масштабируем (подбирать значение)
           let worldZ = (lm.z + 0.2) * -400; // Масштабирование и сдвиг по Z (подбирать значение)
           return new THREE.Vector3(worldX, worldY, worldZ);
