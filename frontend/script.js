@@ -729,6 +729,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const telegramLinkButton = document.getElementById('telegramLinkButton'); // Находим кнопку
   const githubButton = document.getElementById('githubButton'); // Находим кнопку
   const gestureArea = document.getElementById('gesture-area'); // Находим область жестов
+  if (gestureArea) {
+      gestureArea.title = 'Кликните для записи жеста'; // Добавляем всплывающую подсказку
+  }
 
   const gestureModal = document.getElementById('gestureModal');
   const promptModal = document.getElementById('promptModal');
@@ -769,8 +772,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Gesture Area Click Listener ---
   if (gestureArea) {
-    // Устанавливаем начальный текст
-    document.getElementById('gesture-text-label').textContent = 'Кликните для записи жеста';
     gestureArea.addEventListener('click', () => {
       if (!isGestureRecording) {
         startGestureRecording();
