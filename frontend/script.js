@@ -1666,6 +1666,7 @@ async function loadInitialFilesAndSetupEditor() {
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
+    let thumbTip, indexTip, palmBase;
     if (!isGestureCanvasReady) { return; }
 
     // Удаляем старые меши рук перед отрисовкой новых
@@ -1731,9 +1732,9 @@ async function loadInitialFilesAndSetupEditor() {
         // --- Конец отрисовки СКЕЛЕТА ---
 
         // --- Логика жестов (Восстановлено) ---
-        const thumbTip = landmarks[4];
-        const indexTip = landmarks[8];
-        const palmBase = landmarks[0];
+        thumbTip = landmarks[4];
+        indexTip = landmarks[8];
+        palmBase = landmarks[0];
 
         if (thumbTip && indexTip && palmBase) {
             const pinchDistance = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
