@@ -1660,13 +1660,30 @@ async function loadInitialFilesAndSetupEditor() {
     });
   }
 
+  let handSpheres = { left: [], right: [] }; // Массив для хранения сфер рук
+
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
     if (!isGestureCanvasReady) { return; }
 
+    // Удаляем старые сферы перед добавлением новых
+    handSpheres.left.forEach(sphere => {
+      if (sphere.parent === leftSequencerGroup) {
+        leftSequencerGroup.remove(sphere);
+      }
+    });
+    handSpheres.right.forEach(sphere => {
+      if (sphere.parent === rightSequencerGroup) {
+        rightSequencerGroup.remove(sphere);
+      }
+    });
+    handSpheres.left = [];
+    handSpheres.right = [];
+
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       for (let i = 0; i < results.multiHandLandmarks.length; i++) {
         const landmarks = results.multiHandLandmarks[i];
+        const handedness = results.multiHandedness[i].label; // 'Left' или 'Right'
 
         // --- Логика жестов (Восстановлено) ---
         const thumbTip = landmarks[4];
@@ -1689,34 +1706,30 @@ async function loadInitialFilesAndSetupEditor() {
         }
         // --- Конец логики жестов ---
 
-        // --- Отрисовка руки поверх голограммы (НОВОЕ) ---
-        // Нужен доступ к сцене Three.js (scene) и камере (activeCamera)
-        if (scene && activeCamera && typeof THREE !== 'undefined') {
-            // landmarks[p].x/y/z - координаты в диапазоне ~0-1 относительно видео
-            // Их нужно преобразовать в координаты мира Three.js
-            // Это СЛОЖНАЯ задача, требует знания параметров камеры и проекции.
-            // Пока просто создадим простые сферы в произвольных местах, чтобы проверить сам механизм.
+        // --- Отрисовка руки ВНУТРИ 3D сеток (left/rightSequencerGroup) ---
+        const wristPos = landmarks[0];
+        if (wristPos) {
+          const geometry = new THREE.SphereGeometry(3, 8, 8); // Маленькая сфера
+          const material = new THREE.MeshBasicMaterial({ color: handedness === 'Left' ? 0xff0000 : 0x0000ff }); // Красная для Left, Синяя для Right
+          const sphere = new THREE.Mesh(geometry, material);
 
-            // Пример: Создадим одну сферу на месте запястья (landmarks[0])
-            const wristPos = landmarks[0];
-            if (wristPos) {
-               const geometry = new THREE.SphereGeometry(2, 16, 16); // Маленькая сфера
-               const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Зеленая
-               const sphere = new THREE.Mesh(geometry, material);
+          // Преобразуем нормализованные координаты в 3D-координаты внутри сетки
+          const x = wristPos.x * GRID_WIDTH;
+          const y = (1 - wristPos.y) * GRID_HEIGHT; // Инвертируем Y
+          const z = wristPos.z * GRID_DEPTH;
 
-               // !!! ЭТО НЕПРАВИЛЬНОЕ ПРЕОБРАЗОВАНИЕ КООРДИНАТ !!!
-               // !!! Нужен правильный метод проекции из координат MediaPipe в мир Three.js !!!
-               // Пока просто поставим сферу перед камерой для теста
-               const worldX = (wristPos.x - 0.5) * 100; // Примерное преобразование X
-               const worldY = (0.5 - wristPos.y) * 100; // Примерное преобразование Y (инвертировано)
-               const worldZ = -500; // Перед камерой
-
-               sphere.position.set(worldX, worldY, worldZ);
-               scene.add(sphere); // Добавляем на основную сцену
-               console.log(`Hand ${i} Wrist Sphere created at ${worldX.toFixed(0)}, ${worldY.toFixed(0)}, ${worldZ}`);
-            }
+          // Учитываем сдвиг левой сетки
+          if (handedness === 'Left') {
+            sphere.position.set(x - GRID_WIDTH, y, z - GRID_DEPTH/2);
+            leftSequencerGroup.add(sphere);
+            handSpheres.left.push(sphere);
+          } else {
+            sphere.position.set(x, y, z - GRID_DEPTH/2);
+            rightSequencerGroup.add(sphere);
+            handSpheres.right.push(sphere);
+          }
         }
-        // --- Конец отрисовки поверх голограммы ---
+        // --- Конец отрисовки руки ---
 
         // Удаляем старые точки для этой руки
         document.querySelectorAll('.finger-dot-on-line[data-hand="' + i + '"]').forEach(dot => dot.remove());
