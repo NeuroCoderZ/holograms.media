@@ -1689,6 +1689,35 @@ async function loadInitialFilesAndSetupEditor() {
         }
         // --- Конец логики жестов ---
 
+        // --- Отрисовка руки поверх голограммы (НОВОЕ) ---
+        // Нужен доступ к сцене Three.js (scene) и камере (activeCamera)
+        if (scene && activeCamera && typeof THREE !== 'undefined') {
+            // landmarks[p].x/y/z - координаты в диапазоне ~0-1 относительно видео
+            // Их нужно преобразовать в координаты мира Three.js
+            // Это СЛОЖНАЯ задача, требует знания параметров камеры и проекции.
+            // Пока просто создадим простые сферы в произвольных местах, чтобы проверить сам механизм.
+
+            // Пример: Создадим одну сферу на месте запястья (landmarks[0])
+            const wristPos = landmarks[0];
+            if (wristPos) {
+               const geometry = new THREE.SphereGeometry(2, 16, 16); // Маленькая сфера
+               const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Зеленая
+               const sphere = new THREE.Mesh(geometry, material);
+
+               // !!! ЭТО НЕПРАВИЛЬНОЕ ПРЕОБРАЗОВАНИЕ КООРДИНАТ !!!
+               // !!! Нужен правильный метод проекции из координат MediaPipe в мир Three.js !!!
+               // Пока просто поставим сферу перед камерой для теста
+               const worldX = (wristPos.x - 0.5) * 100; // Примерное преобразование X
+               const worldY = (0.5 - wristPos.y) * 100; // Примерное преобразование Y (инвертировано)
+               const worldZ = -500; // Перед камерой
+
+               sphere.position.set(worldX, worldY, worldZ);
+               scene.add(sphere); // Добавляем на основную сцену
+               console.log(`Hand ${i} Wrist Sphere created at ${worldX.toFixed(0)}, ${worldY.toFixed(0)}, ${worldZ}`);
+            }
+        }
+        // --- Конец отрисовки поверх голограммы ---
+
         // Удаляем старые точки для этой руки
         document.querySelectorAll('.finger-dot-on-line[data-hand="' + i + '"]').forEach(dot => dot.remove());
 
