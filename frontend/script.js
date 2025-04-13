@@ -680,7 +680,6 @@ function startGestureRecording() {
   const gestureArea = document.getElementById('gesture-area');
   if (gestureArea) {
     gestureArea.classList.add('recording');
-    document.getElementById('gesture-text-label').textContent = 'Идет запись жеста... (макс 20 сек)'; // Обновляем текст
   }
   console.log("Начало записи жеста.");
 
@@ -701,7 +700,6 @@ function stopGestureRecording() {
   const gestureArea = document.getElementById('gesture-area');
   if (gestureArea) {
     gestureArea.classList.remove('recording');
-    document.getElementById('gesture-text-label').textContent = 'Кликните для записи жеста'; // Возвращаем исходный текст
   }
   // Очищаем тайм-аут, если остановка произошла до истечения 20 секунд
   if (gestureTimeoutId) {
