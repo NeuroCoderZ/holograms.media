@@ -392,6 +392,20 @@ body {
 .modal button:hover { background-color: var(--button-action-hover); }
 .modal button:disabled { background-color: #555; cursor: not-allowed; }
 
+.finger-dot-on-line {
+  position: absolute;
+  left: 11px; /* Центрируем на красной линии (10px отступ + 2px ширина / 2 = 11px - половина точки) */
+  width: 6px; /* Размер точки */
+  height: 6px; /* Размер точки */
+  background-color: white;
+  border-radius: 50%;
+  transform-origin: center center; /* Масштабирование от центра */
+  transition: transform 0.05s linear; /* Плавное изменение размера */
+  z-index: 2; /* Поверх красной линии */
+  /* Сдвиг влево на половину ширины для центрирования */
+  margin-left: -3px;
+}
+
 /* Прелоадер */
 #loading-spinner {
   display: none; position: fixed; top: 50%; left: 50%;
