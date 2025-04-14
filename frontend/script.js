@@ -141,7 +141,6 @@ const GESTURE_RECORDING_DURATION = 20000; // 20 seconds in milliseconds
 
 // --- MediaPipe Hands ---
 let hands = null; // Global reference to MediaPipe Hands controller
-let camera = null; // Global reference to MediaPipe Camera utility
 
 let mainSequencerGroup = new THREE.Group();
 const leftSequencerGroup = createSequencerGrid(
@@ -1634,32 +1633,53 @@ async function loadInitialFilesAndSetupEditor() {
     // Устанавливаем обработчик результатов
     hands.onResults(onHandsResults);
 
-    // --- Инициализация Утилиты Камеры ---
-    // Проверяем, загружена ли утилита Camera
-    if (typeof Camera === 'undefined') {
-       console.error('Утилита MediaPipe Camera не загружена. Проверьте подключение camera_utils.js.');
-       return; // Прерываем, если утилита не найдена
-    }
-    // Создаем экземпляр Camera (переменная 'camera' объявлена глобально)
-    camera = new Camera(videoElementForHands, {
-      onFrame: async () => {
-        // Отправляем текущий кадр видео в Hands для обработки
-        if (hands) { // Добавляем проверку, что hands инициализирован
-             await hands.send({image: videoElementForHands});
-        }
-      },
-      width: 640,  // Стандартное разрешение для веб-камеры
-      height: 480
-    });
+    async function startVideoStream(videoElement, handsInstance) {
+      try {
+        // Запрашиваем видеопоток, полагаясь на настройки браузера по умолчанию
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+              width: { ideal: 640 }, // Можно указать желаемые параметры
+              height: { ideal: 480 }
+          }
+        });
+        console.log(">>> Acquired video stream via getUserMedia");
+        videoElement.srcObject = stream;
 
-    // Запускаем камеру и обработку кадров
-    camera.start().then(() => {
-      console.log("MediaPipe Camera успешно запущена и начала отправку кадров.");
-      isGestureCanvasReady = true;
-      console.log('Флаг isGestureCanvasReady установлен в true');
-    }).catch(err => {
-      console.error("Ошибка запуска MediaPipe Camera:", err);
-    });
+        // Ждем, пока видео загрузится, чтобы получить размеры
+        videoElement.onloadedmetadata = () => {
+          console.log(">>> Video metadata loaded. Starting hands processing loop.");
+          videoElement.play(); // Начнем воспроизведение видео (может быть нужно для send)
+
+          // Запускаем цикл отправки кадров в MediaPipe вручную
+          async function processVideoFrame() {
+            if (videoElement.readyState >= 2) { // Убедимся, что есть данные кадра
+              try {
+                await handsInstance.send({ image: videoElement });
+              } catch (handsError) {
+                 console.error("Error sending frame to MediaPipe Hands:", handsError);
+              }
+            }
+            requestAnimationFrame(processVideoFrame); // Запрашиваем следующий кадр
+          }
+          processVideoFrame(); // Запускаем цикл
+
+          isGestureCanvasReady = true; // Устанавливаем флаг здесь
+          console.log('Флаг isGestureCanvasReady установлен в true (после getUserMedia)');
+        };
+
+      } catch (err) {
+        console.error(">>> Error acquiring camera feed via getUserMedia:", err.name, err.message);
+        // Отобразим ошибку пользователю, как в Firefox
+        alert(`Failed to acquire camera feed: ${err.name}: ${err.message}`);
+      }
+    }
+
+    if (videoElementForHands && hands) {
+         startVideoStream(videoElementForHands, hands);
+    } else {
+         console.error("Video element or Hands instance not ready for startVideoStream");
+    }
+
   }
 
   let handMeshGroup = new THREE.Group();
