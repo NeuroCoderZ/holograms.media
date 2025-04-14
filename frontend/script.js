@@ -1716,7 +1716,6 @@ async function loadInitialFilesAndSetupEditor() {
           // Применяем смещение ко всем точкам ТЕКУЩЕЙ руки, если оно есть
           if (xOffset !== 0) {
             // Добавим лог смещения
-            console.log(`DEBUG: Applying xOffset=${xOffset.toFixed(2)} to ${handedness} hand`);
             for (const point of handPoints3D) {
               point.x += xOffset;
             }
