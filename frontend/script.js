@@ -1791,6 +1791,8 @@ async function loadInitialFilesAndSetupEditor() {
 
         // Рассчитываем нарушения для каждой руки
         processedHands.forEach(handData => {
+            if (!handData.handedness) return; // Пропускаем руку без handedness
+            
             for (const point of handData.initialPoints) {
                 if (handData.handedness === 'Left') {
                     violations.Left = Math.min(violations.Left, point.x); // Зеркальный мир: Левая рука справа (X>0)
@@ -1810,14 +1812,20 @@ async function loadInitialFilesAndSetupEditor() {
 
         // Применяем смещения и готовим финальные данные
         processedHands.forEach(handData => {
-            const offset = offsets[handData.handedness];
+            const offset = handData.handedness ? offsets[handData.handedness] : 0; // Не применяем смещение, если нет handedness
             const finalPoints = handData.initialPoints.map(p => p.clone().add(new THREE.Vector3(offset, 0, 0)));
-            finalHandsToRender.push({ handedness: handData.handedness, points: finalPoints });
+            finalHandsToRender.push({ 
+                handedness: handData.handedness, 
+                points: finalPoints 
+            });
         });
 
     } else if (processedHands.length === 1) {
         // Если рука одна, просто используем начальные точки
-        finalHandsToRender.push({ handedness: processedHands[0].handedness, points: processedHands[0].initialPoints });
+        finalHandsToRender.push({ 
+            handedness: processedHands[0].handedness, 
+            points: processedHands[0].initialPoints 
+        });
     }
 
     // Рендерим руки с финальными координатами
