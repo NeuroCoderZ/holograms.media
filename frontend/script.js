@@ -1731,9 +1731,9 @@ async function loadInitialFilesAndSetupEditor() {
 
     // Очищаем группу ПЕРЕД рендерингом нового кадра
     handMeshGroup.clear();
-    let processedHands = []; // Массив для сбора данных
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        let processedHands = []; // Массив для сбора данных
         for (let i = 0; i < results.multiHandLandmarks.length; i++) {
             const landmarks = results.multiHandLandmarks[i];
             const classification = results.multiHandedness.find(h => h.index === i);
