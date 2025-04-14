@@ -1634,11 +1634,47 @@ async function loadInitialFilesAndSetupEditor() {
     hands.onResults(onHandsResults);
 
     async function startVideoStream(videoElement, handsInstance) {
+      console.log(">>> Enumerating media devices...");
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      console.log(">>> Available video devices:", videoDevices);
+
+      let iriunDeviceId = null;
+      for (const device of videoDevices) {
+          // Ищем по частичному совпадению имени 'Iriun' (регистронезависимо)
+          if (device.label && device.label.toLowerCase().includes('iriun')) {
+              iriunDeviceId = device.deviceId;
+              console.log(`>>> Found Iriun Webcam with deviceId: ${iriunDeviceId}`);
+              break; // Нашли, выходим из цикла
+          }
+      }
+
+      // Если не нашли Iriun, попробуем использовать первую камеру как запасной вариант (или выдать ошибку)
+      if (!iriunDeviceId && videoDevices.length > 0) {
+          console.warn(">>> Iriun Webcam not found by label, falling back to the first video device.");
+          // iriunDeviceId = videoDevices[0].deviceId; // Раскомментировать, если нужен fallback
+      } else if (!iriunDeviceId) {
+           console.error(">>> No video devices found at all!");
+           alert("No video devices found!");
+           return; // Выходим, если камер нет
+      }
+
+      // Если Iriun не найдена, но есть другие камеры, выдадим предупреждение
+      if (!iriunDeviceId) {
+           console.error(">>> Iriun Webcam device ID not found!");
+           alert("Iriun Webcam not found. Please ensure it is connected and selected.");
+           // Можно либо выйти (return;), либо продолжить с камерой по умолчанию,
+           // но тогда нужно убрать условие deviceId из constraints ниже.
+           // Пока выйдем, чтобы было понятно, что Iriun не нашлась.
+           return;
+      }
+
       try {
         // Запрашиваем видеопоток, полагаясь на настройки браузера по умолчанию
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-              width: { ideal: 640 }, // Можно указать желаемые параметры
+              deviceId: { exact: iriunDeviceId }, // Явно запрашиваем Iriun по ID
+              width: { ideal: 640 },
               height: { ideal: 480 }
           }
         });
