@@ -1674,8 +1674,6 @@ async function loadInitialFilesAndSetupEditor() {
     // Удаляем старые меши рук перед отрисовкой новых
     handMeshGroup.clear();
 
-    const areTwoHands = results.multiHandLandmarks.length === 2;
-
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       const areTwoHands = results.multiHandLandmarks.length === 2;
       for (let i = 0; i < results.multiHandedness.length; i++) {
