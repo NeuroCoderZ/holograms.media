@@ -1664,6 +1664,7 @@ async function loadInitialFilesAndSetupEditor() {
 
   let handMeshGroup = new THREE.Group();
   scene.add(handMeshGroup);
+  handMeshGroup.scale.x = -1;
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
