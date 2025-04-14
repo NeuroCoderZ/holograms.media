@@ -1676,6 +1676,7 @@ async function loadInitialFilesAndSetupEditor() {
     const areTwoHands = results.multiHandLandmarks.length === 2;
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+      const areTwoHands = results.multiHandLandmarks.length === 2;
       for (let i = 0; i < results.multiHandLandmarks.length; i++) {
         const landmarks = results.multiHandLandmarks[i];
         const handedness = results.multiHandedness[i].label;
@@ -1814,8 +1815,23 @@ async function loadInitialFilesAndSetupEditor() {
         }
 
         if (allowRender) {
-          handMeshGroup.add(lines);
-          handMeshGroup.add(points);
+          let allowRender = true; // По умолчанию рендерим
+          if (areTwoHands) {
+              // Пересчитываем X центра ладони (landmark[0]) для текущей руки
+              const palmBaseX = (0.5 - landmarks[0].x) * 2 * GRID_WIDTH;
+              // handedness уже должна быть определена в этом цикле
+              if (handedness === 'Left' && palmBaseX > 0) {
+                  allowRender = false; // Левая рука (отображаемая справа) зашла левее центра
+              } else if (handedness === 'Right' && palmBaseX < 0) {
+                  allowRender = false; // Правая рука (отображаемая слева) зашла правее центра
+              }
+          }
+
+          if (allowRender) {
+            // Существующие строки добавления мешей должны оказаться здесь
+            handMeshGroup.add(lines);
+            handMeshGroup.add(points);
+          }
         }
       }
     }
