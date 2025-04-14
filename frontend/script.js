@@ -1707,10 +1707,10 @@ async function loadInitialFilesAndSetupEditor() {
           // Рассчитываем необходимое смещение, если ТЕКУЩАЯ рука нарушает границу (X=0)
           // 'Left' рука рендерится СПРАВА (worldX < 0), 'Right' рука рендерится СЛЕВА (worldX > 0)
           // из-за формулы worldX = (0.5 - lm.x) * ...
-          if (handedness === 'Left' && mostViolatingX > 0) { // Левая рука (справа) пытается уйти левее центра (X>0)
-            xOffset = -mostViolatingX; // Сдвинуть эту руку обратно вправо (отрицательное смещение)
-          } else if (handedness === 'Right' && mostViolatingX < 0) { // Правая рука (слева) пытается уйти правее центра (X<0)
-            xOffset = -mostViolatingX; // Сдвинуть эту руку обратно влево (положительное смещение)
+          if (handedness === 'Left' && mostViolatingX > 0) { // Левая рука (визуально СЛЕВА, т.е. worldX должен быть < 0) пытается уйти ПРАВЕЕ центра (mostViolatingX > 0)
+            xOffset = -mostViolatingX; // Сдвинуть эту руку ВЛЕВО на величину нарушения
+          } else if (handedness === 'Right' && mostViolatingX < 0) { // Правая рука (визуально СПРАВА, т.е. worldX должен быть > 0) пытается уйти ЛЕВЕЕ центра (mostViolatingX < 0)
+            xOffset = -mostViolatingX; // Сдвинуть эту руку ВПРАВО на величину нарушения
           }
 
           // Применяем смещение ко всем точкам ТЕКУЩЕЙ руки, если оно есть
