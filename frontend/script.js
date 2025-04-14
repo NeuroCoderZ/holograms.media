@@ -1692,6 +1692,39 @@ async function loadInitialFilesAndSetupEditor() {
         });
 
         if (areTwoHands) {
+          let xOffset = 0; // Смещение по X для ТЕКУЩЕЙ руки
+
+          // Находим самую "выступающую" точку по X для ТЕКУЩЕЙ руки
+          let mostViolatingX = (handedness === 'Left') ? -Infinity : Infinity;
+          for (const point of handPoints3D) {
+            if (handedness === 'Left') {
+              mostViolatingX = Math.max(mostViolatingX, point.x); // Ищем максимальный X (самый правый)
+            } else { // handedness === 'Right'
+              mostViolatingX = Math.min(mostViolatingX, point.x); // Ищем минимальный X (самый левый)
+            }
+          }
+
+          // Рассчитываем необходимое смещение, если ТЕКУЩАЯ рука нарушает границу (X=0)
+          // 'Left' рука рендерится СПРАВА (worldX < 0), 'Right' рука рендерится СЛЕВА (worldX > 0)
+          // из-за формулы worldX = (0.5 - lm.x) * ...
+          if (handedness === 'Left' && mostViolatingX > 0) { // Левая рука (справа) пытается уйти левее центра (X>0)
+            xOffset = -mostViolatingX; // Сдвинуть эту руку обратно вправо (отрицательное смещение)
+          } else if (handedness === 'Right' && mostViolatingX < 0) { // Правая рука (слева) пытается уйти правее центра (X<0)
+            xOffset = -mostViolatingX; // Сдвинуть эту руку обратно влево (положительное смещение)
+          }
+
+          // Применяем смещение ко всем точкам ТЕКУЩЕЙ руки, если оно есть
+          if (xOffset !== 0) {
+            // Добавим лог смещения
+            console.log(`DEBUG: Applying xOffset=${xOffset.toFixed(2)} to ${handedness} hand`);
+            for (const point of handPoints3D) {
+              point.x += xOffset;
+            }
+          }
+        }
+        // Теперь handPoints3D содержит координаты с примененным "застреванием" по X для ЭТОЙ руки
+
+        if (areTwoHands) {
           let xOffset = 0; // Смещение по X, которое нужно применить ко всем точкам
 
           // Находим самую "выступающую" точку по X для текущей руки
@@ -1815,27 +1848,8 @@ async function loadInitialFilesAndSetupEditor() {
         }
 
         if (allowRender) {
-          let allowRender = true; // По умолчанию рендерим
-          if (areTwoHands) {
-              // Пересчитываем X центра ладони (landmark[0]) для текущей руки
-              const palmBaseX = (0.5 - landmarks[0].x) * 2 * GRID_WIDTH;
-              console.log(`DEBUG: Hand[${i}] ${handedness}: palmBaseX = ${palmBaseX.toFixed(2)}, areTwoHands = ${areTwoHands}`);
-              // handedness уже должна быть определена в этом цикле
-              if (handedness === 'Left' && palmBaseX > 0) {
-                  console.log(`DEBUG: Hand[${i}] ${handedness}: VIOLATION! Left hand crossed center.`);
-                  allowRender = false; // Левая рука (отображаемая справа) зашла левее центра
-              } else if (handedness === 'Right' && palmBaseX < 0) {
-                  console.log(`DEBUG: Hand[${i}] ${handedness}: VIOLATION! Right hand crossed center.`);
-                  allowRender = false; // Правая рука (отображаемая слева) зашла правее центра
-              }
-          }
-
-          console.log(`DEBUG: Hand[${i}] ${handedness}: Final allowRender = ${allowRender}`);
-          if (allowRender) {
-            // Существующие строки добавления мешей должны оказаться здесь
-            handMeshGroup.add(lines);
-            handMeshGroup.add(points);
-          }
+          handMeshGroup.add(lines);
+          handMeshGroup.add(points);
         }
       }
     }
