@@ -1677,9 +1677,10 @@ async function loadInitialFilesAndSetupEditor() {
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       const areTwoHands = results.multiHandLandmarks.length === 2;
-      for (let i = 0; i < results.multiHandLandmarks.length; i++) {
-        const landmarks = results.multiHandLandmarks[i];
-        const handedness = results.multiHandedness[i].label;
+      for (let i = 0; i < results.multiHandedness.length; i++) {
+        const classification = results.multiHandedness[i];
+        const handedness = classification.label;
+        const landmarks = results.multiHandLandmarks[classification.index];
 
         // Преобразуем координаты landmarks (0-1) в координаты мира Three.js (ПРИБЛИЗИТЕЛЬНО!)
         const handPoints3D = landmarks.map(lm => {
@@ -1787,9 +1788,10 @@ async function loadInitialFilesAndSetupEditor() {
             let rightHandViolation = 0; // Насколько правая рука зашла налево (<0)
 
             // Определяем нарушения для каждой руки (проверяем все точки)
-            for (let i = 0; i < results.multiHandLandmarks.length; i++) {
-                const handedness = results.multiHandedness[i].label;
-                const landmarks = results.multiHandLandmarks[i];
+            for (let i = 0; i < results.multiHandedness.length; i++) {
+                const classification = results.multiHandedness[i];
+                const handedness = classification.label;
+                const landmarks = results.multiHandLandmarks[classification.index];
                 const handPoints = landmarks.map(lm => { // Пересчитываем X для проверки
                      return (0.5 - lm.x) * 2 * GRID_WIDTH;
                 });
