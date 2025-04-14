@@ -1738,11 +1738,15 @@ async function loadInitialFilesAndSetupEditor() {
             const landmarks = results.multiHandLandmarks[i];
             const classification = results.multiHandedness.find(h => h.index === i);
             // Добавим проверку и на classification, и на landmarks перед получением label
-            if (!classification || !landmarks) {
-                console.warn(`Missing classification or landmarks for index ${i}`);
+            if (!landmarks) { // Проверяем только landmarks для пропуска
+                console.warn(`Missing landmarks for index ${i}`);
                 continue;
             }
-            const handedness = classification.label;
+            // Пытаемся получить handedness, но используем undefined, если нет classification
+            const handedness = classification ? classification.label : undefined;
+            if (!classification) {
+                 console.warn(`Missing classification for index ${i}, handedness is undefined.`);
+            }
 
             // Рассчитываем ТОЛЬКО начальные точки (НЕзеркальная формула, т.к. есть scale.x = -1)
             const initialHandPoints3D = landmarks.map(lm => {
