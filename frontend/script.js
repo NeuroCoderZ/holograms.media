@@ -1697,6 +1697,41 @@ async function loadInitialFilesAndSetupEditor() {
           return new THREE.Vector3(worldX, worldY, worldZ);
         });
 
+        if (areTwoHands) {
+          let xOffset = 0;
+          // Находим самую "выступающую" точку по X для текущей руки
+          // Используем НЕИНВЕРТИРОВАННЫЕ координаты для проверки нарушения
+          let mostViolatingLmX = (handedness === 'Left') ? 0 : 1; // Начальные значения для поиска нарушения
+          for (const lm of landmarks) {
+              if (handedness === 'Left') { // Левая рука (должна быть lm.x < 0.5)
+                  mostViolatingLmX = Math.max(mostViolatingLmX, lm.x); // Ищем максимальный lm.x
+              } else { // Правая рука (должна быть lm.x > 0.5)
+                  mostViolatingLmX = Math.min(mostViolatingLmX, lm.x); // Ищем минимальный lm.x
+              }
+          }
+
+          // Рассчитываем смещение, если есть нарушение границы lm.x = 0.5
+          if (handedness === 'Left' && mostViolatingLmX > 0.5) {
+              // Левая рука зашла направо (lm.x > 0.5)
+              // На сколько она зашла в координатах lm.x? -> mostViolatingLmX - 0.5
+              // На сколько нужно сдвинуть в worldX? -> -(mostViolatingLmX - 0.5) * 2 * GRID_WIDTH
+              xOffset = -(mostViolatingLmX - 0.5) * 2 * GRID_WIDTH;
+          } else if (handedness === 'Right' && mostViolatingLmX < 0.5) {
+              // Правая рука зашла налево (lm.x < 0.5)
+              // На сколько она зашла в координатах lm.x? -> 0.5 - mostViolatingLmX
+              // На сколько нужно сдвинуть в worldX? -> (0.5 - mostViolatingLmX) * 2 * GRID_WIDTH
+              xOffset = (0.5 - mostViolatingLmX) * 2 * GRID_WIDTH;
+          }
+
+          // Применяем смещение ко всем точкам ТЕКУЩЕЙ руки, если оно есть
+          if (xOffset !== 0) {
+            for (const point of handPoints3D) {
+              point.x += xOffset;
+            }
+          }
+        }
+        // Теперь handPoints3D содержит координаты с примененным "застреванием" по X
+
 
 
         if (areTwoHands) {
