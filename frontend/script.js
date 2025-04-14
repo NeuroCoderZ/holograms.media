@@ -1721,6 +1721,7 @@ async function loadInitialFilesAndSetupEditor() {
   let handMeshGroup = new THREE.Group();
   scene.add(handMeshGroup);
   handMeshGroup.scale.x = -1;
+  handMeshGroup.scale.x = -1;
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
@@ -1730,6 +1731,76 @@ async function loadInitialFilesAndSetupEditor() {
 
     // Очищаем группу ПЕРЕД рендерингом нового кадра
     handMeshGroup.clear();
+
+    const areTwoHands = results.multiHandLandmarks && results.multiHandLandmarks.length === 2;
+    let processedHands = []; // Массив для сбора данных
+
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+            const landmarks = results.multiHandLandmarks[i];
+            const classification = results.multiHandedness.find(h => h.index === i);
+            // Добавим проверку и на classification, и на landmarks перед получением label
+            if (!classification || !landmarks) {
+                console.warn(`Missing classification or landmarks for index ${i}`);
+                continue;
+            }
+            const handedness = classification.label;
+
+            // Рассчитываем ТОЛЬКО начальные точки (НЕзеркальная формула, т.к. есть scale.x = -1)
+            const initialHandPoints3D = landmarks.map(lm => {
+                let worldX = (lm.x - 0.5) * 2 * GRID_WIDTH; // НЕзеркальный X
+                let worldY = (1 - lm.y) * GRID_HEIGHT;
+                let worldZ = (lm.z + 0.2) * -400;
+                return new THREE.Vector3(worldX, worldY, worldZ);
+            });
+            processedHands.push({ handedness: handedness, initialPoints: initialHandPoints3D });
+        }
+    }
+
+    let finalHandsToRender = [];
+    if (processedHands.length > 0) { // Обрабатываем, если есть хотя бы одна рука
+        if (areTwoHands) {
+            let offsets = { Left: 0, Right: 0 };
+            // Важно: Расчет нарушений для НЕзеркального мира
+            let violations = { Left: -Infinity, Right: Infinity };
+            processedHands.forEach(handData => {
+                for (const point of handData.initialPoints) {
+                    if (handData.handedness === 'Left') { violations.Left = Math.max(violations.Left, point.x); } // Левая рука (X<0) - ищем max X
+                    else { violations.Right = Math.min(violations.Right, point.x); } // Правая рука (X>0) - ищем min X
+                }
+            });
+            // Расчет смещений
+            if (violations.Left > 0) { offsets.Left = -violations.Left; } // Левая зашла >0, двигаем влево
+            if (violations.Right < 0) { offsets.Right = -violations.Right; } // Правая зашла <0, двигаем вправо
+
+            // Применяем смещения
+            processedHands.forEach(handData => {
+                const offset = offsets[handData.handedness];
+                const finalPoints = handData.initialPoints.map(p => p.clone().add(new THREE.Vector3(offset, 0, 0)));
+                finalHandsToRender.push({ points: finalPoints }); // Передаем только точки
+            });
+        } else { // Рука одна, просто добавляем
+            finalHandsToRender.push({ points: processedHands[0].initialPoints }); // Передаем только точки
+        }
+    }
+
+    // handMeshGroup.clear(); уже был вызван в начале функции
+    finalHandsToRender.forEach(handData => {
+        const finalHandPoints3D = handData.points;
+        // Используем ПОЛУПРОЗРАЧНЫЕ материалы (как в коммите a2b7e1a)
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, linewidth: 2 });
+        const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.3 });
+
+        const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => {
+            const p1 = finalHandPoints3D[conn[0]]; const p2 = finalHandPoints3D[conn[1]];
+            return (p1 && p2) ? [p1, p2] : [];
+        }));
+        const pointsGeometry = new THREE.BufferGeometry().setFromPoints(finalHandPoints3D);
+        const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
+        const points = new THREE.Points(pointsGeometry, pointsMaterial);
+        handMeshGroup.add(lines);
+        handMeshGroup.add(points);
+    });
 
     let processedHands = []; // Массив для хранения обработанных рук
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
