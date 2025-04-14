@@ -1736,12 +1736,16 @@ async function loadInitialFilesAndSetupEditor() {
         for (let i = 0; i < results.multiHandLandmarks.length; i++) {
             const landmarks = results.multiHandLandmarks[i];
             const classification = results.multiHandedness.find(h => h.index === i);
-            const handedness = classification ? classification.label : 'Unknown';
+            if (!classification) {
+                console.warn(`Classification not found for index ${i}`);
+                continue; // Пропустить, если не нашли классификацию
+            }
+            const handedness = classification.label;
             if (!landmarks || handedness === 'Unknown') { continue; }
 
             // Рассчитываем ТОЛЬКО начальные точки БЕЗ смещения
             const initialHandPoints3D = landmarks.map(lm => {
-                let worldX = (lm.x - 0.5) * 2 * GRID_WIDTH; // НЕинвертированный X
+                let worldX = (0.5 - lm.x) * 2 * GRID_WIDTH; // НЕинвертированный X
                 let worldY = (1 - lm.y) * GRID_HEIGHT;
                 let worldZ = (lm.z + 0.2) * -400; // Оставляем пока так
                 return new THREE.Vector3(worldX, worldY, worldZ);
