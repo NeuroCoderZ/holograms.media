@@ -1727,12 +1727,10 @@ async function loadInitialFilesAndSetupEditor() {
   function onHandsResults(results) {
     let thumbTip, indexTip, palmBase;
     if (!isGestureCanvasReady) { return; }
-    const areTwoHands = results.multiHandLandmarks.length === 2;
+    const areTwoHands = results.multiHandLandmarks && results.multiHandLandmarks.length === 2;
 
     // Очищаем группу ПЕРЕД рендерингом нового кадра
     handMeshGroup.clear();
-
-    const areTwoHands = results.multiHandLandmarks && results.multiHandLandmarks.length === 2;
     let processedHands = []; // Массив для сбора данных
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
