@@ -1819,14 +1819,18 @@ async function loadInitialFilesAndSetupEditor() {
           if (areTwoHands) {
               // Пересчитываем X центра ладони (landmark[0]) для текущей руки
               const palmBaseX = (0.5 - landmarks[0].x) * 2 * GRID_WIDTH;
+              console.log(`DEBUG: Hand[${i}] ${handedness}: palmBaseX = ${palmBaseX.toFixed(2)}, areTwoHands = ${areTwoHands}`);
               // handedness уже должна быть определена в этом цикле
               if (handedness === 'Left' && palmBaseX > 0) {
+                  console.log(`DEBUG: Hand[${i}] ${handedness}: VIOLATION! Left hand crossed center.`);
                   allowRender = false; // Левая рука (отображаемая справа) зашла левее центра
               } else if (handedness === 'Right' && palmBaseX < 0) {
+                  console.log(`DEBUG: Hand[${i}] ${handedness}: VIOLATION! Right hand crossed center.`);
                   allowRender = false; // Правая рука (отображаемая слева) зашла правее центра
               }
           }
 
+          console.log(`DEBUG: Hand[${i}] ${handedness}: Final allowRender = ${allowRender}`);
           if (allowRender) {
             // Существующие строки добавления мешей должны оказаться здесь
             handMeshGroup.add(lines);
