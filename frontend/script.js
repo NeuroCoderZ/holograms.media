@@ -1722,6 +1722,7 @@ async function loadInitialFilesAndSetupEditor() {
   scene.add(handMeshGroup);
   handMeshGroup.scale.x = -1;
   handMeshGroup.scale.x = -1;
+  handMeshGroup.scale.x = -1;
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
@@ -1805,8 +1806,8 @@ async function loadInitialFilesAndSetupEditor() {
         const finalHandPoints3D = handData.points; // Берем точки из массива
 
         // Создаем материалы (как и раньше)
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, linewidth: 2 });
-        const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.3 });
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, linewidth: 3 });
+        const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 4, transparent: true, opacity: 0.6 });
 
         // Создаем геометрии (как и раньше, но с finalHandPoints3D)
         const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => {
