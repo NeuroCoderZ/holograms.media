@@ -1745,7 +1745,7 @@ async function loadInitialFilesAndSetupEditor() {
 
             // Рассчитываем ТОЛЬКО начальные точки БЕЗ смещения
             const initialHandPoints3D = landmarks.map(lm => {
-                let worldX = (0.5 - lm.x) * 2 * GRID_WIDTH; // НЕинвертированный X
+                let worldX = (lm.x - 0.5) * 2 * GRID_WIDTH; // Зеркальная формула
                 let worldY = (1 - lm.y) * GRID_HEIGHT;
                 let worldZ = (lm.z + 0.2) * -400; // Оставляем пока так
                 return new THREE.Vector3(worldX, worldY, worldZ);
@@ -1758,25 +1758,25 @@ async function loadInitialFilesAndSetupEditor() {
     let finalHandsToRender = []; // Массив с финальными точками для рендера
     if (processedHands.length === 2) {
         let offsets = { Left: 0, Right: 0 };
-        let violations = { Left: -Infinity, Right: Infinity };
+        let violations = { Left: Infinity, Right: -Infinity };
 
         // Рассчитываем нарушения для каждой руки
         processedHands.forEach(handData => {
             for (const point of handData.initialPoints) {
                 if (handData.handedness === 'Left') {
-                    violations.Left = Math.max(violations.Left, point.x); // НЕзеркальный мир: Левая рука слева (X<0)
+                    violations.Left = Math.min(violations.Left, point.x); // Зеркальный мир: Левая рука справа (X>0)
                 } else { // Right
-                    violations.Right = Math.min(violations.Right, point.x); // Правая рука справа (X>0)
+                    violations.Right = Math.max(violations.Right, point.x); // Правая рука слева (X<0)
                 }
             }
         });
 
         // Рассчитываем смещения
-        if (violations.Left > 0) { // Левая зашла направо
-            offsets.Left = -violations.Left; // Сдвинуть влево
+        if (violations.Left < 0) { // Левая зашла налево
+            offsets.Left = -violations.Left; // Сдвинуть вправо
         }
-        if (violations.Right < 0) { // Правая зашла налево
-            offsets.Right = -violations.Right; // Сдвинуть вправо
+        if (violations.Right > 0) { // Правая зашла направо
+            offsets.Right = -violations.Right; // Сдвинуть влево
         }
 
         // Применяем смещения и готовим финальные данные
@@ -1796,8 +1796,8 @@ async function loadInitialFilesAndSetupEditor() {
         const finalHandPoints3D = handData.points; // Берем точки из массива
 
         // Создаем материалы (как и раньше)
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, linewidth: 1 });
-        const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.7 });
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: false, opacity: 1.0, linewidth: 1 });
+        const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: false, opacity: 1.0 });
 
         // Создаем геометрии (как и раньше, но с finalHandPoints3D)
         const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => {
