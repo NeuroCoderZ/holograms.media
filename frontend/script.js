@@ -1751,32 +1751,6 @@ async function loadInitialFilesAndSetupEditor() {
           return new THREE.Vector3(worldX, worldY, worldZ);
         });
 
-        if (areTwoHands) {
-          let xOffset = 0;
-          // Находим самую "выступающую" точку по X для текущей руки в МИРОВЫХ координатах (worldX)
-          let mostViolatingX = (handedness === 'Left') ? Infinity : -Infinity; // Инвертируем начальные значения
-          for (const point of handPoints3D) {
-            if (handedness === 'Left') { // Левая рука (отображается СПРАВА, worldX должен быть > 0)
-                mostViolatingX = Math.min(mostViolatingX, point.x); // Ищем МИНИМАЛЬНЫЙ X (самый левый край ПРАВОЙ руки)
-            } else { // Правая рука (отображается СЛЕВА, worldX должен быть < 0)
-                mostViolatingX = Math.max(mostViolatingX, point.x); // Ищем МАКСИМАЛЬНЫЙ X (самый правый край ЛЕВОЙ руки)
-            }
-          }
-
-          // Рассчитываем смещение, если есть нарушение границы X=0
-          if (handedness === 'Left' && mostViolatingX < 0) { // Левая рука (справа) пытается уйти левее центра (worldX < 0)
-            xOffset = -mostViolatingX; // Сдвинуть ВПРАВО (положительный offset)
-          } else if (handedness === 'Right' && mostViolatingX > 0) { // Правая рука (слева) пытается уйти правее центра (worldX > 0)
-            xOffset = -mostViolatingX; // Сдвинуть ВЛЕВО (отрицательный offset)
-          }
-
-          // Применяем смещение ко всем точкам ТЕКУЩЕЙ руки, если оно есть
-          if (xOffset !== 0) {
-            for (const point of handPoints3D) {
-              point.x += xOffset;
-            }
-          }
-        }
 
         if (areTwoHands) {
           let xOffset = 0;
