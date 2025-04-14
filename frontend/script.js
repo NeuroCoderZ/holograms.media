@@ -1727,165 +1727,88 @@ async function loadInitialFilesAndSetupEditor() {
     if (!isGestureCanvasReady) { return; }
     const areTwoHands = results.multiHandLandmarks.length === 2;
 
-    // Удаляем старые меши рук перед отрисовкой новых
+    // Очищаем группу ПЕРЕД рендерингом нового кадра
     handMeshGroup.clear();
 
+    let processedHands = []; // Массив для хранения обработанных рук
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-      for (let i = 0; i < results.multiHandLandmarks.length; i++) {
-        const landmarks = results.multiHandLandmarks[i];
-        const classification = results.multiHandedness.find(h => h.index === i);
-        const handedness = classification ? classification.label : 'Unknown'; // Получаем label или 'Unknown'
-        if (!landmarks || handedness === 'Unknown') { continue; } // Пропускаем, если что-то не так
+        const areTwoHands = results.multiHandLandmarks.length === 2; // Определяем один раз
+        for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+            const landmarks = results.multiHandLandmarks[i];
+            const classification = results.multiHandedness.find(h => h.index === i);
+            const handedness = classification ? classification.label : 'Unknown';
+            if (!landmarks || handedness === 'Unknown') { continue; }
 
-        // Преобразуем координаты landmarks (0-1) в координаты мира Three.js (ПРИБЛИЗИТЕЛЬНО!)
-        const handPoints3D = landmarks.map(lm => {
-          let normX = 0.5 - lm.x; // Центрируем по X
-          let normY = 0.5 - lm.y; // Центрируем и инвертируем Y
-          let worldX = (lm.x - 0.5) * 2 * GRID_WIDTH; // Масштабируем (подбирать значение)
-          let worldY = (1 - lm.y) * GRID_HEIGHT; // Масштабируем (подбирать значение)
-          let worldZ = (lm.z + 0.2) * -400; // Масштабирование и сдвиг по Z (подбирать значение)
-          return new THREE.Vector3(worldX, worldY, worldZ);
-        });
+            // Рассчитываем ТОЛЬКО начальные точки БЕЗ смещения
+            const initialHandPoints3D = landmarks.map(lm => {
+                let worldX = (lm.x - 0.5) * 2 * GRID_WIDTH; // НЕинвертированный X
+                let worldY = (1 - lm.y) * GRID_HEIGHT;
+                let worldZ = (lm.z + 0.2) * -400; // Оставляем пока так
+                return new THREE.Vector3(worldX, worldY, worldZ);
+            });
 
-        if (areTwoHands) {
-          let xOffset = 0;
-          // Находим самую "выступающую" точку по X для текущей руки в МИРОВЫХ координатах (worldX)
-          // Мир НЕ зеркальный: Левая рука слева (X<0), правая справа (X>0).
-          let mostViolatingX = (handedness === 'Left') ? -Infinity : Infinity;
-          for (const point of handPoints3D) {
-            if (handedness === 'Left') { // Левая рука (слева, X должен быть < 0)
-                mostViolatingX = Math.max(mostViolatingX, point.x); // Ищем МАКСИМАЛЬНЫЙ X (самый правый край левой руки)
-            } else { // Правая рука (справа, X должен быть > 0)
-                mostViolatingX = Math.min(mostViolatingX, point.x); // Ищем МИНИМАЛЬНЫЙ X (самый левый край правой руки)
-            }
-          }
-
-          // Рассчитываем смещение, если есть нарушение границы X=0
-          if (handedness === 'Left' && mostViolatingX > 0) { // Левая рука зашла правее центра (worldX > 0)
-            xOffset = -mostViolatingX; // Сдвинуть ВЛЕВО (отрицательный offset)
-          } else if (handedness === 'Right' && mostViolatingX < 0) { // Правая рука зашла левее центра (worldX < 0)
-            xOffset = -mostViolatingX; // Сдвинуть ВПРАВО (положительный offset)
-          }
-
-          // Применяем смещение ко всем точкам ТЕКУЩЕЙ руки, если оно есть
-          if (xOffset !== 0) {
-            for (const point of handPoints3D) {
-              point.x += xOffset;
-            }
-          }
+            processedHands.push({ handedness: handedness, initialPoints: initialHandPoints3D });
         }
+    }
 
+    let finalHandsToRender = []; // Массив с финальными точками для рендера
+    if (processedHands.length === 2) {
+        let offsets = { Left: 0, Right: 0 };
+        let violations = { Left: -Infinity, Right: Infinity };
 
-        if (areTwoHands) {
-          let xOffset = 0;
-          // Находим самую "выступающую" точку по X для текущей руки
-          // Используем НЕИНВЕРТИРОВАННЫЕ координаты для проверки нарушения
-          let mostViolatingLmX = (handedness === 'Left') ? 0 : 1; // Начальные значения для поиска нарушения
-          for (const lm of landmarks) {
-              if (handedness === 'Left') { // Левая рука (должна быть lm.x < 0.5)
-                  mostViolatingLmX = Math.max(mostViolatingLmX, lm.x); // Ищем максимальный lm.x
-              } else { // Правая рука (должна быть lm.x > 0.5)
-                  mostViolatingLmX = Math.min(mostViolatingLmX, lm.x); // Ищем минимальный lm.x
-              }
-          }
-
-          // Рассчитываем смещение, если есть нарушение границы lm.x = 0.5
-          if (handedness === 'Left' && mostViolatingLmX > 0.5) {
-              // Левая рука зашла направо (lm.x > 0.5)
-              // На сколько она зашла в координатах lm.x? -> mostViolatingLmX - 0.5
-              // На сколько нужно сдвинуть в worldX? -> -(mostViolatingLmX - 0.5) * 2 * GRID_WIDTH
-              xOffset = -(mostViolatingLmX - 0.5) * 2 * GRID_WIDTH;
-          } else if (handedness === 'Right' && mostViolatingLmX < 0.5) {
-              // Правая рука зашла налево (lm.x < 0.5)
-              // На сколько она зашла в координатах lm.x? -> 0.5 - mostViolatingLmX
-              // На сколько нужно сдвинуть в worldX? -> (0.5 - mostViolatingLmX) * 2 * GRID_WIDTH
-              xOffset = (0.5 - mostViolatingLmX) * 2 * GRID_WIDTH;
-          }
-
-          // Применяем смещение ко всем точкам ТЕКУЩЕЙ руки, если оно есть
-          if (xOffset !== 0) {
-            for (const point of handPoints3D) {
-              point.x += xOffset;
-            }
-          }
-        }
-        // Теперь handPoints3D содержит координаты с примененным "застреванием" по X
-
-
-
-
-        // Логика "застревания" применяется ко всей группе рук ПОСЛЕ отрисовки
-        if (areTwoHands && handMeshGroup.children.length > 0) { // Убедимся, что руки отрисованы
-            let leftHandViolation = 0;  // Насколько левая рука зашла направо (>0)
-            let rightHandViolation = 0; // Насколько правая рука зашла налево (<0)
-
-            // Определяем нарушения для каждой руки (проверяем все точки)
-            for (let i = 0; i < results.multiHandedness.length; i++) {
-                const classification = results.multiHandedness[i];
-                const handedness = classification.label;
-                const landmarks = results.multiHandLandmarks[classification.index];
-                const handPoints = landmarks.map(lm => { // Пересчитываем X для проверки
-                     return (0.5 - lm.x) * 2 * GRID_WIDTH;
-                });
-
-                if (handedness === 'Left') {
-                    const maxViolation = Math.max(0, ...handPoints.map(x => x)); // Находим максимальный X, но не меньше 0
-                    if (maxViolation > leftHandViolation) leftHandViolation = maxViolation;
-                } else { // Right hand
-                    const minViolation = Math.min(0, ...handPoints.map(x => x)); // Находим минимальный X, но не больше 0
-                    if (minViolation < rightHandViolation) rightHandViolation = minViolation;
+        // Рассчитываем нарушения для каждой руки
+        processedHands.forEach(handData => {
+            for (const point of handData.initialPoints) {
+                if (handData.handedness === 'Left') {
+                    violations.Left = Math.max(violations.Left, point.x); // НЕзеркальный мир: Левая рука слева (X<0)
+                } else { // Right
+                    violations.Right = Math.min(violations.Right, point.x); // Правая рука справа (X>0)
                 }
             }
+        });
 
-            // Если есть нарушения, сдвигаем ВСЮ группу рук
-            // Левая рука "выталкивает" правую, правая "выталкивает" левую
-            const totalOffset = - (leftHandViolation + rightHandViolation); // Считаем суммарный сдвиг
-
-            // Применяем сдвиг к позиции всей группы, где находятся 3D-руки
-            // (Предполагается, что handMeshGroup позиционирована в (0,0,0) сцены,
-            // а точки рук имеют координаты относительно нее)
-            // Если это не так, нужно будет адаптировать логику
-            handMeshGroup.position.x = totalOffset;
-
-        } else {
-             // Если рук не две, сбрасываем смещение группы
-             handMeshGroup.position.x = 0;
+        // Рассчитываем смещения
+        if (violations.Left > 0) { // Левая зашла направо
+            offsets.Left = -violations.Left; // Сдвинуть влево
+        }
+        if (violations.Right < 0) { // Правая зашла налево
+            offsets.Right = -violations.Right; // Сдвинуть вправо
         }
 
-        // Материалы (белые, полупрозрачные)
+        // Применяем смещения и готовим финальные данные
+        processedHands.forEach(handData => {
+            const offset = offsets[handData.handedness];
+            const finalPoints = handData.initialPoints.map(p => p.clone().add(new THREE.Vector3(offset, 0, 0)));
+            finalHandsToRender.push({ handedness: handData.handedness, points: finalPoints });
+        });
+
+    } else if (processedHands.length === 1) {
+        // Если рука одна, просто используем начальные точки
+        finalHandsToRender.push({ handedness: processedHands[0].handedness, points: processedHands[0].initialPoints });
+    }
+
+    // Рендерим руки с финальными координатами
+    finalHandsToRender.forEach(handData => {
+        const finalHandPoints3D = handData.points; // Берем точки из массива
+
+        // Создаем материалы (как и раньше)
         const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, linewidth: 1 });
-        const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.7 }); // Чуть крупнее точки
+        const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.7 });
 
-        // Геометрии
+        // Создаем геометрии (как и раньше, но с finalHandPoints3D)
         const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => {
-          // Добавим проверку на существование точек перед использованием
-          const p1 = handPoints3D[conn[0]];
-          const p2 = handPoints3D[conn[1]];
-          return (p1 && p2) ? [p1, p2] : [];
+            const p1 = finalHandPoints3D[conn[0]];
+            const p2 = finalHandPoints3D[conn[1]];
+            return (p1 && p2) ? [p1, p2] : [];
         }));
-        const pointsGeometry = new THREE.BufferGeometry().setFromPoints(handPoints3D);
+        const pointsGeometry = new THREE.BufferGeometry().setFromPoints(finalHandPoints3D);
 
-        // Объекты
+        // Создаем объекты и добавляем в группу
         const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
         const points = new THREE.Points(pointsGeometry, pointsMaterial);
-
-        // Добавляем в handMeshGroup
-        let allowRender = true; // По умолчанию рендерим
-        if (areTwoHands) {
-          const palmBaseX = (landmarks[0].x - 0.5) * 2 * GRID_WIDTH; // Вычисляем X центра ладони
-          if (handedness === 'Left' && palmBaseX > 0) {
-            allowRender = false; // Левая рука зашла направо
-          } else if (handedness === 'Right' && palmBaseX < 0) {
-            allowRender = false; // Правая рука зашла налево
-          }
-        }
-
-        if (allowRender) {
-          handMeshGroup.add(lines);
-          handMeshGroup.add(points);
-        }
-      }
-    }
+        handMeshGroup.add(lines);
+        handMeshGroup.add(points);
+    });
 
     const gestureArea = document.getElementById('gesture-area');
     if (!gestureArea) return;
