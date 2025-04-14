@@ -1664,7 +1664,6 @@ async function loadInitialFilesAndSetupEditor() {
 
   let handMeshGroup = new THREE.Group();
   scene.add(handMeshGroup);
-  handMeshGroup.scale.x = -1;
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
@@ -1732,34 +1731,6 @@ async function loadInitialFilesAndSetupEditor() {
 
 
 
-        if (areTwoHands) {
-          let xOffset = 0; // Смещение по X, которое нужно применить ко всем точкам
-
-          // Находим самую "выступающую" точку по X для текущей руки
-          let mostViolatingX = (handedness === 'Left') ? -Infinity : Infinity;
-          for (const point of handPoints3D) {
-            if (handedness === 'Left') {
-              mostViolatingX = Math.max(mostViolatingX, point.x); // Ищем максимальный X (самый правый)
-            } else { // handedness === 'Right'
-              mostViolatingX = Math.min(mostViolatingX, point.x); // Ищем минимальный X (самый левый)
-            }
-          }
-
-          // Рассчитываем необходимое смещение, если рука нарушает границу (X=0)
-          if (handedness === 'Left' && mostViolatingX > 0) {
-            xOffset = -mostViolatingX; // Сдвинуть влево на величину нарушения
-          } else if (handedness === 'Right' && mostViolatingX < 0) {
-            xOffset = -mostViolatingX; // Сдвинуть вправо на величину нарушения
-          }
-
-          // Применяем смещение ко всем точкам руки, если оно есть
-          if (xOffset !== 0) {
-            for (const point of handPoints3D) {
-              point.x += xOffset;
-            }
-          }
-        }
-        // Теперь handPoints3D содержит координаты с примененным "застреванием" по X
 
         // Логика "застревания" применяется ко всей группе рук ПОСЛЕ отрисовки
         if (areTwoHands && handMeshGroup.children.length > 0) { // Убедимся, что руки отрисованы
