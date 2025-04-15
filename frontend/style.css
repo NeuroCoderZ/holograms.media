@@ -122,14 +122,12 @@ body {
   width: 70%;
   margin: 5px auto;
   flex-shrink: 0;
-  background-color: var(--placeholder-bg); /* Правильный фон */
-  border: none; /* Убрана рамка */
-  /* border-radius: 8px; */
-  padding: 5px;
-  position: relative; /* Нужно для ::before и точек */
+  background-color: black;
+  border: 2px solid var(--color-icon-disabled);
+  position: relative;
   z-index: 10;
   overflow: hidden;
-  cursor: pointer; /* Делаем курсор рукой */
+  cursor: pointer;
 }
 
 #gesture-area::before {
