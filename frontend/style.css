@@ -125,7 +125,6 @@ body {
   border: 2px solid var(--color-icon-disabled);
   overflow: hidden;
   cursor: pointer;
-  pointer-events: none;
 }
 
 #gesture-area:hover {
@@ -133,16 +132,6 @@ body {
   transition: border-color 0.2s ease-in-out;
 }
 
-#gesture-area::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0; /* Небольшой отступ слева */
-  width: 2px; /* Толщина линии */
-  height: 100%; /* Во всю высоту */
-  background-color: red;
-  z-index: 1; /* Под точками */
-}
 
 
 
