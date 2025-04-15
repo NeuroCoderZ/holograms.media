@@ -113,7 +113,6 @@ body {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain; /* Вписываем с сохранением пропорций */
-  z-index: 5; /* Ниже области жестов, но выше фона body */
 }
 
 /* Область жестов */
@@ -124,10 +123,9 @@ body {
   flex-shrink: 0;
   background-color: black;
   border: 2px solid var(--color-icon-disabled);
-  position: relative;
-  z-index: 10;
   overflow: hidden;
   cursor: pointer;
+  pointer-events: none;
 }
 
 #gesture-area:hover {
