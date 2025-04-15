@@ -130,6 +130,11 @@ body {
   cursor: pointer;
 }
 
+#gesture-area:hover {
+  border-color: var(--color-icon-active);
+  transition: border-color 0.2s ease-in-out;
+}
+
 #gesture-area::before {
   content: '';
   position: absolute;
