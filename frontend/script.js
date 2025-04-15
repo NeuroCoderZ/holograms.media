@@ -996,7 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Рассчитываем масштабы по ширине и высоте
     let widthScale = (screenWidth * TARGET_WIDTH_PERCENTAGE) / hologramWidth; // TARGET_WIDTH_PERCENTAGE ~0.95?
-    let heightScale = (screenHeight * 0.8) / hologramHeight; // Используем 80% высоты (Возвращаем)
+    let heightScale = (screenHeight * 0.9) / hologramHeight;
 
     // Используем МЕНЬШИЙ из масштабов, чтобы вписать объект
     let scale = Math.min(widthScale, heightScale);
@@ -1004,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Добавляем минимальный масштаб
     scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
 
-    return scale * 0.8; // ВОЗВРАЩАЕМ ЧИСТЫЙ МАСШТАБ БЕЗ * 0.5
+    return scale;
   }
 
   const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight); // Используем доступные размеры
