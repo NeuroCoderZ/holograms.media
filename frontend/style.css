@@ -350,9 +350,6 @@ body {
 }
 
 /* Увеличение иконки Telegram */
-#telegramLinkButton svg {
-  transform: scale(1.3);
-}
 
 /* Скрытые и Модальные окна */
 #camera-view, #previewCanvas { display: none; }
