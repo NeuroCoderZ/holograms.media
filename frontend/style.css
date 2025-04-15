@@ -306,7 +306,7 @@ body {
   color: var(--color-icon); /* Светло-серый по умолчанию для SVG */
   display: flex; align-items: center; justify-content: center;
   border-radius: 5px;
-  transition: color 0.2s ease; /* Плавный переход цвета */
+  transition: color 0.15s ease-in-out; /* Плавный переход цвета */
   margin: 0;
 }
 
@@ -324,20 +324,13 @@ body {
   /* filter: brightness(0.8); */ /* Можно добавить для приглушения, если иконки слишком яркие */
 }
 
-/* Hover-эффект для НУЖНЫХ иконок */
-#micButton:hover svg,
-#fullscreenButton:hover svg,
-#xrButton:hover svg,
-#telegramLinkButton:hover svg,
-#triaButton:hover svg,
-#gestureRecordButton:hover svg,
-#hologramListButton:hover svg {
-  color: var(--color-icon-active); /* Белый цвет при наведении */
-}
-
 /* Стили для активной кнопки (если нужно) */
 .control-button.active {
   color: var(--color-icon-active); /* Белый */
+}
+
+.control-button:not(:disabled):hover {
+  color: var(--color-icon-active);
 }
 
 /* Стили для отключенной кнопки */
