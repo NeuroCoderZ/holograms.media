@@ -305,7 +305,6 @@ body {
   display: flex; align-items: center; justify-content: center;
   border-radius: 5px;
   transition: color 0.15s ease-in-out; /* Плавный переход цвета */
-  transition: color 0.15s ease-in-out; /* Плавный переход цвета */
   margin: 0;
 }
 
@@ -325,10 +324,6 @@ body {
 /* Стили для активной кнопки (если нужно) */
 .control-button.active {
   color: var(--color-icon-active); /* Белый */
-}
-
-.control-button:not(:disabled):hover {
-  color: var(--color-icon-active);
 }
 
 .control-button:not(:disabled):hover {
