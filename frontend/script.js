@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 // --- Global Variables ---
+let hologramPivot = new THREE.Group();
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1007,18 +1008,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return scale;
   }
 
-  const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight); // Используем доступные размеры
-  mainSequencerGroup.scale.setScalar(initialScale * 1.1);
-  mainSequencerGroup.position.y = -GRID_HEIGHT * initialScale / 2; // Корректировка вертикального позиционирования
-  mainSequencerGroup.position.x = 0; // Устанавливаем mainSequencerGroup.position.x = 0;
+  const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight);
+  console.log('Final Scale:', initialScale);
 
-  // --- Отладка итогового масштаба и размеров ---
-  const containerRect = gridContainer.getBoundingClientRect();
-  console.log('Grid Container Rect:', containerRect); // Логи размеров контейнера
-  console.log('Final Scale:', initialScale); // Логи итогового масштаба
-
+  scene.add(hologramPivot);
+  hologramPivot.add(mainSequencerGroup);
+  hologramPivot.scale.setScalar(initialScale); // Масштаб пивота
+  hologramPivot.position.set(0, 0, 0); // Пивот в центре
+  mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Группа смещена внутри
   mainSequencerGroup.rotation.set(0, 0, 0);
-  scene.add(mainSequencerGroup);
 
   renderer.autoClear = false;
 
@@ -1047,17 +1045,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!isXRMode) {
       // Clamp rotations to ±90 degrees (±π/2 radians)
-      mainSequencerGroup.rotation.x = THREE.MathUtils.clamp(
+      hologramPivot.rotation.x = THREE.MathUtils.clamp(
         rotationX,
         -Math.PI/2,
         Math.PI/2
       );
-      mainSequencerGroup.rotation.y = THREE.MathUtils.clamp(
+      hologramPivot.rotation.y = THREE.MathUtils.clamp(
         rotationY,
         -Math.PI/2,
         Math.PI/2
       );
-      mainSequencerGroup.rotation.z = 0; // Prevent Z rotation
+      hologramPivot.rotation.z = 0; // Prevent Z rotation
     } else {
       xrCamera.rotation.x = THREE.MathUtils.clamp(
         rotationX,
@@ -1074,8 +1072,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   hammer.on('panend', () => {
-    const startRotationX = !isXRMode ? mainSequencerGroup.rotation.x : xrCamera.rotation.x;
-    const startRotationY = !isXRMode ? mainSequencerGroup.rotation.y : xrCamera.rotation.y;
+    const startRotationX = !isXRMode ? hologramPivot.rotation.x : xrCamera.rotation.x;
+    const startRotationY = !isXRMode ? hologramPivot.rotation.y : xrCamera.rotation.y;
     const startTime = performance.now();
 
     function animateReturn(currentTime) {
@@ -1086,8 +1084,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const easeProgress = 1 - Math.pow(1 - progress, 3);
 
       if (!isXRMode) {
-        mainSequencerGroup.rotation.x = startRotationX * (1 - easeProgress);
-        mainSequencerGroup.rotation.y = startRotationY * (1 - easeProgress);
+        hologramPivot.rotation.x = startRotationX * (1 - easeProgress);
+        hologramPivot.rotation.y = startRotationY * (1 - easeProgress);
       } else {
         xrCamera.rotation.x = startRotationX * (1 - easeProgress);
         xrCamera.rotation.y = startRotationY * (1 - easeProgress);
@@ -1546,10 +1544,10 @@ async function loadInitialFilesAndSetupEditor() {
     // gridContainer.style.height = `${availableHeight}px`; // Возможно, это не нужно, если body/main-area уже 100vh
 
     // Recalculate scale based on new window dimensions
-    const newScale = calculateInitialScale(availableWidth, availableHeight); // Используем доступные размеры
-    mainSequencerGroup.scale.setScalar(newScale * 1.1);
-    mainSequencerGroup.position.y = -GRID_HEIGHT * newScale / 2; // Пересчитываем позицию Y при ресайзе
-    mainSequencerGroup.position.x = 0; // Устанавливаем mainSequencerGroup.position.x = 0;
+    const newScale = calculateInitialScale(availableWidth, availableHeight);
+    hologramPivot.scale.setScalar(newScale); // Масштаб пивота
+    hologramPivot.position.set(0, 0, 0); // Пивот в центре
+    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Группа смещена внутри
 
     // Update camera and renderer
     if (!isXRMode) {
