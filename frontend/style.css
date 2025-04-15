@@ -315,7 +315,6 @@ body {
 .control-button svg {
   width: var(--icon-size); height: var(--icon-size);
   fill: currentColor; /* Наследует цвет от .control-button */
-  transition: transform 0.2s ease; /* Анимация для SVG */
 }
 
 /* Стили для IMG внутри кнопок (если остались где-то) */
