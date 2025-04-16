@@ -965,8 +965,6 @@ document.addEventListener('DOMContentLoaded', () => {
     preserveDrawingBuffer: false, // Отключаем сохранение буфера
     logarithmicDepthBuffer: true // Для лучшего качества глубины
   });
-  renderer.domElement.style.zIndex = '100';
-  renderer.domElement.style.position = 'absolute';
   scene.background = null; // Полностью прозрачный фон
   renderer.setPixelRatio(window.devicePixelRatio);
   // Устанавливаем РАЗМЕР РЕНДЕРЕРА по доступному пространству
