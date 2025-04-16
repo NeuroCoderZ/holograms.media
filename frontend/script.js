@@ -930,6 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
   scene.add(gridPointLight);
 
 
+  const gridContainer = document.getElementById('grid-container');
   // --- Вычисляем доступное пространство СРАЗУ ---
   const initialAvailableWidth = gridContainer.clientWidth;
   const initialAvailableHeight = gridContainer.clientHeight;
