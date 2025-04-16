@@ -92,7 +92,6 @@ body {
   position: relative; /* Для позиционирования canvas */
   overflow: hidden;
   background-color: var(--color-pure-black); /* Черный фон */
-  isolation: isolate; /* Creates new stacking context */
 }
 
 #grid-container {
@@ -118,12 +117,11 @@ body {
 
 /* Область жестов */
 #gesture-area {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 200px;
-  z-index: 50;
+  position: relative;
+  height: 25%;
+  z-index: 0;
+  width: 70%;
+  margin: 5px auto;
   background-color: black;
   border: 2px solid var(--color-icon-disabled);
   overflow: hidden;
@@ -396,17 +394,17 @@ body {
 }
 @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
 #grid-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: calc(100% - 210px);
-  z-index: 100;
-  pointer-events: none;
+  position: relative;
+  height: 75%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #grid-container canvas {
-  position: absolute;
-  z-index: 100;
-  pointer-events: auto;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
