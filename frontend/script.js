@@ -929,9 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
   gridPointLight.position.set(0, TIMELINE_OFFSET / 2, 500);
   scene.add(gridPointLight);
 
-  const gridContainer = document.getElementById('grid-container');
 
-  const gridContainer = document.getElementById('grid-container');
   // --- Вычисляем доступное пространство СРАЗУ ---
   const initialAvailableWidth = gridContainer.clientWidth;
   const initialAvailableHeight = gridContainer.clientHeight;
