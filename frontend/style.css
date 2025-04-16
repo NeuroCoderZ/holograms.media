@@ -118,10 +118,12 @@ body {
 
 /* Область жестов */
 #gesture-area {
-  height: 200px;
+  position: absolute;
+  bottom: 20px;
+  left: 15%;
   width: 70%;
-  margin: 5px auto;
-  flex-shrink: 0;
+  height: 200px;
+  z-index: 50;
   background-color: black;
   border: 2px solid var(--color-icon-disabled);
   overflow: hidden;
