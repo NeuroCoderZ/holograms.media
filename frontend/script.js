@@ -1533,7 +1533,7 @@ async function loadInitialFilesAndSetupEditor() {
 
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(availableWidth, availableHeight);
-    hologramPivot.scale.setScalar(newScale * 0.8); // Уменьшаем масштаб на 20% для лучшего вписывания
+    hologramPivot.scale.setScalar(newScale);
     hologramPivot.position.set(0, 0, 0); // Пивот в центре
     mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем по высоте
 
