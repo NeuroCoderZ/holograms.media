@@ -97,7 +97,6 @@ body {
 #grid-container {
   flex-grow: 1; /* Занимает всю доступную высоту */
   position: relative; /* Для позиционирования canvas */
-  z-index: 1;
   min-height: 0;
   /* Добавляем Flex для центрирования содержимого (canvas) */
   display: flex;
@@ -126,7 +125,6 @@ body {
   border: 2px solid var(--color-icon-disabled);
   overflow: hidden;
   cursor: pointer;
-  z-index: 0;
 }
 
 #gesture-area:hover {
@@ -394,3 +392,7 @@ body {
   z-index: 1001; /* Выше всего */
 }
 @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+#grid-container canvas {
+  position: relative; /* Важно для z-index */
+  z-index: 1;         /* Ставим canvas выше */
+}
