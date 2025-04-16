@@ -943,7 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialOrthoTop = initialAvailableHeight / 2;
   const initialOrthoBottom = -initialAvailableHeight / 2;
   const orthoCamera = new THREE.OrthographicCamera(
-    initialOrthoLeft, initialOrthoRight, initialOrthoTop, initialOrthoBottom,
+    -initialAvailableWidth / 2, initialAvailableWidth / 2, initialAvailableHeight / 2, -initialAvailableHeight / 2,
     -10000, 10000
   );
   orthoCamera.position.set(0, 0, 1200);
