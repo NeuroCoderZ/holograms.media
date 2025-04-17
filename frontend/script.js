@@ -1541,6 +1541,10 @@ async function loadInitialFilesAndSetupEditor() {
     const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
     // Используем всю доступную высоту окна
     const availableHeight = window.innerHeight;
+    
+    const gestureAreaElement = document.getElementById('gesture-area');
+    const gestureAreaHeight = gestureAreaElement ? gestureAreaElement.clientHeight : 'N/A';
+    console.log(`--- Resized: gridH=${availableHeight}, gestureH=${gestureAreaHeight}`);
 
     // Обновляем размеры gridContainer (если нужно для других целей)
     // gridContainer.style.width = `${availableWidth}px`;
@@ -1549,7 +1553,7 @@ async function loadInitialFilesAndSetupEditor() {
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(availableWidth, availableHeight);
     hologramPivot.scale.setScalar(newScale * 0.8); // Уменьшаем итоговый масштаб
-    console.log(`--- Resized scale applied to hologramPivot: ${newScale}`);
+    console.log(`--- Resized scale applied to hologramPivot: ${newScale}. Heights: grid=${availableHeight}, gesture=${gestureAreaHeight}`);
     hologramPivot.position.set(0, 0, 0); // Пивот в центре
     mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2 + 30, 0); // Поднимаем на 30 единиц
 
