@@ -102,7 +102,7 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 75vh;
   z-index: 1;
 }
 
@@ -112,7 +112,8 @@ body {
   bottom: 0;
   left: 15%;
   width: 70%;
-  height: 200px;
+  height: 25vh;
+  margin-bottom: 10px;
   z-index: 0;
   background-color: black;
   border: 2px solid var(--color-icon-disabled);
@@ -388,7 +389,7 @@ body {
 #grid-container {
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 75vh;
 }
 
 #grid-container canvas {
@@ -396,6 +397,6 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 75vh;
   z-index: 1;
 }
