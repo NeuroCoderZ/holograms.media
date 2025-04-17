@@ -929,11 +929,13 @@ document.addEventListener('DOMContentLoaded', () => {
   gridPointLight.position.set(0, TIMELINE_OFFSET / 2, 500);
   scene.add(gridPointLight);
 
-
   const gridContainer = document.getElementById('grid-container');
+
   // --- Вычисляем доступное пространство СРАЗУ ---
-  const initialAvailableWidth = gridContainer.clientWidth;
-  const initialAvailableHeight = gridContainer.clientHeight;
+  const leftPanelWidthInitial = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
+  const rightPanelWidthInitial = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
+  const initialAvailableWidth = window.innerWidth - leftPanelWidthInitial - rightPanelWidthInitial;
+  const initialAvailableHeight = window.innerHeight;
   console.log('Initial Available:', { width: initialAvailableWidth, height: initialAvailableHeight });
   // --------------------------------------------
 
@@ -943,7 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialOrthoTop = initialAvailableHeight / 2;
   const initialOrthoBottom = -initialAvailableHeight / 2;
   const orthoCamera = new THREE.OrthographicCamera(
-    -initialAvailableWidth / 2, initialAvailableWidth / 2, initialAvailableHeight / 2, -initialAvailableHeight / 2,
+    initialOrthoLeft, initialOrthoRight, initialOrthoTop, initialOrthoBottom,
     -10000, 10000
   );
   orthoCamera.position.set(0, 0, 1200);
@@ -963,6 +965,8 @@ document.addEventListener('DOMContentLoaded', () => {
     preserveDrawingBuffer: false, // Отключаем сохранение буфера
     logarithmicDepthBuffer: true // Для лучшего качества глубины
   });
+  renderer.domElement.style.zIndex = '5'; // Below gesture area
+  renderer.domElement.style.position = 'relative';
   scene.background = null; // Полностью прозрачный фон
   renderer.setPixelRatio(window.devicePixelRatio);
   // Устанавливаем РАЗМЕР РЕНДЕРЕРА по доступному пространству
@@ -992,8 +996,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const hologramHeight = GRID_HEIGHT; // Убедись, что GRID_HEIGHT определена глобально
 
     // Рассчитываем масштабы по ширине и высоте
-    let widthScale = (screenWidth * TARGET_WIDTH_PERCENTAGE) / hologramWidth; // TARGET_WIDTH_PERCENTAGE ~0.95?
-    let heightScale = (screenHeight * 0.9) / hologramHeight;
+    let widthScale = (screenWidth * 0.7) / hologramWidth; // TARGET_WIDTH_PERCENTAGE ~0.95?
+    let heightScale = (screenHeight * 0.7) / hologramHeight;
 
     // Используем МЕНЬШИЙ из масштабов, чтобы вписать объект
     let scale = Math.min(widthScale, heightScale);
@@ -1009,9 +1013,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
-  hologramPivot.scale.setScalar(initialScale * 0.8); // Уменьшаем масштаб на 20% для лучшего вписывания
+  hologramPivot.scale.setScalar(initialScale); // Масштаб пивота
   hologramPivot.position.set(0, 0, 0); // Пивот в центре
-  mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем по высоте
+  mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Группа смещена внутри
   mainSequencerGroup.rotation.set(0, 0, 0);
 
   renderer.autoClear = false;
@@ -1528,24 +1532,41 @@ async function loadInitialFilesAndSetupEditor() {
     }
 
     // Получаем актуальные размеры контейнера
-    const availableWidth = gridContainer.clientWidth;
-    const availableHeight = gridContainer.clientHeight;
+    const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
+    const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
+    // Ширина окна браузера минус ширина панелей
+    const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
+    // Используем всю доступную высоту окна
+    const availableHeight = window.innerHeight;
+
+    // Обновляем размеры gridContainer (если нужно для других целей)
+    // gridContainer.style.width = `${availableWidth}px`;
+    // gridContainer.style.height = `${availableHeight}px`; // Возможно, это не нужно, если body/main-area уже 100vh
 
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(availableWidth, availableHeight);
-    hologramPivot.scale.setScalar(newScale);
+    hologramPivot.scale.setScalar(newScale); // Масштаб пивота
     hologramPivot.position.set(0, 0, 0); // Пивот в центре
-    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем по высоте
+    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Группа смещена внутри
 
     // Update camera and renderer
     if (!isXRMode) {
+      // Обновляем параметры ортокамеры с новыми размерами
       orthoCamera.left = -availableWidth / 2;
       orthoCamera.right = availableWidth / 2;
       orthoCamera.top = availableHeight / 2;
       orthoCamera.bottom = -availableHeight / 2;
       orthoCamera.updateProjectionMatrix();
+      const visibleWidth = availableWidth; // Исправлено
+      const visibleHeight = availableHeight; // Исправлено
+
+      orthoCamera.left = -visibleWidth / 2; // Исправлено
+      orthoCamera.right = visibleWidth / 2; // Исправлено
+      orthoCamera.top = visibleHeight / 2;
+      orthoCamera.bottom = -visibleHeight / 2;
+      orthoCamera.updateProjectionMatrix();
     } else {
-      xrCamera.aspect = availableWidth / availableHeight;
+      xrCamera.aspect = window.innerWidth / window.innerHeight;
       xrCamera.updateProjectionMatrix();
     }
 
