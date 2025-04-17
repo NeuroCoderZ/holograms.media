@@ -990,6 +990,7 @@ document.addEventListener('DOMContentLoaded', () => {
   mainSequencerGroup.position.set(0, 0, 0); // Центрирование по Y
 
   function calculateInitialScale(containerWidth, containerHeight) {
+      console.log(`>>> calculateInitialScale called with: w=${containerWidth}, h=${containerHeight}`);
     const screenWidth = containerWidth;
     const screenHeight = containerHeight;
     const hologramWidth = GRID_WIDTH * 2;
@@ -1005,6 +1006,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Добавляем минимальный масштаб
     scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
 
+    console.log(`<<< calculateInitialScale calculated scale: ${scale}`);
     return scale;
   }
 
@@ -1014,6 +1016,7 @@ document.addEventListener('DOMContentLoaded', () => {
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
   hologramPivot.scale.setScalar(initialScale); // Масштаб пивота
+  console.log(`--- Initial scale applied to hologramPivot: ${initialScale}`);
   hologramPivot.position.set(0, 0, 0); // Пивот в центре
   mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Группа смещена внутри
   mainSequencerGroup.rotation.set(0, 0, 0);
@@ -1546,6 +1549,7 @@ async function loadInitialFilesAndSetupEditor() {
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(availableWidth, availableHeight);
     hologramPivot.scale.setScalar(newScale); // Масштаб пивота
+    console.log(`--- Resized scale applied to hologramPivot: ${newScale}`);
     hologramPivot.position.set(0, 0, 0); // Пивот в центре
     mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Группа смещена внутри
 
