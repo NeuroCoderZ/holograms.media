@@ -997,8 +997,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const hologramHeight = GRID_HEIGHT; // Убедись, что GRID_HEIGHT определена глобально
 
     // Рассчитываем масштабы по ширине и высоте
-    let widthScale = (screenWidth * 0.7) / hologramWidth; // TARGET_WIDTH_PERCENTAGE ~0.95?
-    let heightScale = (screenHeight * 0.7) / hologramHeight;
+    let widthScale = (screenWidth * 0.95) / hologramWidth; // Возвращаем ~0.95
+    let heightScale = (screenHeight * 0.9) / hologramHeight; // Возвращаем 0.9
 
     // Используем МЕНЬШИЙ из масштабов, чтобы вписать объект
     let scale = Math.min(widthScale, heightScale);
@@ -1015,10 +1015,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
-  hologramPivot.scale.setScalar(initialScale); // Масштаб пивота
+  hologramPivot.scale.setScalar(initialScale * 0.8); // Уменьшаем итоговый масштаб
   console.log(`--- Initial scale applied to hologramPivot: ${initialScale}`);
   hologramPivot.position.set(0, 0, 0); // Пивот в центре
-  mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Группа смещена внутри
+  mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2 + 30, 0); // Поднимаем на 30 единиц
   mainSequencerGroup.rotation.set(0, 0, 0);
 
   renderer.autoClear = false;
@@ -1548,10 +1548,10 @@ async function loadInitialFilesAndSetupEditor() {
 
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(availableWidth, availableHeight);
-    hologramPivot.scale.setScalar(newScale); // Масштаб пивота
+    hologramPivot.scale.setScalar(newScale * 0.8); // Уменьшаем итоговый масштаб
     console.log(`--- Resized scale applied to hologramPivot: ${newScale}`);
     hologramPivot.position.set(0, 0, 0); // Пивот в центре
-    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Группа смещена внутри
+    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2 + 30, 0); // Поднимаем на 30 единиц
 
     // Update camera and renderer
     if (!isXRMode) {
