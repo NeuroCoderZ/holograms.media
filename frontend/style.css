@@ -57,8 +57,6 @@ body {
 .panel.left-panel {
   width: calc(var(--button-size) * 2 + var(--button-spacing) * 3); /* Ширина двух кнопок + 3 промежутка между ними и по краям */
   background-color: var(--color-pure-black);
-  display: flex;
-  flex-direction: column;
   align-items: center;
   padding: var(--button-spacing);
   flex-shrink: 0;
@@ -95,7 +93,7 @@ body {
 #grid-container {
   position: relative;
   width: 100%;
-  height: calc(100% - 210px);
+  height: 75vh;
   background-color: transparent; /* Фон прозрачный */
 }
 
