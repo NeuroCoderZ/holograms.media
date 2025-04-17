@@ -997,8 +997,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const hologramHeight = GRID_HEIGHT; // Убедись, что GRID_HEIGHT определена глобально
 
     // Рассчитываем масштабы по ширине и высоте
-    let widthScale = (screenWidth * 0.95) / hologramWidth; // Возвращаем ~0.95
-    let heightScale = (screenHeight * 0.9) / hologramHeight; // Возвращаем 0.9
+    let widthScale = (containerWidth * 0.95) / hologramWidth;
+    let heightScale = (containerHeight * 0.9) / hologramHeight;
 
     // Используем МЕНЬШИЙ из масштабов, чтобы вписать объект
     let scale = Math.min(widthScale, heightScale);
@@ -1541,7 +1541,7 @@ async function loadInitialFilesAndSetupEditor() {
     const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
     // Используем всю доступную высоту окна
     const availableHeight = window.innerHeight;
-    
+
     const gestureAreaElement = document.getElementById('gesture-area');
     const gestureAreaHeight = gestureAreaElement ? gestureAreaElement.clientHeight : 'N/A';
     console.log(`--- Resized: gridH=${availableHeight}, gestureH=${gestureAreaHeight}`);
@@ -1771,7 +1771,7 @@ async function loadInitialFilesAndSetupEditor() {
         // Рассчитываем нарушения для каждой руки
         processedHands.forEach(handData => {
             if (!handData.handedness) return; // Пропускаем руку без handedness
-            
+
             for (const point of handData.initialPoints) {
                 if (handData.handedness === 'Left') {
                     violations.Left = Math.min(violations.Left, point.x); // Зеркальный мир: Левая рука справа (X>0)
