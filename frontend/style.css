@@ -120,14 +120,13 @@ body {
   margin-bottom: 1vh;
   z-index: 0;
   background-color: black;
-  border: 2px solid var(--color-icon-disabled);
+  border: none; border-top: 2px solid var(--color-icon-disabled);
   overflow: hidden;
   cursor: pointer;
 }
 
 #gesture-area:hover {
-  border-color: var(--color-icon-active);
-  transition: border-color 0.2s ease-in-out;
+  border-top-color: var(--color-icon-active);
 }
 
 
