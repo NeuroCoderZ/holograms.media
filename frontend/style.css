@@ -395,7 +395,5 @@ body {
   animation: spin 1s ease-in-out infinite;
   z-index: 1001; /* Выше всего */
 }
-@keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }#gesture-area::before {
-#gesture-area::-webkit-scrollbar { display: none; }
-
+@keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
 /* Правая панель (Таймлайн + Промпт) */
