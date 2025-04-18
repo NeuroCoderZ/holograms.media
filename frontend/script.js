@@ -994,19 +994,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const screenWidth = containerWidth;
     const screenHeight = containerHeight;
     const hologramWidth = GRID_WIDTH * 2;
-    const hologramHeight = GRID_HEIGHT; // Убедись, что GRID_HEIGHT определена глобально
+    const hologramHeight = GRID_HEIGHT;
 
-    // Рассчитываем масштабы по ширине и высоте
-    let widthScale = (containerWidth * 0.95) / hologramWidth;
-    let heightScale = (containerHeight * 0.9) / hologramHeight;
+    let widthScale = (containerWidth * 0.95) / hologramWidth; // Небольшой горизонтальный отступ
+    let heightScale = (containerHeight * 0.90) / hologramHeight; // !!! Уменьшаем до 90% высоты контейнера для отступов
 
-    // Используем МЕНЬШИЙ из масштабов, чтобы вписать объект
     let scale = Math.min(widthScale, heightScale);
+    scale = Math.max(scale, 0.1); // Минимальный масштаб
 
-    // Добавляем минимальный масштаб
-    scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
-
-    console.log(`<<< calculateInitialScale calculated scale: ${scale}`);
+    console.log(`<<< calculateInitialScale calculated scale: ${scale} (based on containerH: ${containerHeight})`);
     return scale;
   }
 
