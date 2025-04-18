@@ -1711,7 +1711,7 @@ updateTimelineFromServer();
 
   let handMeshGroup = new THREE.Group();
   scene.add(handMeshGroup);
-  handMeshGroup.scale.x = -1;
+  handMeshGroup.scale.x = -1; // Возвращаем зеркалирование!
   handMeshGroup.scale.x = -1;
   handMeshGroup.scale.x = -1;
 
@@ -1719,133 +1719,80 @@ updateTimelineFromServer();
   function onHandsResults(results) {
     let thumbTip, indexTip, palmBase;
     if (!isGestureCanvasReady) { return; }
-    const areTwoHands = results.multiHandLandmarks && results.multiHandLandmarks.length === 2;
 
-    // Очищаем группу ПЕРЕД рендерингом нового кадра
+    // Очищаем группу ПЕРЕД рендерингом нового кадра  
     handMeshGroup.clear();
 
-    let processedHands = []; // Единый массив для хранения обработанных рук
-    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const areTwoHands = results.multiHandLandmarks.length === 2; // Определяем один раз
+    // Проходимся ТОЛЬКО по рукам, обнаруженным в ЭТОМ кадре
+    if (results.multiHandLandmarks) {
         for (let i = 0; i < results.multiHandLandmarks.length; i++) {
             const landmarks = results.multiHandLandmarks[i];
-            const classification = results.multiHandedness.find(h => h.index === i);
-            const handedness = classification ? classification.label : 'Unknown';
-            if (!landmarks) {
-                console.warn(`Missing landmarks for index ${i}`);
-                continue;
-            }
+            if (!landmarks) continue; // Пропускаем, если нет данных
 
-            // Рассчитываем ТОЛЬКО начальные точки БЕЗ смещения
-            const initialHandPoints3D = landmarks.map(lm => {
-                let worldX = (lm.x - 0.5) * 2 * GRID_WIDTH; // Зеркальная формула
+            // Преобразуем координаты с учетом зеркалирования handMeshGroup.scale.x = -1
+            const handPoints3D = landmarks.map(lm => {
+                // X: НЕ инвертируем lm.x, т.к. scale.x = -1 сделает это. Просто центрируем и масштабируем.
+                // Умножаем на 2 для полного диапазона [-GRID_WIDTH, +GRID_WIDTH]
+                let worldX = (lm.x - 0.5) * GRID_WIDTH * 2;
+                // Y: инвертируем от верхнего края MediaPipe 
                 let worldY = (1 - lm.y) * GRID_HEIGHT;
-                let worldZ = (lm.z + 0.2) * -400; // Оставляем пока так
+                // Z: простая зависимость от GRID_DEPTH, зажатая в пределах
+                // Множитель 1.5 и смещение -GRID_DEPTH / 4 подобраны примерно, нужно тестировать
+                let worldZ = THREE.MathUtils.clamp(lm.z * GRID_DEPTH * 1.5 - GRID_DEPTH / 4, -GRID_DEPTH / 2, GRID_DEPTH / 2);
+
                 return new THREE.Vector3(worldX, worldY, worldZ);
             });
 
-            processedHands.push({ handedness: handedness, initialPoints: initialHandPoints3D });
-        }
-    }
+            // --- Создаем материалы ---
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, linewidth: 3 });
+            // Материал для точек с поддержкой цвета вершин
+            const pointsMaterial = new THREE.PointsMaterial({ size: 4, transparent: true, opacity: 0.8, vertexColors: true });
 
-    let finalHandsToRender = []; // Массив с финальными точками для рендера
-    if (processedHands.length === 2) {
-        let offsets = { Left: 0, Right: 0 };
-        let violations = { Left: Infinity, Right: -Infinity };
+            // --- Создаем геометрии ---
+            // Убедись, что HAND_CONNECTIONS определена где-то глобально!
+            const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => {
+                const p1 = handPoints3D[conn[0]];
+                const p2 = handPoints3D[conn[1]];
+                // Добавим проверку на существование точек перед добавлением
+                return (p1 && p2) ? [p1, p2] : [];
+            }));
+            const pointsGeometry = new THREE.BufferGeometry().setFromPoints(handPoints3D.filter(p => p)); // Фильтруем null/undefined на всякий случай
 
-        // Рассчитываем нарушения для каждой руки
-        processedHands.forEach(handData => {
-            if (!handData.handedness) return; // Пропускаем руку без handedness
-
-            for (const point of handData.initialPoints) {
-                if (handData.handedness === 'Left') {
-                    violations.Left = Math.min(violations.Left, point.x); // Зеркальный мир: Левая рука справа (X>0)
-                } else { // Right
-                    violations.Right = Math.max(violations.Right, point.x); // Правая рука слева (X<0)
+            // --- БЛОК РАСЧЕТА ЦВЕТОВ ВЕРШИН (Зеленые кончики) ---
+            const FINGER_TIP_INDICES = [4, 8, 12, 16, 20];
+            const greenColor = new THREE.Color("#00cc00");
+            const whiteColor = new THREE.Color("#ffffff");
+            const positions = pointsGeometry.attributes.position;
+            // Проверяем, есть ли вообще точки перед созданием массива цветов
+            if (positions && positions.count > 0) {
+                const colors = new Float32Array(positions.count * 3);
+                for (let j = 0; j < positions.count; j++) {
+                    if (FINGER_TIP_INDICES.includes(j)) {
+                        colors[j * 3] = greenColor.r; colors[j * 3 + 1] = greenColor.g; colors[j * 3 + 2] = greenColor.b;
+                    } else {
+                        colors[j * 3] = whiteColor.r; colors[j * 3 + 1] = whiteColor.g; colors[j * 3 + 2] = whiteColor.b;
+                    }
                 }
+                pointsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            } else {
+                 console.warn("No points found in pointsGeometry to set colors for.");
             }
-        });
+            // --- КОНЕЦ БЛОКА РАСЧЕТА ЦВЕТОВ ---
 
-        // Рассчитываем смещения
-        if (violations.Left < 0) { // Левая зашла налево
-            offsets.Left = -violations.Left; // Сдвинуть вправо
-        }
-        if (violations.Right > 0) { // Правая зашла направо
-            offsets.Right = -violations.Right; // Сдвинуть влево
-        }
-
-        // Применяем смещения и готовим финальные данные
-        processedHands.forEach(handData => {
-            const offset = handData.handedness ? offsets[handData.handedness] : 0; // Не применяем смещение, если нет handedness
-            const finalPoints = handData.initialPoints.map(p => p.clone().add(new THREE.Vector3(offset, 0, 0)));
-            finalHandsToRender.push({ 
-                handedness: handData.handedness, 
-                points: finalPoints 
-            });
-        });
-
-    } else if (processedHands.length === 1) {
-        // Если рука одна, просто используем начальные точки
-        finalHandsToRender.push({ 
-            handedness: processedHands[0].handedness, 
-            points: processedHands[0].initialPoints 
-        });
-    }
-
-    // Рендерим руки с финальными координатами
-    finalHandsToRender.forEach(handData => {
-        const finalHandPoints3D = handData.points; // Берем точки из массива
-
-        // Создаем материалы (как и раньше)
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, linewidth: 3 });
-        const pointsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 4, transparent: true, opacity: 0.8 });
-
-        // Создаем геометрии (как и раньше, но с finalHandPoints3D)
-        const linesGeometry = new THREE.BufferGeometry().setFromPoints(HAND_CONNECTIONS.flatMap(conn => {
-            const p1 = finalHandPoints3D[conn[0]];
-            const p2 = finalHandPoints3D[conn[1]];
-            return (p1 && p2) ? [p1, p2] : [];
-        }));
-        const pointsGeometry = new THREE.BufferGeometry().setFromPoints(finalHandPoints3D);
-
-        // Индексы кончиков пальцев
-        const FINGER_TIP_INDICES = [4, 8, 12, 16, 20];
-        const greenColor = new THREE.Color("#00cc00"); // Зеленый цвет
-
-        // Получаем массив позиций и создаем массив цветов
-        const positions = pointsGeometry.attributes.position;
-        const colors = new Float32Array(positions.count * 3); // 3 компонента (r,g,b) на точку
-
-        // Заполняем массив цветов: по умолчанию белый
-        for (let j = 0; j < positions.count; j++) {
-            colors[j * 3] = 1;     // r
-            colors[j * 3 + 1] = 1; // g
-            colors[j * 3 + 2] = 1; // b
-        }
-
-        // Устанавливаем зеленый цвет для кончиков пальцев
-        FINGER_TIP_INDICES.forEach(index => {
-            if (index < positions.count) { // Проверка на всякий случай
-                colors[index * 3] = greenColor.r;
-                colors[index * 3 + 1] = greenColor.g;
-                colors[index * 3 + 2] = greenColor.b;
+            // --- Создаем объекты и добавляем в группу ---
+            // Проверяем, есть ли линии перед добавлением
+            if (linesGeometry.attributes.position && linesGeometry.attributes.position.count > 0) {
+                 const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
+                 handMeshGroup.add(lines);
             }
-        });
+            // Проверяем, есть ли точки перед добавлением
+            if (pointsGeometry.attributes.position && pointsGeometry.attributes.position.count > 0) {
+                 const points = new THREE.Points(pointsGeometry, pointsMaterial);
+                 handMeshGroup.add(points);
+            }
 
-        // Добавляем атрибут цвета к геометрии точек
-        pointsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        // Указываем материалу использовать цвета вершин
-        pointsMaterial.vertexColors = true;
-        // Возможно, потребуется обновить материал, если он уже создан
-        pointsMaterial.needsUpdate = true;
-
-        // Создаем объекты и добавляем в группу
-        const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
-        const points = new THREE.Points(pointsGeometry, pointsMaterial);
-        handMeshGroup.add(lines);
-        handMeshGroup.add(points);
-    });
+        } // Конец цикла for по рукам
+    } // Конец if (results.multiHandLandmarks)
 
      const gestureArea = document.getElementById('gesture-area');
      if (!gestureArea) return;
