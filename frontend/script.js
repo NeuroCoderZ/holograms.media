@@ -1870,7 +1870,7 @@ updateTimelineFromServer();
            const gestureAreaHeight = gestureArea.clientHeight;
            const topPosition = tip.y * gestureAreaHeight;
            // Вычисли масштаб Z
-           const scale = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(tip.z, -0.5, 0.1, 0.5, 1.5), 0.5, 1.5);
+           const scale = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(tip.z, -0.5, 0.1, 1.5, 0.5), 0.5, 1.5); // Близко (-0.5) -> 1.5, Далеко (0.1) -> 0.5
            // Установи стили точки
            dot.style.top = `${topPosition - 3}px`;
            dot.style.transform = `scale(${scale})`;
