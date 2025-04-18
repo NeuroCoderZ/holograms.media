@@ -421,3 +421,27 @@ body {
     color: var(--color-icon-disabled); /* Темно-серый */
     cursor: not-allowed;
 }
+/* Общий стиль для SVG внутри кнопок */
+.control-button svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    fill: currentColor; /* Наследует цвет от родителя (.control-button) */
+}
+
+/* Стиль для родительской кнопки */
+.control-button {
+    /* ... другие стили кнопки ... */
+    color: var(--color-icon); /* Цвет иконки по умолчанию (светло-серый) */
+    transition: color 0.15s ease-in-out; /* Плавный переход цвета */
+}
+
+/* Стиль для ховера на НЕотключенную кнопку */
+.control-button:not(:disabled):hover {
+    color: var(--color-icon-active); /* Цвет иконки при ховере (белый) */
+}
+
+/* Стиль для отключенной кнопки */
+.control-button:disabled {
+    color: var(--color-icon-disabled); /* Темно-серый */
+    cursor: not-allowed;
+}
