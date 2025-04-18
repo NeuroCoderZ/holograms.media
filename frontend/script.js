@@ -1010,12 +1010,20 @@ document.addEventListener('DOMContentLoaded', () => {
     return scale;
   }
 
-  const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight);
+  const gridContainerElement = document.getElementById('grid-container');
+  if (!gridContainerElement) {
+      console.error("#grid-container not found!");
+      return; // Прервать, если контейнер не найден
+  }
+  const initialGridHeight = gridContainerElement.clientHeight;
+  console.log(`Initial grid container height: ${initialGridHeight}`);
+
+  const initialScale = calculateInitialScale(initialAvailableWidth, initialGridHeight); // Передаем высоту КОНТЕЙНЕРА
   console.log('Final Scale:', initialScale);
 
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
-  hologramPivot.scale.setScalar(initialScale * 0.9); // Уменьшаем итоговый масштаб
+  hologramPivot.scale.setScalar(initialScale); // Убрали * 0.8 или * 0.9
   console.log(`--- Initial scale applied to hologramPivot: ${initialScale}`);
   hologramPivot.position.set(0, 0, 0); // Пивот в центре
   mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Убрали +30
