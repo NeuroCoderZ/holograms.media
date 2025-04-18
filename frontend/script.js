@@ -1015,7 +1015,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
-  hologramPivot.scale.setScalar(initialScale * 0.8); // Уменьшаем итоговый масштаб
+  hologramPivot.scale.setScalar(initialScale * 0.9); // Уменьшаем итоговый масштаб
   console.log(`--- Initial scale applied to hologramPivot: ${initialScale}`);
   hologramPivot.position.set(0, 0, 0); // Пивот в центре
   mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2 + 30, 0); // Поднимаем на 30 единиц
@@ -1552,7 +1552,7 @@ async function loadInitialFilesAndSetupEditor() {
 
     // Recalculate scale based on new window dimensions
     const newScale = calculateInitialScale(availableWidth, availableHeight);
-    hologramPivot.scale.setScalar(newScale * 0.8); // Уменьшаем итоговый масштаб
+    hologramPivot.scale.setScalar(newScale * 0.9); // Уменьшаем итоговый масштаб
     console.log(`--- Resized scale applied to hologramPivot: ${newScale}. Heights: grid=${availableHeight}, gesture=${gestureAreaHeight}`);
     hologramPivot.position.set(0, 0, 0); // Пивот в центре
     mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2 + 30, 0); // Поднимаем на 30 единиц
