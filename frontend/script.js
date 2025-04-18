@@ -994,35 +994,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const screenWidth = containerWidth;
     const screenHeight = containerHeight;
     const hologramWidth = GRID_WIDTH * 2;
-    const hologramHeight = GRID_HEIGHT;
+    const hologramHeight = GRID_HEIGHT; // Убедись, что GRID_HEIGHT определена глобально
 
-    let widthScale = (containerWidth * 0.95) / hologramWidth; // Небольшой горизонтальный отступ
-    let heightScale = (containerHeight * 0.90) / hologramHeight; // !!! Уменьшаем до 90% высоты контейнера для отступов
+    // Рассчитываем масштабы по ширине и высоте
+    let widthScale = (containerWidth * 0.95) / hologramWidth;
+    let heightScale = (containerHeight * 0.9) / hologramHeight;
 
+    // Используем МЕНЬШИЙ из масштабов, чтобы вписать объект
     let scale = Math.min(widthScale, heightScale);
-    scale = Math.max(scale, 0.1); // Минимальный масштаб
 
-    console.log(`<<< calculateInitialScale calculated scale: ${scale} (based on containerH: ${containerHeight})`);
+    // Добавляем минимальный масштаб
+    scale = Math.max(scale, 0.1); // Можно сделать минимальный масштаб меньше, например 0.1
+
+    console.log(`<<< calculateInitialScale calculated scale: ${scale}`);
     return scale;
   }
 
-  const gridContainerElement = document.getElementById('grid-container');
-  if (!gridContainerElement) {
-      console.error("#grid-container not found!");
-      return; // Прервать, если контейнер не найден
-  }
-  const initialGridHeight = gridContainerElement.clientHeight;
-  console.log(`Initial grid container height: ${initialGridHeight}`);
-
-  const initialScale = calculateInitialScale(initialAvailableWidth, initialGridHeight); // Передаем высоту КОНТЕЙНЕРА
+  const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight);
   console.log('Final Scale:', initialScale);
 
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
-  hologramPivot.scale.setScalar(initialScale); // Убрали * 0.8 или * 0.9
+  hologramPivot.scale.setScalar(initialScale * 0.8); // Уменьшаем итоговый масштаб
   console.log(`--- Initial scale applied to hologramPivot: ${initialScale}`);
   hologramPivot.position.set(0, 0, 0); // Пивот в центре
-  mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Убрали +30
+  mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем по высоте голограммы
   mainSequencerGroup.rotation.set(0, 0, 0);
 
   renderer.autoClear = false;
@@ -1531,33 +1527,43 @@ async function loadInitialFilesAndSetupEditor() {
   });
 
   window.addEventListener('resize', () => {
+    // Получаем элементы и их размеры ОДИН РАЗ в начале
     const gridContainerElement = document.getElementById('grid-container');
-    if (!gridContainerElement) return; // Добавим проверку
+    if (!gridContainerElement) {
+        console.error("Resize handler: #grid-container not found!");
+        return; // Выходим, если контейнер не найден
+    }
     const currentGridHeight = gridContainerElement.clientHeight;
     const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
     const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
     const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
-    console.log(`--- Resized: availableW=${availableWidth}, gridH=${currentGridHeight}`);
 
+    // Логи для отладки
+    console.log(`Resize event: availableW=${availableWidth}, currentGridHeight=${currentGridHeight}`);
+
+    // Пересчитываем масштаб, используя АКТУАЛЬНУЮ высоту контейнера
     const newScale = calculateInitialScale(availableWidth, currentGridHeight);
-    hologramPivot.scale.setScalar(newScale); // Применяем масштаб БЕЗ множителя
+    hologramPivot.scale.setScalar(newScale); // Применяем масштаб
 
+    // Обновляем камеру, используя АКТУАЛЬНУЮ высоту контейнера
     if (!isXRMode) {
         orthoCamera.left = -availableWidth / 2;
         orthoCamera.right = availableWidth / 2;
-        orthoCamera.top = currentGridHeight / 2; // Используем высоту контейнера
-        orthoCamera.bottom = -currentGridHeight / 2; // Используем высоту контейнера
+        orthoCamera.top = currentGridHeight / 2;
+        orthoCamera.bottom = -currentGridHeight / 2;
         orthoCamera.updateProjectionMatrix();
     } else {
-         xrCamera.aspect = availableWidth / currentGridHeight; // Используем размеры контейнера
+         xrCamera.aspect = availableWidth / currentGridHeight;
          xrCamera.updateProjectionMatrix();
     }
 
+    // Устанавливаем размер рендерера по АКТУАЛЬНОЙ высоте контейнера
     renderer.setSize(availableWidth, currentGridHeight);
 
-    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем по высоте голограммы
-    // hologramPivot.position.set(0, 0, 0); // Пивот остается в (0,0) контейнера
-  });
+    // Центрируем группу ВНУТРИ контейнера (по высоте самой голограммы)
+    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0);
+
+  }); // Конец обработчика resize
 
   function animate() {
     requestAnimationFrame(animate);
@@ -1703,6 +1709,9 @@ async function loadInitialFilesAndSetupEditor() {
 
   let handMeshGroup = new THREE.Group();
   scene.add(handMeshGroup);
+  handMeshGroup.scale.x = -1;
+  handMeshGroup.scale.x = -1;
+  handMeshGroup.scale.x = -1;
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
@@ -1715,7 +1724,6 @@ async function loadInitialFilesAndSetupEditor() {
 
     let processedHands = []; // Единый массив для хранения обработанных рук
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-       console.log(`Hands detected: ${results.multiHandLandmarks.length}, Handedness info:`, results.multiHandedness);
         const areTwoHands = results.multiHandLandmarks.length === 2; // Определяем один раз
         for (let i = 0; i < results.multiHandLandmarks.length; i++) {
             const landmarks = results.multiHandLandmarks[i];
@@ -1728,10 +1736,9 @@ async function loadInitialFilesAndSetupEditor() {
 
             // Рассчитываем ТОЛЬКО начальные точки БЕЗ смещения
             const initialHandPoints3D = landmarks.map(lm => {
-                const handednessLabel = classification ? classification.label : 'Unknown';
-                let worldX = (handednessLabel === 'Right' ? (1 - lm.x) - 0.5 : lm.x - 0.5) * 2 * GRID_WIDTH;
+                let worldX = (lm.x - 0.5) * 2 * GRID_WIDTH; // Зеркальная формула
                 let worldY = (1 - lm.y) * GRID_HEIGHT;
-                let worldZ = THREE.MathUtils.clamp(lm.z * GRID_DEPTH * 1.5 - GRID_DEPTH / 4, -GRID_DEPTH / 2, GRID_DEPTH / 2);
+                let worldZ = (lm.z + 0.2) * -400; // Оставляем пока так
                 return new THREE.Vector3(worldX, worldY, worldZ);
             });
 
@@ -1750,9 +1757,9 @@ async function loadInitialFilesAndSetupEditor() {
 
             for (const point of handData.initialPoints) {
                 if (handData.handedness === 'Left') {
-                    violations.Left = Math.min(violations.Left, point.x);
+                    violations.Left = Math.min(violations.Left, point.x); // Зеркальный мир: Левая рука справа (X>0)
                 } else { // Right
-                    violations.Right = Math.max(violations.Right, point.x);
+                    violations.Right = Math.max(violations.Right, point.x); // Правая рука слева (X<0)
                 }
             }
         });
@@ -1812,31 +1819,31 @@ async function loadInitialFilesAndSetupEditor() {
     // Очисти старые точки
     gestureArea.querySelectorAll('.finger-dot-on-line').forEach(dot => dot.remove());
 
-    const gestureAreaHeight = gestureArea.clientHeight;
+    // Проверь, есть ли вообще обнаруженные руки
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        for (const landmarks of results.multiHandLandmarks) {
-            // Берем только кончики пальцев (индексы 4, 8, 12, 16, 20)
-            const fingerTips = [landmarks[4], landmarks[8], landmarks[12], landmarks[16], landmarks[20]];
-            fingerTips.forEach(tip => {
-                if (!tip) return; // Пропускаем, если точка не определена
-                const dot = document.createElement('div');
-                dot.className = 'finger-dot-on-line';
+      // Внутри этой проверки пройдись циклом по results.multiHandLandmarks
+      for (const landmarks of results.multiHandLandmarks) {
+        // Внутри этого цикла возьми 5 ключевых точек кончиков пальцев
+        const fingerTips = [landmarks[4], landmarks[8], landmarks[12], landmarks[16], landmarks[20]];
 
-                // Позиция Y относительно высоты gesture-area
-                const topPosition = tip.y * gestureAreaHeight;
-
-                // Масштаб Z (глубина) - можно оставить как было или упростить
-                const scale = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(tip.z, -0.5, 0.1, 0.5, 1.5), 0.5, 1.5);
-
-                // Устанавливаем стили точки
-                dot.style.top = `${topPosition - 3}px`; // -3px для центрирования точки высотой 6px
-                dot.style.transform = `scale(${scale})`;
-                dot.style.left = '11px'; // Позиционируем по центру красной линии (10px отступ + 2px ширина / 2)
-                dot.style.marginLeft = '-3px'; // Сдвиг влево на половину ширины точки (6px / 2)
-
-                gestureArea.appendChild(dot);
-            });
-        }
+        // Пройдись циклом по fingerTips
+        fingerTips.forEach(tip => {
+          // Создай новый div
+          const dot = document.createElement('div');
+          // Добавь ему класс
+          dot.className = 'finger-dot-on-line';
+          // Вычисли позицию Y
+          const gestureAreaHeight = gestureArea.clientHeight;
+          const topPosition = tip.y * gestureAreaHeight;
+          // Вычисли масштаб Z
+          const scale = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(tip.z, -0.5, 0.1, 0.5, 1.5), 0.5, 1.5);
+          // Установи стили точки
+          dot.style.top = `${topPosition - 3}px`;
+          dot.style.transform = `scale(${scale})`;
+          // Добавь точку в gestureArea
+          gestureArea.appendChild(dot);
+        });
+      }
     }
   }
 
