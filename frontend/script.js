@@ -1703,9 +1703,6 @@ async function loadInitialFilesAndSetupEditor() {
 
   let handMeshGroup = new THREE.Group();
   scene.add(handMeshGroup);
-  handMeshGroup.scale.x = -1;
-  handMeshGroup.scale.x = -1;
-  handMeshGroup.scale.x = -1;
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
@@ -1718,6 +1715,7 @@ async function loadInitialFilesAndSetupEditor() {
 
     let processedHands = []; // Единый массив для хранения обработанных рук
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+       console.log(`Hands detected: ${results.multiHandLandmarks.length}, Handedness info:`, results.multiHandedness);
         const areTwoHands = results.multiHandLandmarks.length === 2; // Определяем один раз
         for (let i = 0; i < results.multiHandLandmarks.length; i++) {
             const landmarks = results.multiHandLandmarks[i];
@@ -1730,9 +1728,10 @@ async function loadInitialFilesAndSetupEditor() {
 
             // Рассчитываем ТОЛЬКО начальные точки БЕЗ смещения
             const initialHandPoints3D = landmarks.map(lm => {
-                let worldX = (lm.x - 0.5) * 2 * GRID_WIDTH; // Зеркальная формула
+                const handednessLabel = classification ? classification.label : 'Unknown';
+                let worldX = (handednessLabel === 'Right' ? (1 - lm.x) - 0.5 : lm.x - 0.5) * 2 * GRID_WIDTH;
                 let worldY = (1 - lm.y) * GRID_HEIGHT;
-                let worldZ = (lm.z + 0.2) * -400; // Оставляем пока так
+                let worldZ = THREE.MathUtils.clamp(lm.z * GRID_DEPTH * 1.5 - GRID_DEPTH / 4, -GRID_DEPTH / 2, GRID_DEPTH / 2);
                 return new THREE.Vector3(worldX, worldY, worldZ);
             });
 
@@ -1751,9 +1750,9 @@ async function loadInitialFilesAndSetupEditor() {
 
             for (const point of handData.initialPoints) {
                 if (handData.handedness === 'Left') {
-                    violations.Left = Math.min(violations.Left, point.x); // Зеркальный мир: Левая рука справа (X>0)
+                    violations.Left = Math.min(violations.Left, point.x);
                 } else { // Right
-                    violations.Right = Math.max(violations.Right, point.x); // Правая рука слева (X<0)
+                    violations.Right = Math.max(violations.Right, point.x);
                 }
             }
         });
