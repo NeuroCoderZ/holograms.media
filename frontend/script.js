@@ -1531,59 +1531,32 @@ async function loadInitialFilesAndSetupEditor() {
   });
 
   window.addEventListener('resize', () => {
-    // Обновляем размеры canvas для жестов
-    const gestureCanvas = document.getElementById('gestureCanvas');
-    if (gestureCanvas) {
-      gestureCanvas.width = window.innerWidth * 0.6;
-      gestureCanvas.height = window.innerHeight;
-    }
-
-    // Получаем актуальные размеры контейнера
+    const gridContainerElement = document.getElementById('grid-container');
+    if (!gridContainerElement) return; // Добавим проверку
+    const currentGridHeight = gridContainerElement.clientHeight;
     const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
     const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
-    // Ширина окна браузера минус ширина панелей
     const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
-    // Используем всю доступную высоту окна
-    const availableHeight = window.innerHeight;
+    console.log(`--- Resized: availableW=${availableWidth}, gridH=${currentGridHeight}`);
 
-    const gestureAreaElement = document.getElementById('gesture-area');
-    const gestureAreaHeight = gestureAreaElement ? gestureAreaElement.clientHeight : 'N/A';
-    console.log(`--- Resized: gridH=${availableHeight}, gestureH=${gestureAreaHeight}`);
+    const newScale = calculateInitialScale(availableWidth, currentGridHeight);
+    hologramPivot.scale.setScalar(newScale); // Применяем масштаб БЕЗ множителя
 
-    // Обновляем размеры gridContainer (если нужно для других целей)
-    // gridContainer.style.width = `${availableWidth}px`;
-    // gridContainer.style.height = `${availableHeight}px`; // Возможно, это не нужно, если body/main-area уже 100vh
-
-    // Recalculate scale based on new window dimensions
-    const newScale = calculateInitialScale(availableWidth, availableHeight);
-    hologramPivot.scale.setScalar(newScale * 0.9); // Уменьшаем итоговый масштаб
-    console.log(`--- Resized scale applied to hologramPivot: ${newScale}. Heights: grid=${availableHeight}, gesture=${gestureAreaHeight}`);
-    hologramPivot.position.set(0, 0, 0); // Пивот в центре
-    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Убрали +30
-
-    // Update camera and renderer
     if (!isXRMode) {
-      // Обновляем параметры ортокамеры с новыми размерами
-      orthoCamera.left = -availableWidth / 2;
-      orthoCamera.right = availableWidth / 2;
-      orthoCamera.top = availableHeight / 2;
-      orthoCamera.bottom = -availableHeight / 2;
-      orthoCamera.updateProjectionMatrix();
-      const visibleWidth = availableWidth; // Исправлено
-      const visibleHeight = availableHeight; // Исправлено
-
-      orthoCamera.left = -visibleWidth / 2; // Исправлено
-      orthoCamera.right = visibleWidth / 2; // Исправлено
-      orthoCamera.top = visibleHeight / 2;
-      orthoCamera.bottom = -visibleHeight / 2;
-      orthoCamera.updateProjectionMatrix();
+        orthoCamera.left = -availableWidth / 2;
+        orthoCamera.right = availableWidth / 2;
+        orthoCamera.top = currentGridHeight / 2; // Используем высоту контейнера
+        orthoCamera.bottom = -currentGridHeight / 2; // Используем высоту контейнера
+        orthoCamera.updateProjectionMatrix();
     } else {
-      xrCamera.aspect = window.innerWidth / window.innerHeight;
-      xrCamera.updateProjectionMatrix();
+         xrCamera.aspect = availableWidth / currentGridHeight; // Используем размеры контейнера
+         xrCamera.updateProjectionMatrix();
     }
 
-    // Устанавливаем размер рендерера по доступному пространству
-    renderer.setSize(availableWidth, availableHeight);
+    renderer.setSize(availableWidth, currentGridHeight);
+
+    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем по высоте голограммы
+    // hologramPivot.position.set(0, 0, 0); // Пивот остается в (0,0) контейнера
   });
 
   function animate() {
