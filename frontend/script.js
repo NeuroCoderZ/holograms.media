@@ -1806,38 +1806,44 @@ async function loadInitialFilesAndSetupEditor() {
         }));
         const pointsGeometry = new THREE.BufferGeometry().setFromPoints(finalHandPoints3D);
 
-         // Индексы кончиков пальцев
-         const FINGER_TIP_INDICES = [4, 8, 12, 16, 20];
-         const greenColor = new THREE.Color("#00cc00"); // Зеленый цвет
+        // Индексы кончиков пальцев
+        const FINGER_TIP_INDICES = [4, 8, 12, 16, 20];
+        const greenColor = new THREE.Color("#00cc00"); // Зеленый цвет
 
-         // Получаем массив позиций и создаем массив цветов
-         const positions = pointsGeometry.attributes.position;
-         const colors = new Float32Array(positions.count * 3); // 3 компонента (r,g,b) на точку
+        // Получаем массив позиций и создаем массив цветов
+        const positions = pointsGeometry.attributes.position;
+        const colors = new Float32Array(positions.count * 3); // 3 компонента (r,g,b) на точку
 
-         // Заполняем массив цветов: по умолчанию белый
-         for (let j = 0; j < positions.count; j++) {
-             colors[j * 3] = 1;     // r
-             colors[j * 3 + 1] = 1; // g
-             colors[j * 3 + 2] = 1; // b
-         }
+        // Заполняем массив цветов: по умолчанию белый
+        for (let j = 0; j < positions.count; j++) {
+            colors[j * 3] = 1;     // r
+            colors[j * 3 + 1] = 1; // g
+            colors[j * 3 + 2] = 1; // b
+        }
 
-         // Устанавливаем зеленый цвет для кончиков пальцев
-         FINGER_TIP_INDICES.forEach(index => {
-             if (index < positions.count) { // Проверка на всякий случай
-                 colors[index * 3] = greenColor.r;
-                 colors[index * 3 + 1] = greenColor.g;
-                 colors[index * 3 + 2] = greenColor.b;
-             }
-         });
+        // Устанавливаем зеленый цвет для кончиков пальцев
+        FINGER_TIP_INDICES.forEach(index => {
+            if (index < positions.count) { // Проверка на всякий случай
+                colors[index * 3] = greenColor.r;
+                colors[index * 3 + 1] = greenColor.g;
+                colors[index * 3 + 2] = greenColor.b;
+            }
+        });
 
-         // Добавляем атрибут цвета к геометрии точек
+        // Добавляем атрибут цвета к геометрии точек
+        pointsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-         // Создаем объекты и добавляем в группу
-         const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
-         const points = new THREE.Points(pointsGeometry, pointsMaterial);
-         handMeshGroup.add(lines);
-         handMeshGroup.add(points);
-     });
+        // Указываем материалу использовать цвета вершин
+        pointsMaterial.vertexColors = true;
+        // Возможно, потребуется обновить материал, если он уже создан
+        pointsMaterial.needsUpdate = true;
+
+        // Создаем объекты и добавляем в группу
+        const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
+        const points = new THREE.Points(pointsGeometry, pointsMaterial);
+        handMeshGroup.add(lines);
+        handMeshGroup.add(points);
+    });
 
      const gestureArea = document.getElementById('gesture-area');
      if (!gestureArea) return;

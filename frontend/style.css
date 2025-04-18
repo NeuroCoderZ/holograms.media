@@ -377,7 +377,7 @@ body {
   position: absolute;
   width: 6px; /* Размер точки */
   height: 6px; /* Размер точки */
-  background-color: white;
+  background-color: #00cc00; /* Зеленый цвет кнопки */
   border-radius: 50%;
   transform-origin: center center;
   transition: transform 0.05s linear;
