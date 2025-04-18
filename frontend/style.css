@@ -399,3 +399,13 @@ body {
     background-color: red;
     z-index: 1; /* Под точками */
 }
+#gesture-area::before {
+    content: '';
+    position: absolute;
+    left: 10px; /* Отступ линии от левого края */
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: red;
+    z-index: 1; /* Под точками */
+}
