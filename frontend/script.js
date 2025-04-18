@@ -1585,7 +1585,9 @@ async function loadInitialFilesAndSetupEditor() {
     renderer.render(scene, isXRMode ? xrCamera : orthoCamera);
   }
 
-  updateTimelineFromServer();
+  window.dispatchEvent(new Event('resize')); // Имитируем событие resize для первоначального расчета
+
+updateTimelineFromServer();
   initializeMediaPipeHands(); // Инициализируем MediaPipe
   animate();
 
