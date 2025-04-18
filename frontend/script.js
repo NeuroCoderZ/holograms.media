@@ -1806,49 +1806,75 @@ async function loadInitialFilesAndSetupEditor() {
         }));
         const pointsGeometry = new THREE.BufferGeometry().setFromPoints(finalHandPoints3D);
 
-        // Создаем объекты и добавляем в группу
-        const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
-        const points = new THREE.Points(pointsGeometry, pointsMaterial);
-        handMeshGroup.add(lines);
-        handMeshGroup.add(points);
-    });
+         // Индексы кончиков пальцев
+         const FINGER_TIP_INDICES = [4, 8, 12, 16, 20];
+         const greenColor = new THREE.Color("#00cc00"); // Зеленый цвет
 
-    const gestureArea = document.getElementById('gesture-area');
-    if (!gestureArea) return;
+         // Получаем массив позиций и создаем массив цветов
+         const positions = pointsGeometry.attributes.position;
+         const colors = new Float32Array(positions.count * 3); // 3 компонента (r,g,b) на точку
 
-    // Очисти старые точки
-    gestureArea.querySelectorAll('.finger-dot-on-line').forEach(dot => dot.remove());
+         // Заполняем массив цветов: по умолчанию белый
+         for (let j = 0; j < positions.count; j++) {
+             colors[j * 3] = 1;     // r
+             colors[j * 3 + 1] = 1; // g
+             colors[j * 3 + 2] = 1; // b
+         }
 
-    // Проверь, есть ли вообще обнаруженные руки
-    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-      // Внутри этой проверки пройдись циклом по results.multiHandLandmarks
-      for (const landmarks of results.multiHandLandmarks) {
-        // Внутри этого цикла возьми 5 ключевых точек кончиков пальцев
-        const fingerTips = [landmarks[4], landmarks[8], landmarks[12], landmarks[16], landmarks[20]];
+         // Устанавливаем зеленый цвет для кончиков пальцев
+         FINGER_TIP_INDICES.forEach(index => {
+             if (index < positions.count) { // Проверка на всякий случай
+                 colors[index * 3] = greenColor.r;
+                 colors[index * 3 + 1] = greenColor.g;
+                 colors[index * 3 + 2] = greenColor.b;
+             }
+         });
 
-        // Пройдись циклом по fingerTips
-        fingerTips.forEach(tip => {
-          // Создай новый div
-          const dot = document.createElement('div');
-          // Добавь ему класс
-          dot.className = 'finger-dot-on-line';
-          // Вычисли позицию Y
-          const gestureAreaHeight = gestureArea.clientHeight;
-          const topPosition = tip.y * gestureAreaHeight;
-          // Вычисли масштаб Z
-          const scale = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(tip.z, -0.5, 0.1, 0.5, 1.5), 0.5, 1.5);
-          // Установи стили точки
-          dot.style.top = `${topPosition - 3}px`;
-          dot.style.transform = `scale(${scale})`;
-          // Добавь точку в gestureArea
-          gestureArea.appendChild(dot);
-        });
-      }
-    }
-  }
+         // Добавляем атрибут цвета к геометрии точек
 
-  // Обработчик для кнопки GitHub
-  githubButton.addEventListener('click', () => {
-    window.open('https://github.com/NeuroCoderZ/holograms.media', '_blank', 'noopener,noreferrer');
-  });
-});
+         // Создаем объекты и добавляем в группу
+         const lines = new THREE.LineSegments(linesGeometry, lineMaterial);
+         const points = new THREE.Points(pointsGeometry, pointsMaterial);
+         handMeshGroup.add(lines);
+         handMeshGroup.add(points);
+     });
+
+     const gestureArea = document.getElementById('gesture-area');
+     if (!gestureArea) return;
+
+     // Очисти старые точки
+     gestureArea.querySelectorAll('.finger-dot-on-line').forEach(dot => dot.remove());
+
+     // Проверь, есть ли вообще обнаруженные руки
+     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+       // Внутри этой проверки пройдись циклом по results.multiHandLandmarks
+       for (const landmarks of results.multiHandLandmarks) {
+         // Внутри этого цикла возьми 5 ключевых точек кончиков пальцев
+         const fingerTips = [landmarks[4], landmarks[8], landmarks[12], landmarks[16], landmarks[20]];
+
+         // Пройдись циклом по fingerTips
+         fingerTips.forEach(tip => {
+           // Создай новый div
+           const dot = document.createElement('div');
+           // Добавь ему класс
+           dot.className = 'finger-dot-on-line';
+           // Вычисли позицию Y
+           const gestureAreaHeight = gestureArea.clientHeight;
+           const topPosition = tip.y * gestureAreaHeight;
+           // Вычисли масштаб Z
+           const scale = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(tip.z, -0.5, 0.1, 0.5, 1.5), 0.5, 1.5);
+           // Установи стили точки
+           dot.style.top = `${topPosition - 3}px`;
+           dot.style.transform = `scale(${scale})`;
+           // Добавь точку в gestureArea
+           gestureArea.appendChild(dot);
+         });
+       }
+     }
+   }
+
+   // Обработчик для кнопки GitHub
+   githubButton.addEventListener('click', () => {
+     window.open('https://github.com/NeuroCoderZ/holograms.media', '_blank', 'noopener,noreferrer');
+   });
+ });
