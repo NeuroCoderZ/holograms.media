@@ -389,4 +389,13 @@ body {
   animation: spin 1s ease-in-out infinite;
   z-index: 1001; /* Выше всего */
 }
-@keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }#gesture-area::before {
+    content: '';
+    position: absolute;
+    left: 10px; /* Отступ линии от левого края */
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: red;
+    z-index: 1; /* Под точками */
+}
