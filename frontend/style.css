@@ -119,15 +119,12 @@ body {
   margin-top: 1vh;
   margin-bottom: 1vh;
   z-index: 0;
-  background-color: black;
-  border: none; border-top: 2px solid var(--color-icon-disabled);
+  background-color: transparent;
+  border: none;
   overflow: hidden;
   cursor: pointer;
 }
 
-#gesture-area:hover {
-  border-top-color: var(--color-icon-active);
-}
 
 #gesture-area::before {
     content: '';
@@ -382,7 +379,8 @@ body {
   transform-origin: center center;
   transition: transform 0.05s linear;
   z-index: 2; /* Поверх линии */
-  left: 0px; /* Прижимаем к левому краю */
+  left: 1px; /* !!! Сдвигаем на половину ширины линии (2px / 2) */
+  margin-left: -3px; /* !!! Сдвигаем влево на половину ширины точки (6px / 2) */
 }
 
 /* Прелоадер */
