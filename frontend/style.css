@@ -379,7 +379,8 @@ body {
   transform-origin: center center;
   transition: transform 0.05s linear;
   z-index: 2; /* Поверх линии */
-  left: calc(1px - 3px); /* Половина ширины линии (2px/2) минус половина ширины точки (6px/2) */
+  left: 1px; /* Позиционируем левый край точки по центру линии */
+  transform: translateX(-50%);
 }
 
 /* Прелоадер */
