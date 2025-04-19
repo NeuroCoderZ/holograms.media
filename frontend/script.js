@@ -1731,11 +1731,13 @@ updateTimelineFromServer();
 
             // Преобразуем координаты с учетом зеркалирования handMeshGroup.scale.x = -1
             const handPoints3D = landmarks.map(lm => {
-                // X: НЕ инвертируем lm.x, т.к. scale.x = -1 сделает это. Просто центрируем и масштабируем.
-                // Умножаем на 2 для полного диапазона [-GRID_WIDTH, +GRID_WIDTH]
-                let worldX = (lm.x - 0.5) * GRID_WIDTH * 2;
-                // Y: инвертируем от верхнего края MediaPipe 
+                // X: Масштабируем диапазон [0, 1] в [-GRID_WIDTH, +GRID_WIDTH]
+                // Центрирование (lm.x - 0.5) нужно, т.к. pivot голограммы в центре
+                let worldX = (lm.x - 0.5) * (GRID_WIDTH * 2);
+
+                // Y: Масштабируем диапазон [0, 1] в [0, GRID_HEIGHT] и инвертируем
                 let worldY = (1 - lm.y) * GRID_HEIGHT;
+
                 // Z: простая зависимость от GRID_DEPTH, зажатая в пределах
                 // Множитель 1.5 и смещение -GRID_DEPTH / 4 подобраны примерно, нужно тестировать
                 let worldZ = THREE.MathUtils.clamp(lm.z * GRID_DEPTH * 1.5 - GRID_DEPTH / 4, -GRID_DEPTH / 2, GRID_DEPTH / 2);
