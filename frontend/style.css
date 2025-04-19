@@ -121,7 +121,6 @@ body {
   z-index: 0;
   background-color: transparent;
   border: none;
-  overflow: hidden;
   cursor: pointer;
 }
 
