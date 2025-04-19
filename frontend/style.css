@@ -368,7 +368,7 @@ body {
   transform-origin: center center;
   transition: transform 0.05s linear;
   z-index: 2; /* Поверх линии */
-  left: 0px; /* Точка прижата к левому краю */
+  left: 3px; /* Позиционируем левый край точки по левому краю линии */
 }
 
 /* Прелоадер */
