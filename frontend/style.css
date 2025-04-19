@@ -126,16 +126,6 @@ body {
 }
 
 
-#gesture-area::before {
-    content: '';
-    position: absolute;
-    left: 3px; /* Сдвигаем линию на половину ширины точки (6px / 2) */
-    top: 0;  /* От верха */
-    bottom: 0; /* До низа */
-    width: 2px; /* Ширина линии */
-    background-color: red;
-    z-index: 1; /* Под точками */
-}
 
 
 /* Правая панель (Таймлайн + Промпт) */
@@ -380,7 +370,6 @@ body {
   transition: transform 0.05s linear;
   z-index: 2; /* Поверх линии */
   left: 0px; /* Точка прижата к левому краю */
-  transform: none; /* Убираем translateX */
 }
 
 /* Прелоадер */
@@ -442,4 +431,13 @@ body {
 .control-button:disabled {
     color: var(--color-icon-disabled); /* Темно-серый */
     cursor: not-allowed;
+}
+#gesture-line {
+    position: absolute;
+    left: 3px; /* Позиционируем линию по центру точек (6px / 2) */
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: red;
+    z-index: 1; /* Ниже точек */
 }
