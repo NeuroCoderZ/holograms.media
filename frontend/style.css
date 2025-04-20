@@ -120,17 +120,17 @@ body {
 /* Область жестов */
 #gesture-area {
     position: absolute;
-    bottom: 0;   /* !!! Точно прижимаем к низу */
+    bottom: 0;   /* Прижимаем к низу */
     left: 15%;
     width: 70%;
-    height: 4px;   /* Начальная высота - "щель" */
+    height: 4px;   /* Начальная высота "щели" */
     opacity: 1;
-    margin: 0;     /* !!! Убеждаемся, что нет внешних отступов */
+    margin: 0;
     z-index: 0;
     background-color: var(--color-black-95);
     border: none;
     cursor: pointer;
-    overflow: hidden;
+    overflow: hidden; /* !!! Скрываем выход за границы */
     transition: height 0.5s ease-in-out;
 }
 
