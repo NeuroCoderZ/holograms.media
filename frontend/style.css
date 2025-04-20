@@ -121,6 +121,7 @@ body {
 #gesture-area {
     position: absolute;
     bottom: 0;   /* !!! Прижимаем к НИЗУ ЭКРАНА */
+    bottom: 0;   /* !!! Прижимаем к НИЗУ ЭКРАНА */
     left: 15%;
     width: 70%;
     height: 4px;   /* !!! НАЧАЛЬНАЯ высота - "щель" */
