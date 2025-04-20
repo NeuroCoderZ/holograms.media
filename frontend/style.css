@@ -9,6 +9,7 @@
   --text-size: calc(var(--button-size) * 0.35);
   --control-panel-height: calc(var(--button-size) + var(--button-margin) * 2); /* Используется как ширина левой панели */
   --timeline-width: clamp(300px, 30vw, 420px); /* Ширина правой панели */
+  --line-width-vmin: 0.2vmin; /* Адаптивная ширина линии и точек */
 
   /* Цвета (Новая палитра v20.2) */
   --color-black-100: #000000; /* Чистый черный */
@@ -149,7 +150,7 @@ body {
     left: 0;
     top: 0;
     bottom: 0;
-    width: 2px;
+    width: var(--line-width-vmin); /* !!! Адаптивная ширина */
     height: 100%; /* Всегда 100% высоты родителя */
     background-color: var(--color-red-100);
     z-index: 1; /* Под точками */
@@ -391,12 +392,14 @@ body {
 
 .finger-dot-on-line {
     position: absolute;
-    width: 2px; /* !!! Ширина точки = ширина линии */
-    height: 2px; /* !!! Высота точки = ширина линии */
+    width: var(--line-width-vmin); /* !!! Адаптивный размер */
+    height: var(--line-width-vmin); /* !!! Адаптивный размер */
     background-color: var(--color-green-100);
     border-radius: 50%;
+    transform-origin: center left; /* Оставляем */
+    transition: transform 0.05s linear;
     z-index: 2;
-    left: 0px; /* !!! Снова прижимаем к краю */
+    left: calc(var(--line-width-vmin) / 2); /* !!! Левый край точки = Половина ширины линии */
 }
 #loading-spinner {
   display: none; position: fixed; top: 50%; left: 50%;
