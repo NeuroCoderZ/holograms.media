@@ -391,12 +391,10 @@ body {
 
 .finger-dot-on-line {
     position: absolute;
-    width: 0.8vmin;
-    height: 0.8vmin;
+    width: 2px; /* !!! Ширина точки = ширина линии */
+    height: 2px; /* !!! Высота точки = ширина линии */
     background-color: var(--color-green-100);
     border-radius: 50%;
-    transform-origin: center left; /* Оставляем */
-    transition: transform 0.05s linear;
     z-index: 2;
     left: 0px; /* !!! Снова прижимаем к краю */
 }
