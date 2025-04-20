@@ -92,10 +92,12 @@ body {
 
 /* Центральная область (Голограмма + Жесты) */
 .main-area {
-  position: relative;
-  flex-grow: 1;
-  overflow: hidden;
-  background-color: var(--color-pure-black);
+    position: relative; /* !!! ОБЯЗАТЕЛЬНО */
+    flex-grow: 1;
+    overflow: hidden;
+    background-color: var(--color-pure-black);
+    height: 100vh; /* !!! Явно задаем высоту */
+    padding: 0; /* !!! Убираем все внутренние отступы */
 }
 
 #grid-container {
