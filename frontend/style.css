@@ -10,21 +10,29 @@
   --control-panel-height: calc(var(--button-size) + var(--button-margin) * 2); /* Используется как ширина левой панели */
   --timeline-width: clamp(300px, 30vw, 420px); /* Ширина правой панели */
 
-  /* Цвета */
-  --color-pure-black: #000000;
-  --color-dark-border: #282828;
-  --color-primary: #e0e0e0; /* Основной цвет текста/активных иконок */
-  --panel-bg: #1e1e1e;
-  --panel-border: #333333;
-  --input-bg: #2a2a2a; /* Не используется пока */
-  --input-border: #444444; /* Не используется пока */
-  --button-action-bg: #007bff;
+  /* Цвета (Новая палитра v20.2) */
+  --color-black-100: #000000; /* Чистый черный */
+  --color-black-95: rgba(255, 255, 255, 0.05); /* 95% черный (5% белый на черном) */
+  --color-black-66: rgba(255, 255, 255, 0.34); /* 66% черный (~34% белый) */
+  --color-black-33: rgba(255, 255, 255, 0.67); /* 33% черный (~67% белый) */
+  --color-white-100: #ffffff; /* Чистый белый */
+  --color-green-100: #00cc00; /* Чистый зеленый */
+  --color-red-100: #ff0000;   /* Чистый красный */
+
+  /* Переопределение старых переменных (или их замена по всему файлу) */
+  --color-pure-black: var(--color-black-100);
+  --color-primary: var(--color-white-100); /* Основной текст - белый */
+  --panel-bg: var(--color-black-100); /* Панели черные */
+  --panel-border: var(--color-black-66); /* Границы панелей - темно-серые */
+  --input-bg: var(--color-black-95); /* Фон инпутов - почти черный */
+  --input-border: var(--color-black-66); /* Границы инпутов - темно-серые */
+  --button-action-bg: #007bff; /* Оставим синий для кнопок действий */
   --button-action-hover: #0056b3;
-  --button-hover-bg: rgba(255, 255, 255, 0.08); /* Фон кнопки при ховере (если нужен) */
-  --color-icon: #b0b0b0; /* Цвет неактивной иконки (СВЕТЛО-СЕРЫЙ) */
-  --color-icon-active: #ffffff; /* Цвет активной иконки (БЕЛЫЙ) */
-  --color-icon-disabled: #555; /* Темно-серый для disabled и области жестов */
-  --placeholder-bg: #222; /* Цвет фона плейсхолдеров версий */
+  --button-hover-bg: rgba(255, 255, 255, 0.08); /* Фон кнопки при ховере */
+  --color-icon: var(--color-black-33); /* Неактивная иконка - светло-серый */
+  --color-icon-active: var(--color-white-100); /* Активная иконка - белый */
+  --color-icon-disabled: var(--color-black-66); /* Отключенная иконка - темно-серый */
+  --placeholder-bg: var(--color-black-95); /* Фон плейсхолдера - почти черный */
 }
 
 /* Адаптивность */
@@ -119,7 +127,7 @@ body {
   margin-top: 1vh;
   margin-bottom: 1vh;
   z-index: 0;
-  background-color: transparent;
+  background-color: var(--color-black-95); /* !!! Новый фон */
   border: none;
   cursor: pointer;
 }
@@ -177,8 +185,8 @@ body {
 .version-placeholder {
   width: calc(11px * 1.4 * 5 + 10px); /* Ширина = Высота */
   height: calc(11px * 1.4 * 5 + 10px); /* 5 строк текста + padding */
-  background-color: var(--placeholder-bg); /* Цвет фона плейсхолдера */
-  border-radius: 4px; position: relative;
+  background-color: var(--placeholder-bg); /* Должен теперь быть --color-black-95 */
+  position: relative;
   flex-shrink: 0; margin-right: 5px;
 }
 
@@ -273,7 +281,8 @@ body {
 }
 
 #submitTopPrompt {
-  padding: 6px 12px; font-size: 0.9em; background-color: #00cc00; color: #000000;
+  padding: 6px 12px; font-size: 0.9em; background-color: var(--color-green-100); /* !!! Зеленый */
+  color: var(--color-black-100); /* Черный текст на зеленом */
   border: none; border-radius: 3px; cursor: pointer; height: 30px;
 }
 
@@ -282,7 +291,7 @@ body {
   flex: 0 0 var(--button-size);
   width: var(--button-size); height: var(--button-size);
   padding: 0; background-color: transparent; border: none; cursor: pointer;
-  color: var(--color-icon); /* Светло-серый по умолчанию для SVG */
+  color: var(--color-icon); /* Светло-серый */
   display: flex; align-items: center; justify-content: center;
   border-radius: 5px;
   transition: color 0.15s ease-in-out; /* Плавный переход цвета */
@@ -308,7 +317,7 @@ body {
 }
 
 .control-button:not(:disabled):hover {
-  color: var(--color-icon-active);
+  color: var(--color-icon-active); /* Белый */
 }
 
 /* Стили для отключенной кнопки */
@@ -363,7 +372,7 @@ body {
   position: absolute;
   width: 6px; /* Размер точки */
   height: 6px; /* Размер точки */
-  background-color: #00cc00; /* Зеленый цвет кнопки */
+  background-color: var(--color-green-100); /* !!! Зеленый */
   border-radius: 50%;
   transform-origin: center center;
   transition: transform 0.05s linear;
@@ -437,6 +446,6 @@ body {
     top: 0;
     bottom: 0;
     width: 2px;
-    background-color: red;
+    background-color: var(--color-red-100); /* !!! Красный */
     z-index: 1; /* Ниже точек */
 }
