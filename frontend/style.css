@@ -135,12 +135,23 @@ body {
 }
 
 #gesture-area.hands-detected {
-    height: 25vh; /* !!! Финальная высота */
+    height: 25vh; /* Финальная высота */
 }
 
 
 
 
+/* Линия для жестов */
+#gesture-line {
+    position: absolute;
+    left: 0;    /* !!! Линия у левого края */
+    top: 0;
+    bottom: 0;
+    width: 2px; /* Ширина линии */
+    height: 100%;
+    background-color: var(--color-red-100);
+    z-index: 1; /* Под точками */
+}
 
 /* Правая панель (Таймлайн + Промпт) */
 .panel.right-panel {
