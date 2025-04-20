@@ -141,6 +141,10 @@ body {
     pointer-events: auto;
 }
 
+#gesture-area.hands-detected #gesture-line {
+    height: 100%;
+}
+
 
 
 
