@@ -1807,10 +1807,6 @@ updateTimelineFromServer();
             // --- КОНЕЦ БЛОКА РАСЧЕТА ЦВЕТОВ ---
 
             // --- НАЧАЛО БЛОКА МАСШТАБИРОВАНИЯ ТОЧЕК СКЕЛЕТА ---
-            const palmBaseZ = handPoints3D[0] ? handPoints3D[0].z : 0; // Берем Z основания ладони
-            // Масштабируем размер точек: ближе -> больше (например, от 3 до 8)
-            const pointScale = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(palmBaseZ, -GRID_DEPTH / 2, GRID_DEPTH / 2, 8, 3), 3, 8);
-            pointsMaterial.size = pointScale;
             // --- КОНЕЦ БЛОКА МАСШТАБИРОВАНИЯ ТОЧЕК СКЕЛЕТА ---
 
             // --- Создаем объекты и добавляем в группу ---
