@@ -123,10 +123,8 @@ body {
   bottom: 0;   /* !!! Прижимаем к низу экрана */
   left: 15%;
   width: 70%;
-  height: 4px;   /* !!! Начальная высота - "щель" */
+  height: 25vh;   /* !!! Финальная высота */
   opacity: 1;    /* !!! Щель всегда видима */
-  margin-top: 0; /* Убираем */
-  margin-bottom: 0; /* Убираем */
   z-index: 0;
   background-color: var(--color-black-95); /* Фон щели/области */
   border: none;
