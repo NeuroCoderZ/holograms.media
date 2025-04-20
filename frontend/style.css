@@ -458,11 +458,12 @@ body {
 }
 #gesture-line {
     position: absolute;
-    left: 3px; /* Позиционируем линию по центру точек (6px / 2) */
-    bottom: 0; /* Линия начинается снизу */
+    left: 3px; /* Центр точек */
+    top: 0;    /* !!! Начинается сверху контейнера */
+    bottom: 0; /* !!! Растягивается до низа контейнера */
     width: 2px;
-    height: 2px; /* Начальная высота = ширина (точка) */
-    background-color: var(--color-red-100); /* !!! Красный */
-    z-index: 1; /* Ниже точек */
-    transition: height 0.5s ease-in-out; /* Анимация высоты */
+    /* height: 2px; */ /* УДАЛИТЬ начальную высоту */
+    background-color: var(--color-red-100);
+    z-index: 1;
+    /* transition: height 0.5s ease-in-out; */ /* УДАЛИТЬ анимацию */
 }
