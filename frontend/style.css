@@ -128,7 +128,6 @@ body {
     height: 4px;   /* Начальная высота - "щель" */
     opacity: 1;
     margin: 0;
-  padding: 0; /* !!! Добавить, если нет */
     z-index: 0;
     background-color: var(--color-black-95);
     border: none;
