@@ -139,9 +139,9 @@ body {
 }
 
 #gesture-area.hands-detected {
-    height: calc(25vh - 1vh - 1vh);
-    opacity: 1;
-    pointer-events: auto;
+    height: calc(25vh - 1vh - 1vh); /* Финальная высота */
+    /* opacity: 1; */ /* УДАЛИТЬ, т.к. всегда opacity: 1 */
+    pointer-events: auto; /* Включаем события мыши */
 }
 
 #gesture-area.hands-detected #gesture-line {
