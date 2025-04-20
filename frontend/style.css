@@ -119,18 +119,19 @@ body {
 
 /* Область жестов */
 #gesture-area {
-  position: absolute;
-  bottom: 0;   /* !!! Прижимаем к низу экрана */
-  left: 15%;
-  width: 70%;
-  height: 25vh;   /* !!! Финальная высота */
-  opacity: 1;    /* !!! Щель всегда видима */
-  z-index: 0;
-  background-color: var(--color-black-95); /* Фон щели/области */
-  border: none;
-  cursor: pointer;
-  overflow: hidden; /* Скрываем выход за границы */
-  transition: height 0.5s ease-in-out; /* Анимируем только высоту */
+    position: absolute;
+    bottom: 0;   /* !!! Прижимаем к НИЗУ ЭКРАНА */
+    left: 15%;
+    width: 70%;
+    height: 4px;   /* !!! НАЧАЛЬНАЯ высота - "щель" */
+    opacity: 1;    /* Щель всегда видима */
+    margin: 0;     /* Убираем все margin */
+    z-index: 0;
+    background-color: var(--color-black-95); /* Фон щели/области */
+    border: none;
+    cursor: pointer;
+    overflow: hidden; /* Скрываем выход за границы */
+    transition: height 0.5s ease-in-out; /* Анимируем только высоту */
 }
 
 #gesture-area.hands-detected {
