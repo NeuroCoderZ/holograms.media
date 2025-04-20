@@ -1730,6 +1730,19 @@ updateTimelineFromServer();
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
     let thumbTip, indexTip, palmBase;
+    const gestureAreaElement = document.getElementById('gesture-area');
+    const handsArePresent = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
+
+    // Управляем классом для анимации
+    if (gestureAreaElement) {
+        const wasPresent = gestureAreaElement.classList.contains('hands-detected');
+        if (handsArePresent && !wasPresent) {
+            gestureAreaElement.classList.add('hands-detected');
+        } else if (!handsArePresent && wasPresent) {
+            gestureAreaElement.classList.remove('hands-detected');
+        }
+    }
+
     if (!isGestureCanvasReady) { return; }
 
     // Очищаем группу ПЕРЕД рендерингом нового кадра  
