@@ -1177,6 +1177,18 @@ async function fetchAndStoreFile(filename) {
     const content = await response.text();
     fileContents[filename] = content;
     console.log(`Содержимое ${filename} загружено.`);
+    // <<< ДОБАВИТЬ КОД НИЖЕ >>>
+    // Прокручиваем контейнер версий вниз после добавления всех элементов
+    const timelineContainer = document.getElementById('versionTimeline'); // Получаем сам контейнер
+    if (timelineContainer) {
+        // Используем requestAnimationFrame для гарантии, что DOM обновлен
+        requestAnimationFrame(() => {
+            timelineContainer.scrollTop = timelineContainer.scrollHeight;
+            console.log("Timeline scrolled to bottom.");
+        });
+    }
+    // <<< КОНЕЦ ДОБАВЛЕННОГО КОДА >>>
+
   } catch (error) {
     console.error(`Не удалось загрузить ${filename}:`, error);
     fileContents[filename] = `// Ошибка загрузки ${filename}\n${error}`; // Записываем ошибку в контент
