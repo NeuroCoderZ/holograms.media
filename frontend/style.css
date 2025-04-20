@@ -135,6 +135,12 @@ body {
   pointer-events: none;
 }
 
+#gesture-area.hands-detected {
+    height: calc(25vh - 1vh - 1vh);
+    opacity: 1;
+    pointer-events: auto;
+}
+
 
 
 
