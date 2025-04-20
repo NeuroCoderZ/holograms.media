@@ -144,9 +144,6 @@ body {
     pointer-events: auto; /* Включаем события мыши */
 }
 
-#gesture-area.hands-detected #gesture-line {
-    height: 100%;
-}
 
 
 
