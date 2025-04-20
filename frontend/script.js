@@ -1733,13 +1733,15 @@ updateTimelineFromServer();
     const gestureAreaElement = document.getElementById('gesture-area');
     const handsArePresent = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
 
-    // Управляем классом для анимации
+    // Управляем высотой области жестов через JS
     if (gestureAreaElement) {
-        const wasPresent = gestureAreaElement.classList.contains('hands-detected');
-        if (handsArePresent && !wasPresent) {
-            gestureAreaElement.classList.add('hands-detected');
-        } else if (!handsArePresent && wasPresent) {
-            gestureAreaElement.classList.remove('hands-detected');
+        const targetHeight = handsArePresent ? '25vh' : '4px'; // Целевая высота
+        // Проверяем, нужно ли менять высоту
+        if (gestureAreaElement.style.height !== targetHeight) {
+            gestureAreaElement.style.height = targetHeight;
+            console.log(`Gesture area height set to: ${targetHeight}`);
+            // Можно добавить вызов для пересчета макета голограммы ЗДЕСЬ
+            // window.dispatchEvent(new Event('resize'));
         }
     }
 
