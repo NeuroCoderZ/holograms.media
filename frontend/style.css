@@ -451,11 +451,11 @@ body {
 #gesture-line {
     position: absolute;
     left: 3px; /* Центр точек */
-    top: 0;    /* !!! Начинается сверху контейнера */
-    bottom: 0; /* !!! Растягивается до низа контейнера */
+    top: 0;
+    bottom: 0;
     width: 2px;
-    /* height: 2px; */ /* УДАЛИТЬ начальную высоту */
+    height: 100%; /* Всегда 100% высоты родителя */
     background-color: var(--color-red-100);
     z-index: 1;
-    /* transition: height 0.5s ease-in-out; */ /* УДАЛИТЬ анимацию */
+    /* transition: нет */
 }
