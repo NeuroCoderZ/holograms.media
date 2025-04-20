@@ -146,11 +146,11 @@ body {
 /* Линия для жестов */
 #gesture-line {
     position: absolute;
-    left: 0;    /* !!! Линия у левого края */
+    left: 0;    /* Линия у левого края #gesture-area */
     top: 0;
     bottom: 0;
-    width: 2px; /* Ширина линии */
-    height: 100%;
+    width: 2px;
+    height: 100%; /* Всегда 100% высоты родителя */
     background-color: var(--color-red-100);
     z-index: 1; /* Под точками */
 }
