@@ -146,7 +146,7 @@ body {
 /* Линия для жестов */
 #gesture-line {
     position: absolute;
-    left: 0;    /* Линия у левого края #gesture-area */
+    left: 0;
     top: 0;
     bottom: 0;
     width: 2px;
