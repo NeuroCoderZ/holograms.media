@@ -121,18 +121,18 @@ body {
 
 /* Область жестов */
 #gesture-area {
-    position: absolute;
-    bottom: 0;   /* Прижимаем к низу */
+    position: absolute; /* !!! Позиционируем относительно .main-area */
+    bottom: 0;   /* !!! Прижимаем к низу .main-area */
     left: 15%;
     width: 70%;
-    height: 4px;   /* Начальная высота "щели" */
+    height: 4px;   /* Начальная высота - "щель" */
     opacity: 1;
     margin: 0;
     z-index: 0;
     background-color: var(--color-black-95);
     border: none;
     cursor: pointer;
-    overflow: hidden; /* !!! Скрываем выход за границы */
+    overflow: hidden;
     transition: height 0.5s ease-in-out;
 }
 
