@@ -390,17 +390,14 @@ body {
 
 .finger-dot-on-line {
     position: absolute;
-    /* Адаптивный базовый размер */
     width: 0.8vmin;
     height: 0.8vmin;
     background-color: var(--color-green-100);
     border-radius: 50%;
-    /* Масштабируем от центра левого края */
     transform-origin: center left;
-    transition: transform 0.05s linear; /* Для JS scale */
+    transition: transform 0.05s linear;
     z-index: 2; /* Над линией */
-    /* Позиционируем левый край точки по центру линии (ширина линии 2px / 2 = 1px) */
-    left: 1px;
+    left: 1px; /* Позиционируем левый край точки по центру линии */
 }
 #loading-spinner {
   display: none; position: fixed; top: 50%; left: 50%;
