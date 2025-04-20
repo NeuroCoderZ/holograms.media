@@ -47,6 +47,11 @@
 
 /* Общие стили */
 * { box-sizing: border-box; }
+body, .main-area, #grid-container, #gesture-area {
+    border: 1px dashed cyan !important; /* Временная рамка для диагностики */
+    box-sizing: border-box !important; /* Учитываем рамку в размерах */
+}
+
 html, body {
   height: 100%; width: 100%;
   margin: 0; padding: 0;
