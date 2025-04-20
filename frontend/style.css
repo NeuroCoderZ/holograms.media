@@ -9,7 +9,6 @@
   --text-size: calc(var(--button-size) * 0.35);
   --control-panel-height: calc(var(--button-size) + var(--button-margin) * 2); /* Используется как ширина левой панели */
   --timeline-width: clamp(300px, 30vw, 420px); /* Ширина правой панели */
-  --line-width-vmin: 0.2vmin; /* Адаптивная ширина линии и точек */
 
   /* Цвета (Новая палитра v20.2) */
   --color-black-100: #000000; /* Чистый черный */
@@ -129,8 +128,8 @@ body {
 #gesture-area {
     position: absolute; /* !!! Позиционируем относительно .main-area */
     bottom: 0;   /* !!! Прижимаем к низу .main-area */
-    left: 15%;
-    width: 70%;
+    left: 0; /* !!! Прижимаем к левому краю .main-area */
+    width: 100%; /* !!! Растягиваем на всю ширину */
     height: 4px;   /* Начальная высота - "щель" */
     opacity: 1;
     margin: 0;
@@ -142,20 +141,13 @@ body {
     transition: height 0.5s ease-in-out;
 }
 
-#gesture-area.hands-detected {
-    height: 25vh; /* Финальная высота */
-}
-
-
-
-
 /* Линия для жестов */
 #gesture-line {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
-    width: var(--line-width-vmin); /* !!! Адаптивная ширина */
+    width: 2px; /* !!! Фиксированная ширина */
     height: 100%; /* Всегда 100% высоты родителя */
     background-color: var(--color-red-100);
     z-index: 1; /* Под точками */
@@ -397,14 +389,12 @@ body {
 
 .finger-dot-on-line {
     position: absolute;
-    width: var(--line-width-vmin); /* !!! Адаптивный размер */
-    height: var(--line-width-vmin); /* !!! Адаптивный размер */
+    width: 2px; /* !!! Фиксированный размер */
+    height: 2px; /* !!! Фиксированный размер */
     background-color: var(--color-green-100);
     border-radius: 50%;
-    transform-origin: center left; /* Оставляем */
-    transition: transform 0.05s linear;
     z-index: 2;
-    left: calc(var(--line-width-vmin) / 2); /* !!! Левый край точки = Половина ширины линии */
+    left: 0px; /* !!! Прижата к краю линии */
 }
 #loading-spinner {
   display: none; position: fixed; top: 50%; left: 50%;
