@@ -376,15 +376,18 @@ body {
 .modal button:disabled { background-color: #555; cursor: not-allowed; }
 
 .finger-dot-on-line {
-  position: absolute;
-  width: 6px; /* Размер точки */
-  height: 6px; /* Размер точки */
-  background-color: var(--color-green-100); /* !!! Зеленый */
-  border-radius: 50%;
-  transform-origin: center center;
-  transition: transform 0.05s linear;
-  z-index: 2; /* Поверх линии */
-  left: 1px; /* !!! Левый край точки = Центр линии (4px) - Половина ширины точки (3px) */
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background-color: var(--color-green-100);
+    border-radius: 50%;
+    transform-origin: center center;
+    transition: transform 0.05s linear;
+    z-index: 2;
+    left: 0px; /* !!! Точка прижата к краю */
+    padding-left: 3px; /* !!! Отступ контента точки от левого края = центр линии */
+    border-left: 2px solid var(--color-red-100); /* !!! Рисуем линию как границу */
+    box-sizing: border-box; /* !!! Важно, чтобы padding/border не увеличивали размер */
 }
 
 /* Прелоадер */
