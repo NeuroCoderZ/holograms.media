@@ -1013,6 +1013,49 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight);
   console.log('Final Scale:', initialScale);
 
+  // Функция для плавной анимации макета голограммы
+  function updateHologramLayout(handsVisible) {
+      console.log(`Updating hologram layout, handsVisible: ${handsVisible}`);
+
+      const gridContainerElement = document.getElementById('grid-container');
+      if (!gridContainerElement) return;
+      const currentGridHeight = gridContainerElement.clientHeight; // Высота контейнера голограммы (75vh)
+
+      const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
+      const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
+      const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
+
+      // Определяем целевую доступную высоту для голограммы
+      const targetAvailableHeight = handsVisible
+          ? currentGridHeight * 0.90 // 90% = 100% - 5% сверху - 5% снизу (когда руки есть)
+          : window.innerHeight * 0.98; // 98% = 100% - 1% сверху - 1% снизу (когда рук нет)
+
+      // Рассчитываем целевой масштаб
+      const targetScale = calculateInitialScale(availableWidth, targetAvailableHeight);
+
+      // Определяем целевую позицию Y для mainSequencerGroup
+      // Если руки есть, центрируем в 75vh контейнере
+      // Если рук нет, центрируем в окне (позиция пивота 0, смещение группы 0)
+      const targetY = handsVisible ? -GRID_HEIGHT / 2 : 0;
+
+      // --- Анимация с помощью TWEEN.js ---
+      const currentScale = hologramPivot.scale.x; // Текущий масштаб
+      const currentY = mainSequencerGroup.position.y; // Текущая позиция Y
+
+      // Останавливаем предыдущую анимацию, если она была
+      TWEEN.removeAll();
+
+      new TWEEN.Tween({ scale: currentScale, y: currentY })
+          .to({ scale: targetScale, y: targetY }, 500) // Длительность анимации 500ms
+          .easing(TWEEN.Easing.Quadratic.Out) // Плавное замедление
+          .onUpdate((obj) => {
+              hologramPivot.scale.setScalar(obj.scale);
+              mainSequencerGroup.position.y = obj.y;
+          })
+          .start();
+      // ------------------------------------
+  }
+
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
   hologramPivot.scale.setScalar(initialScale * 0.8); // Уменьшаем итоговый масштаб
@@ -1579,6 +1622,9 @@ async function loadInitialFilesAndSetupEditor() {
 
   function animate() {
     requestAnimationFrame(animate);
+
+    // Обновляем анимации TWEEN.js
+    TWEEN.update();
 
     // Явно очищаем буферы перед рендерингом
     renderer.clear();
