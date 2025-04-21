@@ -1590,18 +1590,18 @@ async function loadInitialFilesAndSetupEditor() {
   });
 
   window.addEventListener('resize', () => {
-    // Получаем элементы и их размеры ОДИН РАЗ в начале
+    // Получаем элементы и их размеры
     const gridContainerElement = document.getElementById('grid-container');
     if (!gridContainerElement) {
         console.error("Resize handler: #grid-container not found!");
-        return; // Выходим, если контейнер не найден
+        return;
     }
     const currentGridHeight = gridContainerElement.clientHeight;
     const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
     const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
     const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
 
-    // Логи для отладки
+    // Логи
     console.log(`Resize event: availableW=${availableWidth}, currentGridHeight=${currentGridHeight}`);
 
     // Обновляем камеру и рендерер
@@ -1615,14 +1615,14 @@ async function loadInitialFilesAndSetupEditor() {
          xrCamera.aspect = availableWidth / currentGridHeight;
          xrCamera.updateProjectionMatrix();
     }
-
-    // Устанавливаем размер рендерера по АКТУАЛЬНОЙ высоте контейнера
     renderer.setSize(availableWidth, currentGridHeight);
 
-    // Определяем видимость рук и обновляем макет
+    // Вызываем updateHologramLayout для пересчета макета голограммы
     const gestureAreaElement = document.getElementById('gesture-area');
+    // Определяем видимость по высоте (сравниваем с начальной высотой щели)
     const handsAreCurrentlyVisible = gestureAreaElement ? (gestureAreaElement.style.height !== '4px') : false;
     updateHologramLayout(handsAreCurrentlyVisible);
+
   }); // Конец обработчика resize
 
   function animate() {
