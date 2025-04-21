@@ -1590,38 +1590,38 @@ async function loadInitialFilesAndSetupEditor() {
   });
 
   window.addEventListener('resize', () => {
-    // Получаем элементы и их размеры
-    const gridContainerElement = document.getElementById('grid-container');
-    if (!gridContainerElement) {
-        console.error("Resize handler: #grid-container not found!");
-        return;
-    }
-    const currentGridHeight = gridContainerElement.clientHeight;
-    const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
-    const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
-    const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
+        // Получаем элементы и их размеры
+        const gridContainerElement = document.getElementById('grid-container');
+        if (!gridContainerElement) {
+            console.error("Resize handler: #grid-container not found!");
+            return;
+        }
+        const currentGridHeight = gridContainerElement.clientHeight;
+        const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
+        const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
+        const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
 
-    // Логи
-    console.log(`Resize event: availableW=${availableWidth}, currentGridHeight=${currentGridHeight}`);
+        // Логи
+        console.log(`Resize event: availableW=${availableWidth}, currentGridHeight=${currentGridHeight}`);
 
-    // Обновляем камеру и рендерер
-    if (!isXRMode) {
-        orthoCamera.left = -availableWidth / 2;
-        orthoCamera.right = availableWidth / 2;
-        orthoCamera.top = currentGridHeight / 2;
-        orthoCamera.bottom = -currentGridHeight / 2;
-        orthoCamera.updateProjectionMatrix();
-    } else {
-         xrCamera.aspect = availableWidth / currentGridHeight;
-         xrCamera.updateProjectionMatrix();
-    }
-    renderer.setSize(availableWidth, currentGridHeight);
+        // Обновляем камеру и рендерер
+        if (!isXRMode) {
+            orthoCamera.left = -availableWidth / 2;
+            orthoCamera.right = availableWidth / 2;
+            orthoCamera.top = currentGridHeight / 2;
+            orthoCamera.bottom = -currentGridHeight / 2;
+            orthoCamera.updateProjectionMatrix();
+        } else {
+             xrCamera.aspect = availableWidth / currentGridHeight;
+             xrCamera.updateProjectionMatrix();
+        }
+        renderer.setSize(availableWidth, currentGridHeight);
 
-    // Вызываем updateHologramLayout для пересчета макета голограммы
-    const gestureAreaElement = document.getElementById('gesture-area');
-    // Определяем видимость по высоте (сравниваем с начальной высотой щели)
-    const handsAreCurrentlyVisible = gestureAreaElement ? (gestureAreaElement.style.height !== '4px') : false;
-    updateHologramLayout(handsAreCurrentlyVisible);
+        // Вызываем updateHologramLayout для пересчета макета голограммы
+        const gestureAreaElement = document.getElementById('gesture-area');
+        // Определяем видимость по высоте (сравниваем с начальной высотой щели)
+        const handsAreCurrentlyVisible = gestureAreaElement ? (gestureAreaElement.style.height !== '4px') : false;
+        updateHologramLayout(handsAreCurrentlyVisible);
 
   }); // Конец обработчика resize
 
