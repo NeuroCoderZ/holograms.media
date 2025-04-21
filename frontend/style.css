@@ -388,12 +388,13 @@ body {
 
 .finger-dot-on-line {
     position: absolute;
-    width: var(--line-width-vmin); /* !!! Адаптивный размер */
-    height: var(--line-width-vmin); /* !!! Адаптивный размер */
+    width: calc(var(--line-width-vmin) + 2px);
+    height: calc(var(--line-width-vmin) + 2px);
     background-color: var(--color-green-100);
-    border-radius: 50%;
+    transform-origin: center left;
+    transition: transform 0.05s linear;
     z-index: 2;
-    left: 0px; /* !!! Прижимаем к левому краю линии */
+    left: calc( (var(--line-width-vmin) / 2) - ( (var(--line-width-vmin) + 2px) / 2 ) );
 }
 #loading-spinner {
   display: none; position: fixed; top: 50%; left: 50%;
