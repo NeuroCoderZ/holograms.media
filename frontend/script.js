@@ -1625,10 +1625,10 @@ async function loadInitialFilesAndSetupEditor() {
         // Вызываем updateHologramLayout для пересчета макета голограммы
         const gestureAreaElement = document.getElementById('gesture-area');
         // Определяем видимость по высоте (сравниваем с начальной высотой щели)
-        const handsAreCurrentlyVisible = gestureAreaElement ? (gestureAreaElement.style.height !== '4px') : false;
-        updateHologramLayout(handsAreCurrentlyVisible);
+        const handsAreCurrentlyVisible = gestureAreaElement ? (gestureAreaElement.style.height !== '4px') : false; // !!! Проверяем именно '4px'
+        updateHologramLayout(handsAreCurrentlyVisible); // !!! Этот вызов должен быть здесь
 
-  }); // Конец обработчика resize
+    }); // Конец обработчика resize
 
   function animate() {
     requestAnimationFrame(animate);
