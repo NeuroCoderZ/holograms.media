@@ -1055,7 +1055,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log(`Target Layout: Scale=${targetScale.toFixed(3)}, Y=${targetY.toFixed(1)}, AvailH=${targetAvailableHeight.toFixed(1)}`);
 
-        // --- Анимация TWEEN.js ---
+        // --- Убираем Анимацию TWEEN.js, ставим значения НАПРЯМУЮ ---
+        hologramPivot.scale.setScalar(targetScale);
+        mainSequencerGroup.position.y = targetY;
+        console.log(`Applied Directly: Scale=${hologramPivot.scale.x.toFixed(3)}, Y=${mainSequencerGroup.position.y.toFixed(1)}`);
+        // --- Конец прямой установки ---
+
+        /* // --- НАЧАЛО ЗАКОММЕНТИРОВАННОЙ АНИМАЦИИ TWEEN.js ---
         const currentScale = hologramPivot.scale.x;
         const currentY = mainSequencerGroup.position.y;
         TWEEN.removeAll();
@@ -1067,7 +1073,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 mainSequencerGroup.position.y = obj.y;
             })
             .start();
-        // --- Конец анимации ---
+        */ // --- КОНЕЦ ЗАКОММЕНТИРОВАННОЙ АНИМАЦИИ TWEEN.js ---
   }
 
   scene.add(hologramPivot);
@@ -1633,7 +1639,6 @@ async function loadInitialFilesAndSetupEditor() {
 
   function animate() {
     requestAnimationFrame(animate);
-    TWEEN.update(); // !!! Обновляем анимации TWEEN
 
     // Обновляем анимации TWEEN.js
     TWEEN.update();
