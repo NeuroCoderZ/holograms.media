@@ -1006,51 +1006,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Функция для плавной анимации макета голограммы
   function updateHologramLayout(handsVisible) {
-      console.log(`Updating hologram layout, handsVisible: ${handsVisible}`);
+    console.log(`Updating hologram layout, handsVisible: ${handsVisible}`);
 
-      const gridContainerElement = document.getElementById('grid-container');
-      if (!gridContainerElement) return;
-      const currentGridHeight = gridContainerElement.clientHeight; // Высота контейнера голограммы (75vh)
+    const gridContainerElement = document.getElementById('grid-container');
+    const gestureAreaElement = document.getElementById('gesture-area'); // Нужен для получения высоты
+    if (!gridContainerElement || !gestureAreaElement) return;
 
-      const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
-      const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
-      const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
+    const windowHeight = window.innerHeight; // Используем высоту окна
+    const gridContainerTop = gridContainerElement.offsetTop; // Позиция верха контейнера голограммы
+    const gestureAreaHeightPx = gestureAreaElement.offsetHeight; // Текущая высота области жестов в px
 
-      // --- НАЧАЛО ИСПРАВЛЕННОГО БЛОКА ---
-      // Определяем высоту области жестов в пикселях
-      const gestureAreaCurrentHeightPx = gestureAreaElement ? gestureAreaElement.offsetHeight : 0;
+    const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
+    const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
+    const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
 
-      // Определяем доступную высоту для голограммы ВНУТРИ gridContainer
-      // Отнимаем 5% сверху и 5% снизу от ВЫСОТЫ КОНТЕЙНЕРА ГОЛОГРАММЫ
-      const topMargin = currentGridHeight * 0.05;
-      const bottomMargin = currentGridHeight * 0.05;
-      const targetAvailableHeight = currentGridHeight - topMargin - bottomMargin; // Высота для вписывания
+    // --- Расчет целевой ВЕРТИКАЛЬНОЙ ОБЛАСТИ для голограммы ---
+    const topMarginPercent = 0.05; // 5% сверху окна
+    const bottomMarginPercent = 0.05; // 5% снизу (от верха области жестов)
 
-      // Рассчитываем целевой масштаб (он теперь НЕ зависит от handsVisible напрямую,
-      // так как голограмма всегда вписывается в свое 75vh пространство с отступами)
-      const targetScale = calculateInitialScale(availableWidth, targetAvailableHeight);
+    const topEdge = windowHeight * topMarginPercent;
+    // Нижний край голограммы = Низ окна - высота обл.жестов - отступ 5% от высоты ОКНА
+    const bottomEdge = windowHeight - gestureAreaHeightPx - (windowHeight * bottomMarginPercent);
+    const targetAvailableHeight = bottomEdge - topEdge;
+    // --- Конец расчета области ---
 
-      // Определяем целевую позицию Y для mainSequencerGroup
-      // Она всегда одинакова - центрируем голограмму в ее 75vh контейнере
-      const targetY = -GRID_HEIGHT / 2;
-      // --- КОНЕЦ ИСПРАВЛЕННОГО БЛОКА ---
+    // Рассчитываем целевой масштаб, чтобы вписать голограмму в эту высоту
+    const targetScale = calculateInitialScale(availableWidth, targetAvailableHeight);
 
-      // --- Анимация с помощью TWEEN.js ---
-      const currentScale = hologramPivot.scale.x; // Текущий масштаб
-      const currentY = mainSequencerGroup.position.y; // Текущая позиция Y
+    // Определяем целевую позицию Y для mainSequencerGroup
+    // Центрируем mainSequencerGroup ВНУТРИ рассчитанной targetAvailableHeight
+    // Смещение = середина доступной области - половина высоты голограммы
+    const targetCenterY = topEdge + targetAvailableHeight / 2;
+    const targetY = targetCenterY - (GRID_HEIGHT / 2); // Центрируем mainSequencerGroup
 
-      // Останавливаем предыдущую анимацию, если она была
-      TWEEN.removeAll();
-
-      new TWEEN.Tween({ scale: currentScale, y: currentY })
-          .to({ scale: targetScale, y: targetY }, 500) // Длительность анимации 500ms
-          .easing(TWEEN.Easing.Quadratic.Out) // Плавное замедление
-          .onUpdate((obj) => {
-              hologramPivot.scale.setScalar(obj.scale);
-              mainSequencerGroup.position.y = obj.y;
-          })
-          .start();
-      // ------------------------------------
+    // --- Анимация TWEEN.js ---
+    const currentScale = hologramPivot.scale.x;
+    const currentY = mainSequencerGroup.position.y;
+    TWEEN.removeAll();
+    new TWEEN.Tween({ scale: currentScale, y: currentY })
+        .to({ scale: targetScale, y: targetY }, 500)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .onUpdate((obj) => {
+            hologramPivot.scale.setScalar(obj.scale);
+            mainSequencerGroup.position.y = obj.y;
+        })
+        .start();
+    // --- Конец анимации ---
   }
 
   scene.add(hologramPivot);
