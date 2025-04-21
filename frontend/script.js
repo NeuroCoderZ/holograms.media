@@ -1608,10 +1608,14 @@ async function loadInitialFilesAndSetupEditor() {
     // Устанавливаем размер рендерера по АКТУАЛЬНОЙ высоте контейнера
     renderer.setSize(availableWidth, currentGridHeight);
 
-    // Определяем состояние рук и обновляем макет
-    const gestureAreaElement = document.getElementById('gesture-area');
-    const handsAreCurrentlyVisible = gestureAreaElement ? gestureAreaElement.style.height === '25vh' : false;
-    updateHologramLayout(handsAreCurrentlyVisible);
+    // Рассчитываем доступную высоту и масштаб для текущего размера контейнера
+    const topMargin = currentGridHeight * 0.05;
+    const bottomMargin = currentGridHeight * 0.05;
+    const availableHeightForHologram = currentGridHeight - topMargin - bottomMargin;
+    const newScale = calculateInitialScale(availableWidth, availableHeightForHologram);
+
+    hologramPivot.scale.setScalar(newScale);
+    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем
   }); // Конец обработчика resize
 
   function animate() {
@@ -1781,7 +1785,6 @@ updateTimelineFromServer();
         if (gestureAreaElement.style.height !== targetHeight) {
             gestureAreaElement.style.height = targetHeight;
             console.log(`Gesture area height set to: ${targetHeight}`);
-            updateHologramLayout(handsArePresent);
         }
     }
 
