@@ -1587,11 +1587,7 @@ async function loadInitialFilesAndSetupEditor() {
     // Логи для отладки
     console.log(`Resize event: availableW=${availableWidth}, currentGridHeight=${currentGridHeight}`);
 
-    // Пересчитываем масштаб, используя АКТУАЛЬНУЮ высоту контейнера
-    const newScale = calculateInitialScale(availableWidth, currentGridHeight);
-    hologramPivot.scale.setScalar(newScale); // Применяем масштаб
-
-    // Обновляем камеру, используя АКТУАЛЬНУЮ высоту контейнера
+    // Обновляем камеру и рендерер
     if (!isXRMode) {
         orthoCamera.left = -availableWidth / 2;
         orthoCamera.right = availableWidth / 2;
@@ -1606,9 +1602,10 @@ async function loadInitialFilesAndSetupEditor() {
     // Устанавливаем размер рендерера по АКТУАЛЬНОЙ высоте контейнера
     renderer.setSize(availableWidth, currentGridHeight);
 
-    // Центрируем группу ВНУТРИ контейнера (по высоте самой голограммы)
-    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0);
-
+    // Определяем состояние рук и обновляем макет
+    const gestureAreaElement = document.getElementById('gesture-area');
+    const handsAreCurrentlyVisible = gestureAreaElement ? gestureAreaElement.style.height === '25vh' : false;
+    updateHologramLayout(handsAreCurrentlyVisible);
   }); // Конец обработчика resize
 
   function animate() {
