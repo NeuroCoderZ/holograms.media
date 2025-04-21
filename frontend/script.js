@@ -1608,14 +1608,10 @@ async function loadInitialFilesAndSetupEditor() {
     // Устанавливаем размер рендерера по АКТУАЛЬНОЙ высоте контейнера
     renderer.setSize(availableWidth, currentGridHeight);
 
-    // Рассчитываем доступную высоту и масштаб для текущего размера контейнера
-    const topMargin = currentGridHeight * 0.05;
-    const bottomMargin = currentGridHeight * 0.05;
-    const availableHeightForHologram = currentGridHeight - topMargin - bottomMargin;
-    const newScale = calculateInitialScale(availableWidth, availableHeightForHologram);
-
-    hologramPivot.scale.setScalar(newScale);
-    mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем
+    // Определяем видимость рук и обновляем макет
+    const gestureAreaElement = document.getElementById('gesture-area');
+    const handsAreCurrentlyVisible = gestureAreaElement ? (gestureAreaElement.style.height !== '4px') : false;
+    updateHologramLayout(handsAreCurrentlyVisible);
   }); // Конец обработчика resize
 
   function animate() {
