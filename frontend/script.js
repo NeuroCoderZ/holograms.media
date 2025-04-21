@@ -1740,8 +1740,7 @@ updateTimelineFromServer();
         if (gestureAreaElement.style.height !== targetHeight) {
             gestureAreaElement.style.height = targetHeight;
             console.log(`Gesture area height set to: ${targetHeight}`);
-            // Можно добавить вызов для пересчета макета голограммы ЗДЕСЬ
-            // window.dispatchEvent(new Event('resize'));
+            updateHologramLayout(handsArePresent);
         }
     }
 
