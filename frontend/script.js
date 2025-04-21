@@ -1016,18 +1016,24 @@ document.addEventListener('DOMContentLoaded', () => {
       const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
       const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
 
-      // Определяем целевую доступную высоту для голограммы
-      const targetAvailableHeight = handsVisible
-          ? currentGridHeight * 0.90 // 90% = 100% - 5% сверху - 5% снизу (когда руки есть)
-          : window.innerHeight * 0.98; // 98% = 100% - 1% сверху - 1% снизу (когда рук нет)
+      // --- НАЧАЛО ИСПРАВЛЕННОГО БЛОКА ---
+      // Определяем высоту области жестов в пикселях
+      const gestureAreaCurrentHeightPx = gestureAreaElement ? gestureAreaElement.offsetHeight : 0;
 
-      // Рассчитываем целевой масштаб
+      // Определяем доступную высоту для голограммы ВНУТРИ gridContainer
+      // Отнимаем 5% сверху и 5% снизу от ВЫСОТЫ КОНТЕЙНЕРА ГОЛОГРАММЫ
+      const topMargin = currentGridHeight * 0.05;
+      const bottomMargin = currentGridHeight * 0.05;
+      const targetAvailableHeight = currentGridHeight - topMargin - bottomMargin; // Высота для вписывания
+
+      // Рассчитываем целевой масштаб (он теперь НЕ зависит от handsVisible напрямую,
+      // так как голограмма всегда вписывается в свое 75vh пространство с отступами)
       const targetScale = calculateInitialScale(availableWidth, targetAvailableHeight);
 
       // Определяем целевую позицию Y для mainSequencerGroup
-      // Если руки есть, центрируем в 75vh контейнере
-      // Если рук нет, центрируем в окне (позиция пивота 0, смещение группы 0)
-      const targetY = handsVisible ? -GRID_HEIGHT / 2 : 0;
+      // Она всегда одинакова - центрируем голограмму в ее 75vh контейнере
+      const targetY = -GRID_HEIGHT / 2;
+      // --- КОНЕЦ ИСПРАВЛЕННОГО БЛОКА ---
 
       // --- Анимация с помощью TWEEN.js ---
       const currentScale = hologramPivot.scale.x; // Текущий масштаб
