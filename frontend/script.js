@@ -1785,7 +1785,6 @@ updateTimelineFromServer();
 
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
-    let thumbTip, indexTip, palmBase;
     const gestureAreaElement = document.getElementById('gesture-area');
     const handsArePresent = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
 
@@ -1796,8 +1795,10 @@ updateTimelineFromServer();
         if (gestureAreaElement.style.height !== targetHeight) {
             gestureAreaElement.style.height = targetHeight;
             console.log(`Gesture area height set to: ${targetHeight}`);
-                }
+            updateHologramLayout(handsArePresent); // !!! Этот вызов должен быть здесь
+        }
     }
+    let thumbTip, indexTip, palmBase;
 
     if (!isGestureCanvasReady) { return; }
 
