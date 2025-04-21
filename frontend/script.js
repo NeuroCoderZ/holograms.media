@@ -1071,7 +1071,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
-  mainSequencerGroup.position.y = -GRID_HEIGHT / 2; // Центрируем геометрию относительно пивота
+  mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем геометрию относительно пивота
+  hologramPivot.position.set(0, 0, 0); // Начальная позиция пивота
   mainSequencerGroup.rotation.set(0, 0, 0);
 
   // Установи начальные параметры для состояния "без рук"
