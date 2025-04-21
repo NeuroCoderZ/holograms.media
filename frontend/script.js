@@ -1057,7 +1057,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- Убираем Анимацию TWEEN.js, ставим значения НАПРЯМУЮ ---
         hologramPivot.scale.setScalar(targetScale);
-        mainSequencerGroup.position.y = targetY;
         console.log(`Applied Directly: Scale=${hologramPivot.scale.x.toFixed(3)}, Y=${mainSequencerGroup.position.y.toFixed(1)}`);
         // --- Конец прямой установки ---
 
@@ -1078,11 +1077,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
-  hologramPivot.scale.setScalar(initialScale * 0.8); // Уменьшаем итоговый масштаб
-  console.log(`--- Initial scale applied to hologramPivot: ${initialScale}`);
-  hologramPivot.position.set(0, 0, 0); // Пивот в центре
-  mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем по высоте голограммы
+  mainSequencerGroup.position.y = -GRID_HEIGHT / 2; // Центрируем геометрию относительно пивота
   mainSequencerGroup.rotation.set(0, 0, 0);
+
+  // Установи начальные параметры для состояния "без рук"
+  updateHologramLayout(false);
 
   renderer.autoClear = false;
 
