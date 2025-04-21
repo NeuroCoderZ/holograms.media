@@ -989,15 +989,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   mainSequencerGroup.position.set(0, 0, 0); // Центрирование по Y
 
-  function calculateInitialScale(containerWidth, containerHeight) {
-    console.log(`>>> calculateInitialScale called with: w=${containerWidth}, h=${containerHeight}`);
+  function calculateInitialScale(containerWidth, availableHeightForHologram) { // Параметр - уже доступная высота
+    console.log(`>>> calculateInitialScale called with: w=${containerWidth}, hForHologram=${availableHeightForHologram}`);
     const hologramWidth = GRID_WIDTH * 2;
     const hologramHeight = GRID_HEIGHT;
     let widthScale = (containerWidth * 0.98) / hologramWidth; // Отступ 1% слева/справа
-    let heightScale = containerHeight / hologramHeight; // !!! Без множителя 0.90
+    let heightScale = availableHeightForHologram / hologramHeight; // Используем ПЕРЕДАННУЮ высоту
     let scale = Math.min(widthScale, heightScale);
-    scale = Math.max(scale, 0.1);
-    console.log(`<<< calculateInitialScale calculated scale: ${scale}`);
+    scale = Math.max(scale, 0.1); // Минимальный масштаб
+    console.log(`<<< calculateInitialScale calculated scale: ${scale} (based on availableH: ${availableHeightForHologram})`);
     return scale;
   }
 
