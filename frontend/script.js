@@ -1782,8 +1782,7 @@ updateTimelineFromServer();
         if (gestureAreaElement.style.height !== targetHeight) {
             gestureAreaElement.style.height = targetHeight;
             console.log(`Gesture area height set to: ${targetHeight}`);
-            updateHologramLayout(handsArePresent);
-        }
+                }
     }
 
     if (!isGestureCanvasReady) { return; }
