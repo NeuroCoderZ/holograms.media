@@ -1622,6 +1622,7 @@ async function loadInitialFilesAndSetupEditor() {
 
   function animate() {
     requestAnimationFrame(animate);
+    TWEEN.update(); // !!! Обновляем анимации TWEEN
 
     // Обновляем анимации TWEEN.js
     TWEEN.update();
