@@ -1008,71 +1008,65 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateHologramLayout(handsVisible) {
         console.log(`Updating hologram layout, handsVisible: ${handsVisible}`);
 
-        const gridContainerElement = document.getElementById('grid-container'); // 75vh контейнер
-        const gestureAreaElement = document.getElementById('gesture-area'); // "Щель" или полная область
+        const gridContainerElement = document.getElementById('grid-container');
+        const gestureAreaElement = document.getElementById('gesture-area');
         if (!gridContainerElement || !gestureAreaElement) return;
 
         const windowHeight = window.innerHeight;
-        const gridContainerHeight = gridContainerElement.clientHeight;
-        // !!! Используем СТИЛЬ высоты, так как offsetHeight может не успеть обновиться для анимации
-        const gestureAreaTargetHeightVh = handsVisible ? 25 : (4 / windowHeight * 100); // Целевая высота в Vh (или px для 4px)
-        const gestureAreaTargetHeightPx = handsVisible ? windowHeight * 0.25 : 4; // Целевая высота в px
+        const gridContainerHeight = gridContainerElement.clientHeight; // Высота 75vh контейнера
+        const gestureAreaHeightPx = handsVisible ? windowHeight * 0.25 : 4; // Целевая высота в px
 
         const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
         const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
         const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
 
-        let targetAvailableHeight; // Доступная ВЫСОТА для голограммы
-        let targetCenterY; // ЦЕНТР этой доступной высоты (относительно ВЕРХА ОКНА)
+        let targetAvailableHeight;
+        let targetCenterY_inWindow; // Желаемый центр голограммы от верха ОКНА
 
         const topMarginPercent = 0.05;
         const bottomMarginPercent = 0.05;
 
         if (handsVisible) {
-            // --- Руки ЕСТЬ: Голограмма в 75vh контейнере ---
+            // Руки есть: Голограмма в 75vh контейнере
             const topMarginPx = gridContainerHeight * topMarginPercent;
             const bottomMarginPx = gridContainerHeight * bottomMarginPercent;
-            targetAvailableHeight = gridContainerHeight - topMarginPx - bottomMarginPx; // ~ 75vh * 0.9
+            targetAvailableHeight = gridContainerHeight - topMarginPx - bottomMarginPx;
             // Центр доступной области = верх контейнера (0) + отступ + половина доступной высоты
-            targetCenterY = topMarginPx + targetAvailableHeight / 2;
+            targetCenterY_inWindow = topMarginPx + targetAvailableHeight / 2;
         } else {
-            // --- Рук НЕТ: Голограмма почти во весь экран ---
+            // Рук нет: Голограмма почти во весь экран
             const topEdge = windowHeight * topMarginPercent;
-            // Верх щели = Низ окна - высота щели (используем целевую высоту щели 4px)
-            const gestureAreaTop = windowHeight - 4;
-            const bottomEdge = gestureAreaTop - (windowHeight * bottomMarginPercent); // Отступ 5% от верха щели
+            const gestureAreaTop = windowHeight - 4; // Верх щели
+            const bottomEdge = gestureAreaTop - (windowHeight * bottomMarginPercent);
             targetAvailableHeight = bottomEdge - topEdge;
-            // Центр доступной области
-            targetCenterY = topEdge + targetAvailableHeight / 2;
+            targetCenterY_inWindow = topEdge + targetAvailableHeight / 2;
         }
 
         // Рассчитываем целевой масштаб
         const targetScale = calculateInitialScale(availableWidth, targetAvailableHeight);
 
-        // Рассчитываем целевую позицию Y для mainSequencerGroup относительно hologramPivot
-        const pivotY_from_windowTop = gridContainerHeight / 2; // Центр 75vh контейнера
-        const targetY = targetCenterY - pivotY_from_windowTop; // Смещение от центра контейнера
+        // Рассчитываем целевую позицию Y для ПИВОТА (hologramPivot)
+        // Упрощенный расчет: центр доступной области минус половина ВИЗУАЛЬНОЙ высоты голограммы
+        const targetVisualHeight = GRID_HEIGHT * targetScale;
+        const targetPivotY = targetCenterY_inWindow - targetVisualHeight / 2;
 
-        console.log(`Target Layout: Scale=${targetScale.toFixed(3)}, Y=${targetY.toFixed(1)}, AvailH=${targetAvailableHeight.toFixed(1)}`);
 
-        // --- Убираем Анимацию TWEEN.js, ставим значения НАПРЯМУЮ ---
-        hologramPivot.scale.setScalar(targetScale);
-        console.log(`Applied Directly: Scale=${hologramPivot.scale.x.toFixed(3)}, Y=${mainSequencerGroup.position.y.toFixed(1)}`);
-        // --- Конец прямой установки ---
+        console.log(`Target Layout: Scale=${targetScale.toFixed(3)}, PivotY=${targetPivotY.toFixed(1)}, AvailH=${targetAvailableHeight.toFixed(1)}`);
 
-        /* // --- НАЧАЛО ЗАКОММЕНТИРОВАННОЙ АНИМАЦИИ TWEEN.js ---
+        // --- Анимация TWEEN.js для ПИВОТА ---
         const currentScale = hologramPivot.scale.x;
-        const currentY = mainSequencerGroup.position.y;
+        const currentPivotY = hologramPivot.position.y; // Анимируем позицию ПИВОТА
         TWEEN.removeAll();
-        new TWEEN.Tween({ scale: currentScale, y: currentY })
-            .to({ scale: targetScale, y: targetY }, 500)
+        new TWEEN.Tween({ scale: currentScale, pivotY: currentPivotY })
+            .to({ scale: targetScale, pivotY: targetPivotY }, 500) // Анимируем масштаб и позицию пивота
             .easing(TWEEN.Easing.Quadratic.Out)
             .onUpdate((obj) => {
                 hologramPivot.scale.setScalar(obj.scale);
-                mainSequencerGroup.position.y = obj.y;
+                hologramPivot.position.y = obj.pivotY; // Применяем позицию к ПИВОТУ
+                // mainSequencerGroup.position.y НЕ МЕНЯЕМ
             })
             .start();
-        */ // --- КОНЕЦ ЗАКОММЕНТИРОВАННОЙ АНИМАЦИИ TWEEN.js ---
+        // --- Конец анимации ---
   }
 
   scene.add(hologramPivot);
