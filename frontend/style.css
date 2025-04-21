@@ -146,8 +146,7 @@ body {
     left: 0;
     top: 0;
     bottom: 0;
-    width: 2px; /* !!! Фиксированная ширина */
-    width: 2px;
+    width: var(--line-width-vmin); /* !!! Адаптивная ширина */
     height: 100%;
     background-color: var(--color-red-100);
     z-index: 1;
@@ -389,12 +388,12 @@ body {
 
 .finger-dot-on-line {
     position: absolute;
-    width: 2px; /* !!! Фиксированный размер */
-    height: 2px; /* !!! Фиксированный размер */
+    width: var(--line-width-vmin); /* !!! Адаптивный размер */
+    height: var(--line-width-vmin); /* !!! Адаптивный размер */
     background-color: var(--color-green-100);
     border-radius: 50%;
     z-index: 2;
-    left: 1px; /* !!! Центрируем на линии (линия left:0, width:2 -> центр 1px) */
+    left: 0px; /* !!! Прижимаем к левому краю линии */
 }
 #loading-spinner {
   display: none; position: fixed; top: 50%; left: 50%;
