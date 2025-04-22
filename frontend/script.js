@@ -1053,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetPivotY = effectiveTopEdge + (targetAvailableHeight / 2) - (targetVisualHeight / 2);
 
 
-        console.log(`Target Layout: Scale=${targetScale.toFixed(3)}, PivotY=${targetPivotY.toFixed(1)}, AvailH=${targetAvailableHeight.toFixed(1)}`);
+        console.log(`Target Layout: Scale=${targetScale.toFixed(3)}, PivotY=${targetPivotY.toFixed(1)}, AvailH=${targetAvailableHeight.toFixed(1)}, EffectiveTopEdge=${effectiveTopEdge.toFixed(1)}, TargetVisualHeight=${targetVisualHeight.toFixed(1)}`);
 
         // --- Анимация TWEEN.js для ПИВОТА ---
         const currentScale = hologramPivot.scale.x;
