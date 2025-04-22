@@ -1021,6 +1021,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let targetAvailableHeight;
         let targetCenterY_inWindow; // Желаемый центр голограммы от верха ОКНА
+        let effectiveTopEdge;
 
         const topMarginPercent = 0.05;
         const bottomMarginPercent = 0.05;
@@ -1029,12 +1030,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Руки есть: Голограмма в 75vh контейнере
             const topMarginPx = gridContainerHeight * topMarginPercent;
             const bottomMarginPx = gridContainerHeight * bottomMarginPercent;
+            effectiveTopEdge = topMarginPx;
             targetAvailableHeight = gridContainerHeight - topMarginPx - bottomMarginPx;
             // Центр доступной области = верх контейнера (0) + отступ + половина доступной высоты
             targetCenterY_inWindow = topMarginPx + targetAvailableHeight / 2;
         } else {
             // Рук нет: Голограмма почти во весь экран
             const topEdge = windowHeight * topMarginPercent;
+           effectiveTopEdge = topEdge;
             const gestureAreaTop = windowHeight - 4; // Верх щели
             const bottomEdge = gestureAreaTop - (windowHeight * bottomMarginPercent);
             targetAvailableHeight = bottomEdge - topEdge;
@@ -1047,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Рассчитываем целевую позицию Y для ПИВОТА (hologramPivot)
         // Упрощенный расчет: центр доступной области минус половина ВИЗУАЛЬНОЙ высоты голограммы
         const targetVisualHeight = GRID_HEIGHT * targetScale;
-        const targetPivotY = topEdge + (targetAvailableHeight / 2) - (targetVisualHeight / 2);
+        const targetPivotY = effectiveTopEdge + (targetAvailableHeight / 2) - (targetVisualHeight / 2);
 
 
         console.log(`Target Layout: Scale=${targetScale.toFixed(3)}, PivotY=${targetPivotY.toFixed(1)}, AvailH=${targetAvailableHeight.toFixed(1)}`);
