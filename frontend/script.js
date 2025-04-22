@@ -1788,6 +1788,11 @@ updateTimelineFromServer();
     const gestureAreaElement = document.getElementById('gesture-area');
     const handsArePresent = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
 
+    // Volume control variables
+    const minPinch = 0.05;
+    const maxPinch = 0.3;
+    let volume = 0.5; // Default volume
+
     // Управляем высотой области жестов через JS
     if (gestureAreaElement) {
         const targetHeight = handsArePresent ? '25vh' : '4px'; // Целевая высота
@@ -1810,6 +1815,23 @@ updateTimelineFromServer();
         for (let i = 0; i < results.multiHandLandmarks.length; i++) {
             const landmarks = results.multiHandLandmarks[i];
             if (!landmarks) continue; // Пропускаем, если нет данных
+
+            // Volume control for first hand only
+            if (i === 0 && landmarks[4] && landmarks[8]) {
+                const thumbTip = new THREE.Vector3(landmarks[4].x, landmarks[4].y, landmarks[4].z);
+                const indexTip = new THREE.Vector3(landmarks[8].x, landmarks[8].y, landmarks[8].z);
+                const distance = thumbTip.distanceTo(indexTip);
+
+                // Map pinch distance to volume (0-1)
+                volume = THREE.MathUtils.clamp(
+                    THREE.MathUtils.mapLinear(distance, minPinch, maxPinch, 0.0, 1.0),
+                    0, 1
+                );
+
+                if (audioGainNode) {
+                    audioGainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+                }
+            }
 
             // Преобразуем координаты с учетом зеркалирования handMeshGroup.scale.x = -1
             const handPoints3D = landmarks.map(lm => {
