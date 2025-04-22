@@ -1798,11 +1798,11 @@ updateTimelineFromServer();
             updateHologramLayout(handsArePresent); // !!! Этот вызов должен быть здесь
         }
     }
-    let thumbTip, indexTip, palmBase;
 
     if (!isGestureCanvasReady) { return; }
 
     // Очищаем группу ПЕРЕД рендерингом нового кадра  
+    // Очищаем группу ПЕРЕД рендерингом нового кадра
     handMeshGroup.clear();
 
     // Проходимся ТОЛЬКО по рукам, обнаруженным в ЭТОМ кадре
@@ -1862,9 +1862,6 @@ updateTimelineFromServer();
                  console.warn("No points found in pointsGeometry to set colors for.");
             }
             // --- КОНЕЦ БЛОКА РАСЧЕТА ЦВЕТОВ ---
-
-            // --- НАЧАЛО БЛОКА МАСШТАБИРОВАНИЯ ТОЧЕК СКЕЛЕТА ---
-            // --- КОНЕЦ БЛОКА МАСШТАБИРОВАНИЯ ТОЧЕК СКЕЛЕТА ---
 
             // --- Создаем объекты и добавляем в группу ---
             // Проверяем, есть ли линии перед добавлением
