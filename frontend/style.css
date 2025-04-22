@@ -386,13 +386,13 @@ body {
 
 .finger-dot-on-line {
     position: absolute;
-    width: calc(var(--line-width-vmin) + 2px);
-    height: calc(var(--line-width-vmin) + 2px);
+    width: calc(var(--line-width-vmin) + 2px); /* !!! Ширина точки */
+    height: calc(var(--line-width-vmin) + 2px); /* !!! Высота точки */
     background-color: var(--color-green-100);
     transform-origin: center left;
     transition: transform 0.05s linear;
     z-index: 2;
-    left: calc( (var(--line-width-vmin) / 2) - ( (var(--line-width-vmin) + 2px) / 2 ) );
+    left: calc((var(--line-width-vmin) / 2) - (calc(var(--line-width-vmin) + 2px) / 2)); /* !!! Центрирование */
 }
 #loading-spinner {
   display: none; position: fixed; top: 50%; left: 50%;
