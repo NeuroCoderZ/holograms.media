@@ -1779,6 +1779,7 @@ updateTimelineFromServer();
   }
 
   let handMeshGroup = new THREE.Group();
+  handMeshGroup.scale.x = -1; // Enable mirroring for hands
   scene.add(handMeshGroup);
   handMeshGroup.scale.x = -1; // Enable mirroring for hands
 
