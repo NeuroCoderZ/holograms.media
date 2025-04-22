@@ -125,13 +125,11 @@ body {
 #gesture-area {
     position: fixed; /* !!! Позиционируем относительно ОКНА */
     bottom: 0;   /* !!! Прижимаем к низу .main-area */
-    left: 0; /* !!! Прижимаем к левому краю */
-    right: var(--timeline-width); /* !!! Ограничиваем справа шириной панели */
+    left: calc(var(--button-size) * 2 + var(--button-spacing) * 3 + 1vh); /* !!! Отступ слева = ширина лев.панели + 1vh */
+    right: calc(var(--timeline-width) + 1vh); /* !!! Отступ справа = ширина правой панели + 1vh */
     height: 4px;   /* Начальная высота - "щель" */
     opacity: 1;
     margin: 0;
-    margin-left: calc(var(--button-size) * 2 + var(--button-spacing) * 3 + 1vh); /* Отступ слева = ширина лев.панели + 1vh */
-    margin-right: 1vh; /* Отступ справа 1vh */
     z-index: 10; /* !!! Поднимем на всякий случай над другими элементами */
     background-color: var(--color-black-95);
     border: none;
