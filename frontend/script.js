@@ -1830,7 +1830,7 @@ updateTimelineFromServer();
             // --- Создаем материалы ---
             const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, linewidth: 3 });
             // Материал для точек с поддержкой цвета вершин
-            const pointsMaterial = new THREE.PointsMaterial({ size: 4, transparent: true, opacity: 0.8, vertexColors: true });
+            const pointsMaterial = new THREE.PointsMaterial({ size: 4, transparent: false, opacity: 1.0, vertexColors: true });
 
             // --- Создаем геометрии ---
             // Убедись, что HAND_CONNECTIONS определена где-то глобально!
