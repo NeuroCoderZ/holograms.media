@@ -1048,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Рассчитываем целевую позицию Y для ПИВОТА (hologramPivot)
         // Упрощенный расчет: центр доступной области минус половина ВИЗУАЛЬНОЙ высоты голограммы
         const targetVisualHeight = GRID_HEIGHT * targetScale;
-        const targetPivotY = targetCenterY_inWindow - targetVisualHeight / 2;
+        const targetPivotY = topEdge + (targetAvailableHeight / 2) - (targetVisualHeight / 2);
 
 
         console.log(`Target Layout: Scale=${targetScale.toFixed(3)}, PivotY=${targetPivotY.toFixed(1)}, AvailH=${targetAvailableHeight.toFixed(1)}`);
