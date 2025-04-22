@@ -1007,6 +1007,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Функция для плавной анимации макета голограммы
   function updateHologramLayout(handsVisible) {
         console.log(`Updating hologram layout, handsVisible: ${handsVisible}`);
+ function updateHologramLayout(handsVisible) {
+       console.log(`Updating hologram layout, handsVisible: ${handsVisible}`);
 
         const gridContainerElement = document.getElementById('grid-container');
         const gestureAreaElement = document.getElementById('gesture-area');
@@ -1035,6 +1037,7 @@ document.addEventListener('DOMContentLoaded', () => {
             targetCenterY_inWindow = topMarginPx + targetAvailableHeight / 2;
         } else {
             // Рук нет: Голограмма почти во весь экран
+            const topEdge = windowHeight * topMarginPercent;
             const topEdge = windowHeight * topMarginPercent;
             const gestureAreaTop = windowHeight - 4; // Верх щели
             const bottomEdge = gestureAreaTop - (windowHeight * bottomMarginPercent);
