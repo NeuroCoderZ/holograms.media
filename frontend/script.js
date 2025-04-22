@@ -1007,9 +1007,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Функция для плавной анимации макета голограммы
   function updateHologramLayout(handsVisible) {
         console.log(`Updating hologram layout, handsVisible: ${handsVisible}`);
- function updateHologramLayout(handsVisible) {
-       console.log(`Updating hologram layout, handsVisible: ${handsVisible}`);
-
         const gridContainerElement = document.getElementById('grid-container');
         const gestureAreaElement = document.getElementById('gesture-area');
         if (!gridContainerElement || !gestureAreaElement) return;
