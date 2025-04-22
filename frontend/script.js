@@ -1780,8 +1780,6 @@ updateTimelineFromServer();
 
   let handMeshGroup = new THREE.Group();
 handMeshGroup.scale.x = -1;
-handMeshGroup.scale.x = -1;
-handMeshGroup.scale.x = -1;
   scene.add(handMeshGroup);
   handMeshGroup.scale.x = -1; // Возвращаем зеркалирование!
   handMeshGroup.scale.x = -1;
