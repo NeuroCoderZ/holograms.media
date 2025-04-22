@@ -1035,7 +1035,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // Рук нет: Голограмма почти во весь экран
             const topEdge = windowHeight * topMarginPercent;
-            const topEdge = windowHeight * topMarginPercent;
             const gestureAreaTop = windowHeight - 4; // Верх щели
             const bottomEdge = gestureAreaTop - (windowHeight * bottomMarginPercent);
             targetAvailableHeight = bottomEdge - topEdge;
