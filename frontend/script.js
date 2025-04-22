@@ -1781,10 +1781,8 @@ updateTimelineFromServer();
   }
 
   let handMeshGroup = new THREE.Group();
-  handMeshGroup.scale.x = -1; // Enable mirroring for hands
   scene.add(handMeshGroup);
-  handMeshGroup.scale.x = -1; // Enable mirroring for hands
-
+    
   // --- Обработчик результатов от MediaPipe Hands ---
   function onHandsResults(results) {
     const gestureAreaElement = document.getElementById('gesture-area');
