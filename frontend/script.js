@@ -792,9 +792,49 @@ document.addEventListener('DOMContentLoaded', () => {
   const micButton = document.getElementById('micButton');
   const telegramLinkButton = document.getElementById('telegramLinkButton'); // Находим кнопку
   const githubButton = document.getElementById('githubButton'); // Находим кнопку
+  const togglePanelsButton = document.getElementById('panel-toggle-button');
+  const leftPanel = document.querySelector('.panel.left-panel');
+  const rightPanel = document.querySelector('.panel.right-panel');
   const gestureArea = document.getElementById('gesture-area'); // Находим область жестов
   if (gestureArea) {
       gestureArea.title = 'Кликните для записи жеста'; // Добавляем всплывающую подсказку
+  }
+
+  // Универсальный обработчик для скрытия/показа панелей
+  if (togglePanelsButton && leftPanel && rightPanel) {
+    function updateButtonIcon() {
+      const icon = togglePanelsButton.querySelector('svg');
+      if (icon) {
+        if (leftPanel.classList.contains('hidden') || rightPanel.classList.contains('hidden')) {
+          icon.innerHTML = '<path d="..."/>'; // SVG path для "show panels"
+        } else {
+          icon.innerHTML = '<path d="..."/>'; // SVG path для "hide panels"
+        }
+      }
+    }
+
+    togglePanelsButton.addEventListener('click', () => {
+      const leftHidden = leftPanel.classList.contains('hidden');
+      const rightHidden = rightPanel.classList.contains('hidden');
+
+      if (leftHidden || rightHidden) {
+        // Show both panels
+        leftPanel.classList.remove('hidden');
+        rightPanel.classList.remove('hidden');
+      } else {
+        // Hide both panels
+        leftPanel.classList.add('hidden');
+        rightPanel.classList.add('hidden');
+      }
+
+      updateButtonIcon();
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 350);
+    });
+
+    // Установим начальное состояние иконки
+    updateButtonIcon();
   }
 
   const gestureModal = document.getElementById('gestureModal');
