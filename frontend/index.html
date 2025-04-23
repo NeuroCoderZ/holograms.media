@@ -37,8 +37,6 @@
 
   <!-- Левая панель: Кнопки -->
   <div class="panel left-panel">
-    <button id="toggleLeftPanel" class="panel-toggle-button left" title="Скрыть/Показать левую панель">
-        <svg class="icon-arrow-left" viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg><svg class="icon-arrow-right" viewBox="0 0 24 24" style="display: none;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg></button>
     <div id="button-container">
       <button id="fileButton" class="control-button" title="Загрузить аудиофайл" aria-label="Upload File"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg></button>
       <input type="file" id="fileInput" accept="audio/*" style="display: none;">
@@ -71,8 +69,6 @@
 
   <!-- Правая панель: Таймлайн и Промпт -->
   <div class="panel right-panel"> <!-- Добавлены классы -->
-    <button id="toggleRightPanel" class="panel-toggle-button right" title="Скрыть/Показать правую панель">
-        <svg class="icon-arrow-right" viewBox="0 0 24 24"><path d="M8.59 7.41L13.17 12l-4.58 4.59L10 18l6-6-6-6-1.41 1.41z"/></svg><svg class="icon-arrow-left" viewBox="0 0 24 24" style="display: none;"><path d="M15.41 7.41L10.83 12l4.58 4.59L14 18l-6-6 6-6 1.41 1.41z"/></svg></button>
     <!-- Таймлайн -->
     <div id="versionTimeline">
       <div id="versionFrames"></div>
