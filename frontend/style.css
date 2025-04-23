@@ -461,20 +461,28 @@ body {
   position: fixed;
   bottom: 15px;
   right: 15px;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
+  background-color: rgba(50, 50, 50, 0.8);
+  border: 1px solid var(--panel-border);
   border-radius: 50%;
-  background-color: var(--color-pure-black);
-  color: var(--color-icon);
-  border: none;
+  padding: 0;
   cursor: pointer;
-  z-index: 5;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease;
+  color: var(--color-icon);
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .panel-toggle-button:hover {
-  background-color: var(--button-hover-bg);
+  background-color: rgba(70, 70, 70, 0.95);
+  color: var(--color-icon-active);
+}
+
+.panel-toggle-button svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
 }
