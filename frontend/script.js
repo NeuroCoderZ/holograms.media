@@ -253,6 +253,15 @@ function stopMicrophone() {
     microphoneAnalyserLeft = null;
     microphoneAnalyserRight = null;
     document.getElementById('micButton').classList.remove('active');
+    // Сброс визуализации колонок до тишины
+    columns.forEach((column, i) => {
+        const baseColor = semitones[i] ? semitones[i].color : new THREE.Color(0x111111); // Запасной серый
+        if (column.left && column.right) {
+            column.left.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor).multiplyScalar(0.1); }); // Тусклый базовый цвет
+            column.right.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor).multiplyScalar(0.1); }); // Тусклый базовый цвет
+        }
+    });
+    console.log("Визуализация микрофона очищена (столбцы сброшены).");
   }
 }
 
@@ -889,6 +898,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (column.left) column.left.position.z = 0;
       if (column.right) column.right.position.z = 0;
     });
+    // Сброс визуализации колонок до тишины
+    columns.forEach((column, i) => {
+         const baseColor = semitones[i] ? semitones[i].color : new THREE.Color(0x111111); // Запасной серый
+         if (column.left && column.right) {
+             column.left.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor).multiplyScalar(0.1); }); // Тусклый базовый цвет
+             column.right.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor).multiplyScalar(0.1); }); // Тусклый базовый цвет
+         }
+    });
+    console.log("Визуализация файла очищена (столбцы сброшены).");
 
     // Update UI
     playButton.classList.remove('active');
