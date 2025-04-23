@@ -792,50 +792,57 @@ document.addEventListener('DOMContentLoaded', () => {
   const micButton = document.getElementById('micButton');
   const telegramLinkButton = document.getElementById('telegramLinkButton'); // Находим кнопку
   const githubButton = document.getElementById('githubButton'); // Находим кнопку
-  const togglePanelsButton = document.getElementById('panel-toggle-button');
-  const leftPanel = document.querySelector('.panel.left-panel');
-  const rightPanel = document.querySelector('.panel.right-panel');
   const gestureArea = document.getElementById('gesture-area'); // Находим область жестов
   if (gestureArea) {
       gestureArea.title = 'Кликните для записи жеста'; // Добавляем всплывающую подсказку
   }
 
-  // Универсальный обработчик для скрытия/показа панелей
-  if (togglePanelsButton && leftPanel && rightPanel) {
-    function updateButtonIcon() {
-      const icon = togglePanelsButton.querySelector('svg');
-      if (icon) {
-        if (leftPanel.classList.contains('hidden') || rightPanel.classList.contains('hidden')) {
-          icon.innerHTML = '<path d="..."/>'; // SVG path для "show panels"
-        } else {
-          icon.innerHTML = '<path d="..."/>'; // SVG path для "hide panels"
-        }
-      }
-    }
+  // --- Universal Panel Toggling Logic ---
+  const leftPanel = document.querySelector('.panel.left-panel');
+  const rightPanel = document.querySelector('.panel.right-panel');
+  const togglePanelsButton = document.getElementById('togglePanelsButton');
 
-    togglePanelsButton.addEventListener('click', () => {
-      const leftHidden = leftPanel.classList.contains('hidden');
-      const rightHidden = rightPanel.classList.contains('hidden');
+  // Функция для смены иконки универсальной кнопки
+  function setPanelButtonIcon(button, showPanels) { // true = показать иконку "Показать", false = показать иконку "Скрыть"
+      if (!button) return;
+      const iconHide = button.querySelector('.icon-hide-panels');
+      const iconShow = button.querySelector('.icon-show-panels');
+      if (!iconHide || !iconShow) return;
 
-      if (leftHidden || rightHidden) {
-        // Show both panels
-        leftPanel.classList.remove('hidden');
-        rightPanel.classList.remove('hidden');
-      } else {
-        // Hide both panels
-        leftPanel.classList.add('hidden');
-        rightPanel.classList.add('hidden');
-      }
-
-      updateButtonIcon();
-      setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-      }, 350);
-    });
-
-    // Установим начальное состояние иконки
-    updateButtonIcon();
+      iconHide.style.display = showPanels ? 'none' : 'block';
+      iconShow.style.display = showPanels ? 'block' : 'none';
   }
+
+  if (togglePanelsButton && leftPanel && rightPanel) {
+      togglePanelsButton.addEventListener('click', () => {
+          // Проверяем, скрыта ли левая панель (можно любую)
+          const arePanelsHidden = leftPanel.classList.contains('hidden');
+
+          if (arePanelsHidden) {
+              // Показываем обе панели
+              leftPanel.classList.remove('hidden');
+              rightPanel.classList.remove('hidden');
+              setPanelButtonIcon(togglePanelsButton, false); // Показываем иконку "Скрыть"
+          } else {
+              // Скрываем обе панели
+              leftPanel.classList.add('hidden');
+              rightPanel.classList.add('hidden');
+              setPanelButtonIcon(togglePanelsButton, true); // Показываем иконку "Показать"
+          }
+
+          // Вызываем ресайз после анимации
+          setTimeout(() => {
+              window.dispatchEvent(new Event('resize'));
+          }, 350);
+      });
+
+      // Устанавливаем начальное состояние иконки
+      setPanelButtonIcon(togglePanelsButton, leftPanel.classList.contains('hidden'));
+
+  } else {
+      console.error("Panels or the universal toggle button not found!");
+  }
+  // --- End Universal Panel Toggling Logic ---
 
   const gestureModal = document.getElementById('gestureModal');
   const promptModal = document.getElementById('promptModal');
