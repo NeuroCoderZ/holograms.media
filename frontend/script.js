@@ -1050,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Рассчитываем целевую позицию Y для ПИВОТА (hologramPivot)
         // Упрощенный расчет: центр доступной области минус половина ВИЗУАЛЬНОЙ высоты голограммы
         const targetVisualHeight = GRID_HEIGHT * targetScale;
-        const targetPivotY = effectiveTopEdge + (targetAvailableHeight / 2) - (targetVisualHeight / 2);
+        const targetPivotY = effectiveTopEdge - 0.2 * targetAvailableHeight;
 
 
         console.log(`Target Layout: Scale=${targetScale.toFixed(3)}, PivotY=${targetPivotY.toFixed(1)}, AvailH=${targetAvailableHeight.toFixed(1)}, EffectiveTopEdge=${effectiveTopEdge.toFixed(1)}, TargetVisualHeight=${targetVisualHeight.toFixed(1)}`);
@@ -1815,23 +1815,6 @@ updateTimelineFromServer();
         for (let i = 0; i < results.multiHandLandmarks.length; i++) {
             const landmarks = results.multiHandLandmarks[i];
             if (!landmarks) continue; // Пропускаем, если нет данных
-
-            // Volume control for first hand only
-            if (i === 0 && landmarks[4] && landmarks[8]) {
-                const thumbTip = new THREE.Vector3(landmarks[4].x, landmarks[4].y, landmarks[4].z);
-                const indexTip = new THREE.Vector3(landmarks[8].x, landmarks[8].y, landmarks[8].z);
-                const distance = thumbTip.distanceTo(indexTip);
-
-                // Map pinch distance to volume (0-1)
-                volume = THREE.MathUtils.clamp(
-                    THREE.MathUtils.mapLinear(distance, minPinch, maxPinch, 0.0, 1.0),
-                    0, 1
-                );
-
-                if (audioGainNode) {
-                    audioGainNode.gain.setValueAtTime(volume, audioContext.currentTime);
-                }
-            }
 
             // Преобразуем координаты с учетом зеркалирования handMeshGroup.scale.x = -1
             const handPoints3D = landmarks.map(lm => {
