@@ -265,6 +265,59 @@ function stopMicrophone() {
   }
 }
 
+  // Обработчик клика для кнопки микрофона
+  if (micButton) {
+      micButton.addEventListener('click', () => {
+        // Проверяем состояние AudioContext перед действиями
+        if (!audioContext || audioContext.state === 'closed') {
+            console.log("AudioContext не инициализирован или закрыт. Попытка создать/возобновить.");
+            // Пытаемся создать или возобновить контекст ПЕРЕД тем, как вызывать setupMicrophone
+             if (!audioContext) {
+                 try {
+                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                     console.log("AudioContext создан.");
+                 } catch (e) {
+                     console.error("Не удалось создать AudioContext:", e);
+                     alert("Ошибка: Не удалось инициализировать аудио систему.");
+                     return;
+                 }
+             }
+             if (audioContext.state === 'suspended') {
+                 audioContext.resume().then(() => {
+                     console.log("AudioContext возобновлен.");
+                     // Теперь, когда контекст точно есть и активен, вызываем setup
+                     setupMicrophone();
+                 }).catch(e => console.error("Не удалось возобновить AudioContext:", e));
+             } else if (audioContext.state === 'running') {
+                 // Контекст уже работает, можно вызывать setup
+                 setupMicrophone();
+             }
+            return; // Выходим из обработчика клика после попытки инициализации/возобновления
+        }
+
+         // Если контекст есть и активен, выполняем переключение
+        if (audioContext.state === 'running') {
+             const isActive = micButton.classList.contains('active');
+             if (isActive) {
+               stopMicrophone();
+               console.log("Вызов stopMicrophone()");
+             } else {
+               setupMicrophone();
+               console.log("Вызов setupMicrophone()");
+             }
+        } else if (audioContext.state === 'suspended') {
+            // Дополнительная попытка возобновить, если первое условие не сработало
+             audioContext.resume().then(() => {
+                 console.log("AudioContext возобновлен при переключении.");
+                 // Повторно вызываем setup, так как кнопка была неактивна
+                 setupMicrophone();
+             }).catch(e => console.error("Не удалось возобновить AudioContext при переключении:", e));
+        }
+      });
+  } else {
+      console.error("Кнопка микрофона #micButton не найдена!");
+  }
+
 function updateTouchSensitivity() {
   TOUCH_SENSITIVITY = BASE_TOUCH_SENSITIVITY; // Keep it fixed
 }
