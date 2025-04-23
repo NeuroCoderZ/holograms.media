@@ -1126,20 +1126,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log(`Target Layout: Scale=${targetScale.toFixed(3)}, PivotY=${targetPivotY.toFixed(1)}, AvailH=${targetAvailableHeight.toFixed(1)}, EffectiveTopEdge=${effectiveTopEdge.toFixed(1)}, TargetVisualHeight=${targetVisualHeight.toFixed(1)}`);
 
-        // --- Анимация TWEEN.js для ПИВОТА ---
-        const currentScale = hologramPivot.scale.x;
-        const currentPivotY = hologramPivot.position.y; // Анимируем позицию ПИВОТА
-        TWEEN.removeAll();
-        new TWEEN.Tween({ scale: currentScale, pivotY: currentPivotY })
-            .to({ scale: targetScale, pivotY: targetPivotY }, 500) // Анимируем масштаб и позицию пивота
-            .easing(TWEEN.Easing.Quadratic.Out)
-            .onUpdate((obj) => {
-                hologramPivot.scale.setScalar(obj.scale);
-                hologramPivot.position.y = obj.pivotY; // Применяем позицию к ПИВОТУ
-                // mainSequencerGroup.position.y НЕ МЕНЯЕМ
-            })
-            .start();
-        // --- Конец анимации ---
+        console.log(`Applying INSTANTLY: Scale=${targetScale.toFixed(3)}, PivotY=${targetPivotY.toFixed(1)}`);
+        hologramPivot.scale.setScalar(targetScale);
+        hologramPivot.position.y = targetPivotY;
   }
 
   scene.add(hologramPivot);
