@@ -88,7 +88,7 @@ body {
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  transition: width 0.3s ease-in-out;
+  transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, border 0.3s ease-in-out, min-width 0.3s ease-in-out;
   /* border-right: 1px solid red; */ /* Рамка для отладки */
 }
 .panel.left-panel::-webkit-scrollbar { display: none; }
@@ -174,7 +174,7 @@ body {
   overflow: hidden;
   flex-shrink: 0;
   height: 100vh;
-  transition: width 0.3s ease-in-out;
+  transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, border 0.3s ease-in-out, min-width 0.3s ease-in-out;
 }
 
 #versionTimeline {
