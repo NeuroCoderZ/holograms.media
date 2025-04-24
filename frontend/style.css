@@ -249,6 +249,7 @@ body {
   flex-shrink: 0; display: flex; flex-direction: column; align-items: stretch;
   padding: 5px 5px 5px 5px; /* Добавляем отступ слева */
   background-color: var(--color-pure-black); border-top: 1px solid var(--panel-border); /* !!! Используем цвет границы панели */
+  position: relative;
 }
 #promptBar > * { margin-bottom: var(--padding); }
 #promptBar > *:last-child { margin-bottom: 0; }
@@ -457,32 +458,34 @@ body {
     height: 25vh; /* Финальная высота */
 }
 /* Panel Toggle Button */
-.panel-toggle-button {
-  position: fixed;
-  bottom: 15px;
-  right: 15px;
-  width: 44px;
-  height: 44px;
-  background-color: rgba(50, 50, 50, 0.8);
-  border: 1px solid var(--panel-border);
-  border-radius: 50%;
-  padding: 0;
-  cursor: pointer;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-icon);
-  transition: background-color 0.2s, color 0.2s;
+/* Универсальная кнопка скрытия/показа панелей */
+.panel-toggle-button.universal {
+    position: absolute; /* Относительно #promptBar */
+    top: 0; /* Выравниваем по верху #promptBar */
+    right: 5px; /* Небольшой отступ справа внутри #promptBar */
+    width: 30px; /* Подбираем размер */
+    height: 30px; /* Подбираем размер (высота строки промпта?) */
+    background-color: transparent; /* Прозрачный фон */
+    border: none; /* Без рамки */
+    padding: 0;
+    margin: 0; /* Убираем внешние отступы */
+    cursor: pointer;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-icon); /* Цвет иконки по умолчанию */
+    opacity: 0.7; /* Немного приглушим */
+    transition: opacity 0.2s, color 0.2s;
 }
 
-.panel-toggle-button:hover {
-  background-color: rgba(70, 70, 70, 0.95);
-  color: var(--color-icon-active);
+.panel-toggle-button.universal:hover {
+    opacity: 1.0; /* Полная непрозрачность при ховере */
+    color: var(--color-icon-active); /* Белый цвет при ховере */
 }
 
-.panel-toggle-button svg {
-  width: 24px;
-  height: 24px;
-  fill: currentColor;
+.panel-toggle-button.universal svg {
+    width: 22px; /* Размер иконки */
+    height: 22px;
+    fill: currentColor; /* Наследуем цвет от кнопки */
 }
