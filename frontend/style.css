@@ -472,27 +472,30 @@ body {
 }
 
 
+/* Универсальная кнопка скрытия/показа панелей */
 .panel-toggle-button.universal {
-    width: 30px;
-    height: 30px;
-    background-color: transparent;
-    border: none;
-    padding: 0;
-    margin: 0;
-    margin-left: 5px;
+    /* Убираем позиционирование, кнопка будет в потоке flex */
+    width: 30px;  /* Высота как у других контролов */
+    height: 30px; /* Высота как у других контролов */
+    background-color: transparent; /* Прозрачный фон */
+    border: none; /* Без рамки */
+    padding: 0;   /* Без внутренних отступов */
+    margin: 0;    /* Без внешних отступов */
+    margin-left: 8px; /* Отступ от кнопки "Применить" */
     cursor: pointer;
-    display: flex;
+    display: flex; /* Уже должно быть от родителя, но на всякий случай */
     align-items: center;
     justify-content: center;
-    color: var(--color-icon);
+    color: var(--color-icon); /* Цвет иконки по умолчанию */
     opacity: 0.7;
-    transition: opacity 0.2s, color 0.2s;
-    border-radius: 3px;
+    transition: opacity 0.2s, color 0.2s, background-color 0.2s; /* Добавили фон в transition */
+    border-radius: 3px; /* Как у других кнопок */
+    flex-shrink: 0; /* Не сжиматься */
 }
 .panel-toggle-button.universal:hover {
     opacity: 1.0;
     color: var(--color-icon-active);
-    background-color: var(--button-hover-bg);
+    background-color: var(--button-hover-bg); /* Фон при ховере */
 }
 .panel-toggle-button.universal svg {
     width: 20px;
