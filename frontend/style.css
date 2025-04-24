@@ -44,8 +44,13 @@
     padding-left: 0 !important;
     padding-right: 0 !important;
     border: none !important;
-    overflow: hidden !important;
     flex-shrink: 1000;
+}
+
+/* Hide panel contents when panels are hidden */
+.panel.left-panel.hidden > *:not(.panel-toggle-button),
+.panel.right-panel.hidden > *:not(.panel-toggle-button) {
+    display: none !important;
 }
 
 /* Адаптивность */
@@ -67,6 +72,11 @@ html, body {
   font-family: 'Roboto', sans-serif; /* Используем Roboto */
   background-color: var(--color-pure-black);
   color: var(--color-primary); /* Белый текст по умолчанию */
+}
+
+/* Base styles for tooltips */
+[title] {
+    /* font-size: 10px; */ /* Uncomment and adjust if needed */
 }
 
 /* ОСНОВНОЙ МАКЕТ FLEXBOX */
