@@ -802,42 +802,57 @@ document.addEventListener('DOMContentLoaded', () => {
   const rightPanel = document.querySelector('.panel.right-panel');
   const togglePanelsButton = document.getElementById('togglePanelsButton');
 
+  console.log('Panel elements:', {leftPanel, rightPanel, togglePanelsButton});
+
   // Функция для смены иконки универсальной кнопки
   function setPanelButtonIcon(button, showPanels) { // true = показать иконку "Показать", false = показать иконку "Скрыть"
       if (!button) return;
       const iconHide = button.querySelector('.icon-hide-panels');
       const iconShow = button.querySelector('.icon-show-panels');
+      console.log('Button icons:', {iconHide, iconShow});
       if (!iconHide || !iconShow) return;
 
       iconHide.style.display = showPanels ? 'none' : 'block';
       iconShow.style.display = showPanels ? 'block' : 'none';
+      console.log(`Set icons: hide=${iconHide.style.display}, show=${iconShow.style.display}`);
   }
 
   if (togglePanelsButton && leftPanel && rightPanel) {
       togglePanelsButton.addEventListener('click', () => {
           // Проверяем, скрыта ли левая панель (можно любую)
           const arePanelsHidden = leftPanel.classList.contains('hidden');
+          console.log('Toggling panels. Currently hidden:', arePanelsHidden);
 
           if (arePanelsHidden) {
               // Показываем обе панели
               leftPanel.classList.remove('hidden');
               rightPanel.classList.remove('hidden');
+              console.log('After show - left hidden:', leftPanel.classList.contains('hidden'), 
+                         'right hidden:', rightPanel.classList.contains('hidden'));
               setPanelButtonIcon(togglePanelsButton, false); // Показываем иконку "Скрыть"
           } else {
               // Скрываем обе панели
               leftPanel.classList.add('hidden');
               rightPanel.classList.add('hidden');
+             console.log('After hide - left hidden:', leftPanel.classList.contains('hidden'),
+                        'right hidden:', rightPanel.classList.contains('hidden'));
               setPanelButtonIcon(togglePanelsButton, true); // Показываем иконку "Показать"
           }
 
           // Вызываем ресайз после анимации
           setTimeout(() => {
               window.dispatchEvent(new Event('resize'));
+              console.log('Dispatched resize event');
           }, 350);
       });
 
       // Устанавливаем начальное состояние иконки
       setPanelButtonIcon(togglePanelsButton, leftPanel.classList.contains('hidden'));
+
+      console.log('Initial panel state:', {
+          leftHidden: leftPanel.classList.contains('hidden'),
+          rightHidden: rightPanel.classList.contains('hidden')
+      });
 
   } else {
       console.error("Panels or the universal toggle button not found!");
