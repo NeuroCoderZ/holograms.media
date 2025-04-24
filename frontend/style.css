@@ -473,7 +473,9 @@ body {
 
 
 /* Универсальная кнопка скрытия/показа панелей */
+/* Универсальная кнопка скрытия/показа панелей */
 .panel-toggle-button.universal {
+    /* Убираем position: absolute; кнопка теперь в потоке .prompt-controls */
     width: 30px;
     height: 30px;
     background-color: transparent;
@@ -481,6 +483,7 @@ body {
     padding: 0;
     margin: 0;
     margin-left: 8px; /* Отступ слева */
+    margin-left: 8px; /* Отступ от кнопки "Применить" */
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -490,6 +493,7 @@ body {
     transition: opacity 0.2s, color 0.2s, background-color 0.2s;
     border-radius: 3px;
     flex-shrink: 0;
+    flex-shrink: 0; /* Не сжиматься */
 }
 .panel-toggle-button.universal:hover {
     opacity: 1.0;
