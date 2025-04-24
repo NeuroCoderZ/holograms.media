@@ -41,10 +41,12 @@
 .panel.right-panel.hidden {
     width: 0 !important;
     min-width: 0 !important;
+    min-width: 0 !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
     border: none !important;
     overflow: hidden !important;
+    flex-shrink: 1000;
 }
 
 /* Адаптивность */
@@ -476,7 +478,7 @@ body {
 
 .panel-toggle-button.universal {
     position: absolute;
-    top: 0;
+    top: 5px;
     right: 5px;
     width: 30px;
     height: 30px;
