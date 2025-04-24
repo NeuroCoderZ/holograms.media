@@ -40,7 +40,7 @@
 .panel.left-panel.hidden,
 .panel.right-panel.hidden {
     width: 0 !important;
-    min-width: 0 !important; /* Важно для flex/grid */
+    min-width: 0 !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
     border: none !important;
