@@ -260,7 +260,7 @@ body {
 
 /* Панель Промпта */
 #promptBar {
-  flex-shrink: 0; display: flex; flex-direction: column; align-items: stretch; position: relative;
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: stretch;
   padding: 5px 5px 5px 5px; /* Добавляем отступ слева */
   background-color: var(--color-pure-black); border-top: 1px solid var(--panel-border); /* !!! Используем цвет границы панели */
 }
