@@ -1,6 +1,12 @@
-/* Радикальное скрытие панелей */
+/* Стили для скрытия панелей */
 .panel.hidden {
     display: none !important;
+}
+/* Стили для скрытых панелей */
+.panel.left-panel.hidden,
+.panel.right-panel.hidden {
+    width: 0 !important;
+    padding: 0 !important;
 }
 /* Стили для кнопки переключения панелей */
 #togglePanelsButton {
