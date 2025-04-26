@@ -843,19 +843,6 @@ if (togglePanelsButton && leftPanel && rightPanel) {
   console.error("Не удалось найти один или несколько элементов панели или кнопку переключения!");
 }
 // --- End Universal Panel Toggling Logic ---
-  // Функция для смены иконки универсальной кнопки
-  function setPanelButtonIcon(button, showPanels) { // true = показать иконку "Показать", false = показать иконку "Скрыть"
-      if (!button) return;
-      const iconHide = button.querySelector('.icon-hide-panels');
-      const iconShow = button.querySelector('.icon-show-panels');
-      console.log('Button icons:', {iconHide, iconShow});
-      if (!iconHide || !iconShow) return;
-
-      iconHide.style.display = showPanels ? 'none' : 'block';
-      iconShow.style.display = showPanels ? 'block' : 'none';
-      console.log(`Set icons: hide=${iconHide.style.display}, show=${iconShow.style.display}`);
-  }
-
   if (togglePanelsButton && leftPanel && rightPanel) {
       togglePanelsButton.addEventListener('click', () => {
           // Проверяем, скрыта ли левая панель (можно любую)
@@ -868,14 +855,12 @@ if (togglePanelsButton && leftPanel && rightPanel) {
               rightPanel.classList.remove('hidden');
               console.log('After show - left hidden:', leftPanel.classList.contains('hidden'), 
                          'right hidden:', rightPanel.classList.contains('hidden'));
-              setPanelButtonIcon(togglePanelsButton, false); // Показываем иконку "Скрыть"
           } else {
               // Скрываем обе панели
               leftPanel.classList.add('hidden');
               rightPanel.classList.add('hidden');
              console.log('After hide - left hidden:', leftPanel.classList.contains('hidden'),
                         'right hidden:', rightPanel.classList.contains('hidden'));
-              setPanelButtonIcon(togglePanelsButton, true); // Показываем иконку "Показать"
           }
 
           // Вызываем ресайз после анимации
@@ -886,8 +871,6 @@ if (togglePanelsButton && leftPanel && rightPanel) {
       });
 
       // Устанавливаем начальное состояние иконки
-      setPanelButtonIcon(togglePanelsButton, leftPanel.classList.contains('hidden'));
-
       console.log('Initial panel state:', {
           leftHidden: leftPanel.classList.contains('hidden'),
           rightHidden: rightPanel.classList.contains('hidden')
