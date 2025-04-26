@@ -1,3 +1,10 @@
+/* Добавляем новые стили для кнопки переключения панелей */
+#togglePanelsButton {
+    position: fixed;
+    bottom: 15px;
+    left: 15px;
+    z-index: 100;
+}
 :root {
   /* Размеры */
   --base-size: clamp(8px, 1.5vmin, 14px);
