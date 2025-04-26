@@ -1,13 +1,7 @@
-/* Стили для скрытых панелей */
-.panel.left-panel.hidden,
-.panel.right-panel.hidden {
-    width: 0 !important;
-    min-width: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    overflow: hidden !important;
-    flex-shrink: 1000 !important; /* Очень сильное сжатие */
-} 
+/* Радикальное скрытие панелей */
+.panel.hidden {
+    display: none !important;
+}
 /* Стили для кнопки переключения панелей */
 #togglePanelsButton {
     position: fixed !important;
