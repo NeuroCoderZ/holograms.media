@@ -5,6 +5,13 @@
     left: 15px;
     z-index: 100;
 }
+
+/* Логика иконок */
+#togglePanelsButton .icon-show-panels { display: block; }
+#togglePanelsButton .icon-hide-panels { display: none; }
+#togglePanelsButton.show-mode .icon-show-panels { display: none; }
+#togglePanelsButton.show-mode .icon-hide-panels { display: block; }
+
 :root {
   /* Размеры */
   --base-size: clamp(8px, 1.5vmin, 14px);
