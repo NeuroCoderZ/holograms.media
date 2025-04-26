@@ -19,6 +19,7 @@
     bottom: 15px;
     left: 15px;
     z-index: 100;
+    transform: translateZ(0); /* Попытка вынести в отдельный слой */
 }
 /* Логика иконок */
 #togglePanelsButton .icon-show-panels { display: block; }
