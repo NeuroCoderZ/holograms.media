@@ -440,50 +440,60 @@ body {
 .control-button svg {
     width: var(--icon-size);
     height: var(--icon-size);
-    fill: currentColor; /* Наследует цвет от родителя (.control-button) */
+    fill: currentColor;
 }
 
 /* Стиль для родительской кнопки */
 .control-button {
-    /* ... другие стили кнопки ... */
-    color: var(--color-icon); /* Цвет иконки по умолчанию (светло-серый) */
-    transition: color 0.15s ease-in-out; /* Плавный переход цвета */
+    color: var(--color-icon);
+    transition: color 0.15s ease-in-out;
 }
 
 /* Стиль для ховера на НЕотключенную кнопку */
 .control-button:not(:disabled):hover {
-    color: var(--color-icon-active); /* Цвет иконки при ховере (белый) */
+    color: var(--color-icon-active);
 }
 
 /* Стиль для отключенной кнопки */
 .control-button:disabled {
-    color: var(--color-icon-disabled); /* Темно-серый */
+    color: var(--color-icon-disabled);
     cursor: not-allowed;
 }
+
+/* Логика иконок переключения панелей */
+#togglePanelsButton .icon-show-panels { display: block !important; }
+#togglePanelsButton .icon-hide-panels { display: none !important; }
+#togglePanelsButton.show-mode .icon-show-panels { display: none !important; }
+#togglePanelsButton.show-mode .icon-hide-panels { display: block !important; }
 /* Общий стиль для SVG внутри кнопок */
 .control-button svg {
     width: var(--icon-size);
     height: var(--icon-size);
-    fill: currentColor; /* Наследует цвет от родителя (.control-button) */
+    fill: currentColor;
 }
 
 /* Стиль для родительской кнопки */
 .control-button {
-    /* ... другие стили кнопки ... */
-    color: var(--color-icon); /* Цвет иконки по умолчанию (светло-серый) */
-    transition: color 0.15s ease-in-out; /* Плавный переход цвета */
+    color: var(--color-icon);
+    transition: color 0.15s ease-in-out;
 }
 
 /* Стиль для ховера на НЕотключенную кнопку */
 .control-button:not(:disabled):hover {
-    color: var(--color-icon-active); /* Цвет иконки при ховере (белый) */
+    color: var(--color-icon-active);
 }
 
 /* Стиль для отключенной кнопки */
 .control-button:disabled {
-    color: var(--color-icon-disabled); /* Темно-серый */
+    color: var(--color-icon-disabled);
     cursor: not-allowed;
 }
+
+/* Логика иконок переключения панелей */
+#togglePanelsButton .icon-show-panels { display: block !important; }
+#togglePanelsButton .icon-hide-panels { display: none !important; }
+#togglePanelsButton.show-mode .icon-show-panels { display: none !important; }
+#togglePanelsButton.show-mode .icon-hide-panels { display: block !important; }
 #gesture-area.hands-detected {
     height: 25vh; /* Финальная высота */
 }
