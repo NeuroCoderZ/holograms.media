@@ -15,17 +15,12 @@
 }
 /* Добавляем новые стили для кнопки переключения панелей */
 #togglePanelsButton {
-    position: fixed;
-    bottom: 15px;
-    left: 15px;
-    z-index: 100;
-    transform: translateZ(0); /* Попытка вынести в отдельный слой */
+  position: fixed !important;
+  bottom: 15px !important;
+  left: 15px !important;
+  z-index: 100 !important;
+  transform: translateZ(0);
 }
-/* Логика иконок */
-#togglePanelsButton .icon-show-panels { display: block; }
-#togglePanelsButton .icon-hide-panels { display: none; }
-#togglePanelsButton.show-mode .icon-show-panels { display: none; }
-#togglePanelsButton.show-mode .icon-hide-panels { display: block; }
 
 :root {
 
@@ -494,44 +489,4 @@ body {
 }
 
 
-/* --- Изолированные стили для кнопки --- */
-#togglePanelsButton {
-  /* Позиционирование */
-  position: fixed !important; /* Используем !important для перекрытия всего */
-  bottom: 15px !important;
-  left: 15px !important;
-  z-index: 1000 !important; /* Максимальный z-index */
 
-  /* Видимость и Размеры */
-  display: flex !important; /* Используем flex для центрирования иконки */
-  visibility: visible !important;
-  opacity: 1 !important;
-  width: 50px !important; /* Зададим фиксированный размер */
-  height: 50px !important;
-  padding: 0 !important; /* Убираем внутренние отступы */
-  cursor: pointer !important;
-
-  /* Внешний вид (минимальный) */
-  background-color: rgba(50, 50, 50, 0.7) !important; /* Полупрозрачный серый фон */
-  border: 1px solid white !important; /* Белая рамка для видимости */
-  color: white !important; /* Белый цвет для SVG по умолчанию */
-  align-items: center; /* Центрируем иконку */
-  justify-content: center; /* Центрируем иконку */
-  border-radius: 5px;
-
-  /* Убираем возможные влияния */
-  transform: none !important;
-  transition: none !important;
-}
-
-/* --- Изолированная логика иконок --- */
-#togglePanelsButton svg { /* Стили для обеих SVG */
-   width: 24px !important; /* Фикс. размер иконки */
-   height: 24px !important;
-   fill: currentColor !important; /* Наследует цвет кнопки (белый) */
-}
-/* Показываем нужную иконку через классы */
-#togglePanelsButton .icon-show-panels { display: block; } /* По умолчанию левая */
-#togglePanelsButton .icon-hide-panels { display: none; }
-#togglePanelsButton.show-mode .icon-show-panels { display: none; }
-#togglePanelsButton.show-mode .icon-hide-panels { display: block; } /* При show-mode правая */
