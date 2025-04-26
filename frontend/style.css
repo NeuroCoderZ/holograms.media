@@ -494,34 +494,44 @@ body {
 }
 
 
-/* Универсальная кнопка скрытия/показа панелей */
-.panel-toggle-button.universal {
-    width: 30px;
-    height: 30px;
-    background-color: transparent;
-    border: none;
-    padding: 0;
-    margin: 0;
-    margin-left: 8px; /* Отступ слева */
-    margin-left: 8px; /* Отступ слева */
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-icon);
-    opacity: 0.7;
-    transition: opacity 0.2s, color 0.2s, background-color 0.2s;
-    border-radius: 3px;
-    flex-shrink: 0;
-    flex-shrink: 0; /* Не сжиматься */
+/* --- Изолированные стили для кнопки --- */
+#togglePanelsButton {
+  /* Позиционирование */
+  position: fixed !important; /* Используем !important для перекрытия всего */
+  bottom: 15px !important;
+  left: 15px !important;
+  z-index: 1000 !important; /* Максимальный z-index */
+
+  /* Видимость и Размеры */
+  display: flex !important; /* Используем flex для центрирования иконки */
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 50px !important; /* Зададим фиксированный размер */
+  height: 50px !important;
+  padding: 0 !important; /* Убираем внутренние отступы */
+  cursor: pointer !important;
+
+  /* Внешний вид (минимальный) */
+  background-color: rgba(50, 50, 50, 0.7) !important; /* Полупрозрачный серый фон */
+  border: 1px solid white !important; /* Белая рамка для видимости */
+  color: white !important; /* Белый цвет для SVG по умолчанию */
+  align-items: center; /* Центрируем иконку */
+  justify-content: center; /* Центрируем иконку */
+  border-radius: 5px;
+
+  /* Убираем возможные влияния */
+  transform: none !important;
+  transition: none !important;
 }
-.panel-toggle-button.universal:hover {
-    opacity: 1.0;
-    color: var(--color-icon-active);
-    background-color: var(--button-hover-bg);
+
+/* --- Изолированная логика иконок --- */
+#togglePanelsButton svg { /* Стили для обеих SVG */
+   width: 24px !important; /* Фикс. размер иконки */
+   height: 24px !important;
+   fill: currentColor !important; /* Наследует цвет кнопки (белый) */
 }
-.panel-toggle-button.universal svg {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
-}
+/* Показываем нужную иконку через классы */
+#togglePanelsButton .icon-show-panels { display: block; } /* По умолчанию левая */
+#togglePanelsButton .icon-hide-panels { display: none; }
+#togglePanelsButton.show-mode .icon-show-panels { display: none; }
+#togglePanelsButton.show-mode .icon-hide-panels { display: block; } /* При show-mode правая */
