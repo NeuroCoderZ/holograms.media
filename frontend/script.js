@@ -806,26 +806,26 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- Universal Panel Toggling Logic ---
 if (togglePanelsButton && leftPanel && rightPanel) {
   // Обработчик клика для кнопки
+if (togglePanelsButton && leftPanel && rightPanel) {
   togglePanelsButton.addEventListener('click', () => {
       const arePanelsHidden = leftPanel.classList.contains('hidden');
-      console.log('Toggling panels. Currently hidden:', arePanelsHidden);
+      console.log('[DEBUG] Before toggle: leftPanel classes=', leftPanel.classList.toString(), 'rightPanel classes=', rightPanel.classList.toString(), 'button classes=', togglePanelsButton.classList.toString());
 
       if (arePanelsHidden) {
           // Показываем обе панели
           leftPanel.classList.remove('hidden');
           rightPanel.classList.remove('hidden');
           togglePanelsButton.classList.remove('show-mode');
-          console.log('Panels shown. Button classList:', togglePanelsButton.classList);
+          console.log('[DEBUG] After showing panels: leftPanel classes=', leftPanel.classList.toString(), 'rightPanel classes=', rightPanel.classList.toString(), 'button classes=', togglePanelsButton.classList.toString());
       } else {
           // Скрываем обе панели
           leftPanel.classList.add('hidden');
           rightPanel.classList.add('hidden');
           togglePanelsButton.classList.add('show-mode');
-          console.log('Panels hidden. Button classList:', togglePanelsButton.classList);
+          console.log('[DEBUG] After hiding panels: leftPanel classes=', leftPanel.classList.toString(), 'rightPanel classes=', rightPanel.classList.toString(), 'button classes=', togglePanelsButton.classList.toString());
       }
 
       window.dispatchEvent(new Event('resize'));
-      console.log('Dispatched resize event after toggle.');
   });
 
   // Устанавливаем начальный класс для иконки кнопки ПОСЛЕ небольшой задержки
@@ -844,17 +844,6 @@ if (togglePanelsButton && leftPanel && rightPanel) {
 }
 // --- End Universal Panel Toggling Logic ---
   // Функция для смены иконки универсальной кнопки
-  function setPanelButtonIcon(button, showPanels) { // true = показать иконку "Показать", false = показать иконку "Скрыть"
-      if (!button) return;
-      const iconHide = button.querySelector('.icon-hide-panels');
-      const iconShow = button.querySelector('.icon-show-panels');
-      console.log('Button icons:', {iconHide, iconShow});
-      if (!iconHide || !iconShow) return;
-
-      iconHide.style.display = showPanels ? 'none' : 'block';
-      iconShow.style.display = showPanels ? 'block' : 'none';
-      console.log(`Set icons: hide=${iconHide.style.display}, show=${iconShow.style.display}`);
-  }
 
   if (togglePanelsButton && leftPanel && rightPanel) {
       togglePanelsButton.addEventListener('click', () => {
