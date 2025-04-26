@@ -1,24 +1,52 @@
-/* Стили для скрытия панелей */
-.panel.hidden {
+/* Гарантированное скрытие панелей */
+body > .panel.left-panel.hidden {
     display: none !important;
-}
-/* Стили для скрытых панелей */
-.panel.left-panel.hidden,
-.panel.right-panel.hidden {
     width: 0 !important;
     padding: 0 !important;
+    border: 0 !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    flex-shrink: 1000 !important;
+}
+body > .panel.right-panel.hidden {
+    display: none !important;
+    width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    flex-shrink: 1000 !important;
 }
 /* Стили для кнопки переключения панелей */
 #togglePanelsButton {
-    position: fixed !important;
-    bottom: 15px !important;
-    left: 15px !important;
-    z-index: 100 !important;
-    transform: translateZ(0);
-    display: flex; /* Используем flex для центрирования иконки */
+  /* Позиционирование */
+  position: fixed !important;
+  bottom: 15px !important;
+  left: 15px !important;
+  z-index: 100 !important;
+  transform: translateZ(0);
+
+  /* Явные стили из .control-button + !important */
+  flex: 0 0 var(--button-size) !important;
+  width: var(--button-size) !important;
+  height: var(--button-size) !important;
+  padding: 0 !important;
+  background-color: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: var(--color-icon) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 5px !important;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out !important;
+  margin: 0 !important;
 }
-#togglePanelsButton:not(:disabled):hover {
-    color: var(--color-icon-active);
+#togglePanelsButton.control-button:hover {
+   color: var(--color-icon-active) !important;
+   background-color: var(--button-hover-bg) !important;
 }
 
 :root {
