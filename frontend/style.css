@@ -1,38 +1,30 @@
-/* Стили для скрытых панелей (v3) */
+/* Стили для скрытых панелей */
 .panel.left-panel.hidden,
 .panel.right-panel.hidden {
     width: 0 !important;
     min-width: 0 !important;
-    padding: 0 !important; /* Убираем все отступы */
+    padding: 0 !important;
     border: none !important;
     overflow: hidden !important;
     flex-shrink: 1000 !important;
 }
-/* Стили кнопки переключения панелей (v3) */
 #togglePanelsButton {
-  position: fixed !important;
-  bottom: 15px !important;
-  left: 15px !important;
-  z-index: 100 !important;
-  transform: translateZ(0);
+    width: var(--button-size);
+    height: var(--button-size);
+    padding: 0;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--color-icon);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    transition: color 0.15s ease-in-out;
+    margin: 0;
 }
-#togglePanelsButton {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  color: var(--color-icon) !important;
-  width: var(--button-size) !important;
-  height: var(--button-size) !important;
-  border-radius: 5px !important;
-  cursor: pointer !important;
-  transition: color 0.15s ease-in-out !important;
-}
-#togglePanelsButton:hover {
-  color: var(--color-icon-active) !important;
-  background-color: var(--button-hover-bg) !important;
+#togglePanelsButton:not(:disabled):hover {
+    color: var(--color-icon-active);
 }
 
 :root {
