@@ -6,7 +6,7 @@
     padding: 0 !important; /* Убираем все отступы */
     border: none !important;
     overflow: hidden !important;
-    flex-shrink: 1000;
+    flex-shrink: 1000 !important;
 }
 /* Добавляем новые стили для кнопки переключения панелей */
 #togglePanelsButton {
@@ -101,7 +101,6 @@ body {
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  /* border-right: 1px solid red; */ /* Рамка для отладки */
 }
 .panel.left-panel::-webkit-scrollbar { display: none; }
 
