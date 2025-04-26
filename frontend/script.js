@@ -808,19 +808,19 @@ if (togglePanelsButton && leftPanel && rightPanel) {
   // Обработчик клика для кнопки
   togglePanelsButton.addEventListener('click', () => {
       const arePanelsHidden = leftPanel.classList.contains('hidden');
-      console.log('Toggling panel. Currently hidden:', arePanelsHidden);
+      console.log('Toggling panels. Currently hidden:', arePanelsHidden);
 
       if (arePanelsHidden) {
           // Показываем обе панели
           leftPanel.classList.remove('hidden');
           rightPanel.classList.remove('hidden');
-          togglePanelsButton.classList.remove('show-mode'); // Показываем иконку "Скрыть" (стрелка влево)
+          togglePanelsButton.classList.remove('show-mode');
           console.log('Panels shown. Button classList:', togglePanelsButton.classList);
       } else {
           // Скрываем обе панели
           leftPanel.classList.add('hidden');
           rightPanel.classList.add('hidden');
-          togglePanelsButton.classList.add('show-mode'); // Показываем иконку "Показать" (стрелка вправо)
+          togglePanelsButton.classList.add('show-mode');
           console.log('Panels hidden. Button classList:', togglePanelsButton.classList);
       }
 
@@ -830,18 +830,15 @@ if (togglePanelsButton && leftPanel && rightPanel) {
 
   // Устанавливаем начальный класс для иконки кнопки ПОСЛЕ небольшой задержки
   setTimeout(() => {
-      if (leftPanel && !leftPanel.classList.contains('hidden')) { // Проверяем, что панель видима
+      if (leftPanel && !leftPanel.classList.contains('hidden')) {
           togglePanelsButton.classList.remove('show-mode');
-      } else if (togglePanelsButton) { // Если панель скрыта или не найдена, ставим show-mode
+      } else if (togglePanelsButton) {
           togglePanelsButton.classList.add('show-mode');
       }
-      // Убедимся, что кнопка точно видима после инициализации
       if (togglePanelsButton) {
-          togglePanelsButton.style.display = 'flex'; // Принудительно ставим display
       }
       console.log(`Initial toggle button class set after delay. Has 'show-mode': ${togglePanelsButton?.classList.contains('show-mode')}`);
-  }, 100); // Задержка 100 мс
-
+  }, 100);
 } else {
   console.error("Не удалось найти один или несколько элементов панели или кнопку переключения!");
 }
