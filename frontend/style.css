@@ -1,3 +1,18 @@
+/* Стили для скрытых панелей */
+.panel.left-panel.hidden,
+.panel.right-panel.hidden {
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important; /* Убираем все отступы */
+    border: none !important;
+    overflow: hidden !important;
+    flex-shrink: 1000;
+}
+/* Скрытие содержимого */
+.panel.left-panel.hidden > *,
+.panel.right-panel.hidden > * {
+    display: none !important;
+}
 /* Добавляем новые стили для кнопки переключения панелей */
 #togglePanelsButton {
     position: fixed;
@@ -5,7 +20,6 @@
     left: 15px;
     z-index: 100;
 }
-
 /* Логика иконок */
 #togglePanelsButton .icon-show-panels { display: block; }
 #togglePanelsButton .icon-hide-panels { display: none; }
@@ -13,6 +27,7 @@
 #togglePanelsButton.show-mode .icon-hide-panels { display: block; }
 
 :root {
+
   /* Размеры */
   --base-size: clamp(8px, 1.5vmin, 14px);
   --button-spacing: clamp(5px, 1vmin, 10px);
@@ -50,22 +65,6 @@
   --placeholder-bg: var(--color-black-95); /* Фон плейсхолдера - почти черный */
 }
 
-/* Panel hiding styles */
-.panel.left-panel.hidden,
-.panel.right-panel.hidden {
-    width: 0 !important;
-    min-width: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    border: none !important;
-    flex-shrink: 1000;
-}
-
-/* Hide panel contents when panels are hidden */
-.panel.left-panel.hidden > *:not(.panel-toggle-button),
-.panel.right-panel.hidden > *:not(.panel-toggle-button) {
-    display: none !important;
-}
 
 /* Адаптивность */
 @media screen and (min-width: 1024px) {
@@ -111,7 +110,6 @@ body {
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, border 0.3s ease-in-out, min-width 0.3s ease-in-out;
   /* border-right: 1px solid red; */ /* Рамка для отладки */
 }
 .panel.left-panel::-webkit-scrollbar { display: none; }
@@ -197,7 +195,6 @@ body {
   overflow: hidden;
   flex-shrink: 0;
   height: 100vh;
-  transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, border 0.3s ease-in-out, min-width 0.3s ease-in-out;
 }
 
 #versionTimeline {
