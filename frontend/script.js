@@ -803,7 +803,49 @@ document.addEventListener('DOMContentLoaded', () => {
   const togglePanelsButton = document.getElementById('togglePanelsButton');
 
   console.log('Panel elements:', {leftPanel, rightPanel, togglePanelsButton});
+// --- Universal Panel Toggling Logic ---
+if (togglePanelsButton && leftPanel && rightPanel) {
+  // Обработчик клика для кнопки
+  togglePanelsButton.addEventListener('click', () => {
+      const arePanelsHidden = leftPanel.classList.contains('hidden');
+      console.log('Toggling panel. Currently hidden:', arePanelsHidden);
 
+      if (arePanelsHidden) {
+          // Показываем обе панели
+          leftPanel.classList.remove('hidden');
+          rightPanel.classList.remove('hidden');
+          togglePanelsButton.classList.remove('show-mode'); // Показываем иконку "Скрыть" (стрелка влево)
+          console.log('Panels shown. Button classList:', togglePanelsButton.classList);
+      } else {
+          // Скрываем обе панели
+          leftPanel.classList.add('hidden');
+          rightPanel.classList.add('hidden');
+          togglePanelsButton.classList.add('show-mode'); // Показываем иконку "Показать" (стрелка вправо)
+          console.log('Panels hidden. Button classList:', togglePanelsButton.classList);
+      }
+
+      window.dispatchEvent(new Event('resize'));
+      console.log('Dispatched resize event after toggle.');
+  });
+
+  // Устанавливаем начальный класс для иконки кнопки ПОСЛЕ небольшой задержки
+  setTimeout(() => {
+      if (leftPanel && !leftPanel.classList.contains('hidden')) { // Проверяем, что панель видима
+          togglePanelsButton.classList.remove('show-mode');
+      } else if (togglePanelsButton) { // Если панель скрыта или не найдена, ставим show-mode
+          togglePanelsButton.classList.add('show-mode');
+      }
+      // Убедимся, что кнопка точно видима после инициализации
+      if (togglePanelsButton) {
+          togglePanelsButton.style.display = 'flex'; // Принудительно ставим display
+      }
+      console.log(`Initial toggle button class set after delay. Has 'show-mode': ${togglePanelsButton?.classList.contains('show-mode')}`);
+  }, 100); // Задержка 100 мс
+
+} else {
+  console.error("Не удалось найти один или несколько элементов панели или кнопку переключения!");
+}
+// --- End Universal Panel Toggling Logic ---
   // Функция для смены иконки универсальной кнопки
   function setPanelButtonIcon(button, showPanels) { // true = показать иконку "Показать", false = показать иконку "Скрыть"
       if (!button) return;
@@ -2044,31 +2086,3 @@ updateTimelineFromServer();
      window.open('https://github.com/NeuroCoderZ/holograms.media', '_blank', 'noopener,noreferrer');
    });
  });
-    // --- Universal Panel Toggling Logic ---
-    if (togglePanelsButton && leftPanel && rightPanel) {
-        // Обработчик клика для кнопки
-        togglePanelsButton.addEventListener('click', () => {
-            const arePanelsHidden = leftPanel.classList.contains('hidden');
-            console.log('Toggling panel. Currently hidden:', arePanelsHidden);
-
-            if (arePanelsHidden) {
-                // Показываем обе панели
-                leftPanel.classList.remove('hidden');
-                rightPanel.classList.remove('hidden');
-                togglePanelsButton.classList.remove('show-mode');
-                console.log('Panels shown. Button classList:', togglePanelsButton.classList);
-            } else {
-                // Скрываем обе панели
-                leftPanel.classList.add('hidden');
-                rightPanel.classList.add('hidden');
-                togglePanelsButton.classList.add('show-mode');
-                console.log('Panels hidden. Button classList:', togglePanelsButton.classList);
-            }
-
-            window.dispatchEvent(new Event('resize'));
-            console.log('Dispatched resize event after toggle.');
-        });
-    } else {
-        console.error("Не удалось найти один или несколько элементов панели или кнопку переключения!");
-    }
-    // --- End Universal Panel Toggling Logic ---
