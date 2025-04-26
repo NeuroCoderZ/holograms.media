@@ -8,11 +8,6 @@
     overflow: hidden !important;
     flex-shrink: 1000;
 }
-/* Скрытие содержимого */
-.panel.left-panel.hidden > *,
-.panel.right-panel.hidden > * {
-    display: none !important;
-}
 /* Добавляем новые стили для кнопки переключения панелей */
 #togglePanelsButton {
   position: fixed !important;
