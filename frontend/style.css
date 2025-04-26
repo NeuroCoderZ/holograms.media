@@ -1,4 +1,4 @@
-/* Стили для скрытых панелей (v3) */
+/* Стили для скрытых панелей */
 .panel.left-panel.hidden,
 .panel.right-panel.hidden {
     width: 0 !important;
@@ -6,7 +6,7 @@
     padding: 0 !important;
     border: none !important;
     overflow: hidden !important;
-    flex-shrink: 1000 !important;
+    flex-shrink: 1000 !important; /* Очень сильное сжатие */
 } 
 /* Стили для кнопки переключения панелей */
 #togglePanelsButton {
@@ -15,7 +15,7 @@
     left: 15px !important;
     z-index: 100 !important;
     transform: translateZ(0);
-    display: flex;
+    display: flex; /* Используем flex для центрирования иконки */
 }
 #togglePanelsButton:not(:disabled):hover {
     color: var(--color-icon-active);
