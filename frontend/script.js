@@ -6,6 +6,34 @@ let hologramPivot = new THREE.Group();
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+// --- Universal Panel Toggling Logic ---
+if (togglePanelsButton && leftPanel && rightPanel) {
+    // Обработчик клика для кнопки
+    togglePanelsButton.addEventListener('click', () => {
+        const arePanelsHidden = leftPanel.classList.contains('hidden');
+        console.log('Toggling panel. Currently hidden:', arePanelsHidden);
+
+        if (arePanelsHidden) {
+            // Показываем обе панели
+            leftPanel.classList.remove('hidden');
+            rightPanel.classList.remove('hidden');
+            togglePanelsButton.classList.remove('show-mode');
+            console.log('Panels shown. Button classList:', togglePanelsButton.classList);
+        } else {
+            // Скрываем обе панели
+            leftPanel.classList.add('hidden');
+            rightPanel.add('hidden');
+            togglePanelsButton.classList.add('show-mode');
+            console.log('Panels hidden. Button classList:', togglePanelsButton.classList);
+        }
+
+        window.dispatchEvent(new Event('resize'));
+        console.log('Dispatched resize event after toggle.');
+    });
+} else {
+    console.error("Не удалось найти один или несколько элементов панели или кнопку переключения!");
+}
+// --- End Universal Panel Toggling Logic ---
 const WS_HOST = window.location.host;
 const WS_PATH = '/chat';
 const WS_URL = `${WS_PROTOCOL}//${WS_HOST}${WS_PATH}`;
