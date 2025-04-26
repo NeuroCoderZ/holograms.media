@@ -1,45 +1,33 @@
-/* Финальная попытка скрыть панели */
-body > .panel.left-panel.hidden,
-body > .panel.right-panel.hidden {
-    display: none !important; /* Максимальный приоритет */
-    width: 0 !important;
-    min-width: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    overflow: hidden !important;
-    flex-shrink: 1000 !important;
-    visibility: hidden !important; /* Добавим и это */
-    opacity: 0 !important; /* И это */
+/* Радикальное скрытие панелей */
+.panel.hidden {
+    display: none !important;
 }
-/* Позиционирование и стиль кнопки (максимальный приоритет) */
-#togglePanelsButton.control-button {
+/* Стили для кнопки переключения панелей */
+#togglePanelsButton {
   /* Позиционирование */
   position: fixed !important;
   bottom: 15px !important;
   left: 15px !important;
   z-index: 100 !important;
-  transform: translateZ(0); /* Оставим */
+  transform: translateZ(0);
 
-  /* Копируем стили из .control-button с !important */
-  flex: 0 0 var(--button-size) !important;
+  /* Базовый внешний вид (как у control-button) */
   width: var(--button-size) !important;
   height: var(--button-size) !important;
   padding: 0 !important;
-  background-color: transparent !important; /* !!! Прозрачный фон */
+  background-color: transparent !important;
   border: none !important;
+  border-radius: 5px !important;
   cursor: pointer !important;
-  color: var(--color-icon) !important; /* !!! Цвет иконки по умолчанию */
+  color: var(--color-icon) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 5px !important;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out !important;
-  margin: 0 !important;
 }
-#togglePanelsButton.control-button:hover {
-   color: var(--color-icon-active) !important; /* !!! Белый при ховере */
-   background-color: var(--button-hover-bg) !important; /* !!! Фон при ховере */
+#togglePanelsButton:hover {
+   color: var(--color-icon-active) !important;
+   background-color: var(--button-hover-bg) !important;
 }
 
 :root {
