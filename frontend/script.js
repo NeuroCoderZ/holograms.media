@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 // --- Global Variables ---
 let hologramPivot = new THREE.Group();
@@ -7,6 +8,7 @@ let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_HOST = window.location.host;
+const WS_PATH = '/chat';
 const WS_PATH = '/chat';
 const WS_URL = `${WS_PROTOCOL}//${WS_HOST}${WS_PATH}`;
 let xrIconDisplay = true;
@@ -16,6 +18,7 @@ let audioGainNode;
 let volumeControlActive = false;
 let volumeActivationTimestamp = null;
 let activeFingerTip = null;
+let activeFingerTip = null;
 const VOLUME_ACTIVATION_DELAY = 1000;
 const VOLUME_CONTROL_RADIUS = 50;
 let lastFrameTime = 0;
@@ -24,6 +27,7 @@ let TOUCH_SENSITIVITY = BASE_TOUCH_SENSITIVITY;
 const ROTATION_LIMIT = Math.PI / 2; // 90 degrees
 const ROTATION_RETURN_DURATION = 300; // ms
 const MIN_SCALE = 0.5;
+const MIN_SCALE = 0.5;
 const MAX_SCALE = 1.5;
 const TARGET_WIDTH_PERCENTAGE = 0.95;
 const SAFE_ZONE_MARGIN = 0.9;
@@ -31,6 +35,7 @@ const ROTATION_BUFFER = 0.8;
 const TIMELINE_OFFSET = 180;
 const SPHERE_RADIUS = 5;
 const COLUMN_ANIMATION_SPEED = 2.0; // Adjust for desired animation speed
+const FPS = 25; // Fixed 25fps update rate
 const FPS = 25; // Fixed 25fps update rate
 const TRAIL_DURATION = 500; // 500ms trail duration
 const TRAIL_SEGMENTS = 25; // Number of trail segments
