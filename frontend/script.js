@@ -8,7 +8,6 @@ let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_HOST = window.location.host;
 const WS_PATH = '/chat';
-const WS_PATH = '/chat';
 const WS_URL = `${WS_PROTOCOL}//${WS_HOST}${WS_PATH}`;
 let xrIconDisplay = true;
 let xrState = 0;
