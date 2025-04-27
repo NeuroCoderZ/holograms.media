@@ -1,3 +1,6 @@
+.panel.left-panel,
+.panel.right-panel {
+  position: static !important;
 .panel.left-panel.hidden {
   transform: translateX(-100%) !important;
   opacity: 0 !important;
@@ -5,6 +8,7 @@
   pointer-events: none !important;
   flex: 0 0 0 !important; width: 0 !important; min-width: 0 !important;
   padding: 0 !important; margin: 0 !important; border: none !important; overflow: hidden !important;
+}
 }
 .panel.right-panel.hidden {
   transform: translateX(100%) !important;
