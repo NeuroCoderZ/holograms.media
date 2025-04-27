@@ -800,7 +800,6 @@ document.addEventListener('DOMContentLoaded', () => {
       gestureArea.title = 'Кликните для записи жеста'; // Добавляем всплывающую подсказку
   }
 
-  // --- Universal Panel Toggling Logic ---
   const leftPanel = document.querySelector('.panel.left-panel');
   const rightPanel = document.querySelector('.panel.right-panel');
   const togglePanelsButton = document.getElementById('togglePanelsButton');
@@ -841,8 +840,6 @@ if (togglePanelsButton && leftPanel && rightPanel) {
     togglePanelsButton.addEventListener('click', togglePanels);
 } else {
     console.error("Panels or toggle button not found!");
-}
-// --- End Universal Panel Toggling Logic ---
   if (togglePanelsButton && leftPanel && rightPanel) {
       togglePanelsButton.addEventListener('click', () => {
           // Проверяем, скрыта ли левая панель (можно любую)
