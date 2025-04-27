@@ -2062,4 +2062,3 @@ updateTimelineFromServer();
    githubButton.addEventListener('click', () => {
      window.open('https://github.com/NeuroCoderZ/holograms.media', '_blank', 'noopener,noreferrer');
    });
-});
