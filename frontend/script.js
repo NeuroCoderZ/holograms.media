@@ -108,7 +108,6 @@ let rendererForPreview = null;
 let cameraForPreview = null;
 let sceneForPreview = null;
 
-const GRID_WIDTH = 130;
 const GRID_HEIGHT = 260;
 const GRID_DEPTH = 130;
 const CELL_SIZE = 1;
