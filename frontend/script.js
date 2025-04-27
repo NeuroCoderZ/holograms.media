@@ -6,7 +6,6 @@ let hologramPivot = new THREE.Group();
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const WS_HOST = window.location.host;
 const WS_PATH = '/chat';
 const WS_URL = `${WS_PROTOCOL}//${WS_HOST}${WS_PATH}`;
 let xrIconDisplay = true;
@@ -16,14 +15,12 @@ let audioGainNode;
 let volumeControlActive = false;
 let volumeActivationTimestamp = null;
 let activeFingerTip = null;
-let activeFingerTip = null;
 const VOLUME_ACTIVATION_DELAY = 1000;
 const VOLUME_CONTROL_RADIUS = 50;
 let lastFrameTime = 0;
 const BASE_TOUCH_SENSITIVITY = 0.5; // Fixed touch sensitivity
 let TOUCH_SENSITIVITY = BASE_TOUCH_SENSITIVITY;
 const ROTATION_LIMIT = Math.PI / 2; // 90 degrees
-const ROTATION_RETURN_DURATION = 300; // ms
 const MIN_SCALE = 0.5;
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 1.5;
@@ -32,7 +29,6 @@ const SAFE_ZONE_MARGIN = 0.9;
 const ROTATION_BUFFER = 0.8;
 const TIMELINE_OFFSET = 180;
 const SPHERE_RADIUS = 5;
-const COLUMN_ANIMATION_SPEED = 2.0; // Adjust for desired animation speed
 const FPS = 25; // Fixed 25fps update rate
 const FPS = 25; // Fixed 25fps update rate
 const TRAIL_DURATION = 500; // 500ms trail duration
@@ -121,7 +117,7 @@ let selectedX = 0, selectedY = 0, selectedZ = 0;
 let currentColumn = null;
 const scene = new THREE.Scene();
 const columns = [];
-let analyserLeft, analyserRight;
+const column = [];
 let audioBufferSource = null;
 let audioContext = null;
 let startOffset = 0;
@@ -147,14 +143,11 @@ const GESTURE_RECORDING_DURATION = 20000; // 20 seconds in milliseconds
 let hands = null; // Global reference to MediaPipe Hands controller
 
 let mainSequencerGroup = new THREE.Group();
-const leftSequencerGroup = createSequencerGrid(
-  GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   semitones[semitones.length - 1].color, // Цвет последнего (фиолетового) полутона
   new THREE.Vector3(-GRID_WIDTH, 0, -GRID_DEPTH / 2), // Move left grid further left
   true
 );
 const rightSequencerGroup = createSequencerGrid(
-  GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   semitones[0].color, // Цвет первого (красного) полутона
   new THREE.Vector3(0, 0, -GRID_DEPTH / 2), // Move right grid to center
   false
@@ -162,7 +155,6 @@ const rightSequencerGroup = createSequencerGrid(
 
 // --- Hologram Versioning (временно закомментировано) ---
 // const hologramVersions = {
-//     v1: 'test.glb',
 //     v2: 'test.glb'
 // };
 // let currentHologram = null;
@@ -220,7 +212,6 @@ function setupCamera() {
 
 function setupMicrophone() {
   if (!audioContext) {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
   }
 
   navigator.mediaDevices.getUserMedia({ audio: true })
@@ -247,7 +238,6 @@ function setupMicrophone() {
     .catch(error => {
       console.error('Error accessing microphone:', error);
     });
-}
 
 function stopMicrophone() {
   if (microphoneStream) {
@@ -268,7 +258,6 @@ function stopMicrophone() {
   }
 }
 
-  // Обработчик клика для кнопки микрофона
   if (micButton) {
       micButton.addEventListener('click', () => {
         // Проверяем состояние AudioContext перед действиями
@@ -352,7 +341,6 @@ function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
   const axisGroup = new THREE.Group();
 
   // X-axis - Red for positive, Purple for negative
-  const xAxisGroup = new THREE.Group();
   const xAxisOffset = isLeftGrid ? GRID_WIDTH : 0;
 
   if (isLeftGrid) {
@@ -403,7 +391,6 @@ function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
   );
   zAxisGroup.add(zAxis, zAxisLine);
 
-  // Position all axes relative to the proper offset
   [xAxisGroup, yAxisGroup, zAxisGroup].forEach(group => {
     group.position.set(xAxisOffset, 0, 0);
     axisGroup.add(group);
@@ -428,7 +415,6 @@ function createSequencerGrid(width, height, depth, cellSize, color, position, is
 function createGrid(gridWidth, gridHeight, gridDepth, cellSize, color) {
   const geometry = new THREE.BufferGeometry();
   const positions = [];
-  for (let y = 0; y <= gridHeight; y += 1) {
     for (let z = 0; z <= gridDepth; z += 1) {
       positions.push(0, y * cellSize, z * cellSize, gridWidth * cellSize, y * cellSize, z * cellSize);
     }
@@ -457,7 +443,6 @@ function createGrid(gridWidth, gridHeight, gridDepth, cellSize, color) {
 function initializeColumns() {
   if (columns.length === 0) {
     semitones.forEach((semitone, i) => {
-      const initialDB = 0;
       const maxOffset = degreesToCells(semitone.deg);
       const offsetLeft = i;
       const columnLeft = createColumn(offsetLeft, i + 1, initialDB, true);
@@ -472,7 +457,6 @@ function initializeColumns() {
         dB: initialDB,
         dBDirection: 1
       });
-    });
   }
   columns.forEach(column => {
     if (!column.left.parent) leftSequencerGroup.add(column.left);
@@ -506,7 +490,6 @@ function updateSequencerColumns(amplitudes, channel) {
     const dB = amplitudes[i];
     if (isNaN(dB)) return;
 
-    // Precise normalization
     const normalizedDB = THREE.MathUtils.clamp(
       (dB + 100) / (130 + 100),
       0,
@@ -516,7 +499,6 @@ function updateSequencerColumns(amplitudes, channel) {
     const columnGroup = channel === 'left' ? column.left : column.right;
     const { color } = semitones[i];
 
-    columnGroup.children.forEach(mesh => {
       // Immediate visual update
       mesh.material.opacity = 1.0;
       mesh.material.transparent = false;
@@ -532,7 +514,6 @@ function updateSequencerColumns(amplitudes, channel) {
 
 function setupAudioProcessing(source) {
   if (!audioContext) {
-    console.error('AudioContext is not initialized.');
     return;
   }
 
@@ -606,7 +587,6 @@ function processAudio() {
         const leftDB = leftLevels[i] || 0;
         const rightDB = rightLevels[i] || 0;
 
-        // Instant snap to zero if no signal
         if (leftDB <= -100) {
           column.left.children.forEach(mesh => {
             mesh.scale.z = 0.001; // Minimal size instead of true 0
@@ -646,7 +626,6 @@ function updateColumnMesh(columnGroup, dB, side) {
   columnGroup.children.forEach(mesh => {
     mesh.scale.z = normalizedDB * 260;
     mesh.position.z = (normalizedDB * 260) / 2;
-  });
 }
 
 // XR mode finger tracking
@@ -657,7 +636,6 @@ function setupFingerTracking() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
         currentStream = null;
-    }
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
         .then(stream => {
@@ -669,7 +647,6 @@ function setupFingerTracking() {
                 // Keep video element for handpose but hide it
                 videoElement.style.visibility = 'hidden';
 
-                const handpose = window.handpose;
                 handpose.load().then(model => {
                     setInterval(() => {
                         // Ensure videoElement is accessible and has data
