@@ -803,44 +803,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const togglePanelsButton = document.getElementById('togglePanelsButton');
 
   console.log('Panel elements:', {leftPanel, rightPanel, togglePanelsButton});
-// --- Universal Panel Toggling Logic ---
+// --- Universal Panel Toggling Logic (Improved) ---
+function initializePanelState() {
+    const panelsHidden = localStorage.getItem('panelsHidden') === 'true';
+    if (panelsHidden) {
+        leftPanel.classList.add('hidden');
+        rightPanel.classList.add('hidden');
+        togglePanelsButton.classList.add('show-mode');
+    }
+}
+
+function togglePanels() {
+    const arePanelsHidden = leftPanel.classList.contains('hidden');
+
+    if (arePanelsHidden) {
+        leftPanel.classList.remove('hidden');
+        rightPanel.classList.remove('hidden');
+        togglePanelsButton.classList.remove('show-mode');
+        localStorage.setItem('panelsHidden', 'false');
+    } else {
+        leftPanel.classList.add('hidden');
+        rightPanel.classList.add('hidden');
+        togglePanelsButton.classList.add('show-mode');
+        localStorage.setItem('panelsHidden', 'true');
+    }
+
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+    }, 300); // Wait for animation to complete
+}
+
 if (togglePanelsButton && leftPanel && rightPanel) {
-  // Обработчик клика для кнопки
-  togglePanelsButton.addEventListener('click', () => {
-      const arePanelsHidden = leftPanel.classList.contains('hidden');
-      console.log('Toggling panels. Currently hidden:', arePanelsHidden);
-
-      if (arePanelsHidden) {
-          // Показываем обе панели
-          leftPanel.classList.remove('hidden');
-          rightPanel.classList.remove('hidden');
-          togglePanelsButton.classList.remove('show-mode');
-          console.log('Panels shown. Button classList:', togglePanelsButton.classList);
-      } else {
-          // Скрываем обе панели
-          leftPanel.classList.add('hidden');
-          rightPanel.classList.add('hidden');
-          togglePanelsButton.classList.add('show-mode');
-          console.log('Panels hidden. Button classList:', togglePanelsButton.classList);
-      }
-
-      window.dispatchEvent(new Event('resize'));
-      console.log('Dispatched resize event after toggle.');
-  });
-
-  // Устанавливаем начальный класс для иконки кнопки ПОСЛЕ небольшой задержки
-  setTimeout(() => {
-      if (leftPanel && !leftPanel.classList.contains('hidden')) {
-          togglePanelsButton.classList.remove('show-mode');
-      } else if (togglePanelsButton) {
-          togglePanelsButton.classList.add('show-mode');
-      }
-      if (togglePanelsButton) {
-      }
-      console.log(`Initial toggle button class set after delay. Has 'show-mode': ${togglePanelsButton?.classList.contains('show-mode')}`);
-  }, 100);
+    initializePanelState();
+    togglePanelsButton.addEventListener('click', togglePanels);
 } else {
-  console.error("Не удалось найти один или несколько элементов панели или кнопку переключения!");
+    console.error("Panels or toggle button not found!");
 }
 // --- End Universal Panel Toggling Logic ---
   if (togglePanelsButton && leftPanel && rightPanel) {

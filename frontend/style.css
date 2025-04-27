@@ -1,7 +1,32 @@
-/* Стили для скрытия панелей с анимацией */
-.panel.hidden {
-    display: none !important;
-    width: 0 !important;
+/* Скрытие панелей (метод Клода) */
+.panel.left-panel.hidden {
+  transform: translateX(-100%) !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+}
+.panel.right-panel.hidden {
+  transform: translateX(100%) !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+}
+/* Убираем position: absolute у видимых панелей */
+.panel.left-panel, .panel.right-panel {
+    position: static !important;
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transition: transform 0.3s ease, opacity 0.3s ease !important;
+}
+
+/* Позиционирование кнопки */
+#togglePanelsButton {
+  position: fixed !important;
+  bottom: 15px !important;
+  left: 15px !important;
+  z-index: 100 !important;
+  transform: translateZ(0);
 }
 /* Стили для кнопки переключения панелей */
 #togglePanelsButton {
