@@ -1,33 +1,33 @@
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 
 // --- Global Variables ---
 let hologramPivot = new THREE.Group();
+let isGestureCanvasReady = false;
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_PATH = '/chat';
 const WS_URL = `${WS_PROTOCOL}//${WS_HOST}${WS_PATH}`;
 let xrIconDisplay = true;
-let xrState = 0;
+let currentStream = null;
 let currentStream = null;
 let audioGainNode;
-let volumeControlActive = false;
+let volumeActivationTimestamp = null;
 let volumeActivationTimestamp = null;
 let activeFingerTip = null;
-const VOLUME_ACTIVATION_DELAY = 1000;
+const VOLUME_CONTROL_RADIUS = 50;
 const VOLUME_CONTROL_RADIUS = 50;
 let lastFrameTime = 0;
 const BASE_TOUCH_SENSITIVITY = 0.5; // Fixed touch sensitivity
 let TOUCH_SENSITIVITY = BASE_TOUCH_SENSITIVITY;
 const ROTATION_LIMIT = Math.PI / 2; // 90 degrees
-const MIN_SCALE = 0.5;
-const MIN_SCALE = 0.5;
+const MIN_SCALE = 0.5; // Minimum scale factor
+const MIN_SCALE = 0.5; // Minimum scale factor
 const MAX_SCALE = 1.5;
-const TARGET_WIDTH_PERCENTAGE = 0.95;
+const SAFE_ZONE_MARGIN = 0.9;
 const SAFE_ZONE_MARGIN = 0.9;
 const ROTATION_BUFFER = 0.8;
-const TIMELINE_OFFSET = 180;
+const SPHERE_RADIUS = 5;
 const SPHERE_RADIUS = 5;
 const FPS = 25; // Fixed 25fps update rate
 const FPS = 25; // Fixed 25fps update rate
@@ -38,7 +38,7 @@ const TRAIL_SEGMENTS = 25; // Number of trail segments
 const START_HUE = 0;    // Red
 const END_HUE = 270;    // Violet
 const SATURATION = 1.0;
-const LIGHTNESS = 0.5;
+const BASE_FREQUENCY = 27.5;
 
 // Audio configuration constants
 const BASE_FREQUENCY = 27.5;
