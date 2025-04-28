@@ -1,35 +1,36 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 // --- Global Variables ---
 let hologramPivot = new THREE.Group();
-let isGestureCanvasReady = false;
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_HOST = window.location.host;
 const WS_PATH = '/chat';
 const WS_URL = `${WS_PROTOCOL}//${WS_HOST}${WS_PATH}`;
 let xrIconDisplay = true;
-let currentStream = null;
+let xrState = 0;
 let currentStream = null;
 let audioGainNode;
-let volumeActivationTimestamp = null;
+let volumeControlActive = false;
 let volumeActivationTimestamp = null;
 let activeFingerTip = null;
-const VOLUME_CONTROL_RADIUS = 50;
+const VOLUME_ACTIVATION_DELAY = 1000;
 const VOLUME_CONTROL_RADIUS = 50;
 let lastFrameTime = 0;
 const BASE_TOUCH_SENSITIVITY = 0.5; // Fixed touch sensitivity
 let TOUCH_SENSITIVITY = BASE_TOUCH_SENSITIVITY;
 const ROTATION_LIMIT = Math.PI / 2; // 90 degrees
-const MIN_SCALE = 0.5; // Minimum scale factor
-const MIN_SCALE = 0.5; // Minimum scale factor
+const ROTATION_RETURN_DURATION = 300; // ms
+const MIN_SCALE = 0.5;
 const MAX_SCALE = 1.5;
-const SAFE_ZONE_MARGIN = 0.9;
+const TARGET_WIDTH_PERCENTAGE = 0.95;
 const SAFE_ZONE_MARGIN = 0.9;
 const ROTATION_BUFFER = 0.8;
+const TIMELINE_OFFSET = 180;
 const SPHERE_RADIUS = 5;
-const SPHERE_RADIUS = 5;
-const FPS = 25; // Fixed 25fps update rate
+const COLUMN_ANIMATION_SPEED = 2.0; // Adjust for desired animation speed
 const FPS = 25; // Fixed 25fps update rate
 const TRAIL_DURATION = 500; // 500ms trail duration
 const TRAIL_SEGMENTS = 25; // Number of trail segments
@@ -38,7 +39,7 @@ const TRAIL_SEGMENTS = 25; // Number of trail segments
 const START_HUE = 0;    // Red
 const END_HUE = 270;    // Violet
 const SATURATION = 1.0;
-const BASE_FREQUENCY = 27.5;
+const LIGHTNESS = 0.5;
 
 // Audio configuration constants
 const BASE_FREQUENCY = 27.5;
@@ -108,6 +109,7 @@ let rendererForPreview = null;
 let cameraForPreview = null;
 let sceneForPreview = null;
 
+const GRID_WIDTH = 130;
 const GRID_HEIGHT = 260;
 const GRID_DEPTH = 130;
 const CELL_SIZE = 1;
@@ -116,7 +118,7 @@ let selectedX = 0, selectedY = 0, selectedZ = 0;
 let currentColumn = null;
 const scene = new THREE.Scene();
 const columns = [];
-const column = [];
+let analyserLeft, analyserRight;
 let audioBufferSource = null;
 let audioContext = null;
 let startOffset = 0;
@@ -142,11 +144,14 @@ const GESTURE_RECORDING_DURATION = 20000; // 20 seconds in milliseconds
 let hands = null; // Global reference to MediaPipe Hands controller
 
 let mainSequencerGroup = new THREE.Group();
+const leftSequencerGroup = createSequencerGrid(
+  GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   semitones[semitones.length - 1].color, // Цвет последнего (фиолетового) полутона
   new THREE.Vector3(-GRID_WIDTH, 0, -GRID_DEPTH / 2), // Move left grid further left
   true
 );
 const rightSequencerGroup = createSequencerGrid(
+  GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   semitones[0].color, // Цвет первого (красного) полутона
   new THREE.Vector3(0, 0, -GRID_DEPTH / 2), // Move right grid to center
   false
@@ -154,6 +159,7 @@ const rightSequencerGroup = createSequencerGrid(
 
 // --- Hologram Versioning (временно закомментировано) ---
 // const hologramVersions = {
+//     v1: 'test.glb',
 //     v2: 'test.glb'
 // };
 // let currentHologram = null;
@@ -211,6 +217,7 @@ function setupCamera() {
 
 function setupMicrophone() {
   if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
   }
 
   navigator.mediaDevices.getUserMedia({ audio: true })
@@ -237,6 +244,7 @@ function setupMicrophone() {
     .catch(error => {
       console.error('Error accessing microphone:', error);
     });
+}
 
 function stopMicrophone() {
   if (microphoneStream) {
@@ -257,6 +265,7 @@ function stopMicrophone() {
   }
 }
 
+  // Обработчик клика для кнопки микрофона
   if (micButton) {
       micButton.addEventListener('click', () => {
         // Проверяем состояние AudioContext перед действиями
@@ -340,6 +349,7 @@ function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
   const axisGroup = new THREE.Group();
 
   // X-axis - Red for positive, Purple for negative
+  const xAxisGroup = new THREE.Group();
   const xAxisOffset = isLeftGrid ? GRID_WIDTH : 0;
 
   if (isLeftGrid) {
@@ -390,6 +400,7 @@ function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
   );
   zAxisGroup.add(zAxis, zAxisLine);
 
+  // Position all axes relative to the proper offset
   [xAxisGroup, yAxisGroup, zAxisGroup].forEach(group => {
     group.position.set(xAxisOffset, 0, 0);
     axisGroup.add(group);
@@ -414,6 +425,7 @@ function createSequencerGrid(width, height, depth, cellSize, color, position, is
 function createGrid(gridWidth, gridHeight, gridDepth, cellSize, color) {
   const geometry = new THREE.BufferGeometry();
   const positions = [];
+  for (let y = 0; y <= gridHeight; y += 1) {
     for (let z = 0; z <= gridDepth; z += 1) {
       positions.push(0, y * cellSize, z * cellSize, gridWidth * cellSize, y * cellSize, z * cellSize);
     }
@@ -442,6 +454,7 @@ function createGrid(gridWidth, gridHeight, gridDepth, cellSize, color) {
 function initializeColumns() {
   if (columns.length === 0) {
     semitones.forEach((semitone, i) => {
+      const initialDB = 0;
       const maxOffset = degreesToCells(semitone.deg);
       const offsetLeft = i;
       const columnLeft = createColumn(offsetLeft, i + 1, initialDB, true);
@@ -456,6 +469,7 @@ function initializeColumns() {
         dB: initialDB,
         dBDirection: 1
       });
+    });
   }
   columns.forEach(column => {
     if (!column.left.parent) leftSequencerGroup.add(column.left);
@@ -489,6 +503,7 @@ function updateSequencerColumns(amplitudes, channel) {
     const dB = amplitudes[i];
     if (isNaN(dB)) return;
 
+    // Precise normalization
     const normalizedDB = THREE.MathUtils.clamp(
       (dB + 100) / (130 + 100),
       0,
@@ -498,6 +513,7 @@ function updateSequencerColumns(amplitudes, channel) {
     const columnGroup = channel === 'left' ? column.left : column.right;
     const { color } = semitones[i];
 
+    columnGroup.children.forEach(mesh => {
       // Immediate visual update
       mesh.material.opacity = 1.0;
       mesh.material.transparent = false;
@@ -513,6 +529,7 @@ function updateSequencerColumns(amplitudes, channel) {
 
 function setupAudioProcessing(source) {
   if (!audioContext) {
+    console.error('AudioContext is not initialized.');
     return;
   }
 
@@ -586,6 +603,7 @@ function processAudio() {
         const leftDB = leftLevels[i] || 0;
         const rightDB = rightLevels[i] || 0;
 
+        // Instant snap to zero if no signal
         if (leftDB <= -100) {
           column.left.children.forEach(mesh => {
             mesh.scale.z = 0.001; // Minimal size instead of true 0
@@ -625,6 +643,7 @@ function updateColumnMesh(columnGroup, dB, side) {
   columnGroup.children.forEach(mesh => {
     mesh.scale.z = normalizedDB * 260;
     mesh.position.z = (normalizedDB * 260) / 2;
+  });
 }
 
 // XR mode finger tracking
@@ -635,6 +654,7 @@ function setupFingerTracking() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
         currentStream = null;
+    }
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
         .then(stream => {
@@ -646,6 +666,7 @@ function setupFingerTracking() {
                 // Keep video element for handpose but hide it
                 videoElement.style.visibility = 'hidden';
 
+                const handpose = window.handpose;
                 handpose.load().then(model => {
                     setInterval(() => {
                         // Ensure videoElement is accessible and has data
@@ -776,82 +797,72 @@ document.addEventListener('DOMContentLoaded', () => {
       gestureArea.title = 'Кликните для записи жеста'; // Добавляем всплывающую подсказку
   }
 
+  // Определяем элементы панелей
   const leftPanel = document.querySelector('.panel.left-panel');
   const rightPanel = document.querySelector('.panel.right-panel');
-  const togglePanelsButton = document.getElementById('togglePanelsButton');
+  const togglePanelsButton = document.querySelector('#togglePanelsButton');
+  console.log('Toggle Panels Button initialized:', togglePanelsButton);
+  if (togglePanelsButton) {
+      togglePanelsButton.addEventListener('click', togglePanels);
+      console.log('Click handler added to togglePanelsButton');
+  } else {
+      console.error('Toggle Panels Button not found');
+  }
 
-  console.log('Panel elements:', {leftPanel, rightPanel, togglePanelsButton});
-// --- Universal Panel Toggling Logic (Improved) ---
-function initializePanelState() {
-    const panelsHidden = localStorage.getItem('panelsHidden') === 'true';
-    if (panelsHidden) {
-        leftPanel.classList.add('hidden');
-        rightPanel.classList.add('hidden');
-        togglePanelsButton.classList.add('show-mode');
-    }
-}
-
-function togglePanels() {
-    const arePanelsHidden = leftPanel.classList.contains('hidden');
-
-    if (arePanelsHidden) {
-        leftPanel.classList.remove('hidden');
-        rightPanel.classList.remove('hidden');
-        togglePanelsButton.classList.remove('show-mode');
-        localStorage.setItem('panelsHidden', 'false');
-    } else {
-        leftPanel.classList.add('hidden');
-        rightPanel.classList.add('hidden');
-        togglePanelsButton.classList.add('show-mode');
-        localStorage.setItem('panelsHidden', 'true');
+  // --- Universal Panel Toggling Logic (Improved) ---
+  function initializePanelState() {
+    if (!leftPanel || !rightPanel || !togglePanelsButton) {
+        console.error('Required elements not found for initializePanelState');
+        return;
     }
 
+    // Получаем сохраненное состояние
+    const savedState = localStorage.getItem('panelsHidden');
+    const shouldBeHidden = savedState === 'true';
+
+    console.log(`[DEBUG] Initializing panel state. Saved state: ${savedState}, shouldBeHidden: ${shouldBeHidden}`);
+
+    // Применяем классы
+    leftPanel.classList.toggle('hidden', shouldBeHidden);
+    rightPanel.classList.toggle('hidden', shouldBeHidden);
+    togglePanelsButton.classList.toggle('show-mode', shouldBeHidden);
+
+    console.log(`[DEBUG] After init: leftPanel hidden=${leftPanel.classList.contains('hidden')}, rightPanel hidden=${rightPanel.classList.contains('hidden')}, button show-mode=${togglePanelsButton.classList.contains('show-mode')}`);
+
+    // Вызываем ресайз после применения классов
     setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
-    }, 300); // Wait for animation to complete
-}
-
-if (togglePanelsButton && leftPanel && rightPanel) {
-    initializePanelState();
-    togglePanelsButton.addEventListener('click', togglePanels);
-} else {
-    console.error("Panels or toggle button not found!");
-  if (togglePanelsButton && leftPanel && rightPanel) {
-      togglePanelsButton.addEventListener('click', () => {
-          // Проверяем, скрыта ли левая панель (можно любую)
-          const arePanelsHidden = leftPanel.classList.contains('hidden');
-          console.log('Toggling panels. Currently hidden:', arePanelsHidden);
-
-          if (arePanelsHidden) {
-              // Показываем обе панели
-              leftPanel.classList.remove('hidden');
-              rightPanel.classList.remove('hidden');
-              console.log('After show - left hidden:', leftPanel.classList.contains('hidden'), 
-                         'right hidden:', rightPanel.classList.contains('hidden'));
-          } else {
-              // Скрываем обе панели
-              leftPanel.classList.add('hidden');
-              rightPanel.classList.add('hidden');
-             console.log('After hide - left hidden:', leftPanel.classList.contains('hidden'),
-                        'right hidden:', rightPanel.classList.contains('hidden'));
-          }
-
-          // Вызываем ресайз после анимации
-          setTimeout(() => {
-              window.dispatchEvent(new Event('resize'));
-              console.log('Dispatched resize event');
-          }, 350);
-      });
-
-      // Устанавливаем начальное состояние иконки
-      console.log('Initial panel state:', {
-          leftHidden: leftPanel.classList.contains('hidden'),
-          rightHidden: rightPanel.classList.contains('hidden')
-      });
-
-  } else {
-      console.error("Panels or the universal toggle button not found!");
+        console.log('Dispatched resize event after init timeout.');
+    }, 50);
   }
+
+  function togglePanels() {
+    if (!leftPanel || !rightPanel || !togglePanelsButton) {
+        console.error('Required elements not found for togglePanels');
+        return;
+    }
+    const willBeHidden = !leftPanel.classList.contains('hidden');
+    console.log('Toggling panels, willBeHidden:', willBeHidden);
+    console.log('Left panel parent:', leftPanel.parentNode);
+    leftPanel.classList.toggle('hidden', willBeHidden);
+    rightPanel.classList.toggle('hidden', willBeHidden);
+    console.log('Left panel classes after toggle:', leftPanel.classList.toString());
+    togglePanelsButton.classList.toggle('show-mode', willBeHidden);
+    localStorage.setItem('panelsHidden', willBeHidden.toString());
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+    }, 50);
+  }
+
+  // Initialize panel state and add event listener
+  document.addEventListener('DOMContentLoaded', () => {
+    if (togglePanelsButton && leftPanel && rightPanel) {
+        initializePanelState();
+        togglePanelsButton.addEventListener('click', togglePanels);
+    } else {
+        console.error("Required elements not found: togglePanelsButton, leftPanel, or rightPanel");
+    }
+  });
   // --- End Universal Panel Toggling Logic ---
 
   const gestureModal = document.getElementById('gestureModal');
@@ -1134,59 +1145,65 @@ if (togglePanelsButton && leftPanel && rightPanel) {
 
   // Функция для плавной анимации макета голограммы
   function updateHologramLayout(handsVisible) {
-        console.log(`Updating hologram layout, handsVisible: ${handsVisible}`);
-        const gridContainerElement = document.getElementById('grid-container');
-        const gestureAreaElement = document.getElementById('gesture-area');
-        if (!gridContainerElement || !gestureAreaElement) return;
+    console.log(`Updating hologram layout, handsVisible: ${handsVisible}`);
+    const gridContainerElement = document.getElementById('grid-container');
+    const gestureAreaElement = document.getElementById('gesture-area');
+    if (!gridContainerElement || !gestureAreaElement) return;
 
-        const windowHeight = window.innerHeight;
-        const gridContainerHeight = gridContainerElement.clientHeight; // Высота 75vh контейнера
-        const gestureAreaHeightPx = handsVisible ? windowHeight * 0.25 : 4; // Целевая высота в px
+    const windowHeight = window.innerHeight;
+    const gridContainerHeight = gridContainerElement.clientHeight; // Высота 75vh контейнера
+    const gestureAreaHeightPx = handsVisible ? windowHeight * 0.25 : 4; // Целевая высота в px
 
-        const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
-        const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
-        const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
+    const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
+    const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
+    const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
 
-        let targetAvailableHeight;
-        let targetCenterY_inWindow; // Желаемый центр голограммы от верха ОКНА
-        let effectiveTopEdge;
+    let targetAvailableHeight;
+    let effectiveTopEdge;
 
-        const topMarginPercent = 0.05;
-        const bottomMarginPercent = 0.05;
+    const topMarginPercent = 0.05;
+    const bottomMarginPercent = 0.05;
 
-        if (handsVisible) {
-            // Руки есть: Голограмма в 75vh контейнере
-            const topMarginPx = gridContainerHeight * topMarginPercent;
-            const bottomMarginPx = gridContainerHeight * bottomMarginPercent;
-            effectiveTopEdge = topMarginPx;
-            targetAvailableHeight = gridContainerHeight - topMarginPx - bottomMarginPx;
-            // Центр доступной области = верх контейнера (0) + отступ + половина доступной высоты
-            targetCenterY_inWindow = topMarginPx + targetAvailableHeight / 2;
-        } else {
-            // Рук нет: Голограмма почти во весь экран
-            const topEdge = windowHeight * topMarginPercent;
-           effectiveTopEdge = topEdge;
-            const gestureAreaTop = windowHeight - 4; // Верх щели
-            const bottomEdge = gestureAreaTop - (windowHeight * bottomMarginPercent);
-            targetAvailableHeight = bottomEdge - topEdge;
-            targetCenterY_inWindow = topEdge + targetAvailableHeight / 2;
-        }
+    if (handsVisible) {
+        // Руки есть: Голограмма в 75vh контейнере
+        const topMarginPx = gridContainerHeight * topMarginPercent;
+        const bottomMarginPx = gridContainerHeight * bottomMarginPercent;
+        effectiveTopEdge = topMarginPx;
+        targetAvailableHeight = gridContainerHeight - topMarginPx - bottomMarginPx;
+    } else {
+        // Рук нет: Голограмма почти во весь экран
+        const topEdge = windowHeight * topMarginPercent;
+        effectiveTopEdge = topEdge;
+        const gestureAreaTop = windowHeight - 4; // Верх щели
+        const bottomEdge = gestureAreaTop - (windowHeight * bottomMarginPercent);
+        targetAvailableHeight = bottomEdge - topEdge;
+    }
 
-        // Рассчитываем целевой масштаб
-        const targetScale = calculateInitialScale(availableWidth, targetAvailableHeight);
+    // Рассчитываем целевой масштаб
+    const targetScale = calculateInitialScale(availableWidth, targetAvailableHeight);
 
-        // Рассчитываем целевую позицию Y для ПИВОТА (hologramPivot)
-        // Упрощенный расчет: центр доступной области минус половина ВИЗУАЛЬНОЙ высоты голограммы
-        const targetVisualHeight = GRID_HEIGHT * targetScale;
-        const targetPivotY = effectiveTopEdge - 0.2 * targetAvailableHeight;
+    // Рассчитываем целевую позицию Y для ПИВОТА (hologramPivot)
+    // Координаты в Three.js: Y растет ВВЕРХ от центра окна/сцены = 0.
+    // Верх окна ~ window.innerHeight / 2, Низ окна ~ -window.innerHeight / 2
 
+    // Верхняя граница доступной области (отступ от верха окна)
+    const topEdgeY = (window.innerHeight / 2) - effectiveTopEdge;
+    // Нижняя граница доступной области (отступ от низа окна)
+    const bottomEdgeY = topEdgeY - targetAvailableHeight;
+    // Центр доступной области по Y в координатах Three.js
+    const centerYOfAvailableHeight = bottomEdgeY + targetAvailableHeight / 2;
 
-        console.log(`Target Layout: Scale=${targetScale.toFixed(3)}, PivotY=${targetPivotY.toFixed(1)}, AvailH=${targetAvailableHeight.toFixed(1)}, EffectiveTopEdge=${effectiveTopEdge.toFixed(1)}, TargetVisualHeight=${targetVisualHeight.toFixed(1)}`);
+    // Визуальная высота голограммы
+    const visualHologramHeight = GRID_HEIGHT * targetScale;
+    // Целевая позиция Y пивота = центр доступной области
+    const targetPivotY = centerYOfAvailableHeight; // Центр пивота = Центр области
 
-        console.log(`Applying INSTANTLY: Scale=${targetScale.toFixed(3)}, PivotY=${targetPivotY.toFixed(1)}`);
-        hologramPivot.scale.setScalar(targetScale);
-        hologramPivot.position.y = targetPivotY;
-  }
+    console.log(`[Layout Calc v5] CenterYAvail=${centerYOfAvailableHeight.toFixed(1)}, VisualH=${visualHologramHeight.toFixed(1)}, TargetPivotY=${targetPivotY.toFixed(1)}`);
+
+    // Применяем позицию и масштаб
+    hologramPivot.scale.setScalar(targetScale);
+    hologramPivot.position.y = targetPivotY;
+}
 
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
@@ -1382,7 +1399,7 @@ function setupFileEditor() {
             item.addEventListener('click', () => {
                 const fileName = item.dataset.file;
                 console.log(`Клик по файлу: ${fileName}`);
-                if (fileContents.hasOwnProperty(fileName)) {
+                if (Object.prototype.hasOwnProperty.call(fileContents, fileName)) {
                     fileContentTextAreaElement.value = fileContents[fileName];
                     fileContentTextAreaElement.dataset.currentFile = fileName; // Обновляем атрибут data-*
                     fileListElement.querySelectorAll('li').forEach(li => {
@@ -1407,7 +1424,7 @@ function setupFileEditor() {
     if (saveFileButton && fileContentTextAreaElement) {
          saveFileButton.addEventListener('click', () => {
              const file = fileContentTextAreaElement.dataset.currentFile;
-             if (file && fileContents.hasOwnProperty(file)) {
+             if (file && Object.prototype.hasOwnProperty.call(fileContents, file)) {
                  fileContents[file] = fileContentTextAreaElement.value;
                  console.log(`Содержимое ${file} сохранено локально (в fileContents).`);
                  alert(`${file} сохранен локально.`);
@@ -1596,11 +1613,11 @@ async function loadInitialFilesAndSetupEditor() {
           // Скроллим вниз после добавления/удаления элементов
           versionFramesContainer.scrollTop = versionFramesContainer.scrollHeight;
       });
-
       // Настраиваем наблюдатель: следим за добавлением/удалением дочерних узлов
       observer.observe(versionFramesContainer, { childList: true });
       console.log("MutationObserver для автоскролла таймлайна активирован.");
   }
+  // --- Конец блока MutationObserver ---
 
   async function switchToVersion(versionId, branch) {
     try {
@@ -2038,3 +2055,51 @@ updateTimelineFromServer();
    githubButton.addEventListener('click', () => {
      window.open('https://github.com/NeuroCoderZ/holograms.media', '_blank', 'noopener,noreferrer');
    });
+
+  // Наблюдатель за окном записи жестов
+  const gesturePanel = document.querySelector('.gesture-recording-panel');
+  if (gesturePanel) {
+      const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+              if (mutation.attributeName === 'data-gesture-recording') {
+                  const isActive = gesturePanel.getAttribute('data-gesture-recording') === 'active';
+                  console.log('Gesture recording panel active:', isActive);
+                  window.dispatchEvent(new Event('resize')); // Обновить позиционирование
+              }
+          });
+      });
+      observer.observe(gesturePanel, { attributes: true });
+  }
+
+  // Наблюдатель за окном записи жестов
+  const gestureAreaWatcher = document.getElementById('gesture-area') || document.querySelector('[data-gesture-area], [style*="height: 25vh"], [style*="height: 4px"]');
+  console.log('Gesture area element:', gestureAreaWatcher);
+  if (gestureAreaWatcher) {
+      console.log('Gesture area initial height:', gestureAreaWatcher.style.height);
+      const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+              const height = gestureAreaWatcher.style.height;
+              const isActive = height === '25vh';
+              console.log('Gesture area height changed to:', height, 'Active:', isActive);
+              gestureAreaWatcher.classList.toggle('active', isActive);
+              window.dispatchEvent(new Event('resize'));
+          });
+      });
+      observer.observe(gestureAreaWatcher, { attributes: true, attributeFilter: ['style'] });
+  } else {
+      console.log('Gesture area element not found, checking DOM...');
+      const allElements = document.querySelectorAll('*');
+      allElements.forEach(el => {
+          if (el.style.height === '25vh' || el.style.height === '4px') {
+              console.log('Found element with height 25vh or 4px:', el);
+          }
+      });
+  }
+
+  // Перемещаем кнопку в body, если она вложена в .left-panel
+  const togglePanelsButton = document.querySelector('#togglePanelsButton');
+  if (togglePanelsButton && togglePanelsButton.parentNode.classList.contains('left-panel')) {
+      document.body.appendChild(togglePanelsButton);
+      console.log('Moved togglePanelsButton to body');
+  }
+  });
