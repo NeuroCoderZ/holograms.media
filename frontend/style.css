@@ -1,70 +1,35 @@
-.panel.left-panel,
-.panel.right-panel {
-  position: static !important;
-.panel.left-panel.hidden {
-  transform: translateX(-100%) !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  flex: 0 0 0 !important; width: 0 !important; min-width: 0 !important;
-  padding: 0 !important; margin: 0 !important; border: none !important; overflow: hidden !important;
-}
-}
-.panel.right-panel.hidden {
-  transform: translateX(100%) !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  flex: 0 0 0 !important; width: 0 !important; min-width: 0 !important;
-  padding: 0 !important; margin: 0 !important; border: none !important; overflow: hidden !important;
-}
-/* Убираем position: absolute у видимых панелей */
-.panel.left-panel, .panel.right-panel {
-    position: static !important;
-    transform: translateX(0) !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    transition: transform 0.3s ease, opacity 0.3s ease !important;
-}
-
-/* Позиционирование кнопки */
+/* Toggle button styles */
 #togglePanelsButton {
   position: fixed !important;
-  bottom: 15px !important;
-  left: 15px !important;
-  z-index: 100 !important;
-  transform: translateZ(0);
+  z-index: 1000;
+  bottom: var(--button-spacing);
+  left: var(--button-spacing);
+  outline: none !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
-/* Стили для кнопки переключения панелей */
-#togglePanelsButton {
-  /* Позиционирование */
-  position: fixed !important;
-  display: flex;
-  bottom: 15px !important;
-  left: 15px !important;
-  z-index: 100 !important;
-  transform: translateZ(0);
 
-  /* Базовый внешний вид (как у control-button) */
-  width: var(--button-size) !important;
-  height: var(--button-size) !important;
-  height: var(--button-size) !important;
-  padding: 0 !important;
-  background-color: transparent !important;
-  border: none !important;
-  border-radius: 5px !important;
-  cursor: pointer !important;
-  color: var(--color-icon) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  justify-content: center !important;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out !important;
+#togglePanelsButton:focus {
+  outline: none !important;
 }
-#togglePanelsButton:hover {
-   color: var(--color-icon-active) !important;
-   background-color: var(--button-hover-bg) !important;
-   background-color: var(--button-hover-bg) !important;
+
+/* Icon logic */
+#togglePanelsButton .icon-show-panels {
+  display: block;
+}
+
+#togglePanelsButton .icon-hide-panels {
+  display: none;
+}
+
+#togglePanelsButton.show-mode .icon-show-panels {
+  display: none;
+}
+
+#togglePanelsButton.show-mode .icon-hide-panels {
+  display: block;
 }
 
 :root {
@@ -140,27 +105,50 @@ body {
 }
 
 /* Левая панель (Кнопки) */
-.panel.left-panel {
-  width: calc(var(--button-size) * 2 + var(--button-spacing) * 3); /* Ширина двух кнопок + 3 промежутка между ними и по краям */
-  width: calc(var(--button-size) * 2 + var(--button-spacing) * 3);
-  background-color: var(--color-pure-black);
-  align-items: center;
+.panel.left-panel,
+.panel.right-panel {
+  background-color: var(--panel-bg);
   padding: var(--button-spacing);
   flex-shrink: 0;
   height: 100vh;
+  overflow: hidden;
+}
+
+.panel.left-panel {
+  width: 15vw;
+  max-width: 200px;
+  min-width: 150px;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  transition: width 0.3s ease;
 }
-.panel.left-panel::-webkit-scrollbar { display: none; }
+
+.panel.left-panel::-webkit-scrollbar { 
+  display: none; 
+}
+
+.panel.right-panel {
+  width: var(--timeline-width);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Гарантированное скрытие панелей (display: none) */
+.panel.left-panel.hidden,
+.panel.right-panel.hidden {
+    display: none !important;
+    visibility: hidden !important;
+}
 
 #button-container {
   display: grid;
-  grid-template-columns: repeat(2, var(--button-size)); /* Два столбца шириной с кнопку */
-  gap: var(--button-spacing); /* Промежуток между кнопками */
-  justify-content: center; /* Центрирование сетки по горизонтали */
-  align-content: flex-start; /* Выравнивание рядов к верху */
-  padding: 0; /* Убираем внутренний padding контейнера, если был */
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--button-spacing);
+  justify-content: center;
+  align-content: flex-start;
+  padding: 0;
+  width: 100%;
 }
 
 /* Стилизация скроллбара для Webkit (Chrome, Safari) */
@@ -183,8 +171,8 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 75vh;
-  z-index: 100;
+  height: calc(100vh - 4px); /* Full height minus gesture area height */
+  z-index: 50;
   background-color: transparent; /* Фон прозрачный */
 }
 
@@ -193,8 +181,8 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 75vh;
-  z-index: 1;
+  height: 100%; /* Use full container height */
+  z-index: 50;
 }
 
 /* Область жестов */
@@ -206,7 +194,7 @@ body {
     height: 4px;   /* Начальная высота - "щель" */
     opacity: 1;
     margin: 0;
-    z-index: 10; /* !!! Поднимем на всякий случай над другими элементами */
+    z-index: 100; /* Lower than grid container */
     background-color: var(--color-black-95);
     border: none;
     cursor: pointer;
@@ -227,16 +215,6 @@ body {
 }
 
 /* Правая панель (Таймлайн + Промпт) */
-.panel.right-panel {
-  width: var(--timeline-width);
-  background-color: var(--color-pure-black);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  flex-shrink: 0;
-  height: 100vh;
-}
-
 #versionTimeline {
   flex-grow: 1;
   overflow-y: auto;
@@ -252,26 +230,35 @@ body {
 #versionTimeline::-webkit-scrollbar-track { background: var(--color-pure-black); } /* Черный фон трека */
 
 /* Стили для версии */
+.timeline-item {
+    position: relative;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.timeline-item .version-label {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    font-size: 12px;
+    color: var(--text-color);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px 5px;
+    border-radius: 3px;
+    z-index: 1;
+}
+
 .version-frame {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: calc(11px * 1.4 - 11px); /* Отступ = межстрочный интервал */
-  padding: 5px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: calc(11px * 1.4 - 11px);
+    padding: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 .version-frame:hover { background-color: rgba(255, 255, 255, 0.05); } /* Чуть заметнее ховер */
-
-.version-label {
-  position: absolute;
-  top: 3px; left: 3px;
-  background-color: var(--color-dark-border);
-  color: var(--color-primary);
-  border-radius: 10px; padding: 2px 6px;
-  font-size: 9px; font-weight: normal;
-  z-index: 1; opacity: 0.8;
-}
 
 .version-placeholder {
   width: calc(11px * 1.4 * 5 + 10px); /* Ширина = Высота */
@@ -378,15 +365,18 @@ body {
 
 /* Стили Кнопок (основные) */
 .control-button {
-  flex: 0 0 var(--button-size);
-  width: var(--button-size); height: var(--button-size);
-  padding: 0; background-color: transparent; border: none; cursor: pointer;
-  color: var(--color-icon); /* Светло-серый */
-  display: flex; align-items: center; justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-icon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 5px;
-  transition: color 0.15s ease-in-out; /* Плавный переход цвета */
-  margin: 0;
-  padding: 0; /* !!! Добавить, если нет */
+  transition: color 0.15s ease-in-out;
 }
 
 /* Стили для SVG внутри кнопок */
@@ -423,6 +413,9 @@ body {
 }
 
 /* Увеличение иконки Telegram */
+#telegramLinkButton svg, #triaButton svg {
+  transform: scale(1.2);
+}
 
 /* Скрытые и Модальные окна */
 #camera-view, #previewCanvas { display: none; }
@@ -506,50 +499,67 @@ body {
 }
 
 #togglePanelsButton:hover svg {
-    fill: var(--color-icon-active) !important;
+    fill: var(--color-icon-active) !important; /* Белый цвет иконки */
 }
 
-/* Логика иконок (НАША ВЕРСИЯ) */
-#togglePanelsButton .icon-show-panels { display: block !important; } /* Показать ВЛЕВО */
-#togglePanelsButton .icon-hide-panels { display: none !important; } /* Скрыть ВПРАВО */
-#togglePanelsButton.show-mode .icon-show-panels { display: none !important; } /* Скрыть ВЛЕВО */
-#togglePanelsButton.show-mode .icon-hide-panels { display: block !important; } /* Показать ВПРАВО */
-/* Общий стиль для SVG внутри кнопок */
-.control-button svg {
-    width: var(--icon-size);
-    height: var(--icon-size);
-    fill: currentColor;
-}
-
-/* Стиль для родительской кнопки */
-.control-button {
-    color: var(--color-icon);
-    transition: color 0.15s ease-in-out;
-}
-
-/* Стиль для ховера на НЕотключенную кнопку */
-.control-button:not(:disabled):hover {
-    color: var(--color-icon-active);
-}
-
-/* Стиль для отключенной кнопки */
-.control-button:disabled {
-    color: var(--color-icon-disabled);
-    cursor: not-allowed;
-    fill: currentColor;
-}
-
-#togglePanelsButton:hover svg {
-    fill: var(--color-icon-active) !important;
-}
-
-/* Логика иконок (НАША ВЕРСИЯ) */
-#togglePanelsButton .icon-show-panels { display: block !important; } /* Показать ВЛЕВО */
-#togglePanelsButton .icon-hide-panels { display: none !important; } /* Скрыть ВПРАВО */
-#togglePanelsButton.show-mode .icon-show-panels { display: none !important; } /* Скрыть ВЛЕВО */
-#togglePanelsButton.show-mode .icon-hide-panels { display: block !important; } /* Показать ВПРАВО */
+/* Логика иконок (НАША ВЕРСИЯ, БЕЗ !important пока) */
+#togglePanelsButton .icon-show-panels { display: block; } /* Показать ВЛЕВО */
+#togglePanelsButton .icon-hide-panels { display: none; } /* Скрыть ВПРАВО */
+#togglePanelsButton.show-mode .icon-show-panels { display: none; } /* Скрыть ВЛЕВО */
+#togglePanelsButton.show-mode .icon-hide-panels { display: block; } /* Показать ВПРАВО */
 #gesture-area.hands-detected {
     height: 25vh; /* Финальная высота */
+}
+
+/* When hands are detected */
+#gesture-area.hands-detected {
+  height: 25vh;
+}
+
+/* Adjust grid container height when hands are detected */
+#gesture-area.hands-detected ~ #grid-container {
+  height: calc(100vh - 25vh);
+}
+
+/* Стили видимых панелей (упрощенная анимация) */
+.panel.left-panel,
+.panel.right-panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: max-width 0.3s ease, padding 0.3s ease, opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+/* Скрытие панелей через max-width/padding/opacity */
+.panel.hidden {
+    max-width: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    border: none !important;
+    overflow: hidden !important;
+    transition-delay: 0s, 0s, 0s, 0s, 0s, 0s, 0.3s;
+}
+
+/* Стили для голограммы */
+.hologram {
+    transition: transform 0.3s ease, margin-top 0.3s ease;
+}
+
+.gesture-area.active ~ .hologram,
+.gesture-area.active + .hologram,
+.gesture-area[style*="height: 25vh"] ~ .hologram,
+.gesture-area[style*="height: 25vh"] + .hologram {
+    transform: scale(0.8);
+    margin-top: 5vh;
+}
+
+.timeline-item {
+    position: relative;
 }
 
 
