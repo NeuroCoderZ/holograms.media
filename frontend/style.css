@@ -1,18 +1,31 @@
 /* Toggle button styles */
 #togglePanelsButton {
   position: fixed !important;
-  z-index: 1000;
-  bottom: var(--button-spacing);
-  left: var(--button-spacing);
-  outline: none !important;
-  display: block !important;
-  visibility: visible !important;
+  z-index: 1000 !important;
+  bottom: 1rem !important;
+  left: 1rem !important;
+  width: var(--button-size) !important;
+  height: var(--button-size) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   opacity: 1 !important;
   pointer-events: auto !important;
+  background-color: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: var(--color-icon) !important;
+  transition: color 0.15s ease-in-out !important;
 }
 
-#togglePanelsButton:focus {
-  outline: none !important;
+#togglePanelsButton:hover {
+  color: var(--color-icon-active) !important;
+}
+
+#togglePanelsButton svg {
+  width: var(--icon-size) !important;
+  height: var(--icon-size) !important;
+  fill: currentColor !important;
 }
 
 /* Icon logic */
@@ -32,18 +45,34 @@
   display: block;
 }
 
+#fullscreenButton .icon-exit-fullscreen {
+    display: none;
+}
+
+#fullscreenButton.active .icon-fullscreen {
+    display: none;
+}
+
+#fullscreenButton.active .icon-exit-fullscreen {
+    display: block;
+}
+
+#togglePanelsButton.force-hidden {
+    display: none !important;
+}
+
 :root {
 
   /* Размеры */
   --base-size: clamp(8px, 1.5vmin, 14px);
-  --button-spacing: clamp(5px, 1vmin, 10px);
+  --button-spacing: 0.5vmin !important;
   --padding: clamp(5px, 1vmin, 8px);
-  --button-size: clamp(38px, 8vmin, 55px);
+  --button-size: clamp(44px, 5vmin, 60px) !important;
   --button-margin: clamp(6px, 1.5vmin, 14px);
   --icon-size: calc(var(--button-size) * 0.55);
   --text-size: calc(var(--button-size) * 0.35);
   --control-panel-height: calc(var(--button-size) + var(--button-margin) * 2); /* Используется как ширина левой панели */
-  --timeline-width: clamp(300px, 30vw, 420px); /* Ширина правой панели */
+  --timeline-width: clamp(20vw, 25vw, 30vw); /* Обновленная ширина правой панели */
   --line-width-vmin: 0.2vmin; /* !!! Возвращаем адаптивную ширину */
 
   /* Цвета (Новая палитра v20.2) */
@@ -112,16 +141,25 @@ body {
   flex-shrink: 0;
   height: 100vh;
   overflow: hidden;
+  transition: max-width 0.3s ease-in-out,
+              opacity 0.3s ease-in-out,
+              padding-left 0.3s ease-in-out,
+              padding-right 0.3s ease-in-out,
+              margin-left 0.3s ease-in-out,
+              margin-right 0.3s ease-in-out,
+              border-left-width 0.3s ease-in-out,
+              border-right-width 0.3s ease-in-out,
+              visibility 0s ease-in-out;
 }
 
 .panel.left-panel {
-  width: 15vw;
-  max-width: 200px;
-  min-width: 150px;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  transition: width 0.3s ease;
+  width: calc(var(--button-size) * 2 + var(--button-spacing) * 3) !important;
+  max-width: 180px !important;
+  min-width: 120px !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  transition: width 0.3s ease !important;
 }
 
 .panel.left-panel::-webkit-scrollbar { 
@@ -129,16 +167,26 @@ body {
 }
 
 .panel.right-panel {
-  width: var(--timeline-width);
-  display: flex;
-  flex-direction: column;
+  width: clamp(20vw, 25vw, 30vw) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: width 0.3s ease !important;
 }
 
 /* Гарантированное скрытие панелей (display: none) */
 .panel.left-panel.hidden,
 .panel.right-panel.hidden {
-    display: none !important;
+    max-width: 0 !important;
+    opacity: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    pointer-events: none !important;
     visibility: hidden !important;
+    transition-delay: 0s, 0s, 0s, 0s, 0s, 0s, 0.3s !important;
 }
 
 #button-container {
@@ -237,15 +285,17 @@ body {
 }
 
 .timeline-item .version-label {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    font-size: 12px;
-    color: var(--text-color);
-    background: rgba(0, 0, 0, 0.5);
-    padding: 2px 5px;
-    border-radius: 3px;
-    z-index: 1;
+    position: absolute !important;
+    top: 5px !important;
+    left: 5px !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+    opacity: 0.7 !important;
+    color: var(--text-color) !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    padding: 2px 5px !important;
+    border-radius: 3px !important;
+    z-index: 1 !important;
 }
 
 .version-frame {
@@ -272,11 +322,15 @@ body {
 }
 
 .version-text p {
-  margin: 0; white-space: pre-wrap; word-wrap: break-word;
-  font-size: 11px; line-height: 1.4;
-  height: calc(11px * 1.4 * 5); /* Фикс. высота 5 строк */
-  overflow-y: auto; /* Скролл если длиннее */
-  scrollbar-width: thin; scrollbar-color: #555 #222;
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 11px;
+  line-height: 1.4;
+  height: calc(11px * 1.4 * 5); /* Фиксированная высота для 5 строк */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #555 #222;
 }
 .version-text p::-webkit-scrollbar { width: 5px; }
 .version-text p::-webkit-scrollbar-track { background: #222; border-radius: 3px; }
@@ -287,9 +341,19 @@ body {
   padding: var(--padding); overflow-y: auto; background-color: var(--color-pure-black);
   max-height: 30vh; flex-shrink: 0; border-top: 1px solid var(--panel-border);
 }
-#integratedFileEditor h3 { margin-top: 0; margin-bottom: 10px; font-size: 0.9em; }
+#integratedFileEditor h3 {
+  font-size: 15px;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
 #integratedFileEditor ul#fileList { list-style: none; padding: 0; margin: 0 0 10px 0;}
-#integratedFileEditor li { padding: 5px; cursor: pointer; border-radius: 3px; font-size: 0.9em; margin-bottom: 3px;}
+#integratedFileEditor li {
+  font-size: 13px;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 3px;
+  margin-bottom: 3px;
+}
 #integratedFileEditor li:hover { background-color: var(--button-hover-bg); }
 #integratedFileEditor div#fileEditor { display: flex; flex-direction: column; }
 #integratedFileEditor textarea#fileContent {
@@ -336,8 +400,14 @@ body {
 }
 #toggleFilesButton:hover { background-color: var(--button-hover-bg); color: var(--color-primary); }
 
+#topPromptInput,
+#modelSelect {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 #topPromptInput {
-  flex-grow: 1; padding: 6px; margin-right: 5px; font-size: 0.9em;
+  flex-grow: 1; padding: 6px; margin-right: 5px;
   background-color: var(--color-pure-black); color: var(--color-primary);
   outline: none; 
   border: none;
@@ -348,25 +418,16 @@ body {
   outline: none;
 }
 
-#modelSelect {
-  padding: 6px; margin-right: 5px; font-size: 0.9em;
-  background-color: var(--color-pure-black); color: var(--color-primary);
-  border: none;
-  outline: none;
-  border-radius: 3px;
-  height: 30px;
-}
-
 #submitTopPrompt {
-  padding: 6px 12px; font-size: 0.9em; background-color: var(--color-green-100); /* !!! Зеленый */
+  padding: 6px 12px; font-size: 14px; background-color: var(--color-green-100); /* !!! Зеленый */
   color: var(--color-black-100); /* Черный текст на зеленом */
   border: none; border-radius: 3px; cursor: pointer; height: 30px;
 }
 
 /* Стили Кнопок (основные) */
 .control-button {
-  width: 100%;
-  aspect-ratio: 1;
+  width: var(--button-size) !important;
+  height: var(--button-size) !important;
   padding: 0;
   background-color: transparent;
   border: none;
@@ -377,19 +438,23 @@ body {
   justify-content: center;
   border-radius: 5px;
   transition: color 0.15s ease-in-out;
+  font-size: calc(var(--button-size) * 0.6) !important;
 }
 
 /* Стили для SVG внутри кнопок */
 .control-button svg {
-  width: var(--icon-size); height: var(--icon-size);
-  fill: currentColor; /* Наследует цвет от .control-button */
+  width: var(--icon-size);
+  height: var(--icon-size);
+  fill: currentColor;
 }
 
-/* Стили для IMG внутри кнопок (если остались где-то) */
+/* Стили для IMG внутри кнопок */
 .control-button img {
-  width: var(--icon-size); height: var(--icon-size);
-  max-width: 70%; max-height: 70%; object-fit: contain;
-  /* filter: brightness(0.8); */ /* Можно добавить для приглушения, если иконки слишком яркие */
+  width: var(--icon-size);
+  height: var(--icon-size);
+  max-width: 70%;
+  max-height: 70%;
+  object-fit: contain;
 }
 
 /* Стили для активной кнопки (если нужно) */
@@ -547,19 +612,28 @@ body {
 
 /* Стили для голограммы */
 .hologram {
-    transition: transform 0.3s ease, margin-top 0.3s ease;
+    transition: transform 0.5s ease-in-out, margin-top 0.5s ease-in-out !important;
+    transform-origin: center center !important;
+    will-change: transform, margin-top !important;
 }
 
-.gesture-area.active ~ .hologram,
-.gesture-area.active + .hologram,
-.gesture-area[style*="height: 25vh"] ~ .hologram,
-.gesture-area[style*="height: 25vh"] + .hologram {
-    transform: scale(0.8);
-    margin-top: 5vh;
+.gesture-area.active ~ .main-area .hologram,
+.gesture-area.active + .main-area .hologram {
+    transform: scale(0.8) !important;
+    margin-top: 5vh !important;
 }
 
-.timeline-item {
-    position: relative;
+/* Стили для отладки */
+.debug-hologram {
+    outline: 1px solid red !important;
+}
+
+.debug-panel {
+    outline: 1px solid blue !important;
+}
+
+.debug-label {
+    outline: 1px solid green !important;
 }
 
 
