@@ -12,9 +12,79 @@ from langchain_core.runnables import Runnable
 from langchain_openai import ChatOpenAI
 from datetime import datetime
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+from langchain.tools import Tool
+from langchain_core.prompts import ChatPromptTemplate
+from langchain.agents import AgentExecutor, create_openai_tools_agent
 
 # Загрузка переменных окружения из .env файла
 load_dotenv(override=True)
+
+# Настройка Codestral LLM
+CODESTRAL_API_KEY = os.getenv("CODESTRAL_API_KEY", "LAwz9uT0ZiOvOJmUmkfCoEoXGvbsAbfC")
+
+if not CODESTRAL_API_KEY:
+    print("ПРЕДУПРЕЖДЕНИЕ: CODESTRAL_API_KEY не найден!")
+    codestral_llm = None
+else:
+    codestral_llm = ChatOpenAI(
+        model_name='codestral-latest',
+        openai_api_key=CODESTRAL_API_KEY,
+        base_url="https://api.mistral.ai/v1",
+        temperature=0.4,
+        max_tokens=2048
+    )
+
+# Определение корневой директории проекта
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+async def generate_code_tool(task_description: str) -> str:
+    if not codestral_llm:
+        return "Ошибка: LLM не инициализирован"
+    
+    try:
+        prompt = f"System: Ты - AI ассистент, генерирующий Python код. Напиши только сам код без объяснений и markdown-форматирования ```python ... ```.\nUser: {task_description}"
+        result = await codestral_llm.ainvoke(prompt)
+        return result.content
+    except Exception as e:
+        return f"Ошибка при генерации кода: {str(e)}"
+
+def read_file_tool(file_path: str) -> str:
+    try:
+        # Нормализация пути
+        normalized_path = os.path.normpath(file_path)
+        abs_path = os.path.abspath(os.path.join(PROJECT_ROOT, normalized_path))
+        
+        # Проверка безопасности
+        if not abs_path.startswith(PROJECT_ROOT):
+            return "Ошибка: Попытка доступа к файлу вне корневой директории проекта"
+            
+        # Проверка на запрещенные директории
+        forbidden_dirs = ['.git', '.venv', 'node_modules', '__pycache__']
+        if any(forbidden in abs_path.split(os.sep) for forbidden in forbidden_dirs):
+            return "Ошибка: Доступ к файлу в запрещенной директории"
+            
+        # Чтение файла
+        with open(abs_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    except FileNotFoundError:
+        return f"Ошибка: Файл не найден: {file_path}"
+    except Exception as e:
+        return f"Ошибка при чтении файла: {str(e)}"
+
+# Создание инструментов
+code_generator_tool = Tool(
+    name="code_generator",
+    func=generate_code_tool,
+    description="Генерирует Python код по текстовому описанию задачи. Вход: описание задачи. Выход: строка с кодом.",
+    coroutine=generate_code_tool
+)
+
+read_file_tool = Tool(
+    name="file_reader",
+    func=read_file_tool,
+    description="Читает содержимое файла по указанному пути (относительно корня проекта). Вход: относительный путь к файлу. Выход: содержимое файла или сообщение об ошибке."
+)
 
 # Инициализация FastAPI
 app = FastAPI()
@@ -233,6 +303,38 @@ async def switch_branch_version(branch: str, request: Request):
 
 # Монтируем статику ПОСЛЕ API
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=False), name="static_files_root")
+
+# Модель запроса для Tria
+class TriaQuery(BaseModel):
+    query: str
+
+async def invoke_tria_agent(query: str) -> str:
+    try:
+        query_lower = query.lower()
+        
+        if query_lower.startswith("прочитай файл "):
+            path = query[len("прочитай файл "):].strip()
+            return read_file_tool.run(path)
+            
+        elif query_lower.startswith("напиши код для "):
+            description = query[len("напиши код для "):].strip()
+            return await code_generator_tool.arun(description)
+            
+        else:
+            return await code_generator_tool.arun(f"Ответь на следующий запрос пользователя как AI-ассистент: {query}")
+            
+    except Exception as e:
+        return f"Ошибка при обработке запроса: {str(e)}"
+
+@app.post("/tria/invoke")
+async def tria_invoke(tria_query: TriaQuery):
+    try:
+        response_text = await invoke_tria_agent(tria_query.query)
+        return {"response": response_text}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
 
 # Запуск для локальной отладки (не используется сервисом)
 if __name__ == "__main__":
