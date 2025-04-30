@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { applyPromptWithTriaMode } from './tria_mode.js';
 
 // --- Global Variables ---
+// Переменная isTriaModeActive теперь импортируется из модуля tria_mode.js
 let hologramPivot = new THREE.Group();
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
@@ -1622,98 +1624,119 @@ async function loadInitialFilesAndSetupEditor() {
     return document.getElementById('previewCanvas').toDataURL('image/png');
   }
 
+  // --- Объявляем глобальную переменную для Триа-режима ---
+
+
+  // В самом начале файла объявляем глобальную переменную для Триа-режима
+
+
+  // ... existing code ...
+
+  // Удалим повторные объявления переменной isTriaModeActive
   function applyPrompt(prompt, model) {
-  console.log(`Отправка промпта "${prompt}" с моделью ${model} на /generate`);
+    // Сначала проверяем, активен ли режим Триа через функцию из модуля tria_mode.js
+    applyPromptWithTriaMode(prompt, model)
+      .then(result => {
+        // Если функция вернула результат (не false), значит запрос к Триа был выполнен
+        // и обработан внутри неё, поэтому выходим из функции
+        if (result) return;
+        
+        // Если вернулся false, продолжаем стандартную логику отправки на /generate
+        console.log('Отправка промпта на /generate (стандартный режим)');
+        const spinner = document.getElementById('loading-spinner');
+        const submitButton = document.getElementById('submitTopPrompt');
 
-  const spinner = document.getElementById('loading-spinner');
-  const submitButton = document.getElementById('submitTopPrompt');
+        // Показываем спиннер и блокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
+        spinner.style.display = 'block';
+        submitButton.disabled = true;
 
-  // Показываем спиннер и блокируем кнопку
-  spinner.style.display = 'block';
-  submitButton.disabled = true;
+        // Шаг 1: Отправка запроса на /generate (существующая логика)
+        axios.post('/generate', { prompt, model })
+          // ... существующий код для /generate ...
+          .then(generateResponse => {
+            // Этот блок выполняется после успешного ответа от /generate
+            console.log('Ответ от /generate:', generateResponse.data);
+            const backgroundColor = generateResponse.data.backgroundColor; // Получаем цвет фона
+            const generatedCode = generateResponse.data.generatedCode; // Получаем сгенерированный код
 
-  // Шаг 1: Отправка запроса на /generate
-  axios.post('/generate', { prompt, model })
-    .then(generateResponse => {
-      // Этот блок выполняется после успешного ответа от /generate
-      console.log('Ответ от /generate:', generateResponse.data);
-      const backgroundColor = generateResponse.data.backgroundColor; // Получаем цвет фона
-      const generatedCode = generateResponse.data.generatedCode; // Получаем сгенерированный код
+            // --- ШАГ 1.5: ПРИМЕНЕНИЕ СГЕНЕРИРОВАННОГО КОДА ---
+            if (generatedCode) {
+              console.log("Пытаемся выполнить сгенерированный код...");
+              try {
+                // Используем Function constructor вместо прямого eval для некоторой изоляции
+                const executeCode = new Function('scene', 'mainSequencerGroup', 'THREE', generatedCode);
+                executeCode(scene, mainSequencerGroup, THREE); // Передаем нужные объекты в контекст
+                console.log("Сгенерированный код выполнен успешно.");
+              } catch (e) {
+                console.error("Ошибка выполнения сгенерированного кода:", e);
+                alert(`Ошибка выполнения сгенерированного кода:\n${e.message}\n\nПромт: ${prompt}`);
+                // Не прерываем создание версии, но сообщаем об ошибке
+              }
+            } else {
+              console.log("Сгенерированный код отсутствует, применение не требуется.");
+            }
+            // ---------------------------------------------
 
-      // --- ШАГ 1.5: ПРИМЕНЕНИЕ СГЕНЕРИРОВАННОГО КОДА ---
-      if (generatedCode) {
-        console.log("Пытаемся выполнить сгенерированный код...");
-        try {
-          // Используем Function constructor вместо прямого eval для некоторой изоляции
-          const executeCode = new Function('scene', 'mainSequencerGroup', 'THREE', generatedCode);
-          executeCode(scene, mainSequencerGroup, THREE); // Передаем нужные объекты в контекст
-          console.log("Сгенерированный код выполнен успешно.");
-        } catch (e) {
-          console.error("Ошибка выполнения сгенерированного кода:", e);
-          alert(`Ошибка выполнения сгенерированного кода:\n${e.message}\n\nПромт: ${prompt}`);
-          // Не прерываем создание версии, но сообщаем об ошибке
-        }
-      } else {
-        console.log("Сгенерированный код отсутствует, применение не требуется.");
-      }
-      // ---------------------------------------------
+            // Шаг 2: Подготовка данных и создание новой версии через /branches
+            const sceneStateObject = JSON.parse(JSON.stringify(scene.toJSON())); // Получаем состояние сцены как объект
+            // const previewDataURL = capturePreview(); // Получаем превью (пока не используется бэкендом)
 
-      // Шаг 2: Подготовка данных и создание новой версии через /branches
-      const sceneStateObject = JSON.parse(JSON.stringify(scene.toJSON())); // Получаем состояние сцены как объект
-      // const previewDataURL = capturePreview(); // Получаем превью (пока не используется бэкендом)
+            console.log('Создание новой версии через POST /branches');
+            // Возвращаем Promise от запроса на создание ветки
+            return axios.post('/branches', {
+              branch: currentBranch, // Текущая выбранная ветка
+              prompt: prompt,       // Промпт, который использовался
+              model: model,         // Модель, которая использовалась
+              files: {
+                  ...fileContents,  // Текущее состояние редактируемых файлов
+                  'generated_code.js': generatedCode || '' // Добавляем сгенерированный код
+              },
+              scene_state: sceneStateObject, // Состояние 3D-сцены
+              customData: { backgroundColor: backgroundColor } // Сохраняем цвет фона
+              // preview: previewDataURL // Раскомментировать, если бэкенд будет сохранять превью
+            });
+          })
+          .then(branchesResponse => {
+            // Этот блок выполняется после успешного ответа от POST /branches
+            const newVersionId = branchesResponse.data.version_id;
+            console.log('Новая версия успешно создана на бэкенде, ID:', newVersionId);
 
-      console.log('Создание новой версии через POST /branches');
-      // Возвращаем Promise от запроса на создание ветки
-      return axios.post('/branches', {
-        branch: currentBranch, // Текущая выбранная ветка
-        prompt: prompt,       // Промпт, который использовался
-        model: model,         // Модель, которая использовалась
-        files: {
-            ...fileContents,  // Текущее состояние редактируемых файлов
-            'generated_code.js': generatedCode || '' // Добавляем сгенерированный код
-        },
-        scene_state: sceneStateObject, // Состояние 3D-сцены
-        customData: { backgroundColor: backgroundColor } // Сохраняем цвет фона
-        // preview: previewDataURL // Раскомментировать, если бэкенд будет сохранять превью
+            // Шаг 3: Обновляем UI (таймлайн)
+            // СНАЧАЛА обновляем таймлайн (хотя это может не успеть отобразиться до перезагрузки)
+            // updateTimelineFromServer(); // Этот вызов прерывается перезагрузкой
+            // Скрываем спиннер перед перезагрузкой
+            spinner.style.display = 'none';
+            // ПОТОМ перезагружаем страницу
+            console.log("Перезагрузка страницы для применения изменений...");
+            location.reload(true); // true - для принудительной перезагрузки с сервера (без кэша)
+            // -----------------------------------------
+          })
+          .catch(error => {
+            // Скрываем спиннер и разблокируем кнопку при ошибке
+            spinner.style.display = 'none';
+            submitButton.disabled = false;
+
+            // Обработка ошибок как от /generate, так и от /branches
+            console.error('Ошибка при обработке промпта или создании версии:', error);
+            if (error.response) {
+              // Ошибка пришла с ответом от сервера (статус не 2xx)
+              console.error('Данные ошибки от сервера:', error.response.data);
+              console.error('Статус ошибки от сервера:', error.response.status);
+              alert(`Ошибка сервера: ${error.response.data.detail || error.response.data.error || 'Неизвестная ошибка сервера'}`);
+            } else if (error.request) {
+              // Запрос был отправлен, но ответ не был получен
+              console.error('Сервер не отвечает:', error.request);
+              alert('Не удалось связаться с сервером.');
+            } else {
+              // Ошибка произошла при настройке запроса
+              console.error('Ошибка настройки запроса:', error.message);
+              alert(`Ошибка при отправке запроса: ${error.message}`);
+            }
+          });
+      })
+      .catch(error => {
+        console.error('Ошибка при работе с Триа:', error);
       });
-    })
-    .then(branchesResponse => {
-      // Этот блок выполняется после успешного ответа от POST /branches
-      const newVersionId = branchesResponse.data.version_id;
-      console.log('Новая версия успешно создана на бэкенде, ID:', newVersionId);
-
-      // Шаг 3: Обновляем UI (таймлайн)
-      // СНАЧАЛА обновляем таймлайн (хотя это может не успеть отобразиться до перезагрузки)
-      // updateTimelineFromServer(); // Этот вызов прерывается перезагрузкой
-      // Скрываем спиннер перед перезагрузкой
-      spinner.style.display = 'none';
-      // ПОТОМ перезагружаем страницу
-      console.log("Перезагрузка страницы для применения изменений...");
-      location.reload(true); // true - для принудительной перезагрузки с сервера (без кэша)
-      // -----------------------------------------
-    })
-    .catch(error => {
-      // Скрываем спиннер и разблокируем кнопку при ошибке
-      spinner.style.display = 'none';
-      submitButton.disabled = false;
-
-      // Обработка ошибок как от /generate, так и от /branches
-      console.error('Ошибка при обработке промпта или создании версии:', error);
-      if (error.response) {
-        // Ошибка пришла с ответом от сервера (статус не 2xx)
-        console.error('Данные ошибки от сервера:', error.response.data);
-        console.error('Статус ошибки от сервера:', error.response.status);
-        alert(`Ошибка сервера: ${error.response.data.detail || error.response.data.error || 'Неизвестная ошибка сервера'}`);
-      } else if (error.request) {
-        // Запрос был отправлен, но ответ не был получен
-        console.error('Сервер не отвечает:', error.request);
-        alert('Не удалось связаться с сервером.');
-      } else {
-        // Ошибка произошла при настройке запроса
-        console.error('Ошибка настройки запроса:', error.message);
-        alert(`Ошибка при отправке запроса: ${error.message}`);
-      }
-    });
   }
 
   async function updateTimelineFromServer() {
@@ -2221,123 +2244,5 @@ async function loadInitialFilesAndSetupEditor() {
       console.log('Moved togglePanelsButton to body');
   }
 
-  // --- Логика кнопки Триа ---
-
-  // Получаем ссылки на кнопку и элемент для вывода
-  const triaButton = document.getElementById('triaButton');
-  const triaOutput = document.getElementById('triaOutput');
-
-  // Добавляем обработчик события клика
-  triaButton.addEventListener('click', async () => {
-    // Запрашиваем ввод у пользователя
-    const userQuery = window.prompt('Введите ваш запрос для Триа:');
-
-    // Если пользователь нажал "Отмена" или ничего не ввел
-    if (userQuery === null || userQuery.trim() === '') {
-      triaOutput.textContent = 'Запрос отменен.';
-      return; // Прерываем выполнение
-    }
-
-    // Очищаем предыдущий вывод и показываем индикатор загрузки
-    triaOutput.textContent = 'Обработка запроса...';
-
-    try {
-      // Отправляем POST-запрос на бэкенд
-      const response = await fetch('http://localhost:3000/tria/invoke', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query: userQuery }) // Отправляем запрос в формате JSON
-      });
-
-      // Проверяем, успешен ли ответ сервера (статус 2xx)
-      if (!response.ok) {
-        // Если статус не 2xx, генерируем ошибку
-        throw new Error(`Ошибка сети: ${response.status} ${response.statusText}`);
-      }
-
-      // Парсим JSON-ответ от сервера
-      const data = await response.json();
-
-      // Отображаем ответ Триа в элементе #triaOutput
-      triaOutput.textContent = data.response || 'Получен пустой ответ от сервера.'; // Используем поле 'response'
-
-    } catch (error) {
-      // Обрабатываем ошибки сети или ошибки парсинга JSON
-      console.error('Ошибка при вызове /tria/invoke:', error);
-      triaOutput.textContent = `Ошибка подключения: ${error.message}`;
-    }
-  });
-
-  // Добавляем эту строку, если скрипт загружается в <head>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Этот код выполнится после полной загрузки DOM
-    // Можно переместить сюда получение ссылок и добавление listener'а,
-    // но размещение в конце файла обычно достаточно для скриптов,
-    // загружаемых в конце <body>
-    console.log("DOM fully loaded and parsed for Tria button logic.");
-  });
-  });
-
-// --- Логика кнопки Триа (добавляется в конец файла) ---
-
-// Получаем ссылки на кнопку и элемент для вывода
-// Убедитесь, что DOM загружен, прежде чем искать элементы
-document.addEventListener('DOMContentLoaded', () => {
-    const triaButton = document.getElementById('triaButton');
-    const triaOutput = document.getElementById('triaOutput');
-
-    // Проверка, что элементы найдены
-    if (!triaButton) {
-        console.error("Элемент #triaButton не найден!");
-        return;
-    }
-    if (!triaOutput) {
-        console.error("Элемент #triaOutput не найден!");
-        return;
-    }
-
-    // Добавляем обработчик события клика
-    triaButton.addEventListener('click', async () => {
-        // Запрашиваем ввод у пользователя
-        const userQuery = window.prompt('Введите ваш запрос для Триа:');
-
-        // Если пользователь нажал "Отмена" или ничего не ввел
-        if (userQuery === null || userQuery.trim() === '') {
-            triaOutput.textContent = 'Запрос отменен.';
-            return; // Прерываем выполнение
-        }
-
-        // Очищаем предыдущий вывод и показываем индикатор загрузки
-        triaOutput.textContent = 'Обработка запроса...';
-
-        try {
-            // Отправляем POST-запрос на бэкенд
-            const response = await fetch('http://localhost:3000/tria/invoke', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ query: userQuery }) // Отправляем запрос в формате JSON
-            });
-
-            // Проверяем, успешен ли ответ сервера (статус 2xx)
-            if (!response.ok) {
-                // Если статус не 2xx, генерируем ошибку
-                throw new Error(`Ошибка сети: ${response.status} ${response.statusText}`);
-            }
-
-            // Парсим JSON-ответ от сервера
-            const data = await response.json();
-
-            // Отображаем ответ Триа в элементе #triaOutput
-            triaOutput.textContent = data.response || 'Получен пустой ответ от сервера.'; // Используем поле 'response'
-
-        } catch (error) {
-            // Обрабатываем ошибки сети или ошибки парсинга JSON
-            console.error('Ошибка при вызове /tria/invoke:', error);
-            triaOutput.textContent = `Ошибка подключения: ${error.message}`;
-        }
-    });
+  // Модуль tria_mode.js теперь обрабатывает логику кнопки Триа
 });
