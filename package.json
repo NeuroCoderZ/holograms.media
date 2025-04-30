@@ -11,7 +11,8 @@
   },
   "scripts": {
     "prepare": "husky install",
-    "test": "echo \"No test specified\" && exit 0"
+    "test": "echo \"No test specified\" && exit 0",
+    "lint": "npx eslint frontend/script.js"
   },
   "name": "holograms.media",
   "version": "1.0.0",

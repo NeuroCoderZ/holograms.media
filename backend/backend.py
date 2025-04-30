@@ -7,20 +7,37 @@ from datetime import datetime
 
 # 2. Импорты FastAPI и Pydantic
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ValidationError
 
 # ----------------------------------------------------------------------
 # 3. ИНИЦИАЛИЗАЦИЯ FastAPI ПРИЛОЖЕНИЯ
 # ----------------------------------------------------------------------
 app = FastAPI()
 
+# Добавляем CORS Middleware сразу после инициализации app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # В продакшене заменить на конкретные домены
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # ----------------------------------------------------------------------
 # 4. ОПРЕДЕЛЕНИЕ Pydantic МОДЕЛЕЙ
 # ----------------------------------------------------------------------
 class TriaQuery(BaseModel):
     query: str
+
+# Модель для данных лога Jenkins
+class JenkinsLogData(BaseModel):
+    status: str
+    build_url: str
+    timestamp: str
+    # received_at: datetime = Field(default_factory=datetime.now) # Можно добавить поле здесь
 
 # (Добавьте сюда другие Pydantic модели, если они используются в роутах)
 
@@ -182,6 +199,40 @@ async def tria_invoke(tria_query: TriaQuery):
     except Exception as e: # Перехватываем остальные ошибки
         print(f"Ошибка в /tria/invoke: {e}") # Логируем ошибку
         raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
+
+# --- Перемещенный эндпоинт для сохранения логов Jenkins ---
+@app.post("/tria/save_logs")
+async def save_logs(request: Request): # <<< Принимаем Request вместо модели
+    """Принимает данные лога Jenkins, читает JSON и валидирует Pydantic."""
+    try:
+        # Явно читаем тело запроса как JSON
+        raw_log_data = await request.json()
+        # Валидируем полученный словарь с помощью Pydantic модели
+        log_data = JenkinsLogData(**raw_log_data)
+    except json.JSONDecodeError:
+        print("[ERROR] Invalid JSON received in /tria/save_logs")
+        raise HTTPException(status_code=400, detail="Invalid JSON received")
+    except ValidationError as e:
+        print(f"[ERROR] Validation error in /tria/save_logs: {e.errors()}")
+        # Возвращаем детали ошибки валидации клиенту
+        raise HTTPException(status_code=422, detail=f"Invalid log data format: {e.errors()}")
+
+    # --- Дальнейшая логика --- 
+    if db is None:
+        print("[ERROR] Cannot save Jenkins log, DB not connected yet (called from route definition).")
+        raise HTTPException(status_code=503, detail="Database connection is not available yet")
+
+    # Преобразуем Pydantic модель в словарь для сохранения
+    log_dict = log_data.model_dump()
+    log_dict["received_at"] = datetime.now() # Добавляем время получения на сервере
+
+    try:
+        insert_result = await db.jenkins_logs.insert_one(log_dict)
+        print(f"[INFO] Saved Jenkins log, id: {insert_result.inserted_id}")
+        return {"status": "logs saved", "id": str(insert_result.inserted_id)}
+    except Exception as e:
+        print(f"[ERROR] Failed to save Jenkins log: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save logs due to an internal error: {str(e)}")
 
 # ----------------------------------------------------------------------
 # 6. МОНТИРОВАНИЕ СТАТИКИ
@@ -424,7 +475,6 @@ async def invoke_tria_agent(query: str) -> str:
     except Exception as e:
         print(f"[ERROR] Ошибка внутри invoke_tria_agent: {e}")
         return f"Ошибка при обработке запроса агентом: {str(e)}"
-
 
 # ----------------------------------------------------------------------
 # 12. Блок if __name__ == "__main__":
