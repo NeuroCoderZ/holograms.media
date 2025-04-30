@@ -1,5 +1,1 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-npm test
-git add .
-git commit -m "feat(hologram): auto-update on $(date '+%Y-%m-%d %H:%M:%S')"
+#!/bin/sh\n\nnpm test\ngit add .\ngit commit -m "feat(hologram): auto-update on $(date '+%Y-%m-%d %H:%M:%S')"
