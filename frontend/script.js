@@ -2220,4 +2220,124 @@ async function loadInitialFilesAndSetupEditor() {
       document.body.appendChild(togglePanelsButton);
       console.log('Moved togglePanelsButton to body');
   }
+
+  // --- Логика кнопки Триа ---
+
+  // Получаем ссылки на кнопку и элемент для вывода
+  const triaButton = document.getElementById('triaButton');
+  const triaOutput = document.getElementById('triaOutput');
+
+  // Добавляем обработчик события клика
+  triaButton.addEventListener('click', async () => {
+    // Запрашиваем ввод у пользователя
+    const userQuery = window.prompt('Введите ваш запрос для Триа:');
+
+    // Если пользователь нажал "Отмена" или ничего не ввел
+    if (userQuery === null || userQuery.trim() === '') {
+      triaOutput.textContent = 'Запрос отменен.';
+      return; // Прерываем выполнение
+    }
+
+    // Очищаем предыдущий вывод и показываем индикатор загрузки
+    triaOutput.textContent = 'Обработка запроса...';
+
+    try {
+      // Отправляем POST-запрос на бэкенд
+      const response = await fetch('http://localhost:3000/tria/invoke', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: userQuery }) // Отправляем запрос в формате JSON
+      });
+
+      // Проверяем, успешен ли ответ сервера (статус 2xx)
+      if (!response.ok) {
+        // Если статус не 2xx, генерируем ошибку
+        throw new Error(`Ошибка сети: ${response.status} ${response.statusText}`);
+      }
+
+      // Парсим JSON-ответ от сервера
+      const data = await response.json();
+
+      // Отображаем ответ Триа в элементе #triaOutput
+      triaOutput.textContent = data.response || 'Получен пустой ответ от сервера.'; // Используем поле 'response'
+
+    } catch (error) {
+      // Обрабатываем ошибки сети или ошибки парсинга JSON
+      console.error('Ошибка при вызове /tria/invoke:', error);
+      triaOutput.textContent = `Ошибка подключения: ${error.message}`;
+    }
   });
+
+  // Добавляем эту строку, если скрипт загружается в <head>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Этот код выполнится после полной загрузки DOM
+    // Можно переместить сюда получение ссылок и добавление listener'а,
+    // но размещение в конце файла обычно достаточно для скриптов,
+    // загружаемых в конце <body>
+    console.log("DOM fully loaded and parsed for Tria button logic.");
+  });
+  });
+
+// --- Логика кнопки Триа (добавляется в конец файла) ---
+
+// Получаем ссылки на кнопку и элемент для вывода
+// Убедитесь, что DOM загружен, прежде чем искать элементы
+document.addEventListener('DOMContentLoaded', () => {
+    const triaButton = document.getElementById('triaButton');
+    const triaOutput = document.getElementById('triaOutput');
+
+    // Проверка, что элементы найдены
+    if (!triaButton) {
+        console.error("Элемент #triaButton не найден!");
+        return;
+    }
+    if (!triaOutput) {
+        console.error("Элемент #triaOutput не найден!");
+        return;
+    }
+
+    // Добавляем обработчик события клика
+    triaButton.addEventListener('click', async () => {
+        // Запрашиваем ввод у пользователя
+        const userQuery = window.prompt('Введите ваш запрос для Триа:');
+
+        // Если пользователь нажал "Отмена" или ничего не ввел
+        if (userQuery === null || userQuery.trim() === '') {
+            triaOutput.textContent = 'Запрос отменен.';
+            return; // Прерываем выполнение
+        }
+
+        // Очищаем предыдущий вывод и показываем индикатор загрузки
+        triaOutput.textContent = 'Обработка запроса...';
+
+        try {
+            // Отправляем POST-запрос на бэкенд
+            const response = await fetch('http://localhost:3000/tria/invoke', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: userQuery }) // Отправляем запрос в формате JSON
+            });
+
+            // Проверяем, успешен ли ответ сервера (статус 2xx)
+            if (!response.ok) {
+                // Если статус не 2xx, генерируем ошибку
+                throw new Error(`Ошибка сети: ${response.status} ${response.statusText}`);
+            }
+
+            // Парсим JSON-ответ от сервера
+            const data = await response.json();
+
+            // Отображаем ответ Триа в элементе #triaOutput
+            triaOutput.textContent = data.response || 'Получен пустой ответ от сервера.'; // Используем поле 'response'
+
+        } catch (error) {
+            // Обрабатываем ошибки сети или ошибки парсинга JSON
+            console.error('Ошибка при вызове /tria/invoke:', error);
+            triaOutput.textContent = `Ошибка подключения: ${error.message}`;
+        }
+    });
+});
