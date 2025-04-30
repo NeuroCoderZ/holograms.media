@@ -197,12 +197,8 @@ app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=False), name="static_fil
 from motor.motor_asyncio import AsyncIOMotorClient
 from tenacity import retry, stop_after_attempt, wait_fixed
 from langchain_core.runnables import Runnable
-from langchain_openai import ChatOpenAI
+from langchain_mistralai import ChatMistralAI
 from langchain.tools import Tool
-# Убраны неиспользуемые импорты langchain agents и pydantic_v1
-# from langchain_core.pydantic_v1 import BaseModel as PydanticBaseModel, Field # Заменено на pydantic
-# from langchain_core.prompts import ChatPromptTemplate
-# from langchain.agents import AgentExecutor, create_openai_tools_agent
 from dotenv import load_dotenv
 
 # ----------------------------------------------------------------------
@@ -216,8 +212,8 @@ load_dotenv(override=True)
 # --- MongoDB ---
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://neurocoderz:89611236486@localhost:27017/holograms_db?authSource=admin&retryWrites=true&w=majority")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "holograms_db")
-db: AsyncIOMotorClient = None # Указываем тип для ясности
-client: AsyncIOMotorClient = None
+db = None # Убрали типизацию AsyncIOMotorClient, т.к. она может быть не импортирована здесь
+client = None # Убрали типизацию AsyncIOMotorClient
 
 # --- OpenRouter LLM (для /generate) ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -225,8 +221,10 @@ DEFAULT_MODEL = "openrouter/deepseek/deepseek-r1:free"
 chain: Runnable = None # Будет инициализирован ниже
 
 # --- Codestral LLM (для Триа) ---
-CODESTRAL_API_KEY = os.getenv("CODESTRAL_API_KEY", "LAwz9uT0ZiOvOJmUmkfCoEoXGvbsAbfC")
-codestral_llm: ChatOpenAI = None # Указываем тип
+# Используем рабочий MISTRAL_API_KEY, т.к. CODESTRAL_API_KEY невалиден
+MISTRAL_API_KEY_USED = os.getenv("MISTRAL_API_KEY") # Загружаем рабочий ключ
+CODESTRAL_MODEL_NAME = "codestral-latest" # Целевая модель
+codestral_llm: ChatMistralAI = None # Обновлен тип
 
 # --- Прочие ---
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -235,7 +233,9 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 # 10. Инициализация LLM и Инструментов
 # ----------------------------------------------------------------------
 
-# --- OpenRouter Инициализация ---
+# --- OpenRouter Инициализация (Используем ChatOpenAI здесь, т.к. другой API) ---
+# Добавляем импорт ChatOpenAI только для этого блока
+from langchain_openai import ChatOpenAI
 class OpenRouterChat(Runnable):
     def __init__(self, model: str, api_key: str):
         self.model = model
@@ -245,8 +245,7 @@ class OpenRouterChat(Runnable):
             self.client = None
         else:
             try:
-                # Используем ChatOpenAI напрямую, если она нужна только здесь
-                self.client = ChatOpenAI(
+                self.client = ChatOpenAI( # Оставляем ChatOpenAI для OpenRouter
                     model=self.model,
                     openai_api_key=self.api_key,
                     base_url="https://openrouter.ai/api/v1",
@@ -267,35 +266,54 @@ class OpenRouterChat(Runnable):
         except Exception as e:
             return f"Error calling OpenRouter: {str(e)}"
 
+
 chain = OpenRouterChat(model=DEFAULT_MODEL, api_key=OPENROUTER_API_KEY)
 
-# --- Codestral Инициализация ---
-if not CODESTRAL_API_KEY:
-    print("ПРЕДУПРЕЖДЕНИЕ: CODESTRAL_API_KEY не найден!")
+# --- Codestral Инициализация (с ChatMistralAI) ---
+if not MISTRAL_API_KEY_USED:
+    print("ПРЕДУПРЕЖДЕНИЕ: Рабочий MISTRAL_API_KEY не найден в .env!")
     # codestral_llm остается None
 else:
     try:
-        codestral_llm = ChatOpenAI(
-            model_name='codestral-latest',
-            openai_api_key=CODESTRAL_API_KEY,
-            base_url="https://api.mistral.ai/v1",
+        print(f"[DEBUG] Initializing ChatMistralAI with model '{CODESTRAL_MODEL_NAME}' and key {MISTRAL_API_KEY_USED[:4]}...{MISTRAL_API_KEY_USED[-4:]}")
+        codestral_llm = ChatMistralAI(
+            model=CODESTRAL_MODEL_NAME,
+            api_key=MISTRAL_API_KEY_USED,
+            # base_url="https://api.mistral.ai/v1", # Обычно не нужен для ChatMistralAI
             temperature=0.4,
-            max_tokens=2048
+            # max_tokens=2048 # max_tokens обычно не задается при инициализации, а при вызове
         )
+        print("[DEBUG] ChatMistralAI initialized successfully.")
     except Exception as e:
-        print(f"Ошибка инициализации Codestral LLM: {e}")
+        print(f"[ERROR] Ошибка инициализации ChatMistralAI: {e}")
         codestral_llm = None
 
 # --- Функции-инструменты для Триа ---
 async def generate_code_tool(task_description: str) -> str:
+    # Использует глобальный codestral_llm, который теперь ChatMistralAI
+    print(f"[DEBUG] generate_code_tool called. codestral_llm is {'initialized' if codestral_llm else 'None'}")
     if not codestral_llm:
-        return "Ошибка: Codestral LLM не инициализирован"
+        return "Ошибка: Codestral LLM (ChatMistralAI) не инициализирован (ключ не найден или ошибка инициализации)."
     try:
-        prompt = f"System: Ты - AI ассистент, генерирующий Python код. Напиши только сам код без объяснений и markdown-форматирования ```python ... ```.\nUser: {task_description}"
-        result = await codestral_llm.ainvoke(prompt) # Используем await для асинхронного вызова
+        # Формируем сообщение для Mistral API
+        messages = [
+            ("system", "Ты - AI ассистент, генерирующий Python код. Напиши только сам код без объяснений и markdown-форматирования ```python ... ```."),
+            ("user", task_description)
+        ]
+        # Используем асинхронный вызов
+        result = await codestral_llm.ainvoke(messages)
         return result.content
     except Exception as e:
-        return f"Ошибка при генерации кода: {str(e)}"
+        print(f"[ERROR] Ошибка вызова codestral_llm.ainvoke: {e}") # Логируем ошибку вызова
+        # Попробуем извлечь детали ошибки, если возможно
+        error_details = getattr(e, 'response', None)
+        if error_details and hasattr(error_details, 'json'):
+             try:
+                 details_json = error_details.json()
+                 return f"Ошибка генерации кода (API Error): {details_json.get('message', str(e))}"
+             except:
+                 pass # Если не удалось получить json
+        return f"Ошибка генерации кода: {str(e)}"
 
 def read_file_tool(file_path: str) -> str:
     # Зависит от PROJECT_ROOT
@@ -388,20 +406,23 @@ async def invoke_tria_agent(query: str) -> str:
 
         if query_lower.startswith("прочитай файл "):
             path = query[len("прочитай файл "):].strip()
-            # Используем синхронный вызов, т.к. read_file_tool синхронный
             return read_file_tool.run(path)
 
         elif query_lower.startswith("напиши код для "):
             description = query[len("напиши код для "):].strip()
-             # Используем асинхронный вызов
-            return await code_generator_tool.arun(description)
+            return await code_generator_tool.arun(description) # Используем arun для Tool
 
         else:
-            # Общий запрос также обрабатываем генератором кода/ответов
-            return await code_generator_tool.arun(f"Ответь на следующий запрос пользователя как AI-ассистент: {query}")
+            # Общий запрос также обрабатываем через code_generator_tool
+            # Возможно, стоит создать отдельный инструмент для общих вопросов,
+            # использующий другую модель Mistral, если codestral только для кода.
+            # Пока используем его же.
+            general_prompt = f"Ответь на следующий запрос пользователя как AI-ассистент: {query}"
+            # Передаем как описание задачи для генератора кода/текста
+            return await code_generator_tool.arun(general_prompt)
 
     except Exception as e:
-        print(f"Ошибка внутри invoke_tria_agent: {e}")
+        print(f"[ERROR] Ошибка внутри invoke_tria_agent: {e}")
         return f"Ошибка при обработке запроса агентом: {str(e)}"
 
 
