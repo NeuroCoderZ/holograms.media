@@ -15,6 +15,7 @@
 
 ## Current Focus
 
+- SEO-оптимизация: базовые файлы и мета-теги готовы, требуется ручная регистрация в Google Search Console / Яндекс.Вебмастер
 - Stabilize UI: hologram scale (1.0 without hands, min 0.8 with hands), margins (5% top/bottom)
 - Fix CSS/JS bugs: remove debug elements, configure ESLint/Prettier (already added `lint` in `package.json`)
 - Gestures: pinch for volume (logic missing)
@@ -46,6 +47,7 @@
 
 ## Last Actions
 
+- [2025-05-01 19:00:00 UTC] Завершена базовая SEO-оптимизация: созданы/обновлены robots.txt, sitemap.xml и мета-теги в index.html. Требуется ручная регистрация в Google Search Console и Яндекс.Вебмастер.
 - [2025-05-03 14:30:00 UTC] Создан Jenkinsfile с базовым CI-пайплайном, включая этап отправки логов в `/tria/save_logs`.
 - [2025-05-03 14:35:00 UTC] Эндпоинт `/tria/save_logs` протестирован и работает корректно: `curl -X POST http://localhost:3000/tria/save_logs -H 'Content-Type: application/json' -d '{"status": "SUCCESS", "build_url": "http://jenkins.example.com/job/holograms-media/1", "timestamp": "2025-05-01T10:00:00.000Z"}'`
 - [2025-05-03 10:45:00 UTC] Выполнен рефакторинг backend.py: перемещены импорты вверх, отложена инициализация LLM в startup_event для решения ошибки 405 Method Not Allowed.
@@ -54,6 +56,11 @@
 
 ## Next Steps
 
+- Ручная регистрация в Google Search Console и Яндекс.Вебмастер:
+  - Создать аккаунты (если нет)
+  - Добавить сайт holograms.media
+  - Подтвердить права на сайт (через добавление мета-тега или файла)
+  - Отправить sitemap.xml на индексацию
 - Настроить Jenkins Job:
   - Создать Pipeline Job в Jenkins, указав путь до репозитория с Jenkinsfile
   - Настроить webhook в GitHub для автоматического запуска сборки
