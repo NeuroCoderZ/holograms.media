@@ -11,7 +11,7 @@
   - Infra: Ubuntu 24.04, Nginx, Git, Tmux, VS Code/Cursor + Remote-SSH, Jenkins 2.492.3
 - **AI Tools**: Aider (v0.82.2+), Cursor AI (Claude 3.7 Sonnet), AI "Триа"
 - **Team**: НейроКодер (лидер), Клод (Cursor AI), Мистраль, Джемини, Агент Смит
-- **Триа API**: `/tria/invoke` (active), `/tria/save_logs` (for logging)
+- **Триа API**: `/tria/invoke` (active), `/tria/save_logs` (active)
 
 ## Current Focus
 
@@ -28,6 +28,7 @@
   - Branch set to `*/main`, trigger `GitHub hook trigger for GITScm polling` enabled.
   - Workspace cleared manually: `sudo rm -rf /var/lib/jenkins/workspace/holograms.media/*`.
   - Repository access verified (HTTPS with token in Jenkins credentials).
+  - Jenkinsfile создан, но необходимо настроить Job в Jenkins, указав путь до репозитория.
 
 ## Known Errors
 
@@ -45,18 +46,18 @@
 
 ## Last Actions
 
+- [2025-05-03 14:30:00 UTC] Создан Jenkinsfile с базовым CI-пайплайном, включая этап отправки логов в `/tria/save_logs`.
+- [2025-05-03 14:35:00 UTC] Эндпоинт `/tria/save_logs` протестирован и работает корректно: `curl -X POST http://localhost:3000/tria/save_logs -H 'Content-Type: application/json' -d '{"status": "SUCCESS", "build_url": "http://jenkins.example.com/job/holograms-media/1", "timestamp": "2025-05-01T10:00:00.000Z"}'`
 - [2025-05-03 10:45:00 UTC] Выполнен рефакторинг backend.py: перемещены импорты вверх, отложена инициализация LLM в startup_event для решения ошибки 405 Method Not Allowed.
 - [2025-05-02 16:30:00 UTC] Исправлена инициализация Codestral LLM: используется `ChatMistralAI` вместо `ChatOpenAI`.
 - [2025-05-02 16:35:00 UTC] Тестирование API эндпоинта `/tria/invoke` прошло успешно: `curl -X POST "http://localhost:3000/tria/invoke" -H "Content-Type: application/json" -d '{"query": "Привет, кто ты?"}'`
-- [2025-04-30 13:00:00 UTC] Checked Jenkins settings: branch `*/main`, trigger enabled.
-- [2025-04-30 13:00:00 UTC] Cleared workspace manually.
 
 ## Next Steps
 
-- Протестировать рефакторизованную версию backend.py:
-  - Перезапустить uvicorn (`uvicorn backend.backend:app --host 0.0.0.0 --port 3000 --reload`)
-  - Проверить работу `/health` и `/tria/invoke`
+- Настроить Jenkins Job:
+  - Создать Pipeline Job в Jenkins, указав путь до репозитория с Jenkinsfile
+  - Настроить webhook в GitHub для автоматического запуска сборки
+  - Обновить секцию Send Build Status в Jenkinsfile для корректной работы с MongoDB
 - Улучшить логирование ошибок в функции `generate_code_tool`
 - Исследовать возможность создания отдельного инструмента для общих запросов (не связанных с кодом)
-- Investigate why Jenkins build is not triggering.
-- Check Jenkins logs: `sudo journalctl -u jenkins --since "2025-04-30 13:00"`.
+- Настроить Python линтеры для проверки backend кода в Jenkinsfile
