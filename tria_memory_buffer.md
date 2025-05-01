@@ -34,6 +34,7 @@
 - CORS issues (previously resolved, monitor for Web Speech API)
 - GPG key errors in Jenkins (previously resolved)
 - 403 Forbidden on Webhook (previously resolved)
+- API авторизация исправлена: заменили `ChatOpenAI` на `ChatMistralAI` и используем валидный `MISTRAL_API_KEY`
 
 ## Environment Details
 
@@ -43,12 +44,16 @@
 
 ## Last Actions
 
+- [2025-05-02 16:30:00 UTC] Исправлена инициализация Codestral LLM: используется `ChatMistralAI` вместо `ChatOpenAI`.
+- [2025-05-02 16:35:00 UTC] Тестирование API эндпоинта `/tria/invoke` прошло успешно: `curl -X POST "http://localhost:3000/tria/invoke" -H "Content-Type: application/json" -d '{"query": "Привет, кто ты?"}'`
 - [2025-04-30 13:00:00 UTC] Checked Jenkins settings: branch `*/main`, trigger enabled.
 - [2025-04-30 13:00:00 UTC] Cleared workspace manually.
 - [2025-04-30 13:00:00 UTC] Verified repository access.
 
 ## Next Steps
 
+- Улучшить логирование ошибок в функции `generate_code_tool`
+- Исследовать возможность создания отдельного инструмента для общих запросов (не связанных с кодом)
 - Investigate why Jenkins build is not triggering.
 - Check Jenkins logs: `sudo journalctl -u jenkins --since "2025-04-30 13:00"`.
 - Test with a new commit: `echo "Webhook test 7" >> test.txt && git add test.txt && git commit -m "test: Webhook test commit 7" && git push origin main`.

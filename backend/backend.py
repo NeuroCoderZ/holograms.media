@@ -330,9 +330,7 @@ else:
         codestral_llm = ChatMistralAI(
             model=CODESTRAL_MODEL_NAME,
             api_key=MISTRAL_API_KEY_USED,
-            # base_url="https://api.mistral.ai/v1", # Обычно не нужен для ChatMistralAI
             temperature=0.4,
-            # max_tokens=2048 # max_tokens обычно не задается при инициализации, а при вызове
         )
         print("[DEBUG] ChatMistralAI initialized successfully.")
     except Exception as e:
