@@ -172,11 +172,12 @@
 
   <!-- !!! НОВАЯ УНИВЕРСАЛЬНАЯ КНОПКА ПЕРЕД ЗАКРЫТИЕМ BODY !!! -->
 
-  <!-- Импортируем модуль tria_mode.js перед основным скриптом -->
-  <script type="module" src="tria_mode.js?v=1.0"></script>
+  <!-- Подключение JavaScript со старыми файлами для обратной совместимости -->
+  <script src="script.js?v=1.0" type="module"></script>
+  <script src="tria_mode.js?v=1.0" type="module"></script>
   
-  <!-- Основной скрипт -->
-  <script type="module" src="script.js?v=1.0"></script>
+  <!-- Подключение новой модульной структуры -->
+  <script src="js/main.js" type="module"></script>
 
   <button id="togglePanelsButton" class="control-button panel-toggle-universal" title="Скрыть/Показать панели">
     <!-- Новый SVG: Стрелка ВПРАВО (Показать панель) -->

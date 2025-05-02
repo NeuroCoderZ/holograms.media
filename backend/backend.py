@@ -6,11 +6,17 @@ import re
 from datetime import datetime
 
 # 2. Импорты FastAPI и Pydantic
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field, ValidationError
+from typing import List, Dict, Any, Optional
+import motor.motor_asyncio
+import httpx
+import asyncio
+from pymongo.errors import PyMongoError
+from dotenv import load_dotenv
 
 # ----------------------------------------------------------------------
 # 3. ИНИЦИАЛИЗАЦИЯ FastAPI ПРИЛОЖЕНИЯ
@@ -20,7 +26,7 @@ app = FastAPI()
 # Добавляем CORS Middleware сразу после инициализации app
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В продакшене заменить на конкретные домены
+    allow_origins=["*"],  # Разрешаем все источники (можно ограничить для продакшна)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,6 +46,26 @@ class JenkinsLogData(BaseModel):
     # received_at: datetime = Field(default_factory=datetime.now) # Можно добавить поле здесь
 
 # (Добавьте сюда другие Pydantic модели, если они используются в роутах)
+
+# Модели данных
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    timestamp: Optional[str] = None
+
+class ChatRequest(BaseModel):
+    message: str
+    model: Optional[str] = "mistral/mistral-small-latest"
+    history: Optional[List[Dict[str, str]]] = []
+
+class ChatResponse(BaseModel):
+    response: str
+    should_vocalize: bool = False
+    metadata: Optional[Dict[str, Any]] = None
+
+class ChatSaveRequest(BaseModel):
+    chat_id: str
+    message: ChatMessage
 
 # ----------------------------------------------------------------------
 # 5. ОПРЕДЕЛЕНИЕ РОУТОВ и ОБРАБОТЧИКОВ СОБЫТИЙ
@@ -261,10 +287,11 @@ load_dotenv(override=True)
 # 9. Определение КОНСТАНТ и ГЛОБАЛЬНЫХ ПЕРЕМЕННЫХ
 # ----------------------------------------------------------------------
 # --- MongoDB ---
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://neurocoderz:89611236486@localhost:27017/holograms_db?authSource=admin&retryWrites=true&w=majority")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "holograms_db")
 db = None # Убрали типизацию AsyncIOMotorClient, т.к. она может быть не импортирована здесь
-client = None # Убрали типизацию AsyncIOMotorClient
+client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
+chat_collection = client.holograms_media.chat_history
 
 # --- OpenRouter LLM (для /generate) ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -486,3 +513,124 @@ if __name__ == "__main__":
     print("Запуск Uvicorn напрямую для локальной разработки (НЕ РЕКОМЕНДУЕТСЯ)...")
     # Запуск без reload, т.к. startup/shutdown логика может конфликтовать с reload
     uvicorn.run(app, host="0.0.0.0", port=3000) # Передаем сам объект app 
+
+# Эндпоинт для обработки запросов чата
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    try:
+        # Проверка подключения к MongoDB
+        if not client:
+            raise HTTPException(status_code=500, detail="Нет подключения к базе данных")
+        
+        model = request.model
+        message = request.message
+        history = request.history
+        
+        # Определяем, какую модель использовать
+        is_mistral_model = model and model.startswith("mistral/")
+        
+        response_text = ""
+        if is_mistral_model and codestral_llm:
+            # Используем Mistral через ChatMistralAI
+            try:
+                # Создаем историю для контекста в формате LangChain
+                formatted_history = []
+                for msg in history:
+                    if msg.get("role") and msg.get("content"):
+                        formatted_history.append((msg["role"], msg["content"]))
+                
+                # Системное сообщение для Tria
+                system_message = (
+                    "system", 
+                    "Ты - Tria, интерактивный ИИ-ассистент для платформы Holograms Media. "
+                    "Отвечай кратко, информативно и дружелюбно. "
+                    "Твоя задача - помогать пользователям с их запросами и быть полезным."
+                )
+                
+                # Добавляем системное сообщение и текущее сообщение пользователя
+                messages = [system_message, *formatted_history, ("user", message)]
+                
+                # Вызываем API Mistral через ChatMistralAI
+                response = await codestral_llm.ainvoke(messages)
+                response_text = response.content
+            except Exception as mistral_error:
+                print(f"Ошибка при вызове Mistral API: {mistral_error}")
+                response_text = f"Произошла ошибка при обработке запроса: {str(mistral_error)}"
+        else:
+            # Используем заглушку, если модель не Mistral или codestral_llm не инициализирован
+            response_text = f"Модель {model} недоступна. Убедитесь, что сервер настроен с правильными API ключами."
+        
+        # Сохраняем в MongoDB
+        chat_id = str(uuid.uuid4())
+        await chat_collection.insert_one({
+            "chat_id": chat_id,
+            "timestamp": datetime.now(),
+            "model": model,
+            "user_message": message,
+            "response": response_text,
+            "history": history
+        })
+        
+        return ChatResponse(
+            response=response_text,
+            should_vocalize=True,  # По умолчанию включаем озвучку
+            metadata={"chat_id": chat_id}
+        )
+    
+    except Exception as e:
+        print(f"Ошибка в эндпоинте /chat: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Эндпоинт для сохранения сообщений в базу данных
+@app.post("/chat/save")
+async def save_chat_message(request: ChatSaveRequest):
+    try:
+        # Добавляем временную метку, если её нет
+        if not request.message.timestamp:
+            request.message.timestamp = datetime.utcnow().isoformat()
+        
+        # Преобразуем в словарь для MongoDB
+        message_dict = request.message.dict()
+        
+        # Добавляем сообщение в коллекцию
+        await chat_collection.update_one(
+            {"chat_id": request.chat_id},
+            {"$push": {"messages": message_dict}},
+            upsert=True
+        )
+        
+        return {"status": "success", "message": "Сообщение сохранено"}
+    
+    except PyMongoError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка базы данных: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при сохранении сообщения: {str(e)}"
+        )
+
+# Эндпоинт для получения истории чата
+@app.get("/chat/history/{chat_id}")
+async def get_chat_history(chat_id: str):
+    try:
+        # Ищем чат по ID
+        chat = await chat_collection.find_one({"chat_id": chat_id})
+        
+        if not chat:
+            return {"messages": []}
+        
+        return {"messages": chat.get("messages", [])}
+    
+    except PyMongoError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка базы данных: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при получении истории чата: {str(e)}"
+        ) 
