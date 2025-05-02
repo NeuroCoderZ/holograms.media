@@ -117,14 +117,14 @@ html, body {
   height: 100%; width: 100%;
   margin: 0; padding: 0;
   overflow: hidden;
-  font-family: 'Roboto', sans-serif; /* Используем Roboto */
+  font-family: 'Inter', sans-serif; /* Основной шрифт интерфейса */
   background-color: var(--color-pure-black);
   color: var(--color-primary); /* Белый текст по умолчанию */
 }
 
 /* Base styles for tooltips */
 [title] {
-    /* font-size: 10px; */ /* Uncomment and adjust if needed */
+  font-family: 'Open Sans', sans-serif; /* Шрифт для подсказок */
 }
 
 /* ОСНОВНОЙ МАКЕТ FLEXBOX */
@@ -171,6 +171,12 @@ body {
   display: flex !important;
   flex-direction: column !important;
   transition: width 0.3s ease !important;
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+.right-panel .panel-section {
+  transition: all 0.3s ease-in-out;
 }
 
 /* Гарантированное скрытие панелей (display: none) */
@@ -263,16 +269,27 @@ body {
 }
 
 /* Правая панель (Таймлайн + Промпт) */
-#versionTimeline {
+#versionTimeline, #chatHistory {
   flex-grow: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 5px 5px 5px 5px; /* Добавляем отступ слева */
+  padding: 5px;
   scrollbar-width: thin;
-  scrollbar-color: var(--color-icon-disabled) var(--color-pure-black); /* Ползунок / Фон трека */
-  min-height: 50px;
+  scrollbar-color: var(--color-icon-disabled) var(--color-pure-black);
+  min-height: 100px;
   background-color: var(--color-pure-black);
 }
+
+#promptBar, #chatInputBar {
+  flex-shrink: 0;
+  min-height: 120px;
+  max-height: 200px;
+  background-color: var(--color-pure-black);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+}
+
 #versionTimeline::-webkit-scrollbar { width: 5px; }
 #versionTimeline::-webkit-scrollbar-thumb { background: var(--color-icon-disabled); border-radius: 3px; }
 #versionTimeline::-webkit-scrollbar-track { background: var(--color-pure-black); } /* Черный фон трека */
@@ -309,6 +326,10 @@ body {
     transition: background-color 0.2s;
 }
 .version-frame:hover { background-color: rgba(255, 255, 255, 0.05); } /* Чуть заметнее ховер */
+.version-frame.active { 
+    background-color: rgba(255, 255, 255, 0.1); 
+    border-left: 2px solid var(--color-green-100);
+}
 
 .version-placeholder {
   width: calc(11px * 1.4 * 5 + 10px); /* Ширина = Высота */
@@ -372,24 +393,77 @@ body {
 
 /* Панель Промпта */
 #promptBar {
-  flex-shrink: 0; display: flex; flex-direction: column; align-items: stretch;
-  padding: 5px 5px 5px 5px; /* Добавляем отступ слева */
-  background-color: var(--color-pure-black); border-top: 1px solid var(--panel-border); /* !!! Используем цвет границы панели */
+  flex-shrink: 0; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: stretch;
+  padding: 5px;
+  background-color: var(--color-pure-black); 
+  border-top: none;
+  height: 120px; /* Фиксированная высота */
 }
 #promptBar > * { margin-bottom: var(--padding); }
 #promptBar > *:last-child { margin-bottom: 0; }
 
-.prompt-controls { display: flex; align-items: center; gap: 5px; }
+.prompt-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 0;
+  width: 100%;
+}
+
+/* Стили для кнопок Применить и Отправить */
+#submitTopPrompt, #submitChatMessage {
+  padding: 6px 12px;
+  font-size: 14px;
+  background-color: var(--color-green-100);
+  color: var(--color-black-100);
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  height: 30px;
+  width: 110px;  /* Строго фиксированная ширина */
+  flex-shrink: 0; /* Запрещаем сжатие */
+}
+
+/* Стили для селектора модели */
 .prompt-controls select {
-  flex-grow: 1; 
-  background-color: var(--color-pure-black); 
+  flex-grow: 1;
+  background-color: var(--color-pure-black);
   color: var(--color-primary);
-  padding: 6px; 
+  padding: 6px;
   font-size: 0.9em;
-  border: none; 
-  outline: none; 
+  border: none;
+  outline: none;
   border-radius: 3px;
   height: 30px;
+}
+
+/* Стили для кнопки чата */
+#chatButton {
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-icon);
+  border-radius: 3px;
+  transition: color 0.15s ease-in-out;
+}
+
+#chatButton:hover {
+  color: var(--color-icon-active);
+}
+
+#chatButton svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
 }
 
 #toggleFilesButton {
@@ -400,28 +474,21 @@ body {
 }
 #toggleFilesButton:hover { background-color: var(--button-hover-bg); color: var(--color-primary); }
 
-#topPromptInput,
-#modelSelect {
+/* Одинаковые стили для полей ввода, чтобы не было разницы в размерах */
+#topPromptInput, #chatInput {
+  flex-grow: 1;
+  padding: 6px;
+  margin-right: 5px;
+  background-color: var(--color-pure-black);
+  color: var(--color-primary);
+  outline: none;
+  border: none;
+  border-radius: 3px;
+  min-height: 100px; /* Фиксированная минимальная высота */
+  height: 100px; /* Фиксированная высота */
+  resize: none;
   font-size: 14px;
   line-height: 1.4;
-}
-
-#topPromptInput {
-  flex-grow: 1; padding: 6px; margin-right: 5px;
-  background-color: var(--color-pure-black); color: var(--color-primary);
-  outline: none; 
-  border: none;
-  border-radius: 3px; min-height: 120px; resize: none;
-}
-#topPromptInput:focus {
-  border: none;
-  outline: none;
-}
-
-#submitTopPrompt {
-  padding: 6px 12px; font-size: 14px; background-color: var(--color-green-100); /* !!! Зеленый */
-  color: var(--color-black-100); /* Черный текст на зеленом */
-  border: none; border-radius: 3px; cursor: pointer; height: 30px;
 }
 
 /* Стили Кнопок (основные) */
@@ -528,15 +595,219 @@ body {
     left: calc((var(--line-width-vmin) / 2) - (calc(var(--line-width-vmin) + 2px) / 2)); /* !!! Центрирование */
 }
 #loading-spinner {
-  display: none; position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 50px; height: 50px;
-  border: 5px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
-  z-index: 1001; /* Выше всего */
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  width: 40px;
+  height: 20px;
+  display: none;
+  z-index: 1000;
 }
-@keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+@keyframes dot-animation {
+  0%, 20% { content: "   "; }
+  40% { content: ".  "; }
+  60% { content: ".. "; }
+  80%, 100% { content: "..."; }
+}
+
+#loading-spinner::after {
+  content: "";
+  animation: dot-animation 1.5s infinite;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--color-white-100);
+  font-family: 'Roboto', sans-serif;
+  display: inline-block;
+  letter-spacing: 3px;
+}
+
+/* Удаляем стиль заголовка истории чата */
+.history-title {
+  display: none;
+}
+
+/* Стили видимых панелей (упрощенная анимация) */
+.panel.left-panel,
+.panel.right-panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: max-width 0.3s ease, padding 0.3s ease, opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+/* Скрытие панелей через max-width/padding/opacity */
+.panel.hidden {
+    max-width: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    border: none !important;
+    overflow: hidden !important;
+    transition-delay: 0s, 0s, 0s, 0s, 0s, 0s, 0.3s;
+}
+
+/* Стили для голограммы */
+.hologram {
+    transition: transform 0.5s ease-in-out, margin-top 0.5s ease-in-out !important;
+    transform-origin: center center !important;
+    will-change: transform, margin-top !important;
+}
+
+.gesture-area.active ~ .main-area .hologram,
+.gesture-area.active + .main-area .hologram {
+    transform: scale(0.8) !important;
+    margin-top: 5vh !important;
+}
+
+/* Стили для отладки */
+.debug-panel {
+    outline: 1px solid blue !important;
+}
+
+.debug-label {
+    outline: 1px solid green !important;
+}
+
+/* Стили панелей */
+.panel-section {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Стили для чата */
+#chatHistory {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-icon-disabled) var(--color-pure-black);
+  min-height: 50px;
+  background-color: var(--color-pure-black);
+  position: relative;
+}
+
+#chatHistory::-webkit-scrollbar { width: 5px; }
+#chatHistory::-webkit-scrollbar-thumb { background: var(--color-icon-disabled); border-radius: 3px; }
+#chatHistory::-webkit-scrollbar-track { background: var(--color-pure-black); }
+
+#chatMessages {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  height: 100%;
+  overflow-y: auto;
+  padding: 10px;
+  gap: 10px;
+}
+
+.chat-message {
+  padding: 10px 15px;
+  margin: 5px 0;
+  border-radius: 8px;
+  max-width: 85%;
+  word-wrap: break-word;
+  background-color: transparent !important; /* Принудительно прозрачный фон */
+  font-family: 'Roboto', sans-serif; /* Шрифт для чата */
+}
+
+.user-message {
+  align-self: flex-end;
+  border-left: 2px solid var(--color-white-100);
+  margin-left: auto;
+}
+
+.tria-message {
+  align-self: flex-start;
+  border-left: 2px solid var(--button-action-bg);
+  margin-right: auto;
+}
+
+#chatInputBar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 5px;
+  background-color: var(--color-pure-black);
+  border-top: none; /* Убираем верхнюю границу */
+}
+
+#chatInput {
+  flex-grow: 1;
+  padding: 6px;
+  margin-bottom: 5px;
+  background-color: var(--color-pure-black);
+  color: var(--color-primary);
+  outline: none;
+  border: none;
+  border-radius: 3px;
+  min-height: 80px;
+  resize: none;
+}
+
+#chatButton.active {
+  color: var(--color-icon-active);
+}
+
+/* Разделительная линия */
+.panel-divider {
+  height: 1px;
+  background-color: var(--panel-border);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  position: relative;
+  border: none;
+}
+
+/* Контейнер для содержимого (верхняя часть панели) */
+.content-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 200px;
+  margin-bottom: 10px; /* Увеличенный отступ снизу */
+}
+
+/* Контейнер для ввода (средняя часть) */
+.input-container {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+  max-height: 200px;
+  margin-top: 10px; /* Увеличенный отступ сверху */
+}
+
+/* Блок с элементами управления (нижняя часть панели) */
+.controls-container {
+  flex-shrink: 0;
+  padding: 5px;
+  background-color: var(--color-pure-black);
+  display: flex;
+  flex-direction: column;
+  border-top: none;
+  height: 40px; /* Фиксированная высота */
+}
+
+#chatButton.active {
+  color: var(--color-icon-active);
+}
+
+#modelSelect {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 /* Правая панель (Таймлайн + Промпт) */
 /* Общий стиль для SVG внутри кнопок */
 .control-button svg {
@@ -586,54 +857,67 @@ body {
   height: calc(100vh - 25vh);
 }
 
-/* Стили видимых панелей (упрощенная анимация) */
-.panel.left-panel,
-.panel.right-panel {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transition: max-width 0.3s ease, padding 0.3s ease, opacity 0.3s ease, visibility 0s linear 0.3s;
+/* Стили для кода */
+.code-block, pre, code, #fileContent {
+  font-family: 'Roboto Mono', monospace; /* Моноширинный шрифт для кода */
 }
 
-/* Скрытие панелей через max-width/padding/opacity */
-.panel.hidden {
-    max-width: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    border: none !important;
-    overflow: hidden !important;
-    transition-delay: 0s, 0s, 0s, 0s, 0s, 0s, 0.3s;
+/* Классы шрифтов для разных элементов */
+.font-interface {
+  font-family: 'Inter', sans-serif;
 }
 
-/* Стили для голограммы */
-.hologram {
-    transition: transform 0.5s ease-in-out, margin-top 0.5s ease-in-out !important;
-    transform-origin: center center !important;
-    will-change: transform, margin-top !important;
+.font-chat {
+  font-family: 'Roboto', sans-serif;
 }
 
-.gesture-area.active ~ .main-area .hologram,
-.gesture-area.active + .main-area .hologram {
-    transform: scale(0.8) !important;
-    margin-top: 5vh !important;
+.font-code {
+  font-family: 'Roboto Mono', monospace;
 }
 
-/* Стили для отладки */
-.debug-hologram {
-    outline: 1px solid red !important;
+.font-tooltip {
+  font-family: 'Open Sans', sans-serif;
 }
 
-.debug-panel {
-    outline: 1px solid blue !important;
+/* Применяем шрифты к конкретным элементам */
+#versionTimeline .version-text p {
+  font-family: 'Roboto', sans-serif;
 }
 
-.debug-label {
-    outline: 1px solid green !important;
+.control-button, .panel-section h3, .prompt-controls select {
+  font-family: 'Inter', sans-serif;
+}
+
+#topPromptInput, #chatInput {
+  font-family: 'Roboto', sans-serif;
+}
+
+#integratedFileEditor textarea {
+  font-family: 'Roboto Mono', monospace;
+}
+
+/* Скрытие мигающего курсора в пустых инпутах */
+textarea:placeholder-shown {
+  caret-color: transparent;
+}
+
+textarea:focus:not(:placeholder-shown) {
+  caret-color: auto;
+}
+
+/* Обновление для placeholder в chat input, добавление пробела после "Tria" */
+#chatInput::placeholder {
+  content: "Введите сообщение для Tria ...";
+}
+
+/* Автофокус в режиме чата */
+.chat-mode {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.chat-mode:focus-within {
+  outline: none;
 }
 
 

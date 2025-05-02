@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Holograms Media</title>
+  
+  <!-- Подключение шрифтов -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Open+Sans:wght@400;600&family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="style.css">
   <!-- Favicon and Meta -->
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
@@ -64,17 +70,24 @@
     <div id="grid-container">
       <!-- Область жестов теперь внутри grid-container или main-area? Проверить CSS -->
       <div id="gesture-area">
-          <div id="gesture-line"></div>
+         <div id="gesture-line"></div>
       </div>
     </div>
   </div>
 
   <!-- Правая панель: Таймлайн и Промпт -->
   <div class="panel right-panel">
-    <!-- Кнопка скрытия/показа удалена отсюда -->
-    <!-- Таймлайн -->
-    <div id="versionTimeline">
-      <div id="versionFrames"></div>
+    <!-- Контейнер для содержимого - переключаемые области -->
+    <div class="content-container">
+      <!-- Таймлайн (Режим по умолчанию) -->
+      <div id="versionTimeline" class="panel-section default-mode">
+        <div id="versionFrames"></div>
+      </div>
+
+      <!-- История чата с Триа (Режим чата) -->
+      <div id="chatHistory" class="panel-section chat-mode" style="display: none;">
+        <div id="chatMessages"></div>
+      </div>
     </div>
 
     <!-- Интегрированный редактор файлов -->
@@ -91,19 +104,42 @@
         </div>
     </div>
 
-    <!-- Панель Промпта -->
-    <div id="promptBar">
+    <!-- Общая разделительная линия (всегда видимая) -->
+    <div class="panel-divider"></div>
+
+    <!-- Контейнер для ввода - переключаемые области -->
+    <div class="input-container">
+      <!-- Поле ввода промпта (Режим по умолчанию) -->
+      <div id="promptBar" class="panel-section default-mode">
         <textarea id="topPromptInput" rows="3" placeholder="Что бы вы хотели изменить?"></textarea>
-        <div class="prompt-controls">
-          <select id="modelSelect">
-            <option value="mistral/mistral-small-latest">Mistral Small</option>
-            <option value="mistral/mistral-large-latest">Mistral Large</option>
-            <option value="codestral/codestral-latest">Codestral</option>
-          </select>
-          <button id="submitTopPrompt">Применить</button>
-        </div>
+      </div>
+      
+      <!-- Поле ввода чата (Режим чата) -->
+      <div id="chatInputBar" class="panel-section chat-mode" style="display: none;">
+        <textarea id="chatInput" rows="3" placeholder="Введите сообщение для Tria ..."></textarea>
+      </div>
     </div>
-    <!-- Кнопка удалена отсюда -->
+
+    <!-- Блок с элементами управления (всегда видимый внизу) -->
+    <div class="controls-container">
+      <div class="prompt-controls">
+        <button id="chatButton" class="control-button" title="Чат">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
+            <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z"/>
+          </svg>
+        </button>
+        <select id="modelSelect">
+          <option value="mistral/mistral-small-latest">Mistral Small</option>
+          <option value="mistral/mistral-large-latest">Mistral Large</option>
+          <option value="codestral/codestral-latest">Codestral</option>
+        </select>
+        <!-- Кнопка применить (видима в режиме по умолчанию) -->
+        <button id="submitTopPrompt" class="default-mode">Применить</button>
+        <!-- Кнопка отправить (видима в режиме чата) -->
+        <button id="submitChatMessage" class="chat-mode" style="display: none;">Отправить</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Модальные окна -->
   <div id="gestureModal" class="modal">

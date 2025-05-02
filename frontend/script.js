@@ -3,6 +3,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { applyPromptWithTriaMode } from './tria_mode.js';
 
 // --- Global Variables ---
+let telegramLinkButton;
+let micButton;
 // Переменная isTriaModeActive теперь импортируется из модуля tria_mode.js
 let hologramPivot = new THREE.Group();
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
@@ -780,6 +782,11 @@ function stopGestureRecording() {
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('>>> DOMContentLoaded fired'); // Проверка старта скрипта
+  
+  // Инициализация глобальных переменных
+  telegramLinkButton = document.getElementById('telegramLinkButton');
+  micButton = document.getElementById('micButton');
+  
   const fileButton = document.getElementById('fileButton');
   const fileInput = document.getElementById('fileInput');
   const playButton = document.getElementById('playButton');
@@ -791,12 +798,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const scanButton = document.getElementById('scanButton');
   const bluetoothButton = document.getElementById('bluetoothButton');
   const toggleCameraButton = document.getElementById('toggleCameraButton');
-  const micButton = document.getElementById('micButton');
-  const telegramLinkButton = document.getElementById('telegramLinkButton'); // Находим кнопку
   const githubButton = document.getElementById('githubButton'); // Находим кнопку
+  const chatButton = document.getElementById('chatButton'); // Находим кнопку чата
   const gestureArea = document.getElementById('gesture-area'); // Находим область жестов
   if (gestureArea) {
       gestureArea.title = 'Кликните для записи жеста'; // Добавляем всплывающую подсказку
+  }
+
+  // Обработчик для кнопки чата
+  if (chatButton) {
+    chatButton.addEventListener('click', toggleChatMode);
   }
 
   // Определяем элементы панелей
@@ -1230,7 +1241,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function addDebugClasses() {
     const elements = {
-        hologram: document.getElementById('grid-container'),
         panel: document.querySelector('.panel.left-panel'),
         label: document.querySelector('.version-label')
     };
@@ -1767,8 +1777,54 @@ async function loadInitialFilesAndSetupEditor() {
       // Убрали setTimeout, так как теперь скроллом управляет MutationObserver
     } catch (error) {
       console.error('Ошибка загрузки версий:', error);
-      alert('Не удалось загрузить версии с сервера');
+      
+      // Создаем демонстрационные версии, если произошла ошибка загрузки с сервера
+      createDemoVersions();
     }
+  }
+
+  // Функция для создания демонстрационных версий таймлайна
+  function createDemoVersions() {
+    const versionFrames = document.getElementById('versionFrames');
+    if (!versionFrames) return;
+
+    // Очищаем контейнер версий
+    versionFrames.innerHTML = '';
+
+    // Демонстрационные данные версий
+    const demoVersions = [
+      { id: 'demo-1', prompt: 'Начальная голограмма' },
+      { id: 'demo-2', prompt: 'Добавлены вертикальные колонны' },
+      { id: 'demo-3', prompt: 'Изменены цвета левого сектора на фиолетовый' },
+      { id: 'demo-4', prompt: 'Добавлена анимация вращения' },
+      { id: 'demo-5', prompt: 'Реализовано управление жестами' }
+    ];
+
+    // Создаем элементы версий и добавляем их в DOM
+    demoVersions.forEach((version, index) => {
+      const frame = document.createElement('div');
+      frame.className = 'version-frame';
+      frame.setAttribute('data-version-id', version.id);
+      frame.innerHTML = `
+        <div class="version-placeholder">
+          <span class="version-label">В${index + 1}</span>
+        </div>
+        <div class="version-text">
+          <p>${version.prompt}</p>
+        </div>
+      `;
+      frame.addEventListener('click', () => {
+        // При клике устанавливаем активный класс
+        document.querySelectorAll('.version-frame').forEach(el => {
+          el.classList.remove('active');
+        });
+        frame.classList.add('active');
+      });
+      versionFrames.appendChild(frame);
+    });
+
+    // Прокручиваем вниз, чтобы показать последние версии
+    versionFrames.scrollTop = versionFrames.scrollHeight;
   }
 
   // --- Наблюдатель за изменениями в таймлайне для автоскролла ---
@@ -2245,4 +2301,269 @@ async function loadInitialFilesAndSetupEditor() {
   }
 
   // Модуль tria_mode.js теперь обрабатывает логику кнопки Триа
+
+  // Обработчик для кнопки отправки сообщения в чате
+  const submitChatMessage = document.getElementById('submitChatMessage');
+  if (submitChatMessage) {
+    submitChatMessage.addEventListener('click', sendChatMessage);
+  }
+
+  // Обработчик для поля ввода сообщения в чате (отправка по Enter)
+  const chatInputField = document.getElementById('chatInput');
+  if (chatInputField) {
+    chatInputField.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage();
+      }
+    });
+  }
+
+  // Функция для отправки сообщения в чат
+  function sendChatMessage() {
+    const chatInput = document.getElementById('chatInput');
+    const messageText = chatInput.value.trim();
+    const modelSelect = document.getElementById('modelSelect');
+    const selectedModel = modelSelect.value;
+    
+    if (messageText) {
+      // Показываем индикатор загрузки
+      const spinner = document.getElementById('loading-spinner');
+      if (spinner) spinner.style.display = 'block';
+      
+      // Добавляем сообщение пользователя в чат
+      addMessageToChat('user', messageText);
+      
+      // Очищаем поле ввода
+      chatInput.value = '';
+      
+      // Получаем историю чата для контекста (последние 10 сообщений)
+      const chatMessages = document.getElementById('chatMessages');
+      const chatHistory = [];
+      if (chatMessages) {
+        const messageElements = chatMessages.querySelectorAll('.chat-message');
+        const lastMessages = Array.from(messageElements).slice(-10); // Берем последние 10 сообщений
+        
+        lastMessages.forEach(msgElement => {
+          const role = msgElement.classList.contains('user-message') ? 'user' : 'assistant';
+          const content = msgElement.textContent;
+          chatHistory.push({ role, content });
+        });
+      }
+      
+      // Отправляем запрос на сервер для получения ответа от выбранной LLM модели
+      axios.post('http://localhost:3000/chat', {
+        message: messageText,
+        model: selectedModel, 
+        history: chatHistory
+      })
+      .then(response => {
+        // Скрываем индикатор загрузки
+        if (spinner) spinner.style.display = 'none';
+        
+        // Добавляем ответ от ИИ в чат
+        if (response.data && response.data.response) {
+          addMessageToChat('tria', response.data.response);
+        } else {
+          addMessageToChat('tria', 'Получен пустой ответ от сервера.');
+        }
+      })
+      .catch(error => {
+        // Скрываем индикатор загрузки
+        if (spinner) spinner.style.display = 'none';
+        
+        console.error('Ошибка при отправке сообщения:', error);
+        
+        // Добавляем сообщение об ошибке в чат
+        addMessageToChat('tria', `Ошибка при обработке запроса: ${error.message || 'Неизвестная ошибка'}`);
+      });
+    }
+  }
+
+  // Функция для добавления сообщения в историю чата
+  function addMessageToChat(role, content) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    // Создаем элемент сообщения
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('chat-message');
+    
+    if (role === 'user') {
+      messageElement.classList.add('user-message');
+    } else if (role === 'assistant' || role === 'tria') {
+      messageElement.classList.add('tria-message');
+    } else if (role === 'error') {
+      messageElement.classList.add('error-message');
+    }
+    
+    // Форматируем текст с поддержкой переносов строк
+    const formattedText = content.replace(/\n/g, '<br>');
+    messageElement.innerHTML = formattedText;
+    
+    // Добавляем сообщение в контейнер
+    chatMessages.appendChild(messageElement);
+    
+    // Прокручиваем к новому сообщению
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Сохраняем сообщение в MongoDB
+    saveMessageToDatabase(role, content);
+  }
+
+  // Функция для сохранения сообщения в базу данных
+  function saveMessageToDatabase(sender, text) {
+    // Получаем ID чата из localStorage или создаем новый
+    let chatId = localStorage.getItem('current_chat_id');
+    
+    if (!chatId) {
+      // Если ID чата не существует, создаем новый
+      chatId = 'chat_' + Date.now();
+      localStorage.setItem('current_chat_id', chatId);
+    }
+    
+    // Преобразуем 'триа' обратно в 'tria' для сервера
+    if (sender === 'триа') {
+      sender = 'assistant';
+    } else if (sender === 'user') {
+      sender = 'user';
+    }
+    
+    // Отправляем запрос на сохранение
+    axios.post('/chat/save', {
+      chat_id: chatId,
+      message: {
+        role: sender,
+        content: text,
+        timestamp: new Date().toISOString()
+      }
+    })
+    .then(response => {
+      console.log('Сообщение сохранено:', response.data);
+    })
+    .catch(error => {
+      console.error('Ошибка при сохранении сообщения:', error);
+    });
+  }
+
+  // Функция для загрузки истории чата
+  function loadChatHistory() {
+    const chatId = localStorage.getItem('current_chat_id');
+    
+    if (!chatId) {
+      console.log('История чата не найдена');
+      return;
+    }
+    
+    // Показываем индикатор загрузки
+    const spinner = document.getElementById('loading-spinner');
+    if (spinner) spinner.style.display = 'block';
+    
+    axios.get(`/chat/history/${chatId}`)
+      .then(response => {
+        // Скрываем индикатор загрузки
+        if (spinner) spinner.style.display = 'none';
+        
+        const messages = response.data.messages || [];
+        
+        // Очищаем текущую историю
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+          chatMessages.innerHTML = '';
+        }
+        
+        // Добавляем сообщения из истории
+        messages.forEach(msg => {
+          // Конвертируем 'assistant' в 'tria' для addMessageToChat
+          const sender = msg.role === 'assistant' ? 'tria' : 'user';
+          addMessageToChat(sender, msg.content);
+        });
+      })
+      .catch(error => {
+        // Скрываем индикатор загрузки
+        if (spinner) spinner.style.display = 'none';
+        
+        console.error('Ошибка при загрузке истории чата:', error);
+      });
+  }
+
+  // При инициализации чата загружаем историю
+  document.addEventListener('DOMContentLoaded', () => {
+    // Добавим вызов загрузки истории чата к существующему обработчику
+    const chatButton = document.getElementById('chatButton');
+    if (chatButton) {
+      // Сохраним оригинальный обработчик клика
+      const originalClickHandler = chatButton.onclick;
+      
+      // Заменим обработчик на новый, который сначала вызовет оригинальный, а затем загрузит историю
+      chatButton.onclick = function(event) {
+        // Вызываем оригинальный обработчик, если он есть
+        if (originalClickHandler) {
+          originalClickHandler.call(this, event);
+        }
+        
+        // Если активирован режим чата, загружаем историю
+        if (this.classList.contains('active')) {
+          loadChatHistory();
+        }
+      };
+    }
+  });
+
+  // Добавим обработчики фокуса для поля ввода чата
+  document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+      // При получении фокуса
+      chatInput.addEventListener('focus', () => {
+        // Можно добавить дополнительную логику при фокусе, если нужно
+      });
+      
+      // При потере фокуса
+      chatInput.addEventListener('blur', () => {
+        // Если поле пустое, можно добавить дополнительный код
+        if (chatInput.value.trim() === '') {
+          // Тут можно добавить дополнительную логику, если нужно
+        }
+      });
+    }
+  });
+
+  // Функция для переключения между режимами чата и ввода промпта
+  function toggleChatMode() {
+    const chatButton = document.getElementById('chatButton');
+    const isChatMode = chatButton.classList.toggle('active');
+    
+    // Получаем элементы разных режимов
+    const defaultModeElements = document.querySelectorAll('.default-mode');
+    const chatModeElements = document.querySelectorAll('.chat-mode');
+    
+    // Переключаем видимость элементов
+    defaultModeElements.forEach(el => {
+      el.style.display = isChatMode ? 'none' : 'block';
+    });
+    
+    chatModeElements.forEach(el => {
+      el.style.display = isChatMode ? 'block' : 'none';
+    });
+    
+    // Автофокус в режиме чата
+    if (isChatMode) {
+      const chatInput = document.getElementById('chatInput');
+      if (chatInput) {
+        setTimeout(() => {
+          chatInput.focus();
+        }, 100);
+      }
+    } else {
+      const promptInput = document.getElementById('topPromptInput');
+      if (promptInput) {
+        setTimeout(() => {
+          promptInput.focus();
+        }, 100);
+      }
+    }
+    
+    console.log(`Режим чата ${isChatMode ? 'включен' : 'выключен'}`);
+  }
 });
