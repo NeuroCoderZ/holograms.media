@@ -250,390 +250,525 @@ body {
     transition: height 0.5s ease-in-out;
 }
 
-/* Линия для жестов */
+/* Линия жестов */
 #gesture-line {
-    position: absolute; /* Относительно #gesture-area */
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: var(--line-width-vmin); /* !!! Адаптивная ширина */
-    height: 100%;
-    background-color: var(--color-red-100);
-    z-index: 1;
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: var(--color-white-100);
+    opacity: 0.5;
+    z-index: 105;
 }
 
-/* Правая панель (Таймлайн + Промпт) */
-#versionTimeline {
-  flex-grow: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 5px 5px 5px 5px; /* Добавляем отступ слева */
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-icon-disabled) var(--color-pure-black); /* Ползунок / Фон трека */
-  min-height: 50px;
-  background-color: var(--color-pure-black);
+/* Кнопки переключения видов правой панели */
+.view-toggles {
+    display: flex;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--panel-border);
 }
+
+.view-toggle-btn {
+    flex-grow: 1;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    color: var(--color-icon);
+    cursor: pointer;
+    text-align: center;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+.view-toggle-btn.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.view-toggle-btn:hover {
+    background-color: var(--button-hover-bg);
+}
+
+/* Контейнеры видов правой панели */
+.right-panel-view {
+    display: none;
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: var(--padding);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    height: 0;
+}
+
+.right-panel-view.active-view {
+    display: block;
+    opacity: 1;
+    height: auto;
+}
+
+/* Таймлайн версий */
+#versionTimeline {
+    max-height: 70vh;
+    overflow-x: hidden;
+}
+
+/* Стилизация скроллбара для Webkit (Chrome, Safari) */
 #versionTimeline::-webkit-scrollbar { width: 5px; }
 #versionTimeline::-webkit-scrollbar-thumb { background: var(--color-icon-disabled); border-radius: 3px; }
 #versionTimeline::-webkit-scrollbar-track { background: var(--color-pure-black); } /* Черный фон трека */
 
-/* Стили для версии */
+/* Таймлайн: элементы */
 .timeline-item {
-    position: relative;
-    display: block;
     margin-bottom: 10px;
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
 }
 
 .timeline-item .version-label {
-    position: absolute !important;
-    top: 5px !important;
-    left: 5px !important;
-    font-size: 11px !important;
-    line-height: 1.4 !important;
-    opacity: 0.7 !important;
-    color: var(--text-color) !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    padding: 2px 5px !important;
-    border-radius: 3px !important;
-    z-index: 1 !important;
+    font-size: 11px;
+    line-height: 1.4;
+    font-weight: bold;
+    opacity: 0.9;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.version-label .version-number {
+    background-color: rgba(255, 255, 255, 0.15);
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .version-frame {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: calc(11px * 1.4 - 11px);
+    border: 1px solid var(--color-black-66);
     padding: 5px;
-    border-radius: 5px;
+    border-radius: 4px;
+    min-height: 35px;
+    max-height: 200px;
+    background-color: rgba(255, 255, 255, 0.02);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s ease;
 }
+
 .version-frame:hover { background-color: rgba(255, 255, 255, 0.05); } /* Чуть заметнее ховер */
 
 .version-placeholder {
-  width: calc(11px * 1.4 * 5 + 10px); /* Ширина = Высота */
-  height: calc(11px * 1.4 * 5 + 10px); /* 5 строк текста + padding */
-  background-color: var(--placeholder-bg); /* Должен теперь быть --color-black-95 */
-  flex-shrink: 0; margin-right: 5px;
+    color: var(--color-black-33);
+    font-style: italic;
+    font-size: 12px;
+    text-align: center;
+    padding: 10px;
 }
 
 .version-text {
-  flex-grow: 1; overflow: hidden; min-width: 0;
+    max-height: 190px;
+    overflow-y: auto;
 }
 
 .version-text p {
-  margin: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-size: 11px;
-  line-height: 1.4;
-  height: calc(11px * 1.4 * 5); /* Фиксированная высота для 5 строк */
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #555 #222;
+    font-size: 11px;
+    line-height: 1.4;
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    max-width: 100%;
+    color: var(--color-black-33);
+    cursor: text;
+    user-select: text;
 }
+
 .version-text p::-webkit-scrollbar { width: 5px; }
 .version-text p::-webkit-scrollbar-track { background: #222; border-radius: 3px; }
 .version-text p::-webkit-scrollbar-thumb { background-color: #555; border-radius: 3px; }
 
+/* Чат с Триа */
+#triaChatHistory {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-message {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    max-width: 80%;
+    position: relative;
+}
+
+.user-message {
+    align-self: flex-end;
+    background-color: var(--button-action-bg);
+    color: var(--color-white-100);
+    border-bottom-right-radius: 4px;
+}
+
+.tria-message {
+    align-self: flex-start;
+    background-color: var(--color-black-95);
+    color: var(--color-primary);
+    border-bottom-left-radius: 4px;
+}
+
+.paste-to-prompt-btn {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    background-color: var(--color-black-100);
+    color: var(--color-icon);
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.chat-message:hover .paste-to-prompt-btn {
+    opacity: 0.7;
+}
+
+.paste-to-prompt-btn:hover {
+    opacity: 1 !important;
+    color: var(--color-icon-active);
+}
+
 /* Интегрированный редактор файлов */
 #integratedFileEditor {
-  padding: var(--padding); overflow-y: auto; background-color: var(--color-pure-black);
-  max-height: 30vh; flex-shrink: 0; border-top: 1px solid var(--panel-border);
+    padding: var(--padding);
 }
+
 #integratedFileEditor h3 {
-  font-size: 15px;
-  margin-top: 0;
-  margin-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 14px;
 }
+
 #integratedFileEditor ul#fileList { list-style: none; padding: 0; margin: 0 0 10px 0;}
 #integratedFileEditor li {
-  font-size: 13px;
-  padding: 5px;
-  cursor: pointer;
-  border-radius: 3px;
-  margin-bottom: 3px;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 13px;
+    transition: background-color 0.2s ease;
 }
+
 #integratedFileEditor li:hover { background-color: var(--button-hover-bg); }
 #integratedFileEditor div#fileEditor { display: flex; flex-direction: column; }
 #integratedFileEditor textarea#fileContent {
-  flex-grow: 1; width: 100%; box-sizing: border-box; margin-bottom: 10px;
-  background-color: var(--color-pure-black); color: var(--color-primary);
-  padding: 10px;
-  font-family: monospace; font-size: 0.8em; 
-  resize: none; overflow: auto; white-space: pre; min-height: 100px;
+    background-color: var(--input-bg);
+    color: var(--color-primary);
+    border: 1px solid var(--input-border);
+    padding: 5px;
+    margin-bottom: 5px;
+    font-family: monospace;
 }
+
 #integratedFileEditor button#saveFile {
-  padding: 5px 10px; background-color: var(--button-action-bg); color: white;
-  border: none; border-radius: 5px; cursor: pointer; align-self: flex-end;
-  transition: background-color 0.3s;
+    padding: 5px 10px;
+    background-color: var(--button-action-bg);
+    color: white;
+    border: none;
+    border-radius: 3px;
 }
+
 #integratedFileEditor button#saveFile:hover { background-color: var(--button-action-hover); }
 
-/* Панель Промпта */
+/* Панель промпта */
 #promptBar {
-  flex-shrink: 0; display: flex; flex-direction: column; align-items: stretch;
-  padding: 5px 5px 5px 5px; /* Добавляем отступ слева */
-  background-color: var(--color-pure-black); border-top: 1px solid var(--panel-border); /* !!! Используем цвет границы панели */
+    margin-top: auto;
+    padding: var(--padding);
+    display: flex;
+    flex-direction: column;
 }
+
 #promptBar > * { margin-bottom: var(--padding); }
 #promptBar > *:last-child { margin-bottom: 0; }
 
 .prompt-controls { display: flex; align-items: center; gap: 5px; }
 .prompt-controls select {
-  flex-grow: 1; 
-  background-color: var(--color-pure-black); 
-  color: var(--color-primary);
-  padding: 6px; 
-  font-size: 0.9em;
-  border: none; 
-  outline: none; 
-  border-radius: 3px;
-  height: 30px;
+    padding: 5px;
+    background-color: var(--input-bg);
+    color: var(--color-primary);
+    border: none;
+    border-radius: 3px;
+    font-size: clamp(13px, 2vmin, 15px);
+    flex: 1;
+}
+
+.prompt-controls select option {
+    background-color: var(--panel-bg);
+    color: var(--color-primary);
 }
 
 #toggleFilesButton {
-    background: none; border: 1px solid var(--panel-border); color: var(--color-icon);
-    padding: 4px 8px; min-width: auto; margin-right: 5px; cursor: pointer;
-    height: 30px; /* Фикс высоты */
-    line-height: 1; border-radius: 3px;
+    padding: 5px 10px;
+    background-color: transparent;
+    color: var(--color-icon);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
 }
+
 #toggleFilesButton:hover { background-color: var(--button-hover-bg); color: var(--color-primary); }
 
-#topPromptInput,
-#modelSelect {
-  font-size: 14px;
-  line-height: 1.4;
+#promptInput,
+#triaChatInput,
+textarea#promptText {
+    background-color: var(--input-bg);
+    color: var(--color-primary);
+    border: none;
+    border-radius: 3px;
+    padding: 8px;
 }
 
-#topPromptInput {
-  flex-grow: 1; padding: 6px; margin-right: 5px;
-  background-color: var(--color-pure-black); color: var(--color-primary);
-  outline: none; 
-  border: none;
-  border-radius: 3px; min-height: 120px; resize: none;
+#promptInput,
+#triaChatInput {
+    width: 100%;
+    resize: none;
+    font-size: clamp(13px, 2vmin, 15px);
+    line-height: 1.5;
+    outline: none;
 }
-#topPromptInput:focus {
-  border: none;
-  outline: none;
+
+#promptInput:focus,
+#triaChatInput:focus {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--input-border);
 }
 
 #submitTopPrompt {
-  padding: 6px 12px; font-size: 14px; background-color: var(--color-green-100); /* !!! Зеленый */
-  color: var(--color-black-100); /* Черный текст на зеленом */
-  border: none; border-radius: 3px; cursor: pointer; height: 30px;
+    padding: 5px 12px;
+    background-color: var(--button-action-bg);
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: clamp(13px, 2vmin, 15px);
 }
 
-/* Стили Кнопок (основные) */
+/* Кнопки управления */
 .control-button {
-  width: var(--button-size) !important;
-  height: var(--button-size) !important;
-  padding: 0;
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--color-icon);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  transition: color 0.15s ease-in-out;
-  font-size: calc(var(--button-size) * 0.6) !important;
+    width: var(--button-size);
+    height: var(--button-size);
+    border-radius: 50%;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-icon);
+    transition: background-color 0.2s ease,
+                color 0.2s ease,
+                transform 0.2s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Стили для SVG внутри кнопок */
 .control-button svg {
-  width: var(--icon-size);
-  height: var(--icon-size);
-  fill: currentColor;
+    width: var(--icon-size);
+    height: var(--icon-size);
+    transition: all 0.2s ease;
+    fill: currentColor;
+    pointer-events: none;
 }
 
-/* Стили для IMG внутри кнопок */
 .control-button img {
-  width: var(--icon-size);
-  height: var(--icon-size);
-  max-width: 70%;
-  max-height: 70%;
-  object-fit: contain;
+    width: var(--icon-size);
+    height: var(--icon-size);
+    transition: all 0.2s ease;
+    filter: brightness(0) invert(0.7);
+    pointer-events: none;
 }
 
-/* Стили для активной кнопки (если нужно) */
 .control-button.active {
-  color: var(--color-icon-active); /* Белый */
+    color: var(--color-icon-active);
+    background-color: var(--button-hover-bg);
 }
 
 .control-button:not(:disabled):hover {
-  color: var(--color-icon-active); /* Белый */
+    background-color: var(--button-hover-bg);
+    color: var(--color-icon-active);
+    transform: scale(1.05);
 }
 
-/* Стили для отключенной кнопки */
 .control-button:disabled {
-  color: var(--color-icon-disabled); /* Темно-серый */
-  cursor: not-allowed;
+    color: var(--color-icon-disabled);
+    cursor: not-allowed;
+    transform: none;
 }
 
-/* Увеличение кнопки Стоп */
-#stopButton svg { /* Применяем scale к SVG внутри */
-  transform: scale(1.1);
-}
-
-/* Увеличение иконки Telegram */
-#telegramLinkButton svg, #triaButton svg {
-  transform: scale(1.2);
-}
-
-/* Скрытые и Модальные окна */
+/* Скрытые элементы */
 #camera-view, #previewCanvas { display: none; }
 .modal { display: none; /* ... */ }
 .modal.active { display: flex; /* ... */ }
-/* ... (остальные стили модалок) ... */
+
 .modal {
-  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  justify-content: center; align-items: center; z-index: 1000;
+    display: none;
+    position: fixed;
+    z-index: 101;
+    left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    align-items: center; justify-content: center;
 }
 .modal.active { display: flex; }
 .modal-content {
-  background-color: var(--color-pure-black); color: var(--color-primary);
-  padding: calc(var(--padding) * 1.5); border: 1px solid var(--color-dark-border);
-  border-radius: 5px; width: 80%; max-width: 500px; position: relative;
+    background-color: var(--panel-bg);
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 90%;
+    max-height: 90%;
 }
 .close {
-  position: absolute; top: 5px; right: 10px; color: #aaa;
-  font-size: 28px; font-weight: bold; cursor: pointer;
+    color: var(--color-icon);
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
 }
 .close:hover, .close:focus { color: var(--color-primary); }
 .modal h2 { margin-top: 0; margin-bottom: 15px; }
 .modal textarea {
-  width: 100%; background-color: var(--color-pure-black); color: var(--color-primary);
-  border: 1px solid var(--color-dark-border); border-radius: 3px; padding: 10px;
-  font-family: inherit; margin-bottom: 10px; resize: vertical;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: var(--input-bg);
+    color: var(--color-primary);
 }
-.modal canvas { display: block; margin: 10px auto; border: 1px solid var(--color-dark-border); }
+.modal canvas { display: block; margin: 10px auto; border: 1px solid var(--color-black-66); }
 .modal button {
-  padding: 8px 15px; background-color: var(--button-action-bg); color: white;
-  border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;
+    padding: 8px 15px;
+    background-color: var(--button-action-bg);
+    color: var(--color-white-100);
+    border: none;
+    border-radius: 3px;
 }
 .modal button:hover { background-color: var(--button-action-hover); }
 .modal button:disabled { background-color: #555; cursor: not-allowed; }
 
 .finger-dot-on-line {
     position: absolute;
-    width: calc(var(--line-width-vmin) + 2px); /* !!! Ширина точки */
-    height: calc(var(--line-width-vmin) + 2px); /* !!! Высота точки */
-    background-color: var(--color-green-100);
-    transform-origin: center left;
-    transition: transform 0.05s linear;
-    z-index: 2;
-    left: calc((var(--line-width-vmin) / 2) - (calc(var(--line-width-vmin) + 2px) / 2)); /* !!! Центрирование */
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--color-white-100);
+    transform: translate(-50%, -50%);
+    z-index: 110;
+    pointer-events: none;
+    opacity: 0.8;
 }
+
+/* Прелоадер */
 #loading-spinner {
-  display: none; position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 50px; height: 50px;
-  border: 5px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
-  z-index: 1001; /* Выше всего */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-left-color: var(--color-icon-active);
+    border-radius: 50%;
+    display: none;
+    animation: spin 1s linear infinite;
+    z-index: 1000;
 }
 @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-/* Правая панель (Таймлайн + Промпт) */
-/* Общий стиль для SVG внутри кнопок */
-.control-button svg {
-    width: var(--icon-size);
-    height: var(--icon-size);
-    fill: currentColor;
-}
 
-/* Стиль для родительской кнопки */
-.control-button {
-    color: var(--color-icon);
-    transition: color 0.15s ease-in-out;
-}
-
-/* Стиль для ховера на НЕотключенную кнопку */
-.control-button:not(:disabled):hover {
-    color: var(--color-icon-active);
-}
-
-/* Стиль для отключенной кнопки */
-.control-button:disabled {
-    color: var(--color-icon-disabled);
-    cursor: not-allowed;
-    fill: currentColor;
-}
-
-#togglePanelsButton:hover svg {
-    fill: var(--color-icon-active) !important; /* Белый цвет иконки */
-}
-
-/* Логика иконок (НАША ВЕРСИЯ, БЕЗ !important пока) */
-#togglePanelsButton .icon-show-panels { display: block; } /* Показать ВЛЕВО */
-#togglePanelsButton .icon-hide-panels { display: none; } /* Скрыть ВПРАВО */
-#togglePanelsButton.show-mode .icon-show-panels { display: none; } /* Скрыть ВЛЕВО */
-#togglePanelsButton.show-mode .icon-hide-panels { display: block; } /* Показать ВПРАВО */
+/* Состояние обнаружения рук */
 #gesture-area.hands-detected {
-    height: 25vh; /* Финальная высота */
+    height: 80px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-top: 1px solid var(--color-black-33);
 }
 
-/* When hands are detected */
 #gesture-area.hands-detected {
-  height: 25vh;
+    height: 80px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-top: 1px solid var(--color-black-33);
 }
 
-/* Adjust grid container height when hands are detected */
 #gesture-area.hands-detected ~ #grid-container {
-  height: calc(100vh - 25vh);
+    height: calc(100vh - 80px);
 }
 
-/* Стили видимых панелей (упрощенная анимация) */
+/* Панели в режиме скрытия */
 .panel.left-panel,
 .panel.right-panel {
+    max-width: 100%;
     opacity: 1;
     visibility: visible;
-    pointer-events: auto;
-    transition: max-width 0.3s ease, padding 0.3s ease, opacity 0.3s ease, visibility 0s linear 0.3s;
+    padding-left: var(--button-spacing);
+    padding-right: var(--button-spacing);
+    margin-left: 0;
+    margin-right: 0;
+    border-left-width: 0;
+    border-right-width: 0;
 }
 
-/* Скрытие панелей через max-width/padding/opacity */
 .panel.hidden {
-    max-width: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    border: none !important;
-    overflow: hidden !important;
+    max-width: 0;
+    opacity: 0;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    pointer-events: none;
+    visibility: hidden;
     transition-delay: 0s, 0s, 0s, 0s, 0s, 0s, 0.3s;
 }
 
-/* Стили для голограммы */
+/* Дополнительные классы для 3D-модели */
 .hologram {
-    transition: transform 0.5s ease-in-out, margin-top 0.5s ease-in-out !important;
-    transform-origin: center center !important;
-    will-change: transform, margin-top !important;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: transform 0.5s ease-in-out;
 }
 
 .gesture-area.active ~ .main-area .hologram,
 .gesture-area.active + .main-area .hologram {
-    transform: scale(0.8) !important;
-    margin-top: 5vh !important;
+    transform: translate(-50%, -60%) scale(0.8);
+    transition: transform 0.5s ease-in-out;
 }
 
-/* Стили для отладки */
 .debug-hologram {
-    outline: 1px solid red !important;
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
 }
 
 .debug-panel {
-    outline: 1px solid blue !important;
+    position: fixed;
+    top: 10px;
+    right: 10px;
 }
 
 .debug-label {
-    outline: 1px solid green !important;
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    font-size: 12px;
+    color: white;
+    background-color: rgba(0,0,0,0.5);
+    padding: 5px;
+    border-radius: 3px;
 }
 
 
