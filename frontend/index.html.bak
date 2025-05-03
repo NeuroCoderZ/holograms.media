@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,15 +10,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Open+Sans:wght@400;600&family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="style.css">
   <!-- Favicon and Meta -->
-  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <meta property="og:title" content="Holograms Media">
   <meta property="og:description" content="Interactive 3D Audio Visualizations">
-  <meta property="og:image" content="/static/og-image.jpg">
+  <meta property="og:image" content="/og-image.jpg">
   <meta property="og:url" content="https://holograms.media/">
   <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
 
   <!-- Import Map -->
   <script type="importmap">
@@ -43,6 +42,7 @@
 
   <!-- Левая панель: Кнопки -->
   <div class="panel left-panel">
+    <!-- Кнопка скрытия/показа удалена отсюда -->
     <div id="button-container">
       <button id="fileButton" class="control-button" title="Загрузить аудиофайл" aria-label="Upload File"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg></button>
       <input type="file" id="fileInput" accept="audio/*" style="display: none;">
@@ -61,15 +61,16 @@
       <button id="githubButton" class="control-button" title="GitHub Репозиторий" aria-label="GitHub Repository"><svg width="24px" height="24px" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/></svg></button>
       <button id="installPwaButton" class="control-button" title="Установить на устройство" aria-label="Install PWA"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg></button>
     </div>
+    <!-- Кнопка скрытия/показа удалена отсюда -->
   </div>
 
   <!-- Центральная область -->
   <div class="main-area">
     <!-- Область Голограммы -->
     <div id="grid-container">
-      <!-- Область жестов теперь внутри grid-container или main-area? -->
+      <!-- Область жестов теперь внутри grid-container или main-area? Проверить CSS -->
       <div id="gesture-area">
-          <div id="gesture-line"></div>
+         <div id="gesture-line"></div>
       </div>
     </div>
   </div>
@@ -80,7 +81,7 @@
     <div class="content-container">
       <!-- Таймлайн (Режим по умолчанию) -->
       <div id="versionTimeline" class="panel-section default-mode">
-      <div id="versionFrames"></div>
+        <div id="versionFrames"></div>
       </div>
 
       <!-- История чата с Триа (Режим чата) -->
@@ -91,19 +92,18 @@
       </div>
     </div>
 
-    <div id="triaChatHistory" class="right-panel-view" style="display: none;">
-      <!-- Сюда будут добавляться сообщения чата -->
-      <p style="text-align: center; margin-top: 20px; color: grey;">История чата пуста</p>
+    <!-- Интегрированный редактор файлов -->
+    <div id="integratedFileEditor" style="display: none; border-top: 1px solid var(--panel-border); padding: var(--padding); max-height: 200px; overflow-y: auto;">
+        <h3>Project Files</h3>
+        <ul id="fileList">
+            <li data-file="script.js">script.js</li>
+            <li data-file="style.css">style.css</li>
+            <li data-file="index.html">index.html</li>
+        </ul>
+        <div id="fileEditor">
+            <textarea id="fileContent" rows="8" spellcheck="false"></textarea>
+            <button id="saveFile">Save</button>
         </div>
-    
-    <div id="myGesturesView" class="right-panel-view" style="display: none;">
-      <!-- Сюда будет добавляться список жестов -->
-      <p style="text-align: center; margin-top: 20px; color: grey;">Список жестов пуст</p>
-    </div>
-    
-    <div id="myHologramsView" class="right-panel-view" style="display: none;">
-      <!-- Сюда будет добавляться список голограмм -->
-      <p style="text-align: center; margin-top: 20px; color: grey;">Список голограмм пуст</p>
     </div>
 
     <!-- Общая разделительная линия (всегда видимая) -->
@@ -124,22 +124,22 @@
 
     <!-- Блок с элементами управления (всегда видимый внизу) -->
     <div class="controls-container">
-        <div class="prompt-controls">
+      <div class="prompt-controls">
         <button id="chatButton" class="control-button" title="Чат">
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
             <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z"/>
           </svg>
         </button>
-          <select id="modelSelect">
-            <option value="mistral/mistral-small-latest">Mistral Small</option>
-            <option value="mistral/mistral-large-latest">Mistral Large</option>
-            <option value="codestral/codestral-latest">Codestral</option>
-          </select>
+        <select id="modelSelect">
+          <option value="mistral/mistral-small-latest">Mistral Small</option>
+          <option value="mistral/mistral-large-latest">Mistral Large</option>
+          <option value="codestral/codestral-latest">Codestral</option>
+        </select>
         <!-- Кнопка применить (видима в режиме по умолчанию) -->
         <button id="submitTopPrompt" class="default-mode">Применить</button>
         <!-- Кнопка отправить (видима в режиме чата) -->
         <button id="submitChatMessage" class="chat-mode" style="display: none;">Отправить</button>
-        </div>
+      </div>
     </div>
   </div>
 
@@ -153,6 +153,7 @@
       <button id="startRecordingButton">Start Recording</button>
       <button id="stopRecordingButton" disabled>Stop Recording</button>
     </div>
+     <!-- Кнопка скрытия/показа удалена отсюда -->
   </div>
   <div id="promptModal" class="modal">
     <div class="modal-content">
@@ -161,25 +162,7 @@
       <textarea id="promptText" rows="4" placeholder="Enter your prompt here..."></textarea>
       <button id="submitPrompt">Отправить</button>
     </div>
-  </div>
-
-  <!-- Интегрированный редактор файлов (перемещен в модальное окно) -->
-  <div id="fileEditorModal" class="modal">
-    <div class="modal-content">
-      <span id="closeFileEditorModal" class="close">×</span>
-      <h2>Project Files</h2>
-      <div id="integratedFileEditor">
-        <ul id="fileList">
-          <li data-file="script.js">script.js</li>
-          <li data-file="style.css">style.css</li>
-          <li data-file="index.html">index.html</li>
-        </ul>
-        <div id="fileEditor">
-          <textarea id="fileContent" rows="15" spellcheck="false"></textarea>
-          <button id="saveFile">Save</button>
-        </div>
-      </div>
-    </div>
+     <!-- Кнопка скрытия/показа удалена отсюда -->
   </div>
 
   <!-- Скрытые элементы -->
@@ -192,33 +175,21 @@
   <!-- !!! НОВАЯ УНИВЕРСАЛЬНАЯ КНОПКА ПЕРЕД ЗАКРЫТИЕМ BODY !!! -->
 
   <!-- Подключение JavaScript со старыми файлами для обратной совместимости -->
-  <script src="/static/script.js?v=1.0" type="module"></script>
-  <script src="/static/tria_mode.js?v=1.0" type="module"></script>
+  <script src="script.js?v=1.0" type="module"></script>
+  <script src="tria_mode.js?v=1.0" type="module"></script>
   
   <!-- Подключение новой модульной структуры -->
-  <script src="/static/js/main.js" type="module"></script>
+  <script src="js/main.js" type="module"></script>
 
   <button id="togglePanelsButton" class="control-button panel-toggle-universal" title="Скрыть/Показать панели">
-    <!-- SVG: Стрелка ВПРАВО (Показать панель) -->
+    <!-- Новый SVG: Стрелка ВПРАВО (Показать панель) -->
     <svg class="icon-hide-panels" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
       <path d="M500-640v320l160-160-160-160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm120-80v-560H200v560h120Zm80 0h360v-560H400v560Zm-80 0H200h120Z"/>
     </svg>
-    <!-- SVG: Стрелка ВЛЕВО (Скрыть панель) -->
+    <!-- Новый SVG: Стрелка ВЛЕВО (Скрыть панель) -->
     <svg class="icon-show-panels" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
       <path d="M660-320v-320L500-480l160 160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm120-80v-560H200v560h120Zm80 0h360v-560H400v560Zm-80 0H200h120Z"/>
     </svg>
   </button>
-
-  <!-- Импортируем модуль tria_mode.js перед основным скриптом -->
-  <script type="module" src="tria_mode.js?v=1.0"></script>
-  
-  <!-- Импортируем модуль rightPanelManager.js -->
-  <script type="module" src="rightPanelManager.js?v=1.0"></script>
-  
-  <!-- Импортируем модуль chatMessages.js -->
-  <script type="module" src="chatMessages.js?v=1.0"></script>
-  
-  <!-- Основной скрипт -->
-  <script type="module" src="script.js?v=1.0"></script>
 </body>
 </html>
