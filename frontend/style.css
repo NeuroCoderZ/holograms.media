@@ -75,6 +75,30 @@
   --timeline-width: clamp(20vw, 25vw, 30vw); /* Обновленная ширина правой панели */
   --line-width-vmin: 0.2vmin; /* !!! Возвращаем адаптивную ширину */
 
+  /* Новые переменные для шрифтов */
+  --font-size-base: clamp(13px, 1.8vmin, 16px); /* Основной размер текста */
+  --font-size-small: clamp(11px, 1.5vmin, 14px); /* Мелкий текст (лейблы, метки) */
+  --font-size-large: clamp(15px, 2vmin, 18px); /* Крупный текст (заголовки) */
+  --font-size-button: clamp(14px, 1.8vmin, 16px); /* Текст на кнопках */
+  --font-size-code: clamp(12px, 1.6vmin, 14px); /* Моноширинный текст */
+  
+  /* Новые переменные для элементов управления */
+  --input-height: clamp(80px, 15vmin, 120px); /* Высота полей ввода */
+  --control-height: clamp(28px, 3.5vmin, 32px); /* Высота элементов управления */
+  --button-action-width: clamp(90px, 12vmin, 120px); /* Ширина кнопок действий */
+  --icon-button-size: clamp(28px, 3.5vmin, 32px); /* Размер кнопок с иконками */
+  --icon-size-small: clamp(18px, 2.3vmin, 22px); /* Размер маленьких иконок */
+
+  /* Новые переменные для отступов */
+  --spacing-xs: clamp(2px, 0.5vmin, 4px); /* Очень маленький отступ */
+  --spacing-sm: clamp(4px, 0.8vmin, 6px); /* Маленький отступ */
+  --spacing-md: clamp(8px, 1.2vmin, 12px); /* Средний отступ */
+  --spacing-lg: clamp(12px, 1.8vmin, 16px); /* Большой отступ */
+  
+  /* Радиусы скругления */
+  --border-radius-sm: clamp(3px, 0.5vmin, 4px); /* Маленький радиус */
+  --border-radius-md: clamp(5px, 0.8vmin, 6px); /* Средний радиус */
+
   /* Цвета (Новая палитра v20.2) */
   --color-black-100: #000000; /* Чистый черный */
   --color-black-95: rgba(255, 255, 255, 0.05); /* 95% черный (5% белый на черном) */
@@ -303,15 +327,15 @@ body {
 
 .timeline-item .version-label {
     position: absolute !important;
-    top: 5px !important;
-    left: 5px !important;
-    font-size: 11px !important;
+    top: var(--spacing-sm) !important;
+    left: var(--spacing-sm) !important;
+    font-size: var(--font-size-small) !important;
     line-height: 1.4 !important;
     opacity: 0.7 !important;
     color: var(--text-color) !important;
     background: rgba(0, 0, 0, 0.5) !important;
-    padding: 2px 5px !important;
-    border-radius: 3px !important;
+    padding: var(--spacing-xs) var(--spacing-sm) !important;
+    border-radius: var(--border-radius-sm) !important;
     z-index: 1 !important;
 }
 
@@ -319,9 +343,9 @@ body {
     position: relative;
     display: flex;
     align-items: flex-start;
-    margin-bottom: calc(11px * 1.4 - 11px);
-    padding: 5px;
-    border-radius: 5px;
+    margin-bottom: calc(var(--font-size-small) * 1.4 - var(--font-size-small));
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
     cursor: pointer;
     transition: background-color 0.2s;
 }
@@ -332,30 +356,30 @@ body {
 }
 
 .version-placeholder {
-  width: calc(11px * 1.4 * 5 + 10px); /* Ширина = Высота */
-  height: calc(11px * 1.4 * 5 + 10px); /* 5 строк текста + padding */
-  background-color: var(--placeholder-bg); /* Должен теперь быть --color-black-95 */
-  flex-shrink: 0; margin-right: 5px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius-sm); 
+    color: var(--color-primary);
+    text-align: center;
+    /* Используем переменные для определения размеров */
+    width: calc(var(--font-size-small) * 1.4 * 5 + var(--spacing-md)); /* Ширина = Высота */
+    height: calc(var(--font-size-small) * 1.4 * 5 + var(--spacing-md)); /* Высота для 5 строк текста + padding */
 }
 
 .version-text {
-  flex-grow: 1; overflow: hidden; min-width: 0;
+    padding-left: var(--spacing-md);
 }
 
 .version-text p {
-  margin: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-size: 11px;
-  line-height: 1.4;
-  height: calc(11px * 1.4 * 5); /* Фиксированная высота для 5 строк */
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #555 #222;
+    margin: 0;
+    font-size: var(--font-size-small);
+    line-height: 1.4;
+    white-space: normal;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: calc(var(--font-size-small) * 1.4 * 5); /* Высота для 5 строк текста */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-black-66) var(--color-black-95);
 }
-.version-text p::-webkit-scrollbar { width: 5px; }
-.version-text p::-webkit-scrollbar-track { background: #222; border-radius: 3px; }
-.version-text p::-webkit-scrollbar-thumb { background-color: #555; border-radius: 3px; }
 
 /* Интегрированный редактор файлов */
 #integratedFileEditor {
@@ -363,26 +387,35 @@ body {
   max-height: 30vh; flex-shrink: 0; border-top: 1px solid var(--panel-border);
 }
 #integratedFileEditor h3 {
-  font-size: 15px;
+  font-size: var(--font-size-large);
   margin-top: 0;
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-md);
 }
 #integratedFileEditor ul#fileList { list-style: none; padding: 0; margin: 0 0 10px 0;}
 #integratedFileEditor li {
-  font-size: 13px;
-  padding: 5px;
+  padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
-  border-radius: 3px;
-  margin-bottom: 3px;
+  margin-bottom: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  transition: background-color 0.2s;
+  font-size: var(--font-size-base);
 }
 #integratedFileEditor li:hover { background-color: var(--button-hover-bg); }
 #integratedFileEditor div#fileEditor { display: flex; flex-direction: column; }
 #integratedFileEditor textarea#fileContent {
-  flex-grow: 1; width: 100%; box-sizing: border-box; margin-bottom: 10px;
-  background-color: var(--color-pure-black); color: var(--color-primary);
-  padding: 10px;
-  font-family: monospace; font-size: 0.8em; 
-  resize: none; overflow: auto; white-space: pre; min-height: 100px;
+  flex-grow: 1; 
+  width: 100%; 
+  box-sizing: border-box; 
+  margin-bottom: var(--spacing-md);
+  background-color: var(--color-pure-black); 
+  color: var(--color-primary);
+  padding: var(--spacing-md);
+  font-family: 'Roboto Mono', monospace; 
+  font-size: var(--font-size-code);
+  resize: none; 
+  overflow: auto; 
+  white-space: pre; 
+  min-height: clamp(100px, 20vh, 200px);
 }
 #integratedFileEditor button#saveFile {
   padding: 5px 10px; background-color: var(--button-action-bg); color: white;
@@ -415,15 +448,15 @@ body {
 
 /* Стили для кнопок Применить и Отправить */
 #submitTopPrompt, #submitChatMessage {
-  padding: 6px 12px;
-  font-size: 14px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-button);
   background-color: var(--color-green-100);
   color: var(--color-black-100);
   border: none;
-  border-radius: 3px;
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  height: 30px;
-  width: 110px;  /* Строго фиксированная ширина */
+  height: var(--control-height);
+  width: var(--button-action-width);
   flex-shrink: 0; /* Запрещаем сжатие */
   transition: background-color 0.2s ease;
 }
@@ -440,18 +473,18 @@ body {
   flex-grow: 1; 
   background-color: var(--color-pure-black); 
   color: var(--color-primary);
-  padding: 6px; 
-  font-size: 0.9em;
+  padding: var(--spacing-sm); 
+  font-size: var(--font-size-base);
   border: none; 
   outline: none; 
-  border-radius: 3px;
-  height: 30px;
+  border-radius: var(--border-radius-sm);
+  height: var(--control-height);
 }
 
 /* Стили для кнопки чата */
 #chatButton {
-  width: 30px !important;
-  height: 30px !important;
+  width: var(--icon-button-size) !important;
+  height: var(--icon-button-size) !important;
   padding: 0;
   display: flex;
   align-items: center;
@@ -460,7 +493,7 @@ body {
   border: none;
   cursor: pointer;
   color: var(--color-icon);
-  border-radius: 3px;
+  border-radius: var(--border-radius-sm);
   transition: color 0.15s ease-in-out;
 }
 
@@ -469,33 +502,39 @@ body {
 }
 
 #chatButton svg {
-  width: 20px;
-  height: 20px;
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
   fill: currentColor;
 }
 
 #toggleFilesButton {
-    background: none; border: 1px solid var(--panel-border); color: var(--color-icon);
-    padding: 4px 8px; min-width: auto; margin-right: 5px; cursor: pointer;
-    height: 30px; /* Фикс высоты */
-    line-height: 1; border-radius: 3px;
+    background: none; 
+    border: 1px solid var(--panel-border); 
+    color: var(--color-icon);
+    padding: var(--spacing-xs) var(--spacing-sm); 
+    min-width: auto; 
+    margin-right: var(--spacing-sm); 
+    cursor: pointer;
+    height: var(--control-height);
+    line-height: 1; 
+    border-radius: var(--border-radius-sm);
 }
 #toggleFilesButton:hover { background-color: var(--button-hover-bg); color: var(--color-primary); }
 
 /* Одинаковые стили для полей ввода, чтобы не было разницы в размерах */
 #topPromptInput, #chatInput {
   flex-grow: 1;
-  padding: 6px;
-  margin-right: 5px;
+  padding: var(--spacing-sm);
+  margin-right: var(--spacing-sm);
   background-color: var(--color-pure-black);
   color: var(--color-primary);
   outline: none;
   border: none;
-  border-radius: 3px;
-  min-height: 100px; /* Фиксированная минимальная высота */
-  height: 100px; /* Фиксированная высота */
+  border-radius: var(--border-radius-sm);
+  min-height: var(--input-height);
+  height: var(--input-height);
   resize: none;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   line-height: 1.4;
 }
 
@@ -511,7 +550,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 5px;
+  border-radius: var(--border-radius-md);
   transition: color 0.15s ease-in-out;
   font-size: calc(var(--button-size) * 0.6) !important;
 }
@@ -569,25 +608,53 @@ body {
 }
 .modal.active { display: flex; }
 .modal-content {
-  background-color: var(--color-pure-black); color: var(--color-primary);
-  padding: calc(var(--padding) * 1.5); border: 1px solid var(--color-dark-border);
-  border-radius: 5px; width: 80%; max-width: 500px; position: relative;
+  background-color: var(--color-pure-black); 
+  color: var(--color-primary);
+  padding: calc(var(--padding) * 1.5); 
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-md); 
+  width: 80%; 
+  max-width: clamp(300px, 60vw, 500px); 
+  position: relative;
 }
 .close {
-  position: absolute; top: 5px; right: 10px; color: #aaa;
-  font-size: 28px; font-weight: bold; cursor: pointer;
+  position: absolute; 
+  top: var(--spacing-xs); 
+  right: var(--spacing-md); 
+  color: var(--color-black-33);
+  font-size: var(--font-size-large); 
+  font-weight: bold; 
+  cursor: pointer;
 }
 .close:hover, .close:focus { color: var(--color-primary); }
-.modal h2 { margin-top: 0; margin-bottom: 15px; }
+.modal h2 { 
+  margin-top: 0; 
+  margin-bottom: var(--spacing-md); 
+  font-size: var(--font-size-large);
+}
 .modal textarea {
-  width: 100%; background-color: var(--color-pure-black); color: var(--color-primary);
-  border: 1px solid var(--color-dark-border); border-radius: 3px; padding: 10px;
-  font-family: inherit; margin-bottom: 10px; resize: vertical;
+  width: 100%; 
+  background-color: var(--color-pure-black); 
+  color: var(--color-primary);
+  border: 1px solid var(--panel-border); 
+  border-radius: var(--border-radius-sm); 
+  padding: var(--spacing-md);
+  font-family: inherit; 
+  margin-bottom: var(--spacing-md); 
+  resize: vertical;
+  font-size: var(--font-size-base);
 }
 .modal canvas { display: block; margin: 10px auto; border: 1px solid var(--color-dark-border); }
 .modal button {
-  padding: 8px 15px; background-color: var(--button-action-bg); color: white;
-  border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;
+  padding: var(--spacing-sm) var(--spacing-md); 
+  background-color: var(--button-action-bg); 
+  color: white;
+  border: none; 
+  border-radius: var(--border-radius-sm); 
+  cursor: pointer; 
+  margin-right: var(--spacing-md);
+  height: var(--control-height);
+  font-size: var(--font-size-button);
 }
 .modal button:hover { background-color: var(--button-action-hover); }
 .modal button:disabled { background-color: #555; cursor: not-allowed; }
@@ -746,15 +813,15 @@ body {
 }
 
 .chat-message {
-  padding: 6px; /* Внутренний отступ */
-  margin: 2px 0;
-  border-radius: 4px;
-  max-width: 60%; /* Уменьшаем максимальную ширину до 60% */
+  padding: var(--spacing-sm);
+  margin: var(--spacing-xs) 0;
+  border-radius: var(--border-radius-sm);
+  max-width: 60%;
   word-wrap: break-word;
   background-color: transparent !important;
   font-family: 'Roboto', sans-serif;
   border: none !important;
-  font-size: 14px; /* Унифицированный размер шрифта */
+  font-size: var(--font-size-base);
 }
 
 /* Сообщения пользователя выравниваются справа */
@@ -798,8 +865,8 @@ body {
 
 #chatInput {
   flex-grow: 1;
-  padding: 6px;
-  margin-bottom: 5px;
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
   margin-right: 4px; /* Добавляем отступ справа для скроллбара */
   width: calc(100% - 4px); /* Учитываем отступ в ширине */
   box-sizing: border-box;
@@ -807,14 +874,14 @@ body {
   color: var(--color-primary);
   outline: none;
   border: none;
-  border-radius: 3px;
-  min-height: 80px;
+  border-radius: var(--border-radius-sm);
+  min-height: calc(var(--input-height) * 0.8);
   resize: none;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--color-black-66) var(--color-black-100);
-  font-size: 14px; /* Унифицированный размер шрифта */
-  font-family: 'Roboto', sans-serif; /* Унифицированный шрифт */
+  font-size: var(--font-size-base);
+  font-family: 'Roboto', sans-serif;
 }
 
 #chatInput::-webkit-scrollbar {
