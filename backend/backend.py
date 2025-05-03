@@ -312,23 +312,23 @@ async def save_logs(request: Request): # <<< Принимаем Request вмес
         print("[ERROR] Cannot save Jenkins log, DB not connected yet (called from route definition).")
         raise HTTPException(status_code=503, detail="Database connection is not available yet")
 
-  # Добавляем отметку времени получения сервером
-  log_entry = log_data.dict()
-  log_entry['received_at'] = datetime.now()
+    # Добавляем отметку времени получения сервером
+    log_entry = log_data.dict()
+    log_entry['received_at'] = datetime.now()
 
-  try:
-    # Используем `await` для асинхронной операции с `motor`
-    result = await db.jenkins_logs.insert_one(log_entry)
-    print(f"[INFO] Jenkins log saved successfully, ID: {result.inserted_id}")
-    return JSONResponse(status_code=201, content={"message": "Log saved", "id": str(result.inserted_id)})
-  except PyMongoError as e:
-    print(f"[ERROR] MongoDB error saving Jenkins log: {e}")
-    raise HTTPException(status_code=500, detail=f"Failed to save log to database: {e}")
+    try:
+        # Используем `await` для асинхронной операции с `motor`
+        result = await db.jenkins_logs.insert_one(log_entry)
+        print(f"[INFO] Jenkins log saved successfully, ID: {result.inserted_id}")
+        return JSONResponse(status_code=201, content={"message": "Log saved", "id": str(result.inserted_id)})
+    except PyMongoError as e:
+        print(f"[ERROR] MongoDB error saving Jenkins log: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save log to database: {e}")
     except Exception as e:
-    # Ловим другие возможные ошибки при работе с базой
-    print(f"[ERROR] Unexpected error saving Jenkins log: {e}")
-    traceback.print_exc()
-    raise HTTPException(status_code=500, detail="Unexpected error while saving log")
+        # Ловим другие возможные ошибки при работе с базой
+        print(f"[ERROR] Unexpected error saving Jenkins log: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Unexpected error while saving log")
 
 # ----------------------------------------------------------------------
 # 6. МОНТИРОВАНИЕ СТАТИКИ
