@@ -21,6 +21,17 @@ export function setupChat() {
     return;
   }
   
+  // Настраиваем обработчики событий для поля ввода
+  const chatInput = ui.inputs.chatInput;
+  if (chatInput) {
+    // Обработчик ввода текста
+    chatInput.addEventListener('input', function() {
+      // Автоматически увеличиваем высоту поля ввода при необходимости
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+    });
+  }
+  
   console.log('Чат инициализирован.');
 }
 
@@ -106,22 +117,16 @@ export function addMessageToChat(sender, messageText) {
   const formattedMessage = formatMessage(messageText);
   messageElement.innerHTML = formattedMessage;
   
-  // Добавляем в контейнер (в начало, так как flex-direction: column-reverse)
-  chatHistoryContainer.prepend(messageElement);
+  // Добавляем в контейнер
+  chatHistoryContainer.appendChild(messageElement);
   
-  // Прокручиваем к низу, если пользователь смотрит последние сообщения
-  if (chatHistoryContainer.scrollTop < 50) {
-    setTimeout(() => {
-      chatHistoryContainer.scrollTop = 0;
-    }, 10);
-  }
+  // Прокручиваем к новому сообщению
+  setTimeout(() => {
+    chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
+  }, 10);
   
   // Добавляем в массив сообщений
-  chatMessages.push({
-    sender: sender,
-    message: messageText,
-    timestamp: new Date().toISOString()
-  });
+  chatMessages.push({ sender, message: messageText, timestamp: new Date().toISOString() });
 }
 
 // Форматирование сообщения (базовый маркдаун)

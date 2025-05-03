@@ -10,12 +10,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Open+Sans:wght@400;600&family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="style.css">
   <!-- Favicon and Meta -->
-  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <meta property="og:title" content="Holograms Media">
   <meta property="og:description" content="Interactive 3D Audio Visualizations">
-  <meta property="og:image" content="/static/og-image.jpg">
+  <meta property="og:image" content="/og-image.jpg">
   <meta property="og:url" content="https://holograms.media/">
   <meta property="og:type" content="website">
 
@@ -70,7 +70,7 @@
     <div id="grid-container">
       <!-- Область жестов теперь внутри grid-container или main-area? Проверить CSS -->
       <div id="gesture-area">
-          <div id="gesture-line"></div>
+         <div id="gesture-line"></div>
       </div>
     </div>
   </div>
@@ -81,7 +81,7 @@
     <div class="content-container">
       <!-- Таймлайн (Режим по умолчанию) -->
       <div id="versionTimeline" class="panel-section default-mode">
-      <div id="versionFrames"></div>
+        <div id="versionFrames"></div>
       </div>
 
       <!-- История чата с Триа (Режим чата) -->
@@ -124,22 +124,22 @@
 
     <!-- Блок с элементами управления (всегда видимый внизу) -->
     <div class="controls-container">
-        <div class="prompt-controls">
+      <div class="prompt-controls">
         <button id="chatButton" class="control-button" title="Чат">
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
             <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z"/>
           </svg>
         </button>
-          <select id="modelSelect">
-            <option value="mistral/mistral-small-latest">Mistral Small</option>
-            <option value="mistral/mistral-large-latest">Mistral Large</option>
-            <option value="codestral/codestral-latest">Codestral</option>
-          </select>
+        <select id="modelSelect">
+          <option value="mistral/mistral-small-latest">Mistral Small</option>
+          <option value="mistral/mistral-large-latest">Mistral Large</option>
+          <option value="codestral/codestral-latest">Codestral</option>
+        </select>
         <!-- Кнопка применить (видима в режиме по умолчанию) -->
         <button id="submitTopPrompt" class="default-mode">Применить</button>
         <!-- Кнопка отправить (видима в режиме чата) -->
         <button id="submitChatMessage" class="chat-mode" style="display: none;">Отправить</button>
-        </div>
+      </div>
     </div>
   </div>
 
@@ -175,11 +175,11 @@
   <!-- !!! НОВАЯ УНИВЕРСАЛЬНАЯ КНОПКА ПЕРЕД ЗАКРЫТИЕМ BODY !!! -->
 
   <!-- Подключение JavaScript со старыми файлами для обратной совместимости -->
-  <script src="/static/script.js?v=1.0" type="module"></script>
-  <script src="/static/tria_mode.js?v=1.0" type="module"></script>
+  <script src="script.js?v=1.0" type="module"></script>
+  <script src="tria_mode.js?v=1.0" type="module"></script>
   
   <!-- Подключение новой модульной структуры -->
-  <script src="/static/js/main.js" type="module"></script>
+  <script src="js/main.js" type="module"></script>
 
   <button id="togglePanelsButton" class="control-button panel-toggle-universal" title="Скрыть/Показать панели">
     <!-- Новый SVG: Стрелка ВПРАВО (Показать панель) -->
