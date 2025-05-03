@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { applyPromptWithTriaMode } from './tria_mode.js';
+// Импорт менеджеров UI и ввода
+import { initializeRightPanel } from '/static/js/panels/rightPanelManager.js'; 
+import { initializeChatDisplay, addMessage, clearChat, speak } from '/static/js/panels/chatMessages.js'; 
+import { initializeSpeechInput } from '/static/js/audio/speechInput.js'; 
 
 // --- Global Variables ---
 let telegramLinkButton;
@@ -270,7 +274,7 @@ function stopMicrophone() {
 }
 
   // Обработчик клика для кнопки микрофона
-  if (micButton) {
+  /*if (micButton) {
       micButton.addEventListener('click', () => {
         // Проверяем состояние AudioContext перед действиями
         if (!audioContext || audioContext.state === 'closed') {
@@ -321,7 +325,7 @@ function stopMicrophone() {
   } else {
       console.error("Кнопка микрофона #micButton не найдена!");
   }
-
+*/
 function updateTouchSensitivity() {
   TOUCH_SENSITIVITY = BASE_TOUCH_SENSITIVITY; // Keep it fixed
 }
@@ -782,6 +786,11 @@ function stopGestureRecording() {
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('>>> DOMContentLoaded fired'); // Проверка старта скрипта
+  console.log('>>> DOMContentLoaded fired (Инициализация модулей)');
+  const chatDisplayInitialized = initializeChatDisplay(); 
+  const rightPanelInitialized = initializeRightPanel(); 
+  const speechInputInitialized = initializeSpeechInput(); 
+  console.log(`Статус инициализации: Чат=${chatDisplayInitialized}, Панель=${rightPanelInitialized}, Речь=${speechInputInitialized}`);
   
   // Инициализация глобальных переменных
   telegramLinkButton = document.getElementById('telegramLinkButton');
@@ -805,10 +814,10 @@ document.addEventListener('DOMContentLoaded', () => {
       gestureArea.title = 'Кликните для записи жеста'; // Добавляем всплывающую подсказку
   }
 
-  // Обработчик для кнопки чата
-  if (chatButton) {
-    chatButton.addEventListener('click', toggleChatMode);
-  }
+  // Обработчик для кнопки чата - перенесен в rightPanelManager.js
+  // if (chatButton) {
+  //   chatButton.addEventListener('click', toggleChatMode);
+  // }
 
   // Определяем элементы панелей
   const leftPanel = document.querySelector('.panel.left-panel');
@@ -2348,7 +2357,7 @@ async function loadInitialFilesAndSetupEditor() {
       if (loadingIndicator) loadingIndicator.style.display = 'block';
       
       // Добавляем сообщение пользователя в чат
-      addMessageToChat('user', messageText);
+      addMessage('user', messageText);
       
       // Очищаем поле ввода
       chatInput.value = '';
@@ -2379,9 +2388,13 @@ async function loadInitialFilesAndSetupEditor() {
         
         // Добавляем ответ от ИИ в чат
         if (response.data && response.data.response) {
-          addMessageToChat('tria', response.data.response);
+          addMessage('tria', response.data.response);
+          // Озвучиваем ответ Триа
+          if (response.data.response) { // Проверяем, что ответ не пустой
+              speak(response.data.response);
+          }
         } else {
-          addMessageToChat('tria', 'Получен пустой ответ от сервера.');
+          addMessage('tria', 'Получен пустой ответ от сервера.');
         }
         
         // Сбрасываем флаг ожидания и разблокируем кнопку
@@ -2395,81 +2408,13 @@ async function loadInitialFilesAndSetupEditor() {
         console.error('Ошибка при отправке сообщения:', error);
         
         // Добавляем сообщение об ошибке в чат
-        addMessageToChat('tria', `Ошибка при обработке запроса: ${error.message || 'Неизвестная ошибка'}`);
+        addMessage('tria', `Ошибка при обработке запроса: ${error.message || 'Неизвестная ошибка'}`);
         
         // Сбрасываем флаг ожидания и разблокируем кнопку
         isWaitingForResponse = false;
         if (submitChatMessage) submitChatMessage.disabled = false;
       });
     }
-  }
-
-  // Функция для добавления сообщения в историю чата
-  function addMessageToChat(role, content) {
-    const chatMessages = document.getElementById('chatMessages');
-    if (!chatMessages) return;
-    
-    // Создаем элемент сообщения
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('chat-message');
-    
-    if (role === 'user') {
-      messageElement.classList.add('user-message');
-    } else if (role === 'assistant' || role === 'tria') {
-      messageElement.classList.add('tria-message');
-    } else if (role === 'error') {
-      messageElement.classList.add('error-message');
-    }
-    
-    // Форматируем текст с поддержкой переносов строк
-    const formattedText = content.replace(/\n/g, '<br>');
-    messageElement.innerHTML = formattedText;
-    
-    // Добавляем сообщение в контейнер
-    chatMessages.appendChild(messageElement);
-    
-    // Прокручиваем к новому сообщению с небольшой задержкой
-    setTimeout(() => {
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }, 10);
-    
-    // Сохраняем сообщение в MongoDB
-    saveMessageToDatabase(role, content);
-  }
-
-  // Функция для сохранения сообщения в базу данных
-  function saveMessageToDatabase(sender, text) {
-    // Получаем ID чата из localStorage или создаем новый
-    let chatId = localStorage.getItem('current_chat_id');
-    
-    if (!chatId) {
-      // Если ID чата не существует, создаем новый
-      chatId = 'chat_' + Date.now();
-      localStorage.setItem('current_chat_id', chatId);
-    }
-    
-    // Преобразуем 'триа' обратно в 'tria' для сервера
-    if (sender === 'триа') {
-      sender = 'assistant';
-    } else if (sender === 'user') {
-      sender = 'user';
-    }
-    
-    // Отправляем запрос на сохранение
-    axios.post('/chat/save', {
-      chat_id: chatId,
-      message: {
-        role: sender,
-        content: text,
-        timestamp: new Date().toISOString()
-      }
-    })
-    .then(response => {
-      console.log('Сообщение сохранено:', response.data);
-    })
-    .catch(error => {
-      console.error('Ошибка при сохранении сообщения:', error);
-    });
   }
 
   // Функция для загрузки истории чата
@@ -2502,7 +2447,7 @@ async function loadInitialFilesAndSetupEditor() {
         messages.forEach(msg => {
           // Конвертируем 'assistant' в 'tria' для addMessageToChat
           const sender = msg.role === 'assistant' ? 'tria' : 'user';
-          addMessageToChat(sender, msg.content);
+          addMessage(sender, msg.content);
         });
       })
       .catch(error => {
@@ -2513,89 +2458,6 @@ async function loadInitialFilesAndSetupEditor() {
       });
   }
 
-  // При инициализации чата загружаем историю
-  document.addEventListener('DOMContentLoaded', () => {
-    // Добавим вызов загрузки истории чата к существующему обработчику
-    const chatButton = document.getElementById('chatButton');
-    if (chatButton) {
-      // Сохраним оригинальный обработчик клика
-      const originalClickHandler = chatButton.onclick;
-      
-      // Заменим обработчик на новый, который сначала вызовет оригинальный, а затем загрузит историю
-      chatButton.onclick = function(event) {
-        // Вызываем оригинальный обработчик, если он есть
-        if (originalClickHandler) {
-          originalClickHandler.call(this, event);
-        }
-        
-        // Если активирован режим чата, загружаем историю
-        if (this.classList.contains('active')) {
-          loadChatHistory();
-        }
-      };
-    }
-  });
-
-  // Добавим обработчики фокуса для поля ввода чата
-  document.addEventListener('DOMContentLoaded', () => {
-    const chatInput = document.getElementById('chatInput');
-    if (chatInput) {
-      // При получении фокуса
-      chatInput.addEventListener('focus', () => {
-        // Можно добавить дополнительную логику при фокусе, если нужно
-      });
-      
-      // При потере фокуса
-      chatInput.addEventListener('blur', () => {
-        // Если поле пустое, можно добавить дополнительный код
-        if (chatInput.value.trim() === '') {
-          // Тут можно добавить дополнительную логику, если нужно
-        }
-      });
-    }
-  });
-
-  // Функция для переключения между режимами чата и ввода промпта
-  function toggleChatMode() {
-    const chatButton = document.getElementById('chatButton');
-    const isChatMode = chatButton.classList.toggle('active');
-    
-    // Получаем элементы разных режимов
-    const defaultModeElements = document.querySelectorAll('.default-mode');
-    const chatModeElements = document.querySelectorAll('.chat-mode');
-    
-    // Переключаем видимость элементов
-    defaultModeElements.forEach(el => {
-      el.style.display = isChatMode ? 'none' : 'block';
-    });
-    
-    chatModeElements.forEach(el => {
-      el.style.display = isChatMode ? 'block' : 'none';
-    });
-    
-    // Скрываем индикаторы загрузки при переключении режимов
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    if (loadingIndicator) {
-      loadingIndicator.style.display = 'none';
-    }
-    
-    // Автофокус в режиме чата
-    if (isChatMode) {
-      const chatInput = document.getElementById('chatInput');
-      if (chatInput) {
-        setTimeout(() => {
-          chatInput.focus();
-        }, 100);
-      }
-    } else {
-      const promptInput = document.getElementById('topPromptInput');
-      if (promptInput) {
-        setTimeout(() => {
-          promptInput.focus();
-        }, 100);
-      }
-    }
-    
-    console.log(`Режим чата ${isChatMode ? 'включен' : 'выключен'}`);
-  }
+  // Восстанавливаем экспорт функции в глобальный контекст (временное решение)
+  window.loadChatHistory = loadChatHistory;
 });
