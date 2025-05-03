@@ -2,3 +2,4 @@ node_modules/
 venv/
 *.save
 .aider*
+__pycache__/

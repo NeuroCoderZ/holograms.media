@@ -61,21 +61,33 @@
 
 ## Next Steps
 
-- Следующий шаг рефакторинга фронтенда (Шаг 6):
-  - Создать модуль speechInput.js для микрофонного ввода (Web Speech API) и обработки голосовых команд
-  - Реализовать полноценное распознавание речи через Web Speech API для #micButton
-  - Интегрировать распознавание голоса с существующей логикой отправки запросов
-  - Создать модуль gestureRecognizer.js для работы с MediaPipe Hands
-- Улучшения для модуля chatMessages.js:
-  - Добавить сохранение истории чата в localStorage
-  - Реализовать функционал для очистки истории
-  - Добавить визуальные эффекты при озвучивании текста
-- Ручная регистрация в Google Search Console и Яндекс.Вебмастер:
-  - Создать аккаунты (если нет)
-  - Добавить сайт holograms.media
-  - Подтвердить права на сайт (через добавление мета-тега или файла)
-  - Отправить sitemap.xml на индексацию
-- Настроить Jenkins Job:
-  - Создать Pipeline Job в Jenkins, указав путь до репозитория с Jenkinsfile
-  - Настроить webhook в GitHub для автоматического запуска сборки
-  - Обновить секцию Send Build Status в Jenkinsfile для корректной работы с MongoDB
+- Investigate why Jenkins build is not triggering.
+- Check Jenkins logs: `sudo journalctl -u jenkins --since "2025-04-30 13:00"`.
+- Test with a new commit: `echo "Webhook test 7" >> test.txt && git add test.txt && git commit -m "test: Webhook test commit 7" && git push origin main`.
+  **Commit:** a73fb8b (Предполагаемый)
+
+**Текущий статус:**
+
+- Бэкенд (`backend.py`) работает на порту 3000.
+- Эндпоинты `/tria/invoke` и `/tria/save_logs` доступны.
+- CORS настроен для бэкенда.
+- Фронтенд (`index.html`) имеет базовую структуру с кнопками. Логика `#triaButton` работает.
+- Jenkins настроен, отправка логов на `/tria/save_logs` реализована. Автокоммиты через Webhook НЕ настроены.
+- **Выполнен шаг рефакторинга UI**: Стандартизированы размеры кнопок левой панели и шрифты таймлайна/панели промпта в `frontend/style.css`.
+
+**Выполненный Шаг (Рефакторинг UI - Часть 1):**
+
+- **Цель:** Применить стандарты UI к кнопкам левой панели и шрифтам в `style.css`.
+- **Изменения в `frontend/style.css`:**
+  - `--button-size` установлен в `clamp(44px, 5vmin, 60px)`.
+  - Ширина `.panel.left-panel` теперь корректно рассчитывается на основе `--button-size`. Убраны `min-width` и `max-width` для этой панели.
+  - `.version-label` (метки версий) теперь `font-size: 11px !important; line-height: 1.4 !important;`.
+  - `.version-text p` (текст промптов в таймлайне) теперь `font-size: 11px; line-height: 1.4;`.
+  - Шрифты для `#topPromptInput`, `#modelSelect`, `#submitTopPrompt` установлены в `font-size: clamp(13px, 2vmin, 15px);`.
+- **Результат:** Улучшена адаптивность и консистентность UI элементов.
+
+**Следующие шаги (Приоритетные):**
+
+1.  Исправить ошибку 405 для `/tria/save_logs` в `backend.py`.
+2.  Настроить автокоммиты через GitHub Webhook в Jenkins.
+3.  Реализовать голосовой ввод через `#micButton` (Web Speech API, вызов `/tria/invoke`).
