@@ -1,30 +1,30 @@
 // frontend/js/main.js - Основная точка входа для приложения
 
 // Импорт ядра
-import { initCore } from './core/init.js';
-import { setupEventListeners } from './core/events.js';
-import { setupUI } from './core/ui.js';
+import { initCore } from '/static/js/core/init.js';
+import { setupEventListeners } from '/static/js/core/events.js';
+import { setupUI } from '/static/js/core/ui.js';
 
 // Импорт модулей
-import { initAudio, setupAudioProcessing } from './audio/processing.js';
-import { initMicrophone } from './audio/microphone.js';
-import { initAudioVisualization } from './audio/visualization.js';
+import { initAudio, setupAudioProcessing } from '/static/js/audio/processing.js';
+import { initMicrophone } from '/static/js/audio/microphone.js';
+import { initAudioVisualization } from '/static/js/audio/visualization.js';
 
-import { initScene, setupCamera, animate } from './3d/scene.js';
-import { createHologram } from './3d/hologram.js';
-import { initializeGrid } from './3d/grid.js';
+import { initScene, setupCamera, animate } from '/static/js/3d/scene.js';
+import { createHologram } from '/static/js/3d/hologram.js';
+import { initializeGrid } from '/static/js/3d/grid.js';
 
-import { initializeGestureDetection } from './gestures/detection.js';
-import { initializeHandTracking } from './gestures/tracking.js';
+import { initializeGestureDetection } from '/static/js/gestures/detection.js';
+import { initializeHandTracking } from '/static/js/gestures/tracking.js';
 
-import { setupChat } from './ai/chat.js';
-import { initializeTria } from './ai/tria.js';
+import { setupChat } from '/static/js/ai/chat.js';
+import { initializeTria } from '/static/js/ai/tria.js';
 
-import { loadSettings, saveSettings } from './utils/storage.js';
-import { debounce, throttle } from './utils/helpers.js';
+import { loadSettings, saveSettings } from '/static/js/utils/storage.js';
+import { debounce, throttle } from '/static/js/utils/helpers.js';
 
 // Импорт моста для обратной совместимости
-import { initLegacyBridge, registerLegacyHandlers } from './legacy-bridge.js';
+import { initLegacyBridge, registerLegacyHandlers } from '/static/js/legacy-bridge.js';
 
 // Инициализация приложения при загрузке DOM
 document.addEventListener('DOMContentLoaded', async () => {

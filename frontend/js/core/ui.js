@@ -211,6 +211,12 @@ export function toggleChatMode() {
     el.style.display = isChatMode ? 'block' : 'none';
   });
   
+  // Скрываем индикаторы загрузки при переключении режимов
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  if (loadingIndicator) {
+    loadingIndicator.style.display = 'none';
+  }
+  
   // Автофокус в режиме чата
   if (isChatMode) {
     const chatInput = ui.inputs.chatInput;
