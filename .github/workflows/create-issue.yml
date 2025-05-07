@@ -1,0 +1,21 @@
+name: Create Issue on Push
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create issue
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.create({
+              owner: 'NeuroCoderZ',
+              repo: 'holograms.media',
+              title: 'Auto-generated issue: New code changes',
+              body: 'This issue was created automatically due to a push to the main branch.'
+            })
