@@ -1,6 +1,8 @@
 ---
 title: Holograms Media
 emoji: 💥
+colorFrom: indigo
+colorTo: blue
 sdk: gradio
 sdk_version: 4.31.0
 python_version: 3.12
@@ -9,6 +11,7 @@ pinned: false
 ---
 
 # Holograms Media
+Interactive 3D Audio Visualizations with AI Assistant Tria.
 
 Backend: FastAPI, frontend: static (frontend/), запуск через Gradio SDK.
 
