@@ -27,8 +27,6 @@ from langchain_core.runnables import Runnable
 from langchain_mistralai import ChatMistralAI
 from langchain.tools import Tool
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-# --- Gradio Interface & Mounting FastAPI ---
-import gradio as gr
 
 
 # ----------------------------------------------------------------------
@@ -442,9 +440,12 @@ async def save_chat_message(request: ChatSaveRequest):
 # 11. МОНТИРОВАНИЕ СТАТИКИ
 # ----------------------------------------------------------------------
 
-# Удаляем монтирование статики, так как Gradio обрабатывает её самостоятельно
-
-# Обработчик для корня "/" отдается выше функцией read_index
+# Монтирование статики
+if os.path.isdir(FRONTEND_DIR):
+    app.mount("/static", StaticFiles(directory=FRONTEND_DIR, html=False), name="static_files")
+    print(f"[INFO] Статика успешно смонтирована из: {FRONTEND_DIR} на /static")
+else:
+    print(f"[CRITICAL ERROR] Директория для статики НЕ НАЙДЕНА: {FRONTEND_DIR}")
 
 # ----------------------------------------------------------------------
 # 12. Блок if name == "__main__": (Закомментирован для HF Spaces)
@@ -459,16 +460,3 @@ async def save_chat_message(request: ChatSaveRequest):
 #     # Используем порт 8080, который обычно используется на HF
 #     uvicorn.run(app, host="0.0.0.0", port=8080)
 #
-
-# --- Gradio Interface & Mounting FastAPI ---
-with gr.Blocks() as demo:
-    gr.Markdown("## Holograms Media Backend (FastAPI via Gradio)")
-    gr.Markdown("Access FastAPI at `/api` (e.g., `/api/health`) or static files at `/static/...` and root `/` for index.html")
-
-# Монтируем FastAPI на /api внутри Gradio
-app = gr.mount_asgi(app, path="/api")
-
-# Оставляем ссылку на оригинальный FastAPI app для ясности
-fastapi_app = app
-
-print("[INFO] FastAPI app mounted to Gradio Blocks. Gradio will now launch.")
