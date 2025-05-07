@@ -440,20 +440,7 @@ async def save_chat_message(request: ChatSaveRequest):
 # 11. МОНТИРОВАНИЕ СТАТИКИ
 # ----------------------------------------------------------------------
 
-# Монтируем статику на /static
-# Убедись, что папка 'frontend' находится в корне рядом с app.py
-if os.path.isdir(FRONTEND_DIR):
-    # Убедимся, что монтируем на /static, а не на /
-    app.mount("/static", StaticFiles(directory=FRONTEND_DIR, html=False), name="static_files")
-    print(f"Статика успешно смонтирована из: {FRONTEND_DIR} на /static")
-else:
-    # Это критическая ошибка. Проверь структуру папок и переменную FRONTEND_DIR
-    print(f"[CRITICAL ERROR] Директория для статики НЕ НАЙДЕНА: {FRONTEND_DIR}")
-    # Приложение может запуститься, но статика не будет доступна.
-    # Возможно, стоит выбросить исключение или добавить Health Check, который будет падать,
-    # если статика не найдена.
-    # raise RuntimeError(f"Frontend directory not found at {FRONTEND_DIR}")
-
+# Удаляем монтирование статики, так как Gradio обрабатывает её самостоятельно
 
 # Обработчик для корня "/" отдается выше функцией read_index
 
