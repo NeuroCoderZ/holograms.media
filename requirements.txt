@@ -1,15 +1,14 @@
 fastapi>=0.115.0
-uvicorn[standard]>=0.25.0 # Добавил [standard] для полной совместимости Uvicorn
+uvicorn[standard]>=0.25.0
 pydantic>=2.10.0
-motor[asyncio]>=3.4.0 # Уточнил, что нужен asyncio для Motor
+motor[asyncio]>=3.4.0
 pymongo>=4.9.0
 httpx>=0.24.0
 python-dotenv>=1.0.0
 aiofiles>=23.0.0
-gradio[oauth,mcp]>=5.29.0 # Обновлено для HF Spaces с MCP и OAuth
-langchain>=0.2.0 # Актуальная версия Langchain
-langchain-mistralai>=0.0.10 # Актуальная версия коннектора
-tenacity>=8.0.0 # Актуальная версия Tenacity
+langchain>=0.2.0
+langchain-mistralai>=0.0.10
+tenacity>=8.0.0
 # Добавь сюда любые другие Python зависимости, если твой код их использует!
 # Например, если MediaPipe используется на Python бэкенде:
 # mediapipe

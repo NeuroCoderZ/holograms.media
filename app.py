@@ -13,7 +13,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field, ValidationError
 from typing import List, Dict, Any, Optional
-# motor.motor_asyncio импортируется ниже явно
 import httpx
 import asyncio
 from pymongo.errors import PyMongoError
@@ -27,7 +26,6 @@ from langchain_core.runnables import Runnable
 from langchain_mistralai import ChatMistralAI
 from langchain.tools import Tool
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-import gradio as gr
 
 
 # ----------------------------------------------------------------------
@@ -434,35 +432,9 @@ async def save_chat_message(request: ChatSaveRequest):
 # 11. МОНТИРОВАНИЕ СТАТИКИ
 # ----------------------------------------------------------------------
 
-# Монтирование статики
+# Монтируем статику на корневой путь
 if os.path.isdir(FRONTEND_DIR):
-    app.mount("/static", StaticFiles(directory=FRONTEND_DIR, html=False), name="static_files")
-    print(f"[INFO] Статика успешно смонтирована из: {FRONTEND_DIR} на /static")
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
+    print(f"[INFO] Статика успешно смонтирована из: {FRONTEND_DIR}")
 else:
     print(f"[CRITICAL ERROR] Директория для статики НЕ НАЙДЕНА: {FRONTEND_DIR}")
-
-# ----------------------------------------------------------------------
-# 12. Gradio Interface & FastAPI Integration for HF Spaces
-# ----------------------------------------------------------------------
-
-# Сохраняем ссылку на оригинальное FastAPI приложение
-fastapi_app_instance = app
-
-# --- Создание Gradio интерфейса и монтирование FastAPI ---
-print("[INFO] Создание Gradio интерфейса и монтирование FastAPI...")
-
-with gr.Blocks(title="Holograms Media Backend") as demo:
-    gr.Markdown(
-        """
-        # Holograms Media Backend (FastAPI via Gradio)
-        - FastAPI эндпоинты доступны по пути `/api/...` (например, `/api/health`)
-        - Статика FastAPI (index.html, /static/...) доступна по своим обычным путям
-        """
-    )
-
-# Монтируем наше FastAPI приложение 'fastapi_app_instance' 
-# на путь '/api' внутри Gradio интерфейса 'demo'
-app = gr.mount_asgi(blocks=demo, app_to_mount=fastapi_app_instance, path="/api")
-
-print(f"[INFO] FastAPI приложение ('fastapi_app_instance') смонтировано в Gradio Blocks ('demo')")
-print(f"[INFO] Gradio будет запускать объект 'app' (который теперь является Gradio Blocks)")

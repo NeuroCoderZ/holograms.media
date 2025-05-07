@@ -3,11 +3,11 @@ title: Holograms Media
 emoji: 💥
 colorFrom: indigo
 colorTo: blue
-sdk: gradio
-sdk_version: 5.29.0
-python_version: 3.12
+sdk: docker
 app_file: app.py
+app_port: 7860
 pinned: false
+license: mit
 ---
 
 # Holograms Media
