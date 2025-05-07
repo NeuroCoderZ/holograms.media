@@ -14,22 +14,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-
-      - name: Install huggingface_hub
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade huggingface_hub
-
-      - name: Trigger HF Space Rebuild
+      - name: Trigger HF Space Restart
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN_SPACES_CONTROL }}
+          SPACE_ID: "NeuroCoderZ/holograms-media"
         run: |
-          set -e # Немедленное прерывание при ошибках
+          set -e
           
           echo "Checking environment..."
           if [ -z "$HF_TOKEN" ]; then
@@ -38,14 +28,22 @@ jobs:
           fi
           echo "✓ HF_TOKEN is properly set"
           
-          echo "Installing huggingface-cli..."
-          which huggingface-cli || echo "Warning: huggingface-cli not found in PATH"
+          API_URL="https://huggingface.co/api/spaces/${SPACE_ID}/restart"
+          echo "Attempting to trigger restart for ${SPACE_ID}"
+          echo "Using API endpoint: ${API_URL}"
           
-          echo "Logging in to Hugging Face..."
-          huggingface-cli login --token "$HF_TOKEN"
-          echo "✓ Login successful"
+          echo "Sending POST request to Hugging Face API..."
+          response_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $HF_TOKEN" \
+            "${API_URL}")
+            
+          echo "API response status code: $response_code"
           
-          echo "Triggering restart for NeuroCoderZ/holograms-media Space..."
-          huggingface-cli space NeuroCoderZ/holograms-media --restart
-          
-          echo "✓ Space restart command sent successfully!"
+          if [ "$response_code" -eq 200 ] || [ "$response_code" -eq 202 ]; then
+            echo "✓ Space restart command sent successfully (HTTP $response_code)"
+          else
+            echo "Error: Failed to trigger Space restart. HTTP status code: $response_code"
+            echo "Fetching error details..."
+            curl -X POST -H "Authorization: Bearer $HF_TOKEN" "${API_URL}"
+            exit 1
+          fi
