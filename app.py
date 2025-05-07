@@ -432,9 +432,9 @@ async def save_chat_message(request: ChatSaveRequest):
 # 11. МОНТИРОВАНИЕ СТАТИКИ
 # ----------------------------------------------------------------------
 
-# Монтируем статику на корневой путь
+# Монтирование статики
 if os.path.isdir(FRONTEND_DIR):
-    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
-    print(f"[INFO] Статика успешно смонтирована из: {FRONTEND_DIR}")
+    app.mount("/static", StaticFiles(directory=FRONTEND_DIR, html=False), name="static_files")
+    print(f"[INFO] Статика успешно смонтирована из: {FRONTEND_DIR} на /static")
 else:
     print(f"[CRITICAL ERROR] Директория для статики НЕ НАЙДЕНА: {FRONTEND_DIR}")
