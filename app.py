@@ -286,14 +286,11 @@ async def health_check():
 @app.get("/")
 async def read_index():
     """Отдает основной index.html."""
-    print(f"[GET /] Attempting to serve index.html from {INDEX_HTML_PATH}")
     if os.path.exists(INDEX_HTML_PATH):
         return FileResponse(INDEX_HTML_PATH, media_type="text/html")
     else:
-        print(f"[ERROR] index.html not found at path: {INDEX_HTML_PATH}")
-        # Убедись, что папка frontend и index.html в ней присутствуют в репозитории
-        # и путь FRONTEND_DIR в коде app.py корректен относительно корня репозитория
-        raise HTTPException(status_code=404, detail=f"index.html not found at {INDEX_HTML_PATH}")
+        print(f"[ERROR /] index.html НЕ НАЙДЕН по пути: {INDEX_HTML_PATH}")
+        raise HTTPException(status_code=404, detail="index.html not found")
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
@@ -346,7 +343,6 @@ async def chat(request: ChatRequest):
             db_local = local_client[MONGO_DB_NAME]
             chat_id_val = str(uuid.uuid4()) # Генерируем UUID для чата
             chat_collection_for_saving = db_local["chat_history"]
-            print(f"[CHAT DEBUG] Attempting to save chat to DB collection 'chat_history'...")
 
             # Готовим документ для вставки. Сохраняем полную историю, отправленную в LLM,
             # текущее сообщение пользователя и ответ ассистента.
@@ -360,10 +356,8 @@ async def chat(request: ChatRequest):
             }
 
             await chat_collection_for_saving.insert_one(chat_document)
-            print(f"[CHAT DEBUG] Chat interaction saved to DB (chat_id: {chat_id_val}).")
             chat_id = chat_id_val # Передаем сгенерированный ID в ответ
         except Exception as db_error:
-            print(f"[CHAT WARN] Failed to save chat interaction to DB: {db_error}")
             traceback.print_exc()
             # Ошибка сохранения в БД не должна блокировать успешный ответ LLM
 
@@ -374,7 +368,6 @@ async def chat(request: ChatRequest):
          raise he
     except Exception as e:
         # Ловим все остальные ошибки при вызове LLM или обработке ответа
-        print(f"[CHAT CRITICAL ERROR] Exception during LLM invocation or processing: {e}")
         traceback.print_exc()
         error_details = str(e)
         # Возвращаем общую ошибку сервера, не раскрывая слишком много внутренних деталей
@@ -446,17 +439,3 @@ if os.path.isdir(FRONTEND_DIR):
     print(f"[INFO] Статика успешно смонтирована из: {FRONTEND_DIR} на /static")
 else:
     print(f"[CRITICAL ERROR] Директория для статики НЕ НАЙДЕНА: {FRONTEND_DIR}")
-
-# ----------------------------------------------------------------------
-# 12. Блок if name == "__main__": (Закомментирован для HF Spaces)
-# ----------------------------------------------------------------------
-# Этот блок нужен только для запуска приложения локально как скрипта Python.
-# Hugging Face Spaces запускает приложение по-своему (через Uvicorn, который вызывает app:app),
-# поэтому этот блок должен быть закомментирован или отсутствовать.
-#
-# if __name__ == "__main__":
-#     import uvicorn
-#     print("[INFO] Running locally with uvicorn...")
-#     # Используем порт 8080, который обычно используется на HF
-#     uvicorn.run(app, host="0.0.0.0", port=8080)
-#
