@@ -1,0 +1,38 @@
+name: Deploy to Hugging Face Space
+
+on:
+  push:
+    branches: [ main ]
+  # Опционально: добавляем возможность ручного запуска
+  workflow_dispatch:
+
+jobs:
+  deploy_to_hf_space:
+    runs-on: ubuntu-latest
+    name: Trigger HF Space Rebuild
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
+
+      - name: Login and trigger rebuild
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN_SPACES_CONTROL }}
+        run: |
+          echo "Logging in to Hugging Face..."
+          huggingface-cli login --token $HF_TOKEN
+          
+          echo "Triggering rebuild for NeuroCoderZ/holograms-media Space..."
+          # Используем команду restart с флагом --repo-type=space
+          huggingface-cli repo-update --repo-type=space NeuroCoderZ/holograms-media --force-rebuild
+          
+          echo "Rebuild trigger sent successfully!"
