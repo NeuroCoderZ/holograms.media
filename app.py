@@ -442,33 +442,27 @@ else:
     print(f"[CRITICAL ERROR] Директория для статики НЕ НАЙДЕНА: {FRONTEND_DIR}")
 
 # ----------------------------------------------------------------------
-# 12. Gradio Interface & Mounting FastAPI
+# 12. Gradio Interface & FastAPI Integration for HF Spaces
 # ----------------------------------------------------------------------
 
-# Сохраняем оригинальный FastAPI app
-fastapi_app = app
+# Сохраняем ссылку на оригинальное FastAPI приложение
+fastapi_app_instance = app
 
-# --- Gradio Interface & Mounting FastAPI ---
-with gr.Blocks(title="Holograms Media Backend") as demo: # 'demo' - стандартное имя для Gradio
+# --- Создание Gradio интерфейса и монтирование FastAPI ---
+print("[INFO] Создание Gradio интерфейса и монтирование FastAPI...")
+
+with gr.Blocks(title="Holograms Media Backend") as demo:
     gr.Markdown(
         """
-        # Holograms Media Backend
-        Это FastAPI бэкенд для проекта Holograms Media, запущенный через Gradio.
-        - Статические файлы фронтенда доступны по пути `/static/...` и `/` (для index.html).
-        - API эндпоинты FastAPI доступны по пути `/api/...` (например, `/api/health`).
+        # Holograms Media Backend (FastAPI via Gradio)
+        - FastAPI эндпоинты доступны по пути `/api/...` (например, `/api/health`)
+        - Статика FastAPI (index.html, /static/...) доступна по своим обычным путям
         """
     )
 
-# Монтируем наше FastAPI приложение 'fastapi_app' на путь '/api' внутри Gradio интерфейса 'demo'
-# Gradio будет запускать объект 'demo'
-app_to_run_in_gradio = gr.mount_asgi(blocks=demo, app_to_mount=fastapi_app, path="/api")
+# Монтируем наше FastAPI приложение 'fastapi_app_instance' 
+# на путь '/api' внутри Gradio интерфейса 'demo'
+app = gr.mount_asgi(blocks=demo, app_to_mount=fastapi_app_instance, path="/api")
 
-# ВАЖНО: Gradio SDK на HF Spaces будет искать объект 'app' или 'demo' для запуска.
-# Поскольку мы создали 'demo' и в него вмонтировали FastAPI,
-# нужно убедиться, что Gradio запустит 'demo'.
-# Если app_file в README.md указан как 'app.py', Gradio может ожидать объект 'app'
-# или 'demo'. Чтобы быть уверенным, можно сделать так:
-app = app_to_run_in_gradio # Теперь 'app' ссылается на Gradio Blocks с вмонтированным FastAPI
-
-print(f"[INFO] FastAPI app ('fastapi_app') смонтирован в Gradio Blocks ('demo') и доступен как 'app'.")
-print(f"[INFO] FastAPI эндпоинты будут доступны по /api/... ; Статика FastAPI по /static/... и /")
+print(f"[INFO] FastAPI приложение ('fastapi_app_instance') смонтировано в Gradio Blocks ('demo')")
+print(f"[INFO] Gradio будет запускать объект 'app' (который теперь является Gradio Blocks)")
