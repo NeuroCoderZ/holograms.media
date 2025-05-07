@@ -27,6 +27,8 @@ from langchain_core.runnables import Runnable
 from langchain_mistralai import ChatMistralAI
 from langchain.tools import Tool
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+# --- Gradio Interface & Mounting FastAPI ---
+import gradio as gr
 
 
 # ----------------------------------------------------------------------
@@ -458,4 +460,15 @@ async def save_chat_message(request: ChatSaveRequest):
 #     uvicorn.run(app, host="0.0.0.0", port=8080)
 #
 
-# --- Конец файла app.py ---
+# --- Gradio Interface & Mounting FastAPI ---
+with gr.Blocks() as demo:
+    gr.Markdown("## Holograms Media Backend (FastAPI via Gradio)")
+    gr.Markdown("Access FastAPI at `/api` (e.g., `/api/health`) or static files at `/static/...` and root `/` for index.html")
+
+# Монтируем FastAPI на /api внутри Gradio
+app = gr.mount_asgi(app, path="/api")
+
+# Оставляем ссылку на оригинальный FastAPI app для ясности
+fastapi_app = app
+
+print("[INFO] FastAPI app mounted to Gradio Blocks. Gradio will now launch.")
