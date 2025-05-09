@@ -131,27 +131,57 @@ print(f"[DEBUG] INDEX_HTML_PATH: {INDEX_HTML_PATH}")
 # ----------------------------------------------------------------------
 # 8. Инициализация LLM и Инструментов
 # ----------------------------------------------------------------------
-print("[INFO] Попытка инициализации LLM...")
+print("[INFO] Попытка инициализации LLM (codestral_llm)...")
+MISTRAL_API_KEY_VALUE = os.getenv("MISTRAL_API_KEY") # Получаем MISTRAL_API_KEY
+CODESTRAL_API_KEY_VALUE = os.getenv("CODESTRAL_API_KEY") # Получаем CODESTRAL_API_KEY
 
-MISTRAL_API_KEY_VALUE = os.getenv("MISTRAL_API_KEY")
+api_key_to_use = None
+key_source_message = ""
 
-if not MISTRAL_API_KEY_VALUE:
-    print("[WARN] MISTRAL_API_KEY не найден в переменных окружения! codestral_llm не будет инициализирован.")
+if CODESTRAL_API_KEY_VALUE:
+    api_key_to_use = CODESTRAL_API_KEY_VALUE
+    key_source_message = "using CODESTRAL_API_KEY"
+elif MISTRAL_API_KEY_VALUE:
+    api_key_to_use = MISTRAL_API_KEY_VALUE
+    key_source_message = "using MISTRAL_API_KEY as fallback for codestral_llm"
+    print("[INFO] CODESTRAL_API_KEY не найден, используется MISTRAL_API_KEY для codestral_llm.")
+
+if not api_key_to_use:
+    print(f"[WARN] Ни CODESTRAL_API_KEY, ни MISTRAL_API_KEY не найдены! codestral_llm не будет инициализирован.")
     codestral_llm = None
 else:
     try:
-        selected_model = os.getenv("CODESTRAL_MODEL_NAME", DEFAULT_MODEL)
-        print(f"[DEBUG] Initializing ChatMistralAI with model '{selected_model}' using MISTRAL_API_KEY.")
+        # Используем DEFAULT_MODEL, так как он более общий или может быть настроен через env.
+        # Если для Codestral нужна специфичная модель, ее имя должно быть в DEFAULT_MODEL или CODESTRAL_MODEL_NAME
+        model_to_use = os.getenv("CODESTRAL_MODEL_NAME", DEFAULT_MODEL)
+        print(f"[DEBUG] Initializing ChatMistralAI for codestral_llm with model '{model_to_use}' {key_source_message}.")
         codestral_llm = ChatMistralAI(
-            model_name=selected_model, # Используем model_name как указано в документации
-            mistral_api_key=MISTRAL_API_KEY_VALUE,
-            temperature=0.4, # Можно оставить или сделать настраиваемым
+            model_name=model_to_use,
+            mistral_api_key=api_key_to_use,
+            temperature=0.4,
         )
-        print("[DEBUG] ChatMistralAI (codestral_llm) initialized successfully.")
+        print(f"[DEBUG] ChatMistralAI for codestral_llm initialized successfully {key_source_message}.")
     except Exception as e:
-        print(f"[ERROR] Ошибка инициализации ChatMistralAI (codestral_llm): {e}")
-        traceback.print_exc()
-        codestral_llm = None
+        print(f"[ERROR] Ошибка инициализации ChatMistralAI for codestral_llm {key_source_message}: {e}")
+        traceback.print_exc() # Печатаем traceback первой ошибки
+        # Если первая попытка (с CODESTRAL_API_KEY) не удалась, но MISTRAL_API_KEY есть и он ДРУГОЙ
+        if api_key_to_use == CODESTRAL_API_KEY_VALUE and MISTRAL_API_KEY_VALUE and CODESTRAL_API_KEY_VALUE != MISTRAL_API_KEY_VALUE:
+            print("[INFO] Повторная попытка инициализации codestral_llm с MISTRAL_API_KEY...")
+            try:
+                model_for_fallback = os.getenv("CODESTRAL_MODEL_NAME", DEFAULT_MODEL) # Используем ту же модель или DEFAULT_MODEL
+                print(f"[DEBUG] Initializing ChatMistralAI for codestral_llm with model '{model_for_fallback}' using MISTRAL_API_KEY (fallback).")
+                codestral_llm = ChatMistralAI(
+                    model_name=model_for_fallback,
+                    mistral_api_key=MISTRAL_API_KEY_VALUE, # Используем MISTRAL_API_KEY
+                    temperature=0.4,
+                )
+                print("[DEBUG] ChatMistralAI for codestral_llm initialized successfully using MISTRAL_API_KEY (fallback).")
+            except Exception as e_fallback:
+                print(f"[ERROR] Ошибка повторной инициализации ChatMistralAI for codestral_llm с MISTRAL_API_KEY: {e_fallback}")
+                traceback.print_exc()
+                codestral_llm = None # Окончательная неудача
+        else: # Если MISTRAL_API_KEY не было, или он такой же, или это была уже попытка с MISTRAL_API_KEY
+            codestral_llm = None # Окончательная неудача
 
 """
 
