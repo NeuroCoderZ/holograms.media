@@ -129,29 +129,31 @@ print(f"[DEBUG] INDEX_HTML_PATH: {INDEX_HTML_PATH}")
 
 
 # ----------------------------------------------------------------------
-# 8. Инициализация LLM и Инструментов (ЗАКОММЕНТИРОВАНА)
+# 8. Инициализация LLM и Инструментов
 # ----------------------------------------------------------------------
-# Этот блок нужно будет раскомментировать и адаптировать ПОСЛЕ успешного запуска
-# и после добавления API ключей как Secrets в HF Space
-"""
-print("[INFO] Попытка инициализации моделей и инструментов (закомментировано)...")
-# --- Инициализация Codestral LLM для Триа ---
-# Используем MISTRAL_API_KEY для ChatMistralAI
-if not MISTRAL_API_KEY:
-    print("[WARN] MISTRAL_API_KEY не найден в переменных окружения!")
+print("[INFO] Попытка инициализации LLM...")
+
+MISTRAL_API_KEY_VALUE = os.getenv("MISTRAL_API_KEY")
+
+if not MISTRAL_API_KEY_VALUE:
+    print("[WARN] MISTRAL_API_KEY не найден в переменных окружения! codestral_llm не будет инициализирован.")
+    codestral_llm = None
 else:
     try:
-        print(f"[DEBUG] Initializing ChatMistralAI with model '{DEFAULT_MODEL}'")
+        selected_model = os.getenv("CODESTRAL_MODEL_NAME", DEFAULT_MODEL)
+        print(f"[DEBUG] Initializing ChatMistralAI with model '{selected_model}' using MISTRAL_API_KEY.")
         codestral_llm = ChatMistralAI(
-            model=DEFAULT_MODEL,
-            api_key=MISTRAL_API_KEY,
-            temperature=0.4,
+            model_name=selected_model, # Используем model_name как указано в документации
+            mistral_api_key=MISTRAL_API_KEY_VALUE,
+            temperature=0.4, # Можно оставить или сделать настраиваемым
         )
-        print("[DEBUG] ChatMistralAI initialized successfully.")
+        print("[DEBUG] ChatMistralAI (codestral_llm) initialized successfully.")
     except Exception as e:
-        print(f"[ERROR] Ошибка инициализации ChatMistralAI: {e}")
+        print(f"[ERROR] Ошибка инициализации ChatMistralAI (codestral_llm): {e}")
         traceback.print_exc()
         codestral_llm = None
+
+"""
 
 # --- Функции-инструменты для Триа (определение оставляем, они не выполняются при импорте) ---
 async def generate_code_tool(task_description: str) -> str:
