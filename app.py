@@ -406,13 +406,34 @@ async def chat(request: ChatRequest):
 
             # Готовим документ для вставки. Сохраняем полную историю, отправленную в LLM,
             # текущее сообщение пользователя и ответ ассистента.
+            # Безопасная сериализация сообщений с обработкой исключений
+            serialized_messages = []
+            for msg in messages:
+                try:
+                    if hasattr(msg, 'model_dump'):
+                        serialized_messages.append(msg.model_dump())
+                    elif hasattr(msg, 'dict'):
+                        serialized_messages.append(msg.dict())
+                    else:
+                        serialized_messages.append({
+                            "type": msg.__class__.__name__,
+                            "content": msg.content if hasattr(msg, 'content') else str(msg)
+                        })
+                except Exception as ser_err:
+                    print(f"[CHAT DB WARN] Ошибка сериализации сообщения: {ser_err}")
+                    serialized_messages.append({
+                        "type": msg.__class__.__name__ if hasattr(msg, '__class__') else "Unknown",
+                        "content": str(msg),
+                        "serialization_error": str(ser_err)
+                    })
+            
             chat_document = {
                 "chat_id": chat_id_val,
                 "timestamp": datetime.now(),
                 "model": request.model,
                 "user_message": request.message,
                 "tria_response": response_content,
-                "full_history_sent_to_llm": [msg.dict() for msg in messages] # Сохраняем всю историю как список словарей
+                "full_history_sent_to_llm": serialized_messages
             }
             
             print(f"[CHAT DB DEBUG] Attempting insert into {chat_collection_for_saving.name}. Doc ID: {chat_document.get('chat_id')}")
