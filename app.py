@@ -400,7 +400,7 @@ async def chat(request: ChatRequest):
 
         # Сохранение в БД
         try:
-            db_local, local_client_for_chat = await get_database() # Используем новую переменную для клиента
+            db_local, local_client_for_chat = await get_database() # Используем новую функцию get_database()
             chat_id_val = str(uuid.uuid4()) # Генерируем UUID для чата
             chat_collection_for_saving = db_local["chat_history"]
 
