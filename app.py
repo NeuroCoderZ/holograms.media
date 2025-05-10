@@ -108,7 +108,7 @@ MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "holograms_db")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 CODESTRAL_API_KEY = os.getenv("CODESTRAL_API_KEY")
-DEFAULT_MODEL = "mistral/mistral-small-latest" # Используем Mistral по умолчанию для чата
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "mistral-small-latest") # Используем Mistral по умолчанию для чата
 
 # --- Переменные для LLM и инструментов (Инициализация ЗАКОММЕНТИРОВАНА) ---
 # Эти переменные останутся None до тех пор, пока ты не раскомментируешья и не адаптируешья блок инициализации ниже
