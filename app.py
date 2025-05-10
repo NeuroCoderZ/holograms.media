@@ -111,7 +111,7 @@ CODESTRAL_API_KEY = os.getenv("CODESTRAL_API_KEY")
 DEFAULT_MODEL = "mistral/mistral-small-latest" # Используем Mistral по умолчанию для чата
 
 # --- Переменные для LLM и инструментов (Инициализация ЗАКОММЕНТИРОВАНА) ---
-# Эти переменные останутся None до тех пор, пока ты не раскомментируешь и не адаптируешь блок инициализации ниже
+# Эти переменные останутся None до тех пор, пока ты не раскомментируешья и не адаптируешья блок инициализации ниже
 chain: Optional[Runnable] = None
 codestral_llm: Optional[ChatMistralAI] = None
 code_generator_tool: Optional[Tool] = None
@@ -264,20 +264,42 @@ async def get_db_client() -> AsyncIOMotorClient:
     """Возвращает ПОДКЛЮЧЕННЫЙ клиент MongoDB или выбрасывает исключение."""
     print("[DB Connect] Попытка получения клиента MongoDB...")
     # Убедись, что переменные MONGO_URI и MONGO_DB_NAME прочитаны из окружения (.env или Secrets)
-    if not MONGO_URI:
+    loaded_mongo_uri = MONGO_URI # Используем глобальную переменную, загруженную ранее
+    if not loaded_mongo_uri:
          print("[DB Connect ERROR] !!! MONGO_URI не установлен в переменных окружения!")
          raise ValueError("MONGO_URI environment variable not set.")
-         
+    
+    # Логирование части URI без пароля
+    try:
+        from urllib.parse import urlparse
+        parsed_uri = urlparse(loaded_mongo_uri)
+        safe_uri_display = f"{parsed_uri.scheme}://{parsed_uri.username}:<PASSWORD_HIDDEN>@{parsed_uri.hostname}{parsed_uri.path}"
+        print(f"[DB Connect INFO] Connecting to MongoDB with URI (password hidden): {safe_uri_display}")
+    except Exception as parse_err:
+        print(f"[DB Connect WARN] Could not parse MONGO_URI for safe logging: {parse_err}")
+        # В случае ошибки парсинга, просто продолжаем, основная логика не должна прерываться
+
     try:
         # Используем переменные окружения, прочитанные ранее
         # serverSelectionTimeoutMS=5000 устанавливает таймаут для поиска сервера
-        local_client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+        # Добавляем retryWrites=true для автоматических повторных попыток записи
+        local_client = AsyncIOMotorClient(
+            loaded_mongo_uri, 
+            serverSelectionTimeoutMS=5000,
+            retryWrites=True,
+            connectTimeoutMS=10000,
+            socketTimeoutMS=20000
+        )
         # Проверка связи с базой данных
-        await local_client.admin.command('ismaster')
-        print(f"[DB Connect] Клиент MongoDB ({MONGO_DB_NAME}@{MONGO_URI}) успешно получен и проверен.")
+        await local_client.admin.command('ping') # Используем 'ping' вместо 'ismaster' для большей совместимости
+        print(f"[DB Connect] Клиент MongoDB ({MONGO_DB_NAME}@{parsed_uri.hostname if 'parsed_uri' in locals() else 'unknown_host'}) успешно получен и проверен.")
         return local_client
+    except PyMongoError as mongo_specific_error:
+        print(f"[DB Connect ERROR] !!! ОШИБКА ПОДКЛЮЧЕНИЯ/ПРОВЕРКИ MongoDB (PyMongoError): {mongo_specific_error}")
+        traceback.print_exc()
+        raise
     except Exception as e:
-        print(f"[DB Connect ERROR] !!! ОШИБКА ПОДКЛЮЧЕНИЯ/ПРОВЕРКИ MongoDB по адресу {MONGO_URI}: {e}")
+        print(f"[DB Connect ERROR] !!! ОШИБКА ПОДКЛЮЧЕНИЯ/ПРОВЕРКИ MongoDB: {e}")
         traceback.print_exc()
         raise # Повторяем попытку через tenacity или выбрасываем исключение
 
@@ -295,12 +317,9 @@ async def close_db_client(local_client: Optional[AsyncIOMotorClient]):
 async def health_check():
     """Проверка состояния приложения и подключения к MongoDB."""
     print("[Health Check] Endpoint called.")
-    local_client: Optional[AsyncIOMotorClient] = None
+    local_client_for_health: Optional[AsyncIOMotorClient] = None
     try:
-        local_client = await get_db_client() # Пытаемся получить клиента
-        # Если get_db_client() успешно отработал, соединение активно
-        # Дополнительная команда для проверки конкретной DB
-        db_local = local_client[MONGO_DB_NAME]
+        db_local, local_client_for_health = await get_database() # Используем новую переменную для клиента
         await db_local.command('ping') # Пингуем конкретную базу
         print("[Health Check] MongoDB ping successful.")
         return {"status": "ok", "mongo": "connected", "db_name": MONGO_DB_NAME}
@@ -311,7 +330,7 @@ async def health_check():
         raise HTTPException(status_code=503, detail=f"Service Unavailable: MongoDB connection failed ({e})")
     finally:
         # Важно закрывать соединение после каждого запроса в этой модели
-        await close_db_client(local_client)
+        await close_db_client(local_client_for_health)
 
 
 @app.get("/")
@@ -354,7 +373,7 @@ async def chat(request: ChatRequest):
     print(f"[CHAT DEBUG] Prepared {len(messages)} messages for LLM.")
     # print(f"[CHAT DEBUG] Messages: {messages}") # Отладочный вывод, осторожно с чувствительными данными
 
-    local_client: Optional[AsyncIOMotorClient] = None # Для блока finally
+    local_client_for_chat: Optional[AsyncIOMotorClient] = None # Для блока finally
 
     try:
         # Вызов LLM
@@ -370,8 +389,7 @@ async def chat(request: ChatRequest):
 
         # Сохранение в БД
         try:
-            local_client = await get_db_client() # Получаем клиента ПЕРЕД операцией сохранения
-            db_local = local_client[MONGO_DB_NAME]
+            db_local, local_client_for_chat = await get_database() # Используем новую переменную для клиента
             chat_id_val = str(uuid.uuid4()) # Генерируем UUID для чата
             chat_collection_for_saving = db_local["chat_history"]
 
@@ -385,14 +403,24 @@ async def chat(request: ChatRequest):
                 "tria_response": response_content,
                 "full_history_sent_to_llm": [msg.dict() for msg in messages] # Сохраняем всю историю как список словарей
             }
-
+            
+            print(f"[CHAT DB DEBUG] Attempting insert into {chat_collection_for_saving.name}. Doc ID: {chat_document.get('chat_id')}")
             await chat_collection_for_saving.insert_one(chat_document)
             chat_id = chat_id_val # Передаем сгенерированный ID в ответ
-        except Exception as db_error:
-            traceback.print_exc()
-            # Ошибка сохранения в БД не должна блокировать успешный ответ LLM
+            print(f"[CHAT DB INFO] Chat history saved successfully. Chat ID: {chat_id_to_return}")
 
-        return ChatResponse(response=response_content, should_vocalize=should_vocalize, metadata={"chat_id": chat_id} if chat_id else None)
+        except Exception as db_error:
+            print(f"[CHAT DB ERROR] Failed to save chat history to MongoDB: {db_error}")
+            traceback.print_exc()
+            db_save_error_note = " (Примечание: Ошибка при сохранении истории чата в базу данных)"
+            # Ошибка сохранения в БД не должна блокировать успешный ответ LLM
+            # chat_id_to_return останется None в этом случае
+
+        final_response_content = response_content
+        if db_save_error_note:
+            final_response_content += db_save_error_note
+
+        return ChatResponse(response=final_response_content, should_vocalize=should_vocalize, metadata={"chat_id": chat_id_to_return} if chat_id_to_return else None)
 
     except HTTPException as he:
          # Если это наша HTTPException (например, 503 от проверки LLM), просто пробрасываем ее
@@ -406,7 +434,7 @@ async def chat(request: ChatRequest):
 
     finally:
         # Важно закрывать соединение с БД в конце обработки запроса
-        await close_db_client(local_client)
+        await close_db_client(local_client_for_chat)
 
 
 # <<< ЗАГЛУШКИ для остальных роутов, использующих DB или LLM/инструменты >>>
