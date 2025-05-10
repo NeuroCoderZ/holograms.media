@@ -303,6 +303,13 @@ async def get_db_client() -> AsyncIOMotorClient:
         traceback.print_exc()
         raise # Повторяем попытку через tenacity или выбрасываем исключение
 
+async def get_database():
+    """Возвращает кортеж (db, client) с подключенной базой данных и клиентом MongoDB.
+    Клиент должен быть закрыт после использования через close_db_client()."""
+    client = await get_db_client()
+    db = client[MONGO_DB_NAME]
+    return db, client
+
 async def close_db_client(local_client: Optional[AsyncIOMotorClient]):
     """Закрывает соединение с MongoDB, если клиент существует."""
     if local_client:
@@ -330,7 +337,11 @@ async def health_check():
         raise HTTPException(status_code=503, detail=f"Service Unavailable: MongoDB connection failed ({e})")
     finally:
         # Важно закрывать соединение после каждого запроса в этой модели
-        await close_db_client(local_client_for_health)
+        if local_client_for_health:
+            await close_db_client(local_client_for_health)
+            print("[Health Check] MongoDB connection closed successfully.")
+        else:
+            print("[Health Check] No MongoDB connection to close.")
 
 
 @app.get("/")
@@ -345,6 +356,8 @@ async def read_index():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     print(f"[CHAT DEBUG] /chat endpoint called with model: {request.model}")
+    local_client_for_chat: Optional[AsyncIOMotorClient] = None
+    db_save_error_note = ""
 
     # ----- ПРОВЕРКА LLM (Оставляем, т.к. инициализация закомментирована) -----
     # TODO: Раскомментировать инициализацию LLM выше и убрать эту заглушку
@@ -372,8 +385,6 @@ async def chat(request: ChatRequest):
 
     print(f"[CHAT DEBUG] Prepared {len(messages)} messages for LLM.")
     # print(f"[CHAT DEBUG] Messages: {messages}") # Отладочный вывод, осторожно с чувствительными данными
-
-    local_client_for_chat: Optional[AsyncIOMotorClient] = None # Для блока finally
 
     try:
         # Вызов LLM
@@ -407,20 +418,26 @@ async def chat(request: ChatRequest):
             print(f"[CHAT DB DEBUG] Attempting insert into {chat_collection_for_saving.name}. Doc ID: {chat_document.get('chat_id')}")
             await chat_collection_for_saving.insert_one(chat_document)
             chat_id = chat_id_val # Передаем сгенерированный ID в ответ
-            print(f"[CHAT DB INFO] Chat history saved successfully. Chat ID: {chat_id_to_return}")
+            print(f"[CHAT DB INFO] Chat history saved successfully. Chat ID: {chat_id}")
 
-        except Exception as db_error:
-            print(f"[CHAT DB ERROR] Failed to save chat history to MongoDB: {db_error}")
+        except PyMongoError as mongo_error:
+            print(f"[CHAT DB ERROR] MongoDB error while saving chat history: {mongo_error}")
             traceback.print_exc()
             db_save_error_note = " (Примечание: Ошибка при сохранении истории чата в базу данных)"
             # Ошибка сохранения в БД не должна блокировать успешный ответ LLM
-            # chat_id_to_return останется None в этом случае
+            # chat_id останется None в этом случае
+        except Exception as db_error:
+            print(f"[CHAT DB ERROR] Unexpected error while saving chat history: {db_error}")
+            traceback.print_exc()
+            db_save_error_note = " (Примечание: Ошибка при сохранении истории чата в базу данных)"
+            # Ошибка сохранения в БД не должна блокировать успешный ответ LLM
+            # chat_id останется None в этом случае
 
         final_response_content = response_content
         if db_save_error_note:
             final_response_content += db_save_error_note
 
-        return ChatResponse(response=final_response_content, should_vocalize=should_vocalize, metadata={"chat_id": chat_id_to_return} if chat_id_to_return else None)
+        return ChatResponse(response=final_response_content, should_vocalize=should_vocalize, metadata={"chat_id": chat_id} if chat_id else None)
 
     except HTTPException as he:
          # Если это наша HTTPException (например, 503 от проверки LLM), просто пробрасываем ее
@@ -434,7 +451,11 @@ async def chat(request: ChatRequest):
 
     finally:
         # Важно закрывать соединение с БД в конце обработки запроса
-        await close_db_client(local_client_for_chat)
+        if local_client_for_chat:
+            await close_db_client(local_client_for_chat)
+            print("[CHAT DB INFO] MongoDB connection closed successfully.")
+        else:
+            print("[CHAT DB INFO] No MongoDB connection to close.")
 
 
 # <<< ЗАГЛУШКИ для остальных роутов, использующих DB или LLM/инструменты >>>
