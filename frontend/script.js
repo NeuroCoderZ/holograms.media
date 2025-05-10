@@ -2038,80 +2038,38 @@ async function loadInitialFilesAndSetupEditor() {
     hands.onResults(onHandsResults);
 
     async function startVideoStream(videoElement, handsInstance) {
-      console.log(">>> Enumerating media devices...");
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      console.log(">>> Available video devices:", videoDevices);
+      try { 
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+              video: { 
+                  width: { ideal: 640 }, // Можно оставить желаемые размеры 
+                  height: { ideal: 480 } 
+                  // facingMode: 'user' // Можно добавить, если нужна фронтальная камера 
+              } 
+          }); 
+          console.log(">>> Video stream acquired successfully (browser default/user choice)."); 
+          videoElement.srcObject = stream; // videoElement должен быть определен ранее 
 
-      let iriunDeviceId = null;
-      for (const device of videoDevices) {
-          // Ищем по частичному совпадению имени 'Iriun' (регистронезависимо)
-          if (device.label && device.label.toLowerCase().includes('iriun')) {
-              iriunDeviceId = device.deviceId;
-              console.log(`>>> Found Iriun Webcam with deviceId: ${iriunDeviceId}`);
-              break; // Нашли, выходим из цикла
-          }
-      }
+          videoElement.onloadedmetadata = () => { 
+              console.log(">>> Video metadata loaded. Starting hands processing loop (auto-camera)."); 
+              videoElement.play(); 
 
-      // Если не нашли Iriun, попробуем использовать первую камеру как запасной вариант (или выдать ошибку)
-      if (!iriunDeviceId && videoDevices.length > 0) {
-          console.warn(">>> Iriun Webcam not found by label, falling back to the first video device.");
-          // iriunDeviceId = videoDevices[0].deviceId; // Раскомментировать, если нужен fallback
-      } else if (!iriunDeviceId) {
-           console.error(">>> No video devices found at all!");
-           alert("No video devices found!");
-           return; // Выходим, если камер нет
-      }
-
-      // Если Iriun не найдена, но есть другие камеры, выдадим предупреждение
-      if (!iriunDeviceId) {
-           console.error(">>> Iriun Webcam device ID not found!");
-           alert("Iriun Webcam not found. Please ensure it is connected and selected.");
-           // Можно либо выйти (return;), либо продолжить с камерой по умолчанию,
-           // но тогда нужно убрать условие deviceId из constraints ниже.
-           // Пока выйдем, чтобы было понятно, что Iriun не нашлась.
-           return;
-      }
-
-      try {
-        // Запрашиваем видеопоток, полагаясь на настройки браузера по умолчанию
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-              deviceId: { exact: iriunDeviceId }, // Явно запрашиваем Iriun по ID
-              width: { ideal: 640 },
-              height: { ideal: 480 }
-          }
-        });
-        console.log(">>> Acquired video stream via getUserMedia");
-        videoElement.srcObject = stream;
-
-        // Ждем, пока видео загрузится, чтобы получить размеры
-        videoElement.onloadedmetadata = () => {
-          console.log(">>> Video metadata loaded. Starting hands processing loop.");
-          videoElement.play(); // Начнем воспроизведение видео (может быть нужно для send)
-
-          // Запускаем цикл отправки кадров в MediaPipe вручную
-          async function processVideoFrame() {
-            if (videoElement.readyState >= 2) { // Убедимся, что есть данные кадра
-              try {
-                await handsInstance.send({ image: videoElement });
-              } catch (handsError) {
-                 console.error("Error sending frame to MediaPipe Hands:", handsError);
-              }
-            }
-            requestAnimationFrame(processVideoFrame); // Запрашиваем следующий кадр
-          }
-          processVideoFrame(); // Запускаем цикл
-
-          isGestureCanvasReady = true; // Устанавливаем флаг здесь
-          console.log('Флаг isGestureCanvasReady установлен в true (после getUserMedia)');
-        };
-
-      } catch (err) {
-        console.error(">>> Error acquiring camera feed via getUserMedia:", err.name, err.message);
-        // Отобразим ошибку пользователю, как в Firefox
-        alert(`Failed to acquire camera feed: ${err.name}: ${err.message}`);
-      }
+              async function processVideoFrame() { 
+                  if (videoElement.readyState >= 2) { 
+                      try { 
+                          await handsInstance.send({ image: videoElement }); // handsInstance должен быть передан в функцию или доступен глобально 
+                      } catch (handsError) { 
+                          console.error("Error sending frame to MediaPipe Hands:", handsError); 
+                      } 
+                  } 
+                  requestAnimationFrame(processVideoFrame); 
+              } 
+              processVideoFrame(); 
+              isGestureCanvasReady = true; 
+          }; 
+      } catch (err) { 
+          console.error(">>> Error acquiring camera feed (auto-camera):", err.name, err.message); 
+          alert(`Failed to acquire camera feed: ${err.name}: ${err.message}. Please ensure a camera is connected and permissions are granted.`); 
+      } 
     }
 
     if (videoElementForHands && hands) {
