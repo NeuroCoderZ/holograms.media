@@ -191,12 +191,12 @@
 
   <!-- !!! НОВАЯ УНИВЕРСАЛЬНАЯ КНОПКА ПЕРЕД ЗАКРЫТИЕМ BODY !!! -->
 
-  <!-- Подключение JavaScript модулей --> 
-         <script type="module" src="/static/script.js?v=1.0"></script> 
-         <script type="module" src="/static/tria_mode.js?v=1.0"></script> 
-         <script type="module" src="/static/js/main.js"></script> 
-         <script type="module" src="/static/js/panels/rightPanelManager.js?v=1.0"></script> 
-         <script type="module" src="/static/js/panels/chatMessages.js?v=1.0"></script>
+  <!-- Подключение JavaScript модулей -->
+  <script type="module" src="/static/script.js?v=1.0"></script>
+  <script type="module" src="/static/tria_mode.js?v=1.0"></script>
+  <script type="module" src="/static/js/main.js"></script>
+  <script type="module" src="/static/js/panels/rightPanelManager.js?v=1.0"></script>
+  <script type="module" src="/static/js/panels/chatMessages.js?v=1.0"></script>
 
   <button id="togglePanelsButton" class="control-button panel-toggle-universal" title="Скрыть/Показать панели">
     <!-- SVG: Стрелка ВПРАВО (Показать панель) -->
@@ -209,16 +209,7 @@
     </svg>
   </button>
 
-  <!-- Импортируем модуль tria_mode.js перед основным скриптом -->
-  <script type="module" src="tria_mode.js?v=1.0"></script>
-  
-  <!-- Импортируем модуль rightPanelManager.js -->
-  <script type="module" src="rightPanelManager.js?v=1.0"></script>
-  
-  <!-- Импортируем модуль chatMessages.js -->
-  <script type="module" src="chatMessages.js?v=1.0"></script>
-  
-  <!-- Основной скрипт -->
-  <script type="module" src="script.js?v=1.0"></script>
+  <!-- Подключение JavaScript модулей уже выполнено выше -->
+  <!-- Не дублируем подключения скриптов -->
 </body>
 </html>
