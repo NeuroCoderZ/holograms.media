@@ -51,7 +51,8 @@ function setupButtonListeners() {
   }
   
   if (ui.buttons.stopButton) {
-    ui.buttons.stopButton.addEventListener('click', stopPlayback);
+    // ui.buttons.stopButton.addEventListener('click', stopPlayback); // Модуль playback.js отсутствует
+    ui.buttons.stopButton.addEventListener('click', () => console.log('Функция stopPlayback временно отключена'));
   }
   
   // Кнопка микрофона
@@ -126,11 +127,13 @@ function setupModalListeners() {
     
     // Кнопки в модальном окне жестов
     if (ui.actions.startRecordingButton) {
-      ui.actions.startRecordingButton.addEventListener('click', startGestureRecording);
+      // ui.actions.startRecordingButton.addEventListener('click', startGestureRecording); // Модуль recording.js отсутствует
+      ui.actions.startRecordingButton.addEventListener('click', () => console.log('Функция startGestureRecording временно отключена'));
     }
     
     if (ui.actions.stopRecordingButton) {
-      ui.actions.stopRecordingButton.addEventListener('click', stopGestureRecording);
+      // ui.actions.stopRecordingButton.addEventListener('click', stopGestureRecording); // Модуль recording.js отсутствует
+      ui.actions.stopRecordingButton.addEventListener('click', () => console.log('Функция stopGestureRecording временно отключена'));
     }
   }
   
@@ -147,7 +150,8 @@ function setupModalListeners() {
     if (ui.actions.submitPrompt) {
       ui.actions.submitPrompt.addEventListener('click', () => {
         if (ui.inputs.promptText) {
-          sendPrompt(ui.inputs.promptText.value);
+          // sendPrompt(ui.inputs.promptText.value); // Модуль prompts.js отсутствует
+          console.log('Функция sendPrompt временно отключена (из модального окна)');
           ui.modals.promptModal.style.display = 'none';
         }
       });
@@ -160,14 +164,16 @@ function setupTextInputListeners() {
   // Поле ввода промпта и кнопка отправки
   if (ui.inputs.topPromptInput && ui.actions.submitTopPrompt) {
     ui.actions.submitTopPrompt.addEventListener('click', () => {
-      sendPrompt(ui.inputs.topPromptInput.value);
+      // sendPrompt(ui.inputs.topPromptInput.value); // Модуль prompts.js отсутствует
+      console.log('Функция sendPrompt временно отключена (из верхнего поля ввода)');
     });
     
     // Отправка по Enter
     ui.inputs.topPromptInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        sendPrompt(ui.inputs.topPromptInput.value);
+        // sendPrompt(ui.inputs.topPromptInput.value); // Модуль prompts.js отсутствует
+        console.log('Функция sendPrompt временно отключена (из верхнего поля ввода по Enter)');
       }
     });
   }

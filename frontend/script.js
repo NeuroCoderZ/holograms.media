@@ -2071,7 +2071,7 @@ async function loadInitialFilesAndSetupEditor() {
       return;
     }
 
-    async function startVideoStream(videoElement, handsInstance) { */
+    async function startVideoStream(videoElement, handsInstance) { // Удален ошибочный "*/"
       try { 
           // Проверяем поддержку WebGL перед запросом камеры
           const testCanvas = document.createElement('canvas');
