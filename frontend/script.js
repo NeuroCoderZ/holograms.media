@@ -2071,7 +2071,7 @@ async function loadInitialFilesAndSetupEditor() {
       return;
     }
 
-    async function startVideoStream(videoElement, handsInstance) { // Удален ошибочный "*/"
+async function startVideoStream(videoElement, handsInstance) {
       try { 
           // Проверяем поддержку WebGL перед запросом камеры
           const testCanvas = document.createElement('canvas');
@@ -2129,7 +2129,8 @@ async function loadInitialFilesAndSetupEditor() {
                   let errorCount = 0;
                   const MAX_ERRORS = 5;
                   
-                  async function processVideoFrame() { 
+                  // Определяем функцию обработки кадров
+                  const processVideoFrame = async () => { 
                       if (!processingActive) return; // Проверка активности обработки
                       
                       // Проверяем, что видео полностью загружено и готово
@@ -2211,7 +2212,7 @@ async function loadInitialFilesAndSetupEditor() {
       } 
     }
 
-    if (videoElementForHands && hands) {
+    if (videoElementForHands && hands){
          startVideoStream(videoElementForHands, hands);
     } else {
          console.error("Video element or Hands instance not ready for startVideoStream");
