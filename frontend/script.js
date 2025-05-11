@@ -664,6 +664,14 @@ function setupFingerTracking() {
         currentStream = null;
     }
 
+    // Проверяем поддержку WebGL перед запросом камеры
+    const testCanvas = document.createElement('canvas');
+    const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+    if (!gl) {
+        console.error("WebGL не поддерживается в этом браузере. Отслеживание рук не будет работать.");
+        return;
+    }
+    
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
         .then(stream => {
             currentStream = stream;
@@ -673,7 +681,13 @@ function setupFingerTracking() {
             videoElement.onloadeddata = () => {
                 // Keep video element for handpose but hide it
                 videoElement.style.visibility = 'hidden';
-
+                
+                // Проверяем доступность handpose
+                if (!window.handpose) {
+                    console.error("Библиотека handpose не найдена. Отслеживание рук не будет работать.");
+                    return;
+                }
+                
                 const handpose = window.handpose;
                 handpose.load().then(model => {
                     setInterval(() => {
@@ -2020,55 +2034,180 @@ async function loadInitialFilesAndSetupEditor() {
       return; // Прерываем, если нет видео элемента
     }
 
+    // Проверяем поддержку WebGL
+    let webGLSupported = false;
+    try {
+      const canvas = document.createElement('canvas');
+      webGLSupported = !!(window.WebGLRenderingContext && 
+        (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+      if (!webGLSupported) {
+        console.error("WebGL не поддерживается в этом браузере. MediaPipe Hands требует WebGL.");
+        return;
+      }
+    } catch (e) {
+      console.error("Ошибка при проверке поддержки WebGL:", e);
+      return;
+    }
+
     // Создаем экземпляр Hands (переменная 'hands' объявлена глобально)
-    hands = new Hands({locateFile: (file) => {
-      // Корректный путь к WASM файлам на CDN jsdelivr
-      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-    }});
+    try {
+      hands = new Hands({locateFile: (file) => {
+        // Корректный путь к WASM файлам на CDN jsdelivr
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+      }});
 
-    // Настраиваем параметры Hands
-    hands.setOptions({
-      maxNumHands: 2,           // Отслеживать до двух рук
-      modelComplexity: 1,       // 0 = lite, 1 = full (более точная, но требовательная)
-      minDetectionConfidence: 0.7, // Увеличим порог для надежности
-      minTrackingConfidence: 0.7  // Увеличим порог для надежности
-    });
+      // Настраиваем параметры Hands
+      hands.setOptions({
+        maxNumHands: 2,           // Отслеживать до двух рук
+        modelComplexity: 0,       // Используем lite модель (0) для снижения нагрузки
+        minDetectionConfidence: 0.6, // Снижаем порог для лучшей работы в HF Spaces
+        minTrackingConfidence: 0.6  // Снижаем порог для лучшей работы в HF Spaces
+      });
 
-    // Устанавливаем обработчик результатов
-    hands.onResults(onHandsResults);
+      // Устанавливаем обработчик результатов с упрощенной обработкой
+      hands.onResults(onHandsResults);
+    } catch (initError) {
+      console.error("Ошибка при инициализации MediaPipe Hands:", initError);
+      return;
+    }
 
     async function startVideoStream(videoElement, handsInstance) {
       try { 
+          // Проверяем поддержку WebGL перед запросом камеры
+          const testCanvas = document.createElement('canvas');
+          const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+          if (!gl) {
+              console.error("WebGL не поддерживается в этом браузере. MediaPipe Hands требует WebGL.");
+              return;
+          }
+          
+          // Проверяем, что текстуры могут быть созданы
+          try {
+              const testTexture = gl.createTexture();
+              if (!testTexture) {
+                  console.error("Не удалось создать тестовую WebGL текстуру. MediaPipe может не работать.");
+                  return;
+              }
+              gl.deleteTexture(testTexture);
+          } catch (textureError) {
+              console.error("Ошибка при создании тестовой WebGL текстуры:", textureError);
+              return;
+          }
+          
           const stream = await navigator.mediaDevices.getUserMedia({ 
               video: { 
-                  width: { ideal: 640 }, // Можно оставить желаемые размеры 
-                  height: { ideal: 480 } 
-                  // facingMode: 'user' // Можно добавить, если нужна фронтальная камера 
+                  width: { ideal: 320 }, // Уменьшаем размер для снижения нагрузки
+                  height: { ideal: 240 }, 
+                  facingMode: 'user' // Используем фронтальную камеру для надежности
               } 
           }); 
-          console.log(">>> Video stream acquired successfully (browser default/user choice)."); 
-          videoElement.srcObject = stream; // videoElement должен быть определен ранее 
+          console.log(">>> Video stream acquired successfully (user camera)."); 
+          videoElement.srcObject = stream;
+          currentStream = stream; // Сохраняем поток для возможности остановки позже
 
-          videoElement.onloadedmetadata = () => { 
-              console.log(">>> Video metadata loaded. Starting hands processing loop (auto-camera)."); 
-              videoElement.play(); 
-
-              async function processVideoFrame() { 
-                  if (videoElement.readyState >= 2) { 
-                      try { 
-                          await handsInstance.send({ image: videoElement }); // handsInstance должен быть передан в функцию или доступен глобально 
-                      } catch (handsError) { 
-                          console.error("Error sending frame to MediaPipe Hands:", handsError); 
+          // Используем onloadedmetadata и onloadeddata для большей надежности
+          videoElement.onloadedmetadata = () => {
+              console.log(">>> Video metadata loaded. Waiting for full data load...");
+              videoElement.play();
+          };
+          
+          videoElement.onloadeddata = () => { 
+              console.log(">>> Video data loaded. Waiting before starting hands processing..."); 
+              
+              // Увеличиваем задержку перед началом обработки для полной инициализации WebGL
+              setTimeout(() => {
+                  console.log(">>> Starting hands processing after delay");
+                  
+                  // Проверяем готовность handsInstance перед использованием
+                  if (!handsInstance || typeof handsInstance.send !== 'function') {
+                      console.error("MediaPipe Hands instance not properly initialized");
+                      return;
+                  }
+                  
+                  // Создаем функцию обработки кадров с дополнительными проверками
+                  let processingActive = true;
+                  let errorCount = 0;
+                  const MAX_ERRORS = 5;
+                  
+                  async function processVideoFrame() { 
+                      if (!processingActive) return; // Проверка активности обработки
+                      
+                      // Проверяем, что видео полностью загружено и готово
+                      if (videoElement.readyState >= 3) { 
+                          try { 
+                              // Проверяем, что видео имеет ненулевые размеры
+                              if (videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
+                                  console.warn("Video dimensions are zero, skipping frame");
+                                  requestAnimationFrame(processVideoFrame);
+                                  return;
+                              }
+                              
+                              // Дополнительная проверка готовности handsInstance перед каждым кадром
+                              if (!handsInstance || typeof handsInstance.send !== 'function') {
+                                  console.warn("MediaPipe Hands instance not available for this frame, skipping");
+                                  requestAnimationFrame(processVideoFrame);
+                                  return;
+                              }
+                              
+                              // Оборачиваем в try-catch для отлова ошибок createTexture
+                              await handsInstance.send({ image: videoElement }); 
+                              errorCount = 0; // Сбрасываем счетчик ошибок при успешной обработке
+                          } catch (handsError) { 
+                              console.error("Error sending frame to MediaPipe Hands:", handsError); 
+                              errorCount++;
+                              
+                              // Более детальная обработка ошибок
+                              const errorMessage = handsError.toString();
+                              
+                              // Если ошибка связана с текстурами или WebGL
+                              if (errorMessage.includes('createTexture') || 
+                                  errorMessage.includes('WebGL') || 
+                                  errorMessage.includes('texture') || 
+                                  errorCount > MAX_ERRORS) {
+                                  
+                                  console.warn("WebGL texture error detected or too many errors, disabling hand tracking temporarily");
+                                  processingActive = false; // Останавливаем обработку
+                                  
+                                  // Очищаем ресурсы перед повторной попыткой
+                                  try {
+                                      if (handsInstance && typeof handsInstance.close === 'function') {
+                                          handsInstance.close();
+                                          console.log("Closed hands instance to free resources");
+                                      }
+                                  } catch (closeError) {
+                                      console.warn("Error while closing hands instance:", closeError);
+                                  }
+                                  
+                                  // Пытаемся восстановить через 5 секунд
+                                  setTimeout(() => {
+                                      console.log("Attempting to restart hand tracking...");
+                                      processingActive = true;
+                                      errorCount = 0;
+                                      requestAnimationFrame(processVideoFrame);
+                                  }, 5000);
+                                  return; 
+                              }
+                          } 
                       } 
+                      
+                      if (processingActive) {
+                          requestAnimationFrame(processVideoFrame); 
+                      }
                   } 
-                  requestAnimationFrame(processVideoFrame); 
-              } 
-              processVideoFrame(); 
-              isGestureCanvasReady = true; 
+                  
+                  // Запускаем обработку с небольшой задержкой
+                  setTimeout(() => {
+                      processVideoFrame(); 
+                      isGestureCanvasReady = true;
+                  }, 500);
+                  
+              }, 2000); // Увеличиваем задержку до 2 секунд для лучшей инициализации WebGL
           }; 
       } catch (err) { 
-          console.error(">>> Error acquiring camera feed (auto-camera):", err.name, err.message); 
-          alert(`Failed to acquire camera feed: ${err.name}: ${err.message}. Please ensure a camera is connected and permissions are granted.`); 
+          console.error(">>> Error acquiring camera feed:", err.name, err.message); 
+          console.log("Skipping camera initialization due to error");
+          // Не показываем alert, чтобы не блокировать интерфейс
+          // alert(`Failed to acquire camera feed: ${err.name}: ${err.message}. Please ensure a camera is connected and permissions are granted.`); 
       } 
     }
 
@@ -2077,7 +2216,6 @@ async function loadInitialFilesAndSetupEditor() {
     } else {
          console.error("Video element or Hands instance not ready for startVideoStream");
     }
-
   }
 
   let handMeshGroup = new THREE.Group();
