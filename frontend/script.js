@@ -148,8 +148,8 @@ let isGestureRecording = false;
 let gestureTimeoutId = null;
 const GESTURE_RECORDING_DURATION = 20000; // 20 seconds in milliseconds
 
-// --- MediaPipe Hands ---
-let hands = null; // Global reference to MediaPipe Hands controller
+// --- MediaPipe Hands --- (временно отключено)
+// let hands = null; // Global reference to MediaPipe Hands controller
 
 let mainSequencerGroup = new THREE.Group();
 const leftSequencerGroup = createSequencerGrid(
@@ -2015,11 +2015,11 @@ async function loadInitialFilesAndSetupEditor() {
     }); // Конец обработчика resize
 
   updateTimelineFromServer();
-  initializeMediaPipeHands(); // Инициализируем MediaPipe
+  // initializeMediaPipeHands(); // Временно отключено - MediaPipe Hands
   animate();
 
-  // --- Инициализация MediaPipe Hands ---
-  function initializeMediaPipeHands() {
+  // --- Инициализация MediaPipe Hands --- (временно отключено)
+  /*function initializeMediaPipeHands() {
     // Проверяем, загружена ли библиотека Hands
     if (typeof Hands === 'undefined') {
       console.error('Библиотека MediaPipe Hands не загружена. Проверьте подключение скриптов в HTML.');
@@ -2071,7 +2071,7 @@ async function loadInitialFilesAndSetupEditor() {
       return;
     }
 
-    async function startVideoStream(videoElement, handsInstance) {
+    async function startVideoStream(videoElement, handsInstance) { */
       try { 
           // Проверяем поддержку WebGL перед запросом камеры
           const testCanvas = document.createElement('canvas');
@@ -2221,8 +2221,8 @@ async function loadInitialFilesAndSetupEditor() {
   let handMeshGroup = new THREE.Group();
   scene.add(handMeshGroup);
 
-  // --- Обработчик результатов от MediaPipe Hands ---
-  function onHandsResults(results) {
+  // --- Обработчик результатов от MediaPipe Hands --- (временно отключено)
+  /*function onHandsResults(results) {
     const gestureAreaElement = document.getElementById('gesture-area');
     const handsArePresent = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
 
@@ -2353,7 +2353,7 @@ async function loadInitialFilesAndSetupEditor() {
          });
        }
      }
-   }
+   } */
 
    // Обработчик для кнопки GitHub
    githubButton.addEventListener('click', () => {
