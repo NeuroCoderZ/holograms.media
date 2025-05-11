@@ -2,13 +2,14 @@
 
 import { ui, togglePanels, toggleChatMode, updateHologramLayout } from './ui.js';
 import { state } from './init.js';
-import { startPlayback, pausePlayback, stopPlayback } from '../audio/playback.js';
-import { startMicrophoneRecording, stopMicrophoneRecording } from '../audio/microphone.js';
-import { startFileUpload } from '../utils/fileUpload.js';
-import { enterXRMode, exitXRMode } from '../3d/xr.js';
-import { startGestureRecording, stopGestureRecording } from '../gestures/recording.js';
-import { toggleFullscreen } from '../utils/fullscreen.js';
-import { sendPrompt } from '../ai/prompts.js';
+// TODO: Временно отключены импорты несуществующих модулей
+// import { startPlayback, pausePlayback, stopPlayback } from '../audio/playback.js';
+// import { startMicrophoneRecording, stopMicrophoneRecording } from '../audio/microphone.js';
+// import { startFileUpload } from '../utils/fileUpload.js';
+// import { enterXRMode, exitXRMode } from '../3d/xr.js';
+// import { startGestureRecording, stopGestureRecording } from '../gestures/recording.js';
+// import { toggleFullscreen } from '../utils/fullscreen.js';
+// import { sendPrompt } from '../ai/prompts.js';
 import { sendChatMessage } from '../ai/chat.js';
 
 // Установка основных обработчиков событий
@@ -42,11 +43,11 @@ function setupButtonListeners() {
   
   // Кнопки аудио управления
   if (ui.buttons.playButton) {
-    ui.buttons.playButton.addEventListener('click', startPlayback);
+    ui.buttons.playButton.addEventListener('click', () => console.log('Функция startPlayback временно отключена'));
   }
   
   if (ui.buttons.pauseButton) {
-    ui.buttons.pauseButton.addEventListener('click', pausePlayback);
+    ui.buttons.pauseButton.addEventListener('click', () => console.log('Функция pausePlayback временно отключена'));
   }
   
   if (ui.buttons.stopButton) {
@@ -55,12 +56,20 @@ function setupButtonListeners() {
   
   // Кнопка микрофона
   if (ui.buttons.micButton) {
-    ui.buttons.micButton.addEventListener('click', toggleMicrophone);
+    ui.buttons.micButton.addEventListener('click', () => {
+      if (ui.buttons.micButton.classList.contains('active')) {
+        // stopMicrophoneRecording();
+        console.log('Функция stopMicrophoneRecording временно отключена');
+      } else {
+        // startMicrophoneRecording();
+        console.log('Функция startMicrophoneRecording временно отключена');
+      }
+    });
   }
   
   // Кнопка полноэкранного режима
   if (ui.buttons.fullscreenButton) {
-    ui.buttons.fullscreenButton.addEventListener('click', toggleFullscreen);
+    ui.buttons.fullscreenButton.addEventListener('click', () => console.log('Функция toggleFullscreen временно отключена'));
   }
   
   // Кнопка файлов
@@ -74,12 +83,28 @@ function setupButtonListeners() {
   
   // Кнопка XR режима
   if (ui.buttons.xrButton) {
-    ui.buttons.xrButton.addEventListener('click', toggleXRMode);
+    ui.buttons.xrButton.addEventListener('click', () => {
+      if (ui.buttons.xrButton.classList.contains('active')) {
+        // exitXRMode();
+        console.log('Функция exitXRMode временно отключена');
+      } else {
+        // enterXRMode();
+        console.log('Функция enterXRMode временно отключена');
+      }
+    });
   }
   
   // Кнопка записи жестов
   if (ui.buttons.gestureRecordButton) {
-    ui.buttons.gestureRecordButton.addEventListener('click', toggleGestureRecording);
+    ui.buttons.gestureRecordButton.addEventListener('click', () => {
+      if (ui.buttons.gestureRecordButton.classList.contains('active')) {
+        // stopGestureRecording();
+        console.log('Функция stopGestureRecording временно отключена');
+      } else {
+        // startGestureRecording();
+        console.log('Функция startGestureRecording временно отключена');
+      }
+    });
   }
   
   // Кнопка чата
@@ -238,4 +263,4 @@ function toggleGestureRecording() {
     stopGestureRecording();
     ui.modals.gestureModal.style.display = 'none';
   }
-} 
+}
