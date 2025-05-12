@@ -26,7 +26,7 @@ import { initializeTria } from './ai/tria.js'; // Путь исправлен
 // TODO: Рассмотреть импорт './utils/fullscreen.js' если он нужен здесь
 
 // Импорт моста для обратной совместимости - закомментирован из-за отсутствия модуля
-// TODO: Removed/commented due to missing module legacy-bridge.js
+// FINAL CLEANUP: Module legacy-bridge.js or its functionality is missing/disabled
 // import { initLegacyBridge, registerLegacyHandlers } from './utils/legacy-bridge.js';
 
 // Инициализация приложения при загрузке DOM
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('Инициализация приложения...');
   
   // Инициализируем мост для обратной совместимости
-  // TODO: Removed/commented due to missing module legacy-bridge.js
+  // FINAL CLEANUP: Module legacy-bridge.js or its functionality is missing/disabled
   // initLegacyBridge(); // Из ./utils/legacy-bridge.js
   // registerLegacyHandlers(); // Из ./utils/legacy-bridge.js
   
