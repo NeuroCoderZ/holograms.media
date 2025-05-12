@@ -1,7 +1,7 @@
 // frontend/js/ai/chat.js - Функционал чата и взаимодействие с LLM
 
 import { ui } from '../core/ui.js';
-// FINAL CLEANUP: Module audio/speech.js or its functionality is missing/disabled
+// FINAL CLEANUP (v22): Module speech.js or its functionality is missing/disabled
 // import { synthesizeSpeech } from '../audio/speech.js';
 import { getSelectedModel } from './models.js';
 
@@ -87,7 +87,7 @@ export async function sendChatMessage(messageText) {
         
         // Если нужно синтезировать речь
         if (data.should_vocalize) {
-          // FINAL CLEANUP: Module audio/speech.js or its functionality is missing/disabled
+          // FINAL CLEANUP (v22): Module speech.js or its functionality is missing/disabled
           // synthesizeSpeech(data.response); 
           console.log('Функция synthesizeSpeech временно отключена');
         }
