@@ -1373,6 +1373,7 @@ async function startVideoStream(videoElement, handsInstance) {
         
         console.error('Ошибка при загрузке истории чата:', error);
       });
+    } // Закрывает функцию loadChatHistory
   }
 
   // Восстанавливаем экспорт функции в глобальный контекст (временное решение)
