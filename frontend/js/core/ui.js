@@ -240,8 +240,9 @@ export function toggleChatMode() {
 // Обновление макета голограммы
 export function updateHologramLayout(handsVisible) {
   // Проверяем наличие необходимых элементов
-  if (!ui.containers.gridContainer || !ui.containers.gestureArea || !state.hologramPivot) {
-    console.warn('[Layout] Missing required elements');
+  // FIX: Добавлены проверки на существование ui.containers.gridContainer, ui.containers.gestureArea и state.hologramPivot
+  if (!ui.containers.gridContainer || !ui.containers.gestureArea || !state || !state.hologramPivot) {
+    console.warn('[Layout] Missing required elements for layout update (gridContainer, gestureArea, state or hologramPivot). Skipping update.');
     return;
   }
 
@@ -296,4 +297,4 @@ function calculateInitialScale(containerWidth, availableHeightForHologram) {
   scale = Math.max(scale, 0.1); // Минимальный масштаб
   
   return scale;
-} 
+}

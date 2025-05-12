@@ -291,6 +291,8 @@ const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailab
   // Закомментированный код для микрофона не влияет на отображение кнопок
   // Временная заглушка для будущей реализации
 
+  // FINAL CLEANUP (v22): Module xr.js or its functionality is missing/disabled. Old handler in script.js commented out.
+  /*
   document.getElementById('xrButton').addEventListener('click', () => {
     isXRMode = !isXRMode;
     const button = document.getElementById('xrButton');
@@ -317,6 +319,7 @@ const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailab
         document.getElementById('camera-view').style.display = 'none';
     }
   });
+  */
 
   // Обработчик для кнопки промпта
 
@@ -1216,12 +1219,15 @@ async function startVideoStream(videoElement, handsInstance) {
   }
 
   // Перемещаем кнопку в body, если она вложена в .left-panel
+  // FINAL CLEANUP (v22): Redundant togglePanelsButton logic, handled by ui.js module.
+  /*
   console.log('Is togglePanelsButton already declared?', typeof togglePanelsButton !== 'undefined');
 
   if (togglePanelsButton && togglePanelsButton.parentNode.classList.contains('left-panel')) {
       document.body.appendChild(togglePanelsButton);
       console.log('Moved togglePanelsButton to body');
   }
+  */
 
   // Модуль tria_mode.js теперь обрабатывает логику кнопки Триа
 

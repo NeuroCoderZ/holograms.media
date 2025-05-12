@@ -7,7 +7,7 @@ import { setupUI } from './core/ui.js'; // Путь исправлен
 
 // Импорт модулей
 // import { initAudio, setupAudioProcessing } from '/static/js/audio/processing.js'; // TODO: Module for audio processing not found, related code disabled
-// import { initMicrophone } from '/static/js/audio/microphone.js'; // TODO: Module for microphone not found, related code disabled
+// FINAL CLEANUP (v22): Module microphone.js or its functionality is missing/disabled.
 // import { initAudioVisualization } from '/static/js/audio/visualization.js'; // TODO: Module for audio visualization not found, related code disabled
 // TODO: Рассмотреть импорт './audio/speechInput.js' если он нужен здесь
 
@@ -26,7 +26,7 @@ import { initializeTria } from './ai/tria.js'; // Путь исправлен
 // TODO: Рассмотреть импорт './utils/fullscreen.js' если он нужен здесь
 
 // Импорт моста для обратной совместимости - закомментирован из-за отсутствия модуля
-// FINAL CLEANUP: Module legacy-bridge.js or its functionality is missing/disabled
+// FINAL CLEANUP (v22): Module legacy-bridge.js or its functionality is missing/disabled
 // import { initLegacyBridge, registerLegacyHandlers } from './utils/legacy-bridge.js';
 
 // Инициализация приложения при загрузке DOM
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('Инициализация приложения...');
   
   // Инициализируем мост для обратной совместимости
-  // FINAL CLEANUP: Module legacy-bridge.js or its functionality is missing/disabled
+  // FINAL CLEANUP (v22): Module legacy-bridge.js or its functionality is missing/disabled
   // initLegacyBridge(); // Из ./utils/legacy-bridge.js
   // registerLegacyHandlers(); // Из ./utils/legacy-bridge.js
   
