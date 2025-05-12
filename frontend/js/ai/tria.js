@@ -32,6 +32,8 @@ export function initializeTria() {
   initializeModelSelector();
   
   // Получаем конфигурацию с сервера
+  // TODO: Backend endpoint /api/tria/config not implemented yet. Call disabled.
+  /*
   fetchTriaConfiguration()
     .then(config => {
       console.log('Конфигурация Tria получена:', config);
@@ -47,11 +49,17 @@ export function initializeTria() {
       // Продолжаем с дефолтной конфигурацией
       setupTriaUI();
     });
+  */
+  // Так как fetchTriaConfiguration закомментирован, вызываем setupTriaUI напрямую с дефолтной конфигурацией
+  console.log('Пропускаем fetchTriaConfiguration, используем дефолтную конфигурацию Tria.');
+  setupTriaUI();
   
   console.log('Инициализация Tria завершена.');
 }
 
 // Получение конфигурации с сервера
+// TODO: Backend endpoint /api/tria/config not implemented yet. Function disabled.
+/*
 async function fetchTriaConfiguration() {
   try {
     const response = await fetch('/api/tria/config');
@@ -62,9 +70,10 @@ async function fetchTriaConfiguration() {
     return await response.json();
   } catch (error) {
     console.error('Не удалось получить конфигурацию:', error);
-    return {};
+    return {}; // Возвращаем пустой объект или дефолтную конфигурацию при ошибке
   }
 }
+*/
 
 // Настройка интерфейса Tria
 function setupTriaUI() {
@@ -149,4 +158,4 @@ export async function getTriaUsageStats() {
       averageResponseTime: 0
     };
   }
-} 
+}
