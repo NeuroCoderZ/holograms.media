@@ -898,7 +898,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   }
 
   // Initialize panel state and add event listener
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded'), () => {
     // if (togglePanelsButton && leftPanel && rightPanel) { // Закомментировано v27.0 (Trae) - логика перенесена в js/core/ui.js и js/core/events.js
     //     initializePanelState(); // Логика перенесена в js/core/ui.js
     //     togglePanelsButton.addEventListener('click', togglePanels); // Обработчик перенесен в js/core/events.js
@@ -2558,4 +2558,4 @@ async function startVideoStream(videoElement, handsInstance) {
 
   // Восстанавливаем экспорт функции в глобальный контекст (временное решение)
   window.loadChatHistory = loadChatHistory;
-});
+// This appears to be an orphaned closing bracket - removing it since it has no matching opening bracket

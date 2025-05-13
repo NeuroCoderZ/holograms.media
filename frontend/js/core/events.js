@@ -98,6 +98,24 @@ function setupButtonListeners() {
   // Кнопка XR режима
   if (ui.buttons.xrButton) {
     ui.buttons.xrButton.addEventListener('click', () => {
+      // FINAL CLEANUP (v22): Module xr.js or its functionality is missing/disabled
+      // enterXRMode();
+      console.log('Функция enterXRMode временно отключена');
+    });
+  }
+  
+  // Кнопка записи жестов
+  if (ui.buttons.gestureRecordButton) {
+    ui.buttons.gestureRecordButton.addEventListener('click', () => {
+      // Переключаем видимость области жестов
+      import('./ui.js').then(({ toggleGestureArea }) => {
+        toggleGestureArea();
+      });
+    });
+  }
+  
+  // Кнопка сканирования
+  if (ui.buttons.scanButton) {
       if (ui.buttons.xrButton.classList.contains('active')) {
         // FINAL CLEANUP (v22): Module xr.js or its functionality is missing/disabled
         // exitXRMode();

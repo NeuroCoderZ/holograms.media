@@ -57,10 +57,8 @@ export function addMessage(role, content) {
   // Добавляем сообщение в контейнер
   chatMessagesContainer.appendChild(messageElement);
   
-  // Прокручиваем к новому сообщению с небольшой задержкой
-  setTimeout(() => {
-    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
-  }, 10);
+  // Прокручиваем к новому сообщению сразу после добавления
+  chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
   
   return messageElement;
 }
