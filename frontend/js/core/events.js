@@ -108,9 +108,7 @@ function setupButtonListeners() {
   if (ui.buttons.gestureRecordButton) {
     ui.buttons.gestureRecordButton.addEventListener('click', () => {
       // Переключаем видимость области жестов
-      import('./ui.js').then(({ toggleGestureArea }) => {
-        toggleGestureArea();
-      });
+      toggleGestureArea();
     });
   }
   

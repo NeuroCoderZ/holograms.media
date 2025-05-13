@@ -74,6 +74,8 @@ export function addMessageToChat(sender, message) {
   chatHistoryContainer.prepend(messageElement);
 
   // Прокрутка вверх в flex-контейнере с column-reverse
+  // При использовании flex-direction: column-reverse, scrollTop = 0 уже показывает последнее сообщение
+  // Но для надежности устанавливаем его явно
   chatHistoryContainer.scrollTop = 0;
 }
 
@@ -128,4 +130,4 @@ export function speak(text) {
   } else {
     console.warn("Web Speech Synthesis API не поддерживается.");
   }
-} 
+}
