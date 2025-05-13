@@ -218,13 +218,15 @@ function setupWindowListeners() {
   // Обработчик изменения размера окна
   window.addEventListener('resize', () => {
     // Обновление макета голограммы
-    // Дополнительная проверка перед вызовом updateHologramLayout, чтобы избежать предупреждения из ui.js
-    if (ui && ui.containers && ui.containers.gridContainer && ui.containers.gestureArea && state && state.hologramPivot) {
-      updateHologramLayout(state.handsVisible);
-    } else {
-      // Это предупреждение поможет отследить, если элементы действительно отсутствуют в момент ресайза
-      console.warn('[Events/resize] Skipping updateHologramLayout: one or more required elements (gridContainer, gestureArea, hologramPivot) are not available.');
-    }
+    requestAnimationFrame(() => {
+      // Дополнительная проверка перед вызовом updateHologramLayout, чтобы избежать предупреждения из ui.js
+      if (ui && ui.containers && ui.containers.gridContainer && ui.containers.gestureArea && state && state.hologramPivot) {
+        updateHologramLayout(state.handsVisible);
+      } else {
+        // Это предупреждение поможет отследить, если элементы действительно отсутствуют в момент ресайза
+        console.warn('[Events/resize] Skipping updateHologramLayout: one or more required elements (gridContainer, gestureArea, hologramPivot) are not available.');
+      }
+    });
     
     // Обработка трехмерной сцены
     if (state && state.renderer && state.camera) { // Добавлена проверка на state и его свойства
