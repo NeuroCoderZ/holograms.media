@@ -98,6 +98,7 @@ function initButtons() {
   ui.buttons.stopButton = document.getElementById('stopButton');
   ui.buttons.micButton = document.getElementById('micButton');
   ui.buttons.fullscreenButton = document.getElementById('fullscreenButton');
+  ui.buttons.gestureRecordButton = document.getElementById('gestureRecordButton');
   ui.buttons.xrButton = document.getElementById('xrButton');
   ui.buttons.gestureRecordButton = document.getElementById('gestureRecordButton');
   ui.buttons.scanButton = document.getElementById('scanButton');
@@ -119,6 +120,32 @@ function initContainers() {
   if (ui.containers.gestureArea) {
     ui.containers.gestureArea.title = 'Кликните для записи жеста';
   }
+}
+
+/**
+ * Переключает видимость области жестов
+ * @param {boolean} [show] - Если true, показывает область жестов, если false - скрывает.
+ *                          Если не указано, переключает текущее состояние.
+ */
+export function toggleGestureArea(show) {
+  if (!ui.containers.gestureArea) {
+    console.error('Ошибка: Элемент #gesture-area не найден в DOM');
+    return;
+  }
+  
+  // Если параметр show не указан, переключаем текущее состояние
+  if (show === undefined) {
+    ui.containers.gestureArea.classList.toggle('hands-detected');
+  } else {
+    // Иначе устанавливаем состояние в соответствии с параметром
+    if (show) {
+      ui.containers.gestureArea.classList.add('hands-detected');
+    } else {
+      ui.containers.gestureArea.classList.remove('hands-detected');
+    }
+  }
+  
+  console.log(`Область жестов ${ui.containers.gestureArea.classList.contains('hands-detected') ? 'активирована' : 'деактивирована'}`);
 }
 
 // Инициализация модальных окон
