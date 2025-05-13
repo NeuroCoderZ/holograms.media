@@ -977,6 +977,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   }
 
   // --- Gesture Area Click Listener ---
+   // Получаем элемент gesture-area
   const gestureArea = document.getElementById('gesture-area');
   if (gestureArea) {
     gestureArea.addEventListener('click', () => {
