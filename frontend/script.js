@@ -2257,7 +2257,8 @@ async function startVideoStream(videoElement, handsInstance) {
 
   // --- Обработчик результатов от MediaPipe Hands --- (временно отключено)
   /*function onHandsResults(results) {
-    const gestureAreaElement = document.getElementById('gesture-area');
+    // Используем переменную gestureArea, объявленную ранее, вместо создания новой
+    const gestureAreaElement = gestureArea;
     const handsArePresent = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
 
     // Volume control variables
