@@ -842,9 +842,9 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 //   togglePanelsButton.addEventListener('click', togglePanels);
 //   console.log('Click handler added to togglePanelsButton (in script.js - old)');
 // }
-  } else {
-      console.error('Toggle Panels Button not found');
-  }
+  // } else {
+  //     console.error('Toggle Panels Button not found (commented out due to missing if)');
+  // }
 
   // --- Universal Panel Toggling Logic (Improved) ---
   function initializePanelState() {
