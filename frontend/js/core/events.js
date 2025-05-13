@@ -114,6 +114,7 @@ function setupButtonListeners() {
   
   // Кнопка сканирования
   if (ui.buttons.scanButton) {
+    ui.buttons.scanButton.addEventListener('click', () => {
       if (ui.buttons.xrButton.classList.contains('active')) {
         // FINAL CLEANUP (v22): Module xr.js or its functionality is missing/disabled
         // exitXRMode();
