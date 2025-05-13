@@ -837,10 +837,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const leftPanel = document.querySelector('.panel.left-panel');
   const rightPanel = document.querySelector('.panel.right-panel');
   const togglePanelsButton = document.querySelector('#togglePanelsButton');
-  console.log('Toggle Panels Button initialized:', togglePanelsButton);
-  if (togglePanelsButton) {
-      togglePanelsButton.addEventListener('click', togglePanels);
-      console.log('Click handler added to togglePanelsButton');
+console.log('Toggle Panels Button initialized (in script.js - old):', togglePanelsButton);
+// if (togglePanelsButton) { // Закомментировано v27.0 (Trae) - дублируется в js/core/events.js
+//   togglePanelsButton.addEventListener('click', togglePanels);
+//   console.log('Click handler added to togglePanelsButton (in script.js - old)');
+// }
   } else {
       console.error('Toggle Panels Button not found');
   }
@@ -898,10 +899,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize panel state and add event listener
   document.addEventListener('DOMContentLoaded', () => {
-    if (togglePanelsButton && leftPanel && rightPanel) {
-        initializePanelState();
-        togglePanelsButton.addEventListener('click', togglePanels);
-    } else {
+    // if (togglePanelsButton && leftPanel && rightPanel) { // Закомментировано v27.0 (Trae) - логика перенесена в js/core/ui.js и js/core/events.js
+    //     initializePanelState(); // Логика перенесена в js/core/ui.js
+    //     togglePanelsButton.addEventListener('click', togglePanels); // Обработчик перенесен в js/core/events.js
+    // } else {
         console.error("Required elements not found: togglePanelsButton, leftPanel, or rightPanel");
     }
   });
