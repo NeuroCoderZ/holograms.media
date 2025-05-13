@@ -1377,11 +1377,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSequencerColumns(leftLevels, 'left');
         updateSequencerColumns(rightLevels, 'right');
     }
-
     // Рендерим сцену
     renderer.render(scene, activeCamera);
-  }
+  } // Закрывающая скобка для функции animate
 
+  // Инициализация сцены
   scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
   mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем геометрию относительно пивота
