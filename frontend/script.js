@@ -4,7 +4,38 @@ import { applyPromptWithTriaMode } from './tria_mode.js';
 // Импорт менеджеров UI и ввода
 import { initializeRightPanel } from '/static/js/panels/rightPanelManager.js'; 
 import { initializeChatDisplay, addMessage, clearChat, speak } from '/static/js/panels/chatMessages.js'; 
-import { initializeSpeechInput } from '/static/js/audio/speechInput.js'; 
+import { initializeSpeechInput } from '/static/js/audio/speechInput.js';
+
+// Экспортируем функцию loadChatHistory для использования в других модулях
+export function loadChatHistory() {
+  console.log('Загрузка истории чата...');
+  fetch('/api/chat_history')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('История чата получена:', data);
+      // Очищаем текущую историю
+      clearChat();
+      
+      // Добавляем сообщения из истории
+      if (data && Array.isArray(data)) {
+        data.forEach(msg => {
+          addMessage(msg.role, msg.content);
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Ошибка при загрузке истории чата:', error);
+      addMessage('error', 'Не удалось загрузить историю чата. Пожалуйста, попробуйте позже.');
+    });
+}
+
+// Делаем функцию доступной глобально для обратной совместимости
+window.loadChatHistory = loadChatHistory; 
 
 // --- Global Variables ---
 let telegramLinkButton;
@@ -898,13 +929,13 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   }
 
   // Initialize panel state and add event listener
-  document.addEventListener('DOMContentLoaded'), () => {
+  document.addEventListener('DOMContentLoaded', () => {
     // if (togglePanelsButton && leftPanel && rightPanel) { // Закомментировано v27.0 (Trae) - логика перенесена в js/core/ui.js и js/core/events.js
     //     initializePanelState(); // Логика перенесена в js/core/ui.js
     //     togglePanelsButton.addEventListener('click', togglePanels); // Обработчик перенесен в js/core/events.js
     // } else {
         console.error("Required elements not found: togglePanelsButton, leftPanel, or rightPanel");
-    }
+    // }
   });
   // --- End Universal Panel Toggling Logic ---
 
@@ -946,6 +977,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   }
 
   // --- Gesture Area Click Listener ---
+  const gestureArea = document.getElementById('gesture-area');
   if (gestureArea) {
     gestureArea.addEventListener('click', () => {
       if (!isGestureRecording) {
