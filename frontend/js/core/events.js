@@ -107,8 +107,15 @@ function setupButtonListeners() {
   // Кнопка записи жестов
   if (ui.buttons.gestureRecordButton) {
     ui.buttons.gestureRecordButton.addEventListener('click', () => {
-      // Переключаем видимость области жестов
-      toggleGestureArea();
+      if (ui.buttons.gestureRecordButton.classList.contains('active')) {
+        // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
+        // stopGestureRecording();
+        console.log('Функция stopGestureRecording временно отключена');
+      } else {
+        // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
+        // startGestureRecording();
+        console.log('Функция startGestureRecording временно отключена');
+      }
     });
   }
   
@@ -126,20 +133,6 @@ function setupButtonListeners() {
       }
     });
   }
-  
-  // Кнопка записи жестов
-  if (ui.buttons.gestureRecordButton) {
-    ui.buttons.gestureRecordButton.addEventListener('click', () => {
-      if (ui.buttons.gestureRecordButton.classList.contains('active')) {
-        // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
-        // stopGestureRecording();
-        console.log('Функция stopGestureRecording временно отключена');
-      } else {
-        // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
-        // startGestureRecording();
-        console.log('Функция startGestureRecording временно отключена');
-      }
-    });
   }
   
   // Кнопка чата
