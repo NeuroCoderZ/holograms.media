@@ -133,7 +133,6 @@ function setupButtonListeners() {
       }
     });
   }
-  }
   
   // Кнопка чата
   if (ui.buttons.chatButton) {
@@ -311,7 +310,9 @@ function toggleGestureRecording() {
   if (isRecording) {
     ui.modals.gestureModal.style.display = 'flex';
   } else {
-    stopGestureRecording();
+    // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
+    // stopGestureRecording();
+    console.log('Функция stopGestureRecording временно отключена');
     ui.modals.gestureModal.style.display = 'none';
   }
 }
