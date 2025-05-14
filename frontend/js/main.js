@@ -4,6 +4,7 @@
 import { initCore } from './core/init.js'; // Путь исправлен
 import { setupEventListeners } from './core/events.js'; // Путь исправлен
 import { setupUI } from './core/ui.js'; // Путь исправлен
+import { runFrontendDiagnostics } from './core/diagnostics.js'; // Импорт модуля диагностики
 
 // Импорт модулей
 // import { initAudio, setupAudioProcessing } from '/static/js/audio/processing.js'; // TODO: Module for audio processing not found, related code disabled
@@ -86,4 +87,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // }
   
   console.log('Инициализация завершена (с отключенными отсутствующими модулями)!');
+  
+  // Запускаем диагностику фронтенда
+  setTimeout(() => {
+    runFrontendDiagnostics();
+  }, 1000); // Небольшая задержка для завершения асинхронных операций
 });
