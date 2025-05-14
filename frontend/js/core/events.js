@@ -235,7 +235,7 @@ function setupWindowListeners() {
         updateHologramLayout(state.handsVisible);
       } else {
         // Это предупреждение поможет отследить, если элементы действительно отсутствуют в момент ресайза
-        console.warn('[Events/resize] Skipping updateHologramLayout: one or more required elements (gridContainer, gestureArea, hologramPivot) are not available.');
+        // console.warn('[Events/resize] Skipping updateHologramLayout: one or more required elements (gridContainer, gestureArea, hologramPivot) are not available.');
       }
     });
     

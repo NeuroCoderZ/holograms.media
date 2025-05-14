@@ -353,6 +353,11 @@ async def read_index():
         print(f"[ERROR /] index.html НЕ НАЙДЕН по пути: {INDEX_HTML_PATH}")
         raise HTTPException(status_code=404, detail="index.html not found")
 
+@app.get("/api/chat_history")
+async def get_chat_history_stub():
+    print("[API STUB] GET /api/chat_history called")
+    return {"messages": [], "status": "ok_stub_chat_history"}
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     print(f"[CHAT DEBUG] /chat endpoint called with model: {request.model}")

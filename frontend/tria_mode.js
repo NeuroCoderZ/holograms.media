@@ -26,8 +26,12 @@ export function initializeTriaMode() {
     // Обновляем класс для визуальной индикации
     triaButton.classList.toggle('active', isTriaModeActive);
     
-    // Выводим в консоль текущее состояние
-    console.log('Tria AI Mode:', isTriaModeActive ? 'ON' : 'OFF');
+    // Выводим в консоль сообщение о режиме Триа (заглушка)
+    if (isTriaModeActive) {
+      console.log("Режим 'Медленное Обучение Триа' АКТИВИРОВАН (заглушка).");
+    } else {
+      console.log("Режим 'Медленное Обучение Триа' ДЕАКТИВИРОВАН (заглушка).");
+    }
   });
 
   console.log("Логика переключателя режима Триа инициализирована");
@@ -49,8 +53,8 @@ export async function applyPromptWithTriaMode(prompt, model) {
     if (isTriaModeActive) {
       console.log('Режим Триа активен, отправляем запрос на /tria/invoke');
 
-      // Отправляем запрос на /tria/invoke
-      const response = await fetch('http://localhost:3000/tria/invoke', {
+      // Отправляем запрос на /tria/invoke (используем относительный путь)
+      const response = await fetch('/tria/invoke', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,4 +92,4 @@ export async function applyPromptWithTriaMode(prompt, model) {
 }
 
 // Инициализируем модуль при загрузке DOM
-document.addEventListener('DOMContentLoaded', initializeTriaMode); 
+document.addEventListener('DOMContentLoaded', initializeTriaMode);
