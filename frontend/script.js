@@ -42,6 +42,12 @@ let telegramLinkButton;
 let micButton;
 // Переменная isTriaModeActive теперь импортируется из модуля tria_mode.js
 let hologramPivot = new THREE.Group();
+
+// Экспортируем hologramPivot для использования в других модулях
+export { hologramPivot };
+
+// Делаем hologramPivot доступным глобально для обратной совместимости
+window.hologramPivot = hologramPivot;
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
