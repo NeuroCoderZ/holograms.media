@@ -1151,7 +1151,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   const rightPanelWidthInitial = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
   const initialAvailableWidth = window.innerWidth - leftPanelWidthInitial - rightPanelWidthInitial;
   const initialAvailableHeight = window.innerHeight;
-  console.log('Initial Available:', { width: initialAvailableWidth, height: initialAvailableHeight });
+  // console.log('Initial Available:', { width: initialAvailableWidth, height: initialAvailableHeight });
   // --------------------------------------------
 
   const initialAspect = initialAvailableWidth / initialAvailableHeight;
@@ -1165,7 +1165,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   );
   orthoCamera.position.set(0, 0, 1200);
   orthoCamera.lookAt(0, 0, 0);
-  console.log('Initial Camera:', { left: orthoCamera.left, right: orthoCamera.right, top: orthoCamera.top, bottom: orthoCamera.bottom });
+  // console.log('Initial Camera:', { left: orthoCamera.left, right: orthoCamera.right, top: orthoCamera.top, bottom: orthoCamera.bottom });
 
   const xrCamera = new THREE.PerspectiveCamera(70, initialAspect, 0.1, 10000);
   xrCamera.position.set(0, 0, 0);
@@ -1217,7 +1217,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   }
 
   const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight);
-  console.log('Final Scale:', initialScale);
+  // console.log('Final Scale:', initialScale);
 
   // Функция для плавной анимации макета голограммы
   function updateHologramLayout(handsVisible) {
@@ -1253,11 +1253,11 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     const targetPositionY = handsVisible ? topMargin : 0;
 
     // console.log('[Layout] Target values:', {
-        scale: targetScale,
-        positionY: targetPositionY,
-        availableWidth,
-        availableHeight
-    });
+    //     scale: targetScale,
+    //     positionY: targetPositionY,
+    //     availableWidth,
+    //     availableHeight
+    // });
 
     // Анимируем масштаб
     new TWEEN.Tween(hologramPivot.scale)
