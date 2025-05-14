@@ -26,7 +26,7 @@ export function initializeTriaMode() {
     // Обновляем класс для визуальной индикации
     triaButton.classList.toggle('active', isTriaModeActive);
     
-    // Выводим в консоль сообщение о режиме Триа (заглушка)
+    // Выводим в консоль сообщение о режиме Триа
     if (isTriaModeActive) {
       console.log("Режим 'Медленное Обучение Триа' АКТИВИРОВАН (заглушка).");
     } else {

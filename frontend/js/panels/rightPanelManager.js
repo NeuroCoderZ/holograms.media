@@ -4,7 +4,7 @@
  */
 
 // Импортируем функцию загрузки истории чата из script.js
-import { loadChatHistory } from '/static/script.js';
+import { loadChatHistory } from '../../script.js';
 
 // --- Переменные модуля ---
 // Объект для хранения ссылок на DOM-элементы.

@@ -60,43 +60,60 @@ export const state = {
   debugMode: false            // Включен ли режим отладки
 };
 
-// Функция для инициализации ядра приложения (может быть расширена)
+// Импортируем функцию инициализации Three.js сцены
+import { initializeThreeJSScene } from '../3d/sceneSetup.js';
+
+// Функция для инициализации ядра приложения
 export function initCore() {
   console.log('Инициализация ядра приложения...');
-  // Здесь может быть начальная настройка state, если это необходимо до других модулей
-  // Например, установка начальных значений из localStorage или конфигурационных файлов
   
-  // Инициализация hologramPivot из глобального объекта, если он доступен
-  if (window.hologramPivot && !state.hologramPivot) {
-    state.hologramPivot = window.hologramPivot;
-    console.log('hologramPivot инициализирован из глобального объекта');
+  // Инициализируем Three.js сцену
+  try {
+    const threeContext = initializeThreeJSScene();
+    
+    // Присваиваем возвращенные значения полям state
+    state.scene = threeContext.scene;
+    state.camera = threeContext.camera;
+    state.renderer = threeContext.renderer;
+    state.hologramPivot = threeContext.hologramPivot;
+    
+    console.log('Three.js сцена успешно инициализирована');
+  } catch (error) {
+    console.error('Ошибка при инициализации Three.js сцены:', error);
+    
+    // Запасной вариант: инициализация из глобальных объектов (для обратной совместимости)
+    if (window.hologramPivot && !state.hologramPivot) {
+      state.hologramPivot = window.hologramPivot;
+      console.log('hologramPivot инициализирован из глобального объекта');
+    }
+    
+    if (window.scene && !state.scene) {
+      state.scene = window.scene;
+      console.log('scene инициализирована из глобального объекта');
+    }
+    
+    if (window.camera && !state.camera) {
+      state.camera = window.camera;
+      console.log('camera инициализирована из глобального объекта');
+    }
+    
+    if (window.renderer && !state.renderer) {
+      state.renderer = window.renderer;
+      console.log('renderer инициализирован из глобального объекта');
+    }
   }
   
-  // Инициализация scene из глобального объекта, если он доступен
-  if (window.scene && !state.scene) {
-    state.scene = window.scene;
-    console.log('scene инициализирована из глобального объекта');
-  }
-  
-  // Инициализация camera из глобального объекта, если он доступен
-  if (window.camera && !state.camera) {
-    state.camera = window.camera;
-    console.log('camera инициализирована из глобального объекта');
-  }
-  
-  // Инициализация renderer из глобального объекта, если он доступен
-  if (window.renderer && !state.renderer) {
-    state.renderer = window.renderer;
-    console.log('renderer инициализирован из глобального объекта');
-  }
-  
-  // Установка начального аспекта камеры
+  // Установка начального аспекта камеры (если не было установлено в initializeThreeJSScene)
   if (state.camera) {
     state.camera.aspect = window.innerWidth / window.innerHeight;
     state.camera.updateProjectionMatrix();
   }
-  if (state.renderer) {
+  if (state.renderer && !state.renderer.domElement.parentElement) {
     state.renderer.setSize(window.innerWidth, window.innerHeight);
+    const gridContainer = document.getElementById('grid-container');
+    if (gridContainer) {
+      gridContainer.appendChild(state.renderer.domElement);
+    }
   }
   console.log('Ядро приложения инициализировано.', state);
 }

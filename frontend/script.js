@@ -8,7 +8,7 @@ import { initializeSpeechInput } from '/static/js/audio/speechInput.js';
 
 // Экспортируем функцию loadChatHistory для использования в других модулях
 export function loadChatHistory() {
-  console.log('Загрузка истории чата...');
+  // console.log('Загрузка истории чата...');
   fetch('/api/chat_history')
     .then(response => {
       if (!response.ok) {
@@ -17,7 +17,7 @@ export function loadChatHistory() {
       return response.json();
     })
     .then(data => {
-      console.log('История чата получена:', data);
+      // console.log('История чата получена:', data);
       // Очищаем текущую историю
       clearChat();
       
@@ -161,10 +161,9 @@ const CELL_SIZE = 1;
 
 let selectedX = 0, selectedY = 0, selectedZ = 0;
 let currentColumn = null;
-const scene = new THREE.Scene();
-// Добавляем scene в state для использования в других модулях
+// Импортируем state из init.js
 import { state } from './js/core/init.js';
-state.scene = scene;
+// Примечание: scene теперь инициализируется в sceneSetup.js и присваивается в state
 const columns = [];
 let analyserLeft, analyserRight;
 let audioBufferSource = null;
