@@ -794,7 +794,7 @@ function startGestureRecording() {
     return;
   }
   isGestureRecording = true;
-  const gestureArea = document.getElementById('gesture-area');
+  // Переменная gestureArea должна быть доступна из внешней области видимости (например, объявлена при DOMContentLoaded)
   if (gestureArea) {
     gestureArea.classList.add('recording');
   }
@@ -814,7 +814,7 @@ function stopGestureRecording() {
     return;
   }
   isGestureRecording = false;
-  const gestureArea = document.getElementById('gesture-area');
+  // Переменная gestureArea должна быть доступна из внешней области видимости (например, объявлена при DOMContentLoaded)
   if (gestureArea) {
     gestureArea.classList.remove('recording');
   }

@@ -138,7 +138,7 @@ function setupButtonListeners() {
   if (ui.buttons.chatButton) {
     ui.buttons.chatButton.addEventListener('click', toggleChatMode);
   }
-}
+} // Закрываем функцию setupButtonListeners
 
 // Настройка обработчиков модальных окон
 function setupModalListeners() {
