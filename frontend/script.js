@@ -1127,6 +1127,16 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 
   setupCamera();
 
+  // Создаем сцену Three.js
+  const scene = new THREE.Scene();
+  // Присваиваем scene в state для использования в других модулях
+  state.scene = scene;
+  
+  // Добавляем hologramPivot в сцену
+  scene.add(hologramPivot);
+  // Присваиваем hologramPivot в state для использования в других модулях
+  state.hologramPivot = hologramPivot;
+
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
   const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
@@ -1226,7 +1236,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     let heightScale = availableHeightForHologram / hologramHeight; // Используем ПЕРЕДАННУЮ высоту
     let scale = Math.min(widthScale, heightScale);
     scale = Math.max(scale, 0.1); // Минимальный масштаб
-    // console.log(`<<< calculateInitialScale calculated scale: ${scale} (based on availableH: ${availableHeightForHologram})`);
+    // console.log(`<<< calculateInitialScale calculated scale: ${scale} (based on availableH: ${availableHeightForHologram})`); // Закомментировано v27.0
     return scale;
   }
 
@@ -1241,7 +1251,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     const gridContainerElement = document.getElementById('grid-container');
     const gestureAreaElement = document.getElementById('gesture-area');
     if (!gridContainerElement || !gestureAreaElement) {
-        console.warn('[Layout] Missing required elements');
+        // console.warn('[Layout] Missing required elements'); // Закомментировано v27.0
         return;
     }
 
@@ -1253,7 +1263,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 
     // Проверяем, что hologramPivot добавлен в сцену
     if (!scene.children.includes(hologramPivot)) {
-        console.warn('[Layout] Adding hologramPivot to scene');
+        // console.warn('[Layout] Adding hologramPivot to scene'); // Закомментировано v27.0
         scene.add(hologramPivot);
     }
 
