@@ -2509,7 +2509,7 @@ async function startVideoStream(videoElement, handsInstance) {
       }
       
       // Отправляем запрос на сервер для получения ответа от выбранной LLM модели
-      axios.post('/chat', {
+      window.axios.post('/chat', {
         message: messageText,
         model: selectedModel, 
         history: chatHistory
@@ -2562,7 +2562,7 @@ async function startVideoStream(videoElement, handsInstance) {
     const spinner = document.getElementById('loading-spinner');
     if (spinner) spinner.style.display = 'block';
     
-    axios.get(`/chat/history/${chatId}`)
+    window.axios.get(`/chat/history/${chatId}`)
       .then(response => {
         // Скрываем индикатор загрузки
         if (spinner) spinner.style.display = 'none';
@@ -2592,4 +2592,4 @@ async function startVideoStream(videoElement, handsInstance) {
 
   // Восстанавливаем экспорт функции в глобальный контекст (временное решение)
   window.loadChatHistory = loadChatHistory;
-// This appears to be an orphaned closing bracket - removing it since it has no matching opening bracket
+});
