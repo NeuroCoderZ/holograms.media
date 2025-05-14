@@ -162,6 +162,9 @@ const CELL_SIZE = 1;
 let selectedX = 0, selectedY = 0, selectedZ = 0;
 let currentColumn = null;
 const scene = new THREE.Scene();
+// Добавляем scene в state для использования в других модулях
+import { state } from './js/core/init.js';
+state.scene = scene;
 const columns = [];
 let analyserLeft, analyserRight;
 let audioBufferSource = null;
@@ -1157,7 +1160,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   const rightPanelWidthInitial = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
   const initialAvailableWidth = window.innerWidth - leftPanelWidthInitial - rightPanelWidthInitial;
   const initialAvailableHeight = window.innerHeight;
-  // console.log('Initial Available:', { width: initialAvailableWidth, height: initialAvailableHeight });
+  // console.log('Initial Available:', { width: initialAvailableWidth, height: initialAvailableHeight }); // Закомментировано v27.0
   // --------------------------------------------
 
   const initialAspect = initialAvailableWidth / initialAvailableHeight;
@@ -1171,13 +1174,16 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   );
   orthoCamera.position.set(0, 0, 1200);
   orthoCamera.lookAt(0, 0, 0);
-  // console.log('Initial Camera:', { left: orthoCamera.left, right: orthoCamera.right, top: orthoCamera.top, bottom: orthoCamera.bottom });
+  // console.log('Initial Camera:', { left: orthoCamera.left, right: orthoCamera.right, top: orthoCamera.top, bottom: orthoCamera.bottom }); // Закомментировано v27.0
 
   const xrCamera = new THREE.PerspectiveCamera(70, initialAspect, 0.1, 10000);
   xrCamera.position.set(0, 0, 0);
   xrCamera.lookAt(new THREE.Vector3(0, 0, -1));
 
   let activeCamera = orthoCamera;
+  
+  // Добавляем camera в state для использования в других модулях
+  state.camera = activeCamera;
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
@@ -1190,6 +1196,9 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   renderer.domElement.style.position = 'relative';
   scene.background = null; // Полностью прозрачный фон
   renderer.setPixelRatio(window.devicePixelRatio);
+  
+  // Добавляем renderer в state для использования в других модулях
+  state.renderer = renderer;
   // Устанавливаем РАЗМЕР РЕНДЕРЕРА по доступному пространству
   renderer.setSize(initialAvailableWidth, initialAvailableHeight);
   if (gridContainer) {
@@ -1211,7 +1220,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   mainSequencerGroup.position.set(0, 0, 0); // Центрирование по Y
 
   function calculateInitialScale(containerWidth, availableHeightForHologram) { // Параметр - уже доступная высота
-    // console.log(`>>> calculateInitialScale called with: w=${containerWidth}, hForHologram=${availableHeightForHologram}`);
+    // console.log(`>>> calculateInitialScale called with: w=${containerWidth}, hForHologram=${availableHeightForHologram}`); // Закомментировано v27.0
     const hologramWidth = GRID_WIDTH * 2;
     const hologramHeight = GRID_HEIGHT;
     let widthScale = (containerWidth * 0.98) / hologramWidth; // Отступ 1% слева/справа
@@ -1223,11 +1232,11 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   }
 
   const initialScale = calculateInitialScale(initialAvailableWidth, initialAvailableHeight);
-  // console.log('Final Scale:', initialScale);
+  // console.log('Final Scale:', initialScale); // Закомментировано v27.0
 
   // Функция для плавной анимации макета голограммы
   function updateHologramLayout(handsVisible) {
-    // console.log(`[Layout] Updating hologram layout, handsVisible: ${handsVisible}`);
+    // console.log(`[Layout] Updating hologram layout, handsVisible: ${handsVisible}`); // Закомментировано v27.0
     
     // Проверяем наличие необходимых элементов
     const gridContainerElement = document.getElementById('grid-container');
@@ -1258,7 +1267,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     const targetScale = handsVisible ? 0.8 : calculateInitialScale(availableWidth, availableHeight);
     const targetPositionY = handsVisible ? topMargin : 0;
 
-    // console.log('[Layout] Target values:', {
+    // console.log('[Layout] Target values:', { // Закомментировано v27.0
     //     scale: targetScale,
     //     positionY: targetPositionY,
     //     availableWidth,
@@ -1270,7 +1279,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         .to({ x: targetScale, y: targetScale, z: targetScale }, 500)
         .easing(TWEEN.Easing.Quadratic.InOut)
         .onUpdate(() => {
-            // console.log('[Layout] Scale update:', hologramPivot.scale);
+            // console.log('[Layout] Scale update:', hologramPivot.scale); // Закомментировано v27.0
         })
         .start();
 
@@ -1279,12 +1288,12 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         .to({ y: targetPositionY }, 500)
         .easing(TWEEN.Easing.Quadratic.InOut)
         .onUpdate(() => {
-            // console.log('[Layout] Position update:', hologramPivot.position);
+            // console.log('[Layout] Position update:', hologramPivot.position); // Закомментировано v27.0
         })
         .onComplete(() => {
             // Обновляем камеру после завершения анимации
             activeCamera.updateProjectionMatrix();
-            // console.log('[Layout] Animation complete');
+            // console.log('[Layout] Animation complete'); // Закомментировано v27.0
         })
         .start();
 
@@ -1317,7 +1326,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 
   function logLayoutState() {
     // Логируем состояние голограммы
-    /* console.log('[Layout] Hologram state:', {
+    /* console.log('[Layout] Hologram state:', { // Закомментировано v27.0
         position: hologramPivot.position.toArray(),
         scale: hologramPivot.scale.toArray(),
         rotation: hologramPivot.rotation.toArray()
@@ -1326,7 +1335,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     // Логируем размеры панели
     const leftPanel = document.querySelector('.panel.left-panel');
     if (leftPanel) {
-        /* console.log('[Layout] Left panel dimensions:', {
+        /* console.log('[Layout] Left panel dimensions:', { // Закомментировано v27.0
             width: leftPanel.offsetWidth,
             buttonSize: getComputedStyle(document.documentElement).getPropertyValue('--button-size')
         }); */
@@ -1336,7 +1345,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     const versionLabel = document.querySelector('.version-label');
     if (versionLabel) {
         const styles = getComputedStyle(versionLabel);
-        /* console.log('[Layout] Version label styles:', {
+        /* console.log('[Layout] Version label styles:', { // Закомментировано v27.0
             fontSize: styles.fontSize,
             lineHeight: styles.lineHeight,
             transform: styles.transform
@@ -1346,7 +1355,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 
   // Добавляем обработчик resize
   window.addEventListener('resize', () => {
-    // console.log('[Resize] Window resized');
+    // console.log('[Resize] Window resized'); // Закомментировано v27.0
     
     // Обновляем размеры панелей
     const leftPanel = document.querySelector('.panel.left-panel');
@@ -1357,13 +1366,13 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         const buttonSpacing = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--button-spacing'));
         const newWidth = buttonSize * 2 + buttonSpacing * 3;
         leftPanel.style.width = `${newWidth}px`;
-        // console.log('[Resize] Left panel resized:', { width: newWidth });
+        // console.log('[Resize] Left panel resized:', { width: newWidth }); // Закомментировано v27.0
     }
     
     if (rightPanel) {
         const newWidth = Math.min(Math.max(window.innerWidth * 0.25, 20), 30) + 'vw';
         rightPanel.style.width = newWidth;
-        // console.log('[Resize] Right panel resized:', { width: newWidth });
+        // console.log('[Resize] Right panel resized:', { width: newWidth }); // Закомментировано v27.0
     }
     
     // Обновляем размеры рендерера
@@ -1371,14 +1380,14 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         const availableWidth = window.innerWidth - getPanelWidths();
         const availableHeight = window.innerHeight;
         renderer.setSize(availableWidth, availableHeight);
-        // console.log('[Resize] Renderer resized:', { width: availableWidth, height: availableHeight });
+        // console.log('[Resize] Renderer resized:', { width: availableWidth, height: availableHeight }); // Закомментировано v27.0
     }
     
     // Обновляем камеру
     if (activeCamera) {
         activeCamera.aspect = window.innerWidth / window.innerHeight;
         activeCamera.updateProjectionMatrix();
-        // console.log('[Resize] Camera updated');
+        // console.log('[Resize] Camera updated'); // Закомментировано v27.0
     }
     
     // Обновляем макет голограммы
