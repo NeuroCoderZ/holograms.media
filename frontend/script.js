@@ -1205,14 +1205,14 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   mainSequencerGroup.position.set(0, 0, 0); // Центрирование по Y
 
   function calculateInitialScale(containerWidth, availableHeightForHologram) { // Параметр - уже доступная высота
-    console.log(`>>> calculateInitialScale called with: w=${containerWidth}, hForHologram=${availableHeightForHologram}`);
+    // console.log(`>>> calculateInitialScale called with: w=${containerWidth}, hForHologram=${availableHeightForHologram}`);
     const hologramWidth = GRID_WIDTH * 2;
     const hologramHeight = GRID_HEIGHT;
     let widthScale = (containerWidth * 0.98) / hologramWidth; // Отступ 1% слева/справа
     let heightScale = availableHeightForHologram / hologramHeight; // Используем ПЕРЕДАННУЮ высоту
     let scale = Math.min(widthScale, heightScale);
     scale = Math.max(scale, 0.1); // Минимальный масштаб
-    console.log(`<<< calculateInitialScale calculated scale: ${scale} (based on availableH: ${availableHeightForHologram})`);
+    // console.log(`<<< calculateInitialScale calculated scale: ${scale} (based on availableH: ${availableHeightForHologram})`);
     return scale;
   }
 
@@ -1221,7 +1221,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 
   // Функция для плавной анимации макета голограммы
   function updateHologramLayout(handsVisible) {
-    console.log(`[Layout] Updating hologram layout, handsVisible: ${handsVisible}`);
+    // console.log(`[Layout] Updating hologram layout, handsVisible: ${handsVisible}`);
     
     // Проверяем наличие необходимых элементов
     const gridContainerElement = document.getElementById('grid-container');
@@ -1252,7 +1252,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     const targetScale = handsVisible ? 0.8 : calculateInitialScale(availableWidth, availableHeight);
     const targetPositionY = handsVisible ? topMargin : 0;
 
-    console.log('[Layout] Target values:', {
+    // console.log('[Layout] Target values:', {
         scale: targetScale,
         positionY: targetPositionY,
         availableWidth,
@@ -1264,7 +1264,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         .to({ x: targetScale, y: targetScale, z: targetScale }, 500)
         .easing(TWEEN.Easing.Quadratic.InOut)
         .onUpdate(() => {
-            console.log('[Layout] Scale update:', hologramPivot.scale);
+            // console.log('[Layout] Scale update:', hologramPivot.scale);
         })
         .start();
 
@@ -1273,12 +1273,12 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         .to({ y: targetPositionY }, 500)
         .easing(TWEEN.Easing.Quadratic.InOut)
         .onUpdate(() => {
-            console.log('[Layout] Position update:', hologramPivot.position);
+            // console.log('[Layout] Position update:', hologramPivot.position);
         })
         .onComplete(() => {
             // Обновляем камеру после завершения анимации
             activeCamera.updateProjectionMatrix();
-            console.log('[Layout] Animation complete');
+            // console.log('[Layout] Animation complete');
         })
         .start();
 
@@ -1311,7 +1311,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 
   function logLayoutState() {
     // Логируем состояние голограммы
-    console.log('[Layout] Hologram state:', {
+    // console.log('[Layout] Hologram state:', {
         position: hologramPivot.position.toArray(),
         scale: hologramPivot.scale.toArray(),
         rotation: hologramPivot.rotation.toArray()
@@ -1320,7 +1320,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     // Логируем размеры панели
     const leftPanel = document.querySelector('.panel.left-panel');
     if (leftPanel) {
-        console.log('[Layout] Left panel dimensions:', {
+        // console.log('[Layout] Left panel dimensions:', {
             width: leftPanel.offsetWidth,
             buttonSize: getComputedStyle(document.documentElement).getPropertyValue('--button-size')
         });
@@ -1330,7 +1330,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     const versionLabel = document.querySelector('.version-label');
     if (versionLabel) {
         const styles = getComputedStyle(versionLabel);
-        console.log('[Layout] Version label styles:', {
+        // console.log('[Layout] Version label styles:', {
             fontSize: styles.fontSize,
             lineHeight: styles.lineHeight,
             transform: styles.transform
@@ -1340,7 +1340,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 
   // Добавляем обработчик resize
   window.addEventListener('resize', () => {
-    console.log('[Resize] Window resized');
+    // console.log('[Resize] Window resized');
     
     // Обновляем размеры панелей
     const leftPanel = document.querySelector('.panel.left-panel');
@@ -1351,13 +1351,13 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         const buttonSpacing = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--button-spacing'));
         const newWidth = buttonSize * 2 + buttonSpacing * 3;
         leftPanel.style.width = `${newWidth}px`;
-        console.log('[Resize] Left panel resized:', { width: newWidth });
+        // console.log('[Resize] Left panel resized:', { width: newWidth });
     }
     
     if (rightPanel) {
         const newWidth = Math.min(Math.max(window.innerWidth * 0.25, 20), 30) + 'vw';
         rightPanel.style.width = newWidth;
-        console.log('[Resize] Right panel resized:', { width: newWidth });
+        // console.log('[Resize] Right panel resized:', { width: newWidth });
     }
     
     // Обновляем размеры рендерера
@@ -1365,14 +1365,14 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         const availableWidth = window.innerWidth - getPanelWidths();
         const availableHeight = window.innerHeight;
         renderer.setSize(availableWidth, availableHeight);
-        console.log('[Resize] Renderer resized:', { width: availableWidth, height: availableHeight });
+        // console.log('[Resize] Renderer resized:', { width: availableWidth, height: availableHeight });
     }
     
     // Обновляем камеру
     if (activeCamera) {
         activeCamera.aspect = window.innerWidth / window.innerHeight;
         activeCamera.updateProjectionMatrix();
-        console.log('[Resize] Camera updated');
+        // console.log('[Resize] Camera updated');
     }
     
     // Обновляем макет голограммы
