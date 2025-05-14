@@ -155,7 +155,9 @@ function setupModalListeners() {
     if (ui.actions.startRecordingButton) {
       // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
       // ui.actions.startRecordingButton.addEventListener('click', startGestureRecording); 
-      ui.actions.startRecordingButton.addEventListener('click', () => console.log('Функция startGestureRecording временно отключена'));
+      ui.actions.startRecordingButton.addEventListener('click', () => {
+        console.log('Функция startGestureRecording временно отключена');
+      });
     }
     
     if (ui.actions.stopRecordingButton) {
