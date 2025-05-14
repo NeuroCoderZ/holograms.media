@@ -1311,30 +1311,30 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 
   function logLayoutState() {
     // Логируем состояние голограммы
-    // console.log('[Layout] Hologram state:', {
+    /* console.log('[Layout] Hologram state:', {
         position: hologramPivot.position.toArray(),
         scale: hologramPivot.scale.toArray(),
         rotation: hologramPivot.rotation.toArray()
-    });
+    }); */
 
     // Логируем размеры панели
     const leftPanel = document.querySelector('.panel.left-panel');
     if (leftPanel) {
-        // console.log('[Layout] Left panel dimensions:', {
+        /* console.log('[Layout] Left panel dimensions:', {
             width: leftPanel.offsetWidth,
             buttonSize: getComputedStyle(document.documentElement).getPropertyValue('--button-size')
-        });
+        }); */
     }
 
     // Логируем стили меток
     const versionLabel = document.querySelector('.version-label');
     if (versionLabel) {
         const styles = getComputedStyle(versionLabel);
-        // console.log('[Layout] Version label styles:', {
+        /* console.log('[Layout] Version label styles:', {
             fontSize: styles.fontSize,
             lineHeight: styles.lineHeight,
             transform: styles.transform
-        });
+        }); */
     }
   }
 
