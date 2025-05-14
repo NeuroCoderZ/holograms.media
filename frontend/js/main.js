@@ -43,15 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   initCore(); // Из ./core/init.js
   setupUI(); // Из ./core/ui.js
   
-  // Инициализируем 3D сцену и визуализацию
-  // TODO: Module for 3D scene (e.g., initScene, initializeGrid, createHologram) not found, related code disabled
-  // try {
-  //   const { scene, renderer, camera } = initScene();
-  //   initializeGrid(scene);
-  //   createHologram(scene);
-  // } catch (error) {
-  //   console.error('Ошибка инициализации 3D сцены:', error);
-  // }
+  // Инициализация 3D сцены происходит в initCore() через sceneSetup.js
+// Отдельный вызов не требуется, так как initializeThreeJSScene вызывается внутри initCore()
   
   // Инициализируем аудио
   // TODO: Module for audio processing (e.g., initAudio, initAudioVisualization) not found, related code disabled
