@@ -66,7 +66,31 @@ export function initCore() {
   // Здесь может быть начальная настройка state, если это необходимо до других модулей
   // Например, установка начальных значений из localStorage или конфигурационных файлов
   
-  // Пример: установка начального аспекта камеры
+  // Инициализация hologramPivot из глобального объекта, если он доступен
+  if (window.hologramPivot && !state.hologramPivot) {
+    state.hologramPivot = window.hologramPivot;
+    console.log('hologramPivot инициализирован из глобального объекта');
+  }
+  
+  // Инициализация scene из глобального объекта, если он доступен
+  if (window.scene && !state.scene) {
+    state.scene = window.scene;
+    console.log('scene инициализирована из глобального объекта');
+  }
+  
+  // Инициализация camera из глобального объекта, если он доступен
+  if (window.camera && !state.camera) {
+    state.camera = window.camera;
+    console.log('camera инициализирована из глобального объекта');
+  }
+  
+  // Инициализация renderer из глобального объекта, если он доступен
+  if (window.renderer && !state.renderer) {
+    state.renderer = window.renderer;
+    console.log('renderer инициализирован из глобального объекта');
+  }
+  
+  // Установка начального аспекта камеры
   if (state.camera) {
     state.camera.aspect = window.innerWidth / window.innerHeight;
     state.camera.updateProjectionMatrix();

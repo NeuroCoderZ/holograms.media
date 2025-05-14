@@ -230,19 +230,44 @@ function setupWindowListeners() {
   window.addEventListener('resize', () => {
     // Обновление макета голограммы
     requestAnimationFrame(() => {
-      // Дополнительная проверка перед вызовом updateHologramLayout, чтобы избежать предупреждения из ui.js
-      if (ui && ui.containers && ui.containers.gridContainer && ui.containers.gestureArea && state && state.hologramPivot) {
+      // Расширенная проверка перед вызовом updateHologramLayout
+      // Проверяем наличие всех необходимых компонентов UI и Three.js
+      if (ui && ui.containers && ui.containers.gridContainer && ui.containers.gestureArea && 
+          state && state.hologramPivot && state.scene && state.camera && state.renderer) {
+        // Все необходимые компоненты доступны, можно обновлять макет
         updateHologramLayout(state.handsVisible);
       } else {
-        // Это предупреждение поможет отследить, если элементы действительно отсутствуют в момент ресайза
-        // console.warn('[Events/resize] Skipping updateHologramLayout: one or more required elements (gridContainer, gestureArea, hologramPivot) are not available.');
+        // Если какой-то компонент отсутствует, выводим подробное предупреждение
+        const missingComponents = [];
+        if (!ui || !ui.containers) missingComponents.push('ui.containers');
+        if (ui && ui.containers && !ui.containers.gridContainer) missingComponents.push('gridContainer');
+        if (ui && ui.containers && !ui.containers.gestureArea) missingComponents.push('gestureArea');
+        if (!state) missingComponents.push('state');
+        if (state && !state.hologramPivot) missingComponents.push('hologramPivot');
+        if (state && !state.scene) missingComponents.push('scene');
+        if (state && !state.camera) missingComponents.push('camera');
+        if (state && !state.renderer) missingComponents.push('renderer');
+        
+        console.warn(`[Events/resize] Skipping updateHologramLayout: missing components: ${missingComponents.join(', ')}`);
+        
+        // Пытаемся инициализировать hologramPivot из глобального объекта, если он доступен
+        if (state && !state.hologramPivot && window.hologramPivot) {
+          state.hologramPivot = window.hologramPivot;
+          console.log('hologramPivot инициализирован из глобального объекта в обработчике resize');
+        }
+        
+        // Пытаемся инициализировать scene из глобального объекта, если он доступен
+        if (state && !state.scene && window.scene) {
+          state.scene = window.scene;
+          console.log('scene инициализирована из глобального объекта в обработчике resize');
+        }
       }
     });
     
     // Обработка трехмерной сцены
     if (state && state.renderer && state.camera) { // Добавлена проверка на state и его свойства
       // Размеры должны браться из gridContainer, если он есть, или из window
-      const container = ui.containers.gridContainer || window;
+      const container = ui.containers && ui.containers.gridContainer ? ui.containers.gridContainer : window;
       const newWidth = container.innerWidth || container.clientWidth;
       const newHeight = container.innerHeight || container.clientHeight;
 

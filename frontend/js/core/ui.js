@@ -267,10 +267,66 @@ export function toggleChatMode() {
 // Обновление макета голограммы
 export function updateHologramLayout(handsVisible) {
   // Проверяем наличие необходимых элементов
-  // FIX: Добавлены проверки на существование ui.containers.gridContainer, ui.containers.gestureArea и state.hologramPivot
-  if (!ui.containers.gridContainer || !ui.containers.gestureArea || !state || !state.hologramPivot) {
-    console.warn('[Layout] Missing required elements for layout update (gridContainer, gestureArea, state or hologramPivot). Skipping update.');
+  // Расширенная проверка на существование всех необходимых компонентов
+  if (!ui.containers.gridContainer) {
+    console.warn('[Events/resize] Skipping updateHologramLayout: gridContainer is not available.');
     return;
+  }
+  
+  if (!ui.containers.gestureArea) {
+    console.warn('[Events/resize] Skipping updateHologramLayout: gestureArea is not available.');
+    return;
+  }
+  
+  // Проверяем наличие hologramPivot в state или в глобальном объекте window
+  if (!state) {
+    console.warn('[Events/resize] Skipping updateHologramLayout: state is not available.');
+    return;
+  }
+  
+  // Если hologramPivot не инициализирован в state, но доступен глобально, используем его
+  if (!state.hologramPivot && window.hologramPivot) {
+    state.hologramPivot = window.hologramPivot;
+    console.log('hologramPivot инициализирован из глобального объекта в updateHologramLayout');
+  }
+  
+  if (!state.hologramPivot) {
+    console.warn('[Events/resize] Skipping updateHologramLayout: hologramPivot is not available.');
+    return;
+  }
+  
+  // Проверяем наличие scene, camera и renderer
+  if (!state.scene) {
+    // Если scene не инициализирована в state, но доступна глобально, используем её
+    if (window.scene) {
+      state.scene = window.scene;
+      console.log('scene инициализирована из глобального объекта в updateHologramLayout');
+    } else {
+      console.warn('[Events/resize] Skipping updateHologramLayout: scene is not available.');
+      return;
+    }
+  }
+  
+  if (!state.camera) {
+    // Если camera не инициализирована в state, но доступна глобально, используем её
+    if (window.camera) {
+      state.camera = window.camera;
+      console.log('camera инициализирована из глобального объекта в updateHologramLayout');
+    } else {
+      console.warn('[Events/resize] Skipping updateHologramLayout: camera is not available.');
+      return;
+    }
+  }
+  
+  if (!state.renderer) {
+    // Если renderer не инициализирован в state, но доступен глобально, используем его
+    if (window.renderer) {
+      state.renderer = window.renderer;
+      console.log('renderer инициализирован из глобального объекта в updateHologramLayout');
+    } else {
+      console.warn('[Events/resize] Skipping updateHologramLayout: renderer is not available.');
+      return;
+    }
   }
 
   // Получаем размеры и рассчитываем целевые значения
