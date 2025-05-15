@@ -5,6 +5,7 @@ import { applyPromptWithTriaMode } from './tria_mode.js';
 import { initializeRightPanel } from './js/panels/rightPanelManager.js'; 
 import { initializeChatDisplay, addMessage, clearChat, speak } from './js/panels/chatMessages.js'; 
 import { initializeSpeechInput } from './js/audio/speechInput.js';
+import { state } from './js/core/init.js';
   
 // Экспортируем функцию loadChatHistory для использования в других модулях
 export function loadChatHistory() {
@@ -1402,9 +1403,9 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     }
     
     // Обновляем камеру
-    if (activeCamera) {
-        activeCamera.aspect = window.innerWidth / window.innerHeight;
-        activeCamera.updateProjectionMatrix();
+    if (state.camera) {
+        state.camera.aspect = window.innerWidth / window.innerHeight;
+        state.camera.updateProjectionMatrix();
         // console.log('[Resize] Camera updated'); // Закомментировано v27.0
     }
     
@@ -1421,8 +1422,8 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     requestAnimationFrame(animate);
 
     // Проверяем инициализацию
-    if (!scene || !activeCamera || !renderer) {
-        console.error('[Animation] Rendering setup incomplete:', { scene, activeCamera, renderer });
+    if (!state.scene || !state.camera || !state.renderer) {
+        console.error('[Animation] Rendering setup incomplete:', { scene: state.scene, camera: state.camera, renderer: state.renderer });
         return;
     }
 
@@ -1430,7 +1431,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     TWEEN.update();
 
     // Очищаем буферы
-    renderer.clear();
+    state.renderer.clear();
 
     // Обрабатываем аудио
     if (isPlaying) {
@@ -1445,11 +1446,11 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         updateSequencerColumns(rightLevels, 'right');
     }
     // Рендерим сцену
-    renderer.render(scene, activeCamera);
+    state.renderer.render(state.scene, state.camera);
   } // Закрывающая скобка для функции animate
 
   // Инициализация сцены
-  scene.add(hologramPivot);
+  state.scene.add(hologramPivot);
   hologramPivot.add(mainSequencerGroup);
   mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем геометрию относительно пивота
   hologramPivot.position.set(0, 0, 0); // Начальная позиция пивота
@@ -1458,7 +1459,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   // Установи начальные параметры для состояния "без рук"
   updateHologramLayout(false);
 
-  renderer.autoClear = false;
+  state.renderer.autoClear = false;
 
   const defaultMaterial = new THREE.LineBasicMaterial({
     color: 0xffffff,
@@ -1768,7 +1769,7 @@ async function loadInitialFilesAndSetupEditor() {
               try {
                 // Используем Function constructor вместо прямого eval для некоторой изоляции
                 const executeCode = new Function('scene', 'mainSequencerGroup', 'THREE', generatedCode);
-                executeCode(scene, mainSequencerGroup, THREE); // Передаем нужные объекты в контекст
+                executeCode(state.scene, mainSequencerGroup, THREE); // Передаем нужные объекты из state в контекст
                 console.log("Сгенерированный код выполнен успешно.");
               } catch (e) {
                 console.error("Ошибка выполнения сгенерированного кода:", e);
@@ -1781,7 +1782,7 @@ async function loadInitialFilesAndSetupEditor() {
             // ---------------------------------------------
 
             // Шаг 2: Подготовка данных и создание новой версии через /branches
-            const sceneStateObject = JSON.parse(JSON.stringify(scene.toJSON())); // Получаем состояние сцены как объект
+            const sceneStateObject = JSON.parse(JSON.stringify(state.scene.toJSON())); // Получаем состояние сцены как объект из state
             // const previewDataURL = capturePreview(); // Получаем превью (пока не используется бэкендом)
 
             console.log('Создание новой версии через POST /branches');
