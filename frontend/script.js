@@ -171,36 +171,8 @@ const columns = [];
 // единый источник данных для всего приложения
 const { scene, camera, renderer } = state;
 
-// Экспортируем функцию для загрузки истории чата
-export function loadChatHistory() {
-  // console.log('Загрузка истории чата...');
-  fetch('/api/chat_history')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      // console.log('История чата получена:', data);
-      // Очищаем текущую историю
-      clearChat();
-      
-      // Добавляем сообщения из истории
-      if (data && Array.isArray(data)) {
-        data.forEach(msg => {
-          addMessage(msg.role, msg.content);
-        });
-      }
-    })
-    .catch(error => {
-      console.error('Ошибка при загрузке истории чата:', error);
-      addMessage('error', 'Не удалось загрузить историю чата. Пожалуйста, попробуйте позже.');
-    });
-}
-
-// Делаем функцию доступной глобально для обратной совместимости
-window.loadChatHistory = loadChatHistory;
+// Используем функцию loadChatHistory, определенную выше
+// Функция уже экспортирована и доступна глобально
 let analyserLeft, analyserRight;
 let audioBufferSource = null;
 let audioContext = null;
