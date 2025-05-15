@@ -2,10 +2,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { applyPromptWithTriaMode } from './tria_mode.js';
 // Импорт менеджеров UI и ввода
-import { initializeRightPanel } from '/static/js/panels/rightPanelManager.js'; 
-import { initializeChatDisplay, addMessage, clearChat, speak } from '/static/js/panels/chatMessages.js'; 
-import { initializeSpeechInput } from '/static/js/audio/speechInput.js';
-
+import { initializeRightPanel } from './js/panels/rightPanelManager.js'; 
+import { initializeChatDisplay, addMessage, clearChat, speak } from './js/panels/chatMessages.js'; 
+import { initializeSpeechInput } from './js/audio/speechInput.js';
+  
 // Экспортируем функцию loadChatHistory для использования в других модулях
 export function loadChatHistory() {
   // console.log('Загрузка истории чата...');
@@ -165,6 +165,42 @@ let currentColumn = null;
 import { state } from './js/core/init.js';
 // Примечание: scene теперь инициализируется в sceneSetup.js и присваивается в state
 const columns = [];
+
+// Используем scene, camera и renderer из объекта state
+// Это позволяет избежать дублирования переменных и использовать
+// единый источник данных для всего приложения
+const { scene, camera, renderer } = state;
+
+// Экспортируем функцию для загрузки истории чата
+export function loadChatHistory() {
+  // console.log('Загрузка истории чата...');
+  fetch('/api/chat_history')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      // console.log('История чата получена:', data);
+      // Очищаем текущую историю
+      clearChat();
+      
+      // Добавляем сообщения из истории
+      if (data && Array.isArray(data)) {
+        data.forEach(msg => {
+          addMessage(msg.role, msg.content);
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Ошибка при загрузке истории чата:', error);
+      addMessage('error', 'Не удалось загрузить историю чата. Пожалуйста, попробуйте позже.');
+    });
+}
+
+// Делаем функцию доступной глобально для обратной совместимости
+window.loadChatHistory = loadChatHistory;
 let analyserLeft, analyserRight;
 let audioBufferSource = null;
 let audioContext = null;
@@ -1128,7 +1164,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   setupCamera();
 
   // Создаем сцену Three.js
-  const scene = new THREE.Scene();
+  scene = new THREE.Scene();
   // Присваиваем scene в state для использования в других модулях
   state.scene = scene;
   
@@ -1189,11 +1225,11 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   xrCamera.position.set(0, 0, 0);
   xrCamera.lookAt(new THREE.Vector3(0, 0, -1));
 
-  let activeCamera = orthoCamera;
+  camera = orthoCamera;
   
   // Добавляем camera в state для использования в других модулях
-  state.camera = activeCamera;
-  const renderer = new THREE.WebGLRenderer({
+  state.camera = camera;
+  renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
     alpha: true, // Прозрачный фон
@@ -1256,8 +1292,8 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     }
 
     // Проверяем инициализацию Three.js
-    if (!scene || !activeCamera || !renderer) {
-        console.error('[Layout] Three.js not initialized:', { scene, activeCamera, renderer });
+    if (!scene || !camera || !renderer) {
+        console.error('[Layout] Three.js not initialized:', { scene, camera, renderer });
         return;
     }
 
@@ -1301,7 +1337,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         })
         .onComplete(() => {
             // Обновляем камеру после завершения анимации
-            activeCamera.updateProjectionMatrix();
+            camera.updateProjectionMatrix();
             // console.log('[Layout] Animation complete'); // Закомментировано v27.0
         })
         .start();

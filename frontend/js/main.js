@@ -6,6 +6,9 @@ import { setupEventListeners } from './core/events.js'; // Путь исправ
 import { setupUI } from './core/ui.js'; // Путь исправлен
 import { runFrontendDiagnostics } from './core/diagnostics.js'; // Импорт модуля диагностики
 
+// Импорт UI модулей
+import { initializeMainUI } from './ui/mainUI.js'; // Импорт нового модуля UI
+
 // Импорт модулей
 // import { initAudio, setupAudioProcessing } from '/static/js/audio/processing.js'; // TODO: Module for audio processing not found, related code disabled
 // FINAL CLEANUP (v22): Module microphone.js or its functionality is missing/disabled.
@@ -42,6 +45,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Инициализируем ядро приложения
   initCore(); // Из ./core/init.js
   setupUI(); // Из ./core/ui.js
+  
+  // Инициализируем основной UI
+  initializeMainUI(); // Из ./ui/mainUI.js
   
   // Инициализация 3D сцены происходит в initCore() через sceneSetup.js
 // Отдельный вызов не требуется, так как initializeThreeJSScene вызывается внутри initCore()
