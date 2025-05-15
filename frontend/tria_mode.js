@@ -32,7 +32,11 @@ export function initializeTriaMode() {
     triaButton.classList.toggle('active', state.isTriaModeActive);
     
     // Выводим в консоль сообщение о режиме Триа
-    console.log("Режим 'Медленное Обучение Триа' " + (state.isTriaModeActive ? "АКТИВИРОВАН" : "ДЕАКТИВИРОВАН") + ".");
+    if (state.isTriaModeActive) {
+      console.log("Режим 'Медленное Обучение Триа' АКТИВИРОВАН (заглушка).");
+    } else {
+      console.log("Режим 'Медленное Обучение Триа' ДЕАКТИВИРОВАН (заглушка).");
+    }
   });
 
   console.log("Логика переключателя режима Триа инициализирована");
