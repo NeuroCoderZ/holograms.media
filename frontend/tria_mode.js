@@ -1,8 +1,13 @@
 // Модуль для реализации режима Триа в holograms.media
 // Обеспечивает переключение между отправкой запросов на /tria/invoke или /generate
 
-// Экспортируем глобальную переменную для режима Триа
-export let isTriaModeActive = false;
+// Импортируем объект state из модуля init.js
+import { state } from './js/core/init.js';
+
+// Экспортируем функцию для получения состояния режима Триа
+export function isTriaModeActive() {
+  return state.isTriaModeActive;
+}
 
 // Функция инициализации кнопки и режима Триа
 export function initializeTriaMode() {
@@ -16,18 +21,18 @@ export function initializeTriaMode() {
   }
 
   // Инициализируем состояние кнопки
-  triaButton.classList.toggle('active', isTriaModeActive);
+  triaButton.classList.toggle('active', state.isTriaModeActive);
 
   // Добавляем обработчик события клика для переключения режима
   triaButton.addEventListener('click', () => {
-    // Инвертируем значение
-    isTriaModeActive = !isTriaModeActive;
+    // Инвертируем значение в объекте state
+    state.isTriaModeActive = !state.isTriaModeActive;
     
     // Обновляем класс для визуальной индикации
-    triaButton.classList.toggle('active', isTriaModeActive);
+    triaButton.classList.toggle('active', state.isTriaModeActive);
     
     // Выводим в консоль сообщение о режиме Триа
-    console.log("Режим 'Медленное Обучение Триа' " + (isTriaModeActive ? "АКТИВИРОВАН" : "ДЕАКТИВИРОВАН") + " (заглушка).");
+    console.log("Режим 'Медленное Обучение Триа' " + (state.isTriaModeActive ? "АКТИВИРОВАН" : "ДЕАКТИВИРОВАН") + ".");
   });
 
   console.log("Логика переключателя режима Триа инициализирована");
@@ -35,7 +40,7 @@ export function initializeTriaMode() {
 
 // Функция для отправки запроса в зависимости от режима
 export async function applyPromptWithTriaMode(prompt, model) {
-  console.log(`Отправка промпта "${prompt}" с моделью ${model} ${isTriaModeActive ? 'на /tria/invoke' : 'на /generate'}`);
+  console.log(`Отправка промпта "${prompt}" с моделью ${model} ${state.isTriaModeActive ? 'на /tria/invoke' : 'на /generate'}`);
 
   const spinner = document.getElementById('loading-spinner');
   const submitButton = document.getElementById('submitTopPrompt');
@@ -46,7 +51,7 @@ export async function applyPromptWithTriaMode(prompt, model) {
 
   try {
     // Проверяем, активен ли режим Триа
-    if (isTriaModeActive) {
+    if (state.isTriaModeActive) {
       console.log('Режим Триа активен, отправляем запрос на /tria/invoke');
 
       // Отправляем запрос на /tria/invoke (используем относительный путь)
@@ -81,9 +86,10 @@ export async function applyPromptWithTriaMode(prompt, model) {
     if (submitButton) submitButton.disabled = false;
     
     console.error('Ошибка при вызове /tria/invoke:', error);
-    alert(`Ошибка при отправке запроса к Триа: ${error.message}`);
+    console.warn(`Ошибка при отправке запроса к Триа: ${error.message}`);
     
-    throw error; // Пробрасываем ошибку дальше
+    // Не пробрасываем ошибку дальше, чтобы не блокировать UI
+    return { response: `Ошибка при обращении к Триа: ${error.message}`, error: true }
   }
 }
 
