@@ -7,7 +7,7 @@ import { setupUI } from './core/ui.js'; // Путь исправлен
 import { runFrontendDiagnostics } from './core/diagnostics.js'; // Импорт модуля диагностики
 
 // Импорт UI модулей
-import { initializeMainUI } from './ui/mainUI.js'; // Импорт нового модуля UI
+import { initializeMainUI } from './ui/uiManager.js'; // Импорт модуля управления UI
 
 // Импорт модулей
 // import { initAudio, setupAudioProcessing } from '/static/js/audio/processing.js'; // TODO: Module for audio processing not found, related code disabled

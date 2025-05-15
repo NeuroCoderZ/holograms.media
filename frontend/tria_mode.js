@@ -31,12 +31,8 @@ export function initializeTriaMode() {
     // Обновляем класс для визуальной индикации
     triaButton.classList.toggle('active', state.isTriaModeActive);
     
-    // Выводим в консоль сообщение о режиме Триа
-    if (state.isTriaModeActive) {
-      console.log("Режим 'Медленное Обучение Триа' АКТИВИРОВАН (заглушка).");
-    } else {
-      console.log("Режим 'Медленное Обучение Триа' ДЕАКТИВИРОВАН (заглушка).");
-    }
+    // Выводим в консоль сообщение о смене режима
+    console.log(`Режим Триа ${state.isTriaModeActive ? 'АКТИВИРОВАН' : 'ДЕАКТИВИРОВАН'}`);    
   });
 
   console.log("Логика переключателя режима Триа инициализирована");
@@ -44,7 +40,7 @@ export function initializeTriaMode() {
 
 // Функция для отправки запроса в зависимости от режима
 export async function applyPromptWithTriaMode(prompt, model) {
-  console.log(`Отправка промпта "${prompt}" с моделью ${model} ${state.isTriaModeActive ? 'на /tria/invoke' : 'на /generate'}`);
+  console.log(`Отправка промпта "${prompt}" с моделью ${model} ${state.isTriaModeActive ? 'на /chat' : 'на /generate'}`);
 
   const spinner = document.getElementById('loading-spinner');
   const submitButton = document.getElementById('submitTopPrompt');
@@ -56,15 +52,15 @@ export async function applyPromptWithTriaMode(prompt, model) {
   try {
     // Проверяем, активен ли режим Триа
     if (state.isTriaModeActive) {
-      console.log('Режим Триа активен, отправляем запрос на /tria/invoke');
+      console.log('Режим Триа активен, отправляем запрос на /chat');
 
-      // Отправляем запрос на /tria/invoke (используем относительный путь)
-      const response = await fetch('/tria/invoke', {
+      // Отправляем запрос на /chat (используем относительный путь)
+      const response = await fetch('/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: prompt }) // Используем тот же промпт
+        body: JSON.stringify({ message: prompt, model: model || 'mistral-small-latest' }) // Используем тот же промпт
       });
 
       if (!response.ok) {
