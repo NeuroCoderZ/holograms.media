@@ -78,9 +78,21 @@ export function setSelectedModel(model) {
 
 // Инициализация селекта моделей
 export function initializeModelSelector() {
-  const modelSelect = ui.inputs.modelSelect;
-  if (!modelSelect) {
-    console.warn('Селект моделей не найден');
+  const modelSelectElement = document.getElementById('modelSelect');
+  if (!modelSelectElement) {
+    console.warn('Элемент #modelSelect не найден, инициализация селектора моделей пропускается.');
+    return;
+  }
+  // Присваиваем найденный элемент ui.inputs.modelSelect для дальнейшего использования в модуле, если это предполагается
+  // Если ui.inputs.modelSelect должен быть инициализирован здесь, то это нужно сделать явно.
+  // В текущей логике ui.inputs.modelSelect используется до этой функции, что может быть проблемой.
+  // Пока что будем работать с modelSelectElement.
+
+  const modelSelect = modelSelectElement; // Используем локальную переменную, полученную через getElementById
+  // ui.inputs.modelSelect = modelSelectElement; // Если нужно обновить глобальный ui объект
+
+  if (!modelSelect) { // Эта проверка становится избыточной, если предыдущая сработала
+    console.warn('Селект моделей не найден (повторная проверка).');
     return;
   }
   
@@ -114,10 +126,10 @@ export function initializeModelSelector() {
   }
   
   // Добавляем обработчик изменения модели
-  modelSelect.addEventListener('change', () => {
-    setSelectedModel(modelSelect.value);
+  modelSelectElement.addEventListener('change', () => {
+    setSelectedModel(modelSelectElement.value);
   });
 }
 
 // Экспортируем интерфейс модуля
-export { selectedModel }; 
+export { selectedModel };

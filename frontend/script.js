@@ -5,7 +5,8 @@ import { applyPromptWithTriaMode } from './tria_mode.js';
 import { initializeRightPanel } from './js/panels/rightPanelManager.js'; 
 import { initializeChatDisplay, addMessage, clearChat, speak } from './js/panels/chatMessages.js'; 
 import { initializeSpeechInput } from './js/audio/speechInput.js';
-// Используем window.state вместо импорта state
+// Импортируем state из init.js
+import { state } from './js/core/init.js';
   
 // Экспортируем функцию loadChatHistory для использования в других модулях
 export function loadChatHistory() {
@@ -169,8 +170,8 @@ const columns = [];
 // Используем scene, camera и renderer из объекта state
 // Это позволяет избежать дублирования переменных и использовать
 // единый источник данных для всего приложения
-// Используем let вместо const, так как значения могут изменяться
-let { scene, camera, renderer } = state;
+// Используем прямой доступ к объектам через state вместо деструктуризации
+// state.scene, state.camera, state.renderer
 
 // Используем функцию loadChatHistory, определенную выше
 // Функция уже экспортирована и доступна глобально
@@ -1136,10 +1137,8 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 
   setupCamera();
 
-  // Создаем сцену Three.js
-  scene = new THREE.Scene();
-  // Присваиваем scene в state для использования в других модулях
-  state.scene = scene;
+  // Создаем сцену Three.js и сразу присваиваем в state
+  state.scene = new THREE.Scene();
   
   // Добавляем hologramPivot в сцену
   scene.add(hologramPivot);
