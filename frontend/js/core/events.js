@@ -1,6 +1,6 @@
 // frontend/js/core/events.js - Управление событиями UI
 
-import { ui, togglePanels, toggleChatMode, updateHologramLayout } from './ui.js';
+import { uiElements as ui, togglePanels, toggleChatMode } from '../ui/uiManager.js';
 import { state } from './init.js';
 // FINAL CLEANUP (v22): Module playback.js or its functionality is missing/disabled
 // import { startPlayback, pausePlayback, stopPlayback } from '../audio/playback.js';

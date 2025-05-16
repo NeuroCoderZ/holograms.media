@@ -1,13 +1,13 @@
 // frontend/js/main.js - Основная точка входа для приложения
 
 // Импорт ядра
-import { initCore } from './core/init.js'; // Путь исправлен
-import { setupEventListeners } from './core/events.js'; // Путь исправлен
-import { setupUI } from './core/ui.js'; // Путь исправлен
-import { runFrontendDiagnostics } from './core/diagnostics.js'; // Импорт модуля диагностики
+import { initCore, state } from './core/init.js'; // Импортируем state для доступа к глобальному состоянию
+import { setupEventListeners } from './core/events.js';
+import { setupUI } from './core/ui.js';
+import { runFrontendDiagnostics } from './core/diagnostics.js';
 
 // Импорт UI модулей
-import { initializeMainUI } from './ui/uiManager.js'; // Импорт модуля управления UI
+import { initializeMainUI } from './ui/uiManager.js'; // Модуль управления UI
 
 // Импорт модулей
 // import { initAudio, setupAudioProcessing } from '/static/js/audio/processing.js'; // TODO: Module for audio processing not found, related code disabled
@@ -44,10 +44,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Инициализируем ядро приложения
   initCore(); // Из ./core/init.js
-  setupUI(); // Из ./core/ui.js
   
-  // Инициализируем основной UI
-  initializeMainUI(); // Из ./ui/mainUI.js
+  // Инициализируем основной UI (вместо вызова setupUI, который дублирует функциональность)
+  initializeMainUI(); // Из ./ui/uiManager.js
   
   // Инициализация 3D сцены происходит в initCore() через sceneSetup.js
 // Отдельный вызов не требуется, так как initializeThreeJSScene вызывается внутри initCore()

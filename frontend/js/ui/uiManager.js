@@ -231,3 +231,57 @@ export function initializeMainUI() {
   
   console.log('Основной UI инициализирован');
 }
+
+/**
+ * Переключает режим чата
+ */
+export function toggleChatMode() {
+  // Получаем элементы чата
+  const chatHistory = document.getElementById('chatHistory');
+  const chatInputBar = document.getElementById('chatInputBar');
+  
+  if (!chatHistory || !chatInputBar) {
+    console.error('Элементы чата не найдены');
+    return;
+  }
+  
+  // Переключаем видимость элементов чата
+  const isChatVisible = chatHistory.style.display !== 'none';
+  
+  if (isChatVisible) {
+    // Скрываем чат
+    chatHistory.style.display = 'none';
+    chatInputBar.style.display = 'none';
+    
+    // Обновляем состояние
+    if (uiElements.chatButton) {
+      uiElements.chatButton.classList.remove('active');
+    }
+    
+    // Обновляем глобальное состояние
+    if (window.state) {
+      window.state.isChatMode = false;
+    }
+    
+    console.log('Режим чата деактивирован');
+  } else {
+    // Показываем чат
+    chatHistory.style.display = 'block';
+    chatInputBar.style.display = 'flex';
+    
+    // Обновляем состояние
+    if (uiElements.chatButton) {
+      uiElements.chatButton.classList.add('active');
+    }
+    
+    // Обновляем глобальное состояние
+    if (window.state) {
+      window.state.isChatMode = true;
+    }
+    
+    console.log('Режим чата активирован');
+  }
+  
+  // Вызываем ресайз для обновления размеров
+  window.dispatchEvent(new Event('resize'));
+}
