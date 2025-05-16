@@ -5,7 +5,7 @@ import { applyPromptWithTriaMode } from './tria_mode.js';
 import { initializeRightPanel } from './js/panels/rightPanelManager.js'; 
 import { initializeChatDisplay, addMessage, clearChat, speak } from './js/panels/chatMessages.js'; 
 import { initializeSpeechInput } from './js/audio/speechInput.js';
-import { state } from './js/core/init.js';
+// Используем window.state вместо импорта state
   
 // Экспортируем функцию loadChatHistory для использования в других модулях
 export function loadChatHistory() {
@@ -162,8 +162,7 @@ const CELL_SIZE = 1;
 
 let selectedX = 0, selectedY = 0, selectedZ = 0;
 let currentColumn = null;
-// Импортируем state из init.js
-import { state } from './js/core/init.js';
+// state импортируется выше, повторный импорт удален
 // Примечание: scene теперь инициализируется в sceneSetup.js и присваивается в state
 const columns = [];
 
