@@ -43,13 +43,6 @@ window.loadChatHistory = loadChatHistory;
 let telegramLinkButton;
 let micButton;
 // Переменная isTriaModeActive теперь импортируется из модуля tria_mode.js
-let hologramPivot = new THREE.Group();
-
-// Экспортируем hologramPivot для использования в других модулях
-export { hologramPivot };
-
-// Делаем hologramPivot доступным глобально для обратной совместимости
-window.hologramPivot = hologramPivot;
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1138,22 +1131,22 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   setupCamera();
 
   // Создаем сцену Three.js и сразу присваиваем в state
-  state.scene = new THREE.Scene();
+  // state.scene инициализируется в sceneSetup.js
   
   // Добавляем hologramPivot в сцену
-  scene.add(hologramPivot);
+  state.scene.add(hologramPivot);
   // Присваиваем hologramPivot в state для использования в других модулях
   state.hologramPivot = hologramPivot;
 
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-  scene.add(ambientLight);
+  state.scene.add(ambientLight);
   const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
   directionalLight.position.set(0, 1, 1);
-  scene.add(directionalLight);
+  state.scene.add(directionalLight);
 
   const hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x444444, 0.6);
   hemisphereLight.position.set(0, 200, 0);
-  scene.add(hemisphereLight);
+  state.scene.add(hemisphereLight);
 
   const spotLight = new THREE.SpotLight(0xffffff, 0.5);
   spotLight.position.set(0, 300, 100);
@@ -1164,11 +1157,11 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   spotLight.shadow.mapSize.height = 1024;
   spotLight.shadow.camera.near = 10;
   spotLight.shadow.camera.far = 1000;
-  scene.add(spotLight);
+  state.scene.add(spotLight);
 
   const gridPointLight = new THREE.PointLight(0xffffff, 0.8);
   gridPointLight.position.set(0, TIMELINE_OFFSET / 2, 500);
-  scene.add(gridPointLight);
+  state.scene.add(gridPointLight);
 
   const gridContainer = document.getElementById('grid-container');
 
@@ -1200,7 +1193,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   camera = orthoCamera;
   
   // Добавляем camera в state для использования в других модулях
-  state.camera = camera;
+  // state.camera инициализируется в sceneSetup.js
   renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
@@ -1215,7 +1208,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   renderer.setPixelRatio(window.devicePixelRatio);
   
   // Добавляем renderer в state для использования в других модулях
-  state.renderer = renderer;
+  // state.renderer инициализируется в sceneSetup.js
   // Устанавливаем РАЗМЕР РЕНДЕРЕРА по доступному пространству
   renderer.setSize(initialAvailableWidth, initialAvailableHeight);
   if (gridContainer) {
@@ -1272,7 +1265,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     // Проверяем, что hologramPivot добавлен в сцену
     if (!scene.children.includes(hologramPivot)) {
         // console.warn('[Layout] Adding hologramPivot to scene'); // Закомментировано v27.0
-        scene.add(hologramPivot);
+        state.scene.add(hologramPivot);
     }
 
     // Получаем размеры и рассчитываем целевые значения
@@ -1940,7 +1933,7 @@ async function loadInitialFilesAndSetupEditor() {
       console.log('Переключено на версию:', versionId, 'Данные:', response.data);
 
       // Применяем сохраненный цвет фона
-      scene.background = new THREE.Color(0x000000);
+      state.scene.background = new THREE.Color(0x000000);
       console.log(`Цвет фона установлен на #000000`);
 
       const files = response.data.files;
@@ -1986,9 +1979,9 @@ async function loadInitialFilesAndSetupEditor() {
           console.log("Scene state parsed successfully:", parsedData);
 
           // Удаляем старую сцену и добавляем новую
-          scene.remove(mainSequencerGroup);
+          state.scene.remove(mainSequencerGroup);
           mainSequencerGroup = parsedData;
-          scene.add(mainSequencerGroup);
+          state.scene.add(mainSequencerGroup);
 
           console.log("Состояние сцены применено");
         } catch (e) {
@@ -2006,7 +1999,7 @@ async function loadInitialFilesAndSetupEditor() {
     // Восстанавливаем состояние сцены
     const loader = new THREE.ObjectLoader();
     const sceneData = JSON.parse(version.sceneState);
-    scene.copy(loader.parse(sceneData));
+    state.scene.copy(loader.parse(sceneData));
     // Обновляем UI
     document.querySelectorAll('.version-button').forEach(button => {
       button.classList.remove('active');
@@ -2286,7 +2279,7 @@ async function startVideoStream(videoElement, handsInstance) {
   }
 
   let handMeshGroup = new THREE.Group();
-  scene.add(handMeshGroup);
+  state.scene.add(handMeshGroup);
 
   // --- Обработчик результатов от MediaPipe Hands --- (временно отключено)
   /*function onHandsResults(results) {
