@@ -4,7 +4,7 @@ import { applyPromptWithTriaMode } from './tria_mode.js';
 
 // --- Global Variables ---
 // Переменная isTriaModeActive теперь импортируется из модуля tria_mode.js
-let hologramPivot = new THREE.Group();
+// let hologramPivot = new THREE.Group(); // Перемещено в state
 let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

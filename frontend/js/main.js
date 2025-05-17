@@ -10,7 +10,7 @@ import { runFrontendDiagnostics } from './core/diagnostics.js';
 import { initializeMainUI } from './ui/uiManager.js'; // Модуль управления UI
 
 // Импорт модулей
-import { initializeSpeechInput } from '../audio/speechInput.js'; // Импорт функции инициализации голосового ввода
+import { initializeSpeechInput } from './audio/speechInput.js'; // Импорт функции инициализации голосового ввода
 // import { initAudio, setupAudioProcessing } from '/static/js/audio/processing.js'; // TODO: Module for audio processing not found, related code disabled
 // FINAL CLEANUP (v22): Module microphone.js or its functionality is missing/disabled.
 // import { initAudioVisualization } from '/static/js/audio/visualization.js'; // TODO: Module for audio visualization not found, related code disabled
