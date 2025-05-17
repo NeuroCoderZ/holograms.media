@@ -1,9 +1,9 @@
 // frontend/js/main.js - Основная точка входа для приложения
 
 // Импорт ядра
-import { initCore, state } from './core/init.js'; // Импортируем state для доступа к глобальному состоянию
+import { initCore } from './core/init.js'; // Убираем неиспользуемый импорт state
 import { setupEventListeners } from './core/events.js';
-import { setupUI } from './core/ui.js';
+// import { setupUI } from './core/ui.js'; // Убираем неиспользуемый импорт setupUI
 import { runFrontendDiagnostics } from './core/diagnostics.js';
 
 // Импорт UI модулей
