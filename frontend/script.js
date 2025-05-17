@@ -193,14 +193,14 @@ const GESTURE_RECORDING_DURATION = 20000; // 20 seconds in milliseconds
 // --- MediaPipe Hands --- (временно отключено)
 // let hands = null; // Global reference to MediaPipe Hands controller
 
-let mainSequencerGroup = new THREE.Group();
-const leftSequencerGroup = createSequencerGrid(
+// let mainSequencerGroup = new THREE.Group(); // mainSequencerGroup теперь в state.mainSequencerGroup, инициализируется в sceneSetup.js
+const localLeftSequencerGroup = createSequencerGrid(
   GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   semitones[semitones.length - 1].color, // Цвет последнего (фиолетового) полутона
   new THREE.Vector3(-GRID_WIDTH, 0, -GRID_DEPTH / 2), // Move left grid further left
   true
 );
-const rightSequencerGroup = createSequencerGrid(
+const localRightSequencerGroup = createSequencerGrid(
   GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   semitones[0].color, // Цвет первого (красного) полутона
   new THREE.Vector3(0, 0, -GRID_DEPTH / 2), // Move right grid to center
@@ -216,14 +216,17 @@ const rightSequencerGroup = createSequencerGrid(
 // const loader = new GLTFLoader();
 
 // async function loadHologram(version) {
-//     if (currentHologram) {
-//         scene.remove(currentHologram);
+//     if (currentHologram && state.scene) {
+//         state.scene.remove(currentHologram);
 //     }
 //     return new Promise((resolve, reject) => {
+//         const loader = new GLTFLoader(); // GLTFLoader должен быть инстанцирован
 //         loader.load(hologramVersions[version], (gltf) => {
 //             currentHologram = gltf.scene;
 //             currentHologram.position.set(0, 0, 0); // Center the hologram
-//             scene.add(currentHologram);
+//             if (state.scene) {
+//                 state.scene.add(currentHologram);
+//             }
 //             resolve();
 //         }, undefined, (error) => {
 //             console.error('Ошибка загрузки голограммы:', error);
@@ -522,8 +525,9 @@ function initializeColumns() {
     });
   }
   columns.forEach(column => {
-    if (!column.left.parent) leftSequencerGroup.add(column.left);
-    if (!column.right.parent) rightSequencerGroup.add(column.right);
+    // Добавляем колонки в локальные группы, которые затем добавляются в state.mainSequencerGroup
+    if (!column.left.parent) localLeftSequencerGroup.add(column.left);
+    if (!column.right.parent) localRightSequencerGroup.add(column.right);
   });
 }
 
@@ -1130,38 +1134,80 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
 
   setupCamera();
 
-  // Создаем сцену Three.js и сразу присваиваем в state
   // state.scene инициализируется в sceneSetup.js
+  // state.hologramPivot инициализируется в sceneSetup.js и присваивается в state
   
-  // Добавляем hologramPivot в сцену
-  state.scene.add(hologramPivot);
-  // Присваиваем hologramPivot в state для использования в других модулях
-  state.hologramPivot = hologramPivot;
+  // Добавляем hologramPivot в сцену, если он существует и еще не добавлен
+  if (state.scene && state.hologramPivot && !state.scene.children.includes(state.hologramPivot)) {
+    state.scene.add(state.hologramPivot);
+  } else if (!state.scene) {
+    console.error('Error adding hologramPivot to scene: state.scene is null');
+  } else if (!state.hologramPivot) {
+    console.error('Error adding hologramPivot to scene: state.hologramPivot is null');
+  }
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-  state.scene.add(ambientLight);
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
-  directionalLight.position.set(0, 1, 1);
-  state.scene.add(directionalLight);
+  // AmbientLight и DirectionalLight должны инициализироваться и добавляться в sceneSetup.js
+  // и быть доступны через state.ambientLight, state.directionalLight, если они там создаются.
+  // Если они создаются здесь, то нужно убедиться, что state.scene существует.
+  if (state.scene) {
+    // Эти источники света, вероятно, уже созданы и добавлены в sceneSetup.js
+    // Если нет, то их создание здесь приведет к дублированию или конфликтам.
+    // Проверяем, есть ли они уже в state, прежде чем создавать новые.
+    if (!state.ambientLight) {
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        state.scene.add(ambientLight);
+        // state.ambientLight = ambientLight; // Если нужно сохранить ссылку в state
+    }
+    if (!state.directionalLight) {
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        directionalLight.position.set(0, 1, 1);
+        state.scene.add(directionalLight);
+        // state.directionalLight = directionalLight; // Если нужно сохранить ссылку в state
+    }
+  } else {
+    console.error('Cannot add lights: state.scene is null');
+  }
 
-  const hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x444444, 0.6);
-  hemisphereLight.position.set(0, 200, 0);
-  state.scene.add(hemisphereLight);
+  if (state.scene) {
+    // Аналогично, проверяем, создан ли hemisphereLight в sceneSetup.js
+    if (!state.hemisphereLight) {
+        const hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x444444, 0.6);
+        hemisphereLight.position.set(0, 200, 0);
+        state.scene.add(hemisphereLight);
+        // state.hemisphereLight = hemisphereLight;
+    }
+  } else {
+    console.error('Cannot add hemisphereLight: state.scene is null');
+  }
 
-  const spotLight = new THREE.SpotLight(0xffffff, 0.5);
-  spotLight.position.set(0, 300, 100);
-  spotLight.angle = Math.PI / 6;
-  spotLight.penumbra = 0.2;
-  spotLight.castShadow = true;
-  spotLight.shadow.mapSize.width = 1024;
-  spotLight.shadow.mapSize.height = 1024;
-  spotLight.shadow.camera.near = 10;
-  spotLight.shadow.camera.far = 1000;
-  state.scene.add(spotLight);
+  if (state.scene) {
+    if (!state.spotLight) {
+        const spotLight = new THREE.SpotLight(0xffffff, 0.5);
+        spotLight.position.set(0, 300, 100);
+        spotLight.angle = Math.PI / 6;
+        spotLight.penumbra = 0.2;
+        spotLight.castShadow = true;
+        spotLight.shadow.mapSize.width = 1024;
+        spotLight.shadow.mapSize.height = 1024;
+        spotLight.shadow.camera.near = 10;
+        spotLight.shadow.camera.far = 1000;
+        state.scene.add(spotLight);
+        // state.spotLight = spotLight;
+    }
+  } else {
+    console.error('Cannot add spotLight: state.scene is null');
+  }
 
-  const gridPointLight = new THREE.PointLight(0xffffff, 0.8);
-  gridPointLight.position.set(0, TIMELINE_OFFSET / 2, 500);
-  state.scene.add(gridPointLight);
+  if (state.scene) {
+    if (!state.gridPointLight) {
+        const gridPointLight = new THREE.PointLight(0xffffff, 0.8);
+        gridPointLight.position.set(0, TIMELINE_OFFSET / 2, 500);
+        state.scene.add(gridPointLight);
+        // state.gridPointLight = gridPointLight;
+    }
+  } else {
+    console.error('Cannot add gridPointLight: state.scene is null');
+  }
 
   const gridContainer = document.getElementById('grid-container');
 
@@ -1190,29 +1236,34 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   xrCamera.position.set(0, 0, 0);
   xrCamera.lookAt(new THREE.Vector3(0, 0, -1));
 
-  camera = orthoCamera;
-  
-  // Добавляем camera в state для использования в других модулях
-  // state.camera инициализируется в sceneSetup.js
-  renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    powerPreference: "high-performance",
-    alpha: true, // Прозрачный фон
-    premultipliedAlpha: false,
-    preserveDrawingBuffer: false, // Отключаем сохранение буфера
-    logarithmicDepthBuffer: true // Для лучшего качества глубины
-  });
-  renderer.domElement.style.zIndex = '5'; // Below gesture area
-  renderer.domElement.style.position = 'relative';
-  scene.background = null; // Полностью прозрачный фон
-  renderer.setPixelRatio(window.devicePixelRatio);
-  
-  // Добавляем renderer в state для использования в других модулях
-  // state.renderer инициализируется в sceneSetup.js
-  // Устанавливаем РАЗМЕР РЕНДЕРЕРА по доступному пространству
-  renderer.setSize(initialAvailableWidth, initialAvailableHeight);
-  if (gridContainer) {
-    gridContainer.appendChild(renderer.domElement);
+  // camera и renderer инициализируются в sceneSetup.js и доступны через state
+  // state.camera, state.renderer
+  // Локальные переменные camera и renderer больше не нужны и не должны переопределять state.
+  // const camera = orthoCamera; // Удаляем или комментируем, если orthoCamera должна быть основной
+  // state.camera = orthoCamera; // Это должно происходить в init.js или sceneSetup.js
+
+  // const renderer = new THREE.WebGLRenderer(...); // Удаляем или комментируем
+  // state.renderer = renderer; // Это должно происходить в init.js или sceneSetup.js
+
+  if (state.renderer && state.renderer.domElement) {
+    state.renderer.domElement.style.zIndex = '5'; // Below gesture area
+    state.renderer.domElement.style.position = 'relative';
+    if (state.scene) {
+        state.scene.background = null; // Полностью прозрачный фон
+    } else {
+        console.error('Cannot set scene background: state.scene is null');
+    }
+    state.renderer.setPixelRatio(window.devicePixelRatio);
+    state.renderer.setSize(initialAvailableWidth, initialAvailableHeight);
+    if (gridContainer) {
+        // Удаляем старый canvas рендерера, если он есть, перед добавлением нового
+        while (gridContainer.firstChild) {
+            gridContainer.removeChild(gridContainer.firstChild);
+        }
+        gridContainer.appendChild(state.renderer.domElement);
+    }
+  } else {
+    console.error('state.renderer or state.renderer.domElement is not initialized');
   }
 
   const labelMaterial = new THREE.MeshBasicMaterial({
@@ -1256,16 +1307,20 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
         return;
     }
 
-    // Проверяем инициализацию Three.js
-    if (!scene || !camera || !renderer) {
-        console.error('[Layout] Three.js not initialized:', { scene, camera, renderer });
+    // Проверяем инициализацию Three.js через state
+    if (!state.scene || !state.camera || !state.renderer) {
+        console.error('[Layout] Three.js not initialized via state:', { scene: state.scene, camera: state.camera, renderer: state.renderer });
         return;
     }
 
     // Проверяем, что hologramPivot добавлен в сцену
-    if (!scene.children.includes(hologramPivot)) {
+    if (state.scene && state.hologramPivot && !state.scene.children.includes(state.hologramPivot)) {
         // console.warn('[Layout] Adding hologramPivot to scene'); // Закомментировано v27.0
-        state.scene.add(hologramPivot);
+        state.scene.add(state.hologramPivot);
+    } else if (!state.scene) {
+        console.error('[Layout] Cannot check/add hologramPivot: state.scene is null');
+    } else if (!state.hologramPivot) {
+        console.error('[Layout] Cannot check/add hologramPivot: state.hologramPivot is null');
     }
 
     // Получаем размеры и рассчитываем целевые значения
@@ -1285,27 +1340,37 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     // });
 
     // Анимируем масштаб
-    new TWEEN.Tween(hologramPivot.scale)
-        .to({ x: targetScale, y: targetScale, z: targetScale }, 500)
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .onUpdate(() => {
-            // console.log('[Layout] Scale update:', hologramPivot.scale); // Закомментировано v27.0
-        })
-        .start();
+    if (state.hologramPivot) {
+        new TWEEN.Tween(state.hologramPivot.scale)
+            .to({ x: targetScale, y: targetScale, z: targetScale }, 500)
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .onUpdate(() => {
+                // console.log('[Layout] Scale update:', state.hologramPivot.scale); // Закомментировано v27.0
+            })
+            .start();
+    } else {
+        console.error('[Layout] Cannot animate scale: state.hologramPivot is null');
+    }
 
     // Анимируем позицию
-    new TWEEN.Tween(hologramPivot.position)
-        .to({ y: targetPositionY }, 500)
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .onUpdate(() => {
-            // console.log('[Layout] Position update:', hologramPivot.position); // Закомментировано v27.0
-        })
-        .onComplete(() => {
-            // Обновляем камеру после завершения анимации
-            camera.updateProjectionMatrix();
-            // console.log('[Layout] Animation complete'); // Закомментировано v27.0
-        })
-        .start();
+    if (state.hologramPivot) {
+        new TWEEN.Tween(state.hologramPivot.position)
+            .to({ y: targetPositionY }, 500)
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .onUpdate(() => {
+                // console.log('[Layout] Position update:', state.hologramPivot.position); // Закомментировано v27.0
+            })
+            .onComplete(() => {
+                // Обновляем камеру после завершения анимации
+                if (state.camera) {
+                    state.camera.updateProjectionMatrix();
+                }
+                // console.log('[Layout] Animation complete'); // Закомментировано v27.0
+            })
+            .start();
+    } else {
+        console.error('[Layout] Cannot animate position: state.hologramPivot is null');
+    }
 
     // Добавляем отладочные классы
     addDebugClasses();
@@ -1440,17 +1505,29 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     state.renderer.render(state.scene, state.camera);
   } // Закрывающая скобка для функции animate
 
-  // Инициализация сцены
-  state.scene.add(hologramPivot);
-  hologramPivot.add(mainSequencerGroup);
-  mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем геометрию относительно пивота
-  hologramPivot.position.set(0, 0, 0); // Начальная позиция пивота
-  mainSequencerGroup.rotation.set(0, 0, 0);
+  // Инициализация сцены и добавление объектов
+  if (state.scene && state.hologramPivot && state.mainSequencerGroup) {
+    if (!state.scene.children.includes(state.hologramPivot)) {
+        state.scene.add(state.hologramPivot);
+    }
+    if (!state.hologramPivot.children.includes(state.mainSequencerGroup)) {
+        state.hologramPivot.add(state.mainSequencerGroup);
+    }
+    state.mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Центрируем геометрию относительно пивота
+    state.hologramPivot.position.set(0, 0, 0); // Начальная позиция пивота
+    state.mainSequencerGroup.rotation.set(0, 0, 0);
+  } else {
+    console.error('Cannot initialize scene objects: one or more of scene, hologramPivot, mainSequencerGroup is null in state.');
+  }
 
   // Установи начальные параметры для состояния "без рук"
   updateHologramLayout(false);
 
-  state.renderer.autoClear = false;
+  if (state.renderer) {
+    state.renderer.autoClear = false;
+  } else {
+    console.error('Cannot set autoClear: state.renderer is null');
+  }
 
   const defaultMaterial = new THREE.LineBasicMaterial({
     color: 0xffffff,
@@ -1460,11 +1537,89 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     depthTest: false
   });
 
-  mainSequencerGroup.add(leftSequencerGroup, rightSequencerGroup);
+  if (state.mainSequencerGroup) {
+    state.mainSequencerGroup.add(localLeftSequencerGroup, localRightSequencerGroup);
+  } else {
+    console.error('Cannot add sequencer groups: state.mainSequencerGroup is null');
+  }
 
-  initializeColumns();
+  initializeColumns(); // Эта функция использует localLeftSequencerGroup и localRightSequencerGroup
 
-  const hammer = new Hammer(renderer.domElement);
+  // Инициализация Hammer.js должна происходить только если state.renderer.domElement существует
+  let hammer;
+  if (state.renderer && state.renderer.domElement) {
+    hammer = new Hammer(state.renderer.domElement);
+  } else {
+    console.error('Cannot initialize Hammer: state.renderer.domElement is null');
+  }
+
+  if (hammer) { // Продолжаем только если hammer инициализирован
+    hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+
+    hammer.on('pan', ev => {
+      const deltaX = ev.deltaX / window.innerWidth;
+      const deltaY = ev.deltaY / window.innerHeight;
+
+      // Convert screen movement to radians (1:1 ratio)
+      const rotationX = deltaY * Math.PI;
+      const rotationY = deltaX * Math.PI;
+
+      if (!isXRMode) {
+        if (state.hologramPivot) {
+            // Clamp rotations to ±90 degrees (±π/2 radians)
+            state.hologramPivot.rotation.x = THREE.MathUtils.clamp(
+                rotationX,
+                -Math.PI/2,
+                Math.PI/2
+            );
+            state.hologramPivot.rotation.y = THREE.MathUtils.clamp(
+                rotationY,
+                -Math.PI/2,
+                Math.PI/2
+            );
+            state.hologramPivot.rotation.z = 0; // Prevent Z rotation
+        } else {
+            console.error('Pan event: state.hologramPivot is null');
+        }
+      } else {
+        if (state.camera) { // Assuming xrCamera is state.camera in XR mode
+            state.camera.rotation.x = THREE.MathUtils.clamp(
+                rotationX,
+                -Math.PI/2,
+                Math.PI/2
+            );
+            state.camera.rotation.y = THREE.MathUtils.clamp(
+                rotationY,
+                -Math.PI/2,
+                Math.PI/2
+            );
+        } else {
+            console.error('Pan event (XR mode): state.camera is null');
+        }
+      }
+    });
+
+    hammer.on('pinch', ev => {
+      if (!isXRMode && state.hologramPivot) {
+        const scale = THREE.MathUtils.clamp(ev.scale, MIN_SCALE, MAX_SCALE);
+        state.hologramPivot.scale.set(scale, scale, scale);
+      } else if (!state.hologramPivot) {
+        console.error('Pinch event: state.hologramPivot is null');
+      }
+    });
+
+    hammer.on('panend pinchend', () => {
+      if (!isXRMode && state.hologramPivot) {
+        // Smoothly return to neutral rotation (0,0,0)
+        new TWEEN.Tween(state.hologramPivot.rotation)
+          .to({ x: 0, y: 0, z: 0 }, ROTATION_RETURN_DURATION)
+          .easing(TWEEN.Easing.Quadratic.Out)
+          .start();
+      } else if (!state.hologramPivot) {
+        console.error('Pan/Pinch end event: state.hologramPivot is null');
+      }
+    });
+  }
   hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
 
   hammer.on('pan', ev => {
@@ -1999,7 +2154,12 @@ async function loadInitialFilesAndSetupEditor() {
     // Восстанавливаем состояние сцены
     const loader = new THREE.ObjectLoader();
     const sceneData = JSON.parse(version.sceneState);
-    state.scene.copy(loader.parse(sceneData));
+    if (state.scene) {
+        const loader = new THREE.ObjectLoader(); // Нужен ObjectLoader для parse
+        state.scene.copy(loader.parse(sceneData));
+    } else {
+        console.error('Cannot load version: state.scene is null');
+    }
     // Обновляем UI
     document.querySelectorAll('.version-button').forEach(button => {
       button.classList.remove('active');
@@ -2019,7 +2179,7 @@ async function loadInitialFilesAndSetupEditor() {
     model: 'r1',
     preview: capturePreview(),
     files: { ...fileContents },
-    sceneState: JSON.stringify(scene.toJSON())
+    sceneState: state.scene ? JSON.stringify(state.scene.toJSON()) : null
   };
   hologramVersions.push(initialVersion);
   branches[currentBranch].push(initialVersion);
@@ -2058,12 +2218,29 @@ async function loadInitialFilesAndSetupEditor() {
             orthoCamera.right = availableWidth / 2;
             orthoCamera.top = currentGridHeight / 2;
             orthoCamera.bottom = -currentGridHeight / 2;
-            orthoCamera.updateProjectionMatrix();
-        } else {
-             xrCamera.aspect = availableWidth / currentGridHeight;
-             xrCamera.updateProjectionMatrix();
-        }
-        renderer.setSize(availableWidth, currentGridHeight);
+            // orthoCamera и xrCamera должны быть частью state (state.camera может переключаться между ними)
+            // или быть локальными переменными, если camera = orthoCamera или camera = xrCamera происходит выше.
+            // Текущая логика предполагает, что camera (глобальная) уже установлена в orthoCamera или xrCamera.
+            // Правильнее использовать state.camera.
+            if (state.camera) {
+                if (state.camera.isOrthographicCamera) {
+                    state.camera.left = -availableWidth / 2;
+                    state.camera.right = availableWidth / 2;
+                    state.camera.top = currentGridHeight / 2;
+                    state.camera.bottom = -currentGridHeight / 2;
+                } else if (state.camera.isPerspectiveCamera) {
+                    state.camera.aspect = availableWidth / currentGridHeight;
+                }
+                state.camera.updateProjectionMatrix();
+            } else {
+                console.error('Resize handler: state.camera is null');
+            }
+            
+            if (state.renderer) {
+                state.renderer.setSize(availableWidth, currentGridHeight);
+            } else {
+                console.error('Resize handler: state.renderer is null');
+            }
 
         // Вызываем updateHologramLayout для пересчета макета голограммы
         const gestureAreaElement = document.getElementById('gesture-area');
@@ -2075,7 +2252,12 @@ async function loadInitialFilesAndSetupEditor() {
 
   updateTimelineFromServer();
   // initializeMediaPipeHands(); // Временно отключено - MediaPipe Hands
-  animate();
+  // animate(); // animate должен вызываться из sceneSetup.js или init.js, где есть доступ к state.renderer.setAnimationLoop
+  // Если animate определен в этом файле и использует глобальные renderer/scene/camera, его нужно адаптировать
+  // или убедиться, что он вызывается после полной инициализации state.
+  // Поскольку animate() определена ниже и использует state, вызов здесь может быть преждевременным,
+  // лучше если он будет частью инициализации в main.js или init.js после полной настройки state.
+  // Пока оставим как есть, но это кандидат на перенос.
 
   // --- Инициализация MediaPipe Hands --- (временно отключено)
   /*function initializeMediaPipeHands() {
