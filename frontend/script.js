@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+// GLTFLoader больше не используется, импорт удален
 import { applyPromptWithTriaMode } from './tria_mode.js';
 // Импорт менеджеров UI и ввода
 import { initializeRightPanel } from './js/panels/rightPanelManager.js'; 
@@ -41,14 +41,14 @@ window.loadChatHistory = loadChatHistory;
 
 // --- Global Variables ---
 let telegramLinkButton;
-let micButton;
+// let micButton; // Not used, event listener is commented out
 // Переменная isTriaModeActive теперь импортируется из модуля tria_mode.js
-let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready
+// let isGestureCanvasReady = false; // Flag to track if gesture canvas is ready // Not used
 // WebSocket configuration
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_HOST = window.location.host;
 const WS_PATH = '/chat';
-const WS_URL = `${WS_PROTOCOL}//${WS_HOST}${WS_PATH}`;
+// const WS_URL = `${WS_PROTOCOL}//${WS_HOST}${WS_PATH}`; // Not used
 let xrIconDisplay = true;
 let xrState = 0;
 let currentStream = null;
@@ -69,6 +69,8 @@ const TARGET_WIDTH_PERCENTAGE = 0.95;
 const SAFE_ZONE_MARGIN = 0.9;
 const ROTATION_BUFFER = 0.8;
 const TIMELINE_OFFSET = 180;
+// Добавляем константу в state для доступа из других модулей
+state.TIMELINE_OFFSET = TIMELINE_OFFSET;
 const SPHERE_RADIUS = 5;
 const COLUMN_ANIMATION_SPEED = 2.0; // Adjust for desired animation speed
 const FPS = 25; // Fixed 25fps update rate
@@ -193,7 +195,11 @@ const GESTURE_RECORDING_DURATION = 20000; // 20 seconds in milliseconds
 // --- MediaPipe Hands --- (временно отключено)
 // let hands = null; // Global reference to MediaPipe Hands controller
 
-// let mainSequencerGroup = new THREE.Group(); // mainSequencerGroup теперь в state.mainSequencerGroup, инициализируется в sceneSetup.js
+// mainSequencerGroup теперь в state.mainSequencerGroup, инициализируется в sceneSetup.js
+// Используем функции из модуля rendering.js
+import { createSequencerGrid, semitones, columns, initializeColumns, updateAudioVisualization, resetVisualization, getSemitoneLevels, updateSequencerColumns, updateColumnVisualization } from './js/rendering.js';
+
+// Создаем локальные группы для обратной совместимости
 const localLeftSequencerGroup = createSequencerGrid(
   GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
   semitones[semitones.length - 1].color, // Цвет последнего (фиолетового) полутона
@@ -291,6 +297,21 @@ function setupMicrophone() {
       source.connect(splitter);
       splitter.connect(microphoneAnalyserLeft, 0);
       splitter.connect(microphoneAnalyserRight, 1);
+
+      // Добавляем обработчик для обновления визуализации микрофона
+      function updateMicVisualization() {
+        if (microphoneAnalyserLeft && microphoneAnalyserRight) {
+          // Используем функцию из модуля rendering.js
+          updateColumnsForMicrophone(microphoneAnalyserLeft, microphoneAnalyserRight);
+        }
+        // Запрашиваем следующий кадр анимации, если микрофон активен
+        if (microphoneStream) {
+          requestAnimationFrame(updateMicVisualization);
+        }
+      }
+      
+      // Запускаем визуализацию
+      updateMicVisualization();
 
       document.getElementById('micButton').classList.add('active');
     })
@@ -504,81 +525,35 @@ function createGrid(gridWidth, gridHeight, gridDepth, cellSize, color) {
   return new THREE.LineSegments(geometry, material);
 }
 
-function initializeColumns() {
-  if (columns.length === 0) {
-    semitones.forEach((semitone, i) => {
-      const initialDB = 0;
-      const maxOffset = degreesToCells(semitone.deg);
-      const offsetLeft = i;
-      const columnLeft = createColumn(offsetLeft, i + 1, initialDB, true);
-      const columnRight = createColumn(offsetLeft, i + 1, initialDB, false);
-      columns.push({
-        left: columnLeft,
-        right: columnRight,
-        offsetX: 0,
-        direction: 1,
-        maxOffset: maxOffset,
-        speed: Math.random() * 0.1 + 0.1,
-        dB: initialDB,
-        dBDirection: 1
-      });
-    });
-  }
+// Функции initializeColumns, getSemitoneLevels и updateSequencerColumns теперь импортируются из rendering.js
+// Для обратной совместимости добавляем функцию, которая использует локальные группы
+function initializeColumnsInLocalGroups() {
+  // Инициализируем колонки с помощью функции из rendering.js
+  initializeColumns();
+  
+  // Добавляем колонки в локальные группы для обратной совместимости
   columns.forEach(column => {
-    // Добавляем колонки в локальные группы, которые затем добавляются в state.mainSequencerGroup
     if (!column.left.parent) localLeftSequencerGroup.add(column.left);
     if (!column.right.parent) localRightSequencerGroup.add(column.right);
   });
 }
 
-function getSemitoneLevels(analyser) {
-  if (!analyser) {
-    console.warn("Analyser is not initialized.");
-    return semitones.map(() => -100); // Return default values if analyser is null
+// Переопределяем getSemitoneLevels для использования audioContext из script.js
+function getSemitoneLevelsWithLocalContext(analyser) {
+  if (!analyser || !audioContext) {
+    console.warn("Analyser or AudioContext is not initialized.");
+    return semitones.map(() => -100);
   }
-
-  const bufferLength = analyser.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLength);
-  analyser.getByteFrequencyData(dataArray);
-  const sampleRate = audioContext.sampleRate;
-  const binSize = sampleRate / (2 * bufferLength);
-  return semitones.map(semitone => {
-    const binIndex = Math.round(semitone.f / binSize);
-    if (binIndex >= bufferLength) return -100;
-    const amplitude = dataArray[binIndex];
-    if (amplitude === 0) return -100;
-    const dB = 20 * Math.log10(amplitude / 255) * 1.5;
-    return THREE.MathUtils.clamp(dB, -100, 30);
-  });
+  
+  // Используем функцию из rendering.js
+  return getSemitoneLevels(analyser);
 }
 
-function updateSequencerColumns(amplitudes, channel) {
-  columns.forEach((column, i) => {
-    const dB = amplitudes[i];
-    if (isNaN(dB)) return;
-
-    // Precise normalization
-    const normalizedDB = THREE.MathUtils.clamp(
-      (dB + 100) / (130 + 100),
-      0,
-      1
-    );
-
-    const columnGroup = channel === 'left' ? column.left : column.right;
-    const { color } = semitones[i];
-
-    columnGroup.children.forEach(mesh => {
-      // Immediate visual update
-      mesh.material.opacity = 1.0;
-      mesh.material.transparent = false;
-      mesh.material.color = color;
-
-      // Direct position update without animation
-      const targetDepth = normalizedDB * 260;
-      mesh.scale.z = targetDepth;
-      mesh.position.z = targetDepth / 2;
-    });
-  });
+// Для обратной совместимости оставляем функцию с тем же именем, но переименовываем её
+// чтобы избежать рекурсии при вызове функции с тем же именем из rendering.js
+function updateColumnsFromAnalyser(amplitudes, channel) {
+  // Используем функцию из rendering.js
+  return updateSequencerColumns(amplitudes, channel);
 }
 
 function setupAudioProcessing(source) {
@@ -1543,7 +1518,7 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     console.error('Cannot add sequencer groups: state.mainSequencerGroup is null');
   }
 
-  initializeColumns(); // Эта функция использует localLeftSequencerGroup и localRightSequencerGroup
+  initializeColumnsInLocalGroups(); // Эта функция инициализирует колонки и добавляет их в локальные группы
 
   // Инициализация Hammer.js должна происходить только если state.renderer.domElement существует
   let hammer;
@@ -1553,127 +1528,31 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
     console.error('Cannot initialize Hammer: state.renderer.domElement is null');
   }
 
-  if (hammer) { // Продолжаем только если hammer инициализирован
-    hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+  // Логика Hammer.js перенесена в модуль js/core/gestures.js
+  // и будет инициализирована из main.js
+  // Это позволяет избежать дублирования кода и улучшает модульность приложения
+  
+  // Старый код Hammer.js удален отсюда в рамках рефакторинга
 
-    hammer.on('pan', ev => {
-      const deltaX = ev.deltaX / window.innerWidth;
-      const deltaY = ev.deltaY / window.innerHeight;
-
-      // Convert screen movement to radians (1:1 ratio)
-      const rotationX = deltaY * Math.PI;
-      const rotationY = deltaX * Math.PI;
-
-      if (!isXRMode) {
-        if (state.hologramPivot) {
-            // Clamp rotations to ±90 degrees (±π/2 radians)
-            state.hologramPivot.rotation.x = THREE.MathUtils.clamp(
-                rotationX,
-                -Math.PI/2,
-                Math.PI/2
-            );
-            state.hologramPivot.rotation.y = THREE.MathUtils.clamp(
-                rotationY,
-                -Math.PI/2,
-                Math.PI/2
-            );
-            state.hologramPivot.rotation.z = 0; // Prevent Z rotation
-        } else {
-            console.error('Pan event: state.hologramPivot is null');
-        }
-      } else {
-        if (state.camera) { // Assuming xrCamera is state.camera in XR mode
-            state.camera.rotation.x = THREE.MathUtils.clamp(
-                rotationX,
-                -Math.PI/2,
-                Math.PI/2
-            );
-            state.camera.rotation.y = THREE.MathUtils.clamp(
-                rotationY,
-                -Math.PI/2,
-                Math.PI/2
-            );
-        } else {
-            console.error('Pan event (XR mode): state.camera is null');
-        }
-      }
-    });
-
-    hammer.on('pinch', ev => {
-      if (!isXRMode && state.hologramPivot) {
-        const scale = THREE.MathUtils.clamp(ev.scale, MIN_SCALE, MAX_SCALE);
-        state.hologramPivot.scale.set(scale, scale, scale);
-      } else if (!state.hologramPivot) {
-        console.error('Pinch event: state.hologramPivot is null');
-      }
-    });
-
-    hammer.on('panend pinchend', () => {
-      if (!isXRMode && state.hologramPivot) {
-        // Smoothly return to neutral rotation (0,0,0)
-        new TWEEN.Tween(state.hologramPivot.rotation)
-          .to({ x: 0, y: 0, z: 0 }, ROTATION_RETURN_DURATION)
-          .easing(TWEEN.Easing.Quadratic.Out)
-          .start();
-      } else if (!state.hologramPivot) {
-        console.error('Pan/Pinch end event: state.hologramPivot is null');
-      }
-    });
-  }
-  hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
-
-  hammer.on('pan', ev => {
-    const deltaX = ev.deltaX / window.innerWidth;
-    const deltaY = ev.deltaY / window.innerHeight;
-
-    // Convert screen movement to radians (1:1 ratio)
-    const rotationX = deltaY * Math.PI;
-    const rotationY = deltaX * Math.PI;
-
-    if (!isXRMode) {
-      // Clamp rotations to ±90 degrees (±π/2 radians)
-      hologramPivot.rotation.x = THREE.MathUtils.clamp(
-        rotationX,
-        -Math.PI/2,
-        Math.PI/2
-      );
-      hologramPivot.rotation.y = THREE.MathUtils.clamp(
-        rotationY,
-        -Math.PI/2,
-        Math.PI/2
-      );
-      hologramPivot.rotation.z = 0; // Prevent Z rotation
-    } else {
-      xrCamera.rotation.x = THREE.MathUtils.clamp(
-        rotationX,
-        -Math.PI/2,
-        Math.PI/2
-      );
-      xrCamera.rotation.y = THREE.MathUtils.clamp(
-        rotationY,
-        -Math.PI/2,
-        Math.PI/2
-      );
-      xrCamera.rotation.z = 0;
-    }
-  });
-
-  hammer.on('panend', () => {
-    const startRotationX = !isXRMode ? hologramPivot.rotation.x : xrCamera.rotation.x;
-    const startRotationY = !isXRMode ? hologramPivot.rotation.y : xrCamera.rotation.y;
+  // Добавляем обработчик для возврата голограммы в исходное положение
+  document.addEventListener('mouseup', () => {
+    // Функция для плавного возврата голограммы в исходное положение
+    const startRotationX = state.hologramPivot ? state.hologramPivot.rotation.x : 0;
+    const startRotationY = state.hologramPivot ? state.hologramPivot.rotation.y : 0;
     const startTime = performance.now();
-
-    function animateReturn(currentTime) {
+    
+    function animateReturn() {
+      const currentTime = performance.now();
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / ROTATION_RETURN_DURATION, 1);
-
+      
       // Cubic easing for smooth deceleration
       const easeProgress = 1 - Math.pow(1 - progress, 3);
 
-      if (!isXRMode) {
-        hologramPivot.rotation.x = startRotationX * (1 - easeProgress);
-        hologramPivot.rotation.y = startRotationY * (1 - easeProgress);
-      } else {
+      if (!isXRMode && state.hologramPivot) {
+        state.hologramPivot.rotation.x = startRotationX * (1 - easeProgress);
+        state.hologramPivot.rotation.y = startRotationY * (1 - easeProgress);
+      } else if (xrCamera) {
         xrCamera.rotation.x = startRotationX * (1 - easeProgress);
         xrCamera.rotation.y = startRotationY * (1 - easeProgress);
       }
@@ -1701,9 +1580,9 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
       xrCamera.rotation.copy(orthoCamera.rotation);
       xrCamera.scale.copy(orthoCamera.scale);
 
-      const currentScale = mainSequencerGroup.scale.clone();
-      mainSequencerGroup.scale.copy(currentScale);
-      mainSequencerGroup.position.set(0,0, 0); // Устанавливаем mainSequencerGroup.position.x = 0;
+      const currentScale = state.mainSequencerGroup.scale.clone();
+state.mainSequencerGroup.scale.copy(currentScale);
+state.mainSequencerGroup.position.set(0,0, 0); // Устанавливаем mainSequencerGroup.position.x = 0;
     } else {
         // Clear finger dots
         document.querySelectorAll('.finger-dot').forEach(el => el.remove());
@@ -1915,7 +1794,7 @@ async function loadInitialFilesAndSetupEditor() {
               try {
                 // Используем Function constructor вместо прямого eval для некоторой изоляции
                 const executeCode = new Function('scene', 'mainSequencerGroup', 'THREE', generatedCode);
-                executeCode(state.scene, mainSequencerGroup, THREE); // Передаем нужные объекты из state в контекст
+executeCode(state.scene, state.mainSequencerGroup, THREE); // Передаем нужные объекты из state в контекст
                 console.log("Сгенерированный код выполнен успешно.");
               } catch (e) {
                 console.error("Ошибка выполнения сгенерированного кода:", e);
@@ -2134,9 +2013,9 @@ async function loadInitialFilesAndSetupEditor() {
           console.log("Scene state parsed successfully:", parsedData);
 
           // Удаляем старую сцену и добавляем новую
-          state.scene.remove(mainSequencerGroup);
-          mainSequencerGroup = parsedData;
-          state.scene.add(mainSequencerGroup);
+          state.scene.remove(state.mainSequencerGroup);
+state.mainSequencerGroup = parsedData;
+state.scene.add(state.mainSequencerGroup);
 
           console.log("Состояние сцены применено");
         } catch (e) {
@@ -2241,6 +2120,7 @@ async function loadInitialFilesAndSetupEditor() {
             } else {
                 console.error('Resize handler: state.renderer is null');
             }
+        } // Закрываем условие if (!isXRMode)
 
         // Вызываем updateHologramLayout для пересчета макета голограммы
         const gestureAreaElement = document.getElementById('gesture-area');
