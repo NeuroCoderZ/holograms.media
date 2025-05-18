@@ -131,9 +131,6 @@ function toggleXRMode() {
 let isXRMode = false;
 let currentStream = null;
 let videoElement = null;
-
-// TODO: Возможно, потребуется импортировать MediaPipe Hands, если setupFingerTracking будет использовать его напрямую.
-// import { Hands } from '@mediapipe/hands';
 // TODO: Возможно, потребуется импортировать drawHandLandmarks или перенести ее сюда.
 // import { drawHandLandmarks } from './utils'; // Пример
 

@@ -10,3 +10,4 @@
 ## Последние Ключевые Изменения
 - [YYYY-MM-DD] Рефакторинг script.js: логика аудио плеера и XR вынесена в модули audioFilePlayer.js и cameraManager.js.
 - [2023-11-15] Устранены ошибки дублирования объявлений для createSphere/Line/Axis/Grid в script.js.
+- [YYYY-MM-DD] Устранены ошибки JS в cameraManager.js и script.js.
