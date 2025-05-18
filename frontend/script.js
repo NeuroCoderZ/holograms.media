@@ -482,7 +482,6 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Инициализация глобальных переменных
   telegramLinkButton = document.getElementById('telegramLinkButton');
-  micButton = document.getElementById('micButton');
   
   const fileButton = document.getElementById('fileButton');
   const fileInput = document.getElementById('fileInput');
