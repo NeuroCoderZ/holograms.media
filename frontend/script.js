@@ -109,34 +109,7 @@ function degreesToCells(index) {
   return Math.max(minWidth, Math.round(width));
 }
 
-// Генерация массива полутонов
-const semitones = Array.from({ length: 130 }, (_, i) => {
-  // Частота: базовая частота (27.5 Гц) умножается на 2^(i/12)
-  const f = BASE_FREQUENCY * Math.pow(2, i / NOTES_PER_OCTAVE);
-
-  // Ширина колонки
-  const width = degreesToCells(i);
-
-  // Цвет: линейная интерполяция от START_HUE (0) до END_HUE (270)
-  const hue = ((END_HUE - START_HUE) * i) / (129) + START_HUE;
-  const color = new THREE.Color().setHSL(hue / 360, SATURATION, LIGHTNESS);
-
-  // Нота и октава
-  const octave = Math.floor(i / NOTES_PER_OCTAVE) + STARTING_OCTAVE;
-  const noteIndex = i % NOTES_PER_OCTAVE;
-  const note = NOTES[noteIndex] + octave;
-
-  return {
-    key: note.replace("#", "s"), // Для React (если будет использоваться)
-    note: note,
-    f: f,
-    width: width,
-    color: color,
-    deg: 180.00 - (i * 1.3846), // Угол для визуализации
-    // dBLeft: 0,  // Закомментировано, но оставлено на случай необходимости
-    // dBRight: 0, // Закомментировано, но оставлено на случай необходимости
-  };
-});
+// Массив полутонов теперь импортируется из модуля rendering.js
 
 // --- Grid and Scale Configuration ---
 // Hologram versioning and branching
@@ -160,7 +133,7 @@ let selectedX = 0, selectedY = 0, selectedZ = 0;
 let currentColumn = null;
 // state импортируется выше, повторный импорт удален
 // Примечание: scene теперь инициализируется в sceneSetup.js и присваивается в state
-const columns = [];
+// Массив columns теперь импортируется из модуля rendering.js
 
 // Используем scene, camera и renderer из объекта state
 // Это позволяет избежать дублирования переменных и использовать
