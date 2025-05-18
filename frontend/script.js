@@ -9,6 +9,8 @@ import { initializeSpeechInput } from './js/audio/speechInput.js';
 import { state } from './js/core/init.js';
 // Импортируем функции из sceneSetup.js
 import { createSequencerGrid } from './js/3d/sceneSetup.js';
+// Импортируем функции из rendering.js
+import { createSphere, createLine, createAxis, createGrid } from './js/rendering.js';
   
 // Экспортируем функцию loadChatHistory для использования в других модулях
 export function loadChatHistory() {
