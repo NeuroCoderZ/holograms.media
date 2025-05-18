@@ -149,15 +149,9 @@ let currentColumn = null;
 // Функция уже экспортирована и доступна глобально
 let analyserLeft, analyserRight;
 let audioBufferSource = null;
-let audioContext = null;
-let startOffset = 0;
 let startTimestamp = 0;
-let videoElement = null;
-let videoStream = null;
-let isXRMode = false;
 let isPlaying = false;
 let pausedAt = 0;
-let audioBuffer = null;
 
 let fingerTrails = []; // Array to store finger trail data
 let fingerPositions = []; // Array to store current finger positions
@@ -219,157 +213,19 @@ const localRightSequencerGroup = createSequencerGrid(
 //     });
 // }
 
-function setupCamera() {
-  if (!isXRMode) return;
-
-  navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: 'user',
-      width: { ideal: window.innerWidth },
-      height: { ideal: window.innerHeight }
-    }
-  })
-  .then(stream => {
-    currentStream = stream;
-    const cameraView = document.getElementById('camera-view');
-    if (cameraView) {
-      cameraView.srcObject = stream;
-      cameraView.addEventListener('loadeddata', () => {
-        cameraView.style.visibility = 'visible';
-        setupFingerTracking();
-      });
-    }
-  })
-  .catch(error => {
-    console.error("Error accessing camera:", error);
-  });
-
   // Обработчик для кнопки Telegram
   if (telegramLinkButton) {
     telegramLinkButton.addEventListener('click', () => {
       window.open('https://t.me/+WjtL4ipr-yljNGRi', '_blank', 'noopener,noreferrer');
     });
   }
-}
 
-function setupMicrophone() {
-  if (!audioContext) {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  }
 
-  navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(stream => {
-      microphoneStream = stream;
-      const source = audioContext.createMediaStreamSource(stream);
+// Функция setupMicrophone перенесена в модуль microphoneManager.js
 
-      // Create stereo analysers
-      microphoneAnalyserLeft = audioContext.createAnalyser();
-      microphoneAnalyserRight = audioContext.createAnalyser();
+// Функция stopMicrophone перенесена в модуль microphoneManager.js
 
-      microphoneAnalyserLeft.fftSize = FFT_SIZE;
-      microphoneAnalyserRight.fftSize = FFT_SIZE;
-      microphoneAnalyserLeft.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
-      microphoneAnalyserRight.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
-
-      const splitter = audioContext.createChannelSplitter(2);
-      source.connect(splitter);
-      splitter.connect(microphoneAnalyserLeft, 0);
-      splitter.connect(microphoneAnalyserRight, 1);
-
-      // Добавляем обработчик для обновления визуализации микрофона
-      function updateMicVisualization() {
-        if (microphoneAnalyserLeft && microphoneAnalyserRight) {
-          // Используем функцию из модуля rendering.js
-          updateColumnsForMicrophone(microphoneAnalyserLeft, microphoneAnalyserRight);
-        }
-        // Запрашиваем следующий кадр анимации, если микрофон активен
-        if (microphoneStream) {
-          requestAnimationFrame(updateMicVisualization);
-        }
-      }
-      
-      // Запускаем визуализацию
-      updateMicVisualization();
-
-      document.getElementById('micButton').classList.add('active');
-    })
-    .catch(error => {
-      console.error('Error accessing microphone:', error);
-    });
-}
-
-function stopMicrophone() {
-  if (microphoneStream) {
-    microphoneStream.getTracks().forEach(track => track.stop());
-    microphoneStream = null;
-    microphoneAnalyserLeft = null;
-    microphoneAnalyserRight = null;
-    document.getElementById('micButton').classList.remove('active');
-    // Сброс визуализации колонок до нулевого состояния
-    columns.forEach((column, i) => {
-        const baseColor = semitones[i] ? semitones[i].color : new THREE.Color(0xffffff); // Базовый цвет или белый
-        if (column.left && column.right) {
-            column.left.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor); }); // Базовый цвет
-            column.right.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor); }); // Базовый цвет
-        }
-    });
-    console.log("Визуализация микрофона очищена (столбцы сброшены в 0).");
-  }
-}
-
-  // Обработчик клика для кнопки микрофона
-  /*if (micButton) {
-      micButton.addEventListener('click', () => {
-        // Проверяем состояние AudioContext перед действиями
-        if (!audioContext || audioContext.state === 'closed') {
-            console.log("AudioContext не инициализирован или закрыт. Попытка создать/возобновить.");
-            // Пытаемся создать или возобновить контекст ПЕРЕД тем, как вызывать setupMicrophone
-             if (!audioContext) {
-                 try {
-                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                     console.log("AudioContext создан.");
-                 } catch (e) {
-                     console.error("Не удалось создать AudioContext:", e);
-                     alert("Ошибка: Не удалось инициализировать аудио систему.");
-                     return;
-                 }
-             }
-             if (audioContext.state === 'suspended') {
-                 audioContext.resume().then(() => {
-                     console.log("AudioContext возобновлен.");
-                     // Теперь, когда контекст точно есть и активен, вызываем setup
-                     setupMicrophone();
-                 }).catch(e => console.error("Не удалось возобновить AudioContext:", e));
-             } else if (audioContext.state === 'running') {
-                 // Контекст уже работает, можно вызывать setup
-                 setupMicrophone();
-             }
-            return; // Выходим из обработчика клика после попытки инициализации/возобновления
-        }
-
-         // Если контекст есть и активен, выполняем переключение
-        if (audioContext.state === 'running') {
-             const isActive = micButton.classList.contains('active');
-             if (isActive) {
-               stopMicrophone();
-               console.log("Вызов stopMicrophone()");
-             } else {
-               setupMicrophone();
-               console.log("Вызов setupMicrophone()");
-             }
-        } else if (audioContext.state === 'suspended') {
-            // Дополнительная попытка возобновить, если первое условие не сработало
-             audioContext.resume().then(() => {
-                 console.log("AudioContext возобновлен при переключении.");
-                 // Повторно вызываем setup, так как кнопка была неактивна
-                 setupMicrophone();
-             }).catch(e => console.error("Не удалось возобновить AudioContext при переключении:", e));
-        }
-      });
-  } else {
-      console.error("Кнопка микрофона #micButton не найдена!");
-  }
-*/
+  // Обработчик клика для кнопки микрофона перенесен в модуль microphoneManager.js
 function updateTouchSensitivity() {
   TOUCH_SENSITIVITY = BASE_TOUCH_SENSITIVITY; // Keep it fixed
 }
@@ -535,69 +391,7 @@ function updateColumnMesh(columnGroup, dB, side) {
 }
 
 // XR mode finger tracking
-function setupFingerTracking() {
-    if (!navigator.mediaDevices || !isXRMode) return;
 
-    // Stop any existing stream
-    if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-        currentStream = null;
-    }
-
-    // Проверяем поддержку WebGL перед запросом камеры
-    const testCanvas = document.createElement('canvas');
-    const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
-    if (!gl) {
-        console.error("WebGL не поддерживается в этом браузере. Отслеживание рук не будет работать.");
-        return;
-    }
-    
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-        .then(stream => {
-            currentStream = stream;
-            videoElement = document.getElementById('camera-view');
-            videoElement.srcObject = stream;
-
-            videoElement.onloadeddata = () => {
-                // Keep video element for handpose but hide it
-                videoElement.style.visibility = 'hidden';
-                
-                // Проверяем доступность handpose
-                if (!window.handpose) {
-                    console.error("Библиотека handpose не найдена. Отслеживание рук не будет работать.");
-                    return;
-                }
-                
-                const handpose = window.handpose;
-                handpose.load().then(model => {
-                    setInterval(() => {
-                        // Ensure videoElement is accessible and has data
-                        if (!videoElement || !videoElement.readyState) {
-                          console.warn('Video element not ready or missing');
-                            return;
-                        }
-
-                        model.estimateHands(videoElement).then(hands => {
-                            // Clear previous dots and lines
-                            document.querySelectorAll('.finger-dot').forEach(el => el.remove());
-                            document.querySelectorAll('.finger-line').forEach(el => el.remove());
-
-                            hands.forEach(hand => {
-                                // Flip, draw landmarks
-                                const landmarks = hand.landmarks.map(landmark => [
-                                    videoElement.offsetWidth - landmark[0],
-                                    landmark[1],
-                                    landmark[2]
-                                ]);
-                                drawHandLandmarks(landmarks);
-                            });
-                        });
-                    }, 1000 / 30);
-                });
-            };
-        })
-        .catch(err => console.error('Error accessing camera:', err));
-}
 
 // Function to draw hand landmarks and connecting lines
 function drawHandLandmarks(landmarks) {
@@ -843,121 +637,6 @@ console.log('Toggle Panels Button initialized (in script.js - old):', togglePane
   // --- End Gesture Area Click Listener ---
 
   fileButton.addEventListener('click', () => {
-    fileInput.click();
-  });
-
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files.length === 0) {
-      fileButton.classList.remove('active');
-      return;
-    }
-
-    const file = fileInput.files[0];
-    fileButton.classList.add('active');
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
-
-      try {
-        audioBuffer = await audioContext.decodeAudioData(e.target.result);
-        // Enable playback controls
-        playButton.disabled = false;
-        pauseButton.disabled = false;
-        stopButton.disabled = false;
-
-        // Reset playback state
-        pausedAt = 0;
-        isPlaying = false;
-
-        if (audioBufferSource) {
-          audioBufferSource.stop();
-          audioBufferSource.disconnect();
-        }
-      } catch (error) {
-        console.error('Error decoding audio data:', error);
-      }
-    };
-    reader.readAsArrayBuffer(file);
-    fileInput.value = '';
-  });
-
-  playButton.addEventListener('click', () => {
-    if (!audioBuffer) return;
-
-    if (audioBufferSource) {
-      audioBufferSource.stop();
-      audioBufferSource.disconnect();
-    }
-
-    audioBufferSource = audioContext.createBufferSource();
-    audioBufferSource.buffer = audioBuffer;
-    setupAudioProcessing(audioBufferSource);
-
-    // Calculate start position
-    startOffset = audioContext.currentTime - pausedAt;
-
-    // Start playback from pausedAt position
-    audioBufferSource.start(0, pausedAt);
-    isPlaying = true;
-
-    // Update UI
-    playButton.classList.add('active');
-    pauseButton.classList.remove('active');
-    stopButton.classList.remove('active'); // Убираем актив у стоп
-    stopButton.classList.remove('active');
-  });
-
-  pauseButton.addEventListener('click', () => {
-    if (!isPlaying) return;
-
-    // Calculate current position
-    pausedAt = audioContext.currentTime - startOffset;
-
-    if (audioBufferSource) {
-      audioBufferSource.stop();
-      audioBufferSource.disconnect();
-    }
-
-    isPlaying = false;
-
-    // Update UI
-    playButton.classList.remove('active');
-    pauseButton.classList.add('active');
-    // stopButton остается неактивным
-  });
-
-  stopButton.addEventListener('click', () => {
-    if (audioBufferSource) {
-      audioBufferSource.stop();
-      audioBufferSource.disconnect();
-    }
-
-    // Reset playback state
-    pausedAt = 0;
-    isPlaying = false;
-
-    // Reset visualization
-    columns.forEach(column => {
-      if (column.left) column.left.position.z = 0;
-      if (column.right) column.right.position.z = 0;
-    });
-    // Сброс визуализации колонок до нулевого состояния
-    columns.forEach((column, i) => {
-         const baseColor = semitones[i] ? semitones[i].color : new THREE.Color(0xffffff); // Базовый цвет или белый
-         if (column.left && column.right) {
-             column.left.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor); }); // Базовый цвет
-             column.right.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor); }); // Базовый цвет
-         }
-    });
-    console.log("Визуализация файла очищена (столбцы сброшены в 0).");
-
-    // Update UI
-    playButton.classList.remove('active');
-    pauseButton.classList.remove('active');
-    // stopButton не делаем активным при стопе, это конечное состояние
 
     // Reset playhead position
     const playhead = document.getElementById('playhead');
