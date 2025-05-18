@@ -7,6 +7,8 @@ import { initializeChatDisplay, addMessage, clearChat, speak } from './js/panels
 import { initializeSpeechInput } from './js/audio/speechInput.js';
 // Импортируем state из init.js
 import { state } from './js/core/init.js';
+// Импортируем функции из sceneSetup.js
+import { createSequencerGrid } from './js/3d/sceneSetup.js';
   
 // Экспортируем функцию loadChatHistory для использования в других модулях
 export function loadChatHistory() {
@@ -456,18 +458,7 @@ function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
   return axisGroup;
 }
 
-function createSequencerGrid(width, height, depth, cellSize, color, position, isLeftGrid) {
-  const grid = createGrid(width, height, depth, cellSize, color);
-  if (isLeftGrid) {
-    grid.material.color.set(0x9400d3);
-  }
-  const axis = createAxis(width, SPHERE_RADIUS, isLeftGrid ? 0x9400d3 : 0xFF0000, 0x00FF00, 0xFFFFFF, isLeftGrid);
-  const sequencerGroup = new THREE.Group();
-  sequencerGroup.add(grid);
-  sequencerGroup.add(axis);
-  sequencerGroup.position.copy(position);
-  return sequencerGroup;
-}
+// Функция createSequencerGrid теперь импортируется из sceneSetup.js
 
 function createGrid(gridWidth, gridHeight, gridDepth, cellSize, color) {
   const geometry = new THREE.BufferGeometry();
