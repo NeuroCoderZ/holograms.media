@@ -172,7 +172,8 @@ const GESTURE_RECORDING_DURATION = 20000; // 20 seconds in milliseconds
 
 // mainSequencerGroup теперь в state.mainSequencerGroup, инициализируется в sceneSetup.js
 // Используем функции из модуля rendering.js
-import { createSequencerGrid, semitones, columns, initializeColumns, updateAudioVisualization, resetVisualization, getSemitoneLevels, updateSequencerColumns, updateColumnVisualization } from './js/rendering.js';
+// Не импортируем createSequencerGrid из rendering.js, так как она уже импортирована из sceneSetup.js
+import { semitones, columns, initializeColumns, updateAudioVisualization, resetVisualization, getSemitoneLevels, updateSequencerColumns, updateColumnVisualization, createSphere, createLine, createAxis, createGrid } from './js/rendering.js';
 
 // Создаем локальные группы для обратной совместимости
 const localLeftSequencerGroup = createSequencerGrid(
