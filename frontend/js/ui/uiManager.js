@@ -6,20 +6,22 @@ import { state } from '../core/init.js';
 // Объект для хранения ссылок на DOM-элементы
 export const uiElements = {
   // Кнопки левой панели
-  fileButton: null,
-  playButton: null,
-  pauseButton: null,
-  stopButton: null,
-  micButton: null,
-  fullscreenButton: null,
-  xrButton: null,
-  gestureRecordButton: null,
-  scanButton: null,
-  bluetoothButton: null,
-  telegramLinkButton: null,
-  githubButton: null,
-  triaButton: null,
-  chatButton: null,
+  buttons: {
+    fileButton: null,
+    playButton: null,
+    pauseButton: null,
+    stopButton: null,
+    micButton: null,
+    fullscreenButton: null,
+    xrButton: null,
+    gestureRecordButton: null,
+    scanButton: null,
+    bluetoothButton: null,
+    telegramLinkButton: null,
+    githubButton: null,
+    triaButton: null,
+    chatButton: null,
+  },
   
   // Элементы правой панели
   versionTimeline: null,
@@ -28,24 +30,33 @@ export const uiElements = {
   // Контейнеры
   gridContainer: null,
   gestureArea: null,
+  containers: {
+    chatMessages: null // Добавляем контейнер для чата
+  },
   
   // Модальные окна
-  gestureModal: null,
-  promptModal: null,
+  modals: {
+    gestureModal: null,
+    promptModal: null,
+  },
   
   // Элементы ввода
-  fileInput: null,
-  topPromptInput: null,
-  chatInput: null,
-  promptText: null,
-  modelSelect: null,
+  inputs: {
+    fileInput: null,
+    topPromptInput: null,
+    chatInput: null,
+    promptText: null,
+    modelSelect: null,
+  },
   
   // Кнопки действий
-  submitTopPrompt: null,
-  submitChatMessage: null,
-  submitPrompt: null,
-  startRecordingButton: null,
-  stopRecordingButton: null,
+  actions: {
+    submitTopPrompt: null,
+    submitChatMessage: null,
+    submitPrompt: null,
+    startRecordingButton: null,
+    stopRecordingButton: null,
+  },
   
   // Другие элементы UI
   leftPanel: null,
@@ -175,20 +186,20 @@ export function initializeMainUI() {
   console.log('Инициализация основного UI...');
   
   // Получаем ссылки на DOM-элементы кнопок левой панели
-  uiElements.fileButton = document.getElementById('fileButton');
-  uiElements.playButton = document.getElementById('playButton');
-  uiElements.pauseButton = document.getElementById('pauseButton');
-  uiElements.stopButton = document.getElementById('stopButton');
-  uiElements.micButton = document.getElementById('micButton');
-  uiElements.fullscreenButton = document.getElementById('fullscreenButton');
-  uiElements.xrButton = document.getElementById('xrButton');
-  uiElements.gestureRecordButton = document.getElementById('gestureRecordButton');
-  uiElements.scanButton = document.getElementById('scanButton');
-  uiElements.bluetoothButton = document.getElementById('bluetoothButton');
-  uiElements.telegramLinkButton = document.getElementById('telegramLinkButton');
-  uiElements.githubButton = document.getElementById('githubButton');
-  uiElements.triaButton = document.getElementById('triaButton');
-  uiElements.chatButton = document.getElementById('chatButton');
+  uiElements.buttons.fileButton = document.getElementById('fileButton');
+  uiElements.buttons.playButton = document.getElementById('playButton');
+  uiElements.buttons.pauseButton = document.getElementById('pauseButton');
+  uiElements.buttons.stopButton = document.getElementById('stopButton');
+  uiElements.buttons.micButton = document.getElementById('micButton');
+  uiElements.buttons.fullscreenButton = document.getElementById('fullscreenButton');
+  uiElements.buttons.xrButton = document.getElementById('xrButton');
+  uiElements.buttons.gestureRecordButton = document.getElementById('gestureRecordButton');
+  uiElements.buttons.scanButton = document.getElementById('scanButton');
+  uiElements.buttons.bluetoothButton = document.getElementById('bluetoothButton');
+  uiElements.buttons.telegramLinkButton = document.getElementById('telegramLinkButton');
+  uiElements.buttons.githubButton = document.getElementById('githubButton');
+  uiElements.buttons.triaButton = document.getElementById('triaButton');
+  uiElements.buttons.chatButton = document.getElementById('chatButton');
   
   // Получаем ссылки на элементы правой панели
   uiElements.versionTimeline = document.getElementById('versionTimeline');
@@ -197,91 +208,61 @@ export function initializeMainUI() {
   // Получаем ссылки на контейнеры
   uiElements.gridContainer = document.getElementById('grid-container');
   uiElements.gestureArea = document.getElementById('gesture-area');
+  uiElements.containers.chatMessages = document.getElementById('chatMessagesContainer'); // Инициализируем контейнер чата
   
   // Получаем ссылки на модальные окна
-  uiElements.gestureModal = document.getElementById('gestureModal');
-  uiElements.promptModal = document.getElementById('promptModal');
+  uiElements.modals.gestureModal = document.getElementById('gestureModal');
+  uiElements.modals.promptModal = document.getElementById('promptModal');
   
   // Получаем ссылки на элементы ввода
-  uiElements.fileInput = document.getElementById('fileInput');
-  uiElements.topPromptInput = document.getElementById('topPromptInput');
-  uiElements.chatInput = document.getElementById('chatInput');
-  uiElements.promptText = document.getElementById('promptText');
-  uiElements.modelSelect = document.getElementById('modelSelect');
+  uiElements.inputs.fileInput = document.getElementById('fileInput');
+  uiElements.inputs.topPromptInput = document.getElementById('topPromptInput');
+  uiElements.inputs.chatInput = document.getElementById('chatInput');
+  uiElements.inputs.promptText = document.getElementById('promptText');
+  uiElements.inputs.modelSelect = document.getElementById('modelSelect');
   
   // Получаем ссылки на кнопки действий
-  uiElements.submitTopPrompt = document.getElementById('submitTopPrompt');
-  uiElements.submitChatMessage = document.getElementById('submitChatMessage');
-  uiElements.submitPrompt = document.getElementById('submitPrompt');
-  uiElements.startRecordingButton = document.getElementById('startRecordingButton');
-  uiElements.stopRecordingButton = document.getElementById('stopRecordingButton');
+  uiElements.actions.submitTopPrompt = document.getElementById('submitTopPrompt');
+  uiElements.actions.submitChatMessage = document.getElementById('submitChatMessage');
+  uiElements.actions.submitPrompt = document.getElementById('submitPrompt');
+  uiElements.actions.startRecordingButton = document.getElementById('startRecordingButton');
+  uiElements.actions.stopRecordingButton = document.getElementById('stopRecordingButton');
   
-  // Получаем ссылки на панели
+  // Получаем ссылки на другие элементы UI
   uiElements.leftPanel = document.querySelector('.panel.left-panel');
   uiElements.rightPanel = document.querySelector('.panel.right-panel');
   uiElements.togglePanelsButton = document.getElementById('togglePanelsButton');
-  
-  // Инициализируем состояние панелей
+
+  console.log('Основной UI инициализирован.');
+
+  // Инициализируем состояние панелей после получения ссылок
   initializePanelState();
-  
-  // Добавляем обработчик для кнопки переключения панелей
-  if (uiElements.togglePanelsButton) {
-    uiElements.togglePanelsButton.addEventListener('click', togglePanels);
-  }
-  
-  console.log('Основной UI инициализирован');
+
+  // Добавляем отладочные классы
+  addDebugClasses();
+
+  // Логируем состояние макета
+  logLayoutState();
 }
 
 /**
- * Переключает режим чата
+ * Переключает режим чата (видимость панели чата)
  */
 export function toggleChatMode() {
-  // Получаем элементы чата
-  const chatHistory = document.getElementById('chatHistory');
-  const chatInputBar = document.getElementById('chatInputBar');
-  
-  if (!chatHistory || !chatInputBar) {
-    console.error('Элементы чата не найдены');
+  if (!uiElements.chatHistory) {
+    console.error('Контейнер истории чата не инициализирован для toggleChatMode');
     return;
   }
-  
-  // Переключаем видимость элементов чата
-  const isChatVisible = chatHistory.style.display !== 'none';
-  
-  if (isChatVisible) {
-    // Скрываем чат
-    chatHistory.style.display = 'none';
-    chatInputBar.style.display = 'none';
-    
-    // Обновляем состояние
-    if (uiElements.chatButton) {
-      uiElements.chatButton.classList.remove('active');
-    }
-    
-    // Обновляем глобальное состояние
-    if (window.state) {
-      window.state.isChatMode = false;
-    }
-    
-    console.log('Режим чата деактивирован');
-  } else {
-    // Показываем чат
-    chatHistory.style.display = 'block';
-    chatInputBar.style.display = 'flex';
-    
-    // Обновляем состояние
-    if (uiElements.chatButton) {
-      uiElements.chatButton.classList.add('active');
-    }
-    
-    // Обновляем глобальное состояние
-    if (window.state) {
-      window.state.isChatMode = true;
-    }
-    
-    console.log('Режим чата активирован');
-  }
-  
-  // Вызываем ресайз для обновления размеров
+
+  const isChatHidden = uiElements.chatHistory.classList.toggle('hidden');
+  console.log(`Панель чата ${isChatHidden ? 'скрыта' : 'показана'}`);
+
+  // Вызываем ресайз для обновления размеров, если это влияет на макет
   window.dispatchEvent(new Event('resize'));
 }
+
+// Экспортируем функции, которые могут понадобиться другим модулям
+export { initializePanelState, togglePanels, getPanelWidths, addDebugClasses, logLayoutState, toggleChatMode };
+
+// TODO: Добавить инициализацию других UI элементов по мере необходимости
+// TODO: Рассмотреть возможность использования более надежного способа получения элементов, например, через классы или атрибуты данных, если ID не уникальны или могут меняться.

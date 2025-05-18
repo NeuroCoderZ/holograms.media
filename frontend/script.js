@@ -6,25 +6,9 @@ import { semitones, columns, initializeColumns, updateAudioVisualization, resetV
 
 // --- Hologram Versioning (временно закомментировано) ---
 
-  // --- End Universal Panel Toggling Logic ---
 
 
 
-
-
-
-
-
-
-
-
-  // Логика Hammer.js перенесена в модуль js/core/gestures.js
-  // и будет инициализирована из main.js
-  // Это позволяет избежать дублирования кода и улучшает модульность приложения
-  
-  // Старый код Hammer.js удален отсюда в рамках рефакторинга
-
-  // Обработчик для кнопки промпта
 
 
   });
@@ -492,7 +476,7 @@ async function startVideoStream(videoElement, handsInstance) {
       });
   }
 
-  // Перемещаем кнопку в body, если она вложена в .left-panel
+
   console.log('Is togglePanelsButton already declared?', typeof togglePanelsButton !== 'undefined');
 
   if (togglePanelsButton && togglePanelsButton.parentNode.classList.contains('left-panel')) {
@@ -505,7 +489,7 @@ async function startVideoStream(videoElement, handsInstance) {
   // Флаг ожидания ответа от Триа
   let isWaitingForResponse = false;
 
-  // Обработчик для кнопки отправки сообщения в чате
+
   const submitChatMessage = document.getElementById('submitChatMessage');
   if (submitChatMessage) {
     submitChatMessage.addEventListener('click', sendChatMessage);

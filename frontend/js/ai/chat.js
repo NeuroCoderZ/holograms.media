@@ -14,11 +14,9 @@ let chatHistoryContainer = null;
 export function setupChat() {
   console.log('Инициализация чата...');
   
-  // Получаем контейнер для истории чата
-  chatHistoryContainer = ui.containers.chatMessages;
-  
-  if (!chatHistoryContainer) {
-    console.error('Контейнер для сообщений чата не найден!');
+  const chatMessagesContainer = state.uiElements.containers.chatMessages;
+  if (!chatMessagesContainer) {
+    console.error('Контейнер для сообщений чата не найден в state.uiElements!');
     return;
   }
   
