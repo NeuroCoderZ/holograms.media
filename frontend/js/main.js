@@ -31,6 +31,7 @@ import { initializeXRMode } from './xr/cameraManager.js'; // Модуль упр
 
 import { setupChat } from './ai/chat.js'; // Путь исправлен
 import { initializeTria } from './ai/tria.js'; // Путь исправлен
+import { setupDOMEventHandlers } from './domEventHandlers.js'; // Импорт нового модуля обработчиков событий DOM
 
 // import { loadSettings, saveSettings } from '/static/js/utils/storage.js'; // TODO: Module for storage utils not found, related code disabled
 // import { debounce, throttle } from '/static/js/utils/helpers.js'; // TODO: Module for helper utils not found, related code disabled
@@ -48,7 +49,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // FINAL CLEANUP (v22): Module legacy-bridge.js or its functionality is missing/disabled
   // initLegacyBridge(); // Из ./utils/legacy-bridge.js
   // registerLegacyHandlers(); // Из ./utils/legacy-bridge.js
-  
+
+  // Инициализация обработчиков событий DOM
+  setupDOMEventHandlers();
+
   // Инициализируем ядро приложения
   initCore(); // Из ./core/init.js
   

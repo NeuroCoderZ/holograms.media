@@ -1,0 +1,457 @@
+// frontend/js/core/domEventHandlers.js
+
+import * as THREE from 'three';
+import { state } from './init.js';
+import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
+import axios from 'axios'; // Предполагаем, что axios доступен глобально или импортируется
+
+// Объект для хранения содержимого файлов для редактора
+const fileContents = {};
+
+// --- Universal Panel Toggling Logic (Improved) --- (Перенесено из script.js)
+function initializePanelState() {
+  const leftPanel = document.querySelector('.panel.left-panel');
+  const rightPanel = document.querySelector('.panel.right-panel');
+  const togglePanelsButton = document.querySelector('#togglePanelsButton');
+
+  if (!leftPanel || !rightPanel || !togglePanelsButton) {
+      console.error('Required elements not found for initializePanelState');
+      return;
+  }
+
+  // Получаем сохраненное состояние
+  const savedState = localStorage.getItem('panelsHidden');
+  const shouldBeHidden = savedState === 'true';
+
+  console.log(`[DEBUG] Initializing panel state. Saved state: ${savedState}, shouldBeHidden: ${shouldBeHidden}`);
+
+  // Применяем классы
+  leftPanel.classList.toggle('hidden', shouldBeHidden);
+  rightPanel.classList.toggle('hidden', shouldBeHidden);
+  togglePanelsButton.classList.toggle('show-mode', shouldBeHidden);
+
+  console.log(`[DEBUG] After init: leftPanel hidden=${leftPanel.classList.contains('hidden')}, rightPanel hidden=${rightPanel.classList.contains('hidden')}, button show-mode=${togglePanelsButton.classList.contains('show-mode')}`);
+
+  // Вызываем ресайз после применения классов
+  setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      console.log('Dispatched resize event after init timeout.');
+  }, 50);
+}
+
+function togglePanels() {
+  const leftPanel = document.querySelector('.panel.left-panel');
+  const rightPanel = document.querySelector('.panel.right-panel');
+  const togglePanelsButton = document.querySelector('#togglePanelsButton');
+
+  if (!leftPanel || !rightPanel || !togglePanelsButton) {
+      console.error('Required elements not found for togglePanels');
+      return;
+  }
+  const willBeHidden = !leftPanel.classList.contains('hidden');
+  console.log('Toggling panels, willBeHidden:', willBeHidden);
+
+  // Перемещаем кнопку в body, если она еще не там
+  if (togglePanelsButton.parentNode !== document.body) {
+      document.body.appendChild(togglePanelsButton);
+      console.log('Moved togglePanelsButton to body');
+  }
+
+  leftPanel.classList.toggle('hidden', willBeHidden);
+  rightPanel.classList.toggle('hidden', willBeHidden);
+  togglePanelsButton.classList.toggle('show-mode', willBeHidden);
+  localStorage.setItem('panelsHidden', willBeHidden.toString());
+
+  setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+  }, 50);
+}
+// --- End Universal Panel Toggling Logic ---
+
+// --- File Loading and Editor Setup --- (Перенесено из script.js)
+async function fetchAndStoreFile(filename) {
+  try {
+    const response = await fetch(filename); // Запрашиваем файл у сервера
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status} for ${filename}`);
+    }
+    const content = await response.text();
+    fileContents[filename] = content;
+    console.log(`Содержимое ${filename} загружено.`);
+    // Прокручиваем контейнер версий вниз после добавления всех элементов
+    const timelineContainer = document.getElementById('versionTimeline'); // Получаем сам контейнер
+    if (timelineContainer) {
+        // Используем requestAnimationFrame для гарантии, что DOM обновлен
+        requestAnimationFrame(() => {
+            timelineContainer.scrollTop = timelineContainer.scrollHeight;
+            console.log("Timeline scrolled to bottom.");
+        });
+    }
+
+  } catch (error) {
+    console.error(`Не удалось загрузить ${filename}:`, error);
+    fileContents[filename] = `// Ошибка загрузки ${filename}\n${error}`; // Записываем ошибку в контент
+  }
+}
+
+function setupFileEditor() {
+    const fileListElement = document.getElementById('fileList');
+    const fileContentTextAreaElement = document.getElementById('fileContent');
+    const saveFileButton = document.getElementById('saveFile');
+
+    if (fileListElement && fileContentTextAreaElement) {
+        console.log("Настройка обработчиков для списка файлов...");
+        fileListElement.querySelectorAll('li').forEach(item => {
+            item.addEventListener('click', () => {
+                const fileName = item.dataset.file;
+                console.log(`Клик по файлу: ${fileName}`);
+                if (Object.prototype.hasOwnProperty.call(fileContents, fileName)) {
+                    fileContentTextAreaElement.value = fileContents[fileName];
+                    fileContentTextAreaElement.dataset.currentFile = fileName; // Обновляем атрибут data-*
+                    fileListElement.querySelectorAll('li').forEach(li => {
+                        li.style.fontWeight = li.dataset.file === fileName ? 'bold' : 'normal';
+                    });
+                    console.log(`Отображен файл: ${fileName}`);
+                } else {
+                    console.warn(`Содержимое для ${fileName} не найдено в fileContents.`);
+                    fileContentTextAreaElement.value = `// Не удалось загрузить или найти содержимое ${fileName}`;
+                    fileContentTextAreaElement.dataset.currentFile = '';
+                     fileListElement.querySelectorAll('li').forEach(li => {
+                          li.style.fontWeight = 'normal';
+                     });
+                }
+            });
+        });
+    } else {
+         console.warn("Элементы списка файлов (#fileList) или редактора (#fileContent) не найдены.");
+    }
+
+    // Обработчик кнопки Save
+    if (saveFileButton && fileContentTextAreaElement) {
+         saveFileButton.addEventListener('click', () => {
+             const file = fileContentTextAreaElement.dataset.currentFile;
+             if (file && Object.prototype.hasOwnProperty.call(fileContents, file)) {
+                 fileContents[file] = fileContentTextAreaElement.value;
+                 console.log(`Содержимое ${file} сохранено локально (в fileContents).`);
+                 alert(`${file} сохранен локально.`);
+             } else {
+                 console.warn("Не выбран файл для сохранения.");
+                 alert("Не выбран файл для сохранения.");
+             }
+         });
+    } else {
+         console.warn("Кнопка сохранения (#saveFile) не найдена.");
+    }
+}
+
+async function loadInitialFilesAndSetupEditor() {
+    // Добавляем /static/ к путям
+    await Promise.all([
+        fetchAndStoreFile('/static/index.html'),
+        fetchAndStoreFile('/static/script.js'),
+        fetchAndStoreFile('/static/style.css')
+    ]).then(() => {
+        console.log("Начальное содержимое файлов загружено.");
+
+        const fileContentTextAreaElement = document.getElementById('fileContent');
+        const fileListElement = document.getElementById('fileList');
+        // Используем путь с /static/ для получения контента
+        if (fileContentTextAreaElement && fileContents['/static/script.js']) {
+             fileContentTextAreaElement.value = fileContents['/static/script.js'];
+             fileContentTextAreaElement.dataset.currentFile = '/static/script.js'; // Сохраняем правильный ключ
+              if (fileListElement) {
+                   fileListElement.querySelectorAll('li').forEach(item => {
+                       // Сравниваем data-атрибут (который должен быть без /static/) с 'script.js'
+                       item.style.fontWeight = item.dataset.file === 'script.js' ? 'bold' : 'normal';
+                   });
+              }
+        }
+        setupFileEditor();
+    }).catch(error => {
+         console.error("Критическая ошибка при загрузке начальных файлов:", error);
+    });
+}
+// --------------------------------------
+
+// --- Prompt Handling --- (Перенесено из script.js)
+function applyPrompt(prompt, model) {
+  // Сначала проверяем, активен ли режим Триа через функцию из модуля tria_mode.js
+  applyPromptWithTriaMode(prompt, model)
+    .then(result => {
+      // Если функция вернула результат (не false), значит запрос к Триа был выполнен
+      // и обработан внутри неё, поэтому выходим из функции
+      if (result) return;
+
+      // Если вернулся false, продолжаем стандартную логику отправки на /generate
+      console.log('Отправка промпта на /generate (стандартный режим)');
+      const spinner = document.getElementById('loading-spinner');
+      const submitButton = document.getElementById('submitTopPrompt');
+
+      // Показываем спиннер и блокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
+      spinner.style.display = 'block';
+      submitButton.disabled = true;
+
+      // Шаг 1: Отправка запроса на /generate (существующая логика)
+      axios.post('/generate', { prompt, model })
+        // ... существующий код для /generate ...
+        .then(generateResponse => {
+          // Этот блок выполняется после успешного ответа от /generate
+          console.log('Ответ от /generate:', generateResponse.data);
+          const backgroundColor = generateResponse.data.backgroundColor; // Получаем цвет фона
+          const generatedCode = generateResponse.data.generatedCode; // Получаем сгенерированный код
+
+          // --- ШАГ 1.5: ПРИМЕНЕНИЕ СГЕНЕРИРОВАННОГО КОДА ---
+          if (generatedCode) {
+            console.log("Пытаемся выполнить сгенерированный код...");
+            try {
+              // Используем Function constructor вместо прямого eval для некоторой изоляции
+              const executeCode = new Function('scene', 'mainSequencerGroup', 'THREE', generatedCode);
+              executeCode(state.scene, state.mainSequencerGroup, THREE); // Передаем нужные объекты из state в контекст
+              console.log("Сгенерированный код выполнен успешно.");
+            } catch (e) {
+              console.error("Ошибка выполнения сгенерированного кода:", e);
+              alert(`Ошибка выполнения сгенерированного кода:\n${e.message}\n\nПромт: ${prompt}`);
+              // Не прерываем создание версии, но сообщаем об ошибке
+            }
+          } else {
+            console.log("Сгенерированный код отсутствует, применение не требуется.");
+          }
+          // ---------------------------------------------
+
+          // Шаг 2: Подготовка данных и создание новой версии через /branches
+          const sceneStateObject = JSON.parse(JSON.stringify(state.scene.toJSON())); // Получаем состояние сцены как объект из state
+          // const previewDataURL = capturePreview(); // Получаем превью (пока не используется бэкендом)
+
+          console.log('Создание новой версии через POST /branches');
+          axios.post('/branches', {
+            branch: 'main', // Или текущая активная ветка
+            version_id: Date.now().toString(), // Простой ID на основе времени
+            scene_state: sceneStateObject,
+            prompt: prompt,
+            model: model,
+            // preview: previewDataURL // Пока не отправляем превью
+          })
+          .then(versionResponse => {
+            console.log('Новая версия создана:', versionResponse.data);
+            // Обновляем UI таймлайна версий
+            // updateVersionTimeline(versionResponse.data.versions);
+            // Логика обновления таймлайна должна быть в отдельном модуле UI
+          })
+          .catch(versionError => {
+            console.error('Ошибка при создании версии:', versionError);
+            alert(`Ошибка при создании версии:\n${versionError.message}`);
+          })
+          .finally(() => {
+            // Скрываем спиннер и разблокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
+            spinner.style.display = 'none';
+            submitButton.disabled = false;
+          });
+        })
+        .catch(generateError => {
+          console.error('Ошибка при генерации:', generateError);
+          alert(`Ошибка при генерации:\n${generateError.message}`);
+          // Скрываем спиннер и разблокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
+          spinner.style.display = 'none';
+          submitButton.disabled = false;
+        });
+    })
+    .catch(triaError => {
+      console.error('Ошибка в режиме Триа:', triaError);
+      alert(`Ошибка в режиме Триа:\n${triaError.message}`);
+      // Скрываем спиннер и разблокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
+      const spinner = document.getElementById('loading-spinner');
+      const submitButton = document.getElementById('submitTopPrompt');
+      spinner.style.display = 'none';
+      submitButton.disabled = false;
+    });
+}
+// --- End Prompt Handling ---
+
+export function initializeDOMEventHandlers() {
+  console.log('Initializing DOM event handlers...');
+
+  // Получение ссылок на элементы DOM
+  const fileButton = document.getElementById('fileButton');
+  const fileInput = document.getElementById('fileInput');
+  const fullscreenButton = document.getElementById('fullscreenButton');
+  const toggleCameraButton = document.getElementById('toggleCameraButton');
+  const githubButton = document.getElementById('githubButton');
+  const gestureRecordButton = document.getElementById('gestureRecordButton');
+  const scanButton = document.getElementById('scanButton');
+  const bluetoothButton = document.getElementById('bluetoothButton');
+  const gestureModal = document.getElementById('gestureModal');
+  const promptModal = document.getElementById('promptModal');
+  const closeGestureModal = document.getElementById('closeGestureModal');
+  const closePromptModal = document.getElementById('closePromptModal');
+  const startRecordingButton = document.getElementById('startRecordingButton');
+  const stopRecordingButton = document.getElementById('stopRecordingButton');
+  const gestureCanvas = document.getElementById('gestureCanvas');
+  const gestureStatus = document.getElementById('gestureStatus');
+  const promptText = document.getElementById('promptText');
+  const submitPromptButton = document.getElementById('submitPrompt');
+  const topPromptInput = document.getElementById('topPromptInput');
+  const submitTopPrompt = document.getElementById('submitTopPrompt');
+  const toggleFilesButton = document.getElementById('toggleFilesButton');
+  const integratedFileEditor = document.getElementById('integratedFileEditor');
+  const gestureArea = document.getElementById('gesture-area');
+
+  // --- Add Event Listeners --- (Перенесено из script.js)
+
+  // File Button and Input
+  if (fileButton && fileInput) {
+    fileButton.addEventListener('click', () => {
+      fileInput.click();
+      // Reset playhead position (related to audio player, might need refactoring)
+      const playhead = document.getElementById('playhead');
+      if (playhead) {
+        playhead.style.left = '0%';
+      }
+    });
+    fileInput.addEventListener('change', (event) => {
+      // Логика обработки загрузки файла (ранее в script.js, возможно, должна быть в audioFilePlayer.js)
+      // Сейчас просто логируем и очищаем input
+      console.log('File selected:', event.target.files[0].name);
+      // Очищаем значение input, чтобы событие 'change' срабатывало повторно для того же файла
+      event.target.value = '';
+    });
+  }
+
+  // Fullscreen Button
+  if (fullscreenButton) {
+    // Обработчик для кнопки развертывания - логика перенесена в fullscreen.js
+    // Здесь просто заглушка или вызов функции из fullscreen.js
+    fullscreenButton.addEventListener('click', () => {
+      console.log('Fullscreen button clicked - logic handled by fullscreen.js');
+      // toggleFullscreen(); // Предполагается, что эта функция импортируется или доступна глобально
+    });
+  }
+
+  // Toggle Camera Button (Assuming logic is in cameraManager.js)
+  if (toggleCameraButton) {
+    toggleCameraButton.addEventListener('click', () => {
+      console.log('Toggle Camera button clicked - logic handled by cameraManager.js');
+      // toggleCameraView(); // Предполагается, что эта функция импортируется или доступна глобально
+    });
+  }
+
+  // GitHub Button
+  if (githubButton) {
+    githubButton.addEventListener('click', () => {
+      window.open('https://github.com/NeuroCoderZ/holograms.media', '_blank', 'noopener,noreferrer');
+    });
+  }
+
+  // Gesture Record Button
+  if (gestureRecordButton) {
+    gestureRecordButton.addEventListener('click', () => {
+      console.log('Gesture Record button clicked - logic handled elsewhere');
+      // startGestureRecording(); // Предполагается, что эта функция импортируется или доступна глобально
+    });
+  }
+
+  // Scan Button
+  if (scanButton) {
+    scanButton.addEventListener('click', () => {
+      console.log('Scan button clicked - logic handled elsewhere');
+      // startScan(); // Предполагается, что эта функция импортируется или доступна глобально
+    });
+  }
+
+  // Bluetooth Button
+  if (bluetoothButton) {
+    bluetoothButton.addEventListener('click', () => {
+      console.log('Bluetooth button clicked - logic handled elsewhere');
+      // connectBluetooth(); // Предполагается, что эта функция импортируется или доступна глобально
+    });
+  }
+
+  // Gesture Modal Close Button
+  if (closeGestureModal && gestureModal) {
+    closeGestureModal.addEventListener('click', () => {
+      gestureModal.style.display = 'none';
+    });
+  }
+
+  // Prompt Modal Close Button
+  if (closePromptModal && promptModal) {
+    closePromptModal.addEventListener('click', () => {
+      promptModal.style.display = 'none';
+    });
+  }
+
+  // Submit Prompt Button (Modal)
+  if (submitPromptButton && promptText && promptModal) {
+    submitPromptButton.addEventListener('click', () => {
+      const prompt = promptText.value.trim();
+      if (prompt) {
+        applyPrompt(prompt, document.getElementById('modelSelect').value); // Используем перенесенную applyPrompt
+        promptText.value = '';
+        promptModal.style.display = 'none';
+      } else {
+        alert('Пожалуйста, введите промпт.');
+      }
+    });
+  }
+
+  // Top Prompt Bar Submit Button
+  if (submitTopPrompt && topPromptInput) {
+    submitTopPrompt.addEventListener('click', () => {
+      const prompt = topPromptInput.value.trim();
+      if (prompt) {
+        applyPrompt(prompt, document.getElementById('modelSelect').value); // Используем перенесенную applyPrompt
+        topPromptInput.value = '';
+      }
+    });
+  }
+
+  // Top Prompt Bar Input (KeyPress)
+  if (topPromptInput && submitTopPrompt) {
+    topPromptInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        submitTopPrompt.click();
+      }
+    });
+  }
+
+  // Toggle Files Button
+  if (toggleFilesButton && integratedFileEditor) {
+      toggleFilesButton.addEventListener('click', () => {
+          const isVisible = integratedFileEditor.style.display !== 'none';
+          integratedFileEditor.style.display = isVisible ? 'none' : 'block';
+      });
+  }
+
+  // Gesture Area Click Listener
+  if (gestureArea) {
+    gestureArea.addEventListener('click', () => {
+      // Логика записи жестов (предполагается в другом модуле)
+      console.log('Gesture area clicked - logic handled elsewhere');
+      // if (!isGestureRecording) {
+      //   startGestureRecording();
+      // } else {
+      //   stopGestureRecording();
+      // }
+    });
+  } else {
+    console.warn("Элемент #gesture-area не найден.");
+  }
+
+  // Initialize panel state and add event listener for togglePanelsButton
+  // Note: The DOMContentLoaded listener was in script.js, but the logic
+  // for panels is now in initializePanelState and togglePanels.
+  // We call initializePanelState here directly, assuming this function
+  // is called after DOMContentLoaded in main.js.
+  initializePanelState(); // Инициализируем состояние панелей при загрузке модуля
+  const togglePanelsButton = document.querySelector('#togglePanelsButton');
+  if (togglePanelsButton) {
+      togglePanelsButton.addEventListener('click', togglePanels); // Добавляем обработчик для кнопки переключения панелей
+  }
+
+  // Load initial files for editor
+  loadInitialFilesAndSetupEditor();
+
+  console.log('DOM event handlers initialized.');
+}
+
+// Export helper functions if needed elsewhere, otherwise keep them local
+// export { applyPrompt, fetchAndStoreFile, setupFileEditor, loadInitialFilesAndSetupEditor };
