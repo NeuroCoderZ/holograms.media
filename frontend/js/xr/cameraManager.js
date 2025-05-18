@@ -2,9 +2,9 @@
 import * as THREE from 'three';
 import { state } from '../core/init.js';
 
-let isXRMode = false;
-let currentStream = null;
-let videoElement = null;
+let isXRMode = false; // Объявление на уровне модуля
+let currentStream = null; // Объявление на уровне модуля
+let videoElement = null; // Объявление на уровне модуля
 
 /**
  * Настраивает и управляет видеопотоком с камеры для XR-режима.
@@ -128,9 +128,7 @@ function toggleXRMode() {
 // TODO: Возможно, потребуется импортировать MediaPipe Hands, если setupFingerTracking будет использовать его напрямую.
 // import { Hands } from '@mediapipe/hands';
 
-let isXRMode = false;
-let currentStream = null;
-let videoElement = null;
+
 // TODO: Возможно, потребуется импортировать drawHandLandmarks или перенести ее сюда.
 // import { drawHandLandmarks } from './utils'; // Пример
 
