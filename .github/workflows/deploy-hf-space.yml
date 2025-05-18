@@ -8,16 +8,17 @@ on:
 jobs:
   deploy_to_hf_space:
     runs-on: ubuntu-latest
-    name: Trigger HF Space Rebuild
+    name: Trigger HF Space Rebuild and Notify Tria
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Trigger HF Space Restart
+        id: restart_space # Добавляем id для этого шага, чтобы ссылаться на его результат
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN_SPACES_CONTROL }}
-          SPACE_ID: "NeuroCoderZ/holograms-media"
+          SPACE_ID: "NeuroCoderZ/holograms.media"
         run: |
           set -e
           
@@ -33,7 +34,9 @@ jobs:
           echo "Using API endpoint: ${API_URL}"
           
           echo "Sending POST request to Hugging Face API..."
-          response_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+          # Сохраняем вывод curl, включая HTTP-код и тело ответа в случае ошибки
+          response_output_file=$(mktemp)
+          response_code=$(curl -s -o "$response_output_file" -w "%{http_code}" -X POST \
             -H "Authorization: Bearer $HF_TOKEN" \
             "${API_URL}")
             
@@ -41,9 +44,69 @@ jobs:
           
           if [ "$response_code" -eq 200 ] || [ "$response_code" -eq 202 ]; then
             echo "✓ Space restart command sent successfully (HTTP $response_code)"
+            echo "::set-output name=restart_status::SUCCESS" # Устанавливаем выходную переменную
           else
             echo "Error: Failed to trigger Space restart. HTTP status code: $response_code"
             echo "Fetching error details..."
-            curl -X POST -H "Authorization: Bearer $HF_TOKEN" "${API_URL}"
-            exit 1
+            cat "$response_output_file" # Выводим тело ответа, если была ошибка
+            echo "::set-output name=restart_status::FAILURE" # Устанавливаем выходную переменную
+            # exit 1 # Решаем, прерывать ли workflow или просто отправить статус FAILURE
+          fi
+          rm -f "$response_output_file"
+
+      - name: Send Deployment Status to Tria
+        # Этот шаг выполняется всегда, но отправляет разный статус
+        # if: always() # Можно использовать, если нужно отправлять статус даже при ошибке предыдущего шага
+        env:
+          TRIA_LOG_ENDPOINT: "https://neurocoderz-holograms-media.hf.space/tria/save_logs" # ЗАМЕНИТЕ НА ВАШ АКТУАЛЬНЫЙ URL, ЕСЛИ ОН ДРУГОЙ
+          COMMIT_SHA: ${{ github.sha }}
+          REPO_NAME: ${{ github.repository }}
+          WORKFLOW_RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          # Используем результат предыдущего шага
+          DEPLOY_STATUS: ${{ steps.restart_space.outputs.restart_status || 'UNKNOWN' }} 
+        run: |
+          echo "Sending deployment status to Tria..."
+          echo "Deployment Status: $DEPLOY_STATUS"
+          echo "Commit SHA: $COMMIT_SHA"
+          echo "Repository: $REPO_NAME"
+          echo "Workflow Run URL: $WORKFLOW_RUN_URL"
+          echo "Tria Log Endpoint: $TRIA_LOG_ENDPOINT"
+
+          # Формируем JSON payload
+          # Важно: экранируйте кавычки внутри JSON, если используете одинарные кавычки для sh
+          # Используем jq для безопасного создания JSON, если он доступен, или формируем строку
+          # Пример с формированием строки (убедитесь в корректном экранировании):
+          JSON_PAYLOAD=$(cat <<EOF
+          {
+            "status": "$DEPLOY_STATUS",
+            "build_url": "$WORKFLOW_RUN_URL",
+            "commit_sha": "${COMMIT_SHA:0:7}", 
+            "repository": "$REPO_NAME",
+            "source": "GitHub Actions",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+          )
+
+          echo "JSON Payload to send:"
+          echo "$JSON_PAYLOAD"
+          
+          # Отправляем POST-запрос
+          # Добавляем -f (fail silently on server errors) чтобы workflow не падал, если эндпоинт Триа недоступен
+          # Но логируем ответ
+          curl_response_tria=$(curl -s -w "\nHTTP_STATUS_TRIA:%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d "$JSON_PAYLOAD" \
+            "$TRIA_LOG_ENDPOINT")
+            
+          echo "Response from Tria endpoint:"
+          echo "$curl_response_tria"
+
+          # Проверяем HTTP_STATUS_TRIA (последняя строка вывода curl)
+          http_status_tria=$(echo "$curl_response_tria" | tail -n1 | cut -d: -f2)
+          if [ "$http_status_tria" -eq 200 ] || [ "$http_status_tria" -eq 201 ]; then
+            echo "✓ Successfully sent status to Tria (HTTP $http_status_tria)."
+          else
+            echo "Warning: Failed to send status to Tria or Tria endpoint returned an error (HTTP $http_status_tria)."
+            # Не прерываем workflow из-за этого, но логируем
           fi
