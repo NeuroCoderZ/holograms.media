@@ -372,123 +372,15 @@ function updateTouchSensitivity() {
   TOUCH_SENSITIVITY = BASE_TOUCH_SENSITIVITY; // Keep it fixed
 }
 
-function createSphere(color, radius) {
-  const geometry = new THREE.SphereGeometry(radius * 0.5, 32, 32);
-  const material = new THREE.MeshBasicMaterial({
-    color,
-    depthTest: false,
-    depthWrite: false,
-    transparent: false,
-    fog: false
-  });
-  return new THREE.Mesh(geometry, material);
-}
+// Функция createSphere импортируется из модуля rendering.js
 
-function createLine(start, end, color, opacity) {
-  const material = new THREE.LineBasicMaterial({
-    color,
-    opacity,
-    transparent: true,
-    depthTest: false
-  });
-  const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-  return new THREE.Line(geometry, material);
-}
+// Функция createLine импортируется из модуля rendering.js
 
-function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
-  const axisGroup = new THREE.Group();
-
-  // X-axis - Red for positive, Purple for negative
-  const xAxisGroup = new THREE.Group();
-  const xAxisOffset = isLeftGrid ? GRID_WIDTH : 0;
-
-  if (isLeftGrid) {
-    // Negative X - Purple
-    const xAxisNeg = createSphere(0x9400d3, sphereRadius);
-    xAxisNeg.position.set(-length, 0, 0);
-    const xAxisLineNeg = createLine(
-      new THREE.Vector3(-length, 0, 0),
-      new THREE.Vector3(0, 0, 0),
-      0x9400d3,
-      1.0
-    );
-    xAxisGroup.add(xAxisNeg, xAxisLineNeg);
-  } else {
-    // Positive X - Red
-    const xAxisPos = createSphere(0xFF0000, sphereRadius);
-    xAxisPos.position.set(length, 0, 0);
-    const xAxisLinePos = createLine(
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(length, 0, 0),
-      0xFF0000,
-      1.0
-    );
-    xAxisGroup.add(xAxisPos, xAxisLinePos);
-  }
-
-  // Y-axis - Green
-  const yAxisGroup = new THREE.Group();
-  const yAxis = createSphere(yColor, sphereRadius);
-  yAxis.position.set(0, GRID_HEIGHT, 0);
-  const yAxisLine = createLine(
-    new THREE.Vector3(0, 0, 0),
-    new THREE.Vector3(0, GRID_HEIGHT, 0),
-    0x00FF00,
-    1.0
-  );
-  yAxisGroup.add(yAxis, yAxisLine);
-
-  // Z-axis - White
-  const zAxisGroup = new THREE.Group();
-  const zAxis = createSphere(0xFFFFFF, sphereRadius);
-  zAxis.position.set(0, 0, length);
-  const zAxisLine = createLine(
-    new THREE.Vector3(0, 0, 0),
-    new THREE.Vector3(0, 0, length),
-    0xFFFFFF,
-    1.0
-  );
-  zAxisGroup.add(zAxis, zAxisLine);
-
-  // Position all axes relative to the proper offset
-  [xAxisGroup, yAxisGroup, zAxisGroup].forEach(group => {
-    group.position.set(xAxisOffset, 0, 0);
-    axisGroup.add(group);
-  });
-
-  return axisGroup;
-}
+// Функция createAxis импортируется из модуля rendering.js
 
 // Функция createSequencerGrid теперь импортируется из sceneSetup.js
 
-function createGrid(gridWidth, gridHeight, gridDepth, cellSize, color) {
-  const geometry = new THREE.BufferGeometry();
-  const positions = [];
-  for (let y = 0; y <= gridHeight; y += 1) {
-    for (let z = 0; z <= gridDepth; z += 1) {
-      positions.push(0, y * cellSize, z * cellSize, gridWidth * cellSize, y * cellSize, z * cellSize);
-    }
-  }
-  for (let x = 0; x <= gridWidth; x += 1) {
-    for (let z = 0; z <= gridDepth; z += 1) {
-      positions.push(x * cellSize, 0, z * cellSize, x * cellSize, gridHeight * cellSize, z * cellSize);
-    }
-  }
-  for (let z = 0; z <= gridWidth; z += 1) {
-    for (let y = 0; y <= gridHeight; y += 1) {
-      positions.push(z * cellSize, y * cellSize, 0, z * cellSize, y * cellSize, gridDepth * cellSize);
-    }
-  }
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  const material = new THREE.LineBasicMaterial({
-    color,
-    opacity: 0.003,
-    transparent: true,
-    depthWrite: false,
-    depthTest: false
-  });
-  return new THREE.LineSegments(geometry, material);
-}
+// Функция createGrid импортируется из модуля rendering.js
 
 // Функции initializeColumns, getSemitoneLevels и updateSequencerColumns теперь импортируются из rendering.js
 // Для обратной совместимости добавляем функцию, которая использует локальные группы
