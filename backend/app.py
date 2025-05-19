@@ -118,14 +118,19 @@ code_generator_tool: Optional[Tool] = None
 read_file_tool: Optional[Tool] = None
 
 # --- Прочие ---
-# !!! ВАЖНО: Пути к статике скорректированы, так как app.py теперь в корне !!!
-PROJECT_ROOT = os.path.dirname(__file__) # Корень проекта там же, где app.py
-FRONTEND_DIR = os.path.abspath(os.path.join(PROJECT_ROOT, 'frontend')) # frontend/ относительно корня
+# Определяем корень проекта относительно текущего файла app.py
+# __file__ будет /app/backend/app.py в контейнере
+# os.path.dirname(__file__) -> /app/backend
+# os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) -> /app (это будет наш корень проекта в контейнере)
+APP_PY_DIR = os.path.dirname(__file__)
+PROJECT_ROOT_IN_CONTAINER = os.path.abspath(os.path.join(APP_PY_DIR, '..'))
+
+FRONTEND_DIR = os.path.join(PROJECT_ROOT_IN_CONTAINER, 'frontend')
 INDEX_HTML_PATH = os.path.join(FRONTEND_DIR, 'index.html')
 
-print(f"[DEBUG] PROJECT_ROOT: {PROJECT_ROOT}")
-print(f"[DEBUG] FRONTEND_DIR: {FRONTEND_DIR}")
-print(f"[DEBUG] INDEX_HTML_PATH: {INDEX_HTML_PATH}")
+print(f"[DEBUG] (Corrected) PROJECT_ROOT_IN_CONTAINER: {PROJECT_ROOT_IN_CONTAINER}")
+print(f"[DEBUG] (Corrected) FRONTEND_DIR: {FRONTEND_DIR}")
+print(f"[DEBUG] (Corrected) INDEX_HTML_PATH: {INDEX_HTML_PATH}")
 
 
 # ----------------------------------------------------------------------
