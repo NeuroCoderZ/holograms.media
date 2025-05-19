@@ -32,6 +32,7 @@ import { initializeXRMode } from './xr/cameraManager.js'; // Модуль упр
 import { setupChat } from './ai/chat.js'; // Путь исправлен
 import { initializeTria } from './ai/tria.js'; // Путь исправлен
 import { setupDOMEventHandlers } from './domEventHandlers.js'; // Импорт нового модуля обработчиков событий DOM
+import { initializeResizeHandler } from './core/resizeHandler.js'; // Импорт обработчика изменения размера окна
 
 // import { loadSettings, saveSettings } from '/static/js/utils/storage.js'; // TODO: Module for storage utils not found, related code disabled
 // import { debounce, throttle } from '/static/js/utils/helpers.js'; // TODO: Module for helper utils not found, related code disabled
@@ -52,6 +53,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Инициализация обработчиков событий DOM
   setupDOMEventHandlers();
+
+  // Инициализируем обработчик изменения размера окна
+  initializeResizeHandler();
 
   // Инициализируем ядро приложения
   initCore(); // Из ./core/init.js
@@ -88,12 +92,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Инициализируем систему отслеживания жестов
   // TODO: Module for gestures (e.g., initializeHandTracking, initializeGestureDetection) not found, related code disabled
-  // try {
-  //   initializeHandTracking();
-  //   initializeGestureDetection();
-  // } catch (error) {
-  //   console.error('Ошибка инициализации системы жестов:', error);
-  // }
+  try {
+    // initializeHandTracking(); // Перенесено в handsTracking.js
+    // initializeGestureDetection(); // TODO: Module for gesture detection not found, related code disabled
+    initializeMediaPipeHands(); // Инициализация MediaPipe Hands
+  } catch (error) {
+    console.error('Ошибка инициализации системы жестов:', error);
+  }
   
   // Инициализируем ИИ компоненты
   initializeTria(); // Из ./ai/tria.js
