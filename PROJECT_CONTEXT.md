@@ -9,8 +9,10 @@
 
 ## Последние Ключевые Изменения
 - [YYYY-MM-DD] Рефакторинг script.js: логика аудио плеера и XR вынесена в модули audioFilePlayer.js и cameraManager.js.
-- [2023-11-15] Устранены ошибки дублирования объявлений для createSphere/Line/Axis/Grid в script.js.
-- [YYYY-MM-DD] Устранены ошибки JS в cameraManager.js и script.js.
+                                                        - [2023-11-15] Устранены ошибки дублирования объявлений для createSphere/Line/Axis/Grid в script.js.
+- [YYYY-MM-DD] Устранены SyntaxError в script.js (unexpected token '}') и uiManager.js (duplicate export).
+- [2024-07-29] Рефакторинг script.js: обработчик события resize вынесен в модуль resizeHandler.js.
+- [YYYY-MM-DD] Устранены SyntaxError в script.js (unexpected token '}') и uiManager.js (duplicate export 'logLayoutState').
 # Актуальный Контекст Проекта Holograms Media
 
 ## 0. Важная Информация для AI
@@ -76,8 +78,9 @@
 
 ## 8. Критические Известные Проблемы
 
-1. **КРИТИЧНО:** Устранение блокирующих JS ошибок в `script.js` для обеспечения загрузки фронтенда. (Частично выполнено, но могут быть новые ошибки после рефакторинга).
+- Critical: Continue refactoring `frontend/script.js` and resolve any remaining JS errors.
 2. **РЕФАКТОРИНГ `frontend/script.js`:** Последовательный перенос логики в модули. (Продолжается. Код `micButton` перенесен. Проверены `cameraManager.js`, `chat.js`, `uiManager.js`, `events.js`, `main.js` - переменные объявлены корректно, инициализация чата и проверки UI элементов присутствуют, порядок вызовов в `main.js` логичен).
+
 
 ## 9. Фокус на AI "Триа" и Жестах (Долгосрочно)
 

@@ -67,7 +67,7 @@ export const uiElements = {
 /**
  * Инициализирует состояние панелей (видимость/скрытие)
  */
-export function initializePanelState() {
+function initializePanelState() {
   // Проверяем наличие панелей
   if (!uiElements.leftPanel || !uiElements.rightPanel || !uiElements.togglePanelsButton) {
     console.error('Не удалось найти панели интерфейса для initializePanelState');
@@ -143,39 +143,13 @@ export function addDebugClasses() {
   });
 }
 
-/**
- * Логирует состояние макета
- */
-export function logLayoutState() {
-  // Логи закомментированы, как требуется в задании
-  /*
-  // Логируем состояние голограммы
-  console.log('[Layout] Hologram state:', {
-    position: hologramPivot.position.toArray(),
-    scale: hologramPivot.scale.toArray(),
-    rotation: hologramPivot.rotation.toArray()
-  });
-
-  // Логируем размеры панели
-  const leftPanel = document.querySelector('.panel.left-panel');
-  if (leftPanel) {
-    console.log('[Layout] Left panel dimensions:', {
-      width: leftPanel.offsetWidth,
-      buttonSize: getComputedStyle(document.documentElement).getPropertyValue('--button-size')
-    });
-  }
-
-  // Логируем стили меток
-  const versionLabel = document.querySelector('.version-label');
-  if (versionLabel) {
-    const styles = getComputedStyle(versionLabel);
-    console.log('[Layout] Version label styles:', {
-      fontSize: styles.fontSize,
-      lineHeight: styles.lineHeight,
-      transform: styles.transform
-    });
-  }
-  */
+function logLayoutState() {
+  console.log('Текущее состояние макета UI:');
+  console.log('Левая панель:', uiElements.leftPanel ? uiElements.leftPanel.getBoundingClientRect() : 'не найдена');
+  console.log('Правая панель:', uiElements.rightPanel ? uiElements.rightPanel.getBoundingClientRect() : 'не найдена');
+  console.log('Контейнер сетки:', uiElements.gridContainer ? uiElements.gridContainer.getBoundingClientRect() : 'не найдена');
+  console.log('Область жестов:', uiElements.gestureArea ? uiElements.gestureArea.getBoundingClientRect() : 'не найдена');
+  console.log('Контейнер чата:', uiElements.containers.chatMessages ? uiElements.containers.chatMessages.getBoundingClientRect() : 'не найдена');
 }
 
 /**
@@ -262,7 +236,7 @@ export function toggleChatMode() {
 }
 
 // Экспортируем функции, которые могут понадобиться другим модулям
-export { initializePanelState, togglePanels, getPanelWidths, addDebugClasses, logLayoutState, toggleChatMode };
+export { initializePanelState, togglePanels, getPanelWidths, addDebugClasses, logLayoutState, initializeMainUI, toggleChatMode };
 
 // TODO: Добавить инициализацию других UI элементов по мере необходимости
 // TODO: Рассмотреть возможность использования более надежного способа получения элементов, например, через классы или атрибуты данных, если ID не уникальны или могут меняться.
