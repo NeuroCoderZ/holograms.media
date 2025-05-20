@@ -1,7 +1,6 @@
 // frontend/js/ui/mainUI.js - Модуль для инициализации основного UI и обработчиков событий
 
 // Импортируем необходимые функции
-import { loadChatHistory } from '../../script.js';
 
 // Объект для хранения ссылок на DOM-элементы
 const uiElements = {

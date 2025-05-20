@@ -22,17 +22,20 @@ import { initializeXRMode } from './xr/cameraManager.js'; // Модуль упр
 // import { initAudioVisualization } from '/static/js/audio/visualization.js'; // TODO: Module for audio visualization not found, related code disabled
 // TODO: Рассмотреть импорт './audio/speechInput.js' если он нужен здесь
 
-// import { initScene, setupCamera, animate } from '/static/js/3d/scene.js'; // TODO: Module for 3D scene not found, related code disabled
-// import { createHologram } from '/static/js/3d/hologram.js'; // TODO: Module for 3D hologram not found, related code disabled
-// import { initializeGrid } from '/static/js/3d/grid.js'; // TODO: Module for 3D grid not found, related code disabled
+import { initializeScene } from './3d/sceneSetup.js'; // Импорт инициализации сцены
+import { animate } from './rendering.js'; // Импорт функции анимации
 
 // import { initializeGestureDetection } from '/static/js/gestures/detection.js'; // TODO: Module for gesture detection not found, related code disabled
 // import { initializeHandTracking } from '/static/js/gestures/tracking.js'; // TODO: Module for hand tracking not found, related code disabled
 
 import { setupChat } from './ai/chat.js'; // Путь исправлен
 import { initializeTria } from './ai/tria.js'; // Путь исправлен
-import { setupDOMEventHandlers } from './domEventHandlers.js'; // Импорт нового модуля обработчиков событий DOM
+import { setupDOMEventHandlers } from './core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
 import { initializeResizeHandler } from './core/resizeHandler.js'; // Импорт обработчика изменения размера окна
+import { initializePromptManager } from './ui/promptManager.js'; // Импорт менеджера промптов
+import { initializeVersionManager } from './ui/versionManager.js'; // Импорт менеджера версий
+import { initializeGestureAreaVisualization } from './ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
+import { initializeChatDisplay } from '/static/js/panels/chatMessages.js'; // Импорт инициализации чата
 
 // import { loadSettings, saveSettings } from '/static/js/utils/storage.js'; // TODO: Module for storage utils not found, related code disabled
 // import { debounce, throttle } from '/static/js/utils/helpers.js'; // TODO: Module for helper utils not found, related code disabled
@@ -57,6 +60,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Инициализируем обработчик изменения размера окна
   initializeResizeHandler();
 
+  // Инициализируем менеджер промптов
+  initializePromptManager();
+
+  // Инициализируем менеджер версий
+  initializeVersionManager();
+
+  // Инициализируем визуализацию области жестов
+  initializeGestureAreaVisualization();
+
+  // Инициализируем отображение чата (DOM)
+  initializeChatDisplay();
+
   // Инициализируем ядро приложения
   initCore(); // Из ./core/init.js
   
@@ -78,9 +93,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Инициализируем управление XR режимом
   initializeXRMode(); // Из ./xr/cameraManager.js
   
-  // Инициализация 3D сцены происходит в initCore() через sceneSetup.js
-// Отдельный вызов не требуется, так как initializeThreeJSScene вызывается внутри initCore()
-  
+  // Инициализируем 3D сцену
+  initializeScene(); // Вызываем инициализацию сцены
+
   // Инициализируем аудио
   // TODO: Module for audio processing (e.g., initAudio, initAudioVisualization) not found, related code disabled
   // try {
@@ -95,6 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     // initializeHandTracking(); // Перенесено в handsTracking.js
     // initializeGestureDetection(); // TODO: Module for gesture detection not found, related code disabled
+    import { initializeMediaPipeHands } from './multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
     initializeMediaPipeHands(); // Инициализация MediaPipe Hands
   } catch (error) {
     console.error('Ошибка инициализации системы жестов:', error);
@@ -108,13 +124,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners(); // Из ./core/events.js
   
   // Запускаем анимационный цикл
-  // TODO: Module for 3D scene (animate) not found, related code disabled
-  // try {
-  //   animate();
-  // } catch (error) {
-  //   console.error('Ошибка запуска анимационного цикла:', error);
-  // }
-  
+  animate(); // Вызываем функцию анимации
+
   console.log('Инициализация завершена (с отключенными отсутствующими модулями)!');
   
   // Запускаем диагностику фронтенда

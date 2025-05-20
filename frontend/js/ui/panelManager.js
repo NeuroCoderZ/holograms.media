@@ -13,46 +13,68 @@ function initializePanelState() {
   leftPanel = document.getElementById('left-panel');
   rightPanel = document.getElementById('right-panel');
   togglePanelsButton = document.getElementById('togglePanelsButton');
-  
-  // Проверяем наличие панелей
-  if (!leftPanel || !rightPanel) {
-    console.error('Не удалось найти панели интерфейса');
+
+  // Проверяем наличие панелей и кнопки
+  if (!leftPanel || !rightPanel || !togglePanelsButton) {
+    console.error('Не удалось найти все необходимые элементы для управления панелями');
     return;
   }
-  
-  // Проверяем сохраненное состояние панелей в localStorage
-  const isPanelsHidden = localStorage.getItem('isPanelsHidden') === 'true';
-  
-  // Устанавливаем начальное состояние на основе сохраненного значения
-  if (isPanelsHidden) {
-    leftPanel.classList.add('hidden');
-    rightPanel.classList.add('hidden');
-  } else {
-    leftPanel.classList.remove('hidden');
-    rightPanel.classList.remove('hidden');
-  }
-  
-  console.log(`Состояние панелей инициализировано (${isPanelsHidden ? 'скрыты' : 'показаны'})`);
+
+  // Получаем сохраненное состояние
+  const savedState = localStorage.getItem('panelsHidden');
+  const shouldBeHidden = savedState === 'true';
+
+  console.log(`[DEBUG] Initializing panel state. Saved state: ${savedState}, shouldBeHidden: ${shouldBeHidden}`);
+
+  // Применяем классы
+  leftPanel.classList.toggle('hidden', shouldBeHidden);
+  rightPanel.classList.toggle('hidden', shouldBeHidden);
+  togglePanelsButton.classList.toggle('show-mode', shouldBeHidden);
+
+  console.log(`[DEBUG] After init: leftPanel hidden=${leftPanel.classList.contains('hidden')}, rightPanel hidden=${rightPanel.classList.contains('hidden')}, button show-mode=${togglePanelsButton.classList.contains('show-mode')}`);
+
+  // Вызываем ресайз после применения классов
+  // Небольшая задержка для гарантии применения стилей
+  setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      console.log('Dispatched resize event after panel init timeout.');
+  }, 50);
+
+  console.log(`Состояние панелей инициализировано (${shouldBeHidden ? 'скрыты' : 'показаны'})`);
 }
 
 /**
  * Переключает видимость боковых панелей
  */
 function togglePanels() {
-  if (!leftPanel || !rightPanel) {
-    console.error('Панели не инициализированы');
+  if (!leftPanel || !rightPanel || !togglePanelsButton) {
+    console.error('Панели или кнопка не инициализированы');
     return;
   }
-  
-  // Переключаем класс hidden для обеих панелей
-  leftPanel.classList.toggle('hidden');
-  rightPanel.classList.toggle('hidden');
-  
+
+  const willBeHidden = !leftPanel.classList.contains('hidden');
+  console.log('Toggling panels, willBeHidden:', willBeHidden);
+
+  // Перемещаем кнопку в body, если она еще не там (логика из script.js)
+  if (togglePanelsButton.parentNode !== document.body) {
+      document.body.appendChild(togglePanelsButton);
+      console.log('Moved togglePanelsButton to body');
+  }
+
+  // Переключаем классы
+  leftPanel.classList.toggle('hidden', willBeHidden);
+  rightPanel.classList.toggle('hidden', willBeHidden);
+  togglePanelsButton.classList.toggle('show-mode', willBeHidden);
+
   // Сохраняем состояние в localStorage
-  const isPanelsHidden = leftPanel.classList.contains('hidden');
-  localStorage.setItem('isPanelsHidden', isPanelsHidden);
-  
-  console.log(`Панели ${isPanelsHidden ? 'скрыты' : 'показаны'}`);
+  localStorage.setItem('panelsHidden', willBeHidden.toString());
+
+  // Вызываем ресайз после переключения
+  setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+  }, 50);
+
+  console.log(`Панели ${willBeHidden ? 'скрыты' : 'показаны'}`);
 }
 
 /**
