@@ -75,7 +75,7 @@ function initializePanelState() {
     return;
   }
   
-  // Загружаем сохраненное состояние
+  // Загружаем сохраненное состояние через appStatePersistence
   const shouldBeHidden = loadPanelState();
 
   // Применяем классы, если состояние было загружено
@@ -107,7 +107,7 @@ export function togglePanels() {
   // Переключаем класс для кнопки
   uiElements.togglePanelsButton.classList.toggle('show-mode');
   
-  // Сохраняем состояние
+  // Сохраняем состояние через appStatePersistence
   const isPanelsHidden = uiElements.leftPanel.classList.contains('hidden');
   savePanelState(isPanelsHidden);
   
@@ -238,7 +238,7 @@ export function toggleChatMode() {
 }
 
 // Экспортируем функции, которые могут понадобиться другим модулям
-export { initializePanelState, togglePanels, getPanelWidths, addDebugClasses, logLayoutState, initializeMainUI, toggleChatMode };
+export { initializePanelState, logLayoutState, toggleChatMode }; // Удален дублирующий экспорт addDebugClasses
 
 // TODO: Добавить инициализацию других UI элементов по мере необходимости
 // TODO: Рассмотреть возможность использования более надежного способа получения элементов, например, через классы или атрибуты данных, если ID не уникальны или могут меняться.
