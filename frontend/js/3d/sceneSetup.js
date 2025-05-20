@@ -1,3 +1,14 @@
+import * as THREE from 'three';
+import { state } from '../core/init.js';
+import { semitones } from '../rendering.js';
+
+// Константы для сетки
+const GRID_WIDTH = 130;
+const GRID_HEIGHT = 260;
+const GRID_DEPTH = 130;
+const CELL_SIZE = 1;
+const SPHERE_RADIUS = 5;
+
 function createSphere(color, radius) {
   const geometry = new THREE.SphereGeometry(radius * 0.5, 32, 32);
   const material = new THREE.MeshBasicMaterial({
@@ -153,6 +164,15 @@ function createColumn(offsetX, index, initialDB, isLeft) {
   return columnGroup;
 }
 
+// Функция для вычисления ширины колонок на основе индекса
+function degreesToCells(index) {
+  const maxWidth = 130;
+  const minWidth = 1;
+  const totalSemitones = 130;
+  const width = maxWidth - index / (totalSemitones - 1) * (maxWidth - minWidth);
+  return Math.max(minWidth, Math.round(width));
+}
+
 function initializeColumns() {
   const columns = [];
   semitones.forEach((semitone, i) => {
@@ -236,8 +256,8 @@ function calculateInitialScale(camera, hologramPivot) {
   return targetWidth / currentWidth;
 }
 
-
-
+// Функция инициализации сцены
+export function initializeScene() {
   // Создание групп для секвенсоров и пивота
   state.hologramPivot = new THREE.Group();
   state.mainSequencerGroup = new THREE.Group();
@@ -267,14 +287,11 @@ function calculateInitialScale(camera, hologramPivot) {
   state.mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0);
   state.hologramPivot.position.set(0, 0, 0); // Начальная позиция пивота
   state.mainSequencerGroup.rotation.set(0, 0, 0);
-
-  // Возвращаем объекты через state
-  // return { scene, camera, renderer, hologramPivot, mainSequencerGroup, leftSequencerGroup, rightSequencerGroup };
+}
 
 
 // Экспортируем функции и объекты для использования в других модулях
 export {
-  semitones,
   createSphere,
   createLine,
   createAxis,
@@ -285,5 +302,7 @@ export {
   updateSequencerColumns,
   processAudio,
   updateColumnMesh,
-  calculateInitialScale
+  calculateInitialScale,
+  degreesToCells,
+  initializeScene
 };
