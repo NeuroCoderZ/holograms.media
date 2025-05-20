@@ -2,6 +2,7 @@
 
 // Импортируем необходимые зависимости
 import { state } from '../core/init.js';
+import { loadPanelState, savePanelState } from '../core/appStatePersistence.js'; // Импорт функций для сохранения/загрузки состояния
 
 // Объект для хранения ссылок на DOM-элементы
 export const uiElements = {
@@ -74,14 +75,15 @@ function initializePanelState() {
     return;
   }
   
-  // Получаем сохраненное состояние
-  const savedState = localStorage.getItem('panelsHidden');
-  const shouldBeHidden = savedState === 'true';
+  // Загружаем сохраненное состояние
+  const shouldBeHidden = loadPanelState();
 
-  // Применяем классы
-  uiElements.leftPanel.classList.toggle('hidden', shouldBeHidden);
-  uiElements.rightPanel.classList.toggle('hidden', shouldBeHidden);
-  uiElements.togglePanelsButton.classList.toggle('show-mode', shouldBeHidden);
+  // Применяем классы, если состояние было загружено
+  if (shouldBeHidden !== null) {
+    uiElements.leftPanel.classList.toggle('hidden', shouldBeHidden);
+    uiElements.rightPanel.classList.toggle('hidden', shouldBeHidden);
+    uiElements.togglePanelsButton.classList.toggle('show-mode', shouldBeHidden);
+  }
 
   // Вызываем ресайз после применения классов
   setTimeout(() => {
@@ -105,9 +107,9 @@ export function togglePanels() {
   // Переключаем класс для кнопки
   uiElements.togglePanelsButton.classList.toggle('show-mode');
   
-  // Сохраняем состояние в localStorage
+  // Сохраняем состояние
   const isPanelsHidden = uiElements.leftPanel.classList.contains('hidden');
-  localStorage.setItem('panelsHidden', isPanelsHidden);
+  savePanelState(isPanelsHidden);
   
   // Обновляем состояние в глобальной переменной state
   state.isPanelsHidden = isPanelsHidden;
