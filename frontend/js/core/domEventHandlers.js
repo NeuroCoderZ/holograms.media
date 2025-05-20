@@ -8,66 +8,6 @@ import axios from 'axios'; // Предполагаем, что axios досту�
 // Объект для хранения содержимого файлов для редактора
 const fileContents = {};
 
-// --- Universal Panel Toggling Logic (Improved) --- (Перенесено из script.js)
-function initializePanelState() {
-  const leftPanel = document.querySelector('.panel.left-panel');
-  const rightPanel = document.querySelector('.panel.right-panel');
-  const togglePanelsButton = document.querySelector('#togglePanelsButton');
-
-  if (!leftPanel || !rightPanel || !togglePanelsButton) {
-      console.error('Required elements not found for initializePanelState');
-      return;
-  }
-
-  // Получаем сохраненное состояние
-  const savedState = localStorage.getItem('panelsHidden');
-  const shouldBeHidden = savedState === 'true';
-
-  console.log(`[DEBUG] Initializing panel state. Saved state: ${savedState}, shouldBeHidden: ${shouldBeHidden}`);
-
-  // Применяем классы
-  leftPanel.classList.toggle('hidden', shouldBeHidden);
-  rightPanel.classList.toggle('hidden', shouldBeHidden);
-  togglePanelsButton.classList.toggle('show-mode', shouldBeHidden);
-
-  console.log(`[DEBUG] After init: leftPanel hidden=${leftPanel.classList.contains('hidden')}, rightPanel hidden=${rightPanel.classList.contains('hidden')}, button show-mode=${togglePanelsButton.classList.contains('show-mode')}`);
-
-  // Вызываем ресайз после применения классов
-  setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-      console.log('Dispatched resize event after init timeout.');
-  }, 50);
-}
-
-function togglePanels() {
-  const leftPanel = document.querySelector('.panel.left-panel');
-  const rightPanel = document.querySelector('.panel.right-panel');
-  const togglePanelsButton = document.querySelector('#togglePanelsButton');
-
-  if (!leftPanel || !rightPanel || !togglePanelsButton) {
-      console.error('Required elements not found for togglePanels');
-      return;
-  }
-
-  const isHidden = leftPanel.classList.contains('hidden');
-  const newState = !isHidden; // Новое состояние: если были скрыты, станут видимыми, и наоборот
-
-  leftPanel.classList.toggle('hidden', newState);
-  rightPanel.classList.toggle('hidden', newState);
-  togglePanelsButton.classList.toggle('show-mode', newState); // Кнопка показывает режим, в который переходим
-
-  // Сохраняем состояние
-  localStorage.setItem('panelsHidden', newState);
-
-  console.log(`[DEBUG] Toggled panels. New state: hidden=${newState}`);
-
-  // Вызываем ресайз после применения классов
-  setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-      console.log('Dispatched resize event after toggle timeout.');
-  }, 50);
-}
-
 // --- File Editor Logic (Перенесено из script.js) ---
 
 // Функция для загрузки содержимого файла
