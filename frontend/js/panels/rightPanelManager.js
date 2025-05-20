@@ -3,9 +3,6 @@
  * Отвечает за переключение между режимами Таймлайн и Чат.
  */
 
-// Импортируем функцию загрузки истории чата из script.js
-import { loadChatHistory } from '../../script.js';
-
 // --- Переменные модуля ---
 // Объект для хранения ссылок на DOM-элементы.
 // Будет заполнен в initializeRightPanel.
@@ -65,8 +62,6 @@ function toggleModeInternal() {
         elements.chatInput.focus();
       }, 100);
     }
-    // Загружаем историю чата при переключении в режим чата
-    loadChatHistory();
   } else {
     if (elements.topPromptInput) {
       setTimeout(() => {
