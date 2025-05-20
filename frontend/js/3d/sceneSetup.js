@@ -303,6 +303,5 @@ export {
   processAudio,
   updateColumnMesh,
   calculateInitialScale,
-  degreesToCells,
-  initializeScene
+  degreesToCells
 };
