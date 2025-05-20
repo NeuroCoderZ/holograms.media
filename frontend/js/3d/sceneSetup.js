@@ -55,7 +55,4 @@ export function initializeScene() {
 }
 
 
-// Экспортируем функции и объекты для использования в других модулях
-export {
-  initializeScene
-};
+// Функция initializeScene уже экспортирована при объявлении
