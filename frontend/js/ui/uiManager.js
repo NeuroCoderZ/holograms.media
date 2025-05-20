@@ -238,7 +238,7 @@ export function toggleChatMode() {
 }
 
 // Экспортируем функции, которые могут понадобиться другим модулям
-export { initializePanelState, logLayoutState, toggleChatMode }; // Удален дублирующий экспорт addDebugClasses
+export { initializePanelState, logLayoutState };
 
 // TODO: Добавить инициализацию других UI элементов по мере необходимости
 // TODO: Рассмотреть возможность использования более надежного способа получения элементов, например, через классы или атрибуты данных, если ID не уникальны или могут меняться.

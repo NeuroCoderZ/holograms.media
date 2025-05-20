@@ -29,25 +29,7 @@ function ensureAudioContext() {
 
 /**
  * Получает уровни громкости для каждого полутона из анализатора
- * @param {AnalyserNode} analyser - Анализатор аудио
- * @returns {Array<number>} Массив уровней громкости для каждого полутона
- */
-function getSemitoneLevels(analyser) {
-  if (!analyser || !state.audio.audioContext) {
-    console.warn("Analyser or AudioContext is not initialized.");
-    return semitones.map(() => -100);
-  }
-  
-  const bufferLength = analyser.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLength);
-  analyser.getByteFrequencyData(dataArray);
-  
-  return semitones.map(semitone => {
-    const freq = semitone.f;
-    const index = Math.round((freq / (state.audio.audioContext.sampleRate / 2)) * bufferLength);
-    if (index >= bufferLength) return -100;
-    
-    // Преобразуем значение из диапазона 0-255 в дБ (примерно от -100 до 0)
+
     const value = dataArray[index];
     return value > 0 ? (value / 255) * 100 - 100 : -100;
   });
