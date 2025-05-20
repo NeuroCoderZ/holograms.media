@@ -1,7 +1,9 @@
 // frontend/js/ui/mainUI.js - Модуль для инициализации основного UI и обработчиков событий
 
+// frontend/js/ui/mainUI.js - Модуль для инициализации основного UI и обработчиков событий
+
 // Импортируем необходимые функции
-import { togglePanels } from './uiManager.js';
+// import { togglePanels } from './uiManager.js'; // Удален неиспользуемый импорт
 
 // Экспортируем функции для использования в других модулях
 // export { togglePanels }; // Удаляем некорректный экспорт
