@@ -270,7 +270,7 @@ function calculateInitialScale(camera, hologramPivot) {
 
   // Возвращаем объекты через state
   // return { scene, camera, renderer, hologramPivot, mainSequencerGroup, leftSequencerGroup, rightSequencerGroup };
-}
+
 
 // Экспортируем функции и объекты для использования в других модулях
 export {
