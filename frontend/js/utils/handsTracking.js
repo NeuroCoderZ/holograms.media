@@ -6,12 +6,6 @@ import { updateHologramLayout } from '../ui/layoutManager.js'; // Импорти
 import * as THREE from 'three'; // Импортируем Three.js
 import { Hands } from '@mediapipe/hands'; // Импортируем Hands из MediaPipe
 
-// Переменная для экземпляра MediaPipe Hands
-let hands = null;
-
-// Группа для отображения мешей рук в 3D сцене
-let handMeshGroup = new THREE.Group();
-
 /**
  * Инициализирует MediaPipe Hands и добавляет группу мешей рук в сцену.
  */
@@ -31,14 +25,14 @@ export function initializeMediaPipeHands() {
     return; // Прерываем, если нет видео элемента
   }
 
-  // Создаем экземпляр Hands
-  hands = new Hands({locateFile: (file) => {
+  // Создаем экземпляр Hands и сохраняем его в state
+  state.multimodal.handsInstance = new Hands({locateFile: (file) => {
     // Корректный путь к WASM файлам на CDN jsdelivr
     return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
   }});
 
   // Настраиваем параметры Hands
-  hands.setOptions({
+  state.multimodal.handsInstance.setOptions({
     maxNumHands: 2,           // Отслеживать до двух рук
     modelComplexity: 1,       // 0 = lite, 1 = full (более точная, но требовательная)
     minDetectionConfidence: 0.7, // Увеличим порог для надежности
@@ -46,17 +40,18 @@ export function initializeMediaPipeHands() {
   });
 
   // Устанавливаем обработчик результатов
-  hands.onResults(onHandsResults);
+  state.multimodal.handsInstance.onResults(onHandsResults);
 
-  // Добавляем группу мешей рук в сцену Three.js
+  // Создаем группу мешей рук и добавляем ее в state и сцену Three.js
+  state.multimodal.handMeshGroup = new THREE.Group();
   if (state.scene) {
-    state.scene.add(handMeshGroup);
+    state.scene.add(state.multimodal.handMeshGroup);
   } else {
     console.error("Сцена Three.js не инициализирована в state.");
   }
 
   // Запускаем видео поток
-  startVideoStream(videoElementForHands, hands);
+  startVideoStream(videoElementForHands, state.multimodal.handsInstance);
 }
 
 /**
@@ -90,6 +85,7 @@ async function startVideoStream(videoElement, handsInstance) {
 
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     videoElement.srcObject = stream;
+    state.multimodal.currentStream = stream; // Сохраняем поток в state
 
     await new Promise((resolve) => {
       videoElement.onloadedmetadata = () => {
@@ -112,8 +108,8 @@ async function startVideoStream(videoElement, handsInstance) {
     }
     processVideoFrame(); // Запускаем цикл
 
-    // isGestureCanvasReady = true; // Этот флаг, возможно, нужно будет перенести или переосмыслить
-    // console.log('Флаг isGestureCanvasReady установлен в true (после getUserMedia)');
+    state.multimodal.isGestureCanvasReady = true; // Устанавливаем флаг готовности в state
+    console.log('Флаг isGestureCanvasReady установлен в true (после getUserMedia)');
 
   } catch (err) {
     console.error(">>> Error acquiring camera feed via getUserMedia:", err.name, err.message);
@@ -130,11 +126,14 @@ function onHandsResults(results) {
   // console.log('Hands results:', results); // Отладочный вывод
 
   // Очищаем предыдущие меши рук
-  handMeshGroup.clear();
+  if (state.multimodal.handMeshGroup) {
+    state.multimodal.handMeshGroup.clear();
+  }
 
   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
     // Руки видны, обновляем макет
     updateHologramLayout(true);
+    state.multimodal.handsVisible = true; // Обновляем флаг видимости рук в state
 
     for (const landmarks of results.multiHandLandmarks) {
       // Создаем геометрию для линии, соединяющей точки
@@ -146,7 +145,9 @@ function onHandsResults(results) {
 
       // Создаем объект линии и добавляем его в группу
       const line = new THREE.Line(geometry, material);
-      handMeshGroup.add(line);
+      if (state.multimodal.handMeshGroup) {
+        state.multimodal.handMeshGroup.add(line);
+      }
 
       // Опционально: добавить сферы или другие объекты на каждую точку
       // for (const landmark of landmarks) {
@@ -154,18 +155,21 @@ function onHandsResults(results) {
       //   const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
       //   const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
       //   sphere.position.set(landmark.x * 2 - 1, -(landmark.y * 2 - 1), landmark.z * 10);
-      //   handMeshGroup.add(sphere);
+      //   if (state.multimodal.handMeshGroup) {
+      //     state.multimodal.handMeshGroup.add(sphere);
+      //   }
       // }
     }
   } else {
     // Руки не видны, обновляем макет
     updateHologramLayout(false);
+    state.multimodal.handsVisible = false; // Обновляем флаг видимости рук в state
   }
 
   // TODO: Добавить логику обработки жестов или других действий на основе landmarks
 }
 
 // Экспортируем handMeshGroup, если она нужна где-то еще (например, для удаления из сцены при необходимости)
-export { handMeshGroup };
+// export { handMeshGroup }; // Больше не экспортируем локальную переменную
 
 // TODO: Добавить другие вспомогательные функции, связанные с руками, если необходимо.
