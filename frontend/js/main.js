@@ -11,7 +11,7 @@ import { initializePanelManager } from './ui/panelManager.js'; // Модуль �
 import { initializePromptManager } from './ui/promptManager.js'; // Импорт менеджера промптов
 import { initializeVersionManager } from './ui/versionManager.js'; // Импорт менеджера версий
 import { initializeGestureAreaVisualization } from './ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
-import { initializeChatDisplay } from './panels/chatMessages.js'; // Импорт инициализации чата (Путь исправлен)
+import { initializeChatDisplay } from './panels/chatMessages.js';
 
 // Импорт аудио модулей
 import { initializeSpeechInput } from './audio/speechInput.js';

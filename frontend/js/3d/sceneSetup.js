@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 function createSphere(color, radius) {
   const geometry = new THREE.SphereGeometry(radius * 0.5, 32, 32);
   const material = new THREE.MeshBasicMaterial({
