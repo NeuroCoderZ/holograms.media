@@ -268,8 +268,6 @@ function calculateInitialScale(camera, hologramPivot) {
   state.hologramPivot.position.set(0, 0, 0); // Начальная позиция пивота
   state.mainSequencerGroup.rotation.set(0, 0, 0);
 
-
-
   // Возвращаем объекты через state
   // return { scene, camera, renderer, hologramPivot, mainSequencerGroup, leftSequencerGroup, rightSequencerGroup };
 }
