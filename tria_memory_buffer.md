@@ -1,3 +1,4 @@
+[2025-05-20] ID[ID]. Цель: Финальная очистка script.js. Результат: Вся оставшаяся логика перенесена. script.js опустошен. Размер script.js: ~3 строки. След. шаг: Удаление script.js из index.html и проекта, тестирование.
 # Tria Memory Buffer (holograms.media) - Лог Итераций - Обновлено: 2025-05-19
 
 [2025-05-19 10:45] Промпт ID [20250519-XXXX-007]. Цель: Исправить пути к статике в backend/app.py. Результат: Пути PROJECT_ROOT, FRONTEND_DIR, INDEX_HTML_PATH в backend/app.py скорректированы для Docker. Файлы: backend/app.py. Деплой на HF Spaces теперь должен находить index.html. Следующий шаг: Тестирование деплоя на HF Spaces, устранение ошибок JS на фронтенде.
