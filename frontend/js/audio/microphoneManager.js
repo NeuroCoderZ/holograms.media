@@ -8,10 +8,32 @@ const FFT_SIZE = 4096;
 const SMOOTHING_TIME_CONSTANT = 0.85;
 
 // --- Переменные модуля ---
-let microphoneStream = null;
-let microphoneAnalyserLeft = null;
-let microphoneAnalyserRight = null;
-let audioContext = null;
+import { state } from '../core/init.js';
+
+/**
+ * Инициализирует AudioContext, если он еще не создан и не сохранен в state.
+ * Предполагается, что этот AudioContext будет использоваться всеми аудио-модулями.
+ */
+function ensureAudioContext() {
+  if (!state.audio.audioContext || state.audio.audioContext.state === 'closed') {
+    state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    console.log("AudioContext initialized or recreated in state.");
+  }
+  if (state.audio.audioContext.state === 'suspended') {
+    state.audio.audioContext.resume().then(() => {
+      console.log("AudioContext resumed.");
+    }).catch(e => console.error("Failed to resume AudioContext:", e));
+  }
+}
+
+// Локальные переменные состояния (некоторые перенесены в state.audio)
+let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
+
+// Элементы UI (предполагается, что они будут доступны через uiManager или переданы)
+let micButton = null;
+let recordStatusElement = null;
 
 /**
  * Обновляет визуализацию колонок на основе данных с микрофона
@@ -59,73 +81,78 @@ function getSemitoneLevels(analyser) {
 /**
  * Инициализирует микрофон и начинает захват аудио
  */
-function setupMicrophone() {
-  if (!audioContext) {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+async function setupMicrophone() {
+  ensureAudioContext();
+
+  if (state.audio.microphoneStream) {
+    state.audio.microphoneStream.getTracks().forEach(track => track.stop());
   }
 
-  navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(stream => {
-      microphoneStream = stream;
-      const source = audioContext.createMediaStreamSource(stream);
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    state.audio.microphoneStream = stream; // Сохраняем поток в state
+    console.log("Микрофонный поток получен.", stream);
 
-      // Create stereo analysers
-      microphoneAnalyserLeft = audioContext.createAnalyser();
-      microphoneAnalyserRight = audioContext.createAnalyser();
+    const source = state.audio.audioContext.createMediaStreamSource(stream);
 
-      microphoneAnalyserLeft.fftSize = FFT_SIZE;
-      microphoneAnalyserRight.fftSize = FFT_SIZE;
-      microphoneAnalyserLeft.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
-      microphoneAnalyserRight.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
+    // Создаем AnalyserNode для левого и правого каналов и сохраняем их в state
+    state.audio.analyserLeft = state.audio.audioContext.createAnalyser();
+    state.audio.analyserRight = state.audio.audioContext.createAnalyser();
 
-      const splitter = audioContext.createChannelSplitter(2);
-      source.connect(splitter);
-      splitter.connect(microphoneAnalyserLeft, 0);
-      splitter.connect(microphoneAnalyserRight, 1);
+    // Разделяем каналы
+    const splitter = state.audio.audioContext.createChannelSplitter(2);
 
-      // Добавляем обработчик для обновления визуализации микрофона
-      function updateMicVisualization() {
-        if (microphoneAnalyserLeft && microphoneAnalyserRight) {
-          // Обновляем визуализацию
-          updateColumnsForMicrophone(microphoneAnalyserLeft, microphoneAnalyserRight);
-        }
-        // Запрашиваем следующий кадр анимации, если микрофон активен
-        if (microphoneStream) {
-          requestAnimationFrame(updateMicVisualization);
-        }
-      }
-      
-      // Запускаем визуализацию
-      updateMicVisualization();
+    source.connect(splitter);
+    splitter.connect(state.audio.analyserLeft, 0);
+    splitter.connect(state.audio.analyserRight, 1);
 
-      document.getElementById('micButton').classList.add('active');
-    })
-    .catch(error => {
-      console.error('Ошибка доступа к микрофону:', error);
-    });
+    // Подключаем к выходу (опционально, если не нужно слышать себя)
+    // source.connect(state.audio.audioContext.destination);
+
+    // Настраиваем анализаторы
+    state.audio.analyserLeft.fftSize = 2048;
+    state.audio.analyserRight.fftSize = 2048;
+
+    // Можно добавить логику для обработки данных анализаторов здесь или в другом месте
+    // Например, в цикле рендеринга Three.js
+
+    return true; // Успех
+  } catch (err) {
+    console.error("Ошибка доступа к микрофону:", err);
+    // Отобразим ошибку пользователю
+    alert(`Не удалось получить доступ к микрофону: ${err.name}: ${err.message}`);
+    state.audio.microphoneStream = null;
+    state.audio.analyserLeft = null;
+    state.audio.analyserRight = null;
+    return false; // Ошибка
+  }
 }
 
 /**
  * Останавливает захват аудио с микрофона и сбрасывает визуализацию
  */
-function stopMicrophone() {
-  if (microphoneStream) {
-    microphoneStream.getTracks().forEach(track => track.stop());
-    microphoneStream = null;
-    microphoneAnalyserLeft = null;
-    microphoneAnalyserRight = null;
-    document.getElementById('micButton').classList.remove('active');
-    
-    // Сброс визуализации колонок до нулевого состояния
-    columns.forEach((column, i) => {
-        const baseColor = semitones[i] ? semitones[i].color : new THREE.Color(0xffffff); // Базовый цвет или белый
-        if (column.left && column.right) {
-            column.left.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor); }); // Базовый цвет
-            column.right.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor); }); // Базовый цвет
-        }
-    });
-    console.log("Визуализация микрофона очищена (столбцы сброшены в 0).");
+export function stopMicrophone() {
+  if (state.audio.microphoneStream) {
+    state.audio.microphoneStream.getTracks().forEach(track => track.stop());
+    state.audio.microphoneStream = null;
+    // Note: Analysers are not explicitly disconnected here, they will be garbage collected
+    // when the source is disconnected and the stream stops.
+    state.audio.analyserLeft = null;
+    state.audio.analyserRight = null;
+    console.log("Микрофонный поток остановлен.");
   }
+  
+  // Сброс визуализации колонок до нулевого состояния
+  columns.forEach((column, i) => {
+      const baseColor = semitones[i] ? semitones[i].color : new THREE.Color(0xffffff); // Базовый цвет или белый
+      if (column.left && column.right) {
+          column.left.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor); }); // Базовый цвет
+          column.right.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor); }); // Базовый цвет
+      }
+  });
+  console.log("Визуализация микрофона очищена (столбцы сброшены в 0).");
+
+  // TODO: Отключить анализаторы и источник от AudioContext при остановке (already handled by setting to null?)
 }
 
 /**

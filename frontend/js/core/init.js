@@ -19,18 +19,47 @@ export const state = {
   selectedObject: null,       // Текущий выбранный объект в сцене
 
   // --- Состояние жестов и MediaPipe ---
-  hands: null,                // Экземпляр MediaPipe Hands
-  gestureCanvas: null,        // Canvas для вывода отладочной информации жестов
-  gestureCanvasCtx: null,     // Контекст 2D для gestureCanvas
-  videoElement: null,         // Элемент <video> для захвата с камеры
-  handsVisible: false,        // Флаг, указывающий, видны ли руки (для调整 макета)
-  lastHandData: null,         // Последние полученные данные о руках
+  // hands: null,                // Экземпляр MediaPipe Hands (переносим в multimodal)
+  // gestureCanvas: null,        // Canvas для вывода отладочной информации жестов (переносим в multimodal)
+  // gestureCanvasCtx: null,     // Контекст 2D для gestureCanvas (переносим в multimodal)
+  // videoElement: null,         // Элемент <video> для захвата с камеры (переносим в multimodal)
+  // handsVisible: false,        // Флаг, указывающий, видны ли руки (для调整 макета) (переносим в multimodal)
+  // lastHandData: null,         // Последние полученные данные о руках (переносим в multimodal)
 
   // --- Состояние аудио ---
-  audioContext: null,         // Аудиоконтекст Web Audio API
-  analyser: null,             // AnalyserNode для визуализации аудио
-  microphoneStream: null,     // Поток с микрофона
-  audioSource: null,          // Источник аудио (микрофон или файл)
+  // audioContext: null,         // Аудиоконтекст Web Audio API (переносим в audio)
+  // analyser: null,             // AnalyserNode для визуализации аудио (переносим в audio)
+  // microphoneStream: null,     // Поток с микрофона (переносим в audio)
+  // audioSource: null,          // Источник аудио (микрофон или файл) (переносим в audio)
+
+  // Группировка аудио состояния
+  audio: {
+    audioContext: null,         // Аудиоконтекст Web Audio API
+    analyser: null,
+    microphoneStream: null,
+    analyserLeft: null,
+    analyserRight: null,
+    audioSource: null,
+    audioBuffer: null,          // Буфер загруженного аудиофайла
+    audioBufferSource: null,    // Источник буфера для воспроизведения файла
+    isPlaying: false,           // Флаг воспроизведения аудиофайла
+    pausedAt: 0,                // Позиция паузы в секундах
+    startOffset: 0,             // Смещение начала воспроизведения
+  },
+
+  // Группировка мультимодального состояния
+  multimodal: {
+    handsInstance: null,        // Экземпляр MediaPipe Hands
+    gestureCanvas: null,        // Canvas для вывода отладочной информации жестов
+    gestureCanvasCtx: null,     // Контекст 2D для gestureCanvas
+    videoElementForHands: null, // Элемент <video> для захвата с камеры для рук
+    handsVisible: false,        // Флаг, указывающий, видны ли руки
+    lastHandData: null,         // Последние полученные данные о руках
+    handSpheres: { left: [], right: [] }, // Массив для хранения сфер рук
+    isGestureCanvasReady: false, // Флаг готовности gestureCanvas
+    currentStream: null,        // Текущий поток с камеры для рук
+    handMeshGroup: null,        // Группа для отображения мешей рук в 3D сцене
+  },
 
   // --- Состояние AI (Триа) ---
   isTriaModeActive: false,    // Активен ли режим Триа
@@ -125,3 +154,13 @@ export function initCore() {
 //     state.camera.updateProjectionMatrix();
 //   }
 // }
+
+// Инициализация базовых объектов состояния (может быть расширено в других модулях)
+export function initializeState() {
+  // Здесь можно добавить логику инициализации, если требуется
+  console.log('Initial state:', state);
+}
+
+// Пример использования (для демонстрации или отладки)
+// import { state } from './init.js';
+// state.scene = new THREE.Scene();
