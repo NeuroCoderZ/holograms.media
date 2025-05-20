@@ -1,7 +1,7 @@
 // frontend/js/rendering.js - Модуль для логики 3D-рендеринга
 
 import * as THREE from 'three';
-import { state } from './core/init.js'; // Для доступа к state.scene, state.mainSequencerGroup
+import { state } from '../core/init.js'; // Для доступа к state.scene, state.mainSequencerGroup
 
 // --- Константы и конфигурация, перенесенные из script.js ---
 
@@ -56,19 +56,7 @@ export const semitones = Array.from({ length: 130 }, (_, i) => {
   const note = NOTES[noteIndex] + octave;
 
   return {
-    key: note.replace("#", "s"), // Для React (если будет использоваться)
-    note: note,
-    f: f,
-    width: width,
-    color: color,
-    deg: 180.00 - (i * 1.3846), // Угол для визуализации
-  };
-});
-
-// --- Функции рендеринга, перенесенные из script.js ---
-
-export function createSphere(color, radius) {
-  const geometry = new THREE.SphereGeometry(radius * 0.5, 32, 32);
+    key: note.replace("#", "s"), // Для React (если будет использоваться)\n    note: note,\n    f: f,\n    width: width,\n    color: color,\n    deg: 180.00 - (i * 1.3846), // Угол для визуализации\n  };\n});\n\n// --- Функции рендеринга, перенесенные из script.js ---\n\nexport function createSphere(color, radius) {\n  const geometry = new THREE.SphereGeometry(radius * 0.5, 32, 32);
   const material = new THREE.MeshBasicMaterial({
     color,
     depthTest: false,
@@ -90,39 +78,7 @@ export function createLine(start, end, color, opacity) {
   return new THREE.Line(geometry, material);
 }
 
-export function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
-  const axisGroup = new THREE.Group();
-
-  // X-axis - Red for positive, Purple for negative
-  const xAxisGroup = new THREE.Group();
-  const xAxisOffset = isLeftGrid ? GRID_WIDTH : 0; // Используем GRID_WIDTH из этого модуля
-
-  if (isLeftGrid) {
-    // Negative X - Purple
-    const xAxisNeg = createSphere(0x9400d3, sphereRadius);
-    xAxisNeg.position.set(-length, 0, 0);
-    const xAxisLineNeg = createLine(
-      new THREE.Vector3(-length, 0, 0),
-      new THREE.Vector3(0, 0, 0),
-      0x9400d3,
-      1.0
-    );
-    xAxisGroup.add(xAxisNeg, xAxisLineNeg);
-  } else {
-    // Positive X - Red
-    const xAxisPos = createSphere(0xFF0000, sphereRadius);
-    xAxisPos.position.set(length, 0, 0);
-    const xAxisLinePos = createLine(
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(length, 0, 0),
-      0xFF0000,
-      1.0
-    );
-    xAxisGroup.add(xAxisPos, xAxisLinePos);
-  }
-
-  // Y-axis - Green
-  const yAxisGroup = new THREE.Group();
+export function createAxis(length, sphereRadius, xColor, yColor, zColor) { // Удален isLeftGrid\n  const axisGroup = new THREE.Group();\n\n  // X-axis - Red for positive, Purple for negative\n  const xAxisGroup = new THREE.Group();\n  const xAxisOffset = 0; // isLeftGrid удален, смещение по умолчанию 0\n\n  // Positive X - Red (оставляем только положительную ось X, как в оригинале без isLeftGrid)\n  const xAxisPos = createSphere(0xFF0000, sphereRadius);\n  xAxisPos.position.set(length, 0, 0);\n  const xAxisLinePos = createLine(\n    new THREE.Vector3(0, 0, 0),\n    new THREE.Vector3(length, 0, 0),\n    0xFF0000,\n    1.0\n  );\n  xAxisGroup.add(xAxisPos, xAxisLinePos);\n\n  // Y-axis - Green\n  const yAxisGroup = new THREE.Group();
   const yAxis = createSphere(yColor, sphereRadius);
   yAxis.position.set(0, GRID_HEIGHT, 0); // Используем GRID_HEIGHT из этого модуля
   const yAxisLine = createLine(
@@ -185,23 +141,7 @@ export function createGrid(gridWidth, gridHeight, gridDepth, cellSize, color) {
   return new THREE.LineSegments(geometry, material);
 }
 
-export function createSequencerGrid(width, height, depth, cellSize, color, position, isLeftGrid) {
-  const grid = createGrid(width, height, depth, cellSize, color);
-  if (isLeftGrid) {
-    grid.material.color.set(0x9400d3);
-  }
-  const axis = createAxis(width, SPHERE_RADIUS, isLeftGrid ? 0x9400d3 : 0xFF0000, 0x00FF00, 0xFFFFFF, isLeftGrid);
-  const sequencerGroup = new THREE.Group();
-  sequencerGroup.add(grid);
-  sequencerGroup.add(axis);
-  sequencerGroup.position.copy(position);
-  return sequencerGroup;
-}
-
-// Функция createColumn, адаптированная для rendering.js
-// Примечание: эта функция отличается от той, что в sceneSetup.js. Мы переносим ту, что была в script.js
-function createColumn(x, y, dB, isLeftGrid) {
-  const group = new THREE.Group();
+export function createSequencerGrid(width, height, depth, cellSize, color, position) { // Удален isLeftGrid\n  const grid = createGrid(width, height, depth, cellSize, color);\n  // if (isLeftGrid) { // Логика isLeftGrid удалена\n  //   grid.material.color.set(0x9400d3);\n  // }\n  const axis = createAxis(width, SPHERE_RADIUS, 0xFF0000, 0x00FF00, 0xFFFFFF); // Передаем цвета без учета isLeftGrid\n  const sequencerGroup = new THREE.Group();\n  sequencerGroup.add(grid);\n  sequencerGroup.add(axis);\n  sequencerGroup.position.copy(position);\n  return sequencerGroup;\n}\n\n// Функция createColumn, адаптированная для rendering.js\n// Примечание: эта функция отличается от той, что в sceneSetup.js. Мы переносим ту, что была в script.js\nfunction createColumn(x, y, dB) { // Удален isLeftGrid\n  const group = new THREE.Group();
   const semitone = semitones[y - 1]; // y - это индекс + 1
   if (!semitone) {
     console.warn(`No semitone data for index ${y - 1}`);
@@ -234,9 +174,7 @@ export function initializeColumns() {
       const initialDB = 0;
       // const maxOffset = degreesToCells(semitone.deg); // semitone.deg не используется в createColumn из script.js
       const offsetLeft = i; // Используем индекс как смещение по X для простоты
-      const columnLeft = createColumn(offsetLeft, i + 1, initialDB, true);
-      const columnRight = createColumn(offsetLeft, i + 1, initialDB, false);
-      columns.push({
+      const columnLeft = createColumn(offsetLeft, i + 1, initialDB); // Удален true\n      const columnRight = createColumn(offsetLeft, i + 1, initialDB); // Удален false\n      columns.push({
         left: columnLeft,
         right: columnRight,
         offsetX: 0, // Эти свойства, похоже, для анимации, которая может быть в другом месте

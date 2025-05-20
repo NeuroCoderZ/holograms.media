@@ -1,53 +1,60 @@
 // frontend/js/main.js - Основная точка входа для приложения
 
 // Импорт ядра
-import { initCore } from './core/init.js';
-import { setupEventListeners } from './core/events.js';
-import { runFrontendDiagnostics } from './core/diagnostics.js';
+// frontend/js/main.js - Основная точка входа для приложения
+
+// frontend/js/main.js - Основная точка входа для приложения
+
+// Импорт ядра
+import { initCore } from '/static/js/core/init.js';
+import { setupEventListeners } from '/static/js/core/events.js';
+import { runFrontendDiagnostics } from '/static/js/core/diagnostics.js';
 
 // Импорт UI модулей
-import { initializeMainUI } from './ui/uiManager.js'; // Модуль управления UI
-import { initializePanelManager } from './ui/panelManager.js'; // Модуль управления панелями
-import { initializePromptManager } from './ui/promptManager.js'; // Импорт менеджера промптов
-import { initializeVersionManager } from './ui/versionManager.js'; // Импорт менеджера версий
-import { initializeGestureAreaVisualization } from './ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
-import { initializeChatDisplay } from './panels/chatMessages.js';
+import { initializeMainUI } from '/static/js/ui/uiManager.js'; // Модуль управления UI
+import { initializePanelManager } from '/static/js/ui/panelManager.js'; // Модуль управления панелями
+import { initializePromptManager } from '/static/js/ui/promptManager.js'; // Импорт менеджера промптов
+import { initializeVersionManager } from '/static/js/ui/versionManager.js'; // Импорт менеджера версий
+import { initializeGestureAreaVisualization } from '/static/js/ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
+import { initializeChatDisplay } from '/static/js/panels/chatMessages.js';
+// import { initializeRightPanelManager } from '/static/js/ui/rightPanelManager.js'; // Удален, так как файл не существует, используется panelManager.js
 
 // Импорт аудио модулей
-import { initializeSpeechInput } from './audio/speechInput.js';
-import { initializeMicrophoneButton } from './audio/microphoneManager.js'; // Модуль управления микрофоном
-import { initializeAudioPlayerControls } from './audio/audioFilePlayer.js'; // Модуль управления плеером аудиофайлов
+import { initializeSpeechInput } from '/static/js/audio/speechInput.js';
+import { initializeMicrophoneButton } from '/static/js/audio/microphoneManager.js'; // Модуль управления микрофоном
+import { initializeAudioPlayerControls } from '/static/js/audio/audioFilePlayer.js'; // Модуль управления плеером аудиофайлов
 // import { initAudio, setupAudioProcessing } from '/static/js/audio/processing.js'; // TODO: Module for audio processing not found, related code disabled
 // import { initAudioVisualization } from '/static/js/audio/visualization.js'; // TODO: Module for audio visualization not found, related code disabled
 
 // Импорт XR модулей
-import { initializeXRMode } from './xr/cameraManager.js'; // Модуль управления XR и камерой
+import { initializeXRMode } from '/static/js/xr/cameraManager.js'; // Модуль управления XR и камерой
 
 // Импорт 3D модулей
-import { initializeScene } from './3d/sceneSetup.js'; // Импорт инициализации сцены
-import { animate } from './rendering.js'; // Импорт функции анимации
+import { initializeScene } from '/static/js/3d/sceneSetup.js'; // Импорт инициализации сцены
+import { animate } from '/static/js/3d/rendering.js'; // Импорт функции анимации
 
 // Импорт мультимодальных модулей
-import { initializeMediaPipeHands } from './multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
+import { initializeMediaPipeHands } from '/static/js/multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
 // import { initializeGestureDetection } from '/static/js/gestures/detection.js'; // TODO: Module for gesture detection not found, related code disabled
-// import { initializeHandTracking } from '/static/js/gestures/tracking.js'; // TODO: Module for hand tracking not found, related code disabled
+import { initializeMediaPipeHands as initializeHandTracking } from './multimodal/handsTracking.js'; // Используем alias для существующего модуля
 
 // Импорт AI модулей
-import { setupChat } from './ai/chat.js'; // Путь исправлен
-import { initializeTria } from './ai/tria.js'; // Путь исправлен
+import { setupChat } from '/static/js/ai/chat.js'; // Путь исправлен
+import { initializeTria } from '/static/js/ai/tria.js'; // Путь исправлен
 
 // Импорт обработчиков событий
-import { setupDOMEventHandlers } from './core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
-import { initializeResizeHandler } from './core/resizeHandler.js'; // Импорт обработчика изменения размера окна
+import { setupDOMEventHandlers } from '/static/js/core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
+import { initializeResizeHandler } from '/static/js/core/resizeHandler.js'; // Импорт обработчика изменения размера окна
 
 // Импорт утилит (закомментированы отсутствующие)
-// import { loadSettings, saveSettings } from '/static/js/utils/storage.js'; // TODO: Module for storage utils not found, related code disabled
-// import { debounce, throttle } from '/static/js/utils/helpers.js'; // TODO: Module for helper utils not found, related code disabled
-// TODO: Рассмотреть импорт './utils/fullscreen.js' если он нужен здесь
+import { loadSettings, saveSettings } from './utils/storage.js'; // Модуль-заглушка создан
+import { debounce, throttle } from './utils/helpers.js'; // Модуль-заглушка создан
+
 
 // Импорт моста для обратной совместимости (закомментирован отсутствующий)
 // FINAL CLEANUP (v22): Module legacy-bridge.js or its functionality is missing/disabled
-// import { initLegacyBridge, registerLegacyHandlers } from './utils/legacy-bridge.js';
+// import { initLegacyBridge, registerLegacyHandlers } from './utils/legacy-bridge.js'; // TODO: Module legacy-bridge.js not found
+
 
 // Инициализация приложения при загрузке DOM
 document.addEventListener('DOMContentLoaded', async () => {

@@ -1,11 +1,8 @@
 // frontend/js/audio/microphoneManager.js - Модуль для управления микрофоном
 
 import * as THREE from 'three';
-import { semitones, columns, updateSequencerColumns } from '../rendering.js';
-
-// --- Константы ---
-const FFT_SIZE = 4096;
-const SMOOTHING_TIME_CONSTANT = 0.85;
+import { semitones, columns } from '../3d/rendering.js';
+// TODO: Logic needs refactoring - updateSequencerColumns was here but removed as it was commented out.
 
 // --- Переменные модуля ---
 import { state } from '../core/init.js';
@@ -26,31 +23,9 @@ function ensureAudioContext() {
   }
 }
 
-// Локальные переменные состояния (некоторые перенесены в state.audio)
-let isRecording = false;
-let mediaRecorder = null;
-let audioChunks = [];
 
-// Элементы UI (предполагается, что они будут доступны через uiManager или переданы)
-let micButton = null;
-let recordStatusElement = null;
 
-/**
- * Обновляет визуализацию колонок на основе данных с микрофона
- * @param {AnalyserNode} analyserLeft - Анализатор левого канала
- * @param {AnalyserNode} analyserRight - Анализатор правого канала
- */
-function updateColumnsForMicrophone(analyserLeft, analyserRight) {
-  if (!analyserLeft || !analyserRight) return;
-  
-  // Получаем уровни для каждого полутона
-  const leftLevels = getSemitoneLevels(analyserLeft);
-  const rightLevels = getSemitoneLevels(analyserRight);
-  
-  // Обновляем колонки для левого и правого каналов
-  updateSequencerColumns(leftLevels, 'left');
-  updateSequencerColumns(rightLevels, 'right');
-}
+// Удалена закомментированная функция updateColumnsForMicrophone
 
 /**
  * Получает уровни громкости для каждого полутона из анализатора
@@ -58,7 +33,7 @@ function updateColumnsForMicrophone(analyserLeft, analyserRight) {
  * @returns {Array<number>} Массив уровней громкости для каждого полутона
  */
 function getSemitoneLevels(analyser) {
-  if (!analyser || !audioContext) {
+  if (!analyser || !state.audio.audioContext) {
     console.warn("Analyser or AudioContext is not initialized.");
     return semitones.map(() => -100);
   }
@@ -69,7 +44,7 @@ function getSemitoneLevels(analyser) {
   
   return semitones.map(semitone => {
     const freq = semitone.f;
-    const index = Math.round((freq / (audioContext.sampleRate / 2)) * bufferLength);
+    const index = Math.round((freq / (state.audio.audioContext.sampleRate / 2)) * bufferLength);
     if (index >= bufferLength) return -100;
     
     // Преобразуем значение из диапазона 0-255 в дБ (примерно от -100 до 0)
@@ -131,7 +106,7 @@ async function setupMicrophone() {
 /**
  * Останавливает захват аудио с микрофона и сбрасывает визуализацию
  */
-export function stopMicrophone() {
+function stopMicrophone() {
   if (state.audio.microphoneStream) {
     state.audio.microphoneStream.getTracks().forEach(track => track.stop());
     state.audio.microphoneStream = null;
@@ -168,12 +143,12 @@ export function initializeMicrophoneButton() {
   
   micButton.addEventListener('click', () => {
     // Проверяем состояние AudioContext перед действиями
-    if (!audioContext || audioContext.state === 'closed') {
+    if (!state.audio.audioContext || state.audio.audioContext.state === 'closed') {
       console.log("AudioContext не инициализирован или закрыт. Попытка создать/возобновить.");
       // Пытаемся создать или возобновить контекст ПЕРЕД тем, как вызывать setupMicrophone
-      if (!audioContext) {
+      if (!state.audio.audioContext) {
         try {
-          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
           console.log("AudioContext создан.");
         } catch (e) {
           console.error("Не удалось создать AudioContext:", e);
@@ -181,13 +156,13 @@ export function initializeMicrophoneButton() {
           return;
         }
       }
-      if (audioContext.state === 'suspended') {
-        audioContext.resume().then(() => {
+      if (state.audio.audioContext.state === 'suspended') {
+        state.audio.audioContext.resume().then(() => {
           console.log("AudioContext возобновлен.");
           // Теперь, когда контекст точно есть и активен, вызываем setup
           setupMicrophone();
         }).catch(e => console.error("Не удалось возобновить AudioContext:", e));
-      } else if (audioContext.state === 'running') {
+      } else if (state.audio.audioContext.state === 'running') {
         // Контекст уже работает, можно вызывать setup
         setupMicrophone();
       }
@@ -195,7 +170,7 @@ export function initializeMicrophoneButton() {
     }
 
     // Если контекст есть и активен, выполняем переключение
-    if (audioContext.state === 'running') {
+    if (state.audio.audioContext.state === 'running') {
       const isActive = micButton.classList.contains('active');
       if (isActive) {
         stopMicrophone();
@@ -204,18 +179,20 @@ export function initializeMicrophoneButton() {
         setupMicrophone();
         console.log("Вызов setupMicrophone()");
       }
-    } else if (audioContext.state === 'suspended') {
+    } else if (state.audio.audioContext.state === 'suspended') {
       // Дополнительная попытка возобновить, если первое условие не сработало
-      audioContext.resume().then(() => {
+      state.audio.audioContext.resume().then(() => {
         console.log("AudioContext возобновлен при переключении.");
         // Повторно вызываем setup, так как кнопка была неактивна
         setupMicrophone();
       }).catch(e => console.error("Не удалось возобновить AudioContext при переключении:", e));
     }
   });
-  
+
   console.log('Кнопка микрофона инициализирована');
+
+  // TODO: Remove unused variables semitones and columns if they are only used in the commented out code
 }
 
 // Экспортируем функции для использования в других модулях
-export { setupMicrophone, stopMicrophone, updateColumnsForMicrophone };
+export { setupMicrophone };

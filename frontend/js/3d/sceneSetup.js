@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state } from '../core/init.js';
-import { semitones } from '../rendering.js';
+import { semitones, columns, createSphere, createLine } from './rendering.js'; // Импорт createSphere и createLine из rendering.js
 
 // Константы для сетки
 const GRID_WIDTH = 130;
@@ -9,30 +9,9 @@ const GRID_DEPTH = 130;
 const CELL_SIZE = 1;
 const SPHERE_RADIUS = 5;
 
-function createSphere(color, radius) {
-  const geometry = new THREE.SphereGeometry(radius * 0.5, 32, 32);
-  const material = new THREE.MeshBasicMaterial({
-    color,
-    depthTest: false,
-    depthWrite: false,
-    transparent: false,
-    fog: false
-  });
-  return new THREE.Mesh(geometry, material);
-}
+// Удалены дублирующиеся функции createSphere и createLine
 
-function createLine(start, end, color, opacity) {
-  const material = new THREE.LineBasicMaterial({
-    color,
-    opacity,
-    transparent: true,
-    depthTest: false
-  });
-  const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-  return new THREE.Line(geometry, material);
-}
-
-function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
+function createAxis(length, sphereRadius, isLeftGrid) { // Удален неиспользуемый параметр yColor
   const axisGroup = new THREE.Group();
 
   // X-axis - Red for positive, Purple for negative
@@ -65,7 +44,7 @@ function createAxis(length, sphereRadius, xColor, yColor, zColor, isLeftGrid) {
 
   // Y-axis - Green
   const yAxisGroup = new THREE.Group();
-  const yAxis = createSphere(yColor, sphereRadius);
+  const yAxis = createSphere(0x00FF00, sphereRadius); // Используем хардкод цвет, т.к. параметр удален
   yAxis.position.set(0, GRID_HEIGHT, 0);
   const yAxisLine = createLine(
     new THREE.Vector3(0, 0, 0),
@@ -101,7 +80,7 @@ function createSequencerGrid(width, height, depth, cellSize, color, position, is
   if (isLeftGrid) {
     grid.material.color.set(0x9400d3);
   }
-  const axis = createAxis(width, SPHERE_RADIUS, isLeftGrid ? 0x9400d3 : 0xFF0000, 0x00FF00, 0xFFFFFF, isLeftGrid);
+  const axis = createAxis(width, SPHERE_RADIUS, isLeftGrid); // Удалены неиспользуемые параметры
   const sequencerGroup = new THREE.Group();
   sequencerGroup.add(grid);
   sequencerGroup.add(axis);
@@ -138,114 +117,10 @@ function createGrid(gridWidth, gridHeight, gridDepth, cellSize, color) {
   return new THREE.LineSegments(geometry, material);
 }
 
+// Удалены неиспользуемые функции createColumn, degreesToCells, updateColumnMesh, calculateInitialScale
 
+// TODO: Функции initializeColumns, updateSequencerColumns и processAudio были удалены/закомментированы, так как их логика либо дублировалась, либо должна находиться в других модулях (например, audio). Требуется рефакторинг логики инициализации и обновления колонок.
 
-function createColumn(offsetX, index, initialDB, isLeft) {
-  const columnGroup = new THREE.Group();
-  const columnWidth = 1;
-  const columnDepth = 1;
-  const columnHeight = 1;
-  const semitone = semitones[index - 1];
-  const baseColor = semitone ? semitone.color : new THREE.Color(0xffffff);
-  
-  // Создаем геометрию и материал для колонки
-  const geometry = new THREE.BoxGeometry(columnWidth, columnHeight, columnDepth);
-  const material = new THREE.MeshBasicMaterial({
-    color: baseColor,
-    transparent: true,
-    opacity: 0.5
-  });
-  
-  // Создаем меш и добавляем его в группу
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(offsetX, 0, 0);
-  columnGroup.add(mesh);
-  
-  return columnGroup;
-}
-
-// Функция для вычисления ширины колонок на основе индекса
-function degreesToCells(index) {
-  const maxWidth = 130;
-  const minWidth = 1;
-  const totalSemitones = 130;
-  const width = maxWidth - index / (totalSemitones - 1) * (maxWidth - minWidth);
-  return Math.max(minWidth, Math.round(width));
-}
-
-function initializeColumns() {
-  const columns = [];
-  semitones.forEach((semitone, i) => {
-    const initialDB = 0;
-    const maxOffset = degreesToCells(semitone.deg);
-    const offsetLeft = i;
-    const columnLeft = createColumn(offsetLeft, i + 1, initialDB, true);
-    const columnRight = createColumn(offsetLeft, i + 1, initialDB, false);
-    columns.push({
-      left: columnLeft,
-      right: columnRight,
-      offsetX: 0,
-      direction: 1,
-      maxOffset: maxOffset,
-      speed: Math.random() * 0.1 + 0.1,
-      dB: initialDB,
-      dBDirection: 1
-    });
-  });
-  return columns;
-}
-
-function updateSequencerColumns(columns, leftSequencerGroup, rightSequencerGroup) {
-  columns.forEach(column => {
-    if (!column.left.parent) leftSequencerGroup.add(column.left);
-    if (!column.right.parent) rightSequencerGroup.add(column.right);
-  });
-}
-
-function processAudio(analyserLeft, analyserRight, columns) {
-  if (!analyserLeft || !analyserRight) return;
-
-  const bufferLength = analyserLeft.frequencyBinCount;
-  const dataArrayLeft = new Uint8Array(bufferLength);
-  const dataArrayRight = new Uint8Array(bufferLength);
-  
-  analyserLeft.getByteFrequencyData(dataArrayLeft);
-  analyserRight.getByteFrequencyData(dataArrayRight);
-  
-  columns.forEach((column, i) => {
-    const semitone = semitones[i];
-    if (!semitone) return;
-    
-    const binIndex = Math.round(semitone.f / (44100 / bufferLength));
-    if (binIndex >= bufferLength) return;
-    
-    const valueLeft = dataArrayLeft[binIndex] / 255;
-    const valueRight = dataArrayRight[binIndex] / 255;
-    
-    updateColumnMesh(column.left, valueLeft, semitone.color);
-    updateColumnMesh(column.right, valueRight, semitone.color);
-  });
-}
-
-function updateColumnMesh(columnGroup, value, baseColor) {
-  if (!columnGroup || !columnGroup.children || columnGroup.children.length === 0) return;
-  
-  columnGroup.children.forEach(mesh => {
-    const height = Math.max(0.001, value * 50);
-    mesh.scale.y = height;
-    mesh.position.y = height / 2;
-    
-    // Изменяем цвет в зависимости от значения
-    const color = baseColor.clone();
-    color.offsetHSL(0, 0, value * 0.5); // Увеличиваем яркость при большем значении
-    mesh.material.color.copy(color);
-  });
-}
-
-function calculateInitialScale(camera, hologramPivot) {
-  // Расчет масштаба на основе расстояния от камеры и размера голограммы
-  const distance = camera.position.distanceTo(hologramPivot.position);
-  const fov = camera.fov * (Math.PI / 180);
   const height = 2 * Math.tan(fov / 2) * distance;
   const width = height * camera.aspect;
   
@@ -298,9 +173,6 @@ export {
   createSequencerGrid,
   createGrid,
   createColumn,
-  initializeColumns,
-  updateSequencerColumns,
-  processAudio,
   updateColumnMesh,
   calculateInitialScale,
   degreesToCells

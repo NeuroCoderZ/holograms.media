@@ -90,7 +90,7 @@ export const state = {
 };
 
 // Импортируем функцию инициализации Three.js сцены
-import { initializeThreeJSScene } from '../3d/sceneSetup.js';
+import { initializeScene } from '../3d/sceneSetup.js';
 
 // Функция для инициализации ядра приложения
 export function initCore() {
@@ -98,7 +98,7 @@ export function initCore() {
   
   // Инициализируем Three.js сцену
   try {
-    const threeContext = initializeThreeJSScene();
+    const threeContext = initializeScene();
     
     // Присваиваем возвращенные значения полям state
     state.scene = threeContext.scene;

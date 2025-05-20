@@ -1,5 +1,7 @@
 // frontend/js/core/appStatePersistence.js - Модуль для сохранения и загрузки состояния приложения
 
+
+
 const PANELS_HIDDEN_STORAGE_KEY = 'panelsHidden';
 
 /**
