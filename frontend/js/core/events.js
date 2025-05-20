@@ -2,16 +2,11 @@
 
 import { uiElements as ui, togglePanels, toggleChatMode } from '../ui/uiManager.js';
 import { state } from './init.js';
-// FINAL CLEANUP (v22): Module playback.js or its functionality is missing/disabled
-// import { startPlayback, pausePlayback, stopPlayback } from '../audio/playback.js';
-// FINAL CLEANUP (v22): Module microphone.js or its functionality is missing/disabled
-// import { startMicrophoneRecording, stopMicrophoneRecording } from '../audio/microphone.js';
-// FINAL CLEANUP (v22): Module fileUpload.js or its functionality is missing/disabled
-// import { startFileUpload } from '../utils/fileUpload.js';
-// FINAL CLEANUP (v22): Module xr.js or its functionality is missing/disabled
-// import { enterXRMode, exitXRMode } from '../3d/xr.js';
-// FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
-// import { startGestureRecording, stopGestureRecording } from '../gestures/recording.js';
+// TODO: Reimplement playback functionality
+// TODO: Reimplement microphone recording functionality
+// TODO: Reimplement file upload functionality
+// TODO: Reimplement XR mode functionality
+// TODO: Reimplement gesture recording functionality
 // import { toggleFullscreen } from '../utils/fullscreen.js'; // Оставляем, т.к. fullscreen.js не в списке 404
 // import { sendPrompt } from '../ai/prompts.js'; // Оставляем, т.к. prompts.js не в списке 404
 import { sendChatMessage } from '../ai/chat.js';
@@ -47,50 +42,46 @@ function setupButtonListeners() {
   
   // Кнопки аудио управления
   if (ui.buttons.playButton) {
-    // FINAL CLEANUP (v22): Module playback.js or its functionality is missing/disabled
-    ui.buttons.playButton.addEventListener('click', () => console.log('Функция startPlayback временно отключена'));
+    // TODO: Implement startPlayback
+    ui.buttons.playButton.addEventListener('click', () => console.log('TODO: Implement startPlayback'));
   }
   
   if (ui.buttons.pauseButton) {
-    // FINAL CLEANUP (v22): Module playback.js or its functionality is missing/disabled
-    ui.buttons.pauseButton.addEventListener('click', () => console.log('Функция pausePlayback временно отключена'));
+    // TODO: Implement pausePlayback
+    ui.buttons.pauseButton.addEventListener('click', () => console.log('TODO: Implement pausePlayback'));
   }
   
   if (ui.buttons.stopButton) {
-    // FINAL CLEANUP (v22): Module playback.js or its functionality is missing/disabled
-    // ui.buttons.stopButton.addEventListener('click', stopPlayback); 
-    ui.buttons.stopButton.addEventListener('click', () => console.log('Функция stopPlayback временно отключена'));
+    // TODO: Implement stopPlayback
+    ui.buttons.stopButton.addEventListener('click', () => console.log('TODO: Implement stopPlayback'));
   }
   
   // Кнопка микрофона
   if (ui.buttons.micButton) {
     ui.buttons.micButton.addEventListener('click', () => {
       if (ui.buttons.micButton.classList.contains('active')) {
-        // FINAL CLEANUP (v22): Module microphone.js or its functionality is missing/disabled
-        // stopMicrophoneRecording();
-        console.log('Функция stopMicrophoneRecording временно отключена');
+        // TODO: Implement stopMicrophoneRecording
+        console.log('TODO: Implement stopMicrophoneRecording');
       } else {
-        // FINAL CLEANUP (v22): Module microphone.js or its functionality is missing/disabled
-        // startMicrophoneRecording();
-        console.log('Функция startMicrophoneRecording временно отключена');
+        // TODO: Implement startMicrophoneRecording
+        console.log('TODO: Implement startMicrophoneRecording');
       }
     });
   }
   
   // Кнопка полноэкранного режима
   if (ui.buttons.fullscreenButton) {
-    // FINAL CLEANUP: Module utils/fullscreen.js or its functionality is missing/disabled (хотя его не было в списке 404, но он не используется)
-    ui.buttons.fullscreenButton.addEventListener('click', () => console.log('Функция toggleFullscreen временно отключена'));
+    // TODO: Implement toggleFullscreen (Module utils/fullscreen.js might be needed)
+    ui.buttons.fullscreenButton.addEventListener('click', () => console.log('TODO: Implement toggleFullscreen'));
   }
   
   // Кнопка файлов
   if (ui.buttons.fileButton) {
     ui.buttons.fileButton.addEventListener('click', () => {
       if (ui.inputs.fileInput) {
-        // FINAL CLEANUP (v22): Module fileUpload.js or its functionality is missing/disabled
-        // startFileUpload(); // Предполагая, что fileInput.click() инициирует startFileUpload
+        // TODO: Implement file upload logic (Module fileUpload.js might be needed)
         ui.inputs.fileInput.click(); 
-        console.log('Функциональность загрузки файлов (startFileUpload) временно отключена, но fileInput.click() оставлен.');
+        console.log('TODO: Implement file upload logic');
       }
     });
   }
@@ -98,9 +89,8 @@ function setupButtonListeners() {
   // Кнопка XR режима
   if (ui.buttons.xrButton) {
     ui.buttons.xrButton.addEventListener('click', () => {
-      // FINAL CLEANUP (v22): Module xr.js or its functionality is missing/disabled
-      // enterXRMode();
-      console.log('Функция enterXRMode временно отключена');
+      // TODO: Implement enterXRMode (Module xr.js might be needed)
+      console.log('TODO: Implement enterXRMode');
     });
   }
   
@@ -108,13 +98,11 @@ function setupButtonListeners() {
   if (ui.buttons.gestureRecordButton) {
     ui.buttons.gestureRecordButton.addEventListener('click', () => {
       if (ui.buttons.gestureRecordButton.classList.contains('active')) {
-        // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
-        // stopGestureRecording();
-        console.log('Функция stopGestureRecording временно отключена');
+        // TODO: Implement stopGestureRecording (Module recording.js might be needed)
+        console.log('TODO: Implement stopGestureRecording');
       } else {
-        // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
-        // startGestureRecording();
-        console.log('Функция startGestureRecording временно отключена');
+        // TODO: Implement startGestureRecording (Module recording.js might be needed)
+        console.log('TODO: Implement startGestureRecording');
       }
     });
   }
@@ -123,13 +111,11 @@ function setupButtonListeners() {
   if (ui.buttons.scanButton) {
     ui.buttons.scanButton.addEventListener('click', () => {
       if (ui.buttons.xrButton.classList.contains('active')) {
-        // FINAL CLEANUP (v22): Module xr.js or its functionality is missing/disabled
-        // exitXRMode();
-        console.log('Функция exitXRMode временно отключена');
+        // TODO: Implement exitXRMode (Module xr.js might be needed)
+        console.log('TODO: Implement exitXRMode');
       } else {
-        // FINAL CLEANUP (v22): Module xr.js or its functionality is missing/disabled
-        // enterXRMode();
-        console.log('Функция enterXRMode временно отключена');
+        // TODO: Implement enterXRMode (Module xr.js might be needed)
+        console.log('TODO: Implement enterXRMode');
       }
     });
   }
@@ -153,17 +139,15 @@ function setupModalListeners() {
     
     // Кнопки в модальном окне жестов
     if (ui.actions.startRecordingButton) {
-      // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
-      // ui.actions.startRecordingButton.addEventListener('click', startGestureRecording); 
+      // TODO: Implement startGestureRecording (Module recording.js might be needed)
       ui.actions.startRecordingButton.addEventListener('click', () => {
-        console.log('Функция startGestureRecording временно отключена');
+        console.log('TODO: Implement startGestureRecording');
       });
     }
     
     if (ui.actions.stopRecordingButton) {
-      // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
-      // ui.actions.stopRecordingButton.addEventListener('click', stopGestureRecording); 
-      ui.actions.stopRecordingButton.addEventListener('click', () => console.log('Функция stopGestureRecording временно отключена'));
+      // TODO: Implement stopGestureRecording (Module recording.js might be needed)
+      ui.actions.stopRecordingButton.addEventListener('click', () => console.log('TODO: Implement stopGestureRecording'));
     }
   }
   
@@ -180,8 +164,8 @@ function setupModalListeners() {
     if (ui.actions.submitPrompt) {
       ui.actions.submitPrompt.addEventListener('click', () => {
         if (ui.inputs.promptText) {
-          // sendPrompt(ui.inputs.promptText.value); // Модуль prompts.js отсутствует
-          console.log('Функция sendPrompt временно отключена (из модального окна)');
+          // TODO: Implement sendPrompt (Module prompts.js might be needed)
+          console.log('TODO: Implement sendPrompt (from modal)');
           ui.modals.promptModal.style.display = 'none';
         }
       });
@@ -194,16 +178,16 @@ function setupTextInputListeners() {
   // Поле ввода промпта и кнопка отправки
   if (ui.inputs.topPromptInput && ui.actions.submitTopPrompt) {
     ui.actions.submitTopPrompt.addEventListener('click', () => {
-      // sendPrompt(ui.inputs.topPromptInput.value); // Модуль prompts.js отсутствует
-      console.log('Функция sendPrompt временно отключена (из верхнего поля ввода)');
+      // TODO: Implement sendPrompt (Module prompts.js might be needed)
+      console.log('TODO: Implement sendPrompt (from top input)');
     });
     
     // Отправка по Enter
     ui.inputs.topPromptInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        // sendPrompt(ui.inputs.topPromptInput.value); // Модуль prompts.js отсутствует
-        console.log('Функция sendPrompt временно отключена (из верхнего поля ввода по Enter)');
+        // TODO: Implement sendPrompt (Module prompts.js might be needed)
+        console.log('TODO: Implement sendPrompt (from top input on Enter)');
       }
     });
   }
@@ -291,9 +275,8 @@ function setupFileListeners() {
   if (ui.inputs.fileInput) {
     ui.inputs.fileInput.addEventListener('change', (e) => {
       if (e.target.files && e.target.files.length > 0) {
-        // FINAL CLEANUP (v27.0): Module fileUpload.js or its functionality is missing/disabled
-        // startFileUpload(e.target.files[0]);
-        console.log('Функция startFileUpload временно отключена (из обработчика fileInput change)');
+        // TODO: Implement file upload logic (Module fileUpload.js might be needed)
+        console.log('TODO: Implement file upload logic (from fileInput change)');
       }
     });
   }
@@ -301,45 +284,6 @@ function setupFileListeners() {
 
 // Вспомогательные функции для обработки событий
 
-// Переключатель микрофона
-function toggleMicrophone() {
-  if (!ui.buttons.micButton) return;
-  
-  const isActive = ui.buttons.micButton.classList.toggle('active');
-  
-  if (isActive) {
-    startMicrophoneRecording();
-  } else {
-    stopMicrophoneRecording();
-  }
-}
-
-// Переключатель XR режима
-function toggleXRMode() {
-  if (!ui.buttons.xrButton) return;
-  
-  state.isXRMode = !state.isXRMode;
-  ui.buttons.xrButton.classList.toggle('active', state.isXRMode);
-  
-  if (state.isXRMode) {
-    enterXRMode();
-  } else {
-    exitXRMode();
-  }
-}
-
-// Переключатель записи жестов
-function toggleGestureRecording() {
-  if (!ui.buttons.gestureRecordButton || !ui.modals.gestureModal) return;
-  
-  const isRecording = ui.buttons.gestureRecordButton.classList.toggle('active');
-  
-  if (isRecording) {
-    ui.modals.gestureModal.style.display = 'flex';
-  } else {
-    // FINAL CLEANUP (v22): Module recording.js or its functionality is missing/disabled
-    // stopGestureRecording();
-    console.log('Функция stopGestureRecording временно отключена');
-    ui.modals.gestureModal.style.display = 'none';
-  }
-}
+// TODO: Reimplement toggleMicrophone function
+// TODO: Reimplement toggleXRMode function
+// TODO: Reimplement toggleGestureRecording function

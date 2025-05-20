@@ -180,29 +180,173 @@ function handleStop() {
 }
 
 /**
- * Инициализация элементов управления аудиоплеером.
+ * Инициализация элементов управления аудиоплеером и обработчиков событий.
  */
 export function initializeAudioPlayerControls() {
-  fileButton = document.getElementById('fileButton');
-  playButton = document.getElementById('playButton');
-  pauseButton = document.getElementById('pauseButton');
-  stopButton = document.getElementById('stopButton');
+  // Получаем ссылки на элементы управления по их ID из script.js.backup
+  const fileInput = document.getElementById('audioFileInput');
+  fileButton = document.getElementById('loadAudioButton');
+  playButton = document.getElementById('playAudioButton');
+  pauseButton = document.getElementById('pauseAudioButton');
+  stopButton = document.getElementById('stopAudioButton');
 
-  if (!fileButton || !playButton || !pauseButton || !stopButton) {
-    console.warn('Элементы управления аудиоплеером не найдены. Функциональность плеера будет недоступна.');
+  if (!fileInput || !fileButton || !playButton || !pauseButton || !stopButton) {
+    console.warn('Не найдены все элементы управления аудио (#audioFileInput, #loadAudioButton, #playAudioButton, #pauseAudioButton, #stopAudioButton). AudioPlayer не будет полностью инициализирован.');
     return;
   }
 
-  // Начальное состояние кнопок
+  // Изначально кнопки управления воспроизведением отключены
   playButton.disabled = true;
   pauseButton.disabled = true;
   stopButton.disabled = true;
 
-  fileButton.addEventListener('change', handleFileLoad); // 'change' для input type=file
+  // Обработчик для кнопки загрузки файла - клик по скрытому input
+  fileButton.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  // Обработчик выбора файла - вызывает handleFileLoad
+  fileInput.addEventListener('change', handleFileLoad);
+
+  // Обработчики кнопок воспроизведения
   playButton.addEventListener('click', handlePlay);
   pauseButton.addEventListener('click', handlePause);
   stopButton.addEventListener('click', handleStop);
 
-  ensureAudioContext(); // Первичная инициализация AudioContext
-  console.log('Audio Player Controls initialized.');
+  console.log('AudioPlayer controls initialized.');
 }
+
+/**
+ * Обработчик загрузки файла.
+ */
+async function handleFileLoad(event) {
+  const fileInput = event.target;
+  const file = fileInput.files[0];
+  if (!file) {
+    fileButton.classList.remove('active');
+    return;
+  }
+
+  fileButton.classList.add('active'); // Показываем активность кнопки файла сразу после выбора
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      ensureAudioContext();
+      audioBuffer = await audioContext.decodeAudioData(e.target.result);
+      console.log('Аудиофайл успешно загружен и декодирован.');
+      // Включаем кнопки управления воспроизведением
+      playButton.disabled = false;
+      pauseButton.disabled = false;
+      stopButton.disabled = false;
+
+      // Сбрасываем состояние плеера
+      pausedAt = 0;
+      startOffset = 0;
+      isPlaying = false;
+      if (audioBufferSource) {
+        try {
+          audioBufferSource.stop();
+        } catch (error) {
+          // Подавление ошибки, если источник уже остановлен
+        }
+        audioBufferSource.disconnect();
+        audioBufferSource = null;
+      }
+    } catch (error) {
+      console.error('Ошибка декодирования аудиофайла:', error);
+      fileButton.classList.remove('active');
+      playButton.disabled = true;
+      pauseButton.disabled = true;
+      stopButton.disabled = true;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  fileInput.value = ''; // Очищаем значение input, чтобы событие 'change' срабатывало повторно для того же файла
+}
+
+/**
+ * Обработчик нажатия кнопки Play.
+ */
+function handlePlay() {
+  if (!audioBuffer || isPlaying) return;
+  ensureAudioContext();
+
+  if (audioBufferSource) { // Если уже есть источник, останавливаем и отключаем его
+    try {
+      audioBufferSource.stop();
+    } catch (error) {
+      // Подавление ошибки, если источник уже остановлен
+    }
+    audioBufferSource.disconnect();
+  }
+
+  audioBufferSource = audioContext.createBufferSource();
+  audioBufferSource.buffer = audioBuffer;
+  setupAudioProcessing(audioBufferSource); // Настраиваем обработку (например, гейн)
+
+  // Рассчитываем смещение для возобновления с места паузы
+  // Если pausedAt = 0, воспроизведение начнется с начала
+  const offsetToPlay = pausedAt;
+  audioBufferSource.start(0, offsetToPlay);
+  startOffset = audioContext.currentTime - offsetToPlay; // Корректируем startOffset
+  isPlaying = true;
+
+  playButton.classList.add('active');
+  pauseButton.classList.remove('active');
+  stopButton.classList.remove('active');
+  console.log('Воспроизведение начато.');
+}
+
+/**
+ * Обработчик нажатия кнопки Pause.
+ */
+function handlePause() {
+  if (!isPlaying || !audioBufferSource) return;
+  ensureAudioContext();
+
+  pausedAt = audioContext.currentTime - startOffset; // Сохраняем текущую позицию
+  try {
+    audioBufferSource.stop(); // Останавливаем воспроизведение
+  } catch (error) {
+    // Подавление ошибки, если источник уже остановлен
+  }
+  isPlaying = false;
+
+  playButton.classList.remove('active');
+  pauseButton.classList.add('active');
+  console.log('Воспроизведение на паузе.');
+}
+
+/**
+ * Обработчик нажатия кнопки Stop.
+ */
+function handleStop() {
+  if (!audioBufferSource && !isPlaying && pausedAt === 0) return; // Если нечего останавливать
+
+  if (audioBufferSource) {
+    try {
+      audioBufferSource.stop();
+    } catch (error) {
+      // Подавление ошибки, если источник уже остановлен
+    }
+    audioBufferSource.disconnect();
+    audioBufferSource = null;
+  }
+
+  pausedAt = 0; // Сбрасываем позицию паузы
+  startOffset = 0; // Сбрасываем смещение
+  isPlaying = false;
+
+  playButton.classList.remove('active');
+  pauseButton.classList.remove('active');
+  // stopButton.classList.add('active'); // Обычно стоп не делают активным
+  stopButton.classList.remove('active');
+  console.log('Воспроизведение остановлено.');
+}
+
+// Экспортируем функции, если они нужны извне (например, для инициализации)
+export { playAudio, pauseAudio, stopAudio, loadAudioFile }; // loadAudioFile пока не реализована как отдельная функция, но может понадобиться
+
+// TODO: Реализовать функцию loadAudioFile(file) для загрузки аудио извне (например, из API)
+// TODO: Интегрировать setupAudioProcessing с Three.js для пространственного аудио

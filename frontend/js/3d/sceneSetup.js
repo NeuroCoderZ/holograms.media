@@ -299,128 +299,127 @@ function calculateInitialScale(camera, hologramPivot) {
   return targetWidth / currentWidth;
 }
 
-// --- Основная функция инициализации Three.js сцены ---
+// frontend/js/3d/sceneSetup.js - Модуль инициализации Three.js сцены
 
-export function initializeThreeJSScene() {
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { state } from '../core/init.js'; // Импортируем state
+import { createSequencerGrid, initializeColumns, semitones } from '../rendering.js'; // Импортируем функции и данные из rendering.js
+
+// --- Константы ---
+const GRID_WIDTH = 130;
+const GRID_HEIGHT = 260;
+const GRID_DEPTH = 130;
+const CELL_SIZE = 1;
+const SPHERE_RADIUS = 5;
+const TIMELINE_OFFSET = 180; // Константа для позиционирования
+
+// --- Переменные модуля (будут храниться в state) ---
+// let scene, camera, renderer, hologramPivot, mainSequencerGroup, leftSequencerGroup, rightSequencerGroup;
+
+export function initializeScene() {
   console.log('Инициализация Three.js сцены...');
-  
-  // Создаем основные объекты Three.js
-  const scene = new THREE.Scene();
-  const hologramPivot = new THREE.Group();
-  const mainSequencerGroup = new THREE.Group();
-  
-  // Создаем камеру
-  const aspect = window.innerWidth / window.innerHeight;
-  const orthoCamera = new THREE.OrthographicCamera(
-    -window.innerWidth / 2, window.innerWidth / 2,
-    window.innerHeight / 2, -window.innerHeight / 2,
-    0.1, 1000
-  );
-  orthoCamera.position.set(0, 0, 500);
-  orthoCamera.lookAt(0, 0, 0);
-  
-  // Создаем рендерер
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(0x000000, 0);
-  
-  // Добавляем рендерер в DOM
+
+  // Создание сцены
+  state.scene = new THREE.Scene();
+
+  // Создание камеры (используем OrthographicCamera как в script.js)
   const gridContainer = document.getElementById('grid-container');
+  const initialAvailableWidth = gridContainer ? gridContainer.clientWidth : window.innerWidth;
+  const initialAvailableHeight = gridContainer ? gridContainer.clientHeight : window.innerHeight;
+
+  const initialAspect = initialAvailableWidth / initialAvailableHeight;
+  const initialOrthoLeft = -initialAvailableWidth / 2;
+  const initialOrthoRight = initialAvailableWidth / 2;
+  const initialOrthoTop = initialAvailableHeight / 2;
+  const initialOrthoBottom = -initialAvailableHeight / 2;
+
+  state.camera = new THREE.OrthographicCamera(
+    initialOrthoLeft, initialOrthoRight, initialOrthoTop, initialOrthoBottom,
+    -10000, 10000
+  );
+  state.camera.position.set(0, 0, 1200);
+  state.camera.lookAt(0, 0, 0);
+  console.log('Initial Camera:', { left: state.camera.left, right: state.camera.right, top: state.camera.top, bottom: state.camera.bottom });
+
+  // Создание рендерера
+  state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  state.renderer.setPixelRatio(window.devicePixelRatio);
+  state.renderer.setSize(initialAvailableWidth, initialAvailableHeight);
+  state.renderer.setClearColor(0x000000, 0); // Прозрачный фон
+  state.renderer.autoClear = false; // Отключаем автоматическую очистку для ручного управления
+
+  // Добавление рендерера в DOM
   if (gridContainer) {
-    gridContainer.appendChild(renderer.domElement);
+    gridContainer.appendChild(state.renderer.domElement);
   } else {
-    console.error('Элемент #grid-container не найден!');
-    document.body.appendChild(renderer.domElement);
+    console.error('Элемент #grid-container не найден для добавления рендерера.');
+    document.body.appendChild(state.renderer.domElement); // Добавляем в body как запасной вариант
   }
-  
-  // Создаем освещение
+
+  // Добавление освещения
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-  scene.add(ambientLight);
-  
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  directionalLight.position.set(0, 10, 10);
-  scene.add(directionalLight);
-  
-  // Создаем сетки секвенсора
-  const leftSequencerGroup = createSequencerGrid(
+  state.scene.add(ambientLight);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+  directionalLight.position.set(0, 1, 1);
+  state.scene.add(directionalLight);
+
+  const hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x444444, 0.6);
+  hemisphereLight.position.set(0, 200, 0);
+  state.scene.add(hemisphereLight);
+
+  const spotLight = new THREE.SpotLight(0xffffff, 0.5);
+  spotLight.position.set(0, 300, 100);
+  spotLight.angle = Math.PI / 6;
+  spotLight.penumbra = 0.2;
+  spotLight.castShadow = true;
+  spotLight.shadow.mapSize.width = 1024;
+  spotLight.shadow.mapSize.height = 1024;
+  spotLight.shadow.camera.near = 10;
+  spotLight.shadow.camera.far = 1000;
+  state.scene.add(spotLight);
+
+  const gridPointLight = new THREE.PointLight(0xffffff, 0.8);
+  gridPointLight.position.set(0, TIMELINE_OFFSET / 2, 500);
+  state.scene.add(gridPointLight);
+
+  // Создание групп для секвенсоров и пивота
+  state.hologramPivot = new THREE.Group();
+  state.mainSequencerGroup = new THREE.Group();
+
+  // Создание левой и правой сетки секвенсора
+  // Используем semitones из rendering.js
+  state.leftSequencerGroup = createSequencerGrid(
     GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
-    semitones[semitones.length - 1].color,
-    new THREE.Vector3(-GRID_WIDTH, 0, -GRID_DEPTH / 2),
+    semitones[semitones.length - 1].color, // Цвет последнего (фиолетового) полутона
+    new THREE.Vector3(-GRID_WIDTH, 0, -GRID_DEPTH / 2), // Move left grid further left
     true
   );
-  
-  const rightSequencerGroup = createSequencerGrid(
+  state.rightSequencerGroup = createSequencerGrid(
     GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
-    semitones[0].color,
-    new THREE.Vector3(0, 0, -GRID_DEPTH / 2),
+    semitones[0].color, // Цвет первого (красного) полутона
+    new THREE.Vector3(0, 0, -GRID_DEPTH / 2), // Move right grid to center
     false
   );
-  
-  // Добавляем группы в основную группу
-  mainSequencerGroup.add(leftSequencerGroup);
-  mainSequencerGroup.add(rightSequencerGroup);
-  
-  // Добавляем основную группу в опорную точку голограммы
-  hologramPivot.add(mainSequencerGroup);
-  
-  // Добавляем опорную точку голограммы в сцену
-  scene.add(hologramPivot);
-  
-  // Инициализируем колонки
-  const columns = initializeColumns();
-  updateSequencerColumns(columns, leftSequencerGroup, rightSequencerGroup);
-  
-  // Устанавливаем начальный масштаб голограммы
-  const initialScale = calculateInitialScale(orthoCamera, hologramPivot);
-  hologramPivot.scale.set(initialScale, initialScale, initialScale);
-  
-  // Функция анимации
-  function animate() {
-    requestAnimationFrame(animate);
-    
-    // Обновляем колонки, если есть аудио анализаторы
-    if (window.microphoneAnalyserLeft && window.microphoneAnalyserRight) {
-      processAudio(window.microphoneAnalyserLeft, window.microphoneAnalyserRight, columns);
-    }
-    
-    // Рендерим сцену
-    renderer.render(scene, orthoCamera);
-  }
-  
-  // Запускаем анимацию
-  animate();
-  
-  // Обработчик изменения размера окна
-  window.addEventListener('resize', () => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    
-    orthoCamera.left = -width / 2;
-    orthoCamera.right = width / 2;
-    orthoCamera.top = height / 2;
-    orthoCamera.bottom = -height / 2;
-    orthoCamera.updateProjectionMatrix();
-    
-    renderer.setSize(width, height);
-    
-    // Пересчитываем масштаб голограммы
-    const newScale = calculateInitialScale(orthoCamera, hologramPivot);
-    hologramPivot.scale.set(newScale, newScale, newScale);
-  });
-  
+
+  // Добавление групп в сцену
+  state.mainSequencerGroup.add(state.leftSequencerGroup);
+  state.mainSequencerGroup.add(state.rightSequencerGroup);
+  state.hologramPivot.add(state.mainSequencerGroup);
+  state.scene.add(state.hologramPivot);
+
+  // Центрируем геометрию относительно пивота
+  state.mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0);
+  state.hologramPivot.position.set(0, 0, 0); // Начальная позиция пивота
+  state.mainSequencerGroup.rotation.set(0, 0, 0);
+
+  // Инициализация колонок (перенесено в rendering.js)
+  // initializeColumns(); // Этот вызов, возможно, нужно будет сделать из main.js после инициализации сцены
+
   console.log('Инициализация Three.js сцены завершена');
-  
-  // Возвращаем объекты для использования в других модулях
-  return {
-    scene,
-    camera: orthoCamera,
-    renderer,
-    hologramPivot,
-    columns,
-    leftSequencerGroup,
-    rightSequencerGroup,
-    mainSequencerGroup
-  };
+
+  // Возвращаем объекты через state
+  // return { scene, camera, renderer, hologramPivot, mainSequencerGroup, leftSequencerGroup, rightSequencerGroup };
 }
 
 // Экспортируем функции и объекты для использования в других модулях
