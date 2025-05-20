@@ -48,6 +48,203 @@ function togglePanels() {
       console.error('Required elements not found for togglePanels');
       return;
   }
+
+  const isHidden = leftPanel.classList.contains('hidden');
+  const newState = !isHidden; // Новое состояние: если были скрыты, станут видимыми, и наоборот
+
+  leftPanel.classList.toggle('hidden', newState);
+  rightPanel.classList.toggle('hidden', newState);
+  togglePanelsButton.classList.toggle('show-mode', newState); // Кнопка показывает режим, в который переходим
+
+  // Сохраняем состояние
+  localStorage.setItem('panelsHidden', newState);
+
+  console.log(`[DEBUG] Toggled panels. New state: hidden=${newState}`);
+
+  // Вызываем ресайз после применения классов
+  setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      console.log('Dispatched resize event after toggle timeout.');
+  }, 50);
+}
+
+// --- File Editor Logic (Перенесено из script.js) ---
+
+// Функция для загрузки содержимого файла
+async function loadFileContent(filePath) {
+    try {
+        const response = await axios.get(filePath);
+        fileContents[filePath] = response.data;
+        return response.data;
+    } catch (error) {
+        console.error(`Error loading file content from ${filePath}:`, error);
+        return null;
+    }
+}
+
+// Функция для сохранения содержимого файла (заглушка)
+async function saveFileContent(filePath, content) {
+    console.log(`Attempting to save file ${filePath} with content:`, content);
+    // TODO: Реализовать логику сохранения на бэкенде
+    alert('Функция сохранения файла пока не реализована.');
+    return false; // Предполагаем неудачу, пока не реализовано
+}
+
+// Функция для открытия файла в редакторе
+async function openFileInEditor(filePath) {
+    const editorModal = document.getElementById('editorModal');
+    const editorContent = document.getElementById('editorContent');
+    const editorFilePath = document.getElementById('editorFilePath');
+    const saveFileButton = document.getElementById('saveFile');
+    const closeEditorButton = document.querySelector('.close-button');
+
+    if (!editorModal || !editorContent || !editorFilePath || !saveFileButton || !closeEditorButton) {
+        console.error('Editor modal elements not found.');
+        return;
+    }
+
+    editorFilePath.textContent = filePath;
+    editorContent.value = 'Загрузка...';
+    editorModal.style.display = 'block';
+
+    const content = await loadFileContent(filePath);
+    if (content !== null) {
+        editorContent.value = content;
+        // Сохраняем текущий путь для кнопки сохранения
+        saveFileButton.dataset.currentFilePath = filePath;
+    } else {
+        editorContent.value = `Не удалось загрузить файл: ${filePath}`;
+        saveFileButton.dataset.currentFilePath = ''; // Очищаем путь при ошибке
+    }
+}
+
+// --- Initialization Function ---
+
+export function setupDOMEventHandlers() {
+  console.log('Setting up DOM event handlers...');
+
+  // Обработчик для кнопки GitHub
+  const githubButton = document.getElementById('githubButton');
+  if (githubButton) {
+    githubButton.addEventListener('click', () => {
+      window.open('https://github.com/NeuroCoderZ/holograms.media', '_blank', 'noopener,noreferrer');
+    });
+  } else {
+    console.warn("Кнопка GitHub (#githubButton) не найдена.");
+  }
+
+  // Наблюдатель за окном записи жестов
+  const gesturePanel = document.querySelector('.gesture-recording-panel');
+  if (gesturePanel) {
+      const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+              if (mutation.attributeName === 'data-gesture-recording') {
+                  const isActive = gesturePanel.getAttribute('data-gesture-recording') === 'active';
+                  console.log('Gesture recording panel active:', isActive);
+                  window.dispatchEvent(new Event('resize')); // Обновить позиционирование
+              }
+          });
+      });
+      observer.observe(gesturePanel, { attributes: true });
+  } else {
+    console.warn("Gesture recording panel element not found.");
+  }
+
+  // Наблюдатель за окном записи жестов
+  const gestureAreaWatcher = document.getElementById('gesture-area') || document.querySelector('[data-gesture-area], [style*="height: 25vh"], [style*="height: 4px"]');
+  console.log('Gesture area element:', gestureAreaWatcher);
+  if (gestureAreaWatcher) {
+      console.log('Gesture area initial height:', gestureAreaWatcher.style.height);
+      const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+              const height = gestureAreaWatcher.style.height;
+              const isActive = height === '25vh';
+              console.log('Gesture area height changed to:', height, 'Active:', isActive);
+              gestureAreaWatcher.classList.toggle('active', isActive);
+              window.dispatchEvent(new Event('resize'));
+          });
+      });
+      observer.observe(gestureAreaWatcher, { attributes: true, attributeFilter: ['style'] });
+  } else {
+      console.log('Gesture area element not found, checking DOM...');
+      const allElements = document.querySelectorAll('*');
+      allElements.forEach(el => {
+          if (el.style.height === '25vh' || el.style.height === '4px') {
+              console.log('Found element with height 25vh or 4px:', el);
+          }
+      });
+  }
+
+  // Обработчик для кнопки переключения панелей
+  const togglePanelsButton = document.getElementById('togglePanelsButton');
+  if (togglePanelsButton) {
+      togglePanelsButton.addEventListener('click', togglePanels);
+      // Перемещаем кнопку в body, если она еще в левой панели
+      if (togglePanelsButton.parentNode && togglePanelsButton.parentNode.classList.contains('left-panel')) {
+          document.body.appendChild(togglePanelsButton);
+          console.log('Moved togglePanelsButton to body');
+      }
+  } else {
+      console.warn("Кнопка переключения панелей (#togglePanelsButton) не найдена.");
+  }
+
+  // Инициализация состояния панелей при загрузке
+  initializePanelState();
+
+  // Обработчик для кнопки сохранения в редакторе
+  const saveFileButton = document.getElementById('saveFile');
+  if (saveFileButton) {
+      saveFileButton.addEventListener('click', async () => {
+          const filePath = saveFileButton.dataset.currentFilePath;
+          const content = document.getElementById('editorContent').value;
+          if (filePath) {
+              await saveFileContent(filePath, content);
+          } else {
+              console.warn('No file path specified for saving.');
+          }
+      });
+  } else {
+         console.warn("Кнопка сохранения (#saveFile) не найдена.");
+  }
+
+  // Обработчик для кнопки закрытия редактора
+  const closeEditorButton = document.querySelector('.close-button');
+   if (closeEditorButton) {
+       closeEditorButton.addEventListener('click', () => {
+           const editorModal = document.getElementById('editorModal');
+           if (editorModal) {
+               editorModal.style.display = 'none';
+           }
+       });
+   } else {
+       console.warn("Кнопка закрытия редактора (.close-button) не найдена.");
+   }
+
+  // Обработчик для закрытия редактора по клику вне модального окна
+  const editorModal = document.getElementById('editorModal');
+  if (editorModal) {
+      window.addEventListener('click', (event) => {
+          if (event.target === editorModal) {
+              editorModal.style.display = 'none';
+          }
+      });
+  } else {
+      console.warn("Модальное окно редактора (#editorModal) не найдено.");
+  }
+
+  // TODO: Перенести логику инициализации чата (submitChatMessage, chatInput) в chat.js (уже сделано)
+  // TODO: Перенести вызов loadChatHistory в main.js или соответствующий модуль инициализации
+
+  console.log('DOM event handlers setup complete.');
+}
+
+// Экспортируем функцию openFileInEditor для использования в других модулях
+export { openFileInEditor };Button');
+
+  if (!leftPanel || !rightPanel || !togglePanelsButton) {
+      console.error('Required elements not found for togglePanels');
+      return;
+  }
   const willBeHidden = !leftPanel.classList.contains('hidden');
   console.log('Toggling panels, willBeHidden:', willBeHidden);
 

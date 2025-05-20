@@ -443,12 +443,42 @@ export function updateColumnsForMicrophone(analyserLeft, analyserRight) {
     console.warn("Микрофонные анализаторы не инициализированы.");
     return;
   }
-  
+
   // Получаем уровни для левого и правого каналов
   const leftLevels = getSemitoneLevels(analyserLeft);
   const rightLevels = getSemitoneLevels(analyserRight);
-  
+
   // Обновляем колонки для обоих каналов
   updateSequencerColumns(leftLevels, 'left');
   updateSequencerColumns(rightLevels, 'right');
+}
+
+// --- Функция анимации и рендеринга ---
+
+export function animate() {
+  requestAnimationFrame(animate);
+
+  // Проверяем, что необходимые объекты Three.js инициализированы в state
+  if (!state.scene || !state.camera || !state.renderer) {
+      console.error('[Animation] Rendering setup incomplete:', { scene: state.scene, camera: state.camera, renderer: state.renderer });
+      return;
+  }
+
+  // Обновляем анимации TWEEN.js (предполагается, что TWEEN глобально доступен)
+  if (typeof TWEEN !== 'undefined') {
+      TWEEN.update();
+  }
+
+  // Очищаем буферы
+  state.renderer.clear();
+
+  // Обрабатываем аудио, если воспроизводится
+  // Предполагаем, что isPlaying и processAudio будут доступны через state или импорт
+  // Временно используем updateColumnsForMicrophone, как в script.js.backup
+  if (state.isPlaying && state.microphoneAnalyserLeft && state.microphoneAnalyserRight) {
+      updateColumnsForMicrophone(state.microphoneAnalyserLeft, state.microphoneAnalyserRight);
+  }
+
+  // Рендерим сцену
+  state.renderer.render(state.scene, state.camera);
 }

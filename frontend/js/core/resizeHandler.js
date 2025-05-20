@@ -1,63 +1,74 @@
+import * as THREE from 'three'; // Добавляем импорт THREE для доступа к MathUtils
 import { state } from './init.js';
-// import { updateHologramLayout } from '../ui/layoutManager.js'; // Предполагаемое место, пока оставляем как есть
+import { updateHologramLayout } from '../ui/layoutManager.js'; // Предполагаемое место, пока оставляем как есть
+
+// Вспомогательная функция для получения ширины панелей (перенесена из script.js)
+function getPanelWidths() {
+    const leftPanel = document.querySelector('.panel.left-panel');
+    const rightPanel = document.querySelector('.panel.right-panel');
+    const leftWidth = leftPanel ? leftPanel.offsetWidth : 0;
+    const rightWidth = rightPanel ? rightPanel.offsetWidth : 0;
+    return leftWidth + rightWidth;
+}
 
 export function initializeResizeHandler() {
   window.addEventListener('resize', () => {
-    // Получаем элементы и их размеры
-    const gridContainerElement = document.getElementById('grid-container');
-    if (!gridContainerElement) {
-      console.error("Resize handler: #grid-container not found!");
-      return;
+    console.log('[Resize] Window resized');
+
+    // Обновляем размеры панелей (перенесено из script.js)
+    const leftPanel = document.querySelector('.panel.left-panel');
+    const rightPanel = document.querySelector('.panel.right-panel');
+
+    if (leftPanel) {
+        const buttonSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--button-size'));
+        const buttonSpacing = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--button-spacing'));
+        const newWidth = buttonSize * 2 + buttonSpacing * 3;
+        leftPanel.style.width = `${newWidth}px`;
+        console.log('[Resize] Left panel resized:', { width: newWidth });
     }
-    const currentGridHeight = gridContainerElement.clientHeight;
-    // Предполагаем, что getPanelWidths() либо глобальна, либо будет импортирована/перенесена позже
-    const leftPanelWidth = document.querySelector('.panel.left-panel')?.offsetWidth || 0;
-    const rightPanelWidth = document.querySelector('.panel.right-panel')?.offsetWidth || 0;
-    const availableWidth = window.innerWidth - leftPanelWidth - rightPanelWidth;
 
-    // Логи
-    console.log(`Resize event: availableW=${availableWidth}, currentGridHeight=${currentGridHeight}`);
+    if (rightPanel) {
+        // Используем MathUtils.clamp из THREE
+        const newWidthVW = THREE.MathUtils.clamp(window.innerWidth * 0.25, 20, 30);
+        rightPanel.style.width = `${newWidthVW}vw`;
+        console.log('[Resize] Right panel resized:', { width: `${newWidthVW}vw` });
+    }
 
-    // Обновляем камеру и рендерер
-    // Используем state.camera и state.renderer
-    if (!state.isXRMode) { // Предполагаем, что isXRMode теперь в state
-      // Проверяем, что state.camera существует перед использованием
-      if (state.camera) {
+    // Получаем доступное пространство
+    const availableWidth = window.innerWidth - getPanelWidths();
+    const availableHeight = window.innerHeight;
+
+    // Обновляем рендерер и камеру (используем state)
+    if (state.renderer) {
+        state.renderer.setSize(availableWidth, availableHeight);
+        console.log('[Resize] Renderer resized:', { width: availableWidth, height: availableHeight });
+    }
+
+    if (state.camera) {
+        // Обновляем камеру в зависимости от ее типа
         if (state.camera.isOrthographicCamera) {
-          state.camera.left = -availableWidth / 2;
-          state.camera.right = availableWidth / 2;
-          state.camera.top = currentGridHeight / 2;
-          state.camera.bottom = -currentGridHeight / 2;
+            state.camera.left = -availableWidth / 2;
+            state.camera.right = availableWidth / 2;
+            state.camera.top = availableHeight / 2;
+            state.camera.bottom = -availableHeight / 2;
         } else if (state.camera.isPerspectiveCamera) {
-          state.camera.aspect = availableWidth / currentGridHeight;
+            state.camera.aspect = availableWidth / availableHeight;
         }
         state.camera.updateProjectionMatrix();
-      } else {
-        console.error('Resize handler: state.camera is null');
-      }
-
-      // Проверяем, что state.renderer существует перед использованием
-      if (state.renderer) {
-        state.renderer.setSize(availableWidth, currentGridHeight);
-      } else {
-        console.error('Resize handler: state.renderer is null');
-      }
+        console.log('[Resize] Camera updated');
     }
 
     // Вызываем updateHologramLayout для пересчета макета голограммы
-    const gestureAreaElement = document.getElementById('gesture-area');
     // Определяем видимость по высоте (сравниваем с начальной высотой щели)
-    // !!! Проверяем именно '4px' - это специфичная логика, переносим как есть
+    const gestureAreaElement = document.getElementById('gesture-area');
     const handsAreCurrentlyVisible = gestureAreaElement ? (gestureAreaElement.style.height !== '4px') : false;
-    // updateHologramLayout(handsAreCurrentlyVisible); // !!! Этот вызов должен быть здесь
-    // Если updateHologramLayout еще не вынесена, ее нужно будет импортировать или перенести позже.
-    // Пока оставляем вызов закомментированным или предполагаем, что она глобальна/импортируется.
-    // В соответствии с инструкцией, оставляем вызов как есть, предполагая, что она будет доступна.
+
+    // Проверяем, что updateHologramLayout доступна перед вызовом
     if (typeof updateHologramLayout === 'function') {
         updateHologramLayout(handsAreCurrentlyVisible);
+        console.log('[Resize] updateHologramLayout called');
     } else {
         console.warn('updateHologramLayout function not found. It needs to be imported or moved.');
     }
-
   });
 }
