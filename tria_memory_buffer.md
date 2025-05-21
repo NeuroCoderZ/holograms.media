@@ -32,4 +32,7 @@
 - Выполнен `git add`, `commit`, `push` изменений.
 
 **Статус:** Завершено. Изменения отправлены в репозиторий.
+[2025-05-20 HH:MM] Промпт ID [MANUAL_FIX_YYYYMMDD_01]. Цель: Ручное устранение критических SyntaxErrors и Export/Import ошибок в rendering.js и sceneSetup.js. Результат: Основные синтаксические ошибки и проблемы с импортом/экспортом между rendering.js и sceneSetup.js устранены НейроКодером. Файлы: frontend/js/3d/rendering.js, frontend/js/3d/sceneSetup.js. След. шаг: Тестирование на HF Spaces, затем финальный аудитscript.jsи структуры проекта.
+[2025-05-21] Выполнены `git add`, `git commit` и `git push` для фиксации изменений в `rendering.js`, `sceneSetup.js`, `PROJECT_CONTEXT.md` и `tria_memory_buffer.md`. Обновлен `PROJECT_CONTEXT.md` для отражения устраненных критических ошибок и добавления записи о последних изменениях.
+[2025-05-21] ID[20250520-XXXX-012]. Цель: Фикс импорта axios, анализ TODO в main.js. Результат: Axios подключен CDN, импорты удалены, заглушки созданы. Логи F12: Ошибка 404 для init.js, предупреждение от tria_mode.js. Файлы: frontend/index.html, frontend/js/ui/versionManager.js, frontend/js/core/domEventHandlers.js, frontend/js/ui/promptManager.js, frontend/js/main.js, frontend/js/utils/storage.js, frontend/js/utils/helpers.js. След. шаг: Исправление ошибки 404 для init.js.
 <!-- New entries will be added above this line -->

@@ -36,8 +36,6 @@ import { animate } from '/static/js/3d/rendering.js'; // Импорт функц
 // Импорт мультимодальных модулей
 import { initializeMediaPipeHands } from '/static/js/multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
 // import { initializeGestureDetection } from '/static/js/gestures/detection.js'; // TODO: Module for gesture detection not found, related code disabled
-import { initializeMediaPipeHands as initializeHandTracking } from './multimodal/handsTracking.js'; // Используем alias для существующего модуля
-
 // Импорт AI модулей
 import { setupChat } from '/static/js/ai/chat.js'; // Путь исправлен
 import { initializeTria } from '/static/js/ai/tria.js'; // Путь исправлен
@@ -78,9 +76,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeMediaPipeHands();
   // TODO: Module for gesture detection not found, related code disabled
   // initializeGestureDetection();
-  // TODO: Module for hand tracking not found, related code disabled
-  // initializeHandTracking();
-
   // 5. Инициализируем аудио компоненты (могут зависеть от UI)
   initializeMicrophoneButton();
   initializeAudioPlayerControls();
