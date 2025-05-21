@@ -2,7 +2,6 @@
 
 import { state } from '../core/init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
-import axios from 'axios';
 import { addMessage } from '../panels/chatMessages.js'; // Импортируем addMessage для вывода ответов
 
 /**
