@@ -20,9 +20,9 @@ const STARTING_OCTAVE = 2;
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 // Grid and Scale Configuration (частично)
-const GRID_WIDTH = 130;
+const _GRID_WIDTH = 130;
 const GRID_HEIGHT = 260;
-const GRID_DEPTH = 130;
+const _GRID_DEPTH = 130;
 const CELL_SIZE = 1;
 const SPHERE_RADIUS = 5;
 
@@ -30,7 +30,7 @@ const SPHERE_RADIUS = 5;
 export const columns = [];
 
 // Функция для вычисления ширины колонок на основе индекса
-function degreesToCells(index) {
+export function degreesToCells(index) {
   const maxWidth = 130;
   const minWidth = 1;
   const totalSemitones = 130;
@@ -56,10 +56,17 @@ export const semitones = Array.from({ length: 130 }, (_, i) => {
   const note = NOTES[noteIndex] + octave;
 
   return {
-    key: note.replace("#", "s"), // Для React (если будет использоваться)\n    note: note,\n    f: f,\n    width: width,\n    color: color,\n    deg: 180.00 - (i * 1.3846) // Угол для визуализации
-  });
+    key: note.replace("#", "s"), // Для React (если будет использоваться)
+    note: note,
+    f: f,
+    width: width,
+    color: color,
+    deg: 180.00 - (i * 1.3846) // Угол для визуализации
+  };
+});
 
-
+// TODO: Функция calculateInitialScale не найдена в предоставленном контексте script.js. Если она нужна, ее нужно реализовать и экспортировать.
+// export function calculateInitialScale(...) { ... }
 
 // --- Функции рендеринга, перенесенные из script.js ---
 
@@ -174,8 +181,16 @@ export function createSequencerGrid(width, height, depth, cellSize, color, posit
   //   grid.material.color.set(0x9400d3);
   // }
   const axis = createAxis(width, SPHERE_RADIUS); // Передаем только длину и радиус сферы
-  const sequencerGroup = new THREE.Group();\n  sequencerGroup.add(grid);\n  sequencerGroup.add(axis);\n  sequencerGroup.position.copy(position);\n  return sequencerGroup;\n}\n\n// Функция createColumn, адаптированная для rendering.js\n// Примечание: эта функция отличается от той, что в sceneSetup.js. Мы переносим ту, что была в script.js
-export function createColumn(x, y, dB) { // Удален isLeftGrid
+  const sequencerGroup = new THREE.Group();
+  sequencerGroup.add(grid);
+  sequencerGroup.add(axis);
+  sequencerGroup.position.copy(position);
+  return sequencerGroup;
+}
+
+// Функция createColumn, адаптированная для rendering.js
+// Примечание: эта функция отличается от той, что в sceneSetup.js. Мы переносим ту, что была в script.js
+export function createColumn(x, y, dB) {
   const group = new THREE.Group();
   const semitone = semitones[y - 1]; // y - это индекс + 1
   if (!semitone) {

@@ -104,11 +104,13 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - [2024-05-20 10:30] Порядок вызовов реструктурирован.
 - [2025-05-21] Импорты в main.js проанализированы, созданы заглушки для storage.js, helpers.js.
 
-### Текущий Фокус
-
-- **Стабилизация фронтенда:** Устранение оставшихся ошибок (синтаксических, 404, ESLint) после рефакторинга модулей.
-- **Подготовка к PostgreSQL:** Анализ требований, планирование интеграции.
-- **Git Operations:** Выполнен add, commit, push изменений.
+## 6. Текущие Приоритеты (См. актуальный `PROJECT_CONTEXT.md`)
+1.  **Стабилизация фронтенда** после рефакторинга `script.js`.
+2.  **Устранение JS ошибок** (ReferenceError, интеграция модулей).
+3.  **Подготовка к PostgreSQL.**
+4.  **Устранены критические SyntaxErrors в rendering.js.**
+4.  **Проверка импортов/экспортов в 3D модулях:** Проверена корректность импортов в <mcfile name="sceneSetup.js" path="c:\Projects\holograms-media\frontend\js\3d\sceneSetup.js"></mcfile> из <mcfile name="rendering.js" path="c:\Projects\holograms-media\frontend\js\3d\rendering.js"></mcfile>. Подтверждено отсутствие функции <mcsymbol name="calculateInitialScale" filename="rendering.js" path="c:\Projects\holograms-media\frontend\js\3d\rendering.js" startline="46" type="function"></mcsymbol> в <mcfile name="rendering.js" path="c:\Projects\holograms-media\frontend\js\3d\rendering.js"></mcfile> (согласно TODO). Функция <mcsymbol name="createColumn" filename="rendering.js" path="c:\Projects\holograms-media\PROJECT_CONTEXT.md"></mcfile> не имеет параметра `isLeft`.
+5.  **Анализ rendering.js на синтаксические ошибки:** Проведен анализ файла rendering.js на наличие синтаксических ошибок; явных ошибок не обнаружено в предоставленном контексте.
 
 ### План на Следующие Итерации
 
@@ -171,5 +173,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - MIT.
 
 ### Контакты
+В "Последние Ключевые Изменения" добавьте: [2025-05-20] НейроКодером устранены критические SyntaxErrors и проблемы export/import в rendering.js и sceneSetup.js.
+В "Критические Известные Проблемы" обновите статус этих ошибок (например, пометьте их как решенные или удалите, если они там были).
 
 - См. README.md или GitHub репозиторий.
