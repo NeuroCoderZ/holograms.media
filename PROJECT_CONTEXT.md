@@ -76,7 +76,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 ### Критические Проблемы
 
 - [ ] **Ошибки ESLint:** Остались некритические ошибки, требующие внимания.
-- [ ] **404 Errors:** Возможны ошибки 404 для некоторых модулей после рефакторинга путей.
+- [ ] **404 Errors:** Обнаружена ошибка 404 для `frontend/js/core/init.js`. Возможны другие ошибки 404 для некоторых модулей после рефакторинга путей.
 - [ ] **Неиспользуемый код/переменные:** Требуется чистка кода.
 - [ ] **Логика сохранения/загрузки состояния:** Перенесена в `appStatePersistence.js`, требует тестирования.
 - [ ] **Интеграция WebGPU:** Долгосрочная цель, пока неактуально.
@@ -86,6 +86,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 ### Последние Изменения
 
 - [2025-05-21] Выполнен Git add, commit и push изменений, связанных со структурой фронтенд-модулей и обновлением контекстных файлов.
+- [2025-05-21] Устранена ошибка импорта axios путем использования CDN. Проанализированы TODO в main.js, созданы заглушки для отсутствующих модулей.
 
 ### Последние Изменения
 
@@ -103,12 +104,13 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - [2025-05-20 10:00] Путь импорта и объявление THREE исправлены.
 - [2024-05-20 10:30] Порядок вызовов реструктурирован.
 - [2025-05-21] Импорты в main.js проанализированы, созданы заглушки для storage.js, helpers.js.
+- [2025-05-20] НейроКодером устранены критические SyntaxErrors и проблемы export/import в rendering.js и sceneSetup.js.
 
 ## 6. Текущие Приоритеты (См. актуальный `PROJECT_CONTEXT.md`)
 1.  **Стабилизация фронтенда** после рефакторинга `script.js`.
 2.  **Устранение JS ошибок** (ReferenceError, интеграция модулей).
 3.  **Подготовка к PostgreSQL.**
-4.  **Устранены критические SyntaxErrors в rendering.js.**
+4.  [x] **Устранены критические SyntaxErrors в rendering.js.**
 4.  **Проверка импортов/экспортов в 3D модулях:** Проверена корректность импортов в <mcfile name="sceneSetup.js" path="c:\Projects\holograms-media\frontend\js\3d\sceneSetup.js"></mcfile> из <mcfile name="rendering.js" path="c:\Projects\holograms-media\frontend\js\3d\rendering.js"></mcfile>. Подтверждено отсутствие функции <mcsymbol name="calculateInitialScale" filename="rendering.js" path="c:\Projects\holograms-media\frontend\js\3d\rendering.js" startline="46" type="function"></mcsymbol> в <mcfile name="rendering.js" path="c:\Projects\holograms-media\frontend\js\3d\rendering.js"></mcfile> (согласно TODO). Функция <mcsymbol name="createColumn" filename="rendering.js" path="c:\Projects\holograms-media\PROJECT_CONTEXT.md"></mcfile> не имеет параметра `isLeft`.
 5.  **Анализ rendering.js на синтаксические ошибки:** Проведен анализ файла rendering.js на наличие синтаксических ошибок; явных ошибок не обнаружено в предоставленном контексте.
 

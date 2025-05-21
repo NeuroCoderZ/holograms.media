@@ -1,7 +1,6 @@
 // frontend/js/ui/versionManager.js
 
 import * as THREE from 'three'; // Нужен для ObjectLoader
-import axios from 'axios'; // Нужен для запросов к бэкенду
 
 // Переменные для управления версиями и ветками
 let currentBranch = 'main'; // Текущая активная ветка
