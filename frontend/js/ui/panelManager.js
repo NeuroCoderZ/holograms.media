@@ -10,9 +10,10 @@ let togglePanelsButton = null;
  */
 function initializePanelState() {
   // Получаем ссылки на панели
-  leftPanel = document.getElementById('left-panel');
-  rightPanel = document.getElementById('right-panel');
-  togglePanelsButton = document.getElementById('togglePanelsButton');
+  // Получаем ссылки на панели и кнопку, используя соответствующие селекторы
+  leftPanel = document.querySelector('.panel.left-panel');
+  rightPanel = document.querySelector('.panel.right-panel');
+  togglePanelsButton = document.getElementById('togglePanelsButton'); // Кнопка имеет ID
 
   // Проверяем наличие панелей и кнопки
   if (!leftPanel || !rightPanel || !togglePanelsButton) {

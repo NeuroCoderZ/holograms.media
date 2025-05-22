@@ -40,6 +40,16 @@ export function initializeScene() {
       console.log('[DEBUG] initializeScene: state.hologramPivot is null, initializing...');
       state.hologramPivot = new THREE.Group();
   }
+  // Инициализация основных групп, если они еще не созданы
+  if (state.scene === null) {
+      console.log('[DEBUG] initializeScene: state.scene is null, initializing...');
+      state.scene = new THREE.Scene();
+  }
+  if (state.hologramPivot === null) {
+      console.log('[DEBUG] initializeScene: state.hologramPivot is null, initializing...');
+      state.hologramPivot = new THREE.Group();
+  }
+  // КРИТИЧНО: Инициализация mainSequencerGroup ДО добавления в него дочерних элементов
   if (state.mainSequencerGroup === null) {
        console.log('[DEBUG] initializeScene: state.mainSequencerGroup is null, initializing...');
        state.mainSequencerGroup = new THREE.Group();

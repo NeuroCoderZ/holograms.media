@@ -62,7 +62,7 @@
 ---
 
 ## 6. Текущие Приоритеты (См. `PROJECT_CONTEXT.md`)
-1. **Стабилизация Фронтенда:** Исправление ошибок (`ReferenceError`, `Module not found`) в `main.js`, `uiManager.js`, `sceneSetup.js`. **Runtime Errors устранены.**
+1. **Стабилизация Фронтенда:** Исправление ошибок (`ReferenceError`, `Module not found`) в `main.js`, `uiManager.js`, `sceneSetup.js`.
 2. **UI и Голограмма:** Восстановление отображения голограммы, работа кнопок "Чат", "Триа".
 3. **Миграция на PostgreSQL:** Проектирование схемы, подключение через `asyncpg`.
 4. **Триа:** Заглушки для ботов в `backend/tria_bots/`, мультимодальность (голос, жесты).
@@ -79,6 +79,7 @@
 
 ## 8. Последние Изменения
 - [2025-05-23] Испр. Runtime Errors в sceneSetup (null.add), panelManager и gestureAreaVisualization (поиск DOM).
+- [2025-05-23] Испр. Runtime Errors: инициализация mainSequencerGroup, поиск DOM в panelManager.
 - [2025-05-23] Исправлена ошибка импорта initializePromptManager в promptManager.js.
 - [2025-05-23] Исправлена ошибка импорта initializeChatDisplay и применены правила ESLint в promptManager.js.
 - [2025-05-23] Исправлена ошибка импорта addMessage в promptManager.js и chatMessages.js.
