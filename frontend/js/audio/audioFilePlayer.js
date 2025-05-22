@@ -201,37 +201,7 @@ export function initializeAudioPlayerControls() {
   console.log('AudioPlayer controls initialized.');
 }
 
-      audioBuffer = await audioContext.decodeAudioData(e.target.result);
-      console.log('Аудиофайл успешно загружен и декодирован.');
-      // Включаем кнопки управления воспроизведением
-      playButton.disabled = false;
-      pauseButton.disabled = false;
-      stopButton.disabled = false;
 
-      // Сбрасываем состояние плеера
-      pausedAt = 0;
-      startOffset = 0;
-      isPlaying = false;
-      if (audioBufferSource) {
-        try {
-          audioBufferSource.stop();
-        } catch (error) {
-          // Подавление ошибки, если источник уже остановлен
-        }
-        audioBufferSource.disconnect();
-        audioBufferSource = null;
-      }
-    } catch (error) {
-      console.error('Ошибка декодирования аудиофайла:', error);
-      fileButton.classList.remove('active');
-      playButton.disabled = true;
-      pauseButton.disabled = true;
-      stopButton.disabled = true;
-    }
-  };
-  reader.readAsArrayBuffer(file);
-  fileInput.value = ''; // Очищаем значение input, чтобы событие 'change' срабатывало повторно для того же файла
-}
 
 /**
  * Обработчик нажатия кнопки Play.
