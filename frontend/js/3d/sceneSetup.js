@@ -32,29 +32,19 @@ export function initializeScene() {
       // initCore(); // This might cause issues if called multiple times
       return; // Stop execution if state is bad
   }
-  if (state.scene === null) {
-      console.log('[DEBUG] initializeScene: state.scene is null, initializing...');
-      state.scene = new THREE.Scene();
-  }
-  if (state.hologramPivot === null) {
-      console.log('[DEBUG] initializeScene: state.hologramPivot is null, initializing...');
-      state.hologramPivot = new THREE.Group();
-  }
-  // Инициализация основных групп, если они еще не созданы
-  if (state.scene === null) {
-      console.log('[DEBUG] initializeScene: state.scene is null, initializing...');
-      state.scene = new THREE.Scene();
-  }
-  if (state.hologramPivot === null) {
-      console.log('[DEBUG] initializeScene: state.hologramPivot is null, initializing...');
-      state.hologramPivot = new THREE.Group();
-  }
-  // КРИТИЧНО: Инициализация mainSequencerGroup ДО добавления в него дочерних элементов
-  if (state.mainSequencerGroup === null) {
-       console.log('[DEBUG] initializeScene: state.mainSequencerGroup is null, initializing...');
-       state.mainSequencerGroup = new THREE.Group();
-  }
 
+  // КРИТИЧНО: Инициализация mainSequencerGroup САМОЙ ПЕРВОЙ, ДО любых операций с ним или зависимыми группами.
+  state.mainSequencerGroup = new THREE.Group();
+
+  // Инициализация основных объектов сцены, если они еще не созданы
+  if (state.scene === null) {
+      console.log('[DEBUG] initializeScene: state.scene is null, initializing...');
+      state.scene = new THREE.Scene();
+  }
+  if (state.hologramPivot === null) {
+      console.log('[DEBUG] initializeScene: state.hologramPivot is null, initializing...');
+      state.hologramPivot = new THREE.Group();
+  }
 
   console.log('[DEBUG] initializeScene: state.hologramPivot initialized:', state.hologramPivot);
   console.log('[DEBUG] initializeScene: state.mainSequencerGroup initialized:', state.mainSequencerGroup);
@@ -86,8 +76,6 @@ export function initializeScene() {
       } else {
         console.warn("rightSequencerGroup is null, cannot add to mainSequencerGroup.");
       }
-  } else {
-      console.error("Main Sequencer Group is null before adding children!");
   }
 
 
