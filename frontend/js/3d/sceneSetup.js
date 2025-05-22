@@ -25,11 +25,29 @@ import { semitones, createSequencerGrid } from './rendering.js'; // Import requi
 
 // Функция инициализации сцены
 export function initializeScene() {
-  // Инициализация сцены Three.js
-  state.scene = new THREE.Scene();
-  // Создание групп для секвенсоров и пивота
-  state.hologramPivot = new THREE.Group();
-  state.mainSequencerGroup = new THREE.Group();
+  // Add a check for state and its properties at the beginning
+  if (!state || typeof state !== 'object') {
+      console.error("State object is not initialized or invalid in initializeScene!");
+      // Optionally, attempt a re-initialization or return
+      // initCore(); // This might cause issues if called multiple times
+      return; // Stop execution if state is bad
+  }
+  if (state.scene === null) {
+      console.log('[DEBUG] initializeScene: state.scene is null, initializing...');
+      state.scene = new THREE.Scene();
+  }
+  if (state.hologramPivot === null) {
+      console.log('[DEBUG] initializeScene: state.hologramPivot is null, initializing...');
+      state.hologramPivot = new THREE.Group();
+  }
+  if (state.mainSequencerGroup === null) {
+       console.log('[DEBUG] initializeScene: state.mainSequencerGroup is null, initializing...');
+       state.mainSequencerGroup = new THREE.Group();
+  }
+
+
+  console.log('[DEBUG] initializeScene: state.hologramPivot initialized:', state.hologramPivot);
+  console.log('[DEBUG] initializeScene: state.mainSequencerGroup initialized:', state.mainSequencerGroup);
 
   // Создание левой и правой сетки секвенсора
   // Используем semitones из rendering.js
@@ -45,10 +63,45 @@ export function initializeScene() {
   );
 
   // Добавление групп в сцену
-  state.mainSequencerGroup.add(state.leftSequencerGroup);
-  state.mainSequencerGroup.add(state.rightSequencerGroup);
-  state.hologramPivot.add(state.mainSequencerGroup);
-  state.scene.add(state.hologramPivot);
+  // Добавляем защитные проверки на случай, если объекты по какой-то причине null
+  // These checks are already present, but let's ensure they are correct
+  if (state.mainSequencerGroup) { // Check if mainSequencerGroup is valid before adding
+      if (state.leftSequencerGroup) {
+        state.mainSequencerGroup.add(state.leftSequencerGroup);
+      } else {
+        console.warn("leftSequencerGroup is null, cannot add to mainSequencerGroup.");
+      }
+      if (state.rightSequencerGroup) {
+        state.mainSequencerGroup.add(state.rightSequencerGroup);
+      } else {
+        console.warn("rightSequencerGroup is null, cannot add to mainSequencerGroup.");
+      }
+  } else {
+      console.error("Main Sequencer Group is null before adding children!");
+  }
+
+
+  if (state.hologramPivot) { // Check if hologramPivot is valid before adding
+      if (state.mainSequencerGroup) {
+          state.hologramPivot.add(state.mainSequencerGroup);
+      } else {
+          console.warn("mainSequencerGroup is null, cannot add to hologramPivot.");
+      }
+  } else {
+      console.error("Hologram Pivot is null before adding mainSequencerGroup!");
+  }
+
+
+  if (state.scene) { // Check if scene is valid before adding
+      if (state.hologramPivot) {
+          state.scene.add(state.hologramPivot);
+      } else {
+          console.warn("hologramPivot is null, cannot add to scene.");
+      }
+  } else {
+      console.error("Scene is null before adding pivot!");
+  }
+
 
   // Центрируем геометрию относительно пивота
   state.mainSequencerGroup.position.set(0, -260 / 2, 0);
