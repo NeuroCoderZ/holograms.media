@@ -1,5 +1,4 @@
 // frontend/js/xr/cameraManager.js
-import * as THREE from 'three';
 import { state } from '../core/init.js';
 
 let isXRMode = false; // Объявление на уровне модуля
