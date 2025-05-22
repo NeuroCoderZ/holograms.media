@@ -52,4 +52,3 @@ export function savePanelsHiddenState(isHidden) {
   currentState.panelsHidden = isHidden;
   saveAppState(currentState);
 }
-}
