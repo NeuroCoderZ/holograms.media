@@ -2,6 +2,7 @@
 
 // Импортируем необходимые зависимости
 import { loadPanelState, savePanelState } from '../core/appStatePersistence.js'; // Импорт функций для сохранения/загрузки состояния
+import { state } from '../core/init.js'; // Импорт глобального состояния
 
 // Объект для хранения ссылок на DOM-элементы
 export const uiElements = {
