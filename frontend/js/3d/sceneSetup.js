@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state } from '../core/init.js';
-import { semitones, columns, createColumn, degreesToCells, createSequencerGrid } from './rendering.js'; // Импорт необходимых функций из rendering.js
+import { semitones, createSequencerGrid } from './rendering.js'; // Import required functions from rendering.js
 // TODO: calculateInitialScale не реализована и не экспортируется из rendering.js
 
 // Константы для сетки (используются из rendering.js)
