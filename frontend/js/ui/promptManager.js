@@ -4,6 +4,13 @@ import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
 import { addMessageToChat } from '../panels/chatMessages.js'; // Импортируем addMessageToChat для вывода ответов
 
 /**
+ * Инициализирует менеджер промптов.
+ */
+export function initializePromptManager() {
+  console.log('Prompt manager initialized (stub)');
+}
+
+/**
  * Обрабатывает отправку промпта из верхнего поля ввода.
  * @param {string} prompt - Текст промпта.
  * @param {string} model - Выбранная модель LLM.
