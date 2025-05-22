@@ -6,74 +6,7 @@ let isXRMode = false; // Объявление на уровне модуля
 let currentStream = null; // Объявление на уровне модуля
 let videoElement = null; // Объявление на уровне модуля
 
-/**
- * Настраивает и управляет видеопотоком с камеры для XR-режима.
- */
-function setupCamera() {
-  if (!isXRMode) {
-    console.log('XR режим не активен, остановка видеопотока, если он был.');
-    if (currentStream) {
-      currentStream.getTracks().forEach(track => track.stop());
-      currentStream = null;
-      if (videoElement) {
-        videoElement.style.visibility = 'hidden';
-        videoElement.srcObject = null;
-      }
-      console.log('Видеопоток камеры остановлен.');
-    }
-    // Если есть функция setupFingerTracking и она должна останавливаться/запускаться с камерой
-    // if (typeof setupFingerTracking === 'function') setupFingerTracking(false); // или передать null/stream
-    return;
-  }
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    console.error('getUserMedia не поддерживается этим браузером.');
-    isXRMode = false;
-    const xrButton = document.getElementById('xrButton');
-    if (xrButton) xrButton.classList.remove('active');
-    // TODO: Показать сообщение пользователю
-    return;
-  }
-
-  console.log('Запрос доступа к камере для XR...');
-  navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: 'user', // Предпочтительно фронтальная камера
-      width: { ideal: window.innerWidth }, // Используем размеры окна для идеального соответствия
-      height: { ideal: window.innerHeight }
-    }
-  })
-  .then(stream => {
-    currentStream = stream;
-    videoElement = document.getElementById('camera-view');
-
-    if (videoElement) {
-      videoElement.srcObject = stream;
-      videoElement.onloadedmetadata = () => {
-        videoElement.play();
-        videoElement.style.visibility = 'visible';
-        console.log('Камера успешно настроена и видеопоток активен для XR режима.');
-        // Если есть функция setupFingerTracking и она должна запускаться после камеры
-        // if (typeof setupFingerTracking === 'function') setupFingerTracking(true, stream); // или передать videoElement
-      };
-    } else {
-      console.warn('Элемент #camera-view не найден. Видеопоток не будет отображен.');
-      // Можно создать элемент динамически или остановить поток, если отображение критично
-      stream.getTracks().forEach(track => track.stop());
-      currentStream = null;
-      isXRMode = false;
-      const xrButton = document.getElementById('xrButton');
-      if (xrButton) xrButton.classList.remove('active');
-    }
-  })
-  .catch(error => {
-    console.error('Ошибка доступа к камере:', error);
-    isXRMode = false;
-    const xrButton = document.getElementById('xrButton');
-    if (xrButton) xrButton.classList.remove('active');
-    // TODO: Показать сообщение пользователю
-  });
-}
 
 /**
  * Переключает XR-режим (включает/выключает).
@@ -308,74 +241,7 @@ async function startVideoStream(videoElement, handsInstance) {
       }
   }
 
-/**
- * Настраивает и управляет видеопотоком с камеры для XR-режима.
- */
-function setupCamera() {
-  if (!isXRMode) {
-    console.log('XR режим не активен, остановка видеопотока, если он был.');
-    if (currentStream) {
-      currentStream.getTracks().forEach(track => track.stop());
-      currentStream = null;
-      if (videoElement) {
-        videoElement.style.visibility = 'hidden';
-        videoElement.srcObject = null;
-      }
-      console.log('Видеопоток камеры остановлен.');
-    }
-    // Если есть функция setupFingerTracking и она должна останавливаться/запускаться с камерой
-    // if (typeof setupFingerTracking === 'function') setupFingerTracking(false); // или передать null/stream
-    return;
-  }
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    console.error('getUserMedia не поддерживается этим браузером.');
-    isXRMode = false;
-    const xrButton = document.getElementById('xrButton');
-    if (xrButton) xrButton.classList.remove('active');
-    // TODO: Показать сообщение пользователю
-    return;
-  }
-
-  console.log('Запрос доступа к камере для XR...');
-  navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: 'user', // Предпочтительно фронтальная камера
-      width: { ideal: window.innerWidth }, // Используем размеры окна для идеального соответствия
-      height: { ideal: window.innerHeight }
-    }
-  })
-  .then(stream => {
-    currentStream = stream;
-    videoElement = document.getElementById('camera-view');
-
-    if (videoElement) {
-      videoElement.srcObject = stream;
-      videoElement.onloadedmetadata = () => {
-        videoElement.play();
-        videoElement.style.visibility = 'visible';
-        console.log('Камера успешно настроена и видеопоток активен для XR режима.');
-        // Если есть функция setupFingerTracking и она должна запускаться после камеры
-        // if (typeof setupFingerTracking === 'function') setupFingerTracking(true, stream); // или передать videoElement
-      };
-    } else {
-      console.warn('Элемент #camera-view не найден. Видеопоток не будет отображен.');
-      // Можно создать элемент динамически или остановить поток, если отображение критично
-      stream.getTracks().forEach(track => track.stop());
-      currentStream = null;
-      isXRMode = false;
-      const xrButton = document.getElementById('xrButton');
-      if (xrButton) xrButton.classList.remove('active');
-    }
-  })
-  .catch(error => {
-    console.error('Ошибка доступа к камере:', error);
-    isXRMode = false;
-    const xrButton = document.getElementById('xrButton');
-    if (xrButton) xrButton.classList.remove('active');
-    // TODO: Показать сообщение пользователю
-  });
-}
 
 /**
  * Переключает XR-режим (включает/выключает).
