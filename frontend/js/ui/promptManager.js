@@ -2,7 +2,7 @@
 
 import { state } from '../core/init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
-import { addMessage } from '../panels/chatMessages.js'; // Импортируем addMessage для вывода ответов
+import { addMessageToChat } from '../panels/chatMessages.js'; // Импортируем addMessageToChat для вывода ответов
 
 /**
  * Обрабатывает отправку промпта из верхнего поля ввода.
@@ -42,7 +42,7 @@ export function applyTopPrompt(prompt, model) {
 
           // Добавляем ответ Триа в чат (если есть)
           if (triaResponse) {
-              addMessage('tria', triaResponse);
+              addMessageToChat('tria', triaResponse);
               // Озвучиваем ответ Триа
               // speak(triaResponse); // TODO: Функция speak должна быть доступна или импортирована
           }
