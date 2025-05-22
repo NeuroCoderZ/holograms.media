@@ -76,24 +76,22 @@ export async function setupCamera() {
                   const processVideoFrame = async () => {
                       if (!processingActive) return; // Проверка активности обработки
 
-                      // Проверяем, что видео полностью загружено и готово
-                      if (videoElement.readyState >= 3) {
-                          try
-                          { // Проверяем, что видео имеет ненулевые размеры
-                              if (videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
-                                  console.warn("Video dimensions are zero, skipping frame");
-                                  requestAnimationFrame(processVideoFrame);
-                                  return;
-                              }
+                      if (videoElement.readyState >= 3) { // Проверяем, что видео полностью загружено и готово
+                          // Проверяем, что видео имеет ненулевые размеры
+                          if (videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
+                              console.warn("Video dimensions are zero, skipping frame");
+                              requestAnimationFrame(processVideoFrame);
+                              return;
+                          }
 
-                              // Дополнительная проверка готовности handsInstance перед каждым кадром
-                              if (!handsInstance || typeof handsInstance.send !== 'function') {
-                                  console.warn("MediaPipe Hands instance not available for this frame, skipping");
-                                  requestAnimationFrame(processVideoFrame);
-                                  return;
-                              }
-
-                              // Оборачиваем в try-catch для отлова ошибок createTexture
+                          // Дополнительная проверка готовности handsInstance перед каждым кадром
+                          if (!handsInstance || typeof handsInstance.send !== 'function') {
+                              console.warn("MediaPipe Hands instance not available for this frame, skipping");
+                              requestAnimationFrame(processVideoFrame);
+                              return;
+                          }
+                          
+                          try { // Оборачиваем в try-catch для отлова ошибок createTexture
                               await handsInstance.send({ image: videoElement });
                               errorCount = 0; // Сброс счетчика ошибок при успешной обработке
                           } catch (e) {
@@ -132,7 +130,7 @@ export async function setupCamera() {
   // if (state.renderer && state.scene && state.camera && typeof state.renderer.render === 'function') {
   //   state.renderer.render(state.scene, state.camera);
   // }
-}
+
 
 // Функция для переключения XR режима
 export function toggleXRMode() {
