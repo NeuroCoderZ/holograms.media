@@ -97,9 +97,15 @@ let videoElement = null; // Объявление на уровне модуля
       }
   }
 
+  
+  // Обновление рендерера, если это не делается в основном цикле анимации при смене камеры
+  // if (state.renderer && state.scene && state.camera && typeof state.renderer.render === 'function') {
+  //   state.renderer.render(state.scene, state.camera);
+  // }
+}
 
-
-
+// Функция для переключения XR режима
+export function toggleXRMode() {
   isXRMode = !isXRMode;
   console.log('XR режим переключен:', isXRMode);
 
@@ -140,11 +146,6 @@ let videoElement = null; // Объявление на уровне модуля
       videoElement.style.visibility = 'hidden'; // Скрываем видео элемент
     }
   }
-
-  // Обновление рендерера, если это не делается в основном цикле анимации при смене камеры
-  // if (state.renderer && state.scene && state.camera && typeof state.renderer.render === 'function') {
-  //   state.renderer.render(state.scene, state.camera);
-  // }
 }
 
 /**
