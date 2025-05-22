@@ -281,13 +281,11 @@ async function startVideoStream(videoElement, handsInstance) {
                               console.error("Error processing video frame with MediaPipe Hands:", e);
                               errorCount++;
                               if (errorCount >= MAX_ERRORS) {
-                                  console.error(\`Too many errors (\${MAX_ERRORS}) processing video frames. Stopping processing.\`);
+                                  console.error(`Too many errors (${MAX_ERRORS}) processing video frames. Stopping processing.`);
                                   processingActive = false; // Останавливаем обработку при множественных ошибках
                                   // TODO: Возможно, уведомить пользователя или попытаться перезапустить
                               }
                           }
-                      } else {
-                          console.warn("Video element not ready (readyState < 3), skipping frame");
                       }
                       // Запрашиваем следующий кадр независимо от успеха обработки текущего
                       requestAnimationFrame(processVideoFrame);

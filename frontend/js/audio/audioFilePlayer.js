@@ -67,16 +67,16 @@ async function loadAudioFile(event) {
       state.audio.startOffset = 0;
       state.audio.isPlaying = false;
       if (state.audio.audioBufferSource) {
-        try {
-          state.audio.audioBufferSource.stop();
-        } catch (error) {
-          // Подавление ошибки, если источник уже остановлен
+          try {
+            state.audio.audioBufferSource.stop();
+          } catch (_error) {
+            console.error('Audio source stop error:', _error);
+          }
+          state.audio.audioBufferSource.disconnect();
+          state.audio.audioBufferSource = null;
         }
-        state.audio.audioBufferSource.disconnect();
-        state.audio.audioBufferSource = null;
-      }
-    } catch (error) {
-      console.error('Ошибка декодирования аудиофайла:', error);
+    } catch (_error) {
+      console.error('Ошибка декодирования аудиофайла:', _error);
       fileButton.classList.remove('active');
       playButton.disabled = true;
       pauseButton.disabled = true;
@@ -97,8 +97,8 @@ function playAudio() {
   if (state.audio.audioBufferSource) { // Если уже есть источник, останавливаем и отключаем его
     try {
       state.audio.audioBufferSource.stop();
-    } catch (error) {
-      // Подавление ошибки, если источник уже остановлен
+    } catch (_error) {
+      console.error('Audio source stop error during play:', _error);
     }
     state.audio.audioBufferSource.disconnect();
   }
@@ -129,8 +129,8 @@ function pauseAudio() {
   state.audio.pausedAt = state.audio.audioContext.currentTime - state.audio.startOffset; // Сохраняем текущую позицию
   try {
     state.audio.audioBufferSource.stop(); // Останавливаем воспроизведение
-  } catch (error) {
-    // Подавление ошибки, если источник уже остановлен
+  } catch (_error) {
+    console.error('Audio source stop error during pause:', _error);
   }
   state.audio.isPlaying = false;
 
@@ -147,8 +147,8 @@ function stopAudio() {
   if (state.audio.audioBufferSource) {
     try {
       state.audio.audioBufferSource.stop();
-    } catch (error) {
-      // Подавление ошибки, если источник уже остановлен
+    } catch (_error) {
+      console.error('Audio source stop error during stop:', _error);
     }
     state.audio.audioBufferSource.disconnect();
     state.audio.audioBufferSource = null;
