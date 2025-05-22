@@ -1,6 +1,5 @@
 // frontend/js/ui/promptManager.js
 
-import { state } from '../core/init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
 import { addMessageToChat } from '../panels/chatMessages.js'; // Импортируем addMessageToChat для вывода ответов
 
@@ -53,7 +52,7 @@ export function applyTopPrompt(prompt, model) {
             console.log('Получен код для выполнения:', codeToExecute);
             // TODO: Реализовать выполнение кода на фронтенде или отправку на бэкенд для выполнения
             // Временно просто логируем или отображаем
-            addMessage('tria', `Получен код для выполнения:\n\`\`\`javascript\n${codeToExecute}\n\`\`\``);
+            addMessageToChat('tria', `Получен код для выполнения:\n\`\`\`javascript\n${codeToExecute}\n\`\`\``);
           }
 
           // Скрываем спиннер и разблокируем кнопку
@@ -66,12 +65,12 @@ export function applyTopPrompt(prompt, model) {
           if (submitButton) submitButton.disabled = false;
 
           console.error('Ошибка при выполтке запроса /generate:', error);
-          addMessage('error', `Ошибка при обработке промпта: ${error.message || 'Неизвестная ошибка'}`);
+          addMessageToChat('error', `Ошибка при обработке промпта: ${error.message || 'Неизвестная ошибка'}`);
         });
     })
     .catch(error => {
         console.error('Ошибка в applyPromptWithTriaMode:', error);
-        addMessage('error', `Ошибка в режиме Триа: ${error.message || 'Неизвестная ошибка'}`);
+        addMessageToChat('error', `Ошибка в режиме Триа: ${error.message || 'Неизвестная ошибка'}`);
     });
 }
 
