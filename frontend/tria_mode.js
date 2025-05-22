@@ -73,8 +73,6 @@ export async function applyPromptWithTriaMode(prompt, model) {
       if (spinner) spinner.style.display = 'none';
       if (submitButton) submitButton.disabled = false;
 
-      console.log('Ответ от Триа:', data.response);
-      return data;
     } else {
       // Если режим Триа не активен, возвращаем false, чтобы основной код мог
       // выполнить стандартную логику отправки на /generate

@@ -1,7 +1,6 @@
 // frontend/js/ui/uiManager.js - Модуль для управления UI элементами
 
 // Импортируем необходимые зависимости
-import { state } from '../core/init.js';
 import { loadPanelState, savePanelState } from '../core/appStatePersistence.js'; // Импорт функций для сохранения/загрузки состояния
 
 // Объект для хранения ссылок на DOM-элементы
@@ -121,18 +120,9 @@ export function togglePanels() {
 }
 
 /**
- * Возвращает суммарную ширину боковых панелей
- */
-export function getPanelWidths() {
-  const leftPanel = document.querySelector('.panel.left-panel');
-  const rightPanel = document.querySelector('.panel.right-panel');
-  return (leftPanel?.offsetWidth || 0) + (rightPanel?.offsetWidth || 0);
-}
-
-/**
  * Добавляет отладочные классы к элементам
  */
-export function addDebugClasses() {
+function addDebugClasses() {
   const elements = {
     panel: document.querySelector('.panel.left-panel'),
     label: document.querySelector('.version-label')
@@ -239,6 +229,8 @@ export function toggleChatMode() {
 
 // Экспортируем функции, которые могут понадобиться другим модулям
 export { initializePanelState, logLayoutState };
+
+// Удаляем неиспользуемый экспорт getPanelWidths (сделали локальной или удалим если не нужна)
 
 // TODO: Добавить инициализацию других UI элементов по мере необходимости
 // TODO: Рассмотреть возможность использования более надежного способа получения элементов, например, через классы или атрибуты данных, если ID не уникальны или могут меняться.

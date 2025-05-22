@@ -17,14 +17,10 @@ import { initializePromptManager } from '/static/js/ui/promptManager.js'; // И�
 import { initializeVersionManager } from '/static/js/ui/versionManager.js'; // Импорт менеджера версий
 import { initializeGestureAreaVisualization } from '/static/js/ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
 import { initializeChatDisplay } from '/static/js/panels/chatMessages.js';
-// import { initializeRightPanelManager } from '/static/js/ui/rightPanelManager.js'; // Удален, так как файл не существует, используется panelManager.js
-
 // Импорт аудио модулей
 import { initializeSpeechInput } from '/static/js/audio/speechInput.js';
 import { initializeMicrophoneButton } from '/static/js/audio/microphoneManager.js'; // Модуль управления микрофоном
 import { initializeAudioPlayerControls } from '/static/js/audio/audioFilePlayer.js'; // Модуль управления плеером аудиофайлов
-// import { initAudio, setupAudioProcessing } from '/static/js/audio/processing.js'; // TODO: Module for audio processing not found, related code disabled
-// import { initAudioVisualization } from '/static/js/audio/visualization.js'; // TODO: Module for audio visualization not found, related code disabled
 
 // Импорт XR модулей
 import { initializeXRMode } from '/static/js/xr/cameraManager.js'; // Модуль управления XR и камерой
@@ -35,7 +31,6 @@ import { animate } from '/static/js/3d/rendering.js'; // Импорт функц
 
 // Импорт мультимодальных модулей
 import { initializeMediaPipeHands } from '/static/js/multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
-// import { initializeGestureDetection } from '/static/js/gestures/detection.js'; // TODO: Module for gesture detection not found, related code disabled
 // Импорт AI модулей
 import { setupChat } from '/static/js/ai/chat.js'; // Путь исправлен
 import { initializeTria } from '/static/js/ai/tria.js'; // Путь исправлен
@@ -44,15 +39,9 @@ import { initializeTria } from '/static/js/ai/tria.js'; // Путь исправ
 import { setupDOMEventHandlers } from '/static/js/core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
 import { initializeResizeHandler } from '/static/js/core/resizeHandler.js'; // Импорт обработчика изменения размера окна
 
-// Импорт утилит (закомментированы отсутствующие)
-import { loadSettings, saveSettings } from './utils/storage.js'; // Модуль-заглушка создан
-import { debounce, throttle } from './utils/helpers.js'; // Модуль-заглушка создан
-
 
 // Импорт моста для обратной совместимости (закомментирован отсутствующий)
-// FINAL CLEANUP (v22): Module legacy-bridge.js or its functionality is missing/disabled
-// import { initLegacyBridge, registerLegacyHandlers } from './utils/legacy-bridge.js'; // TODO: Module legacy-bridge.js not found
-
+// import { initLegacyBridge, registerLegacyHandlers } from './legacy-bridge.js'; // Закомментировано, т.к. файл отсутствует или функционал не используется
 
 // Инициализация приложения при загрузке DOM
 document.addEventListener('DOMContentLoaded', async () => {

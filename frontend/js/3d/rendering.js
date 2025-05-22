@@ -70,7 +70,7 @@ export const semitones = Array.from({ length: 130 }, (_, i) => {
 
 // --- Функции рендеринга, перенесенные из script.js ---
 
-export function createSphere(color, radius) {
+function createSphere(color, radius) {
   const geometry = new THREE.SphereGeometry(radius * 0.5, 32, 32);
   const material = new THREE.MeshBasicMaterial({
     color,
@@ -82,7 +82,7 @@ export function createSphere(color, radius) {
   return new THREE.Mesh(geometry, material);
 }
 
-export function createLine(start, end, color, opacity) {
+function createLine(start, end, color, opacity) {
   const material = new THREE.LineBasicMaterial({
     color,
     opacity,
