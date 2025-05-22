@@ -98,19 +98,15 @@ export function initCore() {
   
   // Инициализируем Three.js сцену
   try {
-    const threeContext = initializeScene();
-    
-    // Присваиваем возвращенные значения полям state
-    state.scene = threeContext.scene;
-    state.camera = threeContext.camera;
-    state.renderer = threeContext.renderer;
-    state.hologramPivot = threeContext.hologramPivot;
+    // initializeScene теперь напрямую модифицирует объект state
+    initializeScene();
     
     console.log('Three.js сцена успешно инициализирована');
   } catch (error) {
     console.error('Ошибка при инициализации Three.js сцены:', error);
     
     // Запасной вариант: инициализация из глобальных объектов (для обратной совместимости)
+    // Этот блок оставлен для отладки, но в модульной структуре не должен использоваться
     if (window.hologramPivot && !state.hologramPivot) {
       state.hologramPivot = window.hologramPivot;
       console.log('hologramPivot инициализирован из глобального объекта');
