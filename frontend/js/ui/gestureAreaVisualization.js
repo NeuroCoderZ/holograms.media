@@ -8,7 +8,8 @@ export function initializeGestureAreaVisualization() {
     console.log('Инициализация GestureAreaVisualization...');
 
     // Наблюдатель за окном записи жестов (gesture-recording-panel)
-    const gesturePanel = document.querySelector('.gesture-recording-panel');
+    // Ищем модальное окно жестов, которое, вероятно, используется для индикации записи
+    const gesturePanel = document.getElementById('gestureModal');
     if (gesturePanel) {
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
