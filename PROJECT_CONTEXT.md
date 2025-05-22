@@ -85,6 +85,7 @@
 - [2025-05-23] Исправлена ошибка импорта addMessage в promptManager.js и chatMessages.js.
 - [2025-05-23] Исправлены SyntaxError в appStatePersistence.js и ошибка toggleModeInternal not defined в rightPanelManager.js.
 - [2025-05-22] Удалена дублирующая функция switchToTimelineMode в rightPanelManager.js.
+- [2025-05-23] Исправлена инициализация mainSequencerGroup в sceneSetup.js.
 
 ---
 
