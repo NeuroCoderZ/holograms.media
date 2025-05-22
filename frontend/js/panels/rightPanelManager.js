@@ -18,27 +18,22 @@ const elements = {
   chatInput: null,
   loadingIndicator: null
 };
-
 // --- Внутренние функции модуля ---
 
 /**
  * Внутренняя функция для переключения между режимами Таймлайн и Чат.
  * Вызывается обработчиком событий или другими функциями модуля.
  */
-export function switchToTimelineMode() {
+function toggleModeInternal() {
   if (!elements.chatButton) {
       console.error("Невозможно переключить режим: кнопка чата не найдена.");
       return; // Выходим, если кнопка не найдена
   }
 
   // Переключаем класс active у кнопки чата
-  const isChatMode = elements.chatButton.classList.toggle('active');
-
-  // Получаем элементы разных режимов (лучше искать их здесь, а не хранить глобально)
+  const isChatMode = elements.chatButton.classList.toggle('active');  // Получаем элементы разных режимов (лучше искать их здесь, а не хранить глобально)
   const defaultModeElements = document.querySelectorAll('.default-mode');
-  const chatModeElements = document.querySelectorAll('.chat-mode');
-
-  // Переключаем видимость элементов
+  const chatModeElements = document.querySelectorAll('.chat-mode');  // Переключаем видимость элементов
   defaultModeElements.forEach(el => {
     // Используем 'flex' для контейнеров, 'block' для кнопок/полей по умолчанию
     const displayStyle = (el.id === 'promptBar' || el.id === 'versionTimeline') ? 'flex' : 'block';
@@ -72,7 +67,6 @@ export function switchToTimelineMode() {
 
   console.log(`Режим правой панели переключен на: ${isChatMode ? 'Чат' : 'Таймлайн'}`);
 }
-
 
 // --- Экспортируемые функции ---
 
@@ -115,17 +109,9 @@ export function initializeRightPanel() {
 export function switchToChatMode() {
   if (elements.chatButton && !elements.chatButton.classList.contains('active')) {
     toggleModeInternal(); // Используем внутреннюю функцию
-  }
 }
 
-/**
- * Программно переключает панель в режим таймлайна.
- */
-export function switchToTimelineMode() {
-  if (elements.chatButton && elements.chatButton.classList.contains('active')) {
-    toggleModeInternal(); // Используем внутреннюю функцию
-  }
-}
+
 
 /**
  * Возвращает текущий активный режим панели.
