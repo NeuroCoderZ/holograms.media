@@ -89,6 +89,8 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - [ ] **Интеграция MediaPipe Hands:** Долгосрочная цель, пока неактуально.
 *   Ошибки 404 при загрузке статических файлов (CSS, JS, favicon) - **Проверено, пути в index.html корректны (/static/). Проблема может быть в конфигурации сервера статики или кэше браузера.**
 *   Ошибка `'state' is not defined` в `frontend/js/ui/uiManager.js` - **Проверено, импорт state присутствует и корректен.**
+- [x] **SyntaxError в cameraManager.js:** Устранен.
+- [x] **no-unused-vars в audioFilePlayer.js:** Устранены.
 ### Последние Изменения
 - [2025-05-22] Исправлены ошибки 'Identifier 'handleFileLoad' has already been declared' в `audioFilePlayer.js` и ''state' is not defined' в `uiManager.js`. Добавлен импорт `state` в `uiManager.js`. Указанный некорректный путь для `init.js` не найден в `main.js` или его прямых импортах.
 
@@ -122,6 +124,8 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - [2025-05-22] Испр. ошибки экспорта (playAudio, loadAudioFile и др.) в audioFilePlayer.js путем корректного определения/переименования функций.
 - [2025-05-22] Исправлен SyntaxError (handlePlay) в audioFilePlayer.js.
 - [2025-05-22] Выполнены Git add, commit, push для фиксации изменений в MODULE_CATALOG.md, frontend/js/audio/audioFilePlayer.js и tria_memory_buffer.md.
+- [2025-05-22] Исправлен SyntaxError в cameraManager.js.
+- [2025-05-22] Устранены no-unused-vars в audioFilePlayer.js.
 ## 6. Текущие Приоритеты (См. актуальный `PROJECT_CONTEXT.md`)
 1.  **Стабилизация фронтенда** после рефакторинга `script.js` и удаления `no-unused-vars` в UI модулях.
 2.  **Тестирование фронтенда** после последних исправлений и Git push.
