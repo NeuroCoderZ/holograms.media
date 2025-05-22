@@ -201,23 +201,6 @@ export function initializeAudioPlayerControls() {
   console.log('AudioPlayer controls initialized.');
 }
 
-/**
- * Обработчик загрузки файла.
- */
-async function handleFileLoad(event) {
-  const fileInput = event.target;
-  const file = fileInput.files[0];
-  if (!file) {
-    fileButton.classList.remove('active');
-    return;
-  }
-
-  fileButton.classList.add('active'); // Показываем активность кнопки файла сразу после выбора
-
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    try {
-      ensureAudioContext();
       audioBuffer = await audioContext.decodeAudioData(e.target.result);
       console.log('Аудиофайл успешно загружен и декодирован.');
       // Включаем кнопки управления воспроизведением
