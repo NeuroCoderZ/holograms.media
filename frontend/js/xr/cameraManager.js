@@ -5,11 +5,7 @@ import { state } from '../core/init.js';
 let isXRMode = false; // Объявление на уровне модуля
 let currentStream = null; // Объявление на уровне модуля
 let videoElement = null; // Объявление на уровне модуля
-              gl.deleteTexture(testTexture);
-          } catch (textureError) {
-              console.error("Ошибка при создании тестовой WebGL текстуры:", textureError);
-              return;
-          }
+
 
           const stream = await navigator.mediaDevices.getUserMedia({
               video: {
