@@ -5,9 +5,39 @@ import { state } from '../core/init.js';
 let isXRMode = false; // Объявление на уровне модуля
 let currentStream = null; // Объявление на уровне модуля
 let videoElement = null; // Объявление на уровне модуля
+let handsInstance = null; // Объявление для MediaPipe Hands
 
+/**
+ * Настройка камеры для XR режима
+ */
+export async function setupCamera() {
+  // Остановка текущего потока, если он существует
+  if (currentStream) {
+    currentStream.getTracks().forEach(track => track.stop());
+    currentStream = null;
+  }
 
-          const stream = await navigator.mediaDevices.getUserMedia({
+  // Получаем элемент видео, если он еще не получен
+  if (!videoElement) {
+    videoElement = document.getElementById('camera-view');
+    if (!videoElement) {
+      console.error('Элемент видео не найден. XR режим не может быть активирован.');
+      return;
+    }
+  }
+
+  // Если XR режим выключен, скрываем видео и выходим
+  if (!isXRMode) {
+    videoElement.style.visibility = 'hidden';
+    return;
+  }
+
+  // Показываем видео элемент
+  videoElement.style.visibility = 'visible';
+
+  try {
+    // Получаем доступ к камере
+    const stream = await navigator.mediaDevices.getUserMedia({
               video: {
                   width: { ideal: 320 }, // Уменьшаем размер для снижения нагрузки
                   height: { ideal: 240 },
