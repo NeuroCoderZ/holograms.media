@@ -9,7 +9,7 @@ let promptInput = null; // Нужно для кнопки "вставить в �
 /**
  * Инициализирует модуль чата, получает ссылки на DOM элементы.
  */
-export function initializeChatMessages() {
+export function initializeChatDisplay() {
   chatHistoryContainer = document.getElementById('chatMessages');
   promptInput = document.getElementById('topPromptInput'); // Получаем поле промпта
 
