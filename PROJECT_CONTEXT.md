@@ -91,6 +91,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - [ ] **Интеграция MediaPipe Hands:** Долгосрочная цель, пока неактуально.
 *   Ошибки 404 при загрузке статических файлов (CSS, JS, favicon) - **Проверено, пути в index.html корректны (/static/). Проблема может быть в конфигурации сервера статики или кэше браузера.**
 *   Ошибка `'state' is not defined` в `frontend/js/ui/uiManager.js` - **Проверено, импорт state присутствует и корректен.**
+- [ ] **Ошибка импорта initializePromptManager:** Ошибка наблюдается, но функция уже экспортируется. Возможно, проблема в кэше.
 - [x] **no-unused-vars в audioFilePlayer.js:** Устранены.
 - [x] **SyntaxError (duplicate setupCamera) в cameraManager.js:** Устранен.
 - [x] **SyntaxError в cameraManager.js:** Устранен.
@@ -138,6 +139,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - [2025-05-22] Испр. SyntaxError (duplicate toggleXRMode) в cameraManager.js.
 - [2025-05-22] Исправлен SyntaxError (Unexpected token '}' на стр.94) в cameraManager.js.
 - [2025-05-22] Исправлен SyntaxError (duplicate toggleXRMode) в cameraManager.js.
+- [2025-05-23] Обеспечен экспорт initializePromptManager из promptManager.js.
 - [2025-05-22] Произведена попытка финального исправления SyntaxError (Unexpected token '}' на стр.135) в cameraManager.js путем детального анализа структуры блока.
 - [2025-05-22] Исправлен SyntaxError в cameraManager.js.
 ## 6. Текущие Приоритеты (См. актуальный `PROJECT_CONTEXT.md`)
