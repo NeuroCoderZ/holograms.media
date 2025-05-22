@@ -109,9 +109,8 @@ export function initializeRightPanel() {
 export function switchToChatMode() {
   if (elements.chatButton && !elements.chatButton.classList.contains('active')) {
     toggleModeInternal(); // Используем внутреннюю функцию
+  }
 }
-
-
 
 /**
  * Возвращает текущий активный режим панели.
