@@ -88,9 +88,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - [ ] **Интеграция WebRTC:** Долгосрочная цель, пока неактуально.
 - [ ] **Интеграция MediaPipe Hands:** Долгосрочная цель, пока неактуально.
 *   Ошибки 404 при загрузке статических файлов (CSS, JS, favicon) - **Проверено, пути в index.html корректны (/static/). Проблема может быть в конфигурации сервера статики или кэше браузера.**
-*   `Uncaught SyntaxError: Identifier 'handleFileLoad' has already been declared` в `frontend/js/audio/audioFilePlayer.js` - **Исправлено.**
 *   Ошибка `'state' is not defined` в `frontend/js/ui/uiManager.js` - **Проверено, импорт state присутствует и корректен.**
-*   `Uncaught SyntaxError: Identifier 'handlePlay' has already been declared` в `frontend/js/audio/audioFilePlayer.js` - **Исправлено.**
 ### Последние Изменения
 - [2025-05-22] Исправлены ошибки 'Identifier 'handleFileLoad' has already been declared' в `audioFilePlayer.js` и ''state' is not defined' в `uiManager.js`. Добавлен импорт `state` в `uiManager.js`. Указанный некорректный путь для `init.js` не найден в `main.js` или его прямых импортах.
 
@@ -121,6 +119,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - **[2025-05-21]** Проведена чистка no-unused-vars в модулях `frontend/js/core/events.js`, `frontend/js/ui/uiManager.js`, `frontend/js/audio/microphoneManager.js`.
 - **[2025-05-21]** Рефакторинг `rendering.js`: исправлены синтаксические ошибки, модуль успешно загружается.
 *   [2025- [2025-05-22] Исправлен SyntaxError (handleFileLoad) в audioFilePlayer.js. Проверены пути к статике в index.html (корректны). Проверен импорт state в uiManager.js (корректен).
+- [2025-05-22] Испр. ошибки экспорта (playAudio, loadAudioFile и др.) в audioFilePlayer.js путем корректного определения/переименования функций.
 - [2025-05-22] Исправлен SyntaxError (handlePlay) в audioFilePlayer.js.
 - [2025-05-22] Выполнены Git add, commit, push для фиксации изменений в MODULE_CATALOG.md, frontend/js/audio/audioFilePlayer.js и tria_memory_buffer.md.
 ## 6. Текущие Приоритеты (См. актуальный `PROJECT_CONTEXT.md`)

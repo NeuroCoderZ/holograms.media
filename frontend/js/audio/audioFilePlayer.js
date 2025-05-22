@@ -45,7 +45,7 @@ function setupAudioProcessing(source) {
 /**
  * Обработчик загрузки файла.
  */
-async function handleFileLoad(event) {
+async function loadAudioFile(event) {
   const fileInput = event.target;
   const file = fileInput.files[0];
   if (!file) return;
@@ -90,7 +90,7 @@ async function handleFileLoad(event) {
 /**
  * Обработчик нажатия кнопки Play.
  */
-function handlePlay() {
+function playAudio() {
   if (!state.audio.audioBuffer || state.audio.isPlaying) return;
   ensureAudioContext();
 
@@ -122,7 +122,7 @@ function handlePlay() {
 /**
  * Обработчик нажатия кнопки Pause.
  */
-function handlePause() {
+function pauseAudio() {
   if (!state.audio.isPlaying || !state.audio.audioBufferSource) return;
   ensureAudioContext();
 
@@ -141,7 +141,7 @@ function handlePause() {
 /**
  * Обработчик нажатия кнопки Stop.
  */
-function handleStop() {
+function stopAudio() {
   if (!state.audio.audioBufferSource && !state.audio.isPlaying && state.audio.pausedAt === 0) return; // Если нечего останавливать
   
   if (state.audio.audioBufferSource) {
@@ -191,12 +191,12 @@ export function initializeAudioPlayerControls() {
   });
 
   // Обработчик выбора файла - вызывает handleFileLoad
-  fileInput.addEventListener('change', handleFileLoad);
+  fileInput.addEventListener('change', loadAudioFile);
 
   // Обработчики кнопок воспроизведения
-  playButton.addEventListener('click', handlePlay);
-  pauseButton.addEventListener('click', handlePause);
-  stopButton.addEventListener('click', handleStop);
+  playButton.addEventListener('click', playAudio);
+  pauseAudio.addEventListener('click', pauseAudio);
+  stopAudio.addEventListener('click', stopAudio);
 
   console.log('AudioPlayer controls initialized.');
 }
@@ -204,7 +204,7 @@ export function initializeAudioPlayerControls() {
 
 
 // Экспортируем функции, если они нужны извне (например, для инициализации)
-export { playAudio, pauseAudio, stopAudio, loadAudioFile }; // loadAudioFile пока не реализована как отдельная функция, но может понадобиться
+export { playAudio, pauseAudio, stopAudio, loadAudioFile };
 
 // TODO: Реализовать функцию loadAudioFile(file) для загрузки аудио извне (например, из API)
 // TODO: Интегрировать setupAudioProcessing с Three.js для пространственного аудио
