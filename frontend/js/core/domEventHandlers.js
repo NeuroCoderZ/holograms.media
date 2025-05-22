@@ -178,7 +178,12 @@ export function setupDOMEventHandlers() {
 }
 
 // Экспортируем функцию openFileInEditor для использования в других модулях
-export { openFileInEditor };Button');
+export { openFileInEditor };
+
+function togglePanels() {
+  const leftPanel = document.getElementById('leftPanel');
+  const rightPanel = document.getElementById('rightPanel');
+  const togglePanelsButton = document.getElementById('togglePanelsButton');
 
   if (!leftPanel || !rightPanel || !togglePanelsButton) {
       console.error('Required elements not found for togglePanels');
@@ -590,4 +595,3 @@ export function initializeDOMEventHandlers() {
 }
 
 // Export helper functions if needed elsewhere, otherwise keep them local
-// export { applyPrompt, fetchAndStoreFile, setupFileEditor, loadInitialFilesAndSetupEditor };

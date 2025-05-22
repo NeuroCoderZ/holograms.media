@@ -98,27 +98,5 @@ export function initializePanelManager() {
   console.log('Инициализация управления панелями завершена');
 }
 
-/**
- * Программно скрывает панели
- */
-export function hidePanels() {
-  if (leftPanel && rightPanel) {
-    leftPanel.classList.add('hidden');
-    rightPanel.classList.add('hidden');
-    localStorage.setItem('isPanelsHidden', 'true');
-  }
-}
-
-/**
- * Программно показывает панели
- */
-export function showPanels() {
-  if (leftPanel && rightPanel) {
-    leftPanel.classList.remove('hidden');
-    rightPanel.classList.remove('hidden');
-    localStorage.setItem('isPanelsHidden', 'false');
-  }
-}
-
 // Экспортируем функции для использования в других модулях
 export { togglePanels };

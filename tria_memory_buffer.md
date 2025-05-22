@@ -20,6 +20,14 @@
 [2025-05-21] ID[20250520-XXXX-009]. Цель: Фикс SyntaxErrors/Exports (rendering, sceneSetup). Результат: Ошибки исправлены. Файлы: frontend/js/3d/rendering.js, frontend/js/3d/sceneSetup.js. След. шаг: Тестирование.
  [2025-05-21] ID[20250520-XXXX-010]. Цель: Фикс ВСЕХ SyntaxErrors в rendering.js. Результат: Синтаксические ошибки в rendering.js исправлены. Файл: rendering.js. След. шаг: Тестирование, проверка импортов/экспортов с sceneSetup.js.
 [2025-05-21] ID[20250521-XXXX-011]. Цель: Анализ rendering.js на синтаксические ошибки и обновление контекстных файлов. Результат: Проведен анализ rendering.js, явных синтаксических ошибок не обнаружено в предоставленном контексте. Успешно обновлен PROJECT_CONTEXT.md. Файлы: frontend/js/3d/rendering.js, PROJECT_CONTEXT.md, tria_memory_buffer.md. След. шаг: Локальное тестирование фронтенда.
+<!-- ПРИМЕР ЗАПИСИ (НЕ УДАЛЯТЬ ЭТОТ КОММЕНТАРИЙ) -->
+<!-- 
+[YYYY-MM-DD HH:MM:SS] ID[ID_ПРОМПТА]. Цель: [Краткое описание цели итерации]. Результат: [Краткое описание результата]. Файлы: [список измененных файлов]. След. шаг: [Описание следующего шага].
+-->
+[2025-05-22 01:52:00] ID[20250522-0152-002]. Цель: Удаление неиспользуемых переменных и импортов во фронтенд JS файлах. Результат: Удален неиспользуемый импорт в main.js. Файлы: frontend/js/main.js. След. шаг: Подготовка отчета и обновление PROJECT_CONTEXT.md.
+
+[2024-05-21 21:55:00] ID[20250521-2155-001]. Цель: Удаление no-unused-vars в модулях (main, ui, core, audio, 3d). Результат: no-unused-vars устранены в 3 модулях. Файлы: frontend/js/core/events.js, frontend/js/ui/uiManager.js, frontend/js/audio/microphoneManager.js. След. шаг: Тестирование, наполнение MODULE_CATALOG для этих модулей.
+[2025-05-22 07:00:00] ID[20250522-0700-002]. Цель: Анализ script.js.bak(события), MODULE_CATALOG(events,panelManager), GIT. Результат: Логика событий script.js.bak проанализирована. MODULE_CATALOG обновлен для eventManager.js и uiManager.js. Изменения закомичены. Файлы: MODULE_CATALOG.md, tria_memory_buffer.md, PROJECT_CONTEXT.md. След.шаг: Тестирование UI, след. группа модулей для MODULE_CATALOG.
 <!-- NEXT_ITERATION_LOG_ENTRY -->
 
 ### Итерация [2025-05-21] - Git Commit & Push
@@ -35,4 +43,6 @@
 [2025-05-20 HH:MM] Промпт ID [MANUAL_FIX_YYYYMMDD_01]. Цель: Ручное устранение критических SyntaxErrors и Export/Import ошибок в rendering.js и sceneSetup.js. Результат: Основные синтаксические ошибки и проблемы с импортом/экспортом между rendering.js и sceneSetup.js устранены НейроКодером. Файлы: frontend/js/3d/rendering.js, frontend/js/3d/sceneSetup.js. След. шаг: Тестирование на HF Spaces, затем финальный аудитscript.jsи структуры проекта.
 [2025-05-21] Выполнены `git add`, `git commit` и `git push` для фиксации изменений в `rendering.js`, `sceneSetup.js`, `PROJECT_CONTEXT.md` и `tria_memory_buffer.md`. Обновлен `PROJECT_CONTEXT.md` для отражения устраненных критических ошибок и добавления записи о последних изменениях.
 [2025-05-21] ID[20250520-XXXX-012]. Цель: Фикс импорта axios, анализ TODO в main.js. Результат: Axios подключен CDN, импорты удалены, заглушки созданы. Логи F12: Ошибка 404 для init.js, предупреждение от tria_mode.js. Файлы: frontend/index.html, frontend/js/ui/versionManager.js, frontend/js/core/domEventHandlers.js, frontend/js/ui/promptManager.js, frontend/js/main.js, frontend/js/utils/storage.js, frontend/js/utils/helpers.js. След. шаг: Исправление ошибки 404 для init.js.
+[2025-05-21] ID[20250521-XXXX-013]. Цель: Устранить дублирующийся экспорт в versionManager.js и исправить путь импорта в tria_mode.js. Результат: Дублирующийся экспорт удален в versionManager.js, путь импорта в tria_mode.js исправлен. Файлы: frontend/js/ui/versionManager.js, frontend/js/ai/tria_mode.js. След. шаг: Обновление PROJECT_CONTEXT.md, локальное тестирование, Git commit/push.
+[2025-05-21] ID[USER_REQUEST_MODULE_CATALOG_UPDATE]. Цель: Актуализировать MODULE_CATALOG.md, детализировать связи модулей, соотнести с ARCHITECTURE.md. Результат: Файл MODULE_CATALOG.md обновлен. Проведен анализ структуры модулей frontend, их назначения, зависимостей, экспортов и связей. Выполнено сравнение с ARCHITECTURE.md. Файлы: MODULE_CATALOG.md, PROJECT_CONTEXT.md, tria_memory_buffer.md. След. шаг: Задачи согласно PROJECT_CONTEXT.md.
 <!-- New entries will be added above this line -->

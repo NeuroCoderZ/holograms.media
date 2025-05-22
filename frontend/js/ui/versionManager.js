@@ -221,4 +221,3 @@ export function initializeVersionManager() {
 }
 
 // Экспортируем функции, которые могут понадобиться извне
-export { updateTimelineFromServer, switchToVersion, loadVersion, setSceneReferences };

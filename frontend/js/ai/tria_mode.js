@@ -2,7 +2,7 @@
 // Обеспечивает переключение между отправкой запросов на /tria/invoke или /generate
 
 // Импортируем объект state из модуля init.js
-import { state } from './js/core/init.js';
+import { state } from '../core/init.js';
 
 // Экспортируем функцию для получения состояния режима Триа
 export function isTriaModeActive() {

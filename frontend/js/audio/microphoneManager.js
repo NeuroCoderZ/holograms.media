@@ -1,6 +1,5 @@
 // frontend/js/audio/microphoneManager.js - Модуль для управления микрофоном
 
-import * as THREE from 'three';
 import { semitones, columns } from '../3d/rendering.js';
 // TODO: Logic needs refactoring - updateSequencerColumns was here but removed as it was commented out.
 
