@@ -82,6 +82,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - [ ] **Ошибки ESLint:** Остались некритические ошибки, требующие внимания.
 - [ ] **404 Errors:** Ошибка 404 для `frontend/js/core/init.js` наблюдается, но указанный некорректный путь (`js/ai/js/core/init.js` или `/static/js/ai/js/core/init.js`) не найден в `main.js` или его прямых импортах. Требуется дальнейшее расследование источника ошибки.
 - [ ] **404 Errors:** Ошибка 404 для `frontend/js/core/init.js` наблюдается, но указанный некорректный путь (`js/ai/js/core/init.js` или `/static/js/ai/js/core/init.js`) не найден в `main.js` или его прямых импортах. Требуется дальнейшее расследование источника источника ошибки.
+- [x] **SyntaxError (Unexpected token '}') в cameraManager.js:** Устранен.
 - [ ] **Неиспользуемый код/переменные:** Требуется чистка кода.
 - [ ] **Логика сохранения/загрузки состояния:** Перенесена в `appStatePersistence.js`, требует тестирования.
 - [ ] **Интеграция WebGPU:** Долгосрочная цель, пока неактуально.
@@ -131,6 +132,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - [2025-05-22] Устранены no-unused-vars в audioFilePlayer.js.
 - [2025-05-22] Испр. SyntaxError (duplicate setupCamera) в cameraManager.js.
 - [2025-05-22] Испр. SyntaxError (duplicate toggleXRMode) в cameraManager.js.
+- [2025-05-22] Исправлен SyntaxError (Unexpected token '}') в cameraManager.js.
 - [2025-05-22] Исправлен SyntaxError (duplicate toggleXRMode) в cameraManager.js.
 ## 6. Текущие Приоритеты (См. актуальный `PROJECT_CONTEXT.md`)
 1.  **Стабилизация фронтенда** после рефакторинга `script.js` и удаления `no-unused-vars` в UI модулях.
