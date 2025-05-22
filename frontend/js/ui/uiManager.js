@@ -1,7 +1,7 @@
 // frontend/js/ui/uiManager.js - Модуль для управления UI элементами
 
 // Импортируем необходимые зависимости
-import { loadPanelState, savePanelState } from '../core/appStatePersistence.js'; // Импорт функций для сохранения/загрузки состояния
+import { loadPanelsHiddenState, savePanelsHiddenState } from '../core/appStatePersistence.js'; // Импорт функций для сохранения/загрузки состояния
 import { state } from '../core/init.js'; // Импорт глобального состояния
 
 // Объект для хранения ссылок на DOM-элементы
@@ -76,7 +76,7 @@ function initializePanelState() {
   }
   
   // Загружаем сохраненное состояние через appStatePersistence
-  const shouldBeHidden = loadPanelState();
+  const shouldBeHidden = loadPanelsHiddenState();
 
   // Применяем классы, если состояние было загружено
   if (shouldBeHidden !== null) {
@@ -109,7 +109,7 @@ export function togglePanels() {
   
   // Сохраняем состояние через appStatePersistence
   const isPanelsHidden = uiElements.leftPanel.classList.contains('hidden');
-  savePanelState(isPanelsHidden);
+  savePanelsHiddenState(isPanelsHidden);
   
   // Обновляем состояние в глобальной переменной state
   state.isPanelsHidden = isPanelsHidden;

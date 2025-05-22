@@ -1,6 +1,6 @@
 // frontend/chatMessages.js - Управление сообщениями чата и синтезом речи
 
-import { switchToTimelineMode } from './rightPanelManager.js'; // Для кнопки "вставить в промпт"
+import { toggleModeInternal } from './rightPanelManager.js'; // Для кнопки "вставить в промпт"
 
 // --- Элементы DOM ---
 let chatHistoryContainer = null;
@@ -55,7 +55,7 @@ export function addMessageToChat(sender, message) {
       promptInput.value = message; // Копируем текст сообщения
       promptInput.focus();
       console.log("[Chat] Message pasted to prompt input.");
-      switchToTimelineMode(); // Переключаемся на вид с промптом
+      toggleModeInternal(); // Переключаемся на вид с промптом
     } else {
       console.error("Prompt input #topPromptInput not found for pasting.");
     }

@@ -24,7 +24,7 @@ const elements = {
  * Внутренняя функция для переключения между режимами Таймлайн и Чат.
  * Вызывается обработчиком событий или другими функциями модуля.
  */
-function toggleModeInternal() {
+export function switchToTimelineMode() {
   if (!elements.chatButton) {
       console.error("Невозможно переключить режим: кнопка чата не найдена.");
       return; // Выходим, если кнопка не найдена
