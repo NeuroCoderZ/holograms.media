@@ -25,6 +25,8 @@ import { semitones, createSequencerGrid } from './rendering.js'; // Import requi
 
 // Функция инициализации сцены
 export function initializeScene() {
+  // Инициализация сцены Three.js
+  state.scene = new THREE.Scene();
   // Создание групп для секвенсоров и пивота
   state.hologramPivot = new THREE.Group();
   state.mainSequencerGroup = new THREE.Group();
@@ -53,6 +55,3 @@ export function initializeScene() {
   state.hologramPivot.position.set(0, 0, 0); // Начальная позиция пивота
   state.mainSequencerGroup.rotation.set(0, 0, 0);
 }
-
-
-// Функция initializeScene уже экспортирована при объявлении

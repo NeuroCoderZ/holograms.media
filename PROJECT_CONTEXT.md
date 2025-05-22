@@ -80,6 +80,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - *Более ранние изменения см. в `tria_memory_buffer.md` или истории коммитов.*
 
 ### Критические Проблемы
+- Устранены Runtime Errors в sceneSetup (null.add), panelManager и gestureAreaVisualization (поиск DOM).
 
 - [ ] **Ошибки ESLint:** Остались некритические ошибки, требующие внимания.
 - [ ] **404 Errors:** Ошибка 404 для `frontend/js/core/init.js` наблюдается, но указанный некорректный путь (`js/ai/js/core/init.js` или `/static/js/ai/js/core/init.js`) не найден в `main.js` или его прямых импортах. Требуется дальнейшее расследование источника ошибки.
@@ -98,6 +99,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 
 
 ### Последние Изменения
+- [2025-05-23] Испр. Runtime Errors в sceneSetup (null.add), panelManager и gestureAreaVisualization (поиск DOM).
 - [2025-05-22] Исправлены ошибки 'Identifier 'handleFileLoad' has already been declared' в `audioFilePlayer.js` и ''state' is not defined` в `uiManager.js`. Добавлен импорт `state` в `uiManager.js`. Указанный некорректный путь для `init.js` не найден в `main.js` или его прямых импортах.
 - [2025-05-22] Устранена дублирующаяся функция `switchToTimelineMode` в `frontend/js/panels/rightPanelManager.js`.
 - [2025-05-22] Проверен файл `frontend/js/panels/rightPanelManager.js` на предмет синтаксических ошибок и незакрытых блоков кода. Ошибок не обнаружено.
@@ -106,6 +108,7 @@ frontend/script.js: (УДАЛЕН) Устаревший монолитный JS 
 - [2025-05-21] Устранена ошибка импорта axios путем использования CDN. Проанализированы TODO в main.js, созданы заглушки для отсутствующих модулей.
 
 ### Последние Изменения
+- [2025-05-23] Испр. Runtime Errors в sceneSetup (null.add), panelManager и gestureAreaVisualization (поиск DOM).
 - Удален неиспользуемый импорт в `frontend/js/main.js` для очистки кода.
 
 - [2025-05-22] Проанализирована логика событий и межмодульные связи в script.js.bak (часть 2). Обновлен MODULE_CATALOG.md с детальным описанием eventManager.js и panelManager.js. Завершено исправление uiManager и начальное документирование UI-модулей.
