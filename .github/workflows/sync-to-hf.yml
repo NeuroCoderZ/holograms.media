@@ -19,9 +19,14 @@ jobs:
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
 
-      - name: Add Hugging Face Remote
-        run: git remote add huggingface https://${{ secrets.HF_USERNAME }}:${{ secrets.HF_TOKEN_FOR_SYNC }}@huggingface.co/spaces/${{ github.repository }}
-        # ${{ github.repository }} будет вида "NeuroCoderZ/holograms.media"
+      # Этот шаг устанавливает URL для remote 'huggingface' с использованием токена.
+      # Git будет использовать этот токен для аутентификации при push.
+      # Имя пользователя (в данном случае 'user') здесь формальное,
+      # Hugging Face аутентифицирует по токену.
+      - name: Add Hugging Face Remote with Token
+        run: |
+          git remote add huggingface https://user:${{ secrets.HF_TOKEN_SPACES_CONTROL }}@huggingface.co/spaces/${{ github.repository_owner }}/${{ github.event.repository.name }}
+          echo "Hugging Face remote added."
 
       - name: Push to Hugging Face
         run: |
