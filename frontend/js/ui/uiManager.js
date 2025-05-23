@@ -210,6 +210,9 @@ export function initializeMainUI() {
 
   // Логируем состояние макета
   logLayoutState();
+
+  // Присваиваем собранные UI элементы глобальному состоянию
+  state.uiElements = uiElements;
 }
 
 /**
