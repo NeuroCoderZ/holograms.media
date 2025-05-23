@@ -41,4 +41,51 @@
 
 ## Лог Итераций
 
+<<<<<<< HEAD
 *(Полный лог итераций и ключевых решений находится в tria_memory_buffer.md)*
+
+## 7. Важно для AI при Модификации Кода
+- **Приоритет:** Стабильность, модульность, устранение ошибок.
+- **Проверка:** Если задача противоречит `PROJECT_CONTEXT.md` или неясна, уточняй у НейроКодера.
+- **Автоматизация:** Выполняй изменения через Trae IDE или предлагай код для ручного применения (при таймаутах).
+- **Таймауты Trae IDE:** Не редактируй >10 файлов за раз, разбивай задачи.
+
+---
+
+## 8. Последние Изменения
+- [2025-05-23] Успешно смержен рефакторинг аудио подсистемы от Jules.
+- [2025-05-23] Устранены критические ошибки фронтенда, возникшие после мержа:
+    - Исправлена ошибка 404 для `static/js/ui/ui.js` путем корректировки импорта в `events.js` на `../ui/uiManager.js`.
+    - Устранена `SyntaxError: Duplicate export of 'initializePanelState'` в `panelManager.js` путем удаления дублирующегося экспорта.
+- [2025-05-23] Устранены все известные Runtime Errors (initializePanelState, chat container, gesture panel, audioPlayer DOM, mainSequencerGroup). Фронтенд готов к финальному комплексному тестированию.
+- [2025-05-23] Создан GitHub Action для синхронизации с HF. Сформулирована задача для Jules (анализ AudioPlayer). Обновлен ROADMAP.md (CI/CD).
+- [2025-05-23] Испр. Runtime Errors в sceneSetup (null.add), panelManager и gestureAreaVisualization (поиск DOM).
+- [2025-05-23] Испр. Runtime Errors: инициализация mainSequencerGroup, поиск DOM в panelManager.
+- [2025-05-23] Исправлена ошибка импорта initializePromptManager в promptManager.js.
+- [2025-05-23] Исправлена ошибка импорта initializeChatDisplay и применены правила ESLint в promptManager.js.
+- [2025-05-23] Исправлена ошибка импорта addMessage в promptManager.js и chatMessages.js.
+- [2025-05-23] Исправлены SyntaxError в appStatePersistence.js и ошибка toggleModeInternal not defined в rightPanelManager.js.
+- [2025-05-22] Удалена дублирующая функция switchToTimelineMode в rightPanelManager.js.
+- [2025-05-23] Исправлен TypeError (containers) в chat.js.
+- [2025-05-23] Добавлены/исправлены DOM-элементы для audioFilePlayer.
+- [2025-05-23] Исправлена инициализация UI элементов аудио плеера и логика воспроизведения файлов.
+- [2025-05-23] Устранены Runtime Errors, связанные с initializePanelState, контейнером чата (#chatMessages) и панелью жестов (.gesture-recording-panel), актуализированы соответствующие файлы.
+- [2025-05-23] Реализована полная инициализация state.camera и state.renderer.
+
+---
+
+## 9. Критические Проблемы
+- Нет известных критических проблем, препятствующих запуску фронтенда после применения текущих изменений, кроме необходимости проверить отрисовку 3D-сцены после инициализации камеры и рендерера.
+
+---
+
+## 10. Текущий Фокус
+- Настройка CI/CD, делегирование задач Jules, финальное тестирование фронтенда.
+
+---
+
+## 11. Следующие Шаги
+- Подготовка к миграции на PostgreSQL.
+- Реализация заглушек для ботов Триа.
+
+---
