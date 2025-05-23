@@ -16,9 +16,9 @@
     - `/audio/` - Модули для работы с аудио (микрофон, плеер, обработка, визуализация).
         - `audioFilePlayer.js`
         - `microphoneManager.js`
-        - `processing.js`
+        - `audioProcessing.js` # Replaced processing.js with the new module
         - `speechInput.js`
-        - `visualization.js`
+        - `visualization.js` # This might be obsolete or its role changed
     - `/core/` - Основные модули ядра приложения (инициализация состояния, обработка событий, утилиты).
         - `appStatePersistence.js`
         - `diagnostics.js`
@@ -97,7 +97,7 @@
     - `/core/resizeHandler.js` (`updateCameraOnResize`) - Обрабатывает событие изменения размера окна для обновления камеры.
     - `/3d/rendering.js` (`resetVisualization` - косвенно через `stopAudio`) - Может влиять на визуализацию через вызовы других модулей.
 - **Экспорты:** `setupEventListeners` (основная функция для инициализации всех слушателей).
-- **Связи:** Является ключевым связующим звеном между пользовательским вводом (событиями DOM) и логикой приложения, распределенной по различным модулям (UI, AI, Audio, XR, Multimodal, 3D). Централизует логику привязки слушателей событий, делая ее более управляемой и понятной. Получает ссылки на DOM-элементы, предположительно, из `uiManager.js` или напрямую из `state.ui.elements` после их инициализации в `uiManager.js`.
+- **Связи:** Является ключевым связующим звеном между пользовательским вводом (событиями DOM) и логикой приложения, распределенной по различным модулям (UI, AI, Audio, XR, Multimodal, 3D). Централизует логику привязки слушателей событий, делая ее более управляемой и понятной. **Примечание: Обработчики событий для аудио-контролов (play, pause, stop, mic, file load) были перенесены в соответствующие аудио модули (`audioFilePlayer.js`, `microphoneManager.js`).** Получает ссылки на DOM-элементы из `uiManager.js` или напрямую из `state.ui.elements` после их инициализации в `uiManager.js`.
 
 ### `/core/appStatePersistence.js`
 
@@ -121,12 +121,18 @@
 
 ### `/3d/rendering.js`
 
-- **Назначение:** Содержит логику для создания 3D-объектов (сферы, линии, сетки, колонки), вычисления параметров (полутоны, цвета, размеры колонок), а также функции для обновления визуализации аудио и анимации.
+- **Назначение:** Содержит логику для создания 3D-объектов (сферы, линии, сетки, колонки), вычисления параметров (полутоны, цвета, размеры колонок), а также функции для обновления визуализации аудио и анимации. **Ключевая функция `animate` отвечает за рендер-цикл и обновление аудиовизуализации.**
 - **Зависимости:**
     - `three` (библиотека Three.js)
     - `/core/init.js` (`state`)
-- **Экспорты:** `semitones`, `degreesToCells`, `createSphere`, `createLine`, `createAxis`, `createGrid`, `createSequencerGrid`, `createColumn`, `initializeColumns`, `updateAudioVisualization`, `updateColumnVisualization`, `resetVisualization`, `createAudioVisualization`, `getSemitoneLevels`, `updateSequencerColumns`, `updateColumnsForMicrophone`, `animate` (главный цикл анимации/рендеринга).
-- **Связи:** Предоставляет утилиты для создания 3D-геометрии, используемые в `sceneSetup.js`. Содержит логику обновления 3D-колонок на основе аудиоданных, вызываемую из `audioVisualizer.js` или напрямую из `animate`. Функция `animate` является сердцем 3D-рендеринга, вызывается рекурсивно через `requestAnimationFrame`. Обновляет состояние сцены и рендерит ее. Может вызывать функции обновления из других модулей (аудиовизуализация, обновление моделей рук).
+    - `/audio/audioProcessing.js` (для `getSemitoneLevels`)
+- **Экспорты:** `semitones`, `degreesToCells`, `createSphere`, `createLine`, `createAxis`, `createGrid`, `createSequencerGrid`, `createColumn`, `initializeColumns`, `updateAudioVisualization`, `updateColumnVisualization`, `resetVisualization`, `createAudioVisualization`, `updateSequencerColumns`, `animate` (главный цикл анимации/рендеринга). **Локальные `getSemitoneLevels` и `updateColumnsForMicrophone` были удалены.**
+- **Связи:** Предоставляет утилиты для создания 3D-геометрии, используемые в `sceneSetup.js`.
+    - **Цикл `animate` теперь определяет активный источник аудио (`state.audio.activeSource`).**
+    - В зависимости от источника, он получает соответствующие `AnalyserNode`s (`state.audio.filePlayerAnalysers` или `state.audio.analyserLeft`/`Right`).
+    - Затем вызывает `audioProcessing.js#getSemitoneLevels()` с выбранными анализаторами.
+    - Наконец, вызывает собственную функцию `updateSequencerColumns()` для обновления 3D-визуализации на основе полученных уровней.
+    - Функция `resetVisualization()` вызывается из `audioFilePlayer.js` (косвенно через `stopAudio()`) и `microphoneManager.js` для очистки визуализации.
 
 ### `/ui/uiManager.js`
 
@@ -137,33 +143,47 @@
 - **Экспорты:** `uiElements` (объект или функция, предоставляющая доступ к ключевым DOM-элементам), `initializeMainUI` (функция для начальной настройки UI), `togglePanels` (функция для переключения видимости панелей), `getPanelWidths`, `addDebugClasses`, `logLayoutState`, `updateButtonStates` (обновление состояния кнопок, например, активен/неактивен микрофон), `displayMessageInChat` (добавление сообщений в область чата), `clearChatMessages`, `openModal`, `closeModal` (если модальные окна управляются через uiManager).
 - **Связи:** Является основным источником ссылок на DOM-элементы для других модулей, которым нужно взаимодействовать с UI (например, `events.js` для привязки слушателей, `chat.js` для отображения сообщений). Управляет классами CSS для динамического изменения внешнего вида UI (например, скрытие/показ панелей). Централизует функции управления DOM и видимостью элементов, делая код UI более модульным. Вероятно, именно этот модуль теперь содержит логику, которая ранее управляла видимостью и положением панелей, возможно, с использованием CSS классов или прямых манипуляций стилями.
 
-### `/audio/microphoneManager.js`
-
-- **Назначение:** Управляет доступом к микрофону, записью и обработкой аудиопотока с микрофона.
-- **Зависимости:**
-    - `/core/init.js` (`state`)
-    - `/core/stateManager.js` (`updateAudioState`)
-    - `/audio/processing.js` (`processAudioData`)
-    - `/audio/visualization.js` (`updateVisualizersWithBuffer`)
-    - `/ui/uiManager.js` (`updateButtonStates`)
-- **Экспорты:** `initializeMicrophone`, `startMicrophone`, `stopMicrophone`, `toggleMicrophone`.
-- **Связи:** Инициализируется из `main.js`. Взаимодействует с `processing.js` для обработки аудиоданных и с `visualization.js` для их визуализации. Обновляет состояние кнопок микрофона в UI через `uiManager.js`.
-
 ### `/audio/audioFilePlayer.js`
 
-- **Назначение:** Управляет воспроизведением аудио из буфера (загруженные файлы).
+- **Назначение:** Управляет загрузкой аудиофайлов, их воспроизведением (play, pause, stop) и настройкой своего специфического аудио графа для воспроизведения и **анализа**.
 - **Зависимости:**
     - `/core/init.js` (`state`)
-- **Экспорты:** `playAudioBuffer`, `pauseAudioBuffer`, `stopAudioBuffer`, `setVolume`.
-- **Связи:** Используется `microphoneManager.js` (или другим модулем, отвечающим за загрузку файлов) для управления воспроизведением файлов.
+    - `/audio/audioProcessing.js` (для `getAudioContext`, `createAnalyserNodes`)
+- **Экспорты:** `initializeAudioPlayerControls`, `playAudio`, `pauseAudio`, `stopAudio`, `loadAudioFile`. (Экспорты не изменились, но внутренняя работа другая).
+- **Связи:**
+    - Использует `audioProcessing.js` для получения `AudioContext` и создания `AnalyserNode`s (`state.audio.filePlayerAnalysers`).
+    - Подключает свой аудио источник через `GainNode` (`state.audio.filePlayerGainNode`) и затем к `ChannelSplitterNode`, который передает данные в `filePlayerAnalysers`. `GainNode` также подключен к `audioContext.destination` для воспроизведения.
+    - Управляет `state.audio.activeSource`, устанавливая его в `'file'` во время воспроизведения и `'none'` при паузе/остановке.
+    - Управляет состоянием `state.audio.isPlaying`, `state.audio.pausedAt`, `state.audio.audioBuffer`, `state.audio.startOffset`.
+    - Инициализирует элементы управления плеером (кнопки загрузки, play, pause, stop) и их обработчики событий.
 
-### `/audio/processing.js`
+### `/audio/microphoneManager.js`
 
-- **Назначение:** Содержит логику обработки аудиоданных (например, анализ частот, определение громкости).
+- **Назначение:** Управляет вводом с микрофона, включая настройку аудио графа для **анализа** аудиоданных с микрофона.
 - **Зависимости:**
     - `/core/init.js` (`state`)
-- **Экспорты:** `processAudioData`.
-- **Связи:** Используется `microphoneManager.js` для обработки данных с микрофона.
+    - `/audio/audioProcessing.js` (для `getAudioContext`, `createAnalyserNodes`)
+    - `/3d/rendering.js` (для `resetVisualization`)
+- **Экспорты:** `initializeMicrophoneButton` (Основной экспорт не изменился).
+- **Связи:**
+    - Использует `audioProcessing.js` для получения `AudioContext` и создания своих `AnalyserNode`s (`state.audio.analyserLeft`, `state.audio.analyserRight`) с соответствующим `smoothingTimeConstant`.
+    - Управляет `state.audio.activeSource`, устанавливая его в `'microphone'` когда активен и `'none'` когда остановлен.
+    - Вызывает `rendering.js#resetVisualization()` при остановке микрофона.
+    - **Больше не обрабатывает аудио напрямую в уровни полутонов и не обновляет колонки; это теперь делается в `rendering.js` с использованием данных от этих анализаторов через `audioProcessing.js`.**
+    - Инициализирует кнопку микрофона (`micButton`) и ее обработчик событий.
+
+### `/audio/audioProcessing.js`
+
+- **Назначение:** Этот модуль отвечает за централизацию основных аудио функций, таких как управление `AudioContext`, создание `AnalyserNode` и обработка аудиоданных (например, вычисление уровней полутонов из частотных данных). Служит как утилитарный модуль для других аудио компонентов, которым необходимо выполнять анализ или обеспечивать согласованный `AudioContext`.
+- **Ключевые функции/Экспорты:**
+    - `getAudioContext()`: Управляет жизненным циклом общего экземпляра `AudioContext` (получает или создает/возобновляет его), сохраняя его в `state.audio.audioContext`.
+    - `createAnalyserNodes(audioContext, smoothingTimeConstant)`: Создает и настраивает пару `AnalyserNode` (левый и правый каналы) для аудио анализа, позволяя указать `smoothingTimeConstant`.
+    - `getSemitoneLevels(analyser)`: Принимает `AnalyserNode` и вычисляет массив уровней в децибелах для каждого музыкального полутона на основе его частотных данных.
+- **Зависимости:**
+    - `../core/init.js` (для `state`)
+    - `../3d/rendering.js` (для массива `semitones`, используемого `getSemitoneLevels`)
+    - `three` (для `THREE.MathUtils.clamp`, используемого `getSemitoneLevels`)
+- **Взаимодействия:** Предоставляет утилитарные функции и анализаторы модулям, таким как `audioFilePlayer.js`, `microphoneManager.js`. Используется `rendering.js` (косвенно, так как `rendering.js` теперь вызывает `getSemitoneLevels`, который определен здесь, но выполняется с анализаторами, предоставленными плеером/менеджером).
 
 ### `/audio/visualization.js`
 
