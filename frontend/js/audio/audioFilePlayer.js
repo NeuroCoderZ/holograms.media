@@ -195,8 +195,8 @@ export function initializeAudioPlayerControls() {
 
   // Обработчики кнопок воспроизведения
   playButton.addEventListener('click', playAudio);
-  pauseAudio.addEventListener('click', pauseAudio);
-  stopAudio.addEventListener('click', stopAudio);
+  pauseButton.addEventListener('click', pauseAudio);
+  stopButton.addEventListener('click', stopAudio);
 
   console.log('AudioPlayer controls initialized.');
 }

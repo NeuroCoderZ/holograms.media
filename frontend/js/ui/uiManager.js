@@ -153,8 +153,8 @@ export function initializeMainUI() {
   console.log('Инициализация основного UI...');
   
   // Получаем ссылки на DOM-элементы кнопок левой панели
-  uiElements.buttons.fileButton = document.getElementById('fileButton');
-  uiElements.buttons.playButton = document.getElementById('playButton');
+  uiElements.buttons.fileButton = document.getElementById('loadAudioButton');
+  uiElements.buttons.playButton = document.getElementById('playAudioButton');
   uiElements.buttons.pauseButton = document.getElementById('pauseButton');
   uiElements.buttons.stopButton = document.getElementById('stopButton');
   uiElements.buttons.micButton = document.getElementById('micButton');
