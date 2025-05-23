@@ -43,7 +43,8 @@ export const uiElements = {
   
   // Элементы ввода
   inputs: {
-    fileInput: null,
+    fileInput: null, // This might be for a different purpose, leaving as is.
+    audioFileInput: null, // Added for the audio file input
     topPromptInput: null,
     chatInput: null,
     promptText: null,
@@ -155,8 +156,8 @@ export function initializeMainUI() {
   // Получаем ссылки на DOM-элементы кнопок левой панели
   uiElements.buttons.fileButton = document.getElementById('loadAudioButton');
   uiElements.buttons.playButton = document.getElementById('playAudioButton');
-  uiElements.buttons.pauseButton = document.getElementById('pauseButton');
-  uiElements.buttons.stopButton = document.getElementById('stopButton');
+  uiElements.buttons.pauseButton = document.getElementById('pauseAudioButton'); // Corrected ID
+  uiElements.buttons.stopButton = document.getElementById('stopAudioButton');   // Corrected ID
   uiElements.buttons.micButton = document.getElementById('micButton');
   uiElements.buttons.fullscreenButton = document.getElementById('fullscreenButton');
   uiElements.buttons.xrButton = document.getElementById('xrButton');
@@ -182,7 +183,8 @@ export function initializeMainUI() {
   uiElements.modals.promptModal = document.getElementById('promptModal');
   
   // Получаем ссылки на элементы ввода
-  uiElements.inputs.fileInput = document.getElementById('fileInput');
+  uiElements.inputs.fileInput = document.getElementById('fileInput'); // Remains, in case used for non-audio purposes
+  uiElements.inputs.audioFileInput = document.getElementById('audioFileInput'); // Added for audio file input
   uiElements.inputs.topPromptInput = document.getElementById('topPromptInput');
   uiElements.inputs.chatInput = document.getElementById('chatInput');
   uiElements.inputs.promptText = document.getElementById('promptText');
