@@ -1,28 +1,6 @@
-// frontend/js/ui/layoutManager.js
-
-import * as THREE from 'three';
+// layoutManager.js
+// Управляет расположением и размерами элементов UI
 import { state } from '../core/init.js';
-import { ui } from '../core/ui.js'; // Импортируем ui для доступа к панелям
-
-// Вспомогательные функции
-function getPanelWidths() {
-  return (ui.leftPanel?.offsetWidth || 0) + (ui.rightPanel?.offsetWidth || 0);
-}
-
-function calculateInitialScale(containerWidth, availableHeightForHologram) {
-  const { WIDTH, HEIGHT } = state.config?.GRID || { WIDTH: 130, HEIGHT: 260 };
-
-  const hologramWidth = WIDTH * 2;
-  const hologramHeight = HEIGHT;
-
-  let widthScale = (containerWidth * 0.98) / hologramWidth;
-  let heightScale = availableHeightForHologram / hologramHeight;
-
-  let scale = Math.min(widthScale, heightScale);
-  scale = Math.max(scale, 0.1); // Минимальный масштаб
-
-  return scale;
-}
 
 /**
  * Обновляет макет голограммы и панелей в зависимости от видимости рук и размеров окна.
