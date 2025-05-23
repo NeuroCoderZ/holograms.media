@@ -8,7 +8,7 @@ import { togglePanels, initializePanelState } from '../ui/panelManager.js';
 // Объект для хранения содержимого файлов для редактора
 const fileContents = {};
 
-// --- File Editor Logic (Перенесено из script.js) ---
+// --- File Editor Logic (Перенесено из script.js)
 
 // Функция для загрузки содержимого файла
 async function loadFileContent(filePath) {
@@ -32,11 +32,11 @@ async function saveFileContent(filePath, content) {
 
 // Функция для открытия файла в редакторе
 async function openFileInEditor(filePath) {
-    const editorModal = document.getElementById('editorModal');
-    const editorContent = document.getElementById('editorContent');
-    const editorFilePath = document.getElementById('editorFilePath');
-    const saveFileButton = document.getElementById('saveFile');
-    const closeEditorButton = document.querySelector('.close-button');
+    const editorModal = document.getElementById('fileEditorModal'); // Corrected ID
+    const editorContent = document.getElementById('fileContent'); // Corrected ID
+    const editorFilePath = document.getElementById('editorFilePath'); // Corrected ID
+    const saveFileButton = document.getElementById('saveFile'); // Corrected ID
+    const closeEditorButton = document.getElementById('closeFileEditorModal'); // Corrected ID
 
     if (!editorModal || !editorContent || !editorFilePath || !saveFileButton || !closeEditorButton) {
         console.error('Editor modal elements not found.');
@@ -118,7 +118,7 @@ export function setupDOMEventHandlers() {
   // Обработчик для кнопки переключения панелей
   const togglePanelsButton = document.getElementById('togglePanelsButton');
   if (togglePanelsButton) {
-      togglePanelsButton.addEventListener('click', togglePanels);
+      togglePanelsButton.addEventListener('click', togglePanels); // Используем импортированную togglePanels
       // Перемещаем кнопку в body, если она еще в левой панели
       if (togglePanelsButton.parentNode && togglePanelsButton.parentNode.classList.contains('left-panel')) {
           document.body.appendChild(togglePanelsButton);
@@ -132,11 +132,11 @@ export function setupDOMEventHandlers() {
   initializePanelState();
 
   // Обработчик для кнопки сохранения в редакторе
-  const saveFileButton = document.getElementById('saveFile');
+  const saveFileButton = document.getElementById('saveFile'); // Corrected ID
   if (saveFileButton) {
       saveFileButton.addEventListener('click', async () => {
           const filePath = saveFileButton.dataset.currentFilePath;
-          const content = document.getElementById('editorContent').value;
+          const content = document.getElementById('fileContent').value; // Corrected ID
           if (filePath) {
               await saveFileContent(filePath, content);
           } else {
@@ -144,24 +144,24 @@ export function setupDOMEventHandlers() {
           }
       });
   } else {
-         console.warn("Кнопка сохранения (#saveFile) не найдена.");
+         console.warn("Кнопка сохранения (#saveFile) не найдена."); // Corrected ID
   }
 
   // Обработчик для кнопки закрытия редактора
-  const closeEditorButton = document.querySelector('.close-button');
+  const closeEditorButton = document.getElementById('closeFileEditorModal'); // Corrected ID
    if (closeEditorButton) {
        closeEditorButton.addEventListener('click', () => {
-           const editorModal = document.getElementById('editorModal');
+           const editorModal = document.getElementById('fileEditorModal'); // Corrected ID
            if (editorModal) {
                editorModal.style.display = 'none';
            }
        });
    } else {
-       console.warn("Кнопка закрытия редактора (.close-button) не найдена.");
+       console.warn("Кнопка закрытия редактора (#closeFileEditorModal) не найдена."); // Corrected ID
    }
 
   // Обработчик для закрытия редактора по клику вне модального окна
-  const editorModal = document.getElementById('editorModal');
+  const editorModal = document.getElementById('fileEditorModal'); // Corrected ID
   if (editorModal) {
       window.addEventListener('click', (event) => {
           if (event.target === editorModal) {
@@ -169,7 +169,7 @@ export function setupDOMEventHandlers() {
           }
       });
   } else {
-      console.warn("Модальное окно редактора (#editorModal) не найдено.");
+      console.warn("Модальное окно редактора (#fileEditorModal) не найдено."); // Corrected ID
   }
 
   // TODO: Перенести логику инициализации чата (submitChatMessage, chatInput) в chat.js (уже сделано)
@@ -181,34 +181,7 @@ export function setupDOMEventHandlers() {
 // Экспортируем функцию openFileInEditor для использования в других модулях
 export { openFileInEditor };
 
-function togglePanels() {
-  const leftPanel = document.getElementById('leftPanel');
-  const rightPanel = document.getElementById('rightPanel');
-  const togglePanelsButton = document.getElementById('togglePanelsButton');
-
-  if (!leftPanel || !rightPanel || !togglePanelsButton) {
-      console.error('Required elements not found for togglePanels');
-      return;
-  }
-  const willBeHidden = !leftPanel.classList.contains('hidden');
-  console.log('Toggling panels, willBeHidden:', willBeHidden);
-
-  // Перемещаем кнопку в body, если она еще не там
-  if (togglePanelsButton.parentNode !== document.body) {
-      document.body.appendChild(togglePanelsButton);
-      console.log('Moved togglePanelsButton to body');
-  }
-
-  leftPanel.classList.toggle('hidden', willBeHidden);
-  rightPanel.classList.toggle('hidden', willBeHidden);
-  togglePanelsButton.classList.toggle('show-mode', willBeHidden);
-  localStorage.setItem('panelsHidden', willBeHidden.toString());
-
-  setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-  }, 50);
-}
-// --- End Universal Panel Toggling Logic ---
+// Дублирующаяся функция togglePanels была удалена, используется импортированная из panelManager.js
 
 // --- File Loading and Editor Setup --- (Перенесено из script.js)
 async function fetchAndStoreFile(filename) {
