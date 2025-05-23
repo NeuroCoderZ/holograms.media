@@ -71,6 +71,7 @@
 
 ## 8. Последние Изменения
 - [ДАТА] Устранены все известные Runtime Errors (initializePanelState, chat container, gesture panel, audioPlayer DOM, mainSequencerGroup). Фронтенд готов к финальному комплексному тестированию.
+- [2025-05-23] Устранены все известные Runtime Errors (initializePanelState, chat container, gesture panel, audioPlayer DOM, mainSequencerGroup). Фронтенд готов к финальному комплексному тестированию.
 
 ---
 
@@ -103,7 +104,7 @@
 ---
 
 ## 10. Текущий Фокус
-- Подготовка к миграции на PostgreSQL.
+- Финальное комплексное тестирование фронтенда на Hugging Face Spaces. Проверка работы UI, 3D-сцены, аудио-плеера, чата.
 
 ---
 
