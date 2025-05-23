@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
+import { initializePanelState } from '../ui/uiManager.js';
 
 // Объект для хранения содержимого файлов для редактора
 const fileContents = {};
