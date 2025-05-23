@@ -1,7 +1,9 @@
 // frontend/js/audio/audioFilePlayer.js
-import { state } from '../core/init.js'; // Для доступа к state, если потребуется
+import { state } from '../core/init.js';
+import { getAudioContext, createAnalyserNodes } from './audioProcessing.js';
 
-// Элементы управления плеером
+// Элементы управления плеером (module-level variables)
+let fileInput = null; // Renamed from audioFileInput for consistency, was implicitly module-level
 let fileButton = null;
 let playButton = null;
 let pauseButton = null;
@@ -11,11 +13,8 @@ let stopButton = null;
  * Инициализирует AudioContext, если он еще не создан и не сохранен в state.
  */
 function ensureAudioContext() {
-  if (!state.audio.audioContext || state.audio.audioContext.state === 'closed') {
-    state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    console.log("AudioContext for player initialized or recreated in state.");
-  }
-  if (state.audio.audioContext.state === 'suspended') {
+  state.audio.audioContext = getAudioContext(); // This handles creation/retrieval
+  if (state.audio.audioContext && state.audio.audioContext.state === 'suspended') {
     state.audio.audioContext.resume().then(() => {
       console.log("AudioContext for player resumed.");
     }).catch(e => console.error("Failed to resume AudioContext for player:", e));
@@ -33,11 +32,21 @@ function setupAudioProcessing(source) {
     return;
   }
 
-  // Пример: подключение гейна, если нужно
-  // const gainNode = state.audio.audioContext.createGain();
-  // source.connect(gainNode);
-  // gainNode.connect(state.audio.audioContext.destination);
-  source.connect(state.audio.audioContext.destination); // Прямое подключение к выходу
+  // Disconnect previous gain node if it exists
+  if (state.audio.filePlayerGainNode) {
+    state.audio.filePlayerGainNode.disconnect();
+  }
+
+  state.audio.filePlayerAnalysers = createAnalyserNodes(state.audio.audioContext, 0);
+  state.audio.filePlayerGainNode = state.audio.audioContext.createGain();
+  
+  const splitter = state.audio.audioContext.createChannelSplitter(2);
+
+  source.connect(state.audio.filePlayerGainNode);
+  state.audio.filePlayerGainNode.connect(splitter);
+  splitter.connect(state.audio.filePlayerAnalysers.left, 0);
+  splitter.connect(state.audio.filePlayerAnalysers.right, 1);
+  state.audio.filePlayerGainNode.connect(state.audio.audioContext.destination);
 
   state.audio.audioBufferSource = source; // Сохраняем ссылку на текущий источник в state
 }
@@ -46,77 +55,95 @@ function setupAudioProcessing(source) {
  * Обработчик загрузки файла.
  */
 async function loadAudioFile(event) {
-  const fileInput = event.target;
-  const file = fileInput.files[0];
+  const currentFileInput = event.target; // Use event.target to get the specific input element
+  const file = currentFileInput.files[0];
   if (!file) return;
 
-  fileButton.classList.remove('active'); // Снимаем активность, пока файл не загружен
+  if (fileButton) fileButton.classList.remove('active');
 
   const reader = new FileReader();
   reader.onload = async (e) => {
     try {
-      ensureAudioContext();
+      ensureAudioContext(); // Ensure context is ready before decoding
+      if (!state.audio.audioContext) { // Double check after ensureAudioContext
+          console.error('AudioContext could not be initialized for decoding.');
+          if (fileButton) fileButton.classList.remove('active');
+          if (playButton) playButton.disabled = true;
+          if (pauseButton) pauseButton.disabled = true;
+          if (stopButton) stopButton.disabled = true;
+          return;
+      }
+      // Stop and clear existing audio before loading new
+      if (state.audio.audioBufferSource || state.audio.isPlaying || state.audio.pausedAt > 0) {
+        stopAudio(); // Call existing stopAudio to clean up properly
+      }
+
       state.audio.audioBuffer = await state.audio.audioContext.decodeAudioData(e.target.result);
       console.log('Аудиофайл успешно загружен и декодирован.');
-      playButton.disabled = false;
-      pauseButton.disabled = false;
-      stopButton.disabled = false;
-      fileButton.classList.add('active'); // Возвращаем активность кнопке файла
-      // Сброс состояния плеера
+      if (playButton) playButton.disabled = false;
+      if (pauseButton) pauseButton.disabled = false;
+      if (stopButton) stopButton.disabled = false;
+      if (fileButton) fileButton.classList.add('active');
+      
+      // Reset player state for the new file - some of this is redundant if stopAudio was called, but safe
       state.audio.pausedAt = 0;
       state.audio.startOffset = 0;
       state.audio.isPlaying = false;
-      if (state.audio.audioBufferSource) {
-          try {
-            state.audio.audioBufferSource.stop();
-          } catch (_error) {
-            console.error('Audio source stop error:', _error);
-          }
-          state.audio.audioBufferSource.disconnect();
-          state.audio.audioBufferSource = null;
-        }
+      // activeSource will be set by playAudio or remain 'none'
+
     } catch (_error) {
       console.error('Ошибка декодирования аудиофайла:', _error);
-      fileButton.classList.remove('active');
-      playButton.disabled = true;
-      pauseButton.disabled = true;
-      stopButton.disabled = true;
+      if (fileButton) fileButton.classList.remove('active');
+      if (playButton) playButton.disabled = true;
+      if (pauseButton) pauseButton.disabled = true;
+      if (stopButton) stopButton.disabled = true;
     }
   };
   reader.readAsArrayBuffer(file);
-  fileInput.value = ''; // Очищаем значение input, чтобы событие 'change' срабатывало повторно для того же файла
+  currentFileInput.value = ''; 
 }
 
 /**
  * Обработчик нажатия кнопки Play.
  */
 function playAudio() {
-  if (!state.audio.audioBuffer || state.audio.isPlaying) return;
+  state.audio.activeSource = 'file';
   ensureAudioContext();
 
-  if (state.audio.audioBufferSource) { // Если уже есть источник, останавливаем и отключаем его
+  if (!state.audio.audioBuffer || state.audio.isPlaying) {
+    if (!state.audio.audioBuffer) console.warn("No audio buffer to play.");
+    if (state.audio.isPlaying) console.warn("Audio is already playing.");
+    // Do not reset activeSource here, as it might be a valid attempt to play that just failed due to state
+    return;
+  }
+  if (!state.audio.audioContext) { 
+      console.error("Cannot play audio, AudioContext not available.");
+      state.audio.activeSource = 'none'; 
+      return;
+  }
+
+  if (state.audio.audioBufferSource) { 
     try {
       state.audio.audioBufferSource.stop();
     } catch (_error) {
-      console.error('Audio source stop error during play:', _error);
+      // Ignore error if already stopped
     }
     state.audio.audioBufferSource.disconnect();
   }
 
   state.audio.audioBufferSource = state.audio.audioContext.createBufferSource();
   state.audio.audioBufferSource.buffer = state.audio.audioBuffer;
-  setupAudioProcessing(state.audio.audioBufferSource); // Настраиваем обработку (например, гейн)
+  
+  setupAudioProcessing(state.audio.audioBufferSource); 
 
-  // Рассчитываем смещение для возобновления с места паузы
-  // Если state.audio.pausedAt = 0, воспроизведение начнется с начала
   const offsetToPlay = state.audio.pausedAt;
   state.audio.audioBufferSource.start(0, offsetToPlay);
-  state.audio.startOffset = state.audio.audioContext.currentTime - offsetToPlay; // Корректируем startOffset
+  state.audio.startOffset = state.audio.audioContext.currentTime - offsetToPlay; 
   state.audio.isPlaying = true;
 
-  playButton.classList.add('active');
-  pauseButton.classList.remove('active');
-  stopButton.classList.remove('active');
+  if (playButton) playButton.classList.add('active');
+  if (pauseButton) pauseButton.classList.remove('active');
+  if (stopButton) stopButton.classList.remove('active');
 }
 
 /**
@@ -124,52 +151,72 @@ function playAudio() {
  */
 function pauseAudio() {
   if (!state.audio.isPlaying || !state.audio.audioBufferSource) return;
-  ensureAudioContext();
+  // ensureAudioContext(); // Not strictly needed if playing, but harmless
 
-  state.audio.pausedAt = state.audio.audioContext.currentTime - state.audio.startOffset; // Сохраняем текущую позицию
+  state.audio.pausedAt = state.audio.audioContext.currentTime - state.audio.startOffset; 
   try {
-    state.audio.audioBufferSource.stop(); // Останавливаем воспроизведение
+    state.audio.audioBufferSource.stop(); 
   } catch (_error) {
     console.error('Audio source stop error during pause:', _error);
   }
   state.audio.isPlaying = false;
+  state.audio.activeSource = 'none';
 
-  playButton.classList.remove('active');
-  pauseButton.classList.add('active');
+  if (playButton) playButton.classList.remove('active');
+  if (pauseButton) pauseButton.classList.add('active');
 }
 
 /**
  * Обработчик нажатия кнопки Stop.
  */
 function stopAudio() {
-  if (!state.audio.audioBufferSource && !state.audio.isPlaying && state.audio.pausedAt === 0) return; // Если нечего останавливать
+  if (!state.audio.audioBufferSource && !state.audio.isPlaying && state.audio.pausedAt === 0) return;
   
   if (state.audio.audioBufferSource) {
     try {
       state.audio.audioBufferSource.stop();
-    } catch (_error) {
-      console.error('Audio source stop error during stop:', _error);
+    } catch (error) {
+      // console.error('Audio source stop error during stop:', error); // Can be noisy if already stopped
     }
-    state.audio.audioBufferSource.disconnect();
+    state.audio.audioBufferSource.disconnect(); 
     state.audio.audioBufferSource = null;
   }
   
-  state.audio.pausedAt = 0; // Сбрасываем позицию паузы
-  state.audio.startOffset = 0; // Сбрасываем смещение
+  if (state.audio.filePlayerGainNode) {
+    state.audio.filePlayerGainNode.disconnect(); 
+    state.audio.filePlayerGainNode = null;
+  }
+  
+  // Analysers are connected via the gain node and splitter. Disconnecting gain node is enough.
+  // Setting to null helps GC.
+  if (state.audio.filePlayerAnalysers) {
+      // Explicitly disconnect analysers - good practice though not strictly required if gain node is disconnected
+      if (state.audio.filePlayerAnalysers.left) state.audio.filePlayerAnalysers.left.disconnect();
+      if (state.audio.filePlayerAnalysers.right) state.audio.filePlayerAnalysers.right.disconnect();
+      state.audio.filePlayerAnalysers = null;
+  }
+  
+  state.audio.pausedAt = 0;
+  state.audio.startOffset = 0;
   state.audio.isPlaying = false;
+  state.audio.activeSource = 'none';
 
-  playButton.classList.remove('active');
-  pauseButton.classList.remove('active');
-  // stopButton.classList.add('active'); // Обычно стоп не делают активным
-  stopButton.classList.remove('active');
+  // Assumes playButton, pauseButton, stopButton are module-level variables
+  // assigned in initializeAudioPlayerControls()
+  if (playButton && pauseButton && stopButton) {
+    playButton.classList.remove('active');
+    pauseButton.classList.remove('active');
+    stopButton.classList.remove('active');
+  } else {
+    console.warn('Audio control buttons not accessible in stopAudio for UI update.');
+  }
 }
 
 /**
  * Инициализация элементов управления аудиоплеером и обработчиков событий.
  */
 export function initializeAudioPlayerControls() {
-  // Получаем ссылки на элементы управления по их ID из script.js.backup
-  const fileInput = document.getElementById('audioFileInput');
+  fileInput = document.getElementById('audioFileInput'); // Assign to module-level variable
   fileButton = document.getElementById('loadAudioButton');
   playButton = document.getElementById('playAudioButton');
   pauseButton = document.getElementById('pauseAudioButton');
