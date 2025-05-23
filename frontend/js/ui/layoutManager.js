@@ -1,6 +1,7 @@
 // frontend/js/ui/layoutManager.js
 
-import * as THREE from 'three';
+// Удаляем неиспользуемый импорт THREE
+// import * as THREE from 'three';
 import { state } from '../core/init.js';
 import { ui } from '../core/ui.js'; // Импортируем ui для доступа к панелям
 

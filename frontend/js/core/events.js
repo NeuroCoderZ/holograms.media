@@ -1,10 +1,13 @@
+// frontend/js/core/events.js
+
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
 import { togglePanels } from '../panels/panelManager.js';
 import { initializePanelState } from '../panels/panelManager.js';
 import { uiElements } from '../ui/uiManager.js';
 
-const ui = uiElements;
+// Удаляем дублирующееся объявление ui
+// const ui = uiElements;
 
 // TODO: Refactor event listeners to be more modular and potentially use a dedicated event bus pattern.
 // This file currently mixes core event handling with UI-specific events.
