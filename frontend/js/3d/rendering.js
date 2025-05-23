@@ -391,59 +391,38 @@ export function updateSequencerColumns(amplitudes, channel) {
       const targetDepth = normalizedDB * 260;
       mesh.scale.z = targetDepth;
       mesh.position.z = targetDepth / 2;
-    });
-  });
-}
-
-/**
-// Local updateColumnsForMicrophone function removed. Logic moved to animate().
-
-// --- Функция анимации и рендеринга ---
-*/
-export function animate() {
-  requestAnimationFrame(animate);
-
-  // Проверяем, что необходимые объекты Three.js инициализированы в state
-  if (!state.scene || !state.camera || !state.renderer) {
-      console.error('[Animation] Rendering setup incomplete:', { scene: state.scene, camera: state.camera, renderer: state.renderer });
-      return;
-  }
-
-  // Обновляем анимации TWEEN.js (предполагается, что TWEEN глобально доступен)
-  if (typeof TWEEN !== 'undefined') {
-      TWEEN.update();
-  }
-
-  // Очищаем буферы
-  state.renderer.clear();
-
-  // Обрабатываем аудио, если воспроизводится
-  let leftLevels = null;
-  let rightLevels = null;
-
-  if (state.audio && state.audio.activeSource === 'file' && state.audio.isPlaying && state.audio.filePlayerAnalysers) {
-    leftLevels = getSemitoneLevels(state.audio.filePlayerAnalysers.left);
-    rightLevels = getSemitoneLevels(state.audio.filePlayerAnalysers.right);
-  } else if (state.audio && state.audio.activeSource === 'microphone' && state.audio.analyserLeft && state.audio.analyserRight) {
-    // Assuming microphone is active if state.audio.analyserLeft/Right are present and activeSource is 'microphone'
-    // (microphoneManager.js sets activeSource and manages these analysers)
-    leftLevels = getSemitoneLevels(state.audio.analyserLeft);
-    rightLevels = getSemitoneLevels(state.audio.analyserRight);
-  } else {
-    // No active audio source for visualization, or analysers not ready.
-    // Create arrays of -100dB to make columns go to minimum.
-    // semitones array is available in this file.
-    const numSemitones = semitones.length;
-    leftLevels = Array(numSemitones).fill(-100);
-    rightLevels = Array(numSemitones).fill(-100);
-  }
-
-  // Call updateSequencerColumns with the determined levels
-  if (leftLevels && rightLevels) {
-    updateSequencerColumns(leftLevels, 'left');
-    updateSequencerColumns(rightLevels, 'right');
-  }
-
-  // Рендерим сцену
-  state.renderer.render(state.scene, state.camera);
+      // if (mesh.material && mesh.material.color) {
+      //     const colorIntensity = normalizedDB; // Use normalizedDB to influence color
+      //     mesh.material.color.setRGB(colorIntensity, colorIntensity, colorIntensity); // Example: grayscale based on amplitude
+      // }
+      }
+      
+      // Update TWEEN animations
+      TWEEN.update(time);
+      
+      // Render the scene
+      renderer.render(scene, camera);
+      
+      // Request the next frame
+      requestAnimationFrame(animate);
+      }
+      }
+      
+      // Function to handle window resize
+      function onWindowResize() {
+      if (camera && renderer) {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+      }
+      
+      // Add event listener for window resize
+      window.addEventListener('resize', onWindowResize);
+      
+      // Initial resize call to set correct size
+      onWindowResize();
+      
+      // Export necessary functions
+      export { init3DScene, animate, onWindowResize, updateHologramMesh };
 }
