@@ -387,14 +387,11 @@ export function updateSequencerColumns(amplitudes, channel) {
       mesh.material.transparent = false;
       mesh.material.color = color;
 
-      // Прямое обновление позиции без анимации
+      // Direct position update without animation
       const targetDepth = normalizedDB * 260;
       mesh.scale.z = targetDepth;
       mesh.position.z = targetDepth / 2;
-      // if (mesh.material && mesh.material.color) {
-      //     const colorIntensity = normalizedDB; // Use normalizedDB to influence color
-      //     mesh.material.color.setRGB(colorIntensity, colorIntensity, colorIntensity); // Example: grayscale based on amplitude
-      // }
+      });
       }
       
       // Update TWEEN animations
