@@ -47,7 +47,7 @@ export function initializePanelState() {
 /**
  * Переключает видимость боковых панелей
  */
-function togglePanels() {
+export function togglePanels() {
   if (!leftPanel || !rightPanel || !togglePanelsButton) {
     console.error('Панели или кнопка не инициализированы');
     return;
@@ -98,6 +98,3 @@ export function initializePanelManager() {
   
   console.log('Инициализация управления панелями завершена');
 }
-
-// Экспортируем функции для использования в других модулях
-export { togglePanels };
