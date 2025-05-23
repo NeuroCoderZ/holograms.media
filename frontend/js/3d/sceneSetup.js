@@ -105,4 +105,56 @@ export function initializeScene() {
   state.mainSequencerGroup.position.set(0, -260 / 2, 0);
   state.hologramPivot.position.set(0, 0, 0); // Начальная позиция пивота
   state.mainSequencerGroup.rotation.set(0, 0, 0);
+
+  // Инициализация камеры (PerspectiveCamera)
+  if (state.camera === null) {
+    console.log('[DEBUG] initializeScene: state.camera is null, initializing...');
+    state.camera = new THREE.PerspectiveCamera(
+      state.config.CAMERA.fov,
+      state.config.CAMERA.aspect,
+      state.config.CAMERA.near,
+      state.config.CAMERA.far
+    );
+    state.camera.position.set(
+      state.config.CAMERA.initialPosition.x,
+      state.config.CAMERA.initialPosition.y,
+      state.config.CAMERA.initialPosition.z
+    );
+    console.log('[DEBUG] initializeScene: state.camera initialized:', state.camera);
+  }
+
+  // Инициализация рендерера (WebGLRenderer)
+  if (state.renderer === null) {
+    console.log('[DEBUG] initializeScene: state.renderer is null, initializing...');
+    state.renderer = new THREE.WebGLRenderer({ antialias: true });
+    state.renderer.setSize(window.innerWidth, window.innerHeight);
+    state.renderer.setPixelRatio(window.devicePixelRatio);
+    console.log('[DEBUG] initializeScene: state.renderer initialized:', state.renderer);
+
+    // Добавление элемента рендерера в DOM
+    const gridContainer = document.getElementById('grid-container');
+    if (gridContainer) {
+      gridContainer.appendChild(state.renderer.domElement);
+      console.log('[DEBUG] initializeScene: renderer.domElement added to #grid-container');
+    } else {
+      console.error('initializeScene: #grid-container not found, cannot append renderer.domElement.');
+      // Fallback to body if grid-container is not found (less ideal)
+      // document.body.appendChild(state.renderer.domElement);
+      // console.warn('initializeScene: Appended renderer.domElement to body as #grid-container was not found.');
+    }
+  }
+
+  // Обновление аспекта камеры и размера рендерера при изменении размера окна
+  // Эта логика также должна быть в resizeHandler.js, но добавим здесь для начальной настройки
+  window.addEventListener('resize', () => {
+    if (state.camera) {
+      state.camera.aspect = window.innerWidth / window.innerHeight;
+      state.camera.updateProjectionMatrix();
+    }
+    if (state.renderer) {
+      state.renderer.setSize(window.innerWidth, window.innerHeight);
+      state.renderer.setPixelRatio(window.devicePixelRatio);
+    }
+  });
+
 }
