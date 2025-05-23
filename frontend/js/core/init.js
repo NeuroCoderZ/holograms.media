@@ -37,14 +37,17 @@ export const state = {
     audioContext: null,         // Аудиоконтекст Web Audio API
     analyser: null,
     microphoneStream: null,
-    analyserLeft: null,
-    analyserRight: null,
-    audioSource: null,
+    analyserLeft: null,         // For microphone
+    analyserRight: null,        // For microphone
+    audioSource: null,          // Legacy or general source, activeSource is more specific
     audioBuffer: null,          // Буфер загруженного аудиофайла
     audioBufferSource: null,    // Источник буфера для воспроизведения файла
-    isPlaying: false,           // Флаг воспроизведения аудиофайла
-    pausedAt: 0,                // Позиция паузы в секундах
-    startOffset: 0,             // Смещение начала воспроизведения
+    isPlaying: false,           // Флаг воспроизведения аудиофайла (specific to file player)
+    pausedAt: 0,                // Позиция паузы в секундах (specific to file player)
+    startOffset: 0,             // Смещение начала воспроизведения (specific to file player)
+    activeSource: 'none',       // NEW: Indicates current audio source ('none', 'file', 'microphone')
+    filePlayerAnalysers: null,  // NEW: Analysers for the file player {left: AnalyserNode, right: AnalyserNode}
+    filePlayerGainNode: null,   // NEW: GainNode for the file player
   },
 
   // Группировка мультимодального состояния
