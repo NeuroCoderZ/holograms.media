@@ -1,7 +1,7 @@
 // frontend/js/core/events.js - Управление событиями UI
 
 import { uiElements as ui, togglePanels, toggleChatMode } from '../ui/uiManager.js';
-// import { state } from './init.js'; // Удалено, так как state не используется в этом файле напрямую, а через uiElements или другие импорты
+import { state } from './init.js';
 // TODO: Reimplement playback functionality
 // TODO: Reimplement microphone recording functionality
 // TODO: Reimplement file upload functionality
