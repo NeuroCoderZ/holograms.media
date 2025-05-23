@@ -399,7 +399,7 @@ export function updateSequencerColumns(amplitudes, channel) {
 // Local updateColumnsForMicrophone function removed. Logic moved to animate().
 
 // --- Функция анимации и рендеринга ---
-
+*/
 export function animate() {
   requestAnimationFrame(animate);
 
