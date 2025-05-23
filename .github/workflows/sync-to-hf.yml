@@ -4,31 +4,74 @@ on:
   push:
     branches:
       - main # Запускать только при пуше в main
+  workflow_dispatch: # Позволяет запускать вручную из GitHub Actions UI
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    name: Trigger HF Space Rebuild
+
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # Fetch all history for all tags and branches
+        uses: actions/checkout@v4 # Используем actions/checkout@v4 для актуальности
 
       - name: Set up Git
         run: |
+          # Эти строки не строго необходимы для API-вызова, но не помешают
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
 
-      # Этот шаг устанавливает URL для remote 'huggingface' с использованием токена.
-      # Git будет использовать этот токен для аутентификации при push.
-      # Имя пользователя (в данном случае 'user') здесь формальное,
-      # Hugging Face аутентифицирует по токену.
-      - name: Add Hugging Face Remote with Token
+      - name: Trigger Hugging Face Space Restart via API
+        id: restart_space # Добавляем id, чтобы можно было ссылаться на результат
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN_SPACES_CONTROL }} # Твой секрет с токеном
+          SPACE_ID: "NeuroCoderZ/holograms.media" # Твой Space ID
         run: |
-          git remote add huggingface https://user:${{ secrets.HF_TOKEN_SPACES_CONTROL }}@huggingface.co/spaces/${{ github.repository_owner }}/${{ github.event.repository.name }}
-          echo "Hugging Face remote added."
+          set -e # Выход при первой ошибке
 
-      - name: Push to Hugging Face
-        run: |
-          git push huggingface main --force
-          echo "Successfully pushed to Hugging Face Spaces."
+          echo "Проверяем наличие токена..."
+          if [ -z "$HF_TOKEN" ]; then
+            echo "Ошибка: HF_TOKEN не установлен! Проверьте секреты репозитория GitHub."
+            exit 1
+          fi
+          echo "✓ HF_TOKEN установлен корректно."
+
+          API_URL="https://huggingface.co/api/spaces/${SPACE_ID}/restart"
+          echo "Попытка запустить перезапуск для Space ID: ${SPACE_ID}"
+          echo "Используется API эндпоинт: ${API_URL}"
+
+          echo "Отправляем POST запрос к Hugging Face API..."
+          # Сохраняем вывод curl, включая HTTP-код и тело ответа в случае ошибки
+          response_output_file=$(mktemp)
+          response_code=$(curl -s -o "$response_output_file" -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $HF_TOKEN" \
+            "${API_URL}")
+
+          echo "Статус код ответа API: $response_code"
+
+          if [ "$response_code" -eq 200 ] || [ "$response_code" -eq 202 ]; then
+            echo "✓ Команда перезапуска Space успешно отправлена (HTTP $response_code)"
+            echo "::set-output name=restart_status::SUCCESS" # Устанавливаем выходную переменную
+          else
+            echo "Ошибка: Не удалось запустить перезапуск Space. HTTP статус код: $response_code"
+            echo "Детали ошибки:"
+            cat "$response_output_file" # Выводим тело ответа, если была ошибка
+            echo "::set-output name=restart_status::FAILURE" # Устанавливаем выходную переменную
+            exit 1 # Прерываем workflow, если перезапуск не удался
+          fi
+          rm -f "$response_output_file" # Удаляем временный файл
+
+      # Опционально: Шаг для уведомления Триа о статусе деплоя, если это нужно
+      # - name: Send Deployment Status to Tria
+      #   if: always() # Выполняется всегда, даже при ошибках
+      #   env:
+      #     TRIA_LOG_ENDPOINT: "https://neurocoderz-holograms-media.hf.space/tria/save_logs" # ЗАМЕНИТЕ НА ВАШ АКТУАЛЬНЫЙ URL
+      #     COMMIT_SHA: ${{ github.sha }}
+      #     REPO_NAME: ${{ github.repository }}
+      #     WORKFLOW_RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      #     DEPLOY_STATUS: ${{ steps.restart_space.outputs.restart_status || 'UNKNOWN' }}
+      #   run: |
+      #     echo "Отправляем статус деплоя Триа..."
+      #     # ... (логика отправки curl запроса, как в твоем рабочем workflow)
+      #     # Этот блок закомментирован, так как он не является частью основной проблемы деплоя.
+      #     # Раскомментируй его, если тебе нужна эта функциональность.
