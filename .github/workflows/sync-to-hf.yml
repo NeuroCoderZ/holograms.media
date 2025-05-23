@@ -25,7 +25,7 @@ jobs:
         id: restart_space # Добавляем id, чтобы можно было ссылаться на результат
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN_SPACES_CONTROL }} # Твой секрет с токеном
-          SPACE_ID: "NeuroCoderZ/holograms.media" # Твой Space ID
+          SPACE_ID: "NeuroCoderZ/holograms-media" # Твой Space ID
         run: |
           set -e # Выход при первой ошибке
 
