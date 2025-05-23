@@ -71,7 +71,7 @@
 
 ## 8. Последние Изменения
 - [ДАТА] Устранены все известные Runtime Errors (initializePanelState, chat container, gesture panel, audioPlayer DOM, mainSequencerGroup). Фронтенд готов к финальному комплексному тестированию.
-- [2024-05-23] Устранены все известные Runtime Errors. Фронтенд полностью работоспособен (ожидается тест).
+- [2025-05-23] Устранены все известные Runtime Errors (initializePanelState, chat container, gesture panel, audioPlayer DOM, mainSequencerGroup). Фронтенд готов к финальному комплексному тестированию.
 
 ---
 
@@ -83,19 +83,30 @@
 
 ---
 
-- **Послед.изменения:**
-    - [ДАТА] Устранены известные JavaScript runtime ошибки (UI, Audio, Panel init).
-    - [ДАТА] Разрешен merge conflict в MODULE_CATALOG.md.
-    - [ДАТА] Реализована финальная инициализация state.camera и state.renderer в sceneSetup.js.
-    - [ДАТА] Устранен duplicate export initializePanelState в panelManager.js. ВСЕ ИЗВЕСТНЫЕ ОШИБКИ ЗАГРУЗКИ JS ИСПРАВЛЕНЫ!
+## 8. Последние Изменения
+- [2025-05-23] Создан GitHub Action для синхронизации с HF. Сформулирована задача для Jules (анализ AudioPlayer). Обновлен ROADMAP.md (CI/CD).
+- [2025-05-23] Испр. Runtime Errors в sceneSetup (null.add), panelManager и gestureAreaVisualization (поиск DOM).
+- [2025-05-23] Испр. Runtime Errors: инициализация mainSequencerGroup, поиск DOM в panelManager.
+- [2025-05-23] Исправлена ошибка импорта initializePromptManager в promptManager.js.
+- [2025-05-23] Исправлена ошибка импорта initializeChatDisplay и применены правила ESLint в promptManager.js.
+- [2025-05-23] Исправлена ошибка импорта addMessage в promptManager.js и chatMessages.js.
+- [2025-05-23] Исправлены SyntaxError в appStatePersistence.js и ошибка toggleModeInternal not defined в rightPanelManager.js.
+- [2025-05-22] Удалена дублирующая функция switchToTimelineMode в rightPanelManager.js.
+- [2025-05-23] Исправлен TypeError (containers) в chat.js.
+- [2025-05-23] Добавлены/исправлены DOM-элементы для audioFilePlayer.
+- [2025-05-23] Исправлена инициализация UI элементов аудио плеера и логика воспроизведения файлов.
+- [2025-05-23] Устранены Runtime Errors, связанные с initializePanelState, контейнером чата (#chatMessages) и панелью жестов (.gesture-recording-panel), актуализированы соответствующие файлы.
+- [2025-05-23] Реализована полная инициализация state.camera и state.renderer.
 
+---
 
-- **Крит.проблемы:**
-    - НЕТ ИЗВЕСТНЫХ ОШИБОК!
+## 9. Критические Проблемы
+- Нет известных критических проблем, препятствующих запуску фронтенда после применения текущих изменений, кроме необходимости проверить отрисовку 3D-сцены после инициализации камеры и рендерера.
 
+---
 
 ## 10. Текущий Фокус
-- Финальное комплексное тестирование фронтенда на Hugging Face Spaces для проверки отрисовки 3D-сцены и работы UI.
+- Настройка CI/CD, делегирование задач Jules, финальное тестирование фронтенда.
 
 ---
 
