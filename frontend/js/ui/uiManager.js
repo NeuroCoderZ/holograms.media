@@ -175,7 +175,7 @@ export function initializeMainUI() {
   // Получаем ссылки на контейнеры
   uiElements.gridContainer = document.getElementById('grid-container');
   uiElements.gestureArea = document.getElementById('gesture-area');
-  uiElements.containers.chatMessages = document.getElementById('chatMessagesContainer'); // Инициализируем контейнер чата
+  uiElements.containers.chatMessages = document.getElementById('chatMessages'); // Инициализируем контейнер чата
   
   // Получаем ссылки на модальные окна
   uiElements.modals.gestureModal = document.getElementById('gestureModal');
