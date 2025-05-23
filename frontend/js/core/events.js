@@ -1,7 +1,10 @@
-// frontend/js/core/events.js - Управление событиями UI
+// frontend/js/core/events.js - Модуль для настройки обработчиков событий
 
-import { uiElements as ui, togglePanels, toggleChatMode } from '../ui/uiManager.js';
+import { uiElements } from '../ui/ui.js';
+import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
+import { togglePanels } from '../ui/panelManager.js';
 import { state } from './init.js';
+import { toggleChatMode } from '../ui/uiManager.js';
 // TODO: Reimplement playback functionality
 // TODO: Reimplement microphone recording functionality
 // TODO: Reimplement file upload functionality
@@ -10,6 +13,9 @@ import { state } from './init.js';
 // import { toggleFullscreen } from '../utils/fullscreen.js'; // Оставляем, т.к. fullscreen.js не в списке 404
 // import { sendPrompt } from '../ai/prompts.js'; // Оставляем, т.к. prompts.js не в списке 404
 import { sendChatMessage } from '../ai/chat.js';
+
+// Создаем алиас для uiElements для совместимости с существующим кодом
+const ui = uiElements;
 
 // Установка основных обработчиков событий
 export function setupEventListeners() {
