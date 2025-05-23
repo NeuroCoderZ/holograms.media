@@ -2,8 +2,7 @@
 
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
-import { togglePanels } from '../ui/panelManager.js';
-import { initializePanelState } from '../ui/panelManager.js';
+import { togglePanels, initializePanelState } from '../ui/panelManager.js';
 import { uiElements } from '../ui/uiManager.js';
 
 // Удаляем дублирующееся объявление ui
