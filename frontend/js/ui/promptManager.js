@@ -16,8 +16,11 @@ export function initializePromptManager() {
  * @param {string} model - Выбранная модель LLM.
  */
 export function applyTopPrompt(prompt, model) {
+  // Enhance the prompt before applying it
+  const enhancedPrompt = enhancePrompt(prompt);
+
   // Сначала проверяем, активен ли режим Триа через функцию из модуля tria_mode.js
-  applyPromptWithTriaMode(prompt, model)
+  applyPromptWithTriaMode(enhancedPrompt, model)
     .then(result => {
       // Если функция вернула результат (не false), значит запрос к Триа был выполнен
       // и обработан внутри неё, поэтому выходим из функции
@@ -33,7 +36,7 @@ export function applyTopPrompt(prompt, model) {
       if (submitButton) submitButton.disabled = true;
 
       // Шаг 1: Отправка запроса на /generate (существующая логика)
-      axios.post('/generate', { prompt, model })
+      axios.post('/generate', { prompt: enhancedPrompt, model })
         .then(generateResponse => {
           // Этот блок выполняется после успешного ответа от /generate
           console.log('Ответ от /generate:', generateResponse.data);
@@ -79,6 +82,22 @@ export function applyTopPrompt(prompt, model) {
         console.error('Ошибка в applyPromptWithTriaMode:', error);
         addMessageToChat('error', `Ошибка в режиме Триа: ${error.message || 'Неизвестная ошибка'}`);
     });
+// Function to enhance the prompt
+function enhancePrompt(prompt) {
+  // Add relevant context
+  const context = "Additional context to enhance the prompt.";
+  // Ensure clarity
+  const clearPrompt = prompt.trim();
+  // Offer alternative phrasing
+  const alternatives = [
+    "Alternative phrasing 1",
+    "Alternative phrasing 2",
+    "Alternative phrasing 3"
+  ];
+  const alternative = alternatives[Math.floor(Math.random() * alternatives.length)];
+
+  return `${context} ${clearPrompt} ${alternative}`;
+}
 }
 
 // TODO: Возможно, добавить другие функции, связанные с управлением промптами.

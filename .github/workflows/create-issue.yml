@@ -1,8 +1,9 @@
 name: Create Issue on Push
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch: # Позволяет запускать воркфлоу вручную из вкладки Actions
+#  push: # Закомментировали или удалили этот блок
+#    branches: [main]
 
 jobs:
   create-issue:
