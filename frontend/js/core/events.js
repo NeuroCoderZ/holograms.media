@@ -1,6 +1,6 @@
 // frontend/js/core/events.js - Модуль для настройки обработчиков событий
 
-import { uiElements } from '../ui/ui.js';
+import { uiElements } from '../ui/uiManager.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
 import { togglePanels } from '../ui/panelManager.js';
 import { state } from './init.js';

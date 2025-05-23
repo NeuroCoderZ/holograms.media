@@ -100,4 +100,4 @@ export function initializePanelManager() {
 }
 
 // Экспортируем функции для использования в других модулях
-export { initializePanelState, togglePanels };
+export { togglePanels };
