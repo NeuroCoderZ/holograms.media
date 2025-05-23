@@ -40,34 +40,7 @@ function setupButtonListeners() {
     ui.togglePanelsButton.addEventListener('click', togglePanels);
   }
   
-  // Кнопки аудио управления
-  if (ui.buttons.playButton) {
-    // TODO: Implement startPlayback
-    ui.buttons.playButton.addEventListener('click', () => console.log('TODO: Implement startPlayback'));
-  }
-  
-  if (ui.buttons.pauseButton) {
-    // TODO: Implement pausePlayback
-    ui.buttons.pauseButton.addEventListener('click', () => console.log('TODO: Implement pausePlayback'));
-  }
-  
-  if (ui.buttons.stopButton) {
-    // TODO: Implement stopPlayback
-    ui.buttons.stopButton.addEventListener('click', () => console.log('TODO: Implement stopPlayback'));
-  }
-  
-  // Кнопка микрофона
-  if (ui.buttons.micButton) {
-    ui.buttons.micButton.addEventListener('click', () => {
-      if (ui.buttons.micButton.classList.contains('active')) {
-        // TODO: Implement stopMicrophoneRecording
-        console.log('TODO: Implement stopMicrophoneRecording');
-      } else {
-        // TODO: Implement startMicrophoneRecording
-        console.log('TODO: Implement startMicrophoneRecording');
-      }
-    });
-  }
+  // Кнопки аудио управления - Listeners are now handled by audioFilePlayer.js and microphoneManager.js
   
   // Кнопка полноэкранного режима
   if (ui.buttons.fullscreenButton) {
@@ -75,16 +48,7 @@ function setupButtonListeners() {
     ui.buttons.fullscreenButton.addEventListener('click', () => console.log('TODO: Implement toggleFullscreen'));
   }
   
-  // Кнопка файлов
-  if (ui.buttons.fileButton) {
-    ui.buttons.fileButton.addEventListener('click', () => {
-      if (ui.inputs.fileInput) {
-        // TODO: Implement file upload logic (Module fileUpload.js might be needed)
-        ui.inputs.fileInput.click(); 
-        console.log('TODO: Implement file upload logic');
-      }
-    });
-  }
+  // Кнопка файлов - Listener is now handled by audioFilePlayer.js
   
   // Кнопка XR режима
   if (ui.buttons.xrButton) {
@@ -271,15 +235,8 @@ function setupWindowListeners() {
 
 // Настройка обработчиков для файлов
 function setupFileListeners() {
-  // Обработчики для файлов
-  if (ui.inputs.fileInput) {
-    ui.inputs.fileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files.length > 0) {
-        // TODO: Implement file upload logic (Module fileUpload.js might be needed)
-        console.log('TODO: Implement file upload logic (from fileInput change)');
-      }
-    });
-  }
+  // Обработчики для файлов - Listener for ui.inputs.fileInput (audio file) is now handled by audioFilePlayer.js
+  // If there were other file inputs for different purposes, they would remain here.
 }
 
 // Вспомогательные функции для обработки событий

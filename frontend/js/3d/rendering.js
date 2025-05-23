@@ -2,6 +2,7 @@
 
 import * as THREE from 'three';
 import { state } from '../core/init.js'; // Для доступа к state.scene, state.mainSequencerGroup
+import { getSemitoneLevels } from '../audio/audioProcessing.js';
 
 // --- Константы и конфигурация, перенесенные из script.js ---
 
@@ -361,35 +362,6 @@ export function createAudioVisualization(audioData, sampleRate) {
 }
 
 /**
- * Получает уровни амплитуды для каждого полутона из анализатора
- * @param {AnalyserNode} analyser - Аудио анализатор
- * @returns {Array<number>} Массив уровней в дБ для каждого полутона
- */
-export function getSemitoneLevels(analyser) {
-  if (!analyser) {
-    console.warn("Analyser is not initialized.");
-    return semitones.map(() => -100); // Return default values if analyser is null
-  }
-
-  const bufferLength = analyser.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLength);
-  analyser.getByteFrequencyData(dataArray);
-  
-  // Получаем частоту дискретизации из аудиоконтекста
-  const sampleRate = analyser.context.sampleRate;
-  const binSize = sampleRate / (2 * bufferLength);
-  
-  return semitones.map(semitone => {
-    const binIndex = Math.round(semitone.f / binSize);
-    if (binIndex >= bufferLength) return -100;
-    const amplitude = dataArray[binIndex];
-    if (amplitude === 0) return -100;
-    const dB = 20 * Math.log10(amplitude / 255) * 1.5;
-    return THREE.MathUtils.clamp(dB, -100, 30);
-  });
-}
-
-/**
  * Обновляет колонки секвенсора на основе амплитуд
  * @param {Array<number>} amplitudes - Массив амплитуд для каждого полутона
  * @param {string} channel - Канал ('left' или 'right')
@@ -424,24 +396,7 @@ export function updateSequencerColumns(amplitudes, channel) {
 }
 
 /**
- * Обновляет колонки на основе данных с микрофона
- * @param {AnalyserNode} analyserLeft - Анализатор левого канала
- * @param {AnalyserNode} analyserRight - Анализатор правого канала
- */
-export function updateColumnsForMicrophone(analyserLeft, analyserRight) {
-  if (!analyserLeft || !analyserRight) {
-    console.warn("Микрофонные анализаторы не инициализированы.");
-    return;
-  }
-
-  // Получаем уровни для левого и правого каналов
-  const leftLevels = getSemitoneLevels(analyserLeft);
-  const rightLevels = getSemitoneLevels(analyserRight);
-
-  // Обновляем колонки для обоих каналов
-  updateSequencerColumns(leftLevels, 'left');
-  updateSequencerColumns(rightLevels, 'right');
-}
+// Local updateColumnsForMicrophone function removed. Logic moved to animate().
 
 // --- Функция анимации и рендеринга ---
 
@@ -463,10 +418,30 @@ export function animate() {
   state.renderer.clear();
 
   // Обрабатываем аудио, если воспроизводится
-  // Предполагаем, что isPlaying и processAudio будут доступны через state или импорт
-  // Временно используем updateColumnsForMicrophone, как в script.js.backup
-  if (state.isPlaying && state.microphoneAnalyserLeft && state.microphoneAnalyserRight) {
-      updateColumnsForMicrophone(state.microphoneAnalyserLeft, state.microphoneAnalyserRight);
+  let leftLevels = null;
+  let rightLevels = null;
+
+  if (state.audio && state.audio.activeSource === 'file' && state.audio.isPlaying && state.audio.filePlayerAnalysers) {
+    leftLevels = getSemitoneLevels(state.audio.filePlayerAnalysers.left);
+    rightLevels = getSemitoneLevels(state.audio.filePlayerAnalysers.right);
+  } else if (state.audio && state.audio.activeSource === 'microphone' && state.audio.analyserLeft && state.audio.analyserRight) {
+    // Assuming microphone is active if state.audio.analyserLeft/Right are present and activeSource is 'microphone'
+    // (microphoneManager.js sets activeSource and manages these analysers)
+    leftLevels = getSemitoneLevels(state.audio.analyserLeft);
+    rightLevels = getSemitoneLevels(state.audio.analyserRight);
+  } else {
+    // No active audio source for visualization, or analysers not ready.
+    // Create arrays of -100dB to make columns go to minimum.
+    // semitones array is available in this file.
+    const numSemitones = semitones.length;
+    leftLevels = Array(numSemitones).fill(-100);
+    rightLevels = Array(numSemitones).fill(-100);
+  }
+
+  // Call updateSequencerColumns with the determined levels
+  if (leftLevels && rightLevels) {
+    updateSequencerColumns(leftLevels, 'left');
+    updateSequencerColumns(rightLevels, 'right');
   }
 
   // Рендерим сцену
