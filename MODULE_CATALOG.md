@@ -1,7 +1,6 @@
-<<<<<<< HEAD
 # Каталог Модулей Frontend (JavaScript)
 
-Этот документ описывает структуру и взаимосвязи модулей JavaScript во frontend части проекта holograms.media, основанные на текущем состоянии кодовой базы (v22+).
+Этот документ описывает структуру и взаимосвязи модулей JavaScript во frontend части проекта holograms.media, основанные на текущем состоянии кодовой базы.
 
 Основная цель рефакторинга - переход от монолитного `script.js` к модульной структуре с использованием ES6 модулей для улучшения поддерживаемости, читаемости и организации кода.
 
@@ -10,48 +9,43 @@
 - `/frontend/js/`
     - `/ai/` - Модули, связанные с интеграцией AI (Триа, чат).
         - `chat.js`
-        - `triaIntegration.js`
+        - `models.js`
+        - `prompts.js`
+        - `tria.js`
+        - `tria_mode.js`
     - `/audio/` - Модули для работы с аудио (микрофон, плеер, обработка, визуализация).
-        - `audioManager.js`
-        - `audioPlayer.js`
-        - `audioRecorder.js`
-        - `audioVisualizer.js`
-        - `microphone.js`
+        - `audioFilePlayer.js`
+        - `microphoneManager.js`
+        - `processing.js`
+        - `speechInput.js`
+        - `visualization.js`
     - `/core/` - Основные модули ядра приложения (инициализация состояния, обработка событий, утилиты).
         - `appStatePersistence.js`
-        - `configLoader.js`
-        - `errorHandler.js`
-        - `eventManager.js` (ранее `events.js`)
+        - `diagnostics.js`
+        - `domEventHandlers.js`
+        - `events.js`
+        - `gestures.js`
         - `init.js`
-        - `stateManager.js`
+        - `resizeHandler.js`
+        - `ui.js`
     - `/3d/` - Модули для работы с 3D сценой (Three.js).
-        - `animation.js`
-        - `camera.js`
-        - `controls.js`
-        - `effects.js`
-        - `helpers.js`
-        - `lighting.js`
-        - `models.js`
         - `rendering.js`
         - `sceneSetup.js`
     - `/multimodal/` - Модули для обработки мультимодальных данных (например, отслеживание рук MediaPipe).
-        - `mediaPipeHands.js`
-    - `/ui/` - Модули для управления пользовательским интерфейсом.
-        - `bottomPanelManager.js`
-        - `debugControls.js`
-        - `infoPanelManager.js`
-        - `leftPanelManager.js`
-        - `modalManager.js`
+        - `handsTracking.js`
+    - `/panels/` - Модули для управления панелями UI.
+        - `chatMessages.js`
         - `rightPanelManager.js`
+    - `/ui/` - Модули для управления пользовательским интерфейсом.
+        - `fileEditor.js`
+        - `gestureAreaVisualization.js`
         - `uiManager.js`
     - `/utils/` - Вспомогательные утилиты.
-        - `constants.js`
-        - `fullscreen.js`
         - `helpers.js`
-        - `localStorage.js`
+        - `storage.js`
     - `/xr/` - Модули для работы с XR (WebXR, управление камерой).
-        - `xrControls.js`
         - `xrManager.js`
+    - `legacy-bridge.js` - Модуль для совместимости со старым кодом (временное решение).
     - `main.js` - Главная точка входа.
 
 ## Описание Модулей и Связей
@@ -61,15 +55,15 @@
 - **Назначение:** Главная точка входа приложения. Инициализирует основные компоненты и запускает главный цикл анимации.
 - **Зависимости:**
     - `/core/init.js` (`initCore`, `state`)
-    - `/core/eventManager.js` (`setupEventListeners`)
+    - `/core/events.js` (`setupEventListeners`)
     - `/ui/uiManager.js` (`initializeMainUI`, `uiElements`)
     - `/3d/sceneSetup.js` (`initializeScene` - вызывается через `initCore`)
-    - `/3d/animation.js` (`animate`)
-    - `/audio/audioManager.js` (`initializeAudio`)
-    - `/multimodal/mediaPipeHands.js` (`initializeHands`)
+    - `/3d/rendering.js` (`animate`)
+    - `/audio/microphoneManager.js` (`initializeMicrophone`)
+    - `/multimodal/handsTracking.js` (`initializeHands`)
     - `/ai/chat.js` (`initializeChat`)
     - `/xr/xrManager.js` (`initializeXR`)
-- **Ключевые функции:** Обработчик `DOMContentLoaded`, вызовы инициализационных функций (`initCore`, `initializeMainUI`, `initializeAudio`, `initializeHands`, `initializeChat`, `initializeXR`, `setupEventListeners`), запуск `animate`.
+- **Ключевые функции:** Обработчик `DOMContentLoaded`, вызовы инициализационных функций (`initCore`, `initializeMainUI`, `initializeMicrophone`, `initializeHands`, `initializeChat`, `initializeXR`, `setupEventListeners`), запуск `animate`.
 - **Связи:** Оркестрирует инициализацию и запуск всех основных подсистем приложения.
 
 ### `/core/init.js`
@@ -80,30 +74,30 @@
 - **Экспорты:** `state` (глобальный объект состояния), `initCore` (функция инициализации ядра), `initializeState`.
 - **Связи:** Объект `state` используется практически всеми модулями для доступа и модификации общих данных (сцена, камера, рендерер, состояние UI, состояние аудио, состояние multimodal, конфигурация и т.д.). `initCore` вызывается из `main.js` для старта инициализации 3D-составляющей.
 
-### `/core/stateManager.js`
+### `/core/ui.js`
 
-- **Назначение:** Предоставляет функции для управления и обновления различных частей глобального состояния `state`.
+- **Назначение:** Предоставляет функции для управления и обновления различных частей глобального состояния `state`, связанных с UI.
 - **Зависимости:**
     - `/core/init.js` (`state`)
-- **Экспорты:** `updateAudioState`, `updateMultimodalState`, `updateUiState`, `updateTriaState`, `getAppState`, `setAppStateProperty`.
-- **Связи:** Используется модулями, которым необходимо централизованно и безопасно изменять или получать части глобального состояния. Например, `audioManager.js` может использовать `updateAudioState`.
+- **Экспорты:** `updateUiState`, `getUiState`, `setUiStateProperty`.
+- **Связи:** Используется модулями, которым необходимо централизованно и безопасно изменять или получать части глобального состояния UI.
 
-### `/core/eventManager.js` (ранее `events.js`)
+### `/core/events.js`
 
 - **Назначение:** Централизованно настраивает и управляет обработчиками событий DOM (клики, изменения ввода, события окна). Инкапсулирует логику привязки слушателей событий к UI-элементам.
 - **Зависимости:**
     - `/core/init.js` (`state`) - Для доступа к глобальному состоянию и UI-элементам через `state.ui.elements`.
     - `/ui/uiManager.js` (`uiElements`, `togglePanels`, `updateButtonStates`) - Взаимодействует с UIManager для получения ссылок на элементы и вызова функций управления панелями/кнопками.
     - `/ai/chat.js` (`sendChatMessage`, `handleTopPrompt`) - Вызывает функции чата при событиях ввода текста или отправки промпта.
-    - `/audio/audioManager.js` (`handleFileUpload`, `togglePlayPause`, `stopAudio`, `toggleMicrophone`) - Делегирует управление аудио событиям кнопок (воспроизведение, микрофон, загрузка файла).
-    - `/utils/fullscreen.js` (`toggleFullscreen`) - Вызывает функцию переключения полноэкранного режима.
+    - `/audio/microphoneManager.js` (`handleFileUpload`, `togglePlayPause`, `stopAudio`, `toggleMicrophone`) - Делегирует управление аудио событиям кнопок (воспроизведение, микрофон, загрузка файла).
+    - `/utils/helpers.js` (`toggleFullscreen`) - Вызывает функцию переключения полноэкранного режима.
     - `/xr/xrManager.js` (`toggleXR`) - Вызывает функцию переключения XR режима.
-    - `/multimodal/mediaPipeHands.js` (`toggleHands`, `startRecording`, `stopRecording`) - Управляет состоянием отслеживания рук и записи жестов.
-    - `/ui/modalManager.js` (`openModal`, `closeModal`) - Вызывает функции управления модальными окнами.
-    - `/3d/camera.js` (`updateCameraOnResize`) - Обрабатывает событие изменения размера окна для обновления камеры.
+    - `/multimodal/handsTracking.js` (`toggleHands`, `startRecording`, `stopRecording`) - Управляет состоянием отслеживания рук и записи жестов.
+    - `/ui/uiManager.js` (`openModal`, `closeModal`) - Вызывает функции управления модальными окнами (если модальные окна управляются через uiManager).
+    - `/core/resizeHandler.js` (`updateCameraOnResize`) - Обрабатывает событие изменения размера окна для обновления камеры.
     - `/3d/rendering.js` (`resetVisualization` - косвенно через `stopAudio`) - Может влиять на визуализацию через вызовы других модулей.
 - **Экспорты:** `setupEventListeners` (основная функция для инициализации всех слушателей).
-- **Связи:** Является ключевым связующим звеном между пользовательским вводом (событиями DOM) и логикой приложения, распределенной по различным модулям (UI, AI, Audio, XR, Multimodal, 3D). По сравнению с `script.js.bak`, где `addEventListener` были разбросаны по всему файлу, `eventManager.js` централизует эту логику, делая ее более управляемой и понятной. Он получает ссылки на DOM-элементы, предположительно, из `uiManager.js` или напрямую из `state.ui.elements` после их инициализации в `uiManager.js`.
+- **Связи:** Является ключевым связующим звеном между пользовательским вводом (событиями DOM) и логикой приложения, распределенной по различным модулям (UI, AI, Audio, XR, Multimodal, 3D). Централизует логику привязки слушателей событий, делая ее более управляемой и понятной. Получает ссылки на DOM-элементы, предположительно, из `uiManager.js` или напрямую из `state.ui.elements` после их инициализации в `uiManager.js`.
 
 ### `/core/appStatePersistence.js`
 
@@ -114,56 +108,25 @@
 
 ### `/3d/sceneSetup.js`
 
-- **Назначение:** Инициализирует Three.js сцену, камеру, рендерер и основные 3D объекты (например, `hologramPivot`, сетки секвенсора).
+- **Назначение:** Инициализирует Three.js сцену, камеру, рендерер и основные 3D объекты (например, `hologramPivot`, сетки секвенсера).
 - **Зависимости:**
     - `three` (библиотека Three.js)
     - `/core/init.js` (`state`)
     - `/3d/rendering.js` (`semitones`, `createSequencerGrid`)
-    - `/3d/lighting.js` (`setupLighting`)
-    - `/3d/camera.js` (`createCamera`)
-    - `/3d/controls.js` (`setupOrbitControls`)
+    - `/3d/rendering.js` (`setupLighting` - если освещение настраивается в rendering.js)
+    - `/3d/rendering.js` (`createCamera` - если камера создается в rendering.js)
+    - `/3d/rendering.js` (`setupOrbitControls` - если OrbitControls настраивается в rendering.js)
 - **Экспорты:** `initializeScene` (функция инициализации сцены).
-- **Связи:** Создает и настраивает основные компоненты 3D-сцены, сохраняя их в `state`. Использует функции из `rendering.js` для создания геометрии секвенсоров, `lighting.js` для настройки освещения, `camera.js` для создания камеры и `controls.js` для настройки управления камерой.
+- **Связи:** Создает и настраивает основные компоненты 3D-сцены, сохраняя их в `state`. Использует функции из `rendering.js` для создания геометрии секвенсоров, освещения, камеры и управления камерой.
 
 ### `/3d/rendering.js`
 
-- **Назначение:** Содержит логику для создания 3D-объектов (сферы, линии, сетки, колонки), вычисления параметров (полутоны, цвета, размеры колонок), а также функции для обновления визуализации аудио.
+- **Назначение:** Содержит логику для создания 3D-объектов (сферы, линии, сетки, колонки), вычисления параметров (полутоны, цвета, размеры колонок), а также функции для обновления визуализации аудио и анимации.
 - **Зависимости:**
     - `three` (библиотека Three.js)
     - `/core/init.js` (`state`)
-- **Экспорты:** `semitones`, `degreesToCells`, `createSphere`, `createLine`, `createAxis`, `createGrid`, `createSequencerGrid`, `createColumn`, `initializeColumns`, `updateAudioVisualization`, `updateColumnVisualization`, `resetVisualization`, `createAudioVisualization`, `getSemitoneLevels`, `updateSequencerColumns`, `updateColumnsForMicrophone`.
-- **Связи:** Предоставляет утилиты для создания 3D-геометрии, используемые в `sceneSetup.js` и `models.js`. Содержит логику обновления 3D-колонок на основе аудиоданных, вызываемую из `audioVisualizer.js` или напрямую из `animate` (в старой логике).
-
-### `/3d/animation.js`
-
-- **Назначение:** Содержит главный цикл анимации/рендеринга (`animate`) и логику обновления анимаций (например, TWEEN).
-- **Зависимости:**
-    - `three` (библиотека Three.js)
-    - `/core/init.js` (`state`)
-    - `/audio/audioVisualizer.js` (`updateVisualizers` - если визуализация аудио происходит в цикле анимации)
-    - `/multimodal/mediaPipeHands.js` (`updateHandMeshes` - для обновления 3D рук)
-    - `TWEEN` (библиотека для анимаций, если используется)
-- **Экспорты:** `animate`.
-- **Связи:** Функция `animate` является сердцем 3D-рендеринга, вызывается рекурсивно через `requestAnimationFrame`. Обновляет состояние сцены и рендерит ее. Может вызывать функции обновления из других модулей (аудиовизуализация, обновление моделей рук).
-
-### `/3d/camera.js`
-
-- **Назначение:** Управление созданием и настройкой камеры Three.js.
-- **Зависимости:**
-    - `three` (библиотека Three.js)
-    - `/core/init.js` (`state`)
-- **Экспорты:** `createCamera`, `updateCameraOnResize`.
-- **Связи:** `createCamera` используется в `sceneSetup.js` для инициализации камеры. `updateCameraOnResize` вызывается из `eventManager.js` при изменении размера окна.
-
-### `/3d/controls.js`
-
-- **Назначение:** Настройка и управление элементами управления камерой (например, OrbitControls).
-- **Зависимости:**
-    - `three` (библиотека Three.js)
-    - `OrbitControls` (из `three/examples/jsm/controls/OrbitControls.js`)
-    - `/core/init.js` (`state`)
-- **Экспорты:** `setupOrbitControls`.
-- **Связи:** `setupOrbitControls` используется в `sceneSetup.js` для добавления интерактивного управления камерой.
+- **Экспорты:** `semitones`, `degreesToCells`, `createSphere`, `createLine`, `createAxis`, `createGrid`, `createSequencerGrid`, `createColumn`, `initializeColumns`, `updateAudioVisualization`, `updateColumnVisualization`, `resetVisualization`, `createAudioVisualization`, `getSemitoneLevels`, `updateSequencerColumns`, `updateColumnsForMicrophone`, `animate` (главный цикл анимации/рендеринга).
+- **Связи:** Предоставляет утилиты для создания 3D-геометрии, используемые в `sceneSetup.js`. Содержит логику обновления 3D-колонок на основе аудиоданных, вызываемую из `audioVisualizer.js` или напрямую из `animate`. Функция `animate` является сердцем 3D-рендеринга, вызывается рекурсивно через `requestAnimationFrame`. Обновляет состояние сцены и рендерит ее. Может вызывать функции обновления из других модулей (аудиовизуализация, обновление моделей рук).
 
 ### `/ui/uiManager.js`
 
@@ -171,154 +134,174 @@
 - **Зависимости:**
     - `/core/init.js` (`state`) - Для доступа к глобальному состоянию, где могут храниться ссылки на DOM-элементы или их состояние.
     - `/core/appStatePersistence.js` (`loadPanelState`, `savePanelState`) - Используется для сохранения и восстановления состояния видимости панелей между сессиями.
-- **Экспорты:** `uiElements` (объект или функция, предоставляющая доступ к ключевым DOM-элементам), `initializeMainUI` (функция для начальной настройки UI), `togglePanels` (функция для переключения видимости панелей), `getPanelWidths`, `addDebugClasses`, `logLayoutState`, `updateButtonStates` (обновление состояния кнопок, например, активен/неактивен микрофон), `displayMessageInChat` (добавление сообщений в область чата), `clearChatMessages`.
-- **Связи:** Является основным источником ссылок на DOM-элементы для других модулей, которым нужно взаимодействовать с UI (например, `eventManager.js` для привязки слушателей, `chat.js` для отображения сообщений). Управляет классами CSS для динамического изменения внешнего вида UI (например, скрытие/показ панелей). По сравнению с `script.js.bak`, где логика управления DOM и видимостью элементов была смешана с другой логикой, `uiManager.js` централизует эти функции, делая код UI более модульным. Вероятно, именно этот модуль теперь содержит логику, которая ранее управляла видимостью и положением панелей, возможно, с использованием CSS классов или прямых манипуляций стилями.
+- **Экспорты:** `uiElements` (объект или функция, предоставляющая доступ к ключевым DOM-элементам), `initializeMainUI` (функция для начальной настройки UI), `togglePanels` (функция для переключения видимости панелей), `getPanelWidths`, `addDebugClasses`, `logLayoutState`, `updateButtonStates` (обновление состояния кнопок, например, активен/неактивен микрофон), `displayMessageInChat` (добавление сообщений в область чата), `clearChatMessages`, `openModal`, `closeModal` (если модальные окна управляются через uiManager).
+- **Связи:** Является основным источником ссылок на DOM-элементы для других модулей, которым нужно взаимодействовать с UI (например, `events.js` для привязки слушателей, `chat.js` для отображения сообщений). Управляет классами CSS для динамического изменения внешнего вида UI (например, скрытие/показ панелей). Централизует функции управления DOM и видимостью элементов, делая код UI более модульным. Вероятно, именно этот модуль теперь содержит логику, которая ранее управляла видимостью и положением панелей, возможно, с использованием CSS классов или прямых манипуляций стилями.
 
-### `/audio/audioManager.js`
+### `/audio/microphoneManager.js`
 
-- **Назначение:** Центральный модуль для управления всеми аудио-операциями: загрузка файлов, воспроизведение, пауза, остановка, работа с микрофоном.
+- **Назначение:** Управляет доступом к микрофону, записью и обработкой аудиопотока с микрофона.
 - **Зависимости:**
     - `/core/init.js` (`state`)
     - `/core/stateManager.js` (`updateAudioState`)
-    - `/audio/audioPlayer.js` (`playAudioBuffer`, `pauseAudioBuffer`, `stopAudioBuffer`, `setVolume`)
-    - `/audio/microphone.js` (`startMicrophone`, `stopMicrophone`)
-    - `/audio/audioVisualizer.js` (`setupVisualizers`, `resetVisualizers`, `updateVisualizersWithBuffer`)
-    - `/ui/uiManager.js` (`uiElements`, `updateButtonStates`)
-    - `/3d/rendering.js` (`resetVisualization` - вызывается при остановке аудио)
-- **Экспорты:** `initializeAudio`, `handleFileUpload`, `togglePlayPause`, `stopAudio`, `toggleMicrophone`.
-- **Связи:** Оркестрирует работу других аудио-модулей. Вызывается из `eventManager.js` для обработки действий пользователя, связанных с аудио. Обновляет состояние кнопок в UI.
+    - `/audio/processing.js` (`processAudioData`)
+    - `/audio/visualization.js` (`updateVisualizersWithBuffer`)
+    - `/ui/uiManager.js` (`updateButtonStates`)
+- **Экспорты:** `initializeMicrophone`, `startMicrophone`, `stopMicrophone`, `toggleMicrophone`.
+- **Связи:** Инициализируется из `main.js`. Взаимодействует с `processing.js` для обработки аудиоданных и с `visualization.js` для их визуализации. Обновляет состояние кнопок микрофона в UI через `uiManager.js`.
 
-### `/audio/audioPlayer.js`
+### `/audio/audioFilePlayer.js`
 
-- **Назначение:** Управляет воспроизведением, паузой и остановкой аудио из буфера (загруженные файлы).
+- **Назначение:** Управляет воспроизведением аудио из буфера (загруженные файлы).
 - **Зависимости:**
     - `/core/init.js` (`state`)
 - **Экспорты:** `playAudioBuffer`, `pauseAudioBuffer`, `stopAudioBuffer`, `setVolume`.
-- **Связи:** Используется `audioManager.js` для управления воспроизведением файлов.
+- **Связи:** Используется `microphoneManager.js` (или другим модулем, отвечающим за загрузку файлов) для управления воспроизведением файлов.
 
-### `/audio/microphone.js`
+### `/audio/processing.js`
 
-- **Назначение:** Управляет доступом к микрофону пользователя и потоком аудиоданных с него.
+- **Назначение:** Содержит логику обработки аудиоданных (например, анализ частот, определение громкости).
 - **Зависимости:**
     - `/core/init.js` (`state`)
-- **Экспорты:** `startMicrophone`, `stopMicrophone`.
-- **Связи:** Используется `audioManager.js` для включения/выключения микрофона.
+- **Экспорты:** `processAudioData`.
+- **Связи:** Используется `microphoneManager.js` для обработки данных с микрофона.
 
-### `/audio/audioVisualizer.js`
+### `/audio/visualization.js`
 
-- **Назначение:** Настройка и обновление анализаторов Web Audio API для визуализации аудиоданных.
+- **Назначение:** Отвечает за обновление 3D-визуализации на основе аудиоданных.
 - **Зависимости:**
     - `/core/init.js` (`state`)
-    - `/3d/rendering.js` (`updateColumnsForMicrophone`, `updateSequencerColumns`, `resetVisualization`)
-- **Экспорты:** `setupVisualizers`, `resetVisualizers`, `updateVisualizersWithBuffer`, `updateVisualizersFromMicrophone`.
-- **Связи:** Получает аудиоданные (из плеера или микрофона через `audioManager.js`) и передает их в `rendering.js` для обновления 3D-визуализации.
+    - `/3d/rendering.js` (`updateColumnsForMicrophone`, `resetVisualization`)
+- **Экспорты:** `setupVisualizers`, `resetVisualizers`, `updateVisualizersWithBuffer`.
+- **Связи:** Используется `microphoneManager.js` для обновления визуализации во время записи с микрофона или воспроизведения файла.
 
-### `/multimodal/mediaPipeHands.js`
+### `/multimodal/handsTracking.js`
 
-- **Назначение:** Интеграция с MediaPipe Hands для отслеживания рук, управление видеопотоком для MediaPipe, отображение отладочной информации и обновление 3D-моделей рук.
+- **Назначение:** Интеграция с MediaPipe Hands для отслеживания положения рук и жестов.
 - **Зависимости:**
-    - `@mediapipe/hands`, `@mediapipe/drawing_utils`, `@mediapipe/camera_utils` (внешние библиотеки)
-    - `three` (библиотека Three.js)
     - `/core/init.js` (`state`)
-    - `/core/stateManager.js` (`updateMultimodalState`)
-    - `/ui/uiManager.js` (`uiElements`)
-    - `/3d/models.js` (`createHandSphere`, `updateHandSpheres` или аналогичные для 3D рук)
-- **Экспорты:** `initializeHands`, `toggleHands`, `startRecording`, `stopRecording`, `updateHandMeshes` (если 3D руки обновляются здесь).
-- **Связи:** Захватывает видео с камеры, обрабатывает его с помощью MediaPipe, отображает результаты на 2D canvas и/или обновляет 3D-представление рук в сцене. Управляется из `eventManager.js` и `main.js`.
+    - `@mediapipe/hands` (библиотека MediaPipe Hands)
+    - `/core/gestures.js` (`processHandLandmarks`)
+    - `/3d/rendering.js` (`updateHandMeshes`)
+- **Экспорты:** `initializeHands`, `toggleHands`, `startRecording`, `stopRecording`.
+- **Связи:** Инициализируется из `main.js`. Получает данные от MediaPipe и передает их в `gestures.js` для обработки жестов и в `rendering.js` для обновления 3D-моделей рук.
+
+### `/core/gestures.js`
+
+- **Назначение:** Обработка данных отслеживания рук для определения жестов и их интерпретации.
+- **Зависимости:**
+    - `/core/init.js` (`state`)
+- **Экспорты:** `processHandLandmarks`.
+- **Связи:** Получает данные от `handsTracking.js` и определяет текущий жест.
 
 ### `/ai/chat.js`
 
-- **Назначение:** Управление логикой чата с AI (Триа), отправка сообщений на бэкенд, отображение ответов.
+- **Назначение:** Управление логикой чата, отправка сообщений на бэкенд, отображение ответов.
 - **Зависимости:**
     - `/core/init.js` (`state`)
-    - `/ui/uiManager.js` (`uiElements`, `displayMessageInChat`, `clearChatMessages`)
-    - `/utils/helpers.js` (`showError`)
+    - `/ui/uiManager.js` (`displayMessageInChat`, `clearChatMessages`)
+    - `/ai/prompts.js` (`getPromptTemplate`)
 - **Экспорты:** `initializeChat`, `sendChatMessage`, `handleTopPrompt`.
-- **Связи:** Взаимодействует с UI для получения ввода пользователя и отображения сообщений. Отправляет запросы на бэкенд (API Триа) и обрабатывает ответы. Управляется из `eventManager.js`.
+- **Связи:** Инициализируется из `main.js`. Взаимодействует с `uiManager.js` для отображения сообщений и с `prompts.js` для получения шаблонов промптов.
+
+### `/ai/tria.js`
+
+- **Назначение:** Интеграция с AI Триа (заглушка).
+- **Зависимости:**
+    - `/core/init.js` (`state`)
+- **Экспорты:** `initializeTria`, `sendTriaCommand`.
+- **Связи:** Планируется взаимодействие с бэкендом для отправки команд Триа и получения ответов.
+
+### `/ai/tria_mode.js`
+
+- **Назначение:** Управление режимами работы Триа (например, обучение, выполнение команд).
+- **Зависимости:**
+    - `/core/init.js` (`state`)
+- **Экспорты:** `setTriaMode`, `getTriaMode`.
+- **Связи:** Используется другими модулями AI для установки и получения текущего режима Триа.
+
+### `/ai/models.js`
+
+- **Назначение:** Управление загрузкой и использованием 3D-моделей, связанных с AI (например, модель голограммы).
+- **Зависимости:**
+    - `/core/init.js` (`state`)
+    - `three` (библиотека Three.js)
+    - `GLTFLoader` (из `three/examples/jsm/loaders/GLTFLoader.js`)
+- **Экспорты:** `loadHologramModel`, `updateHologramPosition`.
+- **Связи:** Используется `sceneSetup.js` или другими модулями для загрузки и размещения 3D-моделей в сцене.
+
+### `/ai/prompts.js`
+
+- **Назначение:** Управление шаблонами промптов для взаимодействия с AI.
+- **Зависимости:** Нет прямых зависимостей от других модулей проекта.
+- **Экспорты:** `getPromptTemplate`.
+- **Связи:** Используется `chat.js` для получения форматированных промптов.
+
+### `/panels/rightPanelManager.js`
+
+- **Назначение:** Управление содержимым и состоянием правой панели UI.
+- **Зависимости:**
+    - `/core/init.js` (`state`)
+    - `/ui/uiManager.js` (`uiElements`, `togglePanels`)
+- **Экспорты:** `initializeRightPanel`, `switchToChatMode`, `switchToGestureMode`, `switchToTimelineMode`.
+- **Связи:** Используется `eventManager.js` для переключения режимов панели при кликах на кнопки.
+
+### `/panels/chatMessages.js`
+
+- **Назначение:** Управление отображением сообщений в области чата внутри панели.
+- **Зависимости:**
+    - `/core/init.js` (`state`)
+    - `/ui/uiManager.js` (`uiElements`)
+- **Экспорты:** `addMessage`, `clearMessages`.
+- **Связи:** Используется `chat.js` для добавления новых сообщений в чат.
+
+### `/ui/fileEditor.js`
+
+- **Назначение:** Управление интерфейсом для редактирования файлов (если такая функциональность будет добавлена).
+- **Зависимости:**
+    - `/core/init.js` (`state`)
+    - `/ui/uiManager.js` (`uiElements`)
+- **Экспорты:** `openFileEditor`, `closeFileEditor`, `loadFileContent`, `saveFileContent`.
+- **Связи:** Планируется использование для редактирования файлов конфигурации или скриптов.
+
+### `/ui/gestureAreaVisualization.js`
+
+- **Назначение:** Визуализация области для записи жестов.
+- **Зависимости:**
+    - `/core/init.js` (`state`)
+    - `/ui/uiManager.js` (`uiElements`)
+- **Экспорты:** `initializeGestureArea`, `showGestureArea`, `hideGestureArea`.
+- **Связи:** Используется `rightPanelManager.js` при переключении на режим жестов.
+
+### `/utils/helpers.js`
+
+- **Назначение:** Общие вспомогательные функции (например, форматирование времени, утилиты DOM).
+- **Зависимости:** Нет прямых зависимостей от других модулей проекта.
+- **Экспорты:** `formatTime`, `getElement`, `toggleFullscreen`.
+- **Связи:** Используется различными модулями, которым требуются общие утилиты.
+
+### `/utils/storage.js`
+
+- **Назначение:** Вспомогательные функции для работы с `localStorage` или другими механизмами хранения.
+- **Зависимости:** Нет прямых зависимостей от других модулей проекта.
+- **Экспорты:** `saveItem`, `loadItem`, `removeItem`.
+- **Связи:** Используется `appStatePersistence.js`.
 
 ### `/xr/xrManager.js`
 
-- **Назначение:** Управление сессиями WebXR, вход и выход из режима XR.
+- **Назначение:** Управление сессиями WebXR.
 - **Зависимости:**
-    - `three` (библиотека Three.js)
     - `/core/init.js` (`state`)
-    - `/ui/uiManager.js` (`uiElements`)
-    - `/xr/xrControls.js` (для настройки контроллеров в XR)
+    - `three` (библиотека Three.js)
 - **Экспорты:** `initializeXR`, `toggleXR`.
-- **Связи:** Интегрируется с рендерером Three.js для поддержки XR. Управляется из `eventManager.js`.
+- **Связи:** Инициализируется из `main.js`. Управляет началом и завершением XR-сессий.
 
-## Сравнение с `script.js.bak` и `ARCHITECTURE.md`
+### `/legacy-bridge.js`
 
-- **`script.js.bak`:** Файл `script.js.bak` не был найден. Рефакторинг на модули, по-видимому, завершен или находится в продвинутой стадии. Логика, ранее содержавшаяся в `script.js`, теперь распределена по соответствующим модулям. Например:
-    - Инициализация сцены, камеры, рендерера, объектов: `/3d/sceneSetup.js`, `/3d/lighting.js`, `/3d/camera.js`, `/3d/controls.js`.
-    - Создание геометрии (колонки, сетки): `/3d/rendering.js`.
-    - Цикл анимации: `/3d/animation.js`.
-    - Обработка событий: `/core/eventManager.js`.
-    - Управление UI: `/ui/uiManager.js` и другие UI-модули.
-    - Работа с аудио: модули в `/audio/`.
-    - Работа с MediaPipe: `/multimodal/mediaPipeHands.js`.
-    - Глобальное состояние: `/core/init.js` и `/core/stateManager.js`.
-    Основной принцип разделения ответственности соблюдается.
+- **Назначение:** Мост для совместимости со старым кодом или глобальными переменными (временное решение).
+- **Зависимости:** Может зависеть от старых глобальных переменных или функций.
+- **Экспорты:** Может экспортировать функции или объекты для использования в новой модульной структуре.
+- **Связи:** Используется модулями, которым временно требуется доступ к функциональности из старого `script.js`.
 
-- **`ARCHITECTURE.md`:**
-    - **Соответствие общей структуре:** Текущая модульная структура в целом соответствует описанной в `ARCHITECTURE.md` идее разделения на `core`, `3d`, `ui`, `audio`, `ai`, `multimodal`, `utils`, `xr`. Наличие `main.js` как точки входа также соответствует.
-    - **Потоки данных и `state`:** Использование центрального объекта `state` (`/core/init.js`) для обмена данными между модулями соответствует концепции, описанной в `ARCHITECTURE.md` (хотя там он мог называться `appContext` или аналогично). Модуль `/core/stateManager.js` дополнительно структурирует управление состоянием.
-    - **Взаимодействие модулей:**
-        - **UI и EventManager:** `eventManager.js` обрабатывает события от `uiManager.js` и делегирует их другим модулям, что соответствует блок-схемам в `ARCHITECTURE.md`.
-        - **Audio Pipeline:** Модули в `/audio/` ( `audioManager`, `audioPlayer`, `microphone`, `audioVisualizer`) реализуют цепочку обработки аудио, от захвата/загрузки до визуализации, что также должно быть отражено в `ARCHITECTURE.md`.
-        - **3D Rendering:** Связка `sceneSetup` -> `rendering` -> `animation` для отображения 3D-сцены соответствует стандартной практике и, вероятно, описана в `ARCHITECTURE.md`.
-        - **AI Integration:** `ai/chat.js` взаимодействует с UI и бэкендом, что соответствует потокам данных для AI-компонента.
-        - **Multimodal (MediaPipe):** `multimodal/mediaPipeHands.js` инкапсулирует логику работы с MediaPipe, что является хорошей практикой и должно соответствовать архитектурным диаграммам.
-    - **Отличия и уточнения:**
-        - В `ARCHITECTURE.md` мог быть описан более абстрактный `Renderer` или `GraphicsEngine`, который теперь конкретизирован модулями в `/3d/`.
-        - Детализация каждого мелкого модуля (например, `utils/fullscreen.js`) могла отсутствовать в `ARCHITECTURE.md`, который обычно фокусируется на более крупных компонентах и их взаимодействии.
-        - Названия некоторых модулей могли измениться (например, `events.js` -> `eventManager.js`).
+---
 
-    - **Проверка ключевых потоков из `ARCHITECTURE.md` (гипотетическая, на основе типичных схем):**
-        1.  **Пользовательский ввод -> UI -> EventManager -> Обновление State -> Рендеринг:** Этот поток прослеживается. `uiManager` предоставляет элементы, `eventManager` слушает события, обновляет `state` (напрямую или через `stateManager`), `animation.js` рендерит изменения.
-        2.  **Загрузка аудио -> AudioManager -> AudioPlayer/Visualizer -> State -> Рендеринг:** Этот поток также реализован через соответствующие модули.
-        3.  **Взаимодействие с AI -> UI (ввод) -> ChatManager -> Backend -> ChatManager (ответ) -> UI (отображение):** Этот цикл реализован.
-
-    В целом, текущая модульная структура выглядит логичной и хорошо соответствует принципам, которые обычно закладываются в документ `ARCHITECTURE.md` для подобных приложений. Детальное сравнение требует внимательного изучения конкретных диаграмм и описаний в `ARCHITECTURE.md`, но общая направленность совпадает.
-
-## Выводы
-
-Проект успешно перешел на модульную структуру frontend с использованием ES6 модулей. Код хорошо организован по директориям, отражающим функциональные области приложения (`core`, `3d`, `ui`, `audio`, `ai`, `multimodal`, `utils`, `xr`). Взаимодействие между модулями осуществляется через импорты/экспорты и централизованный объект состояния (`state`), управляемый через `/core/init.js` и `/core/stateManager.js`.
-
-Отсутствие `script.js.bak` подтверждает завершение основной фазы рефакторинга монолитного скрипта. Текущая структура модулей и их взаимосвязей в целом соответствует принципам, изложенным в `ARCHITECTURE.md`, обеспечивая лучшее разделение ответственности и поддерживаемость кода.
-
-Для дальнейшего улучшения можно рассмотреть:
--   Более строгую типизацию (например, с использованием JSDoc или TypeScript).
--   Добавление юнит-тестов для ключевых модулей.
--   Оптимизацию процесса сборки и управления зависимостями, если это еще не сделано.
-
-### `/ui/panelManager.js`
-
-- **Назначение:** Управляет видимостью и состоянием боковых панелей (`left-panel`, `right-panel`) и кнопки их переключения (`togglePanelsButton`). Сохраняет состояние видимости панелей в `localStorage`.
-- **Зависимости:**
-    - DOM API (document.getElementById, classList, addEventListener, localStorage)
-    - window.dispatchEvent (для вызова события resize)
-- **Экспорты:** `initializePanelManager`.
-- **Связи:** Вызывается из `main.js` для инициализации. Взаимодействует с DOM для изменения классов элементов и с `localStorage` для сохранения состояния. Вызывает событие `resize` после изменения видимости панелей для корректного обновления макета.
-=======
-### `frontend/js/panels/rightPanelManager.js`
-
-*   **Purpose:** This module manages the state and visibility of the right-hand UI panel. It is primarily responsible for switching the right panel between "Timeline" mode (displaying version history and prompt input) and "Chat" mode (displaying chat history and chat input).
-*   **Main Exports:**
-    *   `initializeRightPanel()`: Initializes the panel by caching DOM element references and attaching event listeners, particularly to the chat toggle button. Expected to be called once on application load.
-    *   `switchToChatMode()`: Programmatically switches the right panel to "Chat" mode if it isn't already.
-    *   `switchToTimelineMode()`: Programmatically switches the right panel to "Timeline" mode if it isn't already.
-    *   `getCurrentMode()`: Returns a string indicating the current mode of the panel ('chat', 'timeline', or 'unknown').
-*   **Key Dependencies:**
-    *   **Internal:** None explicitly imported.
-    *   **External:** None.
-    *   **DOM:** Relies on the presence of specific DOM elements with the following IDs: `chatButton`, `submitTopPrompt`, `submitChatMessage`, `versionTimeline`, `chatHistory`, `promptBar`, `chatInputBar`, `topPromptInput`, `chatInput`, and `loadingIndicator`.
-    *   **Global State:** Calls `window.loadChatHistory()`, expecting this function to be available in the global scope to load chat messages when switching to chat mode.
-*   **Main Consumers/Interactions:**
-    *   Loaded and executed by `frontend/js/main.js` during the application's initialization phase, which calls `initializeRightPanel()` implicitly.
-    *   Its functionality overlaps with `frontend/js/core/ui.js` (`toggleChatMode` function), which also handles chat button state and visibility of some related elements. `rightPanelManager.js` acts as a more specialized controller for the different modes of the right panel, while `core/ui.js` handles broader UI element caching and some general UI state transitions.
-*   **Current Status:** Stable.
-*   **Comparison with `frontend/script.js.backup`:**
-    *   The legacy `frontend/script.js.backup` file included a generic `togglePanels()` function for showing/hiding both left and right panels simultaneously. It did not have a specific mechanism for managing different *modes* (like "Timeline" vs. "Chat") within the right panel itself.
-    *   `rightPanelManager.js` introduces this more granular control, focusing solely on the right panel's content and state switching, which was not explicitly present in the panel management logic of the backup script.
->>>>>>> document-panelmanager
+**Примечание:** Этот каталог будет обновляться по мере развития проекта и рефакторинга.
