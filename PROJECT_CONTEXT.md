@@ -85,7 +85,9 @@
 - [2025-05-23] Исправлена ошибка импорта addMessage в promptManager.js и chatMessages.js.
 - [2025-05-23] Исправлены SyntaxError в appStatePersistence.js и ошибка toggleModeInternal not defined в rightPanelManager.js.
 - [2025-05-22] Удалена дублирующая функция switchToTimelineMode в rightPanelManager.js.
-- [2025-05-23] Исправлена инициализация mainSequencerGroup в sceneSetup.js.
+- [2025-05-23] Исправлен TypeError (containers) в chat.js.
+- [2025-05-23] Добавлены/исправлены DOM-элементы для audioFilePlayer.
+- [2025-05-23] Исправлена инициализация UI элементов аудио плеера и логика воспроизведения файлов.
 
 ---
 
@@ -95,7 +97,7 @@
 ---
 
 ## 10. Текущий Фокус
-- Тестирование фронтенда на Hugging Face Spaces после Git push для подтверждения устранения Runtime Errors и полной загрузки UI.
+- Подготовка к миграции на PostgreSQL.
 
 ---
 
