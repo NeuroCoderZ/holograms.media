@@ -1,86 +1,98 @@
 // frontend/js/audio/microphoneManager.js - Модуль для управления микрофоном
 
-import { semitones, columns } from '../3d/rendering.js';
-// TODO: Logic needs refactoring - updateSequencerColumns was here but removed as it was commented out.
+import { state } from '../core/init.js';
+import { getAudioContext, createAnalyserNodes } from './audioProcessing.js';
+import { resetVisualization } from '../3d/rendering.js';
 
 // --- Переменные модуля ---
-import { state } from '../core/init.js';
+// state is already imported above
 
 /**
  * Инициализирует AudioContext, если он еще не создан и не сохранен в state.
  * Предполагается, что этот AudioContext будет использоваться всеми аудио-модулями.
  */
 function ensureAudioContext() {
-  if (!state.audio.audioContext || state.audio.audioContext.state === 'closed') {
-    state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    console.log("AudioContext initialized or recreated in state.");
-  }
-  if (state.audio.audioContext.state === 'suspended') {
+  state.audio.audioContext = getAudioContext();
+  if (state.audio.audioContext && state.audio.audioContext.state === 'suspended') {
     state.audio.audioContext.resume().then(() => {
-      console.log("AudioContext resumed.");
-    }).catch(e => console.error("Failed to resume AudioContext:", e));
+      console.log("AudioContext for microphone resumed.");
+    }).catch(e => console.error("Failed to resume AudioContext for microphone:", e));
   }
 }
 
 
 
-// Удалена закомментированная функция updateColumnsForMicrophone
+// Removed local getSemitoneLevels function and commented out updateColumnsForMicrophone
 
-/**
- * Получает уровни громкости для каждого полутона из анализатора
-
-    const value = dataArray[index];
-    return value > 0 ? (value / 255) * 100 - 100 : -100;
-  });
-}
 
 /**
  * Инициализирует микрофон и начинает захват аудио
  */
 async function setupMicrophone() {
   ensureAudioContext();
+  if (!state.audio.audioContext) {
+    console.error("AudioContext could not be initialized for microphone.");
+    return false;
+  }
 
+  // Stop any existing microphone stream before starting a new one
   if (state.audio.microphoneStream) {
     state.audio.microphoneStream.getTracks().forEach(track => track.stop());
+    state.audio.microphoneStream = null; // Clear the old stream
   }
+  // Also, ensure old analysers are disconnected and nulled if they somehow persisted
+  if (state.audio.analyserLeft) {
+    state.audio.analyserLeft.disconnect();
+    state.audio.analyserLeft = null;
+  }
+  if (state.audio.analyserRight) {
+    state.audio.analyserRight.disconnect();
+    state.audio.analyserRight = null;
+  }
+
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    state.audio.microphoneStream = stream; // Сохраняем поток в state
+    state.audio.microphoneStream = stream; 
     console.log("Микрофонный поток получен.", stream);
 
     const source = state.audio.audioContext.createMediaStreamSource(stream);
+    
+    const analysers = createAnalyserNodes(state.audio.audioContext, 0.85);
+    state.audio.analyserLeft = analysers.left;
+    state.audio.analyserRight = analysers.right;
+    // Optional: state.audio.microphoneAnalysers = analysers; 
 
-    // Создаем AnalyserNode для левого и правого каналов и сохраняем их в state
-    state.audio.analyserLeft = state.audio.audioContext.createAnalyser();
-    state.audio.analyserRight = state.audio.audioContext.createAnalyser();
-
-    // Разделяем каналы
     const splitter = state.audio.audioContext.createChannelSplitter(2);
 
     source.connect(splitter);
     splitter.connect(state.audio.analyserLeft, 0);
     splitter.connect(state.audio.analyserRight, 1);
 
-    // Подключаем к выходу (опционально, если не нужно слышать себя)
+    // Do not connect source to destination to avoid feedback unless intended
     // source.connect(state.audio.audioContext.destination);
 
-    // Настраиваем анализаторы
-    state.audio.analyserLeft.fftSize = 2048;
-    state.audio.analyserRight.fftSize = 2048;
+    state.audio.activeSource = 'microphone';
+    
+    // Update UI
+    const micButton = document.getElementById('micButton');
+    if (micButton) micButton.classList.add('active');
 
-    // Можно добавить логику для обработки данных анализаторов здесь или в другом месте
-    // Например, в цикле рендеринга Three.js
-
-    return true; // Успех
+    return true; 
   } catch (err) {
     console.error("Ошибка доступа к микрофону:", err);
-    // Отобразим ошибку пользователю
     alert(`Не удалось получить доступ к микрофону: ${err.name}: ${err.message}`);
-    state.audio.microphoneStream = null;
+    if (state.audio.microphoneStream) { // Clean up stream if it was partially set up
+        state.audio.microphoneStream.getTracks().forEach(track => track.stop());
+        state.audio.microphoneStream = null;
+    }
     state.audio.analyserLeft = null;
     state.audio.analyserRight = null;
-    return false; // Ошибка
+    state.audio.activeSource = 'none'; // Ensure activeSource is reset
+    // Update UI
+    const micButton = document.getElementById('micButton');
+    if (micButton) micButton.classList.remove('active');
+    return false; 
   }
 }
 
@@ -88,27 +100,29 @@ async function setupMicrophone() {
  * Останавливает захват аудио с микрофона и сбрасывает визуализацию
  */
 function stopMicrophone() {
+  state.audio.activeSource = 'none';
+
   if (state.audio.microphoneStream) {
     state.audio.microphoneStream.getTracks().forEach(track => track.stop());
     state.audio.microphoneStream = null;
-    // Note: Analysers are not explicitly disconnected here, they will be garbage collected
-    // when the source is disconnected and the stream stops.
-    state.audio.analyserLeft = null;
-    state.audio.analyserRight = null;
     console.log("Микрофонный поток остановлен.");
   }
   
-  // Сброс визуализации колонок до нулевого состояния
-  columns.forEach((column, i) => {
-      const baseColor = semitones[i] ? semitones[i].color : new THREE.Color(0xffffff); // Базовый цвет или белый
-      if (column.left && column.right) {
-          column.left.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor); }); // Базовый цвет
-          column.right.children.forEach(mesh => { mesh.scale.z = 0.001; mesh.position.z = 0; mesh.material.color.copy(baseColor); }); // Базовый цвет
-      }
-  });
-  console.log("Визуализация микрофона очищена (столбцы сброшены в 0).");
+  if (state.audio.analyserLeft) {
+    state.audio.analyserLeft.disconnect();
+    state.audio.analyserLeft = null;
+  }
+  if (state.audio.analyserRight) {
+    state.audio.analyserRight.disconnect();
+    state.audio.analyserRight = null;
+  }
+  
+  resetVisualization(); // Call the imported function
+  console.log("Визуализация микрофона очищена.");
 
-  // TODO: Отключить анализаторы и источник от AudioContext при остановке (already handled by setting to null?)
+  // Update UI
+  const micButton = document.getElementById('micButton');
+  if (micButton) micButton.classList.remove('active');
 }
 
 /**
@@ -118,7 +132,7 @@ export function initializeMicrophoneButton() {
   const micButton = document.getElementById('micButton');
   
   if (!micButton) {
-    console.error("Кнопка микрофона #micButton не найдена!");
+    console.warn("Кнопка микрофона #micButton не найдена!"); // Changed to warn
     return;
   }
   
@@ -126,54 +140,57 @@ export function initializeMicrophoneButton() {
     // Проверяем состояние AudioContext перед действиями
     if (!state.audio.audioContext || state.audio.audioContext.state === 'closed') {
       console.log("AudioContext не инициализирован или закрыт. Попытка создать/возобновить.");
-      // Пытаемся создать или возобновить контекст ПЕРЕД тем, как вызывать setupMicrophone
-      if (!state.audio.audioContext) {
-        try {
-          state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          console.log("AudioContext создан.");
-        } catch (e) {
-          console.error("Не удалось создать AudioContext:", e);
-          alert("Ошибка: Не удалось инициализировать аудио систему.");
-          return;
-        }
+      // Ensure context is ready before toggling microphone
+      ensureAudioContext(); 
+
+      if (!state.audio.audioContext || state.audio.audioContext.state === 'closed') {
+        console.error("AudioContext could not be initialized or is closed.");
+        alert("Ошибка: Аудиосистема не активна. Попробуйте обновить страницу.");
+        return;
       }
+      
+      // If context is suspended, try to resume it, then proceed with toggle
       if (state.audio.audioContext.state === 'suspended') {
         state.audio.audioContext.resume().then(() => {
-          console.log("AudioContext возобновлен.");
-          // Теперь, когда контекст точно есть и активен, вызываем setup
-          setupMicrophone();
-        }).catch(e => console.error("Не удалось возобновить AudioContext:", e));
-      } else if (state.audio.audioContext.state === 'running') {
-        // Контекст уже работает, можно вызывать setup
-        setupMicrophone();
-      }
-      return; // Выходим из обработчика клика после попытки инициализации/возобновления
-    }
-
-    // Если контекст есть и активен, выполняем переключение
-    if (state.audio.audioContext.state === 'running') {
-      const isActive = micButton.classList.contains('active');
-      if (isActive) {
-        stopMicrophone();
-        console.log("Вызов stopMicrophone()");
+          console.log("AudioContext resumed on mic button click.");
+          toggleMicrophone(micButton); // Proceed with toggling
+        }).catch(e => {
+          console.error("Failed to resume AudioContext on mic button click:", e);
+          alert("Не удалось активировать аудиосистему. Пожалуйста, проверьте настройки браузера.");
+        });
       } else {
-        setupMicrophone();
-        console.log("Вызов setupMicrophone()");
+        // Context is running or was successfully resumed by ensureAudioContext
+        toggleMicrophone(micButton);
       }
-    } else if (state.audio.audioContext.state === 'suspended') {
-      // Дополнительная попытка возобновить, если первое условие не сработало
-      state.audio.audioContext.resume().then(() => {
-        console.log("AudioContext возобновлен при переключении.");
-        // Повторно вызываем setup, так как кнопка была неактивна
-        setupMicrophone();
-      }).catch(e => console.error("Не удалось возобновить AudioContext при переключении:", e));
-    }
-  });
+    });
 
   console.log('Кнопка микрофона инициализирована');
+}
 
-  // TODO: Remove unused variables semitones and columns if they are only used in the commented out code
+/**
+ * Helper function to toggle microphone state.
+ * Assumes audio context is running or has been attempted to resume.
+ * @param {HTMLElement} micButton - The microphone button element.
+ */
+async function toggleMicrophone(micButton) {
+  const isActive = micButton.classList.contains('active');
+  if (isActive) {
+    stopMicrophone();
+    // UI update is in stopMicrophone
+    console.log("Microphone stopped via toggle.");
+  } else {
+    const success = await setupMicrophone();
+    if (success) {
+      // UI update is in setupMicrophone
+      console.log("Microphone started via toggle.");
+    } else {
+      // UI should be handled by setupMicrophone on failure
+      console.error("Failed to setup microphone via toggle.");
+    }
+  }
 }
 
 // Экспортируем функции для использования в других модулях
-export { setupMicrophone };
+// setupMicrophone is mostly internal, called by the button handler.
+// stopMicrophone is also internal.
+// initializeMicrophoneButton is the main export.

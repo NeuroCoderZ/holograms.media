@@ -1,0 +1,29 @@
+name: Sync to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main # Запускать только при пуше в main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Fetch all history for all tags and branches
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Add Hugging Face Remote
+        run: git remote add huggingface https://${{ secrets.HF_USERNAME }}:${{ secrets.HF_TOKEN_FOR_SYNC }}@huggingface.co/spaces/${{ github.repository }}
+        # ${{ github.repository }} будет вида "NeuroCoderZ/holograms.media"
+
+      - name: Push to Hugging Face
+        run: |
+          git push huggingface main --force
+          echo "Successfully pushed to Hugging Face Spaces."
