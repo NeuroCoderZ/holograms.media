@@ -8,7 +8,7 @@ let togglePanelsButton = null;
 /**
  * Инициализирует состояние панелей (видимость/скрытие)
  */
-export function initializePanelState() {
+function initializePanelState() {
   // Получаем ссылки на панели
   // Получаем ссылки на панели и кнопку, используя соответствующие селекторы
   leftPanel = document.querySelector('.panel.left-panel');
