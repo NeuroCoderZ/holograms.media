@@ -3,7 +3,8 @@
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
 import { togglePanels, initializePanelState } from '../ui/panelManager.js';
-import { uiElements } from '../ui/uiManager.js';
+import { uiElements, toggleChatMode } from '../ui/uiManager.js';
+import { updateHologramLayout } from '../ui/layoutManager.js';
 
 // Удаляем дублирующееся объявление ui
 // const ui = uiElements;
@@ -504,19 +505,19 @@ function setupWindowListeners() {
   // Обработчик изменения ориентации для мобильных устройств
   window.addEventListener('orientationchange', () => {
     setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-    }, 200);
+      window.dispatchEvent(new Event('resize')); // Триггерим событие resize для обновления макета
+    }, 500); // Небольшая задержка для учета изменений размеров после поворота
   });
 }
 
-// Настройка обработчиков для файлов
+// Настройка обработчиков для файлов (TODO: Implement file handling logic)
 function setupFileListeners() {
-  // Обработчики для файлов - Listener for ui.inputs.fileInput (audio file) is now handled by audioFilePlayer.js
-  // If there were other file inputs for different purposes, they would remain here.
+  // TODO: Implement file handling logic
 }
 
-// Вспомогательные функции для обработки событий
-
-// TODO: Reimplement toggleMicrophone function
-// TODO: Reimplement toggleXRMode function
+// TODO: Reimplement playback functionality
+// TODO: Reimplement microphone recording functionality
+// TODO: Reimplement file upload functionality
+// TODO: Reimplement XR mode functionality
+// TODO: Reimplement gesture recording functionality
 // TODO: Reimplement toggleGestureRecording function

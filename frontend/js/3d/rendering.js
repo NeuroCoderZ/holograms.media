@@ -391,7 +391,7 @@ export function updateSequencerColumns(amplitudes, channel) {
       const targetDepth = normalizedDB * 260;
       mesh.scale.z = targetDepth;
       mesh.position.z = targetDepth / 2;
-      });
+    });
       }
       
       // Update TWEEN animations
