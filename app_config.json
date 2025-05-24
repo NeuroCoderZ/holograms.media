@@ -1,54 +1,65 @@
 {
     "endpoints": [
       {
-        "path": "/health",
-        "method": "GET",
-        "description": "Проверка состояния API (Health Check)"
-      },
-      {
         "path": "/chat",
         "method": "POST",
-        "description": "Основной эндпоинт для чата с AI (Триа или LLM)",
+        "description": "Отправить сообщение в чат Триа. Используйте это для взаимодействия с AI ассистентом.",
         "parameters": {
           "message": {
             "type": "string",
-            "description": "Сообщение пользователя для чата"
+            "description": "Текстовое сообщение пользователя для Триа."
           },
           "model": {
             "type": "string",
-            "description": "Опциональное имя модели LLM для использования",
-            "optional": true 
+            "description": "Модель для использования (по умолчанию mistral/mistral-small-latest)."
           },
           "history": {
             "type": "array",
-            "description": "Опциональная история чата (массив объектов {role, content})",
-            "optional": true
+            "description": "История чата в формате [{"role": "user", "content": "text"}, {"role": "assistant", "content": "text"}]."
+          }
+        },
+        "returns": {
+          "response": {
+            "type": "string",
+            "description": "Ответ от Триа."
+          },
+          "should_vocalize": {
+            "type": "boolean",
+            "description": "Следует ли Триа озвучить ответ."
           }
         }
       },
       {
         "path": "/tria/invoke",
         "method": "POST",
-        "description": "Эндпоинт для вызова функций AI 'Триа'",
+        "description": "Вызвать Триа для выполнения запроса. Используйте для выполнения задач.",
         "parameters": {
           "query": {
             "type": "string",
-            "description": "Запрос или команда для Триа"
+            "description": "Запрос к Триа для выполнения задачи."
+          }
+        },
+        "returns": {
+          "response": {
+            "type": "string",
+            "description": "Результат выполнения запроса Триа."
           }
         }
       },
       {
-        "path": "/generate",
+        "path": "/health",
+        "method": "GET",
+        "description": "Проверка состояния API Holograms.Media."
+      },
+      {
+        "path": "/branches",
         "method": "POST",
-        "description": "Эндпоинт для генерации контента (например, голограмм)",
-        "parameters": {
-          "prompt": {
-            "type": "string",
-            "description": "Промпт для генерации"
-          }
-          // Добавь другие параметры, если они нужны
-        }
+        "description": "Создать новую версию ветки голограммы."
+      },
+      {
+        "path": "/branches/{branch}",
+        "method": "GET",
+        "description": "Получить список версий для указанной ветки голограммы."
       }
-      // Добавь сюда описания других эндпоинтов, если они нужны для MCP
     ]
   }
