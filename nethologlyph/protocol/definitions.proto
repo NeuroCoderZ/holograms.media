@@ -72,3 +72,63 @@ message HolographicEvent {}
 message HolographicEventAck {}
 message GestureAck {}
 */
+
+// --- Appended Example Messages ---
+
+// Example Message: 3D-Emoji
+// Represents a simple, expressive 3D object that can be placed in the scene.
+message ThreeDEmoji {
+    string emoji_id = 1;          // Unique ID for this instance of the emoji
+    string type = 2;              // Type of emoji (e.g., "smile", "thumbs_up", "heart")
+    Vector3 position = 3;         // Initial position in 3D space
+    Quaternion orientation = 4;   // Initial orientation
+    string color_hex = 5;         // Dominant color in hex (e.g., "#FFD700")
+    float scale = 6;              // Uniform scale factor (default 1.0)
+
+    enum AnimationType {
+        NONE = 0;
+        PULSE = 1;
+        SPIN_Y = 2;
+        BOUNCE = 3;
+    }
+    AnimationType animation = 7;  // Brief animation to play
+    float animation_speed = 8;    // Speed of the animation (e.g., 1.0 for normal)
+}
+
+// Example Message: AudioVisualizationState
+// Transmits parameters to control the state of a generic audio visualization (e.g., columns).
+message AudioVisualizationState {
+    string viz_id = 1;            // ID of the visualization instance to control
+    enum VisualizationType {
+        UNKNOWN_VIZ = 0;
+        COLUMN_BARS = 1;
+        PARTICLE_FIELD = 2;
+        WAVEFORM_MESH = 3;
+    }
+    VisualizationType type = 2;   // Type of visualization this state applies to
+
+    message ColumnBarParameters {
+        int32 num_columns = 1;
+        repeated float column_heights = 2; // Heights for each column, normalized (0.0 to 1.0)
+        string color_scheme = 3;         // e.g., "rainbow", "plasma", "user_defined"
+        repeated string hex_colors = 4;  // if color_scheme is "user_defined"
+        float reactivity = 5;            // How sensitive to audio changes (0.0 to 1.0)
+    }
+
+    message ParticleFieldParameters {
+        int32 num_particles = 1;
+        float particle_size = 2;
+        float expansion_factor = 3;      // How much particles spread with audio intensity
+        string color_palette_name = 4;   // e.g., "fire", "ice", "forest"
+    }
+
+    oneof params {
+        ColumnBarParameters column_params = 3;
+        ParticleFieldParameters particle_params = 4;
+        // Add other visualization parameter types here
+    }
+    Timestamp timestamp = 5;        // When this state was generated
+}
+
+// TODO: Consider adding a general "SceneUpdate" message that can carry one of many
+// specific object types (HolographicSymbol, ThreeDEmoji, etc.) using 'oneof'.
