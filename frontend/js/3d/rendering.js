@@ -397,11 +397,8 @@ export function updateSequencerColumns(amplitudes, channel) {
   });
 }
 
-// Update TWEEN animations
-TWEEN.update(time);
-
-// Render the scene
-renderer.render(scene, camera);
+// Глобальная переменная для отслеживания времени анимации
+let time = 0;
 
 // Request the next frame
 requestAnimationFrame(animate);
@@ -411,42 +408,18 @@ requestAnimationFrame(animate);
  * Основная функция анимации
  * @param {number} time - Время в миллисекундах
  */
-export function animate(time) {
-  // Обновляем аудиовизуализацию, если есть активный источник аудио
-  if (state.audio.activeSource !== 'none') {
-    let analyserLeft = null;
-    let analyserRight = null;
-    
-    // Получаем анализаторы в зависимости от активного источника
-    if (state.audio.activeSource === 'microphone') {
-      analyserLeft = state.audio.analyserLeft;
-      analyserRight = state.audio.analyserRight;
-    } else if (state.audio.activeSource === 'file' && state.audio.filePlayerAnalysers) {
-      analyserLeft = state.audio.filePlayerAnalysers.left;
-      analyserRight = state.audio.filePlayerAnalysers.right;
-    }
-    
-    // Обновляем визуализацию, если есть анализаторы
-    if (analyserLeft && analyserRight) {
-      const leftLevels = getSemitoneLevels(analyserLeft);
-      const rightLevels = getSemitoneLevels(analyserRight);
-      
-      // Обновляем колонки на основе аудиоданных
-      updateSequencerColumns(leftLevels, 'left');
-      updateSequencerColumns(rightLevels, 'right');
-    }
-  }
-  
-  // Обновляем TWEEN анимации
-  TWEEN.update(time);
-  
-  // Рендерим сцену
-  if (state.renderer && state.scene && state.camera) {
+function animate(currentTime) {
+    requestAnimationFrame(animate);
+
+    // Обновляем время для TWEEN
+    time = currentTime !== undefined ? currentTime : time + 16; // Приблизительно 60 FPS
+    TWEEN.update(time);
+
+    // Обновление визуализации аудио
+    updateAudioVisualization();
+
+    // Рендеринг сцены
     state.renderer.render(state.scene, state.camera);
-  }
-  
-  // Запрашиваем следующий кадр
-  requestAnimationFrame(animate);
 }
 
 // Function to handle window resize
