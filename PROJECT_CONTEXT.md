@@ -15,10 +15,11 @@
 - НЕТ ИЗВЕСТНЫХ КРИТИЧЕСКИХ ОШИБОК JS (после исправления SyntaxError в rendering.js и ошибки импорта panelManager.js)
 
 *   **УСТРАНЕНО:** Ошибки загрузки модулей (`404 Not Found` для `ui.js`).
-*   **УСТРАНЕНО:** Ошибка `GET .../static/js/panels/panelManager.js net::ERR_ABORTED 404`.
+*   **УСТРАНЕНО:** Ошибка `GET .../static/js/panels/panelManager.js net::ERR_ABORTED 404` (исправлен путь импорта в `events.js`).
 *   **УСТРАНЕНО:** Ошибки дублирования экспортов (`Duplicate export` в `panelManager.js`).
 *   **УСТРАНЕНО:** Ошибки `Runtime Error` (связанные с инициализацией сцены, поиском DOM-элементов, инициализацией аудио плеера и панелей).
 *   **УСТРАНЕНО:** Ошибка `SyntaxError: Invalid or unexpected token` в `rendering.js` после мержа.
+*   **УСТРАНЕНО:** `ReferenceError` для `toggleChatMode` и `updateHologramLayout` в `events.js` (добавлены необходимые импорты).
 *   **ТЕКУЩАЯ ЗАДАЧА:** Финальная проверка работоспособности фронтенда на Hugging Face Spaces после устранения всех известных JS ошибок.
 *   **СЛЕДУЮЩИЕ ШАГИ:** Продолжение работы над UI, интеграция новых типов голограмм, проектирование схемы базы данных PostgreSQL.
 
