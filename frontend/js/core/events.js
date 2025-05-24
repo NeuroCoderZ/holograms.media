@@ -3,8 +3,9 @@
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
 import { togglePanels, initializePanelState } from '../ui/panelManager.js';
-import { uiElements, toggleChatMode } from '../ui/uiManager.js';
+import { uiElements } from '../ui/uiManager.js';
 import { updateHologramLayout } from '../ui/layoutManager.js';
+import { toggleModeInternal } from '../panels/rightPanelManager.js';
 
 // Удаляем дублирующееся объявление ui
 // const ui = uiElements;
@@ -363,7 +364,7 @@ function setupButtonListeners() {
   
   // Кнопка чата
   if (ui.buttons.chatButton) {
-    ui.buttons.chatButton.addEventListener('click', toggleChatMode);
+    ui.buttons.chatButton.addEventListener('click', toggleModeInternal);
   }
 } // Закрываем функцию setupButtonListeners
 
