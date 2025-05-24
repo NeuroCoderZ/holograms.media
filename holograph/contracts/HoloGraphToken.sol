@@ -4,6 +4,8 @@
 // Main Future Exports/API: Standard ERC20 functions (totalSupply, balanceOf, transfer, etc.).
 // Link to Legacy Logic (if applicable): N/A - New token.
 // Intended Technology Stack: Solidity, (Chosen EVM-compatible Blockchain).
+// Intended Standard: ERC20. Consider extensions like ERC20Burnable, ERC20Pausable, or ERC20Permit based on future needs.
+// OpenZeppelin implementations will be preferred for these standard interfaces.
 // TODO: Define token properties (name, symbol, decimals, initial supply).
 // TODO: Implement minting and burning logic if applicable (e.g., for rewards).
 // TODO: Add ownership and access control mechanisms.

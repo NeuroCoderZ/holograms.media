@@ -68,6 +68,30 @@ export const state = {
   isTriaModeActive: false,    // Активен ли режим Триа
   currentLlmModel: 'mistral-small-latest', // Текущая используемая LLM модель
 
+  // --- Состояние NetHoloGlyph ---
+  nethologlyph: {
+    // Manages the state of the NetHoloGlyph client-side connection and data
+    connectionStatus: 'disconnected', // e.g., 'disconnected', 'connecting', 'connected', 'error'
+    currentSymbols: [], // Array to hold currently active/received holographic symbols
+    serverUrl: 'ws://localhost:8001/ws/hologlyph/', // Default server URL, might be configurable
+    clientId: 'user-' + Date.now(), // Example client ID
+    error: null, // To store any connection or protocol errors
+    // TODO: Add more specific state fields as NetHoloGlyph client develops
+    // e.g., subscribed_topics: [], last_received_message_timestamp: null
+  },
+
+  // --- Состояние HoloGraph Economy ---
+  holograph: {
+    // Manages state related to the HoloGraph economy and DAO interactions
+    userTokenBalance: 0, // User's HGT balance (fetched from a wallet or backend)
+    daoProposals: [], // Array of DAO proposals fetched from backend/blockchain
+    walletConnected: false, // Status of user's crypto wallet connection
+    walletAddress: null, // User's wallet address
+    lastTransactionStatus: null, // e.g., 'pending', 'success', 'failed'
+    // TODO: Add more specific state fields as HoloGraph integration develops
+    // e.g., staking_info: {}, intellectual_mining_rewards_pending: 0
+  },
+
   // --- Конфигурация приложения (может загружаться извне) ---
   config: {
     GRID: { // Параметры для gridHelper и, возможно, других элементов
