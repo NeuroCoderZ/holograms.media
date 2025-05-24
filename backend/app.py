@@ -550,3 +550,38 @@ if os.path.isdir(FRONTEND_DIR):
     print(f"[INFO] Статика успешно смонтирована из: {FRONTEND_DIR} на /static")
 else:
     print(f"[CRITICAL ERROR] Директория для статики НЕ НАЙДЕНА: {FRONTEND_DIR}")
+
+# 12. Добавление Gradio для MCP-поддержки
+import gradio as gr
+
+def wrap_fastapi_to_gradio():
+    # Базовый интерфейс Gradio для проверки
+    def greet(text):
+        return f"Получен запрос: {text}"
+
+    # Создаём Gradio интерфейс
+    interface = gr.Interface(
+        fn=greet,
+        inputs="text",
+        outputs="text",
+        title="Holograms Media API",
+        description="API для управления голографическими медиа."
+    )
+
+    # Монтируем все FastAPI-роуты
+    app = FastAPI()  # Создаём новый экземпляр для Gradio
+    app.mount("/gradio", interface, name="gradio")
+
+    # Копируем существующие роуты
+    app.mount("/", app_instance, name="fastapi_routes")
+
+    return app
+
+# Используем текущий app как app_instance
+app_instance = app
+app = wrap_fastapi_to_gradio()
+
+# Запуск Gradio внутри FastAPI (если нужно вручную, но MCP сам запустит)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=7860)
