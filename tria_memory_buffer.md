@@ -20,17 +20,20 @@
 
 ---
 
-### Итерация 20250524-0400-001
+### Итерация 20250524-0400-002
 
-**Цель:** Устранение финальных критических ошибок фронтенда: SyntaxError в rendering.js (missing bracket) и ошибки импорта panelManager.js (404).
+**Цель:** Устранение финальных критических ошибок фронтенда: SyntaxError в rendering.js (missing bracket), ошибки импорта panelManager.js (404) и ReferenceError для toggleChatMode/updateHologramLayout.
 
 **Действия:**
-1.  **Исправлена ошибка `SyntaxError: missing ) after argument list` в `rendering.js` (строка ~398):** Добавлена недостающая закрывающая скобка в вызове функции внутри блока обновления колонок.
-    *   **БЫЛО:** Код с пропущенной скобкой.
-    *   **СТАЛО:** Код с добавленной скобкой.
+1.  **Исправлена ошибка `SyntaxError: missing ) after argument list` в `rendering.js` (строка ~398):** Удалена лишняя закрывающая скобка в вызове функции внутри блока обновления колонок.
+    *   **БЫЛО:** Код с лишней скобкой.
+    *   **СТАЛО:** Код с корректной структурой.
 2.  **Исправлена ошибка `GET .../static/js/panels/panelManager.js net::ERR_ABORTED 404`:** В файле `frontend/js/core/events.js` путь импорта для `panelManager.js` из `../panels/panelManager.js` изменен на `../ui/panelManager.js`.
     *   **БЫЛО:** `import { togglePanels, initializePanelState } from '../panels/panelManager.js';`
     *   **СТАЛО:** `import { togglePanels, initializePanelState } from '../ui/panelManager.js';`
+3.  **Разрешены `ReferenceError` для `toggleChatMode` и `updateHologramLayout` в `events.js`:** Добавлены необходимые импорты из `../ui/uiManager.js` и `../ui/layoutManager.js` соответственно.
+    *   **БЫЛО:** Отсутствовали импорты для `toggleChatMode` и `updateHologramLayout`.
+    *   **СТАЛО:** Добавлены `import { toggleChatMode } from '../ui/uiManager.js';` и `import { updateHologramLayout } from '../ui/layoutManager.js';`
 
 **Результат:** Устранены последние известные блокирующие JS ошибки. Ожидается полная и корректная загрузка фронтенда.
 
