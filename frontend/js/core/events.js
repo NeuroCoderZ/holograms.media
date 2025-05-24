@@ -3,7 +3,8 @@
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
 import { togglePanels, initializePanelState } from '../ui/panelManager.js';
-import { uiElements, toggleChatMode } from '../ui/uiManager.js';
+import { uiElements } from '../ui/uiManager.js'; // toggleChatMode will be imported from core/ui.js
+import { toggleChatMode } from '../core/ui.js'; // Import the comprehensive toggleChatMode
 import { updateHologramLayout } from '../ui/layoutManager.js';
 
 // Удаляем дублирующееся объявление ui
@@ -416,22 +417,24 @@ function setupModalListeners() {
 
 // Настройка обработчиков для ввода текста
 function setupTextInputListeners() {
-  // Поле ввода промпта и кнопка отправки
-  if (ui.inputs.topPromptInput && ui.actions.submitTopPrompt) {
-    ui.actions.submitTopPrompt.addEventListener('click', () => {
-      // TODO: Implement sendPrompt (Module prompts.js might be needed)
-      console.log('TODO: Implement sendPrompt (from top input)');
-    });
+  // Listeners for topPromptInput and submitTopPrompt are handled in frontend/js/core/domEventHandlers.js
+  // to avoid conflicts and use the more complete implementation there.
+  // The following placeholder listeners have been removed:
+  // if (ui.inputs.topPromptInput && ui.actions.submitTopPrompt) {
+  //   ui.actions.submitTopPrompt.addEventListener('click', () => {
+  //     // TODO: Implement sendPrompt (Module prompts.js might be needed)
+  //     console.log('TODO: Implement sendPrompt (from top input)');
+  //   });
     
-    // Отправка по Enter
-    ui.inputs.topPromptInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        // TODO: Implement sendPrompt (Module prompts.js might be needed)
-        console.log('TODO: Implement sendPrompt (from top input on Enter)');
-      }
-    });
-  }
+  //   // Отправка по Enter
+  //   ui.inputs.topPromptInput.addEventListener('keypress', (e) => {
+  //     if (e.key === 'Enter' && !e.shiftKey) {
+  //       e.preventDefault();
+  //       // TODO: Implement sendPrompt (Module prompts.js might be needed)
+  //       console.log('TODO: Implement sendPrompt (from top input on Enter)');
+  //     }
+  //   });
+  // }
   
   // Поле ввода чата и кнопка отправки
   if (ui.inputs.chatInput && ui.actions.submitChatMessage) {

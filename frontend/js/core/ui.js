@@ -84,8 +84,7 @@ export function setupUI() {
   // Инициализируем кнопки действий
   initActions();
   
-  // Инициализируем состояние панелей
-  initializePanelState();
+  // Состояние панелей инициализируется через panelManager.js
   
   console.log('Пользовательский интерфейс инициализирован.');
 }
@@ -172,51 +171,7 @@ function initActions() {
   ui.actions.stopRecordingButton = document.getElementById('stopRecordingButton');
 }
 
-// Функция для инициализации состояния панелей
-export function initializePanelState() {
-  if (!ui.leftPanel || !ui.rightPanel || !ui.togglePanelsButton) {
-    console.error('Required elements not found for initializePanelState');
-    return;
-  }
-
-  // Получаем сохраненное состояние
-  const savedState = localStorage.getItem('panelsHidden');
-  const shouldBeHidden = savedState === 'true';
-
-  // Применяем классы
-  ui.leftPanel.classList.toggle('hidden', shouldBeHidden);
-  ui.rightPanel.classList.toggle('hidden', shouldBeHidden);
-  ui.togglePanelsButton.classList.toggle('show-mode', shouldBeHidden);
-
-  // Вызываем ресайз после применения классов
-  setTimeout(() => {
-    window.dispatchEvent(new Event('resize'));
-  }, 50);
-}
-
-// Переключение панелей
-export function togglePanels() {
-  if (!ui.leftPanel || !ui.rightPanel || !ui.togglePanelsButton) {
-    console.error('Required elements not found for togglePanels');
-    return;
-  }
-  
-  const willBeHidden = !ui.leftPanel.classList.contains('hidden');
-  
-  // Перемещаем кнопку в body, если она еще не там
-  if (ui.togglePanelsButton.parentNode !== document.body) {
-    document.body.appendChild(ui.togglePanelsButton);
-  }
-  
-  ui.leftPanel.classList.toggle('hidden', willBeHidden);
-  ui.rightPanel.classList.toggle('hidden', willBeHidden);
-  ui.togglePanelsButton.classList.toggle('show-mode', willBeHidden);
-  localStorage.setItem('panelsHidden', willBeHidden.toString());
-  
-  setTimeout(() => {
-    window.dispatchEvent(new Event('resize'));
-  }, 50);
-}
+// Функции initializePanelState и togglePanels были перемещены в frontend/js/ui/panelManager.js
 
 // Переключение между режимами чата и ввода промпта
 export function toggleChatMode() {
