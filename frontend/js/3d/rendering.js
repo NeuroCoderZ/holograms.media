@@ -1,6 +1,8 @@
 // frontend/js/rendering.js - Модуль для логики 3D-рендеринга
 
+// Импорты
 import * as THREE from 'three';
+import * as TWEEN from '@tweenjs/tween.js';
 import { state } from '../core/init.js'; // Для доступа к state.scene, state.mainSequencerGroup
 import { getSemitoneLevels } from '../audio/audioProcessing.js';
 
@@ -392,15 +394,58 @@ export function updateSequencerColumns(amplitudes, channel) {
       mesh.scale.z = targetDepth;
       mesh.position.z = targetDepth / 2;
     });
+  });
+}
+
+// Update TWEEN animations
+TWEEN.update(time);
+
+// Render the scene
+renderer.render(scene, camera);
+
+// Request the next frame
+requestAnimationFrame(animate);
+}
+
+/**
+ * Основная функция анимации
+ * @param {number} time - Время в миллисекундах
+ */
+export function animate(time) {
+  // Обновляем аудиовизуализацию, если есть активный источник аудио
+  if (state.audio.activeSource !== 'none') {
+    let analyserLeft = null;
+    let analyserRight = null;
+    
+    // Получаем анализаторы в зависимости от активного источника
+    if (state.audio.activeSource === 'microphone') {
+      analyserLeft = state.audio.analyserLeft;
+      analyserRight = state.audio.analyserRight;
+    } else if (state.audio.activeSource === 'file' && state.audio.filePlayerAnalysers) {
+      analyserLeft = state.audio.filePlayerAnalysers.left;
+      analyserRight = state.audio.filePlayerAnalysers.right;
+    }
+    
+    // Обновляем визуализацию, если есть анализаторы
+    if (analyserLeft && analyserRight) {
+      const leftLevels = getSemitoneLevels(analyserLeft);
+      const rightLevels = getSemitoneLevels(analyserRight);
+      
+      // Обновляем колонки на основе аудиоданных
+      updateSequencerColumns(leftLevels, 'left');
+      updateSequencerColumns(rightLevels, 'right');
+    }
   }
   
-  // Update TWEEN animations
+  // Обновляем TWEEN анимации
   TWEEN.update(time);
   
-  // Render the scene
-  renderer.render(scene, camera);
+  // Рендерим сцену
+  if (state.renderer && state.scene && state.camera) {
+    state.renderer.render(state.scene, state.camera);
+  }
   
-  // Request the next frame
+  // Запрашиваем следующий кадр
   requestAnimationFrame(animate);
 }
 

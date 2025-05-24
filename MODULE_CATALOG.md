@@ -124,14 +124,18 @@
 - **Назначение:** Содержит логику для создания 3D-объектов (сферы, линии, сетки, колонки), вычисления параметров (полутоны, цвета, размеры колонок), а также функции для обновления визуализации аудио и анимации. **Ключевая функция `animate` отвечает за рендер-цикл и обновление аудиовизуализации.**
 - **Зависимости:**
     - `three` (библиотека Three.js)
+    - `@tweenjs/tween.js` (для анимаций)
     - `/core/init.js` (`state`)
     - `/audio/audioProcessing.js` (для `getSemitoneLevels`)
 - **Экспорты:** `semitones`, `degreesToCells`, `createSphere`, `createLine`, `createAxis`, `createGrid`, `createSequencerGrid`, `createColumn`, `initializeColumns`, `updateAudioVisualization`, `updateColumnVisualization`, `resetVisualization`, `createAudioVisualization`, `updateSequencerColumns`, `animate` (главный цикл анимации/рендеринга). **Локальные `getSemitoneLevels` и `updateColumnsForMicrophone` были удалены.**
 - **Связи:** Предоставляет утилиты для создания 3D-геометрии, используемые в `sceneSetup.js`.
-    - **Цикл `animate` теперь определяет активный источник аудио (`state.audio.activeSource`).**
-    - В зависимости от источника, он получает соответствующие `AnalyserNode`s (`state.audio.filePlayerAnalysers` или `state.audio.analyserLeft`/`Right`).
-    - Затем вызывает `audioProcessing.js#getSemitoneLevels()` с выбранными анализаторами.
-    - Наконец, вызывает собственную функцию `updateSequencerColumns()` для обновления 3D-визуализации на основе полученных уровней.
+    - **Функция `animate` реализована с полной интеграцией аудиовизуализации из `script.js.bak`:**
+        - Определяет активный источник аудио (`state.audio.activeSource`)
+        - Получает соответствующие `AnalyserNode`s (`state.audio.filePlayerAnalysers` или `state.audio.analyserLeft`/`Right`)
+        - Вызывает `audioProcessing.js#getSemitoneLevels()` для получения уровней полутонов
+        - Обновляет 3D-колонки через `updateSequencerColumns()` с динамическим изменением масштаба и позиции
+        - Интегрирует `TWEEN.update(time)` для плавных анимаций
+        - Выполняет рендеринг сцены и запускает следующий кадр через `requestAnimationFrame`
     - Функция `resetVisualization()` вызывается из `audioFilePlayer.js` (косвенно через `stopAudio()`) и `microphoneManager.js` для очистки визуализации.
 
 ### `/ui/uiManager.js`
@@ -178,12 +182,12 @@
 - **Ключевые функции/Экспорты:**
     - `getAudioContext()`: Управляет жизненным циклом общего экземпляра `AudioContext` (получает или создает/возобновляет его), сохраняя его в `state.audio.audioContext`.
     - `createAnalyserNodes(audioContext, smoothingTimeConstant)`: Создает и настраивает пару `AnalyserNode` (левый и правый каналы) для аудио анализа, позволяя указать `smoothingTimeConstant`.
-    - `getSemitoneLevels(analyser)`: Принимает `AnalyserNode` и вычисляет массив уровней в децибелах для каждого музыкального полутона на основе его частотных данных.
+    - `getSemitoneLevels(analyser)`: **Проверена и работает корректно.** Принимает `AnalyserNode` и вычисляет массив уровней в децибелах для каждого музыкального полутона на основе его частотных данных. Функция обрабатывает частотные данные, вычисляет амплитуду в окне вокруг целевой частоты каждого полутона, преобразует в децибелы и возвращает массив соответствующей длины.
 - **Зависимости:**
     - `../core/init.js` (для `state`)
     - `../3d/rendering.js` (для массива `semitones`, используемого `getSemitoneLevels`)
     - `three` (для `THREE.MathUtils.clamp`, используемого `getSemitoneLevels`)
-- **Взаимодействия:** Предоставляет утилитарные функции и анализаторы модулям, таким как `audioFilePlayer.js`, `microphoneManager.js`. Используется `rendering.js` (косвенно, так как `rendering.js` теперь вызывает `getSemitoneLevels`, который определен здесь, но выполняется с анализаторами, предоставленными плеером/менеджером).
+- **Взаимодействия:** Предоставляет утилитарные функции и анализаторы модулям, таким как `audioFilePlayer.js`, `microphoneManager.js`. **Активно используется `rendering.js` в функции `animate` для получения уровней полутонов и обновления аудиовизуализации.**
 
 ### `/audio/visualization.js`
 
