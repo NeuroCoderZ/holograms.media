@@ -392,34 +392,32 @@ export function updateSequencerColumns(amplitudes, channel) {
       mesh.scale.z = targetDepth;
       mesh.position.z = targetDepth / 2;
     });
-      }
-      
-      // Update TWEEN animations
-      TWEEN.update(time);
-      
-      // Render the scene
-      renderer.render(scene, camera);
-      
-      // Request the next frame
-      requestAnimationFrame(animate);
-      }
-      }
-      
-      // Function to handle window resize
-      function onWindowResize() {
-      if (camera && renderer) {
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-          renderer.setSize(window.innerWidth, window.innerHeight);
-      }
-      }
-      
-      // Add event listener for window resize
-      window.addEventListener('resize', onWindowResize);
-      
-      // Initial resize call to set correct size
-      onWindowResize();
-      
-      // Export necessary functions
-      export { init3DScene, animate, onWindowResize, updateHologramMesh };
+  }
+  
+  // Update TWEEN animations
+  TWEEN.update(time);
+  
+  // Render the scene
+  renderer.render(scene, camera);
+  
+  // Request the next frame
+  requestAnimationFrame(animate);
 }
+
+// Function to handle window resize
+function onWindowResize() {
+if (camera && renderer) {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+}
+
+// Add event listener for window resize
+window.addEventListener('resize', onWindowResize);
+
+// Initial resize call to set correct size
+onWindowResize();
+
+// Export necessary functions
+export { init3DScene, animate, onWindowResize, updateHologramMesh };
