@@ -38,6 +38,18 @@ license: mit
 
 Мы верим в силу открытого исходного кода и совместной разработки для построения будущего, где технологии расширяют границы человеческого восприятия.
 
+## Project Structure Overview
+
+This project is organized into several key top-level directories, reflecting its modular architecture and long-term vision:
+
+-   **`/frontend`**: Contains all client-side code for the Holographic Media application. This includes the user interface (UI), 3D rendering pipelines (including WebGL, WebGPU, and WebXR placeholders), audio processing, and multimodal input handling (gestures, voice).
+-   **`/backend`**: Houses the server-side application built with FastAPI. It includes API endpoints, data models, database interaction layers (PostgreSQL with pgvector), and the core logic for the "Tria" AI assistant bot network.
+-   **`/nethologlyph`**: Dedicated to the "NetHoloGlyph" protocol, defining data structures and communication mechanisms for exchanging holographic symbols, gestural commands, and Tria AI states between clients and the server, or peer-to-peer.
+-   **`/holograph`**: Contains all components related to the "HoloGraph" decentralized economy. This includes smart contracts (e.g., for the HoloGraph Token (HGT) and DAO governance), tokenomics documentation, and concepts for "intellectual mining."
+-   **`/research`**: A directory for research and development into future technologies that are part of the project's long-term vision. This includes explorations into neurointerface integration, neuromorphic computing for AI tasks, and quantum algorithms for specific computational challenges.
+
+Each of these directories contains its own `README.md` with more detailed information about its specific structure and purpose.
+
 ## 🚀 Текущий Статус (Версия ~0.1.8 - Alpha, коммит `41be695` или новее)
 
 Проект находится в активной стадии разработки и стабилизации базового функционала.

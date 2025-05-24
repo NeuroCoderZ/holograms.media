@@ -1,0 +1,74 @@
+// File: nethologlyph/protocol/definitions.proto
+// Purpose: Defines core data structures and message formats for the NetHoloGlyph protocol.
+// Key Future Dependencies: Protocol Buffer compiler, network transport modules.
+// Main Future Exports/API: Message types like HolographicSymbol, GestureChunk, TriaStateUpdate.
+// Link to Legacy Logic (if applicable): N/A - New protocol.
+// Intended Technology Stack: Protocol Buffers v3 (or chosen IDL).
+// TODO: Define HolographicSymbol message (geometry, texture, audio, animation data).
+// TODO: Define GestureChunk message for multimodal input transmission.
+// TODO: Define TriaStateUpdate for AI synchronization and shared understanding.
+// TODO: Consider versioning for the protocol messages.
+
+syntax = "proto3";
+package nethologlyph;
+
+option go_package = "github.com/NeuroCoderZ/holograms.media/nethologlyph/gen/go;nethologlyph"; // Example for Go
+option java_package = "com.example.nethologlyph"; // Example for Java
+option java_multiple_files = true;
+
+message Timestamp {
+    int64 seconds = 1;
+    int32 nanos = 2;
+}
+
+message Vector3 {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+message Quaternion {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+    float w = 4;
+}
+
+// TODO: Define HolographicSymbol message
+message HolographicSymbol {
+    string symbol_id = 1;
+    Timestamp timestamp = 2;
+    // Geometry, texture, audio references or data, animation parameters, etc.
+    // e.g., bytes geometry_data = 3; (could be glTF, USDZ, or custom format)
+    // string texture_url = 4;
+    // repeated AnimationKeyframe animation_keyframes = 5;
+}
+
+// TODO: Define GestureChunk message
+message GestureChunk {
+    string chunk_id = 1;
+    Timestamp timestamp = 2;
+    string user_id = 3;
+    // Could include raw landmark data, classified gesture, confidence, etc.
+    // repeated HandLandmark landmarks = 4; (Define HandLandmark message)
+}
+
+// TODO: Define TriaStateUpdate message
+message TriaStateUpdate {
+    string state_id = 1;
+    Timestamp timestamp = 2;
+    // Could include Tria's current understanding, active bots, focus of attention, etc.
+    // string current_mode = 3;
+    // map<string, string> context_parameters = 4;
+}
+
+// Example of a service definition if using gRPC
+/*
+service NetHoloGlyphService {
+    rpc StreamHolographicEvents (stream HolographicEvent) returns (stream HolographicEventAck);
+    rpc SendGestureChunk (GestureChunk) returns (GestureAck);
+}
+message HolographicEvent {}
+message HolographicEventAck {}
+message GestureAck {}
+*/
