@@ -6,6 +6,12 @@
 // Intended Technology Stack: Solidity.
 // TODO: Design mechanism for verifying contributions (e.g., via trusted oracles or decentralized validation).
 // TODO: Implement reward calculation logic based on contribution value.
+//       This involves:
+//       1. Receiving validated contribution metadata (e.g., chunk_id, user_address, quality_score, novelty_score, feedback_score) from a trusted oracle or validator system.
+//       2. Applying a formula (potentially DAO-configurable) to these scores to determine the HGT reward amount.
+//       3. Ensuring sufficient HGT tokens are available in this contract for distribution (requires DAO to fund this contract).
+//       4. Securely updating the user's pendingRewards or directly transferring rewards.
+//       5. Emitting events for transparency.
 // TODO: Define how users claim their HGT rewards.
 
 // SPDX-License-Identifier: MIT
