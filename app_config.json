@@ -1,0 +1,54 @@
+{
+    "endpoints": [
+      {
+        "path": "/health",
+        "method": "GET",
+        "description": "Проверка состояния API (Health Check)"
+      },
+      {
+        "path": "/chat",
+        "method": "POST",
+        "description": "Основной эндпоинт для чата с AI (Триа или LLM)",
+        "parameters": {
+          "message": {
+            "type": "string",
+            "description": "Сообщение пользователя для чата"
+          },
+          "model": {
+            "type": "string",
+            "description": "Опциональное имя модели LLM для использования",
+            "optional": true 
+          },
+          "history": {
+            "type": "array",
+            "description": "Опциональная история чата (массив объектов {role, content})",
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/tria/invoke",
+        "method": "POST",
+        "description": "Эндпоинт для вызова функций AI 'Триа'",
+        "parameters": {
+          "query": {
+            "type": "string",
+            "description": "Запрос или команда для Триа"
+          }
+        }
+      },
+      {
+        "path": "/generate",
+        "method": "POST",
+        "description": "Эндпоинт для генерации контента (например, голограмм)",
+        "parameters": {
+          "prompt": {
+            "type": "string",
+            "description": "Промпт для генерации"
+          }
+          // Добавь другие параметры, если они нужны
+        }
+      }
+      // Добавь сюда описания других эндпоинтов, если они нужны для MCP
+    ]
+  }
