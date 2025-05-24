@@ -1,4 +1,8 @@
-// frontend/js/ui/panelManager.js - Модуль для управления панелями интерфейса
+// frontend/js/ui/panelManager.js
+// Этот модуль отвечает за управление видимостью основных боковых панелей интерфейса (левой и правой).
+// Он является центральным авторитетом для состояния видимости этих панелей,
+// используя appStatePersistence.js для загрузки и сохранения этого состояния.
+import { loadPanelsHiddenState, savePanelsHiddenState } from '../core/appStatePersistence.js';
 
 // --- Переменные модуля ---
 let leftPanel = null;
@@ -6,7 +10,9 @@ let rightPanel = null;
 let togglePanelsButton = null;
 
 /**
- * Инициализирует состояние панелей (видимость/скрытие)
+ * Инициализирует состояние видимости левой и правой боковых панелей.
+ * Загружает сохраненное состояние (скрыты/показаны) с помощью appStatePersistence.js
+ * и применяет его к панелям и кнопке переключения.
  */
 export function initializePanelState() {
   // Получаем ссылки на панели
@@ -22,10 +28,9 @@ export function initializePanelState() {
   }
 
   // Получаем сохраненное состояние
-  const savedState = localStorage.getItem('panelsHidden');
-  const shouldBeHidden = savedState === 'true';
+  const shouldBeHidden = loadPanelsHiddenState();
 
-  console.log(`[DEBUG] Initializing panel state. Saved state: ${savedState}, shouldBeHidden: ${shouldBeHidden}`);
+  console.log(`[DEBUG] Initializing panel state. Loaded state: ${shouldBeHidden}`);
 
   // Применяем классы
   leftPanel.classList.toggle('hidden', shouldBeHidden);
@@ -45,7 +50,10 @@ export function initializePanelState() {
 }
 
 /**
- * Переключает видимость боковых панелей
+ * Переключает видимость левой и правой боковых панелей.
+ * Обновляет их CSS классы для отображения/скрытия и соответствующий класс кнопки переключения.
+ * Сохраняет новое состояние видимости с помощью appStatePersistence.js.
+ * Диспатчит событие 'resize' для обновления макета.
  */
 export function togglePanels() {
   if (!leftPanel || !rightPanel || !togglePanelsButton) {
@@ -68,7 +76,7 @@ export function togglePanels() {
   togglePanelsButton.classList.toggle('show-mode', willBeHidden);
 
   // Сохраняем состояние в localStorage
-  localStorage.setItem('panelsHidden', willBeHidden.toString());
+  savePanelsHiddenState(willBeHidden);
 
   // Вызываем ресайз после переключения
   setTimeout(() => {
@@ -79,8 +87,9 @@ export function togglePanels() {
 }
 
 /**
- * Инициализирует управление панелями
- * Находит DOM-элементы, устанавливает начальное состояние и назначает обработчики событий
+ * Инициализирует менеджер панелей.
+ * Вызывает initializePanelState для установки начального состояния видимости панелей
+ * и назначает обработчик события 'click' для кнопки переключения видимости панелей.
  */
 export function initializePanelManager() {
   console.log('Инициализация управления панелями...');

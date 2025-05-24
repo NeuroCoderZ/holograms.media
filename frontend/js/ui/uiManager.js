@@ -1,7 +1,6 @@
 // frontend/js/ui/uiManager.js - Модуль для управления UI элементами
 
 // Импортируем необходимые зависимости
-import { loadPanelsHiddenState, savePanelsHiddenState } from '../core/appStatePersistence.js'; // Импорт функций для сохранения/загрузки состояния
 import { state } from '../core/init.js'; // Импорт глобального состояния
 
 // Объект для хранения ссылок на DOM-элементы
@@ -65,61 +64,6 @@ export const uiElements = {
   rightPanel: null,
   togglePanelsButton: null
 };
-
-/**
- * Инициализирует состояние панелей (видимость/скрытие)
- */
-function initializePanelState() {
-  // Проверяем наличие панелей
-  if (!uiElements.leftPanel || !uiElements.rightPanel || !uiElements.togglePanelsButton) {
-    console.error('Не удалось найти панели интерфейса для initializePanelState');
-    return;
-  }
-  
-  // Загружаем сохраненное состояние через appStatePersistence
-  const shouldBeHidden = loadPanelsHiddenState();
-
-  // Применяем классы, если состояние было загружено
-  if (shouldBeHidden !== null) {
-    uiElements.leftPanel.classList.toggle('hidden', shouldBeHidden);
-    uiElements.rightPanel.classList.toggle('hidden', shouldBeHidden);
-    uiElements.togglePanelsButton.classList.toggle('show-mode', shouldBeHidden);
-  }
-
-  // Вызываем ресайз после применения классов
-  setTimeout(() => {
-    window.dispatchEvent(new Event('resize'));
-  }, 50);
-}
-
-/**
- * Переключает видимость боковых панелей
- */
-export function togglePanels() {
-  if (!uiElements.leftPanel || !uiElements.rightPanel || !uiElements.togglePanelsButton) {
-    console.error('Панели не инициализированы для togglePanels');
-    return;
-  }
-  
-  // Переключаем класс hidden для обеих панелей
-  uiElements.leftPanel.classList.toggle('hidden');
-  uiElements.rightPanel.classList.toggle('hidden');
-  
-  // Переключаем класс для кнопки
-  uiElements.togglePanelsButton.classList.toggle('show-mode');
-  
-  // Сохраняем состояние через appStatePersistence
-  const isPanelsHidden = uiElements.leftPanel.classList.contains('hidden');
-  savePanelsHiddenState(isPanelsHidden);
-  
-  // Обновляем состояние в глобальной переменной state
-  state.isPanelsHidden = isPanelsHidden;
-  
-  // Вызываем ресайз для обновления размеров
-  window.dispatchEvent(new Event('resize'));
-  
-  console.log(`Панели ${isPanelsHidden ? 'скрыты' : 'показаны'}`);
-}
 
 /**
  * Добавляет отладочные классы к элементам
@@ -204,9 +148,6 @@ export function initializeMainUI() {
 
   console.log('Основной UI инициализирован.');
 
-  // Инициализируем состояние панелей после получения ссылок
-  initializePanelState();
-
   // Добавляем отладочные классы
   addDebugClasses();
 
@@ -217,24 +158,8 @@ export function initializeMainUI() {
   state.uiElements = uiElements;
 }
 
-/**
- * Переключает режим чата (видимость панели чата)
- */
-export function toggleChatMode() {
-  if (!uiElements.chatHistory) {
-    console.error('Контейнер истории чата не инициализирован для toggleChatMode');
-    return;
-  }
-
-  const isChatHidden = uiElements.chatHistory.classList.toggle('hidden');
-  console.log(`Панель чата ${isChatHidden ? 'скрыта' : 'показана'}`);
-
-  // Вызываем ресайз для обновления размеров, если это влияет на макет
-  window.dispatchEvent(new Event('resize'));
-}
-
 // Экспортируем функции, которые могут понадобиться другим модулям
-export { initializePanelState, logLayoutState };
+export { logLayoutState };
 
 // Удаляем неиспользуемый экспорт getPanelWidths (сделали локальной или удалим если не нужна)
 

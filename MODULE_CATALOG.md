@@ -55,8 +55,9 @@
 - **Назначение:** Главная точка входа приложения. Инициализирует основные компоненты и запускает главный цикл анимации.
 - **Зависимости:**
     - `/core/init.js` (`initCore`, `state`)
-    - `/core/events.js` (`setupEventListeners`)
-    - `/ui/uiManager.js` (`initializeMainUI`, `uiElements`)
+    - `/core/events.js` (`setupDOMEventHandlers` или `initializeDOMEventHandlers` - в зависимости от того, какая из них используется)
+    - `/ui/uiManager.js` (`initializeMainUI`)
+    - `/ui/panelManager.js` (`initializePanelManager`)
     - `/3d/sceneSetup.js` (`initializeScene` - вызывается через `initCore`)
     - `/3d/rendering.js` (`animate`)
     - `/audio/microphoneManager.js` (`initializeMicrophone`)
@@ -87,24 +88,26 @@
 - **Назначение:** Централизованно настраивает и управляет обработчиками событий DOM (клики, изменения ввода, события окна). Инкапсулирует логику привязки слушателей событий к UI-элементам.
 - **Зависимости:**
     - `/core/init.js` (`state`) - Для доступа к глобальному состоянию и UI-элементам через `state.ui.elements`.
-    - `/ui/uiManager.js` (`uiElements`, `togglePanels`, `updateButtonStates`) - Взаимодействует с UIManager для получения ссылок на элементы и вызова функций управления панелями/кнопками.
-    - `/ai/chat.js` (`sendChatMessage`, `handleTopPrompt`) - Вызывает функции чата при событиях ввода текста или отправки промпта.
-    - `/audio/microphoneManager.js` (`handleFileUpload`, `togglePlayPause`, `stopAudio`, `toggleMicrophone`) - Делегирует управление аудио событиям кнопок (воспроизведение, микрофон, загрузка файла).
+    - `/ui/uiManager.js` (`uiElements`) - Для доступа к элементам UI, ссылки на которые хранятся в `state.uiElements`.
+    - `/ui/panelManager.js` (`togglePanels`) - Для переключения видимости боковых панелей.
+    - `/panels/rightPanelManager.js` (`toggleModeInternal`) - Для переключения режима содержимого правой панели (например, чат/таймлайн).
+    - `/ai/chat.js` (`sendChatMessage`) - Вызывает функции чата при событиях ввода текста.
+    - `/audio/audioFilePlayer.js` (различные функции управления аудио) - Делегирует управление аудио событиям кнопок.
+    - `/audio/microphoneManager.js` (различные функции управления микрофоном) - Делегирует управление аудио событиям кнопок.
     - `/utils/helpers.js` (`toggleFullscreen`) - Вызывает функцию переключения полноэкранного режима.
     - `/xr/xrManager.js` (`toggleXR`) - Вызывает функцию переключения XR режима.
     - `/multimodal/handsTracking.js` (`toggleHands`, `startRecording`, `stopRecording`) - Управляет состоянием отслеживания рук и записи жестов.
-    - `/ui/uiManager.js` (`openModal`, `closeModal`) - Вызывает функции управления модальными окнами (если модальные окна управляются через uiManager).
     - `/core/resizeHandler.js` (`updateCameraOnResize`) - Обрабатывает событие изменения размера окна для обновления камеры.
     - `/3d/rendering.js` (`resetVisualization` - косвенно через `stopAudio`) - Может влиять на визуализацию через вызовы других модулей.
-- **Экспорты:** `setupEventListeners` (основная функция для инициализации всех слушателей).
-- **Связи:** Является ключевым связующим звеном между пользовательским вводом (событиями DOM) и логикой приложения, распределенной по различным модулям (UI, AI, Audio, XR, Multimodal, 3D). Централизует логику привязки слушателей событий, делая ее более управляемой и понятной. **Примечание: Обработчики событий для аудио-контролов (play, pause, stop, mic, file load) были перенесены в соответствующие аудио модули (`audioFilePlayer.js`, `microphoneManager.js`).** Получает ссылки на DOM-элементы из `uiManager.js` или напрямую из `state.ui.elements` после их инициализации в `uiManager.js`.
+- **Экспорты:** `setupDOMEventHandlers` или `initializeDOMEventHandlers` (основная функция для инициализации всех слушателей; необходимо уточнить, какая из них используется, и удалить другую).
+- **Связи:** Является ключевым связующим звеном между пользовательским вводом (событиями DOM) и логикой приложения. Вместо `uiManager.js#toggleChatMode` теперь использует `rightPanelManager.js#toggleModeInternal` для переключения режима чата. Централизует логику привязки слушателей событий. Получает ссылки на DOM-элементы через `state.uiElements`, которые инициализируются в `uiManager.js`.
 
 ### `/core/appStatePersistence.js`
 
-- **Назначение:** Сохранение и загрузка состояния UI (например, видимость панелей) в `localStorage`.
+- **Назначение:** Управляет сохранением и загрузкой состояния UI, такого как видимость панелей, в `localStorage`.
 - **Зависимости:** Нет прямых зависимостей от других модулей проекта, использует `localStorage` API браузера.
-- **Экспорты:** `savePanelState`, `loadPanelState`.
-- **Связи:** Используется `/ui/uiManager.js` для сохранения и восстановления состояния видимости панелей.
+- **Экспорты:** `savePanelsHiddenState`, `loadPanelsHiddenState`.
+- **Связи:** Используется `/ui/panelManager.js` для сохранения и восстановления состояния видимости панелей.
 
 ### `/3d/sceneSetup.js`
 
@@ -136,12 +139,11 @@
 
 ### `/ui/uiManager.js`
 
-- **Назначение:** Отвечает за инициализацию, управление видимостью и состоянием основных DOM-элементов пользовательского интерфейса, включая панели, кнопки и области отображения информации (например, чат). Инкапсулирует логику, связанную с визуальным представлением UI.
+- **Назначение:** Отвечает за инициализацию основных DOM-элементов пользовательского интерфейса (кроме управления видимостью основных боковых панелей и контентом правой панели) и другую UI-специфичную логику. Собирает ссылки на UI элементы и сохраняет их в `state.uiElements`.
 - **Зависимости:**
-    - `/core/init.js` (`state`) - Для доступа к глобальному состоянию, где могут храниться ссылки на DOM-элементы или их состояние.
-    - `/core/appStatePersistence.js` (`loadPanelState`, `savePanelState`) - Используется для сохранения и восстановления состояния видимости панелей между сессиями.
-- **Экспорты:** `uiElements` (объект или функция, предоставляющая доступ к ключевым DOM-элементам), `initializeMainUI` (функция для начальной настройки UI), `togglePanels` (функция для переключения видимости панелей), `getPanelWidths`, `addDebugClasses`, `logLayoutState`, `updateButtonStates` (обновление состояния кнопок, например, активен/неактивен микрофон), `displayMessageInChat` (добавление сообщений в область чата), `clearChatMessages`, `openModal`, `closeModal` (если модальные окна управляются через uiManager).
-- **Связи:** Является основным источником ссылок на DOM-элементы для других модулей, которым нужно взаимодействовать с UI (например, `events.js` для привязки слушателей, `chat.js` для отображения сообщений). Управляет классами CSS для динамического изменения внешнего вида UI (например, скрытие/показ панелей). Централизует функции управления DOM и видимостью элементов, делая код UI более модульным. Вероятно, именно этот модуль теперь содержит логику, которая ранее управляла видимостью и положением панелей, возможно, с использованием CSS классов или прямых манипуляций стилями.
+    - `/core/init.js` (`state`) - Для доступа к глобальному состоянию, где хранятся ссылки на DOM-элементы.
+- **Экспорты:** `uiElements` (объект, предоставляющий доступ к ключевым DOM-элементам), `initializeMainUI` (функция для начальной настройки UI), `getPanelWidths`, `addDebugClasses`, `logLayoutState`, `updateButtonStates` (обновление состояния кнопок), `displayMessageInChat` (добавление сообщений в область чата), `clearChatMessages`, `openModal`, `closeModal`.
+- **Связи:** Является основным источником ссылок на DOM-элементы для других модулей через `state.uiElements`. Модули, такие как `events.js`, используют эти ссылки для привязки слушателей. `chat.js` использует его для отображения сообщений.
 
 ### `/audio/audioFilePlayer.js`
 
@@ -258,12 +260,11 @@
 
 ### `/panels/rightPanelManager.js`
 
-- **Назначение:** Управление содержимым и состоянием правой панели UI.
+- **Назначение:** Управляет внутренними режимами содержимого (например, Таймлайн vs. Чат) правой панели UI. Является единственным модулем, ответственным за переключение между этими режимами отображения в правой панели.
 - **Зависимости:**
-    - `/core/init.js` (`state`)
-    - `/ui/uiManager.js` (`uiElements`, `togglePanels`)
-- **Экспорты:** `initializeRightPanel`, `switchToChatMode`, `switchToGestureMode`, `switchToTimelineMode`.
-- **Связи:** Используется `eventManager.js` для переключения режимов панели при кликах на кнопки.
+    - `/core/init.js` (`state`) - Потенциально, для доступа к глобальному состоянию, если потребуется в будущем. В текущей реализации DOM-элементы получаются напрямую.
+- **Экспорты:** `initializeRightPanel`, `switchToChatMode`, `toggleModeInternal`, `getCurrentMode`.
+- **Связи:** Используется `core/events.js` (или `core/domEventHandlers.js`) для переключения режима содержимого (вызовом `toggleModeInternal`) при клике на кнопку чата. Инициализирует собственные ссылки на DOM-элементы при помощи `document.getElementById`.
 
 ### `/panels/chatMessages.js`
 
@@ -282,6 +283,15 @@
     - `/ui/uiManager.js` (`uiElements`)
 - **Экспорты:** `openFileEditor`, `closeFileEditor`, `loadFileContent`, `saveFileContent`.
 - **Связи:** Планируется использование для редактирования файлов конфигурации или скриптов.
+
+### `/ui/panelManager.js`
+
+- **Path:** `/ui/panelManager.js`
+- **Назначение (Purpose):** "Отвечает за управление видимостью основных боковых панелей интерфейса (левой и правой). Является центральным авторитетом для состояния видимости этих панелей, используя `appStatePersistence.js` для загрузки и сохранения этого состояния."
+- **Зависимости (Dependencies):**
+    - `/core/appStatePersistence.js` (`loadPanelsHiddenState`, `savePanelsHiddenState`)
+- **Экспорты (Exports):** `initializePanelState`, `togglePanels`, `initializePanelManager`.
+- **Связи (Connections):** "Используется `core/domEventHandlers.js` для переключения видимости панелей и установки их начального состояния. Инициализируется из `main.js` через вызов `initializePanelManager()`."
 
 ### `/ui/gestureAreaVisualization.js`
 
