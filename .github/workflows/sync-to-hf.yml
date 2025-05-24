@@ -13,22 +13,20 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4 # Используем actions/checkout@v4 для актуальности
+        uses: actions/checkout@v4
 
-      - name: Set up Git
+      - name: Set up Git # Необязательно для API-вызова, но не мешает
         run: |
-          # Эти строки не строго необходимы для API-вызова, но не помешают
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
 
       - name: Trigger Hugging Face Space Restart via API
-        id: restart_space # Добавляем id, чтобы можно было ссылаться на результат
+        id: restart_space
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN_SPACES_CONTROL }} # Твой секрет с токеном
+          HF_TOKEN: ${{ secrets.HF_TOKEN_SPACES_CONTROL }} # Используем твой секрет
           SPACE_ID: "NeuroCoderZ/holograms-media" # Твой Space ID
         run: |
-          set -e # Выход при первой ошибке
-
+          set -e
           echo "Проверяем наличие токена..."
           if [ -z "$HF_TOKEN" ]; then
             echo "Ошибка: HF_TOKEN не установлен! Проверьте секреты репозитория GitHub."
@@ -41,7 +39,6 @@ jobs:
           echo "Используется API эндпоинт: ${API_URL}"
 
           echo "Отправляем POST запрос к Hugging Face API..."
-          # Сохраняем вывод curl, включая HTTP-код и тело ответа в случае ошибки
           response_output_file=$(mktemp)
           response_code=$(curl -s -o "$response_output_file" -w "%{http_code}" -X POST \
             -H "Authorization: Bearer $HF_TOKEN" \
@@ -51,27 +48,12 @@ jobs:
 
           if [ "$response_code" -eq 200 ] || [ "$response_code" -eq 202 ]; then
             echo "✓ Команда перезапуска Space успешно отправлена (HTTP $response_code)"
-            echo "::set-output name=restart_status::SUCCESS" # Устанавливаем выходную переменную
+            echo "::set-output name=restart_status::SUCCESS"
           else
             echo "Ошибка: Не удалось запустить перезапуск Space. HTTP статус код: $response_code"
             echo "Детали ошибки:"
-            cat "$response_output_file" # Выводим тело ответа, если была ошибка
-            echo "::set-output name=restart_status::FAILURE" # Устанавливаем выходную переменную
-            exit 1 # Прерываем workflow, если перезапуск не удался
+            cat "$response_output_file"
+            echo "::set-output name=restart_status::FAILURE"
+            exit 1
           fi
-          rm -f "$response_output_file" # Удаляем временный файл
-
-      # Опционально: Шаг для уведомления Триа о статусе деплоя, если это нужно
-      # - name: Send Deployment Status to Tria
-      #   if: always() # Выполняется всегда, даже при ошибках
-      #   env:
-      #     TRIA_LOG_ENDPOINT: "https://neurocoderz-holograms-media.hf.space/tria/save_logs" # ЗАМЕНИТЕ НА ВАШ АКТУАЛЬНЫЙ URL
-      #     COMMIT_SHA: ${{ github.sha }}
-      #     REPO_NAME: ${{ github.repository }}
-      #     WORKFLOW_RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-      #     DEPLOY_STATUS: ${{ steps.restart_space.outputs.restart_status || 'UNKNOWN' }}
-      #   run: |
-      #     echo "Отправляем статус деплоя Триа..."
-      #     # ... (логика отправки curl запроса, как в твоем рабочем workflow)
-      #     # Этот блок закомментирован, так как он не является частью основной проблемы деплоя.
-      #     # Раскомментируй его, если тебе нужна эта функциональность.
+          rm -f "$response_output_file"
