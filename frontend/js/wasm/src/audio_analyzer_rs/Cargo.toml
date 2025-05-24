@@ -1,0 +1,38 @@
+# File: frontend/js/wasm/src/audio_analyzer_rs/Cargo.toml
+# Purpose: Cargo manifest for the Rust-based WebAssembly audio analyzer.
+# Key Future Dependencies: wasm-bindgen, audio processing crates.
+# Main Future Exports/API: N/A (build configuration).
+# Link to Legacy Logic (if applicable): N/A.
+# Intended Technology Stack: Rust, Cargo, WebAssembly.
+# TODO: Add dependencies like ndarray, rustfft for actual CWT.
+# TODO: Configure release profile for size/performance optimization.
+
+[package]
+name = "audio_analyzer_rs"
+version = "0.1.0"
+authors = ["NeuroCoderZ <your_email@example.com>"] # Replace with actual author
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook"]
+
+[dependencies]
+wasm-bindgen = "0.2.83" # Check for latest version
+
+# Optional: For smaller WASM files
+wee_alloc = { version = "0.4.5", optional = true }
+
+# Optional: For better error messages in browser console
+console_error_panic_hook = { version = "0.1.7", optional = true }
+
+# TODO: Add actual audio processing dependencies here
+# e.g., ndarray = "0.15"
+# rustfft = "6.0"
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"
+lto = true
