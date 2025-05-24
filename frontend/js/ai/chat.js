@@ -8,15 +8,21 @@ import { state } from '../core/init.js';
 // Хранилище сообщений чата
 let chatMessages = [];
 let isWaitingForResponse = false;
-let chatHistoryContainer = null;
+let chatHistoryContainer = null; // Will be assigned in setupChat
 
 // Инициализация чата
 export function setupChat() {
   console.log('Инициализация чата...');
   
-  const chatMessagesContainer = state.uiElements.containers.chatMessages;
-  if (!chatMessagesContainer) {
-    console.error('Контейнер для сообщений чата не найден в state.uiElements!');
+  // Assign the chat messages container DOM element to the module-level variable
+  chatHistoryContainer = state.uiElements.containers.chatMessages; 
+  // Fallback if not found in state, though it should be
+  if (!chatHistoryContainer) {
+    chatHistoryContainer = document.getElementById('chatMessages');
+  }
+
+  if (!chatHistoryContainer) {
+    console.error('Контейнер для сообщений чата (#chatMessages) не найден!');
     return;
   }
   

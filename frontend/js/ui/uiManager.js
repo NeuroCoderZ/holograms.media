@@ -219,15 +219,18 @@ export function initializeMainUI() {
 
 /**
  * Переключает режим чата (видимость панели чата)
+ * NOTE: This is a simplified version that only toggles the visibility of the chat history container.
+ * For comprehensive mode switching (including input areas, button states, focus management),
+ * prefer using `toggleChatMode` from `frontend/js/core/ui.js`.
  */
 export function toggleChatMode() {
   if (!uiElements.chatHistory) {
-    console.error('Контейнер истории чата не инициализирован для toggleChatMode');
+    console.error('Контейнер истории чата не инициализирован для toggleChatMode (uiManager)');
     return;
   }
 
   const isChatHidden = uiElements.chatHistory.classList.toggle('hidden');
-  console.log(`Панель чата ${isChatHidden ? 'скрыта' : 'показана'}`);
+  console.log(`Панель чата (uiManager) ${isChatHidden ? 'скрыта' : 'показана'}`);
 
   // Вызываем ресайз для обновления размеров, если это влияет на макет
   window.dispatchEvent(new Event('resize'));

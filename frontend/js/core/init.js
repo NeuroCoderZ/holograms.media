@@ -4,10 +4,12 @@
 export const state = {
   // --- Состояние 3D сцены ---
   scene: null,                // Объект сцены Three.js
-  camera: null,               // Камера Three.js
+  camera: null,               // Основная камера приложения (обычно PerspectiveCamera)
+  xrCamera: null,             // Камера для WebXR сессий (обычно PerspectiveCamera)
+  orthoCamera: null,          // Ортографическая камера (или камера для 2D/UI оверлеев/альтернативного вида)
   renderer: null,             // Рендерер Three.js
   hologramPivot: null,        // Опорная точка для голограммы (THREE.Group)
-  gridHelper: null,           // Сетка-помощник
+  gridHelper: null,           // Сетка-помощник (стандартная)
   ambientLight: null,         // Окружающий свет
   directionalLight: null,     // Направленный свет
 

@@ -392,34 +392,76 @@ export function updateSequencerColumns(amplitudes, channel) {
       mesh.scale.z = targetDepth;
       mesh.position.z = targetDepth / 2;
     });
-      }
-      
-      // Update TWEEN animations
-      TWEEN.update(time);
-      
-      // Render the scene
-      renderer.render(scene, camera);
-      
-      // Request the next frame
-      requestAnimationFrame(animate);
-      }
-      }
-      
-      // Function to handle window resize
-      function onWindowResize() {
-      if (camera && renderer) {
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-          renderer.setSize(window.innerWidth, window.innerHeight);
-      }
-      }
-      
-      // Add event listener for window resize
-      window.addEventListener('resize', onWindowResize);
-      
-      // Initial resize call to set correct size
-      onWindowResize();
-      
-      // Export necessary functions
-      export { init3DScene, animate, onWindowResize, updateHologramMesh };
+  }); // Closing forEach for columns
+} // Closing for updateSequencerColumns
+
+// Animation loop function
+export function animate(time) {
+    // Ensure state and essential components are initialized
+    if (!state || !state.scene || !state.camera || !state.renderer) {
+        console.error("Rendering setup incomplete: state, scene, camera, or renderer is missing.");
+        // Optionally, request next frame to keep trying, or just return to stop.
+        // requestAnimationFrame(animate);
+        return;
+    }
+
+    // Update TWEEN animations if TWEEN is defined and imported/included
+    if (typeof TWEEN !== 'undefined') {
+        TWEEN.update(time);
+    }
+
+    // Placeholder for other animation updates, e.g., from audio:
+    // This section demonstrates how audio visualization *could* be called.
+    // The actual data fetching from analysers would need to be robust.
+    /*
+    if (state.audio) {
+        let audioDataArray;
+        let bufferLength;
+        if (state.audio.activeSource === 'microphone' && state.audio.analyserLeft) {
+            bufferLength = state.audio.analyserLeft.frequencyBinCount;
+            audioDataArray = new Uint8Array(bufferLength);
+            state.audio.analyserLeft.getByteFrequencyData(audioDataArray);
+            updateAudioVisualization(audioDataArray, bufferLength);
+        } else if (state.audio.activeSource === 'file' && state.audio.isPlaying && state.audio.filePlayerAnalysers && state.audio.filePlayerAnalysers.left) {
+            bufferLength = state.audio.filePlayerAnalysers.left.frequencyBinCount;
+            audioDataArray = new Uint8Array(bufferLength);
+            state.audio.filePlayerAnalysers.left.getByteFrequencyData(audioDataArray);
+            updateAudioVisualization(audioDataArray, bufferLength);
+        }
+    }
+    */
+    
+    // Render the scene
+    state.renderer.render(state.scene, state.camera);
+    
+    // Request the next frame
+    requestAnimationFrame(animate);
 }
+      
+// Function to handle window resize
+function onWindowResize() {
+    if (state && state.camera && state.renderer) {
+        state.camera.aspect = window.innerWidth / window.innerHeight;
+        state.camera.updateProjectionMatrix();
+        state.renderer.setSize(window.innerWidth, window.innerHeight);
+    } else {
+        console.warn("onWindowResize: Camera or Renderer not found in state for resize operation.");
+    }
+}
+      
+// Add event listener for window resize
+window.addEventListener('resize', onWindowResize);
+      
+// Initial resize call to set correct size
+// Call onWindowResize only after DOM is ready and Three.js components are initialized.
+// This is typically handled after main initialization. For now, we ensure it's defined.
+// If main.js calls animate, and animate calls onWindowResize, or if it's called after sceneSetup, it's fine.
+// Consider moving the initial call to main.js after initializeScene.
+// For safety, it's often called once after renderer is first set up.
+// The event listener will handle subsequent resizes.
+
+// Export necessary functions
+// Removed init3DScene and updateHologramMesh as they are not defined in this file.
+// animate is already exported by its definition. onWindowResize is primarily for the event listener.
+// Exporting other relevant functions from this module:
+export { createSequencerGrid, createGrid, createAxis, initializeColumns, semitones, updateSequencerColumns, resetVisualization, updateAudioVisualization, createAudioVisualization, degreesToCells };
