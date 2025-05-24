@@ -400,27 +400,6 @@ export function updateSequencerColumns(amplitudes, channel) {
 // Глобальная переменная для отслеживания времени анимации
 let time = 0;
 
-// Request the next frame
-requestAnimationFrame(animate);
-}
-
-/**
- * Основная функция анимации
- * @param {number} time - Время в миллисекундах
- */
-function animate(currentTime) {
-    requestAnimationFrame(animate);
-
-    // Обновляем время для TWEEN
-    time = currentTime !== undefined ? currentTime : time + 16; // Приблизительно 60 FPS
-    TWEEN.update(time);
-
-    // Обновление визуализации аудио
-    updateAudioVisualization();
-
-    // Рендеринг сцены
-    state.renderer.render(state.scene, state.camera);
-}
 
 // Function to handle window resize
 function onWindowResize() {
