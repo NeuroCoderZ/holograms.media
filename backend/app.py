@@ -553,35 +553,30 @@ else:
 
 # 12. Добавление Gradio для MCP-поддержки
 import gradio as gr
+import spaces  # Для декоратора @spaces.GPU
 
-def wrap_fastapi_to_gradio():
-    # Базовый интерфейс Gradio для проверки
-    def greet(text):
-        return f"Получен запрос: {text}"
+@spaces.GPU  # Важно для Hugging Face Space
+async def run_gradio():
+    # Простая функция для проверки
+    async def process_request(input_text):
+        return f"Получен запрос: {input_text}"
 
-    # Создаём Gradio интерфейс
-    interface = gr.Interface(
-        fn=greet,
-        inputs="text",
-        outputs="text",
-        title="Holograms Media API",
-        description="API для управления голографическими медиа."
-    )
+    # Создаём Gradio Blocks для API
+    with gr.Blocks() as demo:
+        gr.Markdown("## Holograms Media API")
+        input_box = gr.Textbox(label="Запрос")
+        output_box = gr.Textbox(label="Ответ")
+        gr.Button("Отправить").click(
+            fn=process_request,
+            inputs=input_box,
+            outputs=output_box
+        )
 
-    # Монтируем все FastAPI-роуты
-    app = FastAPI()  # Создаём новый экземпляр для Gradio
-    app.mount("/gradio", interface, name="gradio")
+    return demo
 
-    # Копируем существующие роуты
-    app.mount("/", app_instance, name="fastapi_routes")
+# Запускаем Gradio
+app = gr.mount_gradio_app(app, run_gradio, path="/gradio")
 
-    return app
-
-# Используем текущий app как app_instance
-app_instance = app
-app = wrap_fastapi_to_gradio()
-
-# Запуск Gradio внутри FastAPI (если нужно вручную, но MCP сам запустит)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=7860)
