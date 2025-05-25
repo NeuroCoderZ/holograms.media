@@ -107,6 +107,13 @@
 - Закомментирован неиспользуемый импорт `getSemitoneLevels`
 - Убран неиспользуемый параметр `time` в `updateHologramMesh`
 
+- **Действие:** Исправлены ошибки `ReferenceError: Cannot access 'state' before initialization` в `frontend/js/3d/rendering.js` и `SyntaxError: Unexpected token ')'` в `frontend/js/audio/microphoneManager.js`.
+  - Удалена дублирующая и некорректная функция `onWindowResize` из `frontend/js/3d/rendering.js`, так как логика изменения размера окна централизована в `frontend/js/core/resizeHandler.js`.
+  - Добавлена отсутствующая закрывающая скобка в обработчике события кнопки микрофона в `frontend/js/audio/microphoneManager.js`.
+  - Обновлены `tria_memory_buffer.md` и `PROJECT_CONTEXT.md`.
+  - Изменения будут зафиксированы и отправлены в репозитории GitHub и Hugging Face.
+  - **Результат:** Указанные ошибки устранены. Следующий шаг: тестирование на Hugging Face Spaces для подтверждения стабильности фронтенда.
+
 ## Итерация 20250525-1025-001: Фикс animate rendering
 **Дата:** 2025-05-25 10:25  
 **Цель:** Исправить ошибку `Export 'animate' is not defined` в rendering.js  
