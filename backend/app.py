@@ -555,28 +555,36 @@ else:
 import gradio as gr
 import spaces  # Для декоратора @spaces.GPU
 
-@spaces.GPU  # Важно для Hugging Face Space
-async def run_gradio():
-    # Простая функция для проверки
-    async def process_request(input_text):
-        return f"Получен запрос: {input_text}"
+# Сначала определяем и создаем объект Gradio Blocks
+# Простая функция для проверки
+async def process_request(input_text):
+    return f"Получен запрос: {input_text}"
 
-    # Создаём Gradio Blocks для API
-    with gr.Blocks() as demo:
-        gr.Markdown("## Holograms Media API")
-        input_box = gr.Textbox(label="Запрос")
-        output_box = gr.Textbox(label="Ответ")
-        gr.Button("Отправить").click(
-            fn=process_request,
-            inputs=input_box,
-            outputs=output_box
-        )
+# Создаём Gradio Blocks для API
+with gr.Blocks() as gradio_blocks_instance: # Даем имя экземпляру
+    gr.Markdown("## Holograms Media API")
+    input_box = gr.Textbox(label="Запрос")
+    output_box = gr.Textbox(label="Ответ")
+    gr.Button("Отправить").click(
+        fn=process_request,
+        inputs=input_box,
+        outputs=output_box
+    )
 
-    return demo
+# Декоратор @spaces.GPU применяется к функции, которая будет использовать GPU,
+# но сам mount_gradio_app должен получать уже созданный экземпляр Blocks.
+# В данном простом случае Gradio напрямую GPU не использует, но декоратор
+# важен для корректной работы в среде Hugging Face Spaces, если GPU потребуется позже.
+# Если GPU не нужен для Gradio, декоратор можно убрать или применить к FastAPI, если он его использует.
+# Пока оставим как есть, предполагая, что это стандартная практика для Spaces.
 
-# Запускаем Gradio
-app = gr.mount_gradio_app(app, run_gradio, path="/gradio")
+# Монтируем СОЗДАННЫЙ экземпляр Gradio Blocks
+app = gr.mount_gradio_app(app, gradio_blocks_instance, path="/gradio") # Используем gradio_blocks_instance
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    # При локальном запуске порт 7860 часто используется Gradio по умолчанию,
+    # но так как мы монтируем Gradio в FastAPI, которое запускается на 8000 (или другом порту),
+    # Uvicorn должен запускать основное FastAPI приложение.
+    # FastAPI (app) теперь включает в себя Gradio по пути /gradio.
+    uvicorn.run(app, host="0.0.0.0", port=8000) # Или ваш обычный порт для FastAPI
