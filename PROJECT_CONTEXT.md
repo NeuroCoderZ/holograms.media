@@ -21,8 +21,9 @@
 *   **УСТРАНЕНО:** Ошибка `SyntaxError: Invalid or unexpected token` в `rendering.js` после мержа.
 *   **УСТРАНЕНО:** `ReferenceError` для `toggleChatMode` и `updateHologramLayout` в `events.js` (добавлены необходимые импорты).
 *   **УСТРАНЕНО:** Ошибка `SyntaxError: missing ) after argument list` (или `Unexpected token TWEEN`) в `rendering.js` (строка ~395).
+*   **УСТРАНЕНО:** `Uncaught TypeError: Failed to resolve module specifier "@tweenjs/tween.js"` ✅ ИСПРАВЛЕНО (2025-05-25)
 *   **РЕАЛИЗОВАНО:** Базовая логика аудиовизуализации из `script.js.bak` интегрирована в `rendering.js` и `audioProcessing.js`.
-*   **Текущий фокус:** Фронтенд: Запуск 3D-рендеринга (фикс `animate`).
+*   **Текущий фокус:** Фронтенд: Устранение ошибки импорта Tween.js для запуска 3D.
 *   **СЛЕДУЮЩИЕ ШАГИ:** Продолжение работы над UI, интеграция новых типов голограмм, проектирование схемы базы данных PostgreSQL.
 
 ## Последние Изменения и Прогресс
@@ -35,6 +36,7 @@
 *   [Дата] Создан файл `MODULE_INTERFACES.md` для документирования API модулей.
 
 ### 2.2. Последние ключевые изменения в коде (за последние 1-2 итерации):
+*   [2025-05-25] Исправлен импорт Tween.js и ошибки ESLint в `rendering.js`.
 *   [2025-05-25] Исправлена функция `animate` в `frontend/js/3d/rendering.js` для корректного запуска цикла рендеринга 3D-сцены. Обеспечен ее правильный экспорт и импорт в `main.js`.
 
 ## Архитектура и Модули (Кратко)

@@ -94,6 +94,32 @@
 [2025-05-24 00:30] PROMPT_ID: 20250524-0030-001. ЦЕЛЬ: Финальный УДАР: Исправление SyntaxError в rendering.js (строка 398) ПОСЛЕ ВСЕХ МЕРЖЕЙ. РЕЗУЛЬТАТ: Ошибка SyntaxError исправлена. Файлы: frontend/js/3d/rendering.js. След.шаг: Git push, HF тест. ВСЕ ДОЛЖНО РАБОТАТЬ!
 
 ---
+## Итерация 20250525-1030-001: Фикс импорта Tween.js и ESLint в rendering.js
+**Дата:** 2025-05-25 10:30  
+**Цель:** Исправить ошибку импорта Tween.js и ESLint ошибки в rendering.js  
+**Результат:** ✅ УСПЕХ  
+**Измененные файлы:** frontend/js/3d/rendering.js  
+**Следующий шаг:** Тест на HF, проверка 3D визуализации без ошибок  
+
+**Детали:**
+- Убран некорректный ES6 импорт `@tweenjs/tween.js`, используется глобальный TWEEN из CDN
+- Исправлены ошибки ESLint: `camera` → `state.camera`, `renderer` → `state.renderer`
+- Закомментирован неиспользуемый импорт `getSemitoneLevels`
+- Убран неиспользуемый параметр `time` в `updateHologramMesh`
+
+## Итерация 20250525-1025-001: Фикс animate rendering
+**Дата:** 2025-05-25 10:25  
+**Цель:** Исправить ошибку `Export 'animate' is not defined` в rendering.js  
+**Результат:** ✅ УСПЕХ  
+**Измененные файлы:** frontend/js/3d/rendering.js, PROJECT_CONTEXT.md, tria_memory_buffer.md  
+**Следующий шаг:** Тест на HF, проверка 3D визуализации  
+
+**Детали:**
+- Добавлена функция `animate` в rendering.js (строки 413-424)
+- Исправлен экспорт: `export { animate, onWindowResize, updateHologramMesh }`
+- Функция `animate` корректно вызывает `requestAnimationFrame`, `TWEEN.update`, и `state.renderer.render`
+- Импорты и вызовы в main.js проверены и работают корректно
+
 [2025-05-25 02:30:00] PROMPT_ID: 20250525-0200-001S. ЦЕЛЬ: Фикс рендеринга (animate). РЕЗУЛЬТАТ: Успех. ИЗМЕНЕННЫЕ_ФАЙЛЫ: frontend/js/3d/rendering.js. КЛЮЧЕВЫЕ_ИЗМЕНЕНИЯ: Функция animate определена и экспортирована в rendering.js. Проверены импорты и вызовы в main.js. СЛЕД_ШАГ: Тест HF, проверка 3D.
 
 ### Итерация [Текущая Дата и Время]

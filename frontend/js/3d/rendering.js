@@ -2,9 +2,9 @@
 
 // Импорты
 import * as THREE from 'three';
-import * as TWEEN from '@tweenjs/tween.js';
+// TWEEN подключается глобально через CDN в index.html
 import { state } from '../core/init.js'; // Для доступа к state.scene, state.mainSequencerGroup
-import { getSemitoneLevels } from '../audio/audioProcessing.js';
+// import { getSemitoneLevels } from '../audio/audioProcessing.js'; // Неиспользуемый импорт закомментирован
 
 // --- Константы и конфигурация, перенесенные из script.js ---
 
@@ -424,10 +424,10 @@ function animate(currentTime) {
 
 // Function to handle window resize
 function onWindowResize() {
-if (camera && renderer) {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+if (state.camera && state.renderer) {
+    state.camera.aspect = window.innerWidth / window.innerHeight;
+    state.camera.updateProjectionMatrix();
+    state.renderer.setSize(window.innerWidth, window.innerHeight);
 }
 }
 
@@ -438,8 +438,8 @@ window.addEventListener('resize', onWindowResize);
 onWindowResize();
 
 // Function to update hologram mesh (placeholder, needs implementation if used)
-function updateHologramMesh(time) {
-    // console.log('updateHologramMesh called at time:', time);
+function updateHologramMesh() {
+    // console.log('updateHologramMesh called');
     // Add actual hologram update logic here if needed
 }
 
