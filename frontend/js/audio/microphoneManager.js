@@ -163,7 +163,7 @@ export function initializeMicrophoneButton() {
         toggleMicrophone(micButton);
       }
     });
-
+  }
   console.log('Кнопка микрофона инициализирована');
 }
 
