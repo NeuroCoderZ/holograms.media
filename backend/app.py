@@ -406,7 +406,7 @@ async def chat(request: ChatRequest):
         # !!! ВАЖНО: Здесь вызывается ainvoke на codestral_llm, который сейчас None !!!
         # Этот роут будет выдавать 503 ошибку до тех пор, пока блок инициализации LLM не будет раскомментирован и исправлен.
         # Убедись, что API ключи добавлены как Secrets в HF Space перед раскомментированием.
-    response = await codestral_llm.ainvoke(messages) # LLM call
+        response = await codestral_llm.ainvoke(messages) # LLM call
         response_content = response.content
         print(f"[CHAT DEBUG] ChatMistralAI response received (first 100 chars): {response_content[:100]}...")
         should_vocalize = False # TODO: Определить логику озвучивания
@@ -435,9 +435,33 @@ async def chat(request: ChatRequest):
         )
         print(f"[CHAT DB INFO] Chat messages for session {session_id} saved. Assistant msg ID: {db_chat_message_id}")
 
+    except LangChainError as e_llm: # Более специфичный отлов ошибок от LangChain/LLM
+        error_message = f"LLM invocation error for session {session_id}: {e_llm}"
+        print(f"[CHAT LLM ERROR] {error_message}")
+        traceback.print_exc()
+        db_save_error_note = " (LLM Error: Failed to get response. Incident logged.)"
+        # Логируем ошибку LLM в application_logs
+        log_conn_err_llm: Optional[asyncpg.Connection] = None
+        try:
+            log_conn_err_llm = await pg_connector.get_pg_connection()
+            await crud_operations.log_application_event(
+                log_conn_err_llm, 
+                level='ERROR', 
+                source_component='chat_llm_invoke', 
+                message=f'LangChainError during LLM call for session {session_id}: {str(e_llm)}',
+                details=traceback.format_exc(),
+                session_id=session_id
+            )
+        except Exception as log_e:
+            print(f"[CHAT CRITICAL LOG ERROR] Failed to log LLM error to DB: {log_e}")
+        finally:
+            if log_conn_err_llm:
+                await pg_connector.release_pg_connection(log_conn_err_llm)
+        raise HTTPException(status_code=503, detail=f"Error communicating with LLM.{db_save_error_note}")
+
     except asyncpg.PostgresError as e_pg:
         print(f"[CHAT DB ERROR] PostgreSQL error while saving chat history for session {session_id}: {e_pg}")
-            traceback.print_exc()
+        traceback.print_exc()
         db_save_error_note = " (DB Error: Failed to save chat. Incident logged.)"
         # Логируем ошибку БД в application_logs
         log_conn_err_pg: Optional[asyncpg.Connection] = None
@@ -447,7 +471,7 @@ async def chat(request: ChatRequest):
                 log_conn_err_pg, 
                 level='ERROR', 
                 source_component='chat_db_pg', 
-                message=f'PostgresError saving chat for session {session_id}', 
+                message=f'PostgresError saving chat for session {session_id}: {str(e_pg)}', 
                 details={'error': str(e_pg), 'traceback': traceback.format_exc(limit=5)}
             )
         except Exception as log_e_pg:
