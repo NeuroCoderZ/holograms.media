@@ -411,52 +411,53 @@ async def chat(request: ChatRequest):
         print(f"[CHAT DEBUG] ChatMistralAI response received (first 100 chars): {response_content[:100]}...")
         should_vocalize = False # TODO: Определить логику озвучивания
 
-    # Сохранение в PostgreSQL
+        # Сохранение в PostgreSQL
+        # Сохранение в PostgreSQL
         try:
-        pg_conn = await pg_connector.get_pg_connection()
-        print(f"[CHAT DB INFO] Acquired PostgreSQL connection for session {session_id}.")
+            pg_conn = await pg_connector.get_pg_connection()
+            print(f"[CHAT DB INFO] Acquired PostgreSQL connection for session {session_id}.")
 
-        # Сохраняем сообщение пользователя
-        await crud_operations.add_chat_message(
-            pg_conn, 
-            session_id=session_id, 
-            role="user", 
-            message_content=request.message,
-            metadata={"model": request.model, "llm_history_count": len(request.history)}
-        )
-        
-        # Сохраняем ответ ассистента
-        db_chat_message_id = await crud_operations.add_chat_message(
-            pg_conn, 
-            session_id=session_id, 
-            role="assistant", 
-            message_content=response_content,
-            metadata={"model": request.model, "raw_llm_response_length": len(response_content)}
-        )
-        print(f"[CHAT DB INFO] Chat messages for session {session_id} saved. Assistant msg ID: {db_chat_message_id}")
-
-    except LangChainError as e_llm: # Более специфичный отлов ошибок от LangChain/LLM
-        error_message = f"LLM invocation error for session {session_id}: {e_llm}"
-        print(f"[CHAT LLM ERROR] {error_message}")
-        traceback.print_exc()
-        db_save_error_note = " (LLM Error: Failed to get response. Incident logged.)"
-        # Логируем ошибку LLM в application_logs
-        log_conn_err_llm: Optional[asyncpg.Connection] = None
-        try:
-            log_conn_err_llm = await pg_connector.get_pg_connection()
-            await crud_operations.log_application_event(
-                log_conn_err_llm, 
-                level='ERROR', 
-                source_component='chat_llm_invoke', 
-                message=f'LangChainError during LLM call for session {session_id}: {str(e_llm)}',
-                details=traceback.format_exc(),
-                session_id=session_id
+            # Сохраняем сообщение пользователя
+            await crud_operations.add_chat_message(
+                pg_conn,
+                session_id=session_id,
+                role="user",
+                message_content=request.message,
+                metadata={"model": request.model, "llm_history_count": len(request.history)}
             )
-        except Exception as log_e:
-            print(f"[CHAT CRITICAL LOG ERROR] Failed to log LLM error to DB: {log_e}")
-        finally:
-            if log_conn_err_llm:
-                await pg_connector.release_pg_connection(log_conn_err_llm)
+
+            # Сохраняем ответ ассистента
+            db_chat_message_id = await crud_operations.add_chat_message(
+                pg_conn,
+                session_id=session_id,
+                role="assistant",
+                message_content=response_content,
+                metadata={"model": request.model, "raw_llm_response_length": len(response_content)}
+            )
+            print(f"[CHAT DB INFO] Chat messages for session {session_id} saved. Assistant msg ID: {db_chat_message_id}")
+
+        except LangChainError as e_llm: # Более специфичный отлов ошибок от LangChain/LLM
+            error_message = f"LLM invocation error for session {session_id}: {e_llm}"
+            print(f"[CHAT LLM ERROR] {error_message}")
+            traceback.print_exc()
+            db_save_error_note = " (LLM Error: Failed to get response. Incident logged.)"
+            # Логируем ошибку LLM в application_logs
+            log_conn_err_llm: Optional[asyncpg.Connection] = None
+            try:
+                log_conn_err_llm = await pg_connector.get_pg_connection()
+                await crud_operations.log_application_event(
+                    log_conn_err_llm,
+                    level='ERROR',
+                    source_component='chat_llm_invoke',
+                    message=f'LangChainError during LLM call for session {session_id}: {str(e_llm)}',
+                    details=traceback.format_exc(),
+                    session_id=session_id
+                )
+            except Exception as log_e:
+                print(f"[CHAT CRITICAL LOG ERROR] Failed to log LLM error to DB: {log_e}")
+            finally:
+                if log_conn_err_llm:
+                    await pg_connector.release_pg_connection(log_conn_err_llm)
         raise HTTPException(status_code=503, detail=f"Error communicating with LLM.{db_save_error_note}")
 
     except asyncpg.PostgresError as e_pg:
@@ -468,9 +469,9 @@ async def chat(request: ChatRequest):
         try:
             log_conn_err_pg = await pg_connector.get_pg_connection()
             await crud_operations.log_application_event(
-                log_conn_err_pg, 
-                level='ERROR', 
-                source_component='chat_db_pg', 
+                log_conn_err_pg,
+                level='ERROR',
+                source_component='chat_db_pg',
                 message=f'PostgresError saving chat for session {session_id}: {str(e_pg)}', 
                 details={'error': str(e_pg), 'traceback': traceback.format_exc(limit=5)}
             )
@@ -489,9 +490,9 @@ async def chat(request: ChatRequest):
         try:
             log_conn_err_main = await pg_connector.get_pg_connection()
             await crud_operations.log_application_event(
-                log_conn_err_main, 
-                level='ERROR', 
-                source_component='chat_db_general', 
+                log_conn_err_main,
+                level='ERROR',
+                source_component='chat_db_general',
                 message=f'General error saving chat for session {session_id}', 
                 details={'error': str(e_db_main), 'traceback': traceback.format_exc(limit=5)}
             )
