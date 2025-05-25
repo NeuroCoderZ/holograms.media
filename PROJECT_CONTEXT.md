@@ -26,6 +26,9 @@
 - **Frontend: Fixing Tween.js import error for 3D launch**
   - **Статус:** Завершено.
   - **Описание:** Исправлена ошибка импорта `Tween.js` в `rendering.js` путем удаления ES6 импорта и использования глобальной переменной, загружаемой через CDN. Устранены ошибки ESLint, связанные с неопределенными переменными `camera` и `renderer` путем использования `state.camera` и `state.renderer`. Закомментирован неиспользуемый импорт `getSemitoneLevels`. Удален неиспользуемый параметр `time` из `updateHologramMesh`. Изменения зафиксированы и отправлены в репозитории GitHub и Hugging Face. Обнаружена критическая уязвимость на GitHub (требует дальнейшего анализа).
+- **Frontend: Финальная отладка `rendering.js` (экспорт onWindowResize)**
+  - **Статус:** Завершено.
+  - **Описание:** Исправлена ошибка экспорта `onWindowResize` в `rendering.js` путем удаления его из списка экспорта, так как функция была удалена ранее. Это устраняет `Uncaught SyntaxError: Export 'onWindowResize' is not defined in module`.
 - **Frontend: Fixing ReferenceError and SyntaxError**
   - **Статус:** Завершено.
   - **Описание:** Устранена ошибка `ReferenceError: Cannot access 'state' before initialization` в `frontend/js/3d/rendering.js` путем удаления дублирующей функции `onWindowResize`. Исправлена ошибка `SyntaxError: Unexpected token ')'` в `frontend/js/audio/microphoneManager.js` путем добавления отсутствующей закрывающей скобки. Изменения будут зафиксированы и отправлены в репозитории GitHub и Hugging Face.
@@ -43,6 +46,7 @@
 ### 2.2. Последние ключевые изменения в коде (за последние 1-2 итерации):
 *   [2025-05-25] Исправлен импорт Tween.js и ошибки ESLint в `rendering.js`.
 *   [2025-05-25] Исправлена функция `animate` в `frontend/js/3d/rendering.js` для корректного запуска цикла рендеринга 3D-сцены. Обеспечен ее правильный экспорт и импорт в `main.js`.
+*   [2025-05-25] Исправлена ошибка экспорта `onWindowResize` в `rendering.js`.
 
 ## Архитектура и Модули (Кратко)
 
@@ -69,4 +73,4 @@
 
 ---
 
-*Последнее обновление: [Текущая дата]*
+*Последнее обновление: 2025-05-25*

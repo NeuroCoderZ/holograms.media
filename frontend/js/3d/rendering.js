@@ -431,4 +431,4 @@ function updateHologramMesh() {
 }
 
 // Export necessary functions
-export { animate, onWindowResize, updateHologramMesh };
+export { animate, updateHologramMesh };
