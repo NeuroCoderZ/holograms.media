@@ -422,20 +422,7 @@ function animate(currentTime) {
     // }
 }
 
-// Function to handle window resize
-function onWindowResize() {
-if (state.camera && state.renderer) {
-    state.camera.aspect = window.innerWidth / window.innerHeight;
-    state.camera.updateProjectionMatrix();
-    state.renderer.setSize(window.innerWidth, window.innerHeight);
-}
-}
 
-// Add event listener for window resize
-window.addEventListener('resize', onWindowResize);
-
-// Initial resize call to set correct size
-onWindowResize();
 
 // Function to update hologram mesh (placeholder, needs implementation if used)
 function updateHologramMesh() {
