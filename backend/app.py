@@ -483,7 +483,7 @@ async def chat(request: ChatRequest):
                 
     except Exception as e_db_main:
         print(f"[CHAT DB ERROR] Unexpected error while saving chat history to PostgreSQL for session {session_id}: {e_db_main}")
-            traceback.print_exc()
+        traceback.print_exc()
         db_save_error_note = " (DB Error: Failed to save chat. Incident logged.)"
         # Логируем общую ошибку БД в application_logs
         log_conn_err_main: Optional[asyncpg.Connection] = None
