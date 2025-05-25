@@ -400,6 +400,27 @@ export function updateSequencerColumns(amplitudes, channel) {
 // Глобальная переменная для отслеживания времени анимации
 let time = 0;
 
+// Animation loop function
+function animate(currentTime) {
+    requestAnimationFrame(animate);
+
+    // Convert to seconds if currentTime is provided by requestAnimationFrame (milliseconds)
+    time = currentTime / 1000;
+
+    // Update TWEEN animations
+    TWEEN.update(time);
+
+    // Render the scene
+    if (state.renderer && state.scene && state.camera) {
+        state.renderer.render(state.scene, state.camera);
+    }
+
+    // Any other animation updates can go here
+    // For example, if there's a hologram mesh to update:
+    // if (typeof updateHologramMesh === 'function') {
+    //     updateHologramMesh(time);
+    // }
+}
 
 // Function to handle window resize
 function onWindowResize() {
@@ -416,5 +437,11 @@ window.addEventListener('resize', onWindowResize);
 // Initial resize call to set correct size
 onWindowResize();
 
+// Function to update hologram mesh (placeholder, needs implementation if used)
+function updateHologramMesh(time) {
+    // console.log('updateHologramMesh called at time:', time);
+    // Add actual hologram update logic here if needed
+}
+
 // Export necessary functions
-export { init3DScene, animate, onWindowResize, updateHologramMesh };
+export { animate, onWindowResize, updateHologramMesh };
