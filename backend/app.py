@@ -105,7 +105,7 @@ load_dotenv(override=True)
 
 # Указываем конкретные модели, как запрошено
 DEFAULT_MODEL = "mistral-medium-latest"
-CODESTRAL_MODEL_NAME = "devstral-small-latest" # Добавил для ясности, что это целевая модель для Codestral
+CODESTRAL_MODEL_NAME = "devstral-small-latest"
 
 chain: Optional[Runnable] = None
 codestral_llm: Optional[ChatMistralAI] = None
@@ -143,7 +143,10 @@ else:
             model=CODESTRAL_MODEL_NAME,
             mistral_api_key=api_key_to_use,
             temperature=0.4,
+<<<<<<< HEAD
             # base_url="https://openrouter.ai/api/v1" # Закомментировано, так как используем прямой Mistral API
+=======
+>>>>>>> 2e79659 (Fix: Use direct Mistral API with MISTRAL_API_KEY and remove OpenRouter dependency)
         )
         print(f"[DEBUG] ChatMistralAI for codestral_llm initialized successfully.
 ")
@@ -161,7 +164,10 @@ else:
             model=DEFAULT_MODEL,
             mistral_api_key=api_key_to_use,
             temperature=0.7,
+<<<<<<< HEAD
             # base_url="https://openrouter.ai/api/v1" # Закомментировано
+=======
+>>>>>>> 2e79659 (Fix: Use direct Mistral API with MISTRAL_API_KEY and remove OpenRouter dependency)
         )
         print(f"[DEBUG] ChatMistralAI for mistral_llm initialized successfully.
 ")
