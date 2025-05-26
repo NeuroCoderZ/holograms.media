@@ -105,7 +105,7 @@ load_dotenv(override=True)
 
 # Указываем конкретные модели, как запрошено
 DEFAULT_MODEL = "mistral-medium-latest"
-CODESTRAL_MODEL_NAME = "devstral-small-latest" # Добавил для ясности, что это целевая модель для Codestral
+CODESTRAL_MODEL_NAME = "devstral-small-latest"
 
 chain: Optional[Runnable] = None
 codestral_llm: Optional[ChatMistralAI] = None
@@ -127,22 +127,22 @@ print(f"[DEBUG] (Corrected) INDEX_HTML_PATH: {INDEX_HTML_PATH}")
 print("[INFO] Попытка инициализации LLM (codestral_llm)...
 ")
 
-# Используем OPENROUTER_API_KEY, так как это общий ключ для доступа к Mistral и Codestral через OpenRouter
-api_key_to_use = os.getenv("OPENROUTER_API_KEY")
+# Используем MISTRAL_API_KEY напрямую для доступа к Mistral API
+api_key_to_use = os.getenv("MISTRAL_API_KEY")
 if not api_key_to_use:
-    print(f"[WARN] OPENROUTER_API_KEY не найден! codestral_llm не будет инициализирован.
+    print(f"[WARN] MISTRAL_API_KEY не найден! LLM не будут инициализированы.
 ")
     codestral_llm = None
+    mistral_llm = None
 else:
     try:
-        # Инициализируем LLM для Codestral
+        # Инициализируем LLM для Codestral (devstral-small-latest)
         print(f"[DEBUG] Initializing ChatMistralAI for codestral_llm with model '{CODESTRAL_MODEL_NAME}'.
 ")
         codestral_llm = ChatMistralAI(
-            model_name=CODESTRAL_MODEL_NAME,
+            model=CODESTRAL_MODEL_NAME,
             mistral_api_key=api_key_to_use,
             temperature=0.4,
-            base_url="https://openrouter.ai/api/v1" # Явно указываем OpenRouter API
         )
         print(f"[DEBUG] ChatMistralAI for codestral_llm initialized successfully.
 ")
@@ -152,17 +152,14 @@ else:
         traceback.print_exc()
         codestral_llm = None
 
-# Дополнительно инициализируем LLM для Mistral-medium-latest, если это потребуется в других частях кода
-mistral_llm = None
-if api_key_to_use:
     try:
+        # Инициализируем LLM для Mistral (mistral-medium-latest)
         print(f"[DEBUG] Initializing ChatMistralAI for mistral_llm with model '{DEFAULT_MODEL}'.
 ")
         mistral_llm = ChatMistralAI(
-            model_name=DEFAULT_MODEL,
+            model=DEFAULT_MODEL,
             mistral_api_key=api_key_to_use,
-            temperature=0.7, # Чуть более высокая температура для чата
-            base_url="https://openrouter.ai/api/v1"
+            temperature=0.7,
         )
         print(f"[DEBUG] ChatMistralAI for mistral_llm initialized successfully.
 ")
@@ -170,6 +167,7 @@ if api_key_to_use:
         print(f"[ERROR] Ошибка инициализации ChatMistralAI for mistral_llm: {e}
 ")
         traceback.print_exc()
+        mistral_llm = None
 
 
 # --- Функции-инструменты для Триа (определение оставляем, они не выполняются при импорте) ---
