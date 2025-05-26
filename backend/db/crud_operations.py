@@ -722,7 +722,8 @@ async def create_initial_users(conn: asyncpg.Connection):
         # Also check by email to prevent UniqueViolationError if username is different but email is same
         existing_user_by_email = await get_user_by_email(conn, user_data["email"])
         if existing_user_by_email:
-            print(f"INFO: User with email '{user_data['email']}' (intended for '{user_data['username']}') already exists. Skipping creation.")
+            sanitized_user_data = {key: (value if key != "password" else "****") for key, value in user_data.items()}
+            print(f"INFO: User with email '{sanitized_user_data['email']}' (intended for '{sanitized_user_data['username']}') already exists. Skipping creation.")
             continue
         
         user_create_model = UserCreate(
@@ -734,7 +735,8 @@ async def create_initial_users(conn: asyncpg.Connection):
         
         created_user = await create_user(conn, user_create_model) 
         if created_user:
-            print(f"INFO: Successfully created user '{user_data['username']}' with role '{user_data['role']}'. ID: {created_user.id}")
+            sanitized_user_data = {key: (value if key != "password" else "****") for key, value in user_data.items()}
+            print(f"INFO: Successfully created user '{sanitized_user_data['username']}' with role '{sanitized_user_data['role']}'. ID: {created_user.id}")
             # Schema defaults: is_active=True, email_verified=False.
             # If specific settings like making admin active and verified are needed immediately,
             # an update operation would be required here. E.g.,
