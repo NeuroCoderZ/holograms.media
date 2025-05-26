@@ -164,3 +164,81 @@ BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 */
+
+--
+-- FUTURE SCAFFOLDING FOR VISIONARY CONCEPTS
+-- These tables are placeholders for future development and are not yet actively used.
+--
+
+-- For "Liquid Code" - Storing embeddings of code components
+/*
+CREATE TABLE tria_code_embeddings (
+    component_id VARCHAR(255) PRIMARY KEY,    -- Unique identifier for the code component (e.g., function path, module name)
+    source_code_reference TEXT,               -- Link or reference to the source code file/version
+    embedding_vector VECTOR(1536),            -- Semantic embedding of the code component
+    semantic_description TEXT,                -- Human-readable description of what the component does
+    dependencies JSONB,                       -- List of other component_ids this component depends on
+    version VARCHAR(50),                      -- Version of this code component/embedding
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_tria_code_embeddings_embedding ON tria_code_embeddings USING hnsw (embedding_vector vector_l2_ops);
+*/
+
+-- For "Tria's Self-Evolution" - Managing AZR tasks
+/*
+CREATE TABLE tria_azr_tasks (
+    task_id SERIAL PRIMARY KEY,
+    description_text TEXT NOT NULL,           -- Description of the task Tria sets for itself
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'evaluating', 'completed_success', 'completed_failure', 'aborted')),
+    priority INTEGER DEFAULT 0,
+    complexity_score FLOAT,
+    generation_source TEXT,                   -- How was this task generated (e.g., "user_feedback_gap", "exploratory_synthesis")
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    metadata JSONB                            -- Any additional data about the task or its generation
+);
+*/
+
+-- For "Tria's Self-Evolution" - Storing results of AZR tasks
+/*
+CREATE TABLE tria_azr_task_solutions (
+    solution_id SERIAL PRIMARY KEY,
+    task_id INTEGER REFERENCES tria_azr_tasks(task_id) ON DELETE CASCADE NOT NULL,
+    solution_approach_description TEXT,       -- How Tria attempted to solve the task
+    solution_artifacts_json JSONB,            -- References to any artifacts produced (e.g., new code embedding IDs, model versions)
+    outcome_summary TEXT,                     -- Summary of the result
+    performance_metrics_json JSONB,           -- Metrics evaluating the solution's success/effectiveness
+    verification_status TEXT DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified_success', 'verified_failure', 'verification_failed_to_run')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_azr_task_solutions_task_id ON tria_azr_task_solutions(task_id);
+*/
+
+-- For "Tria's Self-Evolution" - Logging significant learning events
+/*
+CREATE TABLE tria_learning_log (
+    log_id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    event_type TEXT NOT NULL,                 -- e.g., "parameter_tune", "azr_task_success", "model_retrain_start", "new_gestural_pattern_learned"
+    bot_affected_id TEXT,                     -- Which bot or component was affected
+    summary_text TEXT NOT NULL,
+    details_json JSONB                        -- Detailed information about the event
+);
+CREATE INDEX IF NOT EXISTS idx_tria_learning_log_timestamp ON tria_learning_log(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_tria_learning_log_event_type ON tria_learning_log(event_type);
+*/
+
+-- For "Tria's Self-Evolution" - Storing configurations of Tria's bots
+/*
+CREATE TABLE tria_bot_configurations (
+    config_id SERIAL PRIMARY KEY,
+    bot_id VARCHAR(255) UNIQUE NOT NULL,      -- Identifier for the bot (e.g., "GestureBot", "AudioBot")
+    current_version INTEGER NOT NULL DEFAULT 1,
+    config_parameters_json JSONB NOT NULL,    -- The actual configuration parameters for the bot
+    last_updated_by TEXT DEFAULT 'system',    -- Who or what updated this config (e.g., "LearningBot", "admin_user")
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT                                -- Any notes about this configuration
+);
+*/
