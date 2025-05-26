@@ -1,8 +1,8 @@
 // frontend/js/audio/microphoneManager.js - Модуль для управления микрофоном
 
 import { state } from '../core/init.js';
-import { getAudioContext, createAnalyserNodes } from './audioProcessing.js';
-import { resetVisualization } from '../3d/rendering.js';
+import { getAudioContext, setupAudioProcessing } from './audioProcessing.js'; // Modified import
+// import { resetVisualization } from '../3d/rendering.js'; // Removed import
 
 // --- Переменные модуля ---
 // state is already imported above
@@ -58,21 +58,20 @@ async function setupMicrophone() {
 
     const source = state.audio.audioContext.createMediaStreamSource(stream);
     
-    const analysers = createAnalyserNodes(state.audio.audioContext, 0.85);
-    state.audio.analyserLeft = analysers.left;
-    state.audio.analyserRight = analysers.right;
-    // Optional: state.audio.microphoneAnalysers = analysers; 
+    // Call the imported setupAudioProcessing for microphone
+    setupAudioProcessing(source, 'microphone'); 
+    // This will set state.audio.microphoneAnalysers and state.audio.microphoneGainNode
+    // It also handles splitting and connecting analysers.
 
-    const splitter = state.audio.audioContext.createChannelSplitter(2);
-
-    source.connect(splitter);
-    splitter.connect(state.audio.analyserLeft, 0);
-    splitter.connect(state.audio.analyserRight, 1);
+    // The direct calls to createAnalyserNodes, splitter creation, and connections 
+    // to state.audio.analyserLeft/Right are now handled by the imported setupAudioProcessing.
+    // state.audio.analyserLeft and state.audio.analyserRight are deprecated in favor of 
+    // state.audio.microphoneAnalysers.left and state.audio.microphoneAnalysers.right
 
     // Do not connect source to destination to avoid feedback unless intended
-    // source.connect(state.audio.audioContext.destination);
+    // source.connect(state.audio.audioContext.destination); // This should be handled in setupAudioProcessing if needed, but typically not for mic.
 
-    state.audio.activeSource = 'microphone';
+    state.audio.activeSource = 'microphone'; // Confirmed: This is correctly set.
     
     // Update UI
     const micButton = document.getElementById('micButton');
@@ -108,17 +107,26 @@ function stopMicrophone() {
     console.log("Микрофонный поток остановлен.");
   }
   
-  if (state.audio.analyserLeft) {
-    state.audio.analyserLeft.disconnect();
-    state.audio.analyserLeft = null;
+  // state.audio.analyserLeft and state.audio.analyserRight are deprecated.
+  // The analysers are now in state.audio.microphoneAnalysers.
+  // setupAudioProcessing does not connect these to a specific gain node that needs disconnecting here,
+  // as the microphone source itself is the input to the visualization chain.
+  // The microphoneGainNode created in setupAudioProcessing is part of that chain.
+  // Disconnecting the stream tracks (done above) is the primary way to stop input.
+  // Nullifying the analysers and gain node in state is good for cleanup.
+
+  if (state.audio.microphoneAnalysers) {
+    if (state.audio.microphoneAnalysers.left) state.audio.microphoneAnalysers.left.disconnect();
+    if (state.audio.microphoneAnalysers.right) state.audio.microphoneAnalysers.right.disconnect();
+    state.audio.microphoneAnalysers = null;
   }
-  if (state.audio.analyserRight) {
-    state.audio.analyserRight.disconnect();
-    state.audio.analyserRight = null;
+  if (state.audio.microphoneGainNode) {
+    state.audio.microphoneGainNode.disconnect();
+    state.audio.microphoneGainNode = null;
   }
   
-  resetVisualization(); // Call the imported function
-  console.log("Визуализация микрофона очищена.");
+  // resetVisualization(); // Removed call
+  console.log("Визуализация микрофона очищена (resetVisualization call removed).");
 
   // Update UI
   const micButton = document.getElementById('micButton');
