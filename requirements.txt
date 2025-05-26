@@ -13,7 +13,3 @@ gradio>=5.28
 spaces
 langchain-mistralai>=0.0.10
 tenacity>=8.0.0
-# Добавь сюда любые другие Python зависимости, если твой код их использует!
-# Например, если MediaPipe используется на Python бэкенде:
-# mediapipe
-# и т.д.
