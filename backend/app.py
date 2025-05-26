@@ -103,10 +103,9 @@ load_dotenv(override=True)
 # 7. Определение КОНСТАНТ и ГЛОБАЛЬНЫХ ПЕРЕМЕННЫХ
 # ----------------------------------------------------------------------
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
-CODESTRAL_API_KEY = os.getenv("CODESTRAL_API_KEY")
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "mistral-small-latest")
+# Указываем конкретные модели, как запрошено
+DEFAULT_MODEL = "mistral-medium-latest"
+CODESTRAL_MODEL_NAME = "devstral-small-latest"
 
 chain: Optional[Runnable] = None
 codestral_llm: Optional[ChatMistralAI] = None
@@ -125,53 +124,51 @@ print(f"[DEBUG] (Corrected) INDEX_HTML_PATH: {INDEX_HTML_PATH}")
 # ----------------------------------------------------------------------
 # 8. Инициализация LLM и Инструментов
 # ----------------------------------------------------------------------
-print("[INFO] Попытка инициализации LLM (codestral_llm)...")
-MISTRAL_API_KEY_VALUE = os.getenv("MISTRAL_API_KEY")
-CODESTRAL_API_KEY_VALUE = os.getenv("CODESTRAL_API_KEY")
-api_key_to_use = None
-key_source_message = ""
+print("[INFO] Попытка инициализации LLM (codestral_llm)...
+")
 
-if CODESTRAL_API_KEY_VALUE:
-    api_key_to_use = CODESTRAL_API_KEY_VALUE
-    key_source_message = "using CODESTRAL_API_KEY"
-elif MISTRAL_API_KEY_VALUE:
-    api_key_to_use = MISTRAL_API_KEY_VALUE
-    key_source_message = "using MISTRAL_API_KEY as fallback for codestral_llm"
-    print("[INFO] CODESTRAL_API_KEY не найден, используется MISTRAL_API_KEY для codestral_llm.")
-
+# Используем MISTRAL_API_KEY напрямую для доступа к Mistral API
+api_key_to_use = os.getenv("MISTRAL_API_KEY")
 if not api_key_to_use:
-    print(f"[WARN] Ни CODESTRAL_API_KEY, ни MISTRAL_API_KEY не найдены! codestral_llm не будет инициализирован.")
+    print(f"[WARN] MISTRAL_API_KEY не найден! LLM не будут инициализированы.
+")
     codestral_llm = None
+    mistral_llm = None
 else:
     try:
-        model_to_use = os.getenv("CODESTRAL_MODEL_NAME", DEFAULT_MODEL)
-        print(f"[DEBUG] Initializing ChatMistralAI for codestral_llm with model '{model_to_use}' {key_source_message}.")
+        # Инициализируем LLM для Codestral (devstral-small-latest)
+        print(f"[DEBUG] Initializing ChatMistralAI for codestral_llm with model '{CODESTRAL_MODEL_NAME}'.
+")
         codestral_llm = ChatMistralAI(
-            model_name=model_to_use,
+            model=CODESTRAL_MODEL_NAME,
             mistral_api_key=api_key_to_use,
             temperature=0.4,
         )
-        print(f"[DEBUG] ChatMistralAI for codestral_llm initialized successfully {key_source_message}.")
+        print(f"[DEBUG] ChatMistralAI for codestral_llm initialized successfully.
+")
     except Exception as e:
-        print(f"[ERROR] Ошибка инициализации ChatMistralAI for codestral_llm {key_source_message}: {e}")
+        print(f"[ERROR] Ошибка инициализации ChatMistralAI for codestral_llm: {e}
+")
         traceback.print_exc()
-        if api_key_to_use == CODESTRAL_API_KEY_VALUE and MISTRAL_API_KEY_VALUE and CODESTRAL_API_KEY_VALUE != MISTRAL_API_KEY_VALUE:
-            print("[INFO] Повторная попытка инициализации codestral_llm с MISTRAL_API_KEY...")
-            try:
-                model_for_fallback = os.getenv("CODESTRAL_MODEL_NAME", DEFAULT_MODEL)
-                print(f"[DEBUG] Initializing ChatMistralAI for codestral_llm with model '{model_for_fallback}' using MISTRAL_API_KEY (fallback).")
-                codestral_llm = ChatMistralAI(
-                    model_name=model_for_fallback,
-                    mistral_api_key=MISTRAL_API_KEY_VALUE,
-                    temperature=0.4,
-                )
-                print("[DEBUG] ChatMistralAI for codestral_llm initialized successfully using MISTRAL_API_KEY (fallback).")
-            except Exception as e_fallback:
-                print(f"[ERROR] Ошибка повторной инициализации ChatMistralAI for codestral_llm с MISTRAL_API_KEY: {e_fallback}")
-                traceback.print_exc()
-                codestral_llm = None
-        else:
-            codestral_llm = None
+        codestral_llm = None
+
+    try:
+        # Инициализируем LLM для Mistral (mistral-medium-latest)
+        print(f"[DEBUG] Initializing ChatMistralAI for mistral_llm with model '{DEFAULT_MODEL}'.
+")
+        mistral_llm = ChatMistralAI(
+            model=DEFAULT_MODEL,
+            mistral_api_key=api_key_to_use,
+            temperature=0.7,
+        )
+        print(f"[DEBUG] ChatMistralAI for mistral_llm initialized successfully.
+")
+    except Exception as e:
+        print(f"[ERROR] Ошибка инициализации ChatMistralAI for mistral_llm: {e}
+")
+        traceback.print_exc()
+        mistral_llm = None
+
 
 # --- Функции-инструменты для Триа (определение оставляем, они не выполняются при импорте) ---
 async def generate_code_tool(task_description: str) -> str:
