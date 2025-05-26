@@ -1,2 +1,21 @@
+# Python virtual environment
+venv/
+
+# Node.js modules
+node_modules/
+
+# Python cache
+__pycache__/
+
+# Log files
+*.log
+
+# Environment variables
 .env
-node_modules
+
+# VS Code settings
+.vscode/
+
+# Vim swap files
+*.swp
+*.swo
