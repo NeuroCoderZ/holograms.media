@@ -1,13 +1,13 @@
 # 1. Базовые импорты
 import os
-import uuid
+# import uuid # Removed as it's no longer used directly in app.py
 import json
 import re
 from datetime import datetime
 import traceback
 
 # 2. Импорты FastAPI и Pydantic
-from fastapi import FastAPI, Request, HTTPException, Response
+from fastapi import FastAPI, Request, HTTPException # Response removed as it might be unused
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -20,13 +20,20 @@ from dotenv import load_dotenv
 
 # 3. Импорты остальных библиотек (перенесены сюда)
 import asyncpg # Added for PostgreSQL
-from backend.db import pg_connector, crud_operations # Added for PostgreSQL
+from backend.db import pg_connector, crud_operations # Ensure crud_operations is imported
 # from tenacity import retry, stop_after_attempt, wait_fixed # Removed
 # Импорты для Langchain/LLM оставляем, но код инициализации закомментирован
 from langchain_core.runnables import Runnable
 from langchain_mistralai import ChatMistralAI
 from langchain.tools import Tool
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+
+# Router Imports
+from backend.routers import auth as auth_router
+from backend.routers import gestures as gestures_router
+from backend.routers import holograms as holograms_router
+from backend.routers import chat_sessions as chat_sessions_router
+from backend.routers import prompts as prompts_router
 
 
 # ----------------------------------------------------------------------
@@ -38,14 +45,34 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("[Lifespan] Application startup...")
+    db_conn_for_seeding = None # Connection for seeding
     try:
         await pg_connector.init_pg_pool()
         print("[Lifespan] PostgreSQL connection pool initialized successfully.")
+        
+        # Acquire a connection directly for seeding (not using Depends here)
+        if pg_connector._pool: # Check if pool was initialized
+            print("[Lifespan] Attempting to acquire DB connection for initial user seeding...")
+            db_conn_for_seeding = await pg_connector._pool.acquire() 
+            if db_conn_for_seeding:
+                print("[Lifespan] DB connection acquired. Running initial user seeding...")
+                await crud_operations.create_initial_users(db_conn_for_seeding)
+            else:
+                print("[Lifespan WARN] Could not acquire DB connection for seeding. Initial users may not be created.")
+        else:
+            print("[Lifespan WARN] PostgreSQL pool not available. Skipping initial user seeding.")
+
     except Exception as e:
-        print(f"[Lifespan ERROR] Failed to initialize PostgreSQL pool: {e}")
+        print(f"[Lifespan ERROR] Error during startup or seeding: {e}")
         # Depending on the application's needs, you might want to prevent startup
         # or handle this more gracefully. For now, just logging.
+    finally:
+        if db_conn_for_seeding:
+            await pg_connector._pool.release(db_conn_for_seeding) # Release direct connection
+            print("[Lifespan] DB connection for seeding released.")
+    
     yield # Allow the application to run
+    
     print("[Lifespan] Application shutdown...")
     try:
         await pg_connector.close_pg_pool()
@@ -69,8 +96,15 @@ app.add_middleware(
     allow_headers=["*"], # Временно разрешаем все
 )
 
+# Include Routers
+app.include_router(auth_router.router)
+app.include_router(gestures_router.router)
+app.include_router(holograms_router.router)
+app.include_router(chat_sessions_router.router)
+app.include_router(prompts_router.router)
+
 # ----------------------------------------------------------------------
-# 5. ОПРЕДЕЛЕНИЕ Pydantic МОДЕЛЕЙ (без изменений)
+# 5. ОПРЕДЕЛЕНИЕ Pydantic МОДЕЛЕЙ (Obsolete chat models removed)
 # ----------------------------------------------------------------------
 
 class TriaQuery(BaseModel):
@@ -81,22 +115,11 @@ class JenkinsLogData(BaseModel):
     build_url: str
     timestamp: str
 
-class ChatMessage(BaseModel):
-    role: str
-    content: str
-    timestamp: Optional[str] = None
+# Obsolete ChatMessage, ChatRequest, ChatResponse models are removed.
+# Their functionalities are now handled by models in backend.models.chat_models
+# and the corresponding chat_sessions_router.
 
-class ChatRequest(BaseModel):
-    message: str
-    model: Optional[str] = "mistral/mistral-small-latest"
-    history: Optional[List[Dict[str, str]]] = []
-
-class ChatResponse(BaseModel):
-    response: str
-    should_vocalize: bool = False
-    metadata: Optional[Dict[str, Any]] = None
-
-# class ChatSaveRequest(BaseModel): # Removed
+# class ChatSaveRequest(BaseModel): # Already Removed
 #     chat_id: str
 #     message: ChatMessage
 
@@ -318,217 +341,11 @@ async def read_index():
         print(f"[ERROR /] index.html НЕ НАЙДЕН по пути: {INDEX_HTML_PATH}")
         raise HTTPException(status_code=404, detail="index.html not found")
 
-@app.get("/api/chat_history/{session_id}") # Path parameter for session_id
-async def get_chat_history(session_id: str): # Function name updated
-    """Retrieves chat history for a given session_id from PostgreSQL."""
-    print(f"[API Chat History] GET /api/chat_history/{session_id} called")
-    if not session_id: # Should be caught by FastAPI path param validation, but good practice
-        print("[API Chat History ERROR] session_id is missing.")
-        raise HTTPException(status_code=400, detail="session_id path parameter is required")
+# Obsolete /api/chat_history/{session_id} endpoint removed.
+# Functionality is now part of backend.routers.chat_sessions.router
 
-    conn: Optional[asyncpg.Connection] = None
-    try:
-        conn = await pg_connector.get_pg_connection()
-        print(f"[API Chat History] Acquired PostgreSQL connection for session {session_id}.")
-        
-        history_records = await crud_operations.get_chat_history(conn, session_id=session_id, limit=100) # Increased limit
-        print(f"[API Chat History] Fetched {len(history_records)} messages for session {session_id}.")
-        
-        messages = [
-            {
-                "role": row['role'], 
-                "content": row['message_content'], 
-                "timestamp": row['timestamp'].isoformat() if row['timestamp'] else None
-            } for row in history_records
-        ]
-        # Return in descending order (newest first) as per get_chat_history logic
-        return {"messages": messages, "session_id": session_id, "count": len(messages)}
-
-    except asyncpg.PostgresError as e_pg:
-        error_message = f"Failed to retrieve chat history for session {session_id}: {e_pg}"
-        print(f"[API Chat History ERROR] {error_message}")
-        traceback.print_exc()
-        # Optionally log this to application_logs table as well
-        raise HTTPException(status_code=500, detail=error_message)
-    except Exception as e:
-        error_message = f"Unexpected error retrieving chat history for session {session_id}: {e}"
-        print(f"[API Chat History ERROR] {error_message}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=error_message)
-    finally:
-        if conn:
-            try:
-                await pg_connector.release_pg_connection(conn)
-                print(f"[API Chat History] PostgreSQL connection released for session {session_id}.")
-            except Exception as e_release:
-                print(f"[API Chat History ERROR] Failed to release PostgreSQL connection: {e_release}")
-
-
-@app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    print(f"[CHAT DEBUG] /chat endpoint called with model: {request.model}")
-    # MongoDB client removed
-    db_save_error_note = ""
-    pg_conn: Optional[asyncpg.Connection] = None # For PostgreSQL
-    db_chat_message_id: Optional[int] = None
-    session_id = str(uuid.uuid4()) # Generate a unique session ID for this chat
-
-    # ----- ПРОВЕРКА LLM (Оставляем, т.к. инициализация закомментирована) -----
-    # TODO: Раскомментировать инициализацию LLM выше и убрать эту заглушку
-    if codestral_llm is None: # Проверяем инициализированную переменную LLM
-        print("[CHAT ERROR] LLM не инициализирован!")
-        # Здесь можно было бы попытаться инициализировать LLM, если он не None,
-        # но это лучше делать в lifespan или отдельной функции с кешированием,
-        # а не при каждом запросе. Пока просто возвращаем ошибку.
-        raise HTTPException(status_code=503, detail="LLM Service not available. API keys might be missing or initialization failed.")
-
-    # Формируем историю сообщений для LLM
-    # TODO: Добавь нужный системный промпт для Триа
-    messages = [SystemMessage(content="You are Tria, an AI assistant for the Holograms.media project. Provide concise and helpful responses. If asked to generate code, use the code_generator tool if available.")]
-
-    # Добавляем историю из запроса
-    for msg in request.history:
-        if msg['role'] == 'user':
-            messages.append(HumanMessage(content=msg['content']))
-        elif msg['role'] == 'assistant':
-            messages.append(AIMessage(content=msg['content'])) # Используем AIMessage для ответов ассистента
-        # Пропускаем другие роли, если есть
-
-    # Добавляем текущее сообщение пользователя
-    messages.append(HumanMessage(content=request.message))
-
-    print(f"[CHAT DEBUG] Prepared {len(messages)} messages for LLM.")
-    # print(f"[CHAT DEBUG] Messages: {messages}") # Отладочный вывод, осторожно с чувствительными данными
-
-    try:
-        # Вызов LLM
-        print("[CHAT DEBUG] Attempting codestral_llm.ainvoke...")
-        # !!! ВАЖНО: Здесь вызывается ainvoke на codestral_llm, который сейчас None !!!
-        # Этот роут будет выдавать 503 ошибку до тех пор, пока блок инициализации LLM не будет раскомментирован и исправлен.
-        # Убедись, что API ключи добавлены как Secrets в HF Space перед раскомментированием.
-    response = await codestral_llm.ainvoke(messages) # LLM call
-        response_content = response.content
-        print(f"[CHAT DEBUG] ChatMistralAI response received (first 100 chars): {response_content[:100]}...")
-        should_vocalize = False # TODO: Определить логику озвучивания
-
-    # Сохранение в PostgreSQL
-        try:
-        pg_conn = await pg_connector.get_pg_connection()
-        print(f"[CHAT DB INFO] Acquired PostgreSQL connection for session {session_id}.")
-
-        # Сохраняем сообщение пользователя
-        await crud_operations.add_chat_message(
-            pg_conn, 
-            session_id=session_id, 
-            role="user", 
-            message_content=request.message,
-            metadata={"model": request.model, "llm_history_count": len(request.history)}
-        )
-        
-        # Сохраняем ответ ассистента
-        db_chat_message_id = await crud_operations.add_chat_message(
-            pg_conn, 
-            session_id=session_id, 
-            role="assistant", 
-            message_content=response_content,
-            metadata={"model": request.model, "raw_llm_response_length": len(response_content)}
-        )
-        print(f"[CHAT DB INFO] Chat messages for session {session_id} saved. Assistant msg ID: {db_chat_message_id}")
-
-    except asyncpg.PostgresError as e_pg:
-        print(f"[CHAT DB ERROR] PostgreSQL error while saving chat history for session {session_id}: {e_pg}")
-            traceback.print_exc()
-        db_save_error_note = " (DB Error: Failed to save chat. Incident logged.)"
-        # Логируем ошибку БД в application_logs
-        log_conn_err_pg: Optional[asyncpg.Connection] = None
-        try:
-            log_conn_err_pg = await pg_connector.get_pg_connection()
-            await crud_operations.log_application_event(
-                log_conn_err_pg, 
-                level='ERROR', 
-                source_component='chat_db_pg', 
-                message=f'PostgresError saving chat for session {session_id}', 
-                details={'error': str(e_pg), 'traceback': traceback.format_exc(limit=5)}
-            )
-        except Exception as log_e_pg:
-            print(f"[CHAT DB LOG ERROR] Failed to log PostgresError to application_logs: {log_e_pg}")
-        finally:
-            if log_conn_err_pg:
-                await pg_connector.release_pg_connection(log_conn_err_pg)
-                
-    except Exception as e_db_main:
-        print(f"[CHAT DB ERROR] Unexpected error while saving chat history to PostgreSQL for session {session_id}: {e_db_main}")
-            traceback.print_exc()
-        db_save_error_note = " (DB Error: Failed to save chat. Incident logged.)"
-        # Логируем общую ошибку БД в application_logs
-        log_conn_err_main: Optional[asyncpg.Connection] = None
-        try:
-            log_conn_err_main = await pg_connector.get_pg_connection()
-            await crud_operations.log_application_event(
-                log_conn_err_main, 
-                level='ERROR', 
-                source_component='chat_db_general', 
-                message=f'General error saving chat for session {session_id}', 
-                details={'error': str(e_db_main), 'traceback': traceback.format_exc(limit=5)}
-            )
-        except Exception as log_e_main:
-            print(f"[CHAT DB LOG ERROR] Failed to log general DB error to application_logs: {log_e_main}")
-        finally:
-            if log_conn_err_main:
-                await pg_connector.release_pg_connection(log_conn_err_main)
-
-        final_response_content = response_content
-        if db_save_error_note:
-            final_response_content += db_save_error_note
-
-    return ChatResponse(
-        response=final_response_content, 
-        should_vocalize=should_vocalize, 
-        metadata={
-            "chat_id": session_id, # chat_id is now session_id
-            "assistant_message_id": str(db_chat_message_id) if db_chat_message_id else None
-        }
-    )
-
-    except HTTPException as he:
-         # Если это наша HTTPException (например, 503 от проверки LLM), просто пробрасываем ее
-         raise he
-    except Exception as e:
-        # Ловим все остальные ошибки при вызове LLM или обработке ответа
-        print(f"[CHAT GENERAL ERROR] Exception during LLM call or general processing for session {session_id}: {e}")
-        traceback.print_exc()
-        error_details = str(e)
-
-        # Логируем НЕ-HTTP исключение в application_logs
-        if not isinstance(e, HTTPException): # Только если это не уже обработанная HTTP ошибка
-            log_conn_general_ex: Optional[asyncpg.Connection] = None
-            try:
-                log_conn_general_ex = await pg_connector.get_pg_connection()
-                await crud_operations.log_application_event(
-                    log_conn_general_ex,
-                    level='ERROR',
-                    source_component='chat_llm_or_general',
-                    message=f'General error in /chat endpoint for session {session_id}',
-                    details={'error': error_details, 'traceback': traceback.format_exc(limit=5), 'request_model': request.model}
-                )
-                print(f"[CHAT GENERAL ERROR LOG] Logged general error for session {session_id} to application_logs.")
-            except Exception as log_ex_general:
-                print(f"[CHAT GENERAL ERROR LOG FAIL] Failed to log general error to application_logs: {log_ex_general}")
-            finally:
-                if log_conn_general_ex:
-                    await pg_connector.release_pg_connection(log_conn_general_ex)
-        
-        # Возвращаем общую ошибку сервера, не раскрывая слишком много внутренних деталей
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: Failed to process chat request. Details: {error_details[:200]}...")
-
-    finally:
-        # Важно закрывать соединение с PostgreSQL в конце обработки запроса
-        if pg_conn:
-            try:
-                await pg_connector.release_pg_connection(pg_conn)
-                print(f"[CHAT DB INFO] PostgreSQL connection released for session {session_id}.")
-            except Exception as e_release_pg:
-                print(f"[CHAT DB ERROR] Failed to release PostgreSQL connection for session {session_id}: {e_release_pg}")
+# Obsolete /chat endpoint removed.
+# Functionality is now part of backend.routers.chat_sessions.router
 
 
 # <<< ЗАГЛУШКИ для остальных роутов, использующих DB или LLM/инструменты >>>
