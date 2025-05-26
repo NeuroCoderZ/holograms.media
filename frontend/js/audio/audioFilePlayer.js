@@ -1,6 +1,6 @@
 // frontend/js/audio/audioFilePlayer.js
 import { state } from '../core/init.js';
-import { getAudioContext, createAnalyserNodes } from './audioProcessing.js';
+import { getAudioContext, setupAudioProcessing } from './audioProcessing.js'; // Modified import
 
 // Элементы управления плеером (module-level variables)
 let fileInput = null; // Renamed from audioFileInput for consistency, was implicitly module-level
@@ -21,35 +21,7 @@ function ensureAudioContext() {
   }
 }
 
-/**
- * Настраивает обработку аудио для источника.
- * @param {AudioBufferSourceNode} source - Источник аудио.
- */
-function setupAudioProcessing(source) {
-  ensureAudioContext();
-  if (!state.audio.audioContext) {
-    console.error('AudioContext is not initialized for player.');
-    return;
-  }
-
-  // Disconnect previous gain node if it exists
-  if (state.audio.filePlayerGainNode) {
-    state.audio.filePlayerGainNode.disconnect();
-  }
-
-  state.audio.filePlayerAnalysers = createAnalyserNodes(state.audio.audioContext, 0);
-  state.audio.filePlayerGainNode = state.audio.audioContext.createGain();
-  
-  const splitter = state.audio.audioContext.createChannelSplitter(2);
-
-  source.connect(state.audio.filePlayerGainNode);
-  state.audio.filePlayerGainNode.connect(splitter);
-  splitter.connect(state.audio.filePlayerAnalysers.left, 0);
-  splitter.connect(state.audio.filePlayerAnalysers.right, 1);
-  state.audio.filePlayerGainNode.connect(state.audio.audioContext.destination);
-
-  state.audio.audioBufferSource = source; // Сохраняем ссылку на текущий источник в state
-}
+// REMOVED internal setupAudioProcessing function. The imported one will be used.
 
 /**
  * Обработчик загрузки файла.
@@ -134,7 +106,8 @@ function playAudio() {
   state.audio.audioBufferSource = state.audio.audioContext.createBufferSource();
   state.audio.audioBufferSource.buffer = state.audio.audioBuffer;
   
-  setupAudioProcessing(state.audio.audioBufferSource); 
+  // Call the imported setupAudioProcessing
+  setupAudioProcessing(state.audio.audioBufferSource, 'file'); 
 
   const offsetToPlay = state.audio.pausedAt;
   state.audio.audioBufferSource.start(0, offsetToPlay);
