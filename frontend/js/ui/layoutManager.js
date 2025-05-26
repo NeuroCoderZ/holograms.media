@@ -85,17 +85,30 @@ export function updateHologramLayout(handsVisible) {
     new window.TWEEN.Tween(state.hologramPivot.position)
       .to({ y: targetPositionY }, 500) // Длительность анимации 500мс
       .easing(window.TWEEN.Easing.Quadratic.InOut)
+      .onComplete(() => {
+          if (state.activeCamera) state.activeCamera.updateProjectionMatrix();
+          // console.log('[Layout] Position Animation complete'); 
+      })
       .start();
   } else {
     // Если TWEEN недоступен, применяем изменения мгновенно
     state.hologramPivot.scale.set(targetScale, targetScale, targetScale);
     state.hologramPivot.position.y = targetPositionY;
+    // Update camera if no TWEEN
+    if (state.activeCamera) state.activeCamera.updateProjectionMatrix();
   }
 
   // Обновляем размер рендерера и камеры
+  // The renderer size and camera aspect are typically handled by a dedicated resize handler.
+  // However, updateHologramLayout might be called when handsVisible changes, affecting available space.
+  // The existing lines update based on full window.innerWidth/Height.
+  // This could be correct if gridContainer is positioned absolutely and renderer overlays everything.
+  // If renderer is confined to gridContainer, then availableWidth/availableHeight should be used.
+  // For now, keeping original logic, but it's a point of attention for consistency with resize handler.
   state.renderer.setSize(window.innerWidth, window.innerHeight);
-  state.camera.aspect = window.innerWidth / window.innerHeight;
-  state.camera.updateProjectionMatrix();
+  // state.camera.aspect = window.innerWidth / window.innerHeight; // This is for the fallback state.camera
+  // The activeCamera's aspect ratio (if perspective) should be updated in the main resize handler.
+  // The updateProjectionMatrix for activeCamera is now handled in TWEEN's onComplete or directly if no TWEEN.
 
   // Обновляем позицию gestureArea, если она видима
   if (handsVisible && state.uiElements.containers.gestureArea) {
