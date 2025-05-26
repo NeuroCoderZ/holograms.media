@@ -13,6 +13,7 @@ import { runFrontendDiagnostics } from '/static/js/core/diagnostics.js';
 // Импорт UI модулей
 import { initializeMainUI } from '/static/js/ui/uiManager.js'; // Модуль управления UI
 import { initializePanelManager } from '/static/js/ui/panelManager.js'; // Модуль управления панелями
+import { updateHologramLayout } from '/static/js/ui/layoutManager.js'; // Added import
 import { initializePromptManager } from '/static/js/ui/promptManager.js'; // Импорт менеджера промптов
 import { initializeVersionManager } from '/static/js/ui/versionManager.js'; // Импорт менеджера версий
 import { initializeGestureAreaVisualization } from '/static/js/ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
@@ -38,6 +39,7 @@ import { initializeTria } from '/static/js/ai/tria.js'; // Путь исправ
 // Импорт обработчиков событий
 import { setupDOMEventHandlers } from '/static/js/core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
 import { initializeResizeHandler } from '/static/js/core/resizeHandler.js'; // Импорт обработчика изменения размера окна
+import { initializeHologramRotationControls } from '/static/js/core/events.js'; // Added import
 
 
 // Импорт моста для обратной совместимости (закомментирован отсутствующий)
@@ -86,8 +88,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 8. Устанавливаем обработчики событий (зависят от DOM, state, сцены)
   setupDOMEventHandlers();
-  initializeResizeHandler();
+  initializeResizeHandler(); // This will set up the resize listener
   setupEventListeners();
+  initializeHologramRotationControls(); // Added call
+  
+  // Initial layout update (after scene and panels are likely initialized)
+  updateHologramLayout(false); // Call with handsVisible = false initially
 
   // 9. Запускаем анимационный цикл
   animate();

@@ -4,12 +4,24 @@
 export const state = {
   // --- Состояние 3D сцены ---
   scene: null,                // Объект сцены Three.js
-  camera: null,               // Камера Three.js
+  camera: null,               // Камера Three.js // This is the fallback, activeCamera will be the primary
+  orthoCamera: null,          // Added in Block A
+  xrCamera: null,             // Added in Block A
+  activeCamera: null,         // Added in Block A
   renderer: null,             // Рендерер Three.js
   hologramPivot: null,        // Опорная точка для голограммы (THREE.Group)
   gridHelper: null,           // Сетка-помощник
   ambientLight: null,         // Окружающий свет
   directionalLight: null,     // Направленный свет
+  hemisphereLight: null,      // Added in previous step
+  spotLight: null,            // Added in previous step
+  gridPointLight: null,       // Added in previous step
+  semitones: [],              // Add this for sequencer
+  columns: [],                // Add this for sequencer
+  mainSequencerGroup: null,   // Should exist
+  leftSequencerGroup: null,   // Should exist
+  rightSequencerGroup: null,  // Should exist
+
 
   // --- Состояние управления и взаимодействия ---
   controls: null,             // OrbitControls или другие элементы управления камерой
@@ -34,20 +46,26 @@ export const state = {
 
   // Группировка аудио состояния
   audio: {
-    audioContext: null,         // Аудиоконтекст Web Audio API
-    analyser: null,
+    audioContext: null,
     microphoneStream: null,
-    analyserLeft: null,         // For microphone
-    analyserRight: null,        // For microphone
-    audioSource: null,          // Legacy or general source, activeSource is more specific
-    audioBuffer: null,          // Буфер загруженного аудиофайла
-    audioBufferSource: null,    // Источник буфера для воспроизведения файла
-    isPlaying: false,           // Флаг воспроизведения аудиофайла (specific to file player)
-    pausedAt: 0,                // Позиция паузы в секундах (specific to file player)
-    startOffset: 0,             // Смещение начала воспроизведения (specific to file player)
-    activeSource: 'none',       // NEW: Indicates current audio source ('none', 'file', 'microphone')
-    filePlayerAnalysers: null,  // NEW: Analysers for the file player {left: AnalyserNode, right: AnalyserNode}
-    filePlayerGainNode: null,   // NEW: GainNode for the file player
+    // analyserLeft: null, // General/fallback, or specifically for microphone if decided - Deprecating for specific ones
+    // analyserRight: null, // General/fallback, or specifically for microphone if decided - Deprecating for specific ones
+    audioSource: null,          // Can be the current MediaStreamAudioSourceNode or AudioBufferSourceNode
+    audioBuffer: null,
+    audioBufferSource: null,
+    isPlaying: false,
+    pausedAt: 0,
+    startOffset: 0,
+    activeSource: 'none',       // 'none', 'file', 'microphone'
+    
+    // Specific for file player (from script.js logic)
+    filePlayerAnalysers: null, // Should be an object { left: AnalyserNode, right: AnalyserNode }
+    filePlayerGainNode: null,
+
+    // Specific for microphone (from script.js logic)
+    microphoneAnalysers: null, // Should be an object { left: AnalyserNode, right: AnalyserNode }
+    microphoneGainNode: null, 
+    // analyser: null, // This might be deprecated if using specific ones below - confirmed deprecated
   },
 
   // Группировка мультимодального состояния

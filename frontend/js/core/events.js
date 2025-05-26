@@ -5,6 +5,7 @@ import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
 import { togglePanels, initializePanelState } from '../ui/panelManager.js';
 import { uiElements, toggleChatMode } from '../ui/uiManager.js';
 import { updateHologramLayout } from '../ui/layoutManager.js';
+import * as THREE from 'three'; // Needed for THREE.MathUtils
 
 // Удаляем дублирующееся объявление ui
 // const ui = uiElements;
@@ -144,14 +145,17 @@ function setupTextInputEventListeners() {
  * Sets up event listeners for window events.
  */
 function setupWindowEventListeners() {
-    // Resize event
-    window.addEventListener('resize', () => {
-        // Dispatch a custom event that other modules can listen to
-        const resizeEvent = new CustomEvent('windowResized');
-        window.dispatchEvent(resizeEvent);
-    });
+    // Resize event logic has been moved to frontend/js/core/resizeHandler.js
+    // The original resize listener here was:
+    // window.addEventListener('resize', () => {
+    //     // Dispatch a custom event that other modules can listen to
+    //     const resizeEvent = new CustomEvent('windowResized');
+    //     window.dispatchEvent(resizeEvent);
+    // });
 
     // TODO: Add other window event listeners if needed (e.g., scroll, load)
+    // For now, this function might be empty or handle other window events if any are added.
+    // If it becomes empty and is only called for resize, the call to it can be removed.
 }
 
 /**
@@ -302,7 +306,8 @@ export function setupEventListeners() {
   setupTextInputListeners();
   
   // Обработчики для ресайза и ориентации
-  setupWindowListeners();
+  // setupWindowListeners(); // Resize handling is now in core/resizeHandler.js. 
+  // If setupWindowListeners handles other events, it can remain. For now, assuming it was primarily for resize.
   
   // Обработчики для файлов
   setupFileListeners();
@@ -451,62 +456,15 @@ function setupTextInputListeners() {
 
 // Настройка обработчиков для окна
 function setupWindowListeners() {
-  // Обработчик изменения размера окна
-  window.addEventListener('resize', () => {
-    // Обновление макета голограммы
-    requestAnimationFrame(() => {
-      // Расширенная проверка перед вызовом updateHologramLayout
-      // Проверяем наличие всех необходимых компонентов UI и Three.js
-      if (ui && ui.containers && ui.containers.gridContainer && ui.containers.gestureArea && 
-          state && state.hologramPivot && state.scene && state.camera && state.renderer) {
-        // Все необходимые компоненты доступны, можно обновлять макет
-        updateHologramLayout(state.handsVisible);
-      } else {
-        // Если какой-то компонент отсутствует, выводим подробное предупреждение
-        const missingComponents = [];
-        if (!ui || !ui.containers) missingComponents.push('ui.containers');
-        if (ui && ui.containers && !ui.containers.gridContainer) missingComponents.push('gridContainer');
-        if (ui && ui.containers && !ui.containers.gestureArea) missingComponents.push('gestureArea');
-        if (!state) missingComponents.push('state');
-        if (state && !state.hologramPivot) missingComponents.push('hologramPivot');
-        if (state && !state.scene) missingComponents.push('scene');
-        if (state && !state.camera) missingComponents.push('camera');
-        if (state && !state.renderer) missingComponents.push('renderer');
-        
-        console.warn(`[Events/resize] Skipping updateHologramLayout: missing components: ${missingComponents.join(', ')}`);
-        
-        // Пытаемся инициализировать hologramPivot из глобального объекта, если он доступен
-        if (state && !state.hologramPivot && window.hologramPivot) {
-          state.hologramPivot = window.hologramPivot;
-          console.log('hologramPivot инициализирован из глобального объекта в обработчике resize');
-        }
-        
-        // Пытаемся инициализировать scene из глобального объекта, если он доступен
-        if (state && !state.scene && window.scene) {
-          state.scene = window.scene;
-          console.log('scene инициализирована из глобального объекта в обработчике resize');
-        }
-      }
-    });
-    
-    // Обработка трехмерной сцены
-    if (state && state.renderer && state.camera) { // Добавлена проверка на state и его свойства
-      // Размеры должны браться из gridContainer, если он есть, или из window
-      const container = ui.containers && ui.containers.gridContainer ? ui.containers.gridContainer : window;
-      const newWidth = container.innerWidth || container.clientWidth;
-      const newHeight = container.innerHeight || container.clientHeight;
-
-      state.renderer.setSize(newWidth, newHeight);
-      state.camera.aspect = newWidth / newHeight;
-      state.camera.updateProjectionMatrix();
-    }
-  });
+  // Обработчик изменения размера окна - This logic is now in core/resizeHandler.js
+  // window.addEventListener('resize', () => { ... });
   
   // Обработчик изменения ориентации для мобильных устройств
   window.addEventListener('orientationchange', () => {
     setTimeout(() => {
-      window.dispatchEvent(new Event('resize')); // Триггерим событие resize для обновления макета
-    }, 500); // Небольшая задержка для учета изменений размеров после поворота
+      // Dispatching a resize event is fine, as core/resizeHandler.js will pick it up.
+      window.dispatchEvent(new Event('resize')); 
+    }, 500); 
   });
 }
 
@@ -521,3 +479,57 @@ function setupFileListeners() {
 // TODO: Reimplement XR mode functionality
 // TODO: Reimplement gesture recording functionality
 // TODO: Reimplement toggleGestureRecording function
+
+// --- Hammer.js Rotation Control ---
+const ROTATION_RETURN_DURATION = 300;
+const ROTATION_LIMIT = Math.PI / 2; // 90 degrees
+
+export function initializeHologramRotationControls() {
+    if (typeof Hammer === 'undefined') {
+        console.error('Hammer.js is not loaded.');
+        return;
+    }
+    if (!state.renderer || !state.renderer.domElement) {
+        console.error('Renderer or DOM element not found for Hammer.js.');
+        return;
+    }
+    if (!state.hologramPivot) {
+        console.error('Hologram pivot not found for rotation.');
+        return;
+    }
+
+    const hammer = new Hammer(state.renderer.domElement);
+    hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+
+    hammer.on('pan', (ev) => {
+        if (!state.hologramPivot) return;
+
+        const deltaX = ev.deltaX / window.innerWidth;
+        const deltaY = ev.deltaY / window.innerHeight;
+
+        let rotationY = deltaX * Math.PI; 
+        let rotationX = deltaY * Math.PI; 
+        
+        state.hologramPivot.rotation.y = THREE.MathUtils.clamp(rotationY, -ROTATION_LIMIT, ROTATION_LIMIT);
+        state.hologramPivot.rotation.x = THREE.MathUtils.clamp(rotationX, -ROTATION_LIMIT, ROTATION_LIMIT);
+        state.hologramPivot.rotation.z = 0; // Prevent Z rotation
+    });
+
+    hammer.on('panend', () => {
+        if (!state.hologramPivot) return;
+        if (typeof TWEEN === 'undefined') { 
+            console.error('TWEEN.js is not loaded. Cannot animate rotation return.'); 
+            // Fallback: Snap back to 0 if TWEEN is not available
+            state.hologramPivot.rotation.x = 0;
+            state.hologramPivot.rotation.y = 0;
+            state.hologramPivot.rotation.z = 0;
+            return; 
+        }
+
+        new TWEEN.Tween(state.hologramPivot.rotation)
+            .to({ x: 0, y: 0 }, ROTATION_RETURN_DURATION)
+            .easing(TWEEN.Easing.Cubic.Out) 
+            .start();
+    });
+    console.log("Hologram rotation controls initialized with Hammer.js");
+}
