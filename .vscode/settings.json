@@ -1,5 +1,6 @@
 {
     "IDX.aI.enableInlineCompletion": true,
     "IDX.aI.enableCodebaseIndexing": true,
-    "python.defaultInterpreterPath": "python"
+    "python.defaultInterpreterPath": "/home/user/holograms.media/venv/bin/python",
+    "python.terminal.activateEnvInCurrentTerminal": true
 }
