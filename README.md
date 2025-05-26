@@ -1,3 +1,14 @@
+---
+title: Holograms.media
+emoji: 🌟
+colorFrom: green
+colorTo: indigo
+sdk: gradio
+sdk_version: "5.x"
+app_file: backend/app.py
+pinned: false
+---
+
 # Holograms.media
 
 Welcome to the open-source project "Holograms.media"!
@@ -72,7 +83,7 @@ Full task list: [GitHub Issues](https://github.com/NeuroCoderZ/holograms.media/i
     *   **Python Virtual Environment:**
         ```bash
         python3 -m venv venv
-        source venv/bin/activate # On Windows: .env\Scripts\activate
+        source venv/bin/activate # On Windows: . env\Scripts\activate
         pip install -r backend/requirements.txt
         ```
     *   **PostgreSQL:** Ensure PostgreSQL is running locally (e.g., via Docker, Homebrew, or native install).
@@ -102,4 +113,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Refer to [Roadmap](docs/00_OVERVIEW_AND_CONTEXT/ROADMAP.md) for a detailed plan of future development and milestones.
 
 ---
-
