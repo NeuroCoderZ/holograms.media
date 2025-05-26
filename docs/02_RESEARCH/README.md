@@ -2,7 +2,7 @@
 
 This directory is dedicated to exploring cutting-edge technologies that could
 significantly enhance the "Holographic Media" project in the long term, as
-outlined in `FUTUREARCHITECTURE.md`.
+outlined in the "Future Directions" section of `../01_ARCHITECTURE/SYSTEM_ARCHITECTURE.md`.
 
 The research areas include:
 

@@ -99,7 +99,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🗺️ Roadmap
 
-Refer to [ROADMAP.md](ROADMAP.md) for a detailed plan of future development and milestones.
+Refer to [Roadmap](docs/00_OVERVIEW_AND_CONTEXT/ROADMAP.md) for a detailed plan of future development and milestones.
 
 ---
 
