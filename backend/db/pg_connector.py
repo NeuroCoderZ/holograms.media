@@ -183,3 +183,32 @@ async def close_pg_pool():
 #         await close_pg_pool()
 #
 #     asyncio.run(main_example())
+
+# FastAPI Dependency for DB Connection
+async def get_db_connection(): # This is the dependency injector
+    conn = None
+    try:
+        # _pool is the global pool variable defined in pg_connector.py
+        if _pool is None:
+            print("[DB Dep ERROR] Connection pool not initialized.")
+            # In a real app, you might raise HTTPException here or ensure pool is always up.
+            # For now, relying on lifespan to initialize it.
+            raise ConnectionError("Database connection pool is not available.")
+        
+        # print("[DB Dep DEBUG] Acquiring connection from pool...")
+        conn = await _pool.acquire()
+        # print("[DB Dep DEBUG] Connection acquired.")
+        yield conn
+    except Exception as e:
+        print(f"[DB Dep ERROR] Error acquiring DB connection: {e}")
+        # Consider raising HTTPException for specific error types if needed by endpoints
+        # For now, let the endpoint deal with it if conn is None or an error occurs
+        # However, if acquire() itself fails significantly, it might be better to raise 503.
+        # Let's assume acquire can raise errors that should propagate.
+        # If an HTTPException is raised here, it will bypass the finally block for that specific error.
+        raise # Re-raise the original exception to be handled by FastAPI or endpoint
+    finally:
+        if conn:
+            # print("[DB Dep DEBUG] Releasing connection back to pool...")
+            await _pool.release(conn)
+            # print("[DB Dep DEBUG] Connection released.")
