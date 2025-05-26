@@ -1,123 +1,105 @@
----
-title: Holograms Media
-emoji: ✴️
-colorFrom: gray  # Темно-серый (допустимое значение: gray)
-colorTo: purple  # Сине-фиолетовый (BlueViolet) - близко к чистому фиолетовому (допустимое значение: purple)
-sdk: docker
-app_file: app.py
-app_port: 7860
-pinned: false
-license: mit
----
+# Holograms.media
 
+Welcome to the open-source project "Holograms.media"!
 
-# Holograms Media (holograms.media)
+This ambitious initiative aims to create a multimodal immersive platform for generating and managing dynamic 3D audiovisualizations (referred to as "holograms"). At its core is "Tria," an AI assistant designed to facilitate human-AI co-creation and interaction within this holographic space.
 
-**Интерактивные 3D Аудиовизуализации с AI-Ассистентом "Триа".**
+## 🌟 Vision
 
-[![Status](https://img.shields.io/badge/status-alpha_development-orange.svg)](https://github.com/NeuroCoderZ/holograms.media)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub issues](https://img.shields.io/github/issues/NeuroCoderZ/holograms.media.svg)](https://GitHub.com/NeuroCoderZ/holograms.media/issues/)
-[![GitHub stars](https://img.shields.io/github/stars/NeuroCoderZ/holograms.media.svg)](https://GitHub.com/NeuroCoderZ/holograms.media/stargazers/)
+Our vision is to build a platform where users can intuitively create, manipulate, and experience immersive holographic content through natural interfaces (voice, gesture, thought) powered by advanced AI. We aim to explore the frontiers of human-computer interaction in 3D environments, moving beyond traditional screens.
 
-**Live Demo (Экспериментальное развертывание):** [https://huggingface.co/spaces/NeuroCoderZ/holograms-media](https://huggingface.co/spaces/NeuroCoderZ/holograms-media)
-**(Целевой домен: https://holograms.media - в процессе настройки)**
+## ✨ Features (Current & Planned)
 
-## 🌟 Обзор Проекта
+### Current Working Components:
 
-**Holograms Media** — это open-source (MIT License) исследовательская и девелоперская платформа, нацеленная на создание новой парадигмы человеко-машинной и человеко-человеческой коммуникации. В основе лежит интерактивное взаимодействие с динамическими **3D-аудиовизуализациями ("голограммами")** звука и, в перспективе, других форм информации.
+*   Backend is fully functional for user authentication, chat with Tria, and chat history saving (migrated from MongoDB to PostgreSQL with `pgvector`).
+*   Frontend loads, basic UI (panels, some buttons) partially works.
+*   Panel hide/show button works.
 
-**Ключевые особенности и долгосрочные цели:**
+### Immediate Goals (Priorities):
 
-*   **Мультимодальный интерфейс:** Управление через жесты (включая РЖЯ/ASL, кастомные системы, акустическую локацию), голос, мимику и биометрию.
-*   **AI-Ассистент "Триа":** Эволюционирующий AI ("Триа соберет себя сама"), помогающий в творчестве, анализе и взаимодействии, обучающийся на принципах "медленного обучения".
-*   **Высокоточная аудиовизуализация:** Переход к вейвлет-анализу (130+ полутонов) и WebAssembly для производительности.
-*   **Новый язык коммуникации:** Создание интуитивных аудиовизуальных и жестовых паттернов, минимизируя текстовую информацию.
-*   **Иммерсивность:** Глубокая интеграция с WebXR и WebGPU.
-*   **Децентрализация (R&D):** Исследование концепции **"ГолоГраф"** (ранее "Инфокойн") для токеномики, "жестового/интеллектуального майнинга" и экономики внимания.
+1.  **CRITICAL:** Fix `TypeError: Assignment to constant variable` in `script.js`.
+2.  **REFACTOR `script.js`:** Continue moving UI logic to `uiManager.js` and Three.js logic to `sceneSetup.js`.
+3.  Restore "Chat" button functionality.
+4.  Correct "Tria" button logic and `/tria/invoke` URL.
+5.  Reduce excessive `console.log` output.
 
-Мы верим в силу открытого исходного кода и совместной разработки для построения будущего, где технологии расширяют границы человеческого восприятия.
+Full task list: [GitHub Issues](https://github.com/NeuroCoderZ/holograms.media/issues) and [Projects](https://github.com/NeuroCoderZ/holograms.media/projects).
 
-## Project Structure Overview
+## 🛠 Technology Stack (Key)
 
-This project is organized into several key top-level directories, reflecting its modular architecture and long-term vision:
+### Frontend:
 
--   **`/frontend`**: Contains all client-side code for the Holographic Media application. This includes the user interface (UI), 3D rendering pipelines (including WebGL, WebGPU, and WebXR placeholders), audio processing, and multimodal input handling (gestures, voice).
--   **`/backend`**: Houses the server-side application built with FastAPI. It includes API endpoints, data models, database interaction layers (PostgreSQL with pgvector), and the core logic for the "Tria" AI assistant bot network.
--   **`/nethologlyph`**: Dedicated to the "NetHoloGlyph" protocol, defining data structures and communication mechanisms for exchanging holographic symbols, gestural commands, and Tria AI states between clients and the server, or peer-to-peer.
--   **`/holograph`**: Contains all components related to the "HoloGraph" decentralized economy. This includes smart contracts (e.g., for the HoloGraph Token (HGT) and DAO governance), tokenomics documentation, and concepts for "intellectual mining."
--   **`/research`**: A directory for research and development into future technologies that are part of the project's long-term vision. This includes explorations into neurointerface integration, neuromorphic computing for AI tasks, and quantum algorithms for specific computational challenges.
+*   **HTML, CSS, Pure JavaScript:** Emphasis on clean, native web technologies.
+*   **Three.js:** For 3D rendering and scene management.
+*   **MediaPipe:** For real-time hand tracking and gesture recognition.
+*   **Web Audio API:** For advanced audio processing and visualization.
+*   **WebXR:** For immersive experiences (future integration).
+*   **WebGPU:** For high-performance 3D graphics (future integration).
 
-Each of these directories contains its own `README.md` with more detailed information about its specific structure and purpose.
+### Backend:
 
-## 🚀 Текущий Статус (Версия ~0.1.8 - Alpha, коммит `41be695` или новее)
+*   **Python:** Main language.
+*   **FastAPI:** High-performance web framework for API.
+*   **PostgreSQL with pgvector:** Robust relational database with vector similarity search for knowledge graph and memory features.
+*   **Pydantic:** Data validation and settings management.
+*   **LangChain:** Framework for developing applications powered by language models.
+*   **Mistral AI / Codestral:** LLM integration for "Tria" AI assistant (via API).
+*   **Gradio:** For rapid prototyping and demoing of LLM interactions.
 
-Проект находится в активной стадии разработки и стабилизации базового функционала.
+### Other Tools & Concepts:
 
-*   **Backend (`app.py`):** FastAPI (Python), LLM (Mistral API через ChatMistralAI) инициализируется, эндпоинт `/chat` работает и сохраняет историю в MongoDB Atlas. Заглушка для `/api/chat_history` добавлена.
-*   **Frontend:** JavaScript (ES6 Modules), Three.js. Основные JS-файлы загружаются без 404. **Критическая ошибка `Uncaught TypeError: Assignment to constant variable` в `script.js` (строка ~1139) блокирует отображение голограммы.** Идет активный рефакторинг `script.js` на модули.
-*   **Развертывание:** Hugging Face Spaces (Docker).
+*   **Docker:** For containerization and consistent deployment across environments (Hugging Face Spaces, Google Cloud Run).
+*   **GitHub Actions:** For CI/CD automation.
+*   **Firebase Hosting:** For static frontend deployment.
+*   **Nix / NixOS:** For reproducible development environments.
+*   **Hugging Face Spaces:** For quick AI demo deployment.
+*   **Google Cloud Platform (GCP):** Future target for scalable deployment (Cloud Run, Cloud SQL).
 
-**Основные работающие компоненты:**
-*   Бэкенд полностью функционален для чата с Триа и сохранения истории.
-*   Фронтенд загружается, базовый UI (панели, некоторые кнопки) частично работает.
-*   Кнопка скрытия/показа панелей работает.
-*   Кнопка "Чат" не переключает вид из-за JS ошибки.
+## 🚀 Getting Started (Development)
 
-**Ближайшие цели (Приоритеты):**
-1.  **КРИТИЧНО:** Устранить ошибку `TypeError: Assignment to constant variable` в `script.js`.
-2.  **РЕФАКТОРИНГ `script.js`:** Продолжить вынос UI-логики в `uiManager.js` и логики Three.js в `sceneSetup.js`.
-3.  Восстановить работоспособность кнопки "Чат".
-4.  Исправить логику кнопки "Триа" и URL для `/tria/invoke`.
-5.  Уменьшить избыточный вывод `console.log`.
-
-Полный список задач: [GitHub Issues](https://github.com/NeuroCoderZ/holograms.media/issues) и [Projects](https://github.com/NeuroCoderZ/holograms.media/projects).
-
-## 🛠 Технологический Стек (Ключевые)
-
-*   **Бэкенд:** Python 3.12, FastAPI, Uvicorn, Motor, LangChain, `langchain-mistralai`.
-*   **Фронтенд:** JavaScript (ES6 Modules), Three.js, Web Audio API, Web Speech API, HTML5, CSS3.
-*   **База данных:** MongoDB Atlas.
-*   **AI Модели:** Mistral API.
-*   **Инструменты разработки:** Trae IDE (Claude 3.x, Gemini 2.5 Pro), Git, GitHub.
-*   **Целевые/R&D:** WebAssembly, Вейвлеты, WebXR/WebGPU, TypeScript, React/Vue/Svelte, PyTorch, Векторные БД, Kubernetes, Блокчейн "ГолоГраф".
-
-## 🏁 Начало Работы (Локальная Разработка)
-
-1.  **Клонируйте репозиторий:**
+1.  **Clone the repository:**
     ```bash
     git clone https://github.com/NeuroCoderZ/holograms.media.git
     cd holograms.media
     ```
-2.  **Настройте виртуальное окружение Python** (3.12+):
+2.  **Install Frontend Dependencies (if using npm/yarn for dev):**
     ```bash
-    python -m venv venv
-    # Windows: venv\Scripts\activate | macOS/Linux: source venv/bin/activate
+    # If package.json is used for frontend build steps
+    # npm install
     ```
-3.  **Установите зависимости:** `pip install -r requirements.txt`
-4.  **Создайте `.env` файл** в корне с вашими `MONGO_URI` и `MISTRAL_API_KEY`.
-    ```env
-    MONGO_URI="mongodb+srv://<user>:<password>@<cluster>/holograms_db?retryWrites=true&w=majority&appName=Cluster0"
-    MISTRAL_API_KEY="sk-yourkey"
-    # CODESTRAL_API_KEY="yourkey" # (Если есть)
-    # DEFAULT_MODEL="mistral-small-latest"
+3.  **Setup Backend (Python & PostgreSQL):**
+    *   **Python Virtual Environment:**
+        ```bash
+        python3 -m venv venv
+        source venv/bin/activate # On Windows: .env\Scripts\activate
+        pip install -r backend/requirements.txt
+        ```
+    *   **PostgreSQL:** Ensure PostgreSQL is running locally (e.g., via Docker, Homebrew, or native install).
+    *   **Database Setup:** Connect to your PostgreSQL instance and create the database (`holograms_db`) and user (`holograms_user`) as specified in `backend/db/schema.sql` and `backend/db/pg_connector.py`.
+    *   **Environment Variables:** Create a `.env` file in the `backend/` directory based on `backend/.env.example` and fill in your database credentials and API keys.
+
+4.  **Run the Backend (FastAPI):**
+    ```bash
+    cd backend
+    uvicorn app:app --reload --host 0.0.0.0 --port 8000
     ```
-5.  **Разрешите доступ вашему IP в MongoDB Atlas Network Access List.**
-6.  **Запустите сервер:** `uvicorn app:app --host 0.0.0.0 --port 8000 --reload`
-7.  Откройте `http://localhost:8000`.
+    (Ensure `uvicorn` is installed via `pip install "uvicorn[standard]"`)
 
-## 🤝 Участие в Проекте
+5.  **Serve the Frontend:**
+    *   Open `frontend/index.html` directly in your browser, or use a local web server (e.g., Python's `http.server` or Firebase Emulators).
 
-Мы приветствуем вклад! Ознакомьтесь с [Issues](https://github.com/NeuroCoderZ/holograms.media/issues), создайте форк, ветку и Pull Request.
+## 💡 Contribution
 
-## 📜 Лицензия
+We welcome contributions from the community! Feel free to open issues, submit pull requests, or join discussions.
 
-MIT License - см. [LICENSE](LICENSE).
+## 📄 License
 
-## 📞 Контакты
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-*   Telegram-чат проекта: [https://t.me/+WjtL4ipr-yljNGRi](https://t.me/+WjtL4ipr-yljNGRi)
-*   Telegram-канал проекта: [https://t.me/+-AixvGk1dGdiZTAy](https://t.me/+-AixvGk1dGdiZTAy)
+## 🗺️ Roadmap
+
+Refer to [ROADMAP.md](ROADMAP.md) for a detailed plan of future development and milestones.
 
 ---
-P.S. Этот README.md активно обновляется. Следите за изменениями!
+
