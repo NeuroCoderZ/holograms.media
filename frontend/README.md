@@ -1,42 +1,12 @@
-# Holographic Media Frontend
+# React + Vite
 
-This directory contains all client-side code for the Holographic Media project,
-responsible for rendering holograms, handling user interactions, and communicating with the backend.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Key Subdirectories
+Currently, two official plugins are available:
 
--   **/js**: Contains all JavaScript modules.
-    -   **/3d**: Core 3D rendering logic.
-        -   **/webgpu**: WebGPU specific rendering components for high-performance graphics.
-    -   **/ai**: Client-side components related to Tria AI interaction.
-    -   **/audio**: Audio processing, playback, and analysis (including CWT via WASM).
-    -   **/core**: Core application logic, state management, event handling.
-    -   **/gestures**: Gesture processing (currently relies on `multimodal/handsTracking.js`).
-    -   **/multimodal**: Handling of diverse input methods like hand tracking (MediaPipe) and voice.
-    -   **/panels**: UI components for different informational panels.
-    -   **/ui**: General UI management and components.
-    -   **/utils**: Utility functions.
-    -   **/wasm**: WebAssembly modules (and their Rust/C++ source) for performance-intensive tasks.
-        -   **/src**: Source code for WASM modules (e.g., Rust, C++).
-    -   **/xr**: WebXR integration for VR/AR experiences.
--   **/css**: (Assumed, or link to `style.css` if flat) Stylesheets.
--   **/assets**: (Assumed) Static assets like images, 3D models (not holograms themselves).
--   `index.html`: Main HTML entry point.
--   `manifest.json`: Web application manifest.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Core Technologies
-- Vanilla JavaScript (ES6 Modules)
-- Three.js (current primary 3D library)
-- WebGPU (for future high-performance rendering)
-- WebXR (for immersive experiences)
-- WebAssembly (Rust/C++) for performance-critical tasks
-- MediaPipe (for hand tracking)
-- Web Speech API (for voice input)
+## Expanding the ESLint configuration
 
-## TODO
-- Fully implement WebGPU rendering pipeline.
-- Complete WebXR session management and input handling.
-- Build and integrate WASM modules for audio analysis and physics.
-- Develop advanced multimodal fusion techniques.
-- Refine UI components and state management.
-- Expand test coverage.
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
