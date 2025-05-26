@@ -1,14 +1,10 @@
-```python name=backend/app.py
-# 1. Базовые импорты
 import os
-# import uuid # Removed as it's no longer used directly in app.py
 import json
 import re
 from datetime import datetime
 import traceback
 
-# 2. Импорты FastAPI и Pydantic
-from fastapi import FastAPI, Request, HTTPException  # Response removed as it might be unused
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -16,36 +12,33 @@ from pydantic import BaseModel, Field, ValidationError
 from typing import List, Dict, Any, Optional
 import httpx
 import asyncio
-# from pymongo.errors import PyMongoError # Removed
 from dotenv import load_dotenv
 
-# 3. Импорты остальных библиотек (перенесены сюда)
-import asyncpg  # Added for PostgreSQL
-from backend.db import pg_connector, crud_operations  # Ensure crud_operations is imported
-# from tenacity import retry, stop_after_attempt, wait_fixed # Removed
-# Импорты для Langchain/LLM оставляем, но код инициализации закомментирован
+import asyncpg
+from backend.db import pg_connector, crud_operations
 from langchain_core.runnables import Runnable
 from langchain_mistralai import ChatMistralAI
 from langchain.tools import Tool
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
-# Router Imports
 from backend.routers import auth as auth_router
 from backend.routers import gestures as gestures_router
 from backend.routers import holograms as holograms_router
 from backend.routers import chat_sessions as chat_sessions_router
 from backend.routers import prompts as prompts_router
 
+# Corrected import for InteractionChunkDB
+from backend.models.interaction_chunk_model import InteractionChunkDB
+
 # ----------------------------------------------------------------------
 # 4. ИНИЦИАЛИЗАЦИЯ FastAPI ПРИЛОЖЕНИЯ
 # ----------------------------------------------------------------------
 
-# --- Lifespan Handler with PostgreSQL Integration ---
 from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("[Lifespan] Application startup...")
-    db_conn_for_seeding = None  # Connection for seeding
+    db_conn_for_seeding = None
     try:
         await pg_connector.init_pg_pool()
         print("[Lifespan] PostgreSQL connection pool initialized successfully.")
@@ -73,21 +66,16 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[Lifespan ERROR] Failed to close PostgreSQL pool: {e}")
 
-# --- End Lifespan Handler ---
-
-# Initialize FastAPI with the updated lifespan
 app = FastAPI(lifespan=lifespan)
 
-# Добавляем CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Временно разрешаем все для отладки на HF
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include Routers
 app.include_router(auth_router.router)
 app.include_router(gestures_router.router)
 app.include_router(holograms_router.router)
@@ -95,7 +83,7 @@ app.include_router(chat_sessions_router.router)
 app.include_router(prompts_router.router)
 
 # ----------------------------------------------------------------------
-# 5. ОПРЕДЕЛЕНИЕ Pydantic МОДЕЛЕЙ (Obsolete chat models removed)
+# 5. ОПРЕДЕЛЕНИЕ Pydantic МОДЕЛЕЙ
 # ----------------------------------------------------------------------
 
 class TriaQuery(BaseModel):
@@ -107,7 +95,7 @@ class JenkinsLogData(BaseModel):
     timestamp: str
 
 # ----------------------------------------------------------------------
-# 6. Загрузка .env (на всякий случай, если там есть что-то кроме DB/LLM ключей)
+# 6. Загрузка .env
 # ----------------------------------------------------------------------
 load_dotenv(override=True)
 
@@ -307,7 +295,7 @@ else:
 
 # 12. Добавление Gradio для MCP-поддержки
 import gradio as gr
-import spaces  # Для декоратора @spaces.GPU
+import spaces
 
 async def process_request(input_text):
     return f"Получен запрос: {input_text}"
@@ -327,4 +315,3 @@ app = gr.mount_gradio_app(app, gradio_blocks_instance, path="/gradio")
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-```
