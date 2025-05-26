@@ -124,48 +124,40 @@ print(f"[DEBUG] (Corrected) INDEX_HTML_PATH: {INDEX_HTML_PATH}")
 # ----------------------------------------------------------------------
 # 8. Инициализация LLM и Инструментов
 # ----------------------------------------------------------------------
-print("[INFO] Попытка инициализации LLM (codestral_llm)...
-")
+print("[INFO] Попытка инициализации LLM (codestral_llm)...")
 
 # Используем MISTRAL_API_KEY напрямую для доступа к Mistral API
 api_key_to_use = os.getenv("MISTRAL_API_KEY")
 if not api_key_to_use:
-    print(f"[WARN] MISTRAL_API_KEY не найден! LLM не будут инициализированы.
-")
+    print(f"[WARN] MISTRAL_API_KEY не найден! LLM не будут инициализированы.")
     codestral_llm = None
     mistral_llm = None
 else:
     try:
         # Инициализируем LLM для Codestral (devstral-small-latest)
-        print(f"[DEBUG] Initializing ChatMistralAI for codestral_llm with model '{CODESTRAL_MODEL_NAME}'.
-")
+        print(f"[DEBUG] Initializing ChatMistralAI for codestral_llm with model '{CODESTRAL_MODEL_NAME}'.")
         codestral_llm = ChatMistralAI(
             model=CODESTRAL_MODEL_NAME,
             mistral_api_key=api_key_to_use,
             temperature=0.4,
         )
-        print(f"[DEBUG] ChatMistralAI for codestral_llm initialized successfully.
-")
+        print(f"[DEBUG] ChatMistralAI for codestral_llm initialized successfully.")
     except Exception as e:
-        print(f"[ERROR] Ошибка инициализации ChatMistralAI for codestral_llm: {e}
-")
+        print(f"[ERROR] Ошибка инициализации ChatMistralAI for codestral_llm: {e}")
         traceback.print_exc()
         codestral_llm = None
 
     try:
         # Инициализируем LLM для Mistral (mistral-medium-latest)
-        print(f"[DEBUG] Initializing ChatMistralAI for mistral_llm with model '{DEFAULT_MODEL}'.
-")
+        print(f"[DEBUG] Initializing ChatMistralAI for mistral_llm with model '{DEFAULT_MODEL}'.")
         mistral_llm = ChatMistralAI(
             model=DEFAULT_MODEL,
             mistral_api_key=api_key_to_use,
             temperature=0.7,
         )
-        print(f"[DEBUG] ChatMistralAI for mistral_llm initialized successfully.
-")
+        print(f"[DEBUG] ChatMistralAI for mistral_llm initialized successfully.")
     except Exception as e:
-        print(f"[ERROR] Ошибка инициализации ChatMistralAI for mistral_llm: {e}
-")
+        print(f"[ERROR] Ошибка инициализации ChatMistralAI for mistral_llm: {e}")
         traceback.print_exc()
         mistral_llm = None
 
@@ -292,23 +284,32 @@ else:
 
 # 12. Добавление Gradio для MCP-поддержки
 import gradio as gr
-import spaces
+# import spaces # 'spaces' импортируется, но может не использоваться напрямую, если @spaces.GPU не применяется
 
-async def process_request(input_text):
-    return f"Получен запрос: {input_text}"
+async def process_request_gradio(input_text): # Переименовал, чтобы не конфликтовать с возможными другими process_request
+    return f"Получен запрос через Gradio: {input_text}"
 
-with gr.Blocks() as gradio_blocks_instance:
-    gr.Markdown("## Holograms Media API")
-    input_box = gr.Textbox(label="Запрос")
-    output_box = gr.Textbox(label="Ответ")
-    gr.Button("Отправить").click(
-        fn=process_request,
-        inputs=input_box,
-        outputs=output_box
-    )
+# @spaces.GPU # Если Gradio не требует GPU и не используется декоратор, можно закомментировать или удалить
+# async def create_gradio_interface(): # Если декоратор @spaces.GPU не используется, async здесь может быть не нужен
+def create_gradio_interface():
+    with gr.Blocks() as demo:
+        gr.Markdown("## Holograms Media API (via Gradio)")
+        input_box = gr.Textbox(label="Запрос")
+        output_box = gr.Textbox(label="Ответ")
+        gr.Button("Отправить").click(
+            fn=process_request_gradio, # Используем переименованную функцию
+            inputs=input_box,
+            outputs=output_box
+        )
+    return demo
 
-app = gr.mount_gradio_app(app, gradio_blocks_instance, path="/gradio")
+gradio_interface = create_gradio_interface()
+app = gr.mount_gradio_app(app, gradio_interface, path="/gradio")
 
 if __name__ == "__main__":
     import uvicorn
+    # Используем порт 8000, если это основной порт для FastAPI и Gradio монтируется на /gradio
+    # Если Gradio должен быть основным на 7860, то нужно изменить порт здесь.
+    # Для HF Spaces обычно ожидается приложение на 7860, если Gradio - главный интерфейс.
+    # Если FastAPI главный, а Gradio - дополнительный, то порт FastAPI (например, 8000)
     uvicorn.run(app, host="0.0.0.0", port=8000)
