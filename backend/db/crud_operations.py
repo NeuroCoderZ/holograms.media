@@ -1,40 +1,70 @@
 import asyncpg
+from backend.utils.sanitization import mask_email
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 
+# Model imports
+from backend.models.user_models import UserCreate, UserInDB
+from backend.models.gesture_models import GestureCreate, UserGesture
+from backend.models.hologram_models import HologramCreate, UserHologram
+from backend.models.chat_models import ChatSessionCreate, UserChatSession, ChatMessageCreate, ChatMessagePublic
+from backend.models.prompt_models import PromptVersionCreate, UserPromptVersion
+
+# Security imports
+from backend.auth.security import get_password_hash
+
+# Standard library imports
+import os # Added for environment variable access in create_initial_users
+
 # --- Users Table CRUD ---
 
-async def create_user(conn: asyncpg.Connection, username: str, hashed_password: str, email: Optional[str] = None) -> Optional[int]:
-    """Inserts a new user into the users table."""
-    print(f"INFO: Attempting to create user: {username}")
+async def create_user(conn: asyncpg.Connection, user: UserCreate) -> Optional[UserInDB]:
+    """Inserts a new user into the users table after hashing the password."""
+    print(f"INFO: Attempting to create user: {user.username}")
+    hashed_password = get_password_hash(user.password)
     try:
-        # created_at has a default, updated_at is application-handled or via trigger
+        # is_active, email_verified, created_at, updated_at use DB defaults or are set by triggers/app logic
+        # role is taken from user input, defaulting if not provided by UserCreate model
         query = """
-            INSERT INTO users (username, hashed_password, email)
-            VALUES ($1, $2, $3)
-            RETURNING id;
+            INSERT INTO users (username, email, hashed_password, role, user_settings)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *; 
         """
-        user_id = await conn.fetchval(query, username, hashed_password, email)
-        print(f"INFO: User {username} created successfully with ID: {user_id}")
-        return user_id
+        # user_settings is set to None (null in DB) if not provided in UserCreate
+        # This assumes UserCreate might have an optional user_settings field later
+        # or it's handled by the default value in the table schema (currently not set for user_settings)
+        # For now, explicitly pass None if user_settings is not part of UserCreate.
+        # If UserCreate model gets user_settings: user_settings=user.user_settings
+        created_user_record = await conn.fetchrow(
+            query, user.username, user.email, hashed_password, user.role, None 
+        ) 
+        if created_user_record:
+            print(f"INFO: User {user.username} created successfully with ID: {created_user_record['id']}")
+            return UserInDB(**dict(created_user_record))
+        return None # Should not happen if RETURNING * and insert is successful
+    except asyncpg.UniqueViolationError as e:
+        # This error is raised if username or email already exists due to UNIQUE constraints
+        print(f"ERROR: Failed to create user {user.username}. Username or email may already exist. Details: {e}")
+        return None
     except asyncpg.PostgresError as e:
-        print(f"ERROR: Error creating user {username}: {e}")
+        print(f"ERROR: Error creating user {user.username}: {e}")
         return None
     except Exception as e:
-        print(f"ERROR: An unexpected error occurred while creating user {username}: {e}")
+        print(f"ERROR: An unexpected error occurred while creating user {user.username}: {e}")
         return None
 
-async def get_user_by_username(conn: asyncpg.Connection, username: str) -> Optional[asyncpg.Record]:
+async def get_user_by_username(conn: asyncpg.Connection, username: str) -> Optional[UserInDB]:
     """Fetches a user by username."""
     print(f"INFO: Attempting to fetch user by username: {username}")
     try:
         query = "SELECT * FROM users WHERE username = $1;"
-        user_record = await conn.fetchrow(query, username)
-        if user_record:
+        record = await conn.fetchrow(query, username)
+        if record:
             print(f"INFO: User {username} found.")
+            return UserInDB(**dict(record))
         else:
             print(f"INFO: User {username} not found.")
-        return user_record
+            return None
     except asyncpg.PostgresError as e:
         print(f"ERROR: Error fetching user {username}: {e}")
         return None
@@ -42,17 +72,37 @@ async def get_user_by_username(conn: asyncpg.Connection, username: str) -> Optio
         print(f"ERROR: An unexpected error occurred while fetching user {username}: {e}")
         return None
 
-async def get_user_by_id(conn: asyncpg.Connection, user_id: int) -> Optional[asyncpg.Record]:
+async def get_user_by_email(conn: asyncpg.Connection, email: str) -> Optional[UserInDB]:
+    """Fetches a user by email."""
+    print(f"INFO: Attempting to fetch user by email: {mask_email(email)}")
+    try:
+        query = "SELECT * FROM users WHERE email = $1;"
+        record = await conn.fetchrow(query, email)
+        if record:
+            print(f"INFO: User with email {mask_email(email)} found.")
+            return UserInDB(**dict(record))
+        else:
+            print(f"INFO: User with email {mask_email(email)} not found.")
+            return None
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error fetching user by email {mask_email(email)}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while fetching user by email {mask_email(email)}: {e}")
+        return None
+
+async def get_user_by_id(conn: asyncpg.Connection, user_id: int) -> Optional[UserInDB]:
     """Fetches a user by ID."""
     print(f"INFO: Attempting to fetch user by ID: {user_id}")
     try:
         query = "SELECT * FROM users WHERE id = $1;"
-        user_record = await conn.fetchrow(query, user_id)
-        if user_record:
+        record = await conn.fetchrow(query, user_id)
+        if record:
             print(f"INFO: User with ID {user_id} found.")
+            return UserInDB(**dict(record))
         else:
             print(f"INFO: User with ID {user_id} not found.")
-        return user_record
+            return None
     except asyncpg.PostgresError as e:
         print(f"ERROR: Error fetching user ID {user_id}: {e}")
         return None
@@ -71,7 +121,7 @@ async def update_user_email(conn: asyncpg.Connection, user_id: int, new_email: s
             WHERE id = $3;
         """
         status = await conn.execute(query, new_email, current_time_utc, user_id)
-        if status.endswith("1"): # Example: "UPDATE 1"
+        if status.endswith("1"): # Example: "UPDATE 1" means one row was updated
             print(f"INFO: Email updated successfully for user ID: {user_id}")
             return True
         else:
@@ -84,76 +134,620 @@ async def update_user_email(conn: asyncpg.Connection, user_id: int, new_email: s
         print(f"ERROR: An unexpected error occurred while updating email for user ID {user_id}: {e}")
         return False
 
-# --- Chat History Table CRUD ---
+async def update_user_last_login(conn: asyncpg.Connection, user_id: int) -> bool:
+    """Updates a user's last_login_at and updated_at timestamps."""
+    print(f"INFO: Attempting to update last login for user ID: {user_id}")
+    try:
+        current_time_utc = datetime.now(timezone.utc)
+        query = """
+            UPDATE users
+            SET last_login_at = $1, updated_at = $1 
+            WHERE id = $2;
+        """
+        # Using $1 for both fields as they should be the same current timestamp
+        status = await conn.execute(query, current_time_utc, user_id)
+        if status.endswith("1"): # "UPDATE 1"
+            print(f"INFO: Last login updated successfully for user ID: {user_id}")
+            return True
+        else:
+            print(f"WARN: Failed to update last login for user ID: {user_id}. User not found.")
+            return False
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error updating last login for user ID {user_id}: {e}")
+        return False
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while updating last login for user ID {user_id}: {e}")
+        return False
+
+# --- User Chat Sessions Table CRUD ---
+
+async def create_user_chat_session(conn: asyncpg.Connection, user_id: int, session_in: ChatSessionCreate) -> Optional[UserChatSession]:
+    """Creates a new chat session for a user."""
+    print(f"INFO: Attempting to create chat session for user ID: {user_id}, title: {session_in.session_title}")
+    try:
+        query = """
+            INSERT INTO user_chat_sessions (user_id, session_title, created_at, updated_at)
+            VALUES ($1, $2, $3, $3) 
+            RETURNING *;
+        """
+        # Using $3 for both created_at and updated_at on creation
+        current_time = datetime.now(timezone.utc)
+        record = await conn.fetchrow(query, user_id, session_in.session_title, current_time)
+        if record:
+            print(f"INFO: Chat session created successfully with ID: {record['id']} for user ID: {user_id}")
+            return UserChatSession(**dict(record))
+        return None
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error creating chat session for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while creating chat session for user ID {user_id}: {e}")
+        return None
+
+async def get_user_chat_sessions(conn: asyncpg.Connection, user_id: int, skip: int = 0, limit: int = 100) -> List[UserChatSession]:
+    """Lists all chat sessions for a user, ordered by most recently updated."""
+    print(f"INFO: Attempting to get chat sessions for user ID: {user_id}, skip: {skip}, limit: {limit}")
+    try:
+        query = """
+            SELECT * FROM user_chat_sessions
+            WHERE user_id = $1
+            ORDER BY updated_at DESC
+            LIMIT $2 OFFSET $3;
+        """
+        records = await conn.fetch(query, user_id, limit, skip)
+        print(f"INFO: Found {len(records)} chat sessions for user ID {user_id}.")
+        return [UserChatSession(**dict(record)) for record in records]
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error getting chat sessions for user ID {user_id}: {e}")
+        return []
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while getting chat sessions for user ID {user_id}: {e}")
+        return []
+
+async def get_user_chat_session_by_id(conn: asyncpg.Connection, session_id: int, user_id: int) -> Optional[UserChatSession]:
+    """Gets a specific chat session by its ID, ensuring it belongs to the user."""
+    print(f"INFO: Attempting to get chat session ID: {session_id} for user ID: {user_id}")
+    try:
+        query = "SELECT * FROM user_chat_sessions WHERE id = $1 AND user_id = $2;"
+        record = await conn.fetchrow(query, session_id, user_id)
+        if record:
+            print(f"INFO: Chat session ID: {session_id} found for user ID: {user_id}.")
+            return UserChatSession(**dict(record))
+        else:
+            print(f"INFO: Chat session ID: {session_id} not found for user ID: {user_id}.")
+            return None
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error getting chat session ID {session_id} for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while getting chat session ID {session_id} for user ID {user_id}: {e}")
+        return None
+
+async def delete_user_chat_session(conn: asyncpg.Connection, session_id: int, user_id: int) -> bool:
+    """Deletes a chat session, ensuring it belongs to the user. Associated messages are deleted by CASCADE."""
+    print(f"INFO: Attempting to delete chat session ID: {session_id} for user ID: {user_id}")
+    try:
+        query = "DELETE FROM user_chat_sessions WHERE id = $1 AND user_id = $2;"
+        status = await conn.execute(query, session_id, user_id)
+        if status.endswith("1"): # "DELETE 1"
+            print(f"INFO: Chat session ID: {session_id} deleted successfully for user ID: {user_id}.")
+            return True
+        else:
+            print(f"WARN: Failed to delete chat session ID: {session_id} for user ID: {user_id}. Session not found or not owned by user.")
+            return False
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error deleting chat session ID {session_id} for user ID {user_id}: {e}")
+        return False
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while deleting chat session ID {session_id} for user ID {user_id}: {e}")
+        return False
+
+
+# --- Chat History Table CRUD (Refactored) ---
 
 async def add_chat_message(
     conn: asyncpg.Connection,
-    session_id: str,
+    user_chat_session_id: int, # Changed from session_id: str, user_id: Optional[int]
     role: str,
     message_content: str,
-    user_id: Optional[int] = None,
     metadata: Optional[Dict[str, Any]] = None
-) -> Optional[int]:
-    """Adds a new chat message."""
-    print(f"INFO: Attempting to add chat message for session: {session_id}")
+) -> Optional[ChatMessagePublic]: # Changed return type
+    """Adds a new chat message to a specific user_chat_session."""
+    print(f"INFO: Attempting to add chat message for user_chat_session_id: {user_chat_session_id}")
     if role not in ('user', 'assistant', 'system'):
         print(f"ERROR: Invalid role '{role}'. Must be 'user', 'assistant', or 'system'.")
         return None
     try:
+        # Note: The user_id is implicitly validated by the foreign key on user_chat_session_id
+        # if the session belongs to the correct user.
         query = """
-            INSERT INTO chat_history (session_id, user_id, role, message_content, metadata)
+            INSERT INTO chat_history (user_chat_session_id, role, message_content, metadata, timestamp)
             VALUES ($1, $2, $3, $4, $5)
-            RETURNING id;
+            RETURNING *; 
         """
-        message_id = await conn.fetchval(query, session_id, user_id, role, message_content, metadata)
-        print(f"INFO: Chat message added successfully for session {session_id} with ID: {message_id}")
-        return message_id
+        current_time = datetime.now(timezone.utc)
+        record = await conn.fetchrow(query, user_chat_session_id, role, message_content, metadata, current_time)
+        if record:
+            print(f"INFO: Chat message added successfully with ID: {record['id']} to session ID: {user_chat_session_id}")
+            # Also update the parent user_chat_session's updated_at timestamp
+            update_session_query = "UPDATE user_chat_sessions SET updated_at = $1 WHERE id = $2"
+            await conn.execute(update_session_query, current_time, user_chat_session_id)
+            return ChatMessagePublic(**dict(record))
+        return None
+    except asyncpg.ForeignKeyViolationError as e:
+        print(f"ERROR: Error adding chat message. User chat session ID {user_chat_session_id} may not exist. Details: {e}")
+        return None
     except asyncpg.PostgresError as e:
-        print(f"ERROR: Error adding chat message for session {session_id}: {e}")
+        print(f"ERROR: Error adding chat message for session {user_chat_session_id}: {e}")
         return None
     except Exception as e:
-        print(f"ERROR: An unexpected error occurred while adding chat message for session {session_id}: {e}")
+        print(f"ERROR: An unexpected error occurred while adding chat message for session {user_chat_session_id}: {e}")
         return None
 
-async def get_chat_history(conn: asyncpg.Connection, session_id: str, limit: int = 50) -> List[asyncpg.Record]:
-    """Retrieves chat history for a given session_id, ordered by timestamp DESC."""
-    print(f"INFO: Attempting to get chat history for session: {session_id} with limit {limit}")
+async def get_chat_history(
+    conn: asyncpg.Connection, 
+    user_chat_session_id: int, # Changed from session_id: str
+    limit: int = 50
+) -> List[ChatMessagePublic]: # Changed return type
+    """Retrieves chat history for a given user_chat_session_id, ordered by timestamp DESC."""
+    print(f"INFO: Attempting to get chat history for user_chat_session_id: {user_chat_session_id} with limit {limit}")
     try:
         query = """
             SELECT * FROM chat_history
-            WHERE session_id = $1
-            ORDER BY timestamp DESC
+            WHERE user_chat_session_id = $1
+            ORDER BY timestamp ASC -- Usually chat history is displayed oldest first, then new messages appended
             LIMIT $2;
         """
-        records = await conn.fetch(query, session_id, limit)
-        print(f"INFO: Found {len(records)} messages for session {session_id}.")
-        return records
+        # If you need newest first, change to ORDER BY timestamp DESC
+        records = await conn.fetch(query, user_chat_session_id, limit)
+        print(f"INFO: Found {len(records)} messages for user_chat_session_id {user_chat_session_id}.")
+        return [ChatMessagePublic(**dict(record)) for record in records]
     except asyncpg.PostgresError as e:
-        print(f"ERROR: Error getting chat history for session {session_id}: {e}")
+        print(f"ERROR: Error getting chat history for user_chat_session_id {user_chat_session_id}: {e}")
         return []
     except Exception as e:
-        print(f"ERROR: An unexpected error occurred while getting chat history for session {session_id}: {e}")
+        print(f"ERROR: An unexpected error occurred while getting chat history for user_chat_session_id {user_chat_session_id}: {e}")
         return []
 
-async def get_chat_history_for_user(conn: asyncpg.Connection, user_id: int, limit: int = 50) -> List[asyncpg.Record]:
-    """Retrieves chat history for a given user_id, ordered by timestamp DESC."""
-    print(f"INFO: Attempting to get chat history for user ID: {user_id} with limit {limit}")
+# Removed get_chat_history_for_user as its main purpose is now covered by
+# get_user_chat_sessions and then get_chat_history for a specific session.
+# If direct access to all messages of a user across all sessions is needed, a new function would be required.
+
+# --- User Gestures Table CRUD ---
+
+async def create_user_gesture(conn: asyncpg.Connection, user_id: int, gesture_in: GestureCreate) -> Optional[UserGesture]:
+    """Inserts a new gesture for the user."""
+    print(f"INFO: Attempting to create gesture '{gesture_in.gesture_name}' for user ID: {user_id}")
+    current_time = datetime.now(timezone.utc)
     try:
         query = """
-            SELECT * FROM chat_history
-            WHERE user_id = $1
-            ORDER BY timestamp DESC
-            LIMIT $2;
+            INSERT INTO user_gestures (user_id, gesture_name, gesture_data_ref, gesture_definition, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $5)
+            RETURNING *;
         """
-        records = await conn.fetch(query, user_id, limit)
-        print(f"INFO: Found {len(records)} messages for user ID {user_id}.")
-        return records
+        record = await conn.fetchrow(
+            query, user_id, gesture_in.gesture_name, gesture_in.gesture_data_ref, 
+            gesture_in.gesture_definition, current_time
+        )
+        if record:
+            print(f"INFO: Gesture '{gesture_in.gesture_name}' created successfully with ID: {record['id']} for user ID: {user_id}")
+            return UserGesture(**dict(record))
+        return None
+    except asyncpg.UniqueViolationError:
+        print(f"ERROR: Gesture name '{gesture_in.gesture_name}' already exists for user ID: {user_id}.")
+        return None
     except asyncpg.PostgresError as e:
-        print(f"ERROR: Error getting chat history for user ID {user_id}: {e}")
+        print(f"ERROR: Error creating gesture '{gesture_in.gesture_name}' for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while creating gesture for user ID {user_id}: {e}")
+        return None
+
+async def get_user_gestures(conn: asyncpg.Connection, user_id: int, skip: int = 0, limit: int = 100) -> List[UserGesture]:
+    """Lists all gestures for a user."""
+    print(f"INFO: Attempting to get gestures for user ID: {user_id}, skip: {skip}, limit: {limit}")
+    try:
+        query = "SELECT * FROM user_gestures WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2 OFFSET $3;"
+        records = await conn.fetch(query, user_id, limit, skip)
+        print(f"INFO: Found {len(records)} gestures for user ID: {user_id}.")
+        return [UserGesture(**dict(record)) for record in records]
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error getting gestures for user ID {user_id}: {e}")
         return []
     except Exception as e:
-        print(f"ERROR: An unexpected error occurred while getting chat history for user ID {user_id}: {e}")
+        print(f"ERROR: An unexpected error occurred while getting gestures for user ID {user_id}: {e}")
         return []
+
+async def get_user_gesture_by_id(conn: asyncpg.Connection, gesture_id: int, user_id: int) -> Optional[UserGesture]:
+    """Gets a specific gesture by its ID, ensuring it belongs to the user."""
+    print(f"INFO: Attempting to get gesture ID: {gesture_id} for user ID: {user_id}")
+    try:
+        query = "SELECT * FROM user_gestures WHERE id = $1 AND user_id = $2;"
+        record = await conn.fetchrow(query, gesture_id, user_id)
+        if record:
+            print(f"INFO: Gesture ID: {gesture_id} found for user ID: {user_id}.")
+            return UserGesture(**dict(record))
+        else:
+            print(f"INFO: Gesture ID: {gesture_id} not found for user ID: {user_id}.")
+            return None
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error getting gesture ID {gesture_id} for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while getting gesture ID {gesture_id} for user ID {user_id}: {e}")
+        return None
+
+async def update_user_gesture(conn: asyncpg.Connection, gesture_id: int, user_id: int, gesture_update_data: Dict[str, Any]) -> Optional[UserGesture]:
+    """Updates a gesture. Only allows updating gesture_name, gesture_definition, gesture_data_ref."""
+    print(f"INFO: Attempting to update gesture ID: {gesture_id} for user ID: {user_id}")
+    
+    allowed_fields = {"gesture_name", "gesture_definition", "gesture_data_ref"}
+    update_fields = {k: v for k, v in gesture_update_data.items() if k in allowed_fields}
+
+    if not update_fields:
+        print(f"WARN: No valid fields to update for gesture ID: {gesture_id}.")
+        # Optionally, fetch and return the existing gesture if no valid fields are provided
+        return await get_user_gesture_by_id(conn, gesture_id, user_id)
+
+    update_fields["updated_at"] = datetime.now(timezone.utc)
+    
+    set_clause_parts = [f"{field} = ${i+1}" for i, field in enumerate(update_fields.keys())]
+    set_clause = ", ".join(set_clause_parts)
+    
+    query = f"""
+        UPDATE user_gestures
+        SET {set_clause}
+        WHERE id = ${len(update_fields) + 1} AND user_id = ${len(update_fields) + 2}
+        RETURNING *;
+    """
+    values = list(update_fields.values()) + [gesture_id, user_id]
+    
+    try:
+        record = await conn.fetchrow(query, *values)
+        if record:
+            print(f"INFO: Gesture ID: {gesture_id} updated successfully for user ID: {user_id}.")
+            return UserGesture(**dict(record))
+        else:
+            print(f"WARN: Failed to update gesture ID: {gesture_id}. Not found or not owned by user ID: {user_id}.")
+            return None
+    except asyncpg.UniqueViolationError: # If gesture_name is updated to one that already exists for the user
+        print(f"ERROR: Update failed for gesture ID {gesture_id}. Gesture name may already exist for user ID {user_id}.")
+        return None
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error updating gesture ID {gesture_id} for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while updating gesture ID {gesture_id} for user ID {user_id}: {e}")
+        return None
+
+async def delete_user_gesture(conn: asyncpg.Connection, gesture_id: int, user_id: int) -> bool:
+    """Deletes a gesture, ensuring it belongs to the user."""
+    print(f"INFO: Attempting to delete gesture ID: {gesture_id} for user ID: {user_id}")
+    try:
+        query = "DELETE FROM user_gestures WHERE id = $1 AND user_id = $2;"
+        status = await conn.execute(query, gesture_id, user_id)
+        if status.endswith("1"):
+            print(f"INFO: Gesture ID: {gesture_id} deleted successfully for user ID: {user_id}.")
+            return True
+        else:
+            print(f"WARN: Failed to delete gesture ID: {gesture_id}. Not found or not owned by user ID: {user_id}.")
+            return False
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error deleting gesture ID {gesture_id} for user ID {user_id}: {e}")
+        return False
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while deleting gesture ID {gesture_id} for user ID {user_id}: {e}")
+        return False
+
+# --- User Holograms Table CRUD ---
+
+async def create_user_hologram(conn: asyncpg.Connection, user_id: int, hologram_in: HologramCreate) -> Optional[UserHologram]:
+    """Creates a new hologram for the user."""
+    print(f"INFO: Attempting to create hologram '{hologram_in.hologram_name}' for user ID: {user_id}")
+    current_time = datetime.now(timezone.utc)
+    try:
+        query = """
+            INSERT INTO user_holograms (user_id, hologram_name, hologram_state_data, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $4)
+            RETURNING *;
+        """
+        record = await conn.fetchrow(
+            query, user_id, hologram_in.hologram_name, hologram_in.hologram_state_data, current_time
+        )
+        if record:
+            print(f"INFO: Hologram '{hologram_in.hologram_name}' created successfully with ID: {record['id']} for user ID: {user_id}")
+            return UserHologram(**dict(record))
+        return None
+    except asyncpg.UniqueViolationError:
+        print(f"ERROR: Hologram name '{hologram_in.hologram_name}' already exists for user ID: {user_id}.")
+        return None
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error creating hologram '{hologram_in.hologram_name}' for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while creating hologram for user ID {user_id}: {e}")
+        return None
+
+async def get_user_holograms(conn: asyncpg.Connection, user_id: int, skip: int = 0, limit: int = 100) -> List[UserHologram]:
+    """Lists all holograms for a user."""
+    print(f"INFO: Attempting to get holograms for user ID: {user_id}, skip: {skip}, limit: {limit}")
+    try:
+        query = "SELECT * FROM user_holograms WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2 OFFSET $3;"
+        records = await conn.fetch(query, user_id, limit, skip)
+        print(f"INFO: Found {len(records)} holograms for user ID: {user_id}.")
+        return [UserHologram(**dict(record)) for record in records]
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error getting holograms for user ID {user_id}: {e}")
+        return []
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while getting holograms for user ID {user_id}: {e}")
+        return []
+
+async def get_user_hologram_by_id(conn: asyncpg.Connection, hologram_id: int, user_id: int) -> Optional[UserHologram]:
+    """Gets a specific hologram by its ID, ensuring it belongs to the user."""
+    print(f"INFO: Attempting to get hologram ID: {hologram_id} for user ID: {user_id}")
+    try:
+        query = "SELECT * FROM user_holograms WHERE id = $1 AND user_id = $2;"
+        record = await conn.fetchrow(query, hologram_id, user_id)
+        if record:
+            print(f"INFO: Hologram ID: {hologram_id} found for user ID: {user_id}.")
+            return UserHologram(**dict(record))
+        else:
+            print(f"INFO: Hologram ID: {hologram_id} not found for user ID: {user_id}.")
+            return None
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error getting hologram ID {hologram_id} for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while getting hologram ID {hologram_id} for user ID {user_id}: {e}")
+        return None
+
+async def update_user_hologram(conn: asyncpg.Connection, hologram_id: int, user_id: int, hologram_update_data: Dict[str, Any]) -> Optional[UserHologram]:
+    """Updates a hologram. Only allows updating hologram_name, hologram_state_data."""
+    print(f"INFO: Attempting to update hologram ID: {hologram_id} for user ID: {user_id}")
+    
+    allowed_fields = {"hologram_name", "hologram_state_data"}
+    update_fields = {k: v for k, v in hologram_update_data.items() if k in allowed_fields}
+
+    if not update_fields:
+        print(f"WARN: No valid fields to update for hologram ID: {hologram_id}.")
+        return await get_user_hologram_by_id(conn, hologram_id, user_id)
+
+    update_fields["updated_at"] = datetime.now(timezone.utc)
+    
+    set_clause_parts = [f"{field} = ${i+1}" for i, field in enumerate(update_fields.keys())]
+    set_clause = ", ".join(set_clause_parts)
+    
+    query = f"""
+        UPDATE user_holograms
+        SET {set_clause}
+        WHERE id = ${len(update_fields) + 1} AND user_id = ${len(update_fields) + 2}
+        RETURNING *;
+    """
+    values = list(update_fields.values()) + [hologram_id, user_id]
+    
+    try:
+        record = await conn.fetchrow(query, *values)
+        if record:
+            print(f"INFO: Hologram ID: {hologram_id} updated successfully for user ID: {user_id}.")
+            return UserHologram(**dict(record))
+        else:
+            print(f"WARN: Failed to update hologram ID: {hologram_id}. Not found or not owned by user ID: {user_id}.")
+            return None
+    except asyncpg.UniqueViolationError:
+        print(f"ERROR: Update failed for hologram ID {hologram_id}. Hologram name may already exist for user ID {user_id}.")
+        return None
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error updating hologram ID {hologram_id} for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while updating hologram ID {hologram_id} for user ID {user_id}: {e}")
+        return None
+
+async def delete_user_hologram(conn: asyncpg.Connection, hologram_id: int, user_id: int) -> bool:
+    """Deletes a hologram, ensuring it belongs to the user."""
+    print(f"INFO: Attempting to delete hologram ID: {hologram_id} for user ID: {user_id}")
+    try:
+        query = "DELETE FROM user_holograms WHERE id = $1 AND user_id = $2;"
+        status = await conn.execute(query, hologram_id, user_id)
+        if status.endswith("1"):
+            print(f"INFO: Hologram ID: {hologram_id} deleted successfully for user ID: {user_id}.")
+            return True
+        else:
+            print(f"WARN: Failed to delete hologram ID: {hologram_id}. Not found or not owned by user ID: {user_id}.")
+            return False
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error deleting hologram ID {hologram_id} for user ID {user_id}: {e}")
+        return False
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while deleting hologram ID {hologram_id} for user ID {user_id}: {e}")
+        return False
+
+# --- User Prompt Versions Table CRUD ---
+
+async def create_user_prompt_version(conn: asyncpg.Connection, user_id: int, prompt_in: PromptVersionCreate) -> Optional[UserPromptVersion]:
+    """Creates a new prompt version for the user, incrementing version number."""
+    print(f"INFO: Attempting to create prompt version for title '{prompt_in.prompt_title}' for user ID: {user_id}")
+    try:
+        # Determine next version number
+        version_query = """
+            SELECT MAX(version_number) FROM user_prompt_versions
+            WHERE user_id = $1 AND prompt_title = $2;
+        """
+        max_version_record = await conn.fetchval(version_query, user_id, prompt_in.prompt_title)
+        next_version = (max_version_record or 0) + 1
+        
+        insert_query = """
+            INSERT INTO user_prompt_versions 
+                (user_id, prompt_title, prompt_text, version_number, associated_hologram_id, metadata, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING *;
+        """
+        current_time = datetime.now(timezone.utc)
+        record = await conn.fetchrow(
+            insert_query, user_id, prompt_in.prompt_title, prompt_in.prompt_text, 
+            next_version, prompt_in.associated_hologram_id, prompt_in.metadata, current_time
+        )
+        if record:
+            print(f"INFO: Prompt version '{prompt_in.prompt_title}' v{next_version} created successfully with ID: {record['id']} for user ID: {user_id}")
+            return UserPromptVersion(**dict(record))
+        return None
+    except asyncpg.UniqueViolationError: # Should be caught by the (user_id, prompt_title, version_number) constraint if race condition happens
+        print(f"ERROR: Prompt version '{prompt_in.prompt_title}' v{next_version} creation failed due to unique constraint for user ID {user_id}.")
+        return None # Or re-try logic if desired
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error creating prompt version '{prompt_in.prompt_title}' for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while creating prompt version for user ID {user_id}: {e}")
+        return None
+
+async def get_user_prompt_versions_by_title(conn: asyncpg.Connection, user_id: int, prompt_title: str, skip: int = 0, limit: int = 100) -> List[UserPromptVersion]:
+    """Lists all versions of a specific prompt for a user, ordered by version number DESC."""
+    print(f"INFO: Attempting to get prompt versions for title '{prompt_title}' for user ID: {user_id}")
+    try:
+        query = """
+            SELECT * FROM user_prompt_versions 
+            WHERE user_id = $1 AND prompt_title = $2 
+            ORDER BY version_number DESC 
+            LIMIT $3 OFFSET $4;
+        """
+        records = await conn.fetch(query, user_id, prompt_title, limit, skip)
+        print(f"INFO: Found {len(records)} versions for prompt '{prompt_title}' for user ID: {user_id}.")
+        return [UserPromptVersion(**dict(record)) for record in records]
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error getting prompt versions for '{prompt_title}' for user ID {user_id}: {e}")
+        return []
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while getting prompt versions for user ID {user_id}: {e}")
+        return []
+
+async def get_user_prompt_version_by_id(conn: asyncpg.Connection, prompt_version_id: int, user_id: int) -> Optional[UserPromptVersion]:
+    """Gets a specific prompt version by its ID, ensuring it belongs to the user."""
+    print(f"INFO: Attempting to get prompt version ID: {prompt_version_id} for user ID: {user_id}")
+    try:
+        query = "SELECT * FROM user_prompt_versions WHERE id = $1 AND user_id = $2;"
+        record = await conn.fetchrow(query, prompt_version_id, user_id)
+        if record:
+            print(f"INFO: Prompt version ID: {prompt_version_id} found for user ID: {user_id}.")
+            return UserPromptVersion(**dict(record))
+        else:
+            print(f"INFO: Prompt version ID: {prompt_version_id} not found for user ID: {user_id}.")
+            return None
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error getting prompt version ID {prompt_version_id} for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while getting prompt version ID {prompt_version_id} for user ID {user_id}: {e}")
+        return None
+
+async def get_latest_user_prompt_version(conn: asyncpg.Connection, user_id: int, prompt_title: str) -> Optional[UserPromptVersion]:
+    """Gets the latest version of a specific prompt for a user."""
+    print(f"INFO: Attempting to get latest version of prompt '{prompt_title}' for user ID: {user_id}")
+    try:
+        query = """
+            SELECT * FROM user_prompt_versions 
+            WHERE user_id = $1 AND prompt_title = $2 
+            ORDER BY version_number DESC 
+            LIMIT 1;
+        """
+        record = await conn.fetchrow(query, user_id, prompt_title)
+        if record:
+            print(f"INFO: Latest version {record['version_number']} of prompt '{prompt_title}' found for user ID: {user_id}.")
+            return UserPromptVersion(**dict(record))
+        else:
+            print(f"INFO: No versions found for prompt '{prompt_title}' for user ID: {user_id}.")
+            return None
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error getting latest prompt version for '{prompt_title}' for user ID {user_id}: {e}")
+        return None
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while getting latest prompt version for user ID {user_id}: {e}")
+        return None
+
+async def delete_user_prompt_version(conn: asyncpg.Connection, prompt_version_id: int, user_id: int) -> bool:
+    """Deletes a prompt version, ensuring it belongs to the user."""
+    print(f"INFO: Attempting to delete prompt version ID: {prompt_version_id} for user ID: {user_id}")
+    try:
+        query = "DELETE FROM user_prompt_versions WHERE id = $1 AND user_id = $2;"
+        status = await conn.execute(query, prompt_version_id, user_id)
+        if status.endswith("1"):
+            print(f"INFO: Prompt version ID: {prompt_version_id} deleted successfully for user ID: {user_id}.")
+            return True
+        else:
+            print(f"WARN: Failed to delete prompt version ID: {prompt_version_id}. Not found or not owned by user ID: {user_id}.")
+            return False
+    except asyncpg.PostgresError as e:
+        print(f"ERROR: Error deleting prompt version ID {prompt_version_id} for user ID {user_id}: {e}")
+        return False
+    except Exception as e:
+        print(f"ERROR: An unexpected error occurred while deleting prompt version ID {prompt_version_id} for user ID {user_id}: {e}")
+        return False
+
+# --- Initial User Seeding ---
+async def create_initial_users(conn: asyncpg.Connection):
+    print("INFO: Attempting to create initial users (admin, test_user)...")
+    
+    admin_username = "NeuroCoderZ_Admin"
+    admin_email = os.getenv("INITIAL_ADMIN_EMAIL", "admin@example.com") 
+    admin_password = os.getenv("INITIAL_ADMIN_PASSWORD")
+    admin_role = "admin"
+
+    test_user_username = "test_user_0"
+    test_user_email = os.getenv("INITIAL_TEST_USER_EMAIL", "testuser@example.com")
+    test_user_password = os.getenv("INITIAL_TEST_USER_PASSWORD")
+    test_user_role = "user"
+
+    users_to_create = []
+    if admin_password:
+        users_to_create.append(
+            {"username": admin_username, "email": admin_email, "password": admin_password, "role": admin_role, "is_admin": True}
+        )
+    else:
+        print(f"WARN: INITIAL_ADMIN_PASSWORD not set. Admin user '{admin_username}' will not be created.")
+
+    if test_user_password:
+        users_to_create.append(
+            {"username": test_user_username, "email": test_user_email, "password": test_user_password, "role": test_user_role, "is_admin": False}
+        )
+    else:
+        print(f"WARN: INITIAL_TEST_USER_PASSWORD not set. Test user '{test_user_username}' will not be created.")
+
+    for user_data in users_to_create:
+        existing_user_by_name = await get_user_by_username(conn, user_data["username"])
+        if existing_user_by_name:
+            print(f"INFO: User '{user_data['username']}' already exists by username. Skipping creation.")
+            continue
+        
+        # Also check by email to prevent UniqueViolationError if username is different but email is same
+        existing_user_by_email = await get_user_by_email(conn, user_data["email"])
+        if existing_user_by_email:
+            sanitized_user_data = {key: (value if key != "password" else "****") for key, value in user_data.items()}
+            print(f"INFO: User with email '{sanitized_user_data['email']}' (intended for '{sanitized_user_data['username']}') already exists. Skipping creation.")
+            continue
+        
+        user_create_model = UserCreate(
+            username=user_data["username"],
+            email=user_data["email"],
+            password=user_data["password"], # create_user will hash this
+            role=user_data["role"]
+        )
+        
+        created_user = await create_user(conn, user_create_model) 
+        if created_user:
+            sanitized_user_data = {key: (value if key != "password" else "****") for key, value in user_data.items()}
+            print(f"INFO: Successfully created user '{sanitized_user_data['username']}' with role '{sanitized_user_data['role']}'. ID: {created_user.id}")
+            # Schema defaults: is_active=True, email_verified=False.
+            # If specific settings like making admin active and verified are needed immediately,
+            # an update operation would be required here. E.g.,
+            # if user_data["is_admin"]:
+            #    await conn.execute("UPDATE users SET email_verified = TRUE, is_active = TRUE WHERE id = $1", created_user.id)
+            #    print(f"INFO: Admin user '{created_user.username}' explicitly set to active and email_verified.")
+        else:
+            # create_user already prints detailed error including UniqueViolation
+            print(f"ERROR: Failed to create user '{user_data['username']}'. See previous logs from create_user function.")
+    print("INFO: Initial user creation process finished.")
+
 
 # --- Audiovisual Gestural Chunks Table CRUD ---
 
