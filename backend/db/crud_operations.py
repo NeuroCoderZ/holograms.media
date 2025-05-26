@@ -1,4 +1,5 @@
 import asyncpg
+from backend.utils.sanitization import mask_email
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 
@@ -73,21 +74,21 @@ async def get_user_by_username(conn: asyncpg.Connection, username: str) -> Optio
 
 async def get_user_by_email(conn: asyncpg.Connection, email: str) -> Optional[UserInDB]:
     """Fetches a user by email."""
-    print(f"INFO: Attempting to fetch user by email: {email}")
+    print(f"INFO: Attempting to fetch user by email: {mask_email(email)}")
     try:
         query = "SELECT * FROM users WHERE email = $1;"
         record = await conn.fetchrow(query, email)
         if record:
-            print(f"INFO: User with email {email} found.")
+            print(f"INFO: User with email {mask_email(email)} found.")
             return UserInDB(**dict(record))
         else:
-            print(f"INFO: User with email {email} not found.")
+            print(f"INFO: User with email {mask_email(email)} not found.")
             return None
     except asyncpg.PostgresError as e:
-        print(f"ERROR: Error fetching user by email {email}: {e}")
+        print(f"ERROR: Error fetching user by email {mask_email(email)}: {e}")
         return None
     except Exception as e:
-        print(f"ERROR: An unexpected error occurred while fetching user by email {email}: {e}")
+        print(f"ERROR: An unexpected error occurred while fetching user by email {mask_email(email)}: {e}")
         return None
 
 async def get_user_by_id(conn: asyncpg.Connection, user_id: int) -> Optional[UserInDB]:
