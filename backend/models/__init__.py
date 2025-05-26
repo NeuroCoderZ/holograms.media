@@ -8,6 +8,11 @@ from .hologram_models import HologramBase, HologramCreate, UserHologram
 from .chat_models import ChatSessionCreate, UserChatSession, ChatMessageCreate, ChatMessagePublic
 from .prompt_models import PromptVersionBase, PromptVersionCreate, UserPromptVersion
 
+# New models for future scaffolding
+from .internal_bus_models import InternalMessage
+from .hologlyph_models import Vector3, Quaternion, ThreeDEmojiModel, HolographicSymbolModel
+
+
 # Optional: Define __all__ to control what 'from backend.models import *' imports
 __all__ = [
     # auth_models
@@ -22,4 +27,7 @@ __all__ = [
     "ChatSessionCreate", "UserChatSession", "ChatMessageCreate", "ChatMessagePublic",
     # prompt_models
     "PromptVersionBase", "PromptVersionCreate", "UserPromptVersion",
+    # New models
+    "InternalMessage",
+    "Vector3", "Quaternion", "ThreeDEmojiModel", "HolographicSymbolModel"
 ]
