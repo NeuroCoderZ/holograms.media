@@ -21,6 +21,14 @@ class GestureBot:
         gesture_classification = "unknown"
         gesture_parameters = {}
         gesture_embedding = [] # Placeholder for vector embedding
+
+            # FUTURE SCAFFOLDING for Gestural Holographic Operating System
+            # The output structure of this method is expected to become richer,
+            # potentially aligning with a model like `InterpretedGestureSequence`
+            # (defined conceptually in visionary_architecture_scaffolding.md and
+            # perhaps as a Pydantic model in backend/models/gesture_models.py in the future).
+            # This would include more detailed primitive breakdowns, semantic hypotheses, etc.
+
         return {
             "classification": gesture_classification,
             "parameters": gesture_parameters,
