@@ -26,6 +26,7 @@ from backend.routers import gestures as gestures_router
 from backend.routers import holograms as holograms_router
 from backend.routers import chat_sessions as chat_sessions_router
 from backend.routers import prompts as prompts_router
+from backend.routers import interaction_chunks as interaction_chunks_router # New router
 
 # Corrected import for InteractionChunkDB
 from backend.models.interaction_chunk_model import InteractionChunkDB
@@ -33,38 +34,64 @@ from backend.models.interaction_chunk_model import InteractionChunkDB
 # ----------------------------------------------------------------------
 # 4. ИНИЦИАЛИЗАЦИЯ FastAPI ПРИЛОЖЕНИЯ
 # ----------------------------------------------------------------------
-
+from google.cloud import pubsub_v1 # Added for Pub/Sub
 from contextlib import asynccontextmanager
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("[Lifespan] Application startup...")
-    db_conn_for_seeding = None
+    # Initialize PostgreSQL Pool
     try:
         await pg_connector.init_pg_pool()
         print("[Lifespan] PostgreSQL connection pool initialized successfully.")
-        if pg_connector._pool:
-            print("[Lifespan] Attempting to acquire DB connection for initial user seeding...")
-            db_conn_for_seeding = await pg_connector._pool.acquire()
-            if db_conn_for_seeding:
-                print("[Lifespan] DB connection acquired. Running initial user seeding...")
-                await crud_operations.create_initial_users(db_conn_for_seeding)
-            else:
-                print("[Lifespan WARN] Could not acquire DB connection for seeding. Initial users may not be created.")
-        else:
-            print("[Lifespan WARN] PostgreSQL pool not available. Skipping initial user seeding.")
+        if not pg_connector._pool:
+            print("[Lifespan WARN] PostgreSQL pool not available after init_pg_pool().")
     except Exception as e:
-        print(f"[Lifespan ERROR] Error during startup or seeding: {e}")
-    finally:
-        if db_conn_for_seeding:
-            await pg_connector._pool.release(db_conn_for_seeding)
-            print("[Lifespan] DB connection for seeding released.")
-    yield
+        print(f"[Lifespan ERROR] Error during PostgreSQL pool initialization: {e}")
+        # Depending on policy, might want to raise to prevent app start without DB
+        # For now, log and continue to Pub/Sub setup.
+    
+    # Initialize Google Cloud Pub/Sub Publisher Client
+    app.state.pubsub_publisher_client = None
+    app.state.pubsub_topic_path = None
+    try:
+        google_cloud_project = os.getenv("GOOGLE_CLOUD_PROJECT")
+        pubsub_topic_name = os.getenv("PUB_SUB_TOPIC_CHUNK_PROCESSING")
+
+        if google_cloud_project and pubsub_topic_name:
+            publisher_client = pubsub_v1.PublisherClient()
+            topic_path = publisher_client.topic_path(google_cloud_project, pubsub_topic_name)
+            app.state.pubsub_publisher_client = publisher_client
+            app.state.pubsub_topic_path = topic_path
+            print(f"[Lifespan] Google Cloud Pub/Sub Publisher client initialized for topic: {topic_path}")
+        else:
+            print("[Lifespan WARN] GOOGLE_CLOUD_PROJECT or PUB_SUB_TOPIC_CHUNK_PROCESSING not set. Pub/Sub client NOT initialized.")
+            
+    except Exception as e:
+        print(f"[Lifespan ERROR] Error initializing Google Cloud Pub/Sub client: {e}")
+        traceback.print_exc()
+        # App can still run without Pub/Sub, but publishing will fail.
+        
+    yield # Application is running
+
     print("[Lifespan] Application shutdown...")
+    # Close PostgreSQL Pool
     try:
         await pg_connector.close_pg_pool()
         print("[Lifespan] PostgreSQL connection pool closed successfully.")
     except Exception as e:
         print(f"[Lifespan ERROR] Failed to close PostgreSQL pool: {e}")
+
+    # Close Pub/Sub client (if it has a close method, typically managed by context or gRPC)
+    if hasattr(app.state.pubsub_publisher_client, 'close'):
+        try:
+            # For newer versions of google-cloud-pubsub, client might not have explicit close()
+            # or it's handled by underlying gRPC channels.
+            # publisher_client.close() # If applicable
+            print("[Lifespan] Pub/Sub client closed (if applicable).")
+        except Exception as e:
+            print(f"[Lifespan ERROR] Failed to close Pub/Sub client: {e}")
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -81,6 +108,7 @@ app.include_router(gestures_router.router)
 app.include_router(holograms_router.router)
 app.include_router(chat_sessions_router.router)
 app.include_router(prompts_router.router)
+app.include_router(interaction_chunks_router.router) # Include the new router
 
 # ----------------------------------------------------------------------
 # 5. ОПРЕДЕЛЕНИЕ Pydantic МОДЕЛЕЙ
