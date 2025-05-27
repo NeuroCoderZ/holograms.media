@@ -1,29 +1,34 @@
-from typing import List, Optional, Dict, Any # Ensure Any is imported if Dict values are not specific
-from pydantic import BaseModel, Field
-import datetime
+from pydantic import BaseModel, Field, ConfigDict # Используем ConfigDict для Pydantic V2
+from typing import Optional, List, Dict, Any
+from datetime import datetime
 
-class CodeEmbeddingBase(BaseModel):
-    component_id: str = Field(..., description="Unique identifier for the code component (e.g., function path, module name)")
+class TriaCodeEmbeddingBase(BaseModel):
+    component_id: str = Field(..., description="Unique identifier for the code component (e.g., function path, module name)", max_length=255)
     source_code_reference: Optional[str] = Field(None, description="Link or reference to the source code file/version")
-    # Assuming embedding_vector will be handled appropriately during creation/retrieval,
-    # it might not always be present in base model for creation if generated later.
-    # For now, including it as optional.
-    embedding_vector: Optional[List[float]] = Field(None, description="Semantic embedding of the code component")
-    semantic_description: Optional[str] = Field(None, description="Human-readable description of what the component does")
-    dependencies: Optional[List[str]] = Field(None, description="List of other component_ids this component depends on") # Assuming list of strings
-    version: Optional[str] = Field(None, description="Version of this code component/embedding")
+    semantic_description: Optional[str] = Field(None, description="Human-readable or AI-generated summary of the component's purpose")
+    dependencies: Optional[Dict[str, Any]] = Field(None, description="e.g., list of other component_ids this component depends on, using Dict for JSONB flexibility") # JSONB -> Dict
+    version: Optional[str] = Field(None, description="Version of this code component/embedding", max_length=50)
+    embedding_vector: Optional[List[float]] = Field(None, description="Semantic embedding of the code component. Assuming it might be set or updated later.")
 
-class CodeEmbeddingCreate(CodeEmbeddingBase):
-    # Add any specific fields for creation if different from base
-    # For now, assume it's the same as base, but ensure critical fields are not optional if needed for creation
-    component_id: str # Make non-optional for creation
-    embedding_vector: List[float] # Make non-optional for creation
+class TriaCodeEmbeddingCreate(TriaCodeEmbeddingBase):
+    # component_id is already required in TriaCodeEmbeddingBase if "..." is used as default
+    # embedding_vector can be provided on creation or updated later.
+    # If embedding_vector MUST be present on creation, make it non-optional here:
+    # embedding_vector: List[float] = Field(...)
+    pass # Inherits all fields, component_id is already mandatory
 
-class CodeEmbedding(CodeEmbeddingBase):
-    # Fields from the database record, including those automatically generated
-    embedding_vector: List[float] # Make non-optional for a stored record
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
+class TriaCodeEmbeddingInDB(TriaCodeEmbeddingBase): # Переименовал для ясности, что это модель для чтения из БД
+    # component_id is inherited and mandatory
+    # embedding_vector can be Optional if it can be null in DB, or List[float] if always present
+    created_at: datetime
+    updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    # Pydantic V2 Config
+    model_config = ConfigDict(from_attributes=True)
+
+# Для удобства можно также определить модель для публичного API ответа, если она отличается
+class TriaCodeEmbeddingPublic(TriaCodeEmbeddingBase):
+    created_at: datetime
+    updated_at: datetime
+    # embedding_vector: Optional[List[float]] # Реши, нужно ли его всегда возвращать
+    model_config = ConfigDict(from_attributes=True)
