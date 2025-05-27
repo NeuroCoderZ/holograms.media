@@ -1,5 +1,15 @@
 // frontend/js/main.js - Основная точка входа для приложения
 
+// At the top of main.js
+import { 
+    app as firebaseApp, 
+    auth as firebaseAuth, 
+    storage as firebaseStorage, 
+    firestore as firebaseFirestore 
+} from './core/firebaseInit.js'; // Adjust path if main.js is not in frontend/js/
+
+console.log('Firebase services imported in main.js (Task 3/3 Complete):', { firebaseApp, firebaseAuth, firebaseStorage, firebaseFirestore });
+
 // Импорт ядра
 // frontend/js/main.js - Основная точка входа для приложения
 
