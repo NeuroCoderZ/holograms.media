@@ -1,5 +1,41 @@
 ## tria_memory_buffer.md - Лог итераций и ключевых решений
 
+### Итерация 2025-05-26: Скаффолдинг для Визионерских Концепций
+
+**Дата:** 2025-05-26 (Примечание: Используется обобщенная дата для этого лога)
+
+**Цель:** Реализация начального скаффолдинга для поддержки будущих визионерских концепций ("Liquid Code", "Gestural Holographic OS", "Tria's Self-Evolution/AZR"), как указано в Разделе 5 ("Proposed Next Implementation Steps") документа Visionary Architecture.
+
+**Действия и Результаты:**
+
+1.  **Обновление Схемы Базы Данных (`backend/db/schema.sql`):**
+    *   Создана таблица `tria_code_embeddings` для хранения векторных представлений компонентов кода ("Liquid Code").
+    *   Создана таблица `tria_azr_tasks` для управления задачами, которые Триа ставит для собственного развития (Absolute Zero Reasoning).
+    *   Создана таблица `tria_learning_log` для логирования ключевых событий в процессе обучения Триа.
+
+2.  **Создание и Обновление Pydantic Моделей (`backend/models/`):**
+    *   Создан файл `code_embedding_models.py` с моделями `CodeEmbeddingBase`, `CodeEmbeddingCreate`, `CodeEmbedding` для работы с эмбеддингами кода.
+    *   Создан файл `azr_models.py` с моделями `AZRTaskBase`, `AZRTaskCreate`, `AZRTask` для задач AZR.
+    *   Создан файл `learning_log_models.py` с моделями `LearningLogEntryBase`, `LearningLogEntryCreate`, `LearningLogEntry` для записей в лог обучения.
+    *   Файл `gesture_models.py` дополнен моделями `GesturalPrimitive` и `InterpretedGestureSequence` для более глубокой интерпретации жестов.
+    *   Модель `InternalMessage` в `internal_bus_models.py` была проверена и подтверждена как соответствующая требованиям для внутренней шины сообщений.
+    *   Все новые модели добавлены в `backend/models/__init__.py`.
+
+3.  **Добавление Заглушек CRUD Операций (`backend/db/crud_operations.py`):**
+    *   Добавлены функции-заполнители (placeholders) для основных CRUD-операций (создание, получение, обновление статуса, поиск по сходству) для таблиц `tria_code_embeddings`, `tria_azr_tasks` и `tria_learning_log`.
+
+4.  **Добавление Заглушек Методов в `LearningBot.py` (`backend/tria_bots/LearningBot.py`):**
+    *   Класс `LearningBot` дополнен методами-заполнителями для взаимодействия с новыми структурами данных:
+        *   `manage_code_embedding`, `retrieve_code_embedding`, `discover_similar_code` (для "Liquid Code").
+        *   `submit_new_azr_task`, `update_azr_task_progress` (для AZR).
+        *   `record_learning_event` (для логирования обучения).
+
+**Результат:** Заложены основные структурные элементы (схемы БД, модели данных, заглушки сервисных функций) для дальнейшей разработки визионерских концепций проекта. Эта работа напрямую следует плану, изложенному в "Proposed Next Implementation Steps for Scaffolding" документа "Visionary Architecture".
+
+**Следующие шаги:** Поэтапная реализация логики CRUD-операций и методов в `LearningBot.py`, а также разработка механизмов для реального использования этих структур.
+
+---
+
 ### Итерация 20250523-1700-001B (B - After Jules Merge)
 
 **Цель:** Устранение критических ошибок фронтенда после мержа рефакторинга аудио подсистемы (404 ui.js, Duplicate export panelManager).
