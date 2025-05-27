@@ -1,5 +1,17 @@
 # Holograms.media
 
+---
+title: Holograms Media # Замени на свое название
+emoji:  Holograms Media # Замени на свое название
+colorFrom: green # Выбери цвет
+colorTo: blue # Выбери цвет
+sdk: docker # У тебя Dockerfile, так что это правильно
+# sdk_version: "{{sdkVersion}}" # Если Docker, версия SDK обычно не нужна явно
+app_file: backend/app.py # Путь к основному файлу приложения ВНУТРИ Docker-контейнера (после COPY)
+# app_port: 8000 # Если твой Dockerfile EXPOSE 8000 и uvicorn запускается на 8000
+pinned: false
+---
+
 Welcome to the open-source project "Holograms.media"!
 
 This ambitious initiative aims to create a multimodal immersive platform for generating and managing dynamic 3D audiovisualizations (referred to as "holograms"). At its core is "Tria," an AI assistant designed to facilitate human-AI co-creation and interaction within this holographic space.
