@@ -3,9 +3,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Table: users
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(255) UNIQUE NOT NULL,
-    hashed_password VARCHAR(255) NOT NULL,
+    firebase_uid TEXT PRIMARY KEY, -- Changed from id SERIAL
     email VARCHAR(255) UNIQUE,
     role VARCHAR(50) DEFAULT 'user' NOT NULL CHECK (role IN ('admin', 'core_developer', 'beta_tester', 'user')),
     last_login_at TIMESTAMP WITH TIME ZONE,
@@ -14,27 +12,24 @@ CREATE TABLE users (
     user_settings JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP -- Handled at application level
+    -- username VARCHAR(255) UNIQUE NOT NULL, -- Removed
+    -- hashed_password VARCHAR(255) NOT NULL, -- Removed
 );
 
 -- Table: user_chat_sessions
 CREATE TABLE user_chat_sessions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    session_title VARCHAR(255), -- User-defined or auto-generated
+    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL, -- Changed from INTEGER REFERENCES users(id)
+    session_title VARCHAR(255), 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL -- App level update
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL 
 );
 CREATE INDEX IF NOT EXISTS idx_user_chat_sessions_user_id ON user_chat_sessions(user_id);
 
 -- Table: chat_history
--- Old indexes idx_chat_history_session_id and idx_chat_history_user_id are implicitly dropped
--- by removing the columns they depend on, or should be explicitly dropped before altering table.
--- For simplicity in a full script, we assume they are gone or will be handled during migration.
 CREATE TABLE chat_history (
     id SERIAL PRIMARY KEY,
     user_chat_session_id INTEGER REFERENCES user_chat_sessions(id) ON DELETE CASCADE NOT NULL,
-    -- session_id VARCHAR(255), -- Removed
-    -- user_id INTEGER REFERENCES users(id) ON DELETE SET NULL, -- Removed
     role VARCHAR(50) CHECK (role IN ('user', 'assistant', 'system')) NOT NULL,
     message_content TEXT NOT NULL,
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -45,30 +40,42 @@ CREATE INDEX IF NOT EXISTS idx_chat_history_user_chat_session_id ON chat_history
 -- Table: audiovisual_gestural_chunks
 CREATE TABLE audiovisual_gestural_chunks (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL, -- Changed to NOT NULL and ON DELETE CASCADE
-    session_id VARCHAR(255), -- Kept as per instruction, might refer to a recording session
+    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL, -- Changed from INTEGER REFERENCES users(id)
+    session_id VARCHAR(255), 
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     audio_data_path VARCHAR(512),
     video_data_path VARCHAR(512),
-    gesture_data JSONB,
-    transcription_text TEXT,
-    recognized_gestures JSONB,
-    context_metadata JSONB,
-    chunk_embedding VECTOR(1536)
+    hand_landmarks JSONB, -- Added as per previous interaction_chunk_model
+    gesture_classification_client TEXT, -- Added
+    gesture_confidence_client REAL, -- Added
+    speech_transcription_client TEXT, -- Added
+    environment_context JSONB, -- Added
+    user_feedback_rating INTEGER, -- Added
+    user_feedback_text TEXT, -- Added
+    user_flagged_issue BOOLEAN DEFAULT FALSE, -- Added
+    tria_processed_flag BOOLEAN DEFAULT FALSE, -- Added
+    processing_tags TEXT[], -- Added
+    metadata JSONB, -- Kept, can store other things (already in interaction_chunk_model)
+    raw_data_blob JSONB, -- Added
+    -- gesture_data JSONB, -- Replaced by hand_landmarks and specific gesture fields
+    -- transcription_text TEXT, -- Replaced by speech_transcription_client
+    -- recognized_gestures JSONB, -- Replaced by server-side fields in InteractionChunkDB model
+    -- context_metadata JSONB, -- Replaced by environment_context
+    chunk_embedding VECTOR(1536) NULL -- Kept NULL as per previous definition
 );
 CREATE INDEX IF NOT EXISTS idx_audiovisual_chunks_user_id ON audiovisual_gestural_chunks(user_id);
-CREATE INDEX IF NOT EXISTS idx_audiovisual_chunks_session_id ON audiovisual_gestural_chunks(session_id); -- Kept existing index
+CREATE INDEX IF NOT EXISTS idx_audiovisual_chunks_session_id ON audiovisual_gestural_chunks(session_id);
 CREATE INDEX IF NOT EXISTS idx_audiovisual_chunks_chunk_embedding ON audiovisual_gestural_chunks USING hnsw (chunk_embedding vector_l2_ops);
 
 -- Table: user_gestures
 CREATE TABLE user_gestures (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL, -- Changed from INTEGER REFERENCES users(id)
     gesture_name VARCHAR(255) NOT NULL,
-    gesture_data_ref INTEGER REFERENCES audiovisual_gestural_chunks(id) ON DELETE SET NULL, -- Optional link
-    gesture_definition JSONB NOT NULL, -- Simplified landmarks, sequence, or parameters
+    gesture_data_ref INTEGER REFERENCES audiovisual_gestural_chunks(id) ON DELETE SET NULL, 
+    gesture_definition JSONB NOT NULL, 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL -- App level update
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL 
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_gestures_user_id_gesture_name ON user_gestures(user_id, gesture_name);
 CREATE INDEX IF NOT EXISTS idx_user_gestures_user_id ON user_gestures(user_id);
@@ -76,11 +83,11 @@ CREATE INDEX IF NOT EXISTS idx_user_gestures_user_id ON user_gestures(user_id);
 -- Table: user_holograms
 CREATE TABLE user_holograms (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL, -- Changed from INTEGER REFERENCES users(id)
     hologram_name VARCHAR(255) NOT NULL,
-    hologram_state_data JSONB NOT NULL, -- Full state to reconstruct visualization/application state
+    hologram_state_data JSONB NOT NULL, 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL -- App level update
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL 
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_holograms_user_id_hologram_name ON user_holograms(user_id, hologram_name);
 CREATE INDEX IF NOT EXISTS idx_user_holograms_user_id ON user_holograms(user_id);
@@ -88,13 +95,13 @@ CREATE INDEX IF NOT EXISTS idx_user_holograms_user_id ON user_holograms(user_id)
 -- Table: user_prompt_versions
 CREATE TABLE user_prompt_versions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL, -- Changed from INTEGER REFERENCES users(id)
     prompt_title VARCHAR(255) NOT NULL,
     prompt_text TEXT NOT NULL,
     version_number INTEGER NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    associated_hologram_id INTEGER REFERENCES user_holograms(id) ON DELETE SET NULL, -- Optional link
-    metadata JSONB, -- e.g., LLM used, parameters
+    associated_hologram_id INTEGER REFERENCES user_holograms(id) ON DELETE SET NULL, 
+    metadata JSONB, 
     CONSTRAINT unique_user_prompt_version UNIQUE (user_id, prompt_title, version_number)
 );
 CREATE INDEX IF NOT EXISTS idx_user_prompt_versions_user_id ON user_prompt_versions(user_id);
@@ -115,8 +122,8 @@ CREATE INDEX IF NOT EXISTS idx_tria_kb_content_embedding ON tria_knowledge_base 
 -- Table: tria_memory_embeddings
 CREATE TABLE tria_memory_embeddings (
     id SERIAL PRIMARY KEY,
-    source_type VARCHAR(100), -- e.g., 'chat', 'chunk', 'document'
-    source_id VARCHAR(255),   -- Can be integer or string
+    source_type VARCHAR(100), 
+    source_id VARCHAR(255),   
     embedding_vector VECTOR(1536),
     text_content TEXT,
     metadata JSONB,
@@ -135,7 +142,7 @@ CREATE TABLE application_logs (
 );
 CREATE INDEX IF NOT EXISTS idx_application_logs_level ON application_logs(level);
 CREATE INDEX IF NOT EXISTS idx_application_logs_timestamp_desc ON application_logs(timestamp DESC);
-CREATE INDEX IF NOT EXISTS idx_application_logs_source_component ON application_logs(source_component); -- Added as per instruction point 9 review
+CREATE INDEX IF NOT EXISTS idx_application_logs_source_component ON application_logs(source_component);
 
 -- Table: holograph_data
 CREATE TABLE holograph_data (
@@ -144,26 +151,6 @@ CREATE TABLE holograph_data (
     data_payload JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
--- Note: updated_at in users, user_chat_sessions, user_gestures, user_holograms
--- is intended to be handled at the application level.
--- If database-level automatic updates are required for any of these,
--- a trigger function would be needed for each table similar to the example below for users.
-/*
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-   NEW.updated_at = NOW();
-   RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Example for one table:
-CREATE TRIGGER update_user_updated_at
-BEFORE UPDATE ON users
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-*/
 
 --
 -- FUTURE SCAFFOLDING FOR VISIONARY CONCEPTS
@@ -199,7 +186,6 @@ CREATE TABLE tria_azr_tasks (
 );
 
 -- For "Tria's Self-Evolution" - Storing results of AZR tasks
-/*
 CREATE TABLE tria_azr_task_solutions (
     solution_id SERIAL PRIMARY KEY,
     task_id INTEGER REFERENCES tria_azr_tasks(task_id) ON DELETE CASCADE NOT NULL,
@@ -211,7 +197,6 @@ CREATE TABLE tria_azr_task_solutions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_azr_task_solutions_task_id ON tria_azr_task_solutions(task_id);
-*/
 
 -- For "Tria's Self-Evolution" - Logging significant learning events
 CREATE TABLE tria_learning_log (
@@ -226,7 +211,6 @@ CREATE INDEX IF NOT EXISTS idx_tria_learning_log_timestamp ON tria_learning_log(
 CREATE INDEX IF NOT EXISTS idx_tria_learning_log_event_type ON tria_learning_log(event_type);
 
 -- For "Tria's Self-Evolution" - Storing configurations of Tria's bots
-/*
 CREATE TABLE tria_bot_configurations (
     config_id SERIAL PRIMARY KEY,
     bot_id VARCHAR(255) UNIQUE NOT NULL,      -- Identifier for the bot (e.g., "GestureBot", "AudioBot")
@@ -236,4 +220,15 @@ CREATE TABLE tria_bot_configurations (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     notes TEXT                                -- Any notes about this configuration
 );
-*/
+
+-- Note on audiovisual_gestural_chunks:
+-- The fields gesture_data, transcription_text, recognized_gestures, context_metadata
+-- were replaced by more specific fields from InteractionChunkCreate model based on previous subtask.
+-- This change is reflected above.
+-- If `chunk_embedding` is intended to be NOT NULL, its definition should be changed.
+-- Currently, it allows NULLs.
+
+-- Note on updated_at triggers:
+-- The comment about application-level handling of updated_at is kept.
+-- If DB-level triggers are preferred, uncomment and adapt the example.
+```
