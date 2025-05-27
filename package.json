@@ -1,32 +1,5 @@
 {
-  "dependencies": {
-    "@types/three": "^0.174.0",
-    "three": "^0.174.0"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.25.1",
-    "eslint": "^9.25.1",
-    "globals": "^16.0.0",
-    "husky": "^9.1.7"
-  },
-  "scripts": {
-    "prepare": "husky install",
-    "test": "echo \"No test specified\" && exit 0",
-    "lint": "npx eslint frontend/script.js"
-  },
-  "name": "holograms.media",
-  "version": "1.0.0",
-  "main": "commitlint.config.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/NeuroCoderZ/holograms.media.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/NeuroCoderZ/holograms.media/issues"
-  },
-  "homepage": "https://github.com/NeuroCoderZ/holograms.media#readme",
-  "description": ""
+  "name": "holograms-media",
+  "version": "0.1.0",
+  "dependencies": {}
 }

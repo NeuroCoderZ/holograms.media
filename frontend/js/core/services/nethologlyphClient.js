@@ -1,0 +1,1 @@
+// Core NetHoloGlyph client logic.
