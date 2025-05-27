@@ -171,35 +171,32 @@ EXECUTE FUNCTION update_updated_at_column();
 --
 
 -- For "Liquid Code" - Storing embeddings of code components
-/*
 CREATE TABLE tria_code_embeddings (
     component_id VARCHAR(255) PRIMARY KEY,    -- Unique identifier for the code component (e.g., function path, module name)
     source_code_reference TEXT,               -- Link or reference to the source code file/version
-    embedding_vector VECTOR(1536),            -- Semantic embedding of the code component
+    embedding_vector VECTOR(1536),            -- Semantic embedding of the code component. NOTE: Ensure the vector dimension (1536) is appropriate or make it a parameter.
     semantic_description TEXT,                -- Human-readable description of what the component does
     dependencies JSONB,                       -- List of other component_ids this component depends on
     version VARCHAR(50),                      -- Version of this code component/embedding
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP -- Note: `updated_at` typically requires application-level logic or database triggers to auto-update on row modification.
 );
 CREATE INDEX IF NOT EXISTS idx_tria_code_embeddings_embedding ON tria_code_embeddings USING hnsw (embedding_vector vector_l2_ops);
-*/
 
 -- For "Tria's Self-Evolution" - Managing AZR tasks
-/*
 CREATE TABLE tria_azr_tasks (
     task_id SERIAL PRIMARY KEY,
-    description_text TEXT NOT NULL,           -- Description of the task Tria sets for itself
+    description_text TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'evaluating', 'completed_success', 'completed_failure', 'aborted')),
     priority INTEGER DEFAULT 0,
     complexity_score FLOAT,
-    generation_source TEXT,                   -- How was this task generated (e.g., "user_feedback_gap", "exploratory_synthesis")
+    generation_source TEXT,
+    related_bot_id TEXT, -- Added as per visionary doc section 4.3
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     started_at TIMESTAMP WITH TIME ZONE,
     completed_at TIMESTAMP WITH TIME ZONE,
-    metadata JSONB                            -- Any additional data about the task or its generation
+    metadata_json JSONB -- Renamed from metadata to metadata_json for clarity
 );
-*/
 
 -- For "Tria's Self-Evolution" - Storing results of AZR tasks
 /*
@@ -217,18 +214,16 @@ CREATE INDEX IF NOT EXISTS idx_azr_task_solutions_task_id ON tria_azr_task_solut
 */
 
 -- For "Tria's Self-Evolution" - Logging significant learning events
-/*
 CREATE TABLE tria_learning_log (
     log_id SERIAL PRIMARY KEY,
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    event_type TEXT NOT NULL,                 -- e.g., "parameter_tune", "azr_task_success", "model_retrain_start", "new_gestural_pattern_learned"
-    bot_affected_id TEXT,                     -- Which bot or component was affected
-    summary_text TEXT NOT NULL,
-    details_json JSONB                        -- Detailed information about the event
+    event_type TEXT NOT NULL,
+    bot_affected_id TEXT,
+    summary_text TEXT NOT NULL, -- Marked as NOT NULL
+    details_json JSONB -- Renamed from details to details_json
 );
 CREATE INDEX IF NOT EXISTS idx_tria_learning_log_timestamp ON tria_learning_log(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_tria_learning_log_event_type ON tria_learning_log(event_type);
-*/
 
 -- For "Tria's Self-Evolution" - Storing configurations of Tria's bots
 /*
