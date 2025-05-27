@@ -13,6 +13,8 @@ gradio>=5.28
 spaces
 langchain-mistralai>=0.0.10
 tenacity>=8.0.0
+firebase-admin>=6.5.0
+google-cloud-pubsub>=2.13.0
 # Добавь сюда любые другие Python зависимости, если твой код их использует!
 # Например, если MediaPipe используется на Python бэкенде:
 # mediapipe
