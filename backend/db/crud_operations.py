@@ -9,6 +9,9 @@ from backend.models.gesture_models import GestureCreate, UserGesture
 from backend.models.hologram_models import HologramCreate, UserHologram
 from backend.models.chat_models import ChatSessionCreate, UserChatSession, ChatMessageCreate, ChatMessagePublic
 from backend.models.prompt_models import PromptVersionCreate, UserPromptVersion
+from backend.models.code_embedding_models import CodeEmbedding, CodeEmbeddingCreate
+from backend.models.azr_models import AZRTask, AZRTaskCreate # Added AZR models
+from backend.models.learning_log_models import LearningLogEntry, LearningLogEntryCreate # Added Learning Log models
 
 # Security imports
 from backend.auth.security import get_password_hash
@@ -748,6 +751,181 @@ async def create_initial_users(conn: asyncpg.Connection):
             print(f"ERROR: Failed to create user '{user_data['username']}'. See previous logs from create_user function.")
     print("INFO: Initial user creation process finished.")
 
+# --- Tria Code Embeddings Table CRUD ---
+
+async def add_code_embedding(conn: asyncpg.Connection, embedding_data: CodeEmbeddingCreate) -> Optional[CodeEmbedding]:
+    """Stores a new code embedding in the tria_code_embeddings table."""
+    print(f"INFO: Attempting to add code embedding for component: {embedding_data.component_id}")
+    # TODO: Implement actual database insertion logic
+    # Placeholder:
+    # query = """
+    #     INSERT INTO tria_code_embeddings (component_id, source_code_reference, embedding_vector, 
+    #                                     semantic_description, dependencies, version, created_at, updated_at)
+    #     VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+    #     RETURNING *;
+    # """
+    # try:
+    #     record = await conn.fetchrow(
+    #         query, embedding_data.component_id, embedding_data.source_code_reference,
+    #         embedding_data.embedding_vector, embedding_data.semantic_description,
+    #         json.dumps(embedding_data.dependencies) if embedding_data.dependencies is not None else None, # Ensure JSONB is handled
+    #         embedding_data.version
+    #     )
+    #     if record:
+    #         return CodeEmbedding(**dict(record))
+    #     return None
+    # except asyncpg.PostgresError as e:
+    #     print(f"ERROR: Error adding code embedding {embedding_data.component_id}: {e}")
+    #     return None
+    print(f"TODO: Implement add_code_embedding for {embedding_data.component_id}")
+    return None # Placeholder
+
+async def get_code_embedding_by_id(conn: asyncpg.Connection, component_id: str) -> Optional[CodeEmbedding]:
+    """Retrieves a code embedding by its component_id."""
+    print(f"INFO: Attempting to fetch code embedding for component: {component_id}")
+    # TODO: Implement actual database retrieval logic
+    # Placeholder:
+    # query = "SELECT * FROM tria_code_embeddings WHERE component_id = $1;"
+    # try:
+    #     record = await conn.fetchrow(query, component_id)
+    #     if record:
+    #         return CodeEmbedding(**dict(record))
+    #     return None
+    # except asyncpg.PostgresError as e:
+    #     print(f"ERROR: Error fetching code embedding {component_id}: {e}")
+    #     return None
+    print(f"TODO: Implement get_code_embedding_by_id for {component_id}")
+    return None # Placeholder
+
+async def find_similar_code_components_by_embedding(conn: asyncpg.Connection, embedding_vector: List[float], top_k: int = 5) -> List[CodeEmbedding]:
+    """Finds top_k similar code components based on embedding_vector similarity (L2 distance)."""
+    print(f"INFO: Attempting to find {top_k} similar code components.")
+    # TODO: Implement actual database similarity search logic
+    # Placeholder:
+    # query = """
+    #     SELECT *, (embedding_vector <-> $1) AS distance
+    #     FROM tria_code_embeddings
+    #     ORDER BY distance ASC
+    #     LIMIT $2;
+    # """
+    # try:
+    #     records = await conn.fetch(query, embedding_vector, top_k)
+    #     return [CodeEmbedding(**dict(record)) for record in records]
+    # except asyncpg.PostgresError as e:
+    #     print(f"ERROR: Error finding similar code components: {e}")
+    #     return []
+    print(f"TODO: Implement find_similar_code_components_by_embedding")
+    return [] # Placeholder
+
+# --- TRIA AZR Tasks Table CRUD ---
+
+async def create_azr_task(conn: asyncpg.Connection, task_data: AZRTaskCreate) -> Optional[AZRTask]:
+    """Creates a new AZR task."""
+    print(f"INFO: Attempting to create AZR task: {task_data.description_text[:50]}...")
+    # TODO: Implement actual database insertion logic
+    # Example:
+    # query = """
+    #     INSERT INTO tria_azr_tasks (description_text, status, priority, complexity_score, generation_source, related_bot_id, metadata_json, created_at, started_at, completed_at)
+    #     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8, $9)
+    #     RETURNING *;
+    # """
+    # try:
+    #     record = await conn.fetchrow(query, task_data.description_text, task_data.status, task_data.priority, 
+    #                                  task_data.complexity_score, task_data.generation_source, task_data.related_bot_id, 
+    #                                  json.dumps(task_data.metadata_json) if task_data.metadata_json else None, 
+    #                                  None, None) # Assuming started_at and completed_at are None on creation
+    #     if record:
+    #         return AZRTask(**dict(record))
+    # except asyncpg.PostgresError as e:
+    #     print(f"ERROR: Error creating AZR task '{task_data.description_text[:50]}': {e}")
+    # return None
+    print(f"TODO: Implement create_azr_task for {task_data.description_text[:50]}")
+    return None # Placeholder
+
+async def get_azr_task_by_id(conn: asyncpg.Connection, task_id: int) -> Optional[AZRTask]:
+    """Retrieves an AZR task by its ID."""
+    print(f"INFO: Attempting to fetch AZR task ID: {task_id}")
+    # TODO: Implement actual database retrieval logic
+    # Example:
+    # query = "SELECT * FROM tria_azr_tasks WHERE task_id = $1;"
+    # try:
+    #     record = await conn.fetchrow(query, task_id)
+    #     if record:
+    #         return AZRTask(**dict(record))
+    # except asyncpg.PostgresError as e:
+    #     print(f"ERROR: Error fetching AZR task ID {task_id}: {e}")
+    # return None
+    print(f"TODO: Implement get_azr_task_by_id for {task_id}")
+    return None # Placeholder
+
+async def update_azr_task_status(conn: asyncpg.Connection, task_id: int, status: str, completed_at: Optional[datetime] = None) -> Optional[AZRTask]:
+    """Updates the status and optionally completed_at time of an AZR task."""
+    print(f"INFO: Attempting to update AZR task ID: {task_id} to status: {status}")
+    # TODO: Implement actual database update logic
+    # Example:
+    # started_at_update = ", started_at = NOW()" if status == "active" and completed_at is None else "" # Example logic
+    # completed_at_update = ", completed_at = $3" if completed_at else ""
+    # query = f"""
+    #     UPDATE tria_azr_tasks 
+    #     SET status = $2 {started_at_update} {completed_at_update}, updated_at = NOW() 
+    #     WHERE task_id = $1 RETURNING *;
+    # """ # Note: schema.sql does not have updated_at for tria_azr_tasks yet. Add if needed.
+    # values = [task_id, status]
+    # if completed_at:
+    #     values.append(completed_at)
+    # try:
+    #     record = await conn.fetchrow(query, *values)
+    #     if record:
+    #         return AZRTask(**dict(record))
+    # except asyncpg.PostgresError as e:
+    #     print(f"ERROR: Error updating AZR task ID {task_id}: {e}")
+    # return None
+    print(f"TODO: Implement update_azr_task_status for {task_id}")
+    return None # Placeholder
+
+# --- TRIA Learning Log Table CRUD ---
+
+async def add_learning_log_entry(conn: asyncpg.Connection, log_entry_data: LearningLogEntryCreate) -> Optional[LearningLogEntry]:
+    """Adds a new entry to the learning log."""
+    print(f"INFO: Attempting to add learning log entry: {log_entry_data.event_type} - {log_entry_data.summary_text[:50]}...")
+    # TODO: Implement actual database insertion logic
+    # Example:
+    # query = """
+    #     INSERT INTO tria_learning_log (event_type, bot_affected_id, summary_text, details_json, timestamp)
+    #     VALUES ($1, $2, $3, $4, NOW())
+    #     RETURNING *;
+    # """
+    # try:
+    #     record = await conn.fetchrow(query, log_entry_data.event_type, log_entry_data.bot_affected_id, 
+    #                                  log_entry_data.summary_text, 
+    #                                  json.dumps(log_entry_data.details_json) if log_entry_data.details_json else None)
+    #     if record:
+    #         return LearningLogEntry(**dict(record))
+    # except asyncpg.PostgresError as e:
+    #     print(f"ERROR: Error adding learning log for event '{log_entry_data.event_type}': {e}")
+    # return None
+    print(f"TODO: Implement add_learning_log_entry for {log_entry_data.event_type}")
+    return None # Placeholder
+
+async def get_learning_log_entries(conn: asyncpg.Connection, event_type: Optional[str] = None, limit: int = 100) -> List[LearningLogEntry]:
+    """Retrieves learning log entries, optionally filtered by event_type."""
+    print(f"INFO: Attempting to fetch learning log entries (event_type: {event_type}, limit: {limit})")
+    # TODO: Implement actual database retrieval logic
+    # Example:
+    # if event_type:
+    #     query = "SELECT * FROM tria_learning_log WHERE event_type = $1 ORDER BY timestamp DESC LIMIT $2;"
+    #     params = [event_type, limit]
+    # else:
+    #     query = "SELECT * FROM tria_learning_log ORDER BY timestamp DESC LIMIT $1;"
+    #     params = [limit]
+    # try:
+    #     records = await conn.fetch(query, *params)
+    #     return [LearningLogEntry(**dict(record)) for record in records]
+    # except asyncpg.PostgresError as e:
+    #     print(f"ERROR: Error fetching learning log entries: {e}")
+    # return []
+    print(f"TODO: Implement get_learning_log_entries")
+    return [] # Placeholder
 
 # --- Audiovisual Gestural Chunks Table CRUD ---
 

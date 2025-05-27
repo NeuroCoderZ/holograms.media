@@ -60,6 +60,16 @@
     *   `backend/routers/prompts.py`: CRUD для версий пользовательских промптов.
 *   **[Дата] Фаза 2: Реализовано начальное заполнение базы данных пользователями.**
     *   Добавлена функция `create_initial_users` для создания администратора и тестового пользователя при старте приложения (на основе переменных окружения).
+*   **[Дата] Реализовано начальное скаффолдинг-основание для Визионерских Концепций:**
+    *   **База данных (`schema.sql`):** Добавлены таблицы `tria_code_embeddings` (для "Liquid Code"), `tria_azr_tasks` и `tria_learning_log` (для "Tria's Self-Evolution/AZR").
+    *   **Модели Pydantic (`backend/models/`):**
+        *   Созданы `code_embedding_models.py` (с моделями `CodeEmbedding*` для представления компонентов кода).
+        *   Созданы `azr_models.py` (с `AZRTask*`) и `learning_log_models.py` (с `LearningLogEntry*`) для управления процессами AZR и логирования обучения.
+        *   Расширены `gesture_models.py` моделями `GesturalPrimitive` и `InterpretedGestureSequence` для детализированной интерпретации жестов.
+        *   Модель `InternalMessage` в `internal_bus_models.py` была подтверждена как соответствующая требованиям.
+    *   **Операции CRUD (`backend/db/crud_operations.py`):** Добавлены заполнители (placeholders) для CRUD-операций для новых таблиц.
+    *   **Логика Ботов (`backend/tria_bots/LearningBot.py`):** Добавлены методы-заполнители для взаимодействия с новыми структурами данных (управление эмбеддингами кода, задачами AZR, логирование обучения).
+    *   Эти изменения соответствуют шагам, изложенным в "Proposed Next Implementation Steps for Scaffolding" документа "Visionary Architecture".
 *   [2025-05-25] Исправлен импорт Tween.js и ошибки ESLint в `rendering.js`.
 *   [2025-05-25] Исправлена функция `animate` в `frontend/js/3d/rendering.js` для корректного запуска цикла рендеринга 3D-сцены. Обеспечен ее правильный экспорт и импорт в `main.js`.
 *   [2025-05-25] Исправлена ошибка экспорта `onWindowResize` в `rendering.js`.
@@ -73,7 +83,7 @@
 
 ### 2.2. Последние ключевые изменения в коде (за последние 1-2 итерации):
 
-*   **Бэкенд:** Основные изменения связаны с миграцией на PostgreSQL, реализацией аутентификации и CRUD операций для пользовательских данных (жесты, голограммы, чаты, промпты). Структура бэкенда была реорганизована с использованием FastAPI роутеров для лучшей модульности.
+*   **Бэкенд:** Основные изменения связаны с миграцией на PostgreSQL, реализацией аутентификации и CRUD операций для пользовательских данных. Недавно было добавлено скаффолдинг-основание для поддержки будущих визионерских концепций, включая новые таблицы БД, Pydantic модели и сервисные заглушки для "Liquid Code", "AZR" и улучшенной обработки жестов. Структура бэкенда была реорганизована с использованием FastAPI роутеров для лучшей модульности.
 *   **Фронтенд:** [2025-05-25] Исправлен импорт Tween.js и ошибки ESLint в `rendering.js`. Обеспечен корректный запуск цикла рендеринга 3D-сцены.
 *   [2025-05-25] Исправлена функция `animate` в `frontend/js/3d/rendering.js` для корректного запуска цикла рендеринга 3D-сцены. Обеспечен ее правильный экспорт и импорт в `main.js`.
 *   [2025-05-25] Исправлена ошибка экспорта `onWindowResize` в `rendering.js`.
@@ -86,9 +96,10 @@
     *   **База данных:** PostgreSQL с расширением pgvector.
     *   **API:** FastAPI.
     *   **Аутентификация:** JWT-токены (`backend/auth/security.py`).
-    *   **Модели данных:** Pydantic модели в `backend/models/` (включая `user_models.py`, `auth_models.py`, `gesture_models.py`, `hologram_models.py`, `chat_models.py`, `prompt_models.py`).
-    *   **Операции с БД (CRUD):** `backend/db/crud_operations.py`.
+    *   **Модели данных:** Pydantic модели в `backend/models/` (включая `user_models.py`, `auth_models.py`, `gesture_models.py`, `hologram_models.py`, `chat_models.py`, `prompt_models.py`, а также новые модели для `code_embedding_models.py`, `azr_models.py`, `learning_log_models.py`).
+    *   **Операции с БД (CRUD):** `backend/db/crud_operations.py` (расширен заглушками для новых сущностей).
     *   **API Роутеры:** Модули в `backend/routers/` (включая `auth.py`, `gestures.py`, `holograms.py`, `chat_sessions.py`, `prompts.py`).
+    *   **Боты Триа (`backend/tria_bots/`):** `LearningBot.py` дополнен методами-заглушками для будущей работы с визионерскими концепциями.
 *   **Фронтенд:**
     *   `frontend/js/core`: Основная логика инициализации, событий, состояния.
     *   `frontend/js/3d`: Работа с Three.js/WebGPU, рендеринг, управление сценой и объектами.
