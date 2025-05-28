@@ -36,11 +36,28 @@ function animate(currentTime) {
     // Audio processing and visualization updates
     if (state.audio) { // Ensure state.audio is initialized
         if (state.audio.activeSource === 'file' && state.audio.isPlaying && state.audio.filePlayerAnalysers) {
-            updateFilePlaybackVisuals();
-        } else if (state.audio.activeSource === 'microphone' && state.audio.microphoneAnalysers && state.audio.microphoneAnalysers.left && state.audio.microphoneAnalysers.right) {
-            updateLiveSequencerVisuals(state.audio.microphoneAnalysers.left, state.audio.microphoneAnalysers.right);
+            updateFilePlaybackVisuals(); // This likely needs similar refactoring if it directly manipulates columns
+        } else if (state.audio.activeSource === 'microphone' &&
+                   state.hologramRendererInstance &&
+                   state.audioAnalyzerLeftInstance &&
+                   state.audioAnalyzerRightInstance &&
+                   state.audio.microphoneAnalysers && // Ensure analysers are ready from MicrophoneManager
+                   state.audio.microphoneAnalysers.left && 
+                   state.audio.microphoneAnalysers.right) {
+            
+            const leftLevels = state.audioAnalyzerLeftInstance.getSemitoneLevels();
+            const rightLevels = state.audioAnalyzerRightInstance.getSemitoneLevels();
+            state.hologramRendererInstance.updateColumnVisuals(leftLevels, rightLevels);
+
         } else {
             // Optional: Call a function to reset columns to a default visual state if no audio is active.
+            // This could be state.hologramRendererInstance.updateColumnVisuals([], []) or a specific reset method.
+            // For now, if nothing is active, columns remain in their last state or are reset by other logic.
+            // If hologramRendererInstance exists, we could potentially tell it to clear/reset.
+            if (state.hologramRendererInstance && (state.audio.activeSource === 'none' || !state.audio.activeSource)) {
+                 // Consider adding a specific method like resetVisuals or pass empty/default levels
+                 // state.hologramRendererInstance.updateColumnVisuals(allSilentLevels, allSilentLevels);
+            }
             // This could be a new function in audioProcessing.js or reuse existing reset logic if appropriate.
             // For now, if resetVisualization() in microphoneManager.js handles the mic-off case,
             // and if updateFilePlaybackVisuals handles its own "silence" (e.g. snap to zero), this might be sufficient.
