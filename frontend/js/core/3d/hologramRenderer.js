@@ -1,1 +1,0 @@
-// Core Hologram rendering logic.
