@@ -16,12 +16,11 @@ export const state = {
   hemisphereLight: null,      // Added in previous step
   spotLight: null,            // Added in previous step
   gridPointLight: null,       // Added in previous step
-  semitones: [],              // Add this for sequencer
-  columns: [],                // Add this for sequencer
-  mainSequencerGroup: null,   // Should exist
-  leftSequencerGroup: null,   // Should exist
-  rightSequencerGroup: null,  // Should exist
-
+  // --- Properties for new class instances ---
+  microphoneManagerInstance: null,
+  audioAnalyzerLeftInstance: null,
+  audioAnalyzerRightInstance: null,
+  hologramRendererInstance: null,
 
   // --- Состояние управления и взаимодействия ---
   controls: null,             // OrbitControls или другие элементы управления камерой
@@ -136,53 +135,82 @@ export const state = {
 
 // Импортируем функцию инициализации Three.js сцены
 import { initializeScene } from '../3d/sceneSetup.js';
+import { MicrophoneManager } from '../../audio/microphoneManager.js';
+import { AudioAnalyzer } from '../../audio/audioAnalyzer.js';
+import { HologramRenderer } from '../../3d/hologramRenderer.js';
 
 // Функция для инициализации ядра приложения
-export function initCore() {
+export async function initCore() {
   console.log('Инициализация ядра приложения...');
   
   // Инициализируем Three.js сцену
   try {
     // initializeScene теперь напрямую модифицирует объект state
-    initializeScene();
+    initializeScene(state); // Pass state to initializeScene
     
     console.log('Three.js сцена успешно инициализирована');
   } catch (error) {
     console.error('Ошибка при инициализации Three.js сцены:', error);
+    // Fallback might not be useful if scene itself failed to init
+    // Consider if the app can run without a scene. If not, maybe rethrow or set a global error state.
+  }
+
+  // Proceed with other initializations only if scene is available
+  if (!state.scene) {
+    console.error('Scene not initialized, cannot proceed with Hologram and Audio setup.');
+    return; 
+  }
+
+  // Instantiate HologramRenderer
+  // state.hologramPivot is created in initializeScene.
+  // HologramRenderer creates its own pivot and adds it to the scene.
+  // This means state.hologramPivot (from initializeScene) might become unused or represent a different group.
+  // For now, let HologramRenderer manage its own pivot.
+  // If state.hologramPivot needs to be THE pivot, HologramRenderer's constructor would need modification.
+  state.hologramRendererInstance = new HologramRenderer(state.scene);
+  console.log('HologramRenderer initialized.');
+
+  // Instantiate MicrophoneManager
+  state.microphoneManagerInstance = new MicrophoneManager(); // Can pass FFT_SIZE, SMOOTHING_TIME_CONSTANT if needed from config
+
+  // Initialize microphone and get analysers
+  try {
+    const { analyserLeft, analyserRight, audioContext } = await state.microphoneManagerInstance.init();
     
-    // Запасной вариант: инициализация из глобальных объектов (для обратной совместимости)
-    // Этот блок оставлен для отладки, но в модульной структуре не должен использоваться
-    if (window.hologramPivot && !state.hologramPivot) {
-      state.hologramPivot = window.hologramPivot;
-      console.log('hologramPivot инициализирован из глобального объекта');
-    }
+    // Store the audio context and analysers in the state.audio structure
+    state.audio.audioContext = audioContext;
+    state.audio.microphoneAnalysers = { left: analyserLeft, right: analyserRight };
     
-    if (window.scene && !state.scene) {
-      state.scene = window.scene;
-      console.log('scene инициализирована из глобального объекта');
-    }
+    // Instantiate AudioAnalyzers with the obtained analysers and context
+    state.audioAnalyzerLeftInstance = new AudioAnalyzer(analyserLeft, audioContext);
+    state.audioAnalyzerRightInstance = new AudioAnalyzer(analyserRight, audioContext);
     
-    if (window.camera && !state.camera) {
-      state.camera = window.camera;
-      console.log('camera инициализирована из глобального объекта');
-    }
-    
-    if (window.renderer && !state.renderer) {
-      state.renderer = window.renderer;
-      console.log('renderer инициализирован из глобального объекта');
-    }
+    state.audio.activeSource = 'microphone'; // Activate microphone by default
+    console.log('MicrophoneManager and AudioAnalyzers initialized successfully.');
+
+  } catch (micError) {
+    console.error('Failed to initialize microphone or analyzers:', micError);
+    // Application can proceed without microphone audio. User might need to be notified.
+    // state.audio.activeSource will remain 'none' or whatever its default is.
   }
   
   // Установка начального аспекта камеры (если не было установлено в initializeThreeJSScene)
+  // This might be redundant if initializeScene handles it correctly with window resize listeners.
   if (state.camera) {
     state.camera.aspect = window.innerWidth / window.innerHeight;
     state.camera.updateProjectionMatrix();
   }
+  // This check for renderer parent might also be redundant if initializeScene appends it.
   if (state.renderer && !state.renderer.domElement.parentElement) {
     state.renderer.setSize(window.innerWidth, window.innerHeight);
     const gridContainer = document.getElementById('grid-container');
     if (gridContainer) {
+      // Ensure container is empty before appending, if initializeScene didn't do it
+      // gridContainer.innerHTML = ''; 
       gridContainer.appendChild(state.renderer.domElement);
+    } else {
+        // Fallback handled in initializeScene, but good to be aware.
+        console.warn("Grid container not found during initCore fallback renderer append.");
     }
   }
   console.log('Ядро приложения инициализировано.', state);

@@ -16,7 +16,7 @@ console.log('Firebase services imported in main.js (Task 3/3 Complete):', { fire
 // frontend/js/main.js - Основная точка входа для приложения
 
 // Импорт ядра
-import { initCore } from '/static/js/core/init.js';
+import { initCore } from './core/init.js'; // Adjusted path
 import { setupEventListeners } from '/static/js/core/events.js';
 import { runFrontendDiagnostics } from '/static/js/core/diagnostics.js';
 
@@ -30,15 +30,15 @@ import { initializeGestureAreaVisualization } from '/static/js/ui/gestureAreaVis
 import { initializeChatDisplay } from '/static/js/panels/chatMessages.js';
 // Импорт аудио модулей
 import { initializeSpeechInput } from '/static/js/audio/speechInput.js';
-import { initializeMicrophoneButton } from '/static/js/audio/microphoneManager.js'; // Модуль управления микрофоном
+// import { initializeMicrophoneButton } from './audio/microphoneManager.js'; // Adjusted path and commented out
 import { initializeAudioPlayerControls } from '/static/js/audio/audioFilePlayer.js'; // Модуль управления плеером аудиофайлов
 
 // Импорт XR модулей
 import { initializeXRMode } from '/static/js/xr/cameraManager.js'; // Модуль управления XR и камерой
 
 // Импорт 3D модулей
-import { initializeScene } from '/static/js/3d/sceneSetup.js'; // Импорт инициализации сцены
-import { animate } from '/static/js/3d/rendering.js'; // Импорт функции анимации
+// import { initializeScene } from '/static/js/3d/sceneSetup.js'; // Removed, handled by initCore
+import { animate } from './3d/rendering.js'; // Adjusted path
 
 // Импорт мультимодальных модулей
 import { initializeMediaPipeHands } from '/static/js/multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
@@ -59,8 +59,8 @@ import { initializeHologramRotationControls } from '/static/js/core/events.js'; 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Инициализация приложения...');
 
-  // 1. Инициализируем ядро приложения (создает state)
-  initCore();
+  // 1. Инициализируем ядро приложения (создает state, scene, etc.)
+  await initCore(); // Made async and awaited
 
   // 2. Инициализируем основные UI компоненты (зависят от state)
   initializeMainUI();
@@ -70,15 +70,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeGestureAreaVisualization();
   initializeChatDisplay();
 
-  // 3. Инициализируем 3D сцену (зависит от state, UI)
-  initializeScene();
+  // 3. Инициализируем 3D сцену (зависит от state, UI) -> Handled by initCore
+  // initializeScene(); // Removed
 
   // 4. Инициализируем мультимодальные компоненты (могут зависеть от сцены)
   initializeMediaPipeHands();
   // TODO: Module for gesture detection not found, related code disabled
   // initializeGestureDetection();
   // 5. Инициализируем аудио компоненты (могут зависеть от UI)
-  initializeMicrophoneButton();
+  // initializeMicrophoneButton(); // Commented out
   initializeAudioPlayerControls();
   initializeSpeechInput();
   // TODO: Module for audio processing (e.g., initAudio, initAudioVisualization) not found, related code disabled
