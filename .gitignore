@@ -220,6 +220,12 @@ temp/
 # *.swp # Covered by IDE
 # *~ # Covered by IDE
 
+# Firebase / Google Cloud
+.firebase/
+firebase-debug.log
+*.firebase.*.log # Firebase functions emulator logs
+.gcloud/
+
 
 # -----------------------------------------------------------
 # Другое (Добавить по необходимости)
