@@ -13,11 +13,13 @@
       }
     ]
   },
-  "functions": [
+  "functions": [ // Изменил на массив объектов, если функций будет несколько или для большей гибкости
     {
-      "source": "backend", 
-      "runtime": "python312", 
-      "codebase": "holograms-backend" 
+      "source": "backend", // Указывает, что исходники функций в папке backend/
+      "runtime": "python312", // Соответствует dev.nix
+      "codebase": "holograms-backend" // Имя для группы функций (codebase)
+      // Можно добавить preinstall, predeploy хуки, если нужны
+      // "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"] // Пример, если бы был TS
     }
   ]
 }
