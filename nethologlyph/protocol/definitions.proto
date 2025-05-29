@@ -1,149 +1,93 @@
 syntax = "proto3";
 
-package nethologlyph.protocol;
+package nethologlyph;
 
-import "google/protobuf/timestamp.proto";
-import "nethologlyph/protocol/common_types.proto"; // Importing Vector3 and Quaternion
+import "google/protobuf/timestamp.proto"; // For precise timestamping
 
-// Main wrapper packet for all NetHoloGlyph communication
+// Common geometric types
+message Vector3 {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+message Quaternion {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+    float w = 4; // Scalar component, typically last
+}
+
+// Core Holographic Symbol representation
+message HolographicSymbol {
+    string symbol_id = 1; // Unique identifier for this symbol instance
+    string type = 2; // e.g., "cube", "sphere", "text_label", "custom_model_uri"
+    Vector3 position = 3;
+    Quaternion orientation = 4;
+    Vector3 scale = 5;
+    string material_properties_json = 6; // JSON string for material (color, texture, etc.)
+    bytes custom_data = 7; // For application-specific binary data
+    google.protobuf.Timestamp last_updated = 8; // Timestamp of last modification
+    optional string code_language = 9; // For "Liquid Code" context
+    optional string embedding_model_version = 10; // For "Liquid Code" context
+}
+
+// Represents a chunk of gestural data
+message GestureChunk {
+    string gesture_id = 1; // Unique ID for this specific gesture event or segment
+    string user_id = 2; // User performing the gesture
+    google.protobuf.Timestamp timestamp = 3; // Timestamp of the gesture event
+    string recognized_gesture_type = 4; // High-level type, e.g., "pinch_start", "swipe_left"
+    float confidence = 5; // Confidence score for the recognition
+    repeated float landmark_data_3d = 6; // Flattened array of 3D landmark coordinates (e.g., 21 hand landmarks * 3 coords = 63 floats)
+    string source_modality = 7; // e.g., "MediaPipe_Web", "WebXR_HandInput"
+    optional string gesture_sequence_id = 8; // To group segments of a continuous gesture
+    optional bool is_continuous_gesture_segment = 9; // True if part of an ongoing gesture
+    optional string temporal_spatial_metadata_json = 10; // JSON for richer data like trajectory, speed
+}
+
+// For Tria's internal state synchronization or updates to clients
+message TriaStateUpdate {
+    string state_key = 1; // e.g., "current_mood", "active_task_id", "learning_progress_percent"
+    string state_value_json = 2; // JSON string representing the state value (flexible)
+    google.protobuf.Timestamp timestamp = 3;
+    optional string bot_id = 4; // Which bot's state is being updated, if applicable
+}
+
+// Example of a specific, simple HoloGlyph type: 3D Emoji
+message ThreeDEmoji {
+    string emoji_id = 1; // Unique ID for this emoji instance
+    string type = 2; // e.g., "smiley_face_holo", "thumbs_up_3d_animated"
+    Vector3 position = 3;
+    Quaternion orientation = 4;
+    optional float animation_speed = 5; // Speed for animated emojis
+    google.protobuf.Timestamp timestamp = 6;
+}
+
+// Example for sending audio visualization data
+message AudioVisualizationState {
+    string stream_id = 1; // ID of the audio stream being visualized
+    repeated float frequency_bands = 2; // Array of frequency band values
+    float overall_intensity = 3; // Overall intensity or volume level
+    google.protobuf.Timestamp timestamp = 4;
+}
+
+// Wrapper message for all NetHoloGlyph communications
+// This allows for sending various types of payloads over a single WebSocket connection (or other transport)
 message NetHoloPacket {
-    string packet_id = 1; // Unique ID for this packet
+    string packet_id = 1; // Unique ID for this packet (e.g., UUID)
     google.protobuf.Timestamp timestamp = 2; // Timestamp of packet creation
-    string source_id = 3; // Identifier of the sender (e.g., user_firebase_uid, service_id)
-    optional string target_id = 4; // Identifier of the recipient if directly addressed
+    string source_id = 3; // Identifier of the client, user, or service sending the packet
 
     oneof payload {
-        HolographicSymbol holographic_symbol = 5;
-        GestureChunk gesture_chunk = 6;
-        TriaStateUpdate tria_state_update = 7;
-        ThreeDEmoji three_d_emoji = 8;
-        AudioVisualizationState audio_visualization_state = 9;
-        // Add other specific payload types here as needed
-        SceneUpdateRequest scene_update_request = 10;
-        HandshakeRequest handshake_request = 11;
-        HandshakeResponse handshake_response = 12;
-        ErrorPacket error_packet = 13;
-        MediaStreamChunk media_stream_chunk = 14;
+        HolographicSymbol holo_symbol = 4;
+        GestureChunk gesture_chunk = 5;
+        TriaStateUpdate tria_state = 6;
+        ThreeDEmoji emoji = 7;
+        AudioVisualizationState audio_viz = 8;
+        // Future message types can be added here
+        // UserInputCommand user_input_command = 9;
+        // EnvironmentUpdate environment_update = 10;
+        // ErrorMessage error_message = 11;
     }
-    string version = 15; // Protocol version
 }
-
-// Represents a single holographic element in the scene
-message HolographicSymbol {
-    string element_id = 1; // Unique identifier for this holographic element
-    string symbol_type = 2; // e.g., "cube", "sphere", "text_label", "custom_glyph_id"
-    Vector3 position = 3;
-    Quaternion orientation = 4; // Using Quaternion from common_types.proto
-    Vector3 scale = 5;
-    optional string material_properties_json = 6; // JSON string for material (e.g., color, texture, shader info)
-    optional bytes custom_data = 7; // For application-specific binary data
-    google.protobuf.Timestamp last_updated = 8; // Timestamp of the last update to this symbol
-
-    // New fields based on DRSB update
-    optional string code_language = 9; // Language if this symbol represents executable code (e.g., "python", "javascript")
-    optional string embedding_model_version = 10; // Version of the embedding model if symbol has an associated embedding
-    optional bool is_interactive = 11 [default = false];
-    optional string text_content = 12; // For text-based symbols
-    optional bytes rendering_hints = 13; // e.g., LOD level, billboard mode
-}
-
-// Represents a chunk of gesture data
-message GestureChunk {
-    string gesture_id = 1; // Unique ID for this gesture instance or segment
-    string user_id = 2; // User who performed the gesture
-    google.protobuf.Timestamp timestamp = 3; // Start time of the gesture segment
-    optional string recognized_gesture_type = 4; // e.g., "swipe_left", "pinch_zoom", "custom_spell_xyz"
-    optional float confidence = 5; // Confidence score for the recognized gesture type (0.0 to 1.0)
-    
-    // Detailed landmark data, could be a flat list of floats (x,y,z,w,visibility...) per landmark
-    // Or a structured representation if preferred. Using repeated float for flexibility.
-    repeated float landmark_data_3d = 6; // e.g., [x1,y1,z1,w1,v1, x2,y2,z2,w2,v2, ...]
-    
-    string source_modality = 7; // e.g., "hand_tracking_mediapipe", "full_body_openpose", "eye_gaze_tobii"
-    optional string gesture_sequence_id = 8; // If this chunk is part of a larger, interpreted sequence
-    optional bool is_continuous_gesture_segment = 9 [default = false]; // True if part of an ongoing gesture
-    optional string temporal_spatial_metadata_json = 10; // JSON string for additional context (e.g., speed, trajectory properties)
-    optional Vector3 hand_velocity = 11; // Average velocity if applicable
-    optional Quaternion hand_orientation = 12; // Dominant hand orientation
-}
-
-// Represents an update to Tria's internal state or a message from Tria
-message TriaStateUpdate {
-    string state_key = 1; // Key identifying the state being updated (e.g., "current_mood", "active_task_id")
-    string state_value_json = 2; // JSON string representing the new value of the state
-    google.protobuf.Timestamp timestamp = 3;
-    optional string bot_id = 4; // ID of the Tria bot originating this update (if applicable)
-    optional string user_message = 5; // A message from Tria intended for the user
-    optional bytes custom_payload = 6; // For more complex state updates
-}
-
-// Represents a 3D emoji with animation and properties
-message ThreeDEmoji {
-    string emoji_id = 1; // Unique ID for this emoji instance in the scene
-    string emoji_type_id = 2; // Identifier for the type of emoji (e.g., "smile_01", "thumbs_up_animated")
-    Vector3 position = 3;
-    Quaternion orientation = 4;
-    Vector3 scale = 5;
-    optional string animation_state = 6; // e.g., "idle_loop", "play_once_greeting", "fade_in"
-    optional float animation_speed_multiplier = 7 [default = 1.0];
-    google.protobuf.Timestamp last_updated = 8;
-    optional bool is_interactive = 9 [default = false];
-}
-
-// Represents the state and parameters for an audio visualization
-message AudioVisualizationState {
-    string visualization_id = 1; // Unique ID for this visualization instance
-    string visualization_type = 2; // e.g., "waveform_dynamic", "frequency_bars_reactive", "particle_cloud_ambient"
-    Vector3 position = 3;
-    Quaternion orientation = 4;
-    Vector3 scale = 5;
-    optional string audio_source_id = 6; // ID of the audio stream or source driving this visualization
-    optional string parameters_json = 7; // JSON string for type-specific parameters (e.g., colors, sensitivity, particle count)
-    google.protobuf.Timestamp last_updated = 8;
-    optional bool is_active = 9 [default = true];
-}
-
-// For requesting updates to a scene
-message SceneUpdateRequest {
-    string scene_id = 1; // ID of the scene to update
-    repeated HolographicSymbol upsert_elements = 2; // Elements to add or update
-    repeated string delete_element_ids = 3; // IDs of elements to remove
-    optional string scene_settings_json = 4; // JSON for global scene settings (e.g., lighting, skybox)
-}
-
-// For session establishment
-message HandshakeRequest {
-    string client_id = 1;
-    string client_version = 2;
-    repeated string supported_features = 3;
-    google.protobuf.Timestamp client_timestamp = 4;
-}
-
-message HandshakeResponse {
-    string server_id = 1;
-    string server_version = 2;
-    string session_id = 3;
-    repeated string negotiated_features = 4;
-    optional string error_message = 5; // If handshake failed
-    google.protobuf.Timestamp server_timestamp = 6;
-}
-
-// For generic error reporting
-message ErrorPacket {
-    int32 error_code = 1; // Application-specific error code
-    string error_message = 2;
-    optional string details = 3;
-    optional string original_packet_id = 4; // ID of the packet that caused the error, if applicable
-}
-
-// For streaming media like audio or video
-message MediaStreamChunk {
-    string stream_id = 1; // Unique ID for the media stream
-    int32 chunk_index = 2; // Sequence number of this chunk
-    bytes data = 3; // Raw bytes of the media chunk
-    bool is_last_chunk = 4 [default = false];
-    string content_type = 5; // e.g., "audio/webm;codecs=opus", "video/x-h264"
-    google.protobuf.Timestamp timestamp = 6; // Timestamp of when this chunk was generated/captured
-    optional string metadata_json = 7; // JSON for any metadata specific to this chunk (e.g., frame type for video)
-}
-```

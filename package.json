@@ -1,5 +1,18 @@
 {
   "name": "holograms-media",
   "version": "0.1.0",
-  "dependencies": {}
+  "private": true,
+  "scripts": {
+    "lint": "echo 'Linters not configured yet'",
+    "firebase:login": "firebase login",
+    "firebase:init": "firebase init",
+    "firebase:deploy:hosting": "firebase deploy --only hosting",
+    "firebase:deploy:functions": "firebase deploy --only functions",
+    "firebase:serve": "firebase serve --only hosting,functions",
+    "firebase:emulators": "firebase emulators:start --import=./firebase-emulator-data --export-on-exit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "firebase-tools": "^13.7.5"
+  }
 }
