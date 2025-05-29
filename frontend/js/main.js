@@ -10,6 +10,8 @@ import {
 
 console.log('Firebase services imported in main.js (Task 3/3 Complete):', { firebaseApp, firebaseAuth, firebaseStorage, firebaseFirestore });
 
+import { setAuthDOMElements, initAuthObserver, handleTokenForBackend } from './core/auth.js';
+
 // Импорт ядра
 // frontend/js/main.js - Основная точка входа для приложения
 
@@ -64,6 +66,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Инициализируем основные UI компоненты (зависят от state)
   initializeMainUI();
+
+  // Initialize Auth UI elements
+  setAuthDOMElements('signInButton', 'signOutButton', 'userStatus');
+  // Initialize Firebase Auth observer and pass callback for token handling
+  initAuthObserver(handleTokenForBackend);
+
   initializePanelManager();
   initializePromptManager();
   initializeVersionManager();
