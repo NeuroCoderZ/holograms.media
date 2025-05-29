@@ -1,37 +1,19 @@
-import { defineFlow, runFlow } from '@genkit-ai/flow';
-import { googleAI } from '@genkit-ai/google-ai'; // Example, if using Gemini
-import * as z from 'zod';
+import { configureGenkit } from '@genkit-ai/core';
+import { firebase } from '@genkit-ai/firebase'; // If using Firebase for Genkit flows
+// import { googleCloud } from '@genkit-ai/google-cloud'; // Example if Vertex was used in future
 
-// Initialize any necessary plugins here if not globally in genkit.config.ts
-// e.g., if specific models are needed for this flow
-// configureGenkit({
-//   plugins: [googleAI()], // Example for Gemini
-// });
+configureGenkit({
+  plugins: [
+    firebase(), // Example plugin, assuming Firebase integration for Genkit
+    // googleCloud(), // Example for future Vertex AI integration
+  ],
+  logLevel: 'debug',
+  enableTracingAndMetrics: true, // Useful for development and debugging
+});
 
-export const sampleFlow = defineFlow(
-  {
-    name: 'sampleFlow',
-    inputSchema: z.string(),
-    outputSchema: z.string(),
-  },
-  async (input) => {
-    console.log(`[SampleFlow] Received input: ${input}`);
-    // Example: Using a Genkit model (ensure it's configured)
-    // const llm = geminiPro; // Assuming geminiPro is an available model
-    // const response = await generate({
-    //   model: llm,
-    //   prompt: `You are a helpful assistant. Respond to: ${input}`,
-    // });
-    // return response.text();
-    return `Echo from sampleFlow: ${input}`;
-  }
-);
+// Export flows from here or from individual flow files
+// For example, if process_chunk_flow.ts defines flows, they might be exported here
+// or directly from their files if using module augmentation or specific registration patterns.
+export * from './flows/process_chunk_flow'; // Assuming flows are exported from this file
 
-// Example of how to run this flow (optional, for testing)
-// async function runSample() {
-//   const result = await runFlow(sampleFlow, "Hello Genkit!");
-//   console.log("[SampleFlow] Result:", result);
-// }
-// runSample();
-
-console.log('Genkit sample flow (index.ts) loaded. Define your flows here.');
+console.log("Genkit configured in tria-genkit-core/src/index.ts");

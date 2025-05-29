@@ -1,16 +1,22 @@
 {
   "name": "tria-genkit-core",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Genkit core logic for Tria AI",
+  "main": "lib/index.js",
+  "private": true,
   "scripts": {
     "start": "genkit start",
     "build": "tsc",
+    "watch": "tsc -w",
     "flow:run": "genkit flow:run",
     "serve": "genkit serve",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "genkit",
+    "firebase",
+    "ai"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
