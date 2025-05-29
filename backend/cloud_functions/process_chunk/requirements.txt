@@ -1,0 +1,7 @@
+# This file can be used to specify dependencies specific to the process_chunk Cloud Function.
+# For MVP, most common dependencies will be in backend/core/ and covered by backend/requirements.txt
+# or included in the global Python runtime provided by Firebase for Cloud Functions.
+# Add specific dependencies here if this function requires something unique not available globally
+# and not suitable for backend/core.
+# Example:
+# some-python-package==1.2.3
