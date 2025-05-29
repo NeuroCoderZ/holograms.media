@@ -1,21 +1,49 @@
+# backend/requirements.txt
+
+# Firebase
+firebase-functions # Основная зависимость для Firebase Functions
+firebase-admin     # Для взаимодействия с Firebase сервисами из функций (например, Auth)
+
+# Database (PostgreSQL for Neon.tech)
+asyncpg>=0.29.0         # Асинхронный драйвер для PostgreSQL
+psycopg2-binary>=2.9.9  # Часто нужен для SQLAlchemy или других инструментов, работающих с pgvector, даже если основной asyncpg
+
+# FastAPI & Uvicorn (Если какая-то часть логики ВСЕ ЕЩЕ будет как FastAPI приложение, 
+# которое потом "заворачивается" в Cloud Function, или для локального тестирования. 
+# Если ВСЕ строго на отдельных функциях, uvicorn может быть не нужен в Cloud Functions)
 fastapi>=0.115.0
-uvicorn[standard]>=0.25.0
+uvicorn[standard]>=0.25.0 # Для запуска FastAPI локально
+
+# Pydantic for data validation
 pydantic>=2.10.0
-asyncpg>=0.29.0
-psycopg2-binary>=2.9.9
+
+# HTTP client
 httpx>=0.24.0
-python-dotenv>=1.0.0
+
+# Environment variables
+python-dotenv>=1.0.0 # Для локальной разработки с .env файлом
+
+# Asynchronous file operations (if needed by any backend logic)
 aiofiles>=23.0.0
+
+# Password Hashing & JWT (если используется кастомная логика JWT где-то, 
+# но Firebase Auth должен это покрывать в основном)
 passlib[bcrypt]>=2.0.0
 python-jose[cryptography]>=3.3.0
-langchain>=0.2.0
-gradio>=5.28
-spaces
-langchain-mistralai>=0.0.10
-tenacity>=8.0.0
-firebase-admin>=6.5.0
-google-cloud-pubsub>=2.13.0
-# Добавь сюда любые другие Python зависимости, если твой код их использует!
-# Например, если MediaPipe используется на Python бэкенде:
-# mediapipe
-# и т.д.
+
+# LLM Clients (прямые вызовы)
+# Пока оставляем закомментированными, Александр добавит конкретные по мере необходимости
+# mistralai
+# openai # Если вдруг понадобится
+# google-generativeai # Для Gemini, если без Vertex AI
+
+# Langchain (Если какие-то компоненты Триа используют LangChain для RAG или цепочек)
+# langchain>=0.2.0
+# langchain-core
+# langchain-mistralai # Если используется интеграция Mistral через LangChain
+
+# Other
+tenacity>=8.0.0 # Для ретраев API вызовов
+
+# Protobuf (для NetHoloGlyph)
+protobuf>=3.19.0 # Убедись, что версия совместима с генерируемым кодом
