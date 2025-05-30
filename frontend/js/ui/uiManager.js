@@ -3,6 +3,8 @@
 // Импортируем необходимые зависимости
 import { loadPanelsHiddenState, savePanelsHiddenState } from '../core/appStatePersistence.js'; // Импорт функций для сохранения/загрузки состояния
 import { state } from '../core/init.js'; // Импорт глобального состояния
+import { auth } from '../core/firebaseInit.js'; // Firebase Auth
+import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js'; // Firebase Storage Service
 
 // Объект для хранения ссылок на DOM-элементы
 export const uiElements = {
@@ -45,6 +47,7 @@ export const uiElements = {
   inputs: {
     fileInput: null, // This might be for a different purpose, leaving as is.
     audioFileInput: null, // Added for the audio file input
+    chunkUploadInput: null, // Added for generic chunk upload
     topPromptInput: null,
     chatInput: null,
     promptText: null,
@@ -185,6 +188,7 @@ export function initializeMainUI() {
   // Получаем ссылки на элементы ввода
   uiElements.inputs.fileInput = document.getElementById('fileInput'); // Remains, in case used for non-audio purposes
   uiElements.inputs.audioFileInput = document.getElementById('audioFileInput'); // Added for audio file input
+  uiElements.inputs.chunkUploadInput = document.getElementById('chunkUploadInput'); // Added for generic chunk upload
   uiElements.inputs.topPromptInput = document.getElementById('topPromptInput');
   uiElements.inputs.chatInput = document.getElementById('chatInput');
   uiElements.inputs.promptText = document.getElementById('promptText');
@@ -215,6 +219,55 @@ export function initializeMainUI() {
 
   // Присваиваем собранные UI элементы глобальному состоянию
   state.uiElements = uiElements;
+
+  // Event listener for generic chunk upload
+  if (uiElements.inputs.chunkUploadInput) {
+    uiElements.inputs.chunkUploadInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) {
+        console.log("No file selected.");
+        return;
+      }
+
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        alert("Please sign in to upload files.");
+        console.error("User not signed in. Cannot upload file.");
+        // Clear the file input
+        if (uiElements.inputs.chunkUploadInput) uiElements.inputs.chunkUploadInput.value = "";
+        return;
+      }
+
+      const firebaseUserId = currentUser.uid;
+
+      // Simple UI feedback (can be improved with a dedicated status element)
+      const originalButtonText = event.target.previousElementSibling ? event.target.previousElementSibling.textContent : "";
+      const setStatus = (message) => {
+          // Attempt to find a related button or status area to show message
+          // For now, using alert and console.log
+          console.log(message);
+          alert(message); // Replace with better UI feedback
+      };
+
+      setStatus(`Uploading ${file.name}...`);
+
+      try {
+        const storagePath = await uploadFileToFirebaseStorage(file, firebaseUserId);
+        setStatus(`Upload complete! File available at: ${storagePath}`);
+        console.log(`File uploaded to: ${storagePath}`);
+        // TODO: Potentially emit an event or call another function with storagePath and file metadata
+        // eventBus.emit('fileUploadedToStorage', { storagePath, file });
+      } catch (error) {
+        setStatus(`Upload failed for ${file.name}. Error: ${error.message}`);
+        console.error("Error uploading file:", error);
+      } finally {
+          // Clear the file input for the next upload
+          if (uiElements.inputs.chunkUploadInput) uiElements.inputs.chunkUploadInput.value = "";
+      }
+    });
+  } else {
+    console.warn("chunkUploadInput element not found in the DOM. Upload functionality will not be available.");
+  }
 }
 
 /**
