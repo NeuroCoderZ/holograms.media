@@ -43,6 +43,9 @@ from .nethologlyph_models import (
 # Import models from code_embedding_models.py
 from .code_embedding_models import TriaCodeEmbeddingModel
 
+# Import models from learning_log_models.py
+from .learning_log_models import TriaLearningLogModel
+
 # It's good practice to define __all__ to specify what gets imported with 'from .models import *'
 # However, explicit imports are generally preferred.
 # If __all__ is desired, list all imported model names here as strings.
@@ -57,7 +60,6 @@ from .code_embedding_models import TriaCodeEmbeddingModel
 #     "GesturePrimitiveModel", "InterpretedGestureModel", "GestureModel",
 #     "InternalMessage",
 #     "PydanticHolographicSymbol", "PydanticGestureChunk", "PydanticTriaStateUpdate",
-#     "TriaCodeEmbeddingModel"
+#     "TriaCodeEmbeddingModel",
+#     "TriaLearningLogModel" # Added
 # ]
-
-print("backend.core.models package initialized")
