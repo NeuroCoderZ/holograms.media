@@ -6,7 +6,7 @@ from datetime import datetime
 from .base_models import BaseUUIDModel # Assuming BaseUUIDModel provides id, created_at, updated_at
 
 class AudiovisualGesturalChunkModel(BaseUUIDModel): # Inherits id, created_at, updated_at
-    user_id: UUID = Field(..., description="ID of the user who uploaded/owns this chunk.")
+    user_id: str = Field(..., description="Firebase UID of the user who uploaded/owns this chunk.")
     chunk_type: str = Field(..., description="Type of the chunk (e.g., 'audio', 'video', 'audiovisual', 'gesture_only').")
     storage_ref: str = Field(..., description="Reference to the chunk's location in Firebase Storage (e.g., gs://bucket_name/path/to/file).")
     
@@ -34,7 +34,7 @@ class AudiovisualGesturalChunkModel(BaseUUIDModel): # Inherits id, created_at, u
             "examples": [
                 {
                     "id": "d4eebc99-9c0b-4ef8-bb6d-6bb9bd380a66",
-                    "user_id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", # Example user_id
+                    "user_id": "aBcDeFgHiJkLmNoPqRsTuVwXyZ12345", # Example Firebase UID
                     "chunk_type": "audio",
                     "storage_ref": "gs://holograms-media-mvp.appspot.com/user_uploads/user_abc/audio_chunk_1.wav",
                     "original_filename": "my_voice_memo.wav",

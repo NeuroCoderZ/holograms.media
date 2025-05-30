@@ -1,7 +1,15 @@
-# This file can be used to specify dependencies specific to the tria_chat_handler Cloud Function.
-# For MVP, most common dependencies will be in backend/core/ and covered by backend/requirements.txt
-# or included in the global Python runtime provided by Firebase for Cloud Functions.
-# Add specific dependencies here if this function requires something unique not available globally
-# and not suitable for backend/core.
-# Example:
-# some-python-package==1.2.3
+# Firebase Functions library
+firebase-functions>=0.1.0
+
+# Main dependency for database interaction (logging)
+asyncpg>=0.29.0
+
+# HTTP client used by LLMService
+httpx>=0.24.0
+
+# functions-framework is provided by the Google Cloud Functions environment,
+# but firebase-functions is the specific Python SDK for Firebase triggers.
+
+# Other dependencies from backend/core (like Pydantic models) are assumed
+# to be deployed alongside the function or covered by a shared deployment
+# that respects backend/requirements.txt.

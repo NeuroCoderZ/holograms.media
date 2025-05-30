@@ -1,7 +1,11 @@
-# This file can be used to specify dependencies specific to the process_chunk Cloud Function.
-# For MVP, most common dependencies will be in backend/core/ and covered by backend/requirements.txt
-# or included in the global Python runtime provided by Firebase for Cloud Functions.
-# Add specific dependencies here if this function requires something unique not available globally
-# and not suitable for backend/core.
-# Example:
-# some-python-package==1.2.3
+# Main dependency for database interaction, consistent with backend/requirements.txt
+asyncpg>=0.29.0
+
+# functions-framework is provided by the Google Cloud Functions environment
+# Other dependencies from backend/core are assumed to be deployed alongside the function
+# or covered by the main backend/requirements.txt if the entire backend is deployed.
+# Adding any other direct, function-specific dependencies here.
+# For example, if this function used a unique image processing library:
+# Pillow==<version>
+# google-cloud-vision==<version>
+# For now, only asyncpg is explicitly listed as critical for DB ops.
