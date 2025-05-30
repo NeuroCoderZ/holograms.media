@@ -24,6 +24,7 @@ import { runFrontendDiagnostics } from '/static/js/core/diagnostics.js';
 
 // Импорт UI модулей
 import { initializeMainUI } from '/static/js/ui/uiManager.js'; // Модуль управления UI
+import { initChatUI } from './core/ui/chatUI.js'; // Chat UI Initialization
 import { initializePanelManager } from '/static/js/ui/panelManager.js'; // Модуль управления панелями
 import { updateHologramLayout } from '/static/js/ui/layoutManager.js'; // Added import
 import { initializePromptManager } from '/static/js/ui/promptManager.js'; // Импорт менеджера промптов
@@ -75,6 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializePanelManager();
   initializePromptManager();
   initializeVersionManager();
+  initChatUI(); // Initialize Chat UI
   initializeGestureAreaVisualization();
   initializeChatDisplay();
 

@@ -1,10 +1,11 @@
 // frontend/js/ui/uiManager.js - Модуль для управления UI элементами
 
 // Импортируем необходимые зависимости
-import { loadPanelsHiddenState, savePanelsHiddenState } from '../core/appStatePersistence.js'; // Импорт функций для сохранения/загрузки состояния
-import { state } from '../core/init.js'; // Импорт глобального состояния
-import { auth } from '../core/firebaseInit.js'; // Firebase Auth
-import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js'; // Firebase Storage Service
+import { loadPanelsHiddenState, savePanelsHiddenState } from '../core/appStatePersistence.js';
+import { state } from '../core/init.js';
+import { auth } from '../core/firebaseInit.js';
+import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js';
+import panelManager, { openContentPanel, closeAllContentPanels } from './panelManager.js'; // Adjusted import
 
 // Объект для хранения ссылок на DOM-элементы
 export const uiElements = {
@@ -169,8 +170,9 @@ export function initializeMainUI() {
   uiElements.buttons.bluetoothButton = document.getElementById('bluetoothButton');
   uiElements.buttons.telegramLinkButton = document.getElementById('telegramLinkButton');
   uiElements.buttons.githubButton = document.getElementById('githubButton');
-  uiElements.buttons.triaButton = document.getElementById('triaButton');
-  uiElements.buttons.chatButton = document.getElementById('chatButton');
+  uiElements.buttons.triaButton = document.getElementById('triaButton'); // For "Activate Tria Training"
+  uiElements.buttons.chatButton = document.getElementById('chatButton'); // For Toggling Chat Mode / Opening Chat Panel
+  uiElements.buttons.installPwaButton = document.getElementById('installPwaButton'); // Added install PWA button
   
   // Получаем ссылки на элементы правой панели
   uiElements.versionTimeline = document.getElementById('versionTimeline');
@@ -221,7 +223,13 @@ export function initializeMainUI() {
   state.uiElements = uiElements;
 
   // Event listener for generic chunk upload
-  if (uiElements.inputs.chunkUploadInput) {
+  if (uiElements.inputs.chunkUploadInput && uiElements.buttons.fileButton) {
+    // Assuming loadAudioButton is the visible button that triggers the hidden chunkUploadInput
+    uiElements.buttons.fileButton.addEventListener('click', () => {
+        if (uiElements.inputs.chunkUploadInput) {
+            uiElements.inputs.chunkUploadInput.click();
+        }
+    });
     uiElements.inputs.chunkUploadInput.addEventListener('change', async (event) => {
       const file = event.target.files[0];
       if (!file) {
@@ -266,8 +274,141 @@ export function initializeMainUI() {
       }
     });
   } else {
-    console.warn("chunkUploadInput element not found in the DOM. Upload functionality will not be available.");
+    if (!uiElements.inputs.chunkUploadInput) console.warn("chunkUploadInput element not found. Generic file upload via this input is disabled.");
+    if (!uiElements.buttons.fileButton) console.warn("loadAudioButton element not found. Cannot trigger generic file upload.");
   }
+
+  // --- Standard Button Event Listeners ---
+  const addButtonListener = (button, action, logMessage) => {
+    if (button) {
+      button.addEventListener('click', async () => { // Made async for mic button
+        if (typeof action === 'function') {
+          await action(); // Await if action is async (like mic toggle)
+        }
+        if (logMessage) console.log(logMessage);
+      });
+    } else {
+      // Log that the button was not found, helps in debugging missing HTML elements
+      const buttonId = Object.keys(uiElements.buttons).find(key => uiElements.buttons[key] === button);
+      console.warn(`Button element for action "${logMessage || buttonId || 'Unknown Action'}" not found.`);
+    }
+  };
+
+  // Audio Controls
+  addButtonListener(uiElements.buttons.playButton, null, "Play button clicked - functionality pending.");
+  addButtonListener(uiElements.buttons.pauseButton, null, "Pause button clicked - functionality pending.");
+  addButtonListener(uiElements.buttons.stopButton, null, "Stop button clicked - functionality pending.");
+
+  // Mic Button
+  if (uiElements.buttons.micButton) {
+    uiElements.buttons.micButton.addEventListener('click', async () => {
+      if (!state.microphoneManagerInstance || !state.audioAnalyzerLeftInstance || !state.audioAnalyzerRightInstance) {
+        console.error("MicrophoneManager or AudioAnalyzers not initialized in state.");
+        uiElements.buttons.micButton.textContent = "Mic Error";
+        return;
+      }
+      try {
+        if (state.audio.activeSource === 'microphone') {
+          state.microphoneManagerInstance.stop();
+          state.audio.activeSource = 'none';
+          uiElements.buttons.micButton.classList.remove('active');
+          uiElements.buttons.micButton.title = "Включить микрофон";
+          console.log("Microphone stopped via UI button.");
+        } else {
+          // Re-initialize microphone and update analysers
+          const { analyserLeft, analyserRight, audioContext } = await state.microphoneManagerInstance.init();
+          state.audio.audioContext = audioContext; // Update context if it could change
+          state.audio.microphoneAnalysers = { left: analyserLeft, right: analyserRight };
+
+          // Crucially update the analyser nodes in the existing AudioAnalyzer instances
+          state.audioAnalyzerLeftInstance.analyserNode = analyserLeft;
+          state.audioAnalyzerRightInstance.analyserNode = analyserRight;
+          // If AudioAnalyzer also held a reference to audioContext, it might need updating too.
+          // Current AudioAnalyzer takes audioContext in constructor but doesn't seem to re-use it post-init.
+
+          state.audio.activeSource = 'microphone';
+          uiElements.buttons.micButton.classList.add('active');
+          uiElements.buttons.micButton.title = "Выключить микрофон";
+          console.log("Microphone started via UI button.");
+        }
+      } catch (error) {
+        console.error("Error toggling microphone:", error);
+        uiElements.buttons.micButton.textContent = "Mic Error";
+        state.audio.activeSource = 'none'; // Ensure it's reset on error
+      }
+    });
+    // Set initial mic button state based on state.audio.activeSource (e.g. after page load)
+    if (state.audio.activeSource === 'microphone') {
+        uiElements.buttons.micButton.classList.add('active');
+        uiElements.buttons.micButton.title = "Выключить микрофон";
+    } else {
+        uiElements.buttons.micButton.classList.remove('active');
+        uiElements.buttons.micButton.title = "Включить микрофон";
+    }
+  } else {
+      console.warn("Mic button element not found.");
+  }
+
+  // Fullscreen Button
+  if (uiElements.buttons.fullscreenButton) {
+    uiElements.buttons.fullscreenButton.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
+        // Consider changing button icon/text to "Exit Fullscreen"
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+          // Consider changing button icon/text back to "Enter Fullscreen"
+        }
+      }
+      console.log("Fullscreen button clicked.");
+    });
+  } else {
+      console.warn("Fullscreen button element not found.");
+  }
+
+  // Other Feature Buttons
+  addButtonListener(uiElements.buttons.xrButton, null, "XR button clicked - functionality pending.");
+  // gestureRecordButton opens a modal, specific logic might be in domEventHandlers.js or elsewhere
+  // For now, ensure it's clickable and add panel opening if that's also intended.
+  addButtonListener(uiElements.buttons.gestureRecordButton, () => {
+      console.log("Gesture Record button clicked - modal logic likely elsewhere.");
+      // As per subtask, also try to open its panel view
+      openContentPanel('myGestures');
+  }, "Gesture Record button also attempts to open 'myGestures' panel.");
+
+  addButtonListener(uiElements.buttons.hologramListButton, () => openContentPanel('myHolograms'), "Hologram List button clicked - opening 'myHolograms' panel.");
+  addButtonListener(uiElements.buttons.scanButton, null, "Scan button clicked - functionality pending.");
+  addButtonListener(uiElements.buttons.bluetoothButton, null, "Bluetooth button clicked - functionality pending.");
+  addButtonListener(uiElements.buttons.triaButton, null, "Tria (Activate Training) button clicked - functionality pending.");
+
+  // Link Buttons
+  addButtonListener(uiElements.buttons.telegramLinkButton, () => window.open('https://t.me/holograms_media', '_blank'), "Telegram link button clicked.");
+  addButtonListener(uiElements.buttons.githubButton, () => window.open('https://github.com/Holograms-Media', '_blank'), "GitHub link button clicked.");
+
+  // PWA Install Button
+  addButtonListener(uiElements.buttons.installPwaButton, null, "Install PWA button clicked - PWA installation logic to be implemented.");
+
+  // Chat Panel Button (Note: chatUI.js handles sending messages, uiManager handles panel/mode toggling)
+  // The chatButton's role is primarily to toggle the chat interface visibility (handled by 'chat-mode' CSS)
+  // and potentially open the specific chatHistory panel via panelManager if it's not already visible.
+  if (uiElements.buttons.chatButton) {
+    uiElements.buttons.chatButton.addEventListener('click', () => {
+        // This button's primary role is to toggle 'chat-mode' which is likely handled
+        // by a different mechanism (e.g., in tria_mode.js or main.js by toggling classes on body/containers).
+        // Here, we ensure the specific chat panel content is made visible via panelManager.
+        // It assumes that entering "chat mode" should always show the chat history panel.
+        console.log("Chat Mode/Panel button clicked.");
+        openContentPanel('chatHistory');
+        // If there's a global state.isChatMode, it should be toggled by the mode switching logic.
+        // This click listener here focuses on ensuring the panel itself is shown.
+    });
+  } else {
+      console.warn("Chat button (for toggling chat mode/panel) not found.");
+  }
+
 }
 
 /**
