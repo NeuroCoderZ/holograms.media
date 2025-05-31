@@ -1,49 +1,36 @@
 # backend/requirements.txt
 
-# Firebase
-firebase-functions # Основная зависимость для Firebase Functions
-firebase-admin     # Для взаимодействия с Firebase сервисами из функций (например, Auth)
-
-# Database (PostgreSQL for Neon.tech)
-asyncpg>=0.29.0         # Асинхронный драйвер для PostgreSQL
-psycopg2-binary>=2.9.9  # Часто нужен для SQLAlchemy или других инструментов, работающих с pgvector, даже если основной asyncpg
-
-# FastAPI & Uvicorn (Если какая-то часть логики ВСЕ ЕЩЕ будет как FastAPI приложение, 
-# которое потом "заворачивается" в Cloud Function, или для локального тестирования. 
-# Если ВСЕ строго на отдельных функциях, uvicorn может быть не нужен в Cloud Functions)
+# FastAPI & Uvicorn (For local development or if running a monolithic service)
 fastapi>=0.115.0
-uvicorn[standard]>=0.25.0 # Для запуска FastAPI локально
+uvicorn[standard]>=0.25.0
 
-# Pydantic for data validation
+# Pydantic for data validation (General backend models)
 pydantic>=2.10.0
 
-# HTTP client
-httpx>=0.24.0
-
 # Environment variables
-python-dotenv>=1.0.0 # Для локальной разработки с .env файлом
+python-dotenv>=1.0.0
 
-# Asynchronous file operations (if needed by any backend logic)
+# Asynchronous file operations
 aiofiles>=23.0.0
 
-# Password Hashing & JWT (если используется кастомная логика JWT где-то, 
-# но Firebase Auth должен это покрывать в основном)
+# Password Hashing & JWT (If custom auth is used, otherwise Firebase covers)
 passlib[bcrypt]>=2.0.0
 python-jose[cryptography]>=3.3.0
 
-# LLM Clients (прямые вызовы)
-# Пока оставляем закомментированными, Александр добавит конкретные по мере необходимости
-# mistralai
-# openai # Если вдруг понадобится
-# google-generativeai # Для Gemini, если без Vertex AI
+# LLM Clients (for direct usage, if not managed by dedicated service)
+# These might be here if a local script directly calls LLMs for non-CF purposes
+# For Cloud Functions, these are in llm_service.py's requirements or specific CF requirements
+# mistralai # Example, uncomment if needed
+# openai
+# google-generativeai
 
-# Langchain (Если какие-то компоненты Триа используют LangChain для RAG или цепочек)
+# Langchain (If used for RAG or chains outside of CF)
 # langchain>=0.2.0
 # langchain-core
-# langchain-mistralai # Если используется интеграция Mistral через LangChain
+# langchain-mistralai
 
 # Other
-tenacity>=8.0.0 # Для ретраев API вызовов
+tenacity>=8.0.0 # For retries
 
-# Protobuf (для NetHoloGlyph)
-protobuf>=3.19.0 # Убедись, что версия совместима с генерируемым кодом
+# Protobuf (for NetHoloGlyph or other proto-based services)
+protobuf>=3.19.0
