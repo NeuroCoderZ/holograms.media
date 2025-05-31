@@ -10,25 +10,25 @@ This document outlines the definitive plan to achieve the Minimum Viable Product
 
 The MVP will enable a user to:
 
-1.  **Authenticate:** Sign up and log in using Firebase Authentication. User data will be synced to a PostgreSQL database.
+1.  **Authenticate:** Sign up and log in using Firebase Authentication. User data will be synced to a **Neon.tech PostgreSQL** database.
 2.  **Upload Media:** Upload an audio/video file ("interaction chunk") to Firebase Storage.
 3.  **Tria Interaction (Basic):**
     *   A Firebase Cloud Function is triggered by the new chunk in Firebase Storage (or by an HTTP request from frontend).
-    *   A simplified Tria bot (Python module called by the Cloud Function) processes metadata.
-    *   A basic response or acknowledgment is sent back to the user (e.g., via another Cloud Function callable by the frontend).
+    *   A simplified Tria bot (Python module within `backend/core/tria_bots/`, called by the Cloud Function) processes metadata.
+    *   A basic response or acknowledgment is sent back to the user (e.g., via another Cloud Function callable by the frontend, like `tria_chat_handler`).
 4.  **Hologram Visualization & Audio Reactivity:**
-    *   The user can see a placeholder or basic 3D representation.
-    *   This visualization will react to microphone input (based on PR #40 and `script.js` logic).
-5.  **View History (Placeholder):** Buttons for "My Gestures," "My Holograms," "Chat History" will be present and clickable. CRUD functionality will be stubbed or point to a basic list from PostgreSQL if time permits, callable via HTTP-triggered Cloud Functions.
+    *   The user can see a placeholder or basic 3D representation (Three.js/WebGL).
+    *   This visualization will react to microphone input (based on logic formerly in `script.js` and PR #40, now modularized in `frontend/js/audio/` and `frontend/js/3d/`).
+5.  **View History (Placeholder):** Buttons for "My Gestures," "My Holograms," "Chat History" will be present and clickable. CRUD functionality will be stubbed or point to a basic list from **Neon.tech PostgreSQL** if time permits, callable via HTTP-triggered Cloud Functions.
 
 **"Definition of Done" for MVP:**
 
-*   All core functionalities (1-5 above) are demonstrable.
+*   All core functionalities (1-5 above) are demonstrable using the Firebase ecosystem.
 *   Frontend is hosted on Firebase Hosting.
 *   Backend logic is implemented as **Firebase Cloud Functions (Python runtime)**.
-*   PostgreSQL database (**Neon.tech**) is structured and integrated.
+*   **Neon.tech PostgreSQL** database is structured and integrated for user data, chunk metadata, and Tria logs.
 *   Firebase Storage is used for media chunks.
-*   Basic Tria bot logic (Python modules within Cloud Functions using direct Mistral/Devstral API calls) provides a response.
+*   Basic Tria bot logic (Python modules within Cloud Functions, e.g., in `backend/core/tria_bots/` and `backend/core/services/`, using direct Mistral/Devstral/Gemini API calls) provides a response.
 *   Code is reasonably clean, with comments for key sections.
 *   A `README.md` provides basic setup and launch instructions.
 *   All critical "no credit card" constraints are met for services used.
@@ -85,41 +85,41 @@ This section details the technical components, files, logic, data flow, challeng
 ### B. Frontend - Core Hologram Visualization & Audio Reactivity
 
 *   **Files to Modify/Create:**
-    *   `frontend/js/3d/hologramRenderer.js`: (As before) Core Three.js logic. **This module will incorporate the refined rendering loop, object creation (e.g., the "sphere" or custom geometry), and update mechanisms previously in `script.js` and PR #40.**
-    *   `frontend/js/3d/sceneSetup.js`: (As before) Scene, camera, lights.
-    *   `frontend/js/audio/audioAnalyzer.js`: (As before) Microphone input, FFT. **This module will house the audio processing logic (Web Audio API, `getMicrophoneInput`, FFT implementation) from `script.js`/PR #40.**
-    *   `frontend/js/audio/audioVisualizer.js`: (As before) Connects audio to visuals. **This acts as the bridge, translating FFT output from `audioAnalyzer.js` into parameters for `hologramRenderer.js`, similar to how `script.js` updated hologram properties.**
-    *   `frontend/js/config/hologramConfig.js` (New or from `script.js`): Store default parameters, thresholds for audio reactivity, potentially different visualizer modes.
-    *   `frontend/js/main.js`: Orchestrate.
-    *   `frontend/index.html`: Canvas element.
-*   **Logic to Implement (`script.js` / PR #40 Refactoring):**
+    *   `frontend/js/3d/hologramRenderer.js`: Core Three.js logic for rendering the hologram. Incorporates refined rendering loop, object creation, and update mechanisms (inspired by `script.js` legacy and PR #40).
+    *   `frontend/js/3d/sceneSetup.js`: Handles scene, camera, and lighting setup.
+    *   `frontend/js/audio/audioAnalyzer.js`: Manages microphone input and performs FFT analysis (based on logic from `script.js`/PR #40).
+    *   `frontend/js/audio/audioVisualizer.js`: Connects audio analysis results from `audioAnalyzer.js` to visual parameters in `hologramRenderer.js`.
+    *   `frontend/js/config/hologramConfig.js`: Stores default parameters and thresholds for audio reactivity.
+    *   `frontend/js/main.js`: Orchestrates the initialization and interaction of frontend modules.
+    *   `frontend/index.html`: Contains the canvas element for Three.js rendering.
+*   **Logic to Implement (from `script.js` / PR #40 Refactoring into Modules):**
     *   **`hologramRenderer.js`**:
-        *   Perfect the core rendering loop.
-        *   Functions to create and update the primary visual object (e.g., `createHolographicSphere`, `updateHologramAppearance`).
-        *   Shader material setup if custom shaders from PR #40 are used.
-        *   Response to parameters like `intensity`, `frequencyBin`, etc., to modify scale, color, deformation.
+        *   Stable core rendering loop.
+        *   Functions to create/update the primary visual object (e.g., `createHolographicSphere`, `updateHologramAppearance`).
+        *   Shader material setup if custom shaders are used.
+        *   Dynamic response to parameters (intensity, frequency) for modifying scale, color, deformation.
     *   **`audioAnalyzer.js`**:
-        *   Encapsulate `navigator.mediaDevices.getUserMedia` for microphone access.
-        *   Robust FFT implementation (e.g., from a library or optimized custom code from `script.js`).
-        *   Averaging/smoothing of FFT data if needed.
+        *   Encapsulated microphone access using `navigator.mediaDevices.getUserMedia`.
+        *   Robust FFT implementation.
+        *   Optional averaging/smoothing of FFT data.
     *   **`audioVisualizer.js`**:
-        *   Logic to map specific frequency bands or overall intensity from `audioAnalyzer.js` to specific visual parameters in `hologramRenderer.js`. This is where the "reactivity" is defined.
-        *   Use `hologramConfig.js` for sensitivity settings.
-*   **Data Flow:** (As before, but emphasizing `hologramConfig.js`)
+        *   Logic to map frequency bands/intensity from `audioAnalyzer.js` to visual parameters in `hologramRenderer.js`, using settings from `hologramConfig.js`.
+*   **Data Flow:**
     1.  User grants microphone permission.
     2.  `audioAnalyzer.js` captures audio, performs FFT.
-    3.  `audioVisualizer.js` receives data, uses `hologramConfig.js` to determine response.
+    3.  `audioVisualizer.js` receives FFT data, consults `hologramConfig.js`.
     4.  `audioVisualizer.js` calls update functions in `hologramRenderer.js`.
-    5.  `hologramRenderer.js` modifies scene.
+    5.  `hologramRenderer.js` modifies the Three.js scene.
 *   **Key Challenges/Considerations:**
-    *   (As before) PR #40 integration, performance, cross-browser compatibility, permissions.
-    *   Modularizing `script.js` logic effectively into the new structure.
+    *   Ensuring stable integration of PR #40 concepts into the modular structure.
+    *   Performance of client-side audio processing and rendering.
+    *   Cross-browser compatibility and microphone permissions.
 *   **Tasks & Sub-Tasks:**
-    *   [M] Refactor/Implement `hologramRenderer.js` with core visualization logic from `script.js`/PR #40 - Day 7
-    *   [M] Refactor/Implement `audioAnalyzer.js` with audio capture and FFT from `script.js`/PR #40 - Day 7
-    *   [S] Create `hologramConfig.js` and integrate with `audioVisualizer.js` - Day 7
-    *   [S] Connect audio analysis to visual parameters via `audioVisualizer.js` - Day 7-8
-    *   [M] Test and debug audio-reactive visualization thoroughly - Day 8
+    *   [M] Implement/stabilize `hologramRenderer.js` with core visualization logic - Day 7
+    *   [M] Implement/stabilize `audioAnalyzer.js` with audio capture and FFT - Day 7
+    *   [S] Develop and integrate `hologramConfig.js` with `audioVisualizer.js` - Day 7
+    *   [S] Ensure `audioVisualizer.js` correctly maps audio to visual parameters - Day 7-8
+    *   [M] Thoroughly test and debug audio-reactive visualization - Day 8
 
 ---
 
@@ -196,187 +196,186 @@ This section details the technical components, files, logic, data flow, challeng
 ### E. Backend - Core Logic in Firebase Cloud Functions (Python)
 
 *   **Files to Modify/Create:**
-    *   `backend/cloud_functions/`: Directory for all Cloud Functions (e.g., `auth_sync/`, `process_chunk/`, `tria_chat_handler/`). Each will have `main.py`, `requirements.txt`.
-    *   `backend/core/`: Shared business logic, services, DB operations, models (e.g., `crud_operations.py`, `llm_service.py`, `tria_bots/`).
-    *   `backend/core/db/pg_connector.py`: For Neon.tech.
-    *   `.env` (for local simulation if using Firebase emulator) / Cloud Function environment variable configuration.
+    *   `backend/cloud_functions/` (or `backend/main.py`): Directory/file for all Cloud Function definitions (e.g., `auth_sync_function`, `process_chunk_function`, `tria_chat_handler_function`). Each function will have its specific trigger (HTTP, Storage, etc.).
+    *   `backend/core/`: Shared business logic, services, DB operations (with Neon.tech PostgreSQL), models (Pydantic), Tria bot modules.
+        *   `backend/core/db/pg_connector.py`: For Neon.tech PostgreSQL connection.
+        *   `backend/core/crud_operations.py`: For database interactions.
+        *   `backend/core/services/llm_service.py`: For LLM API calls.
+        *   `backend/core/tria_bots/`: Modules like `ChatBot.py`, `ChunkProcessorBot.py`.
+    *   Firebase Functions configuration for environment variables (e.g., API keys, DB URL).
 *   **Logic to Implement:**
-    *   Refactor FastAPI routers and service logic into individual, focused Cloud Functions.
-        *   `auth.py` router logic -> `auth_sync/main.py` (HTTP trigger).
-        *   `chunks.py` router logic -> `process_chunk/main.py` (Storage trigger), and potentially an HTTP-triggered function if direct calls are needed.
-        *   `tria.py` router logic -> `tria_chat_handler/main.py` (HTTP trigger).
-    *   Shared logic like `crud_operations.py`, `llm_service.py`, Tria bot modules will reside in `backend/core/` and be imported by the Cloud Functions.
+    *   Develop individual, focused Cloud Functions for each backend operation (auth sync, chunk processing, Tria chat).
+    *   These functions will import and use shared logic from `backend/core/`.
 *   **Data Flow:**
-    *   Functions triggered by HTTP requests from frontend, or by Firebase events (Storage, Pub/Sub).
-    *   Functions use shared core logic to interact with DB (Neon.tech via `pg_connector.py`), LLMs, etc.
+    *   Functions triggered by HTTP requests from frontend (via `apiService.js`) or Firebase service events (Storage, Auth, Pub/Sub).
+    *   Functions use shared core logic (`backend/core/`) to interact with Neon.tech PostgreSQL, LLM APIs, etc.
 *   **Key Challenges/Considerations:**
-    *   **Refactoring from Monolith (FastAPI) to Serverless (Cloud Functions):** Requires careful thought on function granularity, shared code management, and state handling (if any).
-    *   **Cold Starts:** Can impact perceived latency for HTTP-triggered functions.
-    *   **Execution Time Limits:** Cloud Functions have max execution times (default 60s, max 9 mins). Long-running Tria processes might need to be asynchronous or broken down.
-    *   **Dependencies:** Managing dependencies for each Cloud Function (`requirements.txt`). The user will manually create `backend/requirements.txt` for shared `core` dependencies. Individual function `requirements.txt` should be minimal or empty if all deps are in the shared `backend/requirements.txt` and deployed together.
-    *   **Local Development/Testing:** Firebase Emulator Suite is essential.
-    *   **Networking:** Cloud Functions need to be configured to access Neon.tech (e.g., VPC connector if Neon DB is in a VPC, or allow public IPs if Neon DB is public - ensure security). For MVP, public connection to Neon with strong credentials might be simpler if allowed by Neon's free tier.
+    *   **Function Granularity:** Designing functions that are neither too small (leading to complex call chains) nor too large (monolithic).
+    *   **Cold Starts:** Potential latency impact; optimize function code and manage dependencies.
+    *   **Execution Time Limits:** Max execution time for Cloud Functions (default 60s, max 540s/9mins). Design for efficiency.
+    *   **Dependencies:** Manage Python dependencies for Cloud Functions via `backend/requirements.txt`.
+    *   **Local Development/Testing:** Firebase Local Emulator Suite is crucial for testing functions locally.
+    *   **Networking & Security:** Securely connect Cloud Functions to Neon.tech PostgreSQL. Ensure IAM permissions and Firebase security rules are correctly configured.
 *   **Tasks & Sub-Tasks:**
-    *   [S] Setup Neon.tech PostgreSQL database - Day 1
-    *   [S] Configure `pg_connector.py` for Neon.tech and test connection from a local Python script - Day 1
-    *   [M] Plan refactoring of FastAPI routes to individual Cloud Functions - Day 1
-    *   [M] Develop and deploy `auth_sync` (HTTP) and `process_chunk` (Storage trigger) Cloud Functions - Day 2-4 (overlaps with sections A & D)
-    *   [M] Develop and deploy `tria_chat_handler` (HTTP) Cloud Function - Day 5-6 (overlaps with section F)
-    *   [M] Structure shared code in `backend/core/` - Ongoing
+    *   [S] Setup Neon.tech PostgreSQL database and test connection from a local Python script with `pg_connector.py` - Day 1
+    *   [M] Define specific Cloud Functions needed for MVP (e.g., `auth_sync_on_user_create`, `process_chunk_on_storage_finalize`, `tria_chat_http_handler`) - Day 1
+    *   [M] Develop and deploy `auth_sync` Cloud Function (e.g., triggered by Firebase Auth user creation) - Day 2-4 (overlaps with sections A & D)
+    *   [M] Develop and deploy `process_chunk` Cloud Function (Storage trigger) - Day 2-4 (overlaps with sections A & D)
+    *   [M] Develop and deploy `tria_chat_handler` Cloud Function (HTTP trigger) - Day 5-6 (overlaps with section F)
+    *   [M] Structure and implement shared business logic in `backend/core/` (services, DB operations, models) - Ongoing
 
 ---
 
-### F. Backend - MVP Tria Bot Logic (Python modules in Cloud Functions)
+### F. Backend - MVP Tria Bot Logic (Python modules in `backend/core/tria_bots/`)
 
 *   **Files to Modify/Create:**
-    *   `backend/core/tria_bots/TriaBotBase.py` (As before, but now in `core`).
-    *   `backend/core/tria_bots/ChunkProcessorBot.py` (As before, in `core`).
-    *   `backend/core/tria_bots/ChatBot.py` (As before, in `core`).
-    *   `backend/cloud_functions/tria_chat_handler/main.py` (New): HTTP-triggered Cloud Function to handle chat.
-    *   `backend/cloud_functions/tria_process_chunk_result_handler/main.py` (Optional, if async processing of chunk by Tria is needed, possibly Pub/Sub triggered).
-    *   `backend/core/services/llm_service.py` (Refactor from `backend/services/LLMService.py`).
-    *   `backend/core/config.py` (Or use Cloud Function environment variables for API keys).
+    *   `backend/core/tria_bots/ChatBot.py`: Module for handling chat logic.
+    *   `backend/core/tria_bots/ChunkProcessorBot.py`: Module for processing uploaded chunks.
+    *   `backend/core/services/llm_service.py`: Wrapper for LLM API calls (Mistral/Devstral, Google Gemini).
+    *   Cloud Function files (e.g., `backend/cloud_functions/tria_chat_handler/main.py`, `backend/cloud_functions/process_chunk/main.py`) will import and use these modules.
 *   **Logic to Implement:**
-    *   **`llm_service.py`**: (As before) Wrapper for Mistral/Devstral API.
-    *   **`ChunkProcessorBot.py` (module):**
-        *   Called by `process_chunk` Cloud Function (or a dedicated Tria processing function).
-        *   Logs chunk metadata.
-    *   **`ChatBot.py` (module):**
-        *   Called by `tria_chat_handler` Cloud Function.
-        *   Takes text input, uses `llm_service.py` for Mistral/Devstral. Basic static RAG.
-    *   **`tria_chat_handler/main.py` (Cloud Function):**
-        *   HTTP triggered. Receives user text.
-        *   Instantiates/calls `ChatBot.py` logic.
-        *   Returns LLM response.
-        *   Logs interaction to `tria_learning_log` via `crud_operations.py`.
-*   **Data Flow:** (Similar to before, but mediated by Cloud Functions)
-    *   **Chat:** Frontend -> HTTP -> `tria_chat_handler` CF -> `ChatBot.py` -> `llm_service.py` -> Mistral/Devstral -> Response -> Frontend.
+    *   **`llm_service.py`**: Standardized way to call different LLM APIs.
+    *   **`ChunkProcessorBot.py`**:
+        *   Called by the `process_chunk` Cloud Function.
+        *   Logs chunk metadata to Neon.tech PostgreSQL.
+        *   For MVP, may perform a very basic analysis or simply acknowledge processing.
+    *   **`ChatBot.py`**:
+        *   Called by the `tria_chat_handler` Cloud Function.
+        *   Takes text input, uses `llm_service.py` for LLM interaction.
+        *   May perform basic RAG using data from Neon.tech PostgreSQL.
+    *   The respective Cloud Functions will:
+        *   Handle incoming requests/triggers.
+        *   Instantiate and call appropriate bot modules from `backend/core/tria_bots/`.
+        *   Return responses.
+        *   Log interactions to `tria_learning_log` table in Neon.tech PostgreSQL via `crud_operations.py`.
+*   **Data Flow (Chat Example):**
+    *   Frontend -> HTTP Request -> `tria_chat_handler` Cloud Function -> `ChatBot.py` (in `backend/core/tria_bots/`) -> `llm_service.py` -> LLM API -> Response -> `ChatBot.py` -> Cloud Function -> HTTP Response -> Frontend.
 *   **Key Challenges/Considerations:**
-    *   **Mistral/Devstral API Access:** Re-confirm no card needed for dev/free keys and understand rate limits. This is critical.
-    *   **LLM Latency:** API calls can be slow; Cloud Function execution time includes this.
-    *   Packaging Tria bot logic and dependencies for Cloud Functions.
+    *   **LLM API Access:** Ensuring reliable access to Mistral/Devstral/Gemini APIs within free tier limits.
+    *   **LLM Latency:** Managing potential delays from LLM API calls within Cloud Function execution limits.
+    *   Structuring bot logic in `backend/core/` for clarity and testability.
 *   **Tasks & Sub-Tasks:**
-    *   [S] Re-confirm Mistral/Devstral API key situation (no card, free tier limits) - Day 1
-    *   [M] Refactor `LLMService.py` into `backend/core/services/` - Day 4
-    *   [S] Adapt `ChunkProcessorBot.py` and `ChatBot.py` as modules in `backend/core/tria_bots/` - Day 4-5
-    *   [M] Implement `tria_chat_handler` Cloud Function - Day 5
-    *   [S] Ensure Tria interactions are logged to PostgreSQL via `crud_operations.py` from Cloud Functions - Day 5
+    *   [S] Confirm LLM API key availability and free tier usage conditions - Day 1
+    *   [M] Implement `llm_service.py` in `backend/core/services/` for Mistral/Gemini - Day 4
+    *   [M] Implement `ChunkProcessorBot.py` and `ChatBot.py` modules in `backend/core/tria_bots/` - Day 4-5
+    *   [M] Ensure `tria_chat_handler` and `process_chunk` Cloud Functions correctly use these bot modules - Day 5
+    *   [S] Implement logging of Tria interactions to Neon.tech PostgreSQL from Cloud Functions - Day 5
 
 ---
 
 ### G. Backend-Frontend Communication (HTTP for Cloud Functions)
 
 *   **Files to Modify/Create:**
-    *   `frontend/js/services/apiService.js`: Updated with URLs for HTTP-triggered Cloud Functions.
-    *   (WebSocket related files like `nethologlyphClient.js` and `NetHoloGlyphService.py` are now DEFERRED/REMOVED for MVP due to Cloud Functions primary model).
+    *   `frontend/js/services/apiService.js`: To be updated with URLs for all HTTP-triggered Cloud Functions.
+    *   WebSocket related files (e.g., `nethologlyphClient.js`, `NetHoloGlyphService.py`) are **deferred post-MVP**.
 *   **Logic to Implement:**
-    *   All frontend-backend communication will use HTTPS requests to trigger specific Cloud Functions.
-        *   Auth: `POST /auth_sync_user_function_url`
-        *   Chunk Metadata (if needed beyond storage trigger): `POST /manual_chunk_process_function_url`
-        *   Tria Chat: `POST /tria_chat_handler_function_url`
-    *   Firebase SDK handles direct upload to Storage for chunks.
+    *   All primary frontend-backend communication for MVP will use HTTPS requests to trigger specific Firebase Cloud Functions.
+        *   Auth-related calls (if custom sync beyond Firebase SDK is needed): e.g., `POST /auth_sync_function_url` (actual URL from Firebase).
+        *   Tria Chat: e.g., `POST /tria_chat_handler_function_url`.
+        *   Other MVP API calls as defined.
+    *   Firebase SDK will be used on the client for direct interaction with Firebase Auth (login/signup) and Firebase Storage (file uploads).
 *   **Data Flow:**
-    *   Frontend makes HTTPS calls to specific Cloud Function URLs.
-    *   Cloud Functions process and return JSON responses.
+    *   Frontend uses Firebase SDK for Auth & Storage.
+    *   Frontend makes HTTPS calls (via `apiService.js`) to specific Cloud Function URLs for other backend logic.
+    *   Cloud Functions process requests and return JSON responses.
 *   **Key Challenges/Considerations:**
-    *   **Simplicity:** This is simpler than managing WebSockets alongside Cloud Functions for MVP.
-    *   **Real-time:** True real-time push from backend to frontend is harder with a pure Cloud Function HTTP model. For MVP, chat responses will be request/response. If Tria processing is long, frontend might need to poll a "get_result" Cloud Function (less ideal) or this part of UX is simplified for MVP (e.g., "Tria is processing, check back later"). For MVP, direct response from chat function is expected.
-    *   Discovering Cloud Function URLs and managing them in frontend config.
+    *   Managing Cloud Function URLs in frontend configuration.
+    *   Ensuring consistent request/response formats between frontend and Cloud Functions.
+    *   For MVP, real-time communication is limited to request/response model. True real-time features (e.g., via WebSockets or Firestore listeners for push updates) are post-MVP.
 *   **Tasks & Sub-Tasks:**
-    *   [S] Update `apiService.js` with Cloud Function HTTP trigger URLs - Day 2 (ongoing as functions are developed)
-    *   [S] Remove/Defer WebSocket client-side code for MVP - Day 2
+    *   [S] Finalize list of all HTTP Cloud Function endpoints needed for MVP and document their expected request/response payloads - Day 2
+    *   [S] Update `frontend/js/services/apiService.js` to correctly call deployed/emulated Cloud Function URLs - Day 2 (ongoing as functions are developed)
+    *   [S] Confirm all WebSocket-related code is excluded from MVP build/deployment - Day 2
 
-## III. Timeline & Prioritization for June 9th
+## III. Timeline & Prioritization for June 9th (Firebase Focused)
 
-Refactoring to Firebase Cloud Functions might shift some backend effort but simplifies deployment infrastructure. The 10-day sprint remains.
+The transition to Firebase Cloud Functions simplifies deployment infrastructure but requires careful planning of function logic and interactions. The 10-day sprint remains ambitious.
 
 **Phase 1: Foundation & Core Backend/Auth (Day 1-3)**
 
 *   **MUST DO:**
-    *   [S] Setup Neon.tech PostgreSQL.
-    *   [S] Configure `pg_connector.py` for Neon.tech, test connection.
-    *   [S] Setup Firebase Project (Auth, Storage, Cloud Functions). Ensure NO billing enabled on GCP project or confirm no card needed for free tier.
-    *   [M] Implement Firebase Auth UI (frontend).
-    *   [M] Develop `auth_sync` Firebase Cloud Function (Python) & integrate with frontend.
-    *   [S] Define initial DB schemas (users, chunks, tria_log, basic history tables).
-    *   [S] Basic HTML structure and UI placeholders for ALL buttons.
+    *   [S] Setup Neon.tech PostgreSQL database, configure connection string for Firebase.
+    *   [S] Test Neon.tech connection from a local Python script using `pg_connector.py` from `backend/core/db/`.
+    *   [S] Setup Firebase Project: Enable Authentication (Email/Password, Google), Storage, Cloud Functions (Python), Hosting. **Verify "no credit card required" for free tiers throughout.**
+    *   [M] Implement Firebase Auth UI and logic in `frontend/js/core/auth.js`.
+    *   [M] Develop `auth_sync` Firebase Cloud Function (Python, triggered by Firebase Auth user creation or custom HTTP call) to sync user data to Neon.tech PostgreSQL.
+    *   [S] Define and create initial DB schemas in Neon.tech (users, audiovisual_gestural_chunks, tria_learning_log, basic user history tables like `user_chat_sessions`).
+    *   [S] Basic HTML structure (`frontend/index.html`) and UI placeholders for all MVP buttons and panels.
 
 **Phase 2: Chunk Handling & Basic Tria with Cloud Functions (Day 3-5)**
 
 *   **MUST DO:**
-    *   [M] Implement frontend direct upload to Firebase Storage.
-    *   [M] Develop `process_chunk` Cloud Function (Storage trigger) for metadata saving.
-    *   [S] Obtain/Confirm Mistral/Devstral API keys (no card, usable free/dev tier).
-    *   [M] Develop `llm_service.py` in `backend/core/`.
-    *   [S] Adapt `ChunkProcessorBot.py` module.
-    *   [M] Develop `tria_chat_handler` Cloud Function with `ChatBot.py` module for basic LLM chat.
-    *   [S] Implement logging to `tria_learning_log` from Cloud Functions.
-    *   [M] Basic `chatUI.js` (input field + display) connected to `tria_chat_handler` CF.
-    *   [M] Make all UI buttons clickable; implement basic logic for MVP-critical ones.
+    *   [M] Implement frontend direct upload to Firebase Storage using `frontend/js/services/firebaseStorageService.js`.
+    *   [M] Develop `process_chunk` Firebase Cloud Function (Python, Storage trigger) for saving chunk metadata to Neon.tech PostgreSQL.
+    *   [S] Obtain/Confirm Mistral/Devstral/Google Gemini API keys and ensure they can be used from Cloud Functions without card validation for free/dev tier.
+    *   [M] Implement `llm_service.py` in `backend/core/services/` for interacting with chosen LLM APIs.
+    *   [S] Implement `ChunkProcessorBot.py` module in `backend/core/tria_bots/`.
+    *   [M] Develop `tria_chat_handler` Firebase Cloud Function (Python, HTTP trigger) integrating `ChatBot.py` from `backend/core/tria_bots/` for basic LLM chat & RAG.
+    *   [S] Implement logging of Tria interactions to `tria_learning_log` table in Neon.tech PostgreSQL from relevant Cloud Functions.
+    *   [M] Implement basic `chatUI.js` in frontend, connected to `tria_chat_handler` Cloud Function.
+    *   [M] Ensure all MVP-critical UI buttons have basic interaction logic implemented in `frontend/js/ui/uiManager.js`.
 
 **Phase 3: Frontend Visualization & UI Polish (Day 5-8)**
 
-*   **MUST DO:** (Largely same)
-    *   [M] Integrate/stabilize hologram rendering (`hologramRenderer.js` from `script.js`/PR #40).
-    *   [M] Implement audio processing (`audioAnalyzer.js` from `script.js`/PR #40).
-    *   [S] Connect audio to visuals (`audioVisualizer.js`, `hologramConfig.js`).
-    *   [M] Test audio-reactivity.
-    *   [M] Refine UI interactions (`uiManager.js`, `panelManager.js`).
+*   **MUST DO:**
+    *   [M] Integrate and stabilize audio-reactive hologram rendering in `frontend/js/3d/hologramRenderer.js` (based on prior `script.js`/PR #40 logic).
+    *   [M] Implement audio processing in `frontend/js/audio/audioAnalyzer.js`.
+    *   [S] Connect audio analysis to visual parameters via `frontend/js/audio/audioVisualizer.js` and `frontend/js/config/hologramConfig.js`.
+    *   [M] Test and debug audio-reactivity thoroughly on Firebase Hosting.
+    *   [M] Refine UI interactions and panel management (`frontend/js/ui/uiManager.js`, `frontend/js/ui/panelManager.js`).
 
 **Phase 4: Integration, Testing, Bug Fixing, Docs (Day 8-10)**
 
-*   **MUST DO:** (Largely same)
-    *   [M] End-to-end testing of the full MVP loop with Cloud Functions.
-    *   [L] Bug fixing.
-    *   [S] Update `README.md` (setup, Firebase deployment, Function triggers).
-    *   [S] Document environment variables for Cloud Functions.
-    *   [S] Prepare for demo.
+*   **MUST DO:**
+    *   [M] End-to-end testing of the full MVP loop using Firebase deployed services (Auth, Hosting, Functions, Storage, Neon.tech DB).
+    *   [L] Intensive bug fixing based on E2E testing.
+    *   [S] Update `README.md` with final setup, Firebase deployment steps, and Cloud Function trigger information.
+    *   [S] Document all necessary environment variables for Cloud Functions (e.g., in `.env.example` and for Firebase config).
+    *   [S] Prepare a concise demo script for the MVP.
 
-**Key Assumptions & Risks (Updated):**
+**Key Assumptions & Risks (Updated for Firebase):**
 
-*   **Firebase Cloud Functions Free Tier & Card:** Critical assumption that Firebase free tier (including Python Cloud Functions) can be used without enabling billing on the underlying GCP project, or that if billing is enabled, no card is immediately required for free tier usage. If a card becomes mandatory for deployment/operation, this is a **BLOCKER**.
-*   **Neon.tech Free Tier for pgvector:** Assumed that pgvector extension is usable within Neon.tech's free tier without a card. If not, basic RAG is impossible, and an alternative PostgreSQL host without this limitation would be needed (major risk).
-*   **Mistral/Devstral API:** (As before) Free/developer keys without card and with sufficient limits.
+*   **Firebase/Neon.tech Free Tier & Card:** **CRITICAL BLOCKER IF FALSE.** Assumes Firebase free tier (Auth, Hosting, Storage, Cloud Functions Python) and Neon.tech free tier (PostgreSQL, pgvector) can be fully utilized for MVP development and initial operation without requiring credit card validation, or if billing is technically enabled on GCP, that free quotas are sufficient and no charges will be incurred.
+*   **LLM API Access:** Assumes free/developer keys for Mistral/Devstral/Gemini can be obtained without card and offer sufficient limits for MVP development and demo.
 *   **Cloud Function Limitations:**
-    *   *Cold Starts:* May affect latency of HTTP-triggered functions.
-    *   *Execution Time:* Max 9 mins. Complex Tria tasks might need to be simplified or made async (post-MVP). For MVP, Tria logic within functions will be simple.
-    *   *Complexity:* Managing dependencies and shared code across multiple functions.
-*   **Refactoring Effort:** Adapting FastAPI logic to a serverless Cloud Functions model might have unforeseen complexities.
-*   **PR #40 Stability:** (As before).
-*   **Developer Availability & Focus:** (As before).
+    *   *Cold Starts:* May affect perceived latency. Plan for this in UX or optimize functions.
+    *   *Execution Time:* Sufficient for MVP Tria logic (direct LLM calls are relatively quick).
+    *   *Complexity & Dependencies:* Manageable for MVP scope.
+*   **PR #40 Frontend Logic:** Assumes the visual/audio logic from PR #40 can be stably integrated into the modular frontend.
+*   **Developer Availability & Focus:** Remains a constant factor.
 
-## IV. Final Check & Polish (Internal Audit by Jules)
+## IV. Final Check & Polish (Internal Audit by Jules - Firebase Focus)
 
 This checklist is for "Jules" (the AI agent) to use before submitting the final MVP.
 
 *   **[ ] Constraint Compliance:**
-    *   [ ] PostgreSQL hosted on Neon.tech (verified no card required for free tier, pgvector assumed included).
-    *   [ ] Backend logic implemented as Firebase Cloud Functions (Python). **Crucially verify no credit card was required for deployment/operation of these functions within their free tier.**
-    *   [ ] Firebase Auth & Storage used (no card needed for these specific services' free tiers).
-    *   [ ] Tria Bot LLM calls use Mistral/Devstral with API keys not requiring a credit card for free/dev usage (verify this assumption holds).
+    *   [ ] **Neon.tech PostgreSQL** used (verified no card required for free tier, pgvector assumed included & functional).
+    *   [ ] Backend logic exclusively via **Firebase Cloud Functions (Python)**. Verified no credit card was required for deployment/operation within free tier limits.
+    *   [ ] **Firebase Auth & Storage** used (verified no card needed for free tiers).
+    *   [ ] Tria Bot LLM calls use Mistral/Devstral/Gemini with API keys not requiring a credit card for free/dev usage.
     *   [ ] No other services requiring credit card for free tier are used.
-*   **[ ] Core Functionality Test:**
-    *   [ ] User can sign up and log in.
-    *   [ ] User data (UID, email) synced to PostgreSQL via `auth_sync` Cloud Function.
+*   **[ ] Core Functionality Test (All on Firebase):**
+    *   [ ] User can sign up and log in via Firebase Auth.
+    *   [ ] User data (UID, email) synced to Neon.tech PostgreSQL via `auth_sync` (or equivalent) Cloud Function.
     *   [ ] User can upload a small audio/video chunk to Firebase Storage.
-    *   [ ] `process_chunk` Cloud Function (Storage triggered) saves chunk metadata to PostgreSQL.
-    *   [ ] Basic Tria bot (via `tria_chat_handler` Cloud Function) provides an acknowledgment/response visible in UI.
-    *   [ ] Hologram visualization (basic shape) is displayed.
+    *   [ ] `process_chunk` Cloud Function (Storage triggered) saves chunk metadata to Neon.tech PostgreSQL.
+    *   [ ] Basic Tria bot (via `tria_chat_handler` Cloud Function) provides an LLM-generated acknowledgment/response visible in UI.
+    *   [ ] Hologram visualization (basic shape) is displayed on Firebase Hosting.
     *   [ ] Hologram reacts to microphone input.
-    *   [ ] All UI buttons (Load Audio, Play, Pause, Stop, Mic, Fullscreen, XR, Gesture Record, Hologram List, Scan, Bluetooth, Tria, Telegram, GitHub, Install PWA) are clickable.
-    *   [ ] MVP-critical buttons ("My Gestures," "My Holograms," "Chat/Tria input," Mic) have basic interaction logic.
-*   **[ ] Technical Checks:**
-    *   [ ] Frontend hosted on Firebase Hosting.
-    *   [ ] Firebase Cloud Functions are deployed and operational.
-    *   [ ] HTTP Triggers for Cloud Functions are correctly configured and callable. Storage Triggers are operational.
-    *   [ ] Environment variables for Cloud Functions (DB credentials, API keys) are correctly configured.
-    *   [ ] Basic error handling in Cloud Functions.
-    *   [ ] Code (frontend and `backend/core/`, `backend/cloud_functions/`) is reasonably commented.
+    *   [ ] All MVP-critical UI buttons (as per `SYSTEM_INSTRUCTION_CURRENT.md`) are clickable and trigger appropriate actions (e.g., calls to Cloud Functions, UI changes).
+*   **[ ] Technical Checks (Firebase Specific):**
+    *   [ ] Frontend deployed and accessible via Firebase Hosting URL.
+    *   [ ] All required Firebase Cloud Functions are deployed and operational (check logs in Firebase Console / Google Cloud Logging).
+    *   [ ] HTTP Triggers for Cloud Functions are correctly configured and callable from frontend. Storage Triggers are operational.
+    *   [ ] Environment variables for Cloud Functions (DB connection string, LLM API keys) are correctly configured using `firebase functions:config:set` and accessible by functions.
+    *   [ ] Basic error handling and logging are present in Cloud Functions.
+    *   [ ] Code (frontend, `backend/core/`, `backend/cloud_functions/` or `backend/main.py`) is reasonably commented.
+    *   [ ] Firebase Security Rules for Storage (and Firestore, if used) are configured for basic MVP security (e.g., authenticated users can write to their own paths).
 *   **[ ] Documentation:**
-    *   [ ] `README.md` has clear instructions for Firebase project setup, frontend deployment, and Cloud Function deployment/configuration.
-    *   [ ] Key environment variables needed for Cloud Functions are listed.
+    *   [ ] `README.md` has clear instructions for Firebase project setup, local emulation (`firebase emulators:start`), frontend deployment (`firebase deploy --only hosting`), and Cloud Function deployment (`firebase deploy --only functions`).
+    *   [ ] Key environment variables for Cloud Functions are documented (e.g., in `.env.example` or a separate config note).
 *   **[ ] MVP Scope Adherence:**
-    *   [ ] Features are within the defined MVP scope. No scope creep.
-    *   [ ] Complexity is managed; "keep it simple" principle applied, especially for Cloud Function logic.
+    *   [ ] Features are within the defined MVP scope as per `ULTIMATE_ROAD_TO_MVP_JUNE_9.md`. No scope creep.
+    *   [ ] Complexity is managed; "keep it simple" principle applied, especially for Cloud Function logic and Tria MVP features.
 
 This ULTIMATE plan provides a focused path to the June 9th MVP, emphasizing adherence to the critical "no credit card" constraint by leveraging Firebase Cloud Functions and Neon.tech. Success depends on diligent execution and proactive risk management.
