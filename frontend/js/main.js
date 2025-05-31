@@ -13,7 +13,7 @@ console.log('Firebase services imported in main.js (Task 3/3 Complete):', { fire
 import { setAuthDOMElements, initAuthObserver, handleTokenForBackend } from './core/auth.js';
 
 // Импорт ядра
-import { initCore } from './core/init.js'; // Adjusted path
+import { initCore, state } from './core/init.js'; // Adjusted path, and import state
 import { setupEventListeners } from '/static/js/core/events.js';
 import { runFrontendDiagnostics } from '/static/js/core/diagnostics.js';
 
@@ -98,7 +98,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // TODO: Module for audio processing (e.g., initAudio, initAudioVisualization) not found, related code disabled
   try {
   // initAudio(); // No longer needed directly here, will be handled by audioAnalyzer/audioVisualizer
-    initAudioVisualization();
+    // Pass the instances from the state to the audio visualizer
+    if (state.audioAnalyzerLeftInstance && state.hologramRendererInstance) {
+      initAudioVisualization(state.audioAnalyzerLeftInstance, state.hologramRendererInstance);
+    } else {
+      console.warn("Audio visualizer could not be fully initialized: missing analyzer or renderer instances.");
+    }
   } catch (error) {
     console.error('Ошибка инициализации аудио:', error);
   }
