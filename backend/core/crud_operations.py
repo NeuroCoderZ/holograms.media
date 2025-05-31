@@ -4,12 +4,12 @@ from typing import Optional, Any, Dict
 from uuid import uuid4, UUID
 from datetime import datetime
 
-from ..models.user_models import UserModel, UserCreate # Import UserCreate
+from ..models.user_models import UserModel, UserCreate
 from ..models.multimodal_models import AudiovisualGesturalChunkModel
 from ..models.learning_log_models import TriaLearningLogModel
 
 
-async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> UserModel: # Changed type to UserCreate
+async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> UserModel:
     """
     Creates a new user record in the database.
 
@@ -35,10 +35,6 @@ async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> Use
     try:
         row = await db.fetchrow(sql, user_create.user_id_firebase, user_create.email)
         if row:
-            # The 'id' field (UUID) from BaseUUIDModel is not in the 'users' table.
-            # We generate a new UUID for it here as the Pydantic model expects it.
-            # created_at and updated_at from the DB are timezone-aware (TIMESTAMPTZ)
-            # asyncpg returns them as Python datetime objects.
             return UserModel(
                 id=uuid4(), # Not from DB, generated locally, but required by BaseUUIDModel
                 user_id_firebase=row['user_id'],
@@ -47,13 +43,9 @@ async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> Use
                 updated_at=row['updated_at']
             )
         else:
-            # This case should ideally not be reached if RETURNING is used and insert is successful.
-            # Consider raising an error or handling more robustly.
             raise Exception("User creation failed, no data returned.")
 
     except asyncpg.UniqueViolationError as e:
-        # Specific handling for unique constraint violations (e.g., email or user_id already exists)
-        # You might want to log this or raise a custom application-level exception
         print(f"Error creating user: {e}") # Replace with proper logging
         raise # Re-raise the exception
 
@@ -78,8 +70,6 @@ async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) ->
     """
     row = await db.fetchrow(sql, firebase_uid)
     if row:
-        # The 'id' field (UUID) from BaseUUIDModel is not in the 'users' table.
-        # We generate a new UUID for it here.
         return UserModel(
             id=uuid4(), # Not from DB, generated locally, but required by BaseUUIDModel
             user_id_firebase=row['user_id'],
@@ -100,37 +90,50 @@ async def create_tria_learning_log_entry(
     """
     sql = """
         INSERT INTO tria_learning_log (
-            event_type, bot_affected_id, summary_text, details_json, timestamp
+            user_id, session_id, event_type, bot_affected_id, summary_text,
+            prompt_text, tria_response_text, model_used, feedback_score, custom_data,
+            timestamp
         ) VALUES (
-            $1, $2, $3, $4, $5
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
         )
         RETURNING
-            log_id, timestamp, event_type, bot_affected_id, summary_text, details_json;
+            log_id, user_id, session_id, event_type, bot_affected_id, summary_text,
+            prompt_text, tria_response_text, model_used, feedback_score, custom_data,
+            timestamp;
     """
     try:
         row = await db.fetchrow(
             sql,
+            log_entry_create.user_id,
+            log_entry_create.session_id,
             log_entry_create.event_type,
             log_entry_create.bot_affected_id,
             log_entry_create.summary_text,
-            log_entry_create.details_json,
-            log_entry_create.timestamp, # Explicitly passing the timestamp from the model
+            log_entry_create.prompt_text,
+            log_entry_create.tria_response_text,
+            log_entry_create.model_used,
+            log_entry_create.feedback_score,
+            log_entry_create.custom_data,
+            log_entry_create.timestamp,
         )
         if row:
-            # Map the database row back to the Pydantic model
             return TriaLearningLogModel(
                 log_id=row['log_id'],
-                timestamp=row['timestamp'],
+                user_id=row['user_id'],
+                session_id=row['session_id'],
                 event_type=row['event_type'],
                 bot_affected_id=row['bot_affected_id'],
                 summary_text=row['summary_text'],
-                details_json=row['details_json']
+                prompt_text=row['prompt_text'],
+                tria_response_text=row['tria_response_text'],
+                model_used=row['model_used'],
+                feedback_score=row['feedback_score'],
+                custom_data=row['custom_data'],
+                timestamp=row['timestamp']
             )
         else:
-            # This case should ideally not be reached if RETURNING is used and insert is successful.
             raise Exception("TriaLearningLog entry creation failed, no data returned.")
     except asyncpg.PostgresError as e:
-        # Log the error or raise a custom application-level exception
         print(f"Error creating Tria learning log entry: {e}") # Replace with proper logging
         raise
 
@@ -181,8 +184,6 @@ async def create_audiovisual_gestural_chunk(
             chunk_create.custom_metadata_json,
         )
         if row:
-            # Map the database row back to the Pydantic model
-            # The 'id' field in Pydantic model corresponds to 'chunk_id' in the DB table.
             return AudiovisualGesturalChunkModel(
                 id=row['chunk_id'],
                 user_id=row['user_id'],
@@ -202,10 +203,8 @@ async def create_audiovisual_gestural_chunk(
                 updated_at=row['updated_at']
             )
         else:
-            # This case should ideally not be reached if RETURNING is used and insert is successful.
             raise Exception("AudiovisualGesturalChunk creation failed, no data returned.")
     except asyncpg.PostgresError as e:
-        # Log the error or raise a custom application-level exception
         print(f"Error creating audiovisual/gestural chunk: {e}") # Replace with proper logging
         raise
 
