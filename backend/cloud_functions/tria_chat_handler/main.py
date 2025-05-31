@@ -120,15 +120,15 @@ async def tria_chat_handler_on_request(req: https_fn.Request) -> https_fn.Respon
         # llm_response will retain its default error message or the one from chatbot if it failed there.
         # If chatbot.get_response() failed, llm_response might already be an error string.
         if not llm_response.startswith("Error:") and not llm_response.startswith("I'm sorry"):
-             llm_response = "An unexpected error occurred. Please try again later." # Generic error message
-             print(f"Detailed error during Tria chat processing for user {firebase_user_id}: {e}") # Log exception details
+             print(f"Detailed error during Tria chat processing: {str(e)}") # Log the detailed exception
+             llm_response = "An unexpected error occurred. Please try again later." # Generic error message for users
     finally:
         if conn:
             await conn.close()
             print(f"Database connection closed for chat request of user {firebase_user_id}.")
 
     return https_fn.Response(
-        json.dumps({"response": llm_response}), # llm_response now contains a generic error message
+        json.dumps({"response": llm_response if not llm_response.startswith("An unexpected error occurred.") else "An unexpected error occurred. Please try again later."}),
         status=200, # Even if logging failed, we might have a valid LLM response
         content_type="application/json"
     )
