@@ -1,6 +1,7 @@
 // frontend/js/core/auth.js
 import { auth, GoogleAuthProvider } from './firebaseInit.js';
 import { signInWithPopup, signOut, onAuthStateChanged, getIdToken } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+import { syncUserAuth } from './services/apiService.js'; // Import the new service
 
 // DOM Elements (to be updated by main.js or uiManager.js after they are added to index.html)
 let signInButton = null;
@@ -77,17 +78,17 @@ export function initAuthObserver(callbackAfterToken) {
     });
 }
 
-// Example of how a token might be sent to a backend function (to be implemented later)
 // This function will be passed as a callback to initAuthObserver
-export function handleTokenForBackend(token) {
+export async function handleTokenForBackend(token) { // Made async
     if (token) {
-        console.log("Auth.js: Received token. Would send to backend auth_sync function.", token.substring(0,20) + "...");
-        // Placeholder for actual backend call:
-        // fetch('/api/auth-sync', { // Replace with actual Cloud Function URL
-        // method: 'POST',
-        // headers: { 'Authorization': `Bearer ${token}` }
-        // }).then(response => response.json()).then(data => console.log(data));
+        console.log("Auth.js: Received token. Attempting to send to backend auth_sync function.", token.substring(0,20) + "...");
+        try {
+            const response = await syncUserAuth(token);
+            console.log("Auth.js: Backend sync successful:", response);
+        } catch (error) {
+            console.error("Auth.js: Error syncing user with backend:", error);
+        }
     } else {
-        console.log("Auth.js: User signed out or no token.");
+        console.log("Auth.js: User signed out or no token received.");
     }
 }
