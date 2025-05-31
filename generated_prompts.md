@@ -20,7 +20,7 @@
 - **Критичность:** Высокая (Блокер)
 - ** Ответственный:** Backend Team
 - ** Прогресс:** ✅ Done
-- **Результат:** Коммит `[COMMIT_SHA_PLACEHOLDER]` (ветка `feat/update-db-schemas`) - Схемы `tria_learning_log` и `user_chat_sessions` обновлены в `backend/core/db/schema.sql`.
+- **Результат:** Коммит `6504b30` (PR #49) - Схемы `tria_learning_log` и `user_chat_sessions` обновлены в `backend/core/db/schema.sql`.
 
 ---
 **Промпт:**
@@ -28,10 +28,10 @@
 - **Источник:** Audit Report - Section III (Key Blockers) / Section E & F
 - **Цель:** Создать и реализовать Python модуль `ChunkProcessorBot.py` в директории `backend/core/tria_bots/`.
 - **Контекст:** `ChunkProcessorBot.py` должен обрабатывать загруженные медиа-чанки. Его отсутствие блокирует полную реализацию "Interaction Chunk" Pipeline и соответствующей Cloud Function (`process_chunk`).
-- **Атомарное действие:** Создать файл `backend/core/tria_bots/ChunkProcessorBot.py`. Реализовать в нем класс `ChunkProcessorBot` с методами для:
-    - Принятия метаданных чанка.
-    - Логирования метаданных в PostgreSQL (через `crud_operations.py`).
-    - Выполнения базового анализа или подтверждения обработки (согласно MVP).
+- **Атомарное действие:** Создан файл `backend/core/tria_bots/ChunkProcessorBot.py`. Реализован класс `ChunkProcessorBot` с методом `process_chunk_metadata` для:
+    - Принятия, валидации и сохранения метаданных чанка в PostgreSQL (через `crud_operations.create_audiovisual_gestural_chunk`).
+    - Логирования успешной обработки в `tria_learning_log`.
+    - Базовой обработки ошибок.
 - **Ожидаемый результат:** Файл `backend/core/tria_bots/ChunkProcessorBot.py` создан с базовой реализацией класса `ChunkProcessorBot` и его методов. Cloud Function `process_chunk` должна быть обновлена для его использования.
 - **MVP Task Dependencies:**
     - Section D: (Optional for MVP) Can then trigger a simple Tria bot logic...
@@ -39,7 +39,8 @@
     - Section F: Ensure `process_chunk` Cloud Functions correctly use these bot modules.
 - **Критичность:** Высокая (Блокер)
 - ** Ответственный:** Backend Team
-- ** Прогресс:** Не начато
+- ** Прогресс:** ✅ Done
+- **Результат:** Коммит `47bdf92` (PR #49) - Создан `ChunkProcessorBot.py` с базовой логикой обработки метаданных чанка.
 
 ---
 **Промпт:**
@@ -633,7 +634,7 @@
 - **Атомарное действие:** (Выполняется тем, у кого есть доступ к Firebase проекту)
     1.  Просмотреть текущие правила безопасности для Firebase Storage (в консоли Firebase или в файле конфигурации правил).
     2.  Убедиться, что правила настроены так, чтобы:
-        - Аутентифицированные пользователи могли загружать файлы в свои директории (например, `user_uploads/{'{userID}'}/{fileName}`).
+        - Аутентифицированные пользователи могли загружать файлы в свои директории (например, `user_uploads/{userID}/{fileName}`).
         - Чтение файлов ограничено в соответствии с требованиями MVP (например, только владелец или нет публичного чтения без необходимости).
         - Неаутентифицированный доступ запрещен или строго ограничен.
     3.  Обновить правила, если они не соответствуют требованиям MVP.
