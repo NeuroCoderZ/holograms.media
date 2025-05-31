@@ -1,33 +1,28 @@
 # CRUD operations for database interaction
 import asyncpg
-from typing import Optional, Any, Dict # Added Dict for JSON types
-from uuid import uuid4, UUID # Added UUID
+from typing import Optional, Any, Dict
+from uuid import uuid4, UUID
 from datetime import datetime
 
-# Assuming UserModel is in a sibling directory 'models'
-# Adjust the import path if your project structure is different.
-# from backend.core.models.user_models import UserModel
-# Correcting relative import based on file location:
-from ..models.user_models import UserModel
+from ..models.user_models import UserModel, UserCreate # Import UserCreate
 from ..models.multimodal_models import AudiovisualGesturalChunkModel
 from ..models.learning_log_models import TriaLearningLogModel
 
 
-async def create_user(db: asyncpg.Connection, *, user_create: UserModel) -> UserModel:
+async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> UserModel: # Changed type to UserCreate
     """
     Creates a new user record in the database.
 
     Args:
         db: An active asyncpg database connection.
-        user_create: A Pydantic UserModel containing the user data to create.
+        user_create: A Pydantic UserCreate model containing the user data to create.
                      The `user_id_firebase` field will be used as the `user_id` primary key
-                     in the 'users' table. The `id` (UUID) field of UserModel is not
-                     stored in the 'users' table and will be generated locally.
+                     in the 'users' table.
 
     Returns:
         A UserModel instance representing the created user, including data
         fetched from the database (like created_at, updated_at) and a locally
-        generated UUID for the 'id' field.
+        generated UUID for the 'id' field to satisfy the BaseModel requirements.
 
     Raises:
         asyncpg.PostgresError: If a database error occurs (e.g., unique constraint violation).
@@ -45,7 +40,7 @@ async def create_user(db: asyncpg.Connection, *, user_create: UserModel) -> User
             # created_at and updated_at from the DB are timezone-aware (TIMESTAMPTZ)
             # asyncpg returns them as Python datetime objects.
             return UserModel(
-                id=uuid4(), # Not from DB, generated locally
+                id=uuid4(), # Not from DB, generated locally, but required by BaseUUIDModel
                 user_id_firebase=row['user_id'],
                 email=row['email'],
                 created_at=row['created_at'],
@@ -74,7 +69,7 @@ async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) ->
     Returns:
         A UserModel instance if the user is found, otherwise None.
         The 'id' (UUID) field of the returned UserModel is generated locally
-        as it's not stored in the 'users' table.
+        as it's not stored in the 'users' table, but required by BaseUUIDModel.
     """
     sql = """
         SELECT user_id, email, created_at, updated_at
@@ -86,7 +81,7 @@ async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) ->
         # The 'id' field (UUID) from BaseUUIDModel is not in the 'users' table.
         # We generate a new UUID for it here.
         return UserModel(
-            id=uuid4(), # Not from DB, generated locally
+            id=uuid4(), # Not from DB, generated locally, but required by BaseUUIDModel
             user_id_firebase=row['user_id'],
             email=row['email'],
             created_at=row['created_at'],
@@ -138,62 +133,6 @@ async def create_tria_learning_log_entry(
         # Log the error or raise a custom application-level exception
         print(f"Error creating Tria learning log entry: {e}") # Replace with proper logging
         raise
-
-# Example of how these functions might be called (for illustration, not part of the script):
-# async def main():
-#     # Assume NEON_DATABASE_URL is set in the environment
-#     # from backend.core.db.pg_connector import get_db_connection
-#
-#     conn = None
-#     try:
-#         # conn = await get_db_connection() # This would come from pg_connector.py
-#
-#         # Dummy connection for testing without actual DB
-#         class DummyConnection:
-#             async def fetchrow(self, query, *args):
-#                 print(f"Executing query: {query} with args: {args}")
-#                 if "INSERT" in query and args[0] == "test_firebase_uid_123":
-#                     return {
-#                         "user_id": args[0], "email": args[1],
-#                         "created_at": datetime.utcnow(), "updated_at": datetime.utcnow()
-#                     }
-#                 if "SELECT" in query and args[0] == "test_firebase_uid_123":
-#                     return {
-#                         "user_id": args[0], "email": "test@example.com",
-#                         "created_at": datetime.utcnow(), "updated_at": datetime.utcnow()
-#                     }
-#                 return None
-#
-#         conn = DummyConnection()
-#
-#         # Create a user
-#         user_to_create = UserModel(
-#             user_id_firebase="test_firebase_uid_123",
-#             email="test@example.com",
-#             # id, created_at, updated_at will be set by default_factory or in create_user
-#         )
-#         created_user = await create_user(db=conn, user_create=user_to_create)
-#         if created_user:
-#             print(f"Created user: {created_user.model_dump_json(indent=2)}")
-#
-#         # Get a user
-#         retrieved_user = await get_user_by_firebase_uid(db=conn, firebase_uid="test_firebase_uid_123")
-#         if retrieved_user:
-#             print(f"Retrieved user: {retrieved_user.model_dump_json(indent=2)}")
-#
-#         non_existent_user = await get_user_by_firebase_uid(db=conn, firebase_uid="non_existent_uid")
-#         if not non_existent_user:
-#             print("Correctly did not find non_existent_user.")
-#
-#     except Exception as e:
-#         print(f"An error occurred: {e}")
-#     # finally:
-#     #     if conn and hasattr(conn, 'close'): # Real connection would have close
-#     #         await conn.close()
-
-# if __name__ == "__main__":
-#     import asyncio
-#     asyncio.run(main())
 
 
 async def create_audiovisual_gestural_chunk(
