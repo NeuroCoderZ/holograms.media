@@ -33,3 +33,38 @@ export async function syncUserAuth(idToken) {
         throw error; // Re-throw to be handled by the caller
     }
 }
+
+/**
+ * Sends a chat message to the backend Tria chat handler Cloud Function.
+ * @param {string} messageText - The text content of the chat message.
+ * @param {string} idToken - The Firebase JWT (ID Token) of the authenticated user.
+ * @returns {Promise<Object>} A promise that resolves with the backend's JSON response or rejects with an error.
+ */
+export async function sendChatMessage(messageText, idToken) {
+    // PLACEHOLDER_TRIACPH_URL will be replaced with the actual Cloud Function URL
+    // once the function is deployed or emulated.
+    const TRIA_CHAT_HANDLER_URL = "PLACEHOLDER_BASE_URL/tria_chat_handler";
+
+    try {
+        const response = await fetch(TRIA_CHAT_HANDLER_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${idToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ text: messageText })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData.message || `HTTP error! Status: ${response.status}`;
+            throw new Error(`Failed to send chat message to backend: ${errorMessage}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error in sendChatMessage:", error);
+        throw error; // Re-throw to be handled by the caller
+    }
+}

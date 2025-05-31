@@ -1,20 +1,22 @@
 // chat_panel.js - Модуль для управления панелью Чат
 
+import { addMessageToChat } from '../js/panels/chatMessages.js'; // Import the message display function
+import { sendChatMessage as sendChatMessageToApi } from '../js/services/apiService.js'; // Import API service function
+import { auth } from '../js/core/firebaseInit.js'; // Import auth instance for token
+import { getIdToken } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js"; // Import getIdToken
+
 // Экспортируем функцию для инициализации панели Чат
 export function initChatPanel() {
   console.log("Инициализация панели Чат");
   
-  // Создаем контейнер для чата, если его еще нет
   let chatContainer = document.getElementById('chatPanel');
   
   if (!chatContainer) {
-    // Создаем контейнер панели чата
     chatContainer = document.createElement('div');
     chatContainer.id = 'chatPanel';
     chatContainer.className = 'panel-content';
-    chatContainer.style.display = 'none'; // По умолчанию скрыт
+    chatContainer.style.display = 'none'; 
     
-    // Создаем структуру панели чата
     const chatMessagesContainer = document.createElement('div');
     chatMessagesContainer.id = 'chatMessages';
     chatMessagesContainer.className = 'chat-messages';
@@ -32,13 +34,11 @@ export function initChatPanel() {
     chatSendButton.textContent = 'Отправить';
     chatSendButton.className = 'chat-send-button';
     
-    // Добавляем обработчик для отправки сообщений
     chatSendButton.addEventListener('click', () => {
       sendChatMessage(chatInput.value);
       chatInput.value = '';
     });
     
-    // Добавляем обработчик для отправки по Enter (с Shift+Enter для переноса строки)
     chatInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -47,14 +47,12 @@ export function initChatPanel() {
       }
     });
     
-    // Собираем структуру
     chatInputContainer.appendChild(chatInput);
     chatInputContainer.appendChild(chatSendButton);
     
     chatContainer.appendChild(chatMessagesContainer);
     chatContainer.appendChild(chatInputContainer);
     
-    // Добавляем контейнер в правую панель
     const rightPanel = document.querySelector('.right-panel');
     if (rightPanel) {
       rightPanel.appendChild(chatContainer);
@@ -64,80 +62,60 @@ export function initChatPanel() {
   }
 }
 
-// Функция для отображения панели чата
 export function showChatPanel() {
   const timelineContainer = document.getElementById('versionTimeline');
   const chatContainer = document.getElementById('chatPanel');
   const gesturesContainer = document.getElementById('gesturesPanel');
   const hologramsContainer = document.getElementById('hologramsPanel');
   
-  // Показываем чат, скрываем остальные панели
   if (timelineContainer) timelineContainer.style.display = 'none';
   if (chatContainer) chatContainer.style.display = 'block';
   if (gesturesContainer) gesturesContainer.style.display = 'none';
   if (hologramsContainer) hologramsContainer.style.display = 'none';
   
-  // Активируем соответствующую кнопку в навигации режимов
   setActivePanelButton('chatButton');
 }
 
-// Функция для отправки сообщения чата
-export async function sendChatMessage(message) {
+async function sendChatMessage(message) { // Made private, for internal use only by this module's UI
   if (!message || message.trim() === '') return;
   
-  // Добавляем сообщение пользователя в чат
-  addChatMessage('user', message);
+  addMessageToChat('user', message); // Use the imported addMessageToChat
   
   try {
-    // Отправляем сообщение на сервер
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ message })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Ошибка HTTP: ${response.status}`);
+    const user = auth.currentUser;
+    if (!user) {
+      console.error("User not authenticated. Cannot send chat message.");
+      addMessageToChat('system', 'Ошибка: пользователь не аутентифицирован.');
+      return;
     }
+    const idToken = await getIdToken(user); // Get the Firebase ID token
+
+    const response = await sendChatMessageToApi(message, idToken); // Call the API service
     
-    const data = await response.json();
-    
-    // Добавляем ответ от сервера в чат
-    addChatMessage('assistant', data.response);
+    if (response && response.response) {
+      addMessageToChat('tria', response.response);
+    } else {
+      throw new Error("Некорректный ответ от сервера.");
+    }
+
   } catch (error) {
     console.error('Ошибка при отправке сообщения:', error);
-    addChatMessage('system', 'Произошла ошибка при отправке сообщения. Попробуйте еще раз.');
+    addMessageToChat('system', `Произошла ошибка при отправке сообщения: ${error.message || "Неизвестная ошибка"}. Попробуйте еще раз.`);
   }
 }
 
-// Функция для добавления сообщения в чат
+// Function for adding a message to the chat (moved logic to chatMessages.js)
+// This function is now just a placeholder for the one imported from chatMessages.js
+// Kept for clarity, but the actual logic is in chatMessages.js
 export function addChatMessage(role, content) {
-  const chatMessages = document.getElementById('chatMessages');
-  if (!chatMessages) return;
-  
-  const messageElement = document.createElement('div');
-  messageElement.className = `chat-message ${role}-message`;
-  
-  const contentElement = document.createElement('div');
-  contentElement.className = 'message-content';
-  contentElement.textContent = content;
-  
-  messageElement.appendChild(contentElement);
-  chatMessages.appendChild(messageElement);
-  
-  // Прокручиваем чат вниз
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  console.warn("Using stub addChatMessage. Ensure addMessageToChat from chatMessages.js is correctly imported and used.");
+  // The actual implementation is now in frontend/js/panels/chatMessages.js
 }
 
-// Вспомогательная функция для установки активной кнопки панели
 function setActivePanelButton(buttonId) {
-  // Сначала убираем класс active со всех кнопок панелей
   const panelButtons = document.querySelectorAll('.panel-mode-button');
   panelButtons.forEach(button => button.classList.remove('active'));
   
-  // Затем добавляем класс active нужной кнопке
   const activeButton = document.getElementById(buttonId);
   if (activeButton) activeButton.classList.add('active');
 } 
