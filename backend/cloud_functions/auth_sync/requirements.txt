@@ -3,5 +3,5 @@
 # or included in the global Python runtime provided by Firebase for Cloud Functions.
 # Add specific dependencies here if this function requires something unique not available globally
 # and not suitable for backend/core.
-# Example:
-# some-python-package==1.2.3
+
+firebase-admin>=6.0.0
