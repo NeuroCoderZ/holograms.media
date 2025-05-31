@@ -70,16 +70,13 @@
 - **Источник:** Audit Report - Section A
 - **Цель:** Проверить и завершить интеграцию Firebase Web SDK в `frontend/js/core/auth.js`, включая отправку JWT в `auth_sync` Cloud Function.
 - **Контекст:** Аутентификация пользователя - базовый функционал MVP. Необходимо убедиться, что frontend корректно взаимодействует с Firebase Auth и передает токен в backend.
-- **Атомарное действие:** Провести code review файла `frontend/js/core/auth.js`. Убедиться, что:
-    1.  Инициализация Firebase Auth выполнена корректно.
-    2.  Процессы регистрации и входа пользователя обрабатываются.
-    3.  JWT токен получается после успешной аутентификации.
-    4.  JWT токен отправляется на соответствующий HTTP эндпоинт Cloud Function `auth_sync` (через `apiService.js`).
+- **Атомарное действие:** Проверена инициализация Firebase в `frontend/js/core/firebaseInit.js`. Создан `frontend/js/services/apiService.js` с функцией `syncUserAuth(idToken)` для отправки JWT на бэкенд (URL эндпоинта - плейсхолдер). Модифицирован `frontend/js/core/auth.js`: импортирована и используется `syncUserAuth` в `handleTokenForBackend` для Google Sign-In; добавлена обработка ошибок и логирование.
 - **Ожидаемый результат:** `frontend/js/core/auth.js` полностью и корректно реализует frontend часть аутентификации Firebase и отправку JWT.
 - **MVP Task Dependencies:** Section A: Implement Firebase Auth UI (frontend), Send JWT to the `auth_sync` Cloud Function.
 - **Критичность:** Высокая
 - ** Ответственный:** Frontend Team
-- ** Прогресс:** Частично выполнено (Нуждается в проверке)
+- ** Прогресс:** ✅ Done
+- **Результат:** Коммит `3137eda` (ветка `feat/mvp-auth-integration-flash`) - Frontend часть отправки JWT реализована.
 
 ---
 **Промпт:**
@@ -87,17 +84,13 @@
 - **Источник:** Audit Report - Section A
 - **Цель:** Проверить реализацию `auth_sync` Cloud Function в `backend/cloud_functions/auth_sync/main.py`.
 - **Контекст:** Cloud Function `auth_sync` отвечает за синхронизацию данных пользователя из Firebase Auth в PostgreSQL. Важно убедиться в корректности обработки JWT, использовании `auth_service.py` и `crud_operations.py`.
-- **Атомарное действие:** Провести code review `backend/cloud_functions/auth_sync/main.py`. Проверить:
-    1.  Корректность получения JWT из HTTP запроса.
-    2.  Правильность вызова `auth_service.py` (или его рефакторенной версии) для верификации JWT и извлечения информации о пользователе.
-    3.  Корректность использования `crud_operations.py` для проверки существования пользователя и его создания/обновления в PostgreSQL.
-    4.  Отправку корректного ответа (успех/ошибка) на frontend.
-    5.  Обработку ошибок.
+- **Атомарное действие:** Модифицирован `backend/cloud_functions/auth_sync/main.py`. Реализована логика приема JWT из заголовка Authorization, вызов `AuthService` для верификации токена, использование `crud_operations` для проверки/создания пользователя в PostgreSQL. Реализовано формирование JSON ответов (успех/ошибка) и базовое логирование.
 - **Ожидаемый результат:** `backend/cloud_functions/auth_sync/main.py` корректно и безопасно обрабатывает синхронизацию пользователей.
 - **MVP Task Dependencies:** Section A: Develop `auth_sync` Firebase Cloud Function, Integrate `crud_operations.py` with `auth_sync` function.
 - **Критичность:** Высокая
 - ** Ответственный:** Backend Team
-- ** Прогресс:** В процессе (Нуждается в проверке)
+- ** Прогресс:** ✅ Done
+- **Результат:** Коммит `45fc5ac` (ветка `feat/mvp-auth-integration-flash`) - Реализована основная логика Cloud Function auth_sync.
 
 ---
 **Промпт:**
@@ -105,15 +98,13 @@
 - **Источник:** Audit Report - Section A
 - **Цель:** Рефакторинг `backend/services/AuthService.py` в `backend/core/auth_service.py` (если еще не сделано) и подтверждение логики декодирования JWT.
 - **Контекст:** `auth_service.py` должен содержать логику для работы с JWT. Необходимо убедиться, что он соответствует требованиям Cloud Function `auth_sync`.
-- **Атомарное действие:**
-    1.  Если существует `backend/services/AuthService.py` и он актуален, переместить/рефакторить его в `backend/core/auth_service.py`.
-    2.  Провести code review `backend/core/auth_service.py`. Убедиться, что он корректно декодирует JWT, полученный от Firebase Auth, и извлекает необходимую информацию о пользователе (UID, email).
-    3.  Обеспечить совместимость с `backend/cloud_functions/auth_sync/main.py`.
+- **Атомарное действие:** Создан файл `backend/core/auth_service.py`. В `backend/cloud_functions/auth_sync/requirements.txt` добавлена зависимость `firebase-admin`. В `AuthService` реализована инициализация `firebase-admin` и метод `verify_firebase_token` для верификации JWT с обработкой ошибок.
 - **Ожидаемый результат:** `backend/core/auth_service.py` существует, содержит корректную логику работы с JWT и используется `auth_sync` Cloud Function.
 - **MVP Task Dependencies:** Section A: Develop `auth_sync` Firebase Cloud Function (uses `auth_service.py`).
 - **Критичность:** Высокая
 - ** Ответственный:** Backend Team
-- ** Прогресс:** Частично выполнено (Нуждается в проверке/рефакторинге)
+- ** Прогресс:** ✅ Done
+- **Результат:** Коммит `45fc5ac` (ветка `feat/mvp-auth-integration-flash`) - Реализован AuthService с верификацией JWT через firebase-admin.
 
 ---
 **Промпт:**
