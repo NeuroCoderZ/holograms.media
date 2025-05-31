@@ -1,11 +1,4 @@
 # Main dependency for database interaction, consistent with backend/requirements.txt
 asyncpg>=0.29.0
-
-# functions-framework is provided by the Google Cloud Functions environment
-# Other dependencies from backend/core are assumed to be deployed alongside the function
-# or covered by the main backend/requirements.txt if the entire backend is deployed.
-# Adding any other direct, function-specific dependencies here.
-# For example, if this function used a unique image processing library:
-# Pillow==<version>
-# google-cloud-vision==<version>
-# For now, only asyncpg is explicitly listed as critical for DB ops.
+pydantic>=2.0.0
+firebase-functions>=1.0.0 # Or specific version if needed
