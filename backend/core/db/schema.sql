@@ -33,13 +33,20 @@ CREATE TABLE IF NOT EXISTS audiovisual_gestural_chunks (
 );
 
 -- Tria Learning Log table
+-- Table for logging various events, user interactions, and feedback related to Tria's learning and operation.
 CREATE TABLE IF NOT EXISTS tria_learning_log (
-    log_id SERIAL PRIMARY KEY, -- Auto-incrementing integer
+    log_id SERIAL PRIMARY KEY,
     timestamp TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
-    event_type TEXT NOT NULL,
-    bot_affected_id TEXT,
-    summary_text TEXT,
-    details_json JSONB
+    user_id TEXT REFERENCES users(user_id) ON DELETE SET NULL, -- ID of the user associated with this log event, references users table
+    session_id UUID, -- ID of the chat session associated with this log event, ideally references user_chat_sessions(session_id)
+    event_type TEXT NOT NULL, -- Type of event being logged (e.g., 'user_interaction', 'model_feedback', 'system_alert')
+    bot_affected_id TEXT, -- ID of the Tria bot instance or module related to this event, if applicable
+    summary_text TEXT, -- A brief human-readable summary of the log event
+    prompt_text TEXT, -- Full text of the prompt given by the user or system
+    tria_response_text TEXT, -- Full text of Tria's response
+    model_used TEXT, -- Identifier for the specific AI/ML model used for the response (e.g., 'gpt-4-turbo', 'claude-3-opus')
+    feedback_score INTEGER, -- Optional user-provided feedback score (e.g., 1-5 stars)
+    custom_data JSONB -- Flexible JSONB field for any additional structured data relevant to the log entry
 );
 
 -- Tria AZR Tasks table
@@ -120,13 +127,16 @@ CREATE TABLE IF NOT EXISTS user_holograms (
 -- ALTER TABLE audiovisual_gestural_chunks ADD CONSTRAINT fk_related_hologram FOREIGN KEY (related_hologram_id) REFERENCES user_holograms(hologram_id);
 
 -- User Chat Sessions table
+-- Stores information about individual user chat sessions with Tria, including timing, status, and preferences.
 CREATE TABLE IF NOT EXISTS user_chat_sessions (
-    session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
-    last_updated_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
-    session_summary TEXT, -- Optional summary of the session
-    custom_metadata_json JSONB
+    session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Unique identifier for the chat session (Primary Key)
+    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE, -- Identifier of the user who owns this session, references users table
+    created_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'), -- Timestamp when the session was created (effectively the start_time)
+    end_time TIMESTAMPTZ NULLABLE, -- Timestamp when the session officially ended (e.g., user explicitly closes session). NULL if ongoing.
+    last_updated_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'), -- Timestamp of the last activity in the session (e.g., last message sent/received), used for tracking active/idle sessions
+    model_preferences JSONB, -- JSONB field to store user-specific or session-specific model preferences (e.g., preferred AI model, temperature, persona)
+    session_summary TEXT, -- Optional human-readable or AI-generated summary of the chat session's content or purpose
+    custom_metadata_json JSONB -- Flexible JSONB field for any other custom metadata related to the session (e.g., client type, device info)
 );
 
 -- Chat History table
