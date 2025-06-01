@@ -102,11 +102,11 @@ def auth_sync_user(req: https_fn.Request) -> https_fn.Response:
 
         except asyncpg.PostgresError as e:
             logger.exception(f"Database error during user synchronization for UID {firebase_uid}.")
-            return https_fn.Response(json.dumps({"status": "error", "message": f"Database error: {e}"}), status=500, mimetype="application/json")
+            return https_fn.Response(json.dumps({"status": "error", "message": "A database error occurred."}), status=500, mimetype="application/json")
         except Exception as e:
             logger.exception(f"An unexpected error occurred during DB operation for UID {firebase_uid}.")
-            return https_fn.Response(json.dumps({"status": "error", "message": f"An unexpected server error occurred: {e}"}), status=500, mimetype="application/json")
+            return https_fn.Response(json.dumps({"status": "error", "message": "An internal server error occurred."}), status=500, mimetype="application/json")
 
     except Exception as e:
         logger.exception("An unhandled error occurred in auth_sync_user function.")
-        return https_fn.Response(json.dumps({"status": "error", "message": f"An unhandled server error occurred: {e}"}), status=500, mimetype="application/json")
+        return https_fn.Response(json.dumps({"status": "error", "message": "An internal server error occurred."}), status=500, mimetype="application/json")
