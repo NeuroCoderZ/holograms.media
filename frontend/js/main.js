@@ -13,12 +13,7 @@ console.log('Firebase services imported in main.js (Task 3/3 Complete):', { fire
 import { setAuthDOMElements, initAuthObserver, handleTokenForBackend } from './core/auth.js';
 
 // Импорт ядра
-// frontend/js/main.js - Основная точка входа для приложения
-
-// frontend/js/main.js - Основная точка входа для приложения
-
-// Импорт ядра
-import { initCore } from './core/init.js'; // Adjusted path
+import { initCore, state } from './core/init.js'; // Adjusted path, and import state
 import { setupEventListeners } from '/static/js/core/events.js';
 import { runFrontendDiagnostics } from '/static/js/core/diagnostics.js';
 
@@ -27,14 +22,19 @@ import { initializeMainUI } from '/static/js/ui/uiManager.js'; // Модуль �
 import { initChatUI } from './core/ui/chatUI.js'; // Chat UI Initialization
 import { initializePanelManager } from '/static/js/ui/panelManager.js'; // Модуль управления панелями
 import { updateHologramLayout } from '/static/js/ui/layoutManager.js'; // Added import
-import { initializePromptManager } from '/static/js/ui/promptManager.js'; // Импорт менеджера промптов
-import { initializeVersionManager } from '/static/js/ui/versionManager.js'; // Импорт менеджера версий
-import { initializeGestureAreaVisualization } from '/static/js/ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
+import { initializePromptManager } 
+from '/static/js/ui/promptManager.js'; // Импорт менеджера промптов
+import { initializeVersionManager } 
+from '/static/js/ui/versionManager.js'; // Импорт менеджера версий
+import { initializeGestureAreaVisualization } 
+from '/static/js/ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
 import { initializeChatDisplay } from '/static/js/panels/chatMessages.js';
 // Импорт аудио модулей
 import { initializeSpeechInput } from '/static/js/audio/speechInput.js';
 // import { initializeMicrophoneButton } from './audio/microphoneManager.js'; // Adjusted path and commented out
-import { initializeAudioPlayerControls } from '/static/js/audio/audioFilePlayer.js'; // Модуль управления плеером аудиофайлов
+import { initializeAudioPlayerControls } 
+from '/static/js/audio/audioFilePlayer.js'; // Модуль управления плеером аудиофайлов
+import { initAudioVisualization } from './audio/audioVisualizer.js'; // Импорт функции аудио-визуализации
 
 // Импорт XR модулей
 import { initializeXRMode } from '/static/js/xr/cameraManager.js'; // Модуль управления XR и камерой
@@ -44,15 +44,19 @@ import { initializeXRMode } from '/static/js/xr/cameraManager.js'; // Модул
 import { animate } from './3d/rendering.js'; // Adjusted path
 
 // Импорт мультимодальных модулей
-import { initializeMediaPipeHands } from '/static/js/multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
+import { initializeMediaPipeHands } 
+from '/static/js/multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
 // Импорт AI модулей
 import { setupChat } from '/static/js/ai/chat.js'; // Путь исправлен
 import { initializeTria } from '/static/js/ai/tria.js'; // Путь исправлен
 
 // Импорт обработчиков событий
-import { setupDOMEventHandlers } from '/static/js/core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
-import { initializeResizeHandler } from '/static/js/core/resizeHandler.js'; // Импорт обработчика изменения размера окна
-import { initializeHologramRotationControls } from '/static/js/core/events.js'; // Added import
+import { setupDOMEventHandlers } 
+from '/static/js/core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
+import { initializeResizeHandler } 
+from '/static/js/core/resizeHandler.js'; // Импорт обработчика изменения размера окна
+import { initializeHologramRotationControls } 
+from '/static/js/core/events.js'; // Added import
 
 
 // Импорт моста для обратной совместимости (закомментирован отсутствующий)
@@ -92,12 +96,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeAudioPlayerControls();
   initializeSpeechInput();
   // TODO: Module for audio processing (e.g., initAudio, initAudioVisualization) not found, related code disabled
-  // try {
-  //   initAudio();
-  //   initAudioVisualization();
-  // } catch (error) {
-  //   console.error('Ошибка инициализации аудио:', error);
-  // }
+  try {
+  // initAudio(); // No longer needed directly here, will be handled by audioAnalyzer/audioVisualizer
+    // Pass the instances from the state to the audio visualizer
+    if (state.audioAnalyzerLeftInstance && state.hologramRendererInstance) {
+      initAudioVisualization(state.audioAnalyzerLeftInstance, state.hologramRendererInstance);
+    } else {
+      console.warn("Audio visualizer could not be fully initialized: missing analyzer or renderer instances.");
+    }
+  } catch (error) {
+    console.error('Ошибка инициализации аудио:', error);
+  }
 
   // 6. Инициализируем ИИ компоненты (могут зависеть от state, UI)
   initializeTria();
