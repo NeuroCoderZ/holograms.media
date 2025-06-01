@@ -14,30 +14,30 @@ import { setAuthDOMElements, initAuthObserver, handleTokenForBackend } from './c
 
 // Импорт ядра
 import { initCore, state } from './core/init.js'; // Adjusted path, and import state
-import { setupEventListeners } from '/static/js/core/events.js';
-import { runFrontendDiagnostics } from '/static/js/core/diagnostics.js';
+import { setupEventListeners } from './core/events.js';
+import { runFrontendDiagnostics } from './core/diagnostics.js';
 
 // Импорт UI модулей
-import { initializeMainUI } from '/static/js/ui/uiManager.js'; // Модуль управления UI
+import { initializeMainUI } from './ui/uiManager.js'; // Модуль управления UI
 import { initChatUI } from './core/ui/chatUI.js'; // Chat UI Initialization
-import { initializePanelManager } from '/static/js/ui/panelManager.js'; // Модуль управления панелями
-import { updateHologramLayout } from '/static/js/ui/layoutManager.js'; // Added import
+import { initializePanelManager } from './ui/panelManager.js'; // Модуль управления панелями
+import { updateHologramLayout } from './ui/layoutManager.js'; // Added import
 import { initializePromptManager } 
-from '/static/js/ui/promptManager.js'; // Импорт менеджера промптов
+from './ui/promptManager.js'; // Импорт менеджера промптов
 import { initializeVersionManager } 
-from '/static/js/ui/versionManager.js'; // Импорт менеджера версий
+from './ui/versionManager.js'; // Импорт менеджера версий
 import { initializeGestureAreaVisualization } 
-from '/static/js/ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
-import { initializeChatDisplay } from '/static/js/panels/chatMessages.js';
+from './ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
+import { initializeChatDisplay } from './panels/chatMessages.js';
 // Импорт аудио модулей
-import { initializeSpeechInput } from '/static/js/audio/speechInput.js';
+import { initializeSpeechInput } from './audio/speechInput.js';
 // import { initializeMicrophoneButton } from './audio/microphoneManager.js'; // Adjusted path and commented out
 import { initializeAudioPlayerControls } 
-from '/static/js/audio/audioFilePlayer.js'; // Модуль управления плеером аудиофайлов
+from './audio/audioFilePlayer.js'; // Модуль управления плеером аудиофайлов
 import { initAudioVisualization } from './audio/audioVisualizer.js'; // Импорт функции аудио-визуализации
 
 // Импорт XR модулей
-import { initializeXRMode } from '/static/js/xr/cameraManager.js'; // Модуль управления XR и камерой
+import { initializeXRMode } from './xr/cameraManager.js'; // Модуль управления XR и камерой
 
 // Импорт 3D модулей
 // import { initializeScene } from '/static/js/3d/sceneSetup.js'; // Removed, handled by initCore
@@ -45,18 +45,18 @@ import { animate } from './3d/rendering.js'; // Adjusted path
 
 // Импорт мультимодальных модулей
 import { initializeMediaPipeHands } 
-from '/static/js/multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
+from './multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
 // Импорт AI модулей
-import { setupChat } from '/static/js/ai/chat.js'; // Путь исправлен
-import { initializeTria } from '/static/js/ai/tria.js'; // Путь исправлен
+import { setupChat } from './ai/chat.js'; // Путь исправлен
+import { initializeTria } from './ai/tria.js'; // Путь исправлен
 
 // Импорт обработчиков событий
 import { setupDOMEventHandlers } 
-from '/static/js/core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
+from './core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
 import { initializeResizeHandler } 
-from '/static/js/core/resizeHandler.js'; // Импорт обработчика изменения размера окна
+from './core/resizeHandler.js'; // Импорт обработчика изменения размера окна
 import { initializeHologramRotationControls } 
-from '/static/js/core/events.js'; // Added import
+from './core/events.js'; // Added import
 
 
 // Импорт моста для обратной совместимости (закомментирован отсутствующий)
