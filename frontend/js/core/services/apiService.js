@@ -1,69 +1,63 @@
 // Core API service for backend communication.
 
-// Centralized base URL for Cloud Functions. This needs to be updated upon deployment or for local emulation.
-const API_BASE_URL = 'YOUR_FUNCTIONS_BASE_URL_HERE'; 
+// Placeholder for the base URL of your Cloud Functions
+// This should be configured for your specific Firebase project and region
+// Example: 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net'
+const API_BASE_URL = ''; // TODO: Configure this before deployment!
 
 /**
- * Sends the Firebase ID Token to the backend for user synchronization.
- * @param {string} idToken - The Firebase JWT (ID Token).
- * @returns {Promise<Object>} A promise that resolves with the backend's JSON response or rejects with an error.
+ * Sends the Firebase ID token to the backend for user synchronization.
+ * @param {string} idToken - The Firebase ID token.
+ * @returns {Promise<any>} A promise that resolves with the backend's JSON response or rejects with an error.
  */
 export async function syncUserAuth(idToken) {
-    const AUTH_SYNC_URL = `${API_BASE_URL}/auth_sync`;
-
-    try {
-        const response = await fetch(AUTH_SYNC_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${idToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({}) // Empty body as per instructions
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({})); // Try to parse error message
-            const errorMessage = errorData.message || `HTTP error! Status: ${response.status}`;
-            throw new Error(`Failed to sync user with backend: ${errorMessage}`);
-        }
-
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Error in syncUserAuth:", error);
-        throw error; // Re-throw to be handled by the caller
+    if (!API_BASE_URL) {
+        console.error("API_BASE_URL is not configured in apiService.js. Cannot sync user.");
+        return Promise.reject("API base URL not configured.");
     }
+    const response = await fetch(`${API_BASE_URL}/auth_sync`, { // Assuming 'auth_sync' is the function name
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({}) // Empty body as per instructions
+    });
+
+    if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Error syncing user with backend:', response.status, errorData);
+        throw new Error(`Backend user sync failed: ${response.status} ${errorData}`);
+    }
+    return response.json();
 }
 
 /**
- * Sends a chat message to the backend Tria chat handler Cloud Function.
- * @param {string} messageText - The text content of the chat message.
- * @param {string} idToken - The Firebase JWT (ID Token) of the authenticated user.
- * @returns {Promise<Object>} A promise that resolves with the backend's JSON response or rejects with an error.
+ * Sends a chat message to the Tria backend.
+ * @param {string} message - The message text.
+ * @param {string} idToken - The Firebase ID token for authentication.
+ * @returns {Promise<any>} A promise that resolves with the Tria bot's response.
  */
-export async function sendChatMessage(messageText, idToken) {
-    const TRIA_CHAT_HANDLER_URL = `${API_BASE_URL}/tria_chat_handler`;
-
-    try {
-        const response = await fetch(TRIA_CHAT_HANDLER_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${idToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ text: messageText })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMessage = errorData.message || `HTTP error! Status: ${response.status}`;
-            throw new Error(`Failed to send chat message to backend: ${errorMessage}`);
-        }
-
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Error in sendChatMessage:", error);
-        throw error; // Re-throw to be handled by the caller
+export async function sendChatMessage(message, idToken) {
+    if (!API_BASE_URL) {
+        console.error("API_BASE_URL is not configured in apiService.js. Cannot send chat message.");
+        return Promise.reject("API base URL not configured.");
     }
+    const response = await fetch(`${API_BASE_URL}/tria_chat_handler`, { // Assuming 'tria_chat_handler' is the function name
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ message: message }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Error sending message to Tria bot:', response.status, errorData);
+        throw new Error(`Tria bot request failed: ${response.status} ${errorData}`);
+    }
+    return response.json();
 }
+
+// You can add other API service functions here as needed.
