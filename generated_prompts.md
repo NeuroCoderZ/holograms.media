@@ -47,7 +47,7 @@
 - **Источник:** Audit Report - Section III (Key Blockers) / Section F & IV (Constraint Compliance)
 - **Цель:** Подтвердить доступность API ключей для Mistral/Devstral/Gemini, их соответствие условиям бесплатного использования (free tier) и отсутствию необходимости привязки банковской карты.
 - **Контекст:** Использование LLM является ключевой частью функционала Tria. Невозможность получить доступ к LLM API или нарушение ограничений по "no credit card" заблокирует разработку Tria бота.
-- **Атомарное действие:** Создан файл `docs/04_SPIKE_AND_RESEARCH/LLM_API_Access.md` с детальным документированием результатов исследования API ключа Mistral `oVcP2Nj0iNWGupB6lswjbvhwHOr23hhr`, включая его работоспособность с Mistral Medium и Devstral Small, ссылки на документацию и вывод о соответствии MVP-требованиям.
+- **Атомарное действие:** Создан файл `docs/04_SPIKE_AND_RESEARCH/LLM_API_Access.md` с детальным документированием результатов исследования API ключа Mistral `oVcP2Nj0iNWGupB6lswjbvhwHOr23hhr`, включая его работоспособность с Mistral Medium и Devstral Small, ссылки на официальную документацию, примеры запросов и вывод о соответствии MVP-требованиям.
 - **Ожидаемый результат:** Четкое подтверждение по каждому LLM провайдеру. API ключи (если применимо и безопасно хранить на данном этапе) получены и готовы к конфигурации в Firebase Functions. Документировать результаты для команды.
 - **MVP Task Dependencies:**
     - Section F: Confirm LLM API key availability and free tier usage conditions.
@@ -56,7 +56,7 @@
 - **Критичность:** Высокая (Блокер)
 - ** Ответственный:** Research/Lead Dev
 - ** Прогресс:** ✅ Done
-- **Результат:** Коммит `d41593a` (ветка `feat/mvp-auth-integration-flash`) - Создан документ `LLM_API_Access.md` с результатами исследования API ключей Mistral. (Предыдущий результат PR #50 подтверждал работу ключа).
+- **Результат:** Коммит `d41593a` (ветка `feat/mvp-auth-integration-flash`) - Создан документ `LLM_API_Access.md` с результатами исследования API ключей Mistral. (PR #50 ранее подтвердил работу ключа).
 
 ## Section A: User Authentication
 
@@ -286,6 +286,20 @@
 - ** Прогресс:** ✅ Done
 - **Результат:** Коммит `562d40a` (ветка `feat/mvp-auth-integration-flash`) - Создан план ручного E2E тестирования аутентификации.
 
+---
+**Промпт:**
+- **ID:** [20240726-1018-020]
+- **Источник:** Audit Report - Section E
+- **Цель:** Уточнить роль `backend/main.py` в контексте Firebase Cloud Functions.
+- **Контекст:** Документ упоминает `backend/main.py` ИЛИ `backend/cloud_functions/` для определения функций. `backend/main.py` выглядит как FastAPI приложение. Необходимо понять, как он используется для деплоя функций, если используется.
+- **Атомарное действие:** Проанализированы `backend/main.py`, `firebase.json` и структура Cloud Functions. Создан файл `docs/01_ARCHITECTURE/DEPLOYMENT_STRATEGY.md`, документирующий текущую или наиболее вероятную стратегию деплоя Cloud Functions.
+- **Ожидаемый результат:** Четкое понимание и документация стратегии деплоя Firebase Cloud Functions.
+- **MVP Task Dependencies:** Section E: Define specific Cloud Functions needed for MVP.
+- **Критичность:** Средняя (Уточнение архитектуры)
+- ** Ответственный:** Backend Team/Lead Dev
+- ** Прогресс:** ✅ Done
+- **Результат:** Коммит `15dc953` (ветка `feat/mvp-auth-integration-flash`) - Задокументирована стратегия деплоя Cloud Functions.
+
 ## Section C: Frontend - UI for MVP
 
 ---
@@ -349,22 +363,6 @@
 - ** Ответственный:** Frontend Team
 - ** Прогресс:** ✅ Done
 - **Результат:** Коммит `610c1ec` (ветка `feat/mvp-auth-integration-flash`) - firebaseStorageService.js проанализирован, код корректен.
-
-## Section E: Backend - Core Logic in Firebase Cloud Functions
-
----
-**Промпт:**
-- **ID:** [20240726-1018-020]
-- **Источник:** Audit Report - Section E
-- **Цель:** Уточнить роль `backend/main.py` в контексте Firebase Cloud Functions.
-- **Контекст:** Документ упоминает `backend/main.py` ИЛИ `backend/cloud_functions/` для определения функций. `backend/main.py` выглядит как FastAPI приложение. Необходимо понять, как он используется для деплоя функций, если используется.
-- **Атомарное действие:** Проанализированы `backend/main.py`, `firebase.json` и структура Cloud Functions. Создан файл `docs/01_ARCHITECTURE/DEPLOYMENT_STRATEGY.md`, документирующий текущую или наиболее вероятную стратегию деплоя Cloud Functions.
-- **Ожидаемый результат:** Четкое понимание и документация стратегии деплоя Firebase Cloud Functions.
-- **MVP Task Dependencies:** Section E: Define specific Cloud Functions needed for MVP.
-- **Критичность:** Средняя (Уточнение архитектуры)
-- ** Ответственный:** Backend Team/Lead Dev
-- ** Прогресс:** ✅ Done
-- **Результат:** Коммит `15dc953` (ветка `feat/mvp-auth-integration-flash`) - Задокументирована стратегия деплоя Cloud Functions.
 
 ## Section F: Backend - MVP Tria Bot Logic
 
