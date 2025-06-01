@@ -1,14 +1,15 @@
 // Core API service for backend communication.
 
+// Centralized base URL for Cloud Functions. This needs to be updated upon deployment or for local emulation.
+const API_BASE_URL = 'YOUR_FUNCTIONS_BASE_URL_HERE'; 
+
 /**
  * Sends the Firebase ID Token to the backend for user synchronization.
  * @param {string} idToken - The Firebase JWT (ID Token).
  * @returns {Promise<Object>} A promise that resolves with the backend's JSON response or rejects with an error.
  */
 export async function syncUserAuth(idToken) {
-    // PLACEHOLDER_AUTH_SYNC_URL will be replaced with the actual Cloud Function URL
-    // once the function is deployed or emulated.
-    const AUTH_SYNC_URL = "PLACEHOLDER_AUTH_SYNC_URL/auth_sync";
+    const AUTH_SYNC_URL = `${API_BASE_URL}/auth_sync`;
 
     try {
         const response = await fetch(AUTH_SYNC_URL, {
@@ -41,9 +42,7 @@ export async function syncUserAuth(idToken) {
  * @returns {Promise<Object>} A promise that resolves with the backend's JSON response or rejects with an error.
  */
 export async function sendChatMessage(messageText, idToken) {
-    // PLACEHOLDER_TRIACPH_URL will be replaced with the actual Cloud Function URL
-    // once the function is deployed or emulated.
-    const TRIA_CHAT_HANDLER_URL = "PLACEHOLDER_BASE_URL/tria_chat_handler";
+    const TRIA_CHAT_HANDLER_URL = `${API_BASE_URL}/tria_chat_handler`;
 
     try {
         const response = await fetch(TRIA_CHAT_HANDLER_URL, {
