@@ -1,36 +1,54 @@
 # backend/core/tria_bots/ChatBot.py
 
+import logging # Import the logging module
 from backend.core.services.llm_service import LLMService
-# We might need other imports later, e.g., for accessing user data or past conversations.
+# Additional imports for future enhancements might include user profile services,
+# conversation history managers, or knowledge graph access.
+
+# Configure logging for this module.
+logger = logging.getLogger(__name__)
 
 class ChatBot:
+    """
+    The ChatBot class represents the core conversational AI (Tria) of the application.
+    It interfaces with an LLMService to generate responses to user queries, providing
+    context and handling basic interaction logic.
+    """
     def __init__(self):
         """
-        Initializes the ChatBot, primarily by setting up the LLMService.
+        Initializes the ChatBot instance. This involves setting up the underlying LLMService
+        which is responsible for communicating with the large language model API.
+        A warning is logged if the LLMService cannot be fully configured (e.g., missing API key).
         """
         self.llm_service = LLMService()
         if not self.llm_service.api_key:
-            # This indicates that the LLM service couldn't load its API key.
-            # The ChatBot might still function but will return error messages from LLMService.
-            print("Warning: ChatBot initialized, but LLMService might be missing API key.")
+            # Log a warning if the LLM service's API key is missing. This indicates
+            # that the bot will likely return error messages from the LLMService calls.
+            logger.warning("ChatBot initialized, but LLMService might be missing API key. Responses may be limited.")
 
     async def get_response(self, user_input: str, firebase_user_id: str) -> str:
         """
-        Generates a response to user input using the LLM service.
+        Generates a conversational response from the Tria bot based on user input.
+        It constructs a prompt that includes a static system context and the user's query,
+        then sends it to the LLMService.
 
         Args:
-            user_input: The text input from the user.
-            firebase_user_id: The Firebase UID of the user, for context.
+            user_input (str): The text message provided by the user.
+            firebase_user_id (str): The unique Firebase UID of the interacting user.
+                                    This can be used to personalize context or log interactions.
 
         Returns:
-            A string containing the LLM's response.
+            str: A string containing Tria's generated response. In case of an LLM configuration
+                 issue or unexpected error, a user-friendly error message is returned.
         """
+        # Check if the LLM service has an API key configured. If not, return a graceful error.
         if not self.llm_service.api_key:
+             logger.error("Attempted to get response, but LLMService is not configured (missing API key).")
              return "I'm sorry, but I'm not configured correctly to help you right now (missing API key)."
 
-        # Define a static context for the LLM.
-        # This can be expanded with more dynamic information if needed.
-        # For example, fetching user preferences, past interactions, etc.
+        # Construct a static context for the LLM. This defines Tria's persona and capabilities.
+        # This context can be dynamically expanded in the future with user-specific data,
+        # conversational history, or real-time application state.
         static_context = (
             f"You are Tria, an advanced AI assistant integrated into holograms.media, "
             f"a platform for creating and interacting with holographic content and audiovisual experiences. "
@@ -42,37 +60,40 @@ class ChatBot:
             f"Keep responses concise and engaging."
         )
 
-        # Call the LLM service with the user input and the constructed static context.
-        # The full prompt (context + user_input) will be assembled by the LLMService.
+        logger.info(f"Sending prompt to LLM for user {firebase_user_id}: {user_input[:100]}...")
         try:
+            # Call the underlying LLMService to get a response.
+            # The LLMService handles the actual API call, error handling, and response parsing.
             llm_response = await self.llm_service.call_mistral_medium(
                 user_prompt=user_input,
                 static_context=static_context
             )
+            logger.info(f"Received response from LLM for user {firebase_user_id}: {llm_response[:100]}...")
             return llm_response
         except Exception as e:
-            # This catches errors that might occur if llm_service.call_mistral_medium itself raises an exception
-            # rather than returning an error string (though current llm_service returns error strings).
-            print(f"Error during ChatBot's call to LLMService: {e}")
+            # Catch any unexpected exceptions that might escape from the LLMService (though LLMService
+            # aims to return error strings). This ensures the ChatBot always returns a message.
+            logger.exception(f"An unexpected error occurred during ChatBot's call to LLMService for user {firebase_user_id}.")
             return "I encountered an unexpected issue while trying to process your request. Please try again later."
 
-# Example Usage (for testing this file directly)
+# Example Usage (for direct testing of this file, not for production Cloud Function context)
 async def main_chatbot_test():
-    # Ensure MISTRAL_API_KEY is set as an environment variable before running this
-    import os
+    # This test function demonstrates how to use the ChatBot class.
+    # It requires the MISTRAL_API_KEY environment variable to be set for the LLMService to function.
+    import os # Import os here for environment variable check in direct run context
     if not os.environ.get("MISTRAL_API_KEY"):
-        print("Please set the MISTRAL_API_KEY environment variable for testing ChatBot.")
-        print("Example: export MISTRAL_API_KEY='your_actual_api_key'")
+        logger.warning("MISTRAL_API_KEY environment variable not set. Skipping direct test of ChatBot.")
+        logger.warning("To test: export MISTRAL_API_KEY='your_actual_api_key' && python backend/core/tria_bots/ChatBot.py")
         return
 
-    print("Testing ChatBot...")
+    logger.info("Starting ChatBot direct test...")
     chatbot = ChatBot()
 
-    if not chatbot.llm_service.api_key:
-        print("ChatBot LLM Service not configured. Aborting test.")
+    if not chatbot.llm_service.api_key: # Re-check after ChatBot init if key was actually loaded
+        logger.error("ChatBot LLM Service not configured after initialization. Aborting test.")
         return
 
-    test_user_id = "test_user_123"
+    test_user_id = "test_user_123_local"
 
     prompts = [
         "Hello Tria, who are you?",
@@ -82,17 +103,14 @@ async def main_chatbot_test():
     ]
 
     for i, prompt_text in enumerate(prompts):
-        print(f"\n--- ChatBot Test {i+1} ---")
-        print(f"User ({test_user_id}): {prompt_text}")
+        logger.info(f"
+--- ChatBot Test {i+1} ---")
+        logger.info(f"User ({test_user_id}): {prompt_text}")
         response = await chatbot.get_response(user_input=prompt_text, firebase_user_id=test_user_id)
-        print(f"Tria: {response}")
+        logger.info(f"Tria: {response}")
 
+# This block ensures `main_chatbot_test()` is called only when the script is executed directly.
 if __name__ == "__main__":
     import asyncio
-    import os
-    # This test assumes that MISTRAL_API_KEY is set in the environment.
-    if os.environ.get("MISTRAL_API_KEY"):
-        asyncio.run(main_chatbot_test())
-    else:
-        print("MISTRAL_API_KEY not set. Skipping direct test run of ChatBot.py.")
-        print("To test: export MISTRAL_API_KEY='your_key_here' && python backend/core/tria_bots/ChatBot.py")
+    # Ensure the environment is correctly set up before running the test.
+    asyncio.run(main_chatbot_test())
