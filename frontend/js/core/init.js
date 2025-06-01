@@ -135,9 +135,9 @@ export const state = {
 
 // Импортируем функцию инициализации Three.js сцены
 import { initializeScene } from '../3d/sceneSetup.js';
-import { MicrophoneManager } from '../../audio/microphoneManager.js';
-import { AudioAnalyzer } from '../../audio/audioAnalyzer.js';
-import { HologramRenderer } from '../../3d/hologramRenderer.js';
+import { MicrophoneManager } from '../audio/microphoneManager.js';
+import { AudioAnalyzer } from '../audio/audioAnalyzer.js';
+import { HologramRenderer } from '../3d/hologramRenderer.js';
 
 // Функция для инициализации ядра приложения
 export async function initCore() {

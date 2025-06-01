@@ -32,7 +32,7 @@ if (API_BASE_URL && (API_BASE_URL.includes('YOUR_PROJECT_ID') || API_BASE_URL.in
  * @returns {Promise<Object>} A promise that resolves with the backend's JSON response or rejects with an error.
  */
 export async function syncUserAuth(idToken) {
-    if (!API_BASE_URL && API_BASE_URL !=='') { // Проверяем, что не пустая строка И не плейсхолдер
+    if (!API_BASE_URL && API_BASE_URL !== '') { // Проверяем, что не пустая строка И не плейсхолдер
         const message = "API_BASE_URL is not configured in apiService.js. Cannot sync user.";
         console.error(message);
         return Promise.reject(new Error(message));
@@ -76,7 +76,7 @@ export async function syncUserAuth(idToken) {
  * @returns {Promise<Object>} A promise that resolves with the backend's JSON response or rejects with an error.
  */
 export async function sendChatMessage(messageText, idToken) {
-    if (!API_BASE_URL && API_BASE_URL !=='') {
+    if (!API_BASE_URL && API_BASE_URL !== '') {
         const message = "API_BASE_URL is not configured in apiService.js. Cannot send chat message.";
         console.error(message);
         return Promise.reject(new Error(message));
