@@ -65,7 +65,7 @@ def auth_sync_user(req: https_fn.Request) -> https_fn.Response:
             logger.info(f"Token successfully verified for UID: {decoded_token.get("uid")}")
         except InvalidTokenError as e:
             logger.error(f"Token verification failed (InvalidTokenError): {e}")
-            return https_fn.Response(json.dumps({"status": "error", "message": f"Invalid or expired token: {e}"}), status=401, mimetype="application/json")
+            return https_fn.Response(json.dumps({"status": "error", "message": "Invalid or expired token."}), status=401, mimetype="application/json")
         except Exception as e:
             logger.exception("Unexpected error during token verification.") # Logs traceback
             return https_fn.Response(json.dumps({"status": "error", "message": f"Server error during token verification: {e}"}), status=500, mimetype="application/json")
