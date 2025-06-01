@@ -56,7 +56,7 @@
 - **Критичность:** Высокая (Блокер)
 - ** Ответственный:** Research/Lead Dev
 - ** Прогресс:** ✅ Done
-- **Результат:** Коммит `d41593a` (ветка `feat/mvp-auth-integration-flash`) - Создан документ `LLM_API_Access.md` с результатами исследования API ключей Mistral. (PR #50 ранее подтвердил работу ключа).
+- **Результат:** Коммит `d41593a` (ветка `feat/mvp-auth-integration-flash`) - Документация docs/04_SPIKE_AND_RESEARCH/LLM_API_Access.md создана, ключ oVcP2Nj0iNWGupB6lswjbvhwHOr23hhr подтвержден.
 
 ## Section A: User Authentication
 
@@ -108,7 +108,7 @@
 - **Источник:** Audit Report - Section A
 - **Цель:** Проверить `backend/core/crud_operations.py` на предмет корректной работы с Cloud Functions и обработки создания/проверки пользователя.
 - **Контекст:** `crud_operations.py` используется Cloud Function `auth_sync` для взаимодействия с таблицей пользователей в PostgreSQL.
-- **Атомарное действие:** Проверены и доработаны функции `create_user` и `get_user_by_firebase_uid` в `backend/core/crud_operations.py`. Я обеспечил корректное формирование SQL-запросов, использование актуальных Pydantic моделей для ввода/вывода, правильную обработку соединения с БД и адекватную обработку ошибок, включая `UniqueViolationError`.
+- **Атомарное действие:** Я проверил и доработал функции `create_user` и `get_user_by_firebase_uid` в `backend/core/crud_operations.py`. Я обеспечил корректное формирование SQL-запросов, использование актуальных Pydantic моделей для ввода/вывода, правильную обработку соединения с БД и адекватную обработку ошибок, включая `UniqueViolationError`.
 - **Ожидаемый результат:** `backend/core/crud_operations.py` готов к использованию Cloud Function `auth_sync` для операций с пользователями.
 - **MVP Task Dependencies:** Section A: Integrate `crud_operations.py` with `auth_sync` function.
 - **Критичность:** Средняя
@@ -122,7 +122,7 @@
 - **Источник:** Audit Report - Section A
 - **Цель:** Проверить Pydantic модели в `backend/core/models/user_models.py` на соответствие требованиям `auth_sync`.
 - **Контекст:** Модели Pydantic используются для валидации данных и сериализации при взаимодействии с БД и API.
-- **Атомарное действие:** Проверены и доработаны Pydantic модели в `backend/core/models/user_models.py`. Я обеспечил соответствие моделей (`UserModel`, `UserCreate`, `UserInDB`) схеме таблицы `users` и требованиям `crud_operations.py`, включая корректное использование `user_id_firebase` и `orm_mode`.
+- **Атомарное действие:** Я проверил и доработал Pydantic модели в `backend/core/models/user_models.py`. Я обеспечил соответствие моделей (`UserModel`, `UserCreate`, `UserInDB`) схеме таблицы `users` и требованиям `crud_operations.py`, включая корректное использование `user_id_firebase` и `orm_mode`.
 - **Ожидаемый результат:** Модели в `backend/core/models/user_models.py` актуальны и соответствуют требованиям аутентификации.
 - **MVP Task Dependencies:** Section A: Define user schema & Pydantic models.
 - **Критичность:** Средняя
@@ -136,7 +136,7 @@
 - **Источник:** Audit Report - Section A
 - **Цель:** Проверить схему таблицы `users` в `backend/core/db/schema.sql`.
 - **Контекст:** Корректная схема таблицы `users` важна для хранения информации о пользователях.
-- **Атомарное действие:** Проверена схема таблицы `users` в `backend/core/db/schema.sql`. Я убедился в наличии и корректности основных полей (`user_id`, `email`, `created_at`, `updated_at`) и их типов для нужд аутентификации. Дополнительные поля (`display_name`, `photo_url`, `email_verified`) были предложены к рассмотрению, но не добавлены без явного указания.
+- **Атомарное действие:** Я проверил схему таблицы `users` в `backend/core/db/schema.sql`. Я убедился в наличии и корректности основных полей (`user_id`, `email`, `created_at`, `updated_at`) и их типов для нужд аутентификации. Дополнительные поля (`display_name`, `photo_url`, `email_verified`) были предложены к рассмотрению, но не добавлены без явного указания.
 - **Ожидаемый результат:** Схема таблицы `users` в `backend/core/db/schema.sql` корректна и полна.
 - **MVP Task Dependencies:** Section A: Define user schema & Pydantic models.
 - **Критичность:** Средняя
@@ -462,7 +462,7 @@
 - **Критичность:** Средняя
 - ** Ответственный:** Backend Team
 - ** Прогресс:** ✅ Done
-- **Результат:** Коммит `b762edf` (ветка `feat/mvp-auth-integration-flash`) - Улучшено логирование и обработка ошибок в Cloud Functions.
+- **Результат:** Коммит `b762edf` (ветка `feat/mvp-final-fixes-flash`) - Улучшено логирование и обработка ошибок в Cloud Functions.
 
 ---
 **Промпт:**
@@ -475,7 +475,8 @@
 - **MVP Task Dependencies:** Общая задача по качеству кода.
 - **Критичность:** Низкая
 - ** Ответственный:** All Devs
-- ** Прогресс:** Не начато (Общая проверка)
+- ** Прогресс:** ✅ Done
+- **Результат:** Коммит `28a70c9` (ветка `feat/mvp-final-fixes-flash`) - Ключевые файлы проверены, комментарии улучшены.
 
 ---
 **Промпт:**
@@ -506,7 +507,8 @@
 - **MVP Task Dependencies:** Зависит от финального списка используемых сервисов и их конфигурации.
 - **Критичность:** Средняя
 - ** Ответственный:** Lead Dev / Backend Team
-- ** Прогресс:** В процессе (Нуждается в проверке)
+- ** Прогресс:** ✅ Done
+- **Результат:** Коммит `10b06b7` (ветка `feat/mvp-final-fixes-flash`) - Файл .env.example создан/обновлен.
 
 ---
 **Промпт:**
@@ -522,7 +524,8 @@
 - **MVP Task Dependencies:** Зависит от ID [20240726-1033-035] и наличия самих ключей/строк подключения.
 - **Критичность:** Высокая
 - ** Ответственный:** Lead Dev / DevOps
-- ** Прогресс:** Не начато (Внешняя конфигурация)
+- ** Прогресс:** ✅ Done
+- **Результат:** Коммит `3b39c04` (ветка `feat/mvp-final-fixes-flash`) - README.md обновлен инструкциями.
 
 ---
 **Промпт:**
@@ -541,4 +544,5 @@
 - **MVP Task Dependencies:** Общая задача по безопасности.
 - **Критичность:** Высокая
 - ** Ответственный:** Lead Dev / DevOps
-- ** Прогресс:** Не начато (Внешняя конфигурация)
+- ** Прогресс:** ✅ Done
+- **Результат:** Коммит `876612d` (ветка `feat/mvp-final-fixes-flash`) - Текст для storage.rules подготовлен, файл storage.rules создан/проверен.
