@@ -108,7 +108,7 @@
 - **Источник:** Audit Report - Section A
 - **Цель:** Проверить `backend/core/crud_operations.py` на предмет корректной работы с Cloud Functions и обработки создания/проверки пользователя.
 - **Контекст:** `crud_operations.py` используется Cloud Function `auth_sync` для взаимодействия с таблицей пользователей в PostgreSQL.
-- **Атомарное действие:** Проверены и доработаны функции `create_user` и `get_user_by_firebase_uid` в `backend/core/crud_operations.py`. Flash обеспечил корректное формирование SQL-запросов, использование актуальных Pydantic моделей для ввода/вывода, правильную обработку соединения с БД и адекватную обработку ошибок, включая `UniqueViolationError`.
+- **Атомарное действие:** Проверены и доработаны функции `create_user` и `get_user_by_firebase_uid` в `backend/core/crud_operations.py`. Я обеспечил корректное формирование SQL-запросов, использование актуальных Pydantic моделей для ввода/вывода, правильную обработку соединения с БД и адекватную обработку ошибок, включая `UniqueViolationError`.
 - **Ожидаемый результат:** `backend/core/crud_operations.py` готов к использованию Cloud Function `auth_sync` для операций с пользователями.
 - **MVP Task Dependencies:** Section A: Integrate `crud_operations.py` with `auth_sync` function.
 - **Критичность:** Средняя
@@ -122,7 +122,7 @@
 - **Источник:** Audit Report - Section A
 - **Цель:** Проверить Pydantic модели в `backend/core/models/user_models.py` на соответствие требованиям `auth_sync`.
 - **Контекст:** Модели Pydantic используются для валидации данных и сериализации при взаимодействии с БД и API.
-- **Атомарное действие:** Проверены и доработаны Pydantic модели в `backend/core/models/user_models.py`. Flash обеспечил соответствие моделей (`UserModel`, `UserCreate`, `UserInDB`) схеме таблицы `users` и требованиям `crud_operations.py`, включая корректное использование `user_id_firebase` и `orm_mode`.
+- **Атомарное действие:** Проверены и доработаны Pydantic модели в `backend/core/models/user_models.py`. Я обеспечил соответствие моделей (`UserModel`, `UserCreate`, `UserInDB`) схеме таблицы `users` и требованиям `crud_operations.py`, включая корректное использование `user_id_firebase` и `orm_mode`.
 - **Ожидаемый результат:** Модели в `backend/core/models/user_models.py` актуальны и соответствуют требованиям аутентификации.
 - **MVP Task Dependencies:** Section A: Define user schema & Pydantic models.
 - **Критичность:** Средняя
@@ -136,7 +136,7 @@
 - **Источник:** Audit Report - Section A
 - **Цель:** Проверить схему таблицы `users` в `backend/core/db/schema.sql`.
 - **Контекст:** Корректная схема таблицы `users` важна для хранения информации о пользователях.
-- **Атомарное действие:** Проверена схема таблицы `users` в `backend/core/db/schema.sql`. Flash убедился в наличии и корректности основных полей (`user_id`, `email`, `created_at`, `updated_at`) и их типов для нужд аутентификации. Дополнительные поля (`display_name`, `photo_url`, `email_verified`) были предложены к рассмотрению, но не добавлены без явного указания.
+- **Атомарное действие:** Проверена схема таблицы `users` в `backend/core/db/schema.sql`. Я убедился в наличии и корректности основных полей (`user_id`, `email`, `created_at`, `updated_at`) и их типов для нужд аутентификации. Дополнительные поля (`display_name`, `photo_url`, `email_verified`) были предложены к рассмотрению, но не добавлены без явного указания.
 - **Ожидаемый результат:** Схема таблицы `users` в `backend/core/db/schema.sql` корректна и полна.
 - **MVP Task Dependencies:** Section A: Define user schema & Pydantic models.
 - **Критичность:** Средняя
