@@ -1,134 +1,160 @@
 import os
 import json
-import uuid # Not strictly needed for TriaLearningLogModel if log_id is handled by DB and timestamp by model
-import datetime # For TriaLearningLogModel's timestamp if not relying solely on default_factory
+import uuid 
+import datetime 
+import logging # Import the logging module
 
-# Firebase Functions specific imports
 from firebase_functions import https_fn, options as firebase_options
-# from firebase_admin import initialize_app, auth as firebase_auth # For ID token verification (future)
-# initialize_app()
+from firebase_admin import initialize_app, auth as firebase_auth 
 
-# Assuming 'backend' is in PYTHONPATH or discoverable
+# Configure basic logging for Cloud Functions
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize Firebase Admin SDK if not already initialized (for auth.verify_id_token)
+if not initialize_app._apps:
+    initialize_app()
+    logger.info("Firebase Admin SDK initialized in tria_chat_handler Cloud Function.")
+else:
+    logger.info("Firebase Admin SDK already initialized in tria_chat_handler.")
+
 from backend.core.tria_bots.ChatBot import ChatBot
 from backend.core.models.learning_log_models import TriaLearningLogModel
 from backend.core.crud_operations import create_tria_learning_log_entry
 from backend.core.db.pg_connector import get_db_connection
 import asyncpg
 
-# Set global options if needed, e.g., region.
-# firebase_options.set_global_options(region=firebase_options.SupportedRegion.EUROPE_WEST1)
-
-# Helper to get env vars (ensure MISTRAL_API_KEY is set for LLMService)
 def get_env_var(var_name, is_critical=True):
     value = os.environ.get(var_name)
     if value is None and is_critical:
-        print(f"FATAL: Environment variable {var_name} not set.")
+        logger.critical(f"FATAL: Environment variable {var_name} not set.")
         raise ValueError(f"Environment variable {var_name} not set.")
     return value
 
-# Initialize ChatBot globally to potentially reuse LLMService instance if it's stateless
-# or if LLMService handles its own state/API key internally.
-# LLMService loads API key on init, so this is fine.
 chatbot = ChatBot()
 
-@https_fn.on_request(cors=https_fn.options.CorsOptions(cors_origins="*", cors_methods=["post"])) # Allow POST from any origin
-async def tria_chat_handler_on_request(req: https_fn.Request) -> https_fn.Response:
+@https_fn.on_request(cors=https_fn.options.CorsOptions(cors_origins="*", cors_methods=["post"])) 
+async def tria_chat_handler(req: https_fn.Request) -> https_fn.Response:
     """
     HTTP-triggered Cloud Function to handle Tria chat interactions.
-    Expects JSON body: {"text": "user message", "firebase_user_id": "uid"}
+    Expects JSON body: {"text": "user message"}.
+    Firebase ID Token must be in Authorization: Bearer header.
     """
-    # Ensure MISTRAL_API_KEY is available for the ChatBot's LLMService
-    # This check could also be at the top level if the function fails to deploy/init without it
-    if not chatbot.llm_service.api_key:
-        print("Error: MISTRAL_API_KEY is not configured for the LLMService.")
-        return https_fn.Response(
-            json.dumps({"error": "LLM service not configured."}),
-            status=503, # Service Unavailable
-            content_type="application/json"
-        )
-
-    if req.method != "POST":
-        return https_fn.Response(
-            json.dumps({"error": "Method not allowed. Use POST."}),
-            status=405,
-            content_type="application/json"
-        )
-
+    logger.info("tria_chat_handler function started.")
+    user_text = None # Initialize user_text to None
+    firebase_user_id = None # Initialize firebase_user_id to None
+    
     try:
-        data = req.get_json(silent=False) # silent=False raises error if not JSON or bad format
-        user_text = data.get("text")
-        firebase_user_id = data.get("firebase_user_id") # Passed directly for MVP
-    except Exception as e:
-        print(f"Error parsing request JSON: {e}")
+        if not chatbot.llm_service.api_key:
+            logger.error("Error: MISTRAL_API_KEY is not configured for the LLMService.")
+            return https_fn.Response(
+                json.dumps({"error": "LLM service not configured."}),
+                status=503, 
+                content_type="application/json"
+            )
+
+        if req.method != "POST":
+            logger.warning(f"Method not allowed: {req.method}")
+            return https_fn.Response(
+                json.dumps({"error": "Method not allowed. Use POST."}),
+                status=405,
+                content_type="application/json"
+            )
+
+        # 1. Verify Firebase ID Token and get user_id
+        auth_header = req.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            logger.warning("Missing or malformed Authorization header.")
+            return https_fn.Response(json.dumps({"status": "error", "message": "Authorization header missing or malformed."}), status=401, mimetype="application/json")
+
+        id_token = auth_header.split(" ")[1]
+        logger.info("ID Token extracted. Attempting verification.")
+        try:
+            # Verify the ID token
+            decoded_token = await firebase_auth.verify_id_token(id_token)
+            firebase_user_id = decoded_token["uid"]
+            logger.info(f"Firebase ID token verified for UID: {firebase_user_id}")
+        except Exception as e:
+            logger.exception("Error verifying Firebase ID token.")
+            return https_fn.Response(json.dumps({"status": "error", "message": "Invalid or expired token."}), status=403, mimetype="application/json")
+
+        if not firebase_user_id:
+            logger.error("Firebase User ID could not be extracted from token.")
+            return https_fn.Response(json.dumps({"status": "error", "message": "User ID could not be determined."}), status=400, mimetype="application/json")
+
+        # 2. Parse request body
+        try:
+            data = req.get_json(silent=False) 
+            user_text = data.get("text")
+            logger.info(f"Request body parsed for user {firebase_user_id}. User text: {user_text[:50]}...")
+        except Exception as e:
+            logger.exception("Error parsing request JSON.")
+            return https_fn.Response(
+                json.dumps({"error": "Invalid request data. Expected JSON: {'text': '...'}"}),
+                status=400,
+                content_type="application/json"
+            )
+
+        if not user_text:
+            logger.warning("Missing required 'text' field in request body.")
+            return https_fn.Response(
+                json.dumps({"error": "Missing required 'text' field in request body."}),
+                status=400,
+                content_type="application/json"
+            )
+
+        logger.info(f"Processing chat request for user '{firebase_user_id}': '{user_text}'")
+
+        llm_response = "Sorry, I encountered an issue and couldn't generate a response." # Default
+        log_summary = ""
+        conn = None 
+
+        try:
+            llm_response = await chatbot.get_response(user_input=user_text, firebase_user_id=firebase_user_id)
+            logger.info(f"LLM response received for user {firebase_user_id}. Response: {llm_response[:50]}...")
+
+            log_summary = f"User: {user_text[:100]}... | Tria: {llm_response[:100]}..."
+
+            # Log the interaction to tria_learning_log
+            log_entry_data = {
+                "user_id": firebase_user_id,
+                "session_id": None,
+                "event_type": "tria_chat_interaction",
+                "bot_affected_id": "ChatBot_MistralMedium_v1", # Example identifier
+                "summary_text": log_summary,
+                "prompt_text": user_text,
+                "tria_response_text": llm_response,
+                "model_used": chatbot.llm_service.default_model,
+                "feedback_score": None,
+                "custom_data": {"request_timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()} # Example custom data
+            }
+
+            log_model_instance = TriaLearningLogModel(**log_entry_data)
+
+            conn = await get_db_connection()
+            logger.info(f"Database connection established for logging for user {firebase_user_id}.")
+            await create_tria_learning_log_entry(db=conn, log_entry_create=log_model_instance)
+            logger.info(f"Chat interaction logged for user {firebase_user_id}.")
+
+        except asyncpg.PostgresError as db_error:
+            logger.exception(f"Database error during chat interaction logging for user {firebase_user_id}.")
+            # Do not re-raise, but ensure a consistent response is sent.
+            llm_response = "An internal database error occurred while logging. Please try again later." 
+        except Exception as e:
+            logger.exception(f"Error during Tria chat processing or logging for user {firebase_user_id}.")
+            if not llm_response.startswith("Error:") and not llm_response.startswith("I'm sorry"):
+                 llm_response = "An unexpected error occurred during chat processing. Please try again later." 
+        finally:
+            if conn:
+                await conn.close()
+                logger.info(f"Database connection closed for chat request of user {firebase_user_id}.")
+
         return https_fn.Response(
-            json.dumps({"error": "Invalid request data. Expected JSON: {'text': '...', 'firebase_user_id': '...'}"}),
-            status=400,
+            json.dumps({"response": llm_response}),
+            status=200, 
             content_type="application/json"
         )
 
-    if not user_text or not firebase_user_id:
-        error_msg = []
-        if not user_text: error_msg.append("'text' field is missing.")
-        if not firebase_user_id: error_msg.append("'firebase_user_id' field is missing.")
-        return https_fn.Response(
-            json.dumps({"error": "Missing required fields.", "details": error_msg}),
-            status=400,
-            content_type="application/json"
-        )
-
-    print(f"Processing chat request for user '{firebase_user_id}': '{user_text}'")
-
-    llm_response = "Sorry, I encountered an issue and couldn't generate a response." # Default
-    log_summary = ""
-    conn = None # Initialize conn to None for the finally block
-
-    try:
-        llm_response = await chatbot.get_response(user_input=user_text, firebase_user_id=firebase_user_id)
-
-        log_summary = f"User: {user_text[:100]}... | Tria: {llm_response[:100]}..."
-
-        # Log the interaction
-        # TriaLearningLogModel requires log_id, but it's auto-incrementing.
-        # We create the model instance without log_id, and the CRUD op handles it.
-        # Timestamp is handled by default_factory in the model.
-        log_entry_data = {
-            "event_type": "tria_chat_interaction",
-            "bot_affected_id": "ChatBot_MistralMedium_v1", # Example identifier
-            "summary_text": log_summary,
-            "details_json": {"user_input": user_text, "llm_response": llm_response, "user_id": firebase_user_id},
-            # timestamp will be set by Pydantic's default_factory
-        }
-
-        # Create TriaLearningLogModel instance.
-        # Since log_id is required by the model but auto-generated by DB,
-        # we provide a placeholder. The CRUD operation create_tria_learning_log_entry
-        # does not use this placeholder for insertion.
-        # A better approach would be a separate Pydantic model for creation that makes log_id optional.
-        log_model_instance = TriaLearningLogModel(log_id=0, **log_entry_data)
-
-        conn = await get_db_connection()
-        await create_tria_learning_log_entry(db=conn, log_entry_create=log_model_instance)
-        print(f"Chat interaction logged for user {firebase_user_id}.")
-
-    except asyncpg.PostgresError as db_error:
-        print(f"Database error during chat interaction logging for user {firebase_user_id}: {db_error}")
-        # LLM response was likely successful, but logging failed. Decide if this should fail the whole request.
-        # For now, we'll return the LLM response but log the DB error.
-        # Consider a more robust error reporting mechanism for ops failures.
     except Exception as e:
-        print(f"Error during Tria chat processing for user {firebase_user_id}: {e}")
-        # llm_response will retain its default error message or the one from chatbot if it failed there.
-        # If chatbot.get_response() failed, llm_response might already be an error string.
-        if not llm_response.startswith("Error:") and not llm_response.startswith("I'm sorry"):
-             print(f"Detailed error during Tria chat processing: {str(e)}") # Log the detailed exception
-             llm_response = "An unexpected error occurred. Please try again later." # Generic error message for users
-    finally:
-        if conn:
-            await conn.close()
-            print(f"Database connection closed for chat request of user {firebase_user_id}.")
-
-    return https_fn.Response(
-        json.dumps({"response": llm_response if not llm_response.startswith("An unexpected error occurred.") else "An unexpected error occurred. Please try again later."}),
-        status=200, # Even if logging failed, we might have a valid LLM response
-        content_type="application/json"
-    )
+        logger.exception("An unhandled error occurred in tria_chat_handler function.")
+        return https_fn.Response(json.dumps({"status": "error", "message": "An unhandled server error occurred. Please try again later."}), status=500, mimetype="application/json")
