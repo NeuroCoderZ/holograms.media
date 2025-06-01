@@ -105,17 +105,25 @@ To get the project up and running, follow these steps:
     ```
 
 7.  **Configure Environment Variables (for Cloud Functions & Local Emulation):**
-    *   **For Deployed Functions:** Use the Firebase CLI to set environment variables (secrets or config). These are essential for connecting to external services like Neon.tech PostgreSQL and LLM APIs.
-        ```bash
-        # Example for an LLM API key (replace YOUR_API_KEY with your actual key)
-        firebase functions:config:set llm.api_key="YOUR_API_KEY"
+    *   **For Deployed Functions:** Firebase Cloud Functions require environment variables to be set securely. Use the Firebase CLI to configure these variables, which are essential for connecting to external services like Neon.tech PostgreSQL and LLM APIs.
         
-        # Example for Neon.tech PostgreSQL connection string
-        # Ensure this is securely handled, possibly as a secret if sensitive.
-        firebase functions:config:set db.url="postgresql://user:pass@host:port/dbname"
+        Before first deployment, or whenever these values change, run the following commands (replace `YOUR_ACTUAL_...` with your real values):
+        ```bash
+        # For Neon.tech PostgreSQL database URL
+        firebase functions:config:set db.neon_database_url="YOUR_ACTUAL_NEON_DATABASE_URL"
+        
+        # For Mistral AI API Key
+        firebase functions:config:set llm.mistral_api_key="oVcP2Nj0iNWGupB6lswjbvhwHOr23hhr"
         ```
-        *Note:* For highly sensitive data, consider using Firebase Secret Manager.
-    *   **For Local Emulation:** You might need to set up a `.env` file within your functions directory (`backend/.env`) that `python-dotenv` can load, or use the Firebase Emulator's configuration options. Refer to `backend/.env.example` for expected variables during local development.
+        *Note:* For highly sensitive data, consider using Firebase Secret Manager for enhanced security.
+        
+        You can verify the configured environment variables with:
+        ```bash
+        firebase functions:config:get
+        ```
+        After setting or updating configuration, you **must** redeploy your functions for them to pick up the new values.
+
+    *   **For Local Emulation:** For local development and testing with the Firebase Emulator Suite, you can use a `.env` file in your `backend/` directory that `python-dotenv` can load, or configure runtime variables for the emulator. Refer to the `.env.example` file in the project root for expected variables and format.
 
 8.  **Run with Firebase Local Emulator Suite:**
     To run the frontend, backend Cloud Functions, authentication, and storage locally:
