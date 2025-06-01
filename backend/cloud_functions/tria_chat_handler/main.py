@@ -76,7 +76,7 @@ async def tria_chat_handler(req: https_fn.Request) -> https_fn.Response:
             logger.info(f"Firebase ID token verified for UID: {firebase_user_id}")
         except Exception as e:
             logger.exception("Error verifying Firebase ID token.")
-            return https_fn.Response(json.dumps({"status": "error", "message": f"Invalid or expired token: {e}"}), status=403, mimetype="application/json")
+            return https_fn.Response(json.dumps({"status": "error", "message": "Invalid or expired token."}), status=403, mimetype="application/json")
 
         if not firebase_user_id:
             logger.error("Firebase User ID could not be extracted from token.")
