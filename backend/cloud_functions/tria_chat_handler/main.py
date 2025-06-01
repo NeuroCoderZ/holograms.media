@@ -157,4 +157,4 @@ async def tria_chat_handler(req: https_fn.Request) -> https_fn.Response:
 
     except Exception as e:
         logger.exception("An unhandled error occurred in tria_chat_handler function.")
-        return https_fn.Response(json.dumps({"status": "error", "message": f"An unhandled server error occurred: {e}"}), status=500, mimetype="application/json")
+        return https_fn.Response(json.dumps({"status": "error", "message": "An unhandled server error occurred. Please try again later."}), status=500, mimetype="application/json")
