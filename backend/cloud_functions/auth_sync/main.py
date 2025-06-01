@@ -68,7 +68,7 @@ def auth_sync_user(req: https_fn.Request) -> https_fn.Response:
             return https_fn.Response(json.dumps({"status": "error", "message": "Invalid or expired token."}), status=401, mimetype="application/json")
         except Exception as e:
             logger.exception("Unexpected error during token verification.") # Logs traceback
-            return https_fn.Response(json.dumps({"status": "error", "message": f"Server error during token verification: {e}"}), status=500, mimetype="application/json")
+            return https_fn.Response(json.dumps({"status": "error", "message": "An internal server error occurred during token verification."}), status=500, mimetype="application/json")
 
         # 4. Extract uid and email
         firebase_uid = decoded_token.get("uid")
