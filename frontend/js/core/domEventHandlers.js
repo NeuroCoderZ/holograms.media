@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
-import { initializePanelState, togglePanels } from '../ui/panelManager.js';
+import PanelManager from '../ui/panelManager.js';
 
 // Объект для хранения содержимого файлов для редактора
 const fileContents = {};
@@ -115,10 +115,13 @@ export function setupDOMEventHandlers() {
       });
   }
 
+  // Создаем экземпляр PanelManager
+  const panelManagerInstance = new PanelManager();
+
   // Обработчик для кнопки переключения панелей
   const togglePanelsButton = document.getElementById('togglePanelsButton');
   if (togglePanelsButton) {
-      togglePanelsButton.addEventListener('click', togglePanels); // Используем импортированную togglePanels
+      togglePanelsButton.addEventListener('click', () => panelManagerInstance.toggleMainPanels()); // Используем метод экземпляра
       // Перемещаем кнопку в body, если она еще в левой панели
       if (togglePanelsButton.parentNode && togglePanelsButton.parentNode.classList.contains('left-panel')) {
           document.body.appendChild(togglePanelsButton);
@@ -129,7 +132,7 @@ export function setupDOMEventHandlers() {
   }
 
   // Инициализация состояния панелей при загрузке
-  initializePanelState();
+  panelManagerInstance.initializePanelManager(); // Инициализируем через экземпляр класса
 
   // Обработчик для кнопки сохранения в редакторе
   const saveFileButton = document.getElementById('saveFile'); // Corrected ID
@@ -205,7 +208,8 @@ async function fetchAndStoreFile(filename) {
 
   } catch (error) {
     console.error(`Не удалось загрузить ${filename}:`, error);
-    fileContents[filename] = `// Ошибка загрузки ${filename}\n${error}`; // Записываем ошибку в контент
+    fileContents[filename] = `// Ошибка загрузки ${filename}
+${error}`; // Записываем ошибку в контент
   }
 }
 
@@ -325,11 +329,12 @@ function applyPrompt(prompt, model) {
               console.log("Сгенерированный код выполнен успешно.");
             } catch (e) {
               console.error("Ошибка выполнения сгенерированного кода:", e);
-              alert(`Ошибка выполнения сгенерированного кода:\n${e.message}\n\nПромт: ${prompt}`);
+              alert(`Ошибка выполнения сгенерированного кода:
+${e.message}
+
+Промт: ${prompt}`);
               // Не прерываем создание версии, но сообщаем об ошибке
             }
-          } else {
-            console.log("Сгенерированный код отсутствует, применение не требуется.");
           }
           // ---------------------------------------------
 
@@ -354,7 +359,8 @@ function applyPrompt(prompt, model) {
           })
           .catch(versionError => {
             console.error('Ошибка при создании версии:', versionError);
-            alert(`Ошибка при создании версии:\n${versionError.message}`);
+            alert(`Ошибка при создании версии:
+${versionError.message}`);
           })
           .finally(() => {
             // Скрываем спиннер и разблокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
@@ -364,15 +370,19 @@ function applyPrompt(prompt, model) {
         })
         .catch(generateError => {
           console.error('Ошибка при генерации:', generateError);
-          alert(`Ошибка при генерации:\n${generateError.message}`);
+          alert(`Ошибка при генерации:
+${generateError.message}`);
           // Скрываем спиннер и разблокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
+          const spinner = document.getElementById('loading-spinner');
+          const submitButton = document.getElementById('submitTopPrompt');
           spinner.style.display = 'none';
           submitButton.disabled = false;
         });
     })
     .catch(triaError => {
       console.error('Ошибка в режиме Триа:', triaError);
-      alert(`Ошибка в режиме Триа:\n${triaError.message}`);
+      alert(`Ошибка в режиме Триа:
+${triaError.message}`);
       // Скрываем спиннер и разблокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
       const spinner = document.getElementById('loading-spinner');
       const submitButton = document.getElementById('submitTopPrompt');
@@ -551,16 +561,8 @@ export function initializeDOMEventHandlers() {
     console.warn("Элемент #gesture-area не найден.");
   }
 
-  // Initialize panel state and add event listener for togglePanelsButton
-  // Note: The DOMContentLoaded listener was in script.js, but the logic
-  // for panels is now in initializePanelState and togglePanels.
-  // We call initializePanelState here directly, assuming this function
-  // is called after DOMContentLoaded in main.js.
-  initializePanelState(); // Инициализируем состояние панелей при загрузке модуля
-  const togglePanelsButton = document.querySelector('#togglePanelsButton');
-  if (togglePanelsButton) {
-      togglePanelsButton.addEventListener('click', togglePanels); // Добавляем обработчик для кнопки переключения панелей
-  }
+  // Инициализация состояния панелей при загрузке
+  panelManagerInstance.initializePanelManager(); // Инициализируем через экземпляр класса
 
   // Load initial files for editor
   loadInitialFilesAndSetupEditor();
