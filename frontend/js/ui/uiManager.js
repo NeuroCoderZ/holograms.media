@@ -6,7 +6,7 @@ import { state } from '../core/init.js';
 import { auth } from '../core/firebaseInit.js';
 import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js';
 // panelManager is used to switch visible content panels in the right sidebar.
-import panelManager, { openContentPanel, closeAllContentPanels } from './panelManager.js';
+import PanelManager from './panelManager.js';
 
 /**
  * uiElements is a central object holding references to all significant DOM elements
@@ -180,6 +180,10 @@ function logLayoutState() {
 export function initializeMainUI() {
   console.log('Инициализация основного UI...');
   
+  // Создаем экземпляр PanelManager
+  const panelManagerInstance = new PanelManager();
+  panelManagerInstance.initializePanelManager(); // Инициализируем PanelManager
+
   // --- Get references to all interactive UI elements by ID ---
   // Buttons in the left panel
   uiElements.buttons.fileButton = document.getElementById('loadAudioButton');
@@ -404,13 +408,13 @@ export function initializeMainUI() {
   // Gesture Record button also opens the 'My Gestures' panel.
   addButtonListener(uiElements.buttons.gestureRecordButton, () => {
       console.log("Gesture Record button clicked. Opening 'My Gestures' panel.");
-      openContentPanel('myGesturesView'); // Opens the specific panel for gestures.
+      panelManagerInstance.openContentPanel('myGesturesView'); // Opens the specific panel for gestures.
   }, "Gesture Record button also attempts to open 'myGesturesView' panel.");
 
   // Hologram List button opens the 'My Holograms' panel.
   addButtonListener(uiElements.buttons.hologramListButton, () => {
       console.log("Hologram List button clicked. Opening 'My Holograms' panel.");
-      openContentPanel('myHologramsView'); // Opens the specific panel for holograms.
+      panelManagerInstance.openContentPanel('myHologramsView'); // Opens the specific panel for holograms.
   }, "Hologram List button opens 'myHologramsView' panel.");
 
   addButtonListener(uiElements.buttons.scanButton, null, "Scan button clicked - functionality pending.");
@@ -429,7 +433,7 @@ export function initializeMainUI() {
   if (uiElements.buttons.chatButton) {
     uiElements.buttons.chatButton.addEventListener('click', () => {
         console.log("Chat Mode/Panel button clicked. Opening 'chatHistory' panel.");
-        openContentPanel('chatHistory'); // Opens the dedicated chat history panel.
+        panelManagerInstance.openContentPanel('chatHistory'); // Opens the dedicated chat history panel.
     });
   } else {
       console.warn("Chat button (for toggling chat mode/panel) not found. Chat panel access disabled.");
