@@ -13,13 +13,21 @@
       }
     ]
   },
-  "functions": [ // Изменил на массив объектов, если функций будет несколько или для большей гибкости
+  "functions": [
     {
-      "source": "backend", // Указывает, что исходники функций в папке backend/
-      "runtime": "python312", // Соответствует dev.nix
-      "codebase": "holograms-backend" // Имя для группы функций (codebase)
-      // Можно добавить preinstall, predeploy хуки, если нужны
-      // "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"] // Пример, если бы был TS
+      "source": "backend",
+      "runtime": "python313",
+      "codebase": "holograms-backend",
+      "ignore": [
+        "venv",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
     }
-  ]
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  }
 }
