@@ -1,5 +1,4 @@
 import { state } from '../core/init.js';
-import { semitones } from '../3d/rendering.js';
 import * as THREE from 'three';
 
 /**
@@ -262,4 +261,4 @@ export function updateFilePlaybackVisuals() {
 }
 
 
-export { getAudioContext, createAnalyserNodes, getSemitoneLevels, setupAudioProcessing, updateLiveSequencerVisuals, updateFilePlaybackVisuals };
+export { getAudioContext, createAnalyserNodes, getSemitoneLevels };
