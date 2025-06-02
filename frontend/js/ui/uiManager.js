@@ -182,10 +182,17 @@ export function initializeMainUI() {
   
   // Создаем экземпляр PanelManager
   const panelManagerInstance = new PanelManager();
+  // PanelManager will initialize its own references. uiManager also needs references
+  // for functions like initializePanelState and logLayoutState if they are to use uiManager's uiElements.
+  uiElements.leftPanel = document.querySelector('.panel.left-panel');
+  uiElements.rightPanel = document.querySelector('.panel.right-panel');
+  uiElements.togglePanelsButton = document.getElementById('togglePanelsButton'); // Used by initializePanelState
+
   panelManagerInstance.initializePanelManager(); // Инициализируем PanelManager
 
   // --- Get references to all interactive UI elements by ID ---
   // Buttons in the left panel
+  // Note: uiElements.togglePanelsButton is already assigned above.
   uiElements.buttons.fileButton = document.getElementById('loadAudioButton');
   uiElements.buttons.playButton = document.getElementById('playAudioButton');
   uiElements.buttons.pauseButton = document.getElementById('pauseAudioButton');

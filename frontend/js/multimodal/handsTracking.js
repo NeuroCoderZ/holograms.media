@@ -288,8 +288,7 @@ export function initializeMediaPipeHands() {
     // Получаем видео элемент
     state.multimodal.videoElementForHands = document.getElementById('camera-view');
     if (!state.multimodal.videoElementForHands) {
-        console.error("Critical: Video element #camera-view not found. Hand tracking cannot start.");
-        // Optionally, display a user-friendly message or disable related UI elements
+        console.error("Error: videoElementForHands not found in DOM for handsTracking.");
         return;
     }
 
