@@ -262,4 +262,4 @@ export function updateFilePlaybackVisuals() {
 }
 
 
-export { getAudioContext, createAnalyserNodes, getSemitoneLevels, setupAudioProcessing, updateLiveSequencerVisuals };
+export { getAudioContext, createAnalyserNodes, getSemitoneLevels, setupAudioProcessing };
