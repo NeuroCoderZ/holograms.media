@@ -546,3 +546,45 @@
 - ** Ответственный:** Lead Dev / DevOps
 - ** Прогресс:** ✅ Done
 - **Результат:** Коммит `876612d` (ветка `feat/mvp-final-fixes-flash`) - Текст для storage.rules подготовлен, файл storage.rules создан/проверен.
+
+---
+**Промпт:**
+- **ID:** [20250602-2030-JULES-001]
+- **Источник:** Jules AI Agent Subtask ([HANDSTRACKING_FINAL_FIX_JULES])
+- **Цель:** Исправить ошибку `ReferenceError: videoElementForHands is not defined` в `frontend/js/multimodal/handsTracking.js`.
+- **Контекст:** Ошибка блокировала корректную инициализацию и работу модуля отслеживания жестов рук.
+- **Атомарное действие:** Модифицирован `frontend/js/multimodal/handsTracking.js`. Переменные `videoElementForHands` и `handsInstance` теперь корректно инициализируются и используются через объект `state.multimodal`. Добавлено логирование ошибок при отсутствии элемента `#camera-view` или неудачном создании экземпляра `Hands`.
+- **Ожидаемый результат:** Модуль `handsTracking.js` инициализируется без ошибок `ReferenceError`, отслеживание рук работает корректно, используя централизованное состояние.
+- **MVP Task Dependencies:** Frontend Hand Gesture Interaction.
+- **Критичность:** Высокая (Блокер для функционала жестов)
+- **Ответственный:** Jules AI Agent
+- **Прогресс:** ✅ Done
+- **Результат:** Коммит `5c37a05` - Ошибка `ReferenceError` исправлена. (Примечание: этот коммит включает также изменения из задач JULES-002 и JULES-003).
+
+---
+**Промпт:**
+- **ID:** [20250602-2030-JULES-002]
+- **Источник:** Jules AI Agent Subtask ([HTML_ELEMENTS_CHECK_JULES])
+- **Цель:** Обеспечить наличие и корректность ключевых HTML элементов в `frontend/index.html`.
+- **Контекст:** Отсутствие или некорректные ID у HTML-элементов могут приводить к ошибкам в JavaScript и нарушению функциональности.
+- **Атомарное действие:** Проверен файл `frontend/index.html`. Добавлен недостающий элемент `<input type="file" id="chunkUploadInput" style="display: none;">`. Проверено наличие и корректность ID для `div.panel.left-panel`, `div.panel.right-panel`, `button#togglePanelsButton`, `div#gesture-area`.
+- **Ожидаемый результат:** Файл `frontend/index.html` содержит все необходимые элементы с корректными ID для работы MVP.
+- **MVP Task Dependencies:** Frontend UI Interactivity, Chunk Upload Feature.
+- **Критичность:** Средняя
+- **Ответственный:** Jules AI Agent
+- **Прогресс:** ✅ Done
+- **Результат:** Коммит `5c37a05` - Элемент `chunkUploadInput` добавлен, остальные ключевые элементы проверены. (Примечание: этот коммит включает также изменения из задач JULES-001 и JULES-003).
+
+---
+**Промпт:**
+- **ID:** [20250602-2030-JULES-003]
+- **Источник:** Jules AI Agent Subtask ([CSS_PATH_FINAL_CHECK_JULES])
+- **Цель:** Финальная проверка и исправление пути к `style.css` и `favicon.ico` в `frontend/index.html`.
+- **Контекст:** Некорректные пути к статическим ресурсам приводят к их отсутствию на странице.
+- **Атомарное действие:** В `frontend/index.html` исправлены пути: `href="/static/style.css"` заменен на `href="style.css"`, `href="/static/favicon.ico"` заменен на `href="favicon.ico"`.
+- **Ожидаемый результат:** `style.css` и `favicon.ico` корректно загружаются браузером.
+- **MVP Task Dependencies:** Frontend Visual Appearance.
+- **Критичность:** Средняя
+- **Ответственный:** Jules AI Agent
+- **Прогресс:** ✅ Done
+- **Результат:** Коммит `5c37a05` - Пути к `style.css` и `favicon.ico` исправлены. (Примечание: этот коммит включает также изменения из задач JULES-001 и JULES-002).
