@@ -184,7 +184,6 @@ function onResults(results) {
     const handsArePresent = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
     state.multimodal.handsVisible = handsArePresent;
 
-    const gestureAreaElement = document.getElementById('gesture-area');
     if (gestureAreaElement) {
         const targetHeight = handsArePresent ? '25vh' : '4px';
         gestureAreaElement.style.height = targetHeight;
@@ -267,8 +266,6 @@ function onResults(results) {
                     const topPosition = tip.y * gestureAreaHeight; // Y is 0 at top, 1 at bottom for MediaPipe
                     // Scale Z from script.js: THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(tip.z, -0.5, 0.1, 1.5, 0.5), 0.5, 1.5)
                     // tip.z is roughly -0.1 (close) to 0.1 (far) but can vary.
-                    // Let's try a simplified scale based on the example's mapLinear.
-                    // Assuming z range for typical interaction is -0.15 (close) to 0.15 (far)
                     // We want scale to be larger when closer (z is more negative)
                     const scale = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(tip.z, -0.15, 0.15, 1.5, 0.5), 0.5, 1.5);
 
