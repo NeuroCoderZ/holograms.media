@@ -21,10 +21,8 @@ const GRID_DEPTH = state.config?.GRID?.DEPTH || 130; // Assuming DEPTH might be 
 
 
 // --- MediaPipe Hands Variables ---
-// let hands = null; // Will use state.multimodal.handsInstance
-// let currentStream = null; // Will use state.multimodal.currentStream
-// let videoElementForHands = null; // Will use state.multimodal.videoElementForHands
-// let isGestureCanvasReady = false; // Will use state.multimodal.isGestureCanvasReady
+// currentStream will use state.multimodal.currentStream
+// isGestureCanvasReady will use state.multimodal.isGestureCanvasReady
 
 // Arrays for visualization (can be moved later)
 let fingerTrails = []; // Array to store finger trail data
@@ -288,14 +286,15 @@ export function initializeMediaPipeHands() {
     console.log("Инициализация MediaPipe Hands...");
 
     // Получаем видео элемент
-    videoElementForHands = document.getElementById('camera-view');
-    if (!videoElementForHands) {
-        console.error("Video element #camera-view not found.");
+    state.multimodal.videoElementForHands = document.getElementById('camera-view');
+    if (!state.multimodal.videoElementForHands) {
+        console.error("Critical: Video element #camera-view not found. Hand tracking cannot start.");
+        // Optionally, display a user-friendly message or disable related UI elements
         return;
     }
 
     // Создаем экземпляр MediaPipe Hands
-    hands = new Hands({
+    state.multimodal.handsInstance = new Hands({
         locateFile: (file) => {
             // Указываем путь к файлам MediaPipe
             return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
@@ -303,15 +302,20 @@ export function initializeMediaPipeHands() {
     });
 
     // Настраиваем параметры
-    hands.setOptions({
+    if (!state.multimodal.handsInstance) {
+        console.error("Critical: MediaPipe Hands instance could not be created. Hand tracking cannot start.");
+        return;
+    }
+    
+    state.multimodal.handsInstance.setOptions({
         maxNumHands: 2,
-        modelComplexity: 1,
+        modelComplexity: 1, // consider making this configurable via state.config
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5
     });
 
     // Устанавливаем обработчик результатов
-    state.multimodal.handsInstance.onResults(onResults); // Use state.multimodal.handsInstance
+    state.multimodal.handsInstance.onResults(onResults);
 
     // Initialize 3D hand group
     state.multimodal.handMeshGroup = new THREE.Group();
