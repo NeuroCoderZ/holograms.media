@@ -2,8 +2,8 @@
 
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
-import { togglePanels, initializePanelState } from '../ui/panelManager.js';
-import { uiElements, toggleChatMode } from '../ui/uiManager.js';
+import PanelManager from '../ui/panelManager.js';
+import { uiElements, toggleChatMode, togglePanels } from '../ui/uiManager.js';
 import { updateHologramLayout } from '../ui/layoutManager.js';
 import * as THREE from 'three'; // Needed for THREE.MathUtils
 
@@ -42,7 +42,8 @@ export function setupDOMEventHandlers() {
     setupAudioPlayerObserver();
 
     // Initialize panel state based on local storage
-    initializePanelState();
+    const panelManagerInstance = new PanelManager();
+    panelManagerInstance.initializePanelManager();
 }
 
 /**
