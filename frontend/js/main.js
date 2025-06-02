@@ -20,7 +20,7 @@ import { runFrontendDiagnostics } from './core/diagnostics.js';
 // Импорт UI модулей
 import { initializeMainUI } from './ui/uiManager.js'; // Модуль управления UI
 import { initChatUI } from './core/ui/chatUI.js'; // Chat UI Initialization
-import { initializePanelManager } from './ui/panelManager.js'; // Модуль управления панелями
+import PanelManager from './ui/panelManager.js'; // Модуль управления панелями
 import { updateHologramLayout } from './ui/layoutManager.js'; // Added import
 import { initializePromptManager } 
 from './ui/promptManager.js'; // Импорт менеджера промптов
@@ -77,7 +77,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize Firebase Auth observer and pass callback for token handling
   initAuthObserver(handleTokenForBackend);
 
-  initializePanelManager();
+  const panelManagerInstance = new PanelManager();
+  panelManagerInstance.initializePanelManager();
+
   initializePromptManager();
   initializeVersionManager();
   initChatUI(); // Initialize Chat UI
