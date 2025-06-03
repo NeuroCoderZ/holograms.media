@@ -429,8 +429,8 @@ export function initializeMainUI() {
   addButtonListener(uiElements.buttons.triaButton, null, "Tria (Activate Training) button clicked - functionality pending.");
 
   // --- External Link Buttons ---
-  addButtonListener(uiElements.buttons.telegramLinkButton, () => window.open('https://t.me/holograms_media', '_blank'), "Telegram link button clicked.");
-  addButtonListener(uiElements.buttons.githubButton, () => window.open('https://github.com/Holograms-Media', '_blank'), "GitHub link button clicked.");
+  addButtonListener(uiElements.buttons.telegramLinkButton, () => window.open('https://t.me/hologramsmedia', '_blank'), "Telegram link button clicked.");
+  addButtonListener(uiElements.buttons.githubButton, () => window.open('https://github.com/NeuroCoderZ/holograms.media/', '_blank'), "GitHub link button clicked.");
 
   // --- PWA Install Button ---
   addButtonListener(uiElements.buttons.installPwaButton, null, "Install PWA button clicked - PWA installation logic to be implemented.");
