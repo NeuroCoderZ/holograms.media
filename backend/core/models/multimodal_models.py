@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, BaseModel
 from typing import Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime
@@ -22,7 +22,7 @@ class AudiovisualGesturalChunkModel(BaseUUIDModel): # Inherits id, created_at, u
     tria_extracted_features_json: Optional[Dict[str, Any]] = Field(default=None, description="Features extracted by Tria (e.g., transcript_id, detected_objects_summary).")
     
     # Linking to other entities
-    related_gesture_id: Optional[UUID] = Field(default=None, description="If this chunk is associated with a specific gesture.")
+    related_gesture_id: Optional[int] = Field(default=None, description="If this chunk is associated with a specific gesture. Links to user_gestures.gesture_id (INT).") # ИСПРАВЛЕННЫЙ ТИП
     related_hologram_id: Optional[UUID] = Field(default=None, description="If this chunk is used in or generated a hologram.")
 
     # Additional contextual metadata
@@ -41,8 +41,31 @@ class AudiovisualGesturalChunkModel(BaseUUIDModel): # Inherits id, created_at, u
                     "mime_type": "audio/wav",
                     "duration_seconds": 15.7,
                     "tria_processing_status": "processed",
+                    "related_gesture_id": 123, # Пример INT ID
                     "created_at": "2024-05-29T14:00:00Z",
                     "updated_at": "2024-05-29T14:05:00Z"
+                }
+            ]
+        }
+
+# Model for User Gesture representation based on the plan
+class UserGestureModel(BaseModel):
+    gesture_id: int = Field(..., description="Primary key for the gesture.")
+    user_id: str = Field(..., description="Firebase UID of the user who owns this gesture.")
+    gesture_name: str = Field(..., description="Name of the gesture.")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp of when the gesture was created.")
+    thumbnail_url: Optional[str] = Field(default=None, description="Placeholder for gesture thumbnail URL.")
+
+    class Config:
+        orm_mode = True
+        schema_extra = {
+            "examples": [
+                {
+                    "gesture_id": 1,
+                    "user_id": "aBcDeFgHiJkLmNoPqRsTuVwXyZ12345",
+                    "gesture_name": "Wave_Hello",
+                    "created_at": "2024-06-15T10:00:00Z",
+                    "thumbnail_url": "https://example.com/thumbnails/wave_hello.png"
                 }
             ]
         }
