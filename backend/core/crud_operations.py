@@ -5,13 +5,13 @@ and basic error handling for various data models used in the application.
 """
 
 import asyncpg
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 from uuid import uuid4, UUID
 from datetime import datetime
 import logging # Import the logging module
 
 from ..models.user_models import UserModel, UserCreate
-from ..models.multimodal_models import AudiovisualGesturalChunkModel
+from ..models.multimodal_models import AudiovisualGesturalChunkModel, UserGestureModel
 from ..models.learning_log_models import TriaLearningLogModel
 
 # Configure logging for this module
@@ -333,4 +333,44 @@ async def get_chunk_by_id(db: asyncpg.Connection, chunk_id: UUID) -> Optional[Au
         raise
     except Exception as e:
         logger.exception(f"An unexpected error occurred while fetching audiovisual/gestural chunk by ID {chunk_id}.")
+        raise
+
+
+async def get_gestures_by_user_id(db: asyncpg.Connection, user_id: str) -> List[UserGestureModel]:
+    """
+    Retrieves all gestures for a given user_id from the user_gestures table.
+
+    Args:
+        db: An active asyncpg database connection.
+        user_id: The ID of the user whose gestures are to be retrieved.
+
+    Returns:
+        A list of UserGestureModel instances. Returns an empty list if no gestures are found.
+    """
+    sql = """
+        SELECT gesture_id, user_id, gesture_name, created_at, thumbnail_url
+        FROM user_gestures
+        WHERE user_id = $1
+        ORDER BY created_at DESC;
+    """
+    logger.info(f"Attempting to retrieve gestures for user_id: {user_id}")
+    try:
+        rows = await db.fetch(sql, user_id)
+        gestures = []
+        if rows:
+            for row in rows:
+                gestures.append(UserGestureModel(**dict(row)))
+            logger.info(f"Found {len(gestures)} gestures for user_id: {user_id}")
+        else:
+            logger.info(f"No gestures found for user_id: {user_id}")
+        return gestures
+    except asyncpg.PostgresError as e:
+        logger.exception(f"Database error while fetching gestures for user_id {user_id}: {e}")
+        # Depending on desired error handling, you might re-raise or return empty list
+        # For now, let's return an empty list to prevent breaking the flow if DB error occurs,
+        # but logging it is important. Or re-raise to let the endpoint handle it.
+        # Re-raising is often better for visibility of issues.
+        raise
+    except Exception as e:
+        logger.exception(f"An unexpected error occurred while fetching gestures for user_id {user_id}: {e}")
         raise
