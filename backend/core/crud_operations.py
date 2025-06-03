@@ -5,7 +5,7 @@ and basic error handling for various data models used in the application.
 """
 
 import asyncpg
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 from uuid import uuid4, UUID
 from datetime import datetime
 import logging # Import the logging module
@@ -13,6 +13,7 @@ import logging # Import the logging module
 from ..models.user_models import UserModel, UserCreate
 from ..models.multimodal_models import AudiovisualGesturalChunkModel
 from ..models.learning_log_models import TriaLearningLogModel
+from ..models.hologram_models import UserHologramResponseModel
 
 # Configure logging for this module
 logger = logging.getLogger(__name__)
@@ -333,4 +334,52 @@ async def get_chunk_by_id(db: asyncpg.Connection, chunk_id: UUID) -> Optional[Au
         raise
     except Exception as e:
         logger.exception(f"An unexpected error occurred while fetching audiovisual/gestural chunk by ID {chunk_id}.")
+        raise
+
+
+async def get_holograms_by_user_id(db: asyncpg.Connection, user_id: str) -> List[UserHologramResponseModel]:
+    """
+    Retrieves all holograms associated with a specific user_id.
+
+    Args:
+        db: An active asyncpg database connection.
+        user_id: The user's identifier (Firebase UID).
+
+    Returns:
+        A list of UserHologramResponseModel instances.
+        Returns an empty list if no holograms are found for the user.
+
+    Raises:
+        asyncpg.PostgresError: If a database error occurs.
+        Exception: For any other unexpected errors.
+    """
+    sql = """
+        SELECT id, hologram_name, created_at
+        FROM user_holograms
+        WHERE user_id = $1
+        ORDER BY created_at DESC;
+    """
+    logger.info(f"Fetching holograms for user_id: {user_id}")
+    try:
+        rows = await db.fetch(sql, user_id)
+        holograms = []
+        if rows:
+            for row in rows:
+                holograms.append(
+                    UserHologramResponseModel(
+                        hologram_id=row['id'],
+                        hologram_name=row['hologram_name'],
+                        created_at=row['created_at'],
+                        preview_url=None # Placeholder for preview_url, as it's not in user_holograms table
+                    )
+                )
+            logger.info(f"Found {len(holograms)} holograms for user_id: {user_id}")
+        else:
+            logger.info(f"No holograms found for user_id: {user_id}")
+        return holograms
+    except asyncpg.PostgresError as e:
+        logger.exception(f"Database error while fetching holograms for user_id {user_id}: {e}")
+        raise
+    except Exception as e:
+        logger.exception(f"An unexpected error occurred while fetching holograms for user_id {user_id}: {e}")
         raise
