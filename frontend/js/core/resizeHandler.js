@@ -60,15 +60,20 @@ export function initializeResizeHandler() {
 
     // Вызываем updateHologramLayout для пересчета макета голограммы
     // Определяем видимость по высоте (сравниваем с начальной высотой щели)
-    const gestureAreaElement = document.getElementById('gesture-area');
-    const handsAreCurrentlyVisible = gestureAreaElement ? (gestureAreaElement.style.height !== '4px') : false;
+    // const gestureAreaElement = document.getElementById('gesture-area'); // Direct DOM query replaced by state access
+    // const handsAreCurrentlyVisible = gestureAreaElement ? (gestureAreaElement.style.height !== '4px') : false;
 
-    // Проверяем, что updateHologramLayout доступна перед вызовом
-    if (typeof updateHologramLayout === 'function') {
-        updateHologramLayout(handsAreCurrentlyVisible);
-        console.log('[Resize] updateHologramLayout called');
+    // Ensure UI elements needed by updateHologramLayout are initialized
+    if (state.uiElements && state.uiElements.gridContainer && state.uiElements.gestureArea) {
+      const handsAreCurrentlyVisible = state.uiElements.gestureArea.style.height !== '4px';
+      if (typeof updateHologramLayout === 'function') {
+          updateHologramLayout(handsAreCurrentlyVisible);
+          console.log('[Resize] updateHologramLayout called');
+      } else {
+          console.warn('updateHologramLayout function not found. It needs to be imported or moved.');
+      }
     } else {
-        console.warn('updateHologramLayout function not found. It needs to be imported or moved.');
+      console.warn('[Resize] UI elements not ready (gridContainer or gestureArea missing in state.uiElements), skipping updateHologramLayout.');
     }
   });
 }
