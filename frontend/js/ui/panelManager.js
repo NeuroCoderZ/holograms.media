@@ -1,5 +1,7 @@
 // frontend/js/ui/panelManager.js - Модуль для управления панелями интерфейса
 
+import { uiElements } from './uiManager.js'; // Импортируем uiElements
+
 class PanelManager {
     constructor() {
         // --- Переменные модуля ---
@@ -12,14 +14,15 @@ class PanelManager {
             myGestures: null,
             myHolograms: null,
             chatHistory: null,
-            // Add other panel keys and element references here
+            versionTimeline: null // Добавляем versionTimeline в список управляемых панелей
         };
 
         // Map internal keys to actual DOM IDs for initialization
         this.contentPanelIdMap = {
             myGestures: 'myGesturesView',
             myHolograms: 'myHologramsView',
-            chatHistory: 'chatHistory' // This is the container for chatMessages
+            chatHistory: 'chatHistory',
+            versionTimeline: 'versionTimeline' // Соответствие ID элемента
         };
 
         console.log("PanelManager initialized.");
@@ -79,10 +82,33 @@ class PanelManager {
                 allFound = false;
             } else {
                 // Ensure they are initially hidden by default, CSS should ideally handle this.
-                // But as a fallback:
                 this.contentPanels[key].style.display = 'none';
             }
         }
+
+        // Убедимся, что по умолчанию видна панель versionTimeline и соответствующий инпут
+        if (this.contentPanels.versionTimeline) {
+            this.contentPanels.versionTimeline.style.display = 'block';
+            // Устанавливаем плейсхолдер для topPromptInput по умолчанию
+            if (uiElements.inputs.topPromptInput) {
+                uiElements.inputs.topPromptInput.placeholder = "Что бы вы хотели изменить?";
+                // Скрываем chatInputBar и показываем promptBar
+                if (document.getElementById('promptBar')) {
+                    document.getElementById('promptBar').style.display = 'block';
+                }
+                if (document.getElementById('chatInputBar')) {
+                    document.getElementById('chatInputBar').style.display = 'none';
+                }
+                if (document.getElementById('submitTopPrompt')) {
+                    document.getElementById('submitTopPrompt').style.display = 'block';
+                }
+                if (document.getElementById('submitChatMessage')) {
+                    document.getElementById('submitChatMessage').style.display = 'none';
+                }
+
+            }
+        }
+
         if (allFound) {
             console.log('Все контентные панели инициализированы.');
         } else {
@@ -92,7 +118,7 @@ class PanelManager {
 
     /**
      * Opens a specific content panel within the right panel and hides others.
-     * @param {string} panelKey - The key of the panel to open (e.g., 'myGestures', 'myHolograms').
+     * @param {string} panelKey - The key of the panel to open (e.g., 'myGestures', 'myHolograms', 'chatHistory').
      */
     openContentPanel(panelKey) {
         if (!this.rightPanelElement || this.rightPanelElement.classList.contains('hidden')) {
@@ -110,6 +136,42 @@ class PanelManager {
                 }
             }
         }
+
+        // Logic for placeholder and input bar visibility
+        if (panelKey === 'chatHistory') {
+            if (uiElements.inputs.chatInput) {
+                uiElements.inputs.chatInput.placeholder = "Ваше сообщение для Триа...";
+            }
+            if (document.getElementById('chatInputBar')) {
+                document.getElementById('chatInputBar').style.display = 'block';
+            }
+            if (document.getElementById('promptBar')) {
+                document.getElementById('promptBar').style.display = 'none';
+            }
+            if (document.getElementById('submitChatMessage')) {
+                document.getElementById('submitChatMessage').style.display = 'block';
+            }
+            if (document.getElementById('submitTopPrompt')) {
+                document.getElementById('submitTopPrompt').style.display = 'none';
+            }
+        } else { // Default mode, or any other panel
+            if (uiElements.inputs.topPromptInput) {
+                uiElements.inputs.topPromptInput.placeholder = "Что бы вы хотели изменить?";
+            }
+            if (document.getElementById('promptBar')) {
+                document.getElementById('promptBar').style.display = 'block';
+            }
+            if (document.getElementById('chatInputBar')) {
+                document.getElementById('chatInputBar').style.display = 'none';
+            }
+            if (document.getElementById('submitTopPrompt')) {
+                document.getElementById('submitTopPrompt').style.display = 'block';
+            }
+            if (document.getElementById('submitChatMessage')) {
+                document.getElementById('submitChatMessage').style.display = 'none';
+            }
+        }
+
         if (panelOpened) {
             console.log(`Content panel '${panelKey}' opened.`);
         } else {
