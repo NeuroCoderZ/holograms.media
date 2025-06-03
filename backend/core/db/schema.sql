@@ -1,16 +1,42 @@
 -- Base schema for Holograms.media MVP
 -- Using TEXT for user_id to align with Firebase UID string type.
--- Using UUID for most other primary keys.
 -- Using TIMESTAMPTZ for all timestamps.
 -- Using JSONB for flexible metadata fields.
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
-    user_id TEXT PRIMARY KEY, -- Firebase UID
-    email TEXT UNIQUE,
+    user_id TEXT PRIMARY KEY, -- Firebase UID, effectively the primary key for user identity.
+    email TEXT UNIQUE,        -- User's email, should be unique.
+    display_name TEXT,        -- Optional: User's display name.
+    photo_url TEXT,           -- Optional: URL to user's photo.
+    -- Any other relevant user profile fields can be added here
     created_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
     updated_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc')
 );
+
+-- User Gestures table
+-- Stores custom gestures defined by users.
+CREATE TABLE IF NOT EXISTS user_gestures (
+    gesture_id SERIAL PRIMARY KEY,    -- Auto-incrementing integer ID for the gesture
+    user_id TEXT NOT NULL,    -- Foreign key referencing the user who owns this gesture
+    gesture_name TEXT NOT NULL, -- Name of the gesture (e.g., "Wave Hello", "Thumbs Up")
+    -- gesture_definition JSONB,       -- Optional: For storing detailed gesture definition (e.g., keypoints, sequence)
+                                      -- For MVP, this might be omitted or kept simple.
+    thumbnail_url TEXT,               -- Optional: URL to a thumbnail image for the gesture
+    created_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
+    updated_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'), -- To track updates to gesture definition
+
+    CONSTRAINT fk_user_gestures_user -- Ensuring constraint name is specific
+        FOREIGN KEY(user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE, -- If a user is deleted, their gestures are also deleted
+
+    UNIQUE (user_id, gesture_name) -- Ensures a user cannot have two gestures with the same name
+);
+
+-- Index for faster lookups of gestures by user_id
+CREATE INDEX IF NOT EXISTS idx_user_gestures_user_id ON user_gestures(user_id);
+
 
 -- Audiovisual Gestural Chunks table
 CREATE TABLE IF NOT EXISTS audiovisual_gestural_chunks (
@@ -25,7 +51,7 @@ CREATE TABLE IF NOT EXISTS audiovisual_gestural_chunks (
     resolution_height INTEGER,
     tria_processing_status TEXT DEFAULT 'pending', -- pending, processing, processed, failed
     tria_extracted_features_json JSONB,
-    related_gesture_id UUID, -- Can be NULL, FK added later if gestures table exists
+    related_gesture_id UUID, -- Can be NULL. If user_gestures.gesture_id was UUID: REFERENCES user_gestures(gesture_id) ON DELETE SET NULL. Now it's SERIAL, so this might need adjustment if strictly enforced at DB level for this relation before app logic.
     related_hologram_id UUID, -- Can be NULL, FK added later if holograms table exists
     custom_metadata_json JSONB,
     created_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
@@ -95,24 +121,6 @@ CREATE TABLE IF NOT EXISTS tria_bot_configurations (
     UNIQUE (bot_id, version)
 );
 
--- User Gestures table
-CREATE TABLE IF NOT EXISTS user_gestures (
-    gesture_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    gesture_name TEXT,
-    recognized_gesture_type TEXT,
-    landmark_data_3d_json JSONB, -- Could store array of landmarks
-    tria_interpretation_json JSONB, -- Store InterpretedGestureModel as JSON
-    source_modality TEXT,
-    context_hologram_id UUID,
-    custom_metadata_json JSONB,
-    created_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
-    updated_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc')
-);
--- Add FK for related_gesture_id in audiovisual_gestural_chunks if this table is created first
--- ALTER TABLE audiovisual_gestural_chunks ADD CONSTRAINT fk_related_gesture FOREIGN KEY (related_gesture_id) REFERENCES user_gestures(gesture_id);
-
-
 -- User Holograms table
 CREATE TABLE IF NOT EXISTS user_holograms (
     hologram_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -123,8 +131,6 @@ CREATE TABLE IF NOT EXISTS user_holograms (
     created_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
     updated_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc')
 );
--- Add FK for related_hologram_id in audiovisual_gestural_chunks
--- ALTER TABLE audiovisual_gestural_chunks ADD CONSTRAINT fk_related_hologram FOREIGN KEY (related_hologram_id) REFERENCES user_holograms(hologram_id);
 
 -- User Chat Sessions table
 -- Stores information about individual user chat sessions with Tria, including timing, status, and preferences.
@@ -151,8 +157,6 @@ CREATE TABLE IF NOT EXISTS chat_history (
 );
 
 -- Tria Code Embeddings table
--- For MVP, storing embedding_vector as JSONB is acceptable.
--- For production with pgvector: embedding_vector VECTOR(DIMENSION_HERE)
 CREATE TABLE IF NOT EXISTS tria_code_embeddings (
     embedding_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code_hash TEXT NOT NULL UNIQUE, -- SHA-256 hash of the code snippet
@@ -167,9 +171,6 @@ CREATE TABLE IF NOT EXISTS tria_code_embeddings (
     created_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
     updated_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc')
 );
--- Example pgvector index (if using actual VECTOR type):
--- CREATE EXTENSION IF NOT EXISTS vector; -- Run once per database
--- CREATE INDEX ON tria_code_embeddings USING ivfflat (embedding_vector vector_l2_ops) WITH (lists = 100);
 
 -- Tria Knowledge Base (example, if needed for MVP)
 CREATE TABLE IF NOT EXISTS tria_knowledge_base (
@@ -184,8 +185,6 @@ CREATE TABLE IF NOT EXISTS tria_knowledge_base (
     created_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
     updated_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc')
 );
--- Example pgvector index for knowledge base:
--- CREATE INDEX ON tria_knowledge_base USING hnsw (embedding_vector vector_cosine_ops);
 
 -- Trigger function to update 'updated_at' timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -197,51 +196,40 @@ END;
 $$ language 'plpgsql';
 
 -- Apply the trigger to tables that have an 'updated_at' column
--- Example for one table (repeat for others):
--- CREATE TRIGGER update_users_updated_at
--- BEFORE UPDATE ON users
--- FOR EACH ROW
--- EXECUTE FUNCTION update_updated_at_column();
-
--- Note: Applying triggers for all tables with updated_at:
 DO $$
 DECLARE
     t_name TEXT;
 BEGIN
     FOR t_name IN (SELECT table_name FROM information_schema.columns WHERE column_name = 'updated_at' AND table_schema = 'public')
     LOOP
-        EXECUTE format('CREATE TRIGGER trigger_update_updated_at_%s
-                       BEFORE UPDATE ON %I
-                       FOR EACH ROW
-                       EXECUTE FUNCTION update_updated_at_column();', t_name, t_name);
+        -- Check if trigger already exists for the table (optional, makes script more robust)
+        -- IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trigger_update_updated_at_' || t_name) THEN
+            EXECUTE format('CREATE TRIGGER trigger_update_updated_at_%s
+                           BEFORE UPDATE ON %I
+                           FOR EACH ROW
+                           EXECUTE FUNCTION update_updated_at_column();', t_name, t_name);
+        -- END IF;
     END LOOP;
 END;
 $$;
 
--- Initial data or enum types if necessary can be added here.
--- E.g., CREATE TYPE sender_type_enum AS ENUM ('user', 'tria_bot', 'system');
--- And then use sender_type_enum for chat_history.sender_type
-
 -- Add indexes for frequently queried columns, especially foreign keys
 CREATE INDEX IF NOT EXISTS idx_chunks_user_id ON audiovisual_gestural_chunks(user_id);
 CREATE INDEX IF NOT EXISTS idx_azr_solutions_task_id ON tria_azr_task_solutions(task_id);
-CREATE INDEX IF NOT EXISTS idx_gestures_user_id ON user_gestures(user_id);
+-- idx_user_gestures_user_id is created above with user_gestures table
 CREATE INDEX IF NOT EXISTS idx_holograms_user_id ON user_holograms(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON user_chat_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_history_session_id ON chat_history(session_id);
 CREATE INDEX IF NOT EXISTS idx_chat_history_user_id ON chat_history(user_id);
 
--- For JSONB columns that will be queried, consider GIN indexes:
--- CREATE INDEX IF NOT EXISTS idx_chunks_metadata ON audiovisual_gestural_chunks USING GIN (metadata_json);
--- CREATE INDEX IF NOT EXISTS idx_chunks_tria_features ON audiovisual_gestural_chunks USING GIN (tria_extracted_features_json);
 
--- Comments on pgvector:
--- To enable pgvector, the extension needs to be created in the database:
--- CREATE EXTENSION IF NOT EXISTS vector;
--- Then, vector columns would be defined as `embedding_vector VECTOR(DIM_SIZE)`
--- And specific vector indexes (HNSW, IVFFlat) would be created.
--- For MVP, using JSONB for `embedding_vector_json` is a simplification if direct pgvector setup is constrained.
--- The actual embedding generation and vector similarity search logic will be in the application code.
--- If JSONB is used, similarity search will be less efficient and done in application layer or with JSONB operators.
+-- Comments related to foreign keys that might need to be re-established if tables are dropped/recreated:
+-- ALTER TABLE audiovisual_gestural_chunks ADD CONSTRAINT fk_related_gesture FOREIGN KEY (related_gesture_id) REFERENCES user_gestures(gesture_id) ON DELETE SET NULL;
+-- Note: user_gestures.gesture_id is now SERIAL (INT). audiovisual_gestural_chunks.related_gesture_id is UUID.
+-- This FK relationship needs careful consideration: either related_gesture_id should be INT, or user_gestures.gesture_id should remain UUID.
+-- For now, I will comment out this ALTER TABLE statement, assuming application logic handles this or a future schema change will align types.
+
+-- ALTER TABLE audiovisual_gestural_chunks ADD CONSTRAINT fk_related_hologram FOREIGN KEY (related_hologram_id) REFERENCES user_holograms(hologram_id) ON DELETE SET NULL;
+
 
 SELECT 'Schema creation script executed successfully.' AS result;
