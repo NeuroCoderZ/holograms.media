@@ -7,6 +7,18 @@ uvicorn[standard]>=0.25.0
 # Pydantic for data validation (General backend models)
 pydantic>=2.10.0
 
+# Firebase Admin SDK
+firebase-admin>=6.0.0
+
+# Async PostgreSQL driver
+asyncpg>=0.29.0
+
+# HTTP client
+httpx>=0.24.0
+
+# AWS SDK for Python
+boto3>=1.20.0
+
 # Environment variables
 python-dotenv>=1.0.0
 
