@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-import uuid
+from uuid import UUID # Added import for UUID
 
 # Basic geometric types
 class Vector3Model(BaseModel):
@@ -85,11 +85,10 @@ class SceneElementUpdate(BaseModel):
     # Add other updatable fields
 
 class UserHologramResponseModel(BaseModel):
-    hologram_id: int
+    hologram_id: UUID # Corrected type to UUID
     hologram_name: str
     created_at: datetime
     preview_url: Optional[str] = Field(default=None, description="URL for the hologram preview image")
 
     class Config:
         orm_mode = True # If ORM objects are used
-```
