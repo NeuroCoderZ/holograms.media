@@ -4,7 +4,8 @@
 import { loadPanelsHiddenState, savePanelsHiddenState } from '../core/appStatePersistence.js';
 import { state } from '../core/init.js';
 import { auth } from '../core/firebaseInit.js';
-import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js';
+// import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js'; // Replaced with apiService.uploadChunk
+import { uploadChunk } from '../services/apiService.js';
 import { initializePwaInstall, handleInstallButtonClick } from '../core/pwaInstall.js';
 // panelManager is used to switch visible content panels in the right sidebar.
 import PanelManager from './panelManager.js';
@@ -293,19 +294,17 @@ export function initializeMainUI() {
           // alert(message); 
       };
 
-      setStatus(`Uploading ${file.name}...`);
+      setStatus(`Uploading ${file.name} to application backend...`);
 
       try {
-        // Call the service to upload the file to Firebase Storage.
-        const storagePath = await uploadFileToFirebaseStorage(file, firebaseUserId);
-        setStatus(`Upload complete! File available at: ${storagePath}`);
-        console.log(`File uploaded to: ${storagePath}`);
-        // TODO: After successful upload, potentially emit an event (via eventBus) or call 
-        // another function to trigger backend processing (e.g., process_chunk HTTP trigger).
-        // eventBus.emit('fileUploadedToStorage', { storagePath, file });
+        const idToken = await currentUser.getIdToken(); // Get Firebase ID token
+        const result = await uploadChunk(firebaseUserId, file, idToken);
+        setStatus(`Upload complete! Server response: ${result.message || JSON.stringify(result)}`);
+        console.log('File uploaded via apiService, server response:', result);
+        // Additional logic after successful upload, if needed
       } catch (error) {
         setStatus(`Upload failed for ${file.name}. Error: ${error.message}`);
-        console.error("Error uploading file:", error);
+        console.error("Error uploading file via apiService:", error);
       } finally {
           // Always clear the file input after an attempt, regardless of success or failure.
           if (uiElements.inputs.chunkUploadInput) uiElements.inputs.chunkUploadInput.value = "";
