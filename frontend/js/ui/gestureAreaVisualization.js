@@ -25,32 +25,29 @@ export function initializeGestureAreaVisualization() {
         console.warn('Элемент .gesture-recording-panel не найден.');
     }
 
-    // Наблюдатель за областью жестов (gesture-area)
-    const gestureAreaWatcher = document.getElementById('gesture-area') || document.querySelector('[data-gesture-area], [style*="height: 25vh"], [style*="height: 4px"]');
-    console.log('Gesture area element:', gestureAreaWatcher);
-    if (gestureAreaWatcher) {
-        console.log('Gesture area initial height:', gestureAreaWatcher.style.height);
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach(() => { // Удалена неиспользуемая переменная mutation
-                const height = gestureAreaWatcher.style.height;
-                const isActive = height === '25vh';
-                console.log('Gesture area height changed to:', height, 'Active:', isActive);
-                gestureAreaWatcher.classList.toggle('active', isActive);
-                window.dispatchEvent(new Event('resize'));
-            });
-        });
-        observer.observe(gestureAreaWatcher, { attributes: true, attributeFilter: ['style'] });
-    } else {
-        console.warn('Элемент #gesture-area или его аналоги не найдены.');
-        // Дополнительный поиск для отладки, если элемент не найден по ID или селекторам
-        const allElements = document.querySelectorAll('*');
-        allElements.forEach(el => {
-            if (el.style.height === '25vh' || el.style.height === '4px') {
-                console.log('Found element with height 25vh or 4px during fallback search:', el);
-            }
-        });
-    }
+    // Наблюдатель за областью жестов (gesture-area) - Эта логика теперь не нужна.
+    // Состояние активности (#gesture-area.hands-detected) управляется из handsTracking.js.
+    // Визуализация точек пальцев также находится в handsTracking.js.
+    // const gestureAreaWatcher = state.uiElements.containers.gestureArea; // Correct way to get it
+    // console.log('Gesture area element reference:', gestureAreaWatcher);
+    // if (gestureAreaWatcher) {
+    //     // Логика ниже не нужна, так как класс 'hands-detected' управляет высотой,
+    //     // а updateHologramLayout вызывается из handsTracking.js.
+    //     // console.log('Gesture area initial height:', gestureAreaWatcher.style.height);
+    //     // const observer = new MutationObserver((mutations) => {
+    //     //     mutations.forEach(() => {
+    //     //         const height = gestureAreaWatcher.offsetHeight; // Read actual height
+    //     //         const isActive = gestureAreaWatcher.classList.contains('hands-detected');
+    //     //         console.log('Gesture area height changed to:', height, 'Active via class:', isActive);
+    //     //         // gestureAreaWatcher.classList.toggle('active', isActive); // 'active' class is not used by current CSS for height
+    //     //         // window.dispatchEvent(new Event('resize')); // Already handled by updateHologramLayout
+    //     //     });
+    //     // });
+    //     // observer.observe(gestureAreaWatcher, { attributes: true, attributeFilter: ['class', 'style'] });
+    // } else {
+    //     console.warn('Элемент #gesture-area (state.uiElements.containers.gestureArea) не найден в gestureAreaVisualization.');
+    // }
 
-    // TODO: Перенести сюда логику отображения точек пальцев, если она еще осталась в script.js
-// (Судя по предыдущему анализу, эта логика была закомментирована или удалена)
+    // TODO: Логика отображения точек пальцев находится в handsTracking.js. Этот комментарий можно удалить.
+    console.log('GestureAreaVisualization initialized. Note: Finger dot and active state are managed in handsTracking.js.');
 }

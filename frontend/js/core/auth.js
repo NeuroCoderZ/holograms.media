@@ -77,10 +77,22 @@ export async function userSignOut() {
  *   This callback is typically used to synchronize the user with the backend or perform other authenticated actions.
  */
 export function initAuthObserver(callbackAfterToken) {
+    const userAvatarElement = document.getElementById('userAvatar');
+
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             // User is signed in. Update UI accordingly.
             if (userStatusDiv) userStatusDiv.textContent = `User: ${user.displayName || user.email}`;
+
+            if (userAvatarElement) {
+                if (user.photoURL) {
+                    userAvatarElement.src = user.photoURL;
+                    userAvatarElement.style.display = 'block';
+                } else {
+                    userAvatarElement.style.display = 'none';
+                }
+            }
+
             if (signInButton) signInButton.style.display = 'none'; // Hide sign-in button
             if (signOutButton) signOutButton.style.display = 'block'; // Show sign-out button
 
@@ -99,6 +111,11 @@ export function initAuthObserver(callbackAfterToken) {
         } else {
             // User is signed out. Update UI accordingly.
             if (userStatusDiv) userStatusDiv.textContent = 'No user signed in.';
+
+            if (userAvatarElement) {
+                userAvatarElement.style.display = 'none';
+            }
+
             if (signInButton) signInButton.style.display = 'block'; // Show sign-in button
             if (signOutButton) signOutButton.style.display = 'none'; // Hide sign-out button
             // Call the provided callback with null, indicating no user token.
