@@ -4,8 +4,9 @@ import { updateHologramLayout } from '../ui/layoutManager.js'; // Предпол
 
 // Вспомогательная функция для получения ширины панелей (перенесена из script.js)
 function getPanelWidths() {
-    const leftPanel = document.querySelector('.panel.left-panel');
-    const rightPanel = document.querySelector('.panel.right-panel');
+    // ИСПРАВЛЕНО: Использование state.uiElements для доступа к панелям
+    const leftPanel = state.uiElements?.leftPanel;
+    const rightPanel = state.uiElements?.rightPanel;
     const leftWidth = leftPanel ? leftPanel.offsetWidth : 0;
     const rightWidth = rightPanel ? rightPanel.offsetWidth : 0;
     return leftWidth + rightWidth;
@@ -16,8 +17,8 @@ export function initializeResizeHandler() {
     console.log('[Resize] Window resized');
 
     // Обновляем размеры панелей (перенесено из script.js)
-    const leftPanel = document.querySelector('.panel.left-panel');
-    const rightPanel = document.querySelector('.panel.right-panel');
+    const leftPanel = state.uiElements?.leftPanel;
+    const rightPanel = state.uiElements?.rightPanel;
 
     if (leftPanel) {
         const buttonSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--button-size'));
