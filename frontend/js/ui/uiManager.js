@@ -246,13 +246,18 @@ export function initializeMainUI() {
 
   console.log('Основной UI инициализирован.');
 
+  // Assign collected UI elements to the global state for access by other modules.
+  state.uiElements = uiElements;
+
+  // Debugging: Verify if gestureArea and gridContainer are found and assigned.
+  console.log('[UIManager] Проверка: gestureArea в state.uiElements:', state.uiElements.gestureArea ? 'найдена' : 'НЕ найдена', state.uiElements.gestureArea);
+  console.log('[UIManager] Проверка: gridContainer в state.uiElements:', state.uiElements.gridContainer ? 'найден' : 'НЕ найден', state.uiElements.gridContainer);
+
   // --- Initial UI State and Debugging ---
   initializePanelState(); // Set initial panel visibility.
   addDebugClasses();      // Add debug classes for styling/inspection.
   logLayoutState();       // Log current layout dimensions for debugging.
 
-  // Assign collected UI elements to the global state for access by other modules.
-  state.uiElements = uiElements;
 
   // --- Event Listeners ---
 
