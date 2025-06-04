@@ -1,12 +1,39 @@
+# Используем официальный образ Python.
+# python:3.11-slim-bullseye или python:3.12-slim-bullseye хороший выбор для баланса размера и свежести.
 FROM python:3.11-slim
 
+# Устанавливаем рабочую директорию в контейнере
 WORKDIR /app
 
-COPY backend /app/backend
-COPY backend/requirements_render.txt /app/requirements.txt
+# Устанавливаем переменную окружения, чтобы Python выводил логи сразу (полезно для Docker и PaaS)
+ENV PYTHONUNBUFFERED=1
 
-RUN pip install --no-cache-dir -r requirements.txt
+# Копируем файл с зависимостями бэкенда ПЕРЕД кодом самого бэкенда
+# Это позволяет Docker кэшировать слой с установленными зависимостями,
+# если сам код меняется, а зависимости нет.
+# Предполагаем, что объединенный файл зависимостей теперь называется backend/requirements.txt
+COPY backend/requirements.txt /app/requirements.txt
 
-EXPOSE 10000
+# Устанавливаем зависимости
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "10000"]
+# Копируем всю директорию backend в рабочую директорию /app/backend в контейнере
+COPY backend/ /app/backend/
+
+# Копируем другие необходимые файлы или директории из корня проекта, если они нужны для работы бэкенда
+# Например, если есть общие конфигурации или модели вне папки backend
+# COPY common_configs/ /app/common_configs/
+
+# Указываем порт, который будет слушать приложение внутри контейнера.
+# Render.com и Koyeb предоставят переменную окружения $PORT, которую Uvicorn должен использовать.
+# EXPOSE здесь больше для документации и не влияет на то, как Render/Koyeb маппят порты.
+EXPOSE 10000 
+
+# Команда для запуска приложения.
+# Uvicorn будет слушать на 0.0.0.0 на порту, указанном переменной окружения PORT,
+# которую автоматически устанавливает Render/Koyeb.
+# Если PORT не установлена (например, при локальном запуске Docker), Uvicorn по умолчанию будет использовать 8000.
+# Чтобы Render/Koyeb правильно передали порт, часто лучше указать его явно.
+# Render использует $PORT, Koyeb тоже.
+CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "$PORT"]
