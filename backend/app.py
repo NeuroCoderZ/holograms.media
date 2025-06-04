@@ -1,128 +1,119 @@
 # backend/app.py
 from fastapi import FastAPI
-from typing import List # Может понадобиться для моделей ответов, если где-то возвращается список напрямую
+from typing import List
+import firebase_admin
+from firebase_admin import credentials
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # --- Импорты роутеров ---
-# Предполагается следующая структура и именование роутеров.
-# Если фактические имена файлов или переменных 'router' в них другие, нужно будет скорректировать.
-
-# Роутеры из backend.api.v1.endpoints (предпочтительный новый путь для API v1)
 from backend.api.v1.endpoints.gesture_routes import router as public_gestures_router
 from backend.api.v1.endpoints.public_holograms import router as public_holograms_router
 from backend.api.v1.endpoints.tria_commands import router as tria_commands_router
-# Добавьте сюда импорты других роутеров из backend.api.v1.endpoints по мере их создания
-# например, для auth, chat, chunks, если они будут там
+from backend.api.v1.endpoints.chunks import router as chunks_router
 
-# Роутеры из backend.routers (возможно, более старая структура или для внутренних/специфических нужд)
-# Убедитесь, что пути и префиксы не конфликтуют с роутерами из api.v1
-from backend.routers.auth import router as legacy_auth_router # Пример, если есть и новый и старый
+from backend.routers.auth import router as legacy_auth_router
 from backend.routers.chat import router as legacy_chat_router
 from backend.routers.chat_sessions import router as legacy_chat_sessions_router
-from backend.routers.gestures import router as legacy_user_me_gestures_router # Для /users/me/gestures
-from backend.routers.holograms import router as legacy_user_holograms_router # Для /users/me/holograms
+from backend.routers.gestures import router as legacy_user_me_gestures_router
+from backend.routers.holograms import router as legacy_user_holograms_router
 from backend.routers.interaction_chunks import router as legacy_interaction_chunks_router
 from backend.routers.prompts import router as legacy_prompts_router
 from backend.routers.tria import router as legacy_tria_router
 
-
-# Инициализация FastAPI приложения
 app = FastAPI(
     title="Holograms Media Backend API",
     description="Backend services for the Holograms Media Project, providing API endpoints for user interactions, media processing, and AI assistant Tria.",
-    version="0.1.0", # Версия вашего API
-    # Можно добавить docs_url и redoc_url, если стандартные /docs и /redoc не устраивают
-    # docs_url="/api/v1/docs",
-    # redoc_url="/api/v1/redoc",
+    version="0.1.0",
 )
 
-# --- Регистрация Роутеров ---
-
-# Префикс /api/v1 для всех основных API эндпоинтов
 API_V1_PREFIX = "/api/v1"
 
-# Роутеры из backend.api.v1.endpoints (новая структура)
-app.include_router(public_gestures_router, prefix=API_V1_PREFIX, tags=["Gestures (User Specific)"]) # /users/{user_id}/gestures
-app.include_router(public_holograms_router, prefix=API_V1_PREFIX, tags=["Holograms (User Specific)"]) # /users/{user_id}/holograms
-app.include_router(tria_commands_router, prefix=f"{API_V1_PREFIX}/tria-commands", tags=["Tria Commands"]) # Более специфичный префикс
+app.include_router(public_gestures_router, prefix=API_V1_PREFIX, tags=["Gestures (User Specific)"])
+app.include_router(public_holograms_router, prefix=API_V1_PREFIX, tags=["Holograms (User Specific)"])
+app.include_router(tria_commands_router, prefix=f"{API_V1_PREFIX}/tria-commands", tags=["Tria Commands"])
+app.include_router(chunks_router, prefix=API_V1_PREFIX, tags=["Chunks"])
 
-# Роутеры из backend.routers (старая структура или для /users/me/ и т.п.)
-# Важно, чтобы их пути не пересекались с новыми без явного на то намерения.
 app.include_router(legacy_auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["Authentication (Legacy)"])
 app.include_router(legacy_chat_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat (Legacy)"])
 app.include_router(legacy_chat_sessions_router, prefix=f"{API_V1_PREFIX}/chat-sessions", tags=["Chat Sessions (Legacy)"])
-
-# Роутеры для /users/me/* (из backend.routers)
-# Предполагается, что эти роутеры уже имеют внутренние префиксы типа /users/me/gestures
 app.include_router(legacy_user_me_gestures_router, prefix=API_V1_PREFIX, tags=["Current User Gestures (Legacy)"])
 app.include_router(legacy_user_holograms_router, prefix=API_V1_PREFIX, tags=["Current User Holograms (Legacy)"])
-
 app.include_router(legacy_interaction_chunks_router, prefix=f"{API_V1_PREFIX}/chunks", tags=["Interaction Chunks (Legacy)"])
 app.include_router(legacy_prompts_router, prefix=f"{API_V1_PREFIX}/prompts", tags=["Prompts (Legacy)"])
 app.include_router(legacy_tria_router, prefix=f"{API_V1_PREFIX}/tria-system", tags=["Tria System (Legacy)"])
 
-
-# --- Корневой эндпоинт и Health Check ---
 @app.get("/", tags=["Root"])
 async def read_root():
-    """
-    Root endpoint for the API.
-    Provides a welcome message.
-    """
     return {"message": "Welcome to the Holograms Media API. Visit /docs for API documentation."}
 
 @app.get("/api/v1/health", tags=["System"])
 async def health_check():
-    """
-    Health check endpoint for the API.
-    Confirms the API is running and accessible.
-    """
     return {"status": "ok", "message": "Holograms Media API is running healthy!"}
 
-# --- CORS Middleware (Раскомментируйте и настройте, если фронтенд будет на другом домене/порту) ---
+# --- CORS Middleware ---
 # from fastapi.middleware.cors import CORSMiddleware
 # origins = [
-#     "http://localhost",          # Для локальной разработки фронтенда
-#     "http://localhost:3000",     # Если фронтенд на порту 3000
-#     "http://localhost:5000",     # Firebase Hosting Emulator
-#     "https://holograms-media.web.app", # Ваш развернутый фронтенд
-#     # Добавьте другие домены по необходимости
+#     "http://localhost",
+#     "http://localhost:3000",
+#     "http://localhost:5000",
+#     "https://holograms-media.web.app",
 # ]
 # app.add_middleware(
 #     CORSMiddleware,
 #     allow_origins=origins,
 #     allow_credentials=True,
-#     allow_methods=["*"], # Разрешить все методы
-#     allow_headers=["*"], # Разрешить все заголовки
+#     allow_methods=["*"],
+#     allow_headers=["*"],
 # )
 
-# --- Обработчики событий Startup и Shutdown (раскомментируйте, если нужны) ---
-# @app.on_event("startup")
-# async def startup_event():
-#     """
-#     Actions to perform when the FastAPI application starts.
-#     E.g., initialize database connections, load ML models, etc.
-#     """
-#     # Например, можно здесь инициализировать пул соединений к БД, если используется
-#     # await init_db_pool()
-#     print("FastAPI application startup completed.")
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Attempting to initialize Firebase Admin SDK...")
+    try:
+        cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        firebase_service_account_base64 = os.getenv("FIREBASE_SERVICE_ACCOUNT_BASE64")
 
-# @app.on_event("shutdown")
-# async def shutdown_event():
-#     """
-#     Actions to perform when the FastAPI application shuts down.
-#     E.g., close database connections, clean up resources.
-#     """
-#     # Например, закрыть пул соединений к БД
-#     # await close_db_pool()
-#     print("FastAPI application shutdown completed.")
+        if not firebase_admin._apps: # Проверка, что приложение еще не инициализировано
+            if cred_path:
+                if os.path.exists(cred_path):
+                    cred = credentials.Certificate(cred_path)
+                    firebase_admin.initialize_app(cred)
+                    logger.info("Firebase Admin SDK initialized via GOOGLE_APPLICATION_CREDENTIALS file.")
+                else:
+                    logger.warning(f"GOOGLE_APPLICATION_CREDENTIALS path does not exist: {cred_path}. Trying Base64 next.")
+                    # Попробовать Base64, если путь к файлу неверен, но переменная установлена
+                    if firebase_service_account_base64:
+                         initialize_firebase_from_base64(firebase_service_account_base64, logger)
+                    else:
+                        logger.warning("FIREBASE_SERVICE_ACCOUNT_BASE64 not set. Firebase SDK not initialized.")
+            elif firebase_service_account_base64:
+                initialize_firebase_from_base64(firebase_service_account_base64, logger)
+            else:
+                logger.warning("Neither GOOGLE_APPLICATION_CREDENTIALS nor FIREBASE_SERVICE_ACCOUNT_BASE64 are set. Firebase SDK not initialized.")
+        else:
+            logger.info("Firebase Admin SDK already initialized.")
+    except Exception as e:
+        logger.error(f"Critical error during Firebase Admin SDK initialization in startup_event: {e}", exc_info=True)
+    logger.info("FastAPI application startup event processing completed.")
 
-# --- Запуск Uvicorn сервера (для локальной разработки, если запускать этот файл напрямую) ---
-# Обычно для Render.com или Docker это не нужно, так как они используют свой способ запуска (например, `uvicorn backend.app:app ...`)
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run(
-#         "backend.app:app", # Путь к экземпляру FastAPI 'app' в этом файле
-#         host="0.0.0.0",    # Слушать на всех интерфейсах
-#         port=8000,         # Стандартный порт для FastAPI
-#         reload=True        # Включить автоперезагрузку при изменениях кода (только для разработки)
-#     )
+def initialize_firebase_from_base64(base64_string, logger_instance):
+    import base64
+    import json
+    try:
+        decoded_service_account_bytes = base64.b64decode(base64_string)
+        service_account_info_str = decoded_service_account_bytes.decode('utf-8')
+        service_account_info = json.loads(service_account_info_str)
+        cred = credentials.Certificate(service_account_info)
+        firebase_admin.initialize_app(cred)
+        logger_instance.info("Firebase Admin SDK initialized via FIREBASE_SERVICE_ACCOUNT_BASE64.")
+    except Exception as e_b64:
+        logger_instance.error(f"Error decoding or parsing FIREBASE_SERVICE_ACCOUNT_BASE64: {e_b64}", exc_info=True)
+        logger_instance.warning("Firebase SDK not initialized from Base64 due to error.")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("FastAPI application shutdown event processing completed.")
