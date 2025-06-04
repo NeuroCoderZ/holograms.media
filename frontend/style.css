@@ -265,25 +265,25 @@ body {
 
 /* Область жестов */
 #gesture-area {
-    position: fixed; /* !!! Позиционируем относительно ОКНА */
-    bottom: 0;   /* !!! Прижимаем к низу .main-area */
-    left: calc(var(--button-size) * 2 + var(--button-spacing) * 3 + 1vh); /* !!! Отступ слева = ширина лев.панели + 1vh */
-    right: calc(var(--timeline-width) + 1vh); /* !!! Отступ справа = ширина правой панели + 1vh */
+    position: absolute; /* Positioned relative to .main-area */
+    bottom: 0;   /* Прижимаем к низу .main-area, JS might override this for alignment with grid-container's effective bottom */
+    /* left and width will be set by layoutManager.js */
     height: 4px;   /* Начальная высота - "щель" */
     opacity: 1;
     margin: 0;
-    z-index: 100; /* Lower than grid container */
+    z-index: 100;
     background-color: var(--color-black-95);
     border: none;
     cursor: pointer;
     overflow: hidden;
-    transition: height 0.5s ease-in-out;
+    transition: height 0.3s ease; /* Updated transition duration */
 }
 
 /* Активная область жестов */
 #gesture-area.hands-detected {
-    height: 25vh;
+    height: 25vh; /* As per task requirement */
     background-color: rgba(0, 0, 0, 0.8);
+    /* border-top: 1px solid var(--color-black-33); /* This style was found later in the file, let's ensure it's consistent or decide if needed */
 }
 
 /* Линия жестов */
@@ -1040,14 +1040,12 @@ body {
 }
 
 #gesture-area.hands-detected {
-    height: 80px;
+    height: 25vh; /* Ensuring consistency, was 80px then 25vh as per task */
     background-color: rgba(0, 0, 0, 0.8);
-    border-top: 1px solid var(--color-black-33);
+    border-top: 1px solid var(--color-black-33); /* Keeping the border-top from later in the original file */
 }
 
-#gesture-area.hands-detected ~ #grid-container {
-    height: calc(100vh - 80px);
-}
+/* Removed rule: #gesture-area.hands-detected ~ #grid-container as it's no longer applicable and JS handles height adjustment */
 
 /* Стили для кода */
 .code-block, pre, code, #fileContent {
