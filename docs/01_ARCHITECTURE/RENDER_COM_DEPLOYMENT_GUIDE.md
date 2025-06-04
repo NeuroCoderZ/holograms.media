@@ -112,50 +112,22 @@ async def download_chunk_endpoint(user_id: str, filename: str, disk_base_path: p
 
 ### 2.1. Подготовка Dockerfile
 
-Следующий Dockerfile является основой для сборки образа. Он включает установку зависимостей из всех релевантных `requirements.txt`.
-
-**Рекомендация:** Перед использованием в продакшене, создайте единый файл `requirements_merged.txt`, объединив все зависимости из:
-*   `backend/requirements.txt`
-*   `backend/cloud_functions/process_chunk/requirements.txt`
-*   `backend/cloud_functions/auth_sync/requirements.txt`
-*   `backend/cloud_functions/tria_chat_handler/requirements.txt`
-Удалите дубликаты, пакеты типа `firebase-functions` и разрешите возможные конфликты версий.
+`Dockerfile` находится в корневой директории проекта. Он использует единый файл зависимостей `backend/requirements_render.txt`.
 
 **Содержимое `Dockerfile`:**
 ```dockerfile
-# Используем официальный образ Python
-FROM python:3.12-slim
+FROM python:3.11-slim
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем все файлы requirements.txt в образ для кэширования слоя
-COPY backend/requirements.txt ./backend/requirements.txt
-COPY backend/cloud_functions/process_chunk/requirements.txt ./backend/cloud_functions/process_chunk/requirements.txt
-COPY backend/cloud_functions/auth_sync/requirements.txt ./backend/cloud_functions/auth_sync/requirements.txt
-COPY backend/cloud_functions/tria_chat_handler/requirements.txt ./backend/cloud_functions/tria_chat_handler/requirements.txt
+COPY backend /app/backend
+COPY backend/requirements_render.txt /app/requirements.txt
 
-# Устанавливаем зависимости
-# ВАЖНО: Замените на установку из единого 'requirements_merged.txt' для продакшена
-RUN pip install --no-cache-dir -r ./backend/requirements.txt &&     pip install --no-cache-dir -r ./backend/cloud_functions/process_chunk/requirements.txt &&     pip install --no-cache-dir -r ./backend/cloud_functions/auth_sync/requirements.txt &&     pip install --no-cache-dir -r ./backend/cloud_functions/tria_chat_handler/requirements.txt
-# Пример с единым файлом (предпочтительно):
-# COPY requirements_merged.txt ./
-# RUN pip install --no-cache-dir -r requirements_merged.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем код бэкенда и другие необходимые директории (например, nethologlyph)
-COPY ./backend ./backend
-COPY ./nethologlyph ./nethologlyph
-# Если ваш FastAPI app инициализируется в backend/main.py и называется 'app':
-# COPY backend/main.py ./backend/main.py
+EXPOSE 10000
 
-# Переменная окружения PORT будет предоставлена Render.com для uvicorn
-# EXPOSE директива здесь больше для информации, Render сам настроит порт
-# EXPOSE 10000 # Пример, Render использует переменную $PORT
-
-# Команда для запуска FastAPI приложения
-# Убедитесь, что 'backend.main:app' указывает на ваш FastAPI экземпляр.
-# $PORT будет автоматически подставлен Render.
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "$PORT"]
+CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "10000"]
 ```
 
 ### 2.2. Настройка сервиса на Render.com
@@ -189,7 +161,7 @@ CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "$PORT"]
 
 *   `NEON_DATABASE_URL`: Строка подключения к вашей базе данных Neon.
 *   `MISTRAL_API_KEY`: API ключ для Mistral AI.
-*   `GOOGLE_APPLICATION_CREDENTIALS`: Путь к файлу ключа сервисного аккаунта Firebase/Google Cloud в контейнере (например, `/etc/secrets/firebase-service-account.json`). Этот файл загружается через "Secret Files".
+*   `GOOGLE_APPLICATION_CREDENTIALS`: **Secret File**. Путь к файлу ключа сервисного аккаунта Firebase/Google Cloud в контейнере (например, `/etc/secrets/firebase-service-account.json`). Этот файл загружается через "Secret Files".
 *   `RENDER_DISK_BASE_PATH`: Путь монтирования Persistent Disk (например, `/mnt/render_disk_data`).
 *   `PYTHONUNBUFFERED=1`: Рекомендуется для корректного вывода логов Python в Docker.
 *   `PORT`: Render устанавливает эту переменную автоматически. Ваше приложение должно слушать этот порт.
@@ -212,10 +184,10 @@ Firebase Admin SDK используется для взаимодействия 
 Рекомендуется инициализировать SDK один раз при старте FastAPI приложения, используя событие `startup`.
 
 ```python
-# backend/main.py (или где у вас инициализируется FastAPI app)
+# backend/app.py (или где у вас инициализируется FastAPI app)
 from fastapi import FastAPI
 import firebase_admin
-from firebase_admin import credentials # Импорт для явного создания Certificate, если нужно
+from firebase_admin import credentials
 import os
 
 app = FastAPI() # Ваш экземпляр FastAPI
@@ -224,7 +196,6 @@ app = FastAPI() # Ваш экземпляр FastAPI
 async def initialize_firebase():
     try:
         # Проверяем, не инициализировано ли приложение Firebase по умолчанию
-        # (если имя не было передано в initialize_app)
         firebase_admin.get_app()
         print("INFO: Firebase Admin SDK уже было инициализировано.")
     except ValueError: # ValueError: The default Firebase app has not been initialized yet.
@@ -232,13 +203,13 @@ async def initialize_firebase():
             # GOOGLE_APPLICATION_CREDENTIALS должна быть установлена как переменная окружения,
             # указывающая на загруженный JSON-ключ в Secret Files.
             # firebase_admin.initialize_app() автоматически ее подхватит.
+            # Если переменная окружения не установлена, initialize_app() будет искать
+            # creds по умолчанию или выбросит ошибку. Для Render.com она ОБЯЗАТЕЛЬНА.
             firebase_admin.initialize_app()
             print("INFO: Firebase Admin SDK успешно инициализировано.")
         except Exception as e:
-            # Логируем ошибку, но не останавливаем запуск приложения,
-            # если Firebase не является критически важным для старта всех функций.
-            # Или можно выбросить исключение, если Firebase необходим.
             print(f"ERROR: Ошибка инициализации Firebase Admin SDK: {e}")
+            # В продакшене, если Firebase критичен, здесь нужно выбросить исключение:
             # raise RuntimeError(f"Could not initialize Firebase Admin SDK: {e}") from e
 
 # ... ваши роутеры и остальная логика приложения ...
@@ -258,9 +229,8 @@ async def initialize_firebase():
 *   **Логирование:** Используйте стандартный Python `logging` модуль. Render автоматически собирает stdout/stderr логи вашего приложения, которые доступны в дашборде.
 *   **Health Checks:** Реализуйте эндпоинт (например, `/health`), который Render будет использовать для проверки работоспособности вашего сервиса. Он должен возвращать статус 200 OK, если приложение работает корректно.
 *   **Структура проекта для FastAPI:**
-    *   Основной файл FastAPI (например, `backend/main.py`) будет импортировать роутеры из `backend/routers/`.
+    *   Основной файл FastAPI (например, `backend/app.py`) будет импортировать роутеры из `backend/routers/`.
     *   Логика бывших Cloud Functions будет реорганизована в сервисы или модули внутри `backend/services/` или `backend/core/` и вызываться из соответствующих эндпоинтов FastAPI.
-*   **Объединение `requirements.txt`:** Это важный шаг для избежания конфликтов и обеспечения чистоты зависимостей. Создайте один файл `requirements_merged.txt` и используйте его в Dockerfile.
+*   **Объединение `requirements.txt`:** Этот шаг уже выполнен. Мы используем `backend/requirements_render.txt`.
 
 Этот гайд должен помочь в процессе миграции и развертывания вашего бэкенда на Render.com.
-```
