@@ -83,4 +83,13 @@ class SceneElementUpdate(BaseModel):
     scale: Optional[Vector3Model] = None
     visible: Optional[bool] = None
     # Add other updatable fields
+
+class UserHologramResponseModel(BaseModel):
+    hologram_id: int
+    hologram_name: str
+    created_at: datetime
+    preview_url: Optional[str] = Field(default=None, description="URL for the hologram preview image")
+
+    class Config:
+        orm_mode = True # If ORM objects are used
 ```

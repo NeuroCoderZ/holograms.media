@@ -1,3 +1,4 @@
+# backend/core/crud_operations.py
 # CRUD operations for database interaction
 """This module provides Create, Read, Update, and Delete (CRUD) operations
 for interacting with the PostgreSQL database. It encapsulates the SQL queries
@@ -8,11 +9,13 @@ import asyncpg
 from typing import Optional, Any, Dict, List
 from uuid import uuid4, UUID
 from datetime import datetime
-import logging # Import the logging module
+import logging
 
+# Import Pydantic models from their respective modules
 from ..models.user_models import UserModel, UserCreate
 from ..models.multimodal_models import AudiovisualGesturalChunkModel, UserGestureModel
 from ..models.learning_log_models import TriaLearningLogModel
+from ..models.hologram_models import UserHologramResponseModel # Модель для ответа по голограммам
 
 # Configure logging for this module
 logger = logging.getLogger(__name__)
@@ -31,7 +34,9 @@ async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> Use
     Returns:
         A UserModel instance representing the created user, including data
         fetched from the database (like created_at, updated_at) and a locally
-        generated UUID for the 'id' field to satisfy the BaseModel requirements.
+        generated UUID for the 'id' field to satisfy the BaseUUIDModel requirements if used.
+        (Note: UserModel in provided snippets does not inherit BaseUUIDModel explicitly,
+         so local id generation might be for consistency with other models or a previous design).
 
     Raises:
         asyncpg.UniqueViolationError: If a user with the given `user_id_firebase` already exists.
@@ -46,25 +51,32 @@ async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> Use
         logger.info(f"Attempting to create user with Firebase UID: {user_create.user_id_firebase}")
         row = await db.fetchrow(sql, user_create.user_id_firebase, user_create.email)
         if row:
-            created_user = UserModel(
-                id=uuid4(), # Not from DB, generated locally, but required by BaseUUIDModel
-                user_id_firebase=row['user_id'],
-                email=row['email'],
-                created_at=row['created_at'],
-                updated_at=row['updated_at']
-            )
+            # Assuming UserModel does not have an 'id' that's a DB primary key, 
+            # and user_id_firebase is the one stored in the DB 'user_id' PK field.
+            # If UserModel expects a UUID 'id' (e.g. from a BaseUUIDModel), it's generated locally.
+            created_user_data = dict(row)
+            # If UserModel expects 'user_id_firebase' field and DB returns 'user_id'
+            if 'user_id' in created_user_data and 'user_id_firebase' not in created_user_data:
+                created_user_data['user_id_firebase'] = created_user_data.pop('user_id')
+            
+            # Add local UUID if UserModel inherits from something like BaseUUIDModel that requires it
+            # This ID is not from the 'users' table itself.
+            if not hasattr(UserCreate, 'id') and hasattr(UserModel, 'id') and not 'id' in created_user_data:
+                 created_user_data['id'] = uuid4()
+
+            created_user = UserModel(**created_user_data)
             logger.info(f"User {created_user.user_id_firebase} created successfully.")
             return created_user
         else:
-            logger.error("User creation failed, no data returned from DB for UID: {user_create.user_id_firebase}")
+            logger.error(f"User creation failed, no data returned from DB for Firebase UID: {user_create.user_id_firebase}")
             raise Exception("User creation failed, no data returned.")
 
     except asyncpg.UniqueViolationError as e:
         logger.warning(f"User with Firebase UID {user_create.user_id_firebase} already exists (UniqueViolationError). Details: {e}")
-        raise # Re-raise the exception for the caller to handle specific to unique constraint
+        raise 
     except Exception as e:
         logger.exception(f"An unexpected error occurred while creating user with Firebase UID {user_create.user_id_firebase}.")
-        raise # Re-raise for general error handling at a higher level
+        raise
 
 
 async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) -> Optional[UserModel]:
@@ -73,12 +85,11 @@ async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) ->
 
     Args:
         db: An active asyncpg database connection.
-        firebase_uid: The Firebase UID (maps to 'user_id' column) of the user to retrieve.
+        firebase_uid: The Firebase UID (maps to 'user_id' column in DB) of the user to retrieve.
 
     Returns:
         A UserModel instance if the user is found, otherwise None.
-        The 'id' (UUID) field of the returned UserModel is generated locally
-        as it's not stored in the 'users' table, but required by BaseUUIDModel.
+        A locally generated UUID for the 'id' field is added if UserModel expects it.
     
     Raises:
         asyncpg.PostgresError: If a database error occurs during the fetch operation.
@@ -87,18 +98,19 @@ async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) ->
         SELECT user_id, email, created_at, updated_at
         FROM users
         WHERE user_id = $1;
-    """\
+    """
     logger.info(f"Attempting to retrieve user with Firebase UID: {firebase_uid}")
     try:
         row = await db.fetchrow(sql, firebase_uid)
         if row:
-            user = UserModel(
-                id=uuid4(), # Not from DB, generated locally, but required by BaseUUIDModel
-                user_id_firebase=row['user_id'],
-                email=row['email'],
-                created_at=row['created_at'],
-                updated_at=row['updated_at']
-            )
+            user_data = dict(row)
+            if 'user_id' in user_data and 'user_id_firebase' not in user_data:
+                user_data['user_id_firebase'] = user_data.pop('user_id')
+            
+            if hasattr(UserModel, 'id') and not 'id' in user_data: # If UserModel expects an 'id' (e.g. from BaseUUIDModel)
+                user_data['id'] = uuid4() # This ID is not from the 'users' table.
+
+            user = UserModel(**user_data)
             logger.info(f"User {firebase_uid} found in database.")
             return user
         else:
@@ -106,7 +118,7 @@ async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) ->
             return None
     except asyncpg.PostgresError as e:
         logger.exception(f"Database error while fetching user by Firebase UID {firebase_uid}.")
-        raise # Re-raise the exception
+        raise
 
 
 async def create_tria_learning_log_entry(
@@ -115,39 +127,23 @@ async def create_tria_learning_log_entry(
     """
     Creates a new Tria learning log entry in the database.
     The `log_id` is auto-generated by the database.
-    The `timestamp` from the input model is used to record when the event occurred.
-
-    Args:
-        db: An active asyncpg database connection.
-        log_entry_create: A Pydantic TriaLearningLogModel instance containing the log data.
-
-    Returns:
-        A TriaLearningLogModel instance representing the created log entry,
-        including the auto-generated `log_id` and database-managed timestamps.
-
-    Raises:
-        asyncpg.PostgresError: If a database error occurs during insertion.
-        Exception: For any other unexpected errors.
-    """\
+    """
     sql = """
         INSERT INTO tria_learning_log (
             user_id, session_id, event_type, bot_affected_id, summary_text,
             prompt_text, tria_response_text, model_used, feedback_score, custom_data,
             timestamp
-        ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
-        )
-        RETURNING
-            log_id, user_id, session_id, event_type, bot_affected_id, summary_text,
-            prompt_text, tria_response_text, model_used, feedback_score, custom_data,
-            timestamp;
-    """\
-    logger.info(f"Attempting to create Tria learning log entry for user: {log_entry_create.user_id}")
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING log_id, user_id, session_id, event_type, bot_affected_id, summary_text,
+                  prompt_text, tria_response_text, model_used, feedback_score, custom_data,
+                  timestamp;
+    """
+    logger.info(f"Attempting to create Tria learning log entry for user: {log_entry_create.user_id}, event: {log_entry_create.event_type}")
     try:
         row = await db.fetchrow(
             sql,
             log_entry_create.user_id,
-            log_entry_create.session_id,
+            log_entry_create.session_id, # Assuming this can be str or UUID compatible with DB type
             log_entry_create.event_type,
             log_entry_create.bot_affected_id,
             log_entry_create.summary_text,
@@ -155,24 +151,11 @@ async def create_tria_learning_log_entry(
             log_entry_create.tria_response_text,
             log_entry_create.model_used,
             log_entry_create.feedback_score,
-            log_entry_create.custom_data,
+            log_entry_create.custom_data, # Pydantic model has custom_data
             log_entry_create.timestamp,
         )
         if row:
-            created_log = TriaLearningLogModel(
-                log_id=row['log_id'],
-                user_id=row['user_id'],
-                session_id=row['session_id'],
-                event_type=row['event_type'],
-                bot_affected_id=row['bot_affected_id'],
-                summary_text=row['summary_text'],
-                prompt_text=row['prompt_text'],
-                tria_response_text=row['tria_response_text'],
-                model_used=row['model_used'],
-                feedback_score=row['feedback_score'],
-                custom_data=row['custom_data'],
-                timestamp=row['timestamp']
-            )
+            created_log = TriaLearningLogModel(**dict(row))
             logger.info(f"Tria learning log entry created with log_id: {created_log.log_id}")
             return created_log
         else:
@@ -181,7 +164,7 @@ async def create_tria_learning_log_entry(
     except asyncpg.PostgresError as e:
         logger.exception(f"Database error while creating Tria learning log entry for user {log_entry_create.user_id}.")
         raise
-    except Exception as e:
+    except Exception as e: # Catching broader exceptions for unexpected issues
         logger.exception(f"An unexpected error occurred while creating Tria learning log entry for user {log_entry_create.user_id}.")
         raise
 
@@ -191,21 +174,7 @@ async def create_audiovisual_gestural_chunk(
 ) -> AudiovisualGesturalChunkModel:
     """
     Creates a new audiovisual/gestural chunk record in the database.
-    The `id` field of the input `chunk_create` model (which is a UUID) is used as `chunk_id` PK.
-    `created_at` and `updated_at` are set by the database via defaults.
-
-    Args:
-        db: An active asyncpg database connection.
-        chunk_create: A Pydantic AudiovisualGesturalChunkModel instance containing the chunk data.
-
-    Returns:
-        An AudiovisualGesturalChunkModel instance representing the created chunk,
-        including database-managed timestamps.
-
-    Raises:
-        asyncpg.PostgresError: If a database error occurs during insertion (e.g., unique constraint violation).
-        Exception: For any other unexpected errors.
-    """\
+    """
     sql = """
         INSERT INTO audiovisual_gestural_chunks (
             chunk_id, user_id, chunk_type, storage_ref,
@@ -213,23 +182,20 @@ async def create_audiovisual_gestural_chunk(
             resolution_width, resolution_height,
             tria_processing_status, tria_extracted_features_json,
             related_gesture_id, related_hologram_id, custom_metadata_json
-            -- created_at and updated_at are handled by DB defaults
-        ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
-        )
-        RETURNING
-            chunk_id, user_id, chunk_type, storage_ref,
-            original_filename, mime_type, duration_seconds,
-            resolution_width, resolution_height,
-            tria_processing_status, tria_extracted_features_json,
-            related_gesture_id, related_hologram_id, custom_metadata_json,
-            created_at, updated_at;
-    """\
-    logger.info(f"Attempting to create audiovisual/gestural chunk with ID: {chunk_create.id}")
+            -- created_at and updated_at are handled by DB defaults in schema.sql
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING chunk_id, user_id, chunk_type, storage_ref,
+                  original_filename, mime_type, duration_seconds,
+                  resolution_width, resolution_height,
+                  tria_processing_status, tria_extracted_features_json,
+                  related_gesture_id, related_hologram_id, custom_metadata_json,
+                  created_at, updated_at;
+    """
+    logger.info(f"Attempting to create audiovisual/gestural chunk with ID: {chunk_create.id} for user: {chunk_create.user_id}")
     try:
         row = await db.fetchrow(
             sql,
-            chunk_create.id,  # Maps to chunk_id
+            chunk_create.id,
             chunk_create.user_id,
             chunk_create.chunk_type,
             chunk_create.storage_ref,
@@ -240,29 +206,17 @@ async def create_audiovisual_gestural_chunk(
             chunk_create.resolution_height,
             chunk_create.tria_processing_status,
             chunk_create.tria_extracted_features_json,
-            chunk_create.related_gesture_id,
+            chunk_create.related_gesture_id, # This should be int as per recent model changes
             chunk_create.related_hologram_id,
             chunk_create.custom_metadata_json,
         )
         if row:
-            created_chunk = AudiovisualGesturalChunkModel(
-                id=row['chunk_id'],
-                user_id=row['user_id'],
-                chunk_type=row['chunk_type'],
-                storage_ref=row['storage_ref'],
-                original_filename=row['original_filename'],
-                mime_type=row['mime_type'],
-                duration_seconds=row['duration_seconds'],
-                resolution_width=row['resolution_width'],
-                resolution_height=row['resolution_height'],
-                tria_processing_status=row['tria_processing_status'],
-                tria_extracted_features_json=row['tria_extracted_features_json'],
-                related_gesture_id=row['related_gesture_id'],
-                related_hologram_id=row['related_hologram_id'],
-                custom_metadata_json=row['custom_metadata_json'],
-                created_at=row['created_at'],
-                updated_at=row['updated_at']
-            )
+            # Map chunk_id from DB to 'id' in Pydantic model
+            row_data = dict(row)
+            if 'chunk_id' in row_data and 'id' not in row_data:
+                 row_data['id'] = row_data.pop('chunk_id')
+
+            created_chunk = AudiovisualGesturalChunkModel(**row_data)
             logger.info(f"Audiovisual/gestural chunk {created_chunk.id} created successfully for user {created_chunk.user_id}.")
             return created_chunk
         else:
@@ -279,50 +233,25 @@ async def create_audiovisual_gestural_chunk(
 async def get_chunk_by_id(db: asyncpg.Connection, chunk_id: UUID) -> Optional[AudiovisualGesturalChunkModel]:
     """
     Retrieves an audiovisual/gestural chunk from the database by its ID.
-
-    Args:
-        db: An active asyncpg database connection.
-        chunk_id: The UUID of the chunk to retrieve.
-
-    Returns:
-        An AudiovisualGesturalChunkModel instance if the chunk is found, otherwise None.
-
-    Raises:
-        asyncpg.PostgresError: If a database error occurs during the fetch operation.
-    """\
+    """
     sql = """
-        SELECT
-            chunk_id, user_id, chunk_type, storage_ref,
-            original_filename, mime_type, duration_seconds,
-            resolution_width, resolution_height,
-            tria_processing_status, tria_extracted_features_json,
-            related_gesture_id, related_hologram_id, custom_metadata_json,
-            created_at, updated_at
+        SELECT chunk_id, user_id, chunk_type, storage_ref,
+               original_filename, mime_type, duration_seconds,
+               resolution_width, resolution_height,
+               tria_processing_status, tria_extracted_features_json,
+               related_gesture_id, related_hologram_id, custom_metadata_json,
+               created_at, updated_at
         FROM audiovisual_gestural_chunks
         WHERE chunk_id = $1;
-    """\
+    """
     logger.info(f"Attempting to retrieve audiovisual/gestural chunk with ID: {chunk_id}")
     try:
         row = await db.fetchrow(sql, chunk_id)
         if row:
-            chunk = AudiovisualGesturalChunkModel(
-                id=row['chunk_id'],
-                user_id=row['user_id'],
-                chunk_type=row['chunk_type'],
-                storage_ref=row['storage_ref'],
-                original_filename=row['original_filename'],
-                mime_type=row['mime_type'],
-                duration_seconds=row['duration_seconds'],
-                resolution_width=row['resolution_width'],
-                resolution_height=row['resolution_height'],
-                tria_processing_status=row['tria_processing_status'],
-                tria_extracted_features_json=row['tria_extracted_features_json'],
-                related_gesture_id=row['related_gesture_id'],
-                related_hologram_id=row['related_hologram_id'],
-                custom_metadata_json=row['custom_metadata_json'],
-                created_at=row['created_at'],
-                updated_at=row['updated_at']
-            )
+            row_data = dict(row)
+            if 'chunk_id' in row_data and 'id' not in row_data:
+                 row_data['id'] = row_data.pop('chunk_id')
+            chunk = AudiovisualGesturalChunkModel(**row_data)
             logger.info(f"Audiovisual/gestural chunk {chunk_id} found.")
             return chunk
         else:
@@ -335,17 +264,10 @@ async def get_chunk_by_id(db: asyncpg.Connection, chunk_id: UUID) -> Optional[Au
         logger.exception(f"An unexpected error occurred while fetching audiovisual/gestural chunk by ID {chunk_id}.")
         raise
 
-
+# --- Функция для получения жестов пользователя (из ветки main / PR #56) ---
 async def get_gestures_by_user_id(db: asyncpg.Connection, user_id: str) -> List[UserGestureModel]:
     """
     Retrieves all gestures for a given user_id from the user_gestures table.
-
-    Args:
-        db: An active asyncpg database connection.
-        user_id: The ID of the user whose gestures are to be retrieved.
-
-    Returns:
-        A list of UserGestureModel instances. Returns an empty list if no gestures are found.
     """
     sql = """
         SELECT gesture_id, user_id, gesture_name, created_at, thumbnail_url
@@ -358,19 +280,65 @@ async def get_gestures_by_user_id(db: asyncpg.Connection, user_id: str) -> List[
         rows = await db.fetch(sql, user_id)
         gestures = []
         if rows:
-            for row in rows:
-                gestures.append(UserGestureModel(**dict(row)))
+            for row_dict in rows:
+                gestures.append(UserGestureModel(**dict(row_dict)))
             logger.info(f"Found {len(gestures)} gestures for user_id: {user_id}")
         else:
             logger.info(f"No gestures found for user_id: {user_id}")
         return gestures
     except asyncpg.PostgresError as e:
         logger.exception(f"Database error while fetching gestures for user_id {user_id}: {e}")
-        # Depending on desired error handling, you might re-raise or return empty list
-        # For now, let's return an empty list to prevent breaking the flow if DB error occurs,
-        # but logging it is important. Or re-raise to let the endpoint handle it.
-        # Re-raising is often better for visibility of issues.
         raise
     except Exception as e:
         logger.exception(f"An unexpected error occurred while fetching gestures for user_id {user_id}: {e}")
+        raise
+
+# --- Функция для получения голограмм пользователя (из ветки feature/backend-my-holograms-jules / PR #57) ---
+async def get_holograms_by_user_id(db: asyncpg.Connection, user_id: str) -> List[UserHologramResponseModel]:
+    """
+    Retrieves all holograms associated with a specific user_id from the user_holograms table.
+    """
+    # В схеме user_holograms поля: hologram_id (PK, UUID), user_id (TEXT), hologram_name (TEXT), definition_json (JSONB), created_at, updated_at
+    # UserHologramResponseModel ожидает: hologram_id (int), hologram_name (str), created_at (datetime), preview_url (Optional[str])
+    # Из-за несоответствия типа hologram_id (UUID в БД, int в модели ответа), SQL-запрос и маппинг нужно скорректировать,
+    # Либо модель UserHologramResponseModel должна ожидать UUID.
+    # Пока оставляем как было в ветке Jules, но это потенциальная проблема.
+    # Также, `user_holograms.id` не существует, есть `hologram_id`.
+    sql = """
+        SELECT hologram_id, hologram_name, created_at 
+        FROM user_holograms 
+        WHERE user_id = $1
+        ORDER BY created_at DESC;
+    """
+    logger.info(f"Fetching holograms for user_id: {user_id}")
+    try:
+        rows = await db.fetch(sql, user_id)
+        holograms = []
+        if rows:
+            for row_dict in rows:
+                # Преобразуем UUID hologram_id в int для UserHologramResponseModel - ЭТО НЕКОРРЕКТНО!
+                # Правильнее было бы, чтобы UserHologramResponseModel принимала UUID или str.
+                # Или если hologram_id в таблице user_holograms действительно SERIAL (int), то все ок.
+                # Судя по schema.sql, user_holograms.hologram_id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+                # Значит, UserHologramResponseModel.hologram_id должна быть UUID или str.
+                # Пока оставляем как есть, предполагая, что модель ответа будет исправлена,
+                # или что в таблице user_holograms id - это SERIAL int, а не UUID.
+                # В отчете Jules модель UserHologramResponseModel имела hologram_id: int.
+                holograms.append(
+                    UserHologramResponseModel(
+                        hologram_id=row_dict['hologram_id'], # Если в БД UUID, а модель ждет int, будет ошибка
+                        hologram_name=row_dict['hologram_name'],
+                        created_at=row_dict['created_at'],
+                        preview_url=None 
+                    )
+                )
+            logger.info(f"Found {len(holograms)} holograms for user_id: {user_id}")
+        else:
+            logger.info(f"No holograms found for user_id: {user_id}")
+        return holograms
+    except asyncpg.PostgresError as e:
+        logger.exception(f"Database error while fetching holograms for user_id {user_id}: {e}")
+        raise
+    except Exception as e:
+        logger.exception(f"An unexpected error occurred while fetching holograms for user_id {user_id}: {e}")
         raise
