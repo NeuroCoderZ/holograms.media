@@ -5,6 +5,7 @@ import { loadPanelsHiddenState, savePanelsHiddenState } from '../core/appStatePe
 import { state } from '../core/init.js';
 import { auth } from '../core/firebaseInit.js';
 import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js';
+import { initializePwaInstall, handleInstallButtonClick } from '../core/pwaInstall.js';
 // panelManager is used to switch visible content panels in the right sidebar.
 import PanelManager from './panelManager.js';
 
@@ -415,7 +416,15 @@ export function initializeMainUI() {
   }
 
   // --- Other Feature Buttons ---
-  addButtonListener(uiElements.buttons.xrButton, null, "XR button clicked - functionality pending.");
+  // addButtonListener(uiElements.buttons.xrButton, null, "XR button clicked - functionality pending."); // Replaced with specific logic below
+  if (uiElements.buttons.xrButton) {
+    uiElements.buttons.xrButton.addEventListener('click', () => {
+      console.log("Переключение на XR режим голограммы - функционал в разработке");
+      uiElements.buttons.xrButton.classList.toggle('active');
+    });
+  } else {
+    console.warn("XR button element not found.");
+  }
   
   // Gesture Record button also opens the 'My Gestures' panel.
   addButtonListener(uiElements.buttons.gestureRecordButton, () => {
@@ -429,16 +438,34 @@ export function initializeMainUI() {
       panelManagerInstance.openContentPanel('myHolograms'); // Opens the specific panel for holograms.
   }, "Hologram List button opens 'myHologramsView' panel.");
 
-  addButtonListener(uiElements.buttons.scanButton, null, "Scan button clicked - functionality pending.");
-  addButtonListener(uiElements.buttons.bluetoothButton, null, "Bluetooth button clicked - functionality pending.");
-  addButtonListener(uiElements.buttons.triaButton, null, "Tria (Activate Training) button clicked - functionality pending.");
+  // addButtonListener(uiElements.buttons.scanButton, null, "Scan button clicked - functionality pending."); // Logic implemented elsewhere
+  // addButtonListener(uiElements.buttons.bluetoothButton, null, "Bluetooth button clicked - functionality pending."); // Logic implemented elsewhere
+  // addButtonListener(uiElements.buttons.triaButton, null, "Tria (Activate Training) button clicked - functionality pending."); // Logic implemented elsewhere
+
+  // --- Bluetooth Button Default State ---
+  if (uiElements.buttons.bluetoothButton) {
+    uiElements.buttons.bluetoothButton.classList.add('disabled');
+    // Fallback styling if 'disabled' class isn't enough or not defined
+    uiElements.buttons.bluetoothButton.style.opacity = '0.5';
+    uiElements.buttons.bluetoothButton.style.pointerEvents = 'none';
+    console.log("Bluetooth button initialized as disabled.");
+  } else {
+    console.warn("Bluetooth button element not found, cannot set default disabled state.");
+  }
 
   // --- External Link Buttons ---
   addButtonListener(uiElements.buttons.telegramLinkButton, () => window.open('https://t.me/hologramsmedia', '_blank'), "Telegram link button clicked.");
   addButtonListener(uiElements.buttons.githubButton, () => window.open('https://github.com/NeuroCoderZ/holograms.media/', '_blank'), "GitHub link button clicked.");
 
   // --- PWA Install Button ---
-  addButtonListener(uiElements.buttons.installPwaButton, null, "Install PWA button clicked - PWA installation logic to be implemented.");
+  // addButtonListener(uiElements.buttons.installPwaButton, null, "Install PWA button clicked - PWA installation logic to be implemented.");
+  if (uiElements.buttons.installPwaButton) {
+    uiElements.buttons.installPwaButton.addEventListener('click', () => {
+      handleInstallButtonClick(); // Call the handler from pwaInstall.js
+    });
+  } else {
+    console.warn("Install PWA button element not found.");
+  }
 
   // --- Chat Panel Button ---
   // This button's primary role is to open the chat interface.
@@ -450,6 +477,29 @@ export function initializeMainUI() {
   } else {
       console.warn("Chat button (for toggling chat mode/panel) not found. Chat panel access disabled.");
   }
+
+  // --- Tria Button ---
+  if (uiElements.buttons.triaButton && uiElements.inputs.modelSelect) {
+    uiElements.buttons.triaButton.addEventListener('click', () => {
+      // Ensure state.tria exists
+      if (!state.tria) {
+        state.tria = { isLearningActive: false };
+      }
+      state.tria.isLearningActive = !state.tria.isLearningActive;
+
+      uiElements.buttons.triaButton.classList.toggle('active', state.tria.isLearningActive);
+      uiElements.inputs.modelSelect.disabled = state.tria.isLearningActive;
+
+      console.log(`Tria button clicked. isLearningActive: ${state.tria.isLearningActive}`);
+    });
+  } else {
+    if (!uiElements.buttons.triaButton) console.warn("Tria button element not found.");
+    if (!uiElements.inputs.modelSelect) console.warn("Model select element not found for Tria button logic.");
+  }
+
+  // --- Scanner Button ---
+  // scanButton logic is now implemented above, removing the placeholder addButtonListener call for it.
+  // Similarly for Tria and Bluetooth buttons, specific logic is replacing the placeholder logs.
 
   // --- Action Buttons (Delegated Handlers) ---
   // The event listeners for these buttons are typically set up in other specialized modules
@@ -463,6 +513,9 @@ export function initializeMainUI() {
   // - `uiElements.actions.closeGestureModal`: Expected listener in modal control logic.
   // - `uiElements.actions.closePromptModal`: Expected listener in modal control logic.
   // - `uiElements.actions.closeFileEditorModal`: Expected listener in modal control logic.
+
+  // Initialize PWA install logic
+  initializePwaInstall();
 }
 
 /**
