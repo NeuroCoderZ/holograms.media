@@ -1,0 +1,13 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.25.0
+pydantic>=2.10.0
+python-dotenv>=1.0.0
+aiofiles>=23.0.0
+passlib[bcrypt]>=2.0.0
+python-jose[cryptography]>=3.3.0
+tenacity>=8.0.0
+protobuf>=3.19.0
+firebase-admin>=6.0.0
+asyncpg>=0.29.0
+firebase-functions>=1.0.0
+httpx>=0.24.0
