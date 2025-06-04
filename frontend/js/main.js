@@ -1,5 +1,18 @@
 // frontend/js/main.js - Основная точка входа для приложения
 
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js') // Path relative to origin
+      .then(registration => {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      })
+      .catch(error => {
+        console.log('ServiceWorker registration failed: ', error);
+      });
+  });
+}
+
 // At the top of main.js
 import { 
     app as firebaseApp, 

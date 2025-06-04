@@ -30,38 +30,4 @@
          "purpose": "maskable"
        }
     ]
-  }{
-  "name": "Holograms Media",
-  "short_name": "Holograms",
-  "description": "Interactive 3D Audio Visualizations",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#1e1e1e",
-  "icons": [
-    {
-      "src": "/icons/192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-       "src": "/icons/192.png",
-       "sizes": "192x192",
-       "type": "image/png",
-       "purpose": "maskable"
-     },
-     {
-       "src": "/icons/512.png",
-       "sizes": "512x512",
-       "type": "image/png",
-       "purpose": "maskable"
-     }
-  ]
 }
