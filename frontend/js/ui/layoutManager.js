@@ -1,141 +1,151 @@
 // frontend/js/ui/layoutManager.js
 
-// Удаляем неиспользуемый импорт THREE
-// import * as THREE from 'three';
 import { state } from '../core/init.js';
-import { ui } from '../core/ui.js'; // Импортируем ui для доступа к панелям
+// Предполагаем, что uiElements ИЗ uiManager.js УЖЕ ЗАПИСАНЫ в state.uiElements к моменту вызова этой функции.
+// Если uiManager еще не отработал, ui.leftPanel и ui.rightPanel здесь могут быть null.
+// Поэтому безопаснее брать их из state.uiElements, если они там уже есть.
 
-// Вспомогательные функции
-function getPanelWidths() {
-  return (ui.leftPanel?.offsetWidth || 0) + (ui.rightPanel?.offsetWidth || 0);
+// Вспомогательные функции для получения актуальной ширины видимых панелей
+function getLeftPanelWidth() {
+  return (state.uiElements?.leftPanel && !state.uiElements.leftPanel.classList.contains('hidden') ? state.uiElements.leftPanel.offsetWidth : 0);
 }
 
+function getRightPanelWidth() {
+  return (state.uiElements?.rightPanel && !state.uiElements.rightPanel.classList.contains('hidden') ? state.uiElements.rightPanel.offsetWidth : 0);
+}
+
+function getTotalPanelWidths() {
+  return getLeftPanelWidth() + getRightPanelWidth();
+}
+
+// Функция расчета начального масштаба для голограммы
 function calculateInitialScale(containerWidth, availableHeightForHologram) {
+  // Используем размеры сетки из конфигурации в state, с дефолтными значениями
   const { WIDTH, HEIGHT } = state.config?.GRID || { WIDTH: 130, HEIGHT: 260 };
 
-  const hologramWidth = WIDTH * 2;
-  const hologramHeight = HEIGHT;
+  const hologramWidth = WIDTH * 2; // Предполагаемая базовая ширина контента голограммы
+  const hologramHeight = HEIGHT;  // Предполагаемая базовая высота контента голограммы
 
-  let widthScale = (containerWidth * 0.98) / hologramWidth;
-  let heightScale = availableHeightForHologram / hologramHeight;
+  const padding = 0.95; // Используем 95% контейнера для голограммы, чтобы были отступы
+  let widthScale = (containerWidth * padding) / hologramWidth;
+  let heightScale = (availableHeightForHologram * padding) / hologramHeight;
 
   let scale = Math.min(widthScale, heightScale);
-  scale = Math.max(scale, 0.1); // Минимальный масштаб
+  scale = Math.max(scale, 0.1); // Минимальный допустимый масштаб
 
   return scale;
 }
 
 /**
- * Обновляет макет голограммы и панелей в зависимости от видимости рук и размеров окна.
+ * Обновляет макет голограммы, контейнера для нее и области жестов
+ * в зависимости от видимости рук и размеров окна.
  * @param {boolean} handsVisible - Флаг, указывающий, видны ли руки MediaPipe.
  */
 export function updateHologramLayout(handsVisible) {
-  console.log('[LayoutManager] updateHologramLayout called, state.uiElements:', state.uiElements); // ЗАДАЧА 3: Добавлен отладочный лог
+  console.log('[LayoutManager] updateHologramLayout called. Hands visible:', handsVisible, 'state.uiElements:', state.uiElements);
 
-  // Проверяем наличие необходимых элементов
-  // Расширенная проверка на существование всех необходимых компонентов
-  if (!state.uiElements.gridContainer) { // ИСПРАВЛЕНО: Доступ напрямую к gridContainer
-    console.warn('[layoutManager/updateHologramLayout] Skipping: gridContainer is not available.');
+  // Проверяем наличие ключевых элементов в state
+  if (!state.uiElements?.gridContainer) {
+    console.warn('[LayoutManager] Skipping: gridContainer is not available in state.uiElements.');
     return;
   }
-
-  if (!state.uiElements.gestureArea) { // ИСПРАВЛЕНО: Доступ напрямую к gestureArea
-    console.warn('[layoutManager/updateHologramLayout] Skipping: gestureArea is not available.');
+  if (!state.uiElements?.gestureArea) {
+    console.warn('[LayoutManager] Skipping: gestureArea is not available in state.uiElements.');
     return;
   }
-
-  // Проверяем наличие hologramPivot в state
   if (!state.hologramPivot) {
-    console.warn('[layoutManager/updateHologramLayout] Skipping: hologramPivot is not available.');
+    console.warn('[LayoutManager] Skipping: hologramPivot is not available in state.');
+    return;
+  }
+  if (!state.renderer) { // state.scene проверяется позже, если используется камера
+    console.warn('[LayoutManager] Skipping: renderer is not available in state.');
     return;
   }
 
-  // Проверяем наличие scene, camera и renderer
-  if (!state.scene) {
-    console.warn('[layoutManager/updateHologramLayout] Skipping: scene is not available.');
-    return;
-  }
+  const gridContainer = state.uiElements.gridContainer;
+  const gestureArea = state.uiElements.gestureArea;
 
-  if (!state.camera) {
-    console.warn('[layoutManager/updateHologramLayout] Skipping: camera is not available.');
-    return;
-  }
-
-  if (!state.renderer) {
-    console.warn('[layoutManager/updateHologramLayout] Skipping: renderer is not available.');
-    return;
-  }
-
-  // Получаем размеры и рассчитываем целевые значения
   const windowHeight = window.innerHeight;
-  const topMargin = windowHeight * 0.05; // 5% от высоты окна как верхний отступ в режиме рук
-  const availableWidth = window.innerWidth - getPanelWidths(); // Используем импортированную функцию
-  // Высота для голограммы: вся высота минус верхний отступ и высота области жестов, если руки видны
-  const availableHeight = windowHeight - (handsVisible ? state.uiElements.gestureArea.offsetHeight : 4); // ИСПРАВЛЕНО: Доступ напрямую к gestureArea
+  const windowWidth = window.innerWidth;
 
-  const targetScale = handsVisible ? 0.8 : calculateInitialScale(availableWidth, availableHeight);
-  const targetPositionY = handsVisible ? topMargin : 0; // Сдвигаем вниз, если руки видны
+  const totalPanelWidth = getTotalPanelWidths();
 
-  // Анимируем масштаб
+  // Рассчитываем доступное пространство для gridContainer (центральная область)
+  const availableWidthForGrid = windowWidth - totalPanelWidth;
+  
+  // Отступы для gridContainer от верха и низа окна (или main-area, если main-area не 100vh)
+  const topPageMargin = windowHeight * 0.05; // 5% сверху
+  const bottomPageMarginBeforeGesture = windowHeight * 0.05; // 5% снизу до области жестов (когда она свернута)
+  
+  const gestureAreaVisibleHeight = handsVisible ? gestureArea.offsetHeight : (gestureArea.classList.contains('hands-detected-css-driven') ? parseFloat(getComputedStyle(gestureArea).height) : 4) ; // 4px - высота свернутой полоски по умолчанию
+
+  // Доступная высота для gridContainer = вся высота - верхний отступ - (отступ снизу ИЛИ высота активной области жестов)
+  const availableHeightForGrid = windowHeight - topPageMargin - (handsVisible ? gestureAreaVisibleHeight : bottomPageMarginBeforeGesture);
+
+  // Позиционируем gridContainer
+  gridContainer.style.position = 'absolute';
+  gridContainer.style.top = `${topPageMargin}px`;
+  gridContainer.style.left = `${getLeftPanelWidth()}px`; // Отступ равен ширине левой панели
+  gridContainer.style.width = `${availableWidthForGrid}px`;
+  gridContainer.style.height = `${availableHeightForGrid}px`;
+
+  // Обновляем размер рендерера Three.js по размерам gridContainer
+  if (state.renderer && gridContainer.clientWidth > 0 && gridContainer.clientHeight > 0) {
+    state.renderer.setSize(gridContainer.clientWidth, gridContainer.clientHeight);
+  }
+
+  // Высота, доступная непосредственно для контента голограммы внутри gridContainer
+  // Если #gesture-area будет ВНУТРИ #grid-container, то нужно будет вычитать ее высоту.
+  // Если #gesture-area ПОД #grid-container, то availableHeightForGrid уже это учла.
+  // Предположим, что availableHeightForGrid - это уже высота для рендера.
+  const availableHeightForHologramContent = availableHeightForGrid;
+
+  // Рассчитываем масштаб для голограммы
+  // Если руки видны, можно использовать фиксированный масштаб или более сложную логику
+  const targetScaleValue = calculateInitialScale(availableWidthForGrid, availableHeightForHologramContent);
+  // Пока уберем логику handsVisible ? 0.8, чтобы всегда масштабировалось по доступному месту
+
+  // Рассчитываем позицию Y для hologramPivot
+  // Цель - центрировать голограмму в availableHeightForHologramContent
+  // (0,0) hologramPivot - это его центр.
+  const newTargetPositionY = 0; // Так как ортографическая камера будет центрирована на этом пространстве
+
+  // Обновляем параметры ортографической камеры, если она активна
+  if (state.activeCamera && state.activeCamera.isOrthographicCamera) {
+    state.activeCamera.left = -availableWidthForGrid / 2;
+    state.activeCamera.right = availableWidthForGrid / 2;
+    state.activeCamera.top = availableHeightForHologramContent / 2;
+    state.activeCamera.bottom = -availableHeightForHologramContent / 2;
+    // state.activeCamera.zoom = 1; // Можно настроить зум, если нужно
+    state.activeCamera.updateProjectionMatrix();
+  }
+
+  // Анимация масштаба и позиции hologramPivot
   if (window.TWEEN) {
     new window.TWEEN.Tween(state.hologramPivot.scale)
-      .to({ x: targetScale, y: targetScale, z: targetScale }, 500) // Длительность анимации 500мс
-      .easing(window.TWEEN.Easing.Quadratic.InOut)
+      .to({ x: targetScaleValue, y: targetScaleValue, z: targetScaleValue }, 300) // Уменьшил время анимации
+      .easing(window.TWEEN.Easing.Quadratic.Out)
       .start();
 
-    // Анимируем позицию
     new window.TWEEN.Tween(state.hologramPivot.position)
-      .to({ y: targetPositionY }, 500) // Длительность анимации 500мс
-      .easing(window.TWEEN.Easing.Quadratic.InOut)
+      .to({ y: newTargetPositionY }, 300)
+      .easing(window.TWEEN.Easing.Quadratic.Out)
       .onComplete(() => {
-          if (state.activeCamera) state.activeCamera.updateProjectionMatrix();
-          // console.log('[Layout] Position Animation complete'); 
+        if (state.activeCamera) state.activeCamera.updateProjectionMatrix();
       })
       .start();
   } else {
-    // Если TWEEN недоступен, применяем изменения мгновенно
-    state.hologramPivot.scale.set(targetScale, targetScale, targetScale);
-    state.hologramPivot.position.y = targetPositionY;
-    // Update camera if no TWEEN
+    state.hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
+    state.hologramPivot.position.y = newTargetPositionY;
     if (state.activeCamera) state.activeCamera.updateProjectionMatrix();
   }
 
-  // Обновляем размер рендерера и камеры
-  // The renderer size and camera aspect are typically handled by a dedicated resize handler.
-  // However, updateHologramLayout might be called when handsVisible changes, affecting available space.
-  // The existing lines update based on full window.innerWidth/Height.
-  // This could be correct if gridContainer is positioned absolutely and renderer overlays everything.
-  // If renderer is confined to gridContainer, then availableWidth/availableHeight should be used.
-  // For now, keeping original logic, but it's a point of attention for consistency with resize handler.
-  state.renderer.setSize(window.innerWidth, window.innerHeight);
-  // state.camera.aspect = window.innerWidth / window.innerHeight; // This is for the fallback state.camera
-  // The activeCamera's aspect ratio (if perspective) should be updated in the main resize handler.
-  // The updateProjectionMatrix for activeCamera is now handled in TWEEN's onComplete or directly if no TWEEN.
-
-  // Обновляем позицию gestureArea, если она видима
-  if (handsVisible && state.uiElements.gestureArea) { // ИСПРАВЛЕНО: Доступ напрямую к gestureArea
-      // Позиционируем gestureArea внизу доступной области
-      state.uiElements.gestureArea.style.position = 'absolute';
-      state.uiElements.gestureArea.style.left = `${getPanelWidths() / 2}px`; // Центрируем по горизонтали между панелями
-      state.uiElements.gestureArea.style.bottom = '0px';
-      state.uiElements.gestureArea.style.width = `${availableWidth}px`;
-      // Высота gestureArea уже должна быть задана в CSS или при инициализации
+  // Позиционируем #gesture-area внизу .main-area, под #grid-container
+  if (gestureArea) {
+    gestureArea.style.position = 'absolute';
+    gestureArea.style.left = `${getLeftPanelWidth()}px`;
+    gestureArea.style.bottom = `0px`; // Прижимаем к самому низу .main-area (или window, если main-area = 100vh)
+    gestureArea.style.width = `${availableWidthForGrid}px`;
+    // Высота #gesture-area управляется через CSS (.hands-detected)
   }
-
-  // Обновляем позицию gridContainer, чтобы он занимал оставшееся место
-   if (state.uiElements.gridContainer) { // ИСПРАВЛЕНО: Доступ напрямую к gridContainer
-       state.uiElements.gridContainer.style.position = 'absolute';
-       state.uiElements.gridContainer.style.top = '0px';
-       state.uiElements.gridContainer.style.left = `${getPanelWidths() / 2}px`;
-       state.uiElements.gridContainer.style.width = `${availableWidth}px`;
-       state.uiElements.gridContainer.style.height = `${availableHeight}px`;
-   }
-
-  // Добавляем отладочные классы для визуализации областей
-  // addDebugClasses(handsVisible);
-
-  // Логируем состояние макета
-  // logLayoutState(handsVisible);
 }
-
-// TODO: Перенести сюда вспомогательные функции, связанные с макетом, если таковые имеются и используются только здесь.
