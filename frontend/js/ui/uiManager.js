@@ -420,13 +420,13 @@ export function initializeMainUI() {
   // Gesture Record button also opens the 'My Gestures' panel.
   addButtonListener(uiElements.buttons.gestureRecordButton, () => {
       console.log("Gesture Record button clicked. Opening 'My Gestures' panel.");
-      panelManagerInstance.openContentPanel('myGesturesView'); // Opens the specific panel for gestures.
+      panelManagerInstance.openContentPanel('myGestures'); // Opens the specific panel for gestures.
   }, "Gesture Record button also attempts to open 'myGesturesView' panel.");
 
   // Hologram List button opens the 'My Holograms' panel.
   addButtonListener(uiElements.buttons.hologramListButton, () => {
       console.log("Hologram List button clicked. Opening 'My Holograms' panel.");
-      panelManagerInstance.openContentPanel('myHologramsView'); // Opens the specific panel for holograms.
+      panelManagerInstance.openContentPanel('myHolograms'); // Opens the specific panel for holograms.
   }, "Hologram List button opens 'myHologramsView' panel.");
 
   addButtonListener(uiElements.buttons.scanButton, null, "Scan button clicked - functionality pending.");
