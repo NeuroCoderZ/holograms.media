@@ -738,6 +738,45 @@ body {
   letter-spacing: 3px;
 }
 
+/* Authentication Section Styles */
+#authSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 10px; /* Or var(--spacing-md) if preferred and consistent */
+}
+
+#signInButton svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+#userStatus {
+  font-size: var(--font-size-small);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-sm); /* e.g., 5px */
+  text-align: center;
+}
+
+#userAvatar {
+  /* Inline styles from HTML: display:none; width: 24px; height: 24px; border-radius: 50%; */
+  /* Overriding margin-right with margin-bottom due to flex-direction: column */
+  margin-right: 0;
+  margin-bottom: var(--spacing-sm); /* e.g., 5px */
+}
+
+#authSeparator {
+  border: none;
+  height: 1px;
+  background-color: var(--panel-border); /* #444 or rgba(255,255,255,0.34) */
+  margin-top: 10px;    /* This was the margin-bottom of the old authSection */
+  margin-bottom: 10px; /* Space after separator */
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* Удаляем стиль заголовка истории чата */
 .history-title {
   display: none;
