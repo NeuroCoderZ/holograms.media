@@ -30,14 +30,16 @@ function calculateInitialScale(containerWidth, availableHeightForHologram) {
  * @param {boolean} handsVisible - Флаг, указывающий, видны ли руки MediaPipe.
  */
 export function updateHologramLayout(handsVisible) {
+  console.log('[LayoutManager] updateHologramLayout called, state.uiElements:', state.uiElements); // ЗАДАЧА 3: Добавлен отладочный лог
+
   // Проверяем наличие необходимых элементов
   // Расширенная проверка на существование всех необходимых компонентов
-  if (!state.uiElements.containers.gridContainer) {
+  if (!state.uiElements.gridContainer) { // ИСПРАВЛЕНО: Доступ напрямую к gridContainer
     console.warn('[layoutManager/updateHologramLayout] Skipping: gridContainer is not available.');
     return;
   }
 
-  if (!state.uiElements.containers.gestureArea) {
+  if (!state.uiElements.gestureArea) { // ИСПРАВЛЕНО: Доступ напрямую к gestureArea
     console.warn('[layoutManager/updateHologramLayout] Skipping: gestureArea is not available.');
     return;
   }
@@ -69,7 +71,7 @@ export function updateHologramLayout(handsVisible) {
   const topMargin = windowHeight * 0.05; // 5% от высоты окна как верхний отступ в режиме рук
   const availableWidth = window.innerWidth - getPanelWidths(); // Используем импортированную функцию
   // Высота для голограммы: вся высота минус верхний отступ и высота области жестов, если руки видны
-  const availableHeight = windowHeight - (handsVisible ? state.uiElements.containers.gestureArea.offsetHeight : 4); // Используем offsetHeight gestureArea
+  const availableHeight = windowHeight - (handsVisible ? state.uiElements.gestureArea.offsetHeight : 4); // ИСПРАВЛЕНО: Доступ напрямую к gestureArea
 
   const targetScale = handsVisible ? 0.8 : calculateInitialScale(availableWidth, availableHeight);
   const targetPositionY = handsVisible ? topMargin : 0; // Сдвигаем вниз, если руки видны
@@ -111,22 +113,22 @@ export function updateHologramLayout(handsVisible) {
   // The updateProjectionMatrix for activeCamera is now handled in TWEEN's onComplete or directly if no TWEEN.
 
   // Обновляем позицию gestureArea, если она видима
-  if (handsVisible && state.uiElements.containers.gestureArea) {
+  if (handsVisible && state.uiElements.gestureArea) { // ИСПРАВЛЕНО: Доступ напрямую к gestureArea
       // Позиционируем gestureArea внизу доступной области
-      state.uiElements.containers.gestureArea.style.position = 'absolute';
-      state.uiElements.containers.gestureArea.style.left = `${getPanelWidths() / 2}px`; // Центрируем по горизонтали между панелями
-      state.uiElements.containers.gestureArea.style.bottom = '0px';
-      state.uiElements.containers.gestureArea.style.width = `${availableWidth}px`;
+      state.uiElements.gestureArea.style.position = 'absolute';
+      state.uiElements.gestureArea.style.left = `${getPanelWidths() / 2}px`; // Центрируем по горизонтали между панелями
+      state.uiElements.gestureArea.style.bottom = '0px';
+      state.uiElements.gestureArea.style.width = `${availableWidth}px`;
       // Высота gestureArea уже должна быть задана в CSS или при инициализации
   }
 
   // Обновляем позицию gridContainer, чтобы он занимал оставшееся место
-   if (state.uiElements.containers.gridContainer) {
-       state.uiElements.containers.gridContainer.style.position = 'absolute';
-       state.uiElements.containers.gridContainer.style.top = '0px';
-       state.uiElements.containers.gridContainer.style.left = `${getPanelWidths() / 2}px`;
-       state.uiElements.containers.gridContainer.style.width = `${availableWidth}px`;
-       state.uiElements.containers.gridContainer.style.height = `${availableHeight}px`;
+   if (state.uiElements.gridContainer) { // ИСПРАВЛЕНО: Доступ напрямую к gridContainer
+       state.uiElements.gridContainer.style.position = 'absolute';
+       state.uiElements.gridContainer.style.top = '0px';
+       state.uiElements.gridContainer.style.left = `${getPanelWidths() / 2}px`;
+       state.uiElements.gridContainer.style.width = `${availableWidth}px`;
+       state.uiElements.gridContainer.style.height = `${availableHeight}px`;
    }
 
   // Добавляем отладочные классы для визуализации областей
