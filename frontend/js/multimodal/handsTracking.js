@@ -178,14 +178,20 @@ async function startVideoStream(videoElement, handsInstance) {
 
 function onResults(results) {
     state.multimodal.lastHandData = results;
-    const gestureAreaElement = document.getElementById('gesture-area');
+    // Use the reference from the state
+    const gestureAreaElement = state.uiElements.containers.gestureArea;
     const handsArePresent = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
     state.multimodal.handsVisible = handsArePresent;
 
     if (gestureAreaElement) {
-        const targetHeight = handsArePresent ? '25vh' : '4px';
-        gestureAreaElement.style.height = targetHeight;
-        // console.log(`Gesture area height set to: ${targetHeight}`);
+        // Toggle class instead of direct style manipulation for height
+        if (handsArePresent) {
+            gestureAreaElement.classList.add('hands-detected');
+        } else {
+            gestureAreaElement.classList.remove('hands-detected');
+        }
+        // The height will be controlled by CSS rules for #gesture-area and #gesture-area.hands-detected
+        // console.log(`Gesture area class updated based on hands presence. Hands: ${handsArePresent}`);
     }
     updateHologramLayout(state.multimodal.handsVisible);
 
