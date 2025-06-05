@@ -1,7 +1,7 @@
 // frontend/js/services/apiService.js
 
 // Плейсхолдер для URL вашего бэкенд-приложения на Koyeb
-export const API_BASE_URL = 'YOUR_KOYEB_APP_URL_PLACEHOLDER'; // Замените на реальный URL или оставьте как плейсхолдер для инструкции
+export const API_BASE_URL = 'https://your-app-name-your-org.koyeb.app'; // TODO: Replace with actual Koyeb URL
 
 /**
  * Загружает чанк на бэкенд Koyeb.
@@ -46,6 +46,45 @@ export async function uploadChunk(userId, file, idToken) {
         throw error;
     }
 }
+
+
+/**
+ * Requests a presigned URL from the backend.
+ * @param {string} filename - The name of the file.
+ * @param {string} contentType - The content type of the file.
+ * @param {string} idToken - Firebase ID token for authorization.
+ * @returns {Promise<object>} - Object containing url, fields, and object_key.
+ * @throws {Error} if the request fails.
+ */
+export async function getPresignedUrl(filename, contentType, idToken) {
+    const requestUrl = `${API_BASE_URL}/api/v1/generate-upload-url`;
+    console.log(`[apiService] Requesting presigned URL for ${filename} (${contentType}) from ${requestUrl}`);
+
+    try {
+        const response = await fetch(requestUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ filename, content_type: contentType }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Failed to get presigned URL and error response parsing failed.' }));
+            console.error(`[apiService] Failed to get presigned URL with status ${response.status}:`, errorData);
+            throw new Error(`Failed to get presigned URL: ${errorData.detail || response.statusText}`);
+        }
+
+        const responseData = await response.json();
+        console.log('[apiService] Presigned URL received:', responseData);
+        return responseData;
+    } catch (error) {
+        console.error('[apiService] Error getting presigned URL:', error);
+        throw error;
+    }
+}
+
 
 // Можно добавить другие функции для взаимодействия с API здесь по мере необходимости
 // Например:

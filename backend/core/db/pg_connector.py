@@ -1,6 +1,10 @@
 import asyncpg
 import os
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging for the database connector module.
 logging.basicConfig(level=logging.INFO)
@@ -73,11 +77,6 @@ if __name__ == "__main__":
     # For local testing, if NEON_DATABASE_URL is not set in the environment,
     # a default value is provided for demonstration. In production, this variable
     # *must* be set securely (e.g., via Firebase Functions environment variables).
-    if not os.environ.get('NEON_DATABASE_URL'):
-        logger.warning("NEON_DATABASE_URL not found in environment. Setting a placeholder for direct script test purposes.")
-        # IMPORTANT: Replace this with your actual local or test database URL if running locally.
-        os.environ['NEON_DATABASE_URL'] = "postgresql://neondb_owner:npg_LvH56aGZBJwy@ep-wandering-math-a9jvc9vk-pooler.gwc.azure.neon.tech/neondb?sslmode=require"
-    
     # Use asyncio.run to execute the asynchronous test_connection function.
     import asyncio
     asyncio.run(test_connection())
