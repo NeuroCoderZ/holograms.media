@@ -72,4 +72,3 @@ class MediaFileDB(MediaFileBase):
 
     class Config:
         orm_mode = True
-```
