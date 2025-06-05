@@ -12,7 +12,7 @@ from datetime import datetime
 import logging
 
 # Import Pydantic models from their respective modules
-from ..models.user_models import UserModel, UserCreate
+from ..models.user_models import UserInDB, UserCreate
 from ..models.multimodal_models import AudiovisualGesturalChunkModel, UserGestureModel
 from ..models.learning_log_models import TriaLearningLogModel
 from ..models.hologram_models import UserHologramResponseModel # Модель для ответа по голограммам
@@ -21,7 +21,7 @@ from ..models.hologram_models import UserHologramResponseModel # Модель д
 logger = logging.getLogger(__name__)
 
 
-async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> UserModel:
+async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> UserInDB:
     """
     Creates a new user record in the database.
 
@@ -32,10 +32,10 @@ async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> Use
                      in the 'users' table.
 
     Returns:
-        A UserModel instance representing the created user, including data
+        A UserInDB instance representing the created user, including data
         fetched from the database (like created_at, updated_at) and a locally
         generated UUID for the 'id' field to satisfy the BaseUUIDModel requirements if used.
-        (Note: UserModel in provided snippets does not inherit BaseUUIDModel explicitly,
+        (Note: UserInDB in provided snippets does not inherit BaseUUIDModel explicitly,
          so local id generation might be for consistency with other models or a previous design).
 
     Raises:
@@ -51,20 +51,20 @@ async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> Use
         logger.info(f"Attempting to create user with Firebase UID: {user_create.user_id_firebase}")
         row = await db.fetchrow(sql, user_create.user_id_firebase, user_create.email)
         if row:
-            # Assuming UserModel does not have an 'id' that's a DB primary key, 
+            # Assuming UserInDB does not have an 'id' that's a DB primary key, 
             # and user_id_firebase is the one stored in the DB 'user_id' PK field.
-            # If UserModel expects a UUID 'id' (e.g. from a BaseUUIDModel), it's generated locally.
+            # If UserInDB expects a UUID 'id' (e.g. from a BaseUUIDModel), it's generated locally.
             created_user_data = dict(row)
-            # If UserModel expects 'user_id_firebase' field and DB returns 'user_id'
+            # If UserInDB expects 'user_id_firebase' field and DB returns 'user_id'
             if 'user_id' in created_user_data and 'user_id_firebase' not in created_user_data:
                 created_user_data['user_id_firebase'] = created_user_data.pop('user_id')
             
-            # Add local UUID if UserModel inherits from something like BaseUUIDModel that requires it
+            # Add local UUID if UserInDB inherits from something like BaseUUIDModel that requires it
             # This ID is not from the 'users' table itself.
-            if not hasattr(UserCreate, 'id') and hasattr(UserModel, 'id') and not 'id' in created_user_data:
+            if not hasattr(UserCreate, 'id') and hasattr(UserInDB, 'id') and not 'id' in created_user_data:
                  created_user_data['id'] = uuid4()
 
-            created_user = UserModel(**created_user_data)
+            created_user = UserInDB(**created_user_data)
             logger.info(f"User {created_user.user_id_firebase} created successfully.")
             return created_user
         else:
@@ -79,7 +79,7 @@ async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> Use
         raise
 
 
-async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) -> Optional[UserModel]:
+async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) -> Optional[UserInDB]:
     """
     Retrieves a user from the database by their Firebase UID.
 
@@ -88,8 +88,8 @@ async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) ->
         firebase_uid: The Firebase UID (maps to 'user_id' column in DB) of the user to retrieve.
 
     Returns:
-        A UserModel instance if the user is found, otherwise None.
-        A locally generated UUID for the 'id' field is added if UserModel expects it.
+        A UserInDB instance if the user is found, otherwise None.
+        A locally generated UUID for the 'id' field is added if UserInDB expects it.
     
     Raises:
         asyncpg.PostgresError: If a database error occurs during the fetch operation.
@@ -107,10 +107,10 @@ async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) ->
             if 'user_id' in user_data and 'user_id_firebase' not in user_data:
                 user_data['user_id_firebase'] = user_data.pop('user_id')
             
-            if hasattr(UserModel, 'id') and not 'id' in user_data: # If UserModel expects an 'id' (e.g. from BaseUUIDModel)
+            if hasattr(UserInDB, 'id') and not 'id' in user_data: # If UserInDB expects an 'id' (e.g. from BaseUUIDModel)
                 user_data['id'] = uuid4() # This ID is not from the 'users' table.
 
-            user = UserModel(**user_data)
+            user = UserInDB(**user_data)
             logger.info(f"User {firebase_uid} found in database.")
             return user
         else:
