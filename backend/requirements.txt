@@ -1,48 +1,41 @@
-# backend/requirements.txt
+--- Core FastAPI ---
 
-# FastAPI & Uvicorn (For local development or if running a monolithic service)
-fastapi>=0.115.0
-uvicorn[standard]>=0.25.0
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
 
-# Pydantic for data validation (General backend models)
-pydantic>=2.10.0
+--- Authentication & Security ---
+For multipart form data handling (which pulls in passlib if needed by dependencies)
 
-# Firebase Admin SDK
-firebase-admin>=6.0.0
+python-multipart>=0.0.9
 
-# Async PostgreSQL driver
-asyncpg>=0.29.0
+For JWT handling (if custom logic is used)
 
-# HTTP client
-httpx>=0.24.0
-
-# AWS SDK for Python
-boto3>=1.20.0
-
-# Environment variables
-python-dotenv>=1.0.0
-
-# Asynchronous file operations
-aiofiles>=23.0.0
-
-# Password Hashing & JWT (If custom auth is used, otherwise Firebase covers)
-passlib[bcrypt]>=2.0.0
 python-jose[cryptography]>=3.3.0
 
-# LLM Clients (for direct usage, if not managed by dedicated service)
-# These might be here if a local script directly calls LLMs for non-CF purposes
-# For Cloud Functions, these are in llm_service.py's requirements or specific CF requirements
-# mistralai # Example, uncomment if needed
-# openai
-# google-generativeai
+Firebase Admin SDK for token verification etc.
 
-# Langchain (If used for RAG or chains outside of CF)
-# langchain>=0.2.0
-# langchain-core
-# langchain-mistralai
+firebase-admin>=6.5.0
 
-# Other
-tenacity>=8.0.0 # For retries
+--- Database ---
 
-# Protobuf (for NetHoloGlyph or other proto-based services)
-protobuf>=3.19.0
+asyncpg>=0.29.0
+
+--- HTTP Client ---
+
+httpx>=0.27.0
+
+--- AWS / S3 Compatible (for Backblaze B2) ---
+
+boto3>=1.34.0
+botocore>=1.34.0
+
+--- Utilities ---
+
+python-dotenv>=1.0.1
+aiofiles>=23.2.1
+tenacity>=8.2.0
+
+--- Protobuf (for NetHoloGlyph or other services) ---
+
+protobuf>=4.25.0
