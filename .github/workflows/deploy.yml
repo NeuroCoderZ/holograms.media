@@ -1,0 +1,85 @@
+name: Build and Deploy to Koyeb
+
+on:
+  push:
+    branches:
+      - main # Or your preferred deployment branch, e.g., deploy/koyeb
+
+jobs:
+  build_and_push_image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Needed to push to GHCR
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile # Explicitly state Dockerfile path
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/holograms-media-backend:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/holograms-media-backend:latest
+          # Note: github.repository_owner will be correctly cased (e.g., NeuroCoderZ)
+          # The image name 'holograms-media-backend' is static and lowercase.
+
+  deploy_to_koyeb:
+    needs: build_and_push_image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Koyeb
+        env:
+          KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }} # Secret must be configured in GitHub repo settings
+          KOYEB_APP_NAME: "holograms-media" # Replace with your actual Koyeb app name if different
+          KOYEB_SERVICE_NAME: "backend"    # Replace with your actual Koyeb service name for the backend
+          IMAGE_URI: ghcr.io/${{ github.repository_owner }}/holograms-media-backend:${{ github.sha }}
+        run: |
+          echo "Attempting to deploy image: $IMAGE_URI to Koyeb app: $KOYEB_APP_NAME service: $KOYEB_SERVICE_NAME"
+          echo "This step requires the Koyeb CLI or API calls properly configured."
+
+          if [ -z "$KOYEB_API_TOKEN" ]; then
+            echo "KOYEB_API_TOKEN not set. Skipping actual deployment."
+            echo "Please configure the KOYEB_API_TOKEN secret in your GitHub repository settings."
+            echo "Also ensure KOYEB_APP_NAME and KOYEB_SERVICE_NAME environment variables are correctly set in this workflow if not using defaults."
+          else
+            echo "KOYEB_API_TOKEN is set. Proceeding with Koyeb deployment steps..."
+            # Example using Koyeb CLI:
+            # 1. Install Koyeb CLI
+            echo "Installing Koyeb CLI..."
+            curl -sSL https://get.koyeb.com/bash | sudo sh
+            export PATH=$HOME/.koyeb/bin:$PATH
+
+            # 2. Login to Koyeb (non-interactive using token)
+            echo "Logging into Koyeb..."
+            koyeb login --token $KOYEB_API_TOKEN
+
+            # 3. Update the service to use the new image
+            # Ensure your KOYEB_APP_NAME and KOYEB_SERVICE_NAME are correct.
+            # The format is typically app-name/service-name or just service-id.
+            # Using service ID is more robust if names change.
+            # For this example, we assume app_name/service_name format.
+            echo "Updating Koyeb service $KOYEB_APP_NAME/$KOYEB_SERVICE_NAME with image $IMAGE_URI..."
+            if koyeb services update "$KOYEB_APP_NAME/$KOYEB_SERVICE_NAME" --image "$IMAGE_URI"; then
+              echo "Koyeb service update command successful."
+            else
+              echo "Koyeb service update command failed. Please check logs and Koyeb dashboard."
+              # Check if the service exists or if the name is correct
+              echo "Listing services to help debug:"
+              koyeb services list -a $KOYEB_APP_NAME
+              exit 1
+            fi
+            echo "Deployment to Koyeb triggered."
+          fi
+          echo "Note: If Koyeb is configured for Git-driven deployment from this branch and automatically deploys on new image pushes to GHCR, this manual deployment step might be redundant or could be simplified to a notification or a health check."
