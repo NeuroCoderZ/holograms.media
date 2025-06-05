@@ -68,8 +68,7 @@ import { setupDOMEventHandlers }
 from './core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
 import { initializeResizeHandler } 
 from './core/resizeHandler.js'; // Импорт обработчика изменения размера окна
-import { initializeHologramRotationControls } 
-from './core/events.js'; // Added import
+import { initializeHammerGestures } from './core/gestures.js'; // Added import
 
 
 // Импорт моста для обратной совместимости (закомментирован отсутствующий)
@@ -134,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupDOMEventHandlers();
   initializeResizeHandler(); // This will set up the resize listener
   setupEventListeners();
-  initializeHologramRotationControls(); // Added call
+  initializeHammerGestures(); // Added call
   
   // Initial layout update (after scene and panels are likely initialized)
   updateHologramLayout(false); // Call with handsVisible = false initially

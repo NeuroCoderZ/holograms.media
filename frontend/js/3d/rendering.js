@@ -35,8 +35,10 @@ function animate(currentTime) {
 
     // Audio processing and visualization updates
     if (state.audio) { // Ensure state.audio is initialized
-        if (state.audio.activeSource === 'file' && state.audio.isPlaying && state.audio.filePlayerAnalysers) {
-            updateFilePlaybackVisuals(); // This likely needs similar refactoring if it directly manipulates columns
+        // Modified condition: Call if activeSource is 'file' and an audioBuffer is loaded.
+        // updateFilePlaybackVisuals will internally handle playing vs. silent state.
+        if (state.audio.activeSource === 'file' && state.audio.audioBuffer) {
+            updateFilePlaybackVisuals();
         } else if (state.audio.activeSource === 'microphone' &&
                    state.hologramRendererInstance &&
                    state.audioAnalyzerLeftInstance &&
