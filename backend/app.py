@@ -1,6 +1,11 @@
 # backend/app.py
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from typing import List
+
+# Load environment variables from .env file before other imports
+load_dotenv()
+
 import firebase_admin
 from firebase_admin import credentials
 import os
