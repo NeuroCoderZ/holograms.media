@@ -20,7 +20,7 @@ The current focus is on delivering an MVP with the following core functionalitie
 For a detailed breakdown of the MVP, see the [ULTIMATE ROAD TO MVP JUNE 9 Document](docs/05_PLANNING_AND_TASKS/ULTIMATE_ROAD_TO_MVP_JUNE_9.md).
 For project tasks and progress, see [GitHub Issues](https://github.com/NeuroCoderZ/holograms.media/issues) and [Projects](https://github.com/NeuroCoderZ/holograms.media/projects).
 
-## 🛠 Technology Stack (Firebase Ecosystem Focus)
+## 🛠 Technology Stack
 
 ### Frontend:
 
@@ -32,23 +32,23 @@ For project tasks and progress, see [GitHub Issues](https://github.com/NeuroCode
 
 ### Backend & AI:
 
-*   **Firebase Cloud Functions (Python):** Core of the backend, handling all server-side logic.
+*   **FastAPI (Python) on Koyeb:** Core of the backend, handling all server-side logic.
 *   **Neon.tech PostgreSQL + pgvector:** Primary database for user data, metadata, and AI knowledge (embeddings).
 *   **Firebase Authentication:** For user sign-up, login, and security.
-*   **Firebase Storage:** For storing user-uploaded media "chunks".
-*   **LLM APIs (Mistral/Devstral, Google Gemini):** Direct calls from Cloud Functions for Tria's AI logic in MVP.
-*   **Genkit (Target Framework):** Planned for orchestrating Tria's AI bots and flows post-MVP, integrating with Firebase AI (Vertex AI) and Google Gemini.
+*   **Cloudflare R2:** For storing user-uploaded media "chunks" and other assets.
+*   **LLM APIs (Mistral/Devstral, Google Gemini):** Direct calls from the FastAPI backend for Tria's AI logic in MVP.
+*   **Genkit (Target Framework):** Planned for orchestrating Tria's AI bots and flows post-MVP.
 *   **LangChain:** Potential use for RAG and AI agent development.
 
 ### Development & Deployment:
 
 *   **Firebase Studio (Project IDX):** Main Integrated Development Environment (IDE).
-*   **Firebase Local Emulator Suite:** For local development and testing of Firebase services.
-*   **GitHub Actions:** For CI/CD, automating deployments to Firebase Hosting and Cloud Functions.
+*   **Docker:** For containerizing the backend for development and deployment.
+*   **Firebase Local Emulator Suite:** For local development and testing of Firebase Authentication (primarily for frontend) and Firebase Hosting.
+*   **GitHub Actions:** For CI/CD, automating deployments to Firebase Hosting (frontend) and Koyeb (backend).
 *   **Git & GitHub:** Version control and project management.
-*   **Docker:** For auxiliary development tasks or containerizing specific tools if needed (not for primary backend deployment).
 
-## 🚀 Getting Started (Development with Firebase)
+## 🚀 Getting Started
 
 To get the project up and running, follow these steps:
 
@@ -65,84 +65,70 @@ To get the project up and running, follow these steps:
     ```
     Follow the official instructions: [Firebase CLI Setup](https://firebase.google.com/docs/cli#setup_the_firebase_cli)
 
-3.  **Login to Firebase:**
+3.  **Login to Firebase (for Frontend Hosting & Auth):**
     Authenticate your CLI with your Firebase account:
     ```bash
     firebase login
     ```
 
-4.  **Set up Firebase Project:**
-    *   Initialize Firebase in your local project directory (if not already done). When prompted, select **Functions**, **Hosting**, **Storage**, and **Emulators**. Follow the prompts to set up your project.
+4.  **Set up Firebase Project (for Frontend Hosting & Auth):**
+    *   Initialize Firebase in your local project directory if you intend to use Firebase Hosting or Auth emulators. When prompted, select **Hosting** and **Emulators**.
         ```bash
-        firebase init
+        firebase init hosting
+        firebase init emulators
         ```
-    *   Ensure your local project is linked to the correct Firebase project:
+    *   Ensure your local project is linked to the correct Firebase project for hosting:
         ```bash
         firebase use <your-firebase-project-id>
         ```
         (Replace `<your-firebase-project-id>` with your actual Firebase project ID, e.g., `holograms-media`).
 
-5.  **Install Backend Dependencies (Python for Cloud Functions):**
-    Each Python Cloud Function (`backend/cloud_functions/*`) has its own `requirements.txt`. You will need to install dependencies for each function that you plan to deploy or emulate.
-    
-    Navigate to each function's directory and install dependencies:
-    ```bash
-    cd backend/cloud_functions/auth_sync
-    pip install -r requirements.txt
-    cd ../process_chunk
-    pip install -r requirements.txt
-    cd ../tria_chat_handler
-    pip install -r requirements.txt
-    # ... repeat for any other Python functions
-    ```
-    *Self-correction:* For local development and to avoid conflicts, it's often better to manage a single virtual environment at the `backend/` level and ensure all `requirements.txt` are compatible, or to use `pip install -r backend/requirements.txt` if a consolidated one exists. However, for Firebase Functions, individual `requirements.txt` are common for isolated deployments as per our [Deployment Strategy documentation](docs/01_ARCHITECTURE/DEPLOYMENT_STRATEGY.md).
+5.  **Set up Backend (FastAPI on Koyeb):**
+    *   Navigate to the `backend/` directory:
+        ```bash
+        cd backend
+        ```
+    *   Create and activate a Python virtual environment:
+        ```bash
+        python -m venv venv
+        source venv/bin/activate  # On Windows: venv\Scripts\activate
+        ```
+    *   Install backend dependencies:
+        ```bash
+        pip install -r requirements.txt
+        ```
+    *   Create a `.env` file by copying `backend/.env.example`:
+        ```bash
+        cp .env.example .env
+        ```
+    *   Populate the `.env` file with your credentials for Neon.tech PostgreSQL, Cloudflare R2, and Firebase Admin SDK (service account details).
+    *   Run the FastAPI application locally:
+        ```bash
+        uvicorn backend.app:app --reload --port 8000
+        ```
+        The backend will be available at `http://localhost:8000`.
 
 6.  **Install Frontend Dependencies (if any build step is involved):**
     This project uses native HTML/CSS/JS, so typically no `npm install` is needed for the frontend. If future tooling (e.g., Vite for bundling) is introduced, this step would become relevant.
-    ```bash
-    # cd frontend
-    # npm install (if package.json exists for frontend tools/bundling)
-    ```
 
-7.  **Configure Environment Variables (for Cloud Functions & Local Emulation):**
-    *   **For Deployed Functions:** Firebase Cloud Functions require environment variables to be set securely. Use the Firebase CLI to configure these variables, which are essential for connecting to external services like Neon.tech PostgreSQL and LLM APIs.
-        
-        Before first deployment, or whenever these values change, run the following commands (replace `YOUR_ACTUAL_...` with your real values):
+7.  **Configure Environment Variables (for Backend):**
+    Environment variables for the backend (Neon.tech, R2, Firebase Admin, LLM APIs) are managed via the `.env` file for local development (loaded by `python-dotenv` in `backend/app.py`). For production on Koyeb, these variables must be set in the Koyeb service configuration. Refer to `backend/.env.example` for the list of required variables.
+
+8.  **Running Frontend and Emulated Services:**
+    *   **Backend:** Run the FastAPI backend separately using `uvicorn backend.app:app --reload` as described above.
+    *   **Frontend & Firebase Emulators:** If you need to test Firebase Authentication or host the frontend locally using Firebase tools:
         ```bash
-        # For Neon.tech PostgreSQL database URL
-        firebase functions:config:set db.neon_database_url="YOUR_ACTUAL_NEON_DATABASE_URL"
-        
-        # For Mistral AI API Key
-        firebase functions:config:set llm.mistral_api_key="oVcP2Nj0iNWGupB6lswjbvhwHOr23hhr"
+        firebase emulators:start --only hosting,auth
         ```
-        *Note:* For highly sensitive data, consider using Firebase Secret Manager for enhanced security.
-        
-        You can verify the configured environment variables with:
-        ```bash
-        firebase functions:config:get
-        ```
-        After setting or updating configuration, you **must** redeploy your functions for them to pick up the new values.
+        This command will typically serve the frontend (from your `public` or `frontend` directory specified in `firebase.json`) on `http://localhost:5000`. The Firebase Authentication emulator will also run. The actual backend logic is handled by your separate `uvicorn` process.
 
-    *   **For Local Emulation:** For local development and testing with the Firebase Emulator Suite, you can use a `.env` file in your `backend/` directory that `python-dotenv` can load, or configure runtime variables for the emulator. Refer to the `.env.example` file in the project root for expected variables and format.
-
-8.  **Run with Firebase Local Emulator Suite:**
-    To run the frontend, backend Cloud Functions, authentication, and storage locally:
-    ```bash
-    firebase emulators:start --only functions,hosting,auth,storage
-    ```
-    This command will typically serve the frontend on `http://localhost:5000` and Cloud Functions on `http://localhost:5001`. The Firebase Emulator UI, which provides a dashboard for all emulated services and logs, is usually accessible at `http://localhost:4000`.
-
-9.  **Deploying to Firebase (Production):**
-    *   **Deploy Frontend (Hosting):**
+9.  **Deploying to Production:**
+    *   **Backend (FastAPI on Koyeb):**
+        The backend is deployed as a Docker container to Koyeb. This is typically handled by CI/CD (e.g., GitHub Actions) pushing a built Docker image to a registry and triggering Koyeb, or by Koyeb building from the repository directly using the `Dockerfile` at the root of the project.
+    *   **Frontend (Firebase Hosting):**
         ```bash
         firebase deploy --only hosting
         ```
-    *   **Deploy Cloud Functions:**
-        As per our [Deployment Strategy](docs/01_ARCHITECTURE/DEPLOYMENT_STRATEGY.md), Cloud Functions are deployed individually.
-        ```bash
-        firebase deploy --only functions
-        ```
-        This will deploy all functions defined in your `firebase.json`'s `functions.source` directory.
 
 ## 📚 Key Project Documents
 *   **System Instruction:** [docs/03_SYSTEM_INSTRUCTIONS_AI/SYSTEM_INSTRUCTION_CURRENT.md](docs/03_SYSTEM_INSTRUCTIONS_AI/SYSTEM_INSTRUCTION_CURRENT.md) (This document - detailed project overview and AI guidelines)
