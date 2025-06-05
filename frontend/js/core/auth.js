@@ -63,7 +63,7 @@ export async function userSignOut() {
     try {
         await signOut(auth);
         // Update UI to indicate no user is signed in.
-        if (userStatusDiv) userStatusDiv.textContent = 'Signed out.';
+        if (userStatusDiv) userStatusDiv.textContent = '';
     } catch (error) {
         console.error("Error during sign out:", error);
     }
@@ -72,7 +72,7 @@ export async function userSignOut() {
 /**
  * Initializes an observer for Firebase Authentication state changes.
  * This observer runs whenever the user's sign-in state changes (e.g., sign-in, sign-out, token refresh).
- * It updates the UI and retrieves the Firebase ID token, passing it to a provided callback function.
+ * It updates the UI and retrieves the Firebase ID token, passing it to a provided callback function.\
  * @param {function(string|null): Promise<void>} callbackAfterToken - A callback function that receives the Firebase ID Token (or null if signed out).
  *   This callback is typically used to synchronize the user with the backend or perform other authenticated actions.
  */
@@ -110,7 +110,7 @@ export function initAuthObserver(callbackAfterToken) {
 
         } else {
             // User is signed out. Update UI accordingly.
-            if (userStatusDiv) userStatusDiv.textContent = 'No user signed in.';
+            if (userStatusDiv) userStatusDiv.textContent = '';
 
             if (userAvatarElement) {
                 userAvatarElement.style.display = 'none';
@@ -118,7 +118,7 @@ export function initAuthObserver(callbackAfterToken) {
 
             if (signInButton) signInButton.style.display = 'block'; // Show sign-in button
             if (signOutButton) signOutButton.style.display = 'none'; // Hide sign-out button
-            // Call the provided callback with null, indicating no user token.
+            // Call the provided callback with null, indicating no user token.\
             if (callbackAfterToken && typeof callbackAfterToken === 'function') {
                 await callbackAfterToken(null); // Await the callback if it's async
             }
@@ -128,8 +128,8 @@ export function initAuthObserver(callbackAfterToken) {
 
 /**
  * Handles the received Firebase ID token by sending it to the backend's authentication synchronization function.
- * This function acts as the `callbackAfterToken` for `initAuthObserver`.
- * @param {string|null} token - The Firebase ID Token string, or null if the user is signed out.
+ * This function acts as the `callbackAfterToken` for `initAuthObserver`.\
+ * @param {string|null} token - The Firebase ID Token string, or null if the user is signed out.\
  */
 export async function handleTokenForBackend(token) {
     if (token) {
