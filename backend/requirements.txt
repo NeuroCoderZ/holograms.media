@@ -1,41 +1,14 @@
---- Core FastAPI ---
-
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
 pydantic>=2.7.0
-
---- Authentication & Security ---
-For multipart form data handling (which pulls in passlib if needed by dependencies)
-
 python-multipart>=0.0.9
-
-For JWT handling (if custom logic is used)
-
 python-jose[cryptography]>=3.3.0
-
-Firebase Admin SDK for token verification etc.
-
 firebase-admin>=6.5.0
-
---- Database ---
-
 asyncpg>=0.29.0
-
---- HTTP Client ---
-
 httpx>=0.27.0
-
---- AWS / S3 Compatible (for Backblaze B2) ---
-
 boto3>=1.34.0
 botocore>=1.34.0
-
---- Utilities ---
-
 python-dotenv>=1.0.1
 aiofiles>=23.2.1
 tenacity>=8.2.0
-
---- Protobuf (for NetHoloGlyph or other services) ---
-
 protobuf>=4.25.0
