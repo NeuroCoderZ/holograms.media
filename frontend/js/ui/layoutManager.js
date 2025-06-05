@@ -5,6 +5,11 @@ import { state } from '../core/init.js';
 // Если uiManager еще не отработал, ui.leftPanel и ui.rightPanel здесь могут быть null.
 // Поэтому безопаснее брать их из state.uiElements, если они там уже есть.
 
+// Constants for layout adjustments
+const HANDS_VISIBLE_SCALE_FACTOR = 0.75;
+const HANDS_VISIBLE_Y_OFFSET_FACTOR = 0.1; // Positive value moves the hologram up
+const HOLOGRAM_PADDING = 0.95; // Used in calculateInitialScale
+
 // Вспомогательные функции для получения актуальной ширины видимых панелей
 function getLeftPanelWidth() {
   return (state.uiElements?.leftPanel && !state.uiElements.leftPanel.classList.contains('hidden') ? state.uiElements.leftPanel.offsetWidth : 0);
@@ -26,9 +31,9 @@ function calculateInitialScale(containerWidth, availableHeightForHologram) {
   const hologramWidth = WIDTH * 2; // Предполагаемая базовая ширина контента голограммы
   const hologramHeight = HEIGHT;  // Предполагаемая базовая высота контента голограммы
 
-  const padding = 0.95; // Используем 95% контейнера для голограммы, чтобы были отступы
-  let widthScale = (containerWidth * padding) / hologramWidth;
-  let heightScale = (availableHeightForHologram * padding) / hologramHeight;
+  // Используем 95% контейнера для голограммы, чтобы были отступы
+  let widthScale = (containerWidth * HOLOGRAM_PADDING) / hologramWidth;
+  let heightScale = (availableHeightForHologram * HOLOGRAM_PADDING) / hologramHeight;
 
   let scale = Math.min(widthScale, heightScale);
   scale = Math.max(scale, 0.1); // Минимальный допустимый масштаб
@@ -101,16 +106,22 @@ export function updateHologramLayout(handsVisible) {
   const availableHeightForHologramContent = availableHeightForGrid;
 
   // Рассчитываем масштаб для голограммы
-  // Если руки видны, можно использовать фиксированный масштаб или более сложную логику
-  const targetScaleValue = calculateInitialScale(availableWidthForGrid, availableHeightForHologramContent);
-  // Пока уберем логику handsVisible ? 0.8, чтобы всегда масштабировалось по доступному месту
+  let targetScaleValue;
+  let newTargetPositionY;
 
-  // Рассчитываем позицию Y для hologramPivot
-  // Цель - центрировать голограмму в availableHeightForHologramContent
-  // (0,0) hologramPivot - это его центр.
-  const newTargetPositionY = 0; // Так как ортографическая камера будет центрирована на этом пространстве
+  if (handsVisible) {
+    targetScaleValue = HANDS_VISIBLE_SCALE_FACTOR * calculateInitialScale(availableWidthForGrid, availableHeightForHologramContent);
+    // Positive Y offset moves the hologram upwards.
+    // Calculated as a percentage of the available height for the hologram content.
+    newTargetPositionY = availableHeightForHologramContent * HANDS_VISIBLE_Y_OFFSET_FACTOR;
+  } else {
+    targetScaleValue = calculateInitialScale(availableWidthForGrid, availableHeightForHologramContent);
+    newTargetPositionY = 0; // Centered when hands are not visible
+  }
 
   // Обновляем параметры ортографической камеры, если она активна
+  // Note: Camera position itself is not changed here, only its frustum.
+  // The hologramPivot position is what moves the content within this frustum.
   if (state.activeCamera && state.activeCamera.isOrthographicCamera) {
     state.activeCamera.left = -availableWidthForGrid / 2;
     state.activeCamera.right = availableWidthForGrid / 2;

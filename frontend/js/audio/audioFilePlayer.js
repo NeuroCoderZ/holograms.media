@@ -61,7 +61,7 @@ async function loadAudioFile(event) {
       state.audio.pausedAt = 0;
       state.audio.startOffset = 0;
       state.audio.isPlaying = false;
-      // activeSource will be set by playAudio or remain 'none'
+      state.audio.activeSource = 'file'; // Set activeSource to 'file' for rendering silent state
 
     } catch (_error) {
       console.error('Ошибка декодирования аудиофайла:', _error);
@@ -133,7 +133,7 @@ function pauseAudio() {
     console.error('Audio source stop error during pause:', _error);
   }
   state.audio.isPlaying = false;
-  state.audio.activeSource = 'none';
+  state.audio.activeSource = 'file'; // Keep activeSource as 'file' for silent/paused visualization
 
   if (playButton) playButton.classList.remove('active');
   if (pauseButton) pauseButton.classList.add('active');
@@ -172,7 +172,7 @@ function stopAudio() {
   state.audio.pausedAt = 0;
   state.audio.startOffset = 0;
   state.audio.isPlaying = false;
-  state.audio.activeSource = 'none';
+  state.audio.activeSource = 'file'; // Keep activeSource as 'file' for silent/stopped visualization
 
   // Assumes playButton, pauseButton, stopButton are module-level variables
   // assigned in initializeAudioPlayerControls()

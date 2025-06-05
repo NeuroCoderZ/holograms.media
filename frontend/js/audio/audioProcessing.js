@@ -207,8 +207,42 @@ export function updateLiveSequencerVisuals(analyserLeft, analyserRight) {
 
 /**
  * Updates sequencer column visuals based on file playback audio.
+ * Handles both active playback and silent (loaded but not playing) states.
  */
 export function updateFilePlaybackVisuals() {
+  // Condition for silent state: file loaded, but not playing
+  if (state.audio.audioBuffer && !state.audio.isPlaying) {
+    if (!state.columns || state.columns.length === 0 || !state.semitones || state.semitones.length === 0) {
+      return; // Not enough data to update visuals
+    }
+    state.columns.forEach((columnPair, i) => {
+      if (i >= state.semitones.length) return;
+
+      const baseColor = state.semitones[i].color;
+      const minScaleY = 0.001;
+      const positionY = (minScaleY / 2) - state.config.GRID.HEIGHT / 2;
+
+      if (columnPair.left && columnPair.left.children[0]) {
+        const mesh = columnPair.left.children[0];
+        mesh.scale.y = minScaleY;
+        mesh.position.y = positionY;
+        mesh.material.color.set(baseColor);
+        mesh.material.opacity = 0.5;
+        mesh.material.transparent = true;
+      }
+      if (columnPair.right && columnPair.right.children[0]) {
+        const mesh = columnPair.right.children[0];
+        mesh.scale.y = minScaleY;
+        mesh.position.y = positionY;
+        mesh.material.color.set(baseColor);
+        mesh.material.opacity = 0.5;
+        mesh.material.transparent = true;
+      }
+    });
+    return; // Visuals set for silent state, skip active playback logic
+  }
+
+  // Existing logic for active playback
   if (!state.audio.filePlayerAnalysers || !state.columns || state.columns.length === 0 || !state.semitones || state.semitones.length === 0) {
     return;
   }
