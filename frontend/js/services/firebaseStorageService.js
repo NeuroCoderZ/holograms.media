@@ -1,86 +1,74 @@
 // frontend/js/services/firebaseStorageService.js
-import { storage } from '../core/firebaseInit.js'; // Get the initialized storage instance
-import { ref, uploadBytesResumable, getMetadata } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
+import { getPresignedUrl } from './apiService.js'; // Import the new API function
 
 /**
- * Generates a simple unique ID for a chunk using current timestamp and a random number.
- * A proper UUID library would be more robust for ensuring global uniqueness if needed.
- * @param {string} filename - The original filename, to add a bit more uniqueness.
- * @returns {string} A pseudo-unique chunk ID.
- */
-function generateChunkId(filename) {
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 7); // Short random string
-    // Sanitize filename part to remove problematic characters
-    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '').substring(0, 50);
-    return `${timestamp}_${randomSuffix}_${sanitizedFilename}`;
-}
-
-/**
- * Uploads a file to Firebase Storage in a user-specific path.
+ * Uploads a file to Cloudflare R2 using a presigned URL obtained from the backend.
  *
  * @param {File} file The file object to upload.
- * @param {string} firebaseUserId The UID of the Firebase user.
- * @returns {Promise<string>} A promise that resolves with the full Firebase Storage path
- *                            of the uploaded file, or rejects with an error.
+ * @param {string} firebaseUserId The UID of the Firebase user (passed to backend for key generation).
+ * @param {string} idToken The Firebase ID token for authorizing the backend request.
+ * @returns {Promise<string>} A promise that resolves with the R2 object key of the uploaded file,
+ *                            or rejects with an error.
  */
-export async function uploadFileToFirebaseStorage(file, firebaseUserId) {
+export async function uploadFileToR2(file, firebaseUserId, idToken) {
     if (!file) {
         return Promise.reject(new Error("File object is required."));
     }
-    if (!firebaseUserId) {
-        return Promise.reject(new Error("Firebase User ID is required."));
+    if (!firebaseUserId) { // Though firebaseUserId is mainly for backend to structure the key
+        return Promise.reject(new Error("Firebase User ID is required for context."));
+    }
+    if (!idToken) {
+        return Promise.reject(new Error("Firebase ID token is required."));
     }
 
-    const chunkId = generateChunkId(file.name);
-    const storagePath = `user_uploads/${firebaseUserId}/${chunkId}_${file.name}`;
+    console.log(`[firebaseStorageService-R2] Starting R2 upload process for: ${file.name}`);
 
-    const storageRef = ref(storage, storagePath);
+    try {
+        // 1. Get presigned URL from the backend
+        console.log(`[firebaseStorageService-R2] Requesting presigned URL for ${file.name}, type: ${file.type}`);
+        const presignedData = await getPresignedUrl(file.name, file.type, idToken);
+        const { url: presignedUrl, fields, object_key: objectKey } = presignedData;
 
-    const customMetadata = {
-        firebaseUserId: firebaseUserId,
-        originalFilename: file.name,
-        clientTimestamp: new Date().toISOString()
-        // contentType is automatically handled by Firebase Storage based on file extension or file.type
-        // but can be explicitly set if needed: contentType: file.type
-    };
+        console.log(`[firebaseStorageService-R2] Received presigned URL for ${objectKey}. Uploading to: ${presignedUrl}`);
 
-    console.log(`Starting upload for: ${file.name} to path: ${storagePath}`);
+        // 2. Create FormData and append fields from presigned POST data
+        const formData = new FormData();
+        for (const key in fields) {
+            formData.append(key, fields[key]);
+        }
+        // Append the file. The key for the file must be 'file',
+        // as this is a common expectation for S3 presigned POSTs.
+        // If your backend's generate_presigned_post specifies a different field name for the file, adjust here.
+        formData.append('file', file);
 
-    return new Promise((resolve, reject) => {
-        const uploadTask = uploadBytesResumable(storageRef, file, { customMetadata });
+        console.log(`[firebaseStorageService-R2] FormData prepared. Initiating upload to R2 for ${objectKey}`);
 
-        uploadTask.on('state_changed',
-            (snapshot) => {
-                // Observe state change events such as progress, pause, and resume
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                console.log(`Upload for ${file.name} is ${progress}% done`);
-                switch (snapshot.state) {
-                    case 'paused':
-                        console.log(`Upload for ${file.name} is paused`);
-                        break;
-                    case 'running':
-                        console.log(`Upload for ${file.name} is running`);
-                        break;
-                }
-            },
-            (error) => {
-                // Handle unsuccessful uploads
-                console.error(`Upload failed for ${file.name}:`, error);
-                reject(error);
-            },
-            async () => {
-                // Handle successful uploads on complete
-                try {
-                    const uploadedFileMetadata = await getMetadata(uploadTask.snapshot.ref);
-                    console.log(`Upload successful for ${file.name}. Full path: ${uploadedFileMetadata.fullPath}`);
-                    resolve(uploadedFileMetadata.fullPath);
-                } catch (metaError) {
-                    console.error(`Failed to get metadata for ${file.name}:`, metaError);
-                    // Fallback to snapshot.ref.fullPath if getMetadata fails for some reason, though it shouldn't
-                    reject(metaError);
-                }
-            }
-        );
-    });
+        // 3. Perform the POST request to R2
+        const r2Response = await fetch(presignedUrl, {
+            method: 'POST',
+            body: formData,
+            // IMPORTANT: Do NOT set Content-Type header manually for FormData.
+            // The browser will set it correctly, including the boundary.
+        });
+
+        if (!r2Response.ok) {
+            // Try to get error message from R2 response if any
+            let r2ErrorText = await r2Response.text(); // Or .text() if XML
+            console.error(`[firebaseStorageService-R2] R2 upload failed for ${objectKey}. Status: ${r2Response.status}`, r2ErrorText);
+            throw new Error(`R2 upload failed: ${r2Response.statusText}. Details: ${r2ErrorText}`);
+        }
+
+        console.log(`[firebaseStorageService-R2] Upload successful for ${objectKey} to R2. Status: ${r2Response.status}`);
+
+        // A successful S3 presigned POST upload usually returns a 204 No Content or 200 OK.
+        // The object_key (or full R2 path/URL if preferred) is returned to the caller.
+        // For now, returning objectKey is consistent with what the backend provides.
+        // You might construct a full URL if needed: `https://your-r2-public-domain.com/${objectKey}`
+        return objectKey;
+
+    } catch (error) {
+        console.error(`[firebaseStorageService-R2] Error during R2 upload for ${file.name}:`, error);
+        // Re-throw the error to be caught by the calling function (e.g., in uiManager)
+        throw error;
+    }
 }
