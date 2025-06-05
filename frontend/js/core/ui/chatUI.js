@@ -57,7 +57,7 @@ async function sendMessage() {
     const currentUser = auth.currentUser;
     if (!currentUser) {
         console.error("No user signed in. Cannot send chat message.");
-        appendMessage("System", "Error: You must be signed in to chat.");
+        // appendMessage("System", "Error: You must be signed in to chat."); // Removed as per request
         return;
     }
     const firebaseUserId = currentUser.uid;
