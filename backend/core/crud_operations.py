@@ -12,71 +12,13 @@ from datetime import datetime
 import logging
 
 # Import Pydantic models from their respective modules
-from ..models.user_models import UserInDB, UserCreate
+from ..models.user_models import UserInDB
 from ..models.multimodal_models import AudiovisualGesturalChunkModel, UserGestureModel
 from ..models.learning_log_models import TriaLearningLogModel
 from ..models.hologram_models import UserHologramResponseModel # Модель для ответа по голограммам
 
 # Configure logging for this module
 logger = logging.getLogger(__name__)
-
-
-async def create_user(db: asyncpg.Connection, *, user_create: UserCreate) -> UserInDB:
-    """
-    Creates a new user record in the database.
-
-    Args:
-        db: An active asyncpg database connection.
-        user_create: A Pydantic UserCreate model containing the user data to create.
-                     The `user_id_firebase` field will be used as the `user_id` primary key
-                     in the 'users' table.
-
-    Returns:
-        A UserInDB instance representing the created user, including data
-        fetched from the database (like created_at, updated_at) and a locally
-        generated UUID for the 'id' field to satisfy the BaseUUIDModel requirements if used.
-        (Note: UserInDB in provided snippets does not inherit BaseUUIDModel explicitly,
-         so local id generation might be for consistency with other models or a previous design).
-
-    Raises:
-        asyncpg.UniqueViolationError: If a user with the given `user_id_firebase` already exists.
-        Exception: For any other unexpected errors during database operation.
-    """
-    sql = """
-        INSERT INTO users (user_id, email)
-        VALUES ($1, $2)
-        RETURNING user_id, email, created_at, updated_at;
-    """
-    try:
-        logger.info(f"Attempting to create user with Firebase UID: {user_create.user_id_firebase}")
-        row = await db.fetchrow(sql, user_create.user_id_firebase, user_create.email)
-        if row:
-            # Assuming UserInDB does not have an 'id' that's a DB primary key, 
-            # and user_id_firebase is the one stored in the DB 'user_id' PK field.
-            # If UserInDB expects a UUID 'id' (e.g. from a BaseUUIDModel), it's generated locally.
-            created_user_data = dict(row)
-            # If UserInDB expects 'user_id_firebase' field and DB returns 'user_id'
-            if 'user_id' in created_user_data and 'user_id_firebase' not in created_user_data:
-                created_user_data['user_id_firebase'] = created_user_data.pop('user_id')
-            
-            # Add local UUID if UserInDB inherits from something like BaseUUIDModel that requires it
-            # This ID is not from the 'users' table itself.
-            if not hasattr(UserCreate, 'id') and hasattr(UserInDB, 'id') and not 'id' in created_user_data:
-                 created_user_data['id'] = uuid4()
-
-            created_user = UserInDB(**created_user_data)
-            logger.info(f"User {created_user.user_id_firebase} created successfully.")
-            return created_user
-        else:
-            logger.error(f"User creation failed, no data returned from DB for Firebase UID: {user_create.user_id_firebase}")
-            raise Exception("User creation failed, no data returned.")
-
-    except asyncpg.UniqueViolationError as e:
-        logger.warning(f"User with Firebase UID {user_create.user_id_firebase} already exists (UniqueViolationError). Details: {e}")
-        raise 
-    except Exception as e:
-        logger.exception(f"An unexpected error occurred while creating user with Firebase UID {user_create.user_id_firebase}.")
-        raise
 
 
 async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) -> Optional[UserInDB]:
