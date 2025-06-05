@@ -257,7 +257,7 @@ async def upload_chunk_endpoint(
 
     except Exception as e:
         logger.error(f"Error processing chunk upload for {chunk_id} (Part {part_number}), file {file_id}: {e}", exc_info=True)
-        return {"success": False, "message": f"Server error during chunk upload: {str(e)}"}
+        return {"success": False, "message": "An internal error occurred while processing the chunk upload."}
 
 
 async def verify_chunk(chunk_id: str, original_data: bytes, b2_bucket_name: str, file_id: str) -> bool:
