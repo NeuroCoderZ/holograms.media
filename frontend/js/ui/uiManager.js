@@ -4,8 +4,9 @@
 import { loadPanelsHiddenState, savePanelsHiddenState } from '../core/appStatePersistence.js';
 import { state } from '../core/init.js';
 import { auth } from '../core/firebaseInit.js';
-// import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js'; // Replaced with apiService.uploadChunk
-import { uploadChunk } from '../services/apiService.js';
+// import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js'; // Old Firebase Storage upload
+import { uploadFileToR2 } from '../services/firebaseStorageService.js'; // New R2 upload via presigned URL
+// import { uploadChunk } from '../services/apiService.js'; // Old direct backend upload, now replaced by R2 presigned
 import { initializePwaInstall, handleInstallButtonClick } from '../core/pwaInstall.js';
 // panelManager is used to switch visible content panels in the right sidebar.
 import PanelManager from './panelManager.js';
@@ -298,13 +299,18 @@ export function initializeMainUI() {
 
       try {
         const idToken = await currentUser.getIdToken(); // Get Firebase ID token
-        const result = await uploadChunk(firebaseUserId, file, idToken);
-        setStatus(`Upload complete! Server response: ${result.message || JSON.stringify(result)}`);
-        console.log('File uploaded via apiService, server response:', result);
+        // const result = await uploadChunk(firebaseUserId, file, idToken); // Old direct backend upload
+        // setStatus(`Upload complete! Server response: ${result.message || JSON.stringify(result)}`);
+        // console.log('File uploaded via apiService, server response:', result);
+
+        setStatus(`Uploading ${file.name} to R2 storage...`);
+        const objectKey = await uploadFileToR2(file, firebaseUserId, idToken);
+        setStatus(`Upload to R2 successful! Object Key: ${objectKey}`);
+        console.log('File uploaded to R2, object key:', objectKey);
         // Additional logic after successful upload, if needed
       } catch (error) {
         setStatus(`Upload failed for ${file.name}. Error: ${error.message}`);
-        console.error("Error uploading file via apiService:", error);
+        console.error("Error uploading file to R2:", error);
       } finally {
           // Always clear the file input after an attempt, regardless of success or failure.
           if (uiElements.inputs.chunkUploadInput) uiElements.inputs.chunkUploadInput.value = "";
