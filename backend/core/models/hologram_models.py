@@ -61,7 +61,7 @@ class UserHologramDB(UserHologramBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # For API responses that might list multiple elements
 class HolographicScene(BaseModel):
@@ -91,4 +91,4 @@ class UserHologramResponseModel(BaseModel):
     preview_url: Optional[str] = Field(default=None, description="URL for the hologram preview image")
 
     class Config:
-        orm_mode = True # If ORM objects are used
+        from_attributes = True # If ORM objects are used

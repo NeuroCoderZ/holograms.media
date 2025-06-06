@@ -6,17 +6,27 @@ import { state } from '../core/init.js';
 // Поэтому безопаснее брать их из state.uiElements, если они там уже есть.
 
 // Constants for layout adjustments
-const HANDS_VISIBLE_SCALE_FACTOR = 0.75;
-const HANDS_VISIBLE_Y_OFFSET_FACTOR = 0.1; // Positive value moves the hologram up
-const HOLOGRAM_PADDING = 0.95; // Used in calculateInitialScale
+const HANDS_VISIBLE_SCALE_FACTOR = 0.75; // Will be overridden by direct 0.8 scale for handsVisible
+const HANDS_VISIBLE_Y_OFFSET_FACTOR = 0.05; // Changed to 0.05 to match oldscriptjs.md topMargin logic (windowHeight * 0.05)
+const HOLOGRAM_REFERENCE_WIDTH = 260; // As per task snippet
+const HOLOGRAM_REFERENCE_HEIGHT = 260; // As per task snippet
+const HOLOGRAM_SCALE_PADDING = 0.98; // As per task snippet for calculateInitialScale
 
 // Вспомогательные функции для получения актуальной ширины видимых панелей
 function getLeftPanelWidth() {
-  return (state.uiElements?.leftPanel && !state.uiElements.leftPanel.classList.contains('hidden') ? state.uiElements.leftPanel.offsetWidth : 0);
+  const leftPanel = state.uiElements?.leftPanel;
+  if (leftPanel && !leftPanel.classList.contains('hidden') && leftPanel.offsetParent !== null) {
+    return leftPanel.getBoundingClientRect().width;
+  }
+  return 0;
 }
 
 function getRightPanelWidth() {
-  return (state.uiElements?.rightPanel && !state.uiElements.rightPanel.classList.contains('hidden') ? state.uiElements.rightPanel.offsetWidth : 0);
+  const rightPanel = state.uiElements?.rightPanel;
+  if (rightPanel && !rightPanel.classList.contains('hidden') && rightPanel.offsetParent !== null) {
+    return rightPanel.getBoundingClientRect().width;
+  }
+  return 0;
 }
 
 function getTotalPanelWidths() {
@@ -24,16 +34,10 @@ function getTotalPanelWidths() {
 }
 
 // Функция расчета начального масштаба для голограммы
-function calculateInitialScale(containerWidth, availableHeightForHologram) {
-  // Используем размеры сетки из конфигурации в state, с дефолтными значениями
-  const { WIDTH, HEIGHT } = state.config?.GRID || { WIDTH: 130, HEIGHT: 260 };
-
-  const hologramWidth = WIDTH * 2; // Предполагаемая базовая ширина контента голограммы
-  const hologramHeight = HEIGHT;  // Предполагаемая базовая высота контента голограммы
-
-  // Используем 95% контейнера для голограммы, чтобы были отступы
-  let widthScale = (containerWidth * HOLOGRAM_PADDING) / hologramWidth;
-  let heightScale = (availableHeightForHologram * HOLOGRAM_PADDING) / hologramHeight;
+function calculateInitialScale(containerWidth, containerHeight) { // Renamed parameter for clarity
+  // Using constants as per task snippet
+  let widthScale = (containerWidth * HOLOGRAM_SCALE_PADDING) / HOLOGRAM_REFERENCE_WIDTH;
+  let heightScale = containerHeight / HOLOGRAM_REFERENCE_HEIGHT; // No padding mentioned for height in snippet's direct scale calculation
 
   let scale = Math.min(widthScale, heightScale);
   scale = Math.max(scale, 0.1); // Минимальный допустимый масштаб
@@ -110,10 +114,8 @@ export function updateHologramLayout(handsVisible) {
   let newTargetPositionY;
 
   if (handsVisible) {
-    targetScaleValue = HANDS_VISIBLE_SCALE_FACTOR * calculateInitialScale(availableWidthForGrid, availableHeightForHologramContent);
-    // Positive Y offset moves the hologram upwards.
-    // Calculated as a percentage of the available height for the hologram content.
-    newTargetPositionY = availableHeightForHologramContent * HANDS_VISIBLE_Y_OFFSET_FACTOR;
+    targetScaleValue = 0.8; // As per oldscriptjs.md
+    newTargetPositionY = window.innerHeight * HANDS_VISIBLE_Y_OFFSET_FACTOR; // As per oldscriptjs.md (topMargin)
   } else {
     targetScaleValue = calculateInitialScale(availableWidthForGrid, availableHeightForHologramContent);
     newTargetPositionY = 0; // Centered when hands are not visible
@@ -134,13 +136,13 @@ export function updateHologramLayout(handsVisible) {
   // Анимация масштаба и позиции hologramPivot
   if (window.TWEEN) {
     new window.TWEEN.Tween(state.hologramPivot.scale)
-      .to({ x: targetScaleValue, y: targetScaleValue, z: targetScaleValue }, 300) // Уменьшил время анимации
-      .easing(window.TWEEN.Easing.Quadratic.Out)
+      .to({ x: targetScaleValue, y: targetScaleValue, z: targetScaleValue }, 500) // Duration 500ms
+      .easing(window.TWEEN.Easing.Quadratic.InOut) // Easing Quadratic.InOut
       .start();
 
     new window.TWEEN.Tween(state.hologramPivot.position)
-      .to({ y: newTargetPositionY }, 300)
-      .easing(window.TWEEN.Easing.Quadratic.Out)
+      .to({ y: newTargetPositionY }, 500) // Duration 500ms
+      .easing(window.TWEEN.Easing.Quadratic.InOut) // Easing Quadratic.InOut
       .onComplete(() => {
         if (state.activeCamera) state.activeCamera.updateProjectionMatrix();
       })

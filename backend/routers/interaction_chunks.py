@@ -4,7 +4,7 @@ import json # Added for Pub/Sub message serialization
 import traceback # For logging Pub/Sub errors
 
 from backend.core import crud_operations
-from backend.db.pg_connector import get_db_connection
+from backend.core.db.pg_connector import get_db_connection
 from backend.core.models.interaction_chunk_model import InteractionChunkCreate, InteractionChunkDB
 from backend.core.models.user_models import UserInDB
 from backend.auth import security 

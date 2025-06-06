@@ -103,11 +103,10 @@ async def main_chatbot_test():
     ]
 
     for i, prompt_text in enumerate(prompts):
-        logger.info(f"
---- ChatBot Test {i+1} ---")
-        logger.info(f"User ({test_user_id}): {prompt_text}")
+        logger.info("ChatBot Test") # Simplified
+        logger.info("User prompt") # Simplified
         response = await chatbot.get_response(user_input=prompt_text, firebase_user_id=test_user_id)
-        logger.info(f"Tria: {response}")
+        logger.info("Tria response") # Simplified
 
 # This block ensures `main_chatbot_test()` is called only when the script is executed directly.
 if __name__ == "__main__":
