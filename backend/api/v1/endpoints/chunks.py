@@ -132,12 +132,7 @@ async def upload_chunk(
         logger.info(f"Successfully submitted chunk metadata for {object_key} to ChunkProcessorBot.")
     except Exception as e:
         logger.error(f"Failed to process chunk metadata for {object_key} after R2 upload. Error: {e}", exc_info=True)
-        # Decide on error handling:
-        # - For now, just log and return success, as file is uploaded.
-        # - Alternatively, could try to delete from R2 if metadata processing is critical for consistency.
-        # - Or, return a specific error/warning to the client.
-        # For this implementation, we'll assume logging is sufficient and the upload itself is the primary success.
-        pass # Logged the error, but proceed to return success for upload
+        pass
 
     return {
         "message": "Chunk uploaded successfully. Metadata processing initiated.",

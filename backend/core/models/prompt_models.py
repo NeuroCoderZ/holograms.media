@@ -22,7 +22,7 @@ class UserPromptVersionDB(UserPromptVersionBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Original content of backend/core/models/prompt_models.py is now replaced.
 # The models PromptVersionBase, PromptVersionCreate, UserPromptVersion (with user_id: int)
