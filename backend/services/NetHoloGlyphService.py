@@ -225,6 +225,4 @@ class NetHoloGlyphService:
                         # await self.unregister_client(client_id) # Be careful with modifying dict during iteration
 
         except Exception as e:
-            # logger.error(f"Error preparing or sending outgoing glyph: {e}", exc_info=True)
-            pass
-```
+            logger.error(f"Error preparing or sending outgoing glyph: {e}", exc_info=True)
