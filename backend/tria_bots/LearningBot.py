@@ -52,7 +52,7 @@ class LearningBot:
         Args:
             interaction_id: The ID of the interaction chunk.
             feedback_data: A dictionary containing feedback details (e.g., rating, text, misinterpretation_flag).
-        """
+        """\
         logger.info(f"Processing feedback for interaction_id: {interaction_id}")
         
         # Log the learning event
@@ -68,7 +68,7 @@ class LearningBot:
         logger.debug(f"Created learning log for feedback on interaction {interaction_id}")
 
         # Example: If feedback indicates a misinterpretation, generate an AZR task to improve.
-        if feedback_data.get("misinterpretation_flag", False):
+        if feedback_data.get("misinterpretation_flag", False):\
             task_description = (
                 f"Interaction {interaction_id} was misinterpreted by a Tria bot. "
                 f"Original input (summary): {feedback_data.get('original_input_summary', 'N/A')}. "
@@ -103,7 +103,7 @@ class LearningBot:
         """
         Runs a cycle of the Absolute Zero Reasoning (AZR) loop.
         This involves generating new tasks, attempting solutions, evaluating them, and learning.
-        """
+        """\
         logger.info("Starting AZR cycle...")
 
         # 1. Task Generation (optional, could be continuous or triggered)
@@ -122,7 +122,7 @@ class LearningBot:
         #     #     task_log = TriaLearningLogCreate( # Changed from TriaLearningLogEntryCreate
         #     #         event_type="azr_task_generated_self_improvement",
         #     #         summary_text=f"AZR self-improvement task for {bot_to_improve}.",
-        #     #         details_json={"azr_task_id": getattr(created_task, 'task_id', None), "bot_id": bot_to_improve}
+        #     #         details_json={'azr_task_id': getattr(created_task, 'task_id', None), "bot_id": bot_to_improve}
         #     #     )
         #     #     # await self.crud_ops.create_tria_learning_log_entry(task_log) # Uncomment
         #     logger.info(f"Simulated AZR self-improvement task generation for bot {bot_to_improve}.")
@@ -157,7 +157,7 @@ class LearningBot:
             evaluation_result = await self.azr_evaluator.evaluate_solution(task, solution_db_simulated) # Use solution_db
 
             # Update task and solution based on evaluation
-            if evaluation_result.get("is_successful"):
+            if evaluation_result.get("is_successful"):\
                 # await self.crud_ops.update_tria_azr_task_status(task.task_id, "completed_success", completed_at=datetime.utcnow()) # Uncomment
                 # await self.crud_ops.update_tria_azr_task_solution_status(solution_db.solution_id, "verified_success", evaluation_result) # Uncomment
                 logger.info(f"AZR task {task.task_id} successfully solved and verified.")
@@ -166,7 +166,7 @@ class LearningBot:
                     summary_text=f"AZR Task {task.task_id} completed successfully.",
                     details_json={"task_id": task.task_id, "solution_id": solution_db_simulated.solution_id, "evaluation": evaluation_result}
                 )
-            elif evaluation_result.get("needs_human_review"):
+            elif evaluation_result.get("needs_human_review"):\
                 # await self.crud_ops.update_tria_azr_task_status(task.task_id, "pending_human_review") # Uncomment
                 # await self.crud_ops.update_tria_azr_task_solution_status(solution_db.solution_id, "pending_human_review", evaluation_result) # Uncomment
                 logger.info(f"AZR task {task.task_id} solution requires human review.")
@@ -191,8 +191,8 @@ class LearningBot:
 
         logger.info("AZR cycle finished.")
 
-    async def propose_bot_parameter_update(self, bot_id: str, parameters_to_update: Dict[str, Any], change_reason: str):
-        """
+    async def propose_bot_parameter_update(self, bot_id: str, parameters_to_update: Dict[str, Any], change_reason: str):\
+        """\
         Proposes a parameter update for a specified Tria bot.
         In MVP, this logs the proposal and marks it for human review.
         Future: Could involve more automated testing/validation before applying.
@@ -201,7 +201,7 @@ class LearningBot:
             bot_id: The identifier of the bot whose parameters are to be updated.
             parameters_to_update: A dictionary of parameters and their new values.
             change_reason: A description of why this change is being proposed.
-        """
+        """\
         logger.info(f"Proposing parameter update for bot '{bot_id}'. Parameters: {parameters_to_update}. Reason: {change_reason}")
 
         # For MVP, log this proposal. In a more advanced system, this might create a pending change request.
@@ -240,20 +240,3 @@ class LearningBot:
         #     #    logger.info(f"Successfully updated (simulated) configuration for bot {bot_id} to version {updated_config.current_version}")
         # else:
         #     logger.warning(f"Could not find existing configuration for bot {bot_id} to apply proposed update.")
-
-
-    # async def propose_bot_logic_modification(self, bot_id: str, logic_embedding_diff: Any) -> bool:
-    #     """
-    #     (Future - "Liquid Code" Concept)
-    #     Proposes modifications to a bot's core logic using code embeddings or other advanced representations.
-    #     This is a highly complex, long-term feature requiring robust safety and validation.
-    #     """
-    #     logger.warning(f"[Future Method] Proposing logic modification for bot {bot_id} via embedding diff. Not implemented in MVP.")
-    #     # TODO: Define "Liquid Code" infrastructure, safety protocols, and validation.
-    #     # This might involve:
-    #     # 1. Retrieving current code embedding for the bot/module.
-    #     # 2. Applying the diff to get a target embedding.
-    #     # 3. Searching a library of known-safe code components/patterns that match the target embedding.
-    #     # 4. Generating a "change request" or "patch" in a verifiable format.
-    #     # 5. Rigorous sandbox testing and validation before any live deployment.
-```
