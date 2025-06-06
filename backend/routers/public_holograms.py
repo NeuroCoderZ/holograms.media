@@ -5,7 +5,7 @@ import logging
 
 from backend.core.crud_operations import get_holograms_by_user_id
 from backend.core.models.hologram_models import UserHologramResponseModel
-from backend.db.pg_connector import get_db_connection # Assuming this path is correct based on other routers
+from backend.core.db.pg_connector import get_db_connection
 
 router = APIRouter(
     prefix="/users",
