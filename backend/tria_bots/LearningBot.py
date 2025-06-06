@@ -6,14 +6,14 @@ from typing import Dict, Any, Optional, List
 # from backend.db.crud_operations import CRUDOperations # This will be needed when CRUD ops are implemented
 # For now, we'll mock or pass it.
 
-from backend.core.models.tria_azr_models import (
+from backend.core.models.tria_evolution_models import (
     TriaAZRTaskCreate,
     TriaAZRTaskDB,
     TriaAZRTaskSolutionCreate,
     TriaAZRTaskSolutionDB,
-    TriaLearningLogEntryCreate,
-    TriaLearningLogEntryDB,
-    TriaBotConfigurationCreate, # Though not directly used in this skeleton, good to have for context
+    TriaLearningLogCreate,    # Changed from TriaLearningLogEntryCreate
+    TriaLearningLogDB,        # Changed from TriaLearningLogEntryDB
+    TriaBotConfigurationCreate,
     TriaBotConfigurationDB
 )
 
@@ -56,7 +56,7 @@ class LearningBot:
         logger.info(f"Processing feedback for interaction_id: {interaction_id}")
         
         # Log the learning event
-        log_entry_data = TriaLearningLogEntryCreate(
+        log_entry_data = TriaLearningLogCreate( # Changed from TriaLearningLogEntryCreate
             event_type="user_feedback_received",
             summary_text=f"Feedback received for interaction {interaction_id}.",
             details_json={
@@ -88,7 +88,7 @@ class LearningBot:
             # created_task = await self.crud_ops.create_tria_azr_task(azr_task_data) # Uncomment when CRUD op is ready
             # if created_task:
             #     logger.info(f"Generated AZR task {created_task.task_id} due to misinterpretation feedback on interaction {interaction_id}.")
-            #     task_log = TriaLearningLogEntryCreate(
+            #     task_log = TriaLearningLogCreate( # Changed from TriaLearningLogEntryCreate
             #         event_type="azr_task_generated_from_feedback",
             #         summary_text=f"AZR task generated for interaction {interaction_id}.",
             #         details_json={"azr_task_id": getattr(created_task, 'task_id', None), "interaction_id": interaction_id}
@@ -119,7 +119,7 @@ class LearningBot:
         #     # created_task = await self.crud_ops.create_tria_azr_task(azr_task_data) # Uncomment
         #     # if created_task:
         #     #     logger.info(f"Generated new AZR self-improvement task: {created_task.task_id} for bot {bot_to_improve}")
-        #     #     task_log = TriaLearningLogEntryCreate(
+        #     #     task_log = TriaLearningLogCreate( # Changed from TriaLearningLogEntryCreate
         #     #         event_type="azr_task_generated_self_improvement",
         #     #         summary_text=f"AZR self-improvement task for {bot_to_improve}.",
         #     #         details_json={"azr_task_id": getattr(created_task, 'task_id', None), "bot_id": bot_to_improve}
@@ -161,7 +161,7 @@ class LearningBot:
                 # await self.crud_ops.update_tria_azr_task_status(task.task_id, "completed_success", completed_at=datetime.utcnow()) # Uncomment
                 # await self.crud_ops.update_tria_azr_task_solution_status(solution_db.solution_id, "verified_success", evaluation_result) # Uncomment
                 logger.info(f"AZR task {task.task_id} successfully solved and verified.")
-                log_event = TriaLearningLogEntryCreate(
+                log_event = TriaLearningLogCreate( # Changed from TriaLearningLogEntryCreate
                     event_type="azr_task_success",
                     summary_text=f"AZR Task {task.task_id} completed successfully.",
                     details_json={"task_id": task.task_id, "solution_id": solution_db_simulated.solution_id, "evaluation": evaluation_result}
@@ -170,7 +170,7 @@ class LearningBot:
                 # await self.crud_ops.update_tria_azr_task_status(task.task_id, "pending_human_review") # Uncomment
                 # await self.crud_ops.update_tria_azr_task_solution_status(solution_db.solution_id, "pending_human_review", evaluation_result) # Uncomment
                 logger.info(f"AZR task {task.task_id} solution requires human review.")
-                log_event = TriaLearningLogEntryCreate(
+                log_event = TriaLearningLogCreate( # Changed from TriaLearningLogEntryCreate
                     event_type="azr_task_human_review_needed",
                     summary_text=f"AZR Task {task.task_id} solution pending human review.",
                     details_json={"task_id": task.task_id, "solution_id": solution_db_simulated.solution_id, "evaluation": evaluation_result}
@@ -180,7 +180,7 @@ class LearningBot:
                 # await self.crud_ops.update_tria_azr_task_status(task.task_id, "completed_failure", completed_at=datetime.utcnow()) # Uncomment
                 # await self.crud_ops.update_tria_azr_task_solution_status(solution_db.solution_id, "verified_failure", evaluation_result) # Uncomment
                 logger.warning(f"AZR task {task.task_id} solution failed or was not verifiable. Reason: {failure_reason}")
-                log_event = TriaLearningLogEntryCreate(
+                log_event = TriaLearningLogCreate( # Changed from TriaLearningLogEntryCreate
                     event_type="azr_task_failure",
                     summary_text=f"AZR Task {task.task_id} failed or unverifiable. Reason: {failure_reason}",
                     details_json={"task_id": task.task_id, "solution_id": solution_db_simulated.solution_id, "evaluation": evaluation_result}
@@ -205,7 +205,7 @@ class LearningBot:
         logger.info(f"Proposing parameter update for bot '{bot_id}'. Parameters: {parameters_to_update}. Reason: {change_reason}")
 
         # For MVP, log this proposal. In a more advanced system, this might create a pending change request.
-        log_entry_data = TriaLearningLogEntryCreate(
+        log_entry_data = TriaLearningLogCreate( # Changed from TriaLearningLogEntryCreate
             event_type="bot_parameter_update_proposal",
             bot_affected_id=bot_id,
             summary_text=f"Parameter update proposed for bot '{bot_id}'. Reason: {change_reason}",
@@ -262,7 +262,7 @@ class LearningBot:
 # async def main_learning_bot_example():
 #     # Mock CRUD operations and LLM client for this example
 #     class MockCRUD:
-#         async def create_tria_learning_log_entry(self, data): print(f"CRUD: Create Learning Log: {data.summary_text}"); return TriaLearningLogEntryDB(**data.model_dump(), log_id=1, timestamp=datetime.utcnow())
+#         async def create_tria_learning_log_entry(self, data): print(f"CRUD: Create Learning Log: {data.summary_text}"); return TriaLearningLogDB(**data.model_dump(), log_id=1, timestamp=datetime.utcnow()) # Changed from TriaLearningLogEntryDB
 #         async def get_pending_azr_tasks(self, limit): print(f"CRUD: Get Pending AZR Tasks (limit {limit})"); return [] # Simulate no tasks
 #         # ... other mock methods as needed by the bot ...
 
