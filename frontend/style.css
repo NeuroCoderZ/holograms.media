@@ -773,9 +773,10 @@ body {
   background-color: var(--panel-border); /* #444 or rgba(255,255,255,0.34) */
   margin-top: 10px;    /* This was the margin-bottom of the old authSection */
   margin-bottom: 10px; /* Space after separator */
-  width: 90%;
+  width: 90%; /* Keeps it slightly inset */
   margin-left: auto;
   margin-right: auto;
+  grid-column: 1 / -1; /* Make HR span across all columns in the grid */
 }
 
 /* Удаляем стиль заголовка истории чата */

@@ -5,6 +5,46 @@ let isXRMode = false; // Объявление на уровне модуля
 let currentStream = null; // Объявление на уровне модуля
 let videoElement = null; // Объявление на уровне модуля
 let handsInstance = null; // Объявление для MediaPipe Hands
+let _cameraWasActiveBeforeHidden = false; // For page visibility
+
+/**
+ * Handles page visibility changes for the camera stream.
+ */
+function handleCameraVisibilityChange() {
+  if (!videoElement) { // Ensure videoElement is available
+    videoElement = document.getElementById('camera-view');
+    if (!videoElement) return; // Still not found, can't do anything
+  }
+
+  if (document.visibilityState === 'hidden') {
+    if (currentStream && isXRMode) { // Only act if XR mode is active and stream exists
+      console.log('Page hidden, stopping camera stream for XR mode.');
+      currentStream.getTracks().forEach(track => track.stop());
+      currentStream = null;
+      videoElement.style.visibility = 'hidden'; // Hide the video element
+      if (videoElement.srcObject) { // Release srcObject
+          videoElement.srcObject = null;
+      }
+      // Note: MediaPipe Hands might need explicit pausing/resetting if it caches the stream or video element.
+      // For now, stopping the stream and hiding video is the primary action.
+      _cameraWasActiveBeforeHidden = true;
+    }
+  } else if (document.visibilityState === 'visible') {
+    if (_cameraWasActiveBeforeHidden && isXRMode) {
+      console.log('Page visible, camera was active in XR mode. Attempting to restart camera.');
+      // Attempt to restart the camera if it was active before hidden.
+      // setupCamera will handle visibility of videoElement based on isXRMode.
+      setupCamera().catch(err => console.error("Error restarting camera on visibility change:", err));
+      _cameraWasActiveBeforeHidden = false;
+    } else if (isXRMode && !currentStream) {
+      // If page became visible, XR mode is on, but no stream (e.g. initial load into hidden tab)
+      // and it wasn't active before hidden (e.g. user didn't start it yet)
+      // We might want to call setupCamera here too, or rely on user to toggle.
+      // For now, the above condition handles explicit "was active".
+      console.log('Page visible, XR mode is on, but no active stream and was not active before hidden.');
+    }
+  }
+}
 
 /**
  * Настройка камеры для XR режима
@@ -200,7 +240,8 @@ export function initializeXRMode() {
     state.camera = state.orthoCamera;
   }
 
-  console.log('XR Manager initialized. XR Mode is OFF.');
+  document.addEventListener('visibilitychange', handleCameraVisibilityChange);
+  console.log('XR Manager initialized. XR Mode is OFF. Visibility listener added.');
 }
 
 // TODO: Экспортировать функции или переменные, если они нужны другим модулям.
