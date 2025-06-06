@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from typing import List, Optional, Dict, Any # Ensure List, Optional, Dict, Any are imported
 import asyncpg
 
-from backend.db import crud_operations
-from backend.models import prompt_models, user_models # For UserInDB type hint
+from backend.core import crud_operations
+from backend.core.models import prompt_models, user_models # For UserInDB type hint
 from backend.auth import security
 from backend.db.pg_connector import get_db_connection
 

@@ -7,7 +7,7 @@ import uuid
 from backend.app import s3_client, r2_bucket_name
 from backend.core.tria_bots.ChunkProcessorBot import ChunkProcessorBot
 from backend.auth.security import get_current_active_user # Assuming this is your dependency for auth
-from backend.models.user_models import UserInDB # Assuming this is your user model
+from backend.core.models.user_models import UserInDB # Assuming this is your user model
 
 # Можно настроить более детальное логирование, если нужно
 logger = logging.getLogger(__name__)

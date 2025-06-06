@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Dict, Any, Optional # Ensure List, Dict, Any, Optional are imported
 import asyncpg
 
-from backend.db import crud_operations
-from backend.models import gesture_models, user_models # For UserInDB type hint
+from backend.core import crud_operations
+from backend.core.models import gesture_models, user_models # For UserInDB type hint
 from backend.auth import security
 from backend.db.pg_connector import get_db_connection
 from pydantic import Field # Ensure Field is imported for GestureUpdate
@@ -16,7 +16,7 @@ router = APIRouter(
 
 # Pydantic model for Gesture Update (partial updates)
 # This class should be within the scope where gesture_models is available
-class GestureUpdate(gesture_models.GestureBase):
+class GestureUpdate(gesture_models.UserGestureDefinitionBase):
     gesture_name: Optional[str] = Field(None, min_length=1, max_length=100)
     gesture_definition: Optional[Dict[str, Any]] = None
     gesture_data_ref: Optional[int] = None
@@ -49,9 +49,9 @@ class GestureUpdate(gesture_models.GestureBase):
         super().__init__(**{k: v for k, v in data.items() if v is not None})
 
 
-@router.post("/", response_model=gesture_models.UserGesture, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=gesture_models.UserGestureDefinitionDB, status_code=status.HTTP_201_CREATED)
 async def create_new_user_gesture(
-    gesture_in: gesture_models.GestureCreate,
+    gesture_in: gesture_models.UserGestureDefinitionCreate,
     current_user: user_models.UserInDB = Depends(security.get_current_active_user), # Option 2: Endpoint-level dependency
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
@@ -80,7 +80,7 @@ async def create_new_user_gesture(
         print(f"[GUESTURE ROUTER ERROR] Error creating user gesture for {current_user.firebase_uid}, name {gesture_in.gesture_name}: {e}") 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error creating gesture.")
 
-@router.get("/", response_model=List[gesture_models.UserGesture])
+@router.get("/", response_model=List[gesture_models.UserGestureDefinitionDB])
 async def list_user_gestures(
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
     db_conn: asyncpg.Connection = Depends(get_db_connection),
@@ -97,7 +97,7 @@ async def list_user_gestures(
     print(f"[GUESTURE ROUTER INFO] Found {len(gestures)} gestures for user {current_user.firebase_uid}.")
     return gestures
 
-@router.get("/{gesture_id}", response_model=gesture_models.UserGesture)
+@router.get("/{gesture_id}", response_model=gesture_models.UserGestureDefinitionDB)
 async def get_specific_user_gesture(
     gesture_id: int,
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
@@ -116,7 +116,7 @@ async def get_specific_user_gesture(
     print(f"[GUESTURE ROUTER INFO] Gesture ID: {gesture_id} found for user {current_user.firebase_uid}.")
     return gesture
 
-@router.put("/{gesture_id}", response_model=gesture_models.UserGesture)
+@router.put("/{gesture_id}", response_model=gesture_models.UserGestureDefinitionDB)
 async def update_existing_user_gesture(
     gesture_id: int,
     gesture_update: GestureUpdate, 

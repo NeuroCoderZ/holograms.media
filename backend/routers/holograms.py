@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Dict, Any, Optional # Ensure List, Dict, Any, Optional are imported
 import asyncpg
 
-from backend.db import crud_operations
-from backend.models import hologram_models, user_models # For UserInDB type hint
+from backend.core import crud_operations
+from backend.core.models import hologram_models, user_models # For UserInDB type hint
 from backend.auth import security
 from backend.db.pg_connector import get_db_connection
 from pydantic import Field # Ensure Field is imported for HologramUpdate

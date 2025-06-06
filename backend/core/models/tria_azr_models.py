@@ -1,14 +1,18 @@
-from pydantic import Field
-from typing import Any, Dict, List, Optional
+from pydantic import Field, BaseModel # BaseModel might be needed for Literal definitions if they are not part of other models
+from typing import Any, Dict, List, Optional, Literal # Added Literal
 from uuid import UUID
 from datetime import datetime
 
-from .base_models import BaseUUIDModel, current_time_utc # Assuming BaseUUIDModel provides id, created_at, updated_at
+from .base_models import BaseUUIDModel, current_time_utc
+
+# Literal types from backend/models/tria_azr_models.py
+AZR_TASK_STATUSES = Literal['pending', 'active', 'evaluating', 'completed_success', 'completed_failure', 'aborted']
+AZR_SOLUTION_VERIFICATION_STATUSES = Literal['pending', 'unverified', 'verified_success', 'verified_failure', 'verification_failed_to_run', 'passed_sandbox', 'failed_sandbox', 'pending_human_review', 'approved', 'rejected', 'deployed']
+# Added 'unverified', 'passed_sandbox', etc. from core model's description to make the Literal more comprehensive.
 
 class TriaAZRTask(BaseUUIDModel):
-    # task_id: UUID is inherited from BaseUUIDModel as 'id'
     description_text: str = Field(..., description="Detailed description of the AZR task.")
-    status: str = Field(default="pending", description="Current status of the task (e.g., pending, active, evaluating, completed_success, completed_failure, aborted)")
+    status: AZR_TASK_STATUSES = Field(default="pending", description="Current status of the task.") # Using Literal
     priority: int = Field(default=0, description="Priority of the task.")
     complexity_score: Optional[float] = Field(default=None, description="Estimated complexity of the task.")
     generation_source: str = Field(..., description="Source that generated this task (e.g., LearningBot_AnomalyDetection, UserFeedback_BotX_Performance).")
@@ -37,13 +41,12 @@ class TriaAZRTask(BaseUUIDModel):
         }
 
 class TriaAZRTaskSolution(BaseUUIDModel):
-    # solution_id: UUID is inherited from BaseUUIDModel as 'id'
     task_id: UUID = Field(..., description="ID of the AZR task this solution addresses.")
     solution_approach_description: str = Field(..., description="Description of the approach taken for this solution.")
     solution_artifacts_json: Dict[str, Any] = Field(default_factory=dict, description="Artifacts related to the solution (e.g., new parameters, code diff URI).")
     outcome_summary: Optional[str] = Field(default=None, description="Summary of the outcome after applying/testing the solution.")
     performance_metrics_json: Dict[str, Any] = Field(default_factory=dict, description="Performance metrics observed with this solution.")
-    verification_status: str = Field(default="unverified", description="Status of solution verification (e.g., unverified, passed_sandbox, failed_sandbox, pending_human_review, approved, rejected, deployed).")
+    verification_status: AZR_SOLUTION_VERIFICATION_STATUSES = Field(default="unverified", description="Status of solution verification.") # Using Literal
     human_reviewer_id: Optional[str] = Field(default=None, description="ID of the human reviewer, if applicable.")
     human_review_timestamp: Optional[datetime] = Field(default=None, description="Timestamp of the human review.")
     
@@ -62,10 +65,9 @@ class TriaAZRTaskSolution(BaseUUIDModel):
             ]
         }
 
-class TriaLearningLogEntry(BaseUUIDModel): # Using BaseUUIDModel for id and created_at/updated_at
-    # log_id: int was in DRSB, but UUID from BaseUUIDModel is more consistent. If int is strict, this needs change.
-    # For now, assuming UUID 'id' field from BaseUUIDModel is acceptable.
-    # timestamp: datetime is covered by created_at from BaseUUIDModel
+# TriaLearningLogEntry from original core file. Note that a more comprehensive
+# TriaLearningLogModel exists in learning_log_models.py
+class TriaLearningLogEntry(BaseUUIDModel):
     event_type: str = Field(..., description="Type of the learning event (e.g., parameter_tune_proposed, azr_task_generated, user_feedback_processed).")
     bot_affected_id: Optional[str] = Field(default=None, description="ID of the bot affected by this learning event, if any.")
     summary_text: str = Field(..., description="A concise summary of the learning event.")
@@ -87,7 +89,6 @@ class TriaLearningLogEntry(BaseUUIDModel): # Using BaseUUIDModel for id and crea
         }
 
 class TriaBotConfiguration(BaseUUIDModel):
-    # config_id: UUID is inherited from BaseUUIDModel as 'id'
     bot_id: str = Field(..., description="Identifier for the bot this configuration applies to (e.g., GestureBot.py, MemoryBot.py).")
     version: int = Field(default=1, description="Version number of this configuration for the specific bot.")
     config_parameters_json: Dict[str, Any] = Field(..., description="The actual configuration parameters for the bot.")
