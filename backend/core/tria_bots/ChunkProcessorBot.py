@@ -4,8 +4,8 @@ from uuid import UUID, uuid4
 from datetime import datetime
 import logging # Import the logging module
 
-from ..models.multimodal_models import AudiovisualGesturalChunkModel
-from ..models.learning_log_models import TriaLearningLogModel
+from backend.core.models.multimodal_models import AudiovisualGesturalChunkModel
+from backend.core.models.learning_log_models import TriaLearningLogModel
 from ..crud_operations import create_audiovisual_gestural_chunk, create_tria_learning_log_entry
 
 # Configure logging for this module

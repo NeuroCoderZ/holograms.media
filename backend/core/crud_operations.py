@@ -12,10 +12,10 @@ from datetime import datetime
 import logging
 
 # Import Pydantic models from their respective modules
-from ..models.user_models import UserInDB
-from ..models.multimodal_models import UserGestureModel
-from ..models.learning_log_models import TriaLearningLogModel
-from ..models.hologram_models import UserHologramResponseModel # Модель для ответа по голограммам
+from backend.core.models.user_models import UserInDB
+from backend.core.models.multimodal_models import UserGestureModel
+from backend.core.models.learning_log_models import TriaLearningLogModel
+from backend.core.models.hologram_models import UserHologramResponseModel
 
 # Configure logging for this module
 logger = logging.getLogger(__name__)
