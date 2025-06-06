@@ -1,0 +1,170 @@
+{
+  "__init__.py": [
+    "CoreModel",
+    "IDModel",
+    "TimestampModel",
+    "BaseUUIDModel",
+    "UserPublic",
+    "UserInDB",
+    "TriaAZRTask",
+    "TriaAZRTaskSolution",
+    "TriaLearningLogEntry",
+    "TriaBotConfiguration",
+    "Vector3Model",
+    "QuaternionModel",
+    "HolographicSymbolModel",
+    "ThreeDEmojiModel",
+    "AudioVisualizationStateModel",
+    "TriaStateUpdateModel",
+    "AudiovisualGesturalChunkModel",
+    "GesturePrimitiveModel",
+    "InterpretedGestureModel",
+    "GestureModel",
+    "InternalMessage",
+    "PydanticHolographicSymbol",
+    "PydanticGestureChunk",
+    "PydanticTriaStateUpdate",
+    "TriaCodeEmbeddingModel",
+    "TriaLearningLogModel"
+  ],
+  "auth_models.py": [
+    "Token",
+    "TokenData"
+  ],
+  "base_models.py": [
+    "CoreModel",
+    "IDModel",
+    "TimestampModel",
+    "BaseUUIDModel",
+    "DBBaseModel",
+    "UUIDDBBaseModel"
+  ],
+  "chat_models.py": [
+    "UserChatSessionBase",
+    "UserChatSessionCreate",
+    "UserChatSessionDB",
+    "ChatMessageBase",
+    "ChatMessageCreate",
+    "ChatMessageDB",
+    "ChatMessagePublic",
+    "ChatSessionWithHistory",
+    "NewChatMessageRequest",
+    "UserPromptTitleInfo"
+  ],
+  "code_embedding_models.py": [
+    "TriaCodeEmbeddingModel",
+    "TriaCodeEmbeddingBase",
+    "TriaCodeEmbeddingCreate",
+    "TriaCodeEmbeddingInDB",
+    "TriaCodeEmbeddingPublic"
+  ],
+  "gesture_models.py": [
+    "GesturalPrimitive",
+    "InterpretedGestureSequenceBase",
+    "InterpretedGestureSequenceCreate",
+    "InterpretedGestureSequenceDB",
+    "UserGestureDefinitionBase",
+    "UserGestureDefinitionCreate",
+    "UserGestureDefinitionDB",
+    "GestureRecognitionRequest",
+    "GestureRecognitionResponse",
+    "CoreGesturePrimitiveModel",
+    "CoreInterpretedGestureModel",
+    "CoreGestureModel"
+  ],
+  "hologlyph_models.py": [
+    "Vector3Model",
+    "QuaternionModel",
+    "HolographicSymbolModel",
+    "ThreeDEmojiModel",
+    "AudioVisualizationStateModel",
+    "TriaStateUpdateModel"
+  ],
+  "hologram_models.py": [
+    "Vector3Model",
+    "QuaternionModel",
+    "HolographicElementBase",
+    "HolographicSymbolModel",
+    "ThreeDEmojiModel",
+    "AudioVisualizationStateModel",
+    "UserHologramBase",
+    "UserHologramCreate",
+    "UserHologramDB",
+    "HolographicScene",
+    "SceneElementUpdate",
+    "UserHologramResponseModel"
+  ],
+  "interaction_chunk_model.py": [
+    "InteractionChunkBase",
+    "InteractionChunkCreate",
+    "InteractionChunkDB"
+  ],
+  "internal_bus_models.py": [
+    "InternalMessage"
+  ],
+  "learning_log_models.py": [
+    "TriaLearningLogModel"
+  ],
+  "multimodal_models.py": [
+    "AudiovisualGesturalChunkModel",
+    "UserGestureModel",
+    "InteractionChunkBase",
+    "InteractionChunkCreate",
+    "InteractionChunkDB",
+    "InteractionChunkPublic",
+    "MediaFileBase",
+    "MediaFileCreate",
+    "MediaFileDB"
+  ],
+  "nethologlyph_models.py": [
+    "Vector3NetModel",
+    "QuaternionNetModel",
+    "NetHoloPacketHeader",
+    "HolographicSymbolNetModel",
+    "GestureChunkNetModel",
+    "TriaStateUpdateNetModel",
+    "MediaStreamChunkNetModel",
+    "NetHoloPacket",
+    "SceneUpdatePayload",
+    "HandshakeRequestPayload",
+    "HandshakeResponsePayload",
+    "ErrorPayload"
+  ],
+  "prompt_models.py": [
+    "UserPromptVersionBase",
+    "UserPromptVersionCreate",
+    "UserPromptVersionDB"
+  ],
+  "tria_azr_models.py": [
+    "TriaAZRTask",
+    "TriaAZRTaskSolution",
+    "TriaLearningLogEntry",
+    "TriaBotConfiguration"
+  ],
+  "tria_evolution_models.py": [
+    "TriaAZRTaskBase",
+    "TriaAZRTaskCreate",
+    "TriaAZRTaskDB",
+    "TriaAZRTaskSolutionBase",
+    "TriaAZRTaskSolutionCreate",
+    "TriaAZRTaskSolutionDB",
+    "TriaLearningLogBase",
+    "TriaLearningLogCreate",
+    "TriaLearningLogDB",
+    "TriaBotConfigurationBase",
+    "TriaBotConfigurationCreate",
+    "TriaBotConfigurationDB",
+    "UserPromptTitleInfo"
+  ],
+  "tria_state_model.py": [
+    "TriaCommand",
+    "TriaResponse"
+  ],
+  "user_models.py": [
+    "UserBase",
+    "UserInDBBase",
+    "UserPublic",
+    "UserInDB",
+    "UserUpdate"
+  ]
+}
