@@ -52,7 +52,7 @@ class LearningBot:
         Args:
             interaction_id: The ID of the interaction chunk.
             feedback_data: A dictionary containing feedback details (e.g., rating, text, misinterpretation_flag).
-        """\
+        """
         logger.info(f"Processing feedback for interaction_id: {interaction_id}")
         
         # Log the learning event
@@ -68,7 +68,7 @@ class LearningBot:
         logger.debug(f"Created learning log for feedback on interaction {interaction_id}")
 
         # Example: If feedback indicates a misinterpretation, generate an AZR task to improve.
-        if feedback_data.get("misinterpretation_flag", False):\
+        if feedback_data.get("misinterpretation_flag", False):
             task_description = (
                 f"Interaction {interaction_id} was misinterpreted by a Tria bot. "
                 f"Original input (summary): {feedback_data.get('original_input_summary', 'N/A')}. "
@@ -98,12 +98,11 @@ class LearningBot:
             #     logger.error(f"Failed to create AZR task for feedback on interaction {interaction_id}.")
             logger.info(f"Simulated AZR task generation for interaction {interaction_id} based on feedback.")
 
-
     async def run_azr_cycle(self, max_tasks_to_process: int = 5):
         """
         Runs a cycle of the Absolute Zero Reasoning (AZR) loop.
         This involves generating new tasks, attempting solutions, evaluating them, and learning.
-        """\
+        """
         logger.info("Starting AZR cycle...")
 
         # 1. Task Generation (optional, could be continuous or triggered)
@@ -157,7 +156,7 @@ class LearningBot:
             evaluation_result = await self.azr_evaluator.evaluate_solution(task, solution_db_simulated) # Use solution_db
 
             # Update task and solution based on evaluation
-            if evaluation_result.get("is_successful"):\
+            if evaluation_result.get("is_successful"):
                 # await self.crud_ops.update_tria_azr_task_status(task.task_id, "completed_success", completed_at=datetime.utcnow()) # Uncomment
                 # await self.crud_ops.update_tria_azr_task_solution_status(solution_db.solution_id, "verified_success", evaluation_result) # Uncomment
                 logger.info(f"AZR task {task.task_id} successfully solved and verified.")
@@ -166,7 +165,7 @@ class LearningBot:
                     summary_text=f"AZR Task {task.task_id} completed successfully.",
                     details_json={"task_id": task.task_id, "solution_id": solution_db_simulated.solution_id, "evaluation": evaluation_result}
                 )
-            elif evaluation_result.get("needs_human_review"):\
+            elif evaluation_result.get("needs_human_review"):
                 # await self.crud_ops.update_tria_azr_task_status(task.task_id, "pending_human_review") # Uncomment
                 # await self.crud_ops.update_tria_azr_task_solution_status(solution_db.solution_id, "pending_human_review", evaluation_result) # Uncomment
                 logger.info(f"AZR task {task.task_id} solution requires human review.")
@@ -191,8 +190,8 @@ class LearningBot:
 
         logger.info("AZR cycle finished.")
 
-    async def propose_bot_parameter_update(self, bot_id: str, parameters_to_update: Dict[str, Any], change_reason: str):\
-        """\
+    async def propose_bot_parameter_update(self, bot_id: str, parameters_to_update: Dict[str, Any], change_reason: str):
+        """
         Proposes a parameter update for a specified Tria bot.
         In MVP, this logs the proposal and marks it for human review.
         Future: Could involve more automated testing/validation before applying.
@@ -201,7 +200,7 @@ class LearningBot:
             bot_id: The identifier of the bot whose parameters are to be updated.
             parameters_to_update: A dictionary of parameters and their new values.
             change_reason: A description of why this change is being proposed.
-        """\
+        """
         logger.info(f"Proposing parameter update for bot '{bot_id}'. Parameters: {parameters_to_update}. Reason: {change_reason}")
 
         # For MVP, log this proposal. In a more advanced system, this might create a pending change request.

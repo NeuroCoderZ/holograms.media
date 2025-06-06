@@ -1,10 +1,9 @@
 # backend/api/v1/endpoints/chunks.py
-from fastapi import APIRouter, File, UploadFile, Depends, HTTPException, Path, Body
+from fastapi import APIRouter, File, UploadFile, Depends, HTTPException, Path, Body, Request
 from pydantic import BaseModel, Field
 import logging
 import os
 import uuid
-from backend.app import s3_client, r2_bucket_name
 from backend.core.tria_bots.ChunkProcessorBot import ChunkProcessorBot
 from backend.auth.security import get_current_active_user # Assuming this is your dependency for auth
 from backend.core.models.user_models import UserInDB # Assuming this is your user model
@@ -28,12 +27,16 @@ class PresignedUrlResponse(BaseModel):
 
 @router.post("/generate-upload-url", response_model=PresignedUrlResponse, tags=["Chunks"])
 async def generate_upload_url(
+    request: Request,
     request_data: PresignedUrlRequest,
     current_user: UserInDB = Depends(get_current_active_user) # Add auth
 ):
     """
     Generate a presigned POST URL for uploading a file directly to R2.
     """
+    s3_client = request.app.state.s3_client
+    r2_bucket_name = os.getenv("R2_BUCKET_NAME")
+
     if not s3_client:
         logger.error("S3 client not initialized. R2 service unavailable.")
         raise HTTPException(status_code=503, detail="R2 service is unavailable due to server configuration error.")
@@ -73,6 +76,7 @@ async def generate_upload_url(
 
 @router.post("/upload_chunk/{user_id}", tags=["Chunks"])
 async def upload_chunk(
+    request: Request,
     user_id: str = Path(..., title="The ID of the user uploading the chunk"),
     file: UploadFile = File(...)
     # current_user: UserDB = Depends(get_current_active_user) # Раскомментировать для аутентификации
@@ -86,6 +90,9 @@ async def upload_chunk(
     # Проверка аутентификации (если раскомментировать Depends)
     # if current_user.id != user_id and not current_user.is_superuser: # Пример проверки прав
     #     raise HTTPException(status_code=403, detail="Not authorized to upload chunks for this user")
+
+    s3_client = request.app.state.s3_client
+    r2_bucket_name = os.getenv("R2_BUCKET_NAME")
 
     if not s3_client:
         logger.error("S3 client not initialized. R2 service unavailable.")
