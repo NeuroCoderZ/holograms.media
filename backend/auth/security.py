@@ -4,13 +4,13 @@ from typing import Optional, Dict, Any
 import firebase_admin
 from firebase_admin import credentials, auth
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Model and DB imports
 from backend.core.models.user_models import UserInDB  # Ensure UserInDB reflects new schema (e.g., has firebase_uid)
 from backend.core import crud_operations
 import asyncpg  # For type hinting
-from backend.db.pg_connector import get_db_connection
+from backend.core.db.pg_connector import get_db_connection
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Initialize Firebase Admin SDK
 # It's recommended to do this once at application startup.
@@ -68,7 +68,7 @@ async def get_current_firebase_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid Firebase ID token: {e}",
-            headers={"WWW-Authenticate": "Bearer error=\"invalid_token\""},
+            headers={"WWW-Authenticate": "Bearer error="invalid_token""},
         )
     except Exception as e: # Catch other Firebase Admin SDK errors
         print(f"[AUTH DEBUG] Error verifying Firebase ID token: {e}")
