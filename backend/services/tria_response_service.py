@@ -8,7 +8,6 @@
 # TODO: Format Tria's output into a standardized response model.
 # TODO: Handle different types of Tria interactions (e.g., direct command, asynchronous update).
 
-# from ..models.tria_state_model import TriaCommand, TriaResponse
 # from ..tria_bots.coordination_service import TriaCoordinationService # Assuming CoordinationService class
 #
 # async def get_tria_response_for_command(command: TriaCommand) -> TriaResponse:
