@@ -43,7 +43,7 @@ else:
 
 # --- Импорты роутеров ---
 from backend.api.v1.endpoints.gesture_routes import router as public_gestures_router
-from backend.api.v1.endpoints.public_holograms import router as public_holograms_router
+from backend.routers.public_holograms import router as public_holograms_router
 from backend.api.v1.endpoints.tria_commands import router as tria_commands_router
 from backend.api.v1.endpoints.chunks import router as chunks_router
 
