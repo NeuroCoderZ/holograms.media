@@ -80,6 +80,7 @@ def datetime_to_protobuf_timestamp(dt: datetime) -> Timestamp:
 
 def protobuf_timestamp_to_datetime(ts: Timestamp) -> datetime:
     """Converts a Google Protobuf Timestamp to a Python datetime object (timezone-aware UTC)."""
-    dt = ts.ToDatetime(tzinfo=timezone.utc)
-    return dt
+    # dt = ts.ToDatetime(tzinfo=timezone.utc)
+    # return dt
+    pass
 ```
