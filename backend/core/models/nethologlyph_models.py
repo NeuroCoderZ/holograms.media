@@ -1,77 +1,98 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from uuid import UUID
+from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
+import uuid
 
-from .hologlyph_models import Vector3Model, QuaternionModel # Re-use basic structures
-from .base_models import BaseUUIDModel, current_time_utc # For consistency if IDs/timestamps are managed similarly
+# Content from backend/models/nethologlyph_models.py
 
-# These Pydantic models are intended to closely mirror the structure of their
-# corresponding Protobuf messages defined in nethologlyph/protocol/definitions.proto.
-# They are used for internal data handling after deserializing from Protobuf
-# or before serializing to Protobuf.
+# --- Common Types (mirroring common_types.proto) ---
+class Vector3NetModel(BaseModel):
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
 
-class PydanticHolographicSymbol(BaseUUIDModel): # Using BaseUUIDModel for id and timestamps
-    # symbol_id from Protobuf is mapped to 'id' from BaseUUIDModel
-    symbol_id_str: str = Field(..., description="The 'symbol_id' field from Protobuf, a string.")
-    type: str = Field(..., description="Type of the holographic symbol (e.g., 'cube', 'sphere').")
-    position: Vector3Model = Field(default_factory=Vector3Model)
-    orientation: QuaternionModel = Field(default_factory=QuaternionModel)
-    scale: Vector3Model = Field(default_factory=lambda: Vector3Model(x=1.0, y=1.0, z=1.0))
-    material_properties_json: Optional[str] = Field(default=None, description="JSON string for material properties, as in Protobuf.")
-    custom_data: Optional[bytes] = Field(default=None, description="Custom data as bytes, matching Protobuf 'bytes' type.")
-    # last_updated from Protobuf (google.protobuf.Timestamp) is mapped to 'updated_at'
-    # The actual timestamp conversion (e.g., to datetime object) would happen during (de)serialization.
-    code_language: Optional[str] = Field(default=None)
-    embedding_model_version: Optional[str] = Field(default=None)
+class QuaternionNetModel(BaseModel):
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    w: float = 1.0
 
-    class Config:
-        orm_mode = True
-        schema_extra = {
-            "notes": "This model mirrors HolographicSymbol in definitions.proto. 'id' is the UUID, 'symbol_id_str' is the proto 'symbol_id'."
-        }
+# --- Main Packet Structure (mirroring NetHoloPacket in definitions.proto) ---
+class NetHoloPacketHeader(BaseModel):
+    packet_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: float = Field(default_factory=datetime.utcnow().timestamp, description="Epoch seconds UTC")
+    source_id: str # e.g., user_firebase_uid or service_id
+    target_id: Optional[str] = None # For direct messages
+    version: str = Field(default="0.1.0")
 
+# Content types (these would correspond to 'oneof' fields in Protobuf)
 
-class PydanticGestureChunk(BaseUUIDModel): # Using BaseUUIDModel for id and timestamps
-    # gesture_id from Protobuf is mapped to 'id' from BaseUUIDModel
-    gesture_id_str: str = Field(..., description="The 'gesture_id' field from Protobuf, a string.")
-    user_id: str # Assuming user_id in proto is a string; if it's a UUID, change type
-    # timestamp from Protobuf (google.protobuf.Timestamp) is mapped to 'created_at' or a specific field
-    # For simplicity, created_at/updated_at from BaseUUIDModel can represent this.
-    # If a separate 'event_timestamp' is needed:
-    # event_timestamp: datetime = Field(default_factory=current_time_utc)
-    recognized_gesture_type: Optional[str] = Field(default=None)
-    confidence: Optional[float] = Field(default=None)
-    landmark_data_3d: Optional[List[float]] = Field(default=None, description="Flattened list of 3D landmark data (e.g., 21*3=63 floats).")
-    source_modality: Optional[str] = Field(default=None)
-    gesture_sequence_id: Optional[str] = Field(default=None)
-    is_continuous_gesture_segment: Optional[bool] = Field(default=False)
-    temporal_spatial_metadata_json: Optional[str] = Field(default=None, description="JSON string for richer temporal/spatial data.")
-    
-    class Config:
-        orm_mode = True
-        schema_extra = {
-            "notes": "This model mirrors GestureChunk in definitions.proto. 'id' is the UUID, 'gesture_id_str' is the proto 'gesture_id'."
-        }
+class HolographicSymbolNetModel(BaseModel):
+    element_id: str
+    symbol_type: str # e.g., 'cube', 'sphere', 'text_label'
+    position: Optional[Vector3NetModel] = None
+    rotation: Optional[QuaternionNetModel] = None
+    scale: Optional[Vector3NetModel] = None
+    color_rgba: Optional[List[float]] = None # [r, g, b, a]
+    text_content: Optional[str] = None
+    is_interactive: Optional[bool] = False
+    metadata: Optional[Dict[str, Any]] = None
 
-class PydanticTriaStateUpdate(BaseUUIDModel): # Using BaseUUIDModel for id and timestamps
-    state_key: str = Field(..., description="e.g., 'current_mood', 'active_task_id'.")
-    state_value_json: str = Field(..., description="JSON string representation of the state value.") # Protobuf uses bytes for JSON, often handled as string in Python
-    # timestamp from Protobuf (google.protobuf.Timestamp) is mapped to 'created_at' or a specific field
-    bot_id: Optional[str] = Field(default=None)
+class GestureChunkNetModel(BaseModel):
+    sequence_id: Optional[str] = None
+    timestamp: float # Relative to packet or absolute
+    hand: Optional[str] = None # 'left', 'right'
+    key_points: Optional[List[Vector3NetModel]] = None
+    recognized_intent: Optional[str] = None
+    confidence: Optional[float] = None
 
-    class Config:
-        orm_mode = True
-        schema_extra = {
-            "notes": "This model mirrors TriaStateUpdate in definitions.proto."
-        }
+class TriaStateUpdateNetModel(BaseModel):
+    status: str
+    current_focus_entity_id: Optional[str] = None
+    available_commands: Optional[List[str]] = None
+    message_to_user: Optional[str] = None
 
-# Add other Pydantic models mirroring Protobuf messages as needed, e.g.:
-# PydanticThreeDEmoji, PydanticAudioVisualizationState, PydanticNetHoloPacket (if the wrapper itself is used internally)
+class MediaStreamChunkNetModel(BaseModel):
+    stream_id: str
+    chunk_index: int
+    data: bytes
+    is_last_chunk: bool = False
+    content_type: str
 
-# Note on Consolidation:
-# If hologlyph_models.HolographicSymbolModel and nethologlyph_models.PydanticHolographicSymbol
-# end up being identical in structure and purpose (e.g., if hologlyph_models are not directly tied to an ORM
-# and are purely for data structure definition), they could potentially be consolidated.
-# However, keeping them separate allows for 'hologlyph_models' to evolve for database storage/ORM features
-# while 'nethologlyph_models' strictly mirror the network protocol. For MVP, this separation is acceptable.
+class NetHoloPacket(BaseModel):
+    header: NetHoloPacketHeader
+    payload_type: str = Field(..., description="Discriminator field: 'HolographicSymbol', 'GestureChunk', 'TriaStateUpdate', 'MediaStreamChunk', 'SceneUpdate', 'HandshakeRequest', 'HandshakeResponse', 'Error'")
+    payload: Dict[str, Any]
+
+class SceneUpdatePayload(BaseModel):
+    scene_id: str
+    upsert_elements: Optional[List[HolographicSymbolNetModel]] = None
+    delete_element_ids: Optional[List[str]] = None
+    scene_settings: Optional[Dict[str, Any]] = None
+
+class HandshakeRequestPayload(BaseModel):
+    client_version: str
+    supported_features: Optional[List[str]] = None
+
+class HandshakeResponsePayload(BaseModel):
+    server_version: str
+    session_id: str
+    accepted_features: Optional[List[str]] = None
+    error_message: Optional[str] = None
+
+class ErrorPayload(BaseModel):
+    code: int
+    message: str
+    details: Optional[str] = None
+
+# Note: The Pydantic models from the original backend/core/models/nethologlyph_models.py
+# (PydanticHolographicSymbol, PydanticGestureChunk, PydanticTriaStateUpdate) which inherited
+# BaseUUIDModel have not been appended here. This choice prioritizes the comprehensive
+# network protocol definitions from backend/models/nethologlyph_models.py.
+# If DB representations of these network messages are needed, they might be better placed
+# in a different model file or reconciled with these definitions if they serve a dual purpose.
+# For now, this file focuses on representing the network packet structures.
+# The Vector3Model and QuaternionModel from the original core file were similar to
+# Vector3NetModel and QuaternionNetModel here; the "NetModel" suffixed versions are retained
+# as they were part of the more complete definitions from backend/models/.
+# The import of .hologlyph_models and .base_models is no longer needed with this content.

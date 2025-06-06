@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional, List
 # from backend.db.crud_operations import CRUDOperations # This will be needed when CRUD ops are implemented
 # For now, we'll mock or pass it.
 
-from backend.models.tria_azr_models import (
+from backend.core.models.tria_azr_models import (
     TriaAZRTaskCreate,
     TriaAZRTaskDB,
     TriaAZRTaskSolutionCreate,
