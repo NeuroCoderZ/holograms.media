@@ -4,7 +4,6 @@
 import * as THREE from 'three';
 // TWEEN подключается глобально через CDN в index.html
 import { state } from '../core/init.js'; // Для доступа к state.scene, state.mainSequencerGroup
-import { updateLiveSequencerVisuals } from '../audio/audioProcessing.js';
 
 // --- Redundant variables, constants, and functions have been removed ---
 // The following are no longer needed here as they are handled in sceneSetup.js or audioProcessing.js:
@@ -61,11 +60,6 @@ function animate(currentTime) {
                  // state.hologramRendererInstance.updateColumnVisuals(allSilentLevels, allSilentLevels);
             }
             // This could be a new function in audioProcessing.js or reuse existing reset logic if appropriate.
-            // For now, if resetVisualization() in microphoneManager.js handles the mic-off case,
-            // and if updateFilePlaybackVisuals handles its own "silence" (e.g. snap to zero), this might be sufficient.
-            // Consider adding an explicit call like:
-            // if (typeof resetAudioVisualization === 'function') resetAudioVisualization();
-            // if columns are not returning to zero otherwise.
             // For now, we rely on the visualizers to handle "silence" or the explicit reset in stopMicrophone.
         }
     }
