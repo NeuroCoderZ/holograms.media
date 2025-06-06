@@ -35,7 +35,7 @@ For project tasks and progress, see [GitHub Issues](https://github.com/NeuroCode
 *   **FastAPI (Python) on Koyeb:** Core of the backend, handling all server-side logic.
 *   **Neon.tech PostgreSQL + pgvector:** Primary database for user data, metadata, and AI knowledge (embeddings).
 *   **Firebase Authentication:** For user sign-up, login, and security.
-*   **Cloudflare R2:** For storing user-uploaded media "chunks" and other assets.
+*   **Backblaze B2:** For storing user-uploaded media "chunks" and other assets.
 *   **LLM APIs (Mistral/Devstral, Google Gemini):** Direct calls from the FastAPI backend for Tria's AI logic in MVP.
 *   **Genkit (Target Framework):** Planned for orchestrating Tria's AI bots and flows post-MVP.
 *   **LangChain:** Potential use for RAG and AI agent development.
@@ -101,18 +101,18 @@ To get the project up and running, follow these steps:
         ```bash
         cp .env.example .env
         ```
-    *   Populate the `.env` file with your credentials for Neon.tech PostgreSQL, Cloudflare R2, and Firebase Admin SDK (service account details).
+    *   Populate the `.env` file with your credentials for Neon.tech PostgreSQL, Backblaze B2, and Firebase Admin SDK (service account details).
     *   Run the FastAPI application locally:
         ```bash
-        uvicorn backend.app:app --reload --port 8000
+        uvicorn backend.app:app --reload
         ```
-        The backend will be available at `http://localhost:8000`.
+        The backend will be available at `http://localhost:8000` (default FastAPI port).
 
 6.  **Install Frontend Dependencies (if any build step is involved):**
     This project uses native HTML/CSS/JS, so typically no `npm install` is needed for the frontend. If future tooling (e.g., Vite for bundling) is introduced, this step would become relevant.
 
 7.  **Configure Environment Variables (for Backend):**
-    Environment variables for the backend (Neon.tech, R2, Firebase Admin, LLM APIs) are managed via the `.env` file for local development (loaded by `python-dotenv` in `backend/app.py`). For production on Koyeb, these variables must be set in the Koyeb service configuration. Refer to `backend/.env.example` for the list of required variables.
+    Environment variables for the backend (Neon.tech, B2, Firebase Admin, LLM APIs) are managed via the `.env` file for local development (loaded by `python-dotenv` in `backend/app.py`). For production on Koyeb, these variables must be set in the Koyeb service configuration. Refer to `backend/.env.example` for the list of required variables.
 
 8.  **Running Frontend and Emulated Services:**
     *   **Backend:** Run the FastAPI backend separately using `uvicorn backend.app:app --reload` as described above.
