@@ -1,0 +1,58 @@
+[
+  {
+    "file_path": "backend/tria_bots/LearningBot.py",
+    "line_number": 8,
+    "imported_name": "TriaAZRTaskCreate",
+    "imported_from_module": "backend.core.models.tria_azr_models",
+    "error_type": "Model 'TriaAZRTaskCreate' not found in 'tria_azr_models.py'"
+  },
+  {
+    "file_path": "backend/tria_bots/LearningBot.py",
+    "line_number": 8,
+    "imported_name": "TriaAZRTaskDB",
+    "imported_from_module": "backend.core.models.tria_azr_models",
+    "error_type": "Model 'TriaAZRTaskDB' not found in 'tria_azr_models.py'"
+  },
+  {
+    "file_path": "backend/tria_bots/LearningBot.py",
+    "line_number": 8,
+    "imported_name": "TriaAZRTaskSolutionCreate",
+    "imported_from_module": "backend.core.models.tria_azr_models",
+    "error_type": "Model 'TriaAZRTaskSolutionCreate' not found in 'tria_azr_models.py'"
+  },
+  {
+    "file_path": "backend/tria_bots/LearningBot.py",
+    "line_number": 8,
+    "imported_name": "TriaAZRTaskSolutionDB",
+    "imported_from_module": "backend.core.models.tria_azr_models",
+    "error_type": "Model 'TriaAZRTaskSolutionDB' not found in 'tria_azr_models.py'"
+  },
+  {
+    "file_path": "backend/tria_bots/LearningBot.py",
+    "line_number": 8,
+    "imported_name": "TriaLearningLogEntryCreate",
+    "imported_from_module": "backend.core.models.tria_azr_models",
+    "error_type": "Model 'TriaLearningLogEntryCreate' not found in 'tria_azr_models.py'"
+  },
+  {
+    "file_path": "backend/tria_bots/LearningBot.py",
+    "line_number": 8,
+    "imported_name": "TriaLearningLogEntryDB",
+    "imported_from_module": "backend.core.models.tria_azr_models",
+    "error_type": "Model 'TriaLearningLogEntryDB' not found in 'tria_azr_models.py'"
+  },
+  {
+    "file_path": "backend/tria_bots/LearningBot.py",
+    "line_number": 8,
+    "imported_name": "TriaBotConfigurationCreate",
+    "imported_from_module": "backend.core.models.tria_azr_models",
+    "error_type": "Model 'TriaBotConfigurationCreate' not found in 'tria_azr_models.py'"
+  },
+  {
+    "file_path": "backend/tria_bots/LearningBot.py",
+    "line_number": 8,
+    "imported_name": "TriaBotConfigurationDB",
+    "imported_from_module": "backend.core.models.tria_azr_models",
+    "error_type": "Model 'TriaBotConfigurationDB' not found in 'tria_azr_models.py'"
+  }
+]
