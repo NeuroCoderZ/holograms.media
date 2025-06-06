@@ -68,7 +68,7 @@ async def get_current_firebase_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid Firebase ID token: {e}",
-            headers={"WWW-Authenticate": "Bearer error="invalid_token""},
+            headers={'WWW-Authenticate': 'Bearer error="invalid_token"'},
         )
     except Exception as e: # Catch other Firebase Admin SDK errors
         print(f"[AUTH DEBUG] Error verifying Firebase ID token: {e}")
