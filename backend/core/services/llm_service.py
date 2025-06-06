@@ -8,144 +8,126 @@ logger = logging.getLogger(__name__)
 
 class LLMService:
     """
-    Service class for interacting with Large Language Models, specifically the Mistral AI API.
-    It handles API key management, request formatting, and response parsing.
+    Service class for interacting with Large Language Models, specifically the Mistral AI API
+    for the public-facing informational chatbot.
     """
     def __init__(self):
-        # Retrieve the Mistral API key from environment variables. This is crucial for authentication.
-        self.api_key = os.environ.get("MISTRAL_API_KEY")
-        if not self.api_key:
-            logger.error("MISTRAL_API_KEY environment variable not set. LLMService will not function correctly.")
-            # In a production system, consider a more robust error handling like raising a ValueError
-            # or ensuring fallback mechanisms. For now, logging and returning error strings will suffice.
+        # API key for the public bot (mistral-small-latest)
+        self.public_bot_api_key = "oVcP2Nj0iNWGupB6lswjbvhwHOr23hhr"
+        if not self.public_bot_api_key: # Should always be true as it's hardcoded
+            logger.error("Public bot API key is not set. LLMService will not function correctly for public bot.")
         
         # Base URL for Mistral's chat completions API.
         self.api_url = "https://api.mistral.ai/v1/chat/completions"
         
-        # Default model to be used for chat completions. Can be overridden by specific method calls.
-        self.default_model = "mistral-medium-latest"
+        # System prompt for the public informational bot
+        self.public_bot_system_prompt = """
+Вы информационный ассистент проекта "Голограммы Медиа".
+Ваша задача - помочь новым пользователям понять суть проекта и как начать работу.
 
-    async def call_mistral_medium(self, user_prompt: str, static_context: str = "") -> str:
+Ключевые моменты, которые вы можете объяснить:
+- Чтобы получить доступ к полному функционалу и ИИ "Триа" (на базе Gemini/Devstral), пользователю необходимо зарегистрироваться. (Детали регистрации могут быть предоставлены позже, пока просто упомяните необходимость).
+- Основные функции кнопок в интерфейсе:
+    - Левая панель: Управление файлами, версиями, настройками (детали могут быть добавлены). Кнопка "Аватар" - для профиля пользователя (после регистрации). Кнопка "Google" - для входа/регистрации.
+    - Центральная область: Отображение и взаимодействие с голограммой.
+    - Правая панель: Чат с ИИ, инструменты для работы с голограммой.
+    - Нижняя панель (область жестов): Используется для управления голограммой с помощью жестов рук (требует разрешения на камеру).
+- Возможности проекта: Создание и редактирование интерактивных аудиовизуальных голограмм, совместная работа (в будущем), управление с помощью жестов и голоса.
+- "Триа": Продвинутый ИИ-ассистент, доступный после регистрации, который помогает в создании контента, отвечает на сложные вопросы и интегрирован с функциями голограммы.
+
+Пожалуйста, будьте вежливы и информативны. Если пользователь спрашивает о чем-то, что выходит за рамки вашей компетенции как информационного бота, предложите ему зарегистрироваться для доступа к "Триа".
+"""
+
+    async def call_mistral_public_chatbot(self, user_prompt: str) -> str:
         """
-        Sends a chat completion request to the Mistral Medium model.
+        Sends a chat completion request to the Mistral Small model for the public informational bot.
         
         Args:
-            user_prompt (str): The main message or query from the user.
-            static_context (str): Optional additional context to prepend to the user's prompt.
-                                  For chat models, a system message is often preferred for context,
-                                  but direct concatenation is used here for simplicity.
+            user_prompt (str): The message or query from the user.
                                   
         Returns:
             str: The generated response from the LLM, or an error message if the API call fails.
-            
-        Raises:
-            (Errors are handled internally and return strings; not re-raised to caller).
         """
-        # Check if the API key is available before making the request.
-        if not self.api_key:
-            return "Error: LLM Service is not configured (API key missing)."
+        if not self.public_bot_api_key:
+            logger.error("Public bot API key is missing.")
+            return "Error: Chatbot not configured (API key missing)."
 
-        # Construct the full prompt, combining static context and user input.
-        full_prompt = user_prompt
-        if static_context:
-            full_prompt = "temp test" # Simplified f-string
-
-        # Define HTTP headers required for the Mistral API, including Authorization with the API key.
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {self.public_bot_api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
 
-        # Define the payload for the API request.
-        # `model`: Specifies which LLM to use (e.g., mistral-medium-latest).
-        # `messages`: A list of message objects, where each object has a `role` (user, assistant, system)
-        #             and `content`.
-        # `temperature`: Controls randomness (0.0-1.0). Higher values mean more creative/less deterministic output.
-        # `max_tokens`: The maximum number of tokens to generate in the response.
         payload = {
-            "model": self.default_model,
+            "model": "mistral-small-latest",
             "messages": [
-                {"role": "user", "content": full_prompt}
+                {"role": "system", "content": self.public_bot_system_prompt},
+                {"role": "user", "content": user_prompt}
             ],
             "temperature": 0.7,
-            "max_tokens": 300
-            # "safe_prompt": False # Option for content moderation; consider enabling in production.
+            "max_tokens": 500
         }
 
-        logger.debug(f"Sending payload to Mistral: {json.dumps(payload, indent=2)}")
+        logger.debug(f"Sending payload to Mistral (public bot): {json.dumps(payload, indent=2)}")
 
-        # Use httpx.AsyncClient for making asynchronous HTTP requests.
-        # A timeout is set to prevent requests from hanging indefinitely.
         async with httpx.AsyncClient(timeout=30.0) as client:
             try:
-                # Send the POST request to the Mistral API.
                 response = await client.post(self.api_url, json=payload, headers=headers)
-                response.raise_for_status()  # Raises an HTTPStatusError for 4xx/5xx responses.
-
+                response.raise_for_status()
                 response_data = response.json()
+                logger.debug(f"Mistral API Raw Response (public bot): {json.dumps(response_data, indent=2)}")
 
-                logger.debug(f"Mistral API Raw Response: {json.dumps(response_data, indent=2)}")
-
-                # Parse the response to extract the LLM's message content.
                 if response_data.get("choices") and len(response_data["choices"]) > 0:
                     message_content = response_data["choices"][0].get("message", {}).get("content")
                     if message_content:
-                        logger.info("Successfully received content from Mistral API.")
+                        logger.info("Successfully received content from Mistral API (public bot).")
                         return message_content.strip()
                     else:
-                        logger.error("Mistral API response contained no content in the message.")
+                        logger.error("Mistral API response (public bot) contained no content in the message.")
                         return "Error: LLM response format unexpected (no content)."
                 else:
-                    logger.error("Mistral API response contained no choices or empty choices list.")
+                    logger.error("Mistral API response (public bot) contained no choices or empty choices list.")
                     return "Error: LLM response format unexpected (no choices)."
 
             except httpx.HTTPStatusError as e:
-                # Handle HTTP errors (e.g., 401 Unauthorized, 404 Not Found, 500 Internal Server Error).
-                logger.error(f"HTTP Status Error calling Mistral API: {e.response.status_code} - {e.response.text}")
+                logger.error(f"HTTP Status Error calling Mistral API (public bot): {e.response.status_code} - {e.response.text}")
                 return f"Error: LLM API request failed with status {e.response.status_code}."
             except httpx.RequestError as e:
-                # Handle request errors (e.g., network issues, DNS resolution failure).
-                logger.error(f"Request Error calling Mistral API: {e}")
+                logger.error(f"Request Error calling Mistral API (public bot): {e}")
                 return f"Error: LLM API request failed due to a network issue or client error."
             except json.JSONDecodeError as e:
-                # Handle errors where the response body is not valid JSON.
-                logger.error(f"JSON Decode Error from Mistral API: {e}. Response text: {response.text if 'response' in locals() else 'N/A'}")
+                logger.error(f"JSON Decode Error from Mistral API (public bot): {e}. Response text: {response.text if 'response' in locals() else 'N/A'}")
                 return "Error: Failed to decode LLM response."
             except Exception as e:
-                # Catch any other unforeseen exceptions.
-                logger.exception("An unexpected error occurred while calling Mistral API.")
+                logger.exception("An unexpected error occurred while calling Mistral API (public bot).")
                 return "Error: An unexpected error occurred with the LLM service."
 
-# Example Usage (for testing this file directly, not for production Cloud Function environment)
 async def main_test():
-    # Before running this test, ensure the MISTRAL_API_KEY environment variable is set.
-    if not os.environ.get("MISTRAL_API_KEY"):
-        logger.warning("MISTRAL_API_KEY environment variable not set. Skipping direct test of LLMService.")
-        logger.warning("To test: export MISTRAL_API_KEY='your_actual_api_key' && python backend/core/services/llm_service.py")
-        return
+    # This test uses the hardcoded public_bot_api_key from the LLMService class.
+    # No environment variable needed for this specific test.
+    logger.info("Starting LLMService test for public chatbot.")
 
     llm_service = LLMService()
-    if not llm_service.api_key: # Check if service initialized correctly (key was found)
-        return # Exit if API key was not set during initialization
 
-    test_prompt = "Explain the concept of a Large Language Model in simple terms."
-    test_context = "You are an AI assistant explaining things to a 5-year old."
+    test_prompt_1 = "Привет, что это за проект?"
+    logger.info(f"Test 1 - Prompt: {test_prompt_1}")
+    response1 = await llm_service.call_mistral_public_chatbot(user_prompt=test_prompt_1)
+    logger.info(f"Test 1 - Response: {response1}")
 
-    logger.info("Test 1") # Simplified
-    response1 = await llm_service.call_mistral_medium(user_prompt=test_prompt, static_context=test_context)
-    logger.info("Response 1") # Simplified
+    test_prompt_2 = "Как мне использовать жесты?"
+    logger.info(f"Test 2 - Prompt: {test_prompt_2}")
+    response2 = await llm_service.call_mistral_public_chatbot(user_prompt=test_prompt_2)
+    logger.info(f"Test 2 - Response: {response2}")
 
-    logger.info("Test 2") # Simplified
-    response2 = await llm_service.call_mistral_medium(user_prompt="What is the capital of France?")
-    logger.info("Response 2") # Simplified
-
-    logger.info("Test 3") # Simplified
-    original_key = llm_service.api_key
-    llm_service.api_key = "bad_key_test" # Temporarily set a bad key to simulate an error
-    response3 = await llm_service.call_mistral_medium(user_prompt="This should fail.")
-    logger.info("Response 3") # Simplified
-    llm_service.api_key = original_key # Restore the original key
+    # Test with a faulty key (simulated by temporarily altering the instance's key)
+    # Note: This is a bit artificial as the key is hardcoded.
+    # A better test for this would be if the key was configurable and an invalid one was passed.
+    logger.info("Test 3 - Simulating an API key error")
+    original_public_key = llm_service.public_bot_api_key
+    llm_service.public_bot_api_key = "invalid_key_for_testing"
+    response3 = await llm_service.call_mistral_public_chatbot(user_prompt="This prompt should cause an auth error.")
+    logger.info(f"Test 3 - Response (expecting error): {response3}")
+    llm_service.public_bot_api_key = original_public_key # Restore for any subsequent tests if needed
 
 # This block ensures that `main_test()` is called only when the script is executed directly.
 if __name__ == "__main__":
