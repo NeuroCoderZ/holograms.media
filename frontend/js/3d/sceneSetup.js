@@ -11,35 +11,47 @@ export function initializeScene(state) {
   state.scene = new THREE.Scene();
   state.scene.background = new THREE.Color(0x000000); // Black background
 
-  // Camera
-  const defaultCamConfig = {
-    fov: 75,
-    aspect: window.innerWidth / window.innerHeight,
-    near: 0.1,
-    far: 1000
-  };
-  // Merge default config with state.config.CAMERA if it exists
-  const camConfig = (state.config && state.config.CAMERA) 
-                    ? { ...defaultCamConfig, ...state.config.CAMERA } 
-                    : defaultCamConfig;
-  
-  state.camera = new THREE.PerspectiveCamera(camConfig.fov, camConfig.aspect, camConfig.near, camConfig.far);
-  state.camera.position.set(0, 1.6, 5); // Default position (eye level, slightly back from origin)
-  state.activeCamera = state.camera; // Set default active camera
-
-  // Renderer
+  // Renderer: Initialize early to get gridContainer dimensions if needed by camera
+  // TODO: Implement WebGPU for performance boost.
   state.renderer = new THREE.WebGLRenderer({
     antialias: true, // Enable antialiasing for smoother edges
     alpha: true      // Enable alpha for transparent background if needed by the page design
   });
-  state.renderer.setSize(window.innerWidth, window.innerHeight);
   state.renderer.setPixelRatio(window.devicePixelRatio); // Adjust for device pixel ratio for sharper images
 
   const gridContainer = document.getElementById('grid-container');
+  if (!gridContainer) {
+    console.error('#grid-container not found. This is essential for camera and renderer setup.');
+    // Fallback or error handling: create a dummy gridContainer or throw error
+    // For now, let's assume it will always be there as per requirements.
+    // If it's not, camera setup below will fail.
+  }
+
+  // Camera - Orthographic
+  // Dimensions based on gridContainer, ensuring it's available
+  const containerWidth = gridContainer ? gridContainer.clientWidth : window.innerWidth;
+  const containerHeight = gridContainer ? gridContainer.clientHeight : window.innerHeight;
+
+  const camLeft = -containerWidth / 2;
+  const camRight = containerWidth / 2;
+  const camTop = containerHeight / 2;
+  const camBottom = -containerHeight / 2;
+  const camNear = 0.1; // Or 1, as per prompt
+  const camFar = 2000; // Or 10000, as per prompt
+
+  state.camera = new THREE.OrthographicCamera(camLeft, camRight, camTop, camBottom, camNear, camFar);
+  state.camera.position.set(0, 0, 1000); // As per prompt (e.g., 1000 or 1200)
+  state.camera.lookAt(0, 0, 0); // Ensure camera looks at the origin
+  state.activeCamera = state.camera; // Set default active camera
+
+  // Set renderer size AFTER camera is configured with container dimensions
+  state.renderer.setSize(containerWidth, containerHeight);
+
   if (gridContainer) {
     gridContainer.innerHTML = ''; // Clear any existing content (e.g., old canvas)
     gridContainer.appendChild(state.renderer.domElement);
   } else {
+    // This case should ideally be handled more robustly if gridContainer can be missing.
     console.warn('#grid-container not found for renderer. Appending to document.body as a fallback.');
     document.body.appendChild(state.renderer.domElement);
   }

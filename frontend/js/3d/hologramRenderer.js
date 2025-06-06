@@ -295,9 +295,10 @@ export class HologramRenderer {
         // Default to a very low value if undefined to ensure minimum visual state.
         const audioLevel = channel.levels[i] !== undefined ? channel.levels[i] : -100; // dB value, -100 is silence.
         
-        // Normalize the audio level to a 0-1 range for scaling. 
-        // Assumes audio levels range from -100dB (silence) to 30dB (loudest relevant for visualization).
-        const normalizedDB = THREE.MathUtils.clamp((audioLevel + 100) / 130, 0, 1);
+        // Normalize the audio level to a 0-1 range for scaling.
+        // AudioAnalyzer provides audioLevel in a -100dB (silence) to 0dB (max) range.
+        // (audioLevel + 100) maps this to 0-100. Dividing by 100 normalizes to 0-1.
+        const normalizedDB = THREE.MathUtils.clamp((audioLevel + 100) / 100, 0, 1);
 
         // Ensure material color is set (it should remain consistent, but explicit copy ensures it).
         mesh.material.color.copy(columnPair.semitoneData.color);

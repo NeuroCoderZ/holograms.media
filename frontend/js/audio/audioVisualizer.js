@@ -7,26 +7,36 @@ import { HologramRenderer } from '../3d/hologramRenderer.js';
 // SMOOTHING_TIME_CONSTANT is imported but not directly used here; it's typically used within AudioAnalyzer.
 // import { SMOOTHING_TIME_CONSTANT } from '../config/hologramConfig.js'; 
 
-let audioAnalyzerInstance = null;
-let hologramRendererInstance = null;
+// import { SMOOTHING_TIME_CONSTANT } from '../config/hologramConfig.js';
+// These instances will be accessed from the global 'state' object.
+// let audioAnalyzerInstance = null; // Deprecated: Will use state.audioAnalyzerLeftInstance
+// let audioAnalyzerRightInstance = null; // Deprecated: Will use state.audioAnalyzerRightInstance
+let hologramRendererInstance = null; // This will be state.hologramRendererInstance
+
+// Import state to access shared instances
+import { state } from '../core/init.js';
 
 /**
- * Initializes the audio visualization module by providing instances of the audio analyzer and hologram renderer.
- * This function must be called before the visualization can start.
- * @param {AudioAnalyzer} analyzer - The instance of AudioAnalyzer from which to get audio levels.
- * @param {HologramRenderer} renderer - The instance of HologramRenderer to update the 3D visualization.
+ * Initializes the audio visualization module by linking to global instances.
+ * This function should be called after core initialization (initCore).
  */
-export function initAudioVisualization(analyzer, renderer) {
-  // Basic validation to ensure both required instances are provided.
-  if (!analyzer || !renderer) {
-    console.error("AudioAnalyzer or HologramRenderer instance not provided to initAudioVisualization. Aborting initialization.");
+export function initAudioVisualization() {
+  // Basic validation to ensure required instances are available in the global state.
+  if (!state.audioAnalyzerLeftInstance || !state.audioAnalyzerRightInstance || !state.hologramRendererInstance) {
+    console.error(
+      "AudioAnalyzer instances or HologramRenderer instance not found in global state for initAudioVisualization. Ensure initCore has run and populated these.",
+      "state.audioAnalyzerLeftInstance:", state.audioAnalyzerLeftInstance,
+      "state.audioAnalyzerRightInstance:", state.audioAnalyzerRightInstance,
+      "state.hologramRendererInstance:", state.hologramRendererInstance
+    );
     return;
   }
-  // Store the provided instances for later use in the animation loop.
-  audioAnalyzerInstance = analyzer;
-  hologramRendererInstance = renderer;
+  // No need to store them locally if accessing directly from state.
+  // However, if frequent access, local references can be slightly cleaner/performant (micro-optimization).
+  // For now, let's use state directly in animateAudioVisuals or assign them here.
+  hologramRendererInstance = state.hologramRendererInstance; // Optional: local reference
 
-  console.log('Audio visualization initialized. Starting animation loop.');
+  console.log('Audio visualization initialized and linked to global instances. Starting animation loop.');
   // Start the animation loop once initialization is complete.
   animateAudioVisuals();
 }
@@ -37,20 +47,20 @@ export function initAudioVisualization(analyzer, renderer) {
  * based on the latest audio data from the AudioAnalyzer.
  */
 function animateAudioVisuals() {
-  // Request the next animation frame, creating a continuous loop.
   requestAnimationFrame(animateAudioVisuals);
 
-  // If either the audio analyzer or hologram renderer instances are not available,
-  // stop the animation loop to prevent errors.
-  if (!audioAnalyzerInstance || !hologramRendererInstance) {
+  // Use the global instances from state
+  const analyzerLeft = state.audioAnalyzerLeftInstance;
+  const analyzerRight = state.audioAnalyzerRightInstance;
+  const renderer = hologramRendererInstance || state.hologramRendererInstance; // Use local or global
+
+  if (!analyzerLeft || !analyzerRight || !renderer) {
+    // console.warn("AudioAnalyzers or HologramRenderer not ready, skipping audio visual frame.");
     return; 
   }
 
-  // Fetch the latest processed audio levels (e.g., semitone levels) from the audio analyzer.
-  const audioLevels = audioAnalyzerInstance.getSemitoneLevels();
+  const leftAudioLevels = analyzerLeft.getSemitoneLevels();
+  const rightAudioLevels = analyzerRight.getSemitoneLevels();
   
-  // Update the visual columns in the hologram renderer.
-  // For the current MVP, we are using the same audio levels for both left and right channels
-  // as a placeholder for a true stereo visualization. HologramRenderer expects two arrays.
-  hologramRendererInstance.updateColumnVisuals(audioLevels, audioLevels);
+  renderer.updateColumnVisuals(leftAudioLevels, rightAudioLevels);
 }
