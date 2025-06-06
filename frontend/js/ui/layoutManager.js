@@ -1,5 +1,5 @@
 // frontend/js/ui/layoutManager.js
-
+import * as THREE from 'three';
 import { state } from '../core/init.js';
 // Предполагаем, что uiElements ИЗ uiManager.js УЖЕ ЗАПИСАНЫ в state.uiElements к моменту вызова этой функции.
 // Если uiManager еще не отработал, ui.leftPanel и ui.rightPanel здесь могут быть null.

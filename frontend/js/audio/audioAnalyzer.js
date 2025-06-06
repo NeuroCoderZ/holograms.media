@@ -17,6 +17,24 @@ export class AudioAnalyzer {
   }
 
   /**
+   * Updates the AnalyserNode used by this AudioAnalyzer instance.
+   * Useful when switching audio sources (e.g., from microphone to file).
+   * @param {AnalyserNode} newAnalyserNode - The new Web Audio API AnalyserNode.
+   */
+  setAnalyserNode(newAnalyserNode) {
+    if (newAnalyserNode && typeof newAnalyserNode.getByteFrequencyData === 'function') {
+      this.analyserNode = newAnalyserNode;
+      // Ensure the new analyserNode also has its min/maxDecibels set correctly if needed,
+      // though createAnalyserNodes in audioProcessing.js already does this.
+      // this.analyserNode.minDecibels = -100;
+      // this.analyserNode.maxDecibels = 0;
+      console.log("AudioAnalyzer's AnalyserNode updated.");
+    } else {
+      console.warn("AudioAnalyzer: Invalid AnalyserNode provided to setAnalyserNode.");
+    }
+  }
+
+  /**
    * Retrieves and processes audio frequency data to produce decibel levels for each defined semitone.
    * The semitone frequencies are defined in `hologramConfig.js`.
    * @returns {number[]} An array of decibel levels (clamped between -100 and 30) for each semitone.
@@ -84,14 +102,16 @@ export class AudioAnalyzer {
       }
 
       // Convert the amplitude (0-255) to a decibel (dB) value.
-      // The formula 20 * log10(amplitude / 255) converts an amplitude ratio to dB.
-      // The multiplication by 1.5 is a custom scaling factor used to visually enhance the perceived loudness.
-      let dB = 20 * Math.log10(amplitude / 255) * 1.5;
+      // Convert amplitude (0-255) to dB. 0dB is max.
+      // 20 * log10(amplitude / 255) converts an amplitude ratio (0-1) to dB.
+      // Max amplitude (255) will be 20 * log10(1) = 0 dB.
+      // Min amplitude (e.g., 1/255) will be a large negative dB value.
+      const rawDb = 20 * Math.log10(amplitude / 255);
 
-      // Clamp the resulting dB value to a predefined range (-100 dB to 30 dB).
-      // -100 dB typically represents silence, and 30 dB represents a peak loud sound for visualization purposes.
-      // This prevents extreme values from distorting the visualization.
-      return THREE.MathUtils.clamp(dB, -100, 30);
+      // Clamp to a range of -100dB (considered silence for visualization) to 0dB (max).
+      // This ensures the output is standardized for the visualizer.
+      const db = THREE.MathUtils.clamp(rawDb, -100, 0);
+      return db;
     });
   }
 }

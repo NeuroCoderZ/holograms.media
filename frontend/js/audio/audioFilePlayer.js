@@ -107,7 +107,16 @@ function playAudio() {
   state.audio.audioBufferSource.buffer = state.audio.audioBuffer;
   
   // Call the imported setupAudioProcessing
+  // This will set state.audio.filePlayerAnalysers.left and .right
   setupAudioProcessing(state.audio.audioBufferSource, 'file'); 
+
+  // Update the global AudioAnalyzer instances to use the new file analysers
+  if (state.audioAnalyzerLeftInstance && state.audio.filePlayerAnalysers?.left) {
+    state.audioAnalyzerLeftInstance.setAnalyserNode(state.audio.filePlayerAnalysers.left);
+  }
+  if (state.audioAnalyzerRightInstance && state.audio.filePlayerAnalysers?.right) {
+    state.audioAnalyzerRightInstance.setAnalyserNode(state.audio.filePlayerAnalysers.right);
+  }
 
   const offsetToPlay = state.audio.pausedAt;
   state.audio.audioBufferSource.start(0, offsetToPlay);
