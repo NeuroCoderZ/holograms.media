@@ -4,7 +4,7 @@
 from .base_models import CoreModel, IDModel, TimestampModel, BaseUUIDModel, current_time_utc
 
 # Import models from user_models.py
-from .user_models import UserModel
+from .user_models import UserPublic, UserInDB
 
 # Import models from tria_azr_models.py
 from .tria_azr_models import (
