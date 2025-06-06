@@ -5,6 +5,7 @@ import firebase_admin
 from firebase_admin import credentials, auth
 from fastapi import Depends, HTTPException, status
 
+import logging # Added import
 # Model and DB imports
 from backend.core.models.user_models import UserInDB  # Ensure UserInDB reflects new schema (e.g., has firebase_uid)
 from backend.core import crud_operations
@@ -150,4 +151,23 @@ async def get_current_active_user(current_user: UserInDB = Depends(get_current_u
         print(f"[AUTH DEBUG] User with Firebase UID '{current_user.firebase_uid}' is inactive.") # Assumes firebase_uid field
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     print(f"[AUTH DEBUG] User with Firebase UID '{getattr(current_user, 'firebase_uid', 'N/A')}' is active.")
+    return current_user
+
+async def get_current_admin_user(current_user: UserInDB = Depends(get_current_active_user)) -> UserInDB:
+    """
+    Ensures the current active user has administrative privileges.
+    """
+    if not current_user: # Should be handled by get_current_active_user, but as a safeguard
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+    if current_user.role != "admin":
+        # Log the attempt for security auditing if desired
+        logger.warning(f"User {current_user.email} (UID: {current_user.firebase_uid}) attempted admin access without privileges.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user does not have administrative privileges",
+        )
+    logger.info(f"Admin access granted for user {current_user.email} (UID: {current_user.firebase_uid}).")
     return current_user
