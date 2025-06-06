@@ -24,19 +24,19 @@ except ImportError:
     nethologlyph_pb2 = type('dummy_pb2', (object,), {'NetHoloPacket': NetHoloPacket})
 
 
-from backend.models.internal_bus_models import InternalMessage
+from backend.core.models.internal_bus_models import InternalMessage
 # Import specific Pydantic models that correspond to your Protobuf message payloads
-from backend.models.nethologlyph_models import (
+from backend.core.models.nethologlyph_models import (
     HolographicSymbolNetModel, # Pydantic version of HolographicSymbol proto
     GestureChunkNetModel,      # Pydantic version of GestureChunk proto
     TriaStateUpdateNetModel,   # Pydantic version of TriaStateUpdate proto
     # Add other Pydantic models corresponding to other NetHoloPacket payload types
 )
-from backend.models.hologram_models import ( # These might be what your internal messages use
+from backend.core.models.hologram_models import ( # These might be what your internal messages use
     HolographicSymbolModel as InternalHolographicSymbol,
     # ThreeDEmojiModel, AudioVisualizationStateModel # etc.
 )
-from backend.models.gesture_models import (
+from backend.core.models.gesture_models import (
     InterpretedGestureSequenceDB as InternalGestureSequence,
 )
 

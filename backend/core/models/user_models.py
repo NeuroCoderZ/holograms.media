@@ -1,62 +1,58 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
-from .base_models import BaseUUIDModel # Assuming BaseUUIDModel provides id, created_at, updated_at
+from datetime import datetime
 
-# Model for creating a new user (for incoming data, e.g., from auth_sync Cloud Function)
-class UserCreate(BaseModel):
-    user_id_firebase: str = Field(..., description="Firebase UID as provided by Firebase Auth")
-    email: EmailStr = Field(..., description="User's email address")
-    # Optionally add other fields that might be passed during creation, e.g.:
-    # display_name: Optional[str] = None
-    # photo_url: Optional[str] = None
-
-    class Config:
-        # For Pydantic V2, use model_config
-        # model_config = {"json_schema_extra": {"examples": [...]}}
-        # For Pydantic V1, use schema_extra
-        schema_extra = {
-            "examples": [
-                {
-                    "user_id_firebase": "firebase_uid_abcde12345",
-                    "email": "new.user@example.com"
-                }
-            ]
-        }
-
-# Model representing a user as stored in the database (including generated fields like ID and timestamps)
-class UserModel(BaseUUIDModel):
-    user_id_firebase: str = Field(..., description="Firebase UID") # This is the UID from Firebase Authentication
+# Base User properties shared by other models
+class UserBase(BaseModel):
+    # username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_]+$") # Removed
     email: EmailStr
-    # Add other user-specific fields as needed, e.g.:
-    # full_name: Optional[str] = None
-    # is_active: bool = True
-    # is_superuser: bool = False
+    role: str = Field(default='user', pattern="^(admin|core_developer|beta_tester|user)$")
+
+# UserCreate is removed. User creation is handled by get_or_create_user_by_firebase_payload
+# using data from Firebase token.
+
+# Properties stored in DB.
+# firebase_uid is now the primary identifier.
+# hashed_password is removed.
+class UserInDBBase(UserBase):
+    firebase_uid: str # Changed from id: int
+    # username field is removed via UserBase
+    # hashed_password field is removed entirely
+    is_active: bool = True
+    email_verified: bool = False # This will be set from Firebase token
+    last_login_at: Optional[datetime] = None
+    user_settings: Optional[dict] = None # For JSONB
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
-        orm_mode = True
-        # For Pydantic V2, use model_config for schema_extra
-        # model_config = {
-        #     "json_schema_extra": {
-        #         "examples": [
-        #             {
-        #                 "user_id_firebase": "firebase_uid_123",
-        #                 "email": "user@example.com",
-        #                 "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-        #                 "created_at": "2024-05-29T10:00:00Z",
-        #                 "updated_at": "2024-05-29T10:00:00Z"
-        #             }
-        #         ]
-        #     }
-        # }
-        # For Pydantic V1, use schema_extra
-        schema_extra = {
-            "examples": [
-                {
-                    "user_id_firebase": "firebase_uid_123",
-                    "email": "user@example.com",
-                    "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-                    "created_at": "2024-05-29T10:00:00Z",
-                    "updated_at": "2024-05-29T10:00:00Z"
-                }
-            ]
-        }
+        from_attributes = True # Pydantic v2 style (alias for orm_mode = True)
+
+# Additional properties to return to client (public representation of a user)
+# Excludes sensitive data.
+class UserPublic(UserBase):
+    firebase_uid: str # Changed from id: int
+    # username field is removed via UserBase
+    email: EmailStr # Explicitly including email from UserBase for clarity
+    email_verified: bool = False # Adding email_verified to public model
+    is_active: bool
+    role: str # Explicitly including role from UserBase
+    last_login_at: Optional[datetime] = None # Making last_login_at public
+    created_at: datetime
+    # updated_at: Optional[datetime] = None # Decide if this should be public, often it is.
+
+    class Config:
+        from_attributes = True # Pydantic v2 style
+
+# Full User model as stored in DB, inheriting all fields.
+# Useful for internal representation after fetching from DB.
+class UserInDB(UserInDBBase):
+    pass
+
+# Optional: If you need a model for updating user settings or other mutable fields by user
+class UserUpdate(BaseModel):
+    user_settings: Optional[dict] = None
+    # Add other fields that a user can update themselves, e.g., display_name if you add it.
+    # Email updates should be handled carefully, potentially requiring re-verification via Firebase.
+    # Role updates would typically be an admin-only operation.
+    is_active: Optional[bool] = None # Typically admin controlled
