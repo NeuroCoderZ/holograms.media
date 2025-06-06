@@ -256,35 +256,5 @@ class LearningBot:
     #     # 3. Searching a library of known-safe code components/patterns that match the target embedding.
     #     # 4. Generating a "change request" or "patch" in a verifiable format.
     #     # 5. Rigorous sandbox testing and validation before any live deployment.
-    #     return False 
-
-# Example of how LearningBot might be instantiated and used (for illustration)
-# async def main_learning_bot_example():
-#     # Mock CRUD operations and LLM client for this example
-#     class MockCRUD:
-#         async def create_tria_learning_log_entry(self, data): print(f"CRUD: Create Learning Log: {data.summary_text}"); return TriaLearningLogDB(**data.model_dump(), log_id=1, timestamp=datetime.utcnow()) # Changed from TriaLearningLogEntryDB
-#         async def get_pending_azr_tasks(self, limit): print(f"CRUD: Get Pending AZR Tasks (limit {limit})"); return [] # Simulate no tasks
-#         # ... other mock methods as needed by the bot ...
-
-#     mock_crud_instance = MockCRUD()
-#     mock_llm_client = {} # Replace with an actual LLM client instance
-
-#     learning_bot = LearningBot(crud_ops=mock_crud_instance, llm_client=mock_llm_client)
-    
-#     await learning_bot.learn_from_interaction_feedback(
-#         interaction_id="interaction_123",
-#         feedback_data={"misinterpretation_flag": True, "original_input_summary": "User waved left", "user_correction": "User actually waved right"}
-#     )
-    
-#     await learning_bot.run_azr_cycle()
-    
-#     await learning_bot.propose_bot_parameter_update(
-#         bot_id="GestureBot",
-#         parameters_to_update={"sensitivity_threshold": 0.85},
-#         change_reason="Observed low recall for subtle gestures in recent interactions."
-#     )
-
-# if __name__ == "__main__":
-#     logging.basicConfig(level=logging.INFO)
-#     asyncio.run(main_learning_bot_example())
+    #     return False
 ```

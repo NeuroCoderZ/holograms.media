@@ -7,8 +7,17 @@ function getPanelWidths() {
     // ИСПРАВЛЕНО: Использование state.uiElements для доступа к панелям
     const leftPanel = state.uiElements?.leftPanel;
     const rightPanel = state.uiElements?.rightPanel;
-    const leftWidth = leftPanel ? leftPanel.offsetWidth : 0;
-    const rightWidth = rightPanel ? rightPanel.offsetWidth : 0;
+
+    let leftWidth = 0;
+    if (leftPanel && leftPanel.offsetParent !== null) { // Check if panel exists and is part of layout
+        leftWidth = leftPanel.getBoundingClientRect().width;
+    }
+
+    let rightWidth = 0;
+    if (rightPanel && rightPanel.offsetParent !== null) { // Check if panel exists and is part of layout
+        rightWidth = rightPanel.getBoundingClientRect().width;
+    }
+
     return leftWidth + rightWidth;
 }
 
@@ -36,8 +45,12 @@ export function initializeResizeHandler() {
     }
 
     // Получаем доступное пространство
-    const availableWidth = window.innerWidth - getPanelWidths();
-    const availableHeight = window.innerHeight;
+    let availableWidth = window.innerWidth - getPanelWidths();
+    let availableHeight = window.innerHeight;
+
+    // Ensure dimensions are positive
+    availableWidth = Math.max(1, availableWidth);
+    availableHeight = Math.max(1, availableHeight);
 
     // Обновляем рендерер и камеру (используем state)
     if (state.renderer) {
@@ -45,18 +58,18 @@ export function initializeResizeHandler() {
         console.log('[Resize] Renderer resized:', { width: availableWidth, height: availableHeight });
     }
 
-    if (state.camera) {
+    if (state.activeCamera) { // Changed from state.camera to state.activeCamera for consistency
         // Обновляем камеру в зависимости от ее типа
-        if (state.camera.isOrthographicCamera) {
-            state.camera.left = -availableWidth / 2;
-            state.camera.right = availableWidth / 2;
-            state.camera.top = availableHeight / 2;
-            state.camera.bottom = -availableHeight / 2;
-        } else if (state.camera.isPerspectiveCamera) {
-            state.camera.aspect = availableWidth / availableHeight;
+        if (state.activeCamera.isOrthographicCamera) {
+            state.activeCamera.left = -availableWidth / 2;
+            state.activeCamera.right = availableWidth / 2;
+            state.activeCamera.top = availableHeight / 2;
+            state.activeCamera.bottom = -availableHeight / 2;
+        } else if (state.activeCamera.isPerspectiveCamera) {
+            state.activeCamera.aspect = availableWidth / availableHeight;
         }
-        state.camera.updateProjectionMatrix();
-        console.log('[Resize] Camera updated');
+        state.activeCamera.updateProjectionMatrix();
+        console.log('[Resize] Active camera updated');
     }
 
     // Вызываем updateHologramLayout для пересчета макета голограммы
