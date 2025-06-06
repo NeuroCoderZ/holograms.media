@@ -11,6 +11,28 @@ export class MicrophoneManager {
 
     this.fftSize = fftSize;
     this.smoothingTimeConstant = smoothingTimeConstant;
+    this._wasActiveBeforeHidden = false; // For page visibility
+
+    this._boundHandleVisibilityChange = this.handleVisibilityChange.bind(this);
+    document.addEventListener('visibilitychange', this._boundHandleVisibilityChange);
+  }
+
+  handleVisibilityChange() {
+    if (document.visibilityState === 'hidden') {
+      if (this.microphoneStream) {
+        console.log('Page hidden, stopping microphone.');
+        this.stop();
+        this._wasActiveBeforeHidden = true;
+      }
+    } else if (document.visibilityState === 'visible') {
+      if (this._wasActiveBeforeHidden) {
+        console.log('Page visible, microphone was active. Consider re-init or prompt.');
+        // Optional: Automatically attempt to re-initialize or prompt user.
+        // For now, we just reset the flag. User might need to click mic button again.
+        // Example: this.init().catch(err => console.error("Error re-initializing mic on visibility", err));
+        this._wasActiveBeforeHidden = false;
+      }
+    }
   }
 
   async init() {
@@ -53,6 +75,23 @@ export class MicrophoneManager {
       this.splitter.connect(this.analyserRight, 1);
       console.log('Audio nodes connected: Source -> Splitter -> Analysers.');
 
+      // Update global AudioAnalyzer instances if they exist
+      // This requires 'state' to be imported or passed if this class is used outside of state management.
+      // For now, assuming 'state' can be imported if this modification is applied.
+      // If not, this logic needs to be handled by the caller of init() (e.g. in initCore.js)
+      if (typeof state !== 'undefined' && state.audioAnalyzerLeftInstance) {
+        state.audioAnalyzerLeftInstance.setAnalyserNode(this.analyserLeft);
+      }
+      if (typeof state !== 'undefined' && state.audioAnalyzerRightInstance) {
+        state.audioAnalyzerRightInstance.setAnalyserNode(this.analyserRight);
+      }
+      // Also update state.audio.microphoneAnalysers
+      if (typeof state !== 'undefined' && state.audio) {
+          state.audio.microphoneAnalysers = { left: this.analyserLeft, right: this.analyserRight };
+          state.audio.audioContext = this.audioContext; // Ensure audio context in state is also current
+      }
+
+
       return {
         analyserLeft: this.analyserLeft,
         analyserRight: this.analyserRight,
@@ -75,6 +114,13 @@ export class MicrophoneManager {
       throw error; // Re-throw to allow caller to handle it
     }
   }
+
+  // It might be beneficial to have a start method that reuses existing context and instances if possible,
+  // or ensures that if init() is called again, the global state instances are updated.
+  // The current init() creates new analysers each time. If init() is the primary way to "start"
+  // after a stop, then updating global state instances (like audioAnalyzerLeftInstance)
+  // within init() or immediately after its call in initCore.js is important.
+  // The change above attempts to do it within init(), assuming state is accessible.
 
   stop() {
     console.log('Stopping microphone and disconnecting audio nodes...');
@@ -106,6 +152,14 @@ export class MicrophoneManager {
     //   this.audioContext = null;
     // }
     console.log('MicrophoneManager stopped.');
+  }
+
+  // Call this method if the MicrophoneManager instance is ever to be destroyed
+  // to prevent memory leaks from the event listener.
+  destroy() {
+    document.removeEventListener('visibilitychange', this._boundHandleVisibilityChange);
+    this.stop(); // Ensure everything is stopped and cleaned up.
+    console.log('MicrophoneManager destroyed and visibility listener removed.');
   }
 
   getAudioContext() {
