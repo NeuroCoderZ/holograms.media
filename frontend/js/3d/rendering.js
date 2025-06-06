@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 // TWEEN подключается глобально через CDN в index.html
 import { state } from '../core/init.js'; // Для доступа к state.scene, state.mainSequencerGroup
-import { updateFilePlaybackVisuals, updateLiveSequencerVisuals } from '../audio/audioProcessing.js';
+import { updateLiveSequencerVisuals } from '../audio/audioProcessing.js';
 
 // --- Redundant variables, constants, and functions have been removed ---
 // The following are no longer needed here as they are handled in sceneSetup.js or audioProcessing.js:
@@ -38,7 +38,7 @@ function animate(currentTime) {
         // Modified condition: Call if activeSource is 'file' and an audioBuffer is loaded.
         // updateFilePlaybackVisuals will internally handle playing vs. silent state.
         if (state.audio.activeSource === 'file' && state.audio.audioBuffer) {
-            updateFilePlaybackVisuals();
+            // updateFilePlaybackVisuals(); // Removed as per request
         } else if (state.audio.activeSource === 'microphone' &&
                    state.hologramRendererInstance &&
                    state.audioAnalyzerLeftInstance &&
