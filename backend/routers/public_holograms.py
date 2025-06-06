@@ -4,7 +4,7 @@ import asyncpg
 import logging
 
 from backend.core.crud_operations import get_holograms_by_user_id
-from backend.models.hologram_models import UserHologramResponseModel
+from backend.core.models.hologram_models import UserHologramResponseModel
 from backend.db.pg_connector import get_db_connection # Assuming this path is correct based on other routers
 
 router = APIRouter(
