@@ -5,7 +5,6 @@
 
 import { state } from './init.js';
 import * as THREE from 'three';
-import TWEEN from '@tweenjs/tween.js';
 
 // Константы для жестов
 const ROTATION_LIMIT = Math.PI / 2; // 90 градусов

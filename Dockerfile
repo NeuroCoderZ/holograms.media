@@ -18,8 +18,12 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Копируем весь код бэкенда в контейнер
+# Копируем код бэкенда и скрипты в контейнер
 COPY ./backend /app/backend
+COPY ./scripts /app/scripts
+
+# Запускаем скрипт верификации импортов
+RUN python scripts/verify_imports.py
 
 # Указываем, что контейнер будет слушать на порту 8000
 # Koyeb автоматически пробросит трафик на этот порт
