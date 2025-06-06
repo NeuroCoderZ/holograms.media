@@ -9,8 +9,8 @@ import uuid # For generating a default session_id if needed by LLM logic before 
 # For now, we'll mock or simulate LLM interaction if needed for add_message.
 # from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
-from backend.db import crud_operations
-from backend.models import chat_models, user_models # For UserInDB type hint
+from backend.core import crud_operations
+from backend.core.models import chat_models, user_models # For UserInDB type hint
 from backend.auth import security
 from backend.db.pg_connector import get_db_connection
 

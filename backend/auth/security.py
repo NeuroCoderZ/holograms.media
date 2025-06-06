@@ -7,8 +7,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Model and DB imports
-from backend.models.user_models import UserInDB  # Ensure UserInDB reflects new schema (e.g., has firebase_uid)
-from backend.db import crud_operations
+from backend.core.models.user_models import UserInDB  # Ensure UserInDB reflects new schema (e.g., has firebase_uid)
+from backend.core import crud_operations
 import asyncpg  # For type hinting
 from backend.db.pg_connector import get_db_connection
 
