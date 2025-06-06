@@ -8,7 +8,6 @@
 # TODO: Call CRUD operations to store the chunk.
 # TODO: Potentially trigger Tria's learning process or MemoryBot update.
 
-# from ..models.interaction_chunk_model import InteractionChunkCreate
 # from ..db import crud_operations
 #
 # async def process_and_store_chunk(chunk_data: InteractionChunkCreate):
