@@ -10,6 +10,7 @@ const HOLOGRAM_REFERENCE_WIDTH = 2 * GRID_WIDTH; // Adjusted for two grids
 const HOLOGRAM_REFERENCE_HEIGHT = GRID_HEIGHT;   // Adjusted for actual grid height
 
 // Дополнительная ручная корректировка для горизонтального центрирования (визуальная подстройка)
+// TODO: Document the specific reason for this visual adjustment. For example, is it due to specific element styling, font rendering, or optical balance?
 const FIXED_VISUAL_ADJUSTMENT_X = -65; // Компенсация визуального смещения влево
 
 // Вспомогательные функции для получения актуальной ширины видимых панелей
@@ -53,6 +54,13 @@ function calculateInitialScale(containerWidth, containerHeight) {
 export function updateHologramLayout(handsVisible) {
   console.log('[LayoutManager] updateHologramLayout called. Hands visible:', handsVisible, 'state.uiElements:', state.uiElements);
 
+// --- НОВЫЙ ПРЕДОХРАНИТЕЛЬ ---
+if (!state.uiElements?.gridContainer || !state.uiElements?.gestureArea) {
+    console.warn('[LayoutManager] Skipping layout update: UI elements not ready yet.');
+    return;
+}
+// --- КОНЕЦ ПРЕДОХРАНИТЕЛЯ ---
+
   // Проверяем наличие ключевых элементов в state
   if (!state.uiElements?.gridContainer) {
     console.warn('[LayoutManager] Skipping: gridContainer is not available in state.uiElements.');
@@ -65,8 +73,12 @@ export function updateHologramLayout(handsVisible) {
   // Check for hologramRendererInstance and its pivot
   // Условие, которое приводило к пропуску, удалено.
   // Мы знаем, что hologramRendererInstance и его pivot теперь доступны на основе предыдущих логов.
-  if (!state.renderer) {
-    console.warn('[LayoutManager] Skipping: renderer is not available in state.');
+  if (!state.renderer) { // General renderer check
+    console.warn('[LayoutManager] Skipping: state.renderer is not available.');
+    return;
+  }
+  if (!state.hologramRendererInstance || typeof state.hologramRendererInstance.getHologramPivot !== 'function') {
+    console.warn('[LayoutManager] Skipping: state.hologramRendererInstance or getHologramPivot is not available.');
     return;
   }
 
@@ -102,7 +114,7 @@ export function updateHologramLayout(handsVisible) {
   gridContainer.style.position = 'absolute';
   gridContainer.style.top = `${desiredTopWindowMargin}px`;
   gridContainer.style.left = `${leftPanelWidth}px`; // Отступ равен ширине левой панели
-  gridContainer.style.style.width = `${availableWidthForGrid}px`;
+  gridContainer.style.width = `${availableWidthForGrid}px`;
   gridContainer.style.height = `${availableHeightForGrid}px`;
 
   // Обновляем параметры ортографической камеры, если она активна
@@ -136,12 +148,12 @@ export function updateHologramLayout(handsVisible) {
   if (window.TWEEN) {
     new window.TWEEN.Tween(hologramPivotToAnimate.scale)
       .to({ x: targetScaleValue, y: targetScaleValue, z: targetScaleValue }, 500)
-      .easing(window.window.TWEEN.Easing.Quadratic.InOut)
+      .easing(window.TWEEN.Easing.Quadratic.InOut)
       .start();
 
     new window.TWEEN.Tween(hologramPivotToAnimate.position)
       .to({ y: newTargetPositionY, x: horizontalOffset }, 500) 
-      .easing(window.window.TWEEN.Easing.Quadratic.InOut)
+      .easing(window.TWEEN.Easing.Quadratic.InOut)
       .onComplete(() => {
         if (state.activeCamera) state.activeCamera.updateProjectionMatrix();
       })
@@ -163,7 +175,7 @@ export function updateHologramLayout(handsVisible) {
     const targetGestureAreaHeight = handsVisible ? `${windowHeight * 0.2}px` : '4px'; 
     new window.TWEEN.Tween(gestureArea.style)
       .to({ height: targetGestureAreaHeight }, 500)
-      .easing(window.window.TWEEN.Easing.Quadratic.InOut)
+      .easing(window.TWEEN.Easing.Quadratic.InOut)
       .start();
   }
 }
