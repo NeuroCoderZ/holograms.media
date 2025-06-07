@@ -4,20 +4,17 @@ import { updateHologramLayout } from '../ui/layoutManager.js'; // Предпол
 
 // Вспомогательная функция для получения ширины панелей (перенесена из script.js)
 function getPanelWidths() {
-    // ИСПРАВЛЕНО: Использование state.uiElements для доступа к панелям
     const leftPanel = state.uiElements?.leftPanel;
     const rightPanel = state.uiElements?.rightPanel;
-
     let leftWidth = 0;
-    if (leftPanel && leftPanel.offsetParent !== null) { // Check if panel exists and is part of layout
+    let rightWidth = 0;
+    // Проверяем, что панель существует и видима перед получением ее ширины
+    if (leftPanel && leftPanel.offsetParent !== null) {
         leftWidth = leftPanel.getBoundingClientRect().width;
     }
-
-    let rightWidth = 0;
-    if (rightPanel && rightPanel.offsetParent !== null) { // Check if panel exists and is part of layout
+    if (rightPanel && rightPanel.offsetParent !== null) {
         rightWidth = rightPanel.getBoundingClientRect().width;
     }
-
     return leftWidth + rightWidth;
 }
 
@@ -30,18 +27,18 @@ export function initializeResizeHandler() {
     const rightPanel = state.uiElements?.rightPanel;
 
     if (leftPanel) {
-        const buttonSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--button-size'));
-        const buttonSpacing = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--button-spacing'));
-        const newWidth = buttonSize * 2 + buttonSpacing * 3;
-        leftPanel.style.width = `${newWidth}px`;
-        console.log('[Resize] Left panel resized:', { width: newWidth });
+      const buttonSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--button-size'));
+      const buttonSpacing = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--button-spacing'));
+      const newWidth = buttonSize * 2 + buttonSpacing * 3;
+      leftPanel.style.width = `${newWidth}px`;
+      console.log('[Resize] Left panel resized:', { width: newWidth });
     }
 
     if (rightPanel) {
-        // Используем MathUtils.clamp из THREE
-        const newWidthVW = THREE.MathUtils.clamp(window.innerWidth * 0.25, 20, 30);
-        rightPanel.style.width = `${newWidthVW}vw`;
-        console.log('[Resize] Right panel resized:', { width: `${newWidthVW}vw` });
+      // Используем MathUtils.clamp из THREE
+      const newWidthVW = THREE.MathUtils.clamp(window.innerWidth * 0.25, 20, 30);
+      rightPanel.style.width = `${newWidthVW}vw`;
+      console.log('[Resize] Right panel resized:', { width: `${newWidthVW}vw` });
     }
 
     // Получаем доступное пространство
@@ -54,22 +51,22 @@ export function initializeResizeHandler() {
 
     // Обновляем рендерер и камеру (используем state)
     if (state.renderer) {
-        state.renderer.setSize(availableWidth, availableHeight);
-        console.log('[Resize] Renderer resized:', { width: availableWidth, height: availableHeight });
+      state.renderer.setSize(availableWidth, availableHeight);
+      console.log('[Resize] Renderer resized:', { width: availableWidth, height: availableHeight });
     }
 
     if (state.activeCamera) { // Changed from state.camera to state.activeCamera for consistency
-        // Обновляем камеру в зависимости от ее типа
-        if (state.activeCamera.isOrthographicCamera) {
-            state.activeCamera.left = -availableWidth / 2;
-            state.activeCamera.right = availableWidth / 2;
-            state.activeCamera.top = availableHeight / 2;
-            state.activeCamera.bottom = -availableHeight / 2;
-        } else if (state.activeCamera.isPerspectiveCamera) {
-            state.activeCamera.aspect = availableWidth / availableHeight;
-        }
-        state.activeCamera.updateProjectionMatrix();
-        console.log('[Resize] Active camera updated');
+      // Обновляем камеру в зависимости от ее типа
+      if (state.activeCamera.isOrthographicCamera) {
+        state.activeCamera.left = -availableWidth / 2;
+        state.activeCamera.right = availableWidth / 2;
+        state.activeCamera.top = availableHeight / 2;
+        state.activeCamera.bottom = -availableHeight / 2;
+      } else if (state.activeCamera.isPerspectiveCamera) {
+        state.activeCamera.aspect = availableWidth / availableHeight;
+      }
+      state.activeCamera.updateProjectionMatrix();
+      console.log('[Resize] Active camera updated');
     }
 
     // Вызываем updateHologramLayout для пересчета макета голограммы
@@ -81,10 +78,10 @@ export function initializeResizeHandler() {
     if (state.uiElements && state.uiElements.gridContainer && state.uiElements.gestureArea) {
       const handsAreCurrentlyVisible = state.uiElements.gestureArea.style.height !== '4px';
       if (typeof updateHologramLayout === 'function') {
-          updateHologramLayout(handsAreCurrentlyVisible);
-          console.log('[Resize] updateHologramLayout called');
+        updateHologramLayout(handsAreCurrentlyVisible);
+        console.log('[Resize] updateHologramLayout called');
       } else {
-          console.warn('updateHologramLayout function not found. It needs to be imported or moved.');
+        console.warn('updateHologramLayout function not found. It needs to be imported or moved.');
       }
     } else {
       console.warn('[Resize] UI elements not ready (gridContainer or gestureArea missing in state.uiElements), skipping updateHologramLayout.');

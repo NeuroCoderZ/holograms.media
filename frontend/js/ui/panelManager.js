@@ -41,14 +41,21 @@ class PanelManager {
             return;
         }
 
-        const savedState = localStorage.getItem('panelsHidden');
-        const shouldBeHidden = savedState === 'true';
-        this.leftPanelElement.classList.toggle('hidden', shouldBeHidden);
-        this.rightPanelElement.classList.toggle('hidden', shouldBeHidden);
-        this.togglePanelsButtonElement.classList.toggle('show-mode', shouldBeHidden);
+        // Always ensure panels are visible initially on page load.
+        // The 'hidden' class should only be applied when the user explicitly clicks the toggle button.
+        this.leftPanelElement.classList.remove('hidden');
+        this.rightPanelElement.classList.remove('hidden');
+        this.togglePanelsButtonElement.classList.remove('show-mode'); // Ensure button icon is for "hide panels"
 
+        // If a saved state exists and it indicates panels should be hidden, apply that state.
+        // This makes them visible by default on first load, but remembers user preference after that.
+        const savedState = localStorage.getItem('panelsHidden');
+        if (savedState === 'true') {
+            this.toggleMainPanels(); // Use the existing toggle function to apply the saved hidden state
+        }
+        
         setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-        console.log(`Состояние основных панелей инициализировано (${shouldBeHidden ? 'скрыты' : 'показаны'})`);
+        console.log(`Состояние основных панелей инициализировано (видимы по умолчанию или восстановлено из localStorage)`);
     }
 
     /**

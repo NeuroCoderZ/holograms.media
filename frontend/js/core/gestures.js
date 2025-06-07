@@ -90,9 +90,9 @@ export function initializeHammerGestures() {
   hammer.on('panend pinchend', () => {
     if (!state.isXRMode && state.hologramPivot) {
       // Плавно возвращаем к нейтральному вращению (0,0,0)
-      new TWEEN.Tween(state.hologramPivot.rotation)
+      new window.TWEEN.Tween(state.hologramPivot.rotation)
         .to({ x: 0, y: 0, z: 0 }, ROTATION_RETURN_DURATION)
-        .easing(TWEEN.Easing.Quadratic.Out)
+        .easing(window.TWEEN.Easing.Cubic.Out)
         .start();
     } else if (!state.hologramPivot) {
       console.error('Событие panend/pinchend: state.hologramPivot отсутствует');
