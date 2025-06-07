@@ -75,22 +75,8 @@ export class MicrophoneManager {
       this.splitter.connect(this.analyserRight, 1);
       console.log('Audio nodes connected: Source -> Splitter -> Analysers.');
 
-      // Update global AudioAnalyzer instances if they exist
-      // This requires 'state' to be imported or passed if this class is used outside of state management.
-      // For now, assuming 'state' can be imported if this modification is applied.
-      // If not, this logic needs to be handled by the caller of init() (e.g. in initCore.js)
-      if (typeof state !== 'undefined' && state.audioAnalyzerLeftInstance) {
-        state.audioAnalyzerLeftInstance.setAnalyserNode(this.analyserLeft);
-      }
-      if (typeof state !== 'undefined' && state.audioAnalyzerRightInstance) {
-        state.audioAnalyzerRightInstance.setAnalyserNode(this.analyserRight);
-      }
-      // Also update state.audio.microphoneAnalysers
-      if (typeof state !== 'undefined' && state.audio) {
-          state.audio.microphoneAnalysers = { left: this.analyserLeft, right: this.analyserRight };
-          state.audio.audioContext = this.audioContext; // Ensure audio context in state is also current
-      }
-
+      // Direct state manipulation removed from here.
+      // The caller of init() will be responsible for updating the global state if necessary.
 
       return {
         analyserLeft: this.analyserLeft,
@@ -171,5 +157,46 @@ export class MicrophoneManager {
       analyserLeft: this.analyserLeft,
       analyserRight: this.analyserRight,
     };
+  }
+
+  async toggleMicrophone(micButtonElement, globalState) {
+    // globalState is expected to be the 'state' object from init.js
+    if (!globalState || !globalState.audio || !globalState.audioAnalyzerLeftInstance || !globalState.audioAnalyzerRightInstance) {
+      console.error("Global state object or required audio properties not provided to toggleMicrophone.");
+      if (micButtonElement) micButtonElement.textContent = "Mic Error";
+      return;
+    }
+
+    try {
+      if (globalState.audio.activeSource === 'microphone') {
+        this.stop();
+        globalState.audio.activeSource = 'none';
+        if (micButtonElement) {
+          micButtonElement.classList.remove('active');
+          micButtonElement.title = "Включить микрофон";
+        }
+        console.log("Microphone stopped via toggleMicrophone.");
+      } else {
+        const { analyserLeft, analyserRight, audioContext } = await this.init();
+
+        // Update global state after successful init
+        globalState.audio.audioContext = audioContext;
+        globalState.audio.microphoneAnalysers = { left: analyserLeft, right: analyserRight };
+
+        globalState.audioAnalyzerLeftInstance.setAnalyserNode(analyserLeft);
+        globalState.audioAnalyzerRightInstance.setAnalyserNode(analyserRight);
+
+        globalState.audio.activeSource = 'microphone';
+        if (micButtonElement) {
+          micButtonElement.classList.add('active');
+          micButtonElement.title = "Выключить микрофон";
+        }
+        console.log("Microphone started via toggleMicrophone.");
+      }
+    } catch (error) {
+      console.error("Error toggling microphone:", error);
+      if (micButtonElement) micButtonElement.textContent = "Mic Error";
+      globalState.audio.activeSource = 'none'; // Reset active source on error
+    }
   }
 }

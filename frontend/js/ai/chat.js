@@ -1,6 +1,6 @@
 // frontend/js/ai/chat.js - Функционал чата и взаимодействие с LLM
 
-import { ui } from '../core/ui.js';
+// import { ui } from '../core/ui.js'; // Replaced with state.uiElements
 // import { synthesizeSpeech } from '../audio/speech.js'; // Keep commented out if needed later
 import { getSelectedModel } from './models.js';
 import { state } from '../core/init.js';
@@ -8,20 +8,30 @@ import { state } from '../core/init.js';
 // Хранилище сообщений чата
 let chatMessages = [];
 let isWaitingForResponse = false;
-let chatHistoryContainer = null;
+let chatHistoryContainer = null; // Will be initialized in setupChat
 
 // Инициализация чата
 export function setupChat() {
   console.log('Инициализация чата...');
   
-  const chatMessagesContainer = state.uiElements.containers.chatMessages;
-  if (!chatMessagesContainer) {
-    console.error('Контейнер для сообщений чата не найден в state.uiElements!');
+  // Initialize chatHistoryContainer for addMessageToChat
+  // Assuming chatHistory is the scrollable container for messages.
+  // If state.uiElements.containers.chatMessages is the actual message list, use that.
+  // Based on context, state.uiElements.chatHistory seems more likely for the scrollable container.
+  // Let's assume it's state.uiElements.containers.chatMessages that should be scrolled.
+  chatHistoryContainer = state.uiElements.containers.chatMessages;
+
+  if (!chatHistoryContainer) {
+    console.error('Контейнер для истории чата (chatMessages) не найден в state.uiElements.containers!');
+    // If chatMessages is the one, then the error message was slightly off.
+    // If it's actually a different element like 'chatHistoryPanel' that contains 'chatMessages',
+    // then this needs to be reassessed based on actual HTML structure.
+    // For now, proceeding with chatMessages as the scrollable container.
     return;
   }
   
   // Настраиваем обработчики событий для поля ввода
-  const chatInput = ui.inputs.chatInput;
+  const chatInput = state.uiElements.inputs.chatInput; // Use state.uiElements
   if (chatInput) {
     // Обработчик ввода текста
     chatInput.addEventListener('input', function() {
@@ -29,6 +39,8 @@ export function setupChat() {
       this.style.height = 'auto';
       this.style.height = (this.scrollHeight) + 'px';
     });
+  } else {
+    console.error('Поле ввода чата (chatInput) не найдено в state.uiElements.inputs!');
   }
   
   console.log('Чат инициализирован.');
@@ -44,7 +56,7 @@ export async function sendChatMessage(messageText) {
   isWaitingForResponse = true;
   
   // Получаем поле ввода и очищаем его
-  const chatInput = ui.inputs.chatInput;
+  const chatInput = state.uiElements.inputs.chatInput; // Use state.uiElements
   if (chatInput) {
     // Сохраняем сообщение
     const userMessage = messageText;
@@ -58,7 +70,8 @@ export async function sendChatMessage(messageText) {
       showLoadingIndicator(true);
       
       // Получаем выбранную модель
-      const selectedModel = getSelectedModel();
+      const modelSelectElement = state.uiElements.inputs.modelSelect;
+      const selectedModel = getSelectedModel(modelSelectElement);
       
       // Делаем запрос к API
       const response = await fetch('/chat', {
