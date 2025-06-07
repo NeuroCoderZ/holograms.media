@@ -1,6 +1,6 @@
 // frontend/js/ai/prompts.js - Обработка промптов и взаимодействие с API
 
-import { ui } from '../core/ui.js';
+// import { ui } from '../core/ui.js'; // Replaced with state.uiElements
 import { getSelectedModel } from './models.js';
 import { state } from '../core/init.js';
 
@@ -12,8 +12,8 @@ export function initializePrompts() {
   console.log('Инициализация системы промптов...');
   
   // Проверяем наличие поля ввода
-  if (!ui.inputs.topPromptInput) {
-    console.error('Поле ввода промпта не найдено!');
+  if (!state.uiElements.inputs.topPromptInput) { // Use state.uiElements
+    console.error('Поле ввода промпта (topPromptInput) не найдено в state.uiElements!');
     return;
   }
   
@@ -36,7 +36,8 @@ export async function sendPrompt(promptText) {
     showLoadingIndicator(true);
     
     // Получаем выбранную модель
-    const selectedModel = getSelectedModel();
+    const modelSelectElement = state.uiElements.inputs.modelSelect; // Get the element
+    const selectedModel = getSelectedModel(modelSelectElement); // Pass the element
     
     // Собираем данные запроса
     const requestData = {
@@ -77,8 +78,8 @@ export async function sendPrompt(promptText) {
       }
       
       // Очищаем поле ввода если нужно
-      if (data.clearInput) {
-        ui.inputs.topPromptInput.value = '';
+      if (data.clearInput && state.uiElements.inputs.topPromptInput) {
+        state.uiElements.inputs.topPromptInput.value = '';
       }
     } else {
       throw new Error(data.error || 'Неизвестная ошибка');
@@ -95,8 +96,11 @@ export async function sendPrompt(promptText) {
 
 // Вставить текст в поле промпта
 export function insertTextIntoPrompt(text) {
-  const promptInput = ui.inputs.topPromptInput;
-  if (!promptInput) return;
+  const promptInput = state.uiElements.inputs.topPromptInput; // Use state.uiElements
+  if (!promptInput) {
+    console.error('Поле ввода промпта (topPromptInput) не найдено в state.uiElements для вставки текста!');
+    return;
+  }
   
   // Вставляем текст на позицию курсора
   const start = promptInput.selectionStart;
@@ -134,8 +138,11 @@ function applyHologramChanges(hologramData) {
 
 // Обновление отображения версий
 function updateVersionsDisplay() {
-  const versionFrames = ui.containers.versionFrames;
-  if (!versionFrames) return;
+  const versionFrames = state.uiElements.containers.versionFrames; // Use state.uiElements
+  if (!versionFrames) {
+    console.warn('Контейнер для версий (versionFrames) не найден в state.uiElements.containers, обновление отображения версий пропускается.');
+    return;
+  }
   
   // Очищаем текущее отображение
   versionFrames.innerHTML = '';

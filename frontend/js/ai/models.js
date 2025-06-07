@@ -1,6 +1,6 @@
 // frontend/js/ai/models.js - Управление моделями ИИ
 
-import { ui } from '../core/ui.js';
+// import { ui } from '../core/ui.js'; // Replaced by passing modelSelectElement as parameter
 
 // Доступные модели
 export const models = {
@@ -40,30 +40,30 @@ export const modelMetadata = {
 let selectedModel = models.TRIA;
 
 // Получить текущую выбранную модель
-export function getSelectedModel() {
+export function getSelectedModel(modelSelectElement) {
   // Если селект доступен, берем значение из него
-  if (ui.inputs.modelSelect) {
-    return ui.inputs.modelSelect.value;
+  if (modelSelectElement) {
+    return modelSelectElement.value;
   }
   
-  // Иначе возвращаем сохраненное значение
+  // Иначе возвращаем сохраненное значение (module-level fallback)
   return selectedModel;
 }
 
 // Установить выбранную модель
-export function setSelectedModel(model) {
+export function setSelectedModel(model, modelSelectElement) {
   // Проверяем, что модель валидна
   if (!Object.values(models).includes(model)) {
     console.error(`Неизвестная модель: ${model}`);
     return false;
   }
   
-  // Обновляем модель
+  // Обновляем модуль-уровневую переменную selectedModel
   selectedModel = model;
   
-  // Если селект доступен, обновляем его
-  if (ui.inputs.modelSelect) {
-    ui.inputs.modelSelect.value = model;
+  // Если селект DOM элемент доступен, обновляем его
+  if (modelSelectElement) {
+    modelSelectElement.value = model;
   }
   
   // Сохраняем в локальное хранилище
@@ -89,7 +89,7 @@ export function initializeModelSelector() {
   // Пока что будем работать с modelSelectElement.
 
   const modelSelect = modelSelectElement; // Используем локальную переменную, полученную через getElementById
-  // ui.inputs.modelSelect = modelSelectElement; // Если нужно обновить глобальный ui объект
+  // ui.inputs.modelSelect = modelSelectElement; // No longer using core/ui.js's ui object
 
   if (!modelSelect) { // Эта проверка становится избыточной, если предыдущая сработала
     console.warn('Селект моделей не найден (повторная проверка).');
@@ -118,8 +118,9 @@ export function initializeModelSelector() {
   try {
     const savedModel = localStorage.getItem('selectedModel');
     if (savedModel && Object.values(models).includes(savedModel)) {
-      modelSelect.value = savedModel;
-      selectedModel = savedModel;
+      // modelSelect.value = savedModel; // This will be set by setSelectedModel
+      // selectedModel = savedModel; // This will be set by setSelectedModel
+      setSelectedModel(savedModel, modelSelect); // Pass modelSelect here
     }
   } catch (e) {
     console.warn('Не удалось восстановить выбранную модель:', e);
@@ -127,9 +128,11 @@ export function initializeModelSelector() {
   
   // Добавляем обработчик изменения модели
   modelSelectElement.addEventListener('change', () => {
-    setSelectedModel(modelSelectElement.value);
+    setSelectedModel(modelSelectElement.value, modelSelectElement); // Pass element here
   });
 }
 
 // Экспортируем интерфейс модуля
+// selectedModel (module-level variable) is still exported for potential direct read,
+// but getSelectedModel(element) is preferred.
 export { selectedModel };
