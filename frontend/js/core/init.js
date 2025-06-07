@@ -21,6 +21,7 @@ export const state = {
   audioAnalyzerLeftInstance: null,
   audioAnalyzerRightInstance: null,
   hologramRendererInstance: null,
+  xrSessionManagerInstance: null, // Added for WebXR
 
   // --- Состояние управления и взаимодействия ---
   controls: null,             // OrbitControls или другие элементы управления камерой
@@ -82,8 +83,11 @@ export const state = {
   },
 
   // --- Состояние AI (Триа) ---
-  isTriaModeActive: false,    // Активен ли режим Триа
-  currentLlmModel: 'mistral-small-latest', // Текущая используемая LLM модель
+  tria: {
+    isLearningActive: false, // Used by Tria button to toggle learning/training mode
+    // currentLlmModel: 'mistral-small-latest', // This could also be part of state.tria
+  },
+  currentLlmModel: 'mistral-small-latest', // Or keep it separate if used more broadly
 
   // --- Состояние NetHoloGlyph ---
   nethologlyph: {
@@ -127,7 +131,6 @@ export const state = {
   },
 
   // --- Прочее состояние ---
-  isPanelsHidden: false,      // Скрыты ли боковые панели
   isChatMode: false,          // Активен ли режим чата
   isLoading: false,           // Идет ли какая-либо загрузка
   debugMode: false            // Включен ли режим отладки
@@ -138,6 +141,7 @@ import { initializeScene } from '../3d/sceneSetup.js';
 import { MicrophoneManager } from '../audio/microphoneManager.js';
 import { AudioAnalyzer } from '../audio/audioAnalyzer.js';
 import { HologramRenderer } from '../3d/hologramRenderer.js';
+import { XRSessionManager } from '../xr/webxr_session_manager.js'; // Added for WebXR
 
 // Функция для инициализации ядра приложения
 export async function initCore() {
@@ -169,6 +173,14 @@ export async function initCore() {
   // If state.hologramPivot needs to be THE pivot, HologramRenderer's constructor would need modification.
   state.hologramRendererInstance = new HologramRenderer(state.scene);
   console.log('HologramRenderer initialized.');
+
+  // Instantiate XRSessionManager (requires state.renderer to be initialized)
+  if (state.renderer) {
+    state.xrSessionManagerInstance = new XRSessionManager(state.renderer);
+    console.log('XRSessionManager initialized.');
+  } else {
+    console.error('Renderer not available for XRSessionManager initialization.');
+  }
 
   // Instantiate MicrophoneManager
   state.microphoneManagerInstance = new MicrophoneManager(); // Can pass FFT_SIZE, SMOOTHING_TIME_CONSTANT if needed from config
