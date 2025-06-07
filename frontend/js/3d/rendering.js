@@ -30,7 +30,7 @@ function animate(currentTime) {
     time = currentTime / 1000;
 
     // Update TWEEN animations
-    TWEEN.update(time);
+    window.TWEEN.update(time);
 
     // Audio processing and visualization updates
     if (state.audio) { // Ensure state.audio is initialized
