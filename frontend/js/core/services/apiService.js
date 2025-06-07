@@ -7,7 +7,7 @@
 // ИЛИ раскомментировать и настроить вариант для локального эмулятора.
 
 // Вариант 1: Для развернутых Cloud Functions (замените плейсхолдеры!)
-const API_BASE_URL = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net';
+const API_BASE_URL = 'common-elita-holograms-media-59398dd8.koyeb.app/';
 
 // Вариант 2: Для локального тестирования с Firebase Emulator (раскомментируйте и замените плейсхолдеры, если нужно)
 // const API_BASE_URL = 'http://127.0.0.1:5001/YOUR_PROJECT_ID/YOUR_REGION';

@@ -36,7 +36,7 @@ export function initializeScene(state) {
   const camRight = containerWidth / 2;
   const camTop = containerHeight / 2;
   const camBottom = -containerHeight / 2;
-  const camNear = 0.1; // Or 1, as per prompt
+  const camNear = 0.01; // Изменено с 0.1 на 0.01 для более близкого отсечения
   const camFar = 2000; // Or 10000, as per prompt
 
   state.camera = new THREE.OrthographicCamera(camLeft, camRight, camTop, camBottom, camNear, camFar);
@@ -66,20 +66,7 @@ export function initializeScene(state) {
   state.directionalLight.position.set(1, 1, 1).normalize(); // Positioned from top-right-front
   state.scene.add(state.directionalLight);
 
-  // Hologram Pivot: A group to hold and orient the main hologram visualization.
-  // This is initialized here so HologramRenderer can populate it.
-  // If HologramRenderer is expected to create this, this line might be redundant,
-  // but having it in state ensures it's available.
-  if (!state.hologramPivot) { // Check if it's already created by another module (e.g. HologramRenderer if init order changes)
-      state.hologramPivot = new THREE.Group();
-      state.scene.add(state.hologramPivot);
-  } else {
-      // If hologramPivot is already initialized (e.g. by HologramRenderer if it was called first),
-      // ensure it's added to the scene. This path is less likely if sceneSetup is called first.
-      if (!state.hologramPivot.parent) {
-          state.scene.add(state.hologramPivot);
-      }
-  }
+  // Removed Hologram Pivot creation from here. It is now created and managed by HologramRenderer.
   
   console.log('sceneSetup.js: Scene initialized');
 }
