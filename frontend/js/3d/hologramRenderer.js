@@ -20,7 +20,16 @@ export class HologramRenderer {
     // mainSequencerGroup holds the left and right sequencer grids. It's positioned
     // relative to the hologramPivot, typically to center the grids vertically.
     this.mainSequencerGroup = new THREE.Group();
-    this.mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Center vertically
+    // Смещаем mainSequencerGroup по X, чтобы отцентрировать обе сетки относительно ее центра.
+    // GRID_WIDTH - это ширина одной сетки. Всего две сетки, поэтому их общая ширина 2 * GRID_WIDTH.
+    // Чтобы отцентрировать их, нужно сместить mainSequencerGroup на -(2 * GRID_WIDTH / 2) = -GRID_WIDTH.
+    // Однако, так как левая сетка начинается с -GRID_WIDTH, а правая с 0, их общий центр будет находиться в -GRID_WIDTH / 2.
+    // Поэтому для центрирования mainSequencerGroup относительно центра, нужно сместить ее на +GRID_WIDTH / 2 от текущего положения, если оно 0.
+    // Но, так как leftSequencerGroup смещена на -GRID_WIDTH, а rightSequencerGroup на 0, 
+    // их общий диапазон от -GRID_WIDTH до +GRID_WIDTH.
+    // Центр этого диапазона -GRID_WIDTH / 2 + GRID_WIDTH / 2 = 0
+    // Исправлено: центрируем по X на -GRID_WIDTH / 2 от текущего положения.
+    this.mainSequencerGroup.position.set(-GRID_WIDTH / 2, -GRID_HEIGHT / 2, 0); 
     this.hologramPivot.add(this.mainSequencerGroup);
 
     // Array to store references to the visual columns (meshes) that react to audio.
@@ -126,7 +135,7 @@ export class HologramRenderer {
       for (let j = 0; j <= divisionsZ; j++) {
         points.push(i * cellSize, 0, j * cellSize, i * cellSize, gridHeight, j * cellSize);
       }
-    }
+}
     // Lines along Z-axis (varying X, Y positions)
     for (let i = 0; i <= divisionsX; i++) {
       for (let j = 0; j <= divisionsY; j++) {
@@ -137,8 +146,8 @@ export class HologramRenderer {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineBasicMaterial({
-        color, 
-        opacity: 0.1, 
+        color,
+        opacity: 0.005, // Установлено 0.005 для 99.5% прозрачности
         transparent: true,
         // Disable depth testing/writing to ensure grid lines are always visible
         // and don't interfere with objects drawn at the same Z-depth.
@@ -154,7 +163,7 @@ export class HologramRenderer {
    * @param {number} height - Height of the grid.
    * @param {number} depth - Depth of the grid.
    * @param {number} cellSize - Size of each cell.
-   * @param {number} color - Color of the grid and axes.
+   * @param {number} color - Hexadecimal color of the grid and axes.
    * @param {THREE.Vector3} position - Position of this grid group relative to its parent.
    * @param {boolean} isLeftGrid - Flag to determine axis colors.
    * @returns {THREE.Group} A Three.js Group containing the grid visualization and axes.
@@ -310,6 +319,7 @@ export class HologramRenderer {
           mesh.position.z = 0.0005; // Center the minimal depth
         } else {
           mesh.scale.z = normalizedDB * GRID_HEIGHT; // Scale depth proportionally to GRID_HEIGHT
+          mesh.material.color.offsetHSL(0, 0, normalizedDB * 0.5);
           mesh.position.z = (normalizedDB * GRID_HEIGHT) / 2; // Adjust position to center the scaled mesh
         }
       });

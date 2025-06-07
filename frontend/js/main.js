@@ -74,6 +74,14 @@ import { initializeHammerGestures } from './core/gestures.js'; // Added import
 // Импорт моста для обратной совместимости (закомментирован отсутствующий)
 // import { initLegacyBridge, registerLegacyHandlers } from './legacy-bridge.js'; // Закомментировано, т.к. файл отсутствует или функционал не используется
 
+// Variables for hologram rotation
+let isDragging = false;
+let startPointerX = 0;
+let startPointerY = 0; // Added for X-axis rotation
+let startRotationY = 0;
+let startRotationX = 0; // Added for X-axis rotation
+const rotationLimit = Math.PI / 2; // 90 degrees in radians
+
 // Инициализация приложения при загрузке DOM
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Инициализация приложения...');
@@ -90,6 +98,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAuthObserver(handleTokenForBackend);
 
   const panelManagerInstance = new PanelManager();
+  // Panels should be visible by default, so no 'hidden' class should be applied initially
+  // The panelManagerInstance.initializePanelManager() will ensure this.
   panelManagerInstance.initializePanelManager();
 
   initializePromptManager();
@@ -98,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeGestureAreaVisualization();
   initializeChatDisplay();
 
-  // 3. Инициализируем 3D сцену (зависит от state, UI) -> Handled by initCore
+  // 3. Инициализируем 3D сцену (зависят от state, UI) -> Handled by initCore
   // initializeScene(); // Removed
 
   // 4. Инициализируем мультимодальные компоненты (могут зависеть от сцены)
@@ -155,4 +165,74 @@ document.addEventListener('DOMContentLoaded', async () => {
   // } catch (error) {
   //   console.error('Ошибка инициализации legacy bridge:', error);
   // }
+
+  // Hologram rotation logic
+  const gridContainer = document.getElementById('grid-container');
+  if (gridContainer) {
+    gridContainer.addEventListener('mousedown', onPointerDown);
+    gridContainer.addEventListener('mouseup', onPointerUp);
+    gridContainer.addEventListener('mousemove', onPointerMove);
+    gridContainer.addEventListener('mouseleave', onPointerUp); // Stop rotation if mouse leaves the area
+
+    gridContainer.addEventListener('touchstart', onPointerDown, { passive: false });
+    gridContainer.addEventListener('touchend', onPointerUp);
+    gridContainer.addEventListener('touchmove', onPointerMove, { passive: false });
+  }
 });
+
+function onPointerDown(event) {
+  isDragging = true;
+  startPointerX = (event.touches ? event.touches[0].clientX : event.clientX);
+  startPointerY = (event.touches ? event.touches[0].clientY : event.clientY); // Capture Y position
+
+  if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
+    startRotationY = state.hologramRendererInstance.getHologramPivot().rotation.y;
+    startRotationX = state.hologramRendererInstance.getHologramPivot().rotation.x;
+    console.log('[main.js] onPointerDown: Initial rotation Y:', startRotationY, 'X:', startRotationX);
+  }
+  // Prevent default to avoid scrolling on touch devices during drag
+  if (event.cancelable) event.preventDefault();
+}
+
+function onPointerUp() {
+  isDragging = false;
+  // Animate back to original position (0 radians for both X and Y)
+  if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
+    console.log('[main.js] onPointerUp: Attempting to tween hologram back to 0,0');
+    new window.TWEEN.Tween(state.hologramRendererInstance.getHologramPivot().rotation)
+      .to({ y: 0, x: 0 }, 1000) // Animate to 0 radians for both X and Y over 1000ms
+      .easing(window.TWEEN.Easing.Quartic.InOut) // Smooth snap-back effect
+      .start();
+  }
+}
+
+function onPointerMove(event) {
+  if (!isDragging) return;
+
+  const currentPointerX = (event.touches ? event.touches[0].clientX : event.clientX);
+  const currentPointerY = (event.touches ? event.touches[0].clientY : event.clientY); // Get current Y position
+
+  const deltaX = currentPointerX - startPointerX;
+  const deltaY = currentPointerY - startPointerY;
+
+  // Adjust sensitivity for desired rotation speed for both axes
+  const sensitivity = 0.005; 
+  // Removed negation for rotationAmountY and rotationAmountX to fix inversion
+  const rotationAmountY = deltaX * sensitivity; // Rotation around Y-axis (horizontal movement)
+  const rotationAmountX = deltaY * sensitivity; // Rotation around X-axis (vertical movement)
+
+  if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
+    let newRotationY = startRotationY + rotationAmountY;
+    let newRotationX = startRotationX + rotationAmountX;
+
+    // Clamp rotation to -90 to +90 degrees for both axes
+    newRotationY = Math.max(-rotationLimit, Math.min(rotationLimit, newRotationY));
+    newRotationX = Math.max(-rotationLimit, Math.min(rotationLimit, newRotationX));
+    
+    state.hologramRendererInstance.getHologramPivot().rotation.y = newRotationY;
+    state.hologramRendererInstance.getHologramPivot().rotation.x = newRotationX;
+    // console.log('[main.js] onPointerMove: Current rotation Y:', newRotationY, 'X:', newRotationX);
+  }
+  // Prevent default to avoid scrolling on touch devices during drag
+  if (event.cancelable) event.preventDefault();
+}
