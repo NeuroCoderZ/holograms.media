@@ -30,14 +30,14 @@ from backend.routers.public_holograms import router as public_holograms_router
 from backend.api.v1.endpoints.tria_commands import router as tria_commands_router
 from backend.api.v1.endpoints.chunks import router as chunks_router
 
-from backend.routers.auth import router as legacy_auth_router
-from backend.routers.chat import router as legacy_chat_router
+# from backend.routers.auth import router as legacy_auth_router
+# from backend.routers.chat import router as legacy_chat_router
 from backend.routers.chat_sessions import router as legacy_chat_sessions_router
 from backend.routers.gestures import router as legacy_user_me_gestures_router
 from backend.routers.holograms import router as legacy_user_holograms_router
 from backend.routers.interaction_chunks import router as legacy_interaction_chunks_router
 from backend.routers.prompts import router as legacy_prompts_router
-from backend.routers.tria import router as legacy_tria_router
+# from backend.routers.tria import router as legacy_tria_router
 
 API_V1_PREFIX = "/api/v1"
 
@@ -46,14 +46,14 @@ app.include_router(public_holograms_router, prefix=API_V1_PREFIX, tags=["Hologra
 app.include_router(tria_commands_router, prefix=f"{API_V1_PREFIX}/tria-commands", tags=["Tria Commands"])
 app.include_router(chunks_router, prefix=API_V1_PREFIX, tags=["Chunks"])
 
-app.include_router(legacy_auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["Authentication (Legacy)"])
-app.include_router(legacy_chat_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat (Legacy)"])
+# app.include_router(legacy_auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["Authentication (Legacy)"])
+# app.include_router(legacy_chat_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat (Legacy)"])
 app.include_router(legacy_chat_sessions_router, prefix=f"{API_V1_PREFIX}/chat-sessions", tags=["Chat Sessions (Legacy)"])
 app.include_router(legacy_user_me_gestures_router, prefix=API_V1_PREFIX, tags=["Current User Gestures (Legacy)"])
 app.include_router(legacy_user_holograms_router, prefix=API_V1_PREFIX, tags=["Current User Holograms (Legacy)"])
 app.include_router(legacy_interaction_chunks_router, prefix=f"{API_V1_PREFIX}/chunks", tags=["Interaction Chunks (Legacy)"])
 app.include_router(legacy_prompts_router, prefix=f"{API_V1_PREFIX}/prompts", tags=["Prompts (Legacy)"])
-app.include_router(legacy_tria_router, prefix=f"{API_V1_PREFIX}/tria-system", tags=["Tria System (Legacy)"])
+# app.include_router(legacy_tria_router, prefix=f"{API_V1_PREFIX}/tria-system", tags=["Tria System (Legacy)"])
 
 @app.get("/", tags=["Root"])
 async def read_root():
