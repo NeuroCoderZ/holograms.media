@@ -1,18 +1,18 @@
 // frontend/js/utils/fullscreen.js - Управление полноэкранным режимом
 
-import { ui } from '../core/ui.js';
+// Removed: import { ui } from '../core/ui.js';
 
 // Переключение полноэкранного режима
-export function toggleFullscreen() {
+export function toggleFullscreen(buttonElement) {
   if (!document.fullscreenElement) {
-    enterFullscreen();
+    enterFullscreen(buttonElement);
   } else {
-    exitFullscreen();
+    exitFullscreen(buttonElement);
   }
 }
 
 // Вход в полноэкранный режим
-export function enterFullscreen() {
+export function enterFullscreen(buttonElement) {
   // Определение элемента для полноэкранного режима
   const element = document.documentElement;
   
@@ -28,14 +28,14 @@ export function enterFullscreen() {
     element.msRequestFullscreen();
   }
   
-  // Обновляем класс кнопки
-  if (ui.buttons.fullscreenButton) {
-    ui.buttons.fullscreenButton.classList.add('active');
-  }
+  // Обновляем класс кнопки - теперь через handleFullscreenChange listener
+  // if (buttonElement) {
+  //   buttonElement.classList.add('active');
+  // }
 }
 
 // Выход из полноэкранного режима
-export function exitFullscreen() {
+export function exitFullscreen(buttonElement) {
   if (document.exitFullscreen) {
     document.exitFullscreen().catch(err => {
       console.error(`Ошибка выхода из полноэкранного режима: ${err.message}`);
@@ -48,29 +48,30 @@ export function exitFullscreen() {
     document.msExitFullscreen();
   }
   
-  // Обновляем класс кнопки
-  if (ui.buttons.fullscreenButton) {
-    ui.buttons.fullscreenButton.classList.remove('active');
-  }
+  // Обновляем класс кнопки - теперь через handleFullscreenChange listener
+  // if (buttonElement) {
+  //   buttonElement.classList.remove('active');
+  // }
 }
 
 // Обработчик события изменения полноэкранного режима
-export function initFullscreenListeners() {
-  document.addEventListener('fullscreenchange', handleFullscreenChange);
-  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-  document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-  document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+export function initFullscreenListeners(buttonElement) {
+  const handler = () => handleFullscreenChange(buttonElement);
+  document.addEventListener('fullscreenchange', handler);
+  document.addEventListener('webkitfullscreenchange', handler);
+  document.addEventListener('mozfullscreenchange', handler);
+  document.addEventListener('MSFullscreenChange', handler);
 }
 
 // Обработчик изменения полноэкранного режима
-function handleFullscreenChange() {
-  const isFullscreen = !!document.fullscreenElement;
+function handleFullscreenChange(buttonElement) {
+  const isFullscreen = !!document.fullscreenElement || !!document.webkitFullscreenElement || !!document.mozFullScreenElement || !!document.msFullscreenElement;
   
   // Обновляем класс кнопки
-  if (ui.buttons.fullscreenButton) {
-    ui.buttons.fullscreenButton.classList.toggle('active', isFullscreen);
+  if (buttonElement) {
+    buttonElement.classList.toggle('active', isFullscreen);
   }
   
   // Можно добавить дополнительную логику при изменении режима
   console.log(`Полноэкранный режим ${isFullscreen ? 'включен' : 'выключен'}`);
-} 
+}

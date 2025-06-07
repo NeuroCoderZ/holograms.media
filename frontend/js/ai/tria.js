@@ -77,14 +77,14 @@ async function fetchTriaConfiguration() {
 
 // Настройка интерфейса Tria
 function setupTriaUI() {
-  // Настраиваем кнопку Tria если она есть
-  if (ui.buttons.triaButton) {
-    ui.buttons.triaButton.addEventListener('click', () => {
-      // Действие при нажатии на кнопку Tria
-      // Например, открыть информацию о модели или настройки
-      showTriaInfo();
-    });
-  }
+  // Listener for triaButton is now handled in uiManager.js, which will call toggleTriaLearningMode.
+  // The original functionality of showTriaInfo() on click is removed from this button's direct event path.
+  // If showTriaInfo() is still desired, it needs a different trigger or to be integrated into the new flow.
+  // if (ui.buttons.triaButton) {
+  //   ui.buttons.triaButton.addEventListener('click', () => {
+  //     showTriaInfo();
+  //   });
+  // }
   
   // Добавляем версию в заголовок (если есть)
   updateTriaVersionDisplay();
