@@ -54,29 +54,27 @@ function calculateInitialScale(containerWidth, containerHeight) {
 export function updateHologramLayout(handsVisible) {
   console.log('[LayoutManager] updateHologramLayout called. Hands visible:', handsVisible, 'state.uiElements:', state.uiElements);
 
-// --- НОВЫЙ ПРЕДОХРАНИТЕЛЬ ---
-if (!state.uiElements?.gridContainer || !state.uiElements?.gestureArea) {
-    console.warn('[LayoutManager] Skipping layout update: UI elements not ready yet.');
+  // Consolidated guard clause
+  if (!state.uiElements?.gridContainer || !state.uiElements?.gestureArea || !state.renderer) {
+    console.warn('[LayoutManager] Skipping: UI elements (gridContainer, gestureArea) or renderer not fully initialized yet.');
     return;
-}
-// --- КОНЕЦ ПРЕДОХРАНИТЕЛЯ ---
+  }
 
-  // Проверяем наличие ключевых элементов в state
-  if (!state.uiElements?.gridContainer) {
-    console.warn('[LayoutManager] Skipping: gridContainer is not available in state.uiElements.');
-    return;
-  }
-  if (!state.uiElements?.gestureArea) {
-    console.warn('[LayoutManager] Skipping: gestureArea is not available in state.uiElements.');
-    return;
-  }
-  // Check for hologramRendererInstance and its pivot
-  // Условие, которое приводило к пропуску, удалено.
-  // Мы знаем, что hologramRendererInstance и его pivot теперь доступны на основе предыдущих логов.
-  if (!state.renderer) { // General renderer check
-    console.warn('[LayoutManager] Skipping: state.renderer is not available.');
-    return;
-  }
+  // The checks below are now covered by the guard clause above, so they can be removed or commented out.
+  // if (!state.uiElements?.gridContainer) {
+  //   console.warn('[LayoutManager] Skipping: gridContainer is not available in state.uiElements.');
+  //   return;
+  // }
+  // if (!state.uiElements?.gestureArea) {
+  //   console.warn('[LayoutManager] Skipping: gestureArea is not available in state.uiElements.');
+  //   return;
+  // }
+  // if (!state.renderer) { // General renderer check
+  //   console.warn('[LayoutManager] Skipping: state.renderer is not available.');
+  //   return;
+  // }
+
+  // Check for hologramRendererInstance and its pivot - this check is still relevant if it's a separate concern.
   if (!state.hologramRendererInstance || typeof state.hologramRendererInstance.getHologramPivot !== 'function') {
     console.warn('[LayoutManager] Skipping: state.hologramRendererInstance or getHologramPivot is not available.');
     return;

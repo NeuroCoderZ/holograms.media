@@ -72,3 +72,59 @@ export async function uploadFileToR2(file, firebaseUserId, idToken) {
         throw error;
     }
 }
+
+// Import auth for the new handler function
+import { auth } from '../core/firebaseInit.js';
+
+/**
+ * Sets up event listeners for chunk upload functionality.
+ *
+ * @param {HTMLInputElement} chunkUploadInputElement The hidden file input element.
+ * @param {HTMLElement} fileButtonElement The visible button that triggers the file input.
+ * @param {function(string):void} [statusCallback] Optional callback to display status messages.
+ */
+export function setupChunkUpload(chunkUploadInputElement, fileButtonElement, statusCallback = console.log) {
+    if (!chunkUploadInputElement || !fileButtonElement) {
+        console.warn("Chunk upload input or button element not provided. File upload setup skipped.");
+        return;
+    }
+
+    fileButtonElement.addEventListener('click', () => {
+        chunkUploadInputElement.click();
+    });
+
+    chunkUploadInputElement.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) {
+            statusCallback("No file selected.");
+            return;
+        }
+
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            alert("Please sign in to upload files."); // Keep alert for critical user feedback
+            statusCallback("User not signed in. Cannot upload file.");
+            chunkUploadInputElement.value = ""; // Clear input
+            return;
+        }
+
+        const firebaseUserId = currentUser.uid;
+        const idToken = await currentUser.getIdToken();
+
+        statusCallback(`Uploading ${file.name} to R2 storage...`);
+
+        try {
+            const objectKey = await uploadFileToR2(file, firebaseUserId, idToken);
+            statusCallback(`Upload to R2 successful! Object Key: ${objectKey}`);
+            console.log('[firebaseStorageService] File uploaded to R2, object key:', objectKey);
+            // Additional logic after successful upload, if needed
+        } catch (error) {
+            statusCallback(`Upload failed for ${file.name}. Error: ${error.message}`);
+            console.error("[firebaseStorageService] Error uploading file to R2:", error);
+        } finally {
+            chunkUploadInputElement.value = ""; // Always clear the file input
+        }
+    });
+
+    console.log('[firebaseStorageService] Chunk upload event listeners configured.');
+}
