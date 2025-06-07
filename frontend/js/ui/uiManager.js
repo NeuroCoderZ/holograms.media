@@ -1,15 +1,17 @@
 // frontend/js/ui/uiManager.js - Модуль для управления UI элементами
 
 // Импортируем необходимые зависимости
-import { loadPanelsHiddenState, savePanelsHiddenState } from '../core/appStatePersistence.js';
 import { state } from '../core/init.js';
 import { auth } from '../core/firebaseInit.js';
 // import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js'; // Old Firebase Storage upload
 import { uploadFileToR2 } from '../services/firebaseStorageService.js'; // New R2 upload via presigned URL
 // import { uploadChunk } from '../services/apiService.js'; // Old direct backend upload, now replaced by R2 presigned
 import { initializePwaInstall, handleInstallButtonClick } from '../core/pwaInstall.js';
+import { setupChunkUpload } from '../services/firebaseStorageService.js'; // Import for chunk upload
 // panelManager is used to switch visible content panels in the right sidebar.
 import PanelManager from './panelManager.js';
+import { toggleFullscreen, initFullscreenListeners } from '../utils/fullscreen.js'; // Import for fullscreen
+import { toggleTriaLearningMode } from '../ai/tria.js'; // Import for Tria button
 
 /**
  * uiElements is a central object holding references to all significant DOM elements
@@ -81,69 +83,10 @@ export const uiElements = {
   },
   
   // --- Panel elements and toggles ---
-  leftPanel: null,          // Reference to the left sidebar DOM element
-  rightPanel: null,         // Reference to the right sidebar DOM element
-  togglePanelsButton: null, // Button to hide/show both side panels
+  leftPanel: null,          // Reference to the left sidebar DOM element - Managed by PanelManager
+  rightPanel: null,         // Reference to the right sidebar DOM element - Managed by PanelManager
+  togglePanelsButton: null, // Button to hide/show both side panels - Managed by PanelManager
 };
-
-/**
- * Initializes the hidden/visible state of the side panels based on user preferences
- * persisted in local storage. Applies CSS classes and triggers a resize event.
- */
-function initializePanelState() {
-  // Ensure essential panel elements are available before attempting to initialize.
-  if (!uiElements.leftPanel || !uiElements.rightPanel || !uiElements.togglePanelsButton) {
-    console.error('Не удалось найти панели интерфейса для initializePanelState');
-    return;
-  }
-  
-  // Load the saved state (true if panels should be hidden) using appStatePersistence.
-  const shouldBeHidden = loadPanelsHiddenState();
-
-  // Apply the 'hidden' class to panels and 'show-mode' to the toggle button if state was loaded.
-  if (shouldBeHidden !== null) {
-    uiElements.leftPanel.classList.toggle('hidden', shouldBeHidden);
-    uiElements.rightPanel.classList.toggle('hidden', shouldBeHidden);
-    uiElements.togglePanelsButton.classList.toggle('show-mode', shouldBeHidden);
-  }
-
-  // Dispatch a resize event after applying classes to ensure other modules (e.g., 3D renderer)
-  // adjust to the new layout dimensions. A small timeout ensures CSS transitions complete.
-  setTimeout(() => {
-    window.dispatchEvent(new Event('resize'));
-  }, 50);
-}
-
-/**
- * Toggles the visibility of the left and right side panels.
- * Persists the new state and triggers a resize event.
- */
-export function togglePanels() {
-  // Ensure essential panel elements are available.
-  if (!uiElements.leftPanel || !uiElements.rightPanel || !uiElements.togglePanelsButton) {
-    console.error('Панели не инициализированы для togglePanels');
-    return;
-  }
-  
-  // Toggle the 'hidden' CSS class on both panels.
-  uiElements.leftPanel.classList.toggle('hidden');
-  uiElements.rightPanel.classList.toggle('hidden');
-  
-  // Toggle the 'show-mode' class on the toggle button to change its icon/appearance.
-  uiElements.togglePanelsButton.classList.toggle('show-mode');
-  
-  // Save the current visibility state to local storage.
-  const isPanelsHidden = uiElements.leftPanel.classList.contains('hidden');
-  savePanelsHiddenState(isPanelsHidden);
-  
-  // Update the global application state.
-  state.isPanelsHidden = isPanelsHidden;
-  
-  // Dispatch a resize event to inform other layout-dependent modules.
-  window.dispatchEvent(new Event('resize'));
-  
-  console.log(`Панели ${isPanelsHidden ? 'скрыты' : 'показаны'}`);
-}
 
 /**
  * Adds debug CSS classes to specific UI elements. 
@@ -185,17 +128,17 @@ export function initializeMainUI() {
   
   // Создаем экземпляр PanelManager
   const panelManagerInstance = new PanelManager();
-  // PanelManager will initialize its own references. uiManager also needs references
-  // for functions like initializePanelState and logLayoutState if they are to use uiManager's uiElements.
-  uiElements.leftPanel = document.querySelector('.panel.left-panel');
-  uiElements.rightPanel = document.querySelector('.panel.right-panel');
-  uiElements.togglePanelsButton = document.getElementById('togglePanelsButton'); // Used by initializePanelState
-
   panelManagerInstance.initializePanelManager(); // Инициализируем PanelManager
+
+  // PanelManager now handles leftPanel, rightPanel, and togglePanelsButton references and initialization.
+  // We can still assign them to uiElements if other parts of uiManager need them,
+  // but their core logic is with PanelManager.
+  uiElements.leftPanel = panelManagerInstance.leftPanelElement;
+  uiElements.rightPanel = panelManagerInstance.rightPanelElement;
+  uiElements.togglePanelsButton = panelManagerInstance.togglePanelsButtonElement;
 
   // --- Get references to all interactive UI elements by ID ---
   // Buttons in the left panel
-  // Note: uiElements.togglePanelsButton is already assigned above.
   uiElements.buttons.fileButton = document.getElementById('loadAudioButton');
   uiElements.buttons.playButton = document.getElementById('playAudioButton');
   uiElements.buttons.pauseButton = document.getElementById('pauseAudioButton');
@@ -257,69 +200,24 @@ export function initializeMainUI() {
   console.log('[UIManager] Проверка: gridContainer в state.uiElements:', state.uiElements.gridContainer ? 'найден' : 'НЕ найден', state.uiElements.gridContainer);
 
   // --- Initial UI State and Debugging ---
-  initializePanelState(); // Set initial panel visibility.
+  // initializePanelState(); // PanelManager now handles this.
   addDebugClasses();      // Add debug classes for styling/inspection.
   logLayoutState();       // Log current layout dimensions for debugging.
 
 
   // --- Event Listeners ---
 
-  // Event listener for generic chunk upload via a hidden file input.
-  // The `fileButton` (visually present) triggers a click on `chunkUploadInput` (hidden).
+  // Setup chunk upload functionality (moved to firebaseStorageService.js)
+  // IMPORTANT: uiElements.buttons.fileButton (loadAudioButton) is ALSO used by audioFilePlayer.js
+  // This will cause two file dialogs to open.
+  // For now, commenting out the generic chunk upload trigger via this button.
+  // This needs a dedicated UI element if it's to be user-triggered.
   if (uiElements.inputs.chunkUploadInput && uiElements.buttons.fileButton) {
-    uiElements.buttons.fileButton.addEventListener('click', () => {
-        if (uiElements.inputs.chunkUploadInput) {
-            uiElements.inputs.chunkUploadInput.click(); // Programmatically click the hidden input.
-        }
-    });
-    uiElements.inputs.chunkUploadInput.addEventListener('change', async (event) => {
-      const file = event.target.files[0];
-      if (!file) {
-        console.log("No file selected.");
-        return;
-      }
-
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        alert("Please sign in to upload files."); // Basic user feedback
-        console.error("User not signed in. Cannot upload file.");
-        if (uiElements.inputs.chunkUploadInput) uiElements.inputs.chunkUploadInput.value = ""; // Clear input
-        return;
-      }
-
-      const firebaseUserId = currentUser.uid;
-
-      // Simple UI feedback mechanism. Replace `alert` with a more sophisticated notification system.
-      const setStatus = (message) => {
-          console.log(message);
-          // alert(message); 
-      };
-
-      setStatus(`Uploading ${file.name} to application backend...`);
-
-      try {
-        const idToken = await currentUser.getIdToken(); // Get Firebase ID token
-        // const result = await uploadChunk(firebaseUserId, file, idToken); // Old direct backend upload
-        // setStatus(`Upload complete! Server response: ${result.message || JSON.stringify(result)}`);
-        // console.log('File uploaded via apiService, server response:', result);
-
-        setStatus(`Uploading ${file.name} to R2 storage...`);
-        const objectKey = await uploadFileToR2(file, firebaseUserId, idToken);
-        setStatus(`Upload to R2 successful! Object Key: ${objectKey}`);
-        console.log('File uploaded to R2, object key:', objectKey);
-        // Additional logic after successful upload, if needed
-      } catch (error) {
-        setStatus(`Upload failed for ${file.name}. Error: ${error.message}`);
-        console.error("Error uploading file to R2:", error);
-      } finally {
-          // Always clear the file input after an attempt, regardless of success or failure.
-          if (uiElements.inputs.chunkUploadInput) uiElements.inputs.chunkUploadInput.value = "";
-      }
-    });
+    // setupChunkUpload(uiElements.inputs.chunkUploadInput, uiElements.buttons.fileButton);
+    console.warn("Generic chunk upload via 'Load Audio' button is temporarily disabled due to conflict with audio file player. A dedicated UI button is needed.");
   } else {
-    // Log warnings if critical elements for chunk upload are missing.
     if (!uiElements.inputs.chunkUploadInput) console.warn("chunkUploadInput element not found. Generic file upload via this input is disabled.");
-    if (!uiElements.buttons.fileButton) console.warn("loadAudioButton element not found. Cannot trigger generic file upload.");
+    // if (!uiElements.buttons.fileButton) console.warn("loadAudioButton element not found. Cannot trigger generic file upload."); // This warning might be confusing now
   }
 
   // --- Helper Function for Button Event Listeners ---
@@ -345,52 +243,30 @@ export function initializeMainUI() {
   };
 
   // --- Audio Control Buttons ---
-  // Current functionality is pending, so these buttons only log their clicks.
-  addButtonListener(uiElements.buttons.playButton, null, "Play button clicked - functionality pending.");
-  addButtonListener(uiElements.buttons.pauseButton, null, "Pause button clicked - functionality pending.");
-  addButtonListener(uiElements.buttons.stopButton, null, "Stop button clicked - functionality pending.");
+  // Event listeners for play, pause, stop are now handled by initializeAudioPlayerControls() in audioFilePlayer.js
+  // Remove these addButtonListener calls.
+  // addButtonListener(uiElements.buttons.playButton, null, "Play button clicked - functionality pending.");
+  // addButtonListener(uiElements.buttons.pauseButton, null, "Pause button clicked - functionality pending.");
+  // addButtonListener(uiElements.buttons.stopButton, null, "Stop button clicked - functionality pending.");
 
   // --- Microphone Toggle Button ---
-  // This button has specific inline logic due to direct interaction with audio state and managers.
   if (uiElements.buttons.micButton) {
     uiElements.buttons.micButton.addEventListener('click', async () => {
-      // Ensure audio managers are initialized before attempting to toggle microphone.
-      if (!state.microphoneManagerInstance || !state.audioAnalyzerLeftInstance || !state.audioAnalyzerRightInstance) {
-        console.error("MicrophoneManager or AudioAnalyzers not initialized in state. Cannot toggle microphone.");
-        uiElements.buttons.micButton.textContent = "Mic Error"; // Provide visual feedback for error.
-        return;
-      }
-      try {
-        if (state.audio.activeSource === 'microphone') {
-          // If microphone is currently active, stop it.
-          state.microphoneManagerInstance.stop();
-          state.audio.activeSource = 'none';
-          uiElements.buttons.micButton.classList.remove('active'); // Update button visual state.
-          uiElements.buttons.micButton.title = "Включить микрофон";
-          console.log("Microphone stopped via UI button.");
-        } else {
-          // If microphone is not active, initialize/start it.
-          // This re-initializes the microphone and updates the analyser nodes in the audio analyzer instances.
-          const { analyserLeft, analyserRight, audioContext } = await state.microphoneManagerInstance.init();
-          state.audio.audioContext = audioContext;
-          state.audio.microphoneAnalysers = { left: analyserLeft, right: analyserRight };
-
-          state.audioAnalyzerLeftInstance.analyserNode = analyserLeft; // Update analyser node reference.
-          state.audioAnalyzerRightInstance.analyserNode = analyserRight; // Update analyser node reference.
-
-          state.audio.activeSource = 'microphone';
-          uiElements.buttons.micButton.classList.add('active'); // Update button visual state.
-          uiElements.buttons.micButton.title = "Выключить микрофон";
-          console.log("Microphone started via UI button.");
-        }
-      } catch (error) {
-        console.error("Error toggling microphone:", error);
+      if (state.microphoneManagerInstance) {
+        await state.microphoneManagerInstance.toggleMicrophone(uiElements.buttons.micButton, state);
+      } else {
+        console.error("MicrophoneManager instance not found in state. Cannot toggle microphone.");
         uiElements.buttons.micButton.textContent = "Mic Error";
-        state.audio.activeSource = 'none'; // Reset active source on error.
       }
     });
+
     // Set initial mic button state based on the global audio state after page load.
-    if (state.audio.activeSource === 'microphone') {
+    // This logic is now handled within toggleMicrophone based on initial state,
+    // but we need to ensure the button's visual state is correct on load.
+    // We can call toggleMicrophone once without click if we want to sync state,
+    // or simply set class based on initial state.audio.activeSource.
+    // For now, let's ensure the class and title are set based on initial state.
+    if (state.audio && state.audio.activeSource === 'microphone') {
         uiElements.buttons.micButton.classList.add('active');
         uiElements.buttons.micButton.title = "Выключить микрофон";
     } else {
@@ -403,29 +279,34 @@ export function initializeMainUI() {
 
   // --- Fullscreen Toggle Button ---
   if (uiElements.buttons.fullscreenButton) {
+    initFullscreenListeners(uiElements.buttons.fullscreenButton); // Initialize event listeners for robust class toggling
     uiElements.buttons.fullscreenButton.addEventListener('click', () => {
-      // Toggle fullscreen mode for the entire document.
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-          alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-        });
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        }
-      }
-      console.log("Fullscreen button clicked.");
+      toggleFullscreen(uiElements.buttons.fullscreenButton); // Call the utility function
+      // console.log("Fullscreen button clicked."); // toggleFullscreen logs this now.
     });
   } else {
       console.warn("Fullscreen button element not found. Fullscreen toggle functionality disabled.");
   }
 
   // --- Other Feature Buttons ---
-  // addButtonListener(uiElements.buttons.xrButton, null, "XR button clicked - functionality pending."); // Replaced with specific logic below
   if (uiElements.buttons.xrButton) {
-    uiElements.buttons.xrButton.addEventListener('click', () => {
-      console.log("Переключение на XR режим голограммы - функционал в разработке");
-      uiElements.buttons.xrButton.classList.toggle('active');
+    // Set initial button state
+    if (state.xrSessionManagerInstance && state.xrSessionManagerInstance.isSessionActive()) {
+      uiElements.buttons.xrButton.classList.add('active');
+      uiElements.buttons.xrButton.title = "Exit XR Mode";
+    } else {
+      uiElements.buttons.xrButton.classList.remove('active');
+      uiElements.buttons.xrButton.title = "Enter XR Mode";
+    }
+
+    uiElements.buttons.xrButton.addEventListener('click', async () => {
+      if (state.xrSessionManagerInstance) {
+        await state.xrSessionManagerInstance.toggleXRSession(uiElements.buttons.xrButton);
+      } else {
+        console.error("XRSessionManager instance not found in state. Cannot toggle XR session.");
+        // Optionally provide visual feedback on the button itself
+        uiElements.buttons.xrButton.textContent = "XR Error";
+      }
     });
   } else {
     console.warn("XR button element not found.");
@@ -485,17 +366,20 @@ export function initializeMainUI() {
 
   // --- Tria Button ---
   if (uiElements.buttons.triaButton && uiElements.inputs.modelSelect) {
-    uiElements.buttons.triaButton.addEventListener('click', () => {
-      // Ensure state.tria exists
-      if (!state.tria) {
-        state.tria = { isLearningActive: false };
-      }
-      state.tria.isLearningActive = !state.tria.isLearningActive;
-
+    // Set initial state for Tria button and modelSelect
+    if (state.tria && typeof state.tria.isLearningActive === 'boolean') {
       uiElements.buttons.triaButton.classList.toggle('active', state.tria.isLearningActive);
       uiElements.inputs.modelSelect.disabled = state.tria.isLearningActive;
+    } else {
+      // Initialize if state.tria or isLearningActive is not properly set
+      if (!state.tria) state.tria = {};
+      state.tria.isLearningActive = false; // Default to false
+      uiElements.buttons.triaButton.classList.remove('active');
+      uiElements.inputs.modelSelect.disabled = false;
+    }
 
-      console.log(`Tria button clicked. isLearningActive: ${state.tria.isLearningActive}`);
+    uiElements.buttons.triaButton.addEventListener('click', () => {
+      toggleTriaLearningMode(uiElements.buttons.triaButton, uiElements.inputs.modelSelect, state);
     });
   } else {
     if (!uiElements.buttons.triaButton) console.warn("Tria button element not found.");
@@ -524,22 +408,7 @@ export function initializeMainUI() {
 }
 
 /**
- * Toggles the visibility of the chat history panel.
- * NOTE: This function might be redundant or conflict with `panelManager.openContentPanel('chatHistory')`
- * if the goal is only to show/hide the panel. Re-evaluate if both are necessary or if `panelManager` is sufficient.
- */
-export function toggleChatMode() {
-  if (!uiElements.chatHistory) {
-    console.error('Контейнер истории чата не инициализирован для toggleChatMode');
-    return;
-  }
-
-  const isChatHidden = uiElements.chatHistory.classList.toggle('hidden');
-  console.log(`Панель чата ${isChatHidden ? 'скрыта' : 'показана'}`);
-
-  // Dispatch a resize event to ensure layout adjusts correctly after panel visibility change.
-  window.dispatchEvent(new Event('resize'));
-}
-
-// Export functions that might be needed by other modules for UI manipulation or state. 
-export { initializePanelState, logLayoutState };
+// Export functions that might be needed by other modules for UI manipulation or state.
+// initializePanelState and togglePanels are removed as PanelManager handles this.
+// toggleChatMode is removed as PanelManager.openContentPanel('chatHistory') handles this.
+export { logLayoutState };
