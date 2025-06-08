@@ -41,21 +41,26 @@ export function initializeHammerGestures() {
 
     // Проверяем режим отображения и наличие hologramPivot
     if (!state.isXRMode) {
-      if (state.hologramPivot) {
-        // Ограничиваем вращение до ±90 градусов (±π/2 радиан)
-        state.hologramPivot.rotation.x = THREE.MathUtils.clamp(
-          rotationX,
-          -ROTATION_LIMIT,
-          ROTATION_LIMIT
-        );
-        state.hologramPivot.rotation.y = THREE.MathUtils.clamp(
-          rotationY,
-          -ROTATION_LIMIT,
-          ROTATION_LIMIT
-        );
-        state.hologramPivot.rotation.z = 0; // Предотвращаем вращение по оси Z
+      if (state.hologramRendererInstance && typeof state.hologramRendererInstance.getHologramPivot === 'function') {
+        const hologramPivot = state.hologramRendererInstance.getHologramPivot();
+        if (hologramPivot) {
+          // Ограничиваем вращение до ±90 градусов (±π/2 радиан)
+          hologramPivot.rotation.x = THREE.MathUtils.clamp(
+            rotationX,
+            -ROTATION_LIMIT,
+            ROTATION_LIMIT
+          );
+          hologramPivot.rotation.y = THREE.MathUtils.clamp(
+            rotationY,
+            -ROTATION_LIMIT,
+            ROTATION_LIMIT
+          );
+          hologramPivot.rotation.z = 0; // Предотвращаем вращение по оси Z
+        } else {
+          console.error('Событие pan: hologramPivot is null or undefined after calling getHologramPivot()');
+        }
       } else {
-        console.error('Событие pan: state.hologramPivot отсутствует');
+        console.error('Событие pan: state.hologramRendererInstance or getHologramPivot method is missing');
       }
     } else {
       // В режиме XR вращаем камеру вместо голограммы
@@ -78,24 +83,38 @@ export function initializeHammerGestures() {
 
   // Обработчик жеста масштабирования (pinch)
   hammer.on('pinch', ev => {
-    if (!state.isXRMode && state.hologramPivot) {
-      const scale = THREE.MathUtils.clamp(ev.scale, MIN_SCALE, MAX_SCALE);
-      state.hologramPivot.scale.set(scale, scale, scale);
-    } else if (!state.hologramPivot) {
-      console.error('Событие pinch: state.hologramPivot отсутствует');
+    if (!state.isXRMode) {
+      if (state.hologramRendererInstance && typeof state.hologramRendererInstance.getHologramPivot === 'function') {
+        const hologramPivot = state.hologramRendererInstance.getHologramPivot();
+        if (hologramPivot) {
+          const scale = THREE.MathUtils.clamp(ev.scale, MIN_SCALE, MAX_SCALE);
+          hologramPivot.scale.set(scale, scale, scale);
+        } else {
+          console.error('Событие pinch: hologramPivot is null or undefined after calling getHologramPivot()');
+        }
+      } else {
+        console.error('Событие pinch: state.hologramRendererInstance or getHologramPivot method is missing');
+      }
     }
   });
 
   // Обработчик окончания жестов (возврат к нейтральному положению)
   hammer.on('panend pinchend', () => {
-    if (!state.isXRMode && state.hologramPivot) {
-      // Плавно возвращаем к нейтральному вращению (0,0,0)
-      new window.TWEEN.Tween(state.hologramPivot.rotation)
-        .to({ x: 0, y: 0, z: 0 }, ROTATION_RETURN_DURATION)
-        .easing(window.TWEEN.Easing.Cubic.Out)
-        .start();
-    } else if (!state.hologramPivot) {
-      console.error('Событие panend/pinchend: state.hologramPivot отсутствует');
+    if (!state.isXRMode) {
+      if (state.hologramRendererInstance && typeof state.hologramRendererInstance.getHologramPivot === 'function') {
+        const hologramPivot = state.hologramRendererInstance.getHologramPivot();
+        if (hologramPivot) {
+          // Плавно возвращаем к нейтральному вращению (0,0,0)
+          new window.TWEEN.Tween(hologramPivot.rotation)
+            .to({ x: 0, y: 0, z: 0 }, ROTATION_RETURN_DURATION)
+            .easing(window.TWEEN.Easing.Cubic.Out)
+            .start();
+        } else {
+          console.error('Событие panend/pinchend: hologramPivot is null or undefined after calling getHologramPivot()');
+        }
+      } else {
+        console.error('Событие panend/pinchend: state.hologramRendererInstance or getHologramPivot method is missing');
+      }
     }
   });
 

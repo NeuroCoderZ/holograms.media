@@ -70,23 +70,90 @@ export function updateHologramLayout() { // Removed handsVisible parameter
     // }
   }
 
-  // 4. Расчет Масштаба (Scale Calculation)
-  // HOLOGRAM_REFERENCE_HEIGHT is imported from '../config/hologramConfig.js'
-  let targetScaleValue = finalHeight / HOLOGRAM_REFERENCE_HEIGHT;
+  const animationDuration = 300; // Common animation duration
+
+  // 4. Determine Gesture Area's target height for calculations
+  const gestureAreaTargetHeightPx = state.handsVisible ? finalHeight * 0.20 : 4;
+
+  // 5. Calculate Effective Available Height for Hologram
+  const effectiveAvailableHeight = finalHeight - gestureAreaTargetHeightPx;
+
+  // 6. Расчет Масштаба (Scale Calculation) based on Effective Available Height
+  // Apply 5% top and 5% bottom margins (total 10% vertical margin)
+  const hologramContentMaxHeight = effectiveAvailableHeight * 0.90;
+  let targetScaleValue = hologramContentMaxHeight / HOLOGRAM_REFERENCE_HEIGHT;
   targetScaleValue = Math.max(targetScaleValue, 0.01); // Ensure scale is not zero or negative
 
-  console.log('[LayoutManager] Hologram scale calculation:', { availableHeight: finalHeight, HOLOGRAM_REFERENCE_HEIGHT: HOLOGRAM_REFERENCE_HEIGHT, targetScaleValue: targetScaleValue });
+  // 7. Центрирование Голограммы (Hologram Centering)
+  // Hologram should be centered in its allocated space (the space above the gesture area)
+  // The Y position is relative to the center of the gridContainer (which is camera's Y=0)
+  // The bottom of the screen is -finalHeight / 2.
+  // The top of the gesture area is -finalHeight / 2 + gestureAreaTargetHeightPx.
+  // The hologram's available space is from (-finalHeight / 2 + gestureAreaTargetHeightPx) to (finalHeight / 2).
+  // The center of this space is: ((-finalHeight / 2 + gestureAreaTargetHeightPx) + (finalHeight / 2)) / 2 = gestureAreaTargetHeightPx / 2.
+  const targetPositionY = gestureAreaTargetHeightPx / 2;
 
-  // 5. Центрирование Голограммы (Centering Hologram)
-  hologramPivot.position.x = 0;
-  hologramPivot.position.y = 0;
-  hologramPivot.position.z = 0;
+  // 8. Animate Hologram Scale and Position if TWEEN is available
+  if (typeof TWEEN !== 'undefined') {
+    // Animate Scale
+    new TWEEN.Tween(hologramPivot.scale)
+      .to({ x: targetScaleValue, y: targetScaleValue, z: targetScaleValue }, animationDuration)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .start();
 
-  console.log('[LayoutManager] Hologram position set to:', { x: hologramPivot.position.x, y: hologramPivot.position.y, z: hologramPivot.position.z });
+    // Animate Position Y
+    new TWEEN.Tween(hologramPivot.position)
+      .to({ y: targetPositionY }, animationDuration)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .start();
 
-  // 6. Применение Трансформаций (Apply Transformations - Direct Assignment)
-  hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
-  console.log('[LayoutManager] Hologram scale applied:', { x: targetScaleValue, y: targetScaleValue, z: targetScaleValue });
+    // X and Z position remain 0 (or could be tweened if needed in future)
+    if (hologramPivot.position.x !== 0 || hologramPivot.position.z !== 0) {
+        new TWEEN.Tween(hologramPivot.position)
+            .to({ x: 0, z: 0 }, animationDuration)
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .start();
+    }
+
+  } else {
+    // Fallback to direct assignment if TWEEN is not available
+    hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
+    hologramPivot.position.y = targetPositionY;
+    hologramPivot.position.x = 0;
+    hologramPivot.position.z = 0;
+    console.warn('[LayoutManager] TWEEN is not defined. Hologram transformations applied directly.');
+  }
+  console.log('[LayoutManager] Hologram target calculated:', { scale: targetScaleValue, posY: targetPositionY });
+
+  // 9. Animate Gesture Area Height based on handsVisible state (from previous subtask)
+  if (state.uiElements?.gestureArea && typeof TWEEN !== 'undefined') {
+    const gestureAreaElement = state.uiElements.gestureArea;
+
+    if (!gestureAreaElement.style.height) {
+      gestureAreaElement.style.height = '4px';
+    }
+    const currentGestureAreaHeightPx = parseFloat(gestureAreaElement.style.height);
+
+    // Avoid re-animating if already at target height (simple check)
+    // gestureAreaTargetHeightPx is already calculated above
+    if (Math.abs(currentGestureAreaHeightPx - gestureAreaTargetHeightPx) > 0.5) {
+      new TWEEN.Tween({ height: currentGestureAreaHeightPx })
+        .to({ height: gestureAreaTargetHeightPx }, animationDuration)
+        .easing(TWEEN.Easing.Quadratic.InOut)
+        .onUpdate((object) => {
+          gestureAreaElement.style.height = object.height + 'px';
+        })
+        .start();
+    }
+  } else {
+    if (!state.uiElements?.gestureArea) {
+      console.warn('[LayoutManager] gestureArea not found in state.uiElements. Cannot animate height.');
+    }
+    if (typeof TWEEN === 'undefined') {
+      // This warning is now covered by the hologram animation check as well
+      // console.warn('[LayoutManager] TWEEN is not defined. Cannot animate gestureArea height.');
+    }
+  }
 
   console.log('[LayoutManager] updateHologramLayout completed successfully.');
 }
