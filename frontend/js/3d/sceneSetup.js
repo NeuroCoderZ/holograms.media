@@ -36,8 +36,8 @@ export function initializeScene(state) {
   const camRight = containerWidth / 2;
   const camTop = containerHeight / 2;
   const camBottom = -containerHeight / 2;
-  const camNear = 0.01; // Изменено с 0.1 на 0.01 для более близкого отсечения
-  const camFar = 2000; // Or 10000, as per prompt
+  const camNear = 0.1; // Requirement: 0.1
+  const camFar = 2000; // Requirement: 2000
 
   state.camera = new THREE.OrthographicCamera(camLeft, camRight, camTop, camBottom, camNear, camFar);
   state.camera.position.set(0, 0, 1000); // As per prompt (e.g., 1000 or 1200)

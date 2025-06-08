@@ -75,23 +75,33 @@ export function updateHologramLayout() { // Removed handsVisible parameter
   // 4. Determine Gesture Area's target height for calculations
   const gestureAreaTargetHeightPx = state.handsVisible ? finalHeight * 0.20 : 4;
 
-  // 5. Calculate Effective Available Height for Hologram
-  const effectiveAvailableHeight = finalHeight - gestureAreaTargetHeightPx;
+  // 5. Calculate padding and available height for Hologram based on requirements
+  // finalHeight is window.innerHeight (also gridContainer height)
+  // gestureAreaTargetHeightPx is the calculated height of the gesture area
 
-  // 6. Расчет Масштаба (Scale Calculation) based on Effective Available Height
-  // Apply 5% top and 5% bottom margins (total 10% vertical margin)
-  const hologramContentMaxHeight = effectiveAvailableHeight * 0.90;
-  let targetScaleValue = hologramContentMaxHeight / HOLOGRAM_REFERENCE_HEIGHT;
+  const paddingTopDevicePx = 0.05 * finalHeight; // 5% of window height for top padding
+
+  // Top of gesture area in device pixels (from top of window)
+  const gestureAreaTopDevicePx = finalHeight - gestureAreaTargetHeightPx;
+  // Bottom padding is 5% of the gesture area's top position
+  const paddingBottomDevicePx = 0.05 * gestureAreaTopDevicePx;
+
+  // Calculate the actual visual height available for the hologram content
+  const hologramAvailableVisualHeightPx = finalHeight - paddingTopDevicePx - paddingBottomDevicePx - gestureAreaTargetHeightPx;
+
+  // 6. Расчет Масштаба (Scale Calculation)
+  let targetScaleValue = hologramAvailableVisualHeightPx / HOLOGRAM_REFERENCE_HEIGHT;
   targetScaleValue = Math.max(targetScaleValue, 0.01); // Ensure scale is not zero or negative
 
   // 7. Центрирование Голограммы (Hologram Centering)
-  // Hologram should be centered in its allocated space (the space above the gesture area)
-  // The Y position is relative to the center of the gridContainer (which is camera's Y=0)
-  // The bottom of the screen is -finalHeight / 2.
-  // The top of the gesture area is -finalHeight / 2 + gestureAreaTargetHeightPx.
-  // The hologram's available space is from (-finalHeight / 2 + gestureAreaTargetHeightPx) to (finalHeight / 2).
-  // The center of this space is: ((-finalHeight / 2 + gestureAreaTargetHeightPx) + (finalHeight / 2)) / 2 = gestureAreaTargetHeightPx / 2.
-  const targetPositionY = gestureAreaTargetHeightPx / 2;
+  // The hologram needs to be centered in the space defined by paddingTopDevicePx and paddingBottomDevicePx,
+  // above the gestureAreaTargetHeightPx.
+  // All calculations are relative to the center of gridContainer (camera's Y=0).
+  // Top of available space (camera coordinates): (finalHeight / 2) - paddingTopDevicePx
+  // Bottom of available space (camera coordinates): (-finalHeight / 2) + gestureAreaTargetHeightPx + paddingBottomDevicePx
+  // Target Y position is the midpoint of this space.
+  const targetPositionY = (((finalHeight / 2) - paddingTopDevicePx) + ((-finalHeight / 2) + gestureAreaTargetHeightPx + paddingBottomDevicePx)) / 2;
+  // Simplified: (gestureAreaTargetHeightPx + paddingBottomDevicePx - paddingTopDevicePx) / 2;
 
   // 8. Animate Hologram Scale and Position if TWEEN is available
   if (typeof TWEEN !== 'undefined') {
