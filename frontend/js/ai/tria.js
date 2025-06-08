@@ -159,3 +159,15 @@ export async function getTriaUsageStats() {
     };
   }
 }
+
+export function toggleTriaLearningMode(triaButton, modelSelect, state) {
+    if (!state.tria) { state.tria = { isLearningActive: false }; }
+    state.tria.isLearningActive = !state.tria.isLearningActive;
+    const isActive = state.tria.isLearningActive;
+    console.log(`Tria learning mode ${isActive ? 'activated' : 'deactivated'}.`);
+    if (triaButton) {
+        triaButton.classList.toggle('active', isActive);
+        triaButton.title = isActive ? 'Деактивировать обучение Триа' : 'Активировать обучение Триа';
+    }
+    if (modelSelect) { modelSelect.disabled = isActive; }
+}

@@ -273,8 +273,6 @@ export function initializeMainUI() {
         uiElements.buttons.micButton.classList.remove('active');
         uiElements.buttons.micButton.title = "Включить микрофон";
     }
-  } else {
-      console.warn("Mic button element not found. Microphone toggle functionality disabled.");
   }
 
   // --- Fullscreen Toggle Button ---
@@ -408,7 +406,8 @@ export function initializeMainUI() {
 }
 
 /**
-// Export functions that might be needed by other modules for UI manipulation or state.
-// initializePanelState and togglePanels are removed as PanelManager handles this.
-// toggleChatMode is removed as PanelManager.openContentPanel('chatHistory') handles this.
+ * Export functions that might be needed by other modules for UI manipulation or state.
+ * initializePanelState and togglePanels are removed as PanelManager handles this.
+ * toggleChatMode is removed as PanelManager.openContentPanel('chatHistory') handles this.
+ */
 export { logLayoutState };
