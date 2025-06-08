@@ -41,19 +41,23 @@ class PanelManager {
             return;
         }
 
-        // Always ensure panels are visible initially on page load.
-        // The 'hidden' class should only be applied when the user explicitly clicks the toggle button.
-        this.leftPanelElement.classList.remove('hidden');
-        this.rightPanelElement.classList.remove('hidden');
-        this.togglePanelsButtonElement.classList.remove('show-mode'); // Ensure button icon is for "hide panels"
-
-        // If a saved state exists and it indicates panels should be hidden, apply that state.
-        // This makes them visible by default on first load, but remembers user preference after that.
         const savedState = localStorage.getItem('panelsHidden');
+
         if (savedState === 'true') {
-            this.toggleMainPanels(); // Use the existing toggle function to apply the saved hidden state
+            // Panels should be hidden
+            this.leftPanelElement.classList.add('hidden');
+            this.rightPanelElement.classList.add('hidden');
+            // Button should have 'show-mode' (consistent with toggleMainPanels: panels are hidden, button shows "click to show")
+            this.togglePanelsButtonElement.classList.add('show-mode');
+        } else {
+            // Panels should be visible
+            this.leftPanelElement.classList.remove('hidden');
+            this.rightPanelElement.classList.remove('hidden');
+            // Button should NOT have 'show-mode' (consistent with toggleMainPanels: panels are visible, button shows "click to hide")
+            this.togglePanelsButtonElement.classList.remove('show-mode');
         }
         
+        // Dispatch a resize event to ensure layouts adjust correctly after panel state is set.
         setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
         console.log(`Состояние основных панелей инициализировано (видимы по умолчанию или восстановлено из localStorage)`);
     }
@@ -72,6 +76,16 @@ class PanelManager {
         this.rightPanelElement.classList.toggle('hidden', willBeHidden);
         this.togglePanelsButtonElement.classList.toggle('show-mode', willBeHidden);
         localStorage.setItem('panelsHidden', willBeHidden.toString());
+
+        // Dispatch uiStateChanged event
+        const event = new CustomEvent('uiStateChanged', {
+            detail: {
+                component: 'mainPanels',
+                newState: willBeHidden ? 'hidden' : 'visible'
+            }
+        });
+        window.dispatchEvent(event);
+
         setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
         console.log(`Основные панели ${willBeHidden ? 'скрыты' : 'показаны'}`);
     }
