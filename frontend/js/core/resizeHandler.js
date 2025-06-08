@@ -5,19 +5,20 @@ import { updateHologramLayout } from '../ui/layoutManager.js'; // Предпол
 // Вспомогательная функция для получения ширины панелей (перенесена из script.js)
 // Replaced with a more robust version as per request
 function getPanelWidths() {
-    let leftWidth = 0;
-    let rightWidth = 0;
-    if (state.uiElements?.leftPanel && state.uiElements.leftPanel.offsetParent !== null) {
-        leftWidth = state.uiElements.leftPanel.getBoundingClientRect().width;
-    }
-    if (state.uiElements?.rightPanel && state.uiElements.rightPanel.offsetParent !== null) {
-        rightWidth = state.uiElements.rightPanel.getBoundingClientRect().width;
-    }
+    const leftPanel = state.uiElements?.leftPanel;
+    const rightPanel = state.uiElements?.rightPanel;
+    // Используем getBoundingClientRect для точности и проверки видимости
+    const leftWidth = (leftPanel && leftPanel.offsetParent !== null) ? leftPanel.getBoundingClientRect().width : 0;
+    const rightWidth = (rightPanel && rightPanel.offsetParent !== null) ? rightPanel.getBoundingClientRect().width : 0;
     return leftWidth + rightWidth;
 }
 
 export function initializeResizeHandler() {
   window.addEventListener('resize', () => {
+    if (!state.uiElements?.gridContainer || !state.uiElements?.leftPanel || !state.uiElements?.rightPanel) {
+        console.warn('[ResizeHandler] Пропуск обработки resize: UI-элементы еще не готовы.');
+        return;
+    }
     console.log('[Resize] Window resized');
 
     // Обновляем размеры панелей (перенесено из script.js)
