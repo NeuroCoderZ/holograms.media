@@ -7,14 +7,23 @@ import { updateHologramLayout } from '../ui/layoutManager.js'; // Предпол
 function getPanelWidths() {
     const leftPanel = state.uiElements?.leftPanel;
     const rightPanel = state.uiElements?.rightPanel;
-    // Используем getBoundingClientRect для точности и проверки видимости
-    const leftWidth = (leftPanel && leftPanel.offsetParent !== null) ? leftPanel.getBoundingClientRect().width : 0;
-    const rightWidth = (rightPanel && rightPanel.offsetParent !== null) ? rightPanel.getBoundingClientRect().width : 0;
+    let leftWidth = 0;
+    let rightWidth = 0;
+    if (leftPanel && leftPanel.offsetParent !== null) {
+        leftWidth = leftPanel.getBoundingClientRect().width;
+    }
+    if (rightPanel && rightPanel.offsetParent !== null) {
+        rightWidth = rightPanel.getBoundingClientRect().width;
+    }
     return leftWidth + rightWidth;
 }
 
 export function initializeResizeHandler() {
   window.addEventListener('resize', () => {
+    if (!state.uiElements?.gridContainer) {
+      console.warn('[ResizeHandler] Early exit: gridContainer not initialized');
+      return;
+    }
     if (!state.uiElements?.gridContainer || !state.uiElements?.leftPanel || !state.uiElements?.rightPanel) {
         console.warn('[ResizeHandler] Пропуск обработки resize: UI-элементы еще не готовы.');
         return;
