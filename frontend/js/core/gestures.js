@@ -105,6 +105,10 @@ export function initializeHammerGestures() {
         const hologramPivot = state.hologramRendererInstance.getHologramPivot();
         if (hologramPivot) {
           // Плавно возвращаем к нейтральному вращению (0,0,0)
+          if (!window.TWEEN) {
+            console.error('TWEEN library is not available on window.TWEEN. Animation will not work.');
+            return;
+          }
           new window.TWEEN.Tween(hologramPivot.rotation)
             .to({ x: 0, y: 0, z: 0 }, ROTATION_RETURN_DURATION)
             .easing(window.TWEEN.Easing.Cubic.Out)
