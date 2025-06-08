@@ -2,7 +2,6 @@
 
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
-import PanelManager from '../ui/panelManager.js';
 import { uiElements } from '../ui/uiManager.js';
 import { updateHologramLayout } from '../ui/layoutManager.js';
 import * as THREE from 'three'; // Needed for THREE.MathUtils
@@ -42,8 +41,12 @@ export function setupDOMEventHandlers() {
     setupAudioPlayerObserver();
 
     // Initialize panel state based on local storage
-    const panelManagerInstance = new PanelManager();
-    panelManagerInstance.initializePanelManager();
+    if (state.panelManager && typeof state.panelManager.initializePanelManager === 'function') {
+      state.panelManager.initializePanelManager();
+      console.log('Called initializePanelManager on state.panelManager');
+    } else {
+      console.warn('state.panelManager or state.panelManager.initializePanelManager is not available in events.js for initialization.');
+    }
 }
 
 /**

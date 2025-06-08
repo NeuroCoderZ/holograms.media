@@ -142,6 +142,7 @@ import { MicrophoneManager } from '../audio/microphoneManager.js';
 import { AudioAnalyzer } from '../audio/audioAnalyzer.js';
 import { HologramRenderer } from '../3d/hologramRenderer.js';
 import { XRSessionManager } from '../xr/webxr_session_manager.js'; // Added for WebXR
+import PanelManager from './ui/panelManager.js';
 
 // Функция для инициализации ядра приложения
 export async function initCore() {
@@ -181,6 +182,10 @@ export async function initCore() {
   } else {
     console.error('Renderer not available for XRSessionManager initialization.');
   }
+
+  // Initialize PanelManager
+  state.panelManager = new PanelManager();
+  console.log('PanelManager initialized and stored in state.');
 
   // Instantiate MicrophoneManager
   state.microphoneManagerInstance = new MicrophoneManager(); // Can pass FFT_SIZE, SMOOTHING_TIME_CONSTANT if needed from config
