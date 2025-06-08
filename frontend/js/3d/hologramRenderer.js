@@ -147,7 +147,7 @@ export class HologramRenderer {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineBasicMaterial({
         color,
-        opacity: 0.005, // Установлено 0.005 для 99.5% прозрачности
+        opacity: 0.001, // Установлено 0.001 для 99.9% прозрачности
         transparent: true,
         // Disable depth testing/writing to ensure grid lines are always visible
         // and don't interfere with objects drawn at the same Z-depth.
@@ -231,15 +231,15 @@ export class HologramRenderer {
     columnGroup.position.x = isLeftGrid ? (GRID_WIDTH - width) : 0;
 
     // Create the basic box geometry for the column. Height and depth are initially fixed.
-    const geometry = new THREE.BoxGeometry(width, 2, 1); // width, height, depth
-    const material = new THREE.MeshBasicMaterial({ color: semitone.color }); // Color from semitone data
+    const geometry = new THREE.BoxGeometry(semitone.width, semitone.width * 2, semitone.width); // width, height, depth
+    const material = new THREE.MeshStandardMaterial({ color: semitone.color }); // Color from semitone data
     const columnMesh = new THREE.Mesh(geometry, material);
 
     // Position the mesh within its parent group.
     // The mesh's local X should be its center (half its width).
-    // Y position is based on the semitone index (to stack them vertically).
+    // Y position is to make the base of the column sit at y=0 of the columnGroup.
     // Z position is initially at 0, as its depth will be animated.
-    columnMesh.position.set(width / 2, (semitoneIndex + 1) * 2, 0);
+    columnMesh.position.set(semitone.width / 2, semitone.width, 0); // New Y position: (semitone.width * 2) / 2
     
     columnGroup.add(columnMesh);
     return columnGroup;
