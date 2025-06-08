@@ -5,7 +5,7 @@ import { state, config } from './core/init.js';
 import { ui, toggleChatMode, togglePanels } from './core/ui.js';
 import { sendPrompt, insertTextIntoPrompt } from './ai/prompts.js';
 import { sendChatMessage, addMessageToChat } from './ai/chat.js';
-import { synthesizeSpeech, stopSpeech } from './audio/speech.js';
+// import { synthesizeSpeech, stopSpeech } from './audio/speech.js';
 import { getSelectedModel, setSelectedModel } from './ai/models.js';
 
 // Экспортируем объекты и функции для глобального доступа
