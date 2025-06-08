@@ -23,6 +23,7 @@ export const GRID_WIDTH = 130;
 export const GRID_HEIGHT = 260;
 export const GRID_DEPTH = 130;
 export const CELL_SIZE = 1;
+export const HOLOGRAM_REFERENCE_HEIGHT = GRID_HEIGHT; // Or directly 260, but using GRID_HEIGHT is more maintainable
 
 // Функция для вычисления ширины колонок на основе индекса
 export function degreesToCells(index) {
