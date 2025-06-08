@@ -739,6 +739,26 @@ body {
   letter-spacing: 3px;
 }
 
+/* Styles for the new Avatar/GitHub group and separator in the left panel */
+.left-panel-icon-group {
+  grid-column: 1 / -1; /* Make the group span both columns of the parent grid */
+  display: flex;
+  justify-content: center; /* Center buttons horizontally within the group */
+  align-items: center;
+  gap: var(--button-spacing, 8px); /* Use existing variable for spacing or a fallback */
+  margin-top: var(--spacing-sm, 5px); /* Optional: add some top margin */
+  margin-bottom: var(--spacing-sm, 5px); /* Optional: add some bottom margin */
+}
+
+hr.left-panel-separator {
+  grid-column: 1 / -1; /* Make the hr span both columns */
+  width: 90%; /* As per requirement */
+  margin: var(--spacing-md, 10px) auto; /* 5% margin on left/right achieved by auto with width 90%. var(--spacing-md) for top/bottom */
+  border: none; /* Clear default browser styling for <hr> */
+  height: 1px; /* Define a specific height for the separator */
+  background-color: var(--panel-border, #444); /* Use existing panel border color or a fallback */
+}
+
 /* Authentication Section Styles */
 #authSection {
   display: flex;
