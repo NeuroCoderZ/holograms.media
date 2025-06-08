@@ -5,6 +5,14 @@
 import { getSelectedModel } from './models.js';
 import { state } from '../core/init.js';
 
+// Placeholder for user authorization check
+function isUserAuthorized() {
+  // Placeholder: Replace with actual authorization check
+  // e.g., return window.authService && window.authService.isLoggedIn();
+  // For now, this will make the chat use the public_chat endpoint.
+  return false;
+}
+
 // Хранилище сообщений чата
 let chatMessages = [];
 let isWaitingForResponse = false;
@@ -69,20 +77,31 @@ export async function sendChatMessage(messageText) {
       // Отображаем индикатор загрузки
       showLoadingIndicator(true);
       
-      // Получаем выбранную модель
-      const modelSelectElement = state.uiElements.inputs.modelSelect;
-      const selectedModel = getSelectedModel(modelSelectElement);
+      let apiUrl = '/chat';
+      let apiPayload;
+
+      if (isUserAuthorized()) {
+        // Получаем выбранную модель для авторизованного пользователя
+        const modelSelectElement = state.uiElements.inputs.modelSelect;
+        const selectedModel = getSelectedModel(modelSelectElement);
+        apiPayload = {
+          message: userMessage,
+          model: selectedModel
+        };
+      } else {
+        apiUrl = '/api/v1/chat/public_chat';
+        apiPayload = {
+          message: userMessage
+        };
+      }
       
       // Делаем запрос к API
-      const response = await fetch('/chat', {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          message: userMessage,
-          model: selectedModel
-        })
+        body: JSON.stringify(apiPayload)
       });
       
       // Проверяем ответ
@@ -93,13 +112,76 @@ export async function sendChatMessage(messageText) {
       // Обрабатываем ответ
       const data = await response.json();
       if (data && data.response) {
+        const botResponseText = data.response;
         // Добавляем ответ в чат
-        addMessageToChat('tria', data.response);
+        addMessageToChat('tria', botResponseText);
         
-        // Если нужно синтезировать речь
-        if (data.should_vocalize) {
-          // synthesizeSpeech(data.response); // Keep commented out if needed later
-          console.log('Функция synthesizeSpeech временно отключена');
+        if (!isUserAuthorized()) {
+          // Голосовой ответ для публичного бота
+          if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(botResponseText);
+            // Можно настроить голос, скорость, высоту тона и т.д. здесь
+            // utterance.voice = window.speechSynthesis.getVoices()[0]; // Пример выбора голоса
+            // utterance.pitch = 1;
+            // utterance.rate = 1;
+            window.speechSynthesis.speak(utterance);
+          } else {
+            console.warn('Speech Synthesis не поддерживается этим браузером.');
+          }
+
+          // Подсветка элементов
+          const elementIdRegex = /#([a-zA-Z0-9_-]+)/g;
+          let match;
+          const highlightDuration = 3000;
+          // Собираем все ID элементов для подсветки
+          const idsToHighlight = [];
+          while ((match = elementIdRegex.exec(botResponseText)) !== null) {
+            idsToHighlight.push(match[1]);
+          }
+
+          if (idsToHighlight.length > 0) {
+            document.body.classList.add('dimmed');
+
+            idsToHighlight.forEach((elementId, index) => {
+              const elementToHighlight = document.getElementById(elementId);
+              if (elementToHighlight) {
+                elementToHighlight.classList.add('highlight');
+
+                // Убираем подсветку и затемнение после задержки
+                // Если это последний элемент, то убираем затемнение всего body
+                setTimeout(() => {
+                  elementToHighlight.classList.remove('highlight');
+                  if (index === idsToHighlight.length - 1) {
+                    document.body.classList.remove('dimmed');
+                  }
+                }, highlightDuration);
+              } else {
+                console.warn(`Элемент с ID #${elementId} не найден для подсветки.`);
+                // Если элемент не найден, и это последний элемент, убираем dim
+                 if (index === idsToHighlight.length - 1) {
+                    // Check if other highlights are still active (this simple version doesn't track them)
+                    // For now, just remove dim if this was the last ID processed.
+                    // A more robust solution would count active highlights.
+                    let stillHighlighted = false;
+                    idsToHighlight.forEach(id => {
+                        const el = document.getElementById(id);
+                        if(el && el.classList.contains('highlight')){
+                            stillHighlighted = true;
+                        }
+                    });
+                    if(!stillHighlighted) {
+                         document.body.classList.remove('dimmed');
+                    }
+                  }
+              }
+            });
+          }
+        } else {
+          // Если нужно синтезировать речь для авторизованного пользователя (старая логика)
+          if (data.should_vocalize) {
+            // synthesizeSpeech(data.response); // Keep commented out if needed later
+            console.log('Функция synthesizeSpeech временно отключена для авторизованного пользователя');
+          }
         }
       } else {
         throw new Error('Некорректный ответ от сервера');
