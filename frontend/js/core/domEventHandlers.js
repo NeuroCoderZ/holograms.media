@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
 import PanelManager from '../ui/panelManager.js';
+import { toggleFullscreen, initFullscreenListeners } from '../utils/fullscreen.js';
 
 // Объект для хранения содержимого файлов для редактора
 const fileContents = {};
@@ -443,12 +444,10 @@ export function initializeDOMEventHandlers() {
 
   // Fullscreen Button
   if (fullscreenButton) {
-    // Обработчик для кнопки развертывания - логика перенесена в fullscreen.js
-    // Здесь просто заглушка или вызов функции из fullscreen.js
     fullscreenButton.addEventListener('click', () => {
-      console.log('Fullscreen button clicked - logic handled by fullscreen.js');
-      // toggleFullscreen(); // Предполагается, что эта функция импортируется или доступна глобально
+      toggleFullscreen(fullscreenButton); // Pass the button element
     });
+    initFullscreenListeners(fullscreenButton); // Initialize listeners to update button state
   }
 
   // Toggle Camera Button (Assuming logic is in cameraManager.js)
