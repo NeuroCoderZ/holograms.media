@@ -31,7 +31,8 @@ from backend.api.v1.endpoints.tria_commands import router as tria_commands_route
 from backend.api.v1.endpoints.chunks import router as chunks_router
 
 # from backend.routers.auth import router as legacy_auth_router
-# from backend.routers.chat import router as legacy_chat_router
+from backend.routers.chat import router as public_chat_router
+# from backend.routers.chat import router as legacy_chat_router # This was the old one
 from backend.routers.chat_sessions import router as legacy_chat_sessions_router
 from backend.routers.gestures import router as legacy_user_me_gestures_router
 from backend.routers.holograms import router as legacy_user_holograms_router
@@ -47,7 +48,8 @@ app.include_router(tria_commands_router, prefix=f"{API_V1_PREFIX}/tria-commands"
 app.include_router(chunks_router, prefix=API_V1_PREFIX, tags=["Chunks"])
 
 # app.include_router(legacy_auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["Authentication (Legacy)"])
-# app.include_router(legacy_chat_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat (Legacy)"])
+app.include_router(public_chat_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat"])
+# app.include_router(legacy_chat_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat (Legacy)"]) # This was the old one
 app.include_router(legacy_chat_sessions_router, prefix=f"{API_V1_PREFIX}/chat-sessions", tags=["Chat Sessions (Legacy)"])
 app.include_router(legacy_user_me_gestures_router, prefix=API_V1_PREFIX, tags=["Current User Gestures (Legacy)"])
 app.include_router(legacy_user_holograms_router, prefix=API_V1_PREFIX, tags=["Current User Holograms (Legacy)"])
