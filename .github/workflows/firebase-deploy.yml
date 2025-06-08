@@ -1,5 +1,7 @@
+# Имя рабочего процесса
 name: Deploy Frontend to Firebase Hosting
 
+# Триггер: запускать при пуше в main
 on:
   push:
     branches:
@@ -7,14 +9,26 @@ on:
 
 jobs:
   build_and_deploy:
+    # Запускаем на стандартной виртуальной машине
     runs-on: ubuntu-latest
+
+    # Указываем рабочую директорию по умолчанию для всех шагов этой задачи
+    defaults:
+      run:
+        working-directory: ./frontend
+
     steps:
+      # Шаг 1: Скачиваем код репозитория
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Шаг 2: Деплой на Firebase Hosting
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
+          # Токен для доступа к репозиторию (стандартная практика)
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          # Ключ сервисного аккаунта для аутентификации в Firebase
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}'
+          # ID проекта в Firebase
           projectId: 'holograms-media'
