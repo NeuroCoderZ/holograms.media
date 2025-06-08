@@ -24,7 +24,7 @@ const semitones = Array.from({ length: 130 }, (_, i) => {
     return {
         key: note.replace("#", "s"),
         note: note, f: f, width: width, color: color,
-        deg: 180.00 - (i * 1.3846)
+        deg: 180.00 - (i * (180.0 / 130.0))
     };
 });
 export default semitones;
