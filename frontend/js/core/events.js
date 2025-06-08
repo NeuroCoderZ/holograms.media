@@ -3,7 +3,7 @@
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
 import PanelManager from '../ui/panelManager.js';
-import { uiElements, toggleChatMode, togglePanels } from '../ui/uiManager.js';
+import { uiElements } from '../ui/uiManager.js';
 import { updateHologramLayout } from '../ui/layoutManager.js';
 import * as THREE from 'three'; // Needed for THREE.MathUtils
 
@@ -320,7 +320,9 @@ export function setupEventListeners() {
 function setupButtonListeners() {
   // Кнопки управления панелями
   if (ui.togglePanelsButton) {
-    ui.togglePanelsButton.addEventListener('click', togglePanels);
+    ui.togglePanelsButton.addEventListener('click', () => {
+      state.panelManager.toggleMainPanels();
+    });
   }
   
   // Кнопки аудио управления - Listeners are now handled by audioFilePlayer.js and microphoneManager.js
@@ -369,7 +371,7 @@ function setupButtonListeners() {
   
   // Кнопка чата
   if (ui.buttons.chatButton) {
-    ui.buttons.chatButton.addEventListener('click', toggleChatMode);
+    // ui.buttons.chatButton.addEventListener('click', toggleChatMode); // toggleChatMode moved to panelManager.js
   }
 } // Закрываем функцию setupButtonListeners
 
