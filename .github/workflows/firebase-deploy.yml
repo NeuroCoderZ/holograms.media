@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Указываем рабочую директорию по умолчанию для всех шагов этой задачи
+    # ЭТО ВАЖНО, так как firebase.json находится в папке frontend
     defaults:
       run:
         working-directory: ./frontend
@@ -26,9 +27,12 @@ jobs:
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          # Токен для доступа к репозиторию (стандартная практика)
+          # Токен для доступа к репозиторию
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           # Ключ сервисного аккаунта для аутентификации в Firebase
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}'
           # ID проекта в Firebase
           projectId: 'holograms-media'
+          # --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ---
+          # Явно указываем, что нужно деплоить на "живой" (live) канал, а не в preview
+          channelId: live
