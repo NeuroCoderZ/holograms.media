@@ -1,10 +1,10 @@
 // Core UI management logic.
-import PanelManager from './panelManager.js';
+import { state } from '../init.js';
 
 class UIManager {
     constructor() {
-        this.panelManager = new PanelManager();
-        console.log("UIManager initialized.");
+        this.panelManager = state.panelManager;
+        console.log("UIManager initialized, using global PanelManager.");
     }
 }
 

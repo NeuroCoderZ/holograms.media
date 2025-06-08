@@ -3,12 +3,20 @@ import { state } from './init.js';
 import { updateHologramLayout } from '../ui/layoutManager.js'; // Предполагаемое место, пока оставляем как есть
 
 // Вспомогательная функция для получения ширины панелей (перенесена из script.js)
-function getPanelWidths() {
+export function getPanelWidths() {
     const leftPanel = state.uiElements?.leftPanel;
     const rightPanel = state.uiElements?.rightPanel;
     let leftWidth = (leftPanel && leftPanel.offsetParent !== null) ? leftPanel.getBoundingClientRect().width : 0;
     let rightWidth = (rightPanel && rightPanel.offsetParent !== null) ? rightPanel.getBoundingClientRect().width : 0;
     return leftWidth + rightWidth;
+}
+
+export function getLeftPanelWidth() {
+  const leftPanel = state.uiElements?.leftPanel;
+  if (leftPanel && leftPanel.offsetParent !== null && !leftPanel.classList.contains('hidden')) { // Ensure it's visible
+    return leftPanel.getBoundingClientRect().width;
+  }
+  return 0;
 }
 
 export function initializeResizeHandler() {
