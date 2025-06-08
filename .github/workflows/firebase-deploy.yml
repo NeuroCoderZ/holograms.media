@@ -1,37 +1,20 @@
-# Имя рабочего процесса, которое будет отображаться в GitHub Actions
 name: Deploy Frontend to Firebase Hosting
 
-# Триггер: запускать этот рабочий процесс при каждом push в ветку 'main'
 on:
   push:
     branches:
       - main
 
-# Задачи, которые будут выполняться
 jobs:
   build_and_deploy:
-    # Тип виртуальной машины, на которой будет выполняться задача
     runs-on: ubuntu-latest
-
-    # Шаги рабочего процесса
     steps:
-      # Шаг 1: Получение кода из репозитория
-      # Использует стандартное действие для checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Шаг 2: Установка Node.js
-      # Это необходимо для установки firebase-tools через npm
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20' # Указываем стабильную версию Node.js
-
-      # Шаг 3: Установка Firebase CLI
-      - name: Install Firebase CLI
-        run: npm install -g firebase-tools
-
-      # Шаг 4: Развертывание на Firebase Hosting
-      # Этот шаг использует ваш секретный токен для аутентификации
       - name: Deploy to Firebase Hosting
-        run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}'
+          projectId: 'holograms-media'

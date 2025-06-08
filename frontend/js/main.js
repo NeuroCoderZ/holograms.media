@@ -166,6 +166,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   //   console.error('Ошибка инициализации legacy bridge:', error);
   // }
 
+  // Финальный вызов для установки начального состояния макета
+  console.log('[main.js] Выполнение первоначальной настройки макета.');
+  updateHologramLayout(false); // Вызываем с `handsVisible = false`
+
   // Hologram rotation logic
   const gridContainer = document.getElementById('grid-container');
   if (gridContainer) {
