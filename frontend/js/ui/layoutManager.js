@@ -52,13 +52,9 @@ function calculateInitialScale(containerWidth, containerHeight) {
  * @param {boolean} handsVisible - Флаг, указывающий, видны ли руки MediaPipe.
  */
 export function updateHologramLayout(handsVisible) {
-  if (!state.uiElements?.gridContainer) {
-    console.warn('[LayoutManager] Early exit: gridContainer not initialized');
-    return;
-  }
   if (!state.uiElements?.gridContainer || !state.uiElements?.gestureArea) {
-    console.warn('[LayoutManager] Пропуск обновления: UI-элементы еще не готовы.');
-    return;
+      console.warn('[LayoutManager] Пропуск: UI элементы не готовы.');
+      return;
   }
   console.log('[LayoutManager] updateHologramLayout called. Hands visible:', handsVisible, 'state.uiElements:', state.uiElements);
 
