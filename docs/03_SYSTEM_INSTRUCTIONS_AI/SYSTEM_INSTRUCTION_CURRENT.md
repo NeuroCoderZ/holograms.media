@@ -39,6 +39,7 @@ D. Развертывание:
 - `docs/05_PLANNING_AND_TASKS/ULTIMATE_ROAD_TO_MVP_JUNE_9.md` (Текущий операционный план)
 - `docs/01_ARCHITECTURE/SYSTEM_ARCHITECTURE.md` (Архитектура потоков данных и взаимодействия)
 - `docs/01_ARCHITECTURE/MODULE_CATALOG.md` (Каталог модулей фронтенда)
+- `docs/02_RESEARCH/TRIA_CONCEPT.md` (Концепция Триа, "медленное обучение", AZR и взаимодействие ботов)
 - `docs/02_RESEARCH/DEEP_RESEARCH_SYSTEM_BLUEPRINT_RU.md` (DRSB, долгосрочное видение, включая концепции FUTUREARCHITECTURE)
 - `docs/00_OVERVIEW_AND_CONTEXT/ROADMAP.md` (Дорожная карта)
 - `docs/99_ARCHIVE/development_logs/tria_memory_buffer.md` (Лог итераций разработки)
@@ -61,7 +62,7 @@ I. Введение: Обзор, Цели и Философия Проекта
 -   **Файловое хранилище**: **Cloudflare R2** (S3-совместимое), доступ через API (например, `boto3`) из Koyeb, для хранения "чанков".
 -   **Фронтенд**: Статическое веб-приложение на **Firebase Hosting**, обеспечивающее пользовательский интерфейс.
 -   **Аутентификация**: **Firebase Authentication** для управления пользователями.
--   **AI "Триа" (текущий этап)**: Логика реализована на **FastAPI эндпоинтах** и использует API ключи для доступа к LLM (например, Mistral).
+-   **AI "Триа" (текущий этап)**: Логика реализована на **FastAPI эндпоинтах** и использует API ключи для доступа к LLM (например, Mistral). Внутренне, Триа развивается как сеть специализированных ботов (см. `backend/tria_bots/`), включая `GestureBot`, `MemoryBot`, `LearningBot` (с компонентами AZR: `TaskGenerator`, `TaskSolver`, `azr_evaluator`), оркестрируемых `CoordinationService`. Поддерживающие сервисы, такие как `NLPService` (см. `backend/services/nlp_service.py`), также разрабатываются для расширения возможностей Триа.
 
 Ключевая идея проекта – преодоление симуляционно-реального разрыва в обучении AI "Триа"...
 
@@ -165,7 +166,13 @@ II. Архитектура и Текущее Состояние
 - `frontend/js/services/firebaseStorageService.js`: ... (без изменений по сравнению с v32.0++)
 
 2.4. AI "Триа" (Текущий этап и Перспективы, адаптировано)
-Бэкенд-логика Триа для текущего этапа: Реализована в **FastAPI эндпоинтах на Koyeb**...
+Бэкенд-логика Триа для текущего этапа: Реализована в **FastAPI эндпоинтах на Koyeb**. Эта логика включает в себя работу сети ботов Триа, как описано в `docs/02_RESEARCH/TRIA_CONCEPT.md` и `docs/01_ARCHITECTURE/SYSTEM_ARCHITECTURE.md`. Ключевые компоненты включают:
+    - `CoordinationService.py`: Оркестрирует поток данных и команд между другими ботами.
+    - `GestureBot.py`: Обрабатывает жестовый ввод.
+    - `MemoryBot.py`: Управляет доступом к базе знаний и памяти Триа.
+    - `LearningBot.py`: Отвечает за обучение и адаптацию системы, включая механизмы AZR (`TaskGenerator.py`, `TaskSolver.py`, `azr_evaluator.py`) для автономного улучшения.
+    - `NLPService.py`: Предоставляет услуги по обработке естественного языка.
+    Эти компоненты находятся в директориях `backend/tria_bots/` и `backend/services/`.
 Взаимодействие с Данными: Триа (через **FastAPI на Koyeb**) читает и записывает данные в Neon.tech PostgreSQL и **Cloudflare R2**.
 
 2.6. Целевая Архитектура (Высокоуровневая. Перспектива текущего стека)
