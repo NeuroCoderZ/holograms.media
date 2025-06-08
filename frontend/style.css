@@ -739,6 +739,23 @@ body {
   letter-spacing: 3px;
 }
 
+/* Styles for highlighting elements and dimming the background */
+body.dimmed > *:not(.highlight) {
+    opacity: 0.25;
+    pointer-events: none;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.highlight {
+    opacity: 1 !important; /* Ensure highlighted element is fully visible */
+    pointer-events: auto !important; /* Ensure highlighted element is interactive */
+    box-shadow: 0 0 15px 5px rgba(0, 255, 132, 0.7); /* Greenish glow */
+    border-radius: 50%; /* Make the highlight area circular - adjust if needed */
+    transition: box-shadow 0.3s ease-in-out;
+    position: relative; /* For z-index to take effect */
+    z-index: 9999; /* High z-index to be on top */
+}
+
 /* Styles for the new Avatar/GitHub group and separator in the left panel */
 .left-panel-icon-group {
   grid-column: 1 / -1; /* Make the group span both columns of the parent grid */
