@@ -138,7 +138,7 @@ export class HologramRenderer {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineBasicMaterial({
         color, 
-        opacity: 0.1, 
+        opacity: 0.001,
         transparent: true,
         // Disable depth testing/writing to ensure grid lines are always visible
         // and don't interfere with objects drawn at the same Z-depth.
