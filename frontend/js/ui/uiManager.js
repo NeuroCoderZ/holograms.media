@@ -6,7 +6,7 @@ import { auth } from '../core/firebaseInit.js';
 // import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js'; // Old Firebase Storage upload
 import { uploadFileToR2 } from '../services/firebaseStorageService.js'; // New R2 upload via presigned URL
 // import { uploadChunk } from '../services/apiService.js'; // Old direct backend upload, now replaced by R2 presigned
-import { initializePwaInstall, handleInstallButtonClick } from '../core/pwaInstall.js';
+import { initializePwaInstall } from '../core/pwaInstall.js';
 import { setupChunkUpload } from '../services/firebaseStorageService.js'; // Import for chunk upload
 // panelManager is used to switch visible content panels in the right sidebar.
 // import PanelManager from './panelManager.js'; // PanelManager is now globally managed via state.panelManager
@@ -362,13 +362,11 @@ export function initializeMainUI() {
 
   // --- PWA Install Button ---
   // addButtonListener(uiElements.buttons.installPwaButton, null, "Install PWA button clicked - PWA installation logic to be implemented.");
-  if (uiElements.buttons.installPwaButton) {
-    uiElements.buttons.installPwaButton.addEventListener('click', () => {
-      handleInstallButtonClick(); // Call the handler from pwaInstall.js
-    });
-  } else {
-    console.warn("Install PWA button element not found.");
-  }
+  // The event listener for installPwaButton has been removed as per the task.
+  // The PWA installation is typically triggered by the browser's own UI prompts
+  // or by a button managed by initializePwaInstall itself if it decides to show one.
+  // The handleInstallButtonClick was likely called directly by this listener,
+  // but initializePwaInstall should handle its own UI interactions.
 
   // --- Chat Panel Button ---
   // This button's primary role is to open the chat interface.
