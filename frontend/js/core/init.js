@@ -185,6 +185,7 @@ export async function initCore() {
 
   // Initialize PanelManager
   state.panelManager = new PanelManager();
+  state.panelManager.initializePanelManager(); // Key step for immediate initialization
   console.log('PanelManager initialized and stored in state.');
 
   // Instantiate MicrophoneManager
