@@ -1219,5 +1219,313 @@ textarea:focus:not(:placeholder-shown) {
   letter-spacing: 3px;
 }
 
+/* --- Left Panel Restructure Styles --- */
+.panel.left-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center groups horizontally */
+  padding-top: var(--spacing-md); /* Add some padding at the top */
+  padding-bottom: var(--spacing-md); /* Add some padding at the bottom */
+  gap: var(--spacing-sm); /* Space between direct children (groups and HRs) */
+}
+
+.left-panel-group {
+  display: flex;
+  flex-direction: column; /* Stack buttons within groups */
+  align-items: center; /* Center buttons horizontally within groups */
+  width: 100%; /* Groups take full width of panel */
+  gap: var(--button-spacing); /* Space between buttons in a group */
+}
+
+.left-panel-group.top-group .panel-button,
+.left-panel-group.top-group .social-login-button {
+  width: 90%; /* Make top group buttons take most of the panel width */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.left-panel-group.central-block {
+  display: grid; /* Revert to grid for central block for 2-column layout */
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--button-spacing);
+  width: 100%; /* Ensure it uses the panel width */
+  padding-left: var(--button-spacing); /* Align with panel padding */
+  padding-right: var(--button-spacing);
+}
+
+.panel-button {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center content (icon + text) */
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin: 0; /* Remove default margins if any, rely on gap */
+  width: 100%; /* Default to full width for stacking buttons */
+  text-align: left;
+  background-color: var(--input-bg); /* A slightly different bg for panel buttons */
+  color: var(--color-primary);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-button);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.panel-button i {
+  margin-right: var(--spacing-sm); /* Space between icon and text */
+  font-size: calc(var(--icon-size) * 0.8); /* Slightly smaller icons in text buttons */
+  width: calc(var(--icon-size) * 0.8); /* Ensure icon takes up defined space */
+  text-align: center;
+}
+
+.panel-button .button-text {
+  flex-grow: 1; /* Allow text to take remaining space */
+}
+
+.panel-button:hover {
+  background-color: var(--button-hover-bg);
+  color: var(--color-icon-active);
+}
+
+/* Specific styling for control-buttons when they are also panel-buttons (central block) */
+.left-panel-group.central-block .control-button.panel-button {
+  width: var(--button-size); /* Override to keep original square size for icon-only buttons */
+  height: var(--button-size);
+  padding: 0; /* Reset padding for icon-only buttons */
+  font-size: calc(var(--button-size) * 0.6); /* Reset font size for icon-only buttons */
+  border: none; /* Remove border from central block control buttons if desired */
+  background-color: transparent; /* Make them like original control buttons */
+}
+
+.left-panel-group.central-block .control-button.panel-button:hover {
+  background-color: var(--button-hover-bg); /* Keep standard hover */
+}
+
+.left-panel-group.central-block .control-button.panel-button svg {
+   width: var(--icon-size);
+   height: var(--icon-size);
+}
 
 
+.social-login-button {
+  /* General social login styles if any */
+}
+
+.google-login-button {
+  background-color: #4285F4; /* Google Blue */
+  color: white;
+  border-color: #4285F4;
+}
+
+.google-login-button:hover {
+  background-color: #357ae8;
+  border-color: #357ae8;
+}
+
+.panel-hr {
+  width: 90%;
+  border: none;
+  height: 1px;
+  background-color: var(--panel-border);
+  margin-top: var(--spacing-sm); /* Use theme spacing */
+  margin-bottom: var(--spacing-sm);
+}
+
+.left-panel-group.bottom-group {
+  flex-direction: row; /* Icons side-by-side */
+  justify-content: space-around; /* Distribute icons evenly */
+  padding: 0 var(--spacing-md); /* Add some padding to the sides of the group */
+}
+
+.panel-icon-link {
+  color: var(--color-icon);
+  font-size: calc(var(--icon-size) * 1.2); /* Larger icons for bottom links */
+  text-decoration: none;
+  transition: color 0.2s ease;
+  padding: var(--spacing-xs);
+}
+
+.panel-icon-link:hover {
+  color: var(--color-icon-active);
+}
+
+/* Ensure avatar button is more like an icon button if it's just an icon */
+#avatarButton.panel-button {
+    /* If avatar is just an icon, make it square like other control buttons */
+    /* width: var(--button-size); */ /* Keep it wide if it has text "Avatar" */
+    /* padding: 0; */
+    /* justify-content: center; */
+}
+#avatarButton.panel-button .button-text {
+  /* display: none; /* Uncomment if Avatar button should be icon-only */
+}
+
+
+/* --- End Left Panel Restructure Styles --- */
+
+/* Utility class for initial hiding to prevent FOUC */
+.u-initially-hidden {
+  opacity: 0 !important;
+}
+
+/* Fade-in animation on page load */
+@keyframes fadeInEffect {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.u-fade-in-on-load {
+  /* opacity: 0; /* Initial state set by u-initially-hidden or directly if preferred */
+  /* transform: translateY(20px); /* Initial state for transform */
+  animation-name: fadeInEffect;
+  animation-duration: 1s;
+  animation-fill-mode: forwards;
+  animation-timing-function: ease-out;
+}
+
+/* --- Interactive Tour Styles --- */
+body.dimmed-for-tour > *:not(.highlighted-element) {
+  opacity: 0.25 !important; /* Ensure this overrides other opacity styles */
+  pointer-events: none !important; /* Prevent interaction with non-highlighted elements */
+  transition: opacity 0.5s ease-in-out;
+}
+
+/* If using a separate overlay div instead of body class: */
+/*
+.dimmed-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9990; /* High z-index, but lower than highlighted elements */
+}
+*/
+
+@keyframes pulseHighlight {
+  0% {
+    box-shadow: 0 0 15px 5px rgba(255, 255, 0, 0.7); /* Yellow */
+    outline: 2px solid rgba(255, 255, 0, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 25px 10px rgba(255, 215, 0, 0.9); /* Gold */
+    outline: 3px solid rgba(255, 215, 0, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 15px 5px rgba(255, 255, 0, 0.7); /* Yellow */
+    outline: 2px solid rgba(255, 255, 0, 0.7);
+  }
+}
+
+.highlighted-element {
+  position: relative; /* Needed for z-index to work reliably */
+  z-index: 9999 !important; /* Ensure highlighted element is on top */
+  opacity: 1 !important; /* Ensure highlighted element is fully visible */
+  pointer-events: auto !important; /* Allow interaction with highlighted element */
+  border-radius: 5px; /* Optional: adds rounded corners to the highlight effect */
+  animation: pulseHighlight 1.5s infinite ease-in-out;
+  transition: box-shadow 0.3s ease-in-out, outline 0.3s ease-in-out; /* Smooth transitions if animation is removed/paused */
+}
+/* --- End Interactive Tour Styles --- */
+
+/* --- PWA Install Button Styles --- */
+.pwa-install-button {
+  display: none; /* Hidden by default */
+}
+
+.pwa-install-button.visible {
+  display: flex; /* Or 'block', or 'grid', depending on how .control-button.panel-button is styled */
+  /* Add any other specific styles for when it's visible if needed */
+}
+/* --- End PWA Install Button Styles --- */
+
+/* --- Consent Modal Styles --- */
+/* General .modal style is assumed to be present from previous tasks (provides overlay, centering) */
+/* If not, basic .modal styles would be needed here:
+.modal {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
+*/
+
+#consent-modal .modal-content.consent-modal-content { /* More specific selector */
+  background-color: var(--color-pure-black, #0d0d0d); /* Dark background */
+  color: var(--color-primary, #e0e0e0); /* Light text */
+  padding: var(--spacing-lg, 25px);
+  border-radius: var(--border-radius-md, 8px);
+  border: 1px solid var(--panel-border, #333);
+  text-align: left; /* Align text to left for readability */
+  max-width: 500px; /* Limit width */
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#consent-modal h2 {
+  font-size: var(--font-size-large, 1.5em);
+  margin-top: 0;
+  margin-bottom: var(--spacing-md, 15px);
+  color: var(--color-primary, #fff);
+  text-align: center;
+}
+
+#consent-modal p {
+  font-size: var(--font-size-base, 1em);
+  line-height: 1.6;
+  margin-bottom: var(--spacing-lg, 20px);
+}
+
+#consent-modal .consent-checkbox-container {
+  display: flex;
+  align-items: center; /* Vertically align checkbox and label */
+  margin-bottom: var(--spacing-lg, 20px);
+  font-size: var(--font-size-small, 0.9em);
+}
+
+#consent-modal input[type="checkbox"]#consent-checkbox {
+  margin-right: var(--spacing-sm, 10px);
+  width: auto; /* Override default textarea/input width if any */
+  accent-color: var(--color-green-100, #00cc00); /* Style the checkbox color */
+  min-height: auto; /* Override default textarea/input min-height if any */
+}
+
+#consent-modal label[for="consent-checkbox"] {
+  color: var(--color-primary, #ccc); /* Slightly lighter label text */
+  cursor: pointer;
+}
+
+#consent-modal button#consent-accept-btn {
+  display: block; /* Make button take full width of its container or center it */
+  width: 100%;
+  padding: var(--spacing-md, 12px) var(--spacing-lg, 20px);
+  font-size: var(--font-size-button, 1em);
+  background-color: var(--button-action-bg, #007bff);
+  color: var(--color-white-100, #fff);
+  border: none;
+  border-radius: var(--border-radius-md, 5px);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+#consent-modal button#consent-accept-btn:disabled {
+  background-color: var(--color-icon-disabled, #555); /* Darker, disabled look */
+  color: var(--color-black-66, #888);
+  cursor: not-allowed;
+}
+
+#consent-modal button#consent-accept-btn:not(:disabled):hover {
+  background-color: var(--button-action-hover, #0056b3);
+}
+/* --- End Consent Modal Styles --- */
