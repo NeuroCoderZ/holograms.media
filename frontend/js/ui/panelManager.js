@@ -8,6 +8,7 @@ class PanelManager {
         this.leftPanelElement = null;
         this.rightPanelElement = null;
         this.togglePanelsButtonElement = null;
+        // this.arePanelsVisible = true; // Not strictly needed if we derive state from classList
 
         // Specific content panels within the right panel
         this.contentPanels = {
@@ -41,25 +42,33 @@ class PanelManager {
             return;
         }
 
-        const savedState = localStorage.getItem('panelsHidden');
+        // Default to visible
+        this.leftPanelElement.classList.remove('hidden');
+        this.rightPanelElement.classList.remove('hidden');
+        this.togglePanelsButtonElement.classList.remove('show-mode'); // Button shows "click to hide"
+        // this.arePanelsVisible = true;
+        console.log('Panels set to visible by default.');
 
-        if (savedState === 'true') {
-            // Panels should be hidden
-            this.leftPanelElement.classList.add('hidden');
-            this.rightPanelElement.classList.add('hidden');
-            // Button should have 'show-mode' (consistent with toggleMainPanels: panels are hidden, button shows "click to show")
-            this.togglePanelsButtonElement.classList.add('show-mode');
-        } else {
-            // Panels should be visible
-            this.leftPanelElement.classList.remove('hidden');
-            this.rightPanelElement.classList.remove('hidden');
-            // Button should NOT have 'show-mode' (consistent with toggleMainPanels: panels are visible, button shows "click to hide")
-            this.togglePanelsButtonElement.classList.remove('show-mode');
+        // Check localStorage to override default visibility
+        try {
+            const panelsHiddenStored = localStorage.getItem('panelsHidden');
+            if (panelsHiddenStored === 'true') {
+                this.leftPanelElement.classList.add('hidden');
+                this.rightPanelElement.classList.add('hidden');
+                this.togglePanelsButtonElement.classList.add('show-mode'); // Button shows "click to show"
+                // this.arePanelsVisible = false;
+                console.log('Panels are hidden based on localStorage setting.');
+            } else {
+                console.log('Panels remain visible (localStorage setting is not "true" or not set).');
+            }
+        } catch (e) {
+            console.error('Error accessing localStorage for panel visibility:', e);
+            // Keep panels visible (the default) if localStorage access fails
         }
         
         // Dispatch a resize event to ensure layouts adjust correctly after panel state is set.
         setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-        console.log(`Состояние основных панелей инициализировано (видимы по умолчанию или восстановлено из localStorage)`);
+        console.log(`Состояние основных панелей инициализировано.`);
     }
 
     /**
@@ -75,7 +84,13 @@ class PanelManager {
         this.leftPanelElement.classList.toggle('hidden', willBeHidden);
         this.rightPanelElement.classList.toggle('hidden', willBeHidden);
         this.togglePanelsButtonElement.classList.toggle('show-mode', willBeHidden);
-        localStorage.setItem('panelsHidden', willBeHidden.toString());
+        // this.arePanelsVisible = !willBeHidden;
+
+        try {
+            localStorage.setItem('panelsHidden', willBeHidden.toString());
+        } catch (e) {
+            console.error('Error saving panel visibility to localStorage:', e);
+        }
 
         // Dispatch uiStateChanged event
         const event = new CustomEvent('uiStateChanged', {
@@ -216,7 +231,7 @@ class PanelManager {
     /**
      * Closes all managed content panels.
      */
-    closeAllContentPanels() {
+    closeAllContentPAnels() {
         for (const key in this.contentPanels) {
             if (this.contentPanels[key]) {
                 this.contentPanels[key].style.display = 'none';
