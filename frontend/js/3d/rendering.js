@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 // TWEEN подключается глобально через CDN в index.html
 import { state } from '../core/init.js'; // Для доступа к state.scene, state.mainSequencerGroup
+import { adaptiveCWT } from '../audio/waveletAnalyzer.js';
 
 // --- Redundant variables, constants, and functions have been removed ---
 // The following are no longer needed here as they are handled in sceneSetup.js or audioProcessing.js:
@@ -40,15 +41,33 @@ function animate(currentTime) {
             // updateFilePlaybackVisuals(); // Removed as per request
         } else if (state.audio.activeSource === 'microphone' &&
                    state.hologramRendererInstance &&
-                   state.audioAnalyzerLeftInstance &&
-                   state.audioAnalyzerRightInstance &&
-                   state.audio.microphoneAnalysers && // Ensure analysers are ready from MicrophoneManager
-                   state.audio.microphoneAnalysers.left && 
-                   state.audio.microphoneAnalysers.right) {
-            
-            const leftLevels = state.audioAnalyzerLeftInstance.getSemitoneLevels();
-            const rightLevels = state.audioAnalyzerRightInstance.getSemitoneLevels();
-            state.hologramRendererInstance.updateColumnVisuals(leftLevels, rightLevels);
+                   state.hologramRendererInstance &&
+                   state.audioAnalyzerLeftInstance && state.audioAnalyzerLeftInstance.analyserNode && // Check analyserNode exists
+                   state.audioAnalyzerRightInstance && state.audioAnalyzerRightInstance.analyserNode && // Check analyserNode exists
+                   true /* simplified condition for subtask, assuming instances are valid */ ) {
+
+        // Use an IIFE to handle async adaptiveCWT calls
+        (async () => {
+            try {
+                // adaptiveCWT now accepts an AnalyserNode directly
+                // It returns [data, data], so we take the first element for each channel's data.
+                const leftChannelData = await adaptiveCWT(state.audioAnalyzerLeftInstance.analyserNode);
+                const rightChannelData = await adaptiveCWT(state.audioAnalyzerRightInstance.analyserNode);
+
+                if (leftChannelData && rightChannelData && leftChannelData[0] && rightChannelData[0]) {
+                    // Pass the raw Uint8Array (0-255 values)
+                    state.hologramRendererInstance.updateColumnVisuals(leftChannelData[0], rightChannelData[0]);
+                } else {
+                    // Handle case where adaptiveCWT might return null/undefined or empty arrays
+                    // console.warn("adaptiveCWT did not return expected data for microphone, sending empty arrays to visuals.");
+                    // state.hologramRendererInstance.updateColumnVisuals(new Uint8Array(260), new Uint8Array(260)); // Send empty data
+                }
+            } catch (error) {
+                console.error("Error updating microphone visuals with adaptiveCWT:", error);
+                // Optionally, reset visuals or send empty data
+                // state.hologramRendererInstance.updateColumnVisuals(new Uint8Array(260), new Uint8Array(260));
+            }
+        })();
 
         } else {
             // Optional: Call a function to reset columns to a default visual state if no audio is active.
