@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT UNIQUE,        -- User's email, should be unique.
     display_name TEXT,        -- Optional: User's display name.
     photo_url TEXT,           -- Optional: URL to user's photo.
+    role VARCHAR(50) DEFAULT 'user' NOT NULL CHECK (role IN ('admin', 'core_developer', 'beta_tester', 'user')), -- User's role with check constraint
     -- Any other relevant user profile fields can be added here
     created_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc'),
     updated_at TIMESTAMPTZ DEFAULT (now() AT TIME ZONE 'utc')
