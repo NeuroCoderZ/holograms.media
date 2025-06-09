@@ -32,6 +32,7 @@ class PanelManager {
     /**
      * Initializes state for main left/right panels (visibility/скрытие)
      */
+    // Новая, упрощенная версия функции
     initializeMainPanelState() {
         this.leftPanelElement = document.querySelector('.panel.left-panel');
         this.rightPanelElement = document.querySelector('.panel.right-panel');
@@ -42,33 +43,20 @@ class PanelManager {
             return;
         }
 
-        // Default to visible
+        // Принудительно делаем панели видимыми при каждой загрузке
         this.leftPanelElement.classList.remove('hidden');
         this.rightPanelElement.classList.remove('hidden');
-        this.togglePanelsButtonElement.classList.remove('show-mode'); // Button shows "click to hide"
-        // this.arePanelsVisible = true;
-        console.log('Panels set to visible by default.');
+        this.togglePanelsButtonElement.classList.remove('show-mode');
 
-        // Check localStorage to override default visibility
-        try {
-            const panelsHiddenStored = localStorage.getItem('panelsHidden');
-            if (panelsHiddenStored === 'true') {
-                this.leftPanelElement.classList.add('hidden');
-                this.rightPanelElement.classList.add('hidden');
-                this.togglePanelsButtonElement.classList.add('show-mode'); // Button shows "click to show"
-                // this.arePanelsVisible = false;
-                console.log('Panels are hidden based on localStorage setting.');
-            } else {
-                console.log('Panels remain visible (localStorage setting is not "true" or not set).');
-            }
-        } catch (e) {
-            console.error('Error accessing localStorage for panel visibility:', e);
-            // Keep panels visible (the default) if localStorage access fails
-        }
+        // Очищаем старое сохраненное состояние, чтобы оно нам не мешало
+        localStorage.removeItem('panelsHidden');
+
+        console.log('Панели принудительно показаны при загрузке.');
         
         // Dispatch a resize event to ensure layouts adjust correctly after panel state is set.
+        // This might still be useful depending on how layout adjustments are handled elsewhere
         setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-        console.log(`Состояние основных панелей инициализировано.`);
+        // console.log(`Состояние основных панелей инициализировано.`); // Original log, can be kept or removed
     }
 
     /**
