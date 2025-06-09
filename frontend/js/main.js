@@ -24,6 +24,7 @@ import {
 console.log('Firebase services imported in main.js (Task 3/3 Complete):', { firebaseApp, firebaseAuth, firebaseStorage, firebaseFirestore });
 
 import { setAuthDOMElements, initAuthObserver, handleTokenForBackend } from './core/auth.js';
+import { initializeConsentManager } from './core/consentManager.js'; // Import Consent Manager
 
 // Импорт ядра
 import { initCore, state } from './core/init.js'; // Adjusted path, and import state
@@ -69,6 +70,7 @@ from './core/domEventHandlers.js'; // Импорт модуля обработч
 import { initializeResizeHandler } 
 from './core/resizeHandler.js'; // Импорт обработчика изменения размера окна
 import { initializeHammerGestures } from './core/gestures.js'; // Added import
+import { initializePwaInstall } from './core/pwaInstall.js'; // Added import for PWA Install
 
 
 // Импорт моста для обратной совместимости (закомментирован отсутствующий)
@@ -85,6 +87,11 @@ const rotationLimit = Math.PI / 2; // 90 degrees in radians
 // Инициализация приложения при загрузке DOM
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Инициализация приложения...');
+
+  // 0. Initialize and await user consent
+  // This should be one of the very first things to run
+  await initializeConsentManager();
+  console.log('User consent check passed/handled.');
 
   // 1. Инициализируем ядро приложения (создает state, scene, etc.)
   await initCore(); // Made async and awaited
@@ -144,12 +151,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeResizeHandler(); // This will set up the resize listener
   setupEventListeners();
   initializeHammerGestures(); // Added call
+  initializePwaInstall(); // Initialize PWA installation prompt logic
   
   // Initial layout update (after scene and panels are likely initialized)
   updateHologramLayout(false); // Call with handsVisible = false initially
 
   // 9. Запускаем анимационный цикл
   animate();
+
+  // Apply fade-in animation to specified UI elements
+  const elementsToFadeIn = [
+    '.panel.left-panel',
+    '.panel.right-panel',
+    '.main-area',
+    '#togglePanelsButton'
+  ];
+
+  setTimeout(() => {
+    elementsToFadeIn.forEach(selector => {
+      const element = document.querySelector(selector);
+      if (element) {
+        element.classList.remove('u-initially-hidden');
+        element.classList.add('u-fade-in-on-load');
+      } else {
+        console.warn(`Element with selector "${selector}" not found for fade-in animation.`);
+      }
+    });
+  }, 100); // Small delay to ensure initial styles are applied and prevent FOUC
 
   console.log('Инициализация завершена (с отключенными отсутствующими модулями)!');
 
