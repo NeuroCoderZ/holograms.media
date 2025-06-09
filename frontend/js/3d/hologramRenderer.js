@@ -223,7 +223,7 @@ export class HologramRenderer {
 
     // Create the basic box geometry for the column. Height and depth are initially fixed.
     const geometry = new THREE.BoxGeometry(width, 2, 1); // width, height, depth
-    const material = new THREE.MeshBasicMaterial({ color: semitone.color }); // Color from semitone data
+    const material = new THREE.MeshStandardMaterial({ color: semitone.color }); // Color from semitone data
     const columnMesh = new THREE.Mesh(geometry, material);
 
     // Position the mesh within its parent group.
