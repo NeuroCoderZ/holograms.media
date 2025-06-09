@@ -1,86 +1,104 @@
+#!/usr/bin/env python3
+
 import argparse
 import asyncio
-import asyncpg
 import os
+import logging
 import sys
-from datetime import datetime
+from datetime import datetime # For updated_at
 
 # Add the backend directory to sys.path
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-# Assuming scripts/ is directly under the project root, so BASE_DIR is project root
-BASE_DIR = os.path.dirname(SCRIPT_DIR)
-# Construct path to backend directory and add to sys.path
+BASE_DIR = os.path.dirname(SCRIPT_DIR) # Assuming scripts/ is under project root
 BACKEND_DIR = os.path.join(BASE_DIR, 'backend')
 sys.path.insert(0, BACKEND_DIR)
 
-# Setup basic logging for the script
+# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 try:
-    from core.db.pg_connector import DB_SETTINGS
-    # Attempt to import USERS_TABLE_NAME, default if not found
-    try:
-        from core.db.schema import USERS_TABLE_NAME
-    except ImportError:
-        logger.info("Could not import USERS_TABLE_NAME from core.db.schema, using default 'users'.")
-        USERS_TABLE_NAME = 'users' # Default table name
+    from core.db.pg_connector import get_db_connection
+    # load_dotenv will be called by pg_connector or by this script if needed
+    from dotenv import load_dotenv
 except ImportError as e:
     logger.error(f"Error importing backend modules: {e}")
     logger.error(f"Current sys.path: {sys.path}")
     logger.error(f"Attempted to add BACKEND_DIR: {BACKEND_DIR}")
+    logger.error("Please ensure the script is run from the project's root directory or that PYTHONPATH is set correctly.")
     sys.exit(1)
 
+# --- IMPORTANT DATABASE SCHEMA PREREQUISITE ---
+# This script assumes that the 'users' table in your database has a column named 'role' (e.g., type TEXT).
+# If this column does not exist, you MUST add it to the schema before running this script.
+# Example SQL to add the column (adjust type/constraints as needed):
+# ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user';
+#
+# Also, ensure the UserInDB Pydantic model in `backend/core/models/user_models.py`
+# reflects this 'role' field if you intend to use it consistently across the backend.
+# The `user_models.py` already defines `role` in `UserBase`, so ensure `UserInDBBase`
+# (or a new model for DB representation if `UserBase` is only for creation/public view) includes it.
+# ---------------------------------------------
+
+USERS_TABLE_NAME = 'users' # Default and correct table name
+
 async def set_user_role_in_db(email: str, new_role: str):
+    """
+    Sets the role for a user identified by their email.
+    Also updates the 'updated_at' timestamp.
+    """
+    # Ensure .env is loaded for NEON_DATABASE_URL if not already by pg_connector
+    load_dotenv(os.path.join(BASE_DIR, '.env'))
+
     conn = None
     try:
-        if DB_SETTINGS is None:
-            logger.error("DB_SETTINGS is not configured. Please check your environment or pg_connector.py.")
+        conn = await get_db_connection()
+        if conn is None:
+            logger.error("Failed to establish database connection. NEON_DATABASE_URL might be missing or invalid in your .env file or environment.")
             return
 
-        # Adapt for Pydantic v1 (dict()) vs v2 (model_dump())
-        if hasattr(DB_SETTINGS, 'model_dump'):
-            conn_params = DB_SETTINGS.model_dump()
-        elif hasattr(DB_SETTINGS, 'dict'):
-            conn_params = DB_SETTINGS.dict()
-        elif isinstance(DB_SETTINGS, dict):
-            conn_params = DB_SETTINGS
-        else:
-            logger.error("DB_SETTINGS is not a recognized Pydantic model or dictionary.")
-            return
+        allowed_roles = ["user", "admin", "core_developer", "beta_tester"]
+        if new_role not in allowed_roles:
+            logger.warning(f"Warning: Role '{new_role}' is not in the predefined list: {allowed_roles}. Proceeding, but ensure this role is handled by your application logic (e.g., Pydantic models).")
 
-        logger.info(f"Connecting to database '{conn_params.get('database')}' on host '{conn_params.get('host')}':'{conn_params.get('port')}' with user '{conn_params.get('user')}'...")
-        conn = await asyncpg.connect(
-            user=conn_params.get('user'),
-            password=conn_params.get('password'),
-            database=conn_params.get('database'),
-            host=conn_params.get('host'),
-            port=conn_params.get('port')
+        # Check if user exists first
+        user_exists_check = await conn.fetchrow(
+            f"SELECT user_id FROM {USERS_TABLE_NAME} WHERE email = $1", email
         )
-        logger.info("Successfully connected to the database.")
-
-        user_exists_check = await conn.fetchrow(f"SELECT firebase_uid FROM {USERS_TABLE_NAME} WHERE email = $1", email)
 
         if not user_exists_check:
-            logger.error(f"User with email '{email}' not found in table '{USERS_TABLE_NAME}'.")
+            logger.error(f"User with email '{email}' not found in table '{USERS_TABLE_NAME}'. No update performed.")
             return
 
-        logger.info(f"Updating role for user '{email}' (Firebase UID: {user_exists_check['firebase_uid']}) to '{new_role}'...")
-        updated_user_uid = await conn.fetchval(
-            f"UPDATE {USERS_TABLE_NAME} SET role = $1, updated_at = $2 WHERE email = $3 RETURNING firebase_uid",
-            new_role, datetime.utcnow(), email
-        )
+        logger.info(f"User '{email}' found (User ID: {user_exists_check['user_id']}). Attempting to set role to '{new_role}'...")
 
-        if updated_user_uid:
-            logger.info(f"Successfully updated role for user '{email}' (UID: {updated_user_uid}) to '{new_role}'.")
+        # Update role and updated_at timestamp
+        # IMPORTANT: Assumes 'role' and 'updated_at' columns exist.
+        # The schema has an automatic trigger for updated_at, but setting it explicitly is also fine.
+        update_query = f"UPDATE {USERS_TABLE_NAME} SET role = $1, updated_at = $2 WHERE email = $3"
+
+        result = await conn.execute(update_query, new_role, datetime.utcnow(), email)
+
+        if result and result.startswith("UPDATE"):
+            rows_affected_str = result.split(" ")[1]
+            if rows_affected_str.isdigit():
+                rows_affected = int(rows_affected_str)
+                if rows_affected > 0:
+                    logger.info(f"Successfully updated role for user '{email}' to '{new_role}'.")
+                else:
+                    # This could happen if the user was deleted between the check and update,
+                    # or if the role was already the new_role and updated_at trigger didn't count as an update
+                    # for the row count in some DB configurations (though with explicit set it should).
+                    logger.warning(f"User '{email}' found, but role was not updated. The role might already be '{new_role}', or an issue occurred.")
+            else:
+                logger.error(f"Unexpected result from database update: {result}. Could not determine rows affected.")
         else:
-            # This case might occur if the role was already set to the new_role,
-            # and the UPDATE statement didn't change any rows, thus returning nothing.
-            # Or, more critically, if the user disappeared between the check and update.
-            logger.warning(f"Could not update role for user '{email}'. User may not exist, or the role was already '{new_role}'.")
+            logger.error(f"Failed to execute update or unexpected result: {result}")
 
+    except ValueError as ve:
+        logger.error(f"Configuration error: {ve}")
     except asyncpg.PostgresError as pg_err:
-        logger.error(f"Database error: {pg_err}")
+        logger.error(f"Database error: {pg_err}", exc_info=True)
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}", exc_info=True)
     finally:
@@ -88,88 +106,35 @@ async def set_user_role_in_db(email: str, new_role: str):
             await conn.close()
             logger.info("Database connection closed.")
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Set a user's role in the database.")
-    parser.add_argument("email", type=str, help="Email address of the user.")
-    allowed_roles = ['user', 'admin', 'core_developer', 'beta_tester']
-    parser.add_argument("role", type=str, choices=allowed_roles,
-                        help=f"New role for the user. Must be one of: {', '.join(allowed_roles)}")
+async def main():
+    parser = argparse.ArgumentParser(
+        description="Set the role for a user in the database. Requires NEON_DATABASE_URL to be set in .env or environment.",
+        epilog="Example: python scripts/set_user_role.py user@example.com admin"
+    )
+    parser.add_argument("email", type=str, help="The email address of the user.")
 
-    # Add optional arguments for database connection details, falling back to DB_SETTINGS
-    parser.add_argument("--db-user", type=str, help="Database user.")
-    parser.add_argument("--db-password", type=str, help="Database password.")
-    parser.add_argument("--db-database", type=str, help="Database name.")
-    parser.add_argument("--db-host", type=str, help="Database host.")
-    parser.add_argument("--db-port", type=int, help="Database port.")
+    # Role choices should align with Pydantic model if possible
+    # from backend.core.models.user_models import UserBase (cannot do top-level due to async context)
+    # For now, hardcode them, but ideally, they'd be dynamically sourced or from a shared config.
+    allowed_roles = ['user', 'admin', 'core_developer', 'beta_tester']
+    parser.add_argument(
+        "role",
+        type=str,
+        choices=allowed_roles,
+        help=f"The new role to assign. Must be one of: {', '.join(allowed_roles)}"
+    )
 
     args = parser.parse_args()
 
-    # Override DB_SETTINGS if command-line arguments are provided
-    # This is a simple override; a more robust solution might use a config object.
-    # For now, we'll directly modify a dictionary derived from DB_SETTINGS if args are present.
+    await set_user_role_in_db(args.email, args.role)
 
-    effective_db_settings = {}
-    if DB_SETTINGS:
-        if hasattr(DB_SETTINGS, 'model_dump'):
-            effective_db_settings = DB_SETTINGS.model_dump()
-        elif hasattr(DB_SETTINGS, 'dict'):
-            effective_db_settings = DB_SETTINGS.dict()
-        elif isinstance(DB_SETTINGS, dict):
-            effective_db_settings = DB_SETTINGS.copy() # Use a copy
-
-    if args.db_user: effective_db_settings['user'] = args.db_user
-    if args.db_password: effective_db_settings['password'] = args.db_password
-    if args.db_database: effective_db_settings['database'] = args.db_database
-    if args.db_host: effective_db_settings['host'] = args.db_host
-    if args.db_port: effective_db_settings['port'] = args.db_port
-
-    # Re-assign DB_SETTINGS to the potentially overridden version for this script run
-    # This is a bit of a hack; ideally, set_user_role_in_db would take db_params.
-    # For now, this keeps set_user_role_in_db simpler.
-    # A better way would be to pass a dictionary of connection parameters to set_user_role_in_db.
-    # For this specific subtask, I will modify set_user_role_in_db to accept connection_params.
-
-    # Let's redefine set_user_role_in_db slightly to accept db_params
-    # To avoid redefining the whole function in this thought block, I'll assume the original
-    # definition of set_user_role_in_db will be modified to accept `db_params`
-    # and use that instead of global DB_SETTINGS directly.
-    # The following call will reflect that:
-
-    # Original DB_SETTINGS will be used if no CLI args for DB are passed.
-    # If CLI args are passed, they update effective_db_settings which is then used.
-    # This means the global DB_SETTINGS is not modified, which is cleaner.
-
-    # Quick patch for the script to use effective_db_settings
-    # This avoids complex redefinition of set_user_role_in_db in this thought block
-    original_db_settings_obj = DB_SETTINGS
-
-    class TempDBSettings:
-        def __init__(self, settings_dict):
-            self.__dict__.update(settings_dict)
-
-        def model_dump(self): # Mock Pydantic v2
-            return self.__dict__
-
-        def dict(self): # Mock Pydantic v1
-            return self.__dict__
-
-    # If any CLI DB args were given, effective_db_settings will differ from original DB_SETTINGS.
-    # In that case, we use a temporary object that mimics DB_SETTINGS.
-    if args.db_user or args.db_password or args.db_database or args.db_host or args.db_port:
-        DB_SETTINGS_OVERRIDE = TempDBSettings(effective_db_settings)
-        # Temporarily replace global DB_SETTINGS for the call
-        # This is a workaround for the script's current structure.
-        # A cleaner way would be to pass db_params directly to set_user_role_in_db.
-        # Given the tool limitations, this direct modification within the script's main block is simpler.
-        async def run_with_override():
-            global DB_SETTINGS
-            original_global_db_settings = DB_SETTINGS
-            DB_SETTINGS = DB_SETTINGS_OVERRIDE
-            try:
-                await set_user_role_in_db(args.email, args.role)
-            finally:
-                DB_SETTINGS = original_global_db_settings # Restore
-        asyncio.run(run_with_override())
+if __name__ == "__main__":
+    # Ensure .env is loaded from the project root if it exists
+    dotenv_path = os.path.join(BASE_DIR, '.env')
+    if os.path.exists(dotenv_path):
+        load_dotenv(dotenv_path)
+        logger.info(f".env file loaded from {dotenv_path}")
     else:
-        # No DB overrides from CLI, use DB_SETTINGS as imported
-        asyncio.run(set_user_role_in_db(args.email, args.role))
+        logger.info(".env file not found at project root, relying on environment variables.")
+
+    asyncio.run(main())
