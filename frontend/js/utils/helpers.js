@@ -1,8 +1,15 @@
 // frontend/js/utils/helpers.js - Stub file
 
 export function debounce(func, wait) {
-  console.warn('debounce not implemented');
-  return func;
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 }
 
 export function throttle(func, limit) {
