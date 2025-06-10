@@ -1658,3 +1658,36 @@ body.dimmed-for-tour > *:not(.highlighted-element) {
       /* Например, кнопка "Меню" в углу */
   }
 }
+
+/* Styles for Adaptive Gesture Area */
+#gesture-area.landscape {
+    position: fixed;
+    bottom: -25vh; /* Hidden by default, to slide up */
+    left: 0;
+    width: 100%;
+    height: 25vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-top: 1px solid var(--color-black-33);
+    transition: bottom 0.3s ease-in-out;
+    z-index: 100; /* Ensure it's above grid-container but below critical UI like modals */
+}
+
+#gesture-area.landscape.visible {
+    bottom: 0; /* Slides into view */
+}
+
+#gesture-area.portrait {
+    position: relative;
+    display: block;
+    width: 100%;
+    margin-top: 5vh; /* Отступ 5% от высоты окна */
+    height: auto;    /* Высота будет рассчитана JS или flexbox */
+    min-height: 15vh; /* Adjusted to a slightly larger sensible minimum */
+    background-color: rgba(0, 0, 0, 0.6);
+    border-top: 1px solid var(--color-black-33);
+}
+
+/* If hands are detected in portrait mode, we might want a specific height */
+#gesture-area.portrait.hands-detected {
+    height: 25vh; /* Example: expand to a fixed height when hands are seen in portrait */
+}

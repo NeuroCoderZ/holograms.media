@@ -56,7 +56,7 @@ export const state = {
     isPlaying: false,
     pausedAt: 0,
     startOffset: 0,
-    activeSource: 'none',       // 'none', 'file', 'microphone'
+    activeSource: 'microphone', // 'none', 'file', 'microphone' // Changed to 'microphone' as per prompt
     
     // Specific for file player (from script.js logic)
     filePlayerAnalysers: null, // Should be an object { left: AnalyserNode, right: AnalyserNode }
