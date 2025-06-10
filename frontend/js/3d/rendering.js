@@ -57,6 +57,24 @@ function animate(currentTime) {
                 if (leftChannelData && rightChannelData && leftChannelData[0] && rightChannelData[0]) {
                     // Pass the raw Uint8Array (0-255 values)
                     state.hologramRendererInstance.updateColumnVisuals(leftChannelData[0], rightChannelData[0]);
+
+                    // --- Diagnosis: Log audio data ---
+                    const leftData = leftChannelData[0];
+                    const rightData = rightChannelData[0];
+                    if (leftData.length > 0 || rightData.length > 0) {
+                        console.log('[AudioVizDebug] Left Data (first 5):', leftData.slice(0, 5), 'Sum:', leftData.reduce((a, b) => a + b, 0));
+                        console.log('[AudioVizDebug] Right Data (first 5):', rightData.slice(0, 5), 'Sum:', rightData.reduce((a, b) => a + b, 0));
+
+                        // Check if data is mostly non-zero
+                        const leftNonZero = leftData.filter(val => val > 0).length > leftData.length / 10;
+                        const rightNonZero = rightData.filter(val => val > 0).length > rightData.length / 10;
+                        if (!leftNonZero && !rightNonZero && (leftData.reduce((a,b)=>a+b,0) > 0 || rightData.reduce((a,b)=>a+b,0) > 0) ) {
+                             // console.warn('[AudioVizDebug] Audio data seems very sparse or mostly zero.');
+                        }
+                    } else {
+                        // console.warn('[AudioVizDebug] Audio data arrays are empty.');
+                    }
+                    // --- End Diagnosis ---
                 } else {
                     // Handle case where adaptiveCWT might return null/undefined or empty arrays
                     // console.warn("adaptiveCWT did not return expected data for microphone, sending empty arrays to visuals.");

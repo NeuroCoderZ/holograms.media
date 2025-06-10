@@ -116,24 +116,23 @@ export function setupDOMEventHandlers() {
       });
   }
 
-  // Создаем экземпляр PanelManager
-  const panelManagerInstance = new PanelManager();
+  // Создаем экземпляр PanelManager - This should be handled by main.js
+  // const panelManagerInstance = new PanelManager();
 
-  // Обработчик для кнопки переключения панелей
-  const togglePanelsButton = document.getElementById('togglePanelsButton');
-  if (togglePanelsButton) {
-      togglePanelsButton.addEventListener('click', () => panelManagerInstance.toggleMainPanels()); // Используем метод экземпляра
-      // Перемещаем кнопку в body, если она еще в левой панели
-      if (togglePanelsButton.parentNode && togglePanelsButton.parentNode.classList.contains('left-panel')) {
-          document.body.appendChild(togglePanelsButton);
-          console.log('Moved togglePanelsButton to body');
-      }
-  } else {
-      console.warn("Кнопка переключения панелей (#togglePanelsButton) не найдена.");
-  }
+  // Обработчик для кнопки переключения панелей - This is handled by PanelManager itself if initialized from main.js
+  // const togglePanelsButton = document.getElementById('togglePanelsButton');
+  // if (togglePanelsButton) {
+  //     togglePanelsButton.addEventListener('click', () => panelManagerInstance.toggleMainPanels());
+  //     if (togglePanelsButton.parentNode && togglePanelsButton.parentNode.classList.contains('left-panel')) {
+  //         document.body.appendChild(togglePanelsButton);
+  //         console.log('Moved togglePanelsButton to body');
+  //     }
+  // } else {
+  //     console.warn("Кнопка переключения панелей (#togglePanelsButton) не найдена.");
+  // }
 
-  // Инициализация состояния панелей при загрузке
-  panelManagerInstance.initializePanelManager(); // Инициализируем через экземпляр класса
+  // Инициализация состояния панелей при загрузке - This should be handled by main.js
+  // panelManagerInstance.initializePanelManager();
 
   // Обработчик для кнопки сохранения в редакторе
   const saveFileButton = document.getElementById('saveFile'); // Corrected ID
@@ -560,8 +559,8 @@ export function initializeDOMEventHandlers() {
     console.warn("Элемент #gesture-area не найден.");
   }
 
-  // Инициализация состояния панелей при загрузке
-  panelManagerInstance.initializePanelManager(); // Инициализируем через экземпляр класса
+  // Инициализация состояния панелей при загрузке - This should be handled by main.js
+  // panelManagerInstance.initializePanelManager();
 
   // Load initial files for editor
   loadInitialFilesAndSetupEditor();

@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializePwaInstall(); // Initialize PWA installation prompt logic
   
   // Initial layout update (after scene and panels are likely initialized)
-  updateHologramLayout(false); // Call with handsVisible = false initially
+  // updateHologramLayout(false); // Call with handsVisible = false initially // Removed, relying on resize event from panel init
 
   // 9. Запускаем анимационный цикл
   animate();
@@ -195,8 +195,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // }
 
   // Финальный вызов для установки начального состояния макета
-  console.log('[main.js] Выполнение первоначальной настройки макета.');
-  updateHologramLayout(false); // Вызываем с `handsVisible = false`
+  // console.log('[main.js] Выполнение первоначальной настройки макета.');
+  // updateHologramLayout(false); // Вызываем с `handsVisible = false` // Removed as potentially redundant
 
   // Hologram rotation logic
   const gridContainer = document.getElementById('grid-container');
