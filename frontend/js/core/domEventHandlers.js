@@ -3,8 +3,8 @@
 import * as THREE from 'three';
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
-import PanelManager from '../ui/panelManager.js';
-import { toggleFullscreen, initFullscreenListeners } from '../utils/fullscreen.js';
+// import PanelManager from '../ui/panelManager.js'; // Removed unused import
+// import { toggleFullscreen, initFullscreenListeners } from '../utils/fullscreen.js'; // Removed unused import
 
 // Объект для хранения содержимого файлов для редактора
 const fileContents = {};
@@ -62,17 +62,11 @@ async function openFileInEditor(filePath) {
 // --- Initialization Function ---
 
 export function setupDOMEventHandlers() {
-  console.log('Setting up DOM event handlers...');
+  // This function is largely deprecated. Specific listeners have been moved.
+  // Kept observers for now.
+  console.log('Setting up DOM event handlers (Legacy - Review for removal)...');
 
-  // Обработчик для кнопки GitHub
-  const githubButton = document.getElementById('githubButton');
-  if (githubButton) {
-    githubButton.addEventListener('click', () => {
-      window.open('https://github.com/NeuroCoderZ/holograms.media', '_blank', 'noopener,noreferrer');
-    });
-  } else {
-    console.warn("Кнопка GitHub (#githubButton) не найдена.");
-  }
+  // Обработчик для кнопки GitHub - Moved to DesktopInput.js
 
   // Наблюдатель за окном записи жестов
   const gesturePanel = document.querySelector('.gesture-recording-panel');
@@ -134,46 +128,9 @@ export function setupDOMEventHandlers() {
   // Инициализация состояния панелей при загрузке - This should be handled by main.js
   // panelManagerInstance.initializePanelManager();
 
-  // Обработчик для кнопки сохранения в редакторе
-  const saveFileButton = document.getElementById('saveFile'); // Corrected ID
-  if (saveFileButton) {
-      saveFileButton.addEventListener('click', async () => {
-          const filePath = saveFileButton.dataset.currentFilePath;
-          const content = document.getElementById('fileContent').value; // Corrected ID
-          if (filePath) {
-              await saveFileContent(filePath, content);
-          } else {
-              console.warn('No file path specified for saving.');
-          }
-      });
-  } else {
-         console.warn("Кнопка сохранения (#saveFile) не найдена."); // Corrected ID
-  }
-
-  // Обработчик для кнопки закрытия редактора
-  const closeEditorButton = document.getElementById('closeFileEditorModal'); // Corrected ID
-   if (closeEditorButton) {
-       closeEditorButton.addEventListener('click', () => {
-           const editorModal = document.getElementById('fileEditorModal'); // Corrected ID
-           if (editorModal) {
-               editorModal.style.display = 'none';
-           }
-       });
-   } else {
-       console.warn("Кнопка закрытия редактора (#closeFileEditorModal) не найдена."); // Corrected ID
-   }
-
-  // Обработчик для закрытия редактора по клику вне модального окна
-  const editorModal = document.getElementById('fileEditorModal'); // Corrected ID
-  if (editorModal) {
-      window.addEventListener('click', (event) => {
-          if (event.target === editorModal) {
-              editorModal.style.display = 'none';
-          }
-      });
-  } else {
-      console.warn("Модальное окно редактора (#fileEditorModal) не найдено."); // Corrected ID
-  }
+  // Обработчик для кнопки сохранения в редакторе - Handled by DesktopInput.js or internal to file editor logic
+  // Обработчик для кнопки закрытия редактора - Handled by DesktopInput.js
+  // Обработчик для закрытия редактора по клику вне модального окна - Handled by DesktopInput.js
 
   // TODO: Перенести логику инициализации чата (submitChatMessage, chatInput) в chat.js (уже сделано)
   // TODO: Перенести вызов loadChatHistory в main.js или соответствующий модуль инициализации
@@ -293,7 +250,7 @@ async function loadInitialFilesAndSetupEditor() {
 // --------------------------------------
 
 // --- Prompt Handling --- (Перенесено из script.js)
-function applyPrompt(prompt, model) {
+export function applyPrompt(prompt, model) { // Added export
   // Сначала проверяем, активен ли режим Триа через функцию из модуля tria_mode.js
   applyPromptWithTriaMode(prompt, model)
     .then(result => {
@@ -392,180 +349,7 @@ ${triaError.message}`);
 }
 // --- End Prompt Handling ---
 
-export function initializeDOMEventHandlers() {
-  console.log('Initializing DOM event handlers...');
-
-  // Получение ссылок на элементы DOM
-  const fileButton = document.getElementById('fileButton');
-  const fileInput = document.getElementById('fileInput');
-  const fullscreenButton = document.getElementById('fullscreenButton');
-  const toggleCameraButton = document.getElementById('toggleCameraButton');
-  const githubButton = document.getElementById('githubButton');
-  const gestureRecordButton = document.getElementById('gestureRecordButton');
-  const scanButton = document.getElementById('scanButton');
-  const bluetoothButton = document.getElementById('bluetoothButton');
-  const gestureModal = document.getElementById('gestureModal');
-  const promptModal = document.getElementById('promptModal');
-  const closeGestureModal = document.getElementById('closeGestureModal');
-  const closePromptModal = document.getElementById('closePromptModal');
-  const startRecordingButton = document.getElementById('startRecordingButton');
-  const stopRecordingButton = document.getElementById('stopRecordingButton');
-  const gestureCanvas = document.getElementById('gestureCanvas');
-  const gestureStatus = document.getElementById('gestureStatus');
-  const promptText = document.getElementById('promptText');
-  const submitPromptButton = document.getElementById('submitPrompt');
-  const topPromptInput = document.getElementById('topPromptInput');
-  const submitTopPrompt = document.getElementById('submitTopPrompt');
-  const toggleFilesButton = document.getElementById('toggleFilesButton');
-  const integratedFileEditor = document.getElementById('integratedFileEditor');
-  const gestureArea = document.getElementById('gesture-area');
-
-  // --- Add Event Listeners --- (Перенесено из script.js)
-
-  // File Button and Input
-  if (fileButton && fileInput) {
-    fileButton.addEventListener('click', () => {
-      fileInput.click();
-      // Reset playhead position (related to audio player, might need refactoring)
-      const playhead = document.getElementById('playhead');
-      if (playhead) {
-        playhead.style.left = '0%';
-      }
-    });
-    fileInput.addEventListener('change', (event) => {
-      // Логика обработки загрузки файла (ранее в script.js, возможно, должна быть в audioFilePlayer.js)
-      // Сейчас просто логируем и очищаем input
-      console.log('File selected:', event.target.files[0].name);
-      // Очищаем значение input, чтобы событие 'change' срабатывало повторно для того же файла
-      event.target.value = '';
-    });
-  }
-
-  // Fullscreen Button
-  if (fullscreenButton) {
-    fullscreenButton.addEventListener('click', () => {
-      toggleFullscreen(fullscreenButton); // Pass the button element
-    });
-    initFullscreenListeners(fullscreenButton); // Initialize listeners to update button state
-  }
-
-  // Toggle Camera Button (Assuming logic is in cameraManager.js)
-  if (toggleCameraButton) {
-    toggleCameraButton.addEventListener('click', () => {
-      console.log('Toggle Camera button clicked - logic handled by cameraManager.js');
-      // toggleCameraView(); // Предполагается, что эта функция импортируется или доступна глобально
-    });
-  }
-
-  // GitHub Button
-  if (githubButton) {
-    githubButton.addEventListener('click', () => {
-      window.open('https://github.com/NeuroCoderZ/holograms.media', '_blank', 'noopener,noreferrer');
-    });
-  }
-
-  // Gesture Record Button
-  if (gestureRecordButton) {
-    gestureRecordButton.addEventListener('click', () => {
-      console.log('Gesture Record button clicked - logic handled elsewhere');
-      // startGestureRecording(); // Предполагается, что эта функция импортируется или доступна глобально
-    });
-  }
-
-  // Scan Button
-  if (scanButton) {
-    scanButton.addEventListener('click', () => {
-      console.log('Scan button clicked - logic handled elsewhere');
-      // startScan(); // Предполагается, что эта функция импортируется или доступна глобально
-    });
-  }
-
-  // Bluetooth Button
-  if (bluetoothButton) {
-    bluetoothButton.addEventListener('click', () => {
-      console.log('Bluetooth button clicked - logic handled elsewhere');
-      // connectBluetooth(); // Предполагается, что эта функция импортируется или доступна глобально
-    });
-  }
-
-  // Gesture Modal Close Button
-  if (closeGestureModal && gestureModal) {
-    closeGestureModal.addEventListener('click', () => {
-      gestureModal.style.display = 'none';
-    });
-  }
-
-  // Prompt Modal Close Button
-  if (closePromptModal && promptModal) {
-    closePromptModal.addEventListener('click', () => {
-      promptModal.style.display = 'none';
-    });
-  }
-
-  // Submit Prompt Button (Modal)
-  if (submitPromptButton && promptText && promptModal) {
-    submitPromptButton.addEventListener('click', () => {
-      const prompt = promptText.value.trim();
-      if (prompt) {
-        applyPrompt(prompt, document.getElementById('modelSelect').value); // Используем перенесенную applyPrompt
-        promptText.value = '';
-        promptModal.style.display = 'none';
-      } else {
-        alert('Пожалуйста, введите промпт.');
-      }
-    });
-  }
-
-  // Top Prompt Bar Submit Button
-  if (submitTopPrompt && topPromptInput) {
-    submitTopPrompt.addEventListener('click', () => {
-      const prompt = topPromptInput.value.trim();
-      if (prompt) {
-        applyPrompt(prompt, document.getElementById('modelSelect').value); // Используем перенесенную applyPrompt
-        topPromptInput.value = '';
-      }
-    });
-  }
-
-  // Top Prompt Bar Input (KeyPress)
-  if (topPromptInput && submitTopPrompt) {
-    topPromptInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        submitTopPrompt.click();
-      }
-    });
-  }
-
-  // Toggle Files Button
-  if (toggleFilesButton && integratedFileEditor) {
-      toggleFilesButton.addEventListener('click', () => {
-          const isVisible = integratedFileEditor.style.display !== 'none';
-          integratedFileEditor.style.display = isVisible ? 'none' : 'block';
-      });
-  }
-
-  // Gesture Area Click Listener
-  if (gestureArea) {
-    gestureArea.addEventListener('click', () => {
-      // Логика записи жестов (предполагается в другом модуле)
-      console.log('Gesture area clicked - logic handled elsewhere');
-      // if (!isGestureRecording) {
-      //   startGestureRecording();
-      // } else {
-      //   stopGestureRecording();
-      // }
-    });
-  } else {
-    console.warn("Элемент #gesture-area не найден.");
-  }
-
-  // Инициализация состояния панелей при загрузке - This should be handled by main.js
-  // panelManagerInstance.initializePanelManager();
-
-  // Load initial files for editor
-  loadInitialFilesAndSetupEditor();
-
-  console.log('DOM event handlers initialized.');
-}
+// Removed initializeDOMEventHandlers function as it became empty after refactoring.
+// Its responsibilities are now handled by platform-specific input managers or other setup functions.
 
 // Export helper functions if needed elsewhere, otherwise keep them local
