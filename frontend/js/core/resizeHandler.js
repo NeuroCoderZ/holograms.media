@@ -72,7 +72,17 @@ export function initializeResizeHandler() {
         state.activeCamera.top = availableHeight / 2;
         state.activeCamera.bottom = -availableHeight / 2;
       } else if (state.activeCamera.isPerspectiveCamera) {
-        state.activeCamera.aspect = availableWidth / availableHeight;
+        const baseFov = 75; // Standard FOV for desktop (landscape)
+        const aspectRatio = availableWidth / availableHeight; // ensure this is defined in scope
+
+        if (aspectRatio < 1) { // Narrow screen (portrait orientation)
+            // Increase FOV to "zoom out"
+            state.activeCamera.fov = baseFov / aspectRatio;
+        } else { // Landscape orientation
+            state.activeCamera.fov = baseFov;
+        }
+        // Ensure camera aspect is also updated
+        state.activeCamera.aspect = aspectRatio;
       }
       state.activeCamera.updateProjectionMatrix();
       console.log('[Resize] Active camera updated');
