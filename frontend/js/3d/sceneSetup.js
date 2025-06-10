@@ -11,13 +11,31 @@ export function initializeScene(state) {
   state.scene = new THREE.Scene();
   state.scene.background = new THREE.Color(0x000000); // Black background
 
-  // Renderer: Initialize early to get gridContainer dimensions if needed by camera
-  // TODO: Implement WebGPU for performance boost.
-  state.renderer = new THREE.WebGLRenderer({
-    antialias: true, // Enable antialiasing for smoother edges
-    alpha: true      // Enable alpha for transparent background if needed by the page design
-  });
-  state.renderer.setPixelRatio(window.devicePixelRatio); // Adjust for device pixel ratio for sharper images
+  try {
+    // Renderer: Initialize early to get gridContainer dimensions if needed by camera
+    // TODO: Implement WebGPU for performance boost.
+    state.renderer = new THREE.WebGLRenderer({
+      antialias: true, // Enable antialiasing for smoother edges
+      alpha: true      // Enable alpha for transparent background if needed by the page design
+    });
+    state.renderer.setPixelRatio(window.devicePixelRatio); // Adjust for device pixel ratio for sharper images
+  } catch (error) {
+    console.error("WebGL Renderer Initialization Error:", error);
+    const errorOverlay = document.getElementById('webgl-error-overlay');
+    const errorDetails = document.getElementById('webgl-error-details');
+    if (errorOverlay) {
+      errorOverlay.style.display = 'flex';
+    }
+    if (errorDetails) {
+      errorDetails.textContent = `Error: ${error.message}`;
+    }
+    // Attempt to remove any partially created canvas
+    if (state.renderer && state.renderer.domElement && state.renderer.domElement.parentElement) {
+        state.renderer.domElement.parentElement.removeChild(state.renderer.domElement);
+    }
+    state.renderer = null; // Ensure renderer is not used
+    return false; // Indicate failure
+  }
 
   const gridContainer = document.getElementById('grid-container');
   if (!gridContainer) {
@@ -68,5 +86,6 @@ export function initializeScene(state) {
 
   // Removed Hologram Pivot creation from here. It is now created and managed by HologramRenderer.
   
-  console.log('sceneSetup.js: Scene initialized');
+  console.log('sceneSetup.js: Scene initialized successfully');
+  return true; // Indicate success
 }

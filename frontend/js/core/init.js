@@ -149,22 +149,22 @@ export async function initCore() {
   console.log('Инициализация ядра приложения...');
   
   // Инициализируем Three.js сцену
-  try {
-    // initializeScene теперь напрямую модифицирует объект state
-    initializeScene(state); // Pass state to initializeScene
-    
-    console.log('Three.js сцена успешно инициализирована');
-  } catch (error) {
-    console.error('Ошибка при инициализации Three.js сцены:', error);
-    // Fallback might not be useful if scene itself failed to init
-    // Consider if the app can run without a scene. If not, maybe rethrow or set a global error state.
+  const sceneInitialized = initializeScene(state); // Pass state and capture return value
+
+  if (!sceneInitialized) {
+    console.error('Scene setup failed (WebGL context error likely). Halting further rendering-dependent initialization.');
+    // The error overlay is displayed by initializeScene itself.
+    // No need to set a global error state here unless other non-rendering parts need to know.
+    return; // Stop further initialization
   }
 
-  // Proceed with other initializations only if scene is available
-  if (!state.scene) {
-    console.error('Scene not initialized, cannot proceed with Hologram and Audio setup.');
-    return; 
+  // At this point, scene and renderer should be initialized if sceneInitialized is true.
+  // state.renderer would be null if WebGLRenderer failed.
+  if (!state.renderer) {
+    console.error('Renderer not available after scene initialization, though initializeScene reported success. This should not happen. Halting.');
+    return;
   }
+  console.log('Three.js scene and renderer successfully initialized.');
 
   // Instantiate HologramRenderer
   // state.hologramPivot is created in initializeScene.
