@@ -107,14 +107,6 @@ async function initializeMultimedia() {
     }
 }
 
-export function setupFirstInteractionListener() {
-    const listener = async () => {
-        console.log("First user interaction detected. Initializing multimedia...");
-        await initializeMultimedia();
-        console.log("Multimedia initialization attempt finished. First interaction listeners removed.");
-    };
+// setupFirstInteractionListener has been moved to MobileInput.js
 
-    document.addEventListener('click', listener, { once: true, capture: true });
-    document.addEventListener('touchstart', listener, { once: true, capture: true });
-    console.log("First interaction listeners set up on document.");
-}
+export { initializeMultimedia };
