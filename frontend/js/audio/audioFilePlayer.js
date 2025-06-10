@@ -176,8 +176,30 @@ function stopAudio() {
       if (state.audio.filePlayerAnalysers.left) state.audio.filePlayerAnalysers.left.disconnect();
       if (state.audio.filePlayerAnalysers.right) state.audio.filePlayerAnalysers.right.disconnect();
       state.audio.filePlayerAnalysers = null;
+
+      // Reset global analyser instances if they were using the file player's analysers
+      if (state.audioAnalyzerLeftInstance && state.audioAnalyzerLeftInstance.analyserNode === state.audio.filePlayerAnalysers?.left) { // Check needed as filePlayerAnalysers is now null
+        // The above check will be false since filePlayerAnalysers is null.
+        // We need a way to know if they *were* set to these.
+        // Simpler: if activeSource is 'file', assume they are set to file analysers.
+      }
+      // Given activeSource is 'file', and we are stopping, it's safe to assume
+      // the global analysers should be cleared if they were for this source.
+      // However, the check `state.audio.activeSource === 'file'` is better placed before nullifying.
+      // Let's refine:
   }
   
+  // If the active source was this file player, clear the global analysers.
+  if (state.audio.activeSource === 'file') {
+    if (state.audioAnalyzerLeftInstance) {
+        state.audioAnalyzerLeftInstance.setAnalyserNode(null);
+    }
+    if (state.audioAnalyzerRightInstance) {
+        state.audioAnalyzerRightInstance.setAnalyserNode(null);
+    }
+    // console.log('Global AudioAnalyzer instances reset after file stop.'); // Optional: for debugging
+  }
+
   state.audio.pausedAt = 0;
   state.audio.startOffset = 0;
   state.audio.isPlaying = false;

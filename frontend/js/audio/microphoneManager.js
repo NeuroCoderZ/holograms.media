@@ -169,13 +169,22 @@ export class MicrophoneManager {
 
     try {
       if (globalState.audio.activeSource === 'microphone') {
-        this.stop();
+        this.stop(); // Stops local mic stream and disconnects local analysers
         globalState.audio.activeSource = 'none';
+
+        // Also reset the global analyser instances
+        if (globalState.audioAnalyzerLeftInstance) {
+          globalState.audioAnalyzerLeftInstance.setAnalyserNode(null);
+        }
+        if (globalState.audioAnalyzerRightInstance) {
+          globalState.audioAnalyzerRightInstance.setAnalyserNode(null);
+        }
+
         if (micButtonElement) {
           micButtonElement.classList.remove('active');
           micButtonElement.title = "Включить микрофон";
         }
-        console.log("Microphone stopped via toggleMicrophone.");
+        console.log("Microphone stopped via toggleMicrophone and global analysers reset.");
       } else {
         const { analyserLeft, analyserRight, audioContext } = await this.init();
 

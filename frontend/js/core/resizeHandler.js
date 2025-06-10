@@ -20,7 +20,17 @@ export function getLeftPanelWidth() {
 }
 
 export function initializeResizeHandler() {
+  let lastWidth = window.innerWidth;
+  let lastHeight = window.innerHeight;
+
   window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth && window.innerHeight === lastHeight) {
+      console.log('[Resize] Window dimensions unchanged, skipping layout update.');
+      return;
+    }
+    lastWidth = window.innerWidth;
+    lastHeight = window.innerHeight;
+
     if (!state.uiElements?.gridContainer) {
       console.warn('[ResizeHandler] Early exit: gridContainer not initialized');
       return;

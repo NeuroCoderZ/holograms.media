@@ -49,37 +49,41 @@ class PanelManager {
 
         if (isMobile) {
             // On mobile, panels are hidden by default (no 'visible' class)
-            this.leftPanelElement.classList.remove('visible');
-            this.rightPanelElement.classList.remove('visible');
+            if (this.leftPanelElement) this.leftPanelElement.classList.remove('visible');
+            if (this.rightPanelElement) this.rightPanelElement.classList.remove('visible');
             // Button should indicate that clicking it will show panels
-            this.togglePanelsButtonElement.classList.add('show-mode');
+            if (this.togglePanelsButtonElement) this.togglePanelsButtonElement.classList.add('show-mode');
         } else {
             // On desktop, load state from localStorage
             // localStorage stores 'panelsHidden'. If true, panels should not have 'visible' class.
             const panelsShouldBeHidden = localStorage.getItem('panelsHidden') === 'true';
 
             if (panelsShouldBeHidden) {
-                this.leftPanelElement.classList.remove('visible');
-                this.rightPanelElement.classList.remove('visible');
-                this.togglePanelsButtonElement.classList.add('show-mode');
+                if (this.leftPanelElement) this.leftPanelElement.classList.remove('visible');
+                if (this.rightPanelElement) this.rightPanelElement.classList.remove('visible');
+                if (this.togglePanelsButtonElement) this.togglePanelsButtonElement.classList.add('show-mode');
             } else {
                 // Default to visible or if localStorage says they were visible
-                this.leftPanelElement.classList.add('visible');
-                this.rightPanelElement.classList.add('visible');
-                this.togglePanelsButtonElement.classList.remove('show-mode');
+                if (this.leftPanelElement) this.leftPanelElement.classList.add('visible');
+                if (this.rightPanelElement) this.rightPanelElement.classList.add('visible');
+                if (this.togglePanelsButtonElement) this.togglePanelsButtonElement.classList.remove('show-mode');
             }
         }
 
         // Ensure any old 'hidden' class (from previous logic) is removed, as visibility is now controlled by 'visible'
-        this.leftPanelElement.classList.remove('hidden');
-        this.rightPanelElement.classList.remove('hidden');
+        if (this.leftPanelElement) this.leftPanelElement.classList.remove('hidden');
+        if (this.rightPanelElement) this.rightPanelElement.classList.remove('hidden');
 
         // Dispatch a resize event to ensure layouts adjust correctly after panel state is set.
         setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-        // console.log(`Состояние основных панелей инициализировано. Mobile: ${isMobile}`);
+
         // More specific log:
-        const currentVisibility = this.leftPanelElement.classList.contains('visible');
-        console.log(`Основные панели инициализированы. Mobile: ${isMobile}. Currently visible: ${currentVisibility}`);
+        if (this.leftPanelElement) {
+            const currentVisibility = this.leftPanelElement.classList.contains('visible');
+            console.log(`Основные панели инициализированы. Mobile: ${isMobile}. Currently visible: ${currentVisibility}`);
+        } else {
+            console.log(`Основные панели инициализированы. Mobile: ${isMobile}. Left panel not found.`);
+        }
     }
 
     /**

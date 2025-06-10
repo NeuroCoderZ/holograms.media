@@ -191,22 +191,44 @@ export async function initCore() {
   // Instantiate MicrophoneManager
   state.microphoneManagerInstance = new MicrophoneManager(); // Can pass FFT_SIZE, SMOOTHING_TIME_CONSTANT if needed from config
 
+  // Ensure AudioContext is available
+  if (!state.audio.audioContext) {
+    state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    console.log('AudioContext created during initCore.');
+  }
+  if (state.audio.audioContext.state === 'suspended') {
+    state.audio.audioContext.resume().catch(e => console.error("Error resuming AudioContext in initCore:", e));
+  }
+
+  // Always instantiate AudioAnalyzer instances, initially with null analysers
+  state.audioAnalyzerLeftInstance = new AudioAnalyzer(null, state.audio.audioContext);
+  state.audioAnalyzerRightInstance = new AudioAnalyzer(null, state.audio.audioContext);
+  console.log('AudioAnalyzer instances created with null analysers.');
+
   // Initialize microphone only if user has previously interacted or granted permission.
-  // This check prevents unsolicited permission prompts on page load.
-  // A UI element (e.g., a "Start Microphone" button) should handle the initial call
-  // to a function that includes microphoneManagerInstance.init() and sets this flag.
   if (localStorage.getItem('microphonePermissionRequestedOnce') === 'true' &&
-      localStorage.getItem('microphonePermissionGranted') === 'true') { // Example of a more refined check
-    // Optionally, could attempt to query permission status API first if available.
-    // For now, rely on a flag set after first user-initiated attempt.
+      localStorage.getItem('microphonePermissionGranted') === 'true') {
     console.log('Attempting to auto-initialize microphone based on previous grant.');
     try {
-      const { analyserLeft, analyserRight, audioContext } = await state.microphoneManagerInstance.init();
+      // MicrophoneManager.init() returns its own audioContext, ensure consistency or decide which one to use.
+      // For now, we assume MicrophoneManager's init might re-initialize or reuse a context.
+      // The important part is that it returns analyser nodes.
+      const { analyserLeft, analyserRight, audioContext: micAudioContext } = await state.microphoneManagerInstance.init();
 
-      state.audio.audioContext = audioContext;
+      // It's possible micAudioContext is different from state.audio.audioContext if mic manager always creates a new one.
+      // This needs to be handled consistently. For now, let's assume micAudioContext should be the one used by these analysers.
+      // Or, ensure MicrophoneManager can use an externally provided AudioContext.
+      // Let's assume we update the global audio context if mic manager provides one:
+      if (micAudioContext) state.audio.audioContext = micAudioContext;
+
       state.audio.microphoneAnalysers = { left: analyserLeft, right: analyserRight };
-      state.audioAnalyzerLeftInstance = new AudioAnalyzer(analyserLeft, audioContext);
-      state.audioAnalyzerRightInstance = new AudioAnalyzer(analyserRight, audioContext);
+
+      // Now set the analyser nodes on the existing instances
+      state.audioAnalyzerLeftInstance.setAnalyserNode(analyserLeft);
+      state.audioAnalyzerLeftInstance.audioContext = micAudioContext; // Ensure context is also updated
+      state.audioAnalyzerRightInstance.setAnalyserNode(analyserRight);
+      state.audioAnalyzerRightInstance.audioContext = micAudioContext; // Ensure context is also updated
+
       state.audio.activeSource = 'microphone';
       console.log('MicrophoneManager and AudioAnalyzers auto-initialized successfully.');
     } catch (micError) {
@@ -215,13 +237,7 @@ export async function initCore() {
     }
   } else {
     console.log('Microphone initialization deferred to user action (e.g., button click).');
-    // Ensure audio analyzers are instantiated, even if with null analysers,
-    // so that calls to them don't fail, but they won't process audio until an analyser is set.
-    // This might require AudioAnalyzer to handle null initially or be instantiated later.
-    // For simplicity here, we assume they are either robust to null analysers or
-    // will be properly initialized when the microphone is actually started by user action.
-    // The init() of MicrophoneManager itself updates state.audioAnalyzerLeft/RightInstance.setAnalyserNode().
-    // So, they will be correctly configured when mic is truly started.
+    // AudioAnalyzer instances are already created with null analysers.
   }
   
   // Установка начального аспекта камеры (если не было установлено в initializeThreeJSScene)
