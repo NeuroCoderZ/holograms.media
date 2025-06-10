@@ -19,122 +19,91 @@ import {
     auth as firebaseAuth, 
     storage as firebaseStorage, 
     firestore as firebaseFirestore 
-} from './core/firebaseInit.js'; // Adjust path if main.js is not in frontend/js/
+} from './core/firebaseInit.js';
 
-console.log('Firebase services imported in main.js (Task 3/3 Complete):', { firebaseApp, firebaseAuth, firebaseStorage, firebaseFirestore });
+console.log('Firebase services imported in main.js:', { firebaseApp, firebaseAuth, firebaseStorage, firebaseFirestore });
 
 import { setAuthDOMElements, initAuthObserver, handleTokenForBackend } from './core/auth.js';
-import { initializeConsentManager } from './core/consentManager.js'; // Import Consent Manager
+import { initializeConsentManager } from './core/consentManager.js';
 
 // Импорт ядра
-import { initCore, state } from './core/init.js'; // Adjusted path, and import state
-import { setupEventListeners } from './core/events.js';
-import { runFrontendDiagnostics } from './core/diagnostics.js';
-import { setupFirstInteractionListener } from './core/mediaInitializer.js'; // Added import
+import { initCore, state } from './core/init.js';
+// import { setupEventListeners } from './core/events.js'; // REMOVED - Handled by platform-specific input managers
+// import { setupDOMEventHandlers } from './core/domEventHandlers.js'; // REMOVED - Handled by platform-specific input managers
+// import { setupFirstInteractionListener } from './core/mediaInitializer.js'; // REMOVED - Handled by MobileInput
 
 // Импорт UI модулей
-import { initializeMainUI } from './ui/uiManager.js'; // Модуль управления UI
-import { initChatUI } from './core/ui/chatUI.js'; // Chat UI Initialization
-import PanelManager from './ui/panelManager.js'; // Модуль управления панелями
-import { updateHologramLayout } from './ui/layoutManager.js'; // Added import
-import { initializePromptManager } 
-from './ui/promptManager.js'; // Импорт менеджера промптов
-import { initializeVersionManager } 
-from './ui/versionManager.js'; // Импорт менеджера версий
-import { initializeGestureAreaVisualization } 
-from './ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
-import { initializeGestureArea } from './ui/gestureAreaManager.js'; // <-- NEW IMPORT
+import { initializeMainUI } from './ui/uiManager.js';
+import { initChatUI } from './core/ui/chatUI.js';
+// import PanelManager from './ui/panelManager.js'; // REMOVED - Handled by layout managers
+import { updateHologramLayout } from './ui/layoutManager.js';
+import { initializePromptManager } from './ui/promptManager.js';
+import { initializeVersionManager } from './ui/versionManager.js';
+import { initializeGestureAreaVisualization } from './ui/gestureAreaVisualization.js';
+// import { initializeGestureArea } from './ui/gestureAreaManager.js'; // REMOVED - Handled by MobileLayout
 import { initializeChatDisplay } from './panels/chatMessages.js';
 // Импорт аудио модулей
 import { initializeSpeechInput } from './audio/speechInput.js';
-// import { initializeMicrophoneButton } from './audio/microphoneManager.js'; // Adjusted path and commented out
-import { initializeAudioPlayerControls } 
-from './audio/audioFilePlayer.js'; // Модуль управления плеером аудиофайлов
-import { initAudioVisualization } from './audio/audioVisualizer.js'; // Импорт функции аудио-визуализации
+import { initializeAudioPlayerControls } from './audio/audioFilePlayer.js';
+import { initAudioVisualization } from './audio/audioVisualizer.js';
 
 // Импорт XR модулей
-import { initializeXRMode } from './xr/cameraManager.js'; // Модуль управления XR и камерой
+import { initializeXRMode } from './xr/cameraManager.js';
 
 // Импорт 3D модулей
-// import { initializeScene } from '/static/js/3d/sceneSetup.js'; // Removed, handled by initCore
-import { animate } from './3d/rendering.js'; // Adjusted path
+import { animate } from './3d/rendering.js';
 
 // Импорт мультимодальных модулей
-import { initializeMediaPipeHands } 
-from './multimodal/handsTracking.js'; // Инициализация MediaPipe Hands
+import { initializeMediaPipeHands } from './multimodal/handsTracking.js';
 // Импорт AI модулей
-import { setupChat } from './ai/chat.js'; // Путь исправлен
-import { initializeTria } from './ai/tria.js'; // Путь исправлен
+import { setupChat } from './ai/chat.js';
+import { initializeTria } from './ai/tria.js';
 
-// Импорт обработчиков событий
-import { setupDOMEventHandlers } 
-from './core/domEventHandlers.js'; // Импорт модуля обработчиков событий DOM из core
-import { initializeResizeHandler } 
-from './core/resizeHandler.js'; // Импорт обработчика изменения размера окна
-import { initializeHammerGestures } from './core/gestures.js'; // Added import
-import { initializePwaInstall } from './core/pwaInstall.js'; // Added import for PWA Install
+// Импорт обработчиков событий (generic ones that remain)
+import { initializeResizeHandler } from './core/resizeHandler.js';
+import { initializeHammerGestures } from './core/gestures.js';
+import { initializePwaInstall } from './core/pwaInstall.js';
+
+// Platform detection
+import { detectPlatform } from './core/platformDetector.js';
 
 
-// Импорт моста для обратной совместимости (закомментирован отсутствующий)
-// import { initLegacyBridge, registerLegacyHandlers } from './legacy-bridge.js'; // Закомментировано, т.к. файл отсутствует или функционал не используется
-
-// Variables for hologram rotation
+// Variables for hologram rotation (remains as it's specific to main.js interaction logic for now)
 let isDragging = false;
 let startPointerX = 0;
-let startPointerY = 0; // Added for X-axis rotation
+let startPointerY = 0;
 let startRotationY = 0;
-let startRotationX = 0; // Added for X-axis rotation
-const rotationLimit = Math.PI / 2; // 90 degrees in radians
+let startRotationX = 0;
+const rotationLimit = Math.PI / 2;
 
 // Инициализация приложения при загрузке DOM
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Инициализация приложения...');
 
-  // 0. Initialize and await user consent
-  // This should be one of the very first things to run
   await initializeConsentManager();
   console.log('User consent check passed/handled.');
 
-  // 1. Инициализируем ядро приложения (создает state, scene, etc.)
-  await initCore(); // Made async and awaited
-
-  // 2. Инициализируем основные UI компоненты (зависят от state)
+  await initCore();
   initializeMainUI();
+  // setupFirstInteractionListener(); // REMOVED - Handled by MobileInput
 
-  setupFirstInteractionListener(); // <-- NEWLY ADDED CALL
-
-  // Initialize Auth UI elements
   setAuthDOMElements('signInButton', 'signOutButton', 'userStatus');
-  // Initialize Firebase Auth observer and pass callback for token handling
   initAuthObserver(handleTokenForBackend);
 
-  const panelManagerInstance = new PanelManager();
-  // Panels should be visible by default, so no 'hidden' class should be applied initially
-  // The panelManagerInstance.initializePanelManager() will ensure this.
-  panelManagerInstance.initializePanelManager();
+  // const panelManagerInstance = new PanelManager(); // REMOVED
+  // panelManagerInstance.initializePanelManager(); // REMOVED
 
   initializePromptManager();
   initializeVersionManager();
-  initChatUI(); // Initialize Chat UI
-  initializeGestureAreaVisualization();
-  initializeGestureArea(); // <-- NEWLY ADDED CALL
+  initChatUI();
+  initializeGestureAreaVisualization(); // This is visualization, not manager
+  // initializeGestureArea(); // REMOVED - Handled by MobileLayout
   initializeChatDisplay();
 
-  // 3. Инициализируем 3D сцену (зависят от state, UI) -> Handled by initCore
-  // initializeScene(); // Removed
-
-  // 4. Инициализируем мультимодальные компоненты (могут зависеть от сцены)
   initializeMediaPipeHands();
-  // TODO: Module for gesture detection not found, related code disabled
-  // initializeGestureDetection();
-  // 5. Инициализируем аудио компоненты (могут зависеть от UI)
-  // initializeMicrophoneButton(); // Commented out
   initializeAudioPlayerControls();
   initializeSpeechInput();
-  // TODO: Module for audio processing (e.g., initAudio, initAudioVisualization) not found, related code disabled
   try {
-  // initAudio(); // No longer needed directly here, will be handled by audioAnalyzer/audioVisualizer
-    // Pass the instances from the state to the audio visualizer
     if (state.audioAnalyzerLeftInstance && state.hologramRendererInstance) {
       initAudioVisualization(state.audioAnalyzerLeftInstance, state.hologramRendererInstance);
     } else {
@@ -144,27 +113,76 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Ошибка инициализации аудио:', error);
   }
 
-  // 6. Инициализируем ИИ компоненты (могут зависеть от state, UI)
   initializeTria();
   setupChat();
-
-  // 7. Инициализируем управление XR режимом (может зависеть от сцены)
   initializeXRMode();
 
-  // 8. Устанавливаем обработчики событий (зависят от DOM, state, сцены)
-  setupDOMEventHandlers();
-  initializeResizeHandler(); // This will set up the resize listener
-  setupEventListeners();
-  initializeHammerGestures(); // Added call
-  initializePwaInstall(); // Initialize PWA installation prompt logic
-  
-  // Initial layout update (after scene and panels are likely initialized)
-  // updateHologramLayout(false); // Call with handsVisible = false initially // Removed, relying on resize event from panel init
+  // Platform-specific setup
+  const platform = detectPlatform();
+  console.log(`Detected platform: ${platform}`);
+  let layoutManager, inputManager;
 
-  // 9. Запускаем анимационный цикл
+  try {
+    switch (platform) {
+        case 'mobile':
+            const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
+            const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
+            layoutManager = new MobileLayout();
+            inputManager = new MobileInput();
+            break;
+        case 'xr':
+            console.log('XR platform detected, attempting to load XRLayout/XRInput.');
+            // Assuming placeholder files exist or will be created
+            const { XrLayout } = await import('./platforms/xr/xrLayout.js');
+            const { XrInput } = await import('./platforms/xr/xrInput.js');
+            layoutManager = new XrLayout();
+            inputManager = new XrInput();
+            break;
+        default: // 'desktop'
+            const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
+            const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
+            layoutManager = new DesktopLayout();
+            inputManager = new DesktopInput();
+            break;
+    }
+  } catch (e) {
+      console.error("Error loading platform-specific modules:", e);
+      // Fallback to desktop if dynamic import fails for mobile/xr to ensure app still tries to load
+      if (platform !== 'desktop') {
+        console.warn(`Falling back to DesktopLayout/DesktopInput due to error with ${platform} modules.`);
+        const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
+        const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
+        layoutManager = new DesktopLayout();
+        inputManager = new DesktopInput();
+      } else {
+        // If desktop itself failed, then there's a bigger issue.
+         throw e; // Re-throw if desktop fails.
+      }
+  }
+
+
+  if (layoutManager && typeof layoutManager.initialize === 'function') {
+      layoutManager.initialize();
+  } else {
+      console.warn('LayoutManager not initialized or initialize method not found.');
+  }
+
+  if (inputManager && typeof inputManager.initialize === 'function') {
+      inputManager.initialize();
+  } else {
+      console.warn('InputManager not initialized or initialize method not found.');
+  }
+
+  // setupDOMEventHandlers(); // REMOVED - Handled by platform-specific input managers
+  // setupEventListeners(); // REMOVED - Handled by platform-specific input managers
+
+  // Generic handlers that are still relevant
+  initializeResizeHandler();
+  initializeHammerGestures();
+  initializePwaInstall();
+
   animate();
 
-  // Apply fade-in animation to specified UI elements
   const elementsToFadeIn = [
     '.panel.left-panel',
     '.panel.right-panel',
@@ -182,26 +200,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.warn(`Element with selector "${selector}" not found for fade-in animation.`);
       }
     });
-  }, 100); // Small delay to ensure initial styles are applied and prevent FOUC
+  }, 100);
 
-  console.log('Инициализация завершена (с отключенными отсутствующими модулями)!');
+  console.log('Инициализация завершена!');
 
-  // 10. Запускаем диагностику фронтенда
-  setTimeout(() => {
-    runFrontendDiagnostics();
-  }, 1000); // Небольшая задержка для завершения асинхронных операций
+  // Run frontend diagnostics (if needed, keep it)
+  // setTimeout(() => {
+  //   runFrontendDiagnostics();
+  // }, 1000);
 
-  // FINAL CLEANUP (v22): Module legacy-bridge.js or its functionality is missing/disabled
-  // try {
-  //   initLegacyBridge();
-  //   registerLegacyHandlers();
-  // } catch (error) {
-  //   console.error('Ошибка инициализации legacy bridge:', error);
-  // }
-
-  // Финальный вызов для установки начального состояния макета
-  // console.log('[main.js] Выполнение первоначальной настройки макета.');
-  // updateHologramLayout(false); // Вызываем с `handsVisible = false` // Removed as potentially redundant
 
   // Hologram rotation logic
   const gridContainer = document.getElementById('grid-container');
@@ -209,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     gridContainer.addEventListener('mousedown', onPointerDown);
     gridContainer.addEventListener('mouseup', onPointerUp);
     gridContainer.addEventListener('mousemove', onPointerMove);
-    gridContainer.addEventListener('mouseleave', onPointerUp); // Stop rotation if mouse leaves the area
+    gridContainer.addEventListener('mouseleave', onPointerUp);
 
     gridContainer.addEventListener('touchstart', onPointerDown, { passive: false });
     gridContainer.addEventListener('touchend', onPointerUp);
@@ -217,28 +224,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+// Hologram rotation functions (onPointerDown, onPointerUp, onPointerMove) remain unchanged
 function onPointerDown(event) {
   isDragging = true;
   startPointerX = (event.touches ? event.touches[0].clientX : event.clientX);
-  startPointerY = (event.touches ? event.touches[0].clientY : event.clientY); // Capture Y position
+  startPointerY = (event.touches ? event.touches[0].clientY : event.clientY);
 
   if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
     startRotationY = state.hologramRendererInstance.getHologramPivot().rotation.y;
     startRotationX = state.hologramRendererInstance.getHologramPivot().rotation.x;
     console.log('[main.js] onPointerDown: Initial rotation Y:', startRotationY, 'X:', startRotationX);
   }
-  // Prevent default to avoid scrolling on touch devices during drag
   if (event.cancelable) event.preventDefault();
 }
 
 function onPointerUp() {
   isDragging = false;
-  // Animate back to original position (0 radians for both X and Y)
   if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
     console.log('[main.js] onPointerUp: Attempting to tween hologram back to 0,0');
     new window.TWEEN.Tween(state.hologramRendererInstance.getHologramPivot().rotation)
-      .to({ y: 0, x: 0 }, 1000) // Animate to 0 radians for both X and Y over 1000ms
-      .easing(window.TWEEN.Easing.Quartic.InOut) // Smooth snap-back effect
+      .to({ y: 0, x: 0 }, 1000)
+      .easing(window.TWEEN.Easing.Quartic.InOut)
       .start();
   }
 }
@@ -247,29 +253,24 @@ function onPointerMove(event) {
   if (!isDragging) return;
 
   const currentPointerX = (event.touches ? event.touches[0].clientX : event.clientX);
-  const currentPointerY = (event.touches ? event.touches[0].clientY : event.clientY); // Get current Y position
+  const currentPointerY = (event.touches ? event.touches[0].clientY : event.clientY);
 
   const deltaX = currentPointerX - startPointerX;
   const deltaY = currentPointerY - startPointerY;
 
-  // Adjust sensitivity for desired rotation speed for both axes
   const sensitivity = 0.005; 
-  // Removed negation for rotationAmountY and rotationAmountX to fix inversion
-  const rotationAmountY = deltaX * sensitivity; // Rotation around Y-axis (horizontal movement)
-  const rotationAmountX = deltaY * sensitivity; // Rotation around X-axis (vertical movement)
+  const rotationAmountY = deltaX * sensitivity;
+  const rotationAmountX = deltaY * sensitivity;
 
   if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
     let newRotationY = startRotationY + rotationAmountY;
     let newRotationX = startRotationX + rotationAmountX;
 
-    // Clamp rotation to -90 to +90 degrees for both axes
     newRotationY = Math.max(-rotationLimit, Math.min(rotationLimit, newRotationY));
     newRotationX = Math.max(-rotationLimit, Math.min(rotationLimit, newRotationX));
     
     state.hologramRendererInstance.getHologramPivot().rotation.y = newRotationY;
     state.hologramRendererInstance.getHologramPivot().rotation.x = newRotationX;
-    // console.log('[main.js] onPointerMove: Current rotation Y:', newRotationY, 'X:', newRotationX);
   }
-  // Prevent default to avoid scrolling on touch devices during drag
   if (event.cancelable) event.preventDefault();
 }
