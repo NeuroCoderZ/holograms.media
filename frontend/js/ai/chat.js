@@ -250,8 +250,8 @@ export async function sendChatMessage(messageText) {
       showLoadingIndicator(false);
       isWaitingForResponse = false;
     }
-  }
-// Removed extra closing brace here
+  // Extra brace removed
+}
 
 // Добавление сообщения в чат
 export function addMessageToChat(sender, messageText) {
