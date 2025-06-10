@@ -34,8 +34,10 @@ class PanelManager {
      */
     // Новая, упрощенная версия функции
     initializeMainPanelState() {
-        this.leftPanelElement = document.querySelector('.panel.left-panel');
-        this.rightPanelElement = document.querySelector('.panel.right-panel');
+        // Inside initializeMainPanelState()
+
+        this.leftPanelElement = document.getElementById('left-panel');
+        this.rightPanelElement = document.getElementById('right-panel');
         this.togglePanelsButtonElement = document.getElementById('togglePanelsButton');
 
         if (!this.leftPanelElement || !this.rightPanelElement || !this.togglePanelsButtonElement) {
@@ -43,20 +45,41 @@ class PanelManager {
             return;
         }
 
-        // Принудительно делаем панели видимыми при каждой загрузке
+        const isMobile = window.innerWidth <= 768;
+
+        if (isMobile) {
+            // On mobile, panels are hidden by default (no 'visible' class)
+            this.leftPanelElement.classList.remove('visible');
+            this.rightPanelElement.classList.remove('visible');
+            // Button should indicate that clicking it will show panels
+            this.togglePanelsButtonElement.classList.add('show-mode');
+        } else {
+            // On desktop, load state from localStorage
+            // localStorage stores 'panelsHidden'. If true, panels should not have 'visible' class.
+            const panelsShouldBeHidden = localStorage.getItem('panelsHidden') === 'true';
+
+            if (panelsShouldBeHidden) {
+                this.leftPanelElement.classList.remove('visible');
+                this.rightPanelElement.classList.remove('visible');
+                this.togglePanelsButtonElement.classList.add('show-mode');
+            } else {
+                // Default to visible or if localStorage says they were visible
+                this.leftPanelElement.classList.add('visible');
+                this.rightPanelElement.classList.add('visible');
+                this.togglePanelsButtonElement.classList.remove('show-mode');
+            }
+        }
+
+        // Ensure any old 'hidden' class (from previous logic) is removed, as visibility is now controlled by 'visible'
         this.leftPanelElement.classList.remove('hidden');
         this.rightPanelElement.classList.remove('hidden');
-        this.togglePanelsButtonElement.classList.remove('show-mode');
 
-        // Очищаем старое сохраненное состояние, чтобы оно нам не мешало
-        localStorage.removeItem('panelsHidden');
-
-        console.log('Панели принудительно показаны при загрузке.');
-        
         // Dispatch a resize event to ensure layouts adjust correctly after panel state is set.
-        // This might still be useful depending on how layout adjustments are handled elsewhere
         setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-        // console.log(`Состояние основных панелей инициализировано.`); // Original log, can be kept or removed
+        // console.log(`Состояние основных панелей инициализировано. Mobile: ${isMobile}`);
+        // More specific log:
+        const currentVisibility = this.leftPanelElement.classList.contains('visible');
+        console.log(`Основные панели инициализированы. Mobile: ${isMobile}. Currently visible: ${currentVisibility}`);
     }
 
     /**
@@ -68,29 +91,40 @@ class PanelManager {
             return;
         }
 
-        const willBeHidden = !this.leftPanelElement.classList.contains('hidden');
-        this.leftPanelElement.classList.toggle('hidden', willBeHidden);
-        this.rightPanelElement.classList.toggle('hidden', willBeHidden);
-        this.togglePanelsButtonElement.classList.toggle('show-mode', willBeHidden);
-        // this.arePanelsVisible = !willBeHidden;
+        // Check if the left panel is currently visible.
+        // Assumes both panels always have the same visibility state regarding the 'visible' class.
+        const isCurrentlyVisible = this.leftPanelElement.classList.contains('visible');
 
+        // Toggle the 'visible' class on both panels.
+        // If it was visible, it becomes hidden. If it was hidden, it becomes visible.
+        this.leftPanelElement.classList.toggle('visible');
+        this.rightPanelElement.classList.toggle('visible');
+
+        // The 'show-mode' on the button should be active when panels are NOT visible.
+        // So, if they were visible (and now are not), add 'show-mode'.
+        // If they were not visible (and now are), remove 'show-mode'.
+        this.togglePanelsButtonElement.classList.toggle('show-mode', isCurrentlyVisible);
+
+        // Update localStorage: 'panelsHidden' should be true if they are now hidden (i.e., they were visible before toggle).
         try {
-            localStorage.setItem('panelsHidden', willBeHidden.toString());
+            localStorage.setItem('panelsHidden', isCurrentlyVisible.toString());
         } catch (e) {
             console.error('Error saving panel visibility to localStorage:', e);
         }
 
         // Dispatch uiStateChanged event
+        // If they were visible, their new state is 'hidden'. Otherwise, it's 'visible'.
+        const newPanelState = isCurrentlyVisible ? 'hidden' : 'visible';
         const event = new CustomEvent('uiStateChanged', {
             detail: {
                 component: 'mainPanels',
-                newState: willBeHidden ? 'hidden' : 'visible'
+                newState: newPanelState
             }
         });
         window.dispatchEvent(event);
 
         setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-        console.log(`Основные панели ${willBeHidden ? 'скрыты' : 'показаны'}`);
+        console.log(`Основные панели ${newPanelState}`);
     }
 
     /**
