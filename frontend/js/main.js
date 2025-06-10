@@ -28,6 +28,7 @@ import { initializeConsentManager } from './core/consentManager.js';
 
 // Импорт ядра
 import { initCore, state } from './core/init.js';
+import { initializeMultimedia } from './core/mediaInitializer.js';
 // import { setupEventListeners } from './core/events.js'; // REMOVED - Handled by platform-specific input managers
 // import { setupDOMEventHandlers } from './core/domEventHandlers.js'; // REMOVED - Handled by platform-specific input managers
 // import { setupFirstInteractionListener } from './core/mediaInitializer.js'; // REMOVED - Handled by MobileInput
@@ -82,6 +83,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await initializeConsentManager();
   console.log('User consent check passed/handled.');
+
+  // Start Session Modal Logic
+  const startSessionModal = document.getElementById('start-session-modal');
+  const startSessionButton = document.getElementById('start-session-button');
+  const consentModal = document.getElementById('consent-modal'); // Assuming this is the ID of the Data Storage Consent modal
+
+  if (startSessionButton && startSessionModal && consentModal) {
+      startSessionButton.addEventListener('click', async () => {
+          try {
+              await initializeMultimedia(); // Call the function from mediaInitializer.js
+              startSessionModal.style.display = 'none'; // Hide the start session modal
+
+              // Ensure consentManager.js's logic for showing consent modal is used
+              // For example, if consentManager.showConsentModalIfNeeded() exists:
+              // showConsentModalIfNeeded();
+              // OR directly show it if that's the new flow:
+              consentModal.style.display = 'flex'; // Show the consent modal
+              console.log('Start session button clicked, multimedia initialized, consent modal shown.');
+          } catch (error) {
+              console.error("Error during session start sequence:", error);
+              // Optionally, provide user feedback here
+          }
+      });
+  } else {
+      console.error('Could not find all required elements for session start: start-session-modal, start-session-button, or consent-modal.');
+  }
 
   await initCore();
   initializeMainUI();
