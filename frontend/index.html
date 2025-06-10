@@ -252,6 +252,23 @@
   <script type="module" src="./js/main.js"></script>
   <script type="module" src="./js/ui/panelManager.js"></script>
 
+  <!-- WebGL Error Overlay -->
+  <div id="webgl-error-overlay" style="display: none;">
+    <div id="webgl-error-message">
+      <h2>WebGL Initialization Error</h2>
+      <p>It seems your browser or device does not support WebGL, or it encountered an error during initialization.</p>
+      <p>Please try the following:</p>
+      <ul>
+        <li>Ensure WebGL is enabled in your browser settings.</li>
+        <li>Update your browser to the latest version.</li>
+        <li>Update your graphics card drivers.</li>
+        <li>Try a different browser.</li>
+      </ul>
+      <p>If the problem persists, your hardware might not be compatible.</p>
+      <p id="webgl-error-details" style="font-size: 0.8em; color: #ccc;"></p>
+    </div>
+  </div>
+
   <!-- Data Storage Consent Modal -->
   <div id="consent-modal" class="modal" style="display:none;">
     <div class="modal-content consent-modal-content">
