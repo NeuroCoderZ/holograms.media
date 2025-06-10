@@ -1,6 +1,7 @@
 import * as THREE from 'three'; // Добавляем импорт THREE для доступа к MathUtils
 import { state } from './init.js';
 import { updateHologramLayout } from '../ui/layoutManager.js'; // Предполагаемое место, пока оставляем как есть
+import { debounce } from '../utils/helpers.js';
 
 // Вспомогательная функция для получения ширины панелей (перенесена из script.js)
 export function getPanelWidths() {
@@ -23,7 +24,7 @@ export function initializeResizeHandler() {
   let lastWidth = window.innerWidth;
   let lastHeight = window.innerHeight;
 
-  window.addEventListener('resize', () => {
+  const handleResizeLogic = () => {
     if (window.innerWidth === lastWidth && window.innerHeight === lastHeight) {
       console.log('[Resize] Window dimensions unchanged, skipping layout update.');
       return;
@@ -105,9 +106,9 @@ export function initializeResizeHandler() {
 
     // Ensure UI elements needed by updateHologramLayout are initialized
     if (state.uiElements && state.uiElements.gridContainer && state.uiElements.gestureArea) {
-      const handsAreCurrentlyVisible = state.uiElements.gestureArea.style.height !== '4px';
+      // const handsAreCurrentlyVisible = state.uiElements.gestureArea.style.height !== '4px'; // This line is no longer needed
       if (typeof updateHologramLayout === 'function') {
-        updateHologramLayout(handsAreCurrentlyVisible);
+        updateHologramLayout(); // Argument removed
         console.log('[Resize] updateHologramLayout called');
       } else {
         console.warn('updateHologramLayout function not found. It needs to be imported or moved.');
@@ -115,5 +116,8 @@ export function initializeResizeHandler() {
     } else {
       console.warn('[Resize] UI elements not ready (gridContainer or gestureArea missing in state.uiElements), skipping updateHologramLayout.');
     }
-  });
+  };
+
+  const debouncedResizeHandler = debounce(handleResizeLogic, 100);
+  window.addEventListener('resize', debouncedResizeHandler);
 }

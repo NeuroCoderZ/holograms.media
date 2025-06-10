@@ -46,12 +46,23 @@ async function loadAudioFile(event) {
           return;
       }
       // Stop and clear existing audio before loading new
+      if (state.audio.audioBufferSource) { // If there's an existing source
+        state.audio.audioBufferSource.onended = null; // Clear its onended handler
+        // stopAudio() will be called if it was playing or paused, ensure it also clears onended
+      }
       if (state.audio.audioBufferSource || state.audio.isPlaying || state.audio.pausedAt > 0) {
         stopAudio(); // Call existing stopAudio to clean up properly
       }
 
       state.audio.audioBuffer = await state.audio.audioContext.decodeAudioData(e.target.result);
       console.log('Аудиофайл успешно загружен и декодирован.');
+
+      // Disable microphone tracks from shared stream
+      if (state.multimodal.currentStream && state.multimodal.currentStream.getAudioTracks().length > 0) {
+        console.log("Disabling microphone tracks from shared stream as audio file is loaded.");
+        state.multimodal.currentStream.getAudioTracks().forEach(track => track.enabled = false);
+      }
+
       if (playButton) playButton.disabled = false;
       if (pauseButton) pauseButton.disabled = false;
       if (stopButton) stopButton.disabled = false;
@@ -61,10 +72,19 @@ async function loadAudioFile(event) {
       state.audio.pausedAt = 0;
       state.audio.startOffset = 0;
       state.audio.isPlaying = false;
-      state.audio.activeSource = 'file'; // Set activeSource to 'file' for rendering silent state
+      state.audio.activeSource = 'file'; // Set activeSource to 'file' for rendering silent state (even before play)
 
     } catch (_error) {
       console.error('Ошибка декодирования аудиофайла:', _error);
+      // Ensure mic tracks are re-enabled if file load fails and they were disabled
+      if (state.multimodal.currentStream && state.multimodal.currentStream.getAudioTracks().length > 0) {
+        const audioTracks = state.multimodal.currentStream.getAudioTracks();
+        // Check if any track is disabled (implies we might have disabled it)
+        if (audioTracks.some(track => !track.enabled)) {
+            console.log("Re-enabling microphone tracks due to audio file load error.");
+            audioTracks.forEach(track => track.enabled = true);
+        }
+      }
       if (fileButton) fileButton.classList.remove('active');
       if (playButton) playButton.disabled = true;
       if (pauseButton) pauseButton.disabled = true;
@@ -123,6 +143,41 @@ function playAudio() {
   state.audio.startOffset = state.audio.audioContext.currentTime - offsetToPlay; 
   state.audio.isPlaying = true;
 
+  state.audio.audioBufferSource.onended = () => {
+    console.log("Audio file playback finished naturally.");
+    // Only perform these actions if the stop was natural, not forced by stopAudio() or loading a new file.
+    if (state.audio.isPlaying) { // isPlaying should be false if stopAudio was called before onended
+        state.audio.isPlaying = false;
+        state.audio.activeSource = 'microphone';
+
+        // Re-enable microphone tracks
+        if (state.multimodal.currentStream && state.multimodal.currentStream.getAudioTracks().length > 0) {
+            state.multimodal.currentStream.getAudioTracks().forEach(track => track.enabled = true);
+            console.log("Microphone tracks re-enabled after file playback finished.");
+        }
+
+        // Restore microphone analysers
+        if (state.audio.microphoneAnalysers?.left && state.audio.microphoneAnalysers?.right) {
+            if (state.audioAnalyzerLeftInstance) {
+                state.audioAnalyzerLeftInstance.setAnalyserNode(state.audio.microphoneAnalysers.left);
+            }
+            if (state.audioAnalyzerRightInstance) {
+                state.audioAnalyzerRightInstance.setAnalyserNode(state.audio.microphoneAnalysers.right);
+            }
+            console.log("Global analysers switched back to microphone after file ended.");
+        } else {
+            if (state.audioAnalyzerLeftInstance) state.audioAnalyzerLeftInstance.setAnalyserNode(null);
+            if (state.audioAnalyzerRightInstance) state.audioAnalyzerRightInstance.setAnalyserNode(null);
+            console.log("Microphone analysers not available, global analysers cleared after file ended.");
+        }
+
+        // Update UI button states
+        if (playButton) playButton.classList.remove('active');
+        if (pauseButton) pauseButton.classList.remove('active');
+        // stopButton is already not active
+    }
+  };
+
   if (playButton) playButton.classList.add('active');
   if (pauseButton) pauseButton.classList.remove('active');
   if (stopButton) stopButton.classList.remove('active');
@@ -152,9 +207,41 @@ function pauseAudio() {
  * Обработчик нажатия кнопки Stop.
  */
 function stopAudio() {
-  if (!state.audio.audioBufferSource && !state.audio.isPlaying && state.audio.pausedAt === 0) return;
+  state.audio.isPlaying = false; // Set this first to prevent onended handler's main logic
+
+  if (!state.audio.audioBufferSource && state.audio.pausedAt === 0) { // No source and not paused means nothing to stop
+      // Still ensure microphone is the source if UI implies stop should do this
+      if (state.audio.activeSource !== 'microphone') {
+          state.audio.activeSource = 'microphone';
+          // Re-enable microphone tracks
+          if (state.multimodal.currentStream && state.multimodal.currentStream.getAudioTracks().length > 0) {
+              state.multimodal.currentStream.getAudioTracks().forEach(track => track.enabled = true);
+              console.log("Microphone tracks re-enabled on stopAudio (no active playback).");
+          }
+          // Restore microphone analysers
+          if (state.audio.microphoneAnalysers?.left && state.audio.microphoneAnalysers?.right) {
+              if (state.audioAnalyzerLeftInstance) {
+                  state.audioAnalyzerLeftInstance.setAnalyserNode(state.audio.microphoneAnalysers.left);
+              }
+              if (state.audioAnalyzerRightInstance) {
+                  state.audioAnalyzerRightInstance.setAnalyserNode(state.audio.microphoneAnalysers.right);
+              }
+              console.log("Global analysers switched back to microphone on stopAudio (no active playback).");
+          } else {
+              if (state.audioAnalyzerLeftInstance) state.audioAnalyzerLeftInstance.setAnalyserNode(null);
+              if (state.audioAnalyzerRightInstance) state.audioAnalyzerRightInstance.setAnalyserNode(null);
+              console.log("Microphone analysers not available, global analysers cleared on stopAudio (no active playback).");
+          }
+      }
+      // Update UI
+      if (playButton) playButton.classList.remove('active');
+      if (pauseButton) pauseButton.classList.remove('active');
+      if (stopButton) stopButton.classList.remove('active');
+      return;
+  }
   
   if (state.audio.audioBufferSource) {
+    state.audio.audioBufferSource.onended = null; // Important: Clear onended handler
     try {
       state.audio.audioBufferSource.stop();
     } catch (error) {
@@ -169,41 +256,41 @@ function stopAudio() {
     state.audio.filePlayerGainNode = null;
   }
   
-  // Analysers are connected via the gain node and splitter. Disconnecting gain node is enough.
-  // Setting to null helps GC.
   if (state.audio.filePlayerAnalysers) {
-      // Explicitly disconnect analysers - good practice though not strictly required if gain node is disconnected
       if (state.audio.filePlayerAnalysers.left) state.audio.filePlayerAnalysers.left.disconnect();
       if (state.audio.filePlayerAnalysers.right) state.audio.filePlayerAnalysers.right.disconnect();
       state.audio.filePlayerAnalysers = null;
-
-      // Reset global analyser instances if they were using the file player's analysers
-      if (state.audioAnalyzerLeftInstance && state.audioAnalyzerLeftInstance.analyserNode === state.audio.filePlayerAnalysers?.left) { // Check needed as filePlayerAnalysers is now null
-        // The above check will be false since filePlayerAnalysers is null.
-        // We need a way to know if they *were* set to these.
-        // Simpler: if activeSource is 'file', assume they are set to file analysers.
-      }
-      // Given activeSource is 'file', and we are stopping, it's safe to assume
-      // the global analysers should be cleared if they were for this source.
-      // However, the check `state.audio.activeSource === 'file'` is better placed before nullifying.
-      // Let's refine:
   }
   
-  // If the active source was this file player, clear the global analysers.
-  if (state.audio.activeSource === 'file') {
-    if (state.audioAnalyzerLeftInstance) {
-        state.audioAnalyzerLeftInstance.setAnalyserNode(null);
-    }
-    if (state.audioAnalyzerRightInstance) {
-        state.audioAnalyzerRightInstance.setAnalyserNode(null);
-    }
-    // console.log('Global AudioAnalyzer instances reset after file stop.'); // Optional: for debugging
-  }
-
   state.audio.pausedAt = 0;
   state.audio.startOffset = 0;
-  state.audio.isPlaying = false;
-  state.audio.activeSource = 'file'; // Keep activeSource as 'file' for silent/stopped visualization
+  // isPlaying is already false
+
+  // --- Switch back to microphone ---
+  state.audio.activeSource = 'microphone';
+  console.log("Audio source switched to microphone after stopping file.");
+
+  // Re-enable microphone tracks from shared stream
+  if (state.multimodal.currentStream && state.multimodal.currentStream.getAudioTracks().length > 0) {
+    console.log("Re-enabling microphone tracks from shared stream.");
+    state.multimodal.currentStream.getAudioTracks().forEach(track => track.enabled = true);
+  }
+
+  // Restore microphone analysers as active for the global instances
+  if (state.audio.microphoneAnalysers?.left && state.audio.microphoneAnalysers?.right) {
+      if (state.audioAnalyzerLeftInstance) {
+          state.audioAnalyzerLeftInstance.setAnalyserNode(state.audio.microphoneAnalysers.left);
+      }
+      if (state.audioAnalyzerRightInstance) {
+          state.audioAnalyzerRightInstance.setAnalyserNode(state.audio.microphoneAnalysers.right);
+      }
+      console.log("Global analysers switched back to microphone.");
+  } else {
+      // Fallback: if microphoneAnalysers aren't available for some reason, clear the global ones.
+      if (state.audioAnalyzerLeftInstance) state.audioAnalyzerLeftInstance.setAnalyserNode(null);
+      if (state.audioAnalyzerRightInstance) state.audioAnalyzerRightInstance.setAnalyserNode(null);
+      console.log("Microphone analysers not available on stop, global analysers cleared.");
+  }
 
   // Assumes playButton, pauseButton, stopButton are module-level variables
   // assigned in initializeAudioPlayerControls()
