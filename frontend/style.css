@@ -1592,3 +1592,60 @@ body.dimmed-for-tour > *:not(.highlighted-element) {
   padding-top: 10px;
 }
 /* --- End WebGL Error Overlay Styles --- */
+
+/* ============================================= */
+/* ==       MOBILE-FIRST RESPONSIVE STYLES      == */
+/* ============================================= */
+
+/* Применяется к экранам шириной до 768px (смартфоны, планшеты в портретном режиме) */
+@media (max-width: 768px) {
+
+  /* 1. Панели по умолчанию скрыты */
+  #left-panel, #right-panel {
+    transform: translateX(-100%); /* Скрываем левую панель за левым краем */
+    transition: transform 0.3s ease-in-out;
+  }
+  #right-panel {
+    transform: translateX(100%); /* Скрываем правую панель за правым краем */
+  }
+
+  /* 2. Полноэкранный режим для активных панелей */
+  #left-panel.visible, #right-panel.visible {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 100;
+    transform: translateX(0); /* Показываем панель, выдвигая ее */
+
+    /* Эффект "матового стекла" (Frosted Glass) */
+    background-color: rgba(20, 20, 25, 0.6); /* Полупрозрачный фон */
+    -webkit-backdrop-filter: blur(10px); /* Размытие для Webkit (Chrome, Safari) */
+    backdrop-filter: blur(10px); /* Стандартное свойство размытия */
+  }
+
+  /* 3. Ширина панелей */
+  #left-panel.visible {
+    width: 100%; /* Левая панель занимает весь экран */
+  }
+
+  #right-panel.visible {
+     width: 100%;
+  }
+
+  /* 4. Скрываем кнопку переключения панелей, если обе панели скрыты */
+  /* ID to be verified: #toggle-panels-btn OR #togglePanelsButton */
+  #togglePanelsButton { /* This line will be updated based on index.html */
+      /* Можно оставить ее видимой или сделать свою логику для мобильных */
+      /* Например, кнопка "Меню" в углу */
+  }
+
+  /* 5. Область голограммы занимает почти весь экран */
+  #grid-container {
+    position: absolute;
+    top: 0;
+    left: 5%; /* Отступ 5% слева */
+    width: 90%; /* Ширина 90% */
+    height: 100%;
+  }
+}
