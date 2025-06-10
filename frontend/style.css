@@ -251,7 +251,7 @@ body {
   left: 0;
   width: 100%;
   height: calc(100vh - 4px); /* Full height minus gesture area height */
-  z-index: 50;
+    z-index: 10;
   background-color: transparent; /* Фон прозрачный */
 }
 
@@ -1690,4 +1690,8 @@ body.dimmed-for-tour > *:not(.highlighted-element) {
 /* If hands are detected in portrait mode, we might want a specific height */
 #gesture-area.portrait.hands-detected {
     height: 25vh; /* Example: expand to a fixed height when hands are seen in portrait */
+}
+
+#camera-view {
+    transform: scaleX(-1);
 }

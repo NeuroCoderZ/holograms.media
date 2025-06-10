@@ -47,6 +47,12 @@ export function initAudioVisualization() {
  * based on the latest audio data from the AudioAnalyzer.
  */
 function animateAudioVisuals() {
+  // ADD THIS CHECK HERE
+  if (!state.audio.analyserLeft || !state.audio.analyserRight) {
+      // If analyzers are not ready, DO NOT request the next frame.
+      // Just exit.
+      return;
+  }
   requestAnimationFrame(animateAudioVisuals);
 
   // Use the global instances from state

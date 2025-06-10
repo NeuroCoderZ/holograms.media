@@ -118,6 +118,6 @@ export function initializeResizeHandler() {
     }
   };
 
-  const debouncedResizeHandler = debounce(handleResizeLogic, 100);
+  const debouncedResizeHandler = debounce(handleResizeLogic, 150);
   window.addEventListener('resize', debouncedResizeHandler);
 }
