@@ -40,13 +40,13 @@ export function setupDOMEventHandlers() {
     // Observe changes in the audio player container to adjust layout
     setupAudioPlayerObserver();
 
-    // Initialize panel state based on local storage
-    if (state.panelManager && typeof state.panelManager.initializePanelManager === 'function') {
-      state.panelManager.initializePanelManager();
-      console.log('Called initializePanelManager on state.panelManager');
-    } else {
-      console.warn('state.panelManager or state.panelManager.initializePanelManager is not available in events.js for initialization.');
-    }
+    // Initialize panel state based on local storage - This should be handled by main.js
+    // if (state.panelManager && typeof state.panelManager.initializePanelManager === 'function') {
+    //   state.panelManager.initializePanelManager();
+    //   console.log('Called initializePanelManager on state.panelManager');
+    // } else {
+    //   console.warn('state.panelManager or state.panelManager.initializePanelManager is not available in events.js for initialization.');
+    // }
 }
 
 /**
@@ -321,12 +321,16 @@ export function setupEventListeners() {
 
 // Настройка обработчиков кнопок
 function setupButtonListeners() {
-  // Кнопки управления панелями
-  if (ui.togglePanelsButton) {
-    ui.togglePanelsButton.addEventListener('click', () => {
-      state.panelManager.toggleMainPanels();
-    });
-  }
+  // Кнопки управления панелями - This is handled by PanelManager itself, initialized in main.js
+  // if (ui.togglePanelsButton) {
+  //   ui.togglePanelsButton.addEventListener('click', () => {
+  //     if (state.panelManager && typeof state.panelManager.toggleMainPanels === 'function') {
+  //       state.panelManager.toggleMainPanels();
+  //     } else {
+  //       console.warn('state.panelManager or its toggleMainPanels method not found.');
+  //     }
+  //   });
+  // }
   
   // Кнопки аудио управления - Listeners are now handled by audioFilePlayer.js and microphoneManager.js
   

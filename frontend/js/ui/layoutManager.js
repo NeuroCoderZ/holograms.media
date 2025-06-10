@@ -24,29 +24,48 @@ export function updateHologramLayout() { // Removed handsVisible parameter
 
   const gridContainer = state.uiElements.gridContainer;
   const hologramPivot = state.hologramRendererInstance.getHologramPivot();
+  const isMobile = window.innerWidth <= 768; // Match CSS media query
 
-  // 2. Расчет Размеров (Calculate Dimensions)
-  const leftPanelCurrentWidth = getLeftPanelWidth(); // Используем импортированную функцию
-  const totalPanelCurrentWidth = getPanelWidths(); // Используем импортированную функцию
+  let finalWidth;
+  const availableHeight = window.innerHeight; // gridContainer will generally take full available height
 
-  const availableWidth = window.innerWidth - totalPanelCurrentWidth;
-  const availableHeight = window.innerHeight; // gridContainer will take full available height
+  if (isMobile) {
+    // On mobile, CSS handles gridContainer's L/R positioning and width (e.g., left: 5vw, width: 90vw).
+    // We must ensure that the gridContainer's styles are applied before reading clientWidth.
+    // A simple way to help ensure this is to trigger a reflow if necessary,
+    // though typically this function is called after major layout changes (like resize)
+    // where styles should be computed.
+    gridContainer.style.position = 'absolute'; // Ensure position is set for offset/client calculations
+    gridContainer.style.top = '0px';
+    // gridContainer.style.left and gridContainer.style.width are set by CSS.
+    // We read them after ensuring CSS is likely applied.
+    gridContainer.getBoundingClientRect(); // Force reflow to get latest computed dimensions
+    finalWidth = gridContainer.clientWidth;
 
-  // Ensure dimensions are positive
-  const finalWidth = Math.max(1, availableWidth);
+    // Ensure gridContainer height is set (CSS might do this, but being explicit is safer for JS calcs)
+    gridContainer.style.height = `${Math.max(1, availableHeight)}px`;
+
+  } else {
+    // Desktop logic: JS controls panel and gridContainer layout
+    const leftPanelCurrentWidth = getLeftPanelWidth();
+    const totalPanelCurrentWidth = getPanelWidths();
+
+    const calculatedWidth = window.innerWidth - totalPanelCurrentWidth;
+    finalWidth = Math.max(1, calculatedWidth);
+
+    gridContainer.style.position = 'absolute';
+    gridContainer.style.top = '0px';
+    gridContainer.style.left = `${leftPanelCurrentWidth}px`;
+    gridContainer.style.width = `${finalWidth}px`;
+    gridContainer.style.height = `${Math.max(1, availableHeight)}px`;
+  }
+
+  // Ensure final dimensions are positive for renderer and camera
+  finalWidth = Math.max(1, finalWidth);
   const finalHeight = Math.max(1, availableHeight);
 
-  // Apply styles to gridContainer to position and size it
-  gridContainer.style.position = 'absolute';
-  gridContainer.style.top = '0px';
-  gridContainer.style.left = `${leftPanelCurrentWidth}px`;
-  gridContainer.style.width = `${finalWidth}px`;
-  gridContainer.style.height = `${finalHeight}px`;
-
-  // Update renderer size to match gridContainer
-  // This is crucial if the renderer's canvas is directly inside gridContainer and should fill it.
-  // This might also be handled by resizeHandler, but explicit here ensures it for this function's scope.
-  if (state.renderer) { // Added a check for state.renderer
+  // Update renderer size
+  if (state.renderer) {
     state.renderer.setSize(finalWidth, finalHeight);
   }
 

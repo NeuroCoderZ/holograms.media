@@ -1629,12 +1629,12 @@ body.dimmed-for-tour > *:not(.highlighted-element) {
 
   /* 3. Логика показа панелей */
   #left-panel.visible {
-    width: 33.33vw; /* 1/3 ширины экрана */
+    width: 33.33vw !important; /* 1/3 ширины экрана */
     transform: translateX(0);
   }
 
   #right-panel.visible {
-    width: 66.67vw; /* 2/3 ширины экрана */
+    width: 66.67vw !important; /* 2/3 ширины экрана */
     transform: translateX(0);
     /* Примечание: левая и правая панели теперь могут быть открыты одновременно */
   }
