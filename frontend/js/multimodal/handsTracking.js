@@ -267,7 +267,7 @@ function onResults(results) {
             const lineMaterial = new THREE.LineBasicMaterial({
                 color: 0xffffff, // White lines
                 transparent: true,
-                opacity: 0.6,
+                opacity: 0.8,
                 linewidth: 2, // Note: linewidth might not be respected by all systems/drivers
             });
 
@@ -284,6 +284,7 @@ function onResults(results) {
                 HAND_CONNECTIONS.flatMap(conn => [handPoints3D[conn[0]], handPoints3D[conn[1]]])
             );
             const handLines = new THREE.LineSegments(linesGeometry, lineMaterial);
+            handLines.renderOrder = 5; // Ensure hands are rendered on top
             state.multimodal.handMeshGroup.add(handLines);
 
             // Create points geometry and colors
@@ -301,6 +302,7 @@ function onResults(results) {
             }
             pointsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
             const handPointsMesh = new THREE.Points(pointsGeometry, pointsMaterial);
+            handPointsMesh.renderOrder = 5; // Ensure hands are rendered on top
             state.multimodal.handMeshGroup.add(handPointsMesh);
 
             // --- 2D Landmark Rendering on gesture-area ---
