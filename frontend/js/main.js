@@ -30,6 +30,7 @@ import { initializeConsentManager } from './core/consentManager.js'; // Import C
 import { initCore, state } from './core/init.js'; // Adjusted path, and import state
 import { setupEventListeners } from './core/events.js';
 import { runFrontendDiagnostics } from './core/diagnostics.js';
+import { setupFirstInteractionListener } from './core/mediaInitializer.js'; // Added import
 
 // Импорт UI модулей
 import { initializeMainUI } from './ui/uiManager.js'; // Модуль управления UI
@@ -42,6 +43,7 @@ import { initializeVersionManager }
 from './ui/versionManager.js'; // Импорт менеджера версий
 import { initializeGestureAreaVisualization } 
 from './ui/gestureAreaVisualization.js'; // Импорт визуализации области жестов
+import { initializeGestureArea } from './ui/gestureAreaManager.js'; // <-- NEW IMPORT
 import { initializeChatDisplay } from './panels/chatMessages.js';
 // Импорт аудио модулей
 import { initializeSpeechInput } from './audio/speechInput.js';
@@ -99,6 +101,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2. Инициализируем основные UI компоненты (зависят от state)
   initializeMainUI();
 
+  setupFirstInteractionListener(); // <-- NEWLY ADDED CALL
+
   // Initialize Auth UI elements
   setAuthDOMElements('signInButton', 'signOutButton', 'userStatus');
   // Initialize Firebase Auth observer and pass callback for token handling
@@ -113,6 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeVersionManager();
   initChatUI(); // Initialize Chat UI
   initializeGestureAreaVisualization();
+  initializeGestureArea(); // <-- NEWLY ADDED CALL
   initializeChatDisplay();
 
   // 3. Инициализируем 3D сцену (зависят от state, UI) -> Handled by initCore
