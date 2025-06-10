@@ -21,41 +21,35 @@ export class MicrophoneManager {
     if (document.visibilityState === 'hidden') {
       if (this.microphoneStream) {
         console.log('Page hidden, stopping microphone.');
+        // Check if this stop is appropriate, it might stop a shared stream.
+        // For now, let's assume it's okay if the app logic expects this.
         this.stop();
         this._wasActiveBeforeHidden = true;
       }
     } else if (document.visibilityState === 'visible') {
       if (this._wasActiveBeforeHidden) {
-        console.log('Page visible, microphone was active. Consider re-init or prompt.');
-        // Optional: Automatically attempt to re-initialize or prompt user.
-        // For now, we just reset the flag. User might need to click mic button again.
-        // Example: this.init().catch(err => console.error("Error re-initializing mic on visibility", err));
+        console.log('Page visible, microphone was active. User might need to re-enable manually.');
+        // Example: Consider prompting user or having a UI element to re-init.
+        // await this.init().catch(err => console.error("Error re-initializing mic on visibility", err));
         this._wasActiveBeforeHidden = false;
       }
     }
   }
 
-  async init() {
+  async initializeWithStream(stream) {
     try {
       if (!this.audioContext || this.audioContext.state === 'closed') {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        console.log('New AudioContext created.');
+        console.log('New AudioContext created in initializeWithStream.');
       } else if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume();
-        console.log('AudioContext resumed.');
+        console.log('AudioContext resumed in initializeWithStream.');
       }
 
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        console.error('getUserMedia not supported on your browser!');
-        throw new Error('getUserMedia not supported on your browser!');
-      }
+      this.microphoneStream = stream; // Store the provided stream
 
-      console.log('Requesting microphone access...');
-      this.microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log('Microphone access granted.');
-
-      this.source = this.audioContext.createMediaStreamSource(this.microphoneStream);
-      console.log('MediaStreamSource created.');
+      this.source = this.audioContext.createMediaStreamSource(stream);
+      console.log('MediaStreamSource created from provided stream.');
 
       this.analyserLeft = this.audioContext.createAnalyser();
       this.analyserRight = this.audioContext.createAnalyser();
@@ -67,37 +61,113 @@ export class MicrophoneManager {
       this.analyserRight.smoothingTimeConstant = this.smoothingTimeConstant;
       console.log(`Analysers configured with fftSize: ${this.fftSize}, smoothingTimeConstant: ${this.smoothingTimeConstant}`);
 
-      this.splitter = this.audioContext.createChannelSplitter(2);
-      console.log('ChannelSplitter created.');
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+          throw new Error("Provided stream has no audio tracks.");
+      }
 
-      this.source.connect(this.splitter);
-      this.splitter.connect(this.analyserLeft, 0);
-      this.splitter.connect(this.analyserRight, 1);
-      console.log('Audio nodes connected: Source -> Splitter -> Analysers.');
+      // Clean up previous splitter if it exists, before re-assigning or deciding not to use it.
+      if (this.splitter) {
+          this.splitter.disconnect();
+          this.splitter = null;
+      }
+      // Also, ensure the source is disconnected from any previous configuration
+      // before connecting it anew. This is crucial if initializeWithStream can be called multiple times.
+      if (this.source && this.source.numberOfOutputs > 0) {
+          this.source.disconnect();
+      }
 
-      // Direct state manipulation removed from here.
-      // The caller of init() will be responsible for updating the global state if necessary.
+
+      const channelCount = audioTracks[0].getSettings().channelCount;
+      console.log(`Audio track channel count: ${channelCount}`);
+
+      if (channelCount === 2) {
+          console.log("Stereo stream detected. Using ChannelSplitter.");
+          this.splitter = this.audioContext.createChannelSplitter(2);
+          this.source.connect(this.splitter);
+          this.splitter.connect(this.analyserLeft, 0);
+          this.splitter.connect(this.analyserRight, 1);
+          console.log('Stereo audio nodes connected: Source -> Splitter -> Analysers.');
+      } else {
+          console.log("Mono stream detected (or channelCount not 2). Duplicating source to both analysers.");
+          // Ensure this.splitter is null and disconnected if we are in mono mode.
+          if (this.splitter) {
+              this.splitter.disconnect();
+              this.splitter = null;
+          }
+          this.source.connect(this.analyserLeft);
+          this.source.connect(this.analyserRight); // Connect source to both for mono
+          console.log('Mono audio nodes connected: Source -> AnalyserLeft & AnalyserRight.');
+      }
 
       return {
-        analyserLeft: this.analyserLeft,
-        analyserRight: this.analyserRight,
-        audioContext: this.audioContext,
+          analyserLeft: this.analyserLeft,
+          analyserRight: this.analyserRight,
+          audioContext: this.audioContext,
+          stream: this.microphoneStream // Return the stream as well
       };
     } catch (error) {
-      console.error('Error during microphone initialization:', error);
-      // Perform cleanup
+      console.error('Error during microphone initialization with stream:', error);
+      // Cleanup logic: disconnect nodes, but don't stop tracks of the provided stream.
       if (this.source) this.source.disconnect();
       if (this.splitter) this.splitter.disconnect();
-      if (this.microphoneStream) {
-        this.microphoneStream.getTracks().forEach(track => track.stop());
-      }
       this.source = null;
       this.splitter = null;
       this.analyserLeft = null;
       this.analyserRight = null;
-      this.microphoneStream = null;
-      // Do not close audioContext here - let the application decide.
-      throw error; // Re-throw to allow caller to handle it
+      // this.microphoneStream = null; // Do not nullify the stream as it's external.
+      throw error;
+    }
+  }
+
+  async init() {
+    try {
+      // Ensure AudioContext is ready
+      if (!this.audioContext || this.audioContext.state === 'closed') {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('New AudioContext created for init().');
+      } else if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+        console.log('AudioContext resumed for init().');
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error('getUserMedia not supported on your browser!');
+        throw new Error('getUserMedia not supported on your browser!');
+      }
+
+      console.log('Requesting microphone access for init()...');
+      // Request a potentially stereo stream for internal init.
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, channelCount: 2 } });
+      console.log('Microphone access granted for init().');
+
+      // Call the new method to handle the stream processing
+      // This will also set this.microphoneStream
+      return await this.initializeWithStream(stream);
+
+    } catch (error) {
+      console.error('Error during microphone init() (getUserMedia part or subsequent initializeWithStream):', error);
+      // If stream was obtained by this.init() but initializeWithStream failed, stop its tracks.
+      // this.microphoneStream would have been set by initializeWithStream if it got that far with this stream.
+      // However, initializeWithStream is designed not to nullify this.microphoneStream on its own error
+      // if the stream was external. Here, the stream is internal to init().
+      // A simple check: if this.microphoneStream is the stream we just got and it failed, stop it.
+      // The current logic in initializeWithStream already handles its own node cleanup.
+      // If initializeWithStream failed, this.microphoneStream might still be the stream we just got.
+      // It's safer to check if this.microphoneStream is not null AND if it was internally generated.
+      // For simplicity, if init fails, and it created a stream, that stream should be stopped.
+      // The `initializeWithStream` already sets `this.microphoneStream`.
+      // If it fails AFTER setting it, then this.microphoneStream refers to the stream created by init.
+      if (this.microphoneStream && this.microphoneStream.getTracks().length > 0) {
+           // Check if any track is still active, this implies it's the stream from this init()
+           const isActive = this.microphoneStream.getTracks().some(track => track.readyState === 'live');
+           if (isActive) {
+             console.log("Stopping tracks of stream created by init() due to an error.");
+             this.microphoneStream.getTracks().forEach(track => track.stop());
+           }
+      }
+      this.microphoneStream = null; // Ensure it's nullified if init fails to complete.
+      throw error;
     }
   }
 

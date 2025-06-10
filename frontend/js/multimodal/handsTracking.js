@@ -32,7 +32,7 @@ let handSpheres = { left: [], right: [] }; // Массив для хранени
 // --- MediaPipe Hands Functions ---
 
 // Function to start the video stream and initialize MediaPipe Hands processing
-async function startVideoStream(videoElement, handsInstance) {
+async function startVideoStream(videoElement, handsInstance, stream = null) { // NEW: stream parameter
     console.log(">>> Attempting to start video stream...");
     try {
         // Проверка поддержки WebGL2
@@ -58,16 +58,37 @@ async function startVideoStream(videoElement, handsInstance) {
             return;
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: { ideal: 320 }, // Уменьшаем размер для снижения нагрузки
-                height: { ideal: 240 },
-                facingMode: 'user' // Используем фронтальную камеру для надежности
-            }
-        });
-        console.log(">>> Video stream acquired successfully (user camera).");
-        videoElement.srcObject = stream;
-        state.multimodal.currentStream = stream; // Store in state
+        let mediaStreamToUse;
+
+        if (stream) {
+            console.log(">>> Using provided MediaStream for video.");
+            mediaStreamToUse = stream;
+            // If the provided stream might contain audio, and videoElement is not muted,
+            // you might want to ensure only video plays.
+            // For example, by cloning and using only video tracks:
+            // const videoTracks = stream.getVideoTracks();
+            // if (videoTracks.length > 0) {
+            //   mediaStreamToUse = new MediaStream(videoTracks);
+            // } else {
+            //   console.error("Provided stream has no video tracks.");
+            //   throw new Error("Provided stream has no video tracks.");
+            // }
+            // However, for now, direct use is fine as videoElement typically handles this.
+            // videoElement.muted = true; // Another option if audio shouldn't play
+        } else {
+            console.log(">>> No stream provided, requesting new video-only stream via getUserMedia.");
+            mediaStreamToUse = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 320 }, // Уменьшаем размер для снижения нагрузки
+                    height: { ideal: 240 },
+                    facingMode: 'user' // Используем фронтальную камеру для надежности
+                }
+            });
+            console.log(">>> New video-only stream acquired successfully.");
+        }
+
+        videoElement.srcObject = mediaStreamToUse;
+        state.multimodal.currentStream = mediaStreamToUse; // Store the stream being used
 
         // Используем onloadedmetadata и onloadeddata для большей надежности
         videoElement.onloadedmetadata = () => {
@@ -193,7 +214,25 @@ function onResults(results) {
         // The height will be controlled by CSS rules for #gesture-area and #gesture-area.hands-detected
         // console.log(`Gesture area class updated based on hands presence. Hands: ${handsArePresent}`);
     }
-    updateHologramLayout(state.multimodal.handsVisible);
+    updateHologramLayout(); // Argument removed
+
+    // New logic for .visible class in landscape mode:
+    if (gestureAreaElement) {
+        const isLandscape = gestureAreaElement.classList.contains('landscape');
+
+        if (isLandscape) {
+            if (handsArePresent) {
+                gestureAreaElement.classList.add('visible');
+                // console.log('[HandsTracking] Hands detected in landscape, adding .visible to gesture-area.');
+            } else {
+                gestureAreaElement.classList.remove('visible');
+                // console.log('[HandsTracking] No hands detected in landscape, removing .visible from gesture-area.');
+            }
+        } else {
+            // In portrait mode, the .visible class (for landscape sliding) should be absent.
+            gestureAreaElement.classList.remove('visible');
+        }
+    }
 
     if (!state.multimodal.isGestureCanvasReady) {
         // console.warn("onResults called but isGestureCanvasReady is false. Skipping draw.");
@@ -227,13 +266,17 @@ function onResults(results) {
             // Create line material
             const lineMaterial = new THREE.LineBasicMaterial({
                 color: 0xffffff, // White lines
+                transparent: true,
+                opacity: 0.6,
                 linewidth: 2, // Note: linewidth might not be respected by all systems/drivers
             });
 
             // Create points material with vertex colors
             const pointsMaterial = new THREE.PointsMaterial({
                 vertexColors: true,
-                size: 8, // Size of points
+                size: 1.0, // Adjusted for world units
+                transparent: true,
+                opacity: 0.8
             });
 
             // Create lines geometry
