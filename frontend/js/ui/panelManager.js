@@ -91,40 +91,59 @@ class PanelManager {
             return;
         }
 
-        // Check if the left panel is currently visible.
-        // Assumes both panels always have the same visibility state regarding the 'visible' class.
-        const isCurrentlyVisible = this.leftPanelElement.classList.contains('visible');
+        const isMobile = window.innerWidth <= 768;
+        let newPanelState;
 
-        // Toggle the 'visible' class on both panels.
-        // If it was visible, it becomes hidden. If it was hidden, it becomes visible.
-        this.leftPanelElement.classList.toggle('visible');
-        this.rightPanelElement.classList.toggle('visible');
+        if (isMobile) {
+            // On mobile, toggle only the left panel
+            const isLeftPanelVisible = this.leftPanelElement.classList.contains('visible');
+            this.leftPanelElement.classList.toggle('visible');
+            // If right panel exists and might be visible, hide it explicitly on mobile when left is toggled.
+            // This ensures only one panel can be open at a time in the new mobile UX.
+            if (this.rightPanelElement.classList.contains('visible')) {
+                this.rightPanelElement.classList.remove('visible');
+            }
 
-        // The 'show-mode' on the button should be active when panels are NOT visible.
-        // So, if they were visible (and now are not), add 'show-mode'.
-        // If they were not visible (and now are), remove 'show-mode'.
-        this.togglePanelsButtonElement.classList.toggle('show-mode', isCurrentlyVisible);
+            newPanelState = isLeftPanelVisible ? 'hidden' : 'visible'; // State of the left panel
+            // Button 'show-mode' should be active if the left panel is now hidden
+            this.togglePanelsButtonElement.classList.toggle('show-mode', isLeftPanelVisible);
+            // localStorage might not be directly applicable here if behavior is always to hide other panels.
+            // Or, we can decide what 'panelsHidden' means on mobile.
+            // For simplicity, let's assume 'panelsHidden' reflects the left panel's state on mobile.
+            try {
+                localStorage.setItem('panelsHidden', isLeftPanelVisible.toString());
+            } catch (e) {
+                console.error('Error saving panel visibility to localStorage (mobile):', e);
+            }
+            console.log(`Левая панель (mobile) ${newPanelState}`);
 
-        // Update localStorage: 'panelsHidden' should be true if they are now hidden (i.e., they were visible before toggle).
-        try {
-            localStorage.setItem('panelsHidden', isCurrentlyVisible.toString());
-        } catch (e) {
-            console.error('Error saving panel visibility to localStorage:', e);
+        } else {
+            // On desktop, toggle both panels
+            const arePanelsCurrentlyVisible = this.leftPanelElement.classList.contains('visible');
+            this.leftPanelElement.classList.toggle('visible');
+            this.rightPanelElement.classList.toggle('visible');
+
+            newPanelState = arePanelsCurrentlyVisible ? 'hidden' : 'visible'; // State of both panels
+            // Button 'show-mode' should be active if panels are now hidden
+            this.togglePanelsButtonElement.classList.toggle('show-mode', arePanelsCurrentlyVisible);
+            try {
+                localStorage.setItem('panelsHidden', arePanelsCurrentlyVisible.toString());
+            } catch (e) {
+                console.error('Error saving panel visibility to localStorage (desktop):', e);
+            }
+            console.log(`Основные панели (desktop) ${newPanelState}`);
         }
 
         // Dispatch uiStateChanged event
-        // If they were visible, their new state is 'hidden'. Otherwise, it's 'visible'.
-        const newPanelState = isCurrentlyVisible ? 'hidden' : 'visible';
         const event = new CustomEvent('uiStateChanged', {
             detail: {
-                component: 'mainPanels',
+                component: isMobile ? 'leftPanel' : 'mainPanels', // Be more specific for mobile
                 newState: newPanelState
             }
         });
         window.dispatchEvent(event);
 
         setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-        console.log(`Основные панели ${newPanelState}`);
     }
 
     /**

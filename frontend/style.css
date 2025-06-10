@@ -1600,52 +1600,61 @@ body.dimmed-for-tour > *:not(.highlighted-element) {
 /* Применяется к экранам шириной до 768px (смартфоны, планшеты в портретном режиме) */
 @media (max-width: 768px) {
 
-  /* 1. Панели по умолчанию скрыты */
-  #left-panel, #right-panel {
-    transform: translateX(-100%); /* Скрываем левую панель за левым краем */
-    transition: transform 0.3s ease-in-out;
-  }
-  #right-panel {
-    transform: translateX(100%); /* Скрываем правую панель за правым краем */
-  }
+  /* --- СТИЛИ ПАНЕЛЕЙ --- */
 
-  /* 2. Полноэкранный режим для активных панелей */
-  #left-panel.visible, #right-panel.visible {
+  /* 1. Позиционируем панели абсолютно, чтобы они не влияли на основной поток */
+  #left-panel, #right-panel {
     position: fixed;
     top: 0;
-    left: 0;
     height: 100%;
     z-index: 100;
-    transform: translateX(0); /* Показываем панель, выдвигая ее */
+    transition: transform 0.3s ease-in-out;
 
-    /* Эффект "матового стекла" (Frosted Glass) */
-    background-color: rgba(20, 20, 25, 0.6); /* Полупрозрачный фон */
-    -webkit-backdrop-filter: blur(10px); /* Размытие для Webkit (Chrome, Safari) */
-    backdrop-filter: blur(10px); /* Стандартное свойство размытия */
+    /* Эффект "матового стекла" */
+    background-color: rgba(20, 20, 25, 0.5); /* Прозрачность 50% */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
-  /* 3. Ширина панелей */
+  /* 2. Скрываем панели за пределами экрана по умолчанию */
+  #left-panel {
+    left: 0;
+    transform: translateX(-100%);
+  }
+
+  #right-panel {
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  /* 3. Логика показа панелей */
   #left-panel.visible {
-    width: 100%; /* Левая панель занимает весь экран */
+    width: 33.33vw; /* 1/3 ширины экрана */
+    transform: translateX(0);
   }
 
   #right-panel.visible {
-     width: 100%;
+    width: 66.67vw; /* 2/3 ширины экрана */
+    transform: translateX(0);
+    /* Примечание: левая и правая панели теперь могут быть открыты одновременно */
   }
 
-  /* 4. Скрываем кнопку переключения панелей, если обе панели скрыты */
-  /* ID to be verified: #toggle-panels-btn OR #togglePanelsButton */
-  #togglePanelsButton { /* This line will be updated based on index.html */
-      /* Можно оставить ее видимой или сделать свою логику для мобильных */
-      /* Например, кнопка "Меню" в углу */
-  }
+  /* --- СТИЛИ КОНТЕЙНЕРА ГОЛОГРАММЫ --- */
 
-  /* 5. Область голограммы занимает почти весь экран */
+  /* 4. Контейнер голограммы теперь всегда занимает 90% ширины с отступами */
   #grid-container {
     position: absolute;
     top: 0;
-    left: 5%; /* Отступ 5% слева */
-    width: 90%; /* Ширина 90% */
+    left: 5vw; /* 5% отступ слева */
+    width: 90vw; /* 90% ширина */
     height: 100%;
+    z-index: 1; /* Убедимся, что он под панелями */
+  }
+
+  /* Сохраняем другие стили, если они были */
+  /* Например, кнопка "Меню" в углу */
+  #togglePanelsButton { /* This line will be updated based on index.html */
+      /* Можно оставить ее видимой или сделать свою логику для мобильных */
+      /* Например, кнопка "Меню" в углу */
   }
 }
