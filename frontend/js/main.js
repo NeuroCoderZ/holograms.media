@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               console.error("Error during session start sequence:", error);
               // Optionally, provide user feedback here
           }
-      });
+      }, { once: true }); // Added { once: true }
   } else {
       console.error('Could not find all required elements for session start: start-session-modal, start-session-button, or consent-modal.');
   }

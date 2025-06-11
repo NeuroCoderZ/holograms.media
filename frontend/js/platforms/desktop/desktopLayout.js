@@ -14,9 +14,23 @@ export class DesktopLayout {
         this.rightPanelElement = document.getElementById('right-panel');
         this.togglePanelsButtonElement = document.getElementById('togglePanelsButton');
 
-        if (!this.leftPanelElement || !this.rightPanelElement || !this.togglePanelsButtonElement) {
-            console.error('[DesktopLayout] Could not find all necessary panel elements.');
-            return;
+        let criticalElementMissing = false;
+        if (!this.leftPanelElement) {
+            console.error('[CRITICAL ERROR][DesktopLayout] Left panel element (#left-panel) not found. Further initialization of DesktopLayout aborted.');
+            criticalElementMissing = true;
+        }
+        if (!this.rightPanelElement) {
+            console.error('[CRITICAL ERROR][DesktopLayout] Right panel element (#right-panel) not found. Further initialization of DesktopLayout aborted.');
+            criticalElementMissing = true;
+        }
+        if (!this.togglePanelsButtonElement) {
+            console.warn('[DesktopLayout] Toggle panels button element (#togglePanelsButton) not found. Panel toggling will not work.');
+            // Depending on requirements, this might also be critical. For now, a warning.
+            // If it should be critical, set criticalElementMissing = true and log an error.
+        }
+
+        if (criticalElementMissing) {
+            return; // Abort initialization
         }
 
         this.initializeMainPanelState();
