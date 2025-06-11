@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               console.error("Error during session start sequence:", error);
               // Optionally, provide user feedback here
           }
-      });
+      }, { once: true }); // Added { once: true }
   } else {
       console.error('Could not find all required elements for session start: start-session-modal, start-session-button, or consent-modal.');
   }
@@ -235,6 +235,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }, 100);
+
+  // After all initializations that might affect layout, including renderer and camera setup in initCore/sceneSetup
+  // and panel initial states by layoutManager.initialize().
+  // A short delay might be beneficial if some initializations are asynchronous and affect layout.
+  // However, a direct call after all known setup is preferable.
+  // Consider if animate() or initializeResizeHandler() already trigger an initial layout.
+  // resizeHandler's initial state might not cover all conditions before first resize.
+  if (typeof updateHologramLayout === 'function') {
+    console.log('[main.js] Performing initial call to updateHologramLayout after DOMContentLoaded.');
+    updateHologramLayout();
+  } else {
+    console.error('[main.js] updateHologramLayout function not available for initial call.');
+  }
 
   console.log('Инициализация завершена!');
 
