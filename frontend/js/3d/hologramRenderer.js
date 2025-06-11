@@ -24,10 +24,14 @@ export class HologramRenderer {
     this.hologramPivot = new THREE.Group();
 
     // mainSequencerGroup holds the left and right sequencer grids. It's positioned
-    // relative to the hologramPivot, typically to center the grids vertically.
+    // relative to the hologramPivot.
     this.mainSequencerGroup = new THREE.Group();
-    this.mainSequencerGroup.position.set(0, -GRID_HEIGHT / 2, 0); // Center vertically
+    this.mainSequencerGroup.position.set(0, 0, 0); // Changed: No longer vertically centering mainSequencerGroup itself
     this.hologramPivot.add(this.mainSequencerGroup);
+
+    // Add a central white sphere to the hologramPivot's origin
+    const centralWhiteSphere = this._createCentralMarkerSphere(CELL_SIZE * 0.3, 0xffffff);
+    this.hologramPivot.add(centralWhiteSphere);
 
     // Array to store references to the visual columns (meshes) that react to audio.
     this.columns = [];
@@ -45,6 +49,16 @@ export class HologramRenderer {
   }
 
   // --- Private Helper Methods for 3D Object Creation ---
+
+  /**
+   * Creates a small sphere mesh for marking central points.
+   * @param {number} radius - Radius of the sphere.
+   * @param {number} color - Hexadecimal color of the sphere.
+   * @returns {THREE.Mesh} A Three.js Mesh object representing a sphere.
+   */
+  _createCentralMarkerSphere(radius, color) {
+    return new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 16), new THREE.MeshBasicMaterial({ color }));
+  }
 
   /**
    * Creates a sphere mesh for axis visualization.
@@ -204,6 +218,10 @@ export class HologramRenderer {
     const axis = this._createAxis(width, height, depth, sphereRadiusForAxis, isLeftGrid);
     group.add(axis);
 
+    // Add a green marker sphere at the center of this grid group
+    const gridCenterSphere = this._createCentralMarkerSphere(CELL_SIZE * 0.3, 0x00ff00);
+    group.add(gridCenterSphere);
+
     group.position.copy(position);
     return group;
   }
@@ -217,20 +235,28 @@ export class HologramRenderer {
     const leftColor = semitones.length > 0 ? semitones[semitones.length - 1].color : new THREE.Color(0x800080); // Default purple
     const rightColor = semitones.length > 0 ? semitones[0].color : new THREE.Color(0xFF0000); // Default red
 
-    // Create the left sequencer grid, positioned to its left.
+    const interGridSpacing = CELL_SIZE * 2; // Spacing between the two grids
+
+    // Create the left sequencer grid
+    // Positioned so its right edge is at -(interGridSpacing / 2)
+    // Vertically centered by applying -GRID_HEIGHT / 2 to its Y position
+    // Z position is -GRID_DEPTH / 2 to center it along Z if depth is considered
     this.leftSequencerGroup = this._createSequencerGrid(
       GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
       leftColor,
-      new THREE.Vector3(-GRID_WIDTH, 0, -GRID_DEPTH / 2),
-      true // Indicate it's the left grid for axis coloring
+      new THREE.Vector3(-GRID_WIDTH - (interGridSpacing / 2), -GRID_HEIGHT / 2, -GRID_DEPTH / 2),
+      true // Indicate it's the left grid
     );
     this.mainSequencerGroup.add(this.leftSequencerGroup);
 
-    // Create the right sequencer grid, positioned to its right.
+    // Create the right sequencer grid
+    // Positioned so its left edge is at (interGridSpacing / 2)
+    // Vertically centered by applying -GRID_HEIGHT / 2 to its Y position
+    // Z position is -GRID_DEPTH / 2
     this.rightSequencerGroup = this._createSequencerGrid(
       GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
       rightColor,
-      new THREE.Vector3(0, 0, -GRID_DEPTH / 2),
+      new THREE.Vector3(interGridSpacing / 2, -GRID_HEIGHT / 2, -GRID_DEPTH / 2),
       false // Indicate it's the right grid
     );
     this.mainSequencerGroup.add(this.rightSequencerGroup);

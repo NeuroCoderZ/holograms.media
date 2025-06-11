@@ -93,6 +93,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       startSessionButton.addEventListener('click', async () => {
           try {
               await initializeMultimedia(); // Call the function from mediaInitializer.js
+
+              // Resume AudioContext if it's suspended
+              if (state.audioContext && state.audioContext.state === 'suspended') {
+                await state.audioContext.resume();
+                console.log('AudioContext resumed successfully.');
+              }
+
               startSessionModal.style.display = 'none'; // Hide the start session modal
 
               // Ensure consentManager.js's logic for showing consent modal is used
