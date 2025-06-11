@@ -28,31 +28,34 @@ export class XRSessionManager { // Export the class
         }
 
         try {
-            const session = await navigator.xr.requestSession(sessionMode);
+            // const session = await navigator.xr.requestSession(sessionMode); // Commented out
+            console.log("[VR Disabled] XR session request was blocked as per current settings."); // Optional: Add a log
+            return false; // Prevent further execution related to session starting
 
+            // The following code will not be reached:
             // Associate the session with the Three.js renderer
+            /*
             if (this.renderer && this.renderer.xr) {
                 await this.renderer.xr.setSession(session);
-                this.xrSession = session; // Store session only after successful association
+                this.xrSession = session;
 
-                // Handle session end event
                 session.addEventListener('end', () => {
-                    this.renderer.xr.setSession(null); // Important for Three.js cleanup
+                    this.renderer.xr.setSession(null);
                     this.xrSession = null;
                     console.log("WebXR session ended via session event.");
-                    // Potentially update button state here if a reference is available
-                    // or emit an event for UI to listen to.
                 });
 
                 console.log(`WebXR session started in ${sessionMode} mode.`);
                 return true;
             } else {
                 console.error("Three.js renderer or its XR capabilities not available.");
-                await session.end(); // End the session if renderer setup fails
+                await session.end();
                 return false;
             }
+            */
         } catch (e) {
-            console.error("Failed to start XR session:", e);
+            // This catch block might still be relevant if other errors occur before the commented line
+            console.error("Failed to start XR session (or error during disabled check):", e);
             return false;
         }
     }
