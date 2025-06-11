@@ -5,7 +5,10 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { semitones, GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE } from '../config/hologramConfig.js';
+import { GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE } from '../config/hologramConfig.js';
+import semitones from '../config/semitones.js';
+
+const BASE_CELL_WIDTH_UNIT = GRID_WIDTH / 8515.0;
 
 /**
  * HologramRenderer class manages the 3D visualization of the hologram in the Three.js scene.
@@ -46,6 +49,23 @@ export class HologramRenderer {
 
     // Add the main hologram pivot to the Three.js scene.
     this.scene.add(this.hologramPivot);
+  }
+
+  _createColumnMesh(semitoneId, semitoneColor) {
+    const id = Math.max(0, Math.min(129, semitoneId));
+    const columnWidth = (130.0 - id) * BASE_CELL_WIDTH_UNIT;
+    const columnHeight = GRID_HEIGHT * 0.01; // Initial small height
+    const columnDepth = BASE_CELL_WIDTH_UNIT * 10.0; // Proportional depth
+
+    const geometry = new THREE.BoxGeometry(columnWidth, columnHeight, columnDepth);
+    const material = new THREE.MeshStandardMaterial({
+        color: semitoneColor,
+        emissive: semitoneColor,
+        emissiveIntensity: 0.0
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.y = columnHeight / 2.0;
+    return mesh;
   }
 
   // --- Private Helper Methods for 3D Object Creation ---
@@ -213,7 +233,7 @@ export class HologramRenderer {
     const sphereRadiusForAxis = cellSize * 0.5;
 
     const gridVis = this._createGridVisualization(width, height, depth, cellSize, color);
-    group.add(gridVis);
+    // group.add(gridVis);
 
     const axis = this._createAxis(width, height, depth, sphereRadiusForAxis, isLeftGrid);
     group.add(axis);
@@ -304,110 +324,114 @@ export class HologramRenderer {
    */
   _initializeColumns() {
     if (!this.leftSequencerGroup || !this.rightSequencerGroup) {
-        console.error("Sequencer groups not initialized before columns can be created. Aborting column initialization.");
+        console.error("Sequencer groups not initialized before columns can be created.");
         return;
     }
+
+    if (this.leftSequencerGroup) {
+        while(this.leftSequencerGroup.children.length > 0) {
+            this.leftSequencerGroup.remove(this.leftSequencerGroup.children[0]);
+        }
+    }
+    if (this.rightSequencerGroup) {
+        while(this.rightSequencerGroup.children.length > 0) {
+            this.rightSequencerGroup.remove(this.rightSequencerGroup.children[0]);
+        }
+    }
+
+    this.columns = new Array(semitones.length);
+
+    let currentOffsetLeft = 0.0;
+    let currentOffsetRight = 0.0;
+
     for (let i = 0; i < semitones.length; i++) {
-      const columnLeft = this._createColumn(i, true);
-      const columnRight = this._createColumn(i, false);
+        const semitone = semitones[i];
 
-      this.columns.push({
-        left: columnLeft,
-        right: columnRight,
-        semitoneData: semitones[i],
-      });
+        const leftColumnMesh = this._createColumnMesh(semitone.id, semitone.color);
+        const rightColumnMesh = this._createColumnMesh(semitone.id, semitone.color);
 
-      this.leftSequencerGroup.add(columnLeft);
-      this.rightSequencerGroup.add(columnRight);
+        const columnWidth = leftColumnMesh.geometry.parameters.width;
+
+        leftColumnMesh.position.x = -currentOffsetLeft - (columnWidth / 2.0);
+        this.leftSequencerGroup.add(leftColumnMesh);
+        currentOffsetLeft += columnWidth;
+
+        rightColumnMesh.position.x = currentOffsetRight + (columnWidth / 2.0);
+        this.rightSequencerGroup.add(rightColumnMesh);
+        currentOffsetRight += columnWidth;
+
+        this.columns[semitone.id] = {
+            leftMesh: leftColumnMesh,
+            rightMesh: rightColumnMesh,
+            semitoneData: semitone,
+            initialLeftMeshX: leftColumnMesh.position.x,
+            initialRightMeshX: rightColumnMesh.position.x
+        };
     }
   }
 
-  /**
-   * Updates the visual appearance of the columns based on real-time audio amplitude data.
-   * Each column's Z-scale (length) and front-face brightness (emissiveIntensity) are adjusted.
-   * Input audioLevels are expected to be Uint8Arrays of 260 amplitude values (0-255).
-   * These are downsampled to 130 values for the 130 columns.
-   * @param {Uint8Array} leftAudioLevels - Array of 260 amplitude values for the left channel.
-   * @param {Uint8Array} rightAudioLevels - Array of 260 amplitude values for the right channel.
-   */
-  updateColumnVisuals(leftAudioLevels, rightAudioLevels) {
-    if (!leftAudioLevels || !rightAudioLevels || leftAudioLevels.length < 260 || rightAudioLevels.length < 260) {
-        // console.warn("Audio levels not provided or insufficient length for column update. Skipping update.");
-        // Optionally, set all columns to a default silent state here
-        this.columns.forEach((columnPair) => {
-            const channels = [
-                { meshGroup: columnPair.left },
-                { meshGroup: columnPair.right },
-            ];
-            channels.forEach(channel => {
-                if (channel.meshGroup && channel.meshGroup.children && channel.meshGroup.children.length > 0) {
-                    const mesh = channel.meshGroup.children[0];
-                    if (mesh instanceof THREE.Mesh) {
-                        mesh.scale.z = 0.001;
-                        mesh.position.z = 0.0005;
-                        if (mesh.material instanceof THREE.MeshStandardMaterial) {
-                            mesh.material.emissiveIntensity = 0;
-                        }
-                    }
-                }
-            });
+  updateVisuals(levels, angles) {
+    if (!levels || !angles || levels.length !== 260 || angles.length !== 130) {
+        this.columns.forEach(colPair => {
+            if (colPair && colPair.leftMesh) {
+                colPair.leftMesh.scale.y = 0.01;
+                colPair.leftMesh.position.y = (GRID_HEIGHT * 0.01) / 2.0;
+                colPair.leftMesh.material.emissiveIntensity = 0.0;
+            }
+            if (colPair && colPair.rightMesh) {
+                colPair.rightMesh.scale.y = 0.01;
+                colPair.rightMesh.position.y = (GRID_HEIGHT * 0.01) / 2.0;
+                colPair.rightMesh.material.emissiveIntensity = 0.0;
+            }
         });
         return;
     }
 
-    this.columns.forEach((columnPair, i) => { // i from 0 to 129
-      const channels = [
-        { levels: leftAudioLevels, meshGroup: columnPair.left, isLeft: true },
-        { levels: rightAudioLevels, meshGroup: columnPair.right, isRight: true },
-      ];
+    const MAX_PAN_SHIFT = GRID_WIDTH / 10.0;
 
-      channels.forEach(channel => {
-        if (!channel.meshGroup || !channel.meshGroup.children || channel.meshGroup.children.length === 0) {
-          return;
-        }
-        const mesh = channel.meshGroup.children[0];
-        if (!(mesh instanceof THREE.Mesh)) {
-          return;
-        }
-        const material = mesh.material;
-
-        let currentRawLevel = 0;
-        // Ensure 2*i and 2*i+1 are valid indices for channel.levels (which has 260 elements)
-        if (channel.levels && (2*i + 1) < channel.levels.length) {
-            currentRawLevel = (channel.levels[2*i] + channel.levels[2*i+1]) / 2.0;
-        } else if (channel.levels && 2*i < channel.levels.length) { // Fallback if only one value available at 2*i
-             currentRawLevel = channel.levels[2*i];
-        } else {
-            // console.warn(`Not enough data in channel.levels for column ${i}`);
-        }
-        
-        // currentRawLevel is now in 0-255 range. Normalize to 0-1.
-        const normalizedAmplitude = THREE.MathUtils.clamp(currentRawLevel / 255.0, 0, 1);
-
-        // Ensure base color is set (this might be better in _createColumn, but good for safety)
-        if (material.color && columnPair.semitoneData && material.color.getHex() !== columnPair.semitoneData.color.getHex()) {
-            material.color.copy(columnPair.semitoneData.color);
+    for (let i = 0; i < 130; i++) {
+        const columnPair = this.columns[i];
+        if (!columnPair || !columnPair.leftMesh || !columnPair.rightMesh) {
+            continue;
         }
 
-        if (isNaN(normalizedAmplitude) || normalizedAmplitude <= 0.001) {
-          mesh.scale.z = 0.001; // Minimum visible depth
-          mesh.position.z = 0.0005; // Center the minimal depth
-          if (material instanceof THREE.MeshStandardMaterial) {
-            material.emissiveIntensity = 0;
-          }
-        } else {
-          mesh.scale.z = normalizedAmplitude * GRID_HEIGHT;
-          mesh.position.z = mesh.scale.z / 2; // Adjust position to center the scaled mesh
-          if (material instanceof THREE.MeshStandardMaterial) {
-            // Ensure emissive color is set to the column's base color if it's currently black
-            if (material.emissive && material.emissive.getHex() === 0x000000 && columnPair.semitoneData) {
-                material.emissive.copy(columnPair.semitoneData.color);
-            }
-            material.emissiveIntensity = normalizedAmplitude * 1.0; // Adjust 1.0 multiplier for desired brightness
-          }
+        const leftMesh = columnPair.leftMesh;
+        const rightMesh = columnPair.rightMesh;
+
+        const dbLeft = levels[i];
+        const dbRight = levels[i + 130];
+
+        const normalizedVolLeft = Math.max(0.0, Math.min(1.0, (dbLeft + 60.0) / 60.0));
+        const normalizedVolRight = Math.max(0.0, Math.min(1.0, (dbRight + 60.0) / 60.0));
+
+        const targetScaleYLeft = Math.max(0.01, normalizedVolLeft * GRID_HEIGHT);
+        const targetScaleYRight = Math.max(0.01, normalizedVolRight * GRID_HEIGHT);
+
+        leftMesh.scale.y = targetScaleYLeft;
+        leftMesh.position.y = targetScaleYLeft / 2.0;
+        leftMesh.material.emissiveIntensity = normalizedVolLeft;
+        if (normalizedVolLeft > 0.001 && leftMesh.material.emissive.getHex() === 0x000000) {
+            leftMesh.material.emissive.set(columnPair.semitoneData.color);
+        } else if (normalizedVolLeft <= 0.001) {
+            leftMesh.material.emissiveIntensity = 0.0;
         }
-      });
-    });
+
+        rightMesh.scale.y = targetScaleYRight;
+        rightMesh.position.y = targetScaleYRight / 2.0;
+        rightMesh.material.emissiveIntensity = normalizedVolRight;
+        if (normalizedVolRight > 0.001 && rightMesh.material.emissive.getHex() === 0x000000) {
+            rightMesh.material.emissive.set(columnPair.semitoneData.color);
+        } else if (normalizedVolRight <= 0.001) {
+            rightMesh.material.emissiveIntensity = 0.0;
+        }
+
+        const panAngle = angles[i];
+        const normalizedPan = Math.max(-1.0, Math.min(1.0, panAngle / 90.0));
+        const shiftAmount = normalizedPan * MAX_PAN_SHIFT;
+
+        leftMesh.position.x = columnPair.initialLeftMeshX + shiftAmount;
+        rightMesh.position.x = columnPair.initialRightMeshX + shiftAmount;
+    }
   }
 
   /**
