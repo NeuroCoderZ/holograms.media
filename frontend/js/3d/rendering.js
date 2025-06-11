@@ -38,27 +38,44 @@ function animate(currentTime) {
         typeof state.audioAnalyzerLeftInstance.getSemitoneLevels === 'function' &&
         typeof state.audioAnalyzerRightInstance.getSemitoneLevels === 'function') {
 
-        if (state.audio && (state.audio.activeSource === 'microphone' || state.audio.activeSource === 'file') &&
+        const activeSource = state.audio ? state.audio.activeSource : 'unknown';
+
+        if (state.audio && (activeSource === 'microphone' || activeSource === 'file') &&
             state.audioAnalyzerLeftInstance.analyserNode && state.audioAnalyzerRightInstance.analyserNode) {
 
             const leftAudioLevels = state.audioAnalyzerLeftInstance.getSemitoneLevels();
             const rightAudioLevels = state.audioAnalyzerRightInstance.getSemitoneLevels();
 
-            if (leftAudioLevels && rightAudioLevels) {
+            // Logging a sample of the data
+            if (leftAudioLevels && leftAudioLevels.length > 0) {
+                console.log(`[AnimateDebug] Source: ${activeSource}, Levels sample L [${leftAudioLevels.length}]: ${leftAudioLevels.slice(0, 5).join(', ')}`);
+            } else {
+                console.warn(`[AnimateDebug] Source: ${activeSource}, Left audio levels are invalid or empty.`);
+            }
+            // Optional: Log right channel if needed for more detailed debugging
+            /*
+            if (rightAudioLevels && rightAudioLevels.length > 0) {
+                console.log(`[AnimateDebug] Source: ${activeSource}, Levels sample R [${rightAudioLevels.length}]: ${rightAudioLevels.slice(0, 5).join(', ')}`);
+            } else {
+                console.warn(`[AnimateDebug] Source: ${activeSource}, Right audio levels are invalid or empty.`);
+            }
+            */
+
+            if (leftAudioLevels && rightAudioLevels) { // Ensure both are valid before updating visuals
                 state.hologramRendererInstance.updateColumnVisuals(leftAudioLevels, rightAudioLevels);
             } else {
-                // Send empty data if getSemitoneLevels returns invalid data
-                // console.warn('[Animate] getSemitoneLevels returned invalid data, sending empty arrays to visuals.');
+                // console.warn(`[AnimateDebug] Source: ${activeSource}, One or both audio levels arrays invalid. Sending silent data.`);
                 state.hologramRendererInstance.updateColumnVisuals(new Uint8Array(260), new Uint8Array(260));
             }
         } else {
             // Audio inactive or analyzers not ready, send silent data
+            // console.log(`[AnimateDebug] Audio source '${activeSource}' inactive or core analyzer components not ready. Sending silent data.`);
             state.hologramRendererInstance.updateColumnVisuals(new Uint8Array(260), new Uint8Array(260));
         }
     } else {
         // Fallback if renderer or analyzers are not even set up, or getSemitoneLevels is missing
         if (state.hologramRendererInstance) {
-            // console.warn('[Animate] Core components for audio visualization missing (renderer, analyzers, or getSemitoneLevels method). Sending silent data.');
+            // console.warn('[AnimateDebug] Core components for audio visualization (renderer, analyzers, or getSemitoneLevels method) missing. Sending silent data.');
             state.hologramRendererInstance.updateColumnVisuals(new Uint8Array(260), new Uint8Array(260));
         }
     }
