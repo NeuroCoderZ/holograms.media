@@ -1,99 +1,186 @@
 // frontend/js/audio/waveletAnalyzer.js
 
-/**
- * Placeholder for adaptive Continuous Wavelet Transform (CWT) analysis.
- * Can process an AudioBuffer or use data from a provided AnalyserNode.
- *
- * @param {AudioBuffer | AnalyserNode} input - The audio buffer to analyze or an AnalyserNode for live data.
- * @param {number} targetFPS - The target frames per second for analysis. Default is 60, minimum is 25.
- *                             (Currently has limited effect in this placeholder version).
- * @returns {Promise<Uint8Array[]>} An array containing two Uint8Arrays (e.g., for left and right channels),
- *                               each with 260 amplitude values (0-255).
- *                               Returns [emptyArray, emptyArray] on failure or invalid input.
- */
-export async function adaptiveCWT(input, targetFPS = 60) {
-  // TODO: Replace AnalyserNode with Wasm-based CWT using Morlet wavelet
-  const minFPS = 25;
-  const actualTargetFPS = Math.max(targetFPS, minFPS); // Still included, though less relevant for AnalyserNode placeholder
-  const outputLength = 260;
-  let dataArray;
-  let frequencyBinCount;
-  let audioCtxInternal = null; // To manage internally created context
+// Path to the WASM module, assuming it's in 'js/wasm/' relative to where the main script (or HTML) is served.
+// Adjust if your build process places it elsewhere.
+const WASM_MODULE_PATH = './wasm/fastcwt.wasm'; // Or '/js/wasm/fastcwt.wasm' depending on server root
 
-  if (input instanceof AudioBuffer) {
-    // console.log("adaptiveCWT processing AudioBuffer"); // For debugging
-    if (!input) {
-      console.error("adaptiveCWT: AudioBuffer input is null or undefined.");
-      return [new Uint8Array(outputLength), new Uint8Array(outputLength)];
+class WaveletAnalyzerProcessor extends AudioWorkletProcessor {
+    constructor(options) {
+        super(options);
+        this.wasmModule = null;
+        this.wasmMemory = null;
+        this._processAudioData = null; // Function pointer for WASM _process_audio_data
+        this._malloc = null;          // Function pointer for WASM _malloc
+        this._free = null;            // Function pointer for WASM _free
+
+        this.chunkSize = options.processorOptions.chunkSize || 2048; // Default if not provided
+        this.targetFrequencies = options.processorOptions.targetFrequencies || []; // Expecting 130 frequencies
+
+        if (this.targetFrequencies.length !== 130) {
+            console.error(`WaveletAnalyzerProcessor: Expected 130 target frequencies, got ${this.targetFrequencies.length}. Analysis may be incorrect.`);
+        }
+
+        this.dbLevelsOutputPtr = null;
+        this.panAnglesOutputPtr = null;
+        this.targetFrequenciesPtr = null;
+        this.leftChannelInputPtr = null;
+        this.rightChannelInputPtr = null;
+
+        this.loadWasmModule();
+
+        this.port.onmessage = (event) => {
+            if (event.data.type === 'updateTargetFrequencies') {
+                this.targetFrequencies = event.data.frequencies;
+                if (this.targetFrequencies.length !== 130) {
+                    console.warn(`WaveletAnalyzerProcessor: Updated target frequencies length is ${this.targetFrequencies.length}, expected 130.`);
+                }
+                // If WASM is loaded and memory is allocated, update the frequency buffer in WASM memory
+                if (this.wasmModule && this.targetFrequenciesPtr && this._malloc) {
+                    this.updateWasmTargetFrequencies();
+                }
+            }
+        };
     }
-    audioCtxInternal = new (window.AudioContext || window.webkitAudioContext)();
-    const analyser = audioCtxInternal.createAnalyser();
-    analyser.fftSize = 2048; // Standard FFT size
-    frequencyBinCount = analyser.frequencyBinCount; // Should be 1024
-    dataArray = new Uint8Array(frequencyBinCount);
 
-    const source = audioCtxInternal.createBufferSource();
-    source.buffer = input;
-    source.connect(analyser);
-    try {
-      source.start();
-      analyser.getByteFrequencyData(dataArray); // Populate dataArray
-      source.stop(); // Stop immediately after capture for static buffer
-    } catch (e) {
-      console.error("Error processing AudioBuffer input in adaptiveCWT:", e);
-      if (audioCtxInternal) await audioCtxInternal.close(); // Clean up internal context
-      return [new Uint8Array(outputLength), new Uint8Array(outputLength)];
+    async loadWasmModule() {
+        try {
+            const response = await fetch(WASM_MODULE_PATH);
+            const bytes = await response.arrayBuffer();
+            const { instance, module } = await WebAssembly.instantiate(bytes, {
+                env: {
+                    // Emscripten usually provides these if needed by the C code (like abort, etc.)
+                    // If your C++ code uses external functions not provided by Emscripten by default,
+                    // they need to be defined here. For FFTW and standard C++, this is typically not needed.
+                }
+            });
+
+            this.wasmModule = instance;
+            this.wasmMemory = this.wasmModule.exports.memory; // Accessing exported memory
+
+            // Get exported functions
+            this._processAudioData = this.wasmModule.exports._process_audio_data;
+            this._malloc = this.wasmModule.exports._malloc;
+            this._free = this.wasmModule.exports._free;
+
+            if (!this._processAudioData || !this._malloc || !this._free) {
+                 console.error('WaveletAnalyzerProcessor: Critical WASM functions not found after loading.');
+                 this.port.postMessage({ type: 'error', message: 'Failed to link critical WASM functions.' });
+                 return;
+            }
+
+            // Allocate memory in the WASM heap for inputs and outputs
+            // These pointers will be stable for the lifetime of this processor instance
+            this.leftChannelInputPtr = this._malloc(this.chunkSize * Float32Array.BYTES_PER_ELEMENT);
+            this.rightChannelInputPtr = this._malloc(this.chunkSize * Float32Array.BYTES_PER_ELEMENT);
+            this.targetFrequenciesPtr = this._malloc(130 * Float32Array.BYTES_PER_ELEMENT);
+            this.dbLevelsOutputPtr = this._malloc(260 * Float32Array.BYTES_PER_ELEMENT); // 130 L + 130 R
+            this.panAnglesOutputPtr = this._malloc(130 * Float32Array.BYTES_PER_ELEMENT);
+
+            if (!this.leftChannelInputPtr || !this.rightChannelInputPtr || !this.targetFrequenciesPtr || !this.dbLevelsOutputPtr || !this.panAnglesOutputPtr) {
+                console.error('WaveletAnalyzerProcessor: Failed to allocate memory in WASM heap.');
+                this.port.postMessage({ type: 'error', message: 'WASM memory allocation failed.' });
+                // Consider freeing any partially allocated buffers if robust error handling is needed
+                return;
+            }
+
+            this.updateWasmTargetFrequencies(); // Initial population of frequencies
+
+            this.port.postMessage({ type: 'wasmLoaded' });
+            console.log('WaveletAnalyzerProcessor: WASM module loaded and memory allocated successfully.');
+
+        } catch (e) {
+            console.error('WaveletAnalyzerProcessor: Error loading WASM module.', e);
+            this.port.postMessage({ type: 'error', message: `WASM loading failed: ${e.toString()}` });
+        }
     }
-  } else if (input && typeof input.getByteFrequencyData === 'function' && typeof input.frequencyBinCount !== 'undefined') { // Duck-typing for AnalyserNode
-    // console.log("adaptiveCWT processing AnalyserNode"); // For debugging
-    const analyser = input;
-    // We assume the external AnalyserNode is already configured (e.g., fftSize).
-    // However, for consistency in this placeholder, we can try to set it if needed,
-    // but be aware this might conflict with external configuration.
-    // For now, let's ensure it's what we expect for the output mapping.
-    if (analyser.fftSize !== 2048) {
-        // console.warn(`adaptiveCWT: Input AnalyserNode fftSize is ${analyser.fftSize}, expected 2048. Adjusting for placeholder mapping.`);
-        // Or, alternatively, do not change it and adapt the mapping logic.
-        // For this placeholder, we'll be strict to simplify mapping. Consider this a point of potential refinement.
-        // analyser.fftSize = 2048; // This might be too intrusive. Let's rely on current config.
+
+    updateWasmTargetFrequencies() {
+        if (this.wasmModule && this.targetFrequenciesPtr && this.targetFrequencies.length > 0) {
+            const wasmHeapF32 = new Float32Array(this.wasmMemory.buffer, this.targetFrequenciesPtr, this.targetFrequencies.length);
+            wasmHeapF32.set(this.targetFrequencies);
+        }
     }
-    frequencyBinCount = analyser.frequencyBinCount;
-    dataArray = new Uint8Array(frequencyBinCount);
-    try {
-      analyser.getByteFrequencyData(dataArray); // Populate dataArray from live input
-    } catch (e) {
-      console.error("Error processing AnalyserNode input in adaptiveCWT:", e);
-      // Do not close the analyser here, it's managed externally
-      return [new Uint8Array(outputLength), new Uint8Array(outputLength)];
+
+    process(inputs, outputs, parameters) {
+        if (!this.wasmModule || !this._processAudioData || !this.leftChannelInputPtr || !this.dbLevelsOutputPtr) {
+            // WASM not ready or critical pointers are null
+            // console.warn('WaveletAnalyzerProcessor: WASM module not ready for processing.');
+            return true; // Keep processor alive
+        }
+
+        // Assuming stereo input: inputs[0] contains 2 channels
+        const input = inputs[0];
+        if (!input || input.length < 2) {
+            // console.warn('WaveletAnalyzerProcessor: Input is not stereo or not available.');
+            return true; // No data to process or not stereo
+        }
+
+        const leftChannel = input[0];
+        const rightChannel = input[1];
+
+        if (leftChannel.length !== this.chunkSize || rightChannel.length !== this.chunkSize) {
+            // This should not happen if the AudioWorkletNode is configured with the same chunkSize
+            console.warn(`WaveletAnalyzerProcessor: Audio data chunk size mismatch. Expected ${this.chunkSize}, got ${leftChannel.length}. Dropping frame.`);
+            return true;
+        }
+
+        // Copy audio data to WASM memory
+        const wasmHeapF32Left = new Float32Array(this.wasmMemory.buffer, this.leftChannelInputPtr, this.chunkSize);
+        wasmHeapF32Left.set(leftChannel);
+
+        const wasmHeapF32Right = new Float32Array(this.wasmMemory.buffer, this.rightChannelInputPtr, this.chunkSize);
+        wasmHeapF32Right.set(rightChannel);
+
+        // Call the WASM function
+        // void process_audio_data(
+        //     float* left_channel_input, float* right_channel_input,
+        //     int chunk_size, float sample_rate,
+        //     const float* target_frequencies,
+        //     float* db_levels_output, float* pan_angles_output
+        // );
+        this._processAudioData(
+            this.leftChannelInputPtr,
+            this.rightChannelInputPtr,
+            this.chunkSize,
+            sampleRate, // sampleRate is a global variable in AudioWorkletProcessor
+            this.targetFrequenciesPtr,
+            this.dbLevelsOutputPtr,
+            this.panAnglesOutputPtr
+        );
+
+        // Read results from WASM memory
+        const dbLevels = new Float32Array(this.wasmMemory.buffer, this.dbLevelsOutputPtr, 260).slice();
+        const panAngles = new Float32Array(this.wasmMemory.buffer, this.panAnglesOutputPtr, 130).slice();
+        // .slice() creates a copy, which is important before posting, as the underlying ArrayBuffer might change.
+
+        // Post results to the main thread
+        this.port.postMessage({
+            type: 'analysisResult',
+            levels: dbLevels,
+            angles: panAngles
+        });
+
+        return true; // Keep processor alive
     }
-  } else {
-    console.error("adaptiveCWT: Invalid input type. Expected AudioBuffer or AnalyserNode.");
-    console.log("Received input:", input); // Log the received input for easier debugging
-    return [new Uint8Array(outputLength), new Uint8Array(outputLength)];
-  }
 
-  // Map the dataArray (potentially 1024 values from fftSize=2048) to the required outputLength (260 values).
-  // Simple approach for placeholder: take the first 'outputLength' values.
-  // A better approach would be averaging, selecting specific frequency bands, or proper downsampling.
-  const outputArray = new Uint8Array(outputLength);
-  if (!dataArray) { // Should not happen if logic above is correct, but as a safeguard
-      console.error("adaptiveCWT: dataArray is undefined before mapping.");
-      return [new Uint8Array(outputLength), new Uint8Array(outputLength)];
-  }
-
-  for (let i = 0; i < outputLength; i++) {
-    if (i < dataArray.length) {
-      outputArray[i] = dataArray[i];
-    } else {
-      // This case should ideally not be hit if frequencyBinCount >= outputLength
-      outputArray[i] = 0; // Pad with 0 if dataArray is shorter
+    // Lifecycle method: called when the processor is about to be destroyed.
+    // Not always guaranteed to be called, e.g., if the page crashes.
+    // However, it's good practice for explicit cleanup.
+    // For Emscripten modules, _free is usually sufficient. FFTW cleanup might be handled by Emscripten's exit routines.
+    static get parameterDescriptors() {
+        // If your processor needs custom parameters, define them here.
+        // For this example, we are passing configuration via constructor options.
+        return [];
     }
-  }
 
-  if (audioCtxInternal) { // Close context only if it was created internally
-    await audioCtxInternal.close();
-  }
-
-  // Return two copies, simulating stereo channels or providing identical data for left/right visualizers
-  return [outputArray, outputArray];
+    // Custom method to handle cleanup if needed, though not standard AudioWorkletProcessor API
+    // This would typically be called before the node is disconnected and the processor is destroyed.
+    // However, direct calls from main thread to processor instances aren't standard.
+    // The best place for cleanup is when the AudioWorkletNode is being disposed of,
+    // which might involve sending a specific message to the processor to trigger this.
+    // For now, rely on _free for pointers allocated with _malloc.
+    // If fftwf_cleanup_threads() or fftwf_cleanup() were necessary and not handled by Emscripten's exit,
+    // it would be more complex to manage from here.
 }
+
+registerProcessor('wavelet-analyzer-processor', WaveletAnalyzerProcessor);
