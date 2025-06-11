@@ -33,6 +33,36 @@ function animate(currentTime) {
     // Update TWEEN animations
     window.TWEEN.update(time);
 
+    // ---- NEW AUDIO VISUALIZATION LOGIC (getSemitoneLevels) ----
+    if (state.audio && state.audio.activeSource === 'microphone' &&
+        state.audioAnalyzerLeftInstance && state.audioAnalyzerLeftInstance.analyserNode &&
+        state.audioAnalyzerRightInstance && state.audioAnalyzerRightInstance.analyserNode &&
+        state.hologramRendererInstance) {
+
+        // Check if getSemitoneLevels method exists on the instances
+        if (typeof state.audioAnalyzerLeftInstance.getSemitoneLevels === 'function' &&
+            typeof state.audioAnalyzerRightInstance.getSemitoneLevels === 'function') {
+
+            const leftAudioLevels = state.audioAnalyzerLeftInstance.getSemitoneLevels();
+            const rightAudioLevels = state.audioAnalyzerRightInstance.getSemitoneLevels();
+
+            // Ensure levels are valid before calling update
+            if (leftAudioLevels && rightAudioLevels) {
+                 state.hologramRendererInstance.updateColumnVisuals(leftAudioLevels, rightAudioLevels);
+            } else {
+                // console.warn('[Animate] getSemitoneLevels returned invalid data, sending empty arrays to visuals.');
+                // state.hologramRendererInstance.updateColumnVisuals(new Uint8Array(), new Uint8Array()); // Or appropriate empty/silent representation
+            }
+        } else {
+            // console.warn('[Animate] getSemitoneLevels method not found on audio analyzer instances.');
+        }
+    } else if (state.audio && state.audio.activeSource !== 'microphone' && state.hologramRendererInstance) {
+        // If not microphone, or components missing, send empty/silent data to clear visuals
+        // This ensures visuals reset when microphone stops.
+        // state.hologramRendererInstance.updateColumnVisuals(new Uint8Array(), new Uint8Array()); // Or a specific method to reset/clear
+    }
+    // ---- END NEW AUDIO VISUALIZATION LOGIC ----
+
     // Audio processing and visualization updates
     if (state.audio) { // Ensure state.audio is initialized
         // Modified condition: Call if activeSource is 'file' and an audioBuffer is loaded.
