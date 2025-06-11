@@ -1,5 +1,6 @@
 // frontend/js/platforms/desktop/desktopLayout.js
 import { uiElements } from '../../ui/uiManager.js'; // Assuming uiManager still provides common UI elements if needed
+import { updateHologramLayout } from '../../ui/layoutManager.js';
 
 export class DesktopLayout {
     constructor() {
@@ -14,9 +15,23 @@ export class DesktopLayout {
         this.rightPanelElement = document.getElementById('right-panel');
         this.togglePanelsButtonElement = document.getElementById('togglePanelsButton');
 
-        if (!this.leftPanelElement || !this.rightPanelElement || !this.togglePanelsButtonElement) {
-            console.error('[DesktopLayout] Could not find all necessary panel elements.');
-            return;
+        let criticalElementMissing = false;
+        if (!this.leftPanelElement) {
+            console.error('[CRITICAL ERROR][DesktopLayout] Left panel element (#left-panel) not found. Further initialization of DesktopLayout aborted.');
+            criticalElementMissing = true;
+        }
+        if (!this.rightPanelElement) {
+            console.error('[CRITICAL ERROR][DesktopLayout] Right panel element (#right-panel) not found. Further initialization of DesktopLayout aborted.');
+            criticalElementMissing = true;
+        }
+        if (!this.togglePanelsButtonElement) {
+            console.warn('[DesktopLayout] Toggle panels button element (#togglePanelsButton) not found. Panel toggling will not work.');
+            // Depending on requirements, this might also be critical. For now, a warning.
+            // If it should be critical, set criticalElementMissing = true and log an error.
+        }
+
+        if (criticalElementMissing) {
+            return; // Abort initialization
         }
 
         this.initializeMainPanelState();
@@ -43,7 +58,8 @@ export class DesktopLayout {
         this.leftPanelElement.classList.remove('hidden');
         this.rightPanelElement.classList.remove('hidden');
 
-        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+        // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
+        if (typeof updateHologramLayout === 'function') updateHologramLayout(); // Add this
         const currentVisibility = this.leftPanelElement.classList.contains('visible');
         console.log(`[DesktopLayout] Panels initialized. Currently visible: ${currentVisibility}`);
     }
@@ -76,6 +92,7 @@ export class DesktopLayout {
             }
         });
         window.dispatchEvent(event);
-        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+        // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
+        if (typeof updateHologramLayout === 'function') updateHologramLayout(); // Add this
     }
 }

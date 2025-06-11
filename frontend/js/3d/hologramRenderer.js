@@ -235,7 +235,7 @@ export class HologramRenderer {
     const leftColor = semitones.length > 0 ? semitones[semitones.length - 1].color : new THREE.Color(0x800080); // Default purple
     const rightColor = semitones.length > 0 ? semitones[0].color : new THREE.Color(0xFF0000); // Default red
 
-    const interGridSpacing = CELL_SIZE * 2; // Spacing between the two grids
+    const interGridSpacing = 0; // Changed from CELL_SIZE * 2
 
     // Create the left sequencer grid
     // Positioned so its right edge is at -(interGridSpacing / 2)
