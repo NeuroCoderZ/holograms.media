@@ -1,5 +1,6 @@
 // frontend/js/platforms/desktop/desktopLayout.js
 import { uiElements } from '../../ui/uiManager.js'; // Assuming uiManager still provides common UI elements if needed
+import { updateHologramLayout } from '../../ui/layoutManager.js';
 
 export class DesktopLayout {
     constructor() {
@@ -57,7 +58,8 @@ export class DesktopLayout {
         this.leftPanelElement.classList.remove('hidden');
         this.rightPanelElement.classList.remove('hidden');
 
-        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+        // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
+        if (typeof updateHologramLayout === 'function') updateHologramLayout(); // Add this
         const currentVisibility = this.leftPanelElement.classList.contains('visible');
         console.log(`[DesktopLayout] Panels initialized. Currently visible: ${currentVisibility}`);
     }
@@ -90,6 +92,7 @@ export class DesktopLayout {
             }
         });
         window.dispatchEvent(event);
-        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+        // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
+        if (typeof updateHologramLayout === 'function') updateHologramLayout(); // Add this
     }
 }

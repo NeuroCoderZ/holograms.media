@@ -1,6 +1,7 @@
 // frontend/js/platforms/mobile/mobileLayout.js
 import { state } from '../../core/init.js'; // For gestureArea
 import { uiElements } from '../../ui/uiManager.js'; // Assuming uiManager still provides common UI elements if needed
+import { updateHologramLayout } from '../../ui/layoutManager.js';
 
 export class MobileLayout {
     constructor() {
@@ -67,7 +68,8 @@ export class MobileLayout {
             this.rightPanelElement.classList.remove('hidden');
         }
 
-        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+        // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
+        if (typeof updateHologramLayout === 'function') updateHologramLayout(); // Add this
         console.log(`[MobileLayout] Panels initialized. Defaulting to hidden.`);
     }
 
@@ -110,7 +112,8 @@ export class MobileLayout {
             }
         });
         window.dispatchEvent(event);
-        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+        // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
+        if (typeof updateHologramLayout === 'function') updateHologramLayout(); // Add this
     }
 
     // Gesture Area Logic (from gestureAreaManager.js)
