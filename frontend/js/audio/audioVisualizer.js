@@ -36,9 +36,9 @@ export function initAudioVisualization() {
   // For now, let's use state directly in animateAudioVisuals or assign them here.
   hologramRendererInstance = state.hologramRendererInstance; // Optional: local reference
 
-  console.log('Audio visualization initialized and linked to global instances. Starting animation loop.');
+  console.log('Audio visualization initialized and linked to global instances.');
   // Start the animation loop once initialization is complete.
-  animateAudioVisuals();
+  // animateAudioVisuals(); // Removed: Animation logic moved to rendering.js
 }
 
 /**
@@ -46,6 +46,7 @@ export function initAudioVisualization() {
  * This function continuously requests animation frames to update the hologram visuals
  * based on the latest audio data from the AudioAnalyzer.
  */
+/* // Commenting out the entire function as its logic is moved to rendering.js
 function animateAudioVisuals() {
   // ADD THIS CHECK HERE
   if (!state.audio.analyserLeft || !state.audio.analyserRight) {
@@ -53,7 +54,7 @@ function animateAudioVisuals() {
       // Just exit.
       return;
   }
-  requestAnimationFrame(animateAudioVisuals);
+  // requestAnimationFrame(animateAudioVisuals);
 
   // Use the global instances from state
   const analyzerLeft = state.audioAnalyzerLeftInstance;
@@ -70,3 +71,4 @@ function animateAudioVisuals() {
   
   renderer.updateColumnVisuals(leftAudioLevels, rightAudioLevels);
 }
+*/
