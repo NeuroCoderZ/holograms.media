@@ -1,99 +1,71 @@
-// frontend/js/audio/waveletAnalyzer.js
+import init, { encode_audio_to_hologram } from '../wasm/fastcwt/fastcwt_processor.js';
 
-/**
- * Placeholder for adaptive Continuous Wavelet Transform (CWT) analysis.
- * Can process an AudioBuffer or use data from a provided AnalyserNode.
- *
- * @param {AudioBuffer | AnalyserNode} input - The audio buffer to analyze or an AnalyserNode for live data.
- * @param {number} targetFPS - The target frames per second for analysis. Default is 60, minimum is 25.
- *                             (Currently has limited effect in this placeholder version).
- * @returns {Promise<Uint8Array[]>} An array containing two Uint8Arrays (e.g., for left and right channels),
- *                               each with 260 amplitude values (0-255).
- *                               Returns [emptyArray, emptyArray] on failure or invalid input.
- */
-export async function adaptiveCWT(input, targetFPS = 60) {
-  // TODO: Replace AnalyserNode with Wasm-based CWT using Morlet wavelet
-  const minFPS = 25;
-  const actualTargetFPS = Math.max(targetFPS, minFPS); // Still included, though less relevant for AnalyserNode placeholder
-  const outputLength = 260;
-  let dataArray;
-  let frequencyBinCount;
-  let audioCtxInternal = null; // To manage internally created context
+class CwtProcessor extends AudioWorkletProcessor {
+    constructor() {
+        super();
+        this.wasm_ready = false;
+        this.sample_rate = 0;
+        this.target_frequencies = null;
 
-  if (input instanceof AudioBuffer) {
-    // console.log("adaptiveCWT processing AudioBuffer"); // For debugging
-    if (!input) {
-      console.error("adaptiveCWT: AudioBuffer input is null or undefined.");
-      return [new Uint8Array(outputLength), new Uint8Array(outputLength)];
+        this.initWasm();
+
+        this.port.onmessage = (event) => {
+            if (event.data.type === 'INIT_DATA') {
+                this.sample_rate = event.data.sampleRate;
+                // target_frequencies sent as a plain array, convert to Float32Array for WASM
+                this.target_frequencies = new Float32Array(event.data.targetFrequencies);
+                console.log('CwtProcessor: Received init data (sampleRate, targetFrequencies).');
+            }
+        };
     }
-    audioCtxInternal = new (window.AudioContext || window.webkitAudioContext)();
-    const analyser = audioCtxInternal.createAnalyser();
-    analyser.fftSize = 2048; // Standard FFT size
-    frequencyBinCount = analyser.frequencyBinCount; // Should be 1024
-    dataArray = new Uint8Array(frequencyBinCount);
 
-    const source = audioCtxInternal.createBufferSource();
-    source.buffer = input;
-    source.connect(analyser);
-    try {
-      source.start();
-      analyser.getByteFrequencyData(dataArray); // Populate dataArray
-      source.stop(); // Stop immediately after capture for static buffer
-    } catch (e) {
-      console.error("Error processing AudioBuffer input in adaptiveCWT:", e);
-      if (audioCtxInternal) await audioCtxInternal.close(); // Clean up internal context
-      return [new Uint8Array(outputLength), new Uint8Array(outputLength)];
+    async initWasm() {
+        try {
+            await init(new URL('../wasm/fastcwt/fastcwt_processor_bg.wasm', import.meta.url));
+            this.wasm_ready = true;
+            this.port.postMessage({ type: 'WASM_READY' });
+            console.log('CwtProcessor: WASM module loaded and ready.');
+        } catch (e) {
+            console.error("CwtProcessor: Failed to load WASM module", e);
+        }
     }
-  } else if (input && typeof input.getByteFrequencyData === 'function' && typeof input.frequencyBinCount !== 'undefined') { // Duck-typing for AnalyserNode
-    // console.log("adaptiveCWT processing AnalyserNode"); // For debugging
-    const analyser = input;
-    // We assume the external AnalyserNode is already configured (e.g., fftSize).
-    // However, for consistency in this placeholder, we can try to set it if needed,
-    // but be aware this might conflict with external configuration.
-    // For now, let's ensure it's what we expect for the output mapping.
-    if (analyser.fftSize !== 2048) {
-        // console.warn(`adaptiveCWT: Input AnalyserNode fftSize is ${analyser.fftSize}, expected 2048. Adjusting for placeholder mapping.`);
-        // Or, alternatively, do not change it and adapt the mapping logic.
-        // For this placeholder, we'll be strict to simplify mapping. Consider this a point of potential refinement.
-        // analyser.fftSize = 2048; // This might be too intrusive. Let's rely on current config.
+
+    process(inputs, outputs, parameters) {
+        // Ensure WASM is ready and input channels exist
+        if (!this.wasm_ready || !this.target_frequencies || inputs[0].length === 0 || !inputs[0][0]) {
+            return true; // Keep processing if not ready or no input
+        }
+
+        const inputChannelData = inputs[0]; // First input port
+        const leftChannel = inputChannelData[0];
+        const rightChannel = inputChannelData[1] || leftChannel; // Use left if right is mono
+
+        // Create output buffers for WASM function
+        const outputDbLevels = new Float32Array(260); // 130 for left, 130 for right
+        const outputPanAngles = new Float32Array(130); // 130 pan angles
+
+        try {
+            // Call the Rust WASM function
+            encode_audio_to_hologram(
+                leftChannel,
+                rightChannel,
+                this.sample_rate,
+                this.target_frequencies,
+                outputDbLevels,
+                outputPanAngles
+            );
+
+            // Post the processed data back to the main thread
+            this.port.postMessage({
+                levels: outputDbLevels,
+                angles: outputPanAngles
+            });
+        } catch (e) {
+            console.error("CwtProcessor: Error processing audio in WASM:", e);
+        }
+
+        return true; // Keep the AudioWorkletNode alive
     }
-    frequencyBinCount = analyser.frequencyBinCount;
-    dataArray = new Uint8Array(frequencyBinCount);
-    try {
-      analyser.getByteFrequencyData(dataArray); // Populate dataArray from live input
-    } catch (e) {
-      console.error("Error processing AnalyserNode input in adaptiveCWT:", e);
-      // Do not close the analyser here, it's managed externally
-      return [new Uint8Array(outputLength), new Uint8Array(outputLength)];
-    }
-  } else {
-    console.error("adaptiveCWT: Invalid input type. Expected AudioBuffer or AnalyserNode.");
-    console.log("Received input:", input); // Log the received input for easier debugging
-    return [new Uint8Array(outputLength), new Uint8Array(outputLength)];
-  }
-
-  // Map the dataArray (potentially 1024 values from fftSize=2048) to the required outputLength (260 values).
-  // Simple approach for placeholder: take the first 'outputLength' values.
-  // A better approach would be averaging, selecting specific frequency bands, or proper downsampling.
-  const outputArray = new Uint8Array(outputLength);
-  if (!dataArray) { // Should not happen if logic above is correct, but as a safeguard
-      console.error("adaptiveCWT: dataArray is undefined before mapping.");
-      return [new Uint8Array(outputLength), new Uint8Array(outputLength)];
-  }
-
-  for (let i = 0; i < outputLength; i++) {
-    if (i < dataArray.length) {
-      outputArray[i] = dataArray[i];
-    } else {
-      // This case should ideally not be hit if frequencyBinCount >= outputLength
-      outputArray[i] = 0; // Pad with 0 if dataArray is shorter
-    }
-  }
-
-  if (audioCtxInternal) { // Close context only if it was created internally
-    await audioCtxInternal.close();
-  }
-
-  // Return two copies, simulating stereo channels or providing identical data for left/right visualizers
-  return [outputArray, outputArray];
 }
+
+registerProcessor('cwt-processor', CwtProcessor);

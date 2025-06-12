@@ -90,29 +90,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   const consentModal = document.getElementById('consent-modal'); // Assuming this is the ID of the Data Storage Consent modal
 
   if (startSessionButton && startSessionModal && consentModal) {
-      startSessionButton.addEventListener('click', async () => {
-          try {
-              await initializeMultimedia(); // Call the function from mediaInitializer.js
+      startButton.addEventListener('click', async () => {
+        console.log("START button clicked. Initializing multimedia...");
 
-              // Resume AudioContext if it's suspended
-              if (state.audioContext && state.audioContext.state === 'suspended') {
-                await state.audioContext.resume();
-                console.log('AudioContext resumed successfully.');
-              }
+        // Скрываем модальное окно
+        startModal.style.display = 'none';
 
-              startSessionModal.style.display = 'none'; // Hide the start session modal
+        // Запускаем инициализатор медиа
+        // Эта функция должна запрашивать камеру/микрофон и возобновлять AudioContext
+        await initializeMultimedia();
 
-              // Ensure consentManager.js's logic for showing consent modal is used
-              // For example, if consentManager.showConsentModalIfNeeded() exists:
-              // showConsentModalIfNeeded();
-              // OR directly show it if that's the new flow:
-              consentModal.style.display = 'flex'; // Show the consent modal
-              console.log('Start session button clicked, multimedia initialized, consent modal shown.');
-          } catch (error) {
-              console.error("Error during session start sequence:", error);
-              // Optionally, provide user feedback here
-          }
-      }, { once: true }); // Added { once: true }
+        // Показываем окно согласия на хранение данных (если оно есть)
+        const consentModal = document.getElementById('consent-modal');
+        if (consentModal) {
+            // Здесь должна быть логика показа consent-модалки из consentManager.js
+        }
+
+    }, { once: true }); // { once: true } гарантирует, что обработчик сработает только один раз
   } else {
       console.error('Could not find all required elements for session start: start-session-modal, start-session-button, or consent-modal.');
   }
@@ -151,71 +145,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupChat();
   initializeXRMode();
 
-  // Platform-specific setup
-  const platform = detectPlatform();
-  console.log(`Detected platform: ${platform}`);
-  let layoutManager, inputManager;
-
-  try {
-    switch (platform) {
-        case 'mobile':
-            const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
-            const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
-            layoutManager = new MobileLayout();
-            inputManager = new MobileInput();
-            break;
-        case 'xr':
-            console.log('XR platform detected, attempting to load XRLayout/XRInput.');
-            // Assuming placeholder files exist or will be created
-            const { XrLayout } = await import('./platforms/xr/xrLayout.js');
-            const { XrInput } = await import('./platforms/xr/xrInput.js');
-            layoutManager = new XrLayout();
-            inputManager = new XrInput();
-            break;
-        default: // 'desktop'
-            const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
-            const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
-            layoutManager = new DesktopLayout();
-            inputManager = new DesktopInput();
-            break;
-    }
-  } catch (e) {
-      console.error("Error loading platform-specific modules:", e);
-      // Fallback to desktop if dynamic import fails for mobile/xr to ensure app still tries to load
-      if (platform !== 'desktop') {
-        console.warn(`Falling back to DesktopLayout/DesktopInput due to error with ${platform} modules.`);
-        const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
-        const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
-        layoutManager = new DesktopLayout();
-        inputManager = new DesktopInput();
-      } else {
-        // If desktop itself failed, then there's a bigger issue.
-         throw e; // Re-throw if desktop fails.
-      }
-  }
-
-
-  if (layoutManager && typeof layoutManager.initialize === 'function') {
-      layoutManager.initialize();
-  } else {
-      console.warn('LayoutManager not initialized or initialize method not found.');
-  }
-
-  if (inputManager && typeof inputManager.initialize === 'function') {
-      inputManager.initialize();
-  } else {
-      console.warn('InputManager not initialized or initialize method not found.');
-  }
-
-  // setupDOMEventHandlers(); // REMOVED - Handled by platform-specific input managers
-  // setupEventListeners(); // REMOVED - Handled by platform-specific input managers
-
   // Generic handlers that are still relevant
   initializeResizeHandler();
   initializeHammerGestures();
   initializePwaInstall();
-
-  animate();
 
   const elementsToFadeIn = [
     '.panel.left-panel',
@@ -269,6 +202,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     gridContainer.addEventListener('touchend', onPointerUp);
     gridContainer.addEventListener('touchmove', onPointerMove, { passive: false });
   }
+
+// Defer platform-specific manager initialization to the end of the event loop
+setTimeout(async () => {
+    const platform = detectPlatform();
+    let layoutManager, inputManager;
+
+    try {
+        switch (platform) {
+            case 'mobile':
+                const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
+                const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
+                layoutManager = new MobileLayout();
+                inputManager = new MobileInput();
+                break;
+            case 'xr':
+                console.log('XR platform detected, attempting to load XRLayout/XRInput.');
+                // Assuming placeholder files exist or will be created
+                const { XrLayout } = await import('./platforms/xr/xrLayout.js');
+                const { XrInput } = await import('./platforms/xr/xrInput.js');
+                layoutManager = new XrLayout();
+                inputManager = new XrInput();
+                break;
+            default: // 'desktop'
+                const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
+                const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
+                layoutManager = new DesktopLayout();
+                inputManager = new DesktopInput();
+                break;
+        }
+    } catch (e) {
+        console.error("Error loading platform-specific modules:", e);
+        // Fallback to desktop if dynamic import fails for mobile/xr to ensure app still tries to load
+        if (platform !== 'desktop') {
+            console.warn(`Falling back to DesktopLayout/DesktopInput due to error with ${platform} modules.`);
+            const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
+            const { DesktopInput } = await import('./platforms/desktop/DesktopInput.js');
+            layoutManager = new DesktopLayout();
+            inputManager = new DesktopInput();
+        } else {
+            // If desktop itself failed, then there's a bigger issue.
+            throw e; // Re-throw if desktop fails.
+        }
+    }
+
+    if (layoutManager && typeof layoutManager.initialize === 'function') {
+        layoutManager.initialize();
+    } else {
+        console.warn('LayoutManager not initialized or initialize method not found.');
+    }
+
+    if (inputManager && typeof inputManager.initialize === 'function') {
+        inputManager.initialize();
+    } else {
+        console.warn('InputManager not initialized or initialize method not found.');
+    }
+
+    console.log(`Platform-specific managers for "${platform}" initialized.`);
+}, 0); // Нулевая задержка выполнит это после текущего стека задач
+
+  animate(); // Цикл анимации остается в конце
 });
 
 // Hologram rotation functions (onPointerDown, onPointerUp, onPointerMove) remain unchanged
@@ -311,10 +304,7 @@ function onPointerMove(event) {
 
   if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
     let newRotationY = startRotationY + rotationAmountY;
-    let newRotationX = startRotationX + rotationAmountX;
-
-    newRotationY = Math.max(-rotationLimit, Math.min(rotationLimit, newRotationY));
-    newRotationX = Math.max(-rotationLimit, Math.min(rotationLimit, newRotationX));
+    let newRotationX = Math.max(-rotationLimit, Math.min(rotationLimit, newRotationX));
     
     state.hologramRendererInstance.getHologramPivot().rotation.y = newRotationY;
     state.hologramRendererInstance.getHologramPivot().rotation.x = newRotationX;

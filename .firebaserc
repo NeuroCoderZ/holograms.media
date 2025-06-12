@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "holograms-media"
-  }
+  },
+  "targets": {
+    "holograms-media": {
+      "hosting": {
+        "prod": [
+          "holograms-media"
+        ],
+        "dev": [
+          "holograms-media-91830644"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
