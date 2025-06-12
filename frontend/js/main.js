@@ -45,7 +45,7 @@ import { initializeGestureAreaVisualization } from './ui/gestureAreaVisualizatio
 import { initializeChatDisplay } from './panels/chatMessages.js';
 // Импорт аудио модулей
 import { initializeSpeechInput } from './audio/speechInput.js';
-import { initializeAudioPlayerControls } from './audio/audioFilePlayer.js';
+// import { initializeAudioPlayerControls } from './audio/audioFilePlayer.js'; // REMOVED
 import { initAudioVisualization } from './audio/audioVisualizer.js';
 
 // Импорт XR модулей
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeChatDisplay();
 
   initializeMediaPipeHands();
-  initializeAudioPlayerControls();
+  // initializeAudioPlayerControls(); // REMOVED
   initializeSpeechInput();
   try {
     if (state.audioAnalyzerLeftInstance && state.hologramRendererInstance) {
