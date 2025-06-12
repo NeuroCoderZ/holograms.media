@@ -1,0 +1,19 @@
+name: Keep IDX Workspace Alive
+
+on:
+  schedule:
+    # Запускается каждые 6 часов
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Позволяет запускать вручную
+
+jobs:
+  ping-idx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping IDX Workspace
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.IDX_AUTH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"command": "date"}' \
+            "https://idx.google.com/api/v1/workspaces/hologramsmedia-91830644/execute"
