@@ -58,7 +58,7 @@ import { animate } from './3d/rendering.js';
 import { initializeMediaPipeHands } from './multimodal/handsTracking.js';
 // Импорт AI модулей
 import { setupChat } from './ai/chat.js';
-import { initializeTria } = './ai/tria.js';
+import { initializeTria } from './ai/tria.js';
 
 // Импорт обработчиков событий (generic ones that remain)
 import { initializeResizeHandler } from './core/resizeHandler.js';
