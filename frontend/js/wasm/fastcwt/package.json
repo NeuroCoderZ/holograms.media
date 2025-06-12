@@ -1,0 +1,15 @@
+{
+  "name": "fastcwt_processor",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "fastcwt_processor_bg.wasm",
+    "fastcwt_processor.js",
+    "fastcwt_processor.d.ts"
+  ],
+  "main": "fastcwt_processor.js",
+  "types": "fastcwt_processor.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
