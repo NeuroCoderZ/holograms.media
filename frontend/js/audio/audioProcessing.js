@@ -47,11 +47,13 @@ export async function setupAudioProcessing(sourceNode, type) {
   cwtProcessorNode.port.onmessage = (event) => {
     if (event.data.type === 'WASM_READY') {
       console.log('WASM module inside AudioWorklet is ready!');
-    } else if (event.data.levels && event.data.angles) {
+    } else if (event.data.type === 'AUDIO_DATA') {
       // Receive processed levels and angles from WASM module
       state.audio.currentDbLevels = event.data.levels; // Float32Array directly
       state.audio.currentPanAngles = event.data.angles; // Float32Array directly
-      // console.log('Received levels and angles from WASM:', state.audio.currentDbLevels, state.audio.currentPanAngles); // For debugging
+      if (event.data.levels && event.data.levels.length > 0) { // Basic check
+        console.log('[MainThread] Received audio data from worklet');
+      }
     }
   };
 

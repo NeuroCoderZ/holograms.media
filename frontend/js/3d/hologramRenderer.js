@@ -374,13 +374,9 @@ export class HologramRenderer {
           targetScaleZ = 0.001; // Minimum visible depth
         }
         
-        // Smoothly interpolate the Z-scale and Z-position
-        const currentScaleZ = mesh.scale.z;
-        const newScaleZ = currentScaleZ + (targetScaleZ - currentScaleZ) * 0.2; // Lerp factor for smoothing
-        const newPositionZ = newScaleZ / 2; // Center the scaled mesh
-
-        mesh.scale.z = newScaleZ;
-        mesh.position.z = newPositionZ;
+        // Directly assign the Z-scale and Z-position
+        mesh.scale.z = targetScaleZ;
+        mesh.position.z = targetScaleZ / 2; // Center the scaled mesh
 
         // Update emissive intensity
         if (material instanceof THREE.MeshStandardMaterial) {

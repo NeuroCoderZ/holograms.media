@@ -31,6 +31,7 @@ class CwtProcessor extends AudioWorkletProcessor {
     }
 
     process(inputs, outputs, parameters) {
+        console.log('[Worklet] Processing frame...'); // Added for tracking
         // Ensure WASM is ready and input channels exist
         if (!this.wasm_ready || !this.target_frequencies || inputs[0].length === 0 || !inputs[0][0]) {
             return true; // Keep processing if not ready or no input
@@ -57,6 +58,7 @@ class CwtProcessor extends AudioWorkletProcessor {
 
             // Post the processed data back to the main thread
             this.port.postMessage({
+                type: 'AUDIO_DATA', // Added for clarity
                 levels: outputDbLevels,
                 angles: outputPanAngles
             });
