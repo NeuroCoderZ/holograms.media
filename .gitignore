@@ -1,4 +1,4 @@
-# Ignore Rust build artifacts folder
+# Ignore Rust build artifacts folder, NOT the output package
 /target/
 
 # Ignore Firebase cache
