@@ -16,7 +16,7 @@
   "functions": [
     {
       "source": "backend",
-      "runtime": "python313",
+      "runtime": "python312",
       "codebase": "holograms-backend",
       "ignore": [
         "venv",

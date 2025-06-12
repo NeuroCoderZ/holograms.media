@@ -127,7 +127,6 @@ export class HologramRenderer {
     const colorXneg = 0x800080; // Purple for X-
     const colorYpos = 0x00FF00; // Green for Y+
     const colorZpos = 0xFFFFFF; // White for Z+
-    // const colorOriginSphere = 0x808080; // Grey for origin sphere, if needed
 
     // Create axis lines using _createLine2ForAxis
     axisGroup.add(this._createLine2ForAxis([origin.x, origin.y, origin.z, xEndPos.x, xEndPos.y, xEndPos.z], colorXpos, desiredLineWidth));
@@ -136,7 +135,6 @@ export class HologramRenderer {
     axisGroup.add(this._createLine2ForAxis([origin.x, origin.y, origin.z, zEndPos.x, zEndPos.y, zEndPos.z], colorZpos, desiredLineWidth));
 
     // Create spheres at the ends of the axes
-    // No longer adding a sphere at the origin directly here, only at ends.
     axisGroup.add(this._createSphereForAxis(sphereRadius, colorXpos).translateX(xLength));
     axisGroup.add(this._createSphereForAxis(sphereRadius, colorXneg).translateX(-xLength));
     axisGroup.add(this._createSphereForAxis(sphereRadius, colorYpos).translateY(yLength));
@@ -183,11 +181,9 @@ export class HologramRenderer {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineBasicMaterial({
-        color, 
+        color,
         opacity: 0.002, // Changed from 0.001
         transparent: true,
-        // Disable depth testing/writing to ensure grid lines are always visible
-        // and don't interfere with objects drawn at the same Z-depth.
         depthWrite: false,
         depthTest: false
     });
@@ -208,8 +204,6 @@ export class HologramRenderer {
   _createSequencerGrid(width, height, depth, cellSize, color, position, isLeftGrid) {
     const group = new THREE.Group();
     
-    // The sphereRadiusInput parameter to _createAxis was cellSize * 0.5.
-    // Since _createAxis now multiplies this by 4 internally, we pass the original value.
     const sphereRadiusForAxis = cellSize * 0.5;
 
     const gridVis = this._createGridVisualization(width, height, depth, cellSize, color);
@@ -238,9 +232,6 @@ export class HologramRenderer {
     const interGridSpacing = 0; // Changed from CELL_SIZE * 2
 
     // Create the left sequencer grid
-    // Positioned so its right edge is at -(interGridSpacing / 2)
-    // Vertically centered by applying -GRID_HEIGHT / 2 to its Y position
-    // Z position is -GRID_DEPTH / 2 to center it along Z if depth is considered
     this.leftSequencerGroup = this._createSequencerGrid(
       GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
       leftColor,
@@ -250,9 +241,6 @@ export class HologramRenderer {
     this.mainSequencerGroup.add(this.leftSequencerGroup);
 
     // Create the right sequencer grid
-    // Positioned so its left edge is at (interGridSpacing / 2)
-    // Vertically centered by applying -GRID_HEIGHT / 2 to its Y position
-    // Z position is -GRID_DEPTH / 2
     this.rightSequencerGroup = this._createSequencerGrid(
       GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE,
       rightColor,
@@ -278,20 +266,15 @@ export class HologramRenderer {
     const width = semitone.width; // Width of the column based on semitone data.
     const columnGroup = new THREE.Group();
 
-    // Position the column group within its respective grid.
-    // For the left grid, columns are placed starting from the right edge and grow inwards.
-    // For the right grid, columns are placed starting from the left edge and grow outwards.
-    columnGroup.position.x = isLeftGrid ? (GRID_WIDTH - width) : 0;
+    // Store initial X position relative to its grid for pan angle application
+    const initialX = isLeftGrid ? (GRID_WIDTH - width) : 0;
+    columnGroup.position.x = initialX;
+    columnGroup.userData.initialX = initialX; // Store for later updates
 
-    // Create the basic box geometry for the column. Height and depth are initially fixed.
     const geometry = new THREE.BoxGeometry(width, 2, 1); // width, height, depth
     const material = new THREE.MeshStandardMaterial({ color: semitone.color }); // Color from semitone data
     const columnMesh = new THREE.Mesh(geometry, material);
 
-    // Position the mesh within its parent group.
-    // The mesh's local X should be its center (half its width).
-    // Y position is based on the semitone index (to stack them vertically).
-    // Z position is initially at 0, as its depth will be animated.
     columnMesh.position.set(width / 2, (semitoneIndex + 1) * 2, 0);
     
     columnGroup.add(columnMesh);
@@ -323,21 +306,20 @@ export class HologramRenderer {
   }
 
   /**
-   * Updates the visual appearance of the columns based on real-time audio amplitude data.
-   * Each column's Z-scale (length) and front-face brightness (emissiveIntensity) are adjusted.
-   * Input audioLevels are expected to be Uint8Arrays of 260 amplitude values (0-255).
-   * These are downsampled to 130 values for the 130 columns.
-   * @param {Uint8Array} leftAudioLevels - Array of 260 amplitude values for the left channel.
-   * @param {Uint8Array} rightAudioLevels - Array of 260 amplitude values for the right channel.
+   * Updates the visual appearance of the columns based on real-time audio data.
+   * Each column's Z-scale (depth) and front-face brightness (emissiveIntensity) are adjusted.
+   * Their X-position is also adjusted based on pan angles.
+   * @param {Float32Array} dbLevels - Array of 260 decibel values (130 for left, 130 for right).
+   * @param {Float32Array} panAngles - Array of 130 pan angles in degrees (-90 to +90).
    */
-  updateColumnVisuals(leftAudioLevels, rightAudioLevels) {
-    if (!leftAudioLevels || !rightAudioLevels || leftAudioLevels.length < 260 || rightAudioLevels.length < 260) {
-        // console.warn("Audio levels not provided or insufficient length for column update. Skipping update.");
-        // Optionally, set all columns to a default silent state here
+  updateVisuals(dbLevels, panAngles) {
+    if (!dbLevels || !panAngles || dbLevels.length !== 260 || panAngles.length !== 130) {
+        console.warn("Audio data (levels or angles) not provided or insufficient length. Skipping update.");
+        // Optionally, reset all columns to a default silent/centered state
         this.columns.forEach((columnPair) => {
             const channels = [
-                { meshGroup: columnPair.left },
-                { meshGroup: columnPair.right },
+                { meshGroup: columnPair.left, isLeft: true },
+                { meshGroup: columnPair.right, isLeft: false },
             ];
             channels.forEach(channel => {
                 if (channel.meshGroup && channel.meshGroup.children && channel.meshGroup.children.length > 0) {
@@ -348,6 +330,10 @@ export class HologramRenderer {
                         if (mesh.material instanceof THREE.MeshStandardMaterial) {
                             mesh.material.emissiveIntensity = 0;
                         }
+                        // Reset X position to initial state
+                        if (channel.meshGroup.userData.initialX !== undefined) {
+                            channel.meshGroup.position.x = channel.meshGroup.userData.initialX;
+                        }
                     }
                 }
             });
@@ -355,10 +341,14 @@ export class HologramRenderer {
         return;
     }
 
-    this.columns.forEach((columnPair, i) => { // i from 0 to 129
+    this.columns.forEach((columnPair, index) => { // 'index' corresponds to semitone index (0-129)
+      const leftLevel = dbLevels[index];
+      const rightLevel = dbLevels[index + 130];
+      const panAngle = panAngles[index];
+
       const channels = [
-        { levels: leftAudioLevels, meshGroup: columnPair.left, isLeft: true },
-        { levels: rightAudioLevels, meshGroup: columnPair.right, isRight: true },
+        { level: leftLevel, meshGroup: columnPair.left, isLeft: true },
+        { level: rightLevel, meshGroup: columnPair.right, isLeft: false },
       ];
 
       channels.forEach(channel => {
@@ -371,41 +361,66 @@ export class HologramRenderer {
         }
         const material = mesh.material;
 
-        let currentRawLevel = 0;
-        // Ensure 2*i and 2*i+1 are valid indices for channel.levels (which has 260 elements)
-        if (channel.levels && (2*i + 1) < channel.levels.length) {
-            currentRawLevel = (channel.levels[2*i] + channel.levels[2*i+1]) / 2.0;
-        } else if (channel.levels && 2*i < channel.levels.length) { // Fallback if only one value available at 2*i
-             currentRawLevel = channel.levels[2*i];
-        } else {
-            // console.warn(`Not enough data in channel.levels for column ${i}`);
-        }
-        
-        // currentRawLevel is now in 0-255 range. Normalize to 0-1.
-        const normalizedAmplitude = THREE.MathUtils.clamp(currentRawLevel / 255.0, 0, 1);
+        // Normalize dB value (-100 to 0) to an amplitude (0 to 1)
+        const normalizedAmplitude = THREE.MathUtils.clamp((channel.level + 100) / 100.0, 0, 1);
 
-        // Ensure base color is set (this might be better in _createColumn, but good for safety)
+        // Ensure base color is set (safety check)
         if (material.color && columnPair.semitoneData && material.color.getHex() !== columnPair.semitoneData.color.getHex()) {
             material.color.copy(columnPair.semitoneData.color);
         }
 
-        if (isNaN(normalizedAmplitude) || normalizedAmplitude <= 0.001) {
-          mesh.scale.z = 0.001; // Minimum visible depth
-          mesh.position.z = 0.0005; // Center the minimal depth
-          if (material instanceof THREE.MeshStandardMaterial) {
-            material.emissiveIntensity = 0;
-          }
-        } else {
-          mesh.scale.z = normalizedAmplitude * GRID_HEIGHT;
-          mesh.position.z = mesh.scale.z / 2; // Adjust position to center the scaled mesh
-          if (material instanceof THREE.MeshStandardMaterial) {
-            // Ensure emissive color is set to the column's base color if it's currently black
+        let targetScaleZ = normalizedAmplitude * GRID_DEPTH; 
+        if (isNaN(targetScaleZ) || targetScaleZ <= 0.001) {
+          targetScaleZ = 0.001; // Minimum visible depth
+        }
+        
+        // Smoothly interpolate the Z-scale and Z-position
+        const currentScaleZ = mesh.scale.z;
+        const newScaleZ = currentScaleZ + (targetScaleZ - currentScaleZ) * 0.2; // Lerp factor for smoothing
+        const newPositionZ = newScaleZ / 2; // Center the scaled mesh
+
+        mesh.scale.z = newScaleZ;
+        mesh.position.z = newPositionZ;
+
+        // Update emissive intensity
+        if (material instanceof THREE.MeshStandardMaterial) {
             if (material.emissive && material.emissive.getHex() === 0x000000 && columnPair.semitoneData) {
                 material.emissive.copy(columnPair.semitoneData.color);
             }
-            material.emissiveIntensity = normalizedAmplitude * 1.0; // Adjust 1.0 multiplier for desired brightness
-          }
+            material.emissiveIntensity = normalizedAmplitude * 1.5; // Adjust multiplier for desired brightness
         }
+
+        // Apply pan angle to X-position
+        const initialX = channel.meshGroup.userData.initialX;
+        const panFactor = panAngle / 90.0; // Normalize angle from -90 to +90 to -1 to +1
+        // Max shift for each column is its width / 2. This makes it pan within its own 'cell'
+        const maxPanShift = columnPair.semitoneData.width / 2; 
+        let panShiftX = panFactor * maxPanShift;
+
+        // For the left grid, we want higher panFactor (more positive angle) to shift it towards its right (towards center of main group)
+        // For the right grid, we want higher panFactor (more positive angle) to shift it towards its right (away from center of main group)
+        // The `isLeft` flag helps determine the direction of the shift relative to the grid's orientation.
+        if (channel.isLeft) {
+            // Left grid: X increases from right to left. Positive pan shifts to the right (less X, closer to origin).
+            // Negative pan shifts to the left (more X, further from origin).
+            // So, for left channel, a positive panAngle should decrease X (move left).
+            // This means original panFactor needs to be inverted for left channel group.position.x.
+            channel.meshGroup.position.x = initialX - panShiftX;
+        } else {
+            // Right grid: X increases from left to right. Positive pan shifts to the right (more X, further from origin).
+            // Negative pan shifts to the left (less X, closer to origin).
+            channel.meshGroup.position.x = initialX + panShiftX;
+        }
+
+        // Diagnostics for first column only
+        if (index === 0) {
+            if (channel.isLeft && newScaleZ > 0.05) {
+                console.log(`[HologramRenderer DEBUG] Left Column 0 scale: ${newScaleZ.toFixed(3)}, panShiftX: ${panShiftX.toFixed(3)}, finalX: ${channel.meshGroup.position.x.toFixed(3)}`);
+            } else if (!channel.isLeft && newScaleZ > 0.05) {
+                console.log(`[HologramRenderer DEBUG] Right Column 0 scale: ${newScaleZ.toFixed(3)}, panShiftX: ${panShiftX.toFixed(3)}, finalX: ${channel.meshGroup.position.x.toFixed(3)}`);
+            }
+        }
+
       });
     });
   }

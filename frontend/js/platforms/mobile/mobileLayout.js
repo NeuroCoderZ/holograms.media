@@ -68,52 +68,18 @@ export class MobileLayout {
             this.rightPanelElement.classList.remove('hidden');
         }
 
-        // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
-        if (typeof updateHologramLayout === 'function') updateHologramLayout(); // Add this
+        if (typeof updateHologramLayout === 'function') updateHologramLayout();
         console.log(`[MobileLayout] Panels initialized. Defaulting to hidden.`);
     }
 
     toggleMainPanels() {
-        if (!this.leftPanelElement || !this.togglePanelsButtonElement) {
-            console.error('[MobileLayout] Panel elements not initialized before toggle.');
-            return;
+        const leftPanel = document.getElementById('left-panel');
+        if (leftPanel) {
+            leftPanel.classList.toggle('visible');
+            console.log(`Left panel visibility toggled. Is visible: ${leftPanel.classList.contains('visible')}`);
+            // Вызываем обновление layout после изменения панели
+            this.updateHologramLayout();
         }
-
-        const isLeftPanelCurrentlyVisible = this.leftPanelElement.classList.contains('visible');
-
-        this.leftPanelElement.classList.toggle('visible');
-
-        // If right panel exists and might be visible, hide it explicitly on mobile when left is toggled.
-        if (this.rightPanelElement && this.rightPanelElement.classList.contains('visible') && !isLeftPanelCurrentlyVisible) {
-            // This case means left panel is about to become visible, ensure right is not.
-            this.rightPanelElement.classList.remove('visible');
-        }
-        if (this.rightPanelElement && isLeftPanelCurrentlyVisible) {
-             // This case means left panel is about to become hidden. Right should remain hidden.
-            this.rightPanelElement.classList.remove('visible');
-        }
-
-
-        const newState = isLeftPanelCurrentlyVisible ? 'hidden' : 'visible';
-        this.togglePanelsButtonElement.classList.toggle('show-mode', isLeftPanelCurrentlyVisible);
-
-        try {
-            // Reflects the state of the *left* panel primarily.
-            localStorage.setItem('panelsHidden', isLeftPanelCurrentlyVisible.toString());
-        } catch (e) {
-            console.error('[MobileLayout] Error saving panel visibility to localStorage:', e);
-        }
-        console.log(`[MobileLayout] Left panel toggled. New state: ${newState}`);
-
-        const event = new CustomEvent('uiStateChanged', {
-            detail: {
-                component: 'leftPanel',
-                newState: newState
-            }
-        });
-        window.dispatchEvent(event);
-        // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
-        if (typeof updateHologramLayout === 'function') updateHologramLayout(); // Add this
     }
 
     // Gesture Area Logic (from gestureAreaManager.js)
