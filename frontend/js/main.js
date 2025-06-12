@@ -295,7 +295,8 @@ function onPointerMove(event) {
 
   if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
     let newRotationY = startRotationY + rotationAmountY;
-    let newRotationX = Math.max(-rotationLimit, Math.min(rotationLimit, newRotationX));
+    let newRotationX = startRotationX + rotationAmountX;
+    newRotationX = Math.max(-rotationLimit, Math.min(rotationLimit, newRotationX));
     
     state.hologramRendererInstance.getHologramPivot().rotation.y = newRotationY;
     state.hologramRendererInstance.getHologramPivot().rotation.x = newRotationX;
