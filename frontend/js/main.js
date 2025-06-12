@@ -112,7 +112,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   await initCore();
-  initializeMainUI();
+  initializeMainUI(); // ШАГ А: Сначала находим все элементы UI
+
   // setupFirstInteractionListener(); // REMOVED - Handled by MobileInput
 
   setAuthDOMElements('signInButton', 'signOutButton', 'userStatus');
@@ -203,8 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     gridContainer.addEventListener('touchmove', onPointerMove, { passive: false });
   }
 
-// Defer platform-specific manager initialization to the end of the event loop
-setTimeout(async () => {
+// ШАГ Б: Теперь создаем менеджеры, передавая им готовые элементы
     const platform = detectPlatform();
     let layoutManager, inputManager;
 
@@ -213,7 +213,7 @@ setTimeout(async () => {
             case 'mobile':
                 const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
                 const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
-                layoutManager = new MobileLayout();
+                layoutManager = new MobileLayout(state.uiElements); // Передаем элементы
                 inputManager = new MobileInput();
                 break;
             case 'xr':
@@ -227,7 +227,7 @@ setTimeout(async () => {
             default: // 'desktop'
                 const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
                 const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
-                layoutManager = new DesktopLayout();
+                layoutManager = new DesktopLayout(state.uiElements); // Передаем элементы
                 inputManager = new DesktopInput();
                 break;
         }
@@ -238,7 +238,7 @@ setTimeout(async () => {
             console.warn(`Falling back to DesktopLayout/DesktopInput due to error with ${platform} modules.`);
             const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
             const { DesktopInput } = await import('./platforms/desktop/DesktopInput.js');
-            layoutManager = new DesktopLayout();
+            layoutManager = new DesktopLayout(state.uiElements); // Передаем элементы
             inputManager = new DesktopInput();
         } else {
             // If desktop itself failed, then there's a bigger issue.
@@ -259,7 +259,6 @@ setTimeout(async () => {
     }
 
     console.log(`Platform-specific managers for "${platform}" initialized.`);
-}, 0); // Нулевая задержка выполнит это после текущего стека задач
 
   animate(); // Цикл анимации остается в конце
 });

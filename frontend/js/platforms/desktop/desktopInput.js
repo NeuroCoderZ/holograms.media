@@ -4,7 +4,8 @@ import { applyPrompt, loadInitialFilesAndSetupEditor } from '../../core/domEvent
 import { toggleFullscreen, initFullscreenListeners } from '../../utils/fullscreen.js';
 
 export class DesktopInput {
-    constructor() {
+    constructor(globalState) {
+        this.state = globalState;
         console.log("DesktopInput instantiated.");
     }
 
@@ -173,6 +174,12 @@ export class DesktopInput {
             });
             fileInput.addEventListener('change', (event) => {
               console.log('DesktopInput: File selected:', event.target.files[0].name);
+              // Call loadAudioFile on the audioFilePlayer instance
+              if (this.state.audioFilePlayer) {
+                this.state.audioFilePlayer.loadAudioFile(event);
+              } else {
+                console.error("audioFilePlayer instance not found in state for file input change.");
+              }
               event.target.value = '';
             });
             console.log("DesktopInput: File button and input listeners set up.");
@@ -222,6 +229,66 @@ export class DesktopInput {
             console.log("DesktopInput: Bluetooth button listener set up.");
         } else {
             console.warn("DesktopInput: Bluetooth button not found.");
+        }
+
+        // Microphone Button
+        const microphoneButton = document.getElementById('microphoneButton');
+        if (microphoneButton) {
+            microphoneButton.addEventListener('click', () => {
+                if (this.state.microphoneManager) {
+                    this.state.microphoneManager.toggleMicrophone(); // Pass state as argument
+                } else {
+                    console.error("microphoneManager instance not found in state.");
+                }
+            });
+            console.log("DesktopInput: Microphone button listener set up.");
+        } else {
+            console.warn("DesktopInput: Microphone button not found.");
+        }
+
+        // Play Audio Button
+        const playAudioButton = document.getElementById('playAudioButton');
+        if (playAudioButton) {
+            playAudioButton.addEventListener('click', () => {
+                if (this.state.audioFilePlayer) {
+                    this.state.audioFilePlayer.playAudio();
+                } else {
+                    console.error("audioFilePlayer instance not found in state for play button.");
+                }
+            });
+            console.log("DesktopInput: Play Audio button listener set up.");
+        } else {
+            console.warn("DesktopInput: Play Audio button not found.");
+        }
+
+        // Pause Audio Button
+        const pauseAudioButton = document.getElementById('pauseAudioButton');
+        if (pauseAudioButton) {
+            pauseAudioButton.addEventListener('click', () => {
+                if (this.state.audioFilePlayer) {
+                    this.state.audioFilePlayer.pauseAudio();
+                } else {
+                    console.error("audioFilePlayer instance not found in state for pause button.");
+                }
+            });
+            console.log("DesktopInput: Pause Audio button listener set up.");
+        } else {
+            console.warn("DesktopInput: Pause Audio button not found.");
+        }
+
+        // Stop Audio Button
+        const stopAudioButton = document.getElementById('stopAudioButton');
+        if (stopAudioButton) {
+            stopAudioButton.addEventListener('click', () => {
+                if (this.state.audioFilePlayer) {
+                    this.state.audioFilePlayer.stopAudio();
+                } else {
+                    console.error("audioFilePlayer instance not found in state for stop button.");
+                }
+            });
+            console.log("DesktopInput: Stop Audio button listener set up.");
+        } else {
+            console.warn("DesktopInput: Stop Audio button not found.");
         }
     }
 }
