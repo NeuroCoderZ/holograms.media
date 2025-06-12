@@ -58,7 +58,7 @@ import { animate } from './3d/rendering.js';
 import { initializeMediaPipeHands } from './multimodal/handsTracking.js';
 // Импорт AI модулей
 import { setupChat } from './ai/chat.js';
-import { initializeTria } from './ai/tria.js';
+import { initializeTria } = './ai/tria.js';
 
 // Импорт обработчиков событий (generic ones that remain)
 import { initializeResizeHandler } from './core/resizeHandler.js';
@@ -90,11 +90,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const consentModal = document.getElementById('consent-modal'); // Assuming this is the ID of the Data Storage Consent modal
 
   if (startSessionButton && startSessionModal && consentModal) {
-      startButton.addEventListener('click', async () => {
+      startSessionButton.addEventListener('click', async () => {
         console.log("START button clicked. Initializing multimedia...");
 
         // Скрываем модальное окно
-        startModal.style.display = 'none';
+        startSessionModal.style.display = 'none';
 
         // Запускаем инициализатор медиа
         // Эта функция должна запрашивать камеру/микрофон и возобновлять AudioContext
