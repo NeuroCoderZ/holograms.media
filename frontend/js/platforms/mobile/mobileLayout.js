@@ -15,9 +15,9 @@ export class MobileLayout {
 
     initialize() {
         // Get elements directly from the passed uiElements object
-        this.leftPanelElement = this.uiElements.panels.leftPanel;
-        this.rightPanelElement = this.uiElements.panels.rightPanel;
-        this.togglePanelsButtonElement = this.uiElements.buttons.togglePanelsButton;
+        this.leftPanelElement = this.uiElements.leftPanel;
+        this.rightPanelElement = this.uiElements.rightPanel;
+        this.togglePanelsButtonElement = this.uiElements.togglePanelsButton;
         this.gestureAreaElement = this.uiElements.containers.gestureArea;
 
         let criticalElementMissing = false;
