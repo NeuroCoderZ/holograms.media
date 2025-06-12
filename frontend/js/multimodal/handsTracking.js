@@ -214,7 +214,7 @@ function onResults(results) {
         // The height will be controlled by CSS rules for #gesture-area and #gesture-area.hands-detected
         // console.log(`Gesture area class updated based on hands presence. Hands: ${handsArePresent}`);
     }
-    updateHologramLayout(); // Argument removed
+    // layoutManager.updateHologramLayout(); // <--- ЗАКОММЕНТИРОВАТЬ ЭТУ СТРОКУ
 
     // New logic for .visible class in landscape mode:
     if (gestureAreaElement) {

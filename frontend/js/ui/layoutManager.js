@@ -20,7 +20,7 @@ export function updateHologramLayout() { // Removed handsVisible parameter
     console.warn('[LayoutManager] Skipping updateHologramLayout: Essential elements (gridContainer, renderer, hologramRendererInstance with getHologramPivot) not ready.');
     return;
   }
-  console.log('[LayoutManager] updateHologramLayout called.');
+  // Removed: console.log('[LayoutManager] updateHologramLayout called.');
 
   const gridContainer = state.uiElements.gridContainer;
   const hologramPivot = state.hologramRendererInstance.getHologramPivot();
@@ -79,7 +79,7 @@ export function updateHologramLayout() { // Removed handsVisible parameter
     state.activeCamera.near = 0.1; // Ensure near/far are appropriate
     state.activeCamera.far = 2000; // Ensure near/far are appropriate
     state.activeCamera.updateProjectionMatrix();
-    console.log('[LayoutManager] Orthographic camera updated:', { left: state.activeCamera.left, right: state.activeCamera.right, top: state.activeCamera.top, bottom: state.activeCamera.bottom });
+    // Removed: console.log('[LayoutManager] Orthographic camera updated:', { left: state.activeCamera.left, right: state.activeCamera.right, top: state.activeCamera.top, bottom: state.activeCamera.bottom });
   } else {
     console.warn('[LayoutManager] Active camera is not orthographic or not set.');
     // If it's a perspective camera, you might want to update its aspect ratio here too.
@@ -152,7 +152,7 @@ export function updateHologramLayout() { // Removed handsVisible parameter
     hologramPivot.position.z = 0;
     // console.warn('[LayoutManager] TWEEN is not defined. Hologram transformations applied directly.'); // Commented out as TWEEN is intentionally disabled for this part
   // }
-  console.log('[LayoutManager] Hologram target calculated:', { scale: targetScaleValue, posY: targetPositionY });
+  // Removed: console.log('[LayoutManager] Hologram target calculated:', { scale: targetScaleValue, posY: targetPositionY });
 
   // 9. Animate Gesture Area Height based on handsVisible state (from previous subtask)
   // if (state.uiElements?.gestureArea && typeof TWEEN !== 'undefined') {
@@ -192,7 +192,7 @@ export function updateHologramLayout() { // Removed handsVisible parameter
   }
 
 
-  console.log('[LayoutManager] updateHologramLayout completed successfully.');
+  // Removed: console.log('[LayoutManager] updateHologramLayout completed successfully.');
 }
 
 /**
