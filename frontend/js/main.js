@@ -77,56 +77,59 @@ let startRotationY = 0;
 let startRotationX = 0;
 const rotationLimit = Math.PI / 2;
 
+// Function to setup Start Session Button Listener
+function setupStartButtonListener() {
+  const startSessionModal = document.getElementById('start-session-modal');
+  const startSessionButton = document.getElementById('start-session-button');
+  // const consentModal = document.getElementById('consent-modal'); // Consent modal logic is handled by consentManager
+
+  if (startSessionButton && startSessionModal) {
+      startSessionButton.addEventListener('click', async () => {
+        console.log("START button clicked. Initializing multimedia...");
+
+        // Hide the modal
+        startSessionModal.style.display = 'none';
+
+        // Initialize media (camera/mic, AudioContext)
+        await initializeMultimedia();
+
+        // Consent modal display is typically handled by initializeConsentManager or after its check.
+        // If needed here, ensure it's shown *after* multimedia initialization if that's the flow.
+        // For now, assuming consentManager handles its own display logic at the right time.
+
+    }, { once: true }); // Ensure the handler runs only once
+  } else {
+      console.error('Could not find required elements for session start: start-session-modal or start-session-button.');
+      // If consentModal were critical here, add it to the error message.
+  }
+}
+
+
 // Инициализация приложения при загрузке DOM
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Инициализация приложения...');
 
+  // 0. Initialize Consent Manager (Handles its own UI if needed)
   await initializeConsentManager();
   console.log('User consent check passed/handled.');
 
-  // Start Session Modal Logic
-  const startSessionModal = document.getElementById('start-session-modal');
-  const startSessionButton = document.getElementById('start-session-button');
-  const consentModal = document.getElementById('consent-modal'); // Assuming this is the ID of the Data Storage Consent modal
-
-  if (startSessionButton && startSessionModal && consentModal) {
-      startSessionButton.addEventListener('click', async () => {
-        console.log("START button clicked. Initializing multimedia...");
-
-        // Скрываем модальное окно
-        startSessionModal.style.display = 'none';
-
-        // Запускаем инициализатор медиа
-        // Эта функция должна запрашивать камеру/микрофон и возобновлять AudioContext
-        await initializeMultimedia();
-
-        // Показываем окно согласия на хранение данных (если оно есть)
-        const consentModal = document.getElementById('consent-modal');
-        if (consentModal) {
-            // Здесь должна быть логика показа consent-модалки из consentManager.js
-        }
-
-    }, { once: true }); // { once: true } гарантирует, что обработчик сработает только один раз
-  } else {
-      console.error('Could not find all required elements for session start: start-session-modal, start-session-button, or consent-modal.');
-  }
-
+  // 1. Core Initialization (includes scene, renderer, camera, etc.)
   await initCore();
-  initializeMainUI(); // ШАГ А: Сначала находим все элементы UI
 
-  // setupFirstInteractionListener(); // REMOVED - Handled by MobileInput
+  // 2. Initialize Main UI (finds and stores all UI elements in state.uiElements)
+  initializeMainUI();
 
+  // 3. Setup Start Button Listener (needs UI elements from initializeMainUI to be available)
+  setupStartButtonListener();
+
+  // Subsequent initializations that depend on Core and UI elements
   setAuthDOMElements('signInButton', 'signOutButton', 'userStatus');
   initAuthObserver(handleTokenForBackend);
-
-  // const panelManagerInstance = new PanelManager(); // REMOVED
-  // panelManagerInstance.initializePanelManager(); // REMOVED
 
   initializePromptManager();
   initializeVersionManager();
   initChatUI();
-  initializeGestureAreaVisualization(); // This is visualization, not manager
-  // initializeGestureArea(); // REMOVED - Handled by MobileLayout
+  initializeGestureAreaVisualization(); // Visualization, not manager
   initializeChatDisplay();
 
   initializeMediaPipeHands();
@@ -146,11 +149,79 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupChat();
   initializeXRMode();
 
-  // Generic handlers that are still relevant
+  // Generic handlers
   initializeResizeHandler();
   initializeHammerGestures();
   initializePwaInstall();
 
+  // Hologram rotation logic (event listeners for grid-container)
+  const gridContainer = document.getElementById('grid-container');
+  if (gridContainer) {
+    gridContainer.addEventListener('mousedown', onPointerDown);
+    gridContainer.addEventListener('mouseup', onPointerUp);
+    gridContainer.addEventListener('mousemove', onPointerMove);
+    gridContainer.addEventListener('mouseleave', onPointerUp);
+
+    gridContainer.addEventListener('touchstart', onPointerDown, { passive: false });
+    gridContainer.addEventListener('touchend', onPointerUp);
+    gridContainer.addEventListener('touchmove', onPointerMove, { passive: false });
+  }
+
+
+  // 4. Platform Detection and Dynamic Loading/Initialization of Layout & Input Managers
+  const platform = detectPlatform();
+  let layoutManager, inputManager;
+
+  try {
+      switch (platform) {
+          case 'mobile':
+              const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
+              const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
+              layoutManager = new MobileLayout(state.uiElements); // Pass uiElements
+              inputManager = new MobileInput(); // MobileInput might need state or uiElements later
+              break;
+          case 'xr':
+              console.log('XR platform detected, attempting to load XRLayout/XRInput.');
+              const { XrLayout } = await import('./platforms/xr/xrLayout.js');
+              const { XrInput } = await import('./platforms/xr/xrInput.js');
+              layoutManager = new XrLayout(state.uiElements); // Pass uiElements
+              inputManager = new XrInput();
+              break;
+          default: // 'desktop'
+              const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
+              const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
+              layoutManager = new DesktopLayout(state.uiElements); // Pass uiElements
+              inputManager = new DesktopInput();
+              break;
+      }
+  } catch (e) {
+      console.error("Error loading platform-specific modules:", e);
+      // Fallback to desktop if dynamic import fails
+      if (platform !== 'desktop') {
+          console.warn(`Falling back to DesktopLayout/DesktopInput due to error with ${platform} modules.`);
+          const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
+          const { DesktopInput } = await import('./platforms/desktop/DesktopInput.js'); // Ensure correct path if different
+          layoutManager = new DesktopLayout(state.uiElements);
+          inputManager = new DesktopInput();
+      } else {
+          throw e; // Re-throw if desktop itself failed.
+      }
+  }
+
+  if (layoutManager && typeof layoutManager.initialize === 'function') {
+      layoutManager.initialize(); // This will set initial panel visibility etc.
+  } else {
+      console.warn('LayoutManager not initialized or initialize method not found.');
+  }
+
+  if (inputManager && typeof inputManager.initialize === 'function') {
+      inputManager.initialize();
+  } else {
+      console.warn('InputManager not initialized or initialize method not found.');
+  }
+  console.log(`Platform-specific managers for "${platform}" initialized.`);
+
+  // Fade-in elements after layout manager has initialized panels
   const elementsToFadeIn = [
     '.panel.left-panel',
     '.panel.right-panel',
@@ -168,16 +239,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.warn(`Element with selector "${selector}" not found for fade-in animation.`);
       }
     });
-  }, 100);
+  }, 50); // Reduced delay, as critical layout should be done by layoutManager.initialize()
 
-  // After all initializations that might affect layout, including renderer and camera setup in initCore/sceneSetup
-  // and panel initial states by layoutManager.initialize().
-  // A short delay might be beneficial if some initializations are asynchronous and affect layout.
-  // However, a direct call after all known setup is preferable.
-  // Consider if animate() or initializeResizeHandler() already trigger an initial layout.
-  // resizeHandler's initial state might not cover all conditions before first resize.
+  // Initial call to updateHologramLayout after all setup, especially after layoutManager might have changed panel states.
   if (typeof updateHologramLayout === 'function') {
-    console.log('[main.js] Performing initial call to updateHologramLayout after DOMContentLoaded.');
+    console.log('[main.js] Performing initial call to updateHologramLayout after DOMContentLoaded and platform managers.');
     updateHologramLayout();
   } else {
     console.error('[main.js] updateHologramLayout function not available for initial call.');
@@ -185,82 +251,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   console.log('Инициализация завершена!');
 
-  // Run frontend diagnostics (if needed, keep it)
-  // setTimeout(() => {
-  //   runFrontendDiagnostics();
-  // }, 1000);
-
-
-  // Hologram rotation logic
-  const gridContainer = document.getElementById('grid-container');
-  if (gridContainer) {
-    gridContainer.addEventListener('mousedown', onPointerDown);
-    gridContainer.addEventListener('mouseup', onPointerUp);
-    gridContainer.addEventListener('mousemove', onPointerMove);
-    gridContainer.addEventListener('mouseleave', onPointerUp);
-
-    gridContainer.addEventListener('touchstart', onPointerDown, { passive: false });
-    gridContainer.addEventListener('touchend', onPointerUp);
-    gridContainer.addEventListener('touchmove', onPointerMove, { passive: false });
-  }
-
-// ШАГ Б: Теперь создаем менеджеры, передавая им готовые элементы
-    const platform = detectPlatform();
-    let layoutManager, inputManager;
-
-    try {
-        switch (platform) {
-            case 'mobile':
-                const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
-                const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
-                layoutManager = new MobileLayout(state.uiElements); // Передаем элементы
-                inputManager = new MobileInput();
-                break;
-            case 'xr':
-                console.log('XR platform detected, attempting to load XRLayout/XRInput.');
-                // Assuming placeholder files exist or will be created
-                const { XrLayout } = await import('./platforms/xr/xrLayout.js');
-                const { XrInput } = await import('./platforms/xr/xrInput.js');
-                layoutManager = new XrLayout();
-                inputManager = new XrInput();
-                break;
-            default: // 'desktop'
-                const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
-                const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
-                layoutManager = new DesktopLayout(state.uiElements); // Передаем элементы
-                inputManager = new DesktopInput();
-                break;
-        }
-    } catch (e) {
-        console.error("Error loading platform-specific modules:", e);
-        // Fallback to desktop if dynamic import fails for mobile/xr to ensure app still tries to load
-        if (platform !== 'desktop') {
-            console.warn(`Falling back to DesktopLayout/DesktopInput due to error with ${platform} modules.`);
-            const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
-            const { DesktopInput } = await import('./platforms/desktop/DesktopInput.js');
-            layoutManager = new DesktopLayout(state.uiElements); // Передаем элементы
-            inputManager = new DesktopInput();
-        } else {
-            // If desktop itself failed, then there's a bigger issue.
-            throw e; // Re-throw if desktop fails.
-        }
-    }
-
-    if (layoutManager && typeof layoutManager.initialize === 'function') {
-        layoutManager.initialize();
-    } else {
-        console.warn('LayoutManager not initialized or initialize method not found.');
-    }
-
-    if (inputManager && typeof inputManager.initialize === 'function') {
-        inputManager.initialize();
-    } else {
-        console.warn('InputManager not initialized or initialize method not found.');
-    }
-
-    console.log(`Platform-specific managers for "${platform}" initialized.`);
-
-  animate(); // Цикл анимации остается в конце
+  // 5. Start Animation Loop
+  animate();
 });
 
 // Hologram rotation functions (onPointerDown, onPointerUp, onPointerMove) remain unchanged

@@ -1,9 +1,10 @@
 // frontend/js/platforms/desktop/desktopLayout.js
-import { uiElements } from '../../ui/uiManager.js'; // Assuming uiManager still provides common UI elements if needed
+// import { uiElements } from '../../ui/uiManager.js'; // Removed as uiElements will be passed via constructor
 import { updateHologramLayout } from '../../ui/layoutManager.js';
 
 export class DesktopLayout {
-    constructor() {
+    constructor(uiElements) { // Added uiElements parameter
+        this.uiElements = uiElements; // Store uiElements
         this.leftPanelElement = null;
         this.rightPanelElement = null;
         this.togglePanelsButtonElement = null;
@@ -11,9 +12,10 @@ export class DesktopLayout {
     }
 
     initialize() {
-        this.leftPanelElement = document.getElementById('left-panel');
-        this.rightPanelElement = document.getElementById('right-panel');
-        this.togglePanelsButtonElement = document.getElementById('togglePanelsButton');
+        // Get elements directly from the passed uiElements object
+        this.leftPanelElement = this.uiElements.leftPanel;
+        this.rightPanelElement = this.uiElements.rightPanel;
+        this.togglePanelsButtonElement = this.uiElements.togglePanelsButton;
 
         let criticalElementMissing = false;
         if (!this.leftPanelElement) {
