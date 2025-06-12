@@ -32,7 +32,7 @@ let handSpheres = { left: [], right: [] }; // Массив для хранени
 // --- MediaPipe Hands Functions ---
 
 // Function to start the video stream and initialize MediaPipe Hands processing
-async function startVideoStream(videoElement, handsInstance, stream = null) { // NEW: stream parameter
+export async function startVideoStream(videoElement, handsInstance, stream = null) { // NEW: stream parameter
     console.log(">>> Attempting to start video stream...");
     try {
         // Проверка поддержки WebGL2
