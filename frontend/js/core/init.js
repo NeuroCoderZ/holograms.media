@@ -10,7 +10,7 @@ export const state = {
   orthoCamera: null,          // Added in Block A
   xrCamera: null,             // Added in Block A
   activeCamera: null,         // Added in Block A
-  renderer: null,             // Рендерер Three.js
+  renderer: null,
   hologramPivot: null,        // Опорная точка для голограммы (THREE.Group)
   gridHelper: null,           // Сетка-помощник
   ambientLight: null,         // Окружающий свет
@@ -130,6 +130,7 @@ export const state = {
 // Импортируем функцию инициализации Three.js сцены
 import { initializeScene } from '../3d/sceneSetup.js';
 import { MicrophoneManager } from '../audio/microphoneManager.js';
+import { AudioFilePlayer } from '../audio/audioFilePlayer.js'; // Added AudioFilePlayer import
 import { HologramRenderer } from '../3d/hologramRenderer.js';
 import { XRSessionManager } from '../xr/webxr_session_manager.js';
 import PanelManager from '../ui/panelManager.js';
@@ -164,7 +165,9 @@ export async function initCore() {
   state.panelManager.initializePanelManager();
   console.log('PanelManager initialized and stored in state.');
 
-  state.microphoneManagerInstance = new MicrophoneManager();
+  // Create and store MicrophoneManager and AudioFilePlayer instances in state
+  state.microphoneManager = new MicrophoneManager(state.audio.audioContext); 
+  state.audioFilePlayer = new AudioFilePlayer(state.audio.audioContext, state);
 
   if (!state.audio.audioContext) {
     state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();

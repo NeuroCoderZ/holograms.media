@@ -1,10 +1,11 @@
 // frontend/js/platforms/mobile/mobileLayout.js
 import { state } from '../../core/init.js'; // For gestureArea
-import { uiElements } from '../../ui/uiManager.js'; // Assuming uiManager still provides common UI elements if needed
+// import { uiElements } from '../../ui/uiManager.js'; // Removed as uiElements will be passed via constructor
 import { updateHologramLayout } from '../../ui/layoutManager.js';
 
 export class MobileLayout {
-    constructor() {
+    constructor(uiElements) {
+        this.uiElements = uiElements; // Store uiElements passed from main.js
         this.leftPanelElement = null;
         this.rightPanelElement = null; // Keep reference for ensuring it's hidden
         this.togglePanelsButtonElement = null;
@@ -13,32 +14,28 @@ export class MobileLayout {
     }
 
     initialize() {
-        this.leftPanelElement = document.getElementById('left-panel');
-        this.rightPanelElement = document.getElementById('right-panel');
-        this.togglePanelsButtonElement = document.getElementById('togglePanelsButton');
-        // Attempt to get gestureAreaElement from state first, then fallback to direct DOM query
-        this.gestureAreaElement = state.uiElements?.containers?.gestureArea || document.getElementById('gesture-area');
+        // Get elements directly from the passed uiElements object
+        this.leftPanelElement = this.uiElements.panels.leftPanel;
+        this.rightPanelElement = this.uiElements.panels.rightPanel;
+        this.togglePanelsButtonElement = this.uiElements.buttons.togglePanelsButton;
+        this.gestureAreaElement = this.uiElements.containers.gestureArea;
 
         let criticalElementMissing = false;
         if (!this.leftPanelElement) {
-            console.error('[CRITICAL ERROR][MobileLayout] Left panel element (#left-panel) not found. Further initialization of MobileLayout aborted.');
+            console.error('[CRITICAL ERROR][MobileLayout] Left panel element (#left-panel) not found in uiElements. Further initialization of MobileLayout aborted.');
             criticalElementMissing = true;
         }
         if (!this.togglePanelsButtonElement) {
-            // If toggle button is essential for mobile layout to function, make it critical
-            console.error('[CRITICAL ERROR][MobileLayout] Toggle panels button element (#togglePanelsButton) not found. Further initialization of MobileLayout aborted.');
+            console.error('[CRITICAL ERROR][MobileLayout] Toggle panels button element (#togglePanelsButton) not found in uiElements. Further initialization of MobileLayout aborted.');
             criticalElementMissing = true;
         }
 
-        // Right panel is not strictly critical for mobile layout's core functionality (managing left panel and gesture area)
-        // but we can log if it's missing.
         if (!this.rightPanelElement) {
-            console.warn('[MobileLayout] Right panel element (#right-panel) not found. This might be expected on mobile.');
+            console.warn('[MobileLayout] Right panel element (#right-panel) not found in uiElements. This might be expected on mobile.');
         }
 
         if (!this.gestureAreaElement) {
-            console.warn('[MobileLayout] Gesture area element (#gesture-area) not found. Gesture area functionality might be affected.');
-            // Depending on how critical gesture area is, this could also set criticalElementMissing = true
+            console.warn('[MobileLayout] Gesture area element (#gesture-area) not found in uiElements. Gesture area functionality might be affected.');
         }
 
         if (criticalElementMissing) {
@@ -46,7 +43,7 @@ export class MobileLayout {
         }
 
         this.initializeMainPanelState();
-        this.initializeGestureArea(); // This method also has its own checks for gestureAreaElement
+        this.initializeGestureArea();
 
         if (this.togglePanelsButtonElement) {
             this.togglePanelsButtonElement.addEventListener('click', () => this.toggleMainPanels());
@@ -55,14 +52,12 @@ export class MobileLayout {
     }
 
     initializeMainPanelState() {
-        // On mobile, panels are hidden by default
         this.leftPanelElement.classList.remove('visible');
         if (this.rightPanelElement) {
             this.rightPanelElement.classList.remove('visible');
         }
         this.togglePanelsButtonElement.classList.add('show-mode');
 
-        // Ensure old 'hidden' class is removed
         this.leftPanelElement.classList.remove('hidden');
         if (this.rightPanelElement) {
             this.rightPanelElement.classList.remove('hidden');
@@ -73,29 +68,24 @@ export class MobileLayout {
     }
 
     toggleMainPanels() {
-        const leftPanel = document.getElementById('left-panel');
+        const leftPanel = this.leftPanelElement; // Use stored reference
         if (leftPanel) {
             leftPanel.classList.toggle('visible');
             console.log(`Left panel visibility toggled. Is visible: ${leftPanel.classList.contains('visible')}`);
-            // Вызываем обновление layout после изменения панели
-            this.updateHologramLayout();
+            this.updateHologramLayout(); // Ensure this refers to layoutManager's update, or pass updateHologramLayout from above
         }
     }
 
     // Gesture Area Logic (from gestureAreaManager.js)
     initializeGestureArea() {
         if (!this.gestureAreaElement) {
-            // Attempt to find it again if not available from state initially
-            this.gestureAreaElement = document.getElementById('gesture-area');
-            if (!this.gestureAreaElement) {
-                console.warn('[MobileLayout] Gesture area element not found at initialization. Orientation styles might not apply correctly.');
-                return;
-            }
+            console.warn('[MobileLayout] Gesture area element not found at initialization. Orientation styles might not apply correctly.');
+            return;
         }
 
         window.addEventListener('orientationchange', this.handleOrientationChange.bind(this));
         window.addEventListener('resize', this.handleOrientationChange.bind(this));
-        this.handleOrientationChange(); // Call once at initialization
+        this.handleOrientationChange();
 
         console.log('[MobileLayout] Gesture area manager logic initialized.');
     }
