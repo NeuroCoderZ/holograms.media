@@ -166,7 +166,7 @@ export async function initCore() {
   console.log('PanelManager initialized and stored in state.');
 
   // Create and store MicrophoneManager and AudioFilePlayer instances in state
-  state.microphoneManager = new MicrophoneManager(state.audio.audioContext); 
+  state.microphoneManager = new MicrophoneManager(state.audio.audioContext, state);
   state.audioFilePlayer = new AudioFilePlayer(state.audio.audioContext, state);
 
   if (!state.audio.audioContext) {
