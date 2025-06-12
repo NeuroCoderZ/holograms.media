@@ -1,3 +1,5 @@
 # Ignore Rust build artifacts
 /backend/rust/fastcwt_processor/target/
 /backend/rust/fastcwt_processor/.cargo/
+.firebase/
+.firebase/
