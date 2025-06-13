@@ -14,7 +14,8 @@ const firebaseConfig = {
   projectId: "holograms-media",
   storageBucket: "holograms-media.firebasestorage.app", // VERIFY
   messagingSenderId: "808002961976",
-  appId: "1:808002961976:web:aa0cd8acb2f7d8bfa85ccd"  // VERIFY
+  appId: "1:808002961976:web:aa0cd8acb2f7d8bfa85ccd",  // VERIFY
+  measurementId: "G-PJP22ESWCM" // <--- ВОТ ЭТА СТРОКА ДОЛЖНА БЫТЬ
 };
 
 // Initialize Firebase
