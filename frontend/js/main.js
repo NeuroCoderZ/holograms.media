@@ -1,4 +1,24 @@
-// frontend/js/main.js - Основная точка входа для приложения
+// Frontend/js/main.js - Основная точка входа для приложения
+
+// --- BEGIN TTA CORE SYNTHESIS IMPORTS ---
+import EventBus from './core/eventBus.js'; // Assuming eventBus.js will be created as per plan
+
+// Block 1 Managers
+import RightPanelManager from './managers/RightPanelManager.js';
+import VersionTimelinePanel from './ui/VersionTimelinePanel.js';
+
+// Block 2 Managers
+import HologramManager from './managers/HologramManager.js';
+import InteractionManager from './managers/InteractionManager.js';
+
+// Block 3 Managers (+ GestureUIManager from Block 2)
+import GestureUIManager from './ui/GestureUIManager.js'; // Handles #gesture-area UI, red line, dots
+import GestureRecordingManager from './managers/GestureRecordingManager.js';
+
+// Block 4 Managers
+import MyGesturesPanel from './ui/MyGesturesPanel.js';
+import GesturesListDisplay from './ui/GesturesListDisplay.js';
+// --- END TTA CORE SYNTHESIS IMPORTS ---
 
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
@@ -53,6 +73,7 @@ import { initializeXRMode } from './xr/cameraManager.js';
 
 // Импорт 3D модулей
 import { animate } from './3d/rendering.js';
+import * as THREE from 'three'; // Added for TTA Core Synthesis, ensures THREE is available if new managers use it directly
 
 // Импорт мультимодальных модулей
 import { initializeMediaPipeHands } from './multimodal/handsTracking.js';
@@ -132,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeGestureAreaVisualization(); // Visualization, not manager
   initializeChatDisplay();
 
-  initializeMediaPipeHands();
+  initializeMediaPipeHands(); // Original call - review if it needs eventBus
   // initializeAudioPlayerControls(); // REMOVED
   initializeSpeechInput();
   try {
@@ -249,6 +270,92 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('[main.js] updateHologramLayout function not available for initial call.');
   }
 
+  // --- BEGIN TTA CORE SYNTHESIS MANAGER INITIALIZATION ---
+  console.log('[TTA Core] Initializing new managers...');
+
+  // Initialize EventBus (GLOBAL INSTANCE)
+  const eventBus = new EventBus();
+  window.eventBus = eventBus; // Make it globally accessible if needed for older modules or debugging
+
+  // AppState (using existing 'state' from './core/init.js')
+  // The new managers expect an 'appState' object with getState/setState.
+  // We will pass the existing 'state' object and they should adapt or be adapted.
+  // If 'state' doesn't have getState/setState, a wrapper might be needed,
+  // or managers updated. For now, passing 'state' directly.
+  const appState = state; // Use existing global state; ensure it has methods if managers rely on them.
+
+  // Ensure essential DOM elements for new managers are available from state.uiElements or query them
+  const gestureAreaElement = state.uiElements.gestureArea || document.getElementById('gesture-area');
+  // const chatButtonElement = state.uiElements.chatButton || document.getElementById('chatButton'); // Already handled by RightPanelManager
+  // const versionTimelineContainerElement = state.uiElements.versionTimelineContainer || document.getElementById('versionTimelineContainer'); // Handled by RPM
+  // const chatInterfaceContainerElement = state.uiElements.chatInterfaceContainer || document.getElementById('chatInterfaceContainer'); // Handled by RPM
+  // const gesturesListContainerElement = state.uiElements.gesturesListContainer || document.getElementById('gesturesListContainer'); // Handled by RPM
+
+
+  if (!gestureAreaElement) {
+      console.error("[TTA Core] CRITICAL: #gesture-area DOM element not found. Gesture functionalities will fail.");
+  }
+  // Add similar checks for other critical elements if not covered by individual manager logs
+
+  // Instantiate Managers (order can be important)
+  // Block 1 Managers
+  const gesturesListDisplay = new GesturesListDisplay(eventBus); // Needs to be created before RightPanelManager if passed as instance
+  const rightPanelManager = new RightPanelManager(appState, eventBus, gesturesListDisplay);
+  const versionTimelinePanel = new VersionTimelinePanel(appState, eventBus /*, versionService */);
+
+  // Block 2 & 3 UI Managers
+  const gestureUIManager = new GestureUIManager(eventBus, appState);
+
+  // Block 2 Core 3D Managers
+  // state.threeJs should contain scene, camera, renderer from initCore()
+  const hologramManager = new HologramManager(state.threeJs.scene, state.threeJs.camera, eventBus, appState);
+  const interactionManager = new InteractionManager(state.threeJs.renderer.domElement, hologramManager);
+
+  // Block 3 Recording Manager
+  if (gestureAreaElement && gestureUIManager) {
+      const gestureRecordingManager = new GestureRecordingManager(gestureAreaElement, gestureUIManager, eventBus);
+      // Make it globally accessible if other parts of the old system need to interact, e.g. for destroy
+      state.gestureRecordingManager = gestureRecordingManager;
+  } else {
+      console.error("[TTA Core] Cannot initialize GestureRecordingManager due to missing #gesture-area or GestureUIManager.");
+  }
+
+  // Block 4 Panel Interaction
+  const myGesturesPanel = new MyGesturesPanel(eventBus);
+  // Make globally accessible if needed
+  state.myGesturesPanel = myGesturesPanel;
+  state.rightPanelManager = rightPanelManager;
+  state.versionTimelinePanel = versionTimelinePanel;
+  state.gestureUIManager = gestureUIManager;
+  state.hologramManager = hologramManager;
+  state.interactionManager = interactionManager;
+  state.gesturesListDisplay = gesturesListDisplay;
+
+
+  // Initialize HologramManager with actual visuals
+  // The existing system uses state.hologramRendererInstance.getHologramPivot() for the main group.
+  // The new HologramManager is designed to manage its own pivot for layout and animation.
+  // We need to pass the *visual content* of the hologram to the new manager.
+  if (hologramManager && state.hologramRendererInstance && state.hologramRendererInstance.getHologramContentGroup) {
+      hologramManager.initializeHologram(state.hologramRendererInstance.getHologramContentGroup());
+  } else if (hologramManager && state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot && state.hologramRendererInstance.getHologramPivot().children.length > 0) {
+      console.warn("[TTA Core] Passing mainSequencerGroup from existing hologramRenderer's pivot to new HologramManager. Review if this is the correct visual group.")
+      // This assumes the getHologramPivot() itself is not the one being animated by old logic, but its children are the content.
+      // A safer approach might be to create a new group, add existing visual children to it, and pass that.
+      // For now, direct pass:
+      hologramManager.initializeHologram(state.hologramRendererInstance.getHologramPivot());
+  } else if (hologramManager) {
+      console.warn("[TTA Core] Could not get main hologram visuals group for HologramManager. Initializing with an empty group.");
+      hologramManager.initializeHologram(new THREE.Group()); // Initialize with empty if nothing found
+  }
+
+  // Re-evaluate initializeMediaPipeHands - it should emit to the eventBus.
+  // If initializeMediaPipeHands is already structured to accept eventBus or use a global one, this is fine.
+  // Otherwise, it needs refactoring. Assuming it's adapted.
+  // initializeMediaPipeHands(eventBus); // This was called earlier, ensure it uses the new eventBus if called again or refactor its original call.
+  console.log('[TTA Core] New managers initialized.');
+  // --- END TTA CORE SYNTHESIS MANAGER INITIALIZATION ---
+
   console.log('Инициализация завершена!');
 
   // 5. Start Animation Loop
@@ -256,6 +363,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Hologram rotation functions (onPointerDown, onPointerUp, onPointerMove) remain unchanged
+// These functions currently use state.hologramRendererInstance.getHologramPivot().
+// If the new HologramManager takes over all pivot manipulation, these might conflict or need redirection.
+// For now, they will coexist. The new InteractionManager uses HammerJS on renderer.domElement.
+// This old logic uses mouse/touch on #grid-container. Potential conflict or redundancy.
 function onPointerDown(event) {
   isDragging = true;
   startPointerX = (event.touches ? event.touches[0].clientX : event.clientX);
@@ -264,7 +375,7 @@ function onPointerDown(event) {
   if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
     startRotationY = state.hologramRendererInstance.getHologramPivot().rotation.y;
     startRotationX = state.hologramRendererInstance.getHologramPivot().rotation.x;
-    console.log('[main.js] onPointerDown: Initial rotation Y:', startRotationY, 'X:', startRotationX);
+    console.log('[main.js - old rotation] onPointerDown: Initial rotation Y:', startRotationY, 'X:', startRotationX);
   }
   if (event.cancelable) event.preventDefault();
 }
@@ -272,11 +383,18 @@ function onPointerDown(event) {
 function onPointerUp() {
   isDragging = false;
   if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
-    console.log('[main.js] onPointerUp: Attempting to tween hologram back to 0,0');
-    new window.TWEEN.Tween(state.hologramRendererInstance.getHologramPivot().rotation)
-      .to({ y: 0, x: 0 }, 1000)
-      .easing(window.TWEEN.Easing.Quartic.InOut)
-      .start();
+    console.log('[main.js - old rotation] onPointerUp: Attempting to tween hologram back to 0,0');
+    if (window.TWEEN) { // Ensure TWEEN is available
+        new window.TWEEN.Tween(state.hologramRendererInstance.getHologramPivot().rotation)
+        .to({ y: 0, x: 0 }, 1000)
+        .easing(window.TWEEN.Easing.Quartic.InOut)
+        .start();
+    } else {
+        console.warn("[main.js - old rotation] TWEEN not found for hologram reset animation.");
+        // Fallback to direct set if TWEEN is not available for some reason
+        state.hologramRendererInstance.getHologramPivot().rotation.x = 0;
+        state.hologramRendererInstance.getHologramPivot().rotation.y = 0;
+    }
   }
 }
 
