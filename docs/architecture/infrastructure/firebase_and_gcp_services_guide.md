@@ -1,3 +1,4 @@
+<!-- TODO: REVIEW FOR DEPRECATION - This guide now focuses on Firebase and auxiliary GCP services. The backend deployment is primarily covered in koyeb_r2_deployment_guide.md. Review remaining sections for relevance. -->
 # Google Cloud Platform (GCP) and Firebase Deployment Guide for TRIA
 
 This guide provides step-by-step instructions for deploying the TRIA application backend and related services on Google Cloud Platform and Firebase.
@@ -92,103 +93,6 @@ You can use an existing GCP project or create a new one.
         *   `FIREBASE_MESSAGING_SENDER_ID`
         *   `FIREBASE_APP_ID`
         *   `FIREBASE_MEASUREMENT_ID` (optional)
-
-## 4. Cloud SQL for PostgreSQL Setup
-
-This section details setting up a PostgreSQL instance on Cloud SQL, which will serve as the primary relational database.
-
-*   **Enable the Cloud SQL Admin API:**
-    ```bash
-    gcloud services enable sqladmin.googleapis.com
-    ```
-
-*   **Create a PostgreSQL instance:**
-    Choose a region, database version, and machine type. For MVP/low-cost, you can use db-f1-micro or g1-small.
-    ```bash
-    gcloud sql instances create TRIA_INSTANCE_NAME \
-        --database-version=POSTGRES_15 \
-        --cpu=1 \
-        --memory=3840MB \
-        --region=YOUR_REGION \
-        --storage-size=10GB \
-        --availability-type=REGIONAL \
-        --storage-type=SSD
-        # --database-flags=cloudsql.enable_google_cloud_iam_authn=on # Optional: for IAM database authentication
-    ```
-    *   Replace `TRIA_INSTANCE_NAME` (e.g., `tria-postgres-instance`).
-    *   Replace `YOUR_REGION` (e.g., `us-central1`).
-    *   Adjust CPU, memory, and storage as needed. `db-f1-micro` is the smallest shared-core instance. For dedicated cores, `db-g1-small` is an option. Check [pricing](https://cloud.google.com/sql/pricing#2nd-gen-pricing) for current low-cost options.
-
-*   **Set the root password (if not using IAM authentication exclusively):**
-    ```bash
-    gcloud sql users set-password postgres \
-        --instance=TRIA_INSTANCE_NAME \
-        --prompt-for-password
-    ```
-    Store this password securely.
-
-*   **Create a database:**
-    ```bash
-    gcloud sql databases create HOLOGRAMS_DB_NAME \
-        --instance=TRIA_INSTANCE_NAME
-    ```
-    Replace `HOLOGRAMS_DB_NAME` (e.g., `holograms_db`, matching `POSTGRES_DB` or `DB_NAME` in `.env.example`).
-
-*   **Create a database user:**
-    ```bash
-    gcloud sql users create TRIA_DB_USER \
-        --instance=TRIA_INSTANCE_NAME \
-        --password=YOUR_USER_PASSWORD # Or use --prompt-for-password
-        # --type=CLOUD_IAM_USER --user=your-iam-user@example.com # For IAM authentication
-    ```
-    Replace `TRIA_DB_USER` and `YOUR_USER_PASSWORD`. Store this password securely.
-
-*   **Enable pgvector extension:**
-    The `vector` extension is required for similarity searches.
-    1.  **Connect to your instance using `psql`**. The easiest way is often via Cloud Shell or by using the Cloud SQL Auth Proxy locally.
-        *   **Using Cloud Shell:**
-            ```bash
-            gcloud sql connect TRIA_INSTANCE_NAME --user=postgres --database=HOLOGRAMS_DB_NAME
-            ```
-            Enter the `postgres` user password when prompted.
-        *   **Using Cloud SQL Auth Proxy (local machine):**
-            First, [install the proxy](https://cloud.google.com/sql/docs/postgres/connect-auth-proxy).
-            Then, in a separate terminal:
-            ```bash
-            ./cloud_sql_proxy --instances=YOUR_PROJECT_ID:YOUR_REGION:TRIA_INSTANCE_NAME=tcp:5432
-            ```
-            Then connect using `psql`:
-            ```bash
-            psql "host=127.0.0.1 port=5432 sslmode=disable dbname=HOLOGRAMS_DB_NAME user=postgres"
-            ```
-    2.  **Once connected via `psql`, run the command to enable the extension:**
-        ```sql
-        CREATE EXTENSION IF NOT EXISTS vector;
-        ```
-    3.  Verify the extension is enabled:
-        ```sql
-        \dx
-        ```
-        You should see `vector` in the list.
-
-*   **Get the Instance Connection Name:**
-    This is needed for backend configuration (e.g., in `.env.example` or Cloud Run environment variables).
-    ```bash
-    gcloud sql instances describe TRIA_INSTANCE_NAME --format='value(connectionName)'
-    ```
-    The output will be `YOUR_PROJECT_ID:YOUR_REGION:TRIA_INSTANCE_NAME`. This is used for `CLOUD_SQL_INSTANCE_CONNECTION_NAME`.
-
-*   **Cloud SQL Auth Proxy (for local development):**
-    As shown above, the Cloud SQL Auth Proxy is the recommended way to connect to your Cloud SQL instance from local development environments. It provides secure connections without needing to whitelist IP addresses.
-    Download and run it as described on the [official documentation page](https://cloud.google.com/sql/docs/postgres/connect-auth-proxy).
-
-*   **Configure Database Credentials in `.env.example`:**
-    Update your `.env` file with the database credentials:
-    *   `POSTGRES_USER` or `DB_USER`: `TRIA_DB_USER`
-    *   `POSTGRES_PASSWORD` or `DB_PASSWORD`: `YOUR_USER_PASSWORD`
-    *   `POSTGRES_DB` or `DB_NAME`: `HOLOGRAMS_DB_NAME`
-    *   `POSTGRES_HOST`: `localhost` (if using Cloud SQL Proxy locally on default port 5432) or `/cloudsql/YOUR_PROJECT_ID:YOUR_REGION:TRIA_INSTANCE_NAME` (when running in GCP environments like Cloud Run with the proxy enabled).
-    *   `CLOUD_SQL_INSTANCE_CONNECTION_NAME`: The value obtained above.
 
 ## 5. Cloud Pub/Sub Setup
 
