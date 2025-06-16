@@ -1,3 +1,4 @@
+<!-- TODO: REVIEW FOR DEPRECATION - This report contains outdated conceptual frontend dependencies and is based on partial backend/Genkit analysis. The described module structure (e.g., App.js, HologramPlayer.js) does not match the current frontend architecture. Verify if any parts are still relevant or if the entire report should be archived or regenerated. -->
 ```markdown
 # File Dependencies Report
 

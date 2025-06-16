@@ -1,3 +1,4 @@
+<!-- TODO: REVIEW FOR DEPRECATION - This project structure report needs significant updates. The frontend/js/ section is highly conceptual and does not match the current module structure. Backend directory details (e.g., cloud_functions vs functions, api/v1/endpoints vs routers) need verification. Descriptions for holograph, nethologlyph, and tria-genkit-core are speculative. The docs/ directory structure is outdated. -->
 ```markdown
 # Project Structure Report
 

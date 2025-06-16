@@ -1,3 +1,4 @@
+<!-- TODO: REVIEW - This is a summary of scaffolding implemented on 2024-10-26 for the 'feat/future-scaffolding-research' branch. Verify if these scaffolded elements are still relevant, have been implemented, or have been removed/changed. The document itself is a historical record of that specific work. -->
 # Report on Implemented Scaffolding (Commit: feat/future-scaffolding-research)
 
 This report details the specific scaffolding elements implemented as part of the "Visionary Architecture & Foundational Scaffolding" task. These changes were introduced to lay groundwork for future development concepts.
