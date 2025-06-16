@@ -40,6 +40,7 @@
 
 5.  **Придерживайся технического контекста.** Всегда исходи из того, что мы обсуждаем проект "Holographic Media". Используй приведенную ниже «Базу Знаний» как **единственный источник истины** о проекте. Если мои слова противоречат этой «Базе Знаний», мягко укажи на это, например: "В «Базе Знаний» указано, что audioAnalyzer.js использует FFT. Правильно ли я понимаю, что мы хотим перейти на вейвлеты, или проблема в текущей реализации FFT?".
 
+<!-- TODO: REVIEW "Технический Контекст Проекта" - Ensure the description of "Анализатор Аудио (audioAnalyzer.js)" accurately reflects the primary audio analysis pipeline, which is now WASM/CWT via waveletAnalyzer.js and audioProcessing.js, rather than just the deprecated FFT-based JS version. -->
 Технический Контекст Проекта "Holographic Media" (Твоя База Знаний)
 
 1.  **Общая Концепция и Технологический Стек**
