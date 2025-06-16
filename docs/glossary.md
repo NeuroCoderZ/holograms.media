@@ -1,3 +1,4 @@
+<!-- TODO: REVIEW FOR DEPRECATION - This glossary appears to be based ENTIRELY on a 'NEOLANG WHITEGHOST' concept and a 'docs/WHITEGHOST.md' document. This is CONTRADICTORY to the observed current architecture (Python backend, JavaScript frontend, FastAPI, Neon.tech DB, Cloudflare R2/Backblaze B2, Firebase). Verify if WHITEGHOST.md is current, a future vision, or if this glossary is obsolete and should be archived or moved to research/vision. -->
 # Глоссарий Проекта "Голографические Медиа"
 
 Этот глоссарий содержит ключевые термины, используемые в проекте "Голографические Медиа". Определения основаны на документе `docs/WHITEGHOST.md` (версия, описывающая проект "Голографические Медиа").

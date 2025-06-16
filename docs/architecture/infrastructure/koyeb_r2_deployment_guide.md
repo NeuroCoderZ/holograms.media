@@ -1,3 +1,4 @@
+<!-- TODO: REVIEW FOR DEPRECATION - This guide appears to be the most current for backend deployment (Koyeb/R2/Neon). Verify all details. Note: R2 env variables are not in .env.example but are expected in Koyeb deployment environment. -->
 # Гайд по развертыванию Python/FastAPI бэкенда на Koyeb с использованием Cloudflare R2
 
 **ID для отчета:** [KOYEB_R2_PLAN_JULES_FINAL]
