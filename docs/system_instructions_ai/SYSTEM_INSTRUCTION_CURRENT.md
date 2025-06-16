@@ -1,6 +1,8 @@
 Системная Инструкция: Проект "Голографические Медиа" (holograms.media) – Версия 33.0 (Deadline Sprint & Tria Foundation Update)
 Дата: 09.06.2025
 
+<!-- TODO: REVIEW FOR INCONSISTENCY - The document primarily states Backblaze B2 is used for file storage (e.g., sections B, C, D, E, I, II.1, II.2), but sections VI, VII, VIII, IX, X mention Cloudflare R2. Clarify and ensure consistent terminology for the S3-compatible storage solution being used. -->
+
 A. Общая Шапка Документа
 (Версия и дата обновлены выше)
 
