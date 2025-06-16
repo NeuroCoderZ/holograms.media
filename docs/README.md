@@ -1,3 +1,4 @@
+<!-- TODO: REVIEW FOR DEPRECATION - Directory structure described here needs to be updated to reflect the actual active content directories (e.g., 'architecture/' instead of '01_ARCHITECTURE/', status of other numbered directories). -->
 # Project Documentation
 
 This directory contains all project-related documentation for "holograms.media". The structure is as follows:
