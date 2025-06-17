@@ -410,10 +410,11 @@ export class HologramRenderer {
 
         // Diagnostics for first column only
         if (index === 0) {
-            if (channel.isLeft && newScaleZ > 0.05) {
-                console.log(`[HologramRenderer DEBUG] Left Column 0 scale: ${newScaleZ.toFixed(3)}, panShiftX: ${panShiftX.toFixed(3)}, finalX: ${channel.meshGroup.position.x.toFixed(3)}`);
-            } else if (!channel.isLeft && newScaleZ > 0.05) {
-                console.log(`[HologramRenderer DEBUG] Right Column 0 scale: ${newScaleZ.toFixed(3)}, panShiftX: ${panShiftX.toFixed(3)}, finalX: ${channel.meshGroup.position.x.toFixed(3)}`);
+            // Use mesh.scale.z as it reflects the actually applied scale
+            if (channel.isLeft && mesh.scale.z > 0.05) {
+                console.log(`[HologramRenderer DEBUG] Left Column 0 scale: ${mesh.scale.z.toFixed(3)}, panShiftX: ${panShiftX.toFixed(3)}, finalX: ${channel.meshGroup.position.x.toFixed(3)}`);
+            } else if (!channel.isLeft && mesh.scale.z > 0.05) {
+                console.log(`[HologramRenderer DEBUG] Right Column 0 scale: ${mesh.scale.z.toFixed(3)}, panShiftX: ${panShiftX.toFixed(3)}, finalX: ${channel.meshGroup.position.x.toFixed(3)}`);
             }
         }
 

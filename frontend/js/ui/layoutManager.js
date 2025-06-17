@@ -1,28 +1,216 @@
 // frontend/js/ui/layoutManager.js
 import * as THREE from 'three';
+// Using window.TWEEN as it's included via script tag and updated in rendering.js
+// import * as TWEEN from '@tweenjs/tween.js';
 import { state } from '../core/init.js';
+import eventBus from '../core/eventBus.js';
 import { getPanelWidths, getLeftPanelWidth } from '../core/resizeHandler.js';
-import { HOLOGRAM_REFERENCE_HEIGHT } from '../config/hologramConfig.js'; // Ensure this constant is defined in the config
+import { HOLOGRAM_REFERENCE_HEIGHT } from '../config/hologramConfig.js';
 
-// Note: GRID_WIDTH, GRID_HEIGHT, HOLOGRAM_SCALE_PADDING, HOLOGRAM_REFERENCE_WIDTH,
-// FIXED_VISUAL_ADJUSTMENT_X, and helper functions (getLeftPanelWidth, getRightPanelWidth,
-// getTotalPanelWidths, calculateInitialScale) have been removed as per the rewrite instructions.
-// TWEEN.js animation logic has also been removed.
+let gridContainer = null;
+let initialLayout = { top: 0, left: 0, width: 0, height: 0 };
+let currentAnimation = null;
+
+function updateRendererAndCamera(newWidth, newHeight) {
+    if (state.renderer) {
+        state.renderer.setSize(newWidth, newHeight);
+    }
+    if (state.activeCamera) {
+        if (state.activeCamera.isOrthographicCamera) {
+            state.activeCamera.left = -newWidth / 2;
+            state.activeCamera.right = newWidth / 2;
+            state.activeCamera.top = newHeight / 2;
+            state.activeCamera.bottom = -newHeight / 2;
+            state.activeCamera.updateProjectionMatrix();
+        } else if (state.activeCamera.isPerspectiveCamera) {
+            state.activeCamera.aspect = newWidth / newHeight;
+            state.activeCamera.updateProjectionMatrix();
+        }
+    }
+}
+
+export function setInitialHologramContainerLayout() {
+    if (!gridContainer) {
+        gridContainer = document.getElementById('grid-container'); // Get it once
+        if (!gridContainer) {
+            console.error('[LayoutManager] #grid-container not found for initial layout.');
+            return;
+        }
+    }
+
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Margins as per requirements
+    const marginTop = windowHeight * 0.05;
+    const marginBottom = windowHeight * 0.01;
+    const marginSides = windowWidth * 0.05;
+
+    initialLayout.top = marginTop;
+    initialLayout.left = marginSides;
+    initialLayout.width = windowWidth - (2 * marginSides);
+    initialLayout.height = windowHeight - marginTop - marginBottom;
+
+    gridContainer.style.position = 'absolute'; // Ensure position is absolute for top/left
+    gridContainer.style.top = `${initialLayout.top}px`;
+    gridContainer.style.left = `${initialLayout.left}px`;
+    gridContainer.style.width = `${initialLayout.width}px`;
+    gridContainer.style.height = `${initialLayout.height}px`;
+
+    updateRendererAndCamera(initialLayout.width, initialLayout.height);
+    console.log('[LayoutManager] Initial hologram container layout set:', initialLayout);
+}
+
+function animateHologramContainer(handsPresent) {
+    if (!gridContainer) {
+        console.error('[LayoutManager] Grid container not found for animation.');
+        return;
+    }
+
+    if (currentAnimation) {
+        currentAnimation.stop();
+        window.TWEEN.remove(currentAnimation);
+    }
+
+    const currentTop = parseFloat(gridContainer.style.top) || initialLayout.top;
+    const currentLeft = parseFloat(gridContainer.style.left) || initialLayout.left;
+    const currentWidth = parseFloat(gridContainer.style.width) || initialLayout.width;
+    const currentHeight = parseFloat(gridContainer.style.height) || initialLayout.height;
+
+    let targetLayout = {};
+
+    if (handsPresent) {
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        targetLayout.top = windowHeight * 0.05; // 5% from screen top
+        const gestureAreaHeight = windowHeight * 0.25; // 25vh
+        const marginAboveGestureArea = windowHeight * 0.05; // 5% margin above gesture area
+
+        // Corrected calculation for targetBottom (as distance from top of screen to bottom edge of container)
+        const gestureAreaTopFromScreenTop = windowHeight - gestureAreaHeight;
+        targetLayout.bottomEdge = gestureAreaTopFromScreenTop - marginAboveGestureArea; // Bottom edge of container relative to screen top
+
+        targetLayout.height = targetLayout.bottomEdge - targetLayout.top;
+        targetLayout.width = windowWidth * 0.90; // 5% margin each side
+        targetLayout.left = windowWidth * 0.05;
+    } else {
+        targetLayout = { ...initialLayout };
+    }
+
+    // Ensure calculated height and width are positive
+    targetLayout.height = Math.max(1, targetLayout.height);
+    targetLayout.width = Math.max(1, targetLayout.width);
+
+
+    const coords = {
+        top: currentTop,
+        left: currentLeft,
+        width: currentWidth,
+        height: currentHeight,
+    };
+
+    currentAnimation = new window.TWEEN.Tween(coords)
+        .to({
+            top: targetLayout.top,
+            left: targetLayout.left,
+            width: targetLayout.width,
+            height: targetLayout.height,
+        }, 300) // 300ms animation
+        .easing(window.TWEEN.Easing.Quadratic.Out)
+        .onUpdate(() => {
+            gridContainer.style.top = `${coords.top}px`;
+            gridContainer.style.left = `${coords.left}px`;
+            gridContainer.style.width = `${coords.width}px`;
+            gridContainer.style.height = `${coords.height}px`;
+            updateRendererAndCamera(coords.width, coords.height);
+        })
+        .onComplete(() => {
+            currentAnimation = null;
+            console.log(`[LayoutManager] Hologram container animation complete. Hands present: ${handsPresent}`);
+            // After animation, call updateHologramLayout to adjust pivot's scale/pos within the new container
+            updateHologramLayout();
+        })
+        .start();
+}
+
+// Initialize and subscribe to events
+// This needs to be called once, perhaps from main.js or when UI is ready
+export function initializeLayoutManager() {
+    gridContainer = document.getElementById('grid-container');
+    if (!gridContainer) {
+        console.error("[LayoutManager] #grid-container not found during initialization.");
+        return;
+    }
+    setInitialHologramContainerLayout(); // Set the initial "no hands" layout
+
+    eventBus.on('handsDetected', () => animateHologramContainer(true));
+    eventBus.on('handsLost', () => animateHologramContainer(false));
+
+    // Also listen for resize to re-apply initial layout (or an adapted one)
+    window.addEventListener('resize', () => {
+        setInitialHologramContainerLayout();
+        // If hands are currently visible, we might want to re-trigger animation to new dimensions
+        if (state.multimodal?.handsVisible) {
+             // Give a short delay for resize to settle before animating
+            setTimeout(() => animateHologramContainer(true), 100);
+        }
+    });
+    console.log("[LayoutManager] Initialized and subscribed to hand/resize events.");
+}
+
 
 /**
  * Updates the layout of the hologram display area (gridContainer),
  * positions it correctly based on visible side panels, and scales the hologram.
  * The function now relies on global state and imported utility functions.
+ * THIS FUNCTION'S ROLE HAS CHANGED: It now primarily focuses on scaling the
+ * HOLOGRAM PIVOT within the ALREADY RESIZED gridContainer.
+ * The gridContainer's size/position is handled by animateHologramContainer and setInitialHologramContainerLayout.
  */
-export function updateHologramLayout() { // Removed handsVisible parameter
-  // 1. "Предохранитель" (Guard Clause)
-  if (!state.uiElements?.gridContainer || !state.renderer || !state.hologramRendererInstance || typeof state.hologramRendererInstance.getHologramPivot !== 'function') {
-    console.warn('[LayoutManager] Skipping updateHologramLayout: Essential elements (gridContainer, renderer, hologramRendererInstance with getHologramPivot) not ready.');
+export function updateHologramLayout() {
+  if (!gridContainer) gridContainer = document.getElementById('grid-container');
+  if (!gridContainer || !state.renderer || !state.hologramRendererInstance || typeof state.hologramRendererInstance.getHologramPivot !== 'function') {
+    console.warn('[LayoutManager] Skipping updateHologramLayout: Essential elements not ready.');
     return;
   }
-  // Removed: console.log('[LayoutManager] updateHologramLayout called.');
 
-  const gridContainer = state.uiElements.gridContainer;
+  const hologramPivot = state.hologramRendererInstance.getHologramPivot();
+
+  // Current dimensions of the gridContainer (set by TWEEN or initial setup)
+  const containerWidth = parseFloat(gridContainer.style.width);
+  const containerHeight = parseFloat(gridContainer.style.height);
+
+  if (isNaN(containerWidth) || isNaN(containerHeight) || containerWidth <= 0 || containerHeight <= 0) {
+    console.warn('[LayoutManager] Invalid gridContainer dimensions for pivot scaling. W:', containerWidth, 'H:', containerHeight);
+    return;
+  }
+
+  // Update renderer and camera to match current container size (redundant if called by TWEEN onUpdate, but safe)
+  updateRendererAndCamera(containerWidth, containerHeight);
+
+  // Scale the hologram pivot to fit within the new container dimensions.
+  // HOLOGRAM_REFERENCE_HEIGHT is the design height of the hologram content itself.
+  // We want to scale it so it fits the containerHeight.
+  let targetScaleValue = containerHeight / HOLOGRAM_REFERENCE_HEIGHT;
+  targetScaleValue = Math.max(targetScaleValue, 0.01); // Ensure scale is not zero or negative
+
+  hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
+
+  // Center the hologram pivot within the gridContainer.
+  // Since camera is orthographic and centered on (0,0) of container, pivot should be at (0,0,0).
+  hologramPivot.position.set(0, 0, 0);
+
+  // The desktop panel logic (getLeftPanelWidth, etc.) is removed from here as the
+  // container's left/width is now managed by the animation/initial setup logic.
+  // This function now assumes gridContainer is already correctly sized and positioned.
+
+  // console.log('[LayoutManager] Hologram pivot updated to fit new container size. Scale:', targetScaleValue);
+}
+
+
+/**
+ * Updates the visibility of the grid helper in the scene.
   const hologramPivot = state.hologramRendererInstance.getHologramPivot();
   const isMobile = window.innerWidth <= 768; // Match CSS media query
 

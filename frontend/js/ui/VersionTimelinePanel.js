@@ -109,37 +109,19 @@ class VersionTimelinePanel {
             frame.className = 'version-frame'; // Style: dark background, thin grey border
             frame.dataset.versionId = version.id || `demo-${index}`;
 
-            // Version Label (Oval)
-            const label = document.createElement('span');
-            label.className = 'version-label'; // Style: oval shape, top-left
-            label.textContent = `V${displayVersions.length - index}`; // Newest is V_max, oldest is V1 if reversed
-                                                                    // Or, if data is newest first: V${versionsData.length - index}
-                                                                    // Let's assume data is oldest first, after reverse, current index 0 is newest.
-                                                                    // So, if versionsData had N items, after reverse, index 0 is original N-1.
-                                                                    // The label should be V + (original index + 1).
-                                                                    // To keep it simple: if data is [vA, vB, vC] (old to new)
-                                                                    // displayVersions is [vC, vB, vA]
-                                                                    // vC (index 0) should be V3
-                                                                    // vB (index 1) should be V2
-                                                                    // vA (index 2) should be V1
-                                                                    // So, label is V${original_length - original_index}
-                                                                    // If data comes with a predefined display number, use that.
-                                                                    // For now, using index from reversed array (0 = newest)
-            label.textContent = `V${version.displayId || (versionsData.indexOf(version) + 1)}`;
+            // Left Placeholder
+            const placeholderDiv = document.createElement('div');
+            placeholderDiv.className = 'version-placeholder';
+            // Placeholder content or styling will be handled by CSS
 
+            // Right Text Container (for prompt)
+            const versionTextDiv = document.createElement('div');
+            versionTextDiv.className = 'version-text';
+            versionTextDiv.textContent = version.prompt || 'No prompt for this version.';
+            // Scrollability and text wrapping for versionTextDiv will be handled by CSS
 
-            // Prompt Text (Scrollable)
-            const textContainer = document.createElement('div');
-            textContainer.className = 'version-text-container'; // For styling scrollability
-
-            const promptText = document.createElement('p');
-            promptText.className = 'version-prompt-text';
-            promptText.textContent = version.prompt || 'No prompt for this version.';
-
-            textContainer.appendChild(promptText);
-
-            frame.appendChild(label);
-            frame.appendChild(textContainer);
+            frame.appendChild(placeholderDiv);
+            frame.appendChild(versionTextDiv);
 
             // Add click listener if needed (e.g., to switch to this version)
             // frame.addEventListener('click', () => {

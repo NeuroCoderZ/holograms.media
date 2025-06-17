@@ -78,6 +78,9 @@ export const state = {
     isGestureCanvasReady: false,
     currentStream: null,
     handMeshGroup: null,
+    previousHandsVisible: false, // Added for tracking hand presence changes
+    handOpacity: 0, // Added for fade animations
+    handOpacityTween: null, // Stores the TWEEN object for hand opacity
   },
 
   // --- Состояние AI (Триа) ---
