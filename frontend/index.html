@@ -24,7 +24,15 @@
   <meta name="twitter:card" content="summary_large_image">
 
   <!-- Import Map for Three.js modules -->
-  <script type="importmap">\n  {\n    "imports": {\n      "three": "https:\/\/unpkg.com\/three@0.165.0\/build\/three.module.js",\n      "three\/examples\/jsm\/": "https:\/\/unpkg.com\/three@0.165.0\/examples\/jsm\/",\n      "@tweenjs\/tween.js": "https:\/\/unpkg.com\/@tweenjs\/tween.js@23.1.1\/dist\/tween.esm.js"\n    }\n  }\n  <\/script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+      "three/examples/jsm/": "https://unpkg.com/three@0.165.0/examples/jsm/",
+      "@tweenjs/tween.js": "https://unpkg.com/@tweenjs/tween.js@23.1.1/dist/tween.esm.js"
+    }
+  }
+</script>
 
   <!-- MediaPipe Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -45,11 +53,19 @@
 </head>
 <body>
 
-  <div id="start-session-modal" class="modal" style="display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.95); z-index: 20000;">
-    <div class="modal-content" style="background-color: #1c1c1e; padding: 30px; border-radius: 10px; text-align: center;">
-      <h2 style="color: #fff; margin-bottom: 20px;">Сеанс Готов</h2>
-      <p style="color: #ccc; margin-bottom: 30px;">Нажмите "START" для инициализации аудио и видео.</p>
-      <button id="start-session-button" style="background-color: #4CAF50; color: white; padding: 20px 40px; border: none; border-radius: 5px; font-size: 2em; cursor: pointer;">START</button>
+  <div id="start-session-modal" class="modal">
+    <div class="modal-content">
+      <div id="google-signin-container">
+        <!-- Кнопка входа Google будет здесь -->
+      </div>
+      <p class="consent-text">
+        Продолжая, вы даете согласие на обработку аудио- и видеоданных с ваших устройств. Эти данные используются исключительно в реальном времени для анализа и формирования голограммы и не сохраняются на наших серверах.
+      </p>
+      <div class="consent-checkbox-container">
+        <input type="checkbox" id="consent-checkbox">
+        <label for="consent-checkbox">Я понимаю и принимаю условия</label>
+      </div>
+      <button id="start-session-button" class="start-button-disabled" disabled>Начать</button>
     </div>
   </div>
 
