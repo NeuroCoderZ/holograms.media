@@ -356,6 +356,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('[TTA Core] New managers initialized.');
   // --- END TTA CORE SYNTHESIS MANAGER INITIALIZATION ---
 
+  // New logic for consent checkbox and start button
+  const consentCheckbox = document.getElementById('consent-checkbox');
+  const startButton = document.getElementById('start-session-button');
+  const googleSignInBtn = document.getElementById('login-google-btn'); // Existing Google Sign-In button
+  const googleContainer = document.getElementById('google-signin-container'); // New container in the modal
+
+  if (googleSignInBtn && googleContainer) {
+    googleContainer.appendChild(googleSignInBtn);
+    // Ensure the button is visible if it was hidden by display:none or similar
+    googleSignInBtn.style.display = 'block'; // Or 'flex', 'inline-block' depending on desired layout
+     // Adjust button styling for the modal if necessary
+    googleSignInBtn.classList.add('google-signin-modal-style'); // Example class
+  }
+
+  if (consentCheckbox && startButton) {
+    consentCheckbox.addEventListener('change', () => {
+      if (consentCheckbox.checked) {
+        startButton.disabled = false;
+        startButton.classList.remove('start-button-disabled');
+      } else {
+        startButton.disabled = true;
+        startButton.classList.add('start-button-disabled');
+      }
+    });
+  }
+
   console.log('Инициализация завершена!');
 
   // 5. Start Animation Loop

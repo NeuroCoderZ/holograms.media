@@ -1847,3 +1847,46 @@ body.dimmed-for-tour > *:not(.highlighted-element) {
 }
 
 /* --- END TTA CORE SYNTHESIS STYLES --- */
+
+/* Стили для нового стартового окна */
+#start-session-modal .modal-content {
+    max-width: 400px;
+    background-color: #1a1a1b;
+    border: 1px solid #333;
+}
+#google-signin-container {
+    margin-bottom: 20px;
+}
+.consent-text {
+    font-size: 0.8em;
+    color: #aaa;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+.consent-checkbox-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+.start-button-disabled {
+    background-color: #4a4a4a !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+}
+#start-session-button {
+    background: linear-gradient(145deg, #8A2BE2, #4B0082);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2em;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+}
+#start-session-button:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(138, 43, 226, 0.6);
+}
