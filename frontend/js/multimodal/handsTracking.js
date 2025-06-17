@@ -1,7 +1,10 @@
 // handsTracking.js
 
 import * as THREE from 'three'; // Импортируем THREE для THREE.MathUtils
+// Using window.TWEEN as it's included via script tag and updated in rendering.js
+// import * as TWEEN from '@tweenjs/tween.js';
 import { state } from '../core/init.js'; // Ensure state is imported
+import eventBus from '../core/eventBus.js'; // Import EventBus
 import { updateHologramLayout } from '../ui/layoutManager.js'; // Added import
 
 // --- Constants ---
@@ -199,24 +202,43 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
 
 function onResults(results) {
     state.multimodal.lastHandData = results;
-    // Use the reference from the state
-    const gestureAreaElement = state.uiElements.containers.gestureArea;
+    const gestureAreaElement = state.uiElements?.containers?.gestureArea; // Optional chaining for safety
     const handsArePresent = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
-    state.multimodal.handsVisible = handsArePresent;
 
+    // Manage hand opacity TWEEN animation
+    if (handsArePresent && !state.multimodal.previousHandsVisible) { // Hands just appeared
+        eventBus.emit('handsDetected', results.multiHandLandmarks);
+        console.log("Event emitted: handsDetected. Starting fade-in.");
+        if (state.multimodal.handOpacityTween) state.multimodal.handOpacityTween.stop();
+        state.multimodal.handOpacityTween = new window.TWEEN.Tween(state.multimodal)
+            .to({ handOpacity: 0.8 }, 300) // Target opacity 0.8, duration 300ms
+            .easing(window.TWEEN.Easing.Quadratic.Out)
+            .start();
+    } else if (!handsArePresent && state.multimodal.previousHandsVisible) { // Hands just disappeared
+        eventBus.emit('handsLost');
+        console.log("Event emitted: handsLost. Starting fade-out.");
+        if (state.multimodal.handOpacityTween) state.multimodal.handOpacityTween.stop();
+        state.multimodal.handOpacityTween = new window.TWEEN.Tween(state.multimodal)
+            .to({ handOpacity: 0 }, 300) // Target opacity 0, duration 300ms
+            .easing(window.TWEEN.Easing.Quadratic.Out)
+            .start();
+    }
+    state.multimodal.handsVisible = handsArePresent; // Update current visibility state
+    state.multimodal.previousHandsVisible = handsArePresent; // Update previous visibility state for next frame
+
+    // The direct DOM manipulation for gestureAreaElement classList can remain for now,
+    // as TWEEN.js animations will be implemented in GestureUIManager and can override/coexist.
+    // However, ideally, this class toggling would also move to the GestureUIManager listening to these events.
     if (gestureAreaElement) {
-        // Toggle class instead of direct style manipulation for height
         if (handsArePresent) {
             gestureAreaElement.classList.add('hands-detected');
         } else {
             gestureAreaElement.classList.remove('hands-detected');
         }
-        // The height will be controlled by CSS rules for #gesture-area and #gesture-area.hands-detected
-        // console.log(`Gesture area class updated based on hands presence. Hands: ${handsArePresent}`);
     }
-    // layoutManager.updateHologramLayout(); // <--- ЗАКОММЕНТИРОВАТЬ ЭТУ СТРОКУ
+    // layoutManager.updateHologramLayout(); // This was commented out, keeping it so.
 
-    // New logic for .visible class in landscape mode:
+    // New logic for .visible class in landscape mode (also potentially to be moved to GestureUIManager):
     if (gestureAreaElement) {
         const isLandscape = gestureAreaElement.classList.contains('landscape');
 
@@ -257,17 +279,25 @@ function onResults(results) {
             const handPoints3D = landmarks.map(landmark => {
                 // Transformation from script.js (lines 1040-1049)
                 // Adjusting Z to be positive for "in front" and scale it
-                const x = landmark.x * GRID_WIDTH - GRID_WIDTH / 2;
+                // Mirror X coordinate to match mirrored video feed
+                const x = (1.0 - landmark.x) * GRID_WIDTH - GRID_WIDTH / 2;
                 const y = (1 - landmark.y) * GRID_HEIGHT - GRID_HEIGHT / 2; // Invert Y
                 const z = (landmark.z * GRID_DEPTH * -1) + (GRID_DEPTH / 4); // Invert Z, scale, and offset
-                return new THREE.Vector3(x, y, z);
+
+                // Apply bounding
+                const boundedX = THREE.MathUtils.clamp(x, -GRID_WIDTH / 2, GRID_WIDTH / 2);
+                const boundedY = THREE.MathUtils.clamp(y, -GRID_HEIGHT / 2, GRID_HEIGHT / 2);
+                // Z bounding can be less strict or based on GRID_DEPTH if needed
+                // const boundedZ = THREE.MathUtils.clamp(z, -GRID_DEPTH / 2, GRID_DEPTH / 2);
+
+                return new THREE.Vector3(boundedX, boundedY, z); // Using original z for now
             });
 
             // Create line material
             const lineMaterial = new THREE.LineBasicMaterial({
                 color: 0xffffff, // White lines
                 transparent: true,
-                opacity: 0.8,
+                opacity: state.multimodal.handOpacity, // Use animated opacity
                 linewidth: 2, // Note: linewidth might not be respected by all systems/drivers
             });
 
@@ -276,7 +306,7 @@ function onResults(results) {
                 vertexColors: true,
                 size: 1.0, // Adjusted for world units
                 transparent: true,
-                opacity: 0.8
+                opacity: state.multimodal.handOpacity // Use animated opacity
             });
 
             // Create lines geometry
@@ -400,6 +430,14 @@ export function stopVideoStream() {
         state.multimodal.handsInstance = null; // Update state
         console.log(">>> MediaPipe Hands instance closed.");
     }
+
+        // Stop any opacity tween if video stream stops
+        if (state.multimodal.handOpacityTween) {
+            state.multimodal.handOpacityTween.stop();
+            state.multimodal.handOpacityTween = null;
+        }
+        state.multimodal.handOpacity = 0; // Reset opacity immediately
+
 
     state.multimodal.isGestureCanvasReady = false; // Update state
     if (state.multimodal.handMeshGroup) {

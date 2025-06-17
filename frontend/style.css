@@ -266,25 +266,27 @@ body {
 
 /* Область жестов */
 #gesture-area {
-    position: absolute; /* Positioned relative to .main-area */
-    bottom: 0;   /* Прижимаем к низу .main-area, JS might override this for alignment with grid-container's effective bottom */
-    /* left and width will be set by layoutManager.js */
-    height: 4px;   /* Начальная высота - "щель" */
+    position: fixed; /* Positioned fixed to the viewport bottom */
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;   /* Initial height for "thin gray line" */
+    background-color: #888888; /* Gray background for initial state */
     opacity: 1;
     margin: 0;
-    z-index: 100;
-    background-color: var(--color-black-95);
+    z-index: 100; /* Ensure it's above grid-container but below critical UI like modals */
     border: none;
     cursor: pointer;
     overflow: hidden;
-    transition: height 0.3s ease; /* Updated transition duration */
+    /* transition: height 0.3s ease; TWEEN.js will handle height animation */
 }
 
-/* Активная область жестов */
+/* Активная область жестов - when hands are detected */
+/* The height is animated by GestureUIManager.js using TWEEN to 25vh */
+/* This class primarily sets the active background color */
 #gesture-area.hands-detected {
-    height: 25vh; /* As per task requirement */
-    background-color: rgba(0, 0, 0, 0.8);
-    /* border-top: 1px solid var(--color-black-33); /* This style was found later in the file, let's ensure it's consistent or decide if needed */
+    background-color: rgba(0, 0, 0, 0.8); /* Darker, semi-transparent background when active */
+    /* height: 25vh;  Height is set by TWEEN.js animation in GestureUIManager */
 }
 
 /* Линия жестов */
@@ -494,15 +496,22 @@ body {
 #submitTopPrompt, #submitChatMessage {
   padding: var(--spacing-sm) var(--spacing-md);
   font-size: var(--font-size-button);
-  background-color: var(--color-green-100);
-  color: var(--color-black-100);
-  border: none;
+  background-color: #00ff00; /* Requirement: Bright green */
+  color: #000000; /* Requirement: Black text */
+  border: 1px solid #00cc00; /* Requirement: Slightly darker green border */
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   height: var(--control-height);
   width: var(--button-action-width);
   flex-shrink: 0; /* Запрещаем сжатие */
   transition: background-color 0.2s ease;
+}
+
+/* Specific style for #submitTopPrompt if it needs to differ from #submitChatMessage in the future */
+#submitTopPrompt {
+  /* background-color: #00ff00; Already set above */
+  /* color: #000000; Already set above */
+  /* border: 1px solid #00cc00; Already set above */
 }
 
 /* Стиль для неактивной кнопки отправки сообщения */
@@ -633,7 +642,11 @@ body {
 }
 
 /* Скрытые элементы */
-#camera-view, #previewCanvas { display: none; }
+#camera-view {
+  display: none;
+  transform: scaleX(-1); /* Mirror the camera feed */
+}
+#previewCanvas { display: none; }
 .modal { display: none; /* ... */ }
 .modal.active { display: flex; /* ... */ }
 
@@ -1237,11 +1250,15 @@ textarea:focus:not(:placeholder-shown) {
   gap: var(--button-spacing); /* Space between buttons in a group */
 }
 
+/* Styling for buttons in the top group of the left panel */
 .left-panel-group.top-group .panel-button,
 .left-panel-group.top-group .social-login-button {
-  width: 90%; /* Make top group buttons take most of the panel width */
-  margin-left: auto;
+  width: var(--button-size); /* Unified size for icon buttons */
+  height: var(--button-size); /* Ensure height matches for square buttons */
+  padding: 0; /* Remove padding if it's an icon-only button from .control-button */
+  margin-left: auto; /* Still allow auto margins if needed for centering within a sub-flex */
   margin-right: auto;
+  /* background-color, border, color will be determined by .control-button styles */
 }
 
 .left-panel-group.central-block {
@@ -1286,18 +1303,40 @@ textarea:focus:not(:placeholder-shown) {
   color: var(--color-icon-active);
 }
 
+/* Unified styling for icon buttons on the left panel that might also have .panel-button */
+/* This ensures they look like .control-buttons (transparent, no border from .panel-button) */
+#left-panel .panel-button.control-button {
+  background-color: transparent;
+  border: none;
+  padding: 0; /* Reset padding from .panel-button */
+  /* width and height are primarily controlled by .control-button's !important */
+  /* color is set by .control-button */
+  /* font-size for icon is set by .control-button */
+}
+
+/* Hover specifically for these combined buttons, ensuring it matches .control-button hover */
+#left-panel .panel-button.control-button:not(:disabled):hover {
+  background-color: var(--button-hover-bg);
+  color: var(--color-icon-active); /* Ensure icon color changes */
+  transform: scale(1.05); /* Match .control-button hover */
+}
+
+/* Ensure active state is also consistent */
+#left-panel .panel-button.control-button.active {
+  background-color: var(--button-hover-bg);
+  color: var(--color-icon-active);
+}
+
+
 /* Specific styling for control-buttons when they are also panel-buttons (central block) */
+/* This block might be redundant now if the above #left-panel .panel-button.control-button is sufficient */
+/* However, keeping it for now in case of subtle differences or future needs. */
 .left-panel-group.central-block .control-button.panel-button {
-  width: var(--button-size); /* Override to keep original square size for icon-only buttons */
-  height: var(--button-size);
-  padding: 0; /* Reset padding for icon-only buttons */
-  font-size: calc(var(--button-size) * 0.6); /* Reset font size for icon-only buttons */
-  border: none; /* Remove border from central block control buttons if desired */
-  background-color: transparent; /* Make them like original control buttons */
+  /* width, height, padding, font-size, border, background-color already handled by above + .control-button */
 }
 
 .left-panel-group.central-block .control-button.panel-button:hover {
-  background-color: var(--button-hover-bg); /* Keep standard hover */
+  /* background-color is handled by the more general hover rule above */
 }
 
 .left-panel-group.central-block .control-button.panel-button svg {
@@ -1739,32 +1778,8 @@ body.dimmed-for-tour > *:not(.highlighted-element) {
 /* --- BEGIN TTA CORE SYNTHESIS STYLES --- */
 /* Styles for Blocks 1, 2, & 3 - Hologram, Gestures, Timeline */
 
-/* styles.css or your main CSS file */
-
-/* Styles for the gesture area */
-#gesture-area {
-    position: fixed; /* Or absolute, depending on layout */
-    bottom: 0;
-    left: 0; /* Or center it, e.g., left: 50%; transform: translateX(-50%); */
-    width: 100%; /* Or a specific width if not full-width */
-    background-color: #333; /* Example background */
-    border-top: 1px solid #555; /* Example border */
-    box-sizing: border-box;
-    z-index: 100; /* Ensure it's above other content but below critical UI like modals */
-
-    /* Smooth transition for height changes */
-    transition: height 0.3s ease-in-out; /* Adjust timing and easing as needed */
-
-    /* Initial height (when hands are not detected) */
-    height: 4px;
-}
-
-/* Optional: Different styling when active (though height is main change) */
-/*
-#gesture-area.active {
-    background-color: #444;
-}
-*/
+/* Styles for the gesture area - This redundant/conflicting block is being removed. */
+/* The styles above starting at line ~270 will be the primary source. */
 
 /* styles.css or your main CSS file - for Block 3 recording */
 
@@ -1782,69 +1797,74 @@ body.dimmed-for-tour > *:not(.highlighted-element) {
 /* frontend/version_timeline_styles.css */
 
 #versionTimelineContainer {
-    /* Assuming this is the main view for the timeline panel */
-    /* It might have a fixed height or be part of a flex layout */
-    /* display: none; */ /* Initially hidden, shown by RightPanelManager */
-    height: 100%; /* Example: take full height of its parent */
+    height: 100%;
     display: flex;
     flex-direction: column;
 }
 
 #versionFrames {
     flex-grow: 1;
-    overflow-y: auto; /* Main scroll for version frames */
-    padding: 10px;
-    background-color: #282c34; /* Dark background for the container */
-    border: 1px solid #444;
+    overflow-y: auto; /* Requirement: Vertical scrollbar when content exceeds height */
+    /* Height is constrained by flex-grow in parent with defined height (e.g. #right-panel) */
+    padding: 5px; /* Minor padding for the container */
+    /* background-color: #282c34; */ /* Using body background */
+    /* border: 1px solid #444; */ /* Using body background */
 }
 
 .version-frame {
-    background-color: #3a3f47; /* Darker item background */
-    border: 1px solid #555; /* Thin grey border as per plan */
-    border-radius: 6px;
-    padding: 10px;
-    margin-bottom: 10px;
-    position: relative; /* For positioning the label */
-    display: flex;
-    flex-direction: column;
+    background-color: #1c1c1e; /* Requirement: Very dark background */
+    border: 1px solid #444;    /* Requirement: Thin, barely visible light-gray border */
+    border-radius: 4px;        /* Slight rounding for aesthetics */
+    padding: 8px;              /* Requirement: Small internal spacing */
+    margin-bottom: 8px;        /* Requirement: Small spacing between frames */
+    display: flex;             /* To arrange placeholder and text side-by-side */
+    flex-direction: row;       /* Ensure items are in a row */
+    min-height: 60px;          /* Minimum height to ensure visibility */
+    /* position: relative; -- Removed as .version-label is removed */
 }
 
 .version-frame:last-child {
     margin-bottom: 0;
 }
 
-.version-label {
-    position: absolute;
-    top: -8px; /* Position slightly above the frame's top border */
-    left: 10px;
-    background-color: #007bff; /* Stylish oval background - example blue */
-    color: white;
-    padding: 3px 10px;
-    border-radius: 12px; /* Oval shape */
-    font-size: 0.8em;
-    font-weight: bold;
-    z-index: 1;
-    border: 1px solid #0056b3; /* Border for the oval */
+/* .version-label styles removed as the element was removed from JS */
+
+.version-placeholder {
+    width: 80px;               /* Requirement: Define width */
+    height: 60px;              /* Requirement: Define height */
+    background-color: #333;    /* Placeholder background for visibility */
+    border-radius: 3px;        /* Slight rounding */
+    margin-right: 8px;         /* Spacing between placeholder and text */
+    flex-shrink: 0;            /* Prevent shrinking */
 }
 
-.version-text-container {
-    margin-top: 15px; /* Space below the label */
-    max-height: 150px; /* Max height for prompt text area */
-    overflow-y: auto; /* Vertical scroll for long prompts */
-    background-color: #2c3038; /* Slightly different background for text area */
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #40454f;
+.version-text {
+    flex-grow: 1;              /* Take remaining width */
+    overflow-y: auto;          /* Requirement: Vertical scrollbar for overflowing text */
+    max-height: 60px;          /* Requirement: Constrained height (match placeholder) */
+    padding: 5px;              /* Internal padding for text area */
+    color: #ccc;               /* Light text on dark background */
+    font-size: 0.8em;          /* Smaller font to fit more text */
+    line-height: 1.4;
+    word-wrap: break-word;     /* Requirement: Wrap long words */
+    overflow-wrap: break-word; /* Requirement: Wrap long words (standard) */
+    background-color: #2a2a2e; /* Slightly different background for text area itself */
+    border-radius: 3px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-black-66) var(--color-black-95);
 }
 
-.version-prompt-text {
-    color: #cdd3da; /* Light text color for readability */
-    font-family: 'Courier New', Courier, monospace; /* Monospace for prompts often looks good */
-    font-size: 0.9em;
-    white-space: pre-wrap; /* Preserve line breaks and spaces in prompt */
-    word-break: break-word;
-    margin: 0; /* Remove default p margin */
+.version-text::-webkit-scrollbar {
+  width: 5px;
 }
+.version-text::-webkit-scrollbar-thumb {
+  background: var(--color-black-66);
+  border-radius: 2px;
+}
+.version-text::-webkit-scrollbar-track {
+  background: var(--color-black-95);
+}
+
 
 /* --- END TTA CORE SYNTHESIS STYLES --- */
 
