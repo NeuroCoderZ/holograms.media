@@ -57,7 +57,7 @@ import { initializeMultimedia } from './core/mediaInitializer.js';
 import { initializeMainUI } from './ui/uiManager.js';
 import { initChatUI } from './core/ui/chatUI.js';
 // import PanelManager from './ui/panelManager.js'; // REMOVED - Handled by layout managers
-import { updateHologramLayout } from './ui/layoutManager.js';
+import { updateHologramLayout, initializeLayoutManager as initializeCoreLayoutManager } from './ui/layoutManager.js'; // Aliased import
 import { initializePromptManager } from './ui/promptManager.js';
 import { initializeVersionManager } from './ui/versionManager.js';
 import { initializeGestureAreaVisualization } from './ui/gestureAreaVisualization.js';
@@ -231,8 +231,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (layoutManager && typeof layoutManager.initialize === 'function') {
       layoutManager.initialize(); // This will set initial panel visibility etc.
+      // Call the core layout manager initialization AFTER platform-specific one
+      initializeCoreLayoutManager();
+      console.log('[Main.js] Core LayoutManager (for hologram container) initialized.');
   } else {
-      console.warn('LayoutManager not initialized or initialize method not found.');
+      console.warn('Platform-specific LayoutManager not initialized or initialize method not found. Core LayoutManager might not behave as expected.');
+      // Still attempt to initialize core layout manager if platform one failed but core one exists
+      initializeCoreLayoutManager();
+      console.log('[Main.js] Core LayoutManager (for hologram container) initialized (platform-specific failed or missing).');
   }
 
   if (inputManager && typeof inputManager.initialize === 'function') {
