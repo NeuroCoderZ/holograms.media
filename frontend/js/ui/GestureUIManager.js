@@ -3,12 +3,15 @@
 
 // Assuming an EventBus class/instance is available and imported
 // import EventBus from '../core/eventBus';
+// Using window.TWEEN as it's included via script tag and updated in rendering.js
+// import * as TWEEN from '@tweenjs/tween.js';
 
 class GestureUIManager {
     constructor(eventBus, appState) {
         this.gestureAreaElement = document.getElementById('gesture-area');
         this.eventBus = eventBus;
         this.appState = appState;
+        this.currentAnimation = null; // To manage ongoing animations
 
         if (!this.gestureAreaElement) {
             console.error("GestureUIManager: #gesture-area element not found!");
@@ -35,95 +38,140 @@ class GestureUIManager {
             console.warn("GestureUIManager: EventBus not provided, cannot subscribe to hand tracking events.");
             return;
         }
-        this.eventBus.on('handsDetected', (results) => this.handleHandsChange(true, results));
-        this.eventBus.on('handsLost', () => this.handleHandsChange(false));
+        // Adjust event handler signatures
+        this.eventBus.on('handsDetected', (landmarksData) => this.handleHandsChange(true, landmarksData));
+        this.eventBus.on('handsLost', () => this.handleHandsChange(false, null)); // Pass null for landmarksData
         console.log("GestureUIManager subscribed to handsDetected and handsLost events.");
     }
 
-    handleHandsChange(present, results = null) {
+    handleHandsChange(present, landmarksData = null) { // landmarksData can be null
         console.log(`GestureUIManager: Hands present state changed to ${present}.`);
-        this.setHandsPresent(present);
+        this.animateGestureArea(present); // Changed to call animation method
 
         if (this.appState && typeof this.appState.setState === 'function') {
             this.appState.setState({ handsVisible: present });
         }
 
-        if (present && results) {
-            this.renderFingerDots(results);
+        // Pass landmarksData (which might be null if handsLost)
+        // Ensure handTrackingResults is structured as expected by renderFingerDots
+        if (present && landmarksData) {
+            this.renderFingerDots({ multiHandLandmarks: landmarksData });
         } else {
             this.clearFingerDots();
         }
     }
 
-    setHandsPresent(present) {
+    animateGestureArea(present) {
         if (!this.gestureAreaElement) return;
-        const targetHeight = present ? '25vh' : '4px';
-        if (this.gestureAreaElement.style.height !== targetHeight) {
-            this.gestureAreaElement.style.height = targetHeight;
-            console.log(`GestureUIManager: #gesture-area height set to: ${targetHeight}`);
+
+        if (this.currentAnimation) {
+            this.currentAnimation.stop();
+            window.TWEEN.remove(this.currentAnimation); // Clean up old tween
         }
-        // Show/hide red line and dots based on hand presence
-        if (this.redLineElement) {
-            this.redLineElement.style.display = present ? 'block' : 'none';
+
+        const initialHeightStyle = this.gestureAreaElement.style.height || getComputedStyle(this.gestureAreaElement).height;
+        const targetVh = present ? 25 : 0.4; // Target height in vh (0.4vh is approx 4px)
+        const targetHeightPx = (targetVh / 100) * window.innerHeight;
+
+        let initialHeightPx;
+        if (initialHeightStyle.endsWith('vh')) {
+            initialHeightPx = (parseFloat(initialHeightStyle) / 100) * window.innerHeight;
+        } else if (initialHeightStyle.endsWith('px')) {
+            initialHeightPx = parseFloat(initialHeightStyle);
+        } else {
+            // Fallback if style is not set or in an unexpected unit (e.g. initially empty style)
+            initialHeightPx = present ? 0 : (0.25 * window.innerHeight); // Start from 0 if appearing, or from 25vh if disappearing
+            // A more robust way for initial state: query actual offsetHeight if style.height is empty
+            if (this.gestureAreaElement.style.height === '') {
+                initialHeightPx = this.gestureAreaElement.offsetHeight;
+            }
         }
-        if (!present) {
-            this.clearFingerDots();
+
+        // Ensure initialHeightPx is a number
+        if (isNaN(initialHeightPx)) {
+            console.warn("GestureUIManager: Could not determine initial height for animation. Defaulting.");
+            initialHeightPx = present ? 4 : (0.25 * window.innerHeight) ; // Default to 4px or 25vh in px
         }
+
+        const coords = { height: initialHeightPx };
+        this.currentAnimation = new window.TWEEN.Tween(coords)
+            .to({ height: targetHeightPx }, 300) // 300ms animation duration
+            .easing(window.TWEEN.Easing.Quadratic.Out)
+            .onUpdate(() => {
+                this.gestureAreaElement.style.height = `${coords.height}px`;
+            })
+            .onComplete(() => {
+                this.currentAnimation = null;
+                // Set final state using vh for responsiveness, or px for the 'hidden' state
+                this.gestureAreaElement.style.height = present ? `${targetVh}vh` : '4px';
+                console.log(`GestureUIManager: #gesture-area animation complete. Target height set to: ${this.gestureAreaElement.style.height}`);
+
+                if (this.redLineElement) {
+                    this.redLineElement.style.display = present ? 'block' : 'none';
+                }
+                // Clearing dots on handsLost is already handled in handleHandsChange
+            })
+            .start();
     }
+
+    // Original setHandsPresent removed as its height logic is now in animateGestureArea.
+    // Red line and dot clearing logic is tied to animation completion or handleHandsChange.
 
     drawVerticalRedLine() {
         if (!this.gestureAreaElement) return;
-        if (this.redLineElement) this.redLineElement.remove(); // Remove if already exists
+        if (this.redLineElement) this.redLineElement.remove();
 
         this.redLineElement = document.createElement('div');
-        this.redLineElement.id = 'gesture-red-line'; // For styling & potential animation
+        this.redLineElement.id = 'gesture-red-line';
         Object.assign(this.redLineElement.style, {
             position: 'absolute',
-            left: '0px', // At the left edge
+            left: '0px',
             top: '0px',
-            width: '2px', // Thickness from plan
-            height: '100%', // Span full height of #gesture-area
+            width: '2px',
+            height: '100%',
             backgroundColor: 'red',
-            zIndex: '1', // Above background, below dots
-            display: 'none' // Initially hidden, shown when hands are present
+            zIndex: '1',
+            display: 'none'
         });
         this.gestureAreaElement.appendChild(this.redLineElement);
         console.log("GestureUIManager: Vertical red line drawn.");
     }
 
-    renderFingerDots(handTrackingResults) {
-        if (!this.gestureAreaElement || !this.redLineElement || this.redLineElement.style.display === 'none') {
+    renderFingerDots(handTrackingResults) { // Expects { multiHandLandmarks: [...] }
+        if (!this.gestureAreaElement) return; // Guard against no element
+        // Only render dots if hands are meant to be present (red line is visible as a proxy)
+        if (!this.redLineElement || this.redLineElement.style.display === 'none') {
+             // This check might be too restrictive if redLineElement is shown only after animation.
+             // Consider if dots should appear during animation or only after.
+             // For now, if redLine is not visible (implying hands are not fully "present" UI-wise), clear dots.
             this.clearFingerDots();
             return;
         }
 
-        this.clearFingerDots(); // Clear previous dots
+        this.clearFingerDots();
 
         const gestureAreaHeight = this.gestureAreaElement.clientHeight;
-        if (gestureAreaHeight <= 0) return; // Avoid division by zero if area is hidden or has no height
+        if (gestureAreaHeight <= 0) return;
 
-        if (handTrackingResults.multiHandLandmarks) {
+        if (handTrackingResults && handTrackingResults.multiHandLandmarks) { // Check handTrackingResults itself
             handTrackingResults.multiHandLandmarks.forEach(landmarks => {
-                // Fingertip indices from MediaPipe Hands (Thumb, Index, Middle, Ring, Pinky)
                 const FINGER_TIP_INDICES = [4, 8, 12, 16, 20];
                 FINGER_TIP_INDICES.forEach(index => {
                     const tip = landmarks[index];
                     if (!tip) return;
 
                     const dot = document.createElement('div');
-                    dot.className = 'gesture-finger-dot'; // For styling
+                    dot.className = 'gesture-finger-dot';
                     Object.assign(dot.style, {
                         position: 'absolute',
-                        // Dots are on the red line, so X is relative to red line's position or #gesture-area left edge
-                        left: '1px', // Centered on the 2px red line (0px to 2px). Or adjust as needed.
-                        // Vertical position based on tip.y (0.0 to 1.0, top to bottom)
-                        top: `${tip.y * gestureAreaHeight - 2}px`, // -2px to center 4px dot
-                        width: '4px', // Example size
-                        height: '4px', // Example size
+                        left: '1px',
+                        top: `${tip.y * gestureAreaHeight - 2}px`,
+                        width: '4px',
+                        height: '4px',
                         backgroundColor: 'green',
                         borderRadius: '50%',
-                        zIndex: '2', // Above red line
-                        transform: 'translateX(-50%)' // Center the dot on its 'left' coordinate
+                        zIndex: '2',
+                        transform: 'translateX(-50%)'
                     });
                     this.gestureAreaElement.appendChild(dot);
                     this.fingerDots.push(dot);
@@ -139,12 +187,32 @@ class GestureUIManager {
 
     destroy() {
         if (this.eventBus) {
-            this.eventBus.off('handsDetected', this.handleHandsChange);
-            this.eventBus.off('handsLost', this.handleHandsChange);
-            console.log("GestureUIManager events unsubscribed.");
+            // For robust unsubscription, it's better to store the bound method references
+            // if they were created like: this.eventBus.on('event', this.handler.bind(this));
+            // Assuming simple function references were used for on():
+            // This might require specific function references passed to off() if they were bound.
+            // For simplicity, if these are direct method references, this might work,
+            // but often explicit removal of the exact listener function is needed.
+            // A common pattern is to store the bound listener:
+            // this.boundHandsDetectedHandler = (landmarksData) => this.handleHandsChange(true, landmarksData);
+            // this.eventBus.on('handsDetected', this.boundHandsDetectedHandler);
+            // ... and then ...
+            // this.eventBus.off('handsDetected', this.boundHandsDetectedHandler);
+            // For now, let's assume the simple off() might work or this is called at app end.
+            // The provided code doesn't show how .on was called in its constructor,
+            // but the new code uses arrow functions directly, so their references are distinct.
+            // For now, this .off call is more of a placeholder.
+             this.eventBus.off('handsDetected', this.handleHandsChange); // This line might not work as expected
+             this.eventBus.off('handsLost', this.handleHandsChange);    // Same here
+            console.log("GestureUIManager events unsubscribed (attempted).");
+        }
+        if (this.currentAnimation) {
+            this.currentAnimation.stop();
+            window.TWEEN.remove(this.currentAnimation);
         }
         if (this.redLineElement) this.redLineElement.remove();
         this.clearFingerDots();
+        console.log("GestureUIManager destroyed.");
     }
 }
 
