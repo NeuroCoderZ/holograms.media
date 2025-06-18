@@ -30,7 +30,6 @@ class GestureUIManager {
         console.log("GestureUIManager initialized for Block 3");
         this.initialize(); // Changed from subscribeToEvents
         this.drawVerticalRedLine(); // Draw the red line once at init
-        // this.setHandsPresent(false); // Moved to initialize()
     }
 
     initialize() { // Renamed from subscribeToEvents and expanded
@@ -39,8 +38,11 @@ class GestureUIManager {
             return;
         }
         // Store bound versions of handlers for consistent subscription/unsubscription
-        this.eventBus.on('handsDetected', this.handleHandsDetected.bind(this));
-        this.eventBus.on('handsLost', this.handleHandsLost.bind(this));
+        this.boundHandleHandsDetected = this.handleHandsDetected.bind(this);
+        this.boundHandleHandsLost = this.handleHandsLost.bind(this);
+
+        this.eventBus.on('handsDetected', this.boundHandleHandsDetected);
+        this.eventBus.on('handsLost', this.boundHandleHandsLost);
         console.log("GestureUIManager subscribed to handsDetected and handsLost events via EventBus.on.");
 
         this.setHandsPresent(false); // Moved from constructor
