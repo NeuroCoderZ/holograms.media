@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 // Using window.TWEEN as it's included via script tag and updated in rendering.js
 // import * as TWEEN from '@tweenjs/tween.js';
-import { state } from '../core/init.js';
+// import { state } from '../core/init.js'; // Removed import
 import eventBus from '../core/eventBus.js';
 import { getPanelWidths, getLeftPanelWidth } from '../core/resizeHandler.js';
 import { HOLOGRAM_REFERENCE_HEIGHT } from '../config/hologramConfig.js';
@@ -11,20 +11,20 @@ let gridContainer = null;
 let initialLayout = { top: 0, left: 0, width: 0, height: 0 };
 let currentAnimation = null;
 
-function updateRendererAndCamera(newWidth, newHeight) {
-    if (state.renderer) {
-        state.renderer.setSize(newWidth, newHeight);
+function updateRendererAndCamera(appState, newWidth, newHeight) { // Added appState
+    if (appState.renderer) {
+        appState.renderer.setSize(newWidth, newHeight);
     }
-    if (state.activeCamera) {
-        if (state.activeCamera.isOrthographicCamera) {
-            state.activeCamera.left = -newWidth / 2;
-            state.activeCamera.right = newWidth / 2;
-            state.activeCamera.top = newHeight / 2;
-            state.activeCamera.bottom = -newHeight / 2;
-            state.activeCamera.updateProjectionMatrix();
-        } else if (state.activeCamera.isPerspectiveCamera) {
-            state.activeCamera.aspect = newWidth / newHeight;
-            state.activeCamera.updateProjectionMatrix();
+    if (appState.activeCamera) {
+        if (appState.activeCamera.isOrthographicCamera) {
+            appState.activeCamera.left = -newWidth / 2;
+            appState.activeCamera.right = newWidth / 2;
+            appState.activeCamera.top = newHeight / 2;
+            appState.activeCamera.bottom = -newHeight / 2;
+            appState.activeCamera.updateProjectionMatrix();
+        } else if (appState.activeCamera.isPerspectiveCamera) {
+            appState.activeCamera.aspect = newWidth / newHeight;
+            appState.activeCamera.updateProjectionMatrix();
         }
     }
 }
@@ -57,11 +57,11 @@ export function setInitialHologramContainerLayout() {
     gridContainer.style.width = `${initialLayout.width}px`;
     gridContainer.style.height = `${initialLayout.height}px`;
 
-    updateRendererAndCamera(initialLayout.width, initialLayout.height);
+    updateRendererAndCamera(appState, initialLayout.width, initialLayout.height); // Pass appState
     console.log('[LayoutManager] Initial hologram container layout set:', initialLayout);
 }
 
-function animateHologramContainer(handsPresent) {
+function animateHologramContainer(appState, handsPresent) { // Added appState
     if (!gridContainer) {
         console.error('[LayoutManager] Grid container not found for animation.');
         return;
@@ -123,37 +123,37 @@ function animateHologramContainer(handsPresent) {
             gridContainer.style.left = `${coords.left}px`;
             gridContainer.style.width = `${coords.width}px`;
             gridContainer.style.height = `${coords.height}px`;
-            updateRendererAndCamera(coords.width, coords.height);
+            updateRendererAndCamera(appState, coords.width, coords.height); // Pass appState
         })
         .onComplete(() => {
             currentAnimation = null;
             console.log(`[LayoutManager] Hologram container animation complete. Hands present: ${handsPresent}`);
             // After animation, call updateHologramLayout to adjust pivot's scale/pos within the new container
-            updateHologramLayout();
+            updateHologramLayout(appState); // Pass appState
         })
         .start();
 }
 
 // Initialize and subscribe to events
 // This needs to be called once, perhaps from main.js or when UI is ready
-export function initializeLayoutManager() {
+export function initializeLayoutManager(appState) { // Added appState
     gridContainer = document.getElementById('grid-container');
     if (!gridContainer) {
         console.error("[LayoutManager] #grid-container not found during initialization.");
         return;
     }
-    setInitialHologramContainerLayout(); // Set the initial "no hands" layout
+    setInitialHologramContainerLayout(appState); // Pass appState
 
-    eventBus.on('handsDetected', () => animateHologramContainer(true));
-    eventBus.on('handsLost', () => animateHologramContainer(false));
+    eventBus.on('handsDetected', () => animateHologramContainer(appState, true)); // Pass appState
+    eventBus.on('handsLost', () => animateHologramContainer(appState, false));   // Pass appState
 
     // Also listen for resize to re-apply initial layout (or an adapted one)
     window.addEventListener('resize', () => {
-        setInitialHologramContainerLayout();
+        setInitialHologramContainerLayout(appState); // Pass appState
         // If hands are currently visible, we might want to re-trigger animation to new dimensions
-        if (state.multimodal?.handsVisible) {
+        if (appState.multimodal?.handsVisible) { // Use appState
              // Give a short delay for resize to settle before animating
-            setTimeout(() => animateHologramContainer(true), 100);
+            setTimeout(() => animateHologramContainer(appState, true), 100); // Pass appState
         }
     });
     console.log("[LayoutManager] Initialized and subscribed to hand/resize events.");
@@ -168,14 +168,14 @@ export function initializeLayoutManager() {
  * HOLOGRAM PIVOT within the ALREADY RESIZED gridContainer.
  * The gridContainer's size/position is handled by animateHologramContainer and setInitialHologramContainerLayout.
  */
-export function updateHologramLayout() {
+export function updateHologramLayout(appState) { // Added appState
   if (!gridContainer) gridContainer = document.getElementById('grid-container');
-  if (!gridContainer || !state.renderer || !state.hologramRendererInstance || typeof state.hologramRendererInstance.getHologramPivot !== 'function') {
-    console.warn('[LayoutManager] Skipping updateHologramLayout: Essential elements not ready.');
+  if (!gridContainer || !appState.renderer || !appState.hologramRendererInstance || typeof appState.hologramRendererInstance.getHologramPivot !== 'function') {
+    console.warn('[LayoutManager] Skipping updateHologramLayout: Essential elements not ready or appState missing.');
     return;
   }
 
-  const hologramPivot = state.hologramRendererInstance.getHologramPivot();
+  const hologramPivot = appState.hologramRendererInstance.getHologramPivot();
 
   // Current dimensions of the gridContainer (set by TWEEN or initial setup)
   const containerWidth = parseFloat(gridContainer.style.width);
@@ -187,7 +187,7 @@ export function updateHologramLayout() {
   }
 
   // Update renderer and camera to match current container size (redundant if called by TWEEN onUpdate, but safe)
-  updateRendererAndCamera(containerWidth, containerHeight);
+  updateRendererAndCamera(appState, containerWidth, containerHeight); // Pass appState
 
   // Scale the hologram pivot to fit within the new container dimensions.
   // HOLOGRAM_REFERENCE_HEIGHT is the design height of the hologram content itself.
@@ -253,34 +253,34 @@ export function updateHologramLayout() {
   const finalHeight = Math.max(1, availableHeight);
 
   // Update renderer size
-  if (state.renderer) {
-    state.renderer.setSize(finalWidth, finalHeight);
-  }
+  // if (state.renderer) { // Needs appState
+    // state.renderer.setSize(finalWidth, finalHeight);
+  // }
 
 
   // 3. Настройка Камеры (Camera Setup)
-  if (state.activeCamera && state.activeCamera.isOrthographicCamera) {
-    state.activeCamera.left = -finalWidth / 2;
-    state.activeCamera.right = finalWidth / 2;
-    state.activeCamera.top = finalHeight / 2;
-    state.activeCamera.bottom = -finalHeight / 2;
-    state.activeCamera.near = 0.1; // Ensure near/far are appropriate
-    state.activeCamera.far = 2000; // Ensure near/far are appropriate
-    state.activeCamera.updateProjectionMatrix();
+  // if (state.activeCamera && state.activeCamera.isOrthographicCamera) { // Needs appState
+    // state.activeCamera.left = -finalWidth / 2;
+    // state.activeCamera.right = finalWidth / 2;
+    // state.activeCamera.top = finalHeight / 2;
+    // state.activeCamera.bottom = -finalHeight / 2;
+    // state.activeCamera.near = 0.1; // Ensure near/far are appropriate
+    // state.activeCamera.far = 2000; // Ensure near/far are appropriate
+    // state.activeCamera.updateProjectionMatrix();
     // Removed: console.log('[LayoutManager] Orthographic camera updated:', { left: state.activeCamera.left, right: state.activeCamera.right, top: state.activeCamera.top, bottom: state.activeCamera.bottom });
-  } else {
-    console.warn('[LayoutManager] Active camera is not orthographic or not set.');
+  // } else {
+    // console.warn('[LayoutManager] Active camera is not orthographic or not set.');
     // If it's a perspective camera, you might want to update its aspect ratio here too.
-    // if (state.activeCamera && state.activeCamera.isPerspectiveCamera) {
+    // if (state.activeCamera && state.activeCamera.isPerspectiveCamera) { // Needs appState
     //   state.activeCamera.aspect = finalWidth / finalHeight;
     //   state.activeCamera.updateProjectionMatrix();
     // }
-  }
+  // }
 
   const animationDuration = 300; // Common animation duration
 
   // 4. Determine Gesture Area's target height for calculations
-  const gestureAreaTargetHeightPx = state.handsVisible ? finalHeight * 0.20 : 4;
+  // const gestureAreaTargetHeightPx = state.handsVisible ? finalHeight * 0.20 : 4; // Needs appState
 
   // 5. Calculate padding and available height for Hologram based on requirements
   // finalHeight is window.innerHeight (also gridContainer height)
@@ -343,8 +343,8 @@ export function updateHologramLayout() {
   // Removed: console.log('[LayoutManager] Hologram target calculated:', { scale: targetScaleValue, posY: targetPositionY });
 
   // 9. Animate Gesture Area Height based on handsVisible state (from previous subtask)
-  // if (state.uiElements?.gestureArea && typeof TWEEN !== 'undefined') {
-  //   const gestureAreaElement = state.uiElements.gestureArea;
+  // if (appState.uiElements?.gestureArea && typeof TWEEN !== 'undefined') { // Needs appState
+  //   const gestureAreaElement = appState.uiElements.gestureArea;
   //
   //   if (!gestureAreaElement.style.height) {
   //     gestureAreaElement.style.height = '4px';
@@ -363,8 +363,8 @@ export function updateHologramLayout() {
   //       .start();
   //   }
   // } else {
-  //   if (!state.uiElements?.gestureArea) {
-  //     console.warn('[LayoutManager] gestureArea not found in state.uiElements. Cannot animate height.');
+  //   if (!appState.uiElements?.gestureArea) { // Needs appState
+  //     console.warn('[LayoutManager] gestureArea not found in appState.uiElements. Cannot animate height.');
   //   }
   //   if (typeof TWEEN === 'undefined') {
       // This warning is now covered by the hologram animation check as well
@@ -373,11 +373,11 @@ export function updateHologramLayout() {
   // }
 
   // Direct setting of gestureArea height if TWEEN is not used or disabled
-  if (state.uiElements?.gestureArea) {
-    state.uiElements.gestureArea.style.height = gestureAreaTargetHeightPx + 'px';
-  } else {
-    console.warn('[LayoutManager] gestureArea not found in state.uiElements. Cannot set height directly.');
-  }
+  // if (appState.uiElements?.gestureArea) { // Needs appState
+    // appState.uiElements.gestureArea.style.height = gestureAreaTargetHeightPx + 'px';
+  // } else {
+    // console.warn('[LayoutManager] gestureArea not found in appState.uiElements. Cannot set height directly.');
+  // }
 
 
   // Removed: console.log('[LayoutManager] updateHologramLayout completed successfully.');
@@ -387,9 +387,9 @@ export function updateHologramLayout() {
  * Updates the visibility of the grid helper in the scene.
  * @param {boolean} isVisible - Whether the grid helper should be visible.
  */
-export function updateGridHelperVisibility(isVisible) {
-  if (state.gridHelper) {
-    state.gridHelper.visible = isVisible;
+export function updateGridHelperVisibility(appState, isVisible) { // Added appState
+  if (appState.gridHelper) {
+    appState.gridHelper.visible = isVisible;
     console.log(`Grid helper visibility set to: ${isVisible}`);
   } else {
     console.warn('Grid helper not found in state.');

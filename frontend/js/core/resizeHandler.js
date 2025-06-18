@@ -111,7 +111,7 @@ export function initializeResizeHandler(passedState) { // Changed signature
     if (localStateRef.uiElements && localStateRef.uiElements.gridContainer && localStateRef.uiElements.gestureArea) { // Use localStateRef
       // const handsAreCurrentlyVisible = localStateRef.uiElements.gestureArea.style.height !== '4px'; // This line is no longer needed
       if (typeof updateHologramLayout === 'function') {
-        updateHologramLayout(); // Argument removed - this function will use its own state or need refactoring
+        updateHologramLayout(localStateRef); // Pass localStateRef
         console.log('[Resize] updateHologramLayout called');
       } else {
         console.warn('updateHologramLayout function not found. It needs to be imported or moved.');

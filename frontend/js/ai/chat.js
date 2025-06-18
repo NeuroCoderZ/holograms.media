@@ -3,7 +3,7 @@
 // import { ui } from '../core/ui.js'; // Replaced with state.uiElements
 // import { synthesizeSpeech } from '../audio/speech.js'; // Keep commented out if needed later
 import { getSelectedModel } from './models.js';
-import { state } from '../core/init.js';
+// import { state } from '../core/init.js'; // Removed direct import
 
 // Placeholder for user authorization check
 function isUserAuthorized() {
@@ -17,6 +17,8 @@ function isUserAuthorized() {
 let chatMessages = [];
 let isWaitingForResponse = false;
 let chatHistoryContainer = null; // Will be initialized in setupChat
+let moduleScopedChatInput = null;    // For sendChatMessage
+let moduleScopedModelSelect = null;  // For sendChatMessage
 
 // --- UI Tour State and Helpers ---
 let isInTourMode = false;
@@ -31,18 +33,18 @@ const START_TOUR_COMMANDS = ['start tour', 'начать тур', 'расска�
 const STOP_TOUR_COMMANDS = ['stop tour', 'закончить тур', 'выйти из тура', 'стоп'];
 
 // Инициализация чата
-export function setupChat(state) {
+export function setupChat(appState) { // Renamed parameter for clarity
   console.log('Инициализация чата...');
   
   // Initialize chatHistoryContainer for addMessageToChat
   // Assuming chatHistory is the scrollable container for messages.
-  // If state.uiElements.containers.chatMessages is the actual message list, use that.
-  // Based on context, state.uiElements.chatHistory seems more likely for the scrollable container.
-  // Let's assume it's state.uiElements.containers.chatMessages that should be scrolled.
-  chatHistoryContainer = state.uiElements.containers.chatMessages;
+  // If appState.uiElements.containers.chatMessages is the actual message list, use that.
+  // Based on context, appState.uiElements.chatHistory seems more likely for the scrollable container.
+  // Let's assume it's appState.uiElements.containers.chatMessages that should be scrolled.
+  chatHistoryContainer = appState.uiElements.containers.chatMessages;
 
   if (!chatHistoryContainer) {
-    console.error('Контейнер для истории чата (chatMessages) не найден в state.uiElements.containers!');
+    console.error('Контейнер для истории чата (chatMessages) не найден в appState.uiElements.containers!');
     // If chatMessages is the one, then the error message was slightly off.
     // If it's actually a different element like 'chatHistoryPanel' that contains 'chatMessages',
     // then this needs to be reassessed based on actual HTML structure.
@@ -51,10 +53,13 @@ export function setupChat(state) {
   }
   
   // Настраиваем обработчики событий для поля ввода
-  const chatInput = state.uiElements.inputs.chatInput; // Use state.uiElements
-  if (chatInput) {
+  const localChatInput = appState.uiElements.inputs.chatInput; // Use appState.uiElements
+  moduleScopedChatInput = appState.uiElements.inputs.chatInput; // Store for sendChatMessage
+  moduleScopedModelSelect = appState.uiElements.inputs.modelSelect; // Store for sendChatMessage
+
+  if (localChatInput) {
     // Обработчик ввода текста
-    chatInput.addEventListener('input', function() {
+    localChatInput.addEventListener('input', function() {
       // Автоматически увеличиваем высоту поля ввода при необходимости
       this.style.height = 'auto';
       this.style.height = (this.scrollHeight) + 'px';
@@ -153,7 +158,7 @@ export async function sendChatMessage(messageText) {
   clearHighlightsAndDim();
   
   isWaitingForResponse = true;
-  const chatInput = state.uiElements.inputs.chatInput;
+  const chatInput = moduleScopedChatInput; // Use module-scoped variable
   let userMessage = messageText.trim(); // Use trimmed version for logic
   const lowerUserMessage = userMessage.toLowerCase();
 
@@ -195,7 +200,7 @@ export async function sendChatMessage(messageText) {
     let apiPayload;
 
     if (isUserAuthorized()) {
-      const modelSelectElement = state.uiElements.inputs.modelSelect;
+      const modelSelectElement = moduleScopedModelSelect; // Use module-scoped variable
       const selectedModel = getSelectedModel(modelSelectElement);
       apiPayload = { message: userMessage, model: selectedModel };
     } else {

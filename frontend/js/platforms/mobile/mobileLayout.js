@@ -67,7 +67,7 @@ export class MobileLayout {
             this.rightPanelElement.classList.remove('hidden');
         }
 
-        if (typeof updateHologramLayout === 'function') updateHologramLayout();
+        if (typeof updateHologramLayout === 'function') updateHologramLayout(this.state); // Pass state
         console.log(`[MobileLayout] Panels initialized. Defaulting to hidden.`);
     }
 
