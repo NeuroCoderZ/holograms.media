@@ -10,6 +10,8 @@ let isRecognizing = false;
 // Ссылки на DOM-элементы
 let micButton = null;
 let chatInput = null;
+let submitButton = null; // Added for state management
+let triaButton = null;   // Added for state management
 
 // Объект распознавания речи
 let recognition = null;
@@ -18,30 +20,32 @@ let recognition = null;
  * Инициализирует систему распознавания речи
  * @returns {boolean} Успешность инициализации
  */
-export function initializeSpeechInput() {
+export function initializeSpeechInput(state) { // Changed signature
   console.log('Инициализация системы распознавания речи...');
-  
+
   // Проверка поддержки Web Speech API
   const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognitionAPI) {
     console.error('Ошибка: Web Speech API не поддерживается в этом браузере');
     return false;
   }
-  
+
   // Находим необходимые DOM-элементы
-  micButton = document.getElementById('micButton');
-  chatInput = document.getElementById('chatInput');
-  
+  micButton = state.uiElements.buttons.micButton;       // Changed to use state
+  chatInput = state.uiElements.inputs.chatInput;         // Changed to use state
+  submitButton = state.uiElements.actions.submitChatMessage; // Added for state management
+  triaButton = state.uiElements.buttons.triaButton;       // Added for state management
+
   if (!micButton) {
     console.error('Ошибка: Элемент #micButton не найден в DOM');
     return false;
   }
-  
+
   if (!chatInput) {
     console.error('Ошибка: Элемент #chatInput не найден в DOM');
     return false;
   }
-  
+
   // Создаем и настраиваем объект распознавания
   recognition = new SpeechRecognitionAPI();
   recognition.continuous = false;
@@ -82,8 +86,7 @@ function setupRecognitionEvents() {
     // Устанавливаем фокус на поле ввода
     chatInput.focus();
 
-    // Автоматически отправляем сообщение (имитируем клик по кнопке отправки)
-    const submitButton = document.getElementById('submitChatMessage');
+    // Автоматически отправляем сообщение (используем module-level submitButton)
     if (submitButton) {
       console.log('Автоматическая отправка распознанного текста...');
       submitButton.click();
@@ -122,8 +125,7 @@ function setupRecognitionEvents() {
  * Переключает состояние распознавания речи при клике на кнопку микрофона
  */
 function toggleSpeechRecognition() {
-  // Проверяем, активна ли кнопка режима Триа
-  const triaButton = document.getElementById('triaButton');
+  // Проверяем, активна ли кнопка режима Триа (используем module-level triaButton)
   if (!triaButton || !triaButton.classList.contains('active')) {
       // console.log('Голосовой ввод доступен только в режиме Триа.');
       // Здесь можно добавить визуальную обратную связь пользователю (например, мигнуть кнопкой)
