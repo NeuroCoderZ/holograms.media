@@ -92,28 +92,34 @@ export function initializeRightPanel(appState) { // Option 2: passed as argument
   elements.submitChatMessage = appState.uiElements.actions.submitChatMessage; // Corrected path
   elements.versionTimeline = appState.uiElements.versionTimeline;
   elements.chatHistory = appState.uiElements.chatHistory;
-  elements.promptBar = document.getElementById('promptBar'); // This ID is not in uiManager's list, keep direct query or add to uiManager
-  elements.chatInputBar = document.getElementById('chatInputBar'); // This ID is not in uiManager's list, keep direct query or add to uiManager
   elements.topPromptInput = appState.uiElements.inputs.topPromptInput;
   elements.chatInput = appState.uiElements.inputs.chatInput;
-  elements.loadingIndicator = document.getElementById('loadingIndicator'); // This ID is not in uiManager's list
+
+  // Assignments from appState.uiElements for elements previously fetched by getElementById
+  elements.promptBar = appState.uiElements.containers.promptBar;
+  elements.chatInputBar = appState.uiElements.containers.chatInputBar;
+  elements.loadingIndicator = appState.uiElements.indicators.loadingIndicator;
 
   // Check if key elements were found via state.uiElements
   if (!elements.chatButton || !elements.versionTimeline || !elements.chatHistory) {
     console.error('Не удалось найти все необходимые элементы (via state.uiElements) для управления правой панелью.');
     // Log what was found or not
-    if (!elements.chatButton) console.error("chatButton not found in appState.uiElements.buttons");
-    if (!elements.versionTimeline) console.error("versionTimeline not found in appState.uiElements");
-    if (!elements.chatHistory) console.error("chatHistory not found in appState.uiElements");
+    if (!elements.chatButton) console.error("RightPanelManager: chatButton not found in appState.uiElements.buttons");
+    if (!elements.versionTimeline) console.error("RightPanelManager: versionTimeline not found in appState.uiElements");
+    if (!elements.chatHistory) console.error("RightPanelManager: chatHistory not found in appState.uiElements");
     return false;
   }
 
-  // For elements not found in uiManager's current list, we'll keep direct queries for now.
-  // These should ideally be added to uiManager if they are considered globally significant UI elements.
-  if (!elements.promptBar) console.warn("RightPanelManager: #promptBar not found via getElementById. This element might be missing or its ID is incorrect.");
-  if (!elements.chatInputBar) console.warn("RightPanelManager: #chatInputBar not found via getElementById. This element might be missing or its ID is incorrect.");
-  if (!elements.loadingIndicator) console.warn("RightPanelManager: #loadingIndicator not found via getElementById.");
-
+  // Warnings for the elements now expected from appState.uiElements
+  if (!elements.promptBar) {
+    console.warn("RightPanelManager: promptBar not found in appState.uiElements.containers.");
+  }
+  if (!elements.chatInputBar) {
+    console.warn("RightPanelManager: chatInputBar not found in appState.uiElements.containers.");
+  }
+  if (!elements.loadingIndicator) {
+    console.warn("RightPanelManager: loadingIndicator not found in appState.uiElements.indicators.");
+  }
 
   // Устанавливаем обработчик для кнопки чата (if found)
   if (elements.chatButton) {
