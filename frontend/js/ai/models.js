@@ -77,8 +77,8 @@ export function setSelectedModel(model, modelSelectElement) {
 }
 
 // Инициализация селекта моделей
-export function initializeModelSelector() {
-  const modelSelectElement = document.getElementById('modelSelect');
+export function initializeModelSelector(state) { // Changed signature
+  const modelSelectElement = state.uiElements.inputs.modelSelect; // Changed to use state
   if (!modelSelectElement) {
     console.warn('Элемент #modelSelect не найден, инициализация селектора моделей пропускается.');
     return;
@@ -87,17 +87,9 @@ export function initializeModelSelector() {
   // Если ui.inputs.modelSelect должен быть инициализирован здесь, то это нужно сделать явно.
   // В текущей логике ui.inputs.modelSelect используется до этой функции, что может быть проблемой.
   // Пока что будем работать с modelSelectElement.
-
-  const modelSelect = modelSelectElement; // Используем локальную переменную, полученную через getElementById
-  // ui.inputs.modelSelect = modelSelectElement; // No longer using core/ui.js's ui object
-
-  if (!modelSelect) { // Эта проверка становится избыточной, если предыдущая сработала
-    console.warn('Селект моделей не найден (повторная проверка).');
-    return;
-  }
   
   // Очищаем текущие опции
-  modelSelect.innerHTML = '';
+  modelSelectElement.innerHTML = '';
   
   // Добавляем опции для каждой модели
   Object.entries(modelMetadata).forEach(([id, metadata]) => {
@@ -111,7 +103,7 @@ export function initializeModelSelector() {
       option.selected = true;
     }
     
-    modelSelect.appendChild(option);
+    modelSelectElement.appendChild(option);
   });
   
   // Восстанавливаем сохраненную модель
@@ -120,7 +112,7 @@ export function initializeModelSelector() {
     if (savedModel && Object.values(models).includes(savedModel)) {
       // modelSelect.value = savedModel; // This will be set by setSelectedModel
       // selectedModel = savedModel; // This will be set by setSelectedModel
-      setSelectedModel(savedModel, modelSelect); // Pass modelSelect here
+      setSelectedModel(savedModel, modelSelectElement); // Pass modelSelectElement here
     }
   } catch (e) {
     console.warn('Не удалось восстановить выбранную модель:', e);

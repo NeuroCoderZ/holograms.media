@@ -1,6 +1,5 @@
 // frontend/js/ai/tria.js - Взаимодействие с Tria и интеграция с Mistral
 
-import { ui } from '../core/ui.js';
 import { initializeModelSelector } from './models.js';
 
 // Настройки Tria
@@ -25,11 +24,11 @@ export const triaConfig = {
 };
 
 // Инициализация Tria
-export function initializeTria() {
+export function initializeTria(state) { // Changed signature
   console.log('Инициализация Tria...');
   
   // Инициализируем селектор моделей
-  initializeModelSelector();
+  initializeModelSelector(state); // Pass state
   
   // Получаем конфигурацию с сервера
   // TODO: Backend endpoint /api/tria/config not implemented yet. Call disabled.
@@ -52,7 +51,7 @@ export function initializeTria() {
   */
   // Так как fetchTriaConfiguration закомментирован, вызываем setupTriaUI напрямую с дефолтной конфигурацией
   console.log('Пропускаем fetchTriaConfiguration, используем дефолтную конфигурацию Tria.');
-  setupTriaUI();
+  setupTriaUI(state); // Pass state
   
   console.log('Инициализация Tria завершена.');
 }
@@ -76,32 +75,32 @@ async function fetchTriaConfiguration() {
 */
 
 // Настройка интерфейса Tria
-function setupTriaUI() {
+function setupTriaUI(state) { // Changed signature
   // Listener for triaButton is now handled in uiManager.js, which will call toggleTriaLearningMode.
   // The original functionality of showTriaInfo() on click is removed from this button's direct event path.
   // If showTriaInfo() is still desired, it needs a different trigger or to be integrated into the new flow.
-  // if (ui.buttons.triaButton) {
+  // if (ui.buttons.triaButton) { // This would become state.uiElements.buttons.triaButton
   //   ui.buttons.triaButton.addEventListener('click', () => {
-  //     showTriaInfo();
+  //     showTriaInfo(state); // Pass state if uncommented
   //   });
   // }
   
   // Добавляем версию в заголовок (если есть)
-  updateTriaVersionDisplay();
+  updateTriaVersionDisplay(state); // Pass state
 }
 
 // Обновление отображения версии Tria
-function updateTriaVersionDisplay() {
-  const versionElement = document.getElementById('triaVersion');
+function updateTriaVersionDisplay(state) { // Changed signature
+  const versionElement = state.uiElements.labels.triaVersion; // Changed to use state
   if (versionElement) {
     versionElement.textContent = triaConfig.model.version;
   }
 }
 
 // Показать информацию о Tria
-function showTriaInfo() {
+function showTriaInfo(state) { // Changed signature
   // Находим или создаем модальное окно
-  let triaInfoModal = document.getElementById('triaInfoModal');
+  let triaInfoModal = state.uiElements.modals.triaInfoModal; // Changed to use state
   if (!triaInfoModal) {
     triaInfoModal = document.createElement('div');
     triaInfoModal.id = 'triaInfoModal';
@@ -122,7 +121,7 @@ function showTriaInfo() {
     document.body.appendChild(triaInfoModal);
     
     // Добавляем обработчик закрытия
-    const closeButton = document.getElementById('closeTriaInfoButton');
+    const closeButton = state.uiElements.buttons.closeTriaInfoButton; // Changed to use state
     if (closeButton) {
       closeButton.addEventListener('click', () => {
         triaInfoModal.style.display = 'none';
