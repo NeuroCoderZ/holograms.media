@@ -65,7 +65,7 @@ export class DesktopLayout {
         this.rightPanelElement.classList.remove('hidden');
 
         // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
-        if (typeof updateHologramLayout === 'function') updateHologramLayout(); // Add this
+        if (typeof updateHologramLayout === 'function') updateHologramLayout(this.state); // Add this and pass state
         const currentVisibility = this.leftPanelElement.classList.contains('visible');
         console.log(`[DesktopLayout] Panels initialized. Currently visible: ${currentVisibility}`);
     }
@@ -99,6 +99,6 @@ export class DesktopLayout {
         });
         window.dispatchEvent(event);
         // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
-        if (typeof updateHologramLayout === 'function') updateHologramLayout(); // Add this
+        if (typeof updateHologramLayout === 'function') updateHologramLayout(this.state); // Add this and pass state
     }
 }
