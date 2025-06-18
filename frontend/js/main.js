@@ -312,13 +312,13 @@ function setupStartButtonListener() {
 }
 
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     console.log("Инициализация приложения (Pre-Start)...");
 
     // --- ЭТАП 1: ИНИЦИАЛИЗАЦИЯ ТОЛЬКО ТОГО, ЧТО НЕ ТРЕБУЕТ DOM ---
     initCore(); // Создает state, AudioContext и т.д.
     const consentManager = new ConsentManager(state); // Requires ConsentManager import
-    consentManager.initialize();
+    await consentManager.initialize();
 
     // --- ЭТАП 2: ПОИСК ВСЕХ DOM-ЭЛЕМЕНТОВ ---
     initializeMainUI(state); // Находит все элементы и кладет их в state.uiElements
