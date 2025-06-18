@@ -26,12 +26,12 @@ export function setSceneReferences(threeScene, sequencerGroup) {
 /**
  * Обновляет таймлайн версий, запрашивая данные с сервера.
  */
-export async function updateTimelineFromServer() {
+export async function updateTimelineFromServer(state) { // Added state
     console.log(`Запрос версий для ветки: ${currentBranch}`);
     try {
         const response = await axios.get(`/branches/${currentBranch}`);
         const versions = response.data.versions;
-        const versionFrames = document.getElementById('versionFrames');
+        const versionFrames = state.uiElements.containers.versionFrames; // Changed to use state
 
         if (!versionFrames) {
             console.warn('Элемент versionFrames не найден.');
@@ -192,25 +192,28 @@ function loadVersion(version) {
 }
 
 // --- Наблюдатель за изменениями в таймлайне для автоскролла --- (перенесено из script.js)
-const versionFramesContainer = document.getElementById('versionFrames');
-if (versionFramesContainer) {
-    const observer = new MutationObserver((mutationsList, observer) => {
-        // Скроллим вниз после добавления/удаления элементов
-        versionFramesContainer.scrollTop = versionFramesContainer.scrollHeight;
-        console.log("Timeline scrolled to bottom via MutationObserver.");
-    });
-    // Настраиваем наблюдатель: следим за добавлением/удалением дочерних узлов
-    observer.observe(versionFramesContainer, { childList: true });
-    console.log("MutationObserver для автоскролла таймлайна активирован.");
-}
+// DOM-зависимую часть инициализации (MutationObserver) нужно вынести в initializeVersionManager,
+// так как state (и uiElements) будет доступен только там.
 // --- Конец блока MutationObserver ---
 
 /**
  * Инициализирует VersionManager.
  * Вызывается из main.js.
+ * @param {object} state - Глобальный объект состояния приложения.
  */
-export function initializeVersionManager() {
+export function initializeVersionManager(state) { // Changed signature
     console.log('Инициализация VersionManager...');
+
+    const versionFramesContainer = state.uiElements.containers.versionFrames; // Changed to use state
+    if (versionFramesContainer) {
+        const observer = new MutationObserver((mutationsList, observer) => {
+            versionFramesContainer.scrollTop = versionFramesContainer.scrollHeight;
+            console.log("Timeline scrolled to bottom via MutationObserver.");
+        });
+        observer.observe(versionFramesContainer, { childList: true });
+        console.log("MutationObserver для автоскролла таймлайна активирован.");
+    }
+
     // TODO: Добавить обработчики событий для кнопок версий, если они не обрабатываются через updateTimelineFromServer
     // (Сейчас обработчики добавляются при создании элементов в updateTimelineFromServer)
 
