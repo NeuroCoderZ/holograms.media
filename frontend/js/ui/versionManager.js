@@ -85,7 +85,7 @@ async function switchToVersion(versionId, branch) {
 
         // TODO: Применить состояние сцены и файлы из response.data
         // Логика применения состояния сцены (перенесено из script.js)
-        const scene_state = response.data.scene_state;
+        const scene_state = JSON.parse(JSON.stringify(response.data.scene_state)); // Ensure scene_state is a plain object
         if (scene_state && typeof scene_state === 'object' && Object.keys(scene_state).length > 0) {
             // Добавляем проверку на наличие основных полей, которые должны быть в scene.toJSON()
             if (!scene_state.metadata || !scene_state.geometries || !scene_state.materials) {
