@@ -2,8 +2,12 @@
 // Placeholder for XR-specific input handling
 
 export class XrInput {
-    constructor() {
+    constructor(state) { // Accept global state
+        this.state = state; // Store global state
         console.log("XrInput instantiated (placeholder).");
+        if (!this.state) {
+            console.warn("XrInput: State object not provided to constructor.");
+        }
     }
 
     initialize() {
