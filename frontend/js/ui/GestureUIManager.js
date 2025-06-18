@@ -7,10 +7,10 @@
 // import * as TWEEN from '@tweenjs/tween.js';
 
 class GestureUIManager {
-    constructor(eventBus, appState) {
+    constructor(eventBus, state) { // appState changed to state
         this.gestureAreaElement = document.getElementById('gesture-area');
         this.eventBus = eventBus;
-        this.appState = appState;
+        this.state = state; // appState changed to state
         this.currentAnimation = null; // To manage ongoing animations
 
         if (!this.gestureAreaElement) {
@@ -48,8 +48,13 @@ class GestureUIManager {
         console.log(`GestureUIManager: Hands present state changed to ${present}.`);
         this.animateGestureArea(present); // Changed to call animation method
 
-        if (this.appState && typeof this.appState.setState === 'function') {
-            this.appState.setState({ handsVisible: present });
+        if (this.state) { // Check if state object exists
+            this.state.handsVisible = present;
+            // Emit an event if other modules need to react to this change,
+            // e.g., HologramManager might listen for this.
+            if (this.eventBus) {
+                this.eventBus.emit('stateChanged_handsVisible', present);
+            }
         }
 
         // Pass landmarksData (which might be null if handsLost)

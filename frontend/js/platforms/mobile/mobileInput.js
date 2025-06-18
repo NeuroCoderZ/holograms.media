@@ -1,11 +1,15 @@
 // frontend/js/platforms/mobile/mobileInput.js
-import { state } from '../../core/init.js'; // For AudioContext (still needed for state checks potentially)
+// import { state } from '../../core/init.js'; // No longer needed, state is passed in constructor
 import { initializeMultimedia } from '../../core/mediaInitializer.js';
 // import { someFunctionFromDomEvents } from '../../core/domEventHandlers.js' // If needed
 
 export class MobileInput {
-    constructor() {
+    constructor(state) { // Accept global state
+        this.state = state; // Store global state
         console.log("MobileInput instantiated.");
+        if (!this.state) {
+            console.warn("MobileInput: State object not provided to constructor.");
+        }
     }
 
     initialize() {

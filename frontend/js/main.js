@@ -114,6 +114,15 @@ function setupStartButtonListener() {
         // Initialize media (camera/mic, AudioContext)
         await initializeMultimedia();
 
+        // Explicitly resume AudioContext if it's suspended, after multimedia initialization
+        if (state.audio && state.audio.audioContext && state.audio.audioContext.state === 'suspended') {
+          state.audio.audioContext.resume().then(() => {
+            console.log('AudioContext resumed successfully after START button click.');
+          }).catch(e => {
+            console.error('Error resuming AudioContext after START button click:', e);
+          });
+        }
+
         // Consent modal display is typically handled by initializeConsentManager or after its check.
         // If needed here, ensure it's shown *after* multimedia initialization if that's the flow.
         // For now, assuming consentManager handles its own display logic at the right time.
@@ -135,10 +144,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('User consent check passed/handled.');
 
   // 1. Core Initialization (includes scene, renderer, camera, etc.)
-  await initCore();
+  await initCore(); // Ensures 'state' object is initialized
 
   // 2. Initialize Main UI (finds and stores all UI elements in state.uiElements)
-  initializeMainUI();
+  // This function will now ensure state.uiElements is populated correctly.
+  initializeMainUI(state); // Pass state if uiManager needs it to attach uiElements
 
   // 3. Setup Start Button Listener (needs UI elements from initializeMainUI to be available)
   setupStartButtonListener();
@@ -198,21 +208,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           case 'mobile':
               const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
               const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
-              layoutManager = new MobileLayout(state.uiElements); // Pass uiElements
-              inputManager = new MobileInput(); // MobileInput might need state or uiElements later
+              layoutManager = new MobileLayout(state); // Pass global state
+              inputManager = new MobileInput(state);   // Pass global state
               break;
           case 'xr':
               console.log('XR platform detected, attempting to load XRLayout/XRInput.');
               const { XrLayout } = await import('./platforms/xr/xrLayout.js');
               const { XrInput } = await import('./platforms/xr/xrInput.js');
-              layoutManager = new XrLayout(state.uiElements); // Pass uiElements
-              inputManager = new XrInput();
+              layoutManager = new XrLayout(state); // Pass global state
+              inputManager = new XrInput(state);   // Pass global state
               break;
           default: // 'desktop'
               const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
               const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
-              layoutManager = new DesktopLayout(state.uiElements); // Pass uiElements
-              inputManager = new DesktopInput();
+              layoutManager = new DesktopLayout(state); // Pass global state
+              inputManager = new DesktopInput(state);   // Pass global state
               break;
       }
   } catch (e) {
@@ -221,9 +231,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (platform !== 'desktop') {
           console.warn(`Falling back to DesktopLayout/DesktopInput due to error with ${platform} modules.`);
           const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
-          const { DesktopInput } = await import('./platforms/desktop/DesktopInput.js'); // Ensure correct path if different
-          layoutManager = new DesktopLayout(state.uiElements);
-          inputManager = new DesktopInput();
+          const { DesktopInput } = await import('./platforms/desktop/desktopInput.js'); // Corrected path
+          layoutManager = new DesktopLayout(state); // Pass global state
+          inputManager = new DesktopInput(state);   // Pass global state
       } else {
           throw e; // Re-throw if desktop itself failed.
       }
@@ -284,18 +294,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.eventBus = eventBus; // Make it globally accessible if needed for older modules or debugging
 
   // AppState (using existing 'state' from './core/init.js')
-  // The new managers expect an 'appState' object with getState/setState.
-  // We will pass the existing 'state' object and they should adapt or be adapted.
-  // If 'state' doesn't have getState/setState, a wrapper might be needed,
-  // or managers updated. For now, passing 'state' directly.
-  const appState = state; // Use existing global state; ensure it has methods if managers rely on them.
+  // Pass the global 'state' object directly to managers expecting 'appState'.
+  // Managers will be adapted to use 'state' directly if they were expecting getState/setState methods not present on the plain 'state' object.
+  // const appState = state; // No longer needed, pass state directly.
 
   // Ensure essential DOM elements for new managers are available from state.uiElements or query them
+  // It's assumed that initializeMainUI() has already populated state.uiElements by this point.
   const gestureAreaElement = state.uiElements.gestureArea || document.getElementById('gesture-area');
-  // const chatButtonElement = state.uiElements.chatButton || document.getElementById('chatButton'); // Already handled by RightPanelManager
-  // const versionTimelineContainerElement = state.uiElements.versionTimelineContainer || document.getElementById('versionTimelineContainer'); // Handled by RPM
-  // const chatInterfaceContainerElement = state.uiElements.chatInterfaceContainer || document.getElementById('chatInterfaceContainer'); // Handled by RPM
-  // const gesturesListContainerElement = state.uiElements.gesturesListContainer || document.getElementById('gesturesListContainer'); // Handled by RPM
+  // const chatButtonElement = state.uiElements.chatButton; // Should be in state.uiElements
+  // const versionTimelineContainerElement = state.uiElements.versionTimelineContainer; // Should be in state.uiElements
+  // const chatInterfaceContainerElement = state.uiElements.chatInterfaceContainer; // Should be in state.uiElements
+  // const gesturesListContainerElement = state.uiElements.gesturesListContainer; // Should be in state.uiElements
 
 
   if (!gestureAreaElement) {
@@ -306,20 +315,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Instantiate Managers (order can be important)
   // Block 1 Managers
   const gesturesListDisplay = new GesturesListDisplay(eventBus); // Needs to be created before RightPanelManager if passed as instance
-  const rightPanelManager = new RightPanelManager(appState, eventBus, gesturesListDisplay);
-  const versionTimelinePanel = new VersionTimelinePanel(appState, eventBus /*, versionService */);
+  const rightPanelManager = new RightPanelManager(state, eventBus, gesturesListDisplay); // Pass global state
+  const versionTimelinePanel = new VersionTimelinePanel(state, eventBus /*, versionService */); // Pass global state
 
   // Block 2 & 3 UI Managers
-  const gestureUIManager = new GestureUIManager(eventBus, appState);
+  const gestureUIManager = new GestureUIManager(eventBus, state); // Pass global state
 
   // Block 2 Core 3D Managers
   // state.threeJs should contain scene, camera, renderer from initCore()
-  const hologramManager = new HologramManager(state.threeJs.scene, state.threeJs.camera, eventBus, appState);
+  const hologramManager = new HologramManager(state.threeJs.scene, state.threeJs.camera, eventBus, state); // Pass global state
   const interactionManager = new InteractionManager(state.threeJs.renderer.domElement, hologramManager);
 
   // Block 3 Recording Manager
   if (gestureAreaElement && gestureUIManager) {
-      const gestureRecordingManager = new GestureRecordingManager(gestureAreaElement, gestureUIManager, eventBus);
+      const gestureRecordingManager = new GestureRecordingManager(state, gestureAreaElement, gestureUIManager, eventBus); // Pass global state
       // Make it globally accessible if other parts of the old system need to interact, e.g. for destroy
       state.gestureRecordingManager = gestureRecordingManager;
   } else {
