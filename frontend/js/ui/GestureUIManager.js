@@ -26,6 +26,7 @@ class GestureUIManager {
 
         this.redLineElement = null;
         this.fingerDots = []; // To keep track of dot elements
+        // this.setHandsPresent(false); // Intentionally not here, moved to initialize() as per subtask.
 
         console.log("GestureUIManager initialized for Block 3");
         this.initialize(); // Changed from subscribeToEvents
@@ -38,7 +39,7 @@ class GestureUIManager {
             return;
         }
         // Store bound versions of handlers for consistent subscription/unsubscription
-        // Ensure the event handlers are bound to the correct context
+        // Ensure the event handlers are bound to the correct context, as per subtask.
         this.boundHandleHandsDetected = this.handleHandsDetected.bind(this);
         this.boundHandleHandsLost = this.handleHandsLost.bind(this);
 
@@ -46,6 +47,7 @@ class GestureUIManager {
         this.eventBus.on('handsLost', this.boundHandleHandsLost);
         console.log("GestureUIManager subscribed to handsDetected and handsLost events via EventBus.on.");
 
+        // this.setHandsPresent(false) is called here as per subtask.
         this.setHandsPresent(false); // Ensure this is the last line
     }
 
