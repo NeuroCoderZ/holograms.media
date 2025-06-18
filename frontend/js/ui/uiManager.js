@@ -203,12 +203,27 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // This uses the 'appState' passed in from main.js, which is the global 'state' object.
   appState.uiElements = uiElements;
 
+  // For elements used by RightPanelManager and potentially others
+  uiElements.containers.promptBar = document.getElementById('promptBar');
+  uiElements.containers.chatInputBar = document.getElementById('chatInputBar');
+
+  // It might be good to have a dedicated category for indicators
+  if (!uiElements.indicators) {
+    uiElements.indicators = {};
+  }
+  uiElements.indicators.loadingIndicator = document.getElementById('loadingIndicator');
+
   // Debugging: Verify if gestureArea and gridContainer are found and assigned.
   console.log('[UIManager] Проверка: gestureArea в appState.uiElements:', appState.uiElements.gestureArea ? 'найдена' : 'НЕ найдена', appState.uiElements.gestureArea);
   console.log('[UIManager] Проверка: gridContainer в appState.uiElements:', appState.uiElements.gridContainer ? 'найден' : 'НЕ найден', appState.uiElements.gridContainer);
   console.log('[UIManager] Проверка: leftPanel в appState.uiElements:', appState.uiElements.leftPanel ? 'найден' : 'НЕ найден');
   console.log('[UIManager] Проверка: rightPanel в appState.uiElements:', appState.uiElements.rightPanel ? 'найден' : 'НЕ найден');
   console.log('[UIManager] Проверка: togglePanelsButton в appState.uiElements:', appState.uiElements.togglePanelsButton ? 'найден' : 'НЕ найден');
+  // Ensure these new elements are also logged or checked if you have debugging patterns for that.
+  // For example, adding to logLayoutState or the verification console.logs:
+  console.log('[UIManager] Проверка: promptBar в appState.uiElements.containers:', appState.uiElements.containers.promptBar ? 'найден' : 'НЕ найден');
+  console.log('[UIManager] Проверка: chatInputBar в appState.uiElements.containers:', appState.uiElements.containers.chatInputBar ? 'найден' : 'НЕ найден');
+  console.log('[UIManager] Проверка: loadingIndicator в appState.uiElements.indicators:', appState.uiElements.indicators.loadingIndicator ? 'найден' : 'НЕ найден');
 
   // --- Initial UI State and Debugging ---
   // initializePanelState(); // PanelManager now handles this.
