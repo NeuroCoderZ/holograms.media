@@ -75,32 +75,62 @@ export function toggleModeInternal() {
  * Находит DOM-элементы и назначает обработчик на кнопку чата.
  * Должна вызываться один раз при загрузке приложения.
  */
-export function initializeRightPanel() {
+// Import state if you prefer direct import, otherwise rely on it being passed.
+// import { state } from '../core/init.js'; // Option 1: direct import
+
+export function initializeRightPanel(appState) { // Option 2: passed as argument (preferred for consistency with uiManager)
   console.log('Инициализация управления правой панелью...');
 
-  // Получаем ссылки на DOM-элементы и сохраняем их в объекте elements
-  elements.chatButton = document.getElementById('chatButton');
-  elements.submitTopPrompt = document.getElementById('submitTopPrompt');
-  elements.submitChatMessage = document.getElementById('submitChatMessage');
-  elements.versionTimeline = document.getElementById('versionTimeline');
-  elements.chatHistory = document.getElementById('chatHistory');
-  elements.promptBar = document.getElementById('promptBar');
-  elements.chatInputBar = document.getElementById('chatInputBar');
-  elements.topPromptInput = document.getElementById('topPromptInput');
-  elements.chatInput = document.getElementById('chatInput');
-  elements.loadingIndicator = document.getElementById('loadingIndicator');
-
-  // Проверяем, что ключевые элементы найдены
-  if (!elements.chatButton || !elements.versionTimeline || !elements.chatHistory || !elements.promptBar || !elements.chatInputBar) {
-    console.error('Не удалось найти все необходимые элементы для управления правой панелью.');
-    return false; // Возвращаем false при ошибке инициализации
+  if (!appState || !appState.uiElements) {
+    console.error('RightPanelManager: State or uiElements not provided for initialization.');
+    return false;
   }
 
-  // Устанавливаем обработчик для кнопки чата
-  elements.chatButton.addEventListener('click', toggleModeInternal); // Назначаем внутреннюю функцию
+  // Get references from appState.uiElements
+  elements.chatButton = appState.uiElements.buttons.chatButton; // Corrected path based on uiManager
+  elements.submitTopPrompt = appState.uiElements.actions.submitTopPrompt; // Corrected path
+  elements.submitChatMessage = appState.uiElements.actions.submitChatMessage; // Corrected path
+  elements.versionTimeline = appState.uiElements.versionTimeline;
+  elements.chatHistory = appState.uiElements.chatHistory;
+  elements.topPromptInput = appState.uiElements.inputs.topPromptInput;
+  elements.chatInput = appState.uiElements.inputs.chatInput;
 
-  console.log('Инициализация управления правой панелью завершена.');
-  return true; // Возвращаем true при успехе
+  // Assignments from appState.uiElements for elements previously fetched by getElementById
+  elements.promptBar = appState.uiElements.containers.promptBar;
+  elements.chatInputBar = appState.uiElements.containers.chatInputBar;
+  elements.loadingIndicator = appState.uiElements.indicators.loadingIndicator;
+
+  // Check if key elements were found via state.uiElements
+  if (!elements.chatButton || !elements.versionTimeline || !elements.chatHistory) {
+    console.error('Не удалось найти все необходимые элементы (via state.uiElements) для управления правой панелью.');
+    // Log what was found or not
+    if (!elements.chatButton) console.error("RightPanelManager: chatButton not found in appState.uiElements.buttons");
+    if (!elements.versionTimeline) console.error("RightPanelManager: versionTimeline not found in appState.uiElements");
+    if (!elements.chatHistory) console.error("RightPanelManager: chatHistory not found in appState.uiElements");
+    return false;
+  }
+
+  // Warnings for the elements now expected from appState.uiElements
+  if (!elements.promptBar) {
+    console.warn("RightPanelManager: promptBar not found in appState.uiElements.containers.");
+  }
+  if (!elements.chatInputBar) {
+    console.warn("RightPanelManager: chatInputBar not found in appState.uiElements.containers.");
+  }
+  if (!elements.loadingIndicator) {
+    console.warn("RightPanelManager: loadingIndicator not found in appState.uiElements.indicators.");
+  }
+
+  // Устанавливаем обработчик для кнопки чата (if found)
+  if (elements.chatButton) {
+    elements.chatButton.addEventListener('click', toggleModeInternal);
+  } else {
+    // This case is already handled by the check above, but for clarity:
+    console.error("RightPanelManager: chatButton not found, cannot assign listener for mode toggle.");
+  }
+
+  console.log('Инициализация управления правой панелью завершена (using state.uiElements where possible).');
+  return true;
 }
 
 /**
