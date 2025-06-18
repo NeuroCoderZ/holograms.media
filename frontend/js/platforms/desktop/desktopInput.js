@@ -2,6 +2,14 @@
 // import { state } from '../../core/init.js'; // Unused import
 import { applyPrompt, loadInitialFilesAndSetupEditor } from '../../core/domEventHandlers.js';
 import { toggleFullscreen, initFullscreenListeners } from '../../utils/fullscreen.js';
+import { initializePrompts } from '../../ai/prompts.js';
+import { initializeVersionManager } from '../../ui/versionManager.js'; // Assuming initializeVersionManager is exported
+import { setupChat } from '../../ai/chat.js';
+import { initializeSpeechInput } from '../../audio/speechInput.js';
+import { initializeTria } from '../../ai/tria.js';
+import { initializeResizeHandler } from '../../core/resizeHandler.js';
+import { initializeHammerGestures } from '../../core/gestures.js';
+import { initializeRightPanel } from '../../panels/rightPanelManager.js';
 
 export class DesktopInput {
     constructor(globalState) {
@@ -20,6 +28,64 @@ export class DesktopInput {
             console.log("DesktopInput: Initialized file editor setup.");
         } else {
             console.error("DesktopInput: loadInitialFilesAndSetupEditor is not a function or not imported.");
+        }
+
+        // console.log("DesktopInput: Initializing secondary managers..."); // Optional: for debugging
+
+        if (typeof initializePrompts === 'function') {
+            initializePrompts(this.state);
+            // console.log("DesktopInput: Prompts initialized.");
+        } else {
+            console.warn("DesktopInput: initializePrompts function not found/imported correctly.");
+        }
+
+        if (typeof initializeVersionManager === 'function') {
+            initializeVersionManager(this.state); // Assuming it might need state
+            // console.log("DesktopInput: VersionManager initialized.");
+        } else {
+            console.warn("DesktopInput: initializeVersionManager function not found/imported correctly.");
+        }
+
+        if (typeof setupChat === 'function') {
+            setupChat(this.state);
+            // console.log("DesktopInput: Chat setup.");
+        } else {
+            console.warn("DesktopInput: setupChat function not found/imported correctly.");
+        }
+
+        if (typeof initializeSpeechInput === 'function') {
+            initializeSpeechInput(this.state); // Assuming it might need state
+            // console.log("DesktopInput: SpeechInput initialized.");
+        } else {
+            console.warn("DesktopInput: initializeSpeechInput function not found/imported correctly.");
+        }
+
+        if (typeof initializeTria === 'function') {
+            initializeTria(this.state); // Assuming it might need state
+            // console.log("DesktopInput: Tria initialized.");
+        } else {
+            console.warn("DesktopInput: initializeTria function not found/imported correctly.");
+        }
+
+        if (typeof initializeResizeHandler === 'function') {
+            initializeResizeHandler(this.state);
+            // console.log("DesktopInput: ResizeHandler initialized.");
+        } else {
+            console.warn("DesktopInput: initializeResizeHandler function not found/imported correctly.");
+        }
+
+        if (typeof initializeHammerGestures === 'function') {
+            initializeHammerGestures(this.state); // Hammer gestures init needs state for renderer.domElement
+            // console.log("DesktopInput: HammerGestures initialized.");
+        } else {
+            console.warn("DesktopInput: initializeHammerGestures function not found/imported correctly.");
+        }
+
+        if (typeof initializeRightPanel === 'function') {
+            initializeRightPanel(this.state);
+            // console.log("DesktopInput: RightPanelManager initialized.");
+        } else {
+            console.warn("DesktopInput: initializeRightPanel function not found/imported correctly.");
         }
         console.log("DesktopInput initialized.");
     }
