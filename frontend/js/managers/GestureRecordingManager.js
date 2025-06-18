@@ -3,7 +3,7 @@
 
 // import EventBus from '../core/eventBus';
 // import GestureUIManager from '../ui/GestureUIManager';
-import axios from 'axios'; // For sending data to backend
+// import axios from 'axios'; // For sending data to backend
 
 class GestureRecordingManager {
     constructor(gestureAreaElement, gestureUIManager, eventBus) {

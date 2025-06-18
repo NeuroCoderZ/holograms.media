@@ -1,6 +1,6 @@
 // Manages the display of saved gestures in the right panel.
 
-import axios from 'axios'; // For fetching gesture data
+// import axios from 'axios'; // For fetching gesture data
 // import EventBus from '../core/eventBus';
 
 class GesturesListDisplay {
