@@ -1,4 +1,4 @@
-name: Keep IDX Workspace Alive
+name: Keep IDX Workspace And Firebase Alive
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  ping-idx:
+  ping-services:
     runs-on: ubuntu-latest
     steps:
       - name: Ping IDX Workspace
@@ -16,3 +16,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"command": "date"}' \
             "https://idx.google.com/api/v1/workspaces/hologramsmedia-91830644/execute"
+
+      - name: Ping Firebase Hosting
+        run: |
+          curl -m 10 https://holograms.media/keep_alive || true
