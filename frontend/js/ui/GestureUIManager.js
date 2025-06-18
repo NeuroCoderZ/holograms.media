@@ -28,20 +28,33 @@ class GestureUIManager {
         this.fingerDots = []; // To keep track of dot elements
 
         console.log("GestureUIManager initialized for Block 3");
-        this.subscribeToEvents();
+        this.initialize(); // Changed from subscribeToEvents
         this.drawVerticalRedLine(); // Draw the red line once at init
-        this.setHandsPresent(false);
+        // this.setHandsPresent(false); // Moved to initialize()
     }
 
-    subscribeToEvents() {
+    initialize() { // Renamed from subscribeToEvents and expanded
         if (!this.eventBus) {
             console.warn("GestureUIManager: EventBus not provided, cannot subscribe to hand tracking events.");
             return;
         }
-        // Adjust event handler signatures
-        this.eventBus.on('handsDetected', (landmarksData) => this.handleHandsChange(true, landmarksData));
-        this.eventBus.on('handsLost', () => this.handleHandsChange(false, null)); // Pass null for landmarksData
-        console.log("GestureUIManager subscribed to handsDetected and handsLost events.");
+        // Store bound versions of handlers for consistent subscription/unsubscription
+        this.boundHandleHandsDetected = this.handleHandsDetected.bind(this);
+        this.boundHandleHandsLost = this.handleHandsLost.bind(this);
+
+        this.eventBus.subscribe('handsDetected', this.boundHandleHandsDetected);
+        this.eventBus.subscribe('handsLost', this.boundHandleHandsLost);
+        console.log("GestureUIManager subscribed to handsDetected and handsLost events via EventBus.subscribe.");
+
+        this.setHandsPresent(false); // Moved from constructor
+    }
+
+    handleHandsDetected(landmarksData) {
+        this.handleHandsChange(true, landmarksData);
+    }
+
+    handleHandsLost() {
+        this.handleHandsChange(false, null);
     }
 
     handleHandsChange(present, landmarksData = null) { // landmarksData can be null
@@ -121,6 +134,26 @@ class GestureUIManager {
 
     // Original setHandsPresent removed as its height logic is now in animateGestureArea.
     // Red line and dot clearing logic is tied to animation completion or handleHandsChange.
+
+    // Added setHandsPresent method, which was originally removed.
+    // This is called in initialize() to set the initial state.
+    setHandsPresent(present) {
+        // This method might need to do more than just log,
+        // but for now, it mirrors the call that was moved.
+        // The actual UI changes are handled by animateGestureArea via handleHandsChange.
+        console.log(`GestureUIManager: Initial hands present state set to ${present}.`);
+        // If immediate UI changes are needed before first event, they would go here.
+        // For now, animateGestureArea(present) is called by handleHandsChange,
+        // which will be triggered by events or could be called here if needed.
+        // Let's ensure the red line is hidden initially if hands are not present.
+        if (this.redLineElement) {
+            this.redLineElement.style.display = present ? 'block' : 'none';
+        }
+        // Ensure finger dots are cleared if hands are not present initially
+        if (!present) {
+            this.clearFingerDots();
+        }
+    }
 
     drawVerticalRedLine() {
         if (!this.gestureAreaElement) return;
@@ -207,9 +240,14 @@ class GestureUIManager {
             // The provided code doesn't show how .on was called in its constructor,
             // but the new code uses arrow functions directly, so their references are distinct.
             // For now, this .off call is more of a placeholder.
-             this.eventBus.off('handsDetected', this.handleHandsChange); // This line might not work as expected
-             this.eventBus.off('handsLost', this.handleHandsChange);    // Same here
-            console.log("GestureUIManager events unsubscribed (attempted).");
+            // Use stored bound handlers for unsubscription
+            if (this.boundHandleHandsDetected) {
+                this.eventBus.unsubscribe('handsDetected', this.boundHandleHandsDetected);
+            }
+            if (this.boundHandleHandsLost) {
+                this.eventBus.unsubscribe('handsLost', this.boundHandleHandsLost);
+            }
+            console.log("GestureUIManager events unsubscribed.");
         }
         if (this.currentAnimation) {
             this.currentAnimation.stop();
