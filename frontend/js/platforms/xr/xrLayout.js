@@ -1,7 +1,7 @@
 // frontend/js/platforms/xr/xrLayout.js
 // Placeholder for XR-specific layout management
 
-export class XrLayout {
+export default class XrLayout {
     constructor(appState) {
         this.appState = appState;
         console.log("XrLayout instantiated (placeholder).");

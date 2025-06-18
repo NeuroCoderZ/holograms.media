@@ -2,7 +2,7 @@
 // import { uiElements } from '../../ui/uiManager.js'; // Removed as uiElements will be passed via constructor
 import { updateHologramLayout } from '../../ui/layoutManager.js';
 
-export class DesktopLayout {
+export default class DesktopLayout {
     constructor(state) { // Accept global state object
         this.state = state; // Store global state
         this.leftPanelElement = null;
