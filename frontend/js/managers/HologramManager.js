@@ -9,11 +9,11 @@ import TWEEN from '@tweenjs/tween.js'; // Assuming TWEEN can be imported
 // import AppState from '../core/stateManager';
 
 class HologramManager {
-    constructor(scene, camera, eventBus, appState) {
+    constructor(scene, camera, eventBus, state) { // appState changed to state
         this.scene = scene;
         this.camera = camera;
         this.eventBus = eventBus;
-        this.appState = appState;
+        this.state = state; // appState changed to state
 
         this.hologramPivot = new THREE.Group();
         this.mainSequencerGroup = new THREE.Group();
@@ -62,8 +62,8 @@ class HologramManager {
         this.hologramPivot.position.set(0, 0, 0);
 
         let initialHandsVisible = false;
-        if (this.appState && typeof this.appState.getState === 'function') {
-            initialHandsVisible = this.appState.getState().handsVisible || false;
+        if (this.state) { // Check if state object exists
+            initialHandsVisible = this.state.handsVisible || false;
         }
         this.updateLayout(initialHandsVisible);
         console.log(`Hologram initialized. Initial handsVisible state: ${initialHandsVisible}`);
@@ -92,12 +92,26 @@ class HologramManager {
         const windowHeight = window.innerHeight;
         const windowWidth = window.innerWidth;
 
-        const leftPanelEl = document.querySelector('.panel.left-panel');
-        const rightPanelEl = document.querySelector('.panel.right-panel');
+        let leftPanelEl = null;
+        let rightPanelEl = null;
 
-        // Consider panel visibility status from class 'hidden'
-        const leftPanelWidth = (leftPanelEl && !leftPanelEl.classList.contains('hidden')) ? leftPanelEl.offsetWidth : 0;
-        const rightPanelWidth = (rightPanelEl && !rightPanelEl.classList.contains('hidden')) ? rightPanelEl.offsetWidth : 0;
+        if (this.state && this.state.uiElements) {
+            leftPanelEl = this.state.uiElements.leftPanel;
+            rightPanelEl = this.state.uiElements.rightPanel;
+        } else {
+            console.warn("HologramManager: state.uiElements not available for panel width calculation. Falling back to querySelector.");
+            leftPanelEl = document.querySelector('.panel.left-panel');
+            rightPanelEl = document.querySelector('.panel.right-panel');
+        }
+
+        // Panel visibility is determined by 'visible' class in DesktopLayout, not 'hidden'
+        // DesktopLayout removes 'hidden' and toggles 'visible'.
+        // MobileLayout removes 'visible' by default.
+        const leftPanelVisible = leftPanelEl && (leftPanelEl.classList.contains('visible') || (!leftPanelEl.classList.contains('hidden') && !leftPanelEl.classList.contains('visible') && getComputedStyle(leftPanelEl).display !== 'none'));
+        const rightPanelVisible = rightPanelEl && (rightPanelEl.classList.contains('visible') || (!rightPanelEl.classList.contains('hidden') && !rightPanelEl.classList.contains('visible') && getComputedStyle(rightPanelEl).display !== 'none'));
+
+        const leftPanelWidth = leftPanelVisible && leftPanelEl ? leftPanelEl.offsetWidth : 0;
+        const rightPanelWidth = rightPanelVisible && rightPanelEl ? rightPanelEl.offsetWidth : 0;
         const panelWidths = leftPanelWidth + rightPanelWidth;
 
         const availableRenderWidth = windowWidth - panelWidths;
@@ -162,8 +176,8 @@ class HologramManager {
     handleResize() {
         console.log("HologramManager: Window resize detected.");
         let currentHandsVisible = false;
-        if (this.appState && typeof this.appState.getState === 'function') {
-            currentHandsVisible = this.appState.getState().handsVisible || false;
+        if (this.state) { // Check if state object exists
+            currentHandsVisible = this.state.handsVisible || false;
         }
         this.updateLayout(currentHandsVisible);
     }
