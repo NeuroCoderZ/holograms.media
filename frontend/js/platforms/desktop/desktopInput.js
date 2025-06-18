@@ -1,6 +1,6 @@
 // frontend/js/platforms/desktop/desktopInput.js
 // import { state } from '../../core/init.js'; // Unused import
-import { applyPrompt, loadInitialFilesAndSetupEditor } from '../../core/domEventHandlers.js';
+import { applyPrompt } from '../../core/domEventHandlers.js';
 import { toggleFullscreen, initFullscreenListeners } from '../../utils/fullscreen.js';
 import { initializePrompts } from '../../ai/prompts.js';
 import { initializeVersionManager } from '../../ui/versionManager.js'; // Assuming initializeVersionManager is exported
@@ -22,13 +22,6 @@ export class DesktopInput {
         this.setupKeyboardListeners();
         this.setupMouseListeners(); // Will include modal submit buttons
         this.setupGeneralButtonListeners(); // Will include other general buttons
-
-        if (typeof loadInitialFilesAndSetupEditor === 'function') {
-            loadInitialFilesAndSetupEditor();
-            console.log("DesktopInput: Initialized file editor setup.");
-        } else {
-            console.error("DesktopInput: loadInitialFilesAndSetupEditor is not a function or not imported.");
-        }
 
         // console.log("DesktopInput: Initializing secondary managers..."); // Optional: for debugging
 
