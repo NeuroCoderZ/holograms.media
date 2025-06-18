@@ -10,6 +10,7 @@ import { initializeTria } from '../../ai/tria.js';
 import { initializeResizeHandler } from '../../core/resizeHandler.js';
 import { initializeHammerGestures } from '../../core/gestures.js';
 import { initializeRightPanel } from '../../panels/rightPanelManager.js';
+import { initializeFileEditor } from '../../ui/fileEditor.js';
 
 export class DesktopInput {
     constructor(globalState) {
@@ -80,6 +81,13 @@ export class DesktopInput {
         } else {
             console.warn("DesktopInput: initializeRightPanel function not found/imported correctly.");
         }
+
+        if (typeof initializeFileEditor === 'function') {
+            initializeFileEditor(this.state);
+            // console.log("DesktopInput: FileEditor initialized.");
+        } else {
+            console.warn("DesktopInput: initializeFileEditor function not found/imported correctly.");
+        }
         console.log("DesktopInput initialized.");
     }
 
@@ -133,24 +141,6 @@ export class DesktopInput {
             console.log("DesktopInput: GitHub button listener set up.");
         } else {
             console.warn("DesktopInput: GitHub button not found.");
-        }
-
-        // File Editor modal interactions
-        const editorModal = document.getElementById('fileEditorModal');
-        const closeEditorButton = document.getElementById('closeFileEditorModal');
-        if (closeEditorButton && editorModal) {
-            closeEditorButton.addEventListener('click', () => editorModal.style.display = 'none');
-            console.log("DesktopInput: File editor close button listener set up.");
-        } else {
-            console.warn("DesktopInput: File editor modal or close button not found.");
-        }
-        if (editorModal) {
-            window.addEventListener('click', (event) => {
-                if (event.target === editorModal) editorModal.style.display = 'none';
-            });
-            console.log("DesktopInput: File editor click outside listener set up.");
-        } else {
-            console.warn("DesktopInput: File editor modal not found for click outside listener.");
         }
 
         // Modal close buttons
