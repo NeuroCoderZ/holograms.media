@@ -1,5 +1,5 @@
 // frontend/js/platforms/desktop/desktopInput.js
-import { state } from '../../core/init.js'; // If needed for specific handlers
+// import { state } from '../../core/init.js'; // Unused import
 import { applyPrompt, loadInitialFilesAndSetupEditor } from '../../core/domEventHandlers.js';
 import { toggleFullscreen, initFullscreenListeners } from '../../utils/fullscreen.js';
 

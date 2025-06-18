@@ -6,10 +6,16 @@
 // import axios from 'axios'; // For sending data to backend
 
 class GestureRecordingManager {
-    constructor(gestureAreaElement, gestureUIManager, eventBus) {
+    constructor(state, gestureAreaElement, gestureUIManager, eventBus) { // Added state as first argument
+        this.state = state; // Store the global state
         this.gestureAreaElement = gestureAreaElement;
         this.gestureUIManager = gestureUIManager;
         this.eventBus = eventBus;
+
+        // It's good practice to check if state is provided, though not strictly necessary if main.js always passes it.
+        if (!this.state) {
+            console.warn("GestureRecordingManager: Global state object not provided to constructor.");
+        }
 
         if (!this.gestureAreaElement) {
             console.error("GestureRecordingManager: gestureAreaElement is required.");

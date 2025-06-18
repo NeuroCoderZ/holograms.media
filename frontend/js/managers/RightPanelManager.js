@@ -2,8 +2,8 @@
 // toggling between 'Timeline', 'Chat', and 'GesturesList' views.
 
 class RightPanelManager {
-    constructor(appState, eventBus, gesturesListDisplayInstance) { // GesturesListDisplay instance can be passed
-        this.appState = appState;
+    constructor(state, eventBus, gesturesListDisplayInstance) { // appState is now state
+        this.state = state; // Use this.state
         this.eventBus = eventBus;
         this.gesturesListDisplay = gesturesListDisplayInstance; // Store the instance
 
@@ -17,7 +17,12 @@ class RightPanelManager {
         if (!this.chatInterfaceContainer) console.warn("RightPanelManager: #chatInterfaceContainer not found.");
         if (!this.gesturesListContainer) console.warn("RightPanelManager: #gesturesListContainer not found. 'My Gestures' view may not work.");
 
-        this.currentMode = this.appState ? (this.appState.getState().rightPanelMode || 'timeline') : 'timeline';
+        // Initialize currentMode from state.rightPanelMode or default to 'timeline'
+        this.currentMode = (this.state && this.state.rightPanelMode) ? this.state.rightPanelMode : 'timeline';
+        // Ensure the state also reflects this initial mode if it wasn't set
+        if (this.state && !this.state.rightPanelMode) {
+            this.state.rightPanelMode = this.currentMode;
+        }
 
         this.setupEventListeners();
         this.updatePanelVisibility();
@@ -49,11 +54,15 @@ class RightPanelManager {
         this.currentMode = newMode;
         console.log(`RightPanelManager: Mode set to ${this.currentMode}`);
 
-        if (this.appState && typeof this.appState.setState === 'function') {
-            this.appState.setState({ rightPanelMode: this.currentMode });
+        if (this.state) {
+            this.state.rightPanelMode = this.currentMode; // Directly set on state object
         }
+        // Optionally, if other modules need to react to this specific change *and* they don't
+        // monitor the state object directly, an event can be emitted.
+        // this.eventBus.emit('stateChanged_rightPanelMode', this.currentMode); // Example event
+
         if (this.eventBus) {
-            this.eventBus.emit('rightPanelModeChanged', this.currentMode);
+            this.eventBus.emit('rightPanelModeChanged', this.currentMode); // Keep existing event for direct listeners
         }
 
         this.updatePanelVisibility();

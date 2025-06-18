@@ -3,8 +3,8 @@
 import { updateHologramLayout } from '../../ui/layoutManager.js';
 
 export class DesktopLayout {
-    constructor(uiElements) { // Added uiElements parameter
-        this.uiElements = uiElements; // Store uiElements
+    constructor(state) { // Accept global state object
+        this.state = state; // Store global state
         this.leftPanelElement = null;
         this.rightPanelElement = null;
         this.togglePanelsButtonElement = null;
@@ -12,10 +12,14 @@ export class DesktopLayout {
     }
 
     initialize() {
-        // Get elements directly from the passed uiElements object
-        this.leftPanelElement = this.uiElements.leftPanel;
-        this.rightPanelElement = this.uiElements.rightPanel;
-        this.togglePanelsButtonElement = this.uiElements.togglePanelsButton;
+        // Get elements from state.uiElements
+        if (!this.state || !this.state.uiElements) {
+            console.error('[CRITICAL ERROR][DesktopLayout] State or uiElements not available on initialization.');
+            return; // Abort initialization
+        }
+        this.leftPanelElement = this.state.uiElements.leftPanel;
+        this.rightPanelElement = this.state.uiElements.rightPanel;
+        this.togglePanelsButtonElement = this.state.uiElements.togglePanelsButton;
 
         let criticalElementMissing = false;
         if (!this.leftPanelElement) {

@@ -1,11 +1,11 @@
 // frontend/js/platforms/mobile/mobileLayout.js
-import { state } from '../../core/init.js'; // For gestureArea
+// import { state } from '../../core/init.js'; // No longer needed, state is passed in constructor
 // import { uiElements } from '../../ui/uiManager.js'; // Removed as uiElements will be passed via constructor
 import { updateHologramLayout } from '../../ui/layoutManager.js';
 
 export class MobileLayout {
-    constructor(uiElements) {
-        this.uiElements = uiElements; // Store uiElements passed from main.js
+    constructor(state) { // Accept global state object
+        this.state = state; // Store global state
         this.leftPanelElement = null;
         this.rightPanelElement = null; // Keep reference for ensuring it's hidden
         this.togglePanelsButtonElement = null;
@@ -14,11 +14,15 @@ export class MobileLayout {
     }
 
     initialize() {
-        // Get elements directly from the passed uiElements object
-        this.leftPanelElement = this.uiElements.leftPanel;
-        this.rightPanelElement = this.uiElements.rightPanel;
-        this.togglePanelsButtonElement = this.uiElements.togglePanelsButton;
-        this.gestureAreaElement = this.uiElements.containers.gestureArea;
+        // Get elements from state.uiElements
+        if (!this.state || !this.state.uiElements) {
+            console.error('[CRITICAL ERROR][MobileLayout] State or uiElements not available on initialization.');
+            return; // Abort initialization
+        }
+        this.leftPanelElement = this.state.uiElements.leftPanel;
+        this.rightPanelElement = this.state.uiElements.rightPanel;
+        this.togglePanelsButtonElement = this.state.uiElements.togglePanelsButton;
+        this.gestureAreaElement = this.state.uiElements.gestureArea; // Corrected: gestureArea is a direct child of uiElements
 
         let criticalElementMissing = false;
         if (!this.leftPanelElement) {
@@ -72,7 +76,7 @@ export class MobileLayout {
         if (leftPanel) {
             leftPanel.classList.toggle('visible');
             console.log(`Left panel visibility toggled. Is visible: ${leftPanel.classList.contains('visible')}`);
-            this.updateHologramLayout(); // Ensure this refers to layoutManager's update, or pass updateHologramLayout from above
+            // Removed: this.updateHologramLayout();
         }
     }
 
