@@ -31,7 +31,7 @@ const START_TOUR_COMMANDS = ['start tour', 'начать тур', 'расска�
 const STOP_TOUR_COMMANDS = ['stop tour', 'закончить тур', 'выйти из тура', 'стоп'];
 
 // Инициализация чата
-export function setupChat() {
+export function setupChat(state) {
   console.log('Инициализация чата...');
   
   // Initialize chatHistoryContainer for addMessageToChat

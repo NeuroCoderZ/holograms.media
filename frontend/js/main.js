@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeSpeechInput(); // Sets up speech input, might be okay if not directly tied to 3D scene at this stage
 
   initializeTria(); // AI core, likely no immediate 3D dependency
-  setupChat(); // AI chat setup
+  setupChat(state); // AI chat setup
 
   // Generic handlers
   initializeResizeHandler(); // Handles window resize
