@@ -11,6 +11,7 @@ import { initializeTria } from '../../ai/tria.js';
 import { initializeResizeHandler } from '../../core/resizeHandler.js';
 import { initializeHammerGestures } from '../../core/gestures.js';
 import { initializeRightPanel } from '../../panels/rightPanelManager.js';
+import { initializeFileEditor } from '../../ui/fileEditor.js';
 
 export class MobileInput {
     constructor(globalState) { // Or use 'state' as parameter name
@@ -84,6 +85,13 @@ export class MobileInput {
             // console.log("MobileInput: RightPanelManager initialized.");
         } else {
             console.warn("MobileInput: initializeRightPanel function not found/imported correctly.");
+        }
+
+        if (typeof initializeFileEditor === 'function') {
+            initializeFileEditor(this.state);
+            // console.log("MobileInput: FileEditor initialized.");
+        } else {
+            console.warn("MobileInput: initializeFileEditor function not found/imported correctly.");
         }
         console.log("MobileInput initialized.");
     }
