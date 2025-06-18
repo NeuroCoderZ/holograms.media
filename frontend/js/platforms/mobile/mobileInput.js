@@ -13,7 +13,7 @@ import { initializeHammerGestures } from '../../core/gestures.js';
 import { initializeRightPanel } from '../../panels/rightPanelManager.js';
 import { initializeFileEditor } from '../../ui/fileEditor.js';
 
-export class MobileInput {
+export default class MobileInput {
     constructor(globalState) { // Or use 'state' as parameter name
         // console.log('MobileInput constructor');
         this.state = globalState; // Store the state
