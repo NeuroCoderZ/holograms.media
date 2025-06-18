@@ -1,7 +1,7 @@
 // frontend/js/ui/uiManager.js - Модуль для управления UI элементами
 
 // Импортируем необходимые зависимости
-import { state } from '../core/init.js';
+// import { state } from '../core/init.js'; // Removed direct import, appState will be used
 import { auth } from '../core/firebaseInit.js';
 // import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js'; // Old Firebase Storage upload
 import { uploadFileToR2 } from '../services/firebaseStorageService.js'; // New R2 upload via presigned URL
@@ -278,8 +278,8 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // --- Microphone Toggle Button ---
   if (uiElements.buttons.micButton) {
     uiElements.buttons.micButton.addEventListener('click', async () => {
-      if (state.microphoneManagerInstance) {
-        await state.microphoneManagerInstance.toggleMicrophone(uiElements.buttons.micButton, state);
+      if (appState.microphoneManagerInstance) {
+        await appState.microphoneManagerInstance.toggleMicrophone(uiElements.buttons.micButton, appState);
       } else {
         console.error("MicrophoneManager instance not found in state. Cannot toggle microphone.");
         uiElements.buttons.micButton.textContent = "Mic Error";
@@ -290,9 +290,9 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
     // This logic is now handled within toggleMicrophone based on initial state,
     // but we need to ensure the button's visual state is correct on load.
     // We can call toggleMicrophone once without click if we want to sync state,
-    // or simply set class based on initial state.audio.activeSource.
+    // or simply set class based on initial appState.audio.activeSource.
     // For now, let's ensure the class and title are set based on initial state.
-    if (state.audio && state.audio.activeSource === 'microphone') {
+    if (appState.audio && appState.audio.activeSource === 'microphone') {
         uiElements.buttons.micButton.classList.add('active');
         uiElements.buttons.micButton.title = "Выключить микрофон";
     } else {
@@ -320,7 +320,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // --- Other Feature Buttons ---
   if (uiElements.buttons.xrButton) {
     // Set initial button state
-    if (state.xrSessionManagerInstance && state.xrSessionManagerInstance.isSessionActive()) {
+    if (appState.xrSessionManagerInstance && appState.xrSessionManagerInstance.isSessionActive()) {
       uiElements.buttons.xrButton.classList.add('active');
       uiElements.buttons.xrButton.title = "Exit XR Mode";
     } else {
@@ -329,8 +329,8 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
     }
 
     uiElements.buttons.xrButton.addEventListener('click', async () => {
-      if (state.xrSessionManagerInstance) {
-        await state.xrSessionManagerInstance.toggleXRSession(uiElements.buttons.xrButton);
+      if (appState.xrSessionManagerInstance) {
+        await appState.xrSessionManagerInstance.toggleXRSession(uiElements.buttons.xrButton);
       } else {
         console.error("XRSessionManager instance not found in state. Cannot toggle XR session.");
         // Optionally provide visual feedback on the button itself
@@ -344,8 +344,8 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // Gesture Record button also opens the 'My Gestures' panel.
   addButtonListener(uiElements.buttons.gestureRecordButton, () => {
       console.log("Gesture Record button clicked. Opening 'My Gestures' panel.");
-      if (state.panelManager) {
-        state.panelManager.openContentPanel('myGestures'); // Opens the specific panel for gestures.
+      if (appState.panelManager) {
+        appState.panelManager.openContentPanel('myGestures'); // Opens the specific panel for gestures.
       } else {
         console.error("PanelManager not found in state. Cannot open 'myGestures' panel.");
       }
@@ -354,8 +354,8 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // Hologram List button opens the 'My Holograms' panel.
   addButtonListener(uiElements.buttons.hologramListButton, () => {
       console.log("Hologram List button clicked. Opening 'My Holograms' panel.");
-      if (state.panelManager) {
-        state.panelManager.openContentPanel('myHolograms'); // Opens the specific panel for holograms.
+      if (appState.panelManager) {
+        appState.panelManager.openContentPanel('myHolograms'); // Opens the specific panel for holograms.
       } else {
         console.error("PanelManager not found in state. Cannot open 'myHolograms' panel.");
       }
@@ -393,8 +393,8 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   if (uiElements.buttons.chatButton) {
     uiElements.buttons.chatButton.addEventListener('click', () => {
         console.log("Chat Mode/Panel button clicked. Opening 'chatHistory' panel.");
-        if (state.panelManager) {
-          state.panelManager.openContentPanel('chatHistory'); // Opens the dedicated chat history panel.
+        if (appState.panelManager) {
+          appState.panelManager.openContentPanel('chatHistory'); // Opens the dedicated chat history panel.
         } else {
           console.error("PanelManager not found in state. Cannot open 'chatHistory' panel.");
         }
@@ -406,19 +406,19 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // --- Tria Button ---
   if (uiElements.buttons.triaButton && uiElements.inputs.modelSelect) {
     // Set initial state for Tria button and modelSelect
-    if (state.tria && typeof state.tria.isLearningActive === 'boolean') {
-      uiElements.buttons.triaButton.classList.toggle('active', state.tria.isLearningActive);
-      uiElements.inputs.modelSelect.disabled = state.tria.isLearningActive;
+    if (appState.tria && typeof appState.tria.isLearningActive === 'boolean') {
+      uiElements.buttons.triaButton.classList.toggle('active', appState.tria.isLearningActive);
+      uiElements.inputs.modelSelect.disabled = appState.tria.isLearningActive;
     } else {
-      // Initialize if state.tria or isLearningActive is not properly set
-      if (!state.tria) state.tria = {};
-      state.tria.isLearningActive = false; // Default to false
+      // Initialize if appState.tria or isLearningActive is not properly set
+      if (!appState.tria) appState.tria = {};
+      appState.tria.isLearningActive = false; // Default to false
       uiElements.buttons.triaButton.classList.remove('active');
       uiElements.inputs.modelSelect.disabled = false;
     }
 
     uiElements.buttons.triaButton.addEventListener('click', () => {
-      toggleTriaLearningMode(uiElements.buttons.triaButton, uiElements.inputs.modelSelect, state);
+      toggleTriaLearningMode(uiElements.buttons.triaButton, uiElements.inputs.modelSelect, appState);
     });
   } else {
     if (!uiElements.buttons.triaButton) console.warn("Tria button element not found.");

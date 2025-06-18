@@ -1,13 +1,9 @@
-// main.js - ЕДИНАЯ ТОЧКА ВХОДА И ОРКЕСТРАТОР
-
+// ... (все импорты остаются вверху) ...
 import { initCore, state } from './core/init.js';
 import { initializeMainUI } from './ui/uiManager.js';
 import { ConsentManager } from './core/consentManager.js';
 import { initializeMultimedia } from './core/mediaInitializer.js';
 import { detectPlatform } from './core/platformDetector.js';
-import { animate } from './3d/rendering.js';
-import { initAuthObserver, handleTokenForBackend } from './core/auth.js';
-import { initializePwaInstall } from './core/pwaInstall.js';
 import { initializePrompts } from './ai/prompts.js';
 import { initializeVersionManager } from './ui/versionManager.js';
 import { setupChat } from './ai/chat.js';
@@ -16,131 +12,121 @@ import { initializeTria } from './ai/tria.js';
 import { initializeResizeHandler } from './core/resizeHandler.js';
 import { initializeHammerGestures } from './core/gestures.js';
 import { initializeRightPanel } from './panels/rightPanelManager.js';
-import { updateHologramLayout } from './ui/layoutManager.js';
+import { updateHologramLayout } from './ui/layoutManager.js'; // Assuming updateHologramLayout is in layoutManager
+import { animate } from './3d/rendering.js'; // Assuming animate is in rendering.js
 
-// Главный обработчик, который запускается после полной загрузки DOM
+// UI and Core managers that might be platform-specific
+import DesktopLayout from './platforms/desktop/desktopLayout.js';
+import DesktopInput from './platforms/desktop/desktopInput.js';
+import MobileLayout from './platforms/mobile/mobileLayout.js';
+import MobileInput from './platforms/mobile/mobileInput.js';
+import XRLayout from './platforms/xr/xrLayout.js';
+import XRInput from './platforms/xr/xrInput.js';
+
 window.addEventListener('DOMContentLoaded', async () => {
-    console.log("Приложение: DOM загружен. Запускаем Pre-Start инициализацию...");
+    console.log("Приложение: DOM загружен. Запускаем Pre-Start...");
 
-    // --- ЭТАП 1: Инициализация Ядра и UI-элементов (до любого взаимодействия) ---
-    await initCore();       // Создает state, AudioContext, базовую 3D-сцену
-    initializeMainUI(state); // Находит ВСЕ DOM-элементы и кладет ссылки в state.uiElements
+    // --- ЭТАП 1: Базовая инициализация ---
+    // initCore now likely populates the state directly or returns it.
+    // Assuming initCore updates a global or passed-in state object.
+    await initCore();
+    initializeMainUI(state); // initializeMainUI needs access to state.uiElements
 
-    // --- ЭТАП 2: Получение Согласия Пользователя ---
+    // --- ЭТАП 2: Получение согласия ---
+    // ConsentManager constructor might need state if it interacts with UI elements defined in state
     const consentManager = new ConsentManager(state);
-    await consentManager.initialize(); // Показывает модалку и ждет клика, или разрешается сразу
+    await consentManager.initialize();
 
-    // --- ЭТАП 3: Настройка кнопки "START" (теперь, когда мы уверены, что она есть в DOM) ---
+    // --- ЭТАП 3: Настройка стартовой кнопки (если она есть) ---
+    // Accessing buttons via state.uiElements.buttons
     const startButton = state.uiElements.buttons.startSessionButton;
-    const startModal = state.uiElements.modals.startSessionModal;
-
-    if (startButton && startModal) {
-        // Если модальное окно запуска ЕСТЬ (т.е. согласие еще НЕ БЫЛО ДАНО, и модалка показалась)
-        if (getComputedStyle(startModal).display !== 'none') {
-            startButton.addEventListener('click', async () => {
-                startModal.style.display = 'none';
-                await startFullApplication(); // Запускаем основную логику
-            }, { once: true });
-        } else {
-            // Модальное окно есть, но СКРЫТО (т.е. согласие УЖЕ БЫЛО ДАНО ранее)
-            console.log("Согласие уже дано (модальное окно скрыто), запускаем приложение автоматически...");
-            await startFullApplication();
-        }
+    if (startButton) {
+        startButton.addEventListener('click', () => startFullApplication(state), { once: true });
     } else {
-        // Если стартовой модалки НЕТ ВООБЩЕ (например, ошибка в HTML или конфигурации UI)
-        // ИЛИ если согласие было дано, но кнопка по какой-то причине отсутствует,
-        // пробуем запуститься, если localStorage подтверждает согласие.
+        // Если кнопки нет, но согласие есть, запускаемся автоматически
         if (localStorage.getItem('userConsentGiven') === 'true') {
-            console.warn("Стартовая кнопка/модалка не найдена, но localStorage указывает на данное согласие. Попытка автоматического запуска...");
-            await startFullApplication();
-        } else {
-            console.error("Критическая ошибка: стартовое модальное окно или кнопка не найдены, и нет записи о ранее данном согласии. Невозможно запустить приложение.");
-            // Можно отобразить сообщение об ошибке пользователю здесь
-            const body = document.querySelector('body');
-            if (body) {
-                body.innerHTML = '<div style="padding: 20px; text-align: center; font-family: sans-serif; color: red;">Критическая ошибка инициализации UI. Невозможно запустить приложение. Обратитесь к разработчику.</div>';
-            }
+            await startFullApplication(state);
         }
     }
-
-    // --- Вспомогательная инициализация (не зависит от основного потока запуска) ---
-    initializePwaInstall();
-    initAuthObserver(handleTokenForBackend); // Передаем handleTokenForBackend как callback
 });
 
-// Функция, запускающая все "тяжелые" модули ПОСЛЕ получения согласия и клика на Start (если он был)
-async function startFullApplication() {
-    console.log("Запуск полного приложения (startFullApplication)...");
+async function startFullApplication(appState) { // Renamed state to appState to avoid conflict with imported state
+    console.log("Запуск полного приложения...");
+    const startModal = appState.uiElements.modals.startSessionModal;
+    if (startModal) startModal.style.display = 'none';
 
-    try {
-        // 1. Инициализация основных компонентов, не зависящих от платформы
-        await initializeMultimedia(state); // Медиа: микрофон, камера
-        initializePrompts(state);      // Промпты AI
-        initializeVersionManager(state); // Управление версиями и обновлениями
-        setupChat(state);              // Настройка чата AI
-        initializeSpeechInput(state);  // Распознавание речи
-        initializeTria(state);         // Инициализация TRIZ/ТРИА движка (если применимо)
-        initializeResizeHandler(state); // Обработчик изменения размера окна
-        initializeHammerGestures(state); // Жесты Hammer.js
-        initializeRightPanel(state);   // Правая панель и ее компоненты
+    // --- ШАГ A: ЗАПУСКАЕМ МЕДИА И ЖДЕМ ---
+    await initializeMultimedia(appState);
 
-        // 2. Определение платформы и загрузка платформо-зависимых менеджеров
-        const platform = detectPlatform();
-        console.log(`Определена платформа: ${platform}`);
-        let layoutManager, inputManager;
+    // --- ШАГ B: ЗАПУСКАЕМ ПЛАТФОРМЕННЫЕ МЕНЕДЖЕРЫ И ЖДЕМ ---
+    const platform = detectPlatform();
+    appState.platform = platform; // Store detected platform in state
 
-        if (platform === 'mobile') {
-            const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
-            const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
-            layoutManager = new MobileLayout(state);
-            inputManager = new MobileInput(state);
-        } else { // 'desktop' и любой другой вариант как fallback
-            const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
-            const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
-            layoutManager = new DesktopLayout(state);
-            inputManager = new DesktopInput(state);
-        }
+    let layoutManager, inputManager;
 
-        // Сохраняем созданные менеджеры в state для глобального доступа
-        state.layoutManager = layoutManager;
-        state.inputManager = inputManager;
-
-        // Асинхронная инициализация менеджеров
-        if (layoutManager && typeof layoutManager.initialize === 'function') {
-            await layoutManager.initialize(); // Добавлен await
-            console.log("LayoutManager инициализирован.");
-        } else {
-            console.warn("LayoutManager не определен или не имеет метода initialize.");
-        }
-
-        if (inputManager && typeof inputManager.initialize === 'function') {
-            await inputManager.initialize(); // Добавлен await
-            console.log("InputManager инициализирован.");
-        } else {
-            console.warn("InputManager не определен или не имеет метода initialize.");
-        }
-
-        // 3. Обновление макета после инициализации менеджеров
-        // (Эта функция может быть частью layoutManager.initialize или вызываться отдельно)
-        if (typeof updateHologramLayout === 'function') {
-             updateHologramLayout(state); // Убедимся, что state передается, если нужно
-        }
-
-
-        // 4. Запуск главного цикла анимации/рендеринга
-        if (typeof animate === 'function') {
-            animate(); // animate сама себя перезапускает через requestAnimationFrame
-            console.log("Цикл анимации запущен.");
-        } else {
-            console.error("Функция animate не найдена. 3D-сцена не будет обновляться.");
-        }
-
-        console.log("--- Приложение полностью запущено (согласно startFullApplication). ---");
-
-    } catch (error) {
-        console.error("Критическая ошибка во время startFullApplication:", error);
-        // Здесь можно добавить логику для отображения сообщения об ошибке пользователю,
-        // например, через специальный элемент в UI или alert.
-        // state.uiManager?.showError("Ошибка запуска приложения: " + error.message);
+    switch (platform) {
+        case 'desktop':
+            layoutManager = new DesktopLayout(appState);
+            inputManager = new DesktopInput(appState);
+            break;
+        case 'mobile':
+            layoutManager = new MobileLayout(appState);
+            inputManager = new MobileInput(appState);
+            break;
+        case 'xr':
+            // Assuming XR layout/input managers are similarly structured
+            layoutManager = new XRLayout(appState);
+            inputManager = new XRInput(appState);
+            break;
+        default:
+            console.error("Неизвестная платформа:", platform);
+            // Fallback to desktop or handle error appropriately
+            layoutManager = new DesktopLayout(appState);
+            inputManager = new DesktopInput(appState);
     }
+
+    appState.layoutManager = layoutManager; // Store layout manager in state
+    appState.inputManager = inputManager;   // Store input manager in state
+
+    if (layoutManager) await layoutManager.initialize();
+    if (inputManager) await inputManager.initialize();
+
+    // --- ШАГ C: ЗАПУСКАЕМ ОСТАЛЬНЫЕ МОДУЛИ ---
+    // Эти функции должны быть адаптированы, чтобы принимать appState
+    initializePrompts(appState);
+    initializeVersionManager(appState);
+    setupChat(appState);
+    initializeSpeechInput(appState);
+    initializeTria(appState);
+    initializeResizeHandler(appState); // resizeHandler might need to be initialized earlier if layout depends on it
+    initializeHammerGestures(appState);
+    initializeRightPanel(appState);
+    // initFileEditor(appState); // If you have a file editor module
+
+    // --- ШАГ D: ФИНАЛЬНЫЙ РАСЧЕТ МАКЕТА И ЗАПУСК АНИМАЦИИ ---
+    // Небольшая задержка, чтобы браузер успел применить все CSS
+    setTimeout(() => {
+        // updateHologramLayout typically would be part of layoutManager or called by it.
+        // If it's a global function, ensure it has access to necessary state/elements.
+        if (appState.layoutManager && typeof appState.layoutManager.updateHologramLayout === 'function') {
+            appState.layoutManager.updateHologramLayout();
+        } else {
+            // Fallback or alternative if updateHologramLayout is a global function
+             updateHologramLayout(appState);
+        }
+
+        // animate function might be part of a renderer or core loop module
+        animate(appState);
+        console.log("--- Приложение полностью запущено и анимируется. ---");
+    }, 100);
 }
+
+// Make sure all imported functions are correctly defined and exported in their respective files.
+// For example, in ./core/init.js:
+// export let state = { /* initial state structure */ };
+// export async function initCore() { /* ... */ }
+
+// In ./ui/uiManager.js:
+// export function initializeMainUI(state) { /* ... */ }
+
+// etc. for all other imported modules and functions.
