@@ -203,6 +203,10 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // This uses the 'appState' passed in from main.js, which is the global 'state' object.
   appState.uiElements = uiElements;
 
+  // Add initialization for triaVersion label
+  if (!appState.uiElements.labels) { appState.uiElements.labels = {}; }
+  appState.uiElements.labels.triaVersion = document.getElementById('triaVersion');
+
   // For elements used by RightPanelManager and potentially others
   uiElements.containers.promptBar = document.getElementById('promptBar');
   uiElements.containers.chatInputBar = document.getElementById('chatInputBar');
@@ -221,6 +225,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   console.log('[UIManager] Проверка: togglePanelsButton в appState.uiElements:', appState.uiElements.togglePanelsButton ? 'найден' : 'НЕ найден');
   // Ensure these new elements are also logged or checked if you have debugging patterns for that.
   // For example, adding to logLayoutState or the verification console.logs:
+  console.log('[UIManager] Проверка: triaVersion в appState.uiElements.labels:', appState.uiElements.labels.triaVersion ? 'найден' : 'НЕ найден', appState.uiElements.labels.triaVersion);
   console.log('[UIManager] Проверка: promptBar в appState.uiElements.containers:', appState.uiElements.containers.promptBar ? 'найден' : 'НЕ найден');
   console.log('[UIManager] Проверка: chatInputBar в appState.uiElements.containers:', appState.uiElements.containers.chatInputBar ? 'найден' : 'НЕ найден');
   console.log('[UIManager] Проверка: loadingIndicator в appState.uiElements.indicators:', appState.uiElements.indicators.loadingIndicator ? 'найден' : 'НЕ найден');
