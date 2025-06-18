@@ -8,6 +8,15 @@ import { detectPlatform } from './core/platformDetector.js';
 import { animate } from './3d/rendering.js';
 import { initAuthObserver, handleTokenForBackend } from './core/auth.js';
 import { initializePwaInstall } from './core/pwaInstall.js';
+import { initializePrompts } from './ai/prompts.js';
+import { initializeVersionManager } from './ui/versionManager.js';
+import { setupChat } from './ai/chat.js';
+import { initializeSpeechInput } from './audio/speechInput.js';
+import { initializeTria } from './ai/tria.js';
+import { initializeResizeHandler } from './core/resizeHandler.js';
+import { initializeHammerGestures } from './core/gestures.js';
+import { initializeRightPanel } from './panels/rightPanelManager.js';
+import { updateHologramLayout } from './ui/layoutManager.js';
 
 // Главный обработчик, который запускается после полной загрузки DOM
 window.addEventListener('DOMContentLoaded', async () => {
@@ -63,21 +72,23 @@ window.addEventListener('DOMContentLoaded', async () => {
 async function startFullApplication() {
     console.log("Запуск полного приложения (startFullApplication)...");
 
-    // 1. Запускаем медиа (микрофон, камера и т.д.)
-    // Эта функция должна быть готова к тому, что пользователь может не дать разрешения на этом этапе
     try {
-        await initializeMultimedia(state);
-    } catch (error) {
-        console.error("Ошибка при инициализации мультимедиа:", error);
-        // Можно показать пользователю сообщение, что без медиа функционал ограничен
-    }
+        // 1. Инициализация основных компонентов, не зависящих от платформы
+        await initializeMultimedia(state); // Медиа: микрофон, камера
+        initializePrompts(state);      // Промпты AI
+        initializeVersionManager(state); // Управление версиями и обновлениями
+        setupChat(state);              // Настройка чата AI
+        initializeSpeechInput(state);  // Распознавание речи
+        initializeTria(state);         // Инициализация TRIZ/ТРИА движка (если применимо)
+        initializeResizeHandler(state); // Обработчик изменения размера окна
+        initializeHammerGestures(state); // Жесты Hammer.js
+        initializeRightPanel(state);   // Правая панель и ее компоненты
 
-    // 2. Определяем платформу и загружаем нужные менеджеры (Layout, Input)
-    const platform = detectPlatform(); // Должна вернуть 'mobile', 'desktop', или другой идентификатор
-    console.log(`Определена платформа: ${platform}`);
-    let layoutManager, inputManager;
+        // 2. Определение платформы и загрузка платформо-зависимых менеджеров
+        const platform = detectPlatform();
+        console.log(`Определена платформа: ${platform}`);
+        let layoutManager, inputManager;
 
-    try {
         if (platform === 'mobile') {
             const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
             const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
@@ -90,37 +101,46 @@ async function startFullApplication() {
             inputManager = new DesktopInput(state);
         }
 
+        // Сохраняем созданные менеджеры в state для глобального доступа
+        state.layoutManager = layoutManager;
+        state.inputManager = inputManager;
+
+        // Асинхронная инициализация менеджеров
         if (layoutManager && typeof layoutManager.initialize === 'function') {
-            layoutManager.initialize();
+            await layoutManager.initialize(); // Добавлен await
             console.log("LayoutManager инициализирован.");
         } else {
             console.warn("LayoutManager не определен или не имеет метода initialize.");
         }
 
         if (inputManager && typeof inputManager.initialize === 'function') {
-            inputManager.initialize();
+            await inputManager.initialize(); // Добавлен await
             console.log("InputManager инициализирован.");
         } else {
             console.warn("InputManager не определен или не имеет метода initialize.");
         }
 
-    } catch (e) {
-        console.error(`Ошибка при загрузке или инициализации платформенных менеджеров для ${platform}:`, e);
+        // 3. Обновление макета после инициализации менеджеров
+        // (Эта функция может быть частью layoutManager.initialize или вызываться отдельно)
+        if (typeof updateHologramLayout === 'function') {
+             updateHologramLayout(state); // Убедимся, что state передается, если нужно
+        }
+
+
+        // 4. Запуск главного цикла анимации/рендеринга
+        if (typeof animate === 'function') {
+            animate(); // animate сама себя перезапускает через requestAnimationFrame
+            console.log("Цикл анимации запущен.");
+        } else {
+            console.error("Функция animate не найдена. 3D-сцена не будет обновляться.");
+        }
+
+        console.log("--- Приложение полностью запущено (согласно startFullApplication). ---");
+
+    } catch (error) {
+        console.error("Критическая ошибка во время startFullApplication:", error);
+        // Здесь можно добавить логику для отображения сообщения об ошибке пользователю,
+        // например, через специальный элемент в UI или alert.
+        // state.uiManager?.showError("Ошибка запуска приложения: " + error.message);
     }
-
-    // 3. Инициализируем остальные модули, которые зависят от ядра, UI и, возможно, платформы
-    // Например, менеджеры панелей, чат, специфичные для проекта модули.
-    // Убедитесь, что эти модули импортированы и их функции инициализации вызываются корректно.
-    // if (typeof initializePanelManager === 'function') initializePanelManager(state);
-    // if (typeof initializeChat === 'function') initializeChat(state);
-
-    // 4. Запускаем главный цикл анимации/рендеринга
-    if (typeof animate === 'function') {
-        animate();
-        console.log("Цикл анимации запущен.");
-    } else {
-        console.error("Функция animate не найдена. 3D-сцена не будет обновляться.");
-    }
-
-    console.log("--- Приложение полностью запущено (согласно startFullApplication). ---");
 }
