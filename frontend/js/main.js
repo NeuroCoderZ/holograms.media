@@ -1,7 +1,7 @@
 // Frontend/js/main.js - Основная точка входа для приложения
 
 // --- BEGIN TTA CORE SYNTHESIS IMPORTS ---
-import EventBus from './core/eventBus.js'; // Assuming eventBus.js will be created as per plan
+import eventBus from './core/eventBus.js'; // ИСПРАВЛЕННЫЙ ИМПОРТ
 
 // Block 1 Managers
 import RightPanelManager from './managers/RightPanelManager.js';
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('[TTA Core] Initializing new managers...');
 
   // Initialize EventBus (GLOBAL INSTANCE)
-  const eventBus = new EventBus();
+  // const eventBus = new EventBus(); // <-- УДАЛИТЬ ЭТУ СТРОКУ
   window.eventBus = eventBus; // Make it globally accessible if needed for older modules or debugging
 
   // AppState (using existing 'state' from './core/init.js')
