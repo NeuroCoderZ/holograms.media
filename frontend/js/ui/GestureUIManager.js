@@ -38,6 +38,7 @@ class GestureUIManager {
             return;
         }
         // Store bound versions of handlers for consistent subscription/unsubscription
+        // Ensure the event handlers are bound to the correct context
         this.boundHandleHandsDetected = this.handleHandsDetected.bind(this);
         this.boundHandleHandsLost = this.handleHandsLost.bind(this);
 
@@ -45,7 +46,7 @@ class GestureUIManager {
         this.eventBus.on('handsLost', this.boundHandleHandsLost);
         console.log("GestureUIManager subscribed to handsDetected and handsLost events via EventBus.on.");
 
-        this.setHandsPresent(false); // Moved from constructor
+        this.setHandsPresent(false); // Ensure this is the last line
     }
 
     handleHandsDetected(landmarksData) {
