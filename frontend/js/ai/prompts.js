@@ -2,17 +2,17 @@
 
 // import { ui } from '../core/ui.js'; // Replaced with state.uiElements
 import { getSelectedModel } from './models.js';
-import { state } from '../core/init.js';
+// import { state } from '../core/init.js'; // Removed import
 
 // Переменные состояния
 let isPendingPrompt = false;
 
 // Инициализация
-export function initializePrompts() {
+export function initializePrompts(passedState) { // Changed signature
   console.log('Инициализация системы промптов...');
   
   // Проверяем наличие поля ввода
-  if (!state.uiElements.inputs.topPromptInput) { // Use state.uiElements
+  if (!passedState.uiElements.inputs.topPromptInput) { // Use passedState
     console.error('Поле ввода промпта (topPromptInput) не найдено в state.uiElements!');
     return;
   }
@@ -22,7 +22,7 @@ export function initializePrompts() {
 }
 
 // Отправка промпта
-export async function sendPrompt(promptText) {
+export async function sendPrompt(promptText, passedState) { // Added passedState
   // Проверяем наличие текста и что предыдущий запрос завершен
   if (!promptText || promptText.trim().length === 0 || isPendingPrompt) {
     return;
@@ -36,7 +36,7 @@ export async function sendPrompt(promptText) {
     showLoadingIndicator(true);
     
     // Получаем выбранную модель
-    const modelSelectElement = state.uiElements.inputs.modelSelect; // Get the element
+    const modelSelectElement = passedState.uiElements.inputs.modelSelect; // Get the element from passedState
     const selectedModel = getSelectedModel(modelSelectElement); // Pass the element
     
     // Собираем данные запроса
@@ -46,7 +46,7 @@ export async function sendPrompt(promptText) {
       context: {
         // Добавляем контекст из текущего состояния приложения
         // (например, информацию о текущей версии и т.д.)
-        branch: state.currentBranch || 'main'
+        branch: passedState.currentBranch || 'main' // Use passedState
       }
     };
     
@@ -78,8 +78,8 @@ export async function sendPrompt(promptText) {
       }
       
       // Очищаем поле ввода если нужно
-      if (data.clearInput && state.uiElements.inputs.topPromptInput) {
-        state.uiElements.inputs.topPromptInput.value = '';
+      if (data.clearInput && passedState.uiElements.inputs.topPromptInput) { // Use passedState
+        passedState.uiElements.inputs.topPromptInput.value = '';
       }
     } else {
       throw new Error(data.error || 'Неизвестная ошибка');
@@ -95,8 +95,8 @@ export async function sendPrompt(promptText) {
 }
 
 // Вставить текст в поле промпта
-export function insertTextIntoPrompt(text) {
-  const promptInput = state.uiElements.inputs.topPromptInput; // Use state.uiElements
+export function insertTextIntoPrompt(text, passedState) { // Added passedState
+  const promptInput = passedState.uiElements.inputs.topPromptInput; // Use passedState
   if (!promptInput) {
     console.error('Поле ввода промпта (topPromptInput) не найдено в state.uiElements для вставки текста!');
     return;
@@ -118,27 +118,27 @@ export function insertTextIntoPrompt(text) {
 }
 
 // Применить изменения к голограмме
-function applyHologramChanges(hologramData) {
+function applyHologramChanges(hologramData, passedState) { // Added passedState
   // TODO: Реализовать применение данных к голограмме
   console.log('Применение изменений к голограмме:', hologramData);
   
   // Обновляем текущее состояние голограммы
   if (hologramData.version) {
-    state.currentVersion = hologramData.version;
+    passedState.currentVersion = hologramData.version; // Use passedState
     
     // Если есть обновленные версии, обновляем их
     if (hologramData.versions) {
-      state.hologramVersions = hologramData.versions;
+      passedState.hologramVersions = hologramData.versions; // Use passedState
       
       // Обновляем интерфейс
-      updateVersionsDisplay();
+      updateVersionsDisplay(passedState); // Pass passedState
     }
   }
 }
 
 // Обновление отображения версий
-function updateVersionsDisplay() {
-  const versionFrames = state.uiElements.containers.versionFrames; // Use state.uiElements
+function updateVersionsDisplay(passedState) { // Added passedState
+  const versionFrames = passedState.uiElements.containers.versionFrames; // Use passedState
   if (!versionFrames) {
     console.warn('Контейнер для версий (versionFrames) не найден в state.uiElements.containers, обновление отображения версий пропускается.');
     return;
@@ -148,13 +148,13 @@ function updateVersionsDisplay() {
   versionFrames.innerHTML = '';
   
   // Добавляем новые версии
-  state.hologramVersions.forEach((version, index) => {
+  passedState.hologramVersions.forEach((version, index) => { // Use passedState
     const versionFrame = document.createElement('div');
     versionFrame.className = 'version-frame';
     versionFrame.dataset.version = version.id;
     
     // Если это текущая версия, добавляем класс
-    if (version.id === state.currentVersion) {
+    if (version.id === passedState.currentVersion) { // Use passedState
       versionFrame.classList.add('current');
     }
     
@@ -167,7 +167,7 @@ function updateVersionsDisplay() {
     // Добавляем обработчик клика
     versionFrame.addEventListener('click', () => {
       // Активируем версию при клике
-      activateVersion(version.id);
+      activateVersion(version.id, passedState); // Pass passedState
     });
     
     // Добавляем в контейнер
@@ -176,23 +176,23 @@ function updateVersionsDisplay() {
 }
 
 // Активация версии
-function activateVersion(versionId) {
+function activateVersion(versionId, passedState) { // Added passedState
   // Найти версию в списке
-  const version = state.hologramVersions.find(v => v.id === versionId);
+  const version = passedState.hologramVersions.find(v => v.id === versionId); // Use passedState
   if (!version) {
     console.error(`Версия ${versionId} не найдена!`);
     return;
   }
   
   // Обновляем текущую версию
-  state.currentVersion = versionId;
+  passedState.currentVersion = versionId; // Use passedState
   
   // Применяем данные голограммы
   // TODO: Реализовать применение данных к голограмме
   console.log('Активация версии:', versionId);
   
   // Обновляем интерфейс
-  updateVersionsDisplay();
+  updateVersionsDisplay(passedState); // Pass passedState
 }
 
 // Вспомогательные функции
