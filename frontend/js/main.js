@@ -440,6 +440,7 @@ function onPointerUp() {
 }
 
 function onPointerMove(event) {
+  // Ensure newRotationX and newRotationY are declared, as per subtask.
   let newRotationX, newRotationY;
   if (!isDragging) return;
 
