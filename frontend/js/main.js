@@ -44,7 +44,7 @@ import {
 console.log('Firebase services imported in main.js:', { firebaseApp, firebaseAuth, firebaseStorage, firebaseFirestore });
 
 import { setAuthDOMElements, initAuthObserver, handleTokenForBackend } from './core/auth.js';
-import { initializeConsentManager } from './core/consentManager.js';
+import { ConsentManager } from './core/consentManager.js'; // MODIFIED IMPORT
 
 // Импорт ядра
 import { initCore, state } from './core/init.js';
@@ -312,75 +312,127 @@ function setupStartButtonListener() {
 }
 
 
-// Инициализация приложения при загрузке DOM
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Инициализация приложения (Pre-Start)...');
+window.addEventListener('DOMContentLoaded', () => {
+    console.log("Инициализация приложения (Pre-Start)...");
 
-  // 0. Initialize Consent Manager (Handles its own UI if needed)
-  await initializeConsentManager();
-  console.log('User consent check passed/handled.');
+    // --- ЭТАП 1: ИНИЦИАЛИЗАЦИЯ ТОЛЬКО ТОГО, ЧТО НЕ ТРЕБУЕТ DOM ---
+    initCore(); // Создает state, AudioContext и т.д.
+    const consentManager = new ConsentManager(state); // Requires ConsentManager import
+    consentManager.initialize();
 
-  // 3. Setup Start Button Listener (this will now contain most of the initialization)
-  setupStartButtonListener();
+    // --- ЭТАП 2: ПОИСК ВСЕХ DOM-ЭЛЕМЕНТОВ ---
+    initializeMainUI(state); // Находит все элементы и кладет их в state.uiElements
 
-  // Subsequent initializations that DO NOT depend on Core/3D/MainUI elements
-  // These are generally safe to run before the user clicks "Start"
-  setAuthDOMElements('signInButton', 'signOutButton', 'userStatus');
-  initAuthObserver(handleTokenForBackend);
+    // --- ЭТАП 3: НАСТРОЙКА СТАРТОВОЙ КНОПКИ ---
+    const startButton = state.uiElements.buttons.startSessionButton;
+    const startModal = state.uiElements.modals.startSessionModal;
 
-  initializePromptManager(); // Manages prompt UI, typically no direct 3D dependency
-  initializeVersionManager(); // Manages versioning UI
-  initChatUI(); // Initializes chat UI elements
-  initializeGestureAreaVisualization(); // Visualizes gesture area, if it doesn't assume main UI elements are ready, it's fine. Otherwise, move.
-                                      // For now, assuming it's a standalone visualization.
-  initializeChatDisplay(); // Displays chat messages
+    if (startButton && startModal) {
+        const consentCheckbox = document.getElementById('consent-checkbox');
+        if (consentCheckbox) {
+            consentCheckbox.addEventListener('change', () => {
+                startButton.disabled = !consentCheckbox.checked;
+            });
+            startButton.disabled = !consentCheckbox.checked; // Initial state
+        } else {
+            console.warn("'consent-checkbox' not found. Start button state might not be managed by checkbox.");
+        }
 
-  initializeSpeechInput(); // Sets up speech input, might be okay if not directly tied to 3D scene at this stage
+        startButton.addEventListener('click', async () => {
+            startModal.style.display = 'none';
 
-  initializeTria(); // AI core, likely no immediate 3D dependency
-  setupChat(state); // AI chat setup
+            await initializeMultimedia(state);
 
-  // Generic handlers
-  initializeResizeHandler(); // Handles window resize
-  initializeHammerGestures(); // Generic gesture library setup on main elements (if those elements exist)
-  initializePwaInstall(); // PWA installation logic
+            const platform = detectPlatform();
+            let layoutManager, inputManager;
+            try {
+                switch (platform) {
+                    case 'mobile':
+                        const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
+                        const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
+                        layoutManager = new MobileLayout(state);
+                        inputManager = new MobileInput(state);
+                        break;
+                    case 'xr':
+                        const { XrLayout } = await import('./platforms/xr/xrLayout.js');
+                        const { XrInput } = await import('./platforms/xr/xrInput.js');
+                        layoutManager = new XrLayout(state);
+                        inputManager = new XrInput(state);
+                        break;
+                    default: // 'desktop'
+                        const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
+                        const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
+                        layoutManager = new DesktopLayout(state);
+                        inputManager = new DesktopInput(state);
+                        break;
+                }
+            } catch (e) {
+                console.error("Error loading platform-specific modules:", e);
+                if (platform !== 'desktop') {
+                    console.warn(`Falling back to DesktopLayout/DesktopInput due to error with ${platform} modules.`);
+                    const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
+                    const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
+                    layoutManager = new DesktopLayout(state);
+                    inputManager = new DesktopInput(state);
+                } else {
+                    throw e;
+                }
+            }
 
-  // New logic for consent checkbox and start button (must be after setupStartButtonListener if it uses startButton)
-  const consentCheckbox = document.getElementById('consent-checkbox');
-  const startButton = document.getElementById('start-session-button'); // This is also fetched in setupStartButtonListener
-                                                                    // Redundant fetch, but harmless.
-  const googleSignInBtn = document.getElementById('login-google-btn');
-  const googleContainer = document.getElementById('google-signin-container');
+            if (layoutManager) layoutManager.initialize();
+            if (inputManager) inputManager.initialize();
 
-  if (googleSignInBtn && googleContainer) {
-    googleContainer.appendChild(googleSignInBtn);
-    googleSignInBtn.style.display = 'block';
-    googleSignInBtn.classList.add('google-signin-modal-style');
-  }
+            console.log('[TTA Core] Initializing new managers (reconstructed for new structure)...');
 
-  if (consentCheckbox && startButton) {
-    // Initial state based on checkbox
-    if (consentCheckbox.checked) {
-        startButton.disabled = false;
-        startButton.classList.remove('start-button-disabled');
+            const gestureAreaElement = state.uiElements.gestureArea || document.getElementById('gesture-area');
+            if (!gestureAreaElement) {
+                console.error("[TTA Core] CRITICAL: #gesture-area DOM element not found.");
+            }
+
+            const gesturesListDisplay = new GesturesListDisplay(eventBus);
+            const rightPanelManager = new RightPanelManager(state, eventBus, gesturesListDisplay);
+            const versionTimelinePanel = new VersionTimelinePanel(state, eventBus);
+            const gestureUIManager = new GestureUIManager(eventBus, state);
+            const hologramManager = new HologramManager(state.threeJs.scene, state.threeJs.camera, eventBus, state);
+            const interactionManager = new InteractionManager(state.threeJs.renderer.domElement, hologramManager);
+
+            if (gestureAreaElement && gestureUIManager) {
+                const gestureRecordingManager = new GestureRecordingManager(state, gestureAreaElement, gestureUIManager, eventBus);
+                state.gestureRecordingManager = gestureRecordingManager;
+            } else {
+                console.error("[TTA Core] Cannot initialize GestureRecordingManager.");
+            }
+
+            const myGesturesPanel = new MyGesturesPanel(eventBus);
+            state.myGesturesPanel = myGesturesPanel;
+            state.rightPanelManager = rightPanelManager;
+            state.versionTimelinePanel = versionTimelinePanel;
+            state.gestureUIManager = gestureUIManager;
+            state.hologramManager = hologramManager;
+            state.interactionManager = interactionManager;
+            state.gesturesListDisplay = gesturesListDisplay;
+
+            if (hologramManager && state.hologramRendererInstance && state.hologramRendererInstance.getHologramContentGroup) {
+                hologramManager.initializeHologram(state.hologramRendererInstance.getHologramContentGroup());
+            } else if (hologramManager && state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot && state.hologramRendererInstance.getHologramPivot().children.length > 0) {
+                console.warn("[TTA Core] Passing mainSequencerGroup from existing hologramRenderer's pivot to new HologramManager.");
+                hologramManager.initializeHologram(state.hologramRendererInstance.getHologramPivot());
+            } else if (hologramManager) {
+                console.warn("[TTA Core] Could not get main hologram visuals group for HologramManager. Initializing with an empty group.");
+                hologramManager.initializeHologram(new THREE.Group());
+            }
+            console.log('[TTA Core] New managers initialized.');
+
+            setupChat(state);
+            animate();
+
+        }, { once: true });
     } else {
-        startButton.disabled = true;
-        startButton.classList.add('start-button-disabled');
+        console.error("Start button or start modal not found. Main application flow cannot begin.");
     }
-    // Listener for changes
-    consentCheckbox.addEventListener('change', () => {
-      if (consentCheckbox.checked) {
-        startButton.disabled = false;
-        startButton.classList.remove('start-button-disabled');
-      } else {
-        startButton.disabled = true;
-        startButton.classList.add('start-button-disabled');
-      }
-    });
-  }
 
-  console.log('Предварительная инициализация DOMContentLoaded завершена. Ожидание старта сессии пользователем.');
-  // animate() loop is now started inside the startButton click listener
+    initializePwaInstall();
+    initAuthObserver(handleTokenForBackend);
 });
 
 // Hologram rotation functions (onPointerDown, onPointerUp, onPointerMove) remain unchanged
