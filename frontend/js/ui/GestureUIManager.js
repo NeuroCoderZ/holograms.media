@@ -42,9 +42,9 @@ class GestureUIManager {
         this.boundHandleHandsDetected = this.handleHandsDetected.bind(this);
         this.boundHandleHandsLost = this.handleHandsLost.bind(this);
 
-        this.eventBus.subscribe('handsDetected', this.boundHandleHandsDetected);
-        this.eventBus.subscribe('handsLost', this.boundHandleHandsLost);
-        console.log("GestureUIManager subscribed to handsDetected and handsLost events via EventBus.subscribe.");
+        this.eventBus.on('handsDetected', this.boundHandleHandsDetected);
+        this.eventBus.on('handsLost', this.boundHandleHandsLost);
+        console.log("GestureUIManager subscribed to handsDetected and handsLost events via EventBus.on.");
 
         this.setHandsPresent(false); // Moved from constructor
     }
@@ -242,10 +242,10 @@ class GestureUIManager {
             // For now, this .off call is more of a placeholder.
             // Use stored bound handlers for unsubscription
             if (this.boundHandleHandsDetected) {
-                this.eventBus.unsubscribe('handsDetected', this.boundHandleHandsDetected);
+                this.eventBus.off('handsDetected', this.boundHandleHandsDetected);
             }
             if (this.boundHandleHandsLost) {
-                this.eventBus.unsubscribe('handsLost', this.boundHandleHandsLost);
+                this.eventBus.off('handsLost', this.boundHandleHandsLost);
             }
             console.log("GestureUIManager events unsubscribed.");
         }

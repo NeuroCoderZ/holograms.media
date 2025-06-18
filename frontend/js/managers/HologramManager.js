@@ -22,10 +22,10 @@ class HologramManager {
         this.GRID_HEIGHT = 260;
 
         console.log("HologramManager initialized");
-        this.subscribeToEvents();
+        this.initializeEventListeners();
     }
 
-    subscribeToEvents() {
+    initializeEventListeners() {
         if (!this.eventBus) {
             console.warn("HologramManager: EventBus not provided, cannot subscribe to hand or resize events.");
             return;
@@ -40,7 +40,7 @@ class HologramManager {
         // Let's add a direct subscription for simplicity here, can be refactored.
         window.addEventListener('resize', this.handleResize.bind(this));
 
-        console.log("HologramManager subscribed to relevant events.");
+        console.log("HologramManager initialized event listeners.");
     }
 
     handleHandPresence(present, results = null) {
