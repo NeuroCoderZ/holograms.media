@@ -30,7 +30,6 @@ class GestureUIManager {
         console.log("GestureUIManager initialized for Block 3");
         this.initialize(); // Changed from subscribeToEvents
         this.drawVerticalRedLine(); // Draw the red line once at init
-        // this.setHandsPresent(false); // Moved to initialize()
     }
 
     initialize() { // Renamed from subscribeToEvents and expanded
