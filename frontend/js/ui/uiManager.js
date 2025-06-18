@@ -123,23 +123,24 @@ function logLayoutState() {
  * It finds all necessary DOM elements by their IDs, sets up initial states, 
  * and assigns primary event listeners.
  */
-export function initializeMainUI() {
+export function initializeMainUI(appState) { // Accept state passed from main.js
   console.log('Инициализация основного UI...');
-  
-  // PanelManager is now initialized in init.js and available as state.panelManager
-  // const panelManagerInstance = new PanelManager(); // REMOVED
-  // panelManagerInstance.initializePanelManager(); // REMOVED
 
-  // PanelManager now handles leftPanel, rightPanel, and togglePanelsButton references and initialization.
-  // We can still assign them to uiElements if other parts of uiManager need them,
-  // but their core logic is with PanelManager.
-  // Ensure state.panelManager is available
-  if (state.panelManager) {
-    uiElements.leftPanel = state.panelManager.leftPanelElement;
-    uiElements.rightPanel = state.panelManager.rightPanelElement;
-    uiElements.togglePanelsButton = state.panelManager.togglePanelsButtonElement;
-  } else {
-    console.error("PanelManager not found in state during initializeMainUI. Panels may not function correctly.");
+  // --- Get references to core layout panel elements by ID ---
+  // These are critical for layout managers and need to be robustly found.
+  uiElements.leftPanel = document.getElementById('left-panel');
+  uiElements.rightPanel = document.getElementById('right-panel');
+  uiElements.togglePanelsButton = document.getElementById('togglePanelsButton');
+
+  if (!uiElements.leftPanel) {
+    console.error('[UIManager CRITICAL] #left-panel not found!');
+  }
+  if (!uiElements.rightPanel) {
+    console.error('[UIManager CRITICAL] #right-panel not found!');
+  }
+  if (!uiElements.togglePanelsButton) {
+    // DesktopLayout handles the case where this button might be missing, so a warning is appropriate.
+    console.warn('[UIManager WARN] #togglePanelsButton not found!');
   }
 
   // --- Get references to all interactive UI elements by ID ---
@@ -199,11 +200,15 @@ export function initializeMainUI() {
   console.log('Основной UI инициализирован.');
 
   // Assign collected UI elements to the global state for access by other modules.
-  state.uiElements = uiElements;
+  // This uses the 'appState' passed in from main.js, which is the global 'state' object.
+  appState.uiElements = uiElements;
 
   // Debugging: Verify if gestureArea and gridContainer are found and assigned.
-  console.log('[UIManager] Проверка: gestureArea в state.uiElements:', state.uiElements.gestureArea ? 'найдена' : 'НЕ найдена', state.uiElements.gestureArea);
-  console.log('[UIManager] Проверка: gridContainer в state.uiElements:', state.uiElements.gridContainer ? 'найден' : 'НЕ найден', state.uiElements.gridContainer);
+  console.log('[UIManager] Проверка: gestureArea в appState.uiElements:', appState.uiElements.gestureArea ? 'найдена' : 'НЕ найдена', appState.uiElements.gestureArea);
+  console.log('[UIManager] Проверка: gridContainer в appState.uiElements:', appState.uiElements.gridContainer ? 'найден' : 'НЕ найден', appState.uiElements.gridContainer);
+  console.log('[UIManager] Проверка: leftPanel в appState.uiElements:', appState.uiElements.leftPanel ? 'найден' : 'НЕ найден');
+  console.log('[UIManager] Проверка: rightPanel в appState.uiElements:', appState.uiElements.rightPanel ? 'найден' : 'НЕ найден');
+  console.log('[UIManager] Проверка: togglePanelsButton в appState.uiElements:', appState.uiElements.togglePanelsButton ? 'найден' : 'НЕ найден');
 
   // --- Initial UI State and Debugging ---
   // initializePanelState(); // PanelManager now handles this.
