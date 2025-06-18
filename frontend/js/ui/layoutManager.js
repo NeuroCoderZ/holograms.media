@@ -175,13 +175,38 @@ export function updateHologramLayout(appState) { // Added appState
     return;
   }
 
+  // Current dimensions of the gridContainer (set by TWEEN or initial setup)
+  // const containerWidth = parseFloat(gridContainer.style.width); // Original line
+  // const containerHeight = parseFloat(gridContainer.style.height); // Original line
+
+  // --- НАЧАЛО НОВОГО КОДА ---
+  // Ensure gridContainer is valid and has dimensions before trying to read them
+  if (!gridContainer || typeof gridContainer.clientWidth === 'undefined' || typeof gridContainer.clientHeight === 'undefined') {
+    console.warn('[LayoutManager] Skipping layout update: gridContainer is not valid or does not have clientWidth/Height properties.');
+    return;
+  }
+
+  const containerWidth = gridContainer.clientWidth;
+  const containerHeight = gridContainer.clientHeight;
+
+  if (!containerWidth || !containerHeight || isNaN(containerWidth) || isNaN(containerHeight)) {
+    console.warn('[LayoutManager] Skipping layout update due to invalid container dimensions (0 or NaN). W:', containerWidth, 'H:', containerHeight);
+    return; // ВЫХОДИМ ИЗ ФУНКЦИИ
+  }
+  // --- КОНЕЦ НОВОГО КОДА ---
+
   const hologramPivot = appState.hologramRendererInstance.getHologramPivot();
 
-  // Current dimensions of the gridContainer (set by TWEEN or initial setup)
-  const containerWidth = parseFloat(gridContainer.style.width);
-  const containerHeight = parseFloat(gridContainer.style.height);
+  // Check if hologramPivot was successfully retrieved before using it
+  if (!hologramPivot) {
+    console.warn('[LayoutManager] Skipping updateHologramLayout: Hologram pivot not available.');
+    return;
+  }
 
-  if (isNaN(containerWidth) || isNaN(containerHeight) || containerWidth <= 0 || containerHeight <= 0) {
+  // The following check for containerWidth/Height might seem redundant due to the new code above,
+  // but this one specifically checks for <= 0 after they've been confirmed to be numbers.
+  // The new code checks for falsy values (0, NaN, undefined) earlier.
+  if (containerWidth <= 0 || containerHeight <= 0) {
     console.warn('[LayoutManager] Invalid gridContainer dimensions for pivot scaling. W:', containerWidth, 'H:', containerHeight);
     return;
   }
