@@ -1,6 +1,6 @@
 // Manages user interactions like pan gestures for hologram rotation.
 
-import Hammer from 'hammerjs'; // Assuming Hammer can be imported
+// import Hammer from 'hammerjs'; // Assuming Hammer can be imported
 // HologramManager might be passed in, not necessarily in the same directory
 // import HologramManager from './HologramManager';
 
