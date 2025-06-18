@@ -12,7 +12,7 @@ import { initializeHammerGestures } from '../../core/gestures.js';
 import { initializeRightPanel } from '../../panels/rightPanelManager.js';
 import { initializeFileEditor } from '../../ui/fileEditor.js';
 
-export class DesktopInput {
+export default class DesktopInput {
     constructor(globalState) {
         this.state = globalState;
         console.log("DesktopInput instantiated.");

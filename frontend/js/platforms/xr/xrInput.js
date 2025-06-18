@@ -1,7 +1,7 @@
 // frontend/js/platforms/xr/xrInput.js
 // Placeholder for XR-specific input handling
 
-export class XrInput {
+export default class XrInput {
     constructor(state) { // Accept global state
         this.state = state; // Store global state
         console.log("XrInput instantiated (placeholder).");
