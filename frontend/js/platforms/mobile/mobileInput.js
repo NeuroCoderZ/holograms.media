@@ -129,7 +129,7 @@ export class MobileInput {
 
             console.log("First user interaction detected by MobileInput. Initializing multimedia...");
             try {
-                await initializeMultimedia();
+                await initializeMultimedia(this.state); // Pass state
                 console.log("Multimedia initialization attempt finished via MobileInput.");
             } catch (error) {
                 console.error("Error during initializeMultimedia call from MobileInput:", error);
