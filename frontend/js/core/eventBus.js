@@ -81,5 +81,3 @@ class EventBus {
 // Create and export a single global instance
 const eventBus = new EventBus();
 export default eventBus;
-
-EOL
