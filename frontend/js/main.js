@@ -440,6 +440,7 @@ function onPointerUp() {
 }
 
 function onPointerMove(event) {
+  let newRotationX, newRotationY;
   if (!isDragging) return;
 
   const currentPointerX = (event.touches ? event.touches[0].clientX : event.clientX);
@@ -453,8 +454,8 @@ function onPointerMove(event) {
   const rotationAmountX = deltaY * sensitivity;
 
   if (state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot()) {
-    let newRotationY = startRotationY + rotationAmountY;
-    let newRotationX = startRotationX + rotationAmountX;
+    newRotationY = startRotationY + rotationAmountY; // Removed let
+    newRotationX = startRotationX + rotationAmountX; // Removed let
     newRotationX = Math.max(-rotationLimit, Math.min(rotationLimit, newRotationX));
     
     state.hologramRendererInstance.getHologramPivot().rotation.y = newRotationY;
