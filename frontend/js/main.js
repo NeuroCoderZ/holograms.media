@@ -123,9 +123,186 @@ function setupStartButtonListener() {
           });
         }
 
-        // Consent modal display is typically handled by initializeConsentManager or after its check.
-        // If needed here, ensure it's shown *after* multimedia initialization if that's the flow.
-        // For now, assuming consentManager handles its own display logic at the right time.
+        console.log('Proceeding with core application initialization after user start...');
+
+        // 1. Core Initialization (includes scene, renderer, camera, etc.)
+        await initCore(); // Ensures 'state' object is initialized
+
+        // 2. Initialize Main UI (finds and stores all UI elements in state.uiElements)
+        initializeMainUI(state); // Pass state if uiManager needs it to attach uiElements
+
+        // Initialize MediaPipe Hands (safer here if it interacts with UI/3D)
+        initializeMediaPipeHands();
+
+        // Initialize Audio Visualization (depends on initCore)
+        try {
+          if (state.audioAnalyzerLeftInstance && state.hologramRendererInstance) {
+            initAudioVisualization(state.audioAnalyzerLeftInstance, state.hologramRendererInstance);
+          } else {
+            console.warn("Audio visualizer could not be fully initialized: missing analyzer or renderer instances.");
+          }
+        } catch (error) {
+          console.error('Ошибка инициализации аудио визуализации:', error);
+        }
+
+        // Initialize XR Mode (depends on initCore)
+        initializeXRMode();
+
+        // Hologram rotation logic (event listeners for grid-container) - depends on initCore
+        const gridContainer = document.getElementById('grid-container');
+        if (gridContainer) {
+          gridContainer.addEventListener('mousedown', onPointerDown);
+          gridContainer.addEventListener('mouseup', onPointerUp);
+          gridContainer.addEventListener('mousemove', onPointerMove);
+          gridContainer.addEventListener('mouseleave', onPointerUp);
+
+          gridContainer.addEventListener('touchstart', onPointerDown, { passive: false });
+          gridContainer.addEventListener('touchend', onPointerUp);
+          gridContainer.addEventListener('touchmove', onPointerMove, { passive: false });
+        }
+
+        // 4. Platform Detection and Dynamic Loading/Initialization of Layout & Input Managers
+        const platform = detectPlatform();
+        let layoutManager, inputManager;
+
+        try {
+            switch (platform) {
+                case 'mobile':
+                    const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
+                    const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
+                    layoutManager = new MobileLayout(state); // Pass global state
+                    inputManager = new MobileInput(state);   // Pass global state
+                    break;
+                case 'xr':
+                    console.log('XR platform detected, attempting to load XRLayout/XRInput.');
+                    const { XrLayout } = await import('./platforms/xr/xrLayout.js');
+                    const { XrInput } = await import('./platforms/xr/xrInput.js');
+                    layoutManager = new XrLayout(state); // Pass global state
+                    inputManager = new XrInput(state);   // Pass global state
+                    break;
+                default: // 'desktop'
+                    const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
+                    const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
+                    layoutManager = new DesktopLayout(state); // Pass global state
+                    inputManager = new DesktopInput(state);   // Pass global state
+                    break;
+            }
+        } catch (e) {
+            console.error("Error loading platform-specific modules:", e);
+            // Fallback to desktop if dynamic import fails
+            if (platform !== 'desktop') {
+                console.warn(`Falling back to DesktopLayout/DesktopInput due to error with ${platform} modules.`);
+                const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
+                const { DesktopInput } = await import('./platforms/desktop/desktopInput.js'); // Corrected path
+                layoutManager = new DesktopLayout(state); // Pass global state
+                inputManager = new DesktopInput(state);   // Pass global state
+            } else {
+                throw e; // Re-throw if desktop itself failed.
+            }
+        }
+
+        if (layoutManager && typeof layoutManager.initialize === 'function') {
+            layoutManager.initialize(); // This will set initial panel visibility etc.
+            // Call the core layout manager initialization AFTER platform-specific one
+            initializeCoreLayoutManager();
+            console.log('[Main.js] Core LayoutManager (for hologram container) initialized.');
+        } else {
+            console.warn('Platform-specific LayoutManager not initialized or initialize method not found. Core LayoutManager might not behave as expected.');
+            initializeCoreLayoutManager();
+            console.log('[Main.js] Core LayoutManager (for hologram container) initialized (platform-specific failed or missing).');
+        }
+
+        if (inputManager && typeof inputManager.initialize === 'function') {
+            inputManager.initialize();
+        } else {
+            console.warn('InputManager not initialized or initialize method not found.');
+        }
+        console.log(`Platform-specific managers for "${platform}" initialized.`);
+
+        // Fade-in elements after layout manager has initialized panels
+        const elementsToFadeIn = [
+          '.panel.left-panel',
+          '.panel.right-panel',
+          '.main-area',
+          '#togglePanelsButton'
+        ];
+
+        setTimeout(() => {
+          elementsToFadeIn.forEach(selector => {
+            const element = document.querySelector(selector);
+            if (element) {
+              element.classList.remove('u-initially-hidden');
+              element.classList.add('u-fade-in-on-load');
+            } else {
+              console.warn(`Element with selector "${selector}" not found for fade-in animation.`);
+            }
+          });
+        }, 50);
+
+        // Initial call to updateHologramLayout after all setup
+        if (typeof updateHologramLayout === 'function') {
+          console.log('[main.js] Performing initial call to updateHologramLayout after platform managers.');
+          updateHologramLayout();
+        } else {
+          console.error('[main.js] updateHologramLayout function not available for initial call.');
+        }
+
+        // --- BEGIN TTA CORE SYNTHESIS MANAGER INITIALIZATION ---
+        console.log('[TTA Core] Initializing new managers...');
+        window.eventBus = eventBus;
+
+        const gestureAreaElement = state.uiElements.gestureArea || document.getElementById('gesture-area');
+        if (!gestureAreaElement) {
+            console.error("[TTA Core] CRITICAL: #gesture-area DOM element not found. Gesture functionalities will fail.");
+        }
+
+        const gesturesListDisplay = new GesturesListDisplay(eventBus);
+        const rightPanelManager = new RightPanelManager(state, eventBus, gesturesListDisplay);
+        const versionTimelinePanel = new VersionTimelinePanel(state, eventBus);
+        const gestureUIManager = new GestureUIManager(eventBus, state);
+        const hologramManager = new HologramManager(state.threeJs.scene, state.threeJs.camera, eventBus, state);
+        const interactionManager = new InteractionManager(state.threeJs.renderer.domElement, hologramManager);
+
+        if (gestureAreaElement && gestureUIManager) {
+            const gestureRecordingManager = new GestureRecordingManager(state, gestureAreaElement, gestureUIManager, eventBus);
+            state.gestureRecordingManager = gestureRecordingManager;
+        } else {
+            console.error("[TTA Core] Cannot initialize GestureRecordingManager due to missing #gesture-area or GestureUIManager.");
+        }
+
+        const myGesturesPanel = new MyGesturesPanel(eventBus);
+        state.myGesturesPanel = myGesturesPanel;
+        state.rightPanelManager = rightPanelManager;
+        state.versionTimelinePanel = versionTimelinePanel;
+        state.gestureUIManager = gestureUIManager;
+        state.hologramManager = hologramManager;
+        state.interactionManager = interactionManager;
+        state.gesturesListDisplay = gesturesListDisplay;
+
+        if (hologramManager && state.hologramRendererInstance && state.hologramRendererInstance.getHologramContentGroup) {
+            hologramManager.initializeHologram(state.hologramRendererInstance.getHologramContentGroup());
+        } else if (hologramManager && state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot && state.hologramRendererInstance.getHologramPivot().children.length > 0) {
+            console.warn("[TTA Core] Passing mainSequencerGroup from existing hologramRenderer's pivot to new HologramManager. Review if this is the correct visual group.")
+            hologramManager.initializeHologram(state.hologramRendererInstance.getHologramPivot());
+        } else if (hologramManager) {
+            console.warn("[TTA Core] Could not get main hologram visuals group for HologramManager. Initializing with an empty group.");
+            hologramManager.initializeHologram(new THREE.Group());
+        }
+        console.log('[TTA Core] New managers initialized.');
+        // --- END TTA CORE SYNTHESIS MANAGER INITIALIZATION ---
+
+        console.log('Core application initialization complete. Starting animation loop...');
+        // 5. Start Animation Loop
+        animate();
+
+        // Ensure UI elements that might have been hidden are now visible
+        // For example, the main application area or specific panels
+        const mainAppArea = document.querySelector('.main-application-area'); // Example selector
+        if (mainAppArea) {
+          mainAppArea.style.visibility = 'visible';
+          mainAppArea.style.opacity = '1';
+        }
+        // Add other elements as needed
 
     }, { once: true }); // Ensure the handler runs only once
   } else {
@@ -137,255 +314,60 @@ function setupStartButtonListener() {
 
 // Инициализация приложения при загрузке DOM
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Инициализация приложения...');
+  console.log('Инициализация приложения (Pre-Start)...');
 
   // 0. Initialize Consent Manager (Handles its own UI if needed)
   await initializeConsentManager();
   console.log('User consent check passed/handled.');
 
-  // 1. Core Initialization (includes scene, renderer, camera, etc.)
-  await initCore(); // Ensures 'state' object is initialized
-
-  // 2. Initialize Main UI (finds and stores all UI elements in state.uiElements)
-  // This function will now ensure state.uiElements is populated correctly.
-  initializeMainUI(state); // Pass state if uiManager needs it to attach uiElements
-
-  // 3. Setup Start Button Listener (needs UI elements from initializeMainUI to be available)
+  // 3. Setup Start Button Listener (this will now contain most of the initialization)
   setupStartButtonListener();
 
-  // Subsequent initializations that depend on Core and UI elements
+  // Subsequent initializations that DO NOT depend on Core/3D/MainUI elements
+  // These are generally safe to run before the user clicks "Start"
   setAuthDOMElements('signInButton', 'signOutButton', 'userStatus');
   initAuthObserver(handleTokenForBackend);
 
-  initializePromptManager();
-  initializeVersionManager();
-  initChatUI();
-  initializeGestureAreaVisualization(); // Visualization, not manager
-  initializeChatDisplay();
+  initializePromptManager(); // Manages prompt UI, typically no direct 3D dependency
+  initializeVersionManager(); // Manages versioning UI
+  initChatUI(); // Initializes chat UI elements
+  initializeGestureAreaVisualization(); // Visualizes gesture area, if it doesn't assume main UI elements are ready, it's fine. Otherwise, move.
+                                      // For now, assuming it's a standalone visualization.
+  initializeChatDisplay(); // Displays chat messages
 
-  initializeMediaPipeHands(); // Original call - review if it needs eventBus
-  // initializeAudioPlayerControls(); // REMOVED
-  initializeSpeechInput();
-  try {
-    if (state.audioAnalyzerLeftInstance && state.hologramRendererInstance) {
-      initAudioVisualization(state.audioAnalyzerLeftInstance, state.hologramRendererInstance);
-    } else {
-      console.warn("Audio visualizer could not be fully initialized: missing analyzer or renderer instances.");
-    }
-  } catch (error) {
-    console.error('Ошибка инициализации аудио:', error);
-  }
+  initializeSpeechInput(); // Sets up speech input, might be okay if not directly tied to 3D scene at this stage
 
-  initializeTria();
-  setupChat();
-  initializeXRMode();
+  initializeTria(); // AI core, likely no immediate 3D dependency
+  setupChat(); // AI chat setup
 
   // Generic handlers
-  initializeResizeHandler();
-  initializeHammerGestures();
-  initializePwaInstall();
+  initializeResizeHandler(); // Handles window resize
+  initializeHammerGestures(); // Generic gesture library setup on main elements (if those elements exist)
+  initializePwaInstall(); // PWA installation logic
 
-  // Hologram rotation logic (event listeners for grid-container)
-  const gridContainer = document.getElementById('grid-container');
-  if (gridContainer) {
-    gridContainer.addEventListener('mousedown', onPointerDown);
-    gridContainer.addEventListener('mouseup', onPointerUp);
-    gridContainer.addEventListener('mousemove', onPointerMove);
-    gridContainer.addEventListener('mouseleave', onPointerUp);
-
-    gridContainer.addEventListener('touchstart', onPointerDown, { passive: false });
-    gridContainer.addEventListener('touchend', onPointerUp);
-    gridContainer.addEventListener('touchmove', onPointerMove, { passive: false });
-  }
-
-
-  // 4. Platform Detection and Dynamic Loading/Initialization of Layout & Input Managers
-  const platform = detectPlatform();
-  let layoutManager, inputManager;
-
-  try {
-      switch (platform) {
-          case 'mobile':
-              const { MobileLayout } = await import('./platforms/mobile/mobileLayout.js');
-              const { MobileInput } = await import('./platforms/mobile/mobileInput.js');
-              layoutManager = new MobileLayout(state); // Pass global state
-              inputManager = new MobileInput(state);   // Pass global state
-              break;
-          case 'xr':
-              console.log('XR platform detected, attempting to load XRLayout/XRInput.');
-              const { XrLayout } = await import('./platforms/xr/xrLayout.js');
-              const { XrInput } = await import('./platforms/xr/xrInput.js');
-              layoutManager = new XrLayout(state); // Pass global state
-              inputManager = new XrInput(state);   // Pass global state
-              break;
-          default: // 'desktop'
-              const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
-              const { DesktopInput } = await import('./platforms/desktop/desktopInput.js');
-              layoutManager = new DesktopLayout(state); // Pass global state
-              inputManager = new DesktopInput(state);   // Pass global state
-              break;
-      }
-  } catch (e) {
-      console.error("Error loading platform-specific modules:", e);
-      // Fallback to desktop if dynamic import fails
-      if (platform !== 'desktop') {
-          console.warn(`Falling back to DesktopLayout/DesktopInput due to error with ${platform} modules.`);
-          const { DesktopLayout } = await import('./platforms/desktop/desktopLayout.js');
-          const { DesktopInput } = await import('./platforms/desktop/desktopInput.js'); // Corrected path
-          layoutManager = new DesktopLayout(state); // Pass global state
-          inputManager = new DesktopInput(state);   // Pass global state
-      } else {
-          throw e; // Re-throw if desktop itself failed.
-      }
-  }
-
-  if (layoutManager && typeof layoutManager.initialize === 'function') {
-      layoutManager.initialize(); // This will set initial panel visibility etc.
-      // Call the core layout manager initialization AFTER platform-specific one
-      initializeCoreLayoutManager();
-      console.log('[Main.js] Core LayoutManager (for hologram container) initialized.');
-  } else {
-      console.warn('Platform-specific LayoutManager not initialized or initialize method not found. Core LayoutManager might not behave as expected.');
-      // Still attempt to initialize core layout manager if platform one failed but core one exists
-      initializeCoreLayoutManager();
-      console.log('[Main.js] Core LayoutManager (for hologram container) initialized (platform-specific failed or missing).');
-  }
-
-  if (inputManager && typeof inputManager.initialize === 'function') {
-      inputManager.initialize();
-  } else {
-      console.warn('InputManager not initialized or initialize method not found.');
-  }
-  console.log(`Platform-specific managers for "${platform}" initialized.`);
-
-  // Fade-in elements after layout manager has initialized panels
-  const elementsToFadeIn = [
-    '.panel.left-panel',
-    '.panel.right-panel',
-    '.main-area',
-    '#togglePanelsButton'
-  ];
-
-  setTimeout(() => {
-    elementsToFadeIn.forEach(selector => {
-      const element = document.querySelector(selector);
-      if (element) {
-        element.classList.remove('u-initially-hidden');
-        element.classList.add('u-fade-in-on-load');
-      } else {
-        console.warn(`Element with selector "${selector}" not found for fade-in animation.`);
-      }
-    });
-  }, 50); // Reduced delay, as critical layout should be done by layoutManager.initialize()
-
-  // Initial call to updateHologramLayout after all setup, especially after layoutManager might have changed panel states.
-  if (typeof updateHologramLayout === 'function') {
-    console.log('[main.js] Performing initial call to updateHologramLayout after DOMContentLoaded and platform managers.');
-    updateHologramLayout();
-  } else {
-    console.error('[main.js] updateHologramLayout function not available for initial call.');
-  }
-
-  // --- BEGIN TTA CORE SYNTHESIS MANAGER INITIALIZATION ---
-  console.log('[TTA Core] Initializing new managers...');
-
-  // Initialize EventBus (GLOBAL INSTANCE)
-  // const eventBus = new EventBus(); // <-- УДАЛИТЬ ЭТУ СТРОКУ
-  window.eventBus = eventBus; // Make it globally accessible if needed for older modules or debugging
-
-  // AppState (using existing 'state' from './core/init.js')
-  // Pass the global 'state' object directly to managers expecting 'appState'.
-  // Managers will be adapted to use 'state' directly if they were expecting getState/setState methods not present on the plain 'state' object.
-  // const appState = state; // No longer needed, pass state directly.
-
-  // Ensure essential DOM elements for new managers are available from state.uiElements or query them
-  // It's assumed that initializeMainUI() has already populated state.uiElements by this point.
-  const gestureAreaElement = state.uiElements.gestureArea || document.getElementById('gesture-area');
-  // const chatButtonElement = state.uiElements.chatButton; // Should be in state.uiElements
-  // const versionTimelineContainerElement = state.uiElements.versionTimelineContainer; // Should be in state.uiElements
-  // const chatInterfaceContainerElement = state.uiElements.chatInterfaceContainer; // Should be in state.uiElements
-  // const gesturesListContainerElement = state.uiElements.gesturesListContainer; // Should be in state.uiElements
-
-
-  if (!gestureAreaElement) {
-      console.error("[TTA Core] CRITICAL: #gesture-area DOM element not found. Gesture functionalities will fail.");
-  }
-  // Add similar checks for other critical elements if not covered by individual manager logs
-
-  // Instantiate Managers (order can be important)
-  // Block 1 Managers
-  const gesturesListDisplay = new GesturesListDisplay(eventBus); // Needs to be created before RightPanelManager if passed as instance
-  const rightPanelManager = new RightPanelManager(state, eventBus, gesturesListDisplay); // Pass global state
-  const versionTimelinePanel = new VersionTimelinePanel(state, eventBus /*, versionService */); // Pass global state
-
-  // Block 2 & 3 UI Managers
-  const gestureUIManager = new GestureUIManager(eventBus, state); // Pass global state
-
-  // Block 2 Core 3D Managers
-  // state.threeJs should contain scene, camera, renderer from initCore()
-  const hologramManager = new HologramManager(state.threeJs.scene, state.threeJs.camera, eventBus, state); // Pass global state
-  const interactionManager = new InteractionManager(state.threeJs.renderer.domElement, hologramManager);
-
-  // Block 3 Recording Manager
-  if (gestureAreaElement && gestureUIManager) {
-      const gestureRecordingManager = new GestureRecordingManager(state, gestureAreaElement, gestureUIManager, eventBus); // Pass global state
-      // Make it globally accessible if other parts of the old system need to interact, e.g. for destroy
-      state.gestureRecordingManager = gestureRecordingManager;
-  } else {
-      console.error("[TTA Core] Cannot initialize GestureRecordingManager due to missing #gesture-area or GestureUIManager.");
-  }
-
-  // Block 4 Panel Interaction
-  const myGesturesPanel = new MyGesturesPanel(eventBus);
-  // Make globally accessible if needed
-  state.myGesturesPanel = myGesturesPanel;
-  state.rightPanelManager = rightPanelManager;
-  state.versionTimelinePanel = versionTimelinePanel;
-  state.gestureUIManager = gestureUIManager;
-  state.hologramManager = hologramManager;
-  state.interactionManager = interactionManager;
-  state.gesturesListDisplay = gesturesListDisplay;
-
-
-  // Initialize HologramManager with actual visuals
-  // The existing system uses state.hologramRendererInstance.getHologramPivot() for the main group.
-  // The new HologramManager is designed to manage its own pivot for layout and animation.
-  // We need to pass the *visual content* of the hologram to the new manager.
-  if (hologramManager && state.hologramRendererInstance && state.hologramRendererInstance.getHologramContentGroup) {
-      hologramManager.initializeHologram(state.hologramRendererInstance.getHologramContentGroup());
-  } else if (hologramManager && state.hologramRendererInstance && state.hologramRendererInstance.getHologramPivot && state.hologramRendererInstance.getHologramPivot().children.length > 0) {
-      console.warn("[TTA Core] Passing mainSequencerGroup from existing hologramRenderer's pivot to new HologramManager. Review if this is the correct visual group.")
-      // This assumes the getHologramPivot() itself is not the one being animated by old logic, but its children are the content.
-      // A safer approach might be to create a new group, add existing visual children to it, and pass that.
-      // For now, direct pass:
-      hologramManager.initializeHologram(state.hologramRendererInstance.getHologramPivot());
-  } else if (hologramManager) {
-      console.warn("[TTA Core] Could not get main hologram visuals group for HologramManager. Initializing with an empty group.");
-      hologramManager.initializeHologram(new THREE.Group()); // Initialize with empty if nothing found
-  }
-
-  // Re-evaluate initializeMediaPipeHands - it should emit to the eventBus.
-  // If initializeMediaPipeHands is already structured to accept eventBus or use a global one, this is fine.
-  // Otherwise, it needs refactoring. Assuming it's adapted.
-  // initializeMediaPipeHands(eventBus); // This was called earlier, ensure it uses the new eventBus if called again or refactor its original call.
-  console.log('[TTA Core] New managers initialized.');
-  // --- END TTA CORE SYNTHESIS MANAGER INITIALIZATION ---
-
-  // New logic for consent checkbox and start button
+  // New logic for consent checkbox and start button (must be after setupStartButtonListener if it uses startButton)
   const consentCheckbox = document.getElementById('consent-checkbox');
-  const startButton = document.getElementById('start-session-button');
-  const googleSignInBtn = document.getElementById('login-google-btn'); // Existing Google Sign-In button
-  const googleContainer = document.getElementById('google-signin-container'); // New container in the modal
+  const startButton = document.getElementById('start-session-button'); // This is also fetched in setupStartButtonListener
+                                                                    // Redundant fetch, but harmless.
+  const googleSignInBtn = document.getElementById('login-google-btn');
+  const googleContainer = document.getElementById('google-signin-container');
 
   if (googleSignInBtn && googleContainer) {
     googleContainer.appendChild(googleSignInBtn);
-    // Ensure the button is visible if it was hidden by display:none or similar
-    googleSignInBtn.style.display = 'block'; // Or 'flex', 'inline-block' depending on desired layout
-     // Adjust button styling for the modal if necessary
-    googleSignInBtn.classList.add('google-signin-modal-style'); // Example class
+    googleSignInBtn.style.display = 'block';
+    googleSignInBtn.classList.add('google-signin-modal-style');
   }
 
   if (consentCheckbox && startButton) {
+    // Initial state based on checkbox
+    if (consentCheckbox.checked) {
+        startButton.disabled = false;
+        startButton.classList.remove('start-button-disabled');
+    } else {
+        startButton.disabled = true;
+        startButton.classList.add('start-button-disabled');
+    }
+    // Listener for changes
     consentCheckbox.addEventListener('change', () => {
       if (consentCheckbox.checked) {
         startButton.disabled = false;
@@ -397,13 +379,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  console.log('Инициализация завершена!');
-
-  // 5. Start Animation Loop
-  animate();
+  console.log('Предварительная инициализация DOMContentLoaded завершена. Ожидание старта сессии пользователем.');
+  // animate() loop is now started inside the startButton click listener
 });
 
 // Hologram rotation functions (onPointerDown, onPointerUp, onPointerMove) remain unchanged
+// These are now called from within the startButton click listener context if gridContainer is found there.
+// This means they will only be active after initCore() and other setups.
 // These functions currently use state.hologramRendererInstance.getHologramPivot().
 // If the new HologramManager takes over all pivot manipulation, these might conflict or need redirection.
 // For now, they will coexist. The new InteractionManager uses HammerJS on renderer.domElement.
