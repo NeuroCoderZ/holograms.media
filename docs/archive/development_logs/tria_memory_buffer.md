@@ -1,3 +1,4 @@
+> **[DISCLAIMER]** This document outlines visionary concepts, research notes, or future plans. It does **not** describe the current, implemented architecture of the project. For an accurate description of the current system, please refer to `docs/architecture/SYSTEM_DESCRIPTION.MD`.
 ## tria_memory_buffer.md - Лог итераций и ключевых решений
 
 ### Итерация 2025-05-26: Скаффолдинг для Визионерских Концепций
