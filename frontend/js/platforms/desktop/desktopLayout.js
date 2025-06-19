@@ -49,28 +49,33 @@ export default class DesktopLayout {
     }
 
     initializeMainPanelState() {
-        const panelsShouldBeHidden = localStorage.getItem('panelsHidden') === 'true';
-        console.log(`[DesktopLayout][initializeMainPanelState] Panels should be hidden (from localStorage): ${panelsShouldBeHidden}`);
+        // const panelsShouldBeHidden = localStorage.getItem('panelsHidden') === 'true';
+        // console.log(`[DesktopLayout][initializeMainPanelState] Panels should be hidden (from localStorage): ${panelsShouldBeHidden}`);
 
-        if (panelsShouldBeHidden) {
-            this.leftPanelElement.classList.remove('visible');
-            this.rightPanelElement.classList.remove('visible');
-            this.togglePanelsButtonElement.classList.add('show-mode');
-            console.log(`[DesktopLayout][initializeMainPanelState] Panels set to HIDDEN. leftPanel visible: ${this.leftPanelElement.classList.contains('visible')}`);
-        } else {
-            this.leftPanelElement.classList.add('visible');
-            this.rightPanelElement.classList.add('visible');
-            this.togglePanelsButtonElement.classList.remove('show-mode');
-            console.log(`[DesktopLayout][initializeMainPanelState] Panels set to VISIBLE. leftPanel visible: ${this.leftPanelElement.classList.contains('visible')}`);
-        }
-        // Ensure old 'hidden' class is removed
-        this.leftPanelElement.classList.remove('hidden');
-        this.rightPanelElement.classList.remove('hidden');
+        // if (panelsShouldBeHidden) {
+        //     this.leftPanelElement.classList.remove('visible');
+        //     this.rightPanelElement.classList.remove('visible');
+        //     this.togglePanelsButtonElement.classList.add('show-mode');
+        //     console.log(`[DesktopLayout][initializeMainPanelState] Panels set to HIDDEN. leftPanel visible: ${this.leftPanelElement.classList.contains('visible')}`);
+        // } else {
+        //     this.leftPanelElement.classList.add('visible');
+        //     this.rightPanelElement.classList.add('visible');
+        //     this.togglePanelsButtonElement.classList.remove('show-mode');
+        //     console.log(`[DesktopLayout][initializeMainPanelState] Panels set to VISIBLE. leftPanel visible: ${this.leftPanelElement.classList.contains('visible')}`);
+        // }
+        // // Ensure old 'hidden' class is removed
+        // this.leftPanelElement.classList.remove('hidden');
+        // this.rightPanelElement.classList.remove('hidden');
+
+        // Force visibility
+        if (this.leftPanelElement) this.leftPanelElement.classList.add('visible');
+        if (this.rightPanelElement) this.rightPanelElement.classList.add('visible');
+        if (this.togglePanelsButtonElement) this.togglePanelsButtonElement.classList.remove('show-mode');
 
         // setTimeout(() => window.dispatchEvent(new Event('resize')), 50); // Remove this
         if (typeof updateHologramLayout === 'function') updateHologramLayout(this.state); // Add this and pass state
-        const currentVisibility = this.leftPanelElement.classList.contains('visible');
-        console.log(`[DesktopLayout] Panels initialized. Currently visible: ${currentVisibility}`);
+        const currentVisibility = this.leftPanelElement ? this.leftPanelElement.classList.contains('visible') : 'N/A';
+        console.log(`[DesktopLayout] Panels initialized (forced). Currently visible: ${currentVisibility}`);
     }
 
     toggleMainPanels() {
