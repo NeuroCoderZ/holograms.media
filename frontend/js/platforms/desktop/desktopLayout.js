@@ -80,10 +80,7 @@ export default class DesktopLayout {
 
         // --- Visibility Check logging for leftPanelElement ---
         if (this.leftPanelElement) {
-            console.log('[Visibility Check] Before toggle, #left-panel classes:', this.leftPanelElement.className);
             this.leftPanelElement.classList.toggle('visible');
-            console.log('[Visibility Check] After toggle, #left-panel classes:', this.leftPanelElement.className);
-            console.log('[Visibility Check] Has .visible class now:', this.leftPanelElement.classList.contains('visible'));
         } else {
             // This case is already handled by the check at the beginning of the function,
             // but adding a specific log here if we were to rely on the snippet's structure.

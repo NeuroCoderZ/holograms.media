@@ -1,7 +1,7 @@
-<!-- TODO: REVIEW FOR DEPRECATION - This guide now focuses on Firebase and auxiliary GCP services. The backend deployment is primarily covered in koyeb_r2_deployment_guide.md. Review remaining sections for relevance. -->
-# Google Cloud Platform (GCP) and Firebase Deployment Guide for TRIA
+<!-- This guide now primarily focuses on setting up and deploying Firebase Hosting for the TRIA frontend and configuring Firebase Authentication. Backend services (FastAPI application, Database, File Storage) are deployed on other platforms and covered in separate guides (e.g., koyeb_r2_deployment_guide.md for FastAPI on Koyeb and Cloudflare R2). This document covers auxiliary GCP services only if they directly support Firebase Hosting or Authentication. -->
+# Firebase Hosting and Authentication Guide for TRIA
 
-This guide provides step-by-step instructions for deploying the TRIA application backend and related services on Google Cloud Platform and Firebase.
+This guide provides step-by-step instructions for setting up Firebase Hosting for the TRIA frontend application and configuring Firebase Authentication.
 
 ## 1. Prerequisites
 
@@ -65,14 +65,13 @@ You can use an existing GCP project or create a new one.
     ```bash
     firebase init
     ```
-    Select the features you need. For TRIA, this will likely include:
-    *   **Firestore:** For NoSQL database capabilities (if used by TRIA features).
-    *   **Functions:** For serverless backend logic (Genkit might deploy here or to Cloud Functions directly).
+    Select the features you need. For TRIA, this will primarily include:
     *   **Hosting:** To deploy the frontend application.
         *   When prompted for your public directory, use `frontend` (or your build output directory, e.g., `frontend/dist`).
         *   Configure as a single-page app if applicable.
-    *   **Storage:** For user uploads, hologram assets, etc.
-    *   **Emulators:** Useful for local development. Download them if prompted.
+    *   **Authentication:** (Set up via Firebase Console, `firebase init` helps link the project).
+    *   **Emulators:** Useful for local development of hosting and auth rules. Download them if prompted.
+    *   (Firestore and Functions might be selected if you plan to use Firestore for specific frontend-related data or have minor Cloud Functions directly supporting hosting/auth, but primary backend logic is on Koyeb).
 
 *   **Enable Firebase Authentication:**
     1.  Go to the [Firebase Console](https://console.firebase.google.com/).
@@ -81,194 +80,115 @@ You can use an existing GCP project or create a new one.
     4.  Click **Get started**.
     5.  Enable desired sign-in methods (e.g., Google Sign-In, Email/Password).
 
-*   **Configure Firebase in `.env.example`:**
-    After setting up Firebase, your project will have Firebase configuration keys.
+*   **Configure Firebase in `.env.example` (for Frontend):**
+    After setting up Firebase and registering your web app, your project will have Firebase configuration keys. These are needed by the frontend to interact with Firebase services.
     1.  Go to your Firebase project settings in the Firebase console.
     2.  Under "Your apps", find your web app configuration (it might look like `firebaseConfig = { ... }`).
-    3.  Copy these values into the corresponding `FIREBASE_*` variables in your `.env` file (created from `.env.example`).
-        *   `FIREBASE_API_KEY`
-        *   `FIREBASE_AUTH_DOMAIN`
-        *   `FIREBASE_PROJECT_ID`
-        *   `FIREBASE_STORAGE_BUCKET`
-        *   `FIREBASE_MESSAGING_SENDER_ID`
-        *   `FIREBASE_APP_ID`
-        *   `FIREBASE_MEASUREMENT_ID` (optional)
+    3.  Copy these values into the corresponding `VITE_FIREBASE_*` (or similar, depending on your frontend setup) variables in your frontend's `.env` file (e.g., `frontend/.env` created from `frontend/.env.example`).
+        *   `VITE_FIREBASE_API_KEY`
+        *   `VITE_FIREBASE_AUTH_DOMAIN`
+        *   `VITE_FIREBASE_PROJECT_ID`
+        *   `VITE_FIREBASE_MESSAGING_SENDER_ID`
+        *   `VITE_FIREBASE_APP_ID`
+        *   `VITE_FIREBASE_MEASUREMENT_ID` (optional)
+    *Note: `FIREBASE_STORAGE_BUCKET` is intentionally omitted as Cloudflare R2 is used for primary file storage.*
 
-## 5. Cloud Pub/Sub Setup
+## 5. Cloud Pub/Sub Setup (Auxiliary Use Only)
 
-Used for asynchronous task processing, like triggering Genkit flows.
+Cloud Pub/Sub is generally part of the backend infrastructure, which is now primarily on Koyeb. However, if any Firebase-specific services (e.g., very specific Firebase Functions directly tied to Auth events) require Pub/Sub for asynchronous tasks, it can be configured here. For the main application's asynchronous processing (like chunk processing), refer to the backend infrastructure guide.
 
-*   **Enable the Pub/Sub API:**
+*   **Enable the Pub/Sub API (if needed for Firebase auxiliary functions):**
     ```bash
     gcloud services enable pubsub.googleapis.com
     ```
 
-*   **Create a Pub/Sub topic:**
-    The topic name should match `PUB_SUB_TOPIC_CHUNK_PROCESSING` from `.env.example`.
+*   **Create a Pub/Sub topic (if needed):**
+    Example:
     ```bash
-    gcloud pubsub topics create TRIA_CHUNK_PROCESSING_TOPIC
+    gcloud pubsub topics create your-firebase-aux-topic
     ```
-    Replace `TRIA_CHUNK_PROCESSING_TOPIC` (e.g., `tria-chunk-processing-topic`).
 
-## 6. Cloud Functions Setup (Python runtime)
+## 6. Cloud Functions Setup (Auxiliary Use Only)
 
-You might need Cloud Functions to:
-*   Act as triggers for Genkit flows (e.g., from Pub/Sub messages).
-*   Wrap existing Python logic (like `crud_operations.py`) for serverless execution.
+Firebase Cloud Functions or Google Cloud Functions might be used for lightweight backend logic directly supporting Firebase Hosting (e.g., SSR for specific routes not handled by the main backend) or Firebase Authentication custom events. The main application backend logic resides on Koyeb.
 
-*   **Example `gcloud functions deploy` command:**
-    This is a generic example. You'll need to adapt it based on your function's specifics.
+*   If you need to deploy auxiliary Cloud Functions (e.g., for Firebase):
+    *   Refer to official Firebase/Google Cloud documentation for deploying functions.
+    *   Ensure they are configured with appropriate triggers (HTTP, event-based) and necessary permissions.
+    *   The example below is generic and should be adapted. **Note:** The `TRIA_CHUNK_PROCESSING_TOPIC` trigger and database environment variables are likely irrelevant for functions solely supporting Hosting/Auth and are part of the main backend (Koyeb).
+
+*   **Generic `gcloud functions deploy` command (for auxiliary functions):**
     ```bash
-    gcloud functions deploy YOUR_FUNCTION_NAME \
+    gcloud functions deploy YOUR_AUX_FUNCTION_NAME \
         --gen2 \
-        --runtime=python311 \
+        --runtime=python311 # Or nodejs, etc.
         --region=YOUR_REGION \
-        --source=./path/to/your/function_code_directory \
+        --source=./path/to/your/aux_function_code_directory \
         --entry-point=your_function_entry_point \
-        --trigger-topic=TRIA_CHUNK_PROCESSING_TOPIC \
         # --trigger-http # For HTTP triggered functions
-        --service-account=YOUR_SERVICE_ACCOUNT_EMAIL \
-        --set-env-vars=DATABASE_URL="postgresql+psycopg2://USER:PASS@/DBNAME?host=/cloudsql/PROJECT:REGION:INSTANCE"
-        # Add other necessary environment variables
+        # --trigger-event=providers/google.firebase.auth/eventTypes/user.create # Example Auth trigger
+        --service-account=YOUR_SERVICE_ACCOUNT_EMAIL # Ensure this SA has minimal necessary roles
+        # --set-env-vars=... # Only if needed by the auxiliary function
     ```
-    *   Replace `YOUR_FUNCTION_NAME`, `YOUR_REGION`, `./path/to/your/function_code_directory`, `your_function_entry_point`, `TRIA_CHUNK_PROCESSING_TOPIC`.
-    *   `--service-account`: Use the email of the service account created in the next step.
-    *   `--set-env-vars`: Set environment variables required by your function, such as database connection strings or API keys. For Cloud SQL, the `DATABASE_URL` format shown uses the Cloud SQL Proxy socket path.
 
-## 7. Service Account and IAM
+## 7. Service Account and IAM for Firebase Services
 
-Create a dedicated service account for your backend services (Cloud Run, Cloud Functions) to grant them necessary permissions securely.
+Create a dedicated service account if you have auxiliary Cloud Functions or other GCP services directly supporting your Firebase Hosting/Authentication setup. This service account will be granted minimal necessary permissions.
+For service accounts related to the main backend application (FastAPI on Koyeb), refer to the `koyeb_r2_deployment_guide.md`.
 
-*   **Create a service account:**
+*   **Create a service account (for auxiliary Firebase services):**
     ```bash
-    gcloud iam service-accounts create TRIA_BACKEND_SA \
-        --description="Service account for TRIA backend services" \
-        --display-name="TRIA Backend SA"
+    gcloud iam service-accounts create TRIA_AUX_SA \
+        --description="Service account for TRIA auxiliary Firebase services" \
+        --display-name="TRIA Firebase Aux SA"
     ```
-    Replace `TRIA_BACKEND_SA` (e.g., `tria-backend-sa`).
-    The email will be `TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com`.
+    Replace `TRIA_AUX_SA` (e.g., `tria-firebase-aux-sa`).
+    The email will be `TRIA_AUX_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com`.
 
-*   **Grant roles to the service account:**
-    Grant necessary roles to the service account.
+*   **Grant roles to the service account (for auxiliary Firebase functions):**
+    Grant only the necessary roles. Example roles for a service account used by auxiliary Firebase Functions that might interact with Firebase Admin SDK or invoke other functions:
     ```bash
-    # Cloud SQL Client (to connect to Cloud SQL)
+    # Firebase Admin (if using Firebase Admin SDK for user management, custom tokens, etc. in auxiliary functions)
+    # Consider more granular Firebase roles if full admin is not needed.
+    # Example: roles/firebase.developAdmin or roles/firebase.authAdmin
     gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-        --member="serviceAccount:TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-        --role="roles/cloudsql.client"
+       --member="serviceAccount:TRIA_AUX_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+       --role="roles/firebase.admin" # Or more granular Firebase roles like firebase.developAdmin
 
-    # Pub/Sub Publisher (to publish messages, if needed)
+    # Cloud Functions Invoker (if auxiliary functions need to invoke other Cloud Functions)
     gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-        --member="serviceAccount:TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-        --role="roles/pubsub.publisher"
-
-    # Pub/Sub Subscriber (for Cloud Functions triggered by Pub/Sub)
-    # This is often granted automatically when deploying a Pub/Sub triggered function with the SA,
-    # but can be granted explicitly if needed.
-    # gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-    #     --member="serviceAccount:TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-    #     --role="roles/pubsub.subscriber"
-
-
-    # Cloud Storage Object Admin (to read/write to Firebase Storage buckets)
-    gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-        --member="serviceAccount:TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-        --role="roles/storage.objectAdmin"
-
-    # Firebase Admin (if using Firebase Admin SDK for user management, custom tokens, etc.)
-    # Check Firebase documentation for specific roles if needed, e.g., roles/firebase.admin
-    # gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-    #    --member="serviceAccount:TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-    #    --role="roles/firebase.admin" # Or more granular Firebase roles
-
-    # Cloud Functions Invoker (if Genkit or other services need to invoke Cloud Functions)
-    gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-        --member="serviceAccount:TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+        --member="serviceAccount:TRIA_AUX_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
         --role="roles/cloudfunctions.invoker"
 
-    # Vertex AI User (if Genkit uses Vertex AI for models)
-    gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-        --member="serviceAccount:TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-        --role="roles/aiplatform.user"
-
-    # Secret Manager Secret Accessor (if you store secrets in Secret Manager)
+    # Secret Manager Secret Accessor (if auxiliary functions need to access secrets)
     # gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-    #     --member="serviceAccount:TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+    #     --member="serviceAccount:TRIA_AUX_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
     #     --role="roles/secretmanager.secretAccessor"
     ```
-    Remember to replace `TRIA_BACKEND_SA` and `YOUR_PROJECT_ID`.
+    Replace `TRIA_AUX_SA` (e.g., `tria-firebase-aux-sa`) and `YOUR_PROJECT_ID`.
+    *Avoid granting overly broad roles. Roles related to Cloud SQL, main application Pub/Sub topics, Cloud Storage (for user data), or Vertex AI are typically not needed for service accounts related *only* to Firebase Hosting/Auth auxiliary functions and should be managed as part of the main backend's service account.*
 
-*   **Create and download a service account key (JSON):**
-    This key is used by backend services running outside GCP (e.g., local development) or when Application Default Credentials are not sufficient.
+*   **Create and download a service account key (JSON) (If Needed):**
+    This key is generally only needed if you are running services outside of GCP (e.g., local scripts that need to act as this service account) or if Application Default Credentials are not being used by your auxiliary function environment. Firebase Functions often use the runtime service account directly.
     ```bash
-    gcloud iam service-accounts keys create ./tria-service-account-key.json \
-        --iam-account=TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com
+    # Only if necessary for external use or specific auth scenarios:
+    gcloud iam service-accounts keys create ./tria-aux-service-account-key.json \
+        --iam-account=TRIA_AUX_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com
     ```
     *   **IMPORTANT:** Secure this key file. Do not commit it to your repository.
-    *   Set the path to this key file in your `.env` file for the `GOOGLE_APPLICATION_CREDENTIALS` variable, e.g., `GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/tria-service-account-key.json"`.
-    *   When running on GCP services like Cloud Run or Cloud Functions, they can typically use the attached service account directly without needing a JSON key file, if the service account is correctly assigned during deployment.
+    *   If used, set the path to this key file in your environment (e.g., `GOOGLE_APPLICATION_CREDENTIALS`).
 
-## 8. Genkit Setup (Placeholder)
+## 8. Genkit Setup
 
-Genkit is a framework for building AI-powered applications. Detailed Genkit deployment will depend on how it's integrated.
+Genkit is a framework for building AI-powered applications and is primarily part of the main backend infrastructure (FastAPI on Koyeb). Refer to the backend deployment and architecture documents (e.g., `koyeb_r2_deployment_guide.md`) for details on Genkit setup and deployment. This Firebase-focused guide does not cover Genkit deployment.
 
-*   Genkit flows might be deployed as:
-    *   Firebase Functions
-    *   Google Cloud Functions
-    *   Part of the FastAPI backend on Cloud Run.
-*   If Genkit flows are exposed via HTTP endpoints (e.g., for processing interaction chunks), their URLs will need to be configured in the `.env` file:
-    *   `GENKIT_FLOW_HTTP_TRIGGER_URL_PROCESS_INTERACTION_CHUNK`
-    *   `CLOUD_FUNCTION_TRIGGER_URL_CHUNK_PROCESSING` (if a Cloud Function triggers Genkit)
-*   The service account (`TRIA_BACKEND_SA`) will need permissions to run Genkit flows and access any GCP services Genkit uses (like Vertex AI).
+## 9. Cloud Run Deployment (FastAPI Backend)
 
-*(Detailed Genkit deployment steps will be added as the Genkit integration is finalized.)*
+The main TRIA FastAPI backend is deployed on Koyeb, not Google Cloud Run. For deployment instructions for the FastAPI backend, including containerization and Koyeb specifics, please refer to the `docs/architecture/infrastructure/koyeb_r2_deployment_guide.md`.
 
-## 9. Cloud Run Deployment (FastAPI Backend - Placeholder)
-
-The FastAPI backend (located in the `backend/` directory) will be containerized using the `Dockerfile` and deployed to Cloud Run.
-
-*   **Build and Push Docker Image:**
-    You'll typically build the Docker image and push it to Google Artifact Registry or Google Container Registry.
-    ```bash
-    # Enable Artifact Registry API
-    gcloud services enable artifactregistry.googleapis.com
-
-    # Create a Docker repository in Artifact Registry
-    gcloud artifacts repositories create tria-repo \
-        --repository-format=docker \
-        --location=YOUR_REGION \
-        --description="TRIA Docker repository"
-
-    # Configure Docker to use gcloud as a credential helper
-    gcloud auth configure-docker YOUR_REGION-docker.pkg.dev
-
-    # Build the image (from the root of the project where Dockerfile is)
-    docker build -t YOUR_REGION-docker.pkg.dev/YOUR_PROJECT_ID/tria-repo/tria-backend:latest -f Dockerfile .
-
-    # Push the image
-    docker push YOUR_REGION-docker.pkg.dev/YOUR_PROJECT_ID/tria-repo/tria-backend:latest
-    ```
-
-*   **Deploy to Cloud Run:**
-    ```bash
-    gcloud run deploy tria-backend-service \
-        --image=YOUR_REGION-docker.pkg.dev/YOUR_PROJECT_ID/tria-repo/tria-backend:latest \
-        --platform=managed \
-        --region=YOUR_REGION \
-        --service-account=TRIA_BACKEND_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com \
-        --allow-unauthenticated \
-        # --port=8000 # Or your backend's configured port
-        --set-env-vars=^::^POSTGRES_USER="your_db_user"::POSTGRES_PASSWORD="your_db_pass"::POSTGRES_DB="holograms_db"::CLOUD_SQL_INSTANCE_CONNECTION_NAME="project:region:instance" # Add all other env vars from .env
-        # For Cloud SQL, also ensure the Cloud SQL connection is configured:
-        --add-cloudsql-instances=YOUR_PROJECT_ID:YOUR_REGION:TRIA_INSTANCE_NAME
-    ```
-    *   Replace placeholders.
-    *   `--allow-unauthenticated`: For public access. Configure authentication as needed.
-    *   `--set-env-vars`: Pass environment variables. Use the `^::^` delimiter for multiple variables. **It's highly recommended to use Secret Manager for sensitive values like database passwords instead of setting them directly as environment variables.**
-    *   `--add-cloudsql-instances`: This makes the Cloud SQL Proxy available to your Cloud Run service.
-
-*(Detailed Cloud Run deployment steps, including CI/CD integration, will be refined.)*
+This section on Cloud Run deployment is intentionally removed from this guide as its focus is on Firebase Hosting and Authentication.
 
 ---
 
-**Remember to replace all placeholder values (e.g., `YOUR_PROJECT_ID`, `TRIA_INSTANCE_NAME`, `YOUR_REGION`, `TRIA_DB_USER`, `TRIA_CHUNK_PROCESSING_TOPIC`, `TRIA_BACKEND_SA`) with your actual configuration values.**
-This guide provides a comprehensive starting point. Depending on the specific evolution of TRIA, some steps might need adjustment.
+**Remember to replace all placeholder values (e.g., `YOUR_PROJECT_ID`, `YOUR_REGION`, `TRIA_AUX_SA`) with your actual configuration values.**
+This guide provides a focused starting point for Firebase Hosting and Authentication.
