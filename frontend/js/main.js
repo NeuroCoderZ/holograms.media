@@ -58,7 +58,7 @@ async function startFullApplication(appState) { // Renamed state to appState to 
     if (startModal) startModal.style.display = 'none';
 
     // --- ШАГ A: ИНИЦИАЛИЗИРУЕМ СИСТЕМУ ОТСЛЕЖИВАНИЯ РУК (ПЕРЕД МУЛЬТИМЕДИА) ---
-    await initializeMediaPipeHands(appState); // Moved this call here
+    // await initializeMediaPipeHands(appState); // Moved this call here
 
     // --- ШАГ B: ЗАПУСКАЕМ МЕДИА И ЖДЕМ ---
     await initializeMultimedia(appState);
