@@ -1,9 +1,5 @@
 // frontend/js/rendering.js - Модуль для логики 3D-рендеринга
 
-// At the top of frontend/js/3d/rendering.js
-window.renderCheck = true;
-window.renderCheckFrame = false;
-
 // Импорты
 import * as THREE from 'three';
 // TWEEN подключается глобально через CDN в index.html
@@ -14,15 +10,6 @@ import * as THREE from 'three';
 
 // Animation loop function
 function animate(appState, currentTime) { // Added appState
-    // В самом начале функции animate()
-    if (!window.renderCheck) {
-        console.log('[Render-Loop Check] Animate function is running.');
-        console.log('[Render-Loop Check] Scene object:', appState.scene);
-        console.log('[Render-Loop Check] Active Camera:', appState.activeCamera);
-        // console.log('[Render-Loop Check] Renderer instance:', appState.renderer); // As per original plan, but renderer was not in the user's snippet for Действие 2.1
-        console.log('[Render-Loop Check] Scene children count at loop start:', appState.scene.children.length);
-        window.renderCheck = true;
-    }
     requestAnimationFrame((time) => animate(appState, time)); // Pass appState in recursive call
 
     // Convert to seconds if currentTime is provided by requestAnimationFrame (milliseconds)
@@ -51,13 +38,6 @@ function animate(appState, currentTime) { // Added appState
     // Render the scene
     if (appState.renderer && appState.scene && appState.activeCamera) { // Ensure activeCamera is used
         appState.renderer.clear(); // Clear before rendering
-        // В rendering.js, внутри animate(), перед renderer.render(...)
-        // Этот лог должен сработать только один раз
-        if (window.renderCheck && !window.renderCheckFrame) {
-            console.log('[LIFESPARK Render-Check] Camera before render:', appState.activeCamera.type, appState.activeCamera.position);
-            console.log('[LIFESPARK Render-Check] Scene children count before render:', appState.scene.children.length);
-            window.renderCheckFrame = true;
-        }
         appState.renderer.render(appState.scene, appState.activeCamera);
     }
 
