@@ -85,6 +85,15 @@ export function initializeScene(state) {
   state.scene.add(state.directionalLight);
 
   // Removed Hologram Pivot creation from here. It is now created and managed by HologramRenderer.
+
+// At the end of the initializeScene() function in sceneSetup.js
+const testCube = new THREE.Mesh(
+    new THREE.BoxGeometry(10, 10, 10),
+    new THREE.MeshBasicMaterial({ color: 0xff0000 })
+);
+testCube.position.set(0, 0, 0);
+state.scene.add(testCube); // Use state.scene
+console.log('[Visibility Check] TEST CUBE ADDED TO SCENE at (0,0,0).');
   
   console.log('sceneSetup.js: Scene initialized successfully');
   return true; // Indicate success
