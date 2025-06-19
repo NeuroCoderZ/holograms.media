@@ -14,6 +14,7 @@ import { initializeHammerGestures } from './core/gestures.js';
 import { initializeRightPanel } from './panels/rightPanelManager.js';
 import { updateHologramLayout } from './ui/layoutManager.js'; // Assuming updateHologramLayout is in layoutManager
 import { animate } from './3d/rendering.js'; // Assuming animate is in rendering.js
+import { initializeMediaPipeHands } from './multimodal/handsTracking.js'; // Added import for handsTracking
 
 // UI and Core managers that might be platform-specific
 import DesktopLayout from './platforms/desktop/desktopLayout.js';
@@ -56,10 +57,13 @@ async function startFullApplication(appState) { // Renamed state to appState to 
     const startModal = appState.uiElements.modals.startSessionModal;
     if (startModal) startModal.style.display = 'none';
 
-    // --- ШАГ A: ЗАПУСКАЕМ МЕДИА И ЖДЕМ ---
+    // --- ШАГ A: ИНИЦИАЛИЗИРУЕМ СИСТЕМУ ОТСЛЕЖИВАНИЯ РУК (ПЕРЕД МУЛЬТИМЕДИА) ---
+    await initializeMediaPipeHands(appState); // Moved this call here
+
+    // --- ШАГ B: ЗАПУСКАЕМ МЕДИА И ЖДЕМ ---
     await initializeMultimedia(appState);
 
-    // --- ШАГ B: ЗАПУСКАЕМ ПЛАТФОРМЕННЫЕ МЕНЕДЖЕРЫ И ЖДЕМ ---
+    // --- ШАГ C: ЗАПУСКАЕМ ПЛАТФОРМЕННЫЕ МЕНЕДЖЕРЫ И ЖДЕМ ---
     const platform = detectPlatform();
     appState.platform = platform; // Store detected platform in state
 
@@ -92,7 +96,7 @@ async function startFullApplication(appState) { // Renamed state to appState to 
     if (layoutManager) await layoutManager.initialize();
     if (inputManager) await inputManager.initialize();
 
-    // --- ШАГ C: ЗАПУСКАЕМ ОСТАЛЬНЫЕ МОДУЛИ ---
+    // --- ШАГ D: ЗАПУСКАЕМ ОСТАЛЬНЫЕ МОДУЛИ ---
     // Эти функции должны быть адаптированы, чтобы принимать appState
     initializePrompts(appState);
     initializeVersionManager(appState);
@@ -104,7 +108,7 @@ async function startFullApplication(appState) { // Renamed state to appState to 
     initializeRightPanel(appState);
     // initFileEditor(appState); // If you have a file editor module
 
-    // --- ШАГ D: ФИНАЛЬНЫЙ РАСЧЕТ МАКЕТА И ЗАПУСК АНИМАЦИИ ---
+    // --- ШАГ E: ФИНАЛЬНЫЙ РАСЧЕТ МАКЕТА И ЗАПУСК АНИМАЦИИ ---
     // Небольшая задержка, чтобы браузер успел применить все CSS
     setTimeout(() => {
         // updateHologramLayout typically would be part of layoutManager or called by it.
