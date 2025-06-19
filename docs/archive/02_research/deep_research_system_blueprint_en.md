@@ -1,3 +1,4 @@
+> **[DISCLAIMER]** This document outlines visionary concepts, research notes, or future plans. It does **not** describe the current, implemented architecture of the project. For an accurate description of the current system, please refer to `docs/architecture/SYSTEM_DESCRIPTION.MD`.
 Detailed Technical Project of the "Holographic Media" Platform: MVP and Visionary Architecture
 I. Executive Summary
 The "Holographic Media" (holograms.media) project represents an ambitious initiative focused on establishing a multimodal, immersive platform for human interaction with information and artificial intelligence (AI) through dynamic 3D audio-visualizations, referred to as "holograms".1 A central component within this evolving ecosystem is "Tria," an AI assistant capable of self-learning and continuous evolution.1 The project endeavors to transcend conventional communication barriers by integrating gestural and voice control alongside the self-learning capabilities of the "Tria" AI assistant.1
@@ -154,7 +155,7 @@ auth.py: Authentication and authorization routes.1
 services/: Business logic and orchestration services.1
 CoordinationService.py: Central orchestrator for "Tria" bots.1
 AuthService.py: User authentication and authorization.1
-NetHologlyphService.py: Handles NetHoloGlyph protocol serialization/deserialization and routing.1
+NetHoloGlyphService.py: Handles NetHoloGlyph protocol serialization/deserialization and routing.1
 StorageService.py: Interacts with Cloud Storage for assets.1
 tria_bots/: Individual "Tria" AI bots.1
 __init__.py: (empty or defines bot registry).1
