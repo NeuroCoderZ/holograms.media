@@ -1,5 +1,4 @@
 // ... (все импорты остаются вверху) ...
-import * as THREE from 'three';
 import { initCore, state } from './core/init.js';
 import { initializeMainUI } from './ui/uiManager.js';
 import { ConsentManager } from './core/consentManager.js';
@@ -31,20 +30,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     // initCore now likely populates the state directly or returns it.
     // Assuming initCore updates a global or passed-in state object.
     await initCore();
-
-    console.log('[LIFESPARK] Overriding active camera for diagnostics...');
-    const rescueCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    rescueCamera.position.z = 50; // Ставим ее подальше, чтобы точно всё видеть
-    state.activeCamera = rescueCamera; // Принудительно заменяем активную камеру
-    console.log('[LIFESPARK] Active camera is now a PerspectiveCamera:', state.activeCamera);
-
-    console.log('[LIFESPARK] Adding a visual beacon to the scene...');
-    const beacon = new THREE.Mesh(
-        new THREE.BoxGeometry(10, 10, 10),
-        new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true }) // Ярко-зеленый и каркасный
-    );
-    state.scene.add(beacon);
-    console.log('[LIFESPARK] Beacon added. Scene now has', state.scene.children.length, 'children.');
 
     initializeMainUI(state); // initializeMainUI needs access to state.uiElements
 
