@@ -1,0 +1,68 @@
+// API V1 УСТАРЕЛ: Этот документ описывает устаревшую версию API V1 и не должен использоваться для новой разработки. Актуальную информацию см. в автогенерируемой документации FastAPI (/docs) на развернутом бэкенде или в соответствующих разделах SystemDescription.md.
+// DEPRECATED: This document is outdated. Refer to the auto-generated FastAPI documentation at /docs on the deployed backend.
+<!-- TODO: REVIEW FOR DEPRECATION - Significantly incomplete and outdated. Does not reflect current API including R2 chunk uploads or Neon DB usage implications. Needs full rewrite or archival. -->
+{
+    "endpoints": [
+      {
+        "path": "/chat",
+        "method": "POST",
+        "description": "Отправить сообщение в чат Триа. Используйте это для взаимодействия с AI ассистентом.",
+        "parameters": {
+          "message": {
+            "type": "string",
+            "description": "Текстовое сообщение пользователя для Триа."
+          },
+          "model": {
+            "type": "string",
+            "description": "Модель для использования (по умолчанию mistral/mistral-small-latest)."
+          },
+          "history": {
+            "type": "array",
+            "description": "История чата в формате [{\"role\": \"user\", \"content\": \"text\"}, {\"role\": \"assistant\", \"content\": \"text\"}]."
+          }
+        },
+        "returns": {
+          "response": {
+            "type": "string",
+            "description": "Ответ от Триа."
+          },
+          "should_vocalize": {
+            "type": "boolean",
+            "description": "Следует ли Триа озвучить ответ."
+          }
+        }
+      },
+      {
+        "path": "/tria/invoke",
+        "method": "POST",
+        "description": "Вызвать Триа для выполнения запроса. Используйте для выполнения задач.",
+        "parameters": {
+          "query": {
+            "type": "string",
+            "description": "Запрос к Триа для выполнения задачи."
+          }
+        },
+        "returns": {
+          "response": {
+            "type": "string",
+            "description": "Результат выполнения запроса Триа."
+          }
+        }
+      },
+      {
+        "path": "/health",
+        "method": "GET",
+        "description": "Проверка состояния API Holograms.Media."
+      },
+      {
+        "path": "/branches",
+        "method": "POST",
+        "description": "Создать новую версию ветки голограммы."
+      },
+      {
+        "path": "/branches/{branch}",
+        "method": "GET",
+        "description": "Получить список версий для указанной ветки голограммы."
+      }
+    ]
+  }
