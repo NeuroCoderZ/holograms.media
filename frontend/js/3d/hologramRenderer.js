@@ -278,6 +278,20 @@ export class HologramRenderer {
     columnMesh.position.set(width / 2, (semitoneIndex + 1) * 2, 0);
     
     columnGroup.add(columnMesh);
+
+    console.log('[Hologram Autopsy] Column Created:', {
+        isMesh: columnMesh instanceof THREE.Mesh,
+        geometrySize: columnMesh.geometry.parameters, // { width, height, depth }
+        initialScale: { ...columnMesh.scale },
+        initialPosition: { ...columnMesh.position },
+        material: {
+            color: columnMesh.material.color.getHexString(),
+            opacity: columnMesh.material.opacity,
+            transparent: columnMesh.material.transparent,
+            visible: columnMesh.material.visible
+        }
+    });
+
     return columnGroup;
   }
 
@@ -303,6 +317,9 @@ export class HologramRenderer {
       this.leftSequencerGroup.add(columnLeft);
       this.rightSequencerGroup.add(columnRight);
     }
+
+    console.log('[Hologram Autopsy] All columns initialized. Total columns in renderer instance:', this.columns.length);
+    console.log('[Hologram Autopsy] Children in mainSequencerGroup after init:', this.mainSequencerGroup.children.length);
   }
 
   /**
@@ -313,6 +330,11 @@ export class HologramRenderer {
    * @param {Float32Array} panAngles - Array of 130 pan angles in degrees (-90 to +90).
    */
   updateVisuals(dbLevels, panAngles) {
+    if (!window.updateVisualsCheck) {
+        console.log('[Hologram Autopsy] First call to updateVisuals received data:', { dbLevels, panAngles });
+        window.updateVisualsCheck = true;
+    }
+
     if (!dbLevels || !panAngles || dbLevels.length !== 260 || panAngles.length !== 130) {
         console.warn("Audio data (levels or angles) not provided or insufficient length. Skipping update.");
         // Optionally, reset all columns to a default silent/centered state
@@ -341,6 +363,9 @@ export class HologramRenderer {
         return;
     }
 
+    // --- НАЧАЛО ДИАГНОСТИЧЕСКОГО БЛОКА ---
+    // Закомментируй или удали оригинальный цикл forEach
+    /*
     this.columns.forEach((columnPair, index) => { // 'index' corresponds to semitone index (0-129)
       const leftLevel = dbLevels[index];
       const rightLevel = dbLevels[index + 130];
@@ -393,24 +418,14 @@ export class HologramRenderer {
         const maxPanShift = columnPair.semitoneData.width / 2; 
         let panShiftX = panFactor * maxPanShift;
 
-        // For the left grid, we want higher panFactor (more positive angle) to shift it towards its right (towards center of main group)
-        // For the right grid, we want higher panFactor (more positive angle) to shift it towards its right (away from center of main group)
-        // The `isLeft` flag helps determine the direction of the shift relative to the grid's orientation.
         if (channel.isLeft) {
-            // Left grid: X increases from right to left. Positive pan shifts to the right (less X, closer to origin).
-            // Negative pan shifts to the left (more X, further from origin).
-            // So, for left channel, a positive panAngle should decrease X (move left).
-            // This means original panFactor needs to be inverted for left channel group.position.x.
             channel.meshGroup.position.x = initialX - panShiftX;
         } else {
-            // Right grid: X increases from left to right. Positive pan shifts to the right (more X, further from origin).
-            // Negative pan shifts to the left (less X, closer to origin).
             channel.meshGroup.position.x = initialX + panShiftX;
         }
 
         // Diagnostics for first column only
         if (index === 0) {
-            // Use mesh.scale.z as it reflects the actually applied scale
             if (channel.isLeft && mesh.scale.z > 0.05) {
                 console.log(`[HologramRenderer DEBUG] Left Column 0 scale: ${mesh.scale.z.toFixed(3)}, panShiftX: ${panShiftX.toFixed(3)}, finalX: ${channel.meshGroup.position.x.toFixed(3)}`);
             } else if (!channel.isLeft && mesh.scale.z > 0.05) {
@@ -420,6 +435,24 @@ export class HologramRenderer {
 
       });
     });
+    */
+
+    // Добавь этот простой цикл для теста
+    const time = Date.now() * 0.001;
+    this.columns.forEach((columnPair, index) => {
+        const scaleValue = (Math.sin(time + index * 0.5) + 1) * 0.5 + 0.1; // от 0.1 до 1.1
+
+        // Принудительно анимируем левую и правую колонны
+        if(columnPair.left && columnPair.left.children[0]) { // Added null check for columnPair.left
+            columnPair.left.children[0].scale.z = scaleValue * 20; // 20 - просто для заметности
+            columnPair.left.children[0].position.z = columnPair.left.children[0].scale.z / 2;
+        }
+         if(columnPair.right && columnPair.right.children[0]) { // Added null check for columnPair.right
+            columnPair.right.children[0].scale.z = scaleValue * 20;
+            columnPair.right.children[0].position.z = columnPair.right.children[0].scale.z / 2;
+        }
+    });
+    // --- КОНЕЦ ДИАГНОСТИЧЕСКОГО БЛОКА ---
   }
 
   /**
