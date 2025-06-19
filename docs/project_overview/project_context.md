@@ -3,42 +3,40 @@
 
 Этот документ описывает текущий практический контекст и статус проекта "Голографические Медиа". Он должен рассматриваться в свете общей концепции и философии, изложенной в `docs/00_OVERVIEW_AND_CONTEXT/CONCEPT_AND_PHILOSOPHY.md`.
 
-## Текущее Состояние Проекта (Акцент на Firebase MVP)
+## Текущее Состояние Проекта
 
-Проект "Голографические Медиа" находится в активной фазе разработки MVP (Minimum Viable Product) с использованием экосистемы Google Cloud/Firebase. Основные усилия направлены на реализацию ключевых функций, описанных в [ULTIMATE ROAD TO MVP JUNE 9](docs/05_PLANNING_AND_TASKS/ULTIMATE_ROAD_TO_MVP_JUNE_9.md).
+Проект "Голографические Медиа" находится в активной фазе разработки MVP (Minimum Viable Product).
+*Последнее обновление: July 30, 2024*
 
 **Ключевые компоненты и их статус:**
-*   **Инфраструктура:** Полностью развернута на Firebase (Hosting, Cloud Functions, Authentication, Storage) и Neon.tech (PostgreSQL с pgvector). Бэкенд также частично развернут на Koyeb для тестирования альтернатив.
-*   **Бэкенд:** Логика реализуется как набор Firebase Cloud Functions (Python), расположенных в `backend/` (основной файл `main.py` или поддиректория `cloud_functions/`) с общей логикой в `backend/core/`. Альтернативный FastAPI бэкенд для некоторых сервисов (например, загрузка чанков в B2) размещен в `backend/app.py` и развернут на Koyeb.
-*   **Фронтенд:** Модульная структура на чистом JavaScript (ES6), размещенная на Firebase Hosting. Ведется работа по стабилизации UI и визуализации голограммы (Three.js/WebGL).
-*   **Аутентификация:** Firebase Authentication интегрирована для управления пользователями.
-*   **Хранение Данных:**
-    - Neon.tech PostgreSQL для метаданных, пользовательской информации и данных Триа.
-    - Используется Backblaze B2 (10 ГБ, 1 ГБ/день скачивания) для хранения "чанков".
-    - Интеграция через `boto3` в `backend/app.py` (развернуто на Koyeb).
-    - Эндпоинт для загрузки: `/upload-chunk`.
-    - Результаты тестирования и детали интеграции: см. `docs/04_SPIKE_AND_RESEARCH/Backend_Platform_Alternatives_Flash.md`.
-    - Firebase Storage может использоваться для других нужд или как резерв.
-*   **AI "Триа" (MVP):** Базовая логика ответов реализуется в Cloud Functions с прямыми вызовами LLM API (Mistral, Google Gemini). Планируется переход на Genkit для оркестрации.
+*   **Фронтенд:** Модульная структура на чистом JavaScript (ES6), размещенная на **Firebase Hosting**. Ведется работа по стабилизации UI и визуализации голограммы (Three.js/WebGL).
+*   **Бэкенд API и Вычисления:** Основной бэкенд API реализован на **FastAPI (Python)** и развернут на **Koyeb**. Этот сервис отвечает за основную бизнес-логику, обработку запросов и взаимодействие с другими компонентами.
+*   **Хранилище Файлов (Чанков):** **Cloudflare R2** используется для хранения медиа-"чанков" (аудио, видео). Загрузка файлов в R2 осуществляется через FastAPI бэкенд на Koyeb.
+*   **База Данных:** **Neon.tech PostgreSQL** (с расширением pgvector) используется для хранения метаданных, пользовательской информации, истории взаимодействий и данных для AI Триа.
+*   **Аутентификация:** **Firebase Authentication** интегрирована для управления пользователями и защиты API.
+*   **Серверная Логика Триа и Вспомогательные Задачи:** Часть логики AI "Триа", обработка событий и другие вспомогательные задачи могут быть реализованы с использованием **Firebase Cloud Functions (Python)**, которые тесно интегрируются с Firebase Authentication и другими сервисами Firebase. FastAPI на Koyeb остается основной точкой входа для большинства операций API.
+*   **AI "Триа" (MVP):** Базовая логика ответов Триа разрабатывается с использованием LLM API (Mistral, Google Gemini), оркестрация планируется через Genkit, интегрированный в бэкенд-инфраструктуру.
+
+*Ссылка на детальный план MVP:* [ULTIMATE ROAD TO MVP JUNE 9](docs/05_PLANNING_AND_TASKS/ULTIMATE_ROAD_TO_MVP_JUNE_9.md) (Примечание: этот план может требовать актуализации в свете текущих дат и прогресса).
 
 ## Цели Текущей Итерации (MVP Sprint)
 
-**Основные цели текущей итерации (согласно [ULTIMATE ROAD TO MVP JUNE 9](docs/05_PLANNING_AND_TASKS/ULTIMATE_ROAD_TO_MVP_JUNE_9.md)):**
+**Основные цели текущей итерации (адаптировано из [ULTIMATE ROAD TO MVP JUNE 9](docs/05_PLANNING_AND_TASKS/ULTIMATE_ROAD_TO_MVP_JUNE_9.md)):**
 1.  **Завершение и демонстрация всех основных функций MVP:**
     *   Аутентификация пользователей (Firebase Authentication).
-    *   Загрузка медиа-"чанков" (Backblaze B2 через FastAPI на Koyeb, триггеры Cloud Functions для последующей обработки).
-    *   Базовая обработка "чанков" и ответы от Триа (Cloud Functions + LLM API).
+    *   Загрузка медиа-"чанков" (Cloudflare R2 через FastAPI на Koyeb).
+    *   Базовая обработка "чанков" и ответы от Триа (преимущественно через FastAPI на Koyeb, с возможным использованием Firebase Cloud Functions для вспомогательных операций + LLM API).
     *   Аудио-реактивная визуализация голограммы на фронтенде (Firebase Hosting).
     *   Сохранение и базовое извлечение пользовательских данных и истории из Neon.tech PostgreSQL.
-2.  **Стабилизация и тестирование** всего цикла MVP на платформе Firebase и Koyeb (для B2 интеграции).
-3.  **Актуализация ключевой документации** (`README.md`, `SYSTEM_INSTRUCTION_CURRENT.md`, `SYSTEM_ARCHITECTURE.md`) для отражения Firebase-архитектуры и интеграции B2.
-4.  Обеспечение работы в рамках **бесплатных квот** Firebase, Neon.tech и Backblaze B2.
+2.  **Стабилизация и тестирование** всего цикла MVP, включая взаимодействие FastAPI на Koyeb, Cloudflare R2, Firebase (Hosting, Auth, Functions) и Neon.tech.
+3.  **Актуализация ключевой документации** (`README.md`, `SYSTEM_INSTRUCTION_CURRENT.md`, `SYSTEM_ARCHITECTURE.MD`) для отражения текущей архитектуры.
+4.  Обеспечение работы в рамках **бесплатных или экономичных квот** используемых сервисов (Koyeb, Cloudflare R2, Firebase, Neon.tech).
 
 ## Ключевые Технические Вызовы и Задачи (MVP Focus)
 
 *   **Стабилизация Фронтенда:** Обеспечение надежной работы аудио-реактивной визуализации и UI на Firebase Hosting.
-*   **Надежность Firebase Cloud Functions и FastAPI на Koyeb:** Тщательное тестирование функций, обработка ошибок, оптимизация "холодных стартов".
-*   **Интеграция Сервисов:** Бесшовная и безопасная работа Firebase Authentication, Hosting, Cloud Functions, FastAPI на Koyeb, Backblaze B2 и Neon.tech PostgreSQL.
+*   **Надежность Бэкенда:** Тщательное тестирование FastAPI на Koyeb и любых используемых Firebase Cloud Functions, обработка ошибок, оптимизация производительности.
+*   **Интеграция Сервисов:** Бесшовная и безопасная работа всех компонентов: FastAPI на Koyeb, Cloudflare R2, Firebase Authentication, Firebase Hosting, Firebase Cloud Functions (если используются для основной логики), и Neon.tech PostgreSQL.
 *   **Работа с Neon.tech PostgreSQL:** Эффективное использование pgvector (если применимо для MVP RAG), оптимизация запросов.
 *   **Безопасность:** Корректная настройка правил безопасности Firebase, защита API-эндпоинтов (Cloud Functions и FastAPI).
 *   **AI-Логика Триа для MVP:** Эффективный промпт-инжиниринг для прямых вызовов LLM, управление задержками.
@@ -52,53 +50,52 @@
 *   **[Дата] Утверждение Плана MVP:** Документ `ULTIMATE_ROAD_TO_MVP_JUNE_9.md` принят как основной операционный план.
 *   **[Дата] Настройка Firebase Проекта:** Создан и сконфигурирован проект Firebase (Hosting, Functions, Auth, Storage).
 *   **[Дата] Первичная реализация Cloud Functions:** Разработаны первые Cloud Functions для аутентификации и обработки чанков.
-*   **[Дата] Интеграция Backblaze B2:** Добавлен FastAPI эндпоинт в `backend/app.py` для загрузки чанков в B2, развернуто на Koyeb. Соответствующая документация обновлена.
+*   **[Дата] Интеграция Cloudflare R2:** Добавлен FastAPI эндпоинт в `backend/app.py` для загрузки чанков в Cloudflare R2, развернуто на Koyeb. Соответствующая документация обновлена.
 *   (Раздел будет пополняться по мере выполнения задач из MVP-плана)
 
-## Архитектура и Модули (Кратко – Firebase MVP с интеграцией B2)
+## Архитектура и Модули (Кратко)
 
-Проект использует модульную структуру, адаптированную для Firebase и внешних сервисов.
-*   **Бэкенд (Firebase Cloud Functions & FastAPI на Koyeb):**
-    *   **Firebase Функции:** Основная логика в `backend/main.py` или `backend/cloud_functions/`.
-    *   **FastAPI (Koyeb):** Для специфических задач, например, загрузка в B2 (`backend/app.py`).
+Проект использует модульную структуру, адаптированную для текущего технологического стека.
+*   **Бэкенд (Основной - FastAPI на Koyeb; Вспомогательный - Firebase Cloud Functions):**
+    *   **FastAPI (Koyeb):** Основная бизнес-логика, API эндпоинты, обработка чанков, загрузка в Cloudflare R2 (`backend/app.py`).
+    *   **Firebase Cloud Functions:** Могут использоваться для задач, тесно связанных с Firebase (например, триггеры Auth, специфические уведомления Firebase), или для части логики Триа, если это целесообразно.
     *   **Общая логика:** Модули в `backend/core/` (для работы с БД Neon.tech, LLM API, бизнес-логика ботов Триа).
     *   **База данных:** Neon.tech PostgreSQL с pgvector.
-    *   **Аутентификация:** Firebase Authentication.
-    *   **Хранилище файлов (чанков):** Backblaze B2.
-    *   **Хранилище файлов (другое):** Firebase Storage.
+    *   **Аутентификация:** Firebase Authentication (проверка токенов на бэкенде).
+    *   **Хранилище файлов (чанков):** Cloudflare R2.
 *   **Фронтенд (Firebase Hosting):**
     *   Чистый JavaScript (ES6 Modules), HTML5, CSS3.
     *   `frontend/js/main.js` как точка входа.
     *   `frontend/js/core/`: Ядро фронтенда (состояние, события).
     *   `frontend/js/3d/`: Three.js/WebGL для визуализации.
-    *   `frontend/js/services/`: Взаимодействие с Firebase (Auth, Storage, Cloud Functions через `apiService.js`) и FastAPI на Koyeb.
+    *   `frontend/js/services/`: Взаимодействие с FastAPI на Koyeb (через `apiService.js`) и Firebase (Auth).
     *   `frontend/js/ui/`: UI-компоненты и менеджеры.
     *   `frontend/js/audio/`: Web Audio API.
 
-Более детально архитектура описана в [SYSTEM_ARCHITECTURE.md](docs/01_ARCHITECTURE/SYSTEM_ARCHITECTURE.md) и [MODULE_CATALOG.md](docs/01_ARCHITECTURE/MODULE_CATALOG.md).
+Более детально архитектура описана в [SYSTEM_ARCHITECTURE.MD](docs/01_ARCHITECTURE/SYSTEM_ARCHITECTURE.md) и [MODULE_CATALOG.MD](docs/01_ARCHITECTURE/MODULE_CATALOG.md).
 Ключевые аспекты текущей реализации и планы зафиксированы в [SYSTEM_INSTRUCTION_CURRENT.md](docs/03_SYSTEM_INSTRUCTIONS_AI/SYSTEM_INSTRUCTION_CURRENT.md).
 
 ## СЛЕДУЮЩИЕ ШАГИ (MVP)
 
 1.  **Завершение разработки всех функций MVP** согласно [ULTIMATE_ROAD_TO_MVP_JUNE_9.md](docs/05_PLANNING_AND_TASKS/ULTIMATE_ROAD_TO_MVP_JUNE_9.md).
-2.  **Комплексное тестирование** на Firebase Local Emulator Suite, в облачной среде Firebase и на Koyeb.
+2.  **Комплексное тестирование** всей системы: Frontend на Firebase Hosting, Backend на Koyeb, Cloudflare R2, Neon.tech DB, Firebase Auth и Functions.
 3.  **Отладка и оптимизация** для обеспечения стабильной работы MVP.
 4.  **Подготовка демонстрационных материалов** и финальной версии `README.md`.
 5.  **Проверка соответствия** всем "Definition of Done" для MVP.
 
-## Среда Разработки и Развертывания (Firebase Ecosystem + Koyeb)
+## Среда Разработки и Развертывания
 
-*   **Основная IDE:** Firebase Studio (Project IDX).
-*   **Локальная разработка/тестирование:** Firebase Local Emulator Suite, локальный запуск FastAPI.
+*   **Основная IDE:** Firebase Studio (Project IDX) или VS Code.
+*   **Локальная разработка/тестирование:** Firebase Local Emulator Suite (для Hosting, Auth, Functions), локальный запуск FastAPI.
 *   **Удаленный репозиторий:** GitHub (`github.com/NeuroCoderZ/holograms.media`).
-*   **CI/CD:** GitHub Actions для автоматического развертывания на Firebase Hosting, Firebase Cloud Functions и Koyeb.
+*   **CI/CD:** GitHub Actions для автоматического развертывания на Firebase Hosting и Koyeb.
 *   **Продакшн (MVP):**
     *   Frontend: Firebase Hosting.
-    *   Backend (основной): Firebase Cloud Functions (Python).
-    *   Backend (B2 uploader): FastAPI на Koyeb (Python).
+    *   Backend (API, основная логика): FastAPI на Koyeb (Python).
+    *   Backend (вспомогательные задачи/триггеры Firebase): Firebase Cloud Functions (Python).
     *   Database: Neon.tech PostgreSQL.
-    *   Storage (чанков): Backblaze B2.
-    *   Storage (другое): Firebase Storage.
+    *   Storage (чанков): Cloudflare R2.
+    *   Authentication: Firebase Authentication.
 
 ## Команда
 
@@ -108,5 +105,5 @@
 
 ---
 
-*Последнее обновление: [Current Date]*
+*Последнее обновление: July 30, 2024*
 ````
