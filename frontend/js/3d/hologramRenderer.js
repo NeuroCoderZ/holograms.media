@@ -279,19 +279,6 @@ export class HologramRenderer {
     
     columnGroup.add(columnMesh);
 
-    console.log('[Hologram Autopsy] Column Created:', {
-        isMesh: columnMesh instanceof THREE.Mesh,
-        geometrySize: columnMesh.geometry.parameters, // { width, height, depth }
-        initialScale: { ...columnMesh.scale },
-        initialPosition: { ...columnMesh.position },
-        material: {
-            color: columnMesh.material.color.getHexString(),
-            opacity: columnMesh.material.opacity,
-            transparent: columnMesh.material.transparent,
-            visible: columnMesh.material.visible
-        }
-    });
-
     return columnGroup;
   }
 
@@ -318,8 +305,6 @@ export class HologramRenderer {
       this.rightSequencerGroup.add(columnRight);
     }
 
-    console.log('[Hologram Autopsy] All columns initialized. Total columns in renderer instance:', this.columns.length);
-    console.log('[Hologram Autopsy] Children in mainSequencerGroup after init:', this.mainSequencerGroup.children.length);
   }
 
   /**
@@ -330,11 +315,6 @@ export class HologramRenderer {
    * @param {Float32Array} panAngles - Array of 130 pan angles in degrees (-90 to +90).
    */
   updateVisuals(dbLevels, panAngles) {
-    if (!window.updateVisualsCheck) {
-        console.log('[Hologram Autopsy] First call to updateVisuals received data:', { dbLevels, panAngles });
-        window.updateVisualsCheck = true;
-    }
-
     if (!dbLevels || !panAngles || dbLevels.length !== 260 || panAngles.length !== 130) {
         console.warn("Audio data (levels or angles) not provided or insufficient length. Skipping update.");
         // Optionally, reset all columns to a default silent/centered state
@@ -363,9 +343,6 @@ export class HologramRenderer {
         return;
     }
 
-    // --- НАЧАЛО ДИАГНОСТИЧЕСКОГО БЛОКА ---
-    // Закомментируй или удали оригинальный цикл forEach
-    /*
     this.columns.forEach((columnPair, index) => { // 'index' corresponds to semitone index (0-129)
       const leftLevel = dbLevels[index];
       const rightLevel = dbLevels[index + 130];
@@ -400,8 +377,15 @@ export class HologramRenderer {
         }
         
         // Directly assign the Z-scale and Z-position
-        mesh.scale.z = targetScaleZ;
-        mesh.position.z = targetScaleZ / 2; // Center the scaled mesh
+        if (index === 0 && channel.isLeft) {
+            // Hardcode scale for the left column of the first pair
+            // leftColumnMesh.scale.z = newLeftScaleZ; // Original line commented out
+            mesh.scale.z = 10;
+            mesh.position.z = mesh.scale.z / 2; // which will be 5
+        } else {
+            mesh.scale.z = targetScaleZ;
+            mesh.position.z = targetScaleZ / 2; // Center the scaled mesh
+        }
 
         // Update emissive intensity
         if (material instanceof THREE.MeshStandardMaterial) {
@@ -424,6 +408,17 @@ export class HologramRenderer {
             channel.meshGroup.position.x = initialX + panShiftX;
         }
 
+        // ОДНОРАЗОВЫЙ ЛОГ ДЛЯ ПЕРВОЙ КОЛОНКИ
+        if (index === 0 && channel.isLeft && !window.updateCheck) {
+            console.log('[Hologram LIVE] UpdateVisuals Tick:', {
+                receivedDbLevel: dbLevels[0], // Assuming dbLevels is accessible directly
+                calculatedAmplitude: normalizedAmplitude, // This is 'leftAmplitude' for the left channel
+                finalScaleZ: targetScaleZ, // This is 'newLeftScaleZ' for the left channel
+                panAngle: panAngles[0] // Assuming panAngles is accessible directly
+            });
+            window.updateCheck = true;
+        }
+
         // Diagnostics for first column only
         if (index === 0) {
             if (channel.isLeft && mesh.scale.z > 0.05) {
@@ -437,22 +432,8 @@ export class HologramRenderer {
     });
     */
 
-    // Добавь этот простой цикл для теста
-    const time = Date.now() * 0.001;
-    this.columns.forEach((columnPair, index) => {
-        const scaleValue = (Math.sin(time + index * 0.5) + 1) * 0.5 + 0.1; // от 0.1 до 1.1
-
-        // Принудительно анимируем левую и правую колонны
-        if(columnPair.left && columnPair.left.children[0]) { // Added null check for columnPair.left
-            columnPair.left.children[0].scale.z = scaleValue * 20; // 20 - просто для заметности
-            columnPair.left.children[0].position.z = columnPair.left.children[0].scale.z / 2;
-        }
-         if(columnPair.right && columnPair.right.children[0]) { // Added null check for columnPair.right
-            columnPair.right.children[0].scale.z = scaleValue * 20;
-            columnPair.right.children[0].position.z = columnPair.right.children[0].scale.z / 2;
-        }
+      });
     });
-    // --- КОНЕЦ ДИАГНОСТИЧЕСКОГО БЛОКА ---
   }
 
   /**
