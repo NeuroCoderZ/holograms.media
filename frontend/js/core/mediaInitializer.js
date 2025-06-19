@@ -47,10 +47,10 @@ async function initializeMultimedia(appState) { // Added appState parameter
 
         // if (appState.multimodal.videoElementForHands && appState.multimodal.handsInstance) {
         //     // startVideoStream will be modified in a subsequent step to accept the stream
-        //     await startVideoStream(appState.multimodal.videoElementForHands, appState.multimodal.handsInstance, stream);
-        //     console.log('Video stream started with shared stream for hand tracking.');
+        //     // await startVideoStream(appState.multimodal.videoElementForHands, appState.multimodal.handsInstance, stream);
+        //     // console.log('Video stream started with shared stream for hand tracking.');
         // } else {
-        //     console.error('videoElementForHands or handsInstance not ready for startVideoStream.');
+        //     // console.error('videoElementForHands or handsInstance not ready for startVideoStream.');
         // }
 
     } catch (err) {

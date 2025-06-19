@@ -56,19 +56,33 @@ export default class MobileLayout {
     }
 
     initializeMainPanelState() {
-        this.leftPanelElement.classList.remove('visible');
-        if (this.rightPanelElement) {
-            this.rightPanelElement.classList.remove('visible');
-        }
-        this.togglePanelsButtonElement.classList.add('show-mode');
+        // this.leftPanelElement.classList.remove('visible');
+        // if (this.rightPanelElement) {
+        //     this.rightPanelElement.classList.remove('visible');
+        // }
+        // this.togglePanelsButtonElement.classList.add('show-mode');
 
-        this.leftPanelElement.classList.remove('hidden');
-        if (this.rightPanelElement) {
+        // this.leftPanelElement.classList.remove('hidden');
+        // if (this.rightPanelElement) {
+        //     this.rightPanelElement.classList.remove('hidden');
+        // }
+
+        // Force visibility for left panel, ensure right panel is hidden, and button is not in show-mode
+        if (this.leftPanelElement) {
+            this.leftPanelElement.classList.add('visible');
+            this.leftPanelElement.classList.remove('hidden'); // Ensure old class is removed
+        }
+        if (this.rightPanelElement) { // Keep right panel hidden on mobile
+            this.rightPanelElement.classList.remove('visible');
             this.rightPanelElement.classList.remove('hidden');
+        }
+        if (this.togglePanelsButtonElement) {
+            this.togglePanelsButtonElement.classList.remove('show-mode');
         }
 
         if (typeof updateHologramLayout === 'function') updateHologramLayout(this.state); // Pass state
-        console.log(`[MobileLayout] Panels initialized. Defaulting to hidden.`);
+        const leftPanelVisibility = this.leftPanelElement ? this.leftPanelElement.classList.contains('visible') : 'N/A';
+        console.log(`[MobileLayout] Panels initialized (forced). Left panel visible: ${leftPanelVisibility}`);
     }
 
     toggleMainPanels() {
