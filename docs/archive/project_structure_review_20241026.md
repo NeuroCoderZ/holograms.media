@@ -1,3 +1,4 @@
+> **[DISCLAIMER]** This document outlines visionary concepts, research notes, or future plans. It does **not** describe the current, implemented architecture of the project. For an accurate description of the current system, please refer to `docs/architecture/SYSTEM_DESCRIPTION.MD`.
 # Project Document Organization and Structure Review (2024-10-26)
 
 This document provides a review of the current project structure, identifies auxiliary textual documents, and proposes a reorganized document structure for better clarity and maintainability.
