@@ -1,9 +1,8 @@
-<!-- TODO: Update [Текущая дата] placeholder with actual current date. -->
 План Развития Проекта "Голографические Медиа" (Версия Июль 2024)
 
-Дата актуализации: [Текущая дата]
+Дата актуализации: July 30, 2024
 Репозиторий: https://github.com/NeuroCoderZ/holograms.media
-Ключевые документы-сателлиты: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md), [SYSTEM_ARCHITECTURE.md](../01_ARCHITECTURE/SYSTEM_ARCHITECTURE.md), [CONCEPT_AND_PHILOSOPHY.md](./CONCEPT_AND_PHILOSOPHY.md)
+Ключевые документы-сателлиты: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md), [SYSTEM_ARCHITECTURE.MD](../01_ARCHITECTURE/SYSTEM_ARCHITECTURE.md), [CONCEPT_AND_PHILOSOPHY.md](./CONCEPT_AND_PHILOSOPHY.md)
 
 I. Фаза "Стабилизация и Фундамент" (Текущий этап - Q2-Q3 2025)
 
@@ -19,7 +18,7 @@ Q2 2025 (Май - Июнь)
 
 Исправление оставшихся ошибок в cameraManager.js, rightPanelManager.js и других проблемных модулях.
 
-Обеспечение корректной загрузки и работы базового UI на Hugging Face Spaces.
+Обеспечение корректной загрузки и работы базового UI на **Firebase Hosting**.
 
 Отрисовка базовой 3D-сцены (голограммы) без ошибок.
 
@@ -74,7 +73,7 @@ Q3 2025 (Июль - Сентябрь)
 
 Настройка Hot Module Replacement (HMR) для локальной разработки.
 
-Адаптация Dockerfile и процесса деплоя на HF Spaces для использования собранных артефактов.
+Адаптация процесса деплоя на **Firebase Hosting** для использования собранных артефактов (если применимо, Vite обычно создает статические файлы для `public` директории Firebase).
 
 Результат: Ускоренные циклы разработки, оптимизированный фронтенд.
 
