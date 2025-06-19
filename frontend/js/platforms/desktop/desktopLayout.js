@@ -78,8 +78,23 @@ export default class DesktopLayout {
 
         const arePanelsCurrentlyVisible = this.leftPanelElement.classList.contains('visible');
 
-        this.leftPanelElement.classList.toggle('visible');
+        // --- Visibility Check logging for leftPanelElement ---
+        if (this.leftPanelElement) {
+            console.log('[Visibility Check] Before toggle, #left-panel classes:', this.leftPanelElement.className);
+            this.leftPanelElement.classList.toggle('visible');
+            console.log('[Visibility Check] After toggle, #left-panel classes:', this.leftPanelElement.className);
+            console.log('[Visibility Check] Has .visible class now:', this.leftPanelElement.classList.contains('visible'));
+        } else {
+            // This case is already handled by the check at the beginning of the function,
+            // but adding a specific log here if we were to rely on the snippet's structure.
+            // For now, the initial check is sufficient. If leftPanelElement is null, it won't reach here.
+            // console.error('[Visibility Check] #left-panel (this.leftPanelElement) not found before toggle.');
+        }
+
+        // Original logic for right panel toggle (it's guarded by the function's initial null check for elements)
         this.rightPanelElement.classList.toggle('visible');
+
+        // --- End Visibility Check logging for leftPanelElement (right panel toggle is separate) ---
 
         const newState = arePanelsCurrentlyVisible ? 'hidden' : 'visible';
         this.togglePanelsButtonElement.classList.toggle('show-mode', arePanelsCurrentlyVisible);
