@@ -103,20 +103,6 @@ async function startFullApplication(appState) { // Renamed state to appState to 
     initializeRightPanel(appState);
     // initFileEditor(appState); // If you have a file editor module
 
-    // In main.js, after initialization of all main components
-    console.log('[Visibility Check] Attaching renderer to DOM...');
-    const gridContainer = appState.uiElements.gridContainer; // Get from appState
-    if (gridContainer && appState.renderer && appState.renderer.domElement) {
-        if (!gridContainer.contains(appState.renderer.domElement)) {
-            gridContainer.appendChild(appState.renderer.domElement);
-            console.log('[Visibility Check] Renderer DOM element was successfully appended to #grid-container.');
-        } else {
-            console.log('[Visibility Check] Renderer DOM element is already in #grid-container.');
-        }
-    } else {
-        console.error('[Visibility Check] Failed to attach renderer: gridContainer or renderer not found in appState.');
-    }
-
     // --- ШАГ D: ФИНАЛЬНЫЙ РАСЧЕТ МАКЕТА И ЗАПУСК АНИМАЦИИ ---
     // Небольшая задержка, чтобы браузер успел применить все CSS
     setTimeout(() => {
