@@ -1,5 +1,9 @@
 // frontend/js/rendering.js - Модуль для логики 3D-рендеринга
 
+// At the top of frontend/js/3d/rendering.js
+window.renderCheck = true;
+window.renderCheckFrame = false;
+
 // Импорты
 import * as THREE from 'three';
 // TWEEN подключается глобально через CDN в index.html
@@ -47,11 +51,11 @@ function animate(appState, currentTime) { // Added appState
     // Render the scene
     if (appState.renderer && appState.scene && appState.activeCamera) { // Ensure activeCamera is used
         appState.renderer.clear(); // Clear before rendering
-        // Непосредственно перед appState.renderer.render(...)
+        // В rendering.js, внутри animate(), перед renderer.render(...)
+        // Этот лог должен сработать только один раз
         if (window.renderCheck && !window.renderCheckFrame) {
-            console.log('[Render-Loop Check] State just before first render call:');
-            console.log('[Render-Loop Check] Camera position:', appState.activeCamera.position);
-            console.log('[Render-Loop Check] Scene children count before render:', appState.scene.children.length);
+            console.log('[LIFESPARK Render-Check] Camera before render:', appState.activeCamera.type, appState.activeCamera.position);
+            console.log('[LIFESPARK Render-Check] Scene children count before render:', appState.scene.children.length);
             window.renderCheckFrame = true;
         }
         appState.renderer.render(appState.scene, appState.activeCamera);
