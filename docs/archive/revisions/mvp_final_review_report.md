@@ -1,3 +1,4 @@
+> **[DISCLAIMER]** This document outlines visionary concepts, research notes, or future plans. It does **not** describe the current, implemented architecture of the project. For an accurate description of the current system, please refer to `docs/architecture/SYSTEM_DESCRIPTION.MD`.
 # Итоговый Отчет Ревизии MVP (Flash - Промпт 2)
 
 **SHA коммита с обновленным \`generated_prompts.md\` (из Промпта 1):** \`ecc47fcd00ac64df80a0a3404e17e52d5f37b8b1\`

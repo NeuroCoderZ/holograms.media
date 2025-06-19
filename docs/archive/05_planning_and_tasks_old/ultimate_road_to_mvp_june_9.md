@@ -1,3 +1,4 @@
+> **[DISCLAIMER]** This document outlines visionary concepts, research notes, or future plans. It does **not** describe the current, implemented architecture of the project. For an accurate description of the current system, please refer to `docs/architecture/SYSTEM_DESCRIPTION.MD`.
 # ULTIMATE ROAD TO MVP (Strict Deadline: June 9th, 2025)
 
 ## Introduction

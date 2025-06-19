@@ -1,3 +1,4 @@
+> **[DISCLAIMER]** This document outlines visionary concepts, research notes, or future plans. It does **not** describe the current, implemented architecture of the project. For an accurate description of the current system, please refer to `docs/architecture/SYSTEM_DESCRIPTION.MD`.
 # Documentation Update Plan: MongoDB to PostgreSQL Migration
 
 This document outlines the documentation files that require updates following the migration from MongoDB to PostgreSQL, and the key changes needed for each.
