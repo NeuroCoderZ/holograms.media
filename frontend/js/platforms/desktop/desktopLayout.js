@@ -50,15 +50,18 @@ export default class DesktopLayout {
 
     initializeMainPanelState() {
         const panelsShouldBeHidden = localStorage.getItem('panelsHidden') === 'true';
+        console.log(`[DesktopLayout][initializeMainPanelState] Panels should be hidden (from localStorage): ${panelsShouldBeHidden}`);
 
         if (panelsShouldBeHidden) {
             this.leftPanelElement.classList.remove('visible');
             this.rightPanelElement.classList.remove('visible');
             this.togglePanelsButtonElement.classList.add('show-mode');
+            console.log(`[DesktopLayout][initializeMainPanelState] Panels set to HIDDEN. leftPanel visible: ${this.leftPanelElement.classList.contains('visible')}`);
         } else {
             this.leftPanelElement.classList.add('visible');
             this.rightPanelElement.classList.add('visible');
             this.togglePanelsButtonElement.classList.remove('show-mode');
+            console.log(`[DesktopLayout][initializeMainPanelState] Panels set to VISIBLE. leftPanel visible: ${this.leftPanelElement.classList.contains('visible')}`);
         }
         // Ensure old 'hidden' class is removed
         this.leftPanelElement.classList.remove('hidden');
@@ -77,31 +80,22 @@ export default class DesktopLayout {
         }
 
         const arePanelsCurrentlyVisible = this.leftPanelElement.classList.contains('visible');
+        console.log(`[DesktopLayout][toggleMainPanels] Panels currently visible (before toggle): ${arePanelsCurrentlyVisible}`);
 
-        // --- Visibility Check logging for leftPanelElement ---
-        if (this.leftPanelElement) {
-            this.leftPanelElement.classList.toggle('visible');
-        } else {
-            // This case is already handled by the check at the beginning of the function,
-            // but adding a specific log here if we were to rely on the snippet's structure.
-            // For now, the initial check is sufficient. If leftPanelElement is null, it won't reach here.
-            // console.error('[Visibility Check] #left-panel (this.leftPanelElement) not found before toggle.');
-        }
-
-        // Original logic for right panel toggle (it's guarded by the function's initial null check for elements)
+        // Toggle visibility classes
+        this.leftPanelElement.classList.toggle('visible');
         this.rightPanelElement.classList.toggle('visible');
+        this.togglePanelsButtonElement.classList.toggle('show-mode', arePanelsCurrentlyVisible); // show-mode means panels are now hidden
 
-        // --- End Visibility Check logging for leftPanelElement (right panel toggle is separate) ---
-
-        const newState = arePanelsCurrentlyVisible ? 'hidden' : 'visible';
-        this.togglePanelsButtonElement.classList.toggle('show-mode', arePanelsCurrentlyVisible);
+        const newState = this.leftPanelElement.classList.contains('visible') ? 'visible' : 'hidden';
+        console.log(`[DesktopLayout][toggleMainPanels] Panels toggled. New state: ${newState}. leftPanel visible: ${this.leftPanelElement.classList.contains('visible')}`);
 
         try {
-            localStorage.setItem('panelsHidden', arePanelsCurrentlyVisible.toString());
+            localStorage.setItem('panelsHidden', (!this.leftPanelElement.classList.contains('visible')).toString()); // Store the *new* hidden state
         } catch (e) {
             console.error('[DesktopLayout] Error saving panel visibility to localStorage:', e);
         }
-        console.log(`[DesktopLayout] Panels toggled. New state: ${newState}`);
+        console.log(`[DesktopLayout] Panels toggled. New state in localStorage: ${localStorage.getItem('panelsHidden')}`);
 
         const event = new CustomEvent('uiStateChanged', {
             detail: {

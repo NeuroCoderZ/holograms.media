@@ -19,11 +19,12 @@ export const state = {
   spotLight: null,            // Added in previous step
   gridPointLight: null,       // Added in previous step
   // --- Properties for new class instances ---
-  microphoneManagerInstance: null,
+  microphoneManagerInstance: null, // Corrected to match mediaInitializer.js
   audioAnalyzerLeftInstance: null,
   audioAnalyzerRightInstance: null,
   hologramRendererInstance: null,
   xrSessionManagerInstance: null, // Added for WebXR
+  audioFilePlayerInstance: null, // Corrected to match mediaInitializer.js
 
   // --- Состояние управления и взаимодействия ---
   controls: null,             // OrbitControls или другие элементы управления камерой
@@ -31,14 +32,6 @@ export const state = {
   mouse: null,                // Вектор для позиции мыши (THREE.Vector2)
   isDragging: false,          // Флаг перетаскивания голограммы
   selectedObject: null,       // Текущий выбранный объект в сцене
-
-  // --- Состояние жестов и MediaPipe ---
-  // hands: null,                // Экземпляр MediaPipe Hands (переносим в multimodal)
-  // gestureCanvas: null,        // Canvas для вывода отладочной информации жестов (переносим в multimodal)
-  // gestureCanvasCtx: null,     // Контекст 2D для gestureCanvas (переносим в multimodal)
-  // videoElement: null,         // Элемент <video> для захвата с камеры (переносим в multimodal)
-  // handsVisible: false,        // Флаг, указывающий, видны ли руки (для调整 макета) (переносим в multimodal)
-  // lastHandData: null,         // Последние полученные данные о руках (переносим в multimodal)
 
   // --- Состояние аудио ---
   audio: {
@@ -169,8 +162,8 @@ export async function initCore() {
   console.log('PanelManager initialized and stored in state.');
 
   // Create and store MicrophoneManager and AudioFilePlayer instances in state
-  state.microphoneManager = new MicrophoneManager(state.audio.audioContext, state);
-  state.audioFilePlayer = new AudioFilePlayer(state.audio.audioContext, state);
+  state.microphoneManagerInstance = new MicrophoneManager(state.audio.audioContext, state); // Corrected name
+  state.audioFilePlayerInstance = new AudioFilePlayer(state.audio.audioContext, state); // Corrected name
 
   if (!state.audio.audioContext) {
     state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -185,30 +178,9 @@ export async function initCore() {
   // state.audioAnalyzerRightInstance = new AudioAnalyzer(null, state.audio.audioContext);
   // console.log('AudioAnalyzer instances created with null analysers.');
 
-  if (localStorage.getItem('microphonePermissionRequestedOnce') === 'true' &&
-      localStorage.getItem('microphonePermissionGranted') === 'true') {
-    console.log('Attempting to auto-initialize microphone based on previous grant.');
-    try {
-      const { stream, audioContext: micAudioContext } = await state.microphoneManagerInstance.init(); // Adjusted to get stream
-
-      if (micAudioContext) state.audio.audioContext = micAudioContext;
-
-      // Pass the stream to audioProcessing.setupAudioProcessing directly
-      // Analysers are no longer needed from MicrophoneManager directly for WASM path
-      if (stream) {
-        const { setupAudioProcessing } = await import('../audio/audioProcessing.js');
-        await setupAudioProcessing(state.audio.audioContext.createMediaStreamSource(stream), 'microphone');
-      }
-
-      state.audio.activeSource = 'microphone';
-      console.log('MicrophoneManager auto-initialized and WASM processing set up successfully.');
-    } catch (micError) {
-      console.error('Failed to auto-initialize microphone or set up WASM processing:', micError);
-      localStorage.removeItem('microphonePermissionGranted');
-    }
-  } else {
-    console.log('Microphone initialization deferred to user action (e.g., button click).');
-  }
+  // Removed auto-initialization of microphone here, it's now handled by initializeMultimedia on user action (or by explicit call in main.js)
+  // The check for localStorage.getItem('microphonePermissionRequestedOnce') should be in initializeMultimedia or its caller
+  console.log('Microphone and AudioFilePlayer instances initialized, auto-initialization logic for microphone moved.');
   
   if (state.camera) {
     state.camera.aspect = window.innerWidth / window.innerHeight;

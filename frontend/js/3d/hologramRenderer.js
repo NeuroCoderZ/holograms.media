@@ -442,9 +442,6 @@ export class HologramRenderer {
 
       });
     });
-
-      });
-    });
   }
 
   /**
