@@ -1,3 +1,4 @@
+// DEPRECATED: This document is outdated. Refer to the auto-generated FastAPI documentation at /docs on the deployed backend.
 <!-- TODO: REVIEW FOR DEPRECATION - Significantly incomplete and outdated. Does not reflect current API including R2 chunk uploads or Neon DB usage implications. Needs full rewrite or archival. -->
 {
     "endpoints": [
