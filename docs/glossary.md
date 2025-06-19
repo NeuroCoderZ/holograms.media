@@ -1,3 +1,6 @@
+**IMPORTANT NOTE: This glossary describes terms related to the "NEOLANG WHITEGHOST" conceptual framework, which was explored as a research/visionary direction for the project. The definitions herein DO NOT describe the currently implemented production architecture of the "Holographic Media" project (which is based on Python/FastAPI, JavaScript, Cloudflare R2, Neon.tech PostgreSQL, and Firebase). This document should be read with that specific context in mind. The original TODO comment regarding its potential deprecation is also relevant.**
+
+---
 <!-- TODO: REVIEW FOR DEPRECATION - This glossary appears to be based ENTIRELY on a 'NEOLANG WHITEGHOST' concept and a 'docs/WHITEGHOST.md' document. This is CONTRADICTORY to the observed current architecture (Python backend, JavaScript frontend, FastAPI, Neon.tech DB, Cloudflare R2/Backblaze B2, Firebase). Verify if WHITEGHOST.md is current, a future vision, or if this glossary is obsolete and should be archived or moved to research/vision. -->
 # Глоссарий Проекта "Голографические Медиа"
 

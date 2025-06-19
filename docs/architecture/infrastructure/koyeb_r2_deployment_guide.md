@@ -1,4 +1,3 @@
-<!-- TODO: REVIEW FOR DEPRECATION - This guide appears to be the most current for backend deployment (Koyeb/R2/Neon). Verify all details. Note: R2 env variables are not in .env.example but are expected in Koyeb deployment environment. -->
 # Гайд по развертыванию Python/FastAPI бэкенда на Koyeb с использованием Cloudflare R2
 
 **ID для отчета:** [KOYEB_R2_PLAN_JULES_FINAL]
@@ -26,8 +25,8 @@
         *   **Account ID:** Находится на главной странице R2 справа.
         *   **Access Key ID:** Из созданного токена.
         *   **Secret Access Key:** Из созданного токена.
-    9.  **Endpoint URL (S3 API):** Обычно имеет формат `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`. Это значение будет использоваться как `R2_ENDPOINT_URL`.
-        *   **Public R2.dev Bucket URL:** Если вы хотите сделать бакет публично доступным (не рекомендуется для приватных пользовательских данных), вы можете подключить R2.dev домен к вашему бакету в настройках бакета. Для загрузки через API это не требуется.
+    9.  **Endpoint URL (S3 API):** Обычно имеет формат `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`. Это значение будет использоваться как переменная окружения `R2_ENDPOINT_URL`. Замените `<ACCOUNT_ID>` на ваш реальный ID аккаунта Cloudflare.
+        *   **Public R2.dev Bucket URL:** Если вы хотите сделать бакет публично доступным (не рекомендуется для приватных пользовательских данных, таких как чанки пользователей), вы можете подключить R2.dev домен к вашему бакету в настройках бакета. Для программной загрузки и доступа через API это не требуется.
 
 ### 1.2. Структура объектов в R2
 
@@ -57,8 +56,81 @@ user_chunks/{user_id}/{unique_filename_with_uuid}
 *   Реализована обработка исключений при загрузке в R2 (возврат HTTP 500).
 *   После успешной загрузки, метаданные чанка отправляются в `ChunkProcessorBot` для дальнейшей обработки.
 
-**Конфигурация клиента `boto3`:**
-Клиент `boto3` инициализируется в `backend/app.py` при старте приложения. Необходимые параметры (`R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`) получаются из переменных окружения.
+**Конфигурация клиента `boto3` для Cloudflare R2:**
+Клиент `boto3` должен быть инициализирован в вашем FastAPI приложении, например, в `backend/app.py` при старте или в выделенном модуле типа `backend/services/storage_service.py`. Он использует переменные окружения для конфигурации.
+
+Вот пример того, как может выглядеть инициализация клиента `boto3` для R2:
+```python
+# Пример для backend/app.py или backend/services/storage_service.py
+
+import boto3
+import os
+import logging # Рекомендуется добавить логгирование
+
+logger = logging.getLogger(__name__)
+
+# Глобальная переменная для клиента, если используется в app.py и передается через app.state
+# Либо инстанс StorageService будет содержать этот клиент.
+s3_client = None
+r2_bucket_name = os.getenv("R2_BUCKET_NAME")
+
+def initialize_s3_client():
+    global s3_client
+    r2_endpoint_url = os.getenv("R2_ENDPOINT_URL") # e.g., https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+    r2_access_key_id = os.getenv("R2_ACCESS_KEY_ID")
+    r2_secret_access_key = os.getenv("R2_SECRET_ACCESS_KEY")
+    # r2_region = os.getenv("R2_REGION", "auto") # R2 часто регионо-агностичен или регион является частью эндпоинта
+
+    if all([r2_endpoint_url, r2_access_key_id, r2_secret_access_key, r2_bucket_name]):
+        try:
+            s3_client = boto3.client(
+                service_name='s3',
+                endpoint_url=r2_endpoint_url,
+                aws_access_key_id=r2_access_key_id,
+                aws_secret_access_key=r2_secret_access_key,
+                # region_name=r2_region # Обычно не требуется для R2, если не используется специфичный региональный эндпоинт
+            )
+            logger.info("Cloudflare R2 S3 client initialized successfully.")
+            # Если используется в app.py и FastAPI state:
+            # from backend.app import app # Предполагая, что это в отдельном файле
+            # app.state.s3_client = s3_client
+            # app.state.r2_bucket_name = r2_bucket_name
+        except Exception as e:
+            logger.error(f"Error initializing Cloudflare R2 S3 client: {e}", exc_info=True)
+            s3_client = None # Убедимся, что клиент None в случае ошибки
+    else:
+        logger.warning("One or more Cloudflare R2 environment variables are missing (R2_ENDPOINT_URL, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME). S3 client not initialized.")
+
+# Вызов initialize_s3_client() должен происходить при старте FastAPI приложения,
+# например, в событии lifespan или on_event("startup").
+# В backend/app.py:
+#
+# from contextlib import asynccontextmanager
+# from fastapi import FastAPI
+# # ... другие импорты ...
+# # from .services.storage_service import initialize_s3_client, s3_client, r2_bucket_name # Если в отдельном файле
+#
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     initialize_s3_client()
+#     # Если s3_client и r2_bucket_name не глобальные, а должны быть в app.state:
+#     # global s3_client_instance, r2_bucket_name_instance (пример)
+#     # app.state.s3_client = s3_client_instance
+#     # app.state.r2_bucket_name = r2_bucket_name_instance
+#     yield
+#     # Код очистки, если нужен
+#
+# app = FastAPI(lifespan=lifespan)
+#
+# Либо для более старых версий FastAPI:
+# @app.on_event("startup")
+# async def startup_event():
+#     initialize_s3_client()
+#     app.state.s3_client = s3_client # Глобальный клиент из модуля
+#     app.state.r2_bucket_name = r2_bucket_name # Глобальное имя бакета из модуля
+```
+
+Этот клиент (`s3_client`) и имя бакета (`r2_bucket_name`) затем могут быть импортированы и использованы в ваших эндпоинтах (например, в `backend/api/v1/endpoints/chunks.py`) для выполнения операций с файлами.
 
 **Было (Render Persistent Disks / Firebase Storage) -> СТАЛО (Cloudflare R2):**
 *   Хранение файлов переносится с локальных дисков или Firebase Storage на Cloudflare R2.
@@ -128,14 +200,19 @@ CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "$PORT"]
 *   `GOOGLE_APPLICATION_CREDENTIALS`: (Secret File) Путь к файлу ключа сервисного аккаунта Firebase/Google Cloud в контейнере.
     *   На Koyeb: создайте Secret типа "File".
     *   Укажите **Key** для переменной окружения, например, `GOOGLE_APPLICATION_CREDENTIALS`.
-    *   Укажите **Path in container**, например, `/app/secrets/firebase-service-account.json`. Убедитесь, что директория `/app/secrets` создается или доступна для записи, если это требуется, или используйте путь, который Koyeb предоставляет по умолчанию для секретных файлов (часто это может быть `/var/run/secrets/koyeb/` или что-то подобное, уточните в документации Koyeb или через `ls` в консоли дебага). Для простоты, можно положить в `/app/firebase-service-account.json`.
+    *   Укажите **Path in container**, например, `/app/firebase-service-account.json`. (Koyeb монтирует секретные файлы в корень приложения по умолчанию, если путь не указан иначе, или можно указать свой путь).
     *   Загрузите содержимое вашего JSON-ключа.
-*   `R2_ENDPOINT_URL`: (Secret) URL эндпоинта вашего бакета R2 (например, `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`).
-*   `R2_ACCESS_KEY_ID`: (Secret) Access Key ID для вашего R2 API токена.
-*   `R2_SECRET_ACCESS_KEY`: (Secret) Secret Access Key для вашего R2 API токена.
-*   `R2_BUCKET_NAME`: (Variable) Имя вашего бакета в Cloudflare R2.
-*   `PYTHONUNBUFFERED=1`: (Variable) Рекомендуется для корректного вывода логов Python в Docker.
-*   `PORT`: (System-provided) Koyeb устанавливает эту переменную автоматически. Ваше приложение (Uvicorn) должно слушать этот порт.
+*   **Cloudflare R2 Variables:**
+    *   `R2_ENDPOINT_URL`: (Secret) URL эндпоинта вашего бакета R2. Обычно в формате `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`. Переменная `ACCOUNT_ID` здесь – это ID вашего Cloudflare аккаунта.
+    *   `R2_ACCESS_KEY_ID`: (Secret) Access Key ID для вашего R2 API токена.
+    *   `R2_SECRET_ACCESS_KEY`: (Secret) Secret Access Key для вашего R2 API токена.
+    *   `R2_BUCKET_NAME`: (Variable) Имя вашего бакета в Cloudflare R2 (например, `holograms-media-chunks`).
+    *   *Примечание: Отдельная переменная `R2_ACCOUNT_ID` обычно не требуется для конфигурации клиента `boto3`, если ID аккаунта уже включен в `R2_ENDPOINT_URL`.*
+*   **Python & Uvicorn Variables:**
+    *   `PYTHONUNBUFFERED=1`: (Variable) Рекомендуется для корректного вывода логов Python в Docker.
+    *   `PORT`: (System-provided) Koyeb устанавливает эту переменную автоматически. Ваше приложение (Uvicorn) должно слушать этот порт.
+*   **Другие переменные (если требуются):**
+    *   Например, `OPENAI_API_KEY`, `ELEVENLABS_API_KEY` и т.д., если используются соответствующие сервисы.
 
 ## 4. Инициализация Firebase Admin SDK в FastAPI
 

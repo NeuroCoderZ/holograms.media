@@ -253,12 +253,6 @@ body {
   display: flex !important; /* Restore display flex */
 }
 
-/* Added for diagnostic purposes: Ensure #left-panel is at translateX(0) when visible */
-#left-panel.visible {
-   transform: translateX(0) !important;
-   transition: transform 0.3s ease-in-out;
-}
-
 
 #button-container {
   display: grid;
