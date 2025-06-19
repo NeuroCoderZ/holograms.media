@@ -46,6 +46,18 @@ export class HologramRenderer {
 
     // Add the main hologram pivot to the Three.js scene.
     this.scene.add(this.hologramPivot);
+
+    // Add AxesHelper to sequencer groups and log their positions
+    if (this.leftSequencerGroup) {
+      const leftAxesHelper = new THREE.AxesHelper(50);
+      this.leftSequencerGroup.add(leftAxesHelper);
+      console.log('Initial position of leftSequencerGroup:', this.leftSequencerGroup.position);
+    }
+    if (this.rightSequencerGroup) {
+      const rightAxesHelper = new THREE.AxesHelper(50);
+      this.rightSequencerGroup.add(rightAxesHelper);
+      console.log('Initial position of rightSequencerGroup:', this.rightSequencerGroup.position);
+    }
   }
 
   // --- Private Helper Methods for 3D Object Creation ---
@@ -430,7 +442,6 @@ export class HologramRenderer {
 
       });
     });
-    */
 
       });
     });
