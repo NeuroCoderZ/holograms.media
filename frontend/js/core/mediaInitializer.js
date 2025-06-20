@@ -45,13 +45,12 @@ async function initializeMultimedia(appState) { // Added appState parameter
             console.error('MicrophoneManager instance not found in state.');
         }
 
-        // if (appState.multimodal.videoElementForHands && appState.multimodal.handsInstance) {
-        //     // startVideoStream will be modified in a subsequent step to accept the stream
-        //     // await startVideoStream(appState.multimodal.videoElementForHands, appState.multimodal.handsInstance, stream);
-        //     // console.log('Video stream started with shared stream for hand tracking.');
-        // } else {
-        //     // console.error('videoElementForHands or handsInstance not ready for startVideoStream.');
-        // }
+        if (appState.multimodal.videoElementForHands && appState.multimodal.handsInstance) {
+            await startVideoStream(appState.multimodal.videoElementForHands, appState.multimodal.handsInstance, stream); // Pass the obtained stream
+            console.log('Video stream started with shared stream for hand tracking in mediaInitializer.');
+        } else {
+            console.error('mediaInitializer: videoElementForHands or handsInstance not ready for startVideoStream.');
+        }
 
     } catch (err) {
         console.error("Failed to get multimedia permissions:", err);
