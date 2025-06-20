@@ -46,18 +46,6 @@ export class HologramRenderer {
 
     // Add the main hologram pivot to the Three.js scene.
     this.scene.add(this.hologramPivot);
-
-    // Add AxesHelper to sequencer groups and log their positions
-    if (this.leftSequencerGroup) {
-      const leftAxesHelper = new THREE.AxesHelper(50);
-      this.leftSequencerGroup.add(leftAxesHelper);
-      console.log('Initial position of leftSequencerGroup:', this.leftSequencerGroup.position);
-    }
-    if (this.rightSequencerGroup) {
-      const rightAxesHelper = new THREE.AxesHelper(50);
-      this.rightSequencerGroup.add(rightAxesHelper);
-      console.log('Initial position of rightSequencerGroup:', this.rightSequencerGroup.position);
-    }
   }
 
   // --- Private Helper Methods for 3D Object Creation ---
@@ -272,7 +260,6 @@ export class HologramRenderer {
   _createColumn(semitoneIndex, isLeftGrid) {
     const semitone = semitones[semitoneIndex];
     if (!semitone) {
-        console.error(`No semitone data for index: ${semitoneIndex}. Returning empty group.`);
         return new THREE.Group(); // Return empty group if data is missing
     }
     const width = semitone.width; // Width of the column based on semitone data.
@@ -300,7 +287,6 @@ export class HologramRenderer {
    */
   _initializeColumns() {
     if (!this.leftSequencerGroup || !this.rightSequencerGroup) {
-        console.error("Sequencer groups not initialized before columns can be created. Aborting column initialization.");
         return;
     }
     for (let i = 0; i < semitones.length; i++) {
@@ -328,7 +314,6 @@ export class HologramRenderer {
    */
   updateVisuals(dbLevels, panAngles) {
     if (!dbLevels || !panAngles || dbLevels.length !== 260 || panAngles.length !== 130) {
-        console.warn("Audio data (levels or angles) not provided or insufficient length. Skipping update.");
         // Optionally, reset all columns to a default silent/centered state
         this.columns.forEach((columnPair) => {
             const channels = [
@@ -389,15 +374,8 @@ export class HologramRenderer {
         }
         
         // Directly assign the Z-scale and Z-position
-        if (index === 0 && channel.isLeft) {
-            // Hardcode scale for the left column of the first pair
-            // leftColumnMesh.scale.z = newLeftScaleZ; // Original line commented out
-            mesh.scale.z = 10;
-            mesh.position.z = mesh.scale.z / 2; // which will be 5
-        } else {
-            mesh.scale.z = targetScaleZ;
-            mesh.position.z = targetScaleZ / 2; // Center the scaled mesh
-        }
+        mesh.scale.z = targetScaleZ;
+        mesh.position.z = targetScaleZ / 2; // Center the scaled mesh
 
         // Update emissive intensity
         if (material instanceof THREE.MeshStandardMaterial) {
@@ -418,26 +396,6 @@ export class HologramRenderer {
             channel.meshGroup.position.x = initialX - panShiftX;
         } else {
             channel.meshGroup.position.x = initialX + panShiftX;
-        }
-
-        // ОДНОРАЗОВЫЙ ЛОГ ДЛЯ ПЕРВОЙ КОЛОНКИ
-        if (index === 0 && channel.isLeft && !window.updateCheck) {
-            console.log('[Hologram LIVE] UpdateVisuals Tick:', {
-                receivedDbLevel: dbLevels[0], // Assuming dbLevels is accessible directly
-                calculatedAmplitude: normalizedAmplitude, // This is 'leftAmplitude' for the left channel
-                finalScaleZ: targetScaleZ, // This is 'newLeftScaleZ' for the left channel
-                panAngle: panAngles[0] // Assuming panAngles is accessible directly
-            });
-            window.updateCheck = true;
-        }
-
-        // Diagnostics for first column only
-        if (index === 0) {
-            if (channel.isLeft && mesh.scale.z > 0.05) {
-                console.log(`[HologramRenderer DEBUG] Left Column 0 scale: ${mesh.scale.z.toFixed(3)}, panShiftX: ${panShiftX.toFixed(3)}, finalX: ${channel.meshGroup.position.x.toFixed(3)}`);
-            } else if (!channel.isLeft && mesh.scale.z > 0.05) {
-                console.log(`[HologramRenderer DEBUG] Right Column 0 scale: ${mesh.scale.z.toFixed(3)}, panShiftX: ${panShiftX.toFixed(3)}, finalX: ${channel.meshGroup.position.x.toFixed(3)}`);
-            }
         }
 
       });
