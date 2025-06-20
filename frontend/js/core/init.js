@@ -134,7 +134,7 @@ import PanelManager from '../ui/panelManager.js';
 export async function initCore() {
   console.log('Инициализация ядра приложения...');
   
-  const sceneInitialized = initializeScene(state);
+  const sceneInitialized = await initializeScene(state);
 
   if (!sceneInitialized) {
     console.error('Scene setup failed (WebGL context error likely). Halting further rendering-dependent initialization.');

@@ -3,67 +3,72 @@
 // Импорты
 import * as THREE from 'three';
 // TWEEN подключается глобально через CDN в index.html
-// import { state } from '../core/init.js'; // Removed import
 
-// Глобальная переменная для отслеживания времени анимации
-// let time = 0; // time variable is local to animate function if based on currentTime
+// Store appState globally within this module, or pass it differently if preferred.
+// For simplicity in this step, let's assume appState is accessible when animationLoop is called.
+// A more robust solution might involve binding appState or making animate a method of a class.
+let _appState_for_animation_loop = null;
 
-// Animation loop function
-function animate(appState, currentTime) { // Added appState
-    requestAnimationFrame((time) => animate(appState, time)); // Pass appState in recursive call
-
-    // Convert to seconds if currentTime is provided by requestAnimationFrame (milliseconds)
-    const timeInSeconds = currentTime / 1000;
-
-    // Update TWEEN animations
-    window.TWEEN.update(timeInSeconds);
-
-    // --- START REPLACEMENT BLOCK ---
-    // Check if hologramRendererInstance exists and if WASM processed audio data is available
-    /*
-    if (appState.hologramRendererInstance && appState.audio.currentDbLevels && appState.audio.currentPanAngles &&
-        appState.audio.currentDbLevels.length === 260 && appState.audio.currentPanAngles.length === 130) {
-        
-        // Pass both levels and angles to the hologram renderer
-        appState.hologramRendererInstance.updateVisuals(appState.audio.currentDbLevels, appState.audio.currentPanAngles);
-
-        // ВРЕМЕННЫЙ ДИАГНОСТИЧЕСКИЙ ЛОГ:
-        const leftLevels = appState.audio.currentDbLevels.slice(0, 130);
-        const leftSum = leftLevels.reduce((a, b) => a + b, 0);
-        if (leftSum > -13000) { // Если сумма не равна полной тишине (assuming -100 * 130 = -13000)
-            console.log(`[Animate DEBUG] Audio data received from WASM. Left Sum: ${leftSum}`);
-        }
+// Main function to start the animation loop
+function startAnimationLoop(appState) {
+    if (!appState || !appState.renderer) {
+        console.error("Cannot start animation loop: appState or renderer is missing.");
+        return;
     }
-    */
-    // --- ДИАГНОСТИЧЕСКОЕ ИЗМЕНЕНИЕ НАЧАЛО ---
-    // Обновление визуализации голограммы ВРЕМЕННО ОТКЛЮЧЕНО
-    /*
-    if (state.hologramRendererInstance && state.audio.currentDbLevels && state.audio.currentPanAngles) {
-        state.hologramRendererInstance.updateVisuals(state.audio.currentDbLevels, state.audio.currentPanAngles);
-    }
-    */
+    _appState_for_animation_loop = appState; // Store appState for use in animation function
+    appState.renderer.setAnimationLoop(animation); // Pass the animation function directly
+    console.log("Animation loop started with WebGPURenderer.");
+}
 
-    // Вместо этого, просто меняем цвет фона для проверки стабильности рендера
-    const time = currentTime * 0.001; // Используем currentTime, переданный в animate
-    if (appState.scene && appState.scene.background) { // Changed state to appState
-        appState.scene.background.setHSL(time % 1.0, 0.6, 0.7); // HSL для плавной смены цвета
-    }
-    // --- ДИАГНОСТИЧЕСКОЕ ИЗМЕНЕНИЕ КОНЕЦ ---
-    // --- END REPLACEMENT BLOCK ---
+// The actual animation function to be called by the loop
+async function animation(time) { // 'time' is provided by setAnimationLoop, typically DOMHighResTimeStamp
+    if (!_appState_for_animation_loop) return;
 
-    // Render the scene
-    if (appState.renderer && appState.scene && appState.activeCamera) { // Ensure activeCamera is used
-        appState.renderer.clear(); // Clear before rendering
-        appState.renderer.render(appState.scene, appState.activeCamera);
+    const appState = _appState_for_animation_loop;
+
+    // Convert time to seconds (assuming 'time' is in milliseconds)
+    const timeInSeconds = time / 1000.0;
+
+    // Update TWEEN animations (if TWEEN is still used)
+    if (window.TWEEN) {
+        window.TWEEN.update(timeInSeconds);
     }
 
+    // Hologram updates are currently commented out in hologramRenderer.js for Phase 1.
+    // If they were active, they would be called here:
+    // if (appState.hologramRendererInstance && appState.audio.currentDbLevels && appState.audio.currentPanAngles) {
+    //     appState.hologramRendererInstance.updateVisuals(appState.audio.currentDbLevels, appState.audio.currentPanAngles);
+    // }
+
+    // Example: Simple scene rotation or object animation can be done here if needed for testing
+    // if (appState.scene && appState.scene.children.length > 0) {
+    //    const testCube = appState.scene.getObjectByName("testCubeName"); // Assuming a cube was added with this name
+    //    if(testCube) {
+    //        testCube.rotation.x = timeInSeconds * 0.5;
+    //        testCube.rotation.y = timeInSeconds * 0.3;
+    //    }
+    // }
+
+    // Diagnostic background color change (can be kept for Phase 1 testing)
+    if (appState.scene && appState.scene.background) {
+        appState.scene.background.setHSL((timeInSeconds * 0.1) % 1.0, 0.6, 0.7);
+    }
+
+    // Render the scene using renderAsync for WebGPU
+    if (appState.renderer && appState.scene && appState.activeCamera) {
+        // For WebGPURenderer, renderer.clear() is often handled internally before renderAsync or is not needed.
+        // await appState.renderer.clearAsync(); // If explicit clear is desired/needed
+        await appState.renderer.renderAsync(appState.scene, appState.activeCamera);
+    }
 }
 
 // Function to update hologram mesh (placeholder, needs implementation if used)
+// This function might be redundant if all updates are handled within the animation loop
+// or by hologramRenderer.js
 function updateHologramMesh() {
     // console.log('updateHologramMesh called');
     // Add actual hologram update logic here if needed
 }
 
-// Export necessary functions
-export { animate, updateHologramMesh };
+// Export the function that starts the loop, and any other necessary functions
+export { startAnimationLoop, updateHologramMesh };

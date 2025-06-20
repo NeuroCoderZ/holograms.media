@@ -6,45 +6,70 @@ import * as THREE from 'three';
  * @param {object} state - The global state object to populate with scene components.
  *                         Expected to have a `config.CAMERA` object or defaults will be used.
  */
-export function initializeScene(state) {
+export async function initializeScene(state) {
   // Scene
   state.scene = new THREE.Scene();
   state.scene.background = new THREE.Color(0x000000); // Black background
 
-  try {
-    console.log('[WebGL Init] Attempting to create WebGLRenderer with minimal settings...');
-    // Assign to state.renderer directly
-    state.renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        powerPreference: 'high-performance'
-    });
-
-    if (!state.renderer.getContext()) {
-        throw new Error('Failed to get WebGL context immediately after creation.');
-    }
-
-    state.renderer.setPixelRatio(window.devicePixelRatio);
-    // state.renderer.setSize(window.innerWidth, window.innerHeight); // This will be set later after camera
-    // renderer.outputEncoding = THREE.sRGBEncoding; // Commented out as per plan
-
-    console.log('[WebGL Init] WebGLRenderer created successfully.');
-
-  } catch (error) {
-    console.error('CRITICAL: WebGL Renderer Initialization Failed.', error);
-
-    const errorModal = document.getElementById('webgl-error-modal');
+  // --- WebGPU Renderer Initialization ---
+  if (!navigator.gpu) {
+    console.error('CRITICAL: WebGPU not supported on this browser.');
+    const errorModal = document.getElementById('webgl-error-modal'); // We'll rename this modal later
     if (errorModal) {
         const errorMessageElement = errorModal.querySelector('.error-message-details');
-        if(errorMessageElement) errorMessageElement.textContent = error.message;
+        if(errorMessageElement) errorMessageElement.textContent = 'WebGPU is not supported on this browser. Please use a modern browser like Chrome or Edge.';
         errorModal.style.display = 'flex';
     }
+    state.renderer = null;
+    state.scene = null; // Ensure scene and camera are also null on failure
+    state.camera = null;
+    return { scene: null, renderer: null, camera: null }; // Return null objects on failure
+  }
 
-    // Attempt to remove any partially created canvas if it exists and was added to DOM
+  try {
+    console.log('[WebGPU Init] Attempting to create WebGPURenderer...');
+    // Ensure THREE from 'three/webgpu' is imported if WebGPURenderer is not part of the main THREE namespace directly
+    // For now, assuming THREE.WebGPURenderer is available. If not, the import needs to be:
+    // import { WebGPURenderer } from 'three/webgpu'; (or similar, based on Three.js structure)
+    // And then used as: new WebGPURenderer(...)
+
+    // For the purpose of this subtask, assume 'three' is imported as:
+    // import * as THREE from 'three';
+    // and WebGPURenderer is available as THREE.WebGPURenderer
+    // If subtask fails due to THREE.WebGPURenderer not being a constructor,
+    // the import statement at the top of sceneSetup.js will need adjustment in a later step.
+    // For now, proceed with THREE.WebGPURenderer
+
+    state.renderer = new THREE.WebGPURenderer({
+        antialias: true,
+        powerPreference: 'high-performance' // Still relevant for WebGPU
+    });
+
+    console.log('[WebGPU Init] WebGPURenderer instance created. Awaiting init()...');
+    await state.renderer.init(); // Asynchronous initialization for WebGPU
+    console.log('[WebGPU Init] renderer.init() completed.');
+
+    state.renderer.setPixelRatio(window.devicePixelRatio);
+    // outputColorSpace is used in WebGPU instead of outputEncoding
+    // state.renderer.outputColorSpace = THREE.SRGBColorSpace; // Or other as needed, check Three.js docs
+
+    console.log('[WebGPU Init] WebGPURenderer initialized successfully.');
+
+  } catch (error) {
+    console.error('CRITICAL: WebGPURenderer Initialization Failed.', error);
+    const errorModal = document.getElementById('webgl-error-modal'); // We'll rename this modal later
+    if (errorModal) {
+        const errorMessageElement = errorModal.querySelector('.error-message-details');
+        if(errorMessageElement) errorMessageElement.textContent = 'Failed to initialize WebGPU renderer: ' + error.message;
+        errorModal.style.display = 'flex';
+    }
     if (state.renderer && state.renderer.domElement && state.renderer.domElement.parentElement) {
         state.renderer.domElement.parentElement.removeChild(state.renderer.domElement);
     }
     state.renderer = null;
-    return false; // Indicate failure, as per existing pattern in the file
+    state.scene = null;
+    state.camera = null;
+    return { scene: null, renderer: null, camera: null }; // Return null objects on failure
   }
 
   const gridContainer = document.getElementById('grid-container');
@@ -97,5 +122,5 @@ export function initializeScene(state) {
   // Removed Hologram Pivot creation from here. It is now created and managed by HologramRenderer.
 
   console.log('sceneSetup.js: Scene initialized successfully');
-  return true; // Indicate success
+  return { scene: state.scene, renderer: state.renderer, camera: state.camera };
 }

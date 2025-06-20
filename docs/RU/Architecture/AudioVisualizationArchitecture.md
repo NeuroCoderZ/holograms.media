@@ -219,31 +219,36 @@ registerProcessor('cwt-processor', CwtProcessor);
 
 **Создание Колонн:**
 *   Геометрия каждой колонны представляет собой `THREE.BoxGeometry`.
+*   **Материал Колонн (Phase 1 WebGPU):** Для совместимости с `THREE.WebGPURenderer` и для упрощения на начальном этапе, колонны используют `THREE.MeshBasicNodeMaterial` вместо `THREE.MeshStandardMaterial`. Цвет задается из `hologramConfig.js`.
 *   Колонны создаются на основе конфигурационных данных, импортируемых из `hologramConfig.js`, таких как `semitones` (массив объектов, описывающих каждый полутон, включая его цвет и ширину), и констант `GRID_WIDTH`, `GRID_HEIGHT`, `GRID_DEPTH`, `CELL_SIZE`, которые определяют размеры и структуру сеток.
 *   Каждая колонна (экземпляр `THREE.Mesh`) добавляется в соответствующую группу (`leftSequencerGroup` или `rightSequencerGroup`).
 
 **Метод `updateVisuals(dbLevels, panAngles)`:**
-*   **Входные данные:**
-    *   `dbLevels`: `Float32Array` из 260 значений, представляющих уровни громкости в децибелах для левого и правого каналов (по 130 значений на каждый канал, соответствующих `target_frequencies` из CWT анализа).
-    *   `panAngles`: `Float32Array` из 130 значений, представляющих углы панорамы в градусах (от -90 до +90) для каждой из `target_frequencies`.
-*   **Функциональность:**
-    *   **Масштаб по оси Z (глубина):** Масштаб колонн по оси Z изменяется в соответствии со значениями из `dbLevels`. Более высокий уровень громкости приводит к большей глубине колонны.
-    *   **Яркость (Emissive Intensity):** Интенсивность собственного свечения материала (`emissiveIntensity`) каждой колонны также модулируется значениями `dbLevels`. Более громкие звуки делают колонны ярче.
-    *   **Позиция по оси X (панорамирование):** Позиция колонн по оси X внутри их родительских сеток (`leftSequencerGroup` и `rightSequencerGroup`) изменяется на основе `panAngles` и индивидуальных свойств колонны (например, ее начальной позиции `initialX` и ширины). Это создает эффект смещения колонны влево или вправо в зависимости от вычисленного угла панорамы для соответствующей частоты.
+*   **Статус (Phase 1 WebGPU):** Этот метод **временно закомментирован** в `HologramRenderer.js`. Динамическое обновление визуальных свойств колонн на основе аудиоданных пока отключено для упрощения перехода на WebGPU.
+*   **Входные данные (исторически):**
+    *   `dbLevels`: `Float32Array` из 260 значений, представляющих уровни громкости в децибелах для левого и правого каналов.
+    *   `panAngles`: `Float32Array` из 130 значений, представляющих углы панорамы.
+*   **Функциональность (исторически):**
+    *   Масштаб по оси Z (глубина), яркость (Emissive Intensity для `MeshStandardMaterial`), и позиция по оси X (панорамирование) изменялись на основе этих данных.
 
 **Внешнее Управление Сценой и Анимацией:**
-*   Настройка сцены, такая как создание камеры, добавление основных источников света, цикл рендеринга (`requestAnimationFrame`) и обработка изменения размеров окна, управляются внешними по отношению к классу `HologramRenderer` модулями (например, `sceneSetup.js` и `rendering.js`). `HologramRenderer` фокусируется исключительно на объектах самой голограммы.
+*   Настройка сцены (камера, освещение) и инициализация рендерера управляются модулем `sceneSetup.js`.
+*   Цикл рендеринга (анимации) управляется модулем `rendering.js` с использованием `renderer.setAnimationLoop()` и `renderer.renderAsync()`. `HologramRenderer` фокусируется исключительно на объектах самой голограммы.
 
-    **Инициализация WebGL Рендерера и Обработка Ошибок:**
-    Процесс инициализации основного рендерера (`THREE.WebGLRenderer`) в `sceneSetup.js` был улучшен для повышения стабильности:
-    *   **Инициализация в `try-catch` блоке:** Создание экземпляра `THREE.WebGLRenderer` обернуто в блок `try-catch` для перехвата потенциальных ошибок на этапе инициализации WebGL.
-    *   **Параметры Рендерера:** Используются минимально необходимые и оптимизированные параметры: `antialias: true` (для сглаживания краев) и `powerPreference: 'high-performance'` (для запроса высокопроизводительного GPU, если доступно несколько).
-    *   **Проверка Контекста:** Сразу после создания рендерера выполняется проверка `if (!state.renderer.getContext())`, чтобы убедиться, что WebGL контекст действительно был получен. Если нет, генерируется ошибка.
-    *   **Обработка Ошибок:** В случае сбоя инициализации WebGL (например, если браузер не поддерживает WebGL, или произошла ошибка при получении контекста):
+    **Инициализация WebGPU Рендерера и Обработка Ошибок (`sceneSetup.js`):**
+    Процесс инициализации основного рендерера (`THREE.WebGPURenderer`) в `sceneSetup.js` включает:
+    *   **Проверка Поддержки WebGPU:** `if (!navigator.gpu)` проверяет доступность WebGPU API.
+    *   **Асинхронная Инициализация:**
+        *   Запрос адаптера: `await navigator.gpu.requestAdapter()`.
+        *   Запрос устройства: `await adapter.requestDevice()`.
+        *   Создание экземпляра `THREE.WebGPURenderer`.
+        *   Вызов `await renderer.init()` для завершения настройки рендерера.
+    *   **Параметры Рендерера:** `antialias: true`, `powerPreference: 'high-performance'`.
+    *   **Обработка Ошибок:** Весь процесс обернут в `try-catch`. В случае ошибки (WebGPU не поддерживается, не удалось получить адаптер/устройство, ошибка инициализации рендерера):
         *   В консоль выводится критическая ошибка.
-        *   Предпринимается попытка отобразить модальное окно (`webgl-error-modal`) с сообщением об ошибке (детали загружаются в элемент с классом `.error-message-details`), информируя пользователя о проблеме.
-        *   Функция инициализации сцены возвращает `false`.
-    *   **Проверка в `init.js`:** После вызова `initializeScene(state)` в `core/init.js`, дополнительно проверяется `if (!state.renderer)`. Если рендерер все еще `null` (что указывает на неудачную инициализацию в `sceneSetup.js`), дальнейшая инициализация компонентов, зависящих от 3D-рендеринга (например, `HologramRenderer`), прекращается, и также может быть предпринята попытка показать модальное окно с ошибкой. Это обеспечивает корректное прекращение работы приложения при отсутствии необходимой графической подсистемы.
+        *   Отображается модальное окно (`webgl-error-modal` – название будет уточнено) с сообщением об ошибке.
+        *   Функция `initializeScene` возвращает объект `{ scene: null, renderer: null, camera: null }`.
+    *   **Проверка в `initCore.js`:** После вызова `await initializeScene(state)`, `initCore.js` проверяет, не равен ли `state.renderer` значению `null`. Если это так, дальнейшая инициализация компонентов, зависящих от 3D-рендеринга, прекращается.
 
 **Упрощенный Пример Структуры Класса:**
 ```javascript
@@ -310,9 +315,10 @@ class HologramRenderer {
                 const leftAmplitude = THREE.MathUtils.clamp((leftLevelDb + 100) / 100.0, 0, 1);
                 leftColumnMesh.scale.z = Math.max(0.001, leftAmplitude * GRID_DEPTH);
                 leftColumnMesh.position.z = leftColumnMesh.scale.z / 2;
-                if (leftColumnMesh.material instanceof THREE.MeshStandardMaterial) {
-                    leftColumnMesh.material.emissiveIntensity = leftAmplitude * 1.5;
-                }
+                // EmissiveIntensity не применяется к MeshBasicNodeMaterial напрямую таким же образом.
+                // if (leftColumnMesh.material instanceof THREE.MeshStandardMaterial) {
+                //     leftColumnMesh.material.emissiveIntensity = leftAmplitude * 1.5;
+                // }
                 // Расчет и применение панорамирования для X позиции columnPair.left
                 const initialXLeft = columnPair.left.userData.initialX;
                 const panFactorLeft = panAngle / 90.0;
@@ -326,9 +332,10 @@ class HologramRenderer {
                 const rightAmplitude = THREE.MathUtils.clamp((rightLevelDb + 100) / 100.0, 0, 1);
                 rightColumnMesh.scale.z = Math.max(0.001, rightAmplitude * GRID_DEPTH);
                 rightColumnMesh.position.z = rightColumnMesh.scale.z / 2;
-                if (rightColumnMesh.material instanceof THREE.MeshStandardMaterial) {
-                    rightColumnMesh.material.emissiveIntensity = rightAmplitude * 1.5;
-                }
+                // EmissiveIntensity не применяется к MeshBasicNodeMaterial напрямую таким же образом.
+                // if (rightColumnMesh.material instanceof THREE.MeshStandardMaterial) {
+                //     rightColumnMesh.material.emissiveIntensity = rightAmplitude * 1.5;
+                // }
                 // Расчет и применение панорамирования для X позиции columnPair.right
                 const initialXRight = columnPair.right.userData.initialX;
                 const panFactorRight = panAngle / 90.0;
@@ -349,7 +356,7 @@ class HologramRenderer {
 *   **Пользовательские Шейдеры (Потенциально):** Для более сложных визуальных эффектов (например, волновые узоры на поверхности голограммы, эффекты частиц) могут быть разработаны пользовательские вершинные и фрагментные шейдеры в будущем.
 
 ### 4.3. Обновление Визуализации
-Метод `updateVisuals(dbLevels, panAngles)` класса `HologramRenderer` вызывается логикой основного приложения каждый раз, когда доступны новые данные `dbLevels` (уровни громкости) и `panAngles` (углы панорамы) из конвейера CWT-анализа аудио. Этот метод обновляет визуальные свойства колонн (глубину, яркость свечения, положение по оси X) на основе этих данных, создавая динамическую реакцию голограммы на звук.
+Метод `updateVisuals(dbLevels, panAngles)` класса `HologramRenderer` **временно закомментирован** (Phase 1 WebGPU). Ранее он вызывался логикой основного приложения каждый раз, когда доступны новые данные `dbLevels` (уровни громкости) и `panAngles` (углы панорамы) из конвейера CWT-анализа аудио, и обновлял визуальные свойства колонн. В текущей фазе динамическое обновление отключено для упрощения рендеринга с WebGPU.
 
 ## 5. Управление Жестами
 

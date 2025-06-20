@@ -134,18 +134,18 @@
 
 ### `main.js`
 
-- **Назначение:** Главная точка входа приложения. Регистрирует Service Worker. После загрузки DOM, последовательно инициализирует все основные модули и подсистемы: менеджер согласия, ядро (`initCore`), основной UI (`initializeMainUI`), обработчик кнопки 'Start Session' (который запускает `initializeMultimedia`), аутентификацию Firebase, менеджеры промптов, версий, чата, визуализации жестов, MediaPipe Hands, аудио ввод/вывод, Tria AI, XR. Настраивает глобальные обработчики (изменение размера, жесты Hammer.js, PWA). Динамически загружает и инициализирует платформо-специфичные модули управления макетом и вводом. Управляет вращением голограммы через события указателя на `#grid-container`. Запускает главный цикл анимации.
+- **Назначение:** Главная точка входа приложения. Регистрирует Service Worker. После загрузки DOM, последовательно инициализирует все основные модули и подсистемы: менеджер согласия, ядро (`initCore` вызывается как `async`), основной UI (`initializeMainUI`), обработчик кнопки 'Start Session' (который запускает `async startFullApplication`, обернутую в try-catch). `startFullApplication` инициализирует мультимедиа, платформо-специфичные модули, и прочие сервисы, после чего запускает главный цикл анимации через `startAnimationLoop` из `rendering.js`.
 - **Экспорты:** Нет явных экспортов (является точкой входа).
 - **Ключевые функции:**
     - Обработчик `DOMContentLoaded`: Основная логика инициализации приложения.
-    - `setupStartButtonListener()`: Настройка слушателя для кнопки начала сессии.
-    - `onPointerDown`, `onPointerUp`, `onPointerMove`: Обработчики событий указателя для вращения голограммы.
+    - `async startFullApplication(appState)`: Инициализирует основную часть приложения после получения согласия или при автоматическом старте.
+    - `setupStartButtonListener()`: Настройка слушателя для кнопки начала сессии, вызывающего `startFullApplication`.
 - **Связи:**
     - Импортирует и вызывает функции инициализации из большого числа модулей во всех категориях (`core`, `ui`, `audio`, `xr`, `3d`, `multimodal`, `ai`, `utils`, `platforms`).
     - Регистрирует Service Worker (`/sw.js`).
     - Использует `state` из `core/init.js`.
-    - Взаимодействует с DOM для модального окна старта сессии и событий на `#grid-container`.
-    - Использует `TWEEN.js` (ожидается глобально) для анимации вращения голограммы.
+    - Взаимодействует с DOM для модального окна старта сессии.
+    - Вызывает `startAnimationLoop` из `rendering.js`.
 
 ### `legacy-bridge.js`
 
@@ -167,7 +167,11 @@
 - **Связи:** (Нет).
 
 ### `/core/init.js`
-(... existing content ...)
+- **Назначение:** Инициализирует ядро приложения. Определяет и экспортирует глобальный объект `state`. Ключевая функция `async initCore()` теперь асинхронно вызывает `await initializeScene(state)` из `3d/sceneSetup.js` для настройки WebGPU рендерера и сцены. Обрабатывает возможные ошибки инициализации WebGPU, проверяя возвращаемое значение от `initializeScene`. Создает экземпляры `HologramRenderer`, `XRSessionManager`, `PanelManager`, `MicrophoneManager`, `AudioFilePlayer`.
+- **Экспорты:** `state`, `initCore`, `initializeState`.
+- **Ключевые функции:** `async initCore()`.
+- **Связи:** `3d/sceneSetup.js`, `audio/microphoneManager.js`, `audio/audioFilePlayer.js`, `3d/hologramRenderer.js`, `xr/webxr_session_manager.js`, `ui/panelManager.js`.
+
 ### `/core/platformDetector.js`
 (... existing content ...)
 ### `/core/stateManager.js`
@@ -219,11 +223,37 @@
 ### `/core/ui/uiManager.js`
 (... existing content ...)
 ### `/3d/sceneSetup.js`
-(... existing content ...)
+- **Назначение:** Отвечает за инициализацию 3D сцены, камеры и рендерера, теперь с использованием WebGPU. Функция `async initializeScene(state)`:
+    - Проверяет поддержку WebGPU (`navigator.gpu`).
+    - Асинхронно запрашивает адаптер и устройство WebGPU.
+    - Создает экземпляр `THREE.WebGPURenderer`.
+    - Вызывает `await renderer.init()` для завершения инициализации рендерера.
+    - Настраивает сцену, камеру (ортогональную по умолчанию), базовое освещение.
+    - В случае ошибки (отсутствие поддержки WebGPU, сбой инициализации рендерера) отображает модальное окно с ошибкой и возвращает объект с `null` значениями для `scene`, `renderer`, `camera`.
+    - В случае успеха возвращает объект `{ scene, renderer, camera }`.
+- **Экспорты:** `initializeScene`.
+- **Ключевые функции:** `async initializeScene(state)`.
+- **Связи:** `three.js`. Используется `initCore` из `/core/init.js`.
+
 ### `/3d/rendering.js`
-(... existing content ...)
+- **Назначение:** Управляет циклом рендеринга (анимации) с использованием WebGPU.
+    - `startAnimationLoop(appState)`: Принимает состояние приложения и запускает цикл анимации, вызывая `appState.renderer.setAnimationLoop(animation)`.
+    - `async function animation(time)`: Асинхронная функция, вызываемая в каждом кадре. Обновляет анимации (например, TWEEN), выполняет диагностические изменения (например, цвет фона), и рендерит сцену с помощью `await appState.renderer.renderAsync(appState.scene, appState.activeCamera)`.
+    - `_appState_for_animation_loop`: Временная переменная модуля для доступа к `appState` внутри обратного вызова `animation`.
+- **Экспорты:** `startAnimationLoop`, `updateHologramMesh` (плейсхолдер).
+- **Ключевые функции:** `startAnimationLoop(appState)`, `async animation(time)`.
+- **Связи:** `three.js`. Используется `main.js` для запуска цикла.
+
 ### `/3d/hologramRenderer.js`
-(... existing content ...)
+- **Назначение:** Управляет созданием и обновлением 3D-визуализации голограммы (сетки колонн).
+    - Конструктор: Принимает сцену, создает главный опорный `THREE.Group` (`hologramPivot`) и группы для левого/правого секвенсора.
+    - `_createColumn()`: Создает отдельную колонну (куб `THREE.BoxGeometry`). **Материал изменен на `MeshBasicNodeMaterial` (импортируется из `three/examples/jsm/renderers/webgpu/nodes/materials/MeshBasicNodeMaterial.js`) для совместимости с WebGPU (Phase 1).**
+    - `_initializeColumns()`: Создает все колонны на основе `hologramConfig.js`.
+    - `updateVisuals(dbLevels, panAngles)`: **Метод временно закомментирован (Phase 1 WebGPU).** Ранее отвечал за обновление Z-масштаба, яркости и X-позиции колонн на основе аудиоданных.
+- **Экспорты:** `HologramRenderer` (класс).
+- **Ключевые функции:** `constructor`, `_createColumn`, `_initializeColumns`, `updateVisuals` (закомментирован).
+- **Связи:** `three.js`, `hologramConfig.js`. Используется `initCore` для создания экземпляра. Импортирует `MeshBasicNodeMaterial`.
+
 ### `/3d/webgpu/hologram_shader_webgpu.js`
 (... existing content ...)
 ### `/3d/webgpu/webgpu_renderer.js`
