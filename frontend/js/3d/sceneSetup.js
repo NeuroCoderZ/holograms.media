@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import WebGPURenderer from 'three/addons/renderers/webgpu/WebGPURenderer.js';
 
 /**
  * Initializes the Three.js scene, camera, renderer, and basic lighting.
@@ -40,7 +41,7 @@ export async function initializeScene(state) {
     // the import statement at the top of sceneSetup.js will need adjustment in a later step.
     // For now, proceed with THREE.WebGPURenderer
 
-    state.renderer = new THREE.WebGPURenderer({
+    state.renderer = new WebGPURenderer({
         antialias: true,
         powerPreference: 'high-performance' // Still relevant for WebGPU
     });
