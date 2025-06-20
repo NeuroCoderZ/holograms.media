@@ -12,29 +12,39 @@ export function initializeScene(state) {
   state.scene.background = new THREE.Color(0x000000); // Black background
 
   try {
-    // Renderer: Initialize early to get gridContainer dimensions if needed by camera
-    // TODO: Implement WebGPU for performance boost.
+    console.log('[WebGL Init] Attempting to create WebGLRenderer with minimal settings...');
+    // Assign to state.renderer directly
     state.renderer = new THREE.WebGLRenderer({
-      antialias: true, // Enable antialiasing for smoother edges
-      alpha: true      // Enable alpha for transparent background if needed by the page design
+        antialias: true,
+        powerPreference: 'high-performance'
     });
-    state.renderer.setPixelRatio(window.devicePixelRatio); // Adjust for device pixel ratio for sharper images
+
+    if (!state.renderer.getContext()) {
+        throw new Error('Failed to get WebGL context immediately after creation.');
+    }
+
+    state.renderer.setPixelRatio(window.devicePixelRatio);
+    // state.renderer.setSize(window.innerWidth, window.innerHeight); // This will be set later after camera
+    // renderer.outputEncoding = THREE.sRGBEncoding; // Commented out as per plan
+
+    console.log('[WebGL Init] WebGLRenderer created successfully.');
+
   } catch (error) {
-    console.error("WebGL Renderer Initialization Error:", error);
-    const errorOverlay = document.getElementById('webgl-error-overlay');
-    const errorDetails = document.getElementById('webgl-error-details');
-    if (errorOverlay) {
-      errorOverlay.style.display = 'flex';
+    console.error('CRITICAL: WebGL Renderer Initialization Failed.', error);
+
+    const errorModal = document.getElementById('webgl-error-modal');
+    if (errorModal) {
+        const errorMessageElement = errorModal.querySelector('.error-message-details');
+        if(errorMessageElement) errorMessageElement.textContent = error.message;
+        errorModal.style.display = 'flex';
     }
-    if (errorDetails) {
-      errorDetails.textContent = `Error: ${error.message}`;
-    }
-    // Attempt to remove any partially created canvas
+
+    // Attempt to remove any partially created canvas if it exists and was added to DOM
     if (state.renderer && state.renderer.domElement && state.renderer.domElement.parentElement) {
         state.renderer.domElement.parentElement.removeChild(state.renderer.domElement);
     }
-    state.renderer = null; // Ensure renderer is not used
-    return false; // Indicate failure
+    state.renderer = null;
+    return false; // Indicate failure, as per existing pattern in the file
   }
 
   const gridContainer = document.getElementById('grid-container');
