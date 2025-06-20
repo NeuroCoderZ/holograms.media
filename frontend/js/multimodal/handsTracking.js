@@ -6,6 +6,9 @@ import * as THREE from 'three'; // Импортируем THREE для THREE.Mat
 import { state } from '../core/init.js'; // Ensure state is imported
 import eventBus from '../core/eventBus.js'; // Import EventBus
 import { updateHologramLayout } from '../ui/layoutManager.js'; // Added import
+import { AtomicGestureClassifier } from '../gestures/AtomicGestureClassifier.js';
+import { GestureSequencer } from '../gestures/GestureSequencer.js';
+import { GESTURE_SEQUENCES } from '../config/gestureSequences.js';
 
 // --- Constants ---
 const HAND_CONNECTIONS = [ 
@@ -209,6 +212,25 @@ function onResults(results) {
     if (handsArePresent && !state.multimodal.previousHandsVisible) { // Hands just appeared
         eventBus.emit('handsDetected', results.multiHandLandmarks);
         console.log("Event emitted: handsDetected. Starting fade-in.");
+
+        // Perform gesture classification and sequencing for the first hand
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            const landmarks = results.multiHandLandmarks[0]; // Process the first detected hand
+            if (state.gestures && state.gestures.classifier && state.gestures.sequencer) {
+                const detectedGesture = state.gestures.classifier.classify(landmarks);
+                if (detectedGesture) {
+                    // console.log('Detected atomic gesture:', detectedGesture);
+                    state.gestures.sequencer.emitGesture(detectedGesture);
+                } else {
+                    // If no specific gesture is classified, but hand is present, emit null to sequencer
+                    // This helps reset sequences if an "unknown" hand pose appears mid-sequence.
+                    state.gestures.sequencer.emitGesture(null);
+                }
+            } else {
+                console.warn('Gesture classifier or sequencer not found in state.');
+            }
+        }
+
         if (state.multimodal.handOpacityTween) state.multimodal.handOpacityTween.stop();
         state.multimodal.handOpacityTween = new window.TWEEN.Tween(state.multimodal)
             .to({ handOpacity: 0.8 }, 300) // Target opacity 0.8, duration 300ms
@@ -396,6 +418,14 @@ export function initializeMediaPipeHands() {
 
     // Устанавливаем обработчик результатов
     state.multimodal.handsInstance.onResults(onResults);
+
+    // Initialize gesture processing components
+    if (!state.gestures) {
+        state.gestures = {};
+    }
+    state.gestures.classifier = new AtomicGestureClassifier();
+    state.gestures.sequencer = new GestureSequencer(GESTURE_SEQUENCES);
+    console.log('AtomicGestureClassifier and GestureSequencer initialized and stored in state.');
 
     // Initialize 3D hand group
     state.multimodal.handMeshGroup = new THREE.Group();
