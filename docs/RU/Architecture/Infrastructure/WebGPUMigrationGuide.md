@@ -29,7 +29,7 @@
 import * as THREE from 'three';
 
 // Импорт WebGPURenderer из аддонов
-import { WebGPURenderer } from 'three/addons/renderers/webgpu/WebGPURenderer.js';
+import WebGPURenderer from 'three/addons/renderers/webgpu/WebGPURenderer.js';
 
 // Импорт материалов для WebGPU нод
 import { MeshBasicNodeMaterial } from 'three/addons/nodes/Nodes.js';
