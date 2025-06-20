@@ -182,10 +182,4 @@ class GestureSequencer {
     }
 }
 
-// Export the classes
-if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-    module.exports = { GestureSequenceFSM, GestureSequencer }; // For CommonJS (Node.js)
-} else {
-    window.GestureSequenceFSM = GestureSequenceFSM; // For browser environments
-    window.GestureSequencer = GestureSequencer;
-}
+export { GestureSequenceFSM, GestureSequencer };

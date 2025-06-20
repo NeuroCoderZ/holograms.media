@@ -297,9 +297,4 @@ class AtomicGestureClassifier {
     }
 }
 
-// Export the class
-if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-    module.exports = AtomicGestureClassifier; // For CommonJS (Node.js)
-} else {
-    window.AtomicGestureClassifier = AtomicGestureClassifier; // For browser environments
-}
+export { AtomicGestureClassifier };
