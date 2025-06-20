@@ -5,6 +5,7 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { MeshBasicNodeMaterial } from 'three/examples/jsm/renderers/webgpu/nodes/materials/MeshBasicNodeMaterial.js';
 import { semitones, GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE } from '../config/hologramConfig.js';
 
 /**
@@ -271,7 +272,7 @@ export class HologramRenderer {
     columnGroup.userData.initialX = initialX; // Store for later updates
 
     const geometry = new THREE.BoxGeometry(width, 2, 1); // width, height, depth
-    const material = new THREE.MeshStandardMaterial({ color: semitone.color }); // Color from semitone data
+    const material = new MeshBasicNodeMaterial({ color: semitone.color }); // Color from semitone data
     const columnMesh = new THREE.Mesh(geometry, material);
 
     columnMesh.position.set(width / 2, (semitoneIndex + 1) * 2, 0);
@@ -313,93 +314,96 @@ export class HologramRenderer {
    * @param {Float32Array} panAngles - Array of 130 pan angles in degrees (-90 to +90).
    */
   updateVisuals(dbLevels, panAngles) {
-    if (!dbLevels || !panAngles || dbLevels.length !== 260 || panAngles.length !== 130) {
-        // Optionally, reset all columns to a default silent/centered state
-        this.columns.forEach((columnPair) => {
-            const channels = [
-                { meshGroup: columnPair.left, isLeft: true },
-                { meshGroup: columnPair.right, isLeft: false },
-            ];
-            channels.forEach(channel => {
-                if (channel.meshGroup && channel.meshGroup.children && channel.meshGroup.children.length > 0) {
-                    const mesh = channel.meshGroup.children[0];
-                    if (mesh instanceof THREE.Mesh) {
-                        mesh.scale.z = 0.001;
-                        mesh.position.z = 0.0005;
-                        if (mesh.material instanceof THREE.MeshStandardMaterial) {
-                            mesh.material.emissiveIntensity = 0;
-                        }
-                        // Reset X position to initial state
-                        if (channel.meshGroup.userData.initialX !== undefined) {
-                            channel.meshGroup.position.x = channel.meshGroup.userData.initialX;
-                        }
-                    }
-                }
-            });
-        });
-        return;
-    }
-
-    this.columns.forEach((columnPair, index) => { // 'index' corresponds to semitone index (0-129)
-      const leftLevel = dbLevels[index];
-      const rightLevel = dbLevels[index + 130];
-      const panAngle = panAngles[index];
-
-      const channels = [
-        { level: leftLevel, meshGroup: columnPair.left, isLeft: true },
-        { level: rightLevel, meshGroup: columnPair.right, isLeft: false },
-      ];
-
-      channels.forEach(channel => {
-        if (!channel.meshGroup || !channel.meshGroup.children || channel.meshGroup.children.length === 0) {
-          return;
-        }
-        const mesh = channel.meshGroup.children[0];
-        if (!(mesh instanceof THREE.Mesh)) {
-          return;
-        }
-        const material = mesh.material;
-
-        // Normalize dB value (-100 to 0) to an amplitude (0 to 1)
-        const normalizedAmplitude = THREE.MathUtils.clamp((channel.level + 100) / 100.0, 0, 1);
-
-        // Ensure base color is set (safety check)
-        if (material.color && columnPair.semitoneData && material.color.getHex() !== columnPair.semitoneData.color.getHex()) {
-            material.color.copy(columnPair.semitoneData.color);
-        }
-
-        let targetScaleZ = normalizedAmplitude * GRID_DEPTH; 
-        if (isNaN(targetScaleZ) || targetScaleZ <= 0.001) {
-          targetScaleZ = 0.001; // Minimum visible depth
-        }
-        
-        // Directly assign the Z-scale and Z-position
-        mesh.scale.z = targetScaleZ;
-        mesh.position.z = targetScaleZ / 2; // Center the scaled mesh
-
-        // Update emissive intensity
-        if (material instanceof THREE.MeshStandardMaterial) {
-            if (material.emissive && material.emissive.getHex() === 0x000000 && columnPair.semitoneData) {
-                material.emissive.copy(columnPair.semitoneData.color);
-            }
-            material.emissiveIntensity = normalizedAmplitude * 1.5; // Adjust multiplier for desired brightness
-        }
-
-        // Apply pan angle to X-position
-        const initialX = channel.meshGroup.userData.initialX;
-        const panFactor = panAngle / 90.0; // Normalize angle from -90 to +90 to -1 to +1
-        // Max shift for each column is its width / 2. This makes it pan within its own 'cell'
-        const maxPanShift = columnPair.semitoneData.width / 2; 
-        let panShiftX = panFactor * maxPanShift;
-
-        if (channel.isLeft) {
-            channel.meshGroup.position.x = initialX - panShiftX;
-        } else {
-            channel.meshGroup.position.x = initialX + panShiftX;
-        }
-
-      });
-    });
+    // if (!dbLevels || !panAngles || dbLevels.length !== 260 || panAngles.length !== 130) {
+    //     // Optionally, reset all columns to a default silent/centered state
+    //     this.columns.forEach((columnPair) => {
+    //         const channels = [
+    //             { meshGroup: columnPair.left, isLeft: true },
+    //             { meshGroup: columnPair.right, isLeft: false },
+    //         ];
+    //         channels.forEach(channel => {
+    //             if (channel.meshGroup && channel.meshGroup.children && channel.meshGroup.children.length > 0) {
+    //                 const mesh = channel.meshGroup.children[0];
+    //                 if (mesh instanceof THREE.Mesh) {
+    //                     mesh.scale.z = 0.001;
+    //                     mesh.position.z = 0.0005;
+    //                     if (mesh.material instanceof THREE.MeshStandardMaterial) { // This check might also need update if material changes
+    //                         mesh.material.emissiveIntensity = 0;
+    //                     }
+    //                     // Reset X position to initial state
+    //                     if (channel.meshGroup.userData.initialX !== undefined) {
+    //                         channel.meshGroup.position.x = channel.meshGroup.userData.initialX;
+    //                     }
+    //                 }
+    //             }
+    //         });
+    //     });
+    //     return;
+    // }
+    //
+    // this.columns.forEach((columnPair, index) => { // 'index' corresponds to semitone index (0-129)
+    //   const leftLevel = dbLevels[index];
+    //   const rightLevel = dbLevels[index + 130];
+    //   const panAngle = panAngles[index];
+    //
+    //   const channels = [
+    //     { level: leftLevel, meshGroup: columnPair.left, isLeft: true },
+    //     { level: rightLevel, meshGroup: columnPair.right, isLeft: false },
+    //   ];
+    //
+    //   channels.forEach(channel => {
+    //     if (!channel.meshGroup || !channel.meshGroup.children || channel.meshGroup.children.length === 0) {
+    //       return;
+    //     }
+    //     const mesh = channel.meshGroup.children[0];
+    //     if (!(mesh instanceof THREE.Mesh)) {
+    //       return;
+    //     }
+    //     const material = mesh.material;
+    //
+    //     // Normalize dB value (-100 to 0) to an amplitude (0 to 1)
+    //     const normalizedAmplitude = THREE.MathUtils.clamp((channel.level + 100) / 100.0, 0, 1);
+    //
+    //     // Ensure base color is set (safety check)
+    //     if (material.color && columnPair.semitoneData && material.color.getHex() !== columnPair.semitoneData.color.getHex()) {
+    //         material.color.copy(columnPair.semitoneData.color);
+    //     }
+    //
+    //     let targetScaleZ = normalizedAmplitude * GRID_DEPTH;
+    //     if (isNaN(targetScaleZ) || targetScaleZ <= 0.001) {
+    //       targetScaleZ = 0.001; // Minimum visible depth
+    //     }
+    //
+    //     // Directly assign the Z-scale and Z-position
+    //     mesh.scale.z = targetScaleZ;
+    //     mesh.position.z = targetScaleZ / 2; // Center the scaled mesh
+    //
+    //     // Update emissive intensity
+    //     // For MeshBasicNodeMaterial, emissiveIntensity might not be directly applicable in the same way.
+    //     // This part might need adjustment or removal if MeshBasicNodeMaterial doesn't support it or handles it differently.
+    //     // For Phase 1, focusing on basic rendering, so complex material properties can be simplified.
+    //     if (material instanceof THREE.MeshStandardMaterial) { // This condition will now be false
+    //         if (material.emissive && material.emissive.getHex() === 0x000000 && columnPair.semitoneData) {
+    //             material.emissive.copy(columnPair.semitoneData.color);
+    //         }
+    //         material.emissiveIntensity = normalizedAmplitude * 1.5; // Adjust multiplier for desired brightness
+    //     }
+    //
+    //     // Apply pan angle to X-position
+    //     const initialX = channel.meshGroup.userData.initialX;
+    //     const panFactor = panAngle / 90.0; // Normalize angle from -90 to +90 to -1 to +1
+    //     // Max shift for each column is its width / 2. This makes it pan within its own 'cell'
+    //     const maxPanShift = columnPair.semitoneData.width / 2;
+    //     let panShiftX = panFactor * maxPanShift;
+    //
+    //     if (channel.isLeft) {
+    //         channel.meshGroup.position.x = initialX - panShiftX;
+    //     } else {
+    //         channel.meshGroup.position.x = initialX + panShiftX;
+    //     }
+    //
+    //   });
+    // });
   }
 
   /**

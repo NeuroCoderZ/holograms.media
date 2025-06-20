@@ -8,6 +8,10 @@
     ],
     "rewrites": [
       {
+        "source": "/webgpu-test",
+        "destination": "/webgpu_test.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
