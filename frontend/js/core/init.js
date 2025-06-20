@@ -141,9 +141,22 @@ export async function initCore() {
     return;
   }
 
+  // This should be AFTER initializeScene(state) and its related check
   if (!state.renderer) {
-    console.error('Renderer not available after scene initialization, though initializeScene reported success. This should not happen. Halting.');
-    return;
+    console.error('CRITICAL CHECK FAILED: state.renderer is null after initializeScene. Halting core initialization because scene setup failed (WebGL context unavailable).');
+    // Display a user-friendly message on the page if possible, similar to sceneSetup.js
+    // This could be a simplified version or a call to a shared error display function if available.
+    // For now, the console error is the primary requirement.
+    // Optionally, you can try to show the same modal if it exists:
+    const errorModal = document.getElementById('webgl-error-modal');
+    if (errorModal) {
+        const errorMessageElement = errorModal.querySelector('.error-message-details');
+        if(errorMessageElement && !errorMessageElement.textContent) { // Show if not already populated by sceneSetup
+            errorMessageElement.textContent = 'WebGL context could not be created. Core app initialization halted.';
+        }
+        errorModal.style.display = 'flex';
+    }
+    return; // Полностью прекращаем дальнейшее выполнение initCore
   }
   console.log('Three.js scene and renderer successfully initialized.');
 
