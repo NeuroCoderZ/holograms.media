@@ -20,6 +20,7 @@ function animate(appState, currentTime) { // Added appState
 
     // --- START REPLACEMENT BLOCK ---
     // Check if hologramRendererInstance exists and if WASM processed audio data is available
+    /*
     if (appState.hologramRendererInstance && appState.audio.currentDbLevels && appState.audio.currentPanAngles &&
         appState.audio.currentDbLevels.length === 260 && appState.audio.currentPanAngles.length === 130) {
         
@@ -33,6 +34,21 @@ function animate(appState, currentTime) { // Added appState
             console.log(`[Animate DEBUG] Audio data received from WASM. Left Sum: ${leftSum}`);
         }
     }
+    */
+    // --- ДИАГНОСТИЧЕСКОЕ ИЗМЕНЕНИЕ НАЧАЛО ---
+    // Обновление визуализации голограммы ВРЕМЕННО ОТКЛЮЧЕНО
+    /*
+    if (state.hologramRendererInstance && state.audio.currentDbLevels && state.audio.currentPanAngles) {
+        state.hologramRendererInstance.updateVisuals(state.audio.currentDbLevels, state.audio.currentPanAngles);
+    }
+    */
+
+    // Вместо этого, просто меняем цвет фона для проверки стабильности рендера
+    const time = currentTime * 0.001; // Используем currentTime, переданный в animate
+    if (appState.scene && appState.scene.background) { // Changed state to appState
+        appState.scene.background.setHSL(time % 1.0, 0.6, 0.7); // HSL для плавной смены цвета
+    }
+    // --- ДИАГНОСТИЧЕСКОЕ ИЗМЕНЕНИЕ КОНЕЦ ---
     // --- END REPLACEMENT BLOCK ---
 
     // Render the scene
