@@ -13,7 +13,7 @@ import { initializeResizeHandler } from './core/resizeHandler.js';
 import { initializeHammerGestures } from './core/gestures.js';
 import { initializeRightPanel } from './panels/rightPanelManager.js';
 import { updateHologramLayout } from './ui/layoutManager.js'; // Assuming updateHologramLayout is in layoutManager
-import { animate } from './3d/rendering.js'; // Assuming animate is in rendering.js
+import { startAnimationLoop } from './3d/rendering.js'; // Assuming animate is in rendering.js
 import { initializeMediaPipeHands } from './multimodal/handsTracking.js'; // Added import for handsTracking
 
 // UI and Core managers that might be platform-specific
@@ -43,11 +43,23 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Accessing buttons via state.uiElements.buttons
     const startButton = state.uiElements.buttons.startSessionButton;
     if (startButton) {
-        startButton.addEventListener('click', () => startFullApplication(state), { once: true });
+        startButton.addEventListener('click', async () => {
+            try {
+                await startFullApplication(state);
+            } catch (error) {
+                console.error("Error during startFullApplication:", error);
+                alert("Failed to start the application. Please check the console for details.");
+            }
+        }, { once: true });
     } else {
         // Если кнопки нет, но согласие есть, запускаемся автоматически
         if (localStorage.getItem('userConsentGiven') === 'true') {
-            await startFullApplication(state);
+            try {
+                await startFullApplication(state);
+            } catch (error) {
+                console.error("Error during startFullApplication:", error);
+                alert("Failed to start the application. Please check the console for details.");
+            }
         }
     }
 });
@@ -121,7 +133,7 @@ async function startFullApplication(appState) { // Renamed state to appState to 
         }
 
         // animate function might be part of a renderer or core loop module
-        animate(appState);
+        startAnimationLoop(appState);
         console.log("--- Приложение полностью запущено и анимируется. ---");
     }, 100);
 }
