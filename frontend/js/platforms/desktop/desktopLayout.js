@@ -1,5 +1,4 @@
-// frontend/js/platforms/desktop/desktopLayout.js
-// import { uiElements } from '../../ui/uiManager.js'; // Removed as uiElements will be passed via constructor
+import * as THREE from 'three';
 import { updateHologramLayout } from '../../ui/layoutManager.js';
 
 export default class DesktopLayout {

@@ -1,7 +1,8 @@
 // frontend/js/core/events.js
 
-// import { state } from './init.js'; // Removed unused import
-// import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Removed unused import
+import * as THREE from 'three';
+import { state } from './init.js';
+import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
 import { uiElements } from '../ui/uiManager.js';
 // import { updateHologramLayout } from '../ui/layoutManager.js'; // Removed unused import
 // import * as THREE from 'three'; // Removed unused import
@@ -133,8 +134,8 @@ export function setupEventListeners() {
   console.log('[events.js] Event listeners setup process complete.');
 }
 
-// Removed empty setupButtonListeners (2nd instance)
-// Removed empty setupModalListeners (2nd instance)
+// Removed empty setupButtonEventListeners (2nd instance)
+// Removed empty setupModalEventListeners (2nd instance)
 
 // Renamed setupTextInputListeners (2nd instance) to be specific for chat
 function setupChatTextInputListeners() {

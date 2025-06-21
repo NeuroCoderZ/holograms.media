@@ -235,7 +235,6 @@ export async function sendChatMessage(messageText) {
       } else if (isInTourMode) {
         // If the bot's response doesn't seem to ask for continuation, end the tour.
         // Or, the backend prompt should be solid enough to always ask for continuation if tour is active.
-        // For now, if not explicitly asking to continue, we might assume the tour part is done or needs specific "next"
         // This part might need refinement based on how backend structures tour steps.
         // If bot is expected to always end with a question for continuation during tour:
         // awaitingTourContinuation = true; // if backend is designed to always ask.
@@ -309,8 +308,9 @@ function formatMessage(message) {
   // Заменяем *italic* на курсив
   formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
   
-  // Заменяем \n на <br>
+  // Заменяем на <br>
   formatted = formatted.replace(/\n/g, '<br>');
+
   
   return formatted;
 }

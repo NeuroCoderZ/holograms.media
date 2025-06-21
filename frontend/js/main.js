@@ -77,13 +77,16 @@ window.addEventListener('DOMContentLoaded', async () => {
                         <p>Please check the browser console (F12 or Right-click > Inspect > Console) for more details.</p>
                         <p>You may need to refresh the page or contact support if the issue persists.</p>
                     </div>`;
-            } else {
+            }
+             else {
                 alert("Critical error during application startup. Please check console for details.");
             }
         } catch (uiError) {
             console.error("Error displaying startup error message:", uiError);
             alert("Critical error during application startup, and failed to display detailed error message. Please check console.");
         }
+        // Optionally, re-throw the error if there are higher-level error handlers or for testing
+        // throw error;
     }
 });
 
@@ -240,7 +243,7 @@ async function startFullApplication(appState) { // Renamed state to appState to 
             errorContainer.innerHTML += `<p>Error starting the full application: ${error.message}. Some features may not be available. Check console for details.</p>`;
         } catch (uiError) {
             console.error("Failed to display startFullApplication error message in UI:", uiError);
-            alert("Error starting the full application. Some features may not be available. Please check console for details.");
+            alert("Critical error during application startup, and failed to display detailed error message. Please check console.");
         }
         // Optionally, re-throw the error if there are higher-level error handlers or for testing
         // throw error;

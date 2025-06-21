@@ -37,13 +37,6 @@ export async function setupAudioProcessing(sourceNode, type) {
     outputChannelCount: [2] // We expect 2 channels of output from the worklet (left/right data)
   });
 
-  // Send initial data to the AudioWorklet: sample rate and target frequencies
-  cwtProcessorNode.port.postMessage({
-      type: 'INIT_DATA',
-      sampleRate: audioCtx.sampleRate,
-      targetFrequencies: state.audio.targetFrequencies
-  });
-
   cwtProcessorNode.port.onmessage = (event) => {
     if (event.data.type === 'WASM_READY') {
       console.log('WASM module inside AudioWorklet is ready!');

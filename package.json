@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "lint": "echo 'Linters not configured yet'",
     "firebase:login": "firebase login",
     "firebase:init": "firebase init",
@@ -13,6 +16,7 @@
   },
   "devDependencies": {
     "firebase-tools": "^13.7.5",
+    "vite": "^6.3.5",
     "wrangler": "^4.19.1"
   },
   "dependencies": {

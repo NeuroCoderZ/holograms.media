@@ -155,7 +155,7 @@ ${versionError.message}`);
           })
           .finally(() => {
             // Скрываем спиннер и разблокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
-            spinner.style.display = 'none';
+            spinner.style.display = 'block';
             submitButton.disabled = false;
           });
         })
@@ -166,7 +166,7 @@ ${generateError.message}`);
           // Скрываем спиннер и разблокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
           const spinner = document.getElementById('loading-spinner');
           const submitButton = document.getElementById('submitTopPrompt');
-          spinner.style.display = 'none';
+          spinner.style.display = 'block';
           submitButton.disabled = false;
         });
     })
@@ -177,7 +177,7 @@ ${triaError.message}`);
       // Скрываем спиннер и разблокируем кнопку (уже должно быть сделано в applyPromptWithTriaMode)
       const spinner = document.getElementById('loading-spinner');
       const submitButton = document.getElementById('submitTopPrompt');
-      spinner.style.display = 'none';
+      spinner.style.display = 'block';
       submitButton.disabled = false;
     });
 }
