@@ -84,9 +84,10 @@ export function initializeHammerGestures(passedState) { // Changed signature
       } else {
         console.error('Событие panmove: localStateRef.hologramRendererInstance or getHologramPivot method is missing');
       }
-    } else {
-      // Логика для режима XR (вращение камеры) - предполагаем, что здесь не нужна кумулятивность таким же образом
-      // или что она управляется иначе. Для задачи с голограммой, фокусируемся на non-XR.
+    }
+    // Для режима XR (вращение камеры) - предполагаем, что здесь не нужна кумулятивность таким же образом
+    // или что она управляется иначе. Для задачи с голограммой, фокусируемся на non-XR.
+    else {
       if (localStateRef.camera) { // Use localStateRef
         // Эта часть может потребовать аналогичной логики с prePanRotation для камеры, если нужно
         const deltaX = ev.deltaX / window.innerWidth;
@@ -133,7 +134,7 @@ export function initializeHammerGestures(passedState) { // Changed signature
             return;
           }
           new window.TWEEN.Tween(hologramPivot.rotation)
-            .to({ x: initialHologramRotation.x, y: initialHologramRotation.y, z: initialHologramRotation.z }, ROTATION_RETURN_DURATION)
+            .to({ x: initialHologramRotation.x, y: initialHologramRotation.y, z: initialHologramRotation.z }, 300)
             .easing(window.TWEEN.Easing.Cubic.Out)
             .start();
         } else {

@@ -401,8 +401,9 @@ export class HologramRenderer {
     //     } else {
     //         channel.meshGroup.position.x = initialX + panShiftX;
     //     }
-    //
+
     //   });
+
     // });
   }
 

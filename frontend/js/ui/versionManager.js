@@ -1,6 +1,7 @@
 // frontend/js/ui/versionManager.js
 
 import * as THREE from 'three'; // Нужен для ObjectLoader
+import { ObjectLoader } from 'three/addons/loaders/ObjectLoader.js';
 
 // Переменные для управления версиями и ветками
 let currentBranch = 'main'; // Текущая активная ветка
@@ -94,7 +95,7 @@ async function switchToVersion(versionId, branch) {
             }
 
             if (scene && mainSequencerGroup) {
-                 const loader = new THREE.ObjectLoader();
+                 const loader = new ObjectLoader(); // Use imported ObjectLoader
                  try {
                      const parsedData = loader.parse(scene_state);
                      console.log("Scene state parsed successfully:", parsedData);
@@ -167,7 +168,7 @@ function loadVersion(version) {
     currentVersion = version;
     // TODO: Восстанавливаем состояние сцены и файлов из объекта version
     if (scene && version.sceneState) {
-        const loader = new THREE.ObjectLoader();
+        const loader = new ObjectLoader(); // Use imported ObjectLoader
         try {
             const sceneData = JSON.parse(version.sceneState);
              if (mainSequencerGroup) {

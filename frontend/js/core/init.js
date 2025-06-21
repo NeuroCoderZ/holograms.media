@@ -1,5 +1,6 @@
 // frontend/js/core/init.js - Инициализация основного состояния и конфигурации приложения
 
+import * as THREE from 'three';
 import { semitones } from '../config/hologramConfig.js';
 
 // Глобальный объект состояния приложения
@@ -43,7 +44,7 @@ export const state = {
     isPlaying: false,
     pausedAt: 0,
     startOffset: 0,
-    activeSource: 'microphone', // 'none', 'file', 'microphone'
+    activeSource: 'microphone',
     
     // Specific for file player (from script.js logic)
     filePlayerAnalysers: null,

@@ -3,3 +3,4 @@
 
 # Ignore Firebase cache
 .firebase/
+node_modules

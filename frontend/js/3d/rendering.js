@@ -2,7 +2,7 @@
 
 // Импорты
 import * as THREE from 'three';
-// TWEEN подключается глобально через CDN в index.html
+import * as TWEEN from '@tweenjs/tween.js';
 
 // Store appState globally within this module, or pass it differently if preferred.
 // For simplicity in this step, let's assume appState is accessible when animationLoop is called.
@@ -30,8 +30,8 @@ async function animation(time) { // 'time' is provided by setAnimationLoop, typi
     const timeInSeconds = time / 1000.0;
 
     // Update TWEEN animations (if TWEEN is still used)
-    if (window.TWEEN) {
-        window.TWEEN.update(timeInSeconds);
+    if (TWEEN) {
+        TWEEN.update(timeInSeconds);
     }
 
     // Hologram updates are currently commented out in hologramRenderer.js for Phase 1.
