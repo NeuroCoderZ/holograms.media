@@ -62,4 +62,4 @@ export function registerLegacyHandlers() {
   }
   
   // Обработка других функций при необходимости
-} 
+}
