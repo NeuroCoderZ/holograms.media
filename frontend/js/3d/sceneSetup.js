@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import WebGPURenderer from 'three/addons/renderers/webgpu/WebGPURenderer.js';
 
 /**
  * Initializes the Three.js scene, camera, renderer, and basic lighting.
@@ -12,58 +11,30 @@ export async function initializeScene(state) {
   state.scene = new THREE.Scene();
   state.scene.background = new THREE.Color(0x000000); // Black background
 
-  // --- WebGPU Renderer Initialization ---
-  if (!navigator.gpu) {
-    console.error('CRITICAL: WebGPU not supported on this browser.');
-    const errorModal = document.getElementById('webgl-error-modal'); // We'll rename this modal later
-    if (errorModal) {
-        const errorMessageElement = errorModal.querySelector('.error-message-details');
-        if(errorMessageElement) errorMessageElement.textContent = 'WebGPU is not supported on this browser. Please use a modern browser like Chrome or Edge.';
-        errorModal.style.display = 'flex';
-    }
-    state.renderer = null;
-    state.scene = null; // Ensure scene and camera are also null on failure
-    state.camera = null;
-    return { scene: null, renderer: null, camera: null }; // Return null objects on failure
-  }
-
+  // --- WebGL Renderer Initialization ---
   try {
-    console.log('[WebGPU Init] Attempting to create WebGPURenderer...');
-    // Ensure THREE from 'three/webgpu' is imported if WebGPURenderer is not part of the main THREE namespace directly
-    // For now, assuming THREE.WebGPURenderer is available. If not, the import needs to be:
-    // import { WebGPURenderer } from 'three/webgpu'; (or similar, based on Three.js structure)
-    // And then used as: new WebGPURenderer(...)
-
-    // For the purpose of this subtask, assume 'three' is imported as:
-    // import * as THREE from 'three';
-    // and WebGPURenderer is available as THREE.WebGPURenderer
-    // If subtask fails due to THREE.WebGPURenderer not being a constructor,
-    // the import statement at the top of sceneSetup.js will need adjustment in a later step.
-    // For now, proceed with THREE.WebGPURenderer
-
-    state.renderer = new WebGPURenderer({
+    console.log('[WebGL Init] Attempting to create WebGLRenderer...');
+    state.renderer = new THREE.WebGLRenderer({
         antialias: true,
-        powerPreference: 'high-performance' // Still relevant for WebGPU
+        // powerPreference: 'high-performance' // Retained for potential relevance
     });
-
-    console.log('[WebGPU Init] WebGPURenderer instance created. Awaiting init()...');
-    await state.renderer.init(); // Asynchronous initialization for WebGPU
-    console.log('[WebGPU Init] renderer.init() completed.');
-
     state.renderer.setPixelRatio(window.devicePixelRatio);
-    // outputColorSpace is used in WebGPU instead of outputEncoding
-    // state.renderer.outputColorSpace = THREE.SRGBColorSpace; // Or other as needed, check Three.js docs
+    state.renderer.outputEncoding = THREE.sRGBEncoding; // Correct encoding for WebGL
 
-    console.log('[WebGPU Init] WebGPURenderer initialized successfully.');
+    console.log('[WebGL Init] WebGLRenderer initialized successfully.');
 
   } catch (error) {
-    console.error('CRITICAL: WebGPURenderer Initialization Failed.', error);
-    const errorModal = document.getElementById('webgl-error-modal'); // We'll rename this modal later
-    if (errorModal) {
-        const errorMessageElement = errorModal.querySelector('.error-message-details');
-        if(errorMessageElement) errorMessageElement.textContent = 'Failed to initialize WebGPU renderer: ' + error.message;
-        errorModal.style.display = 'flex';
+    console.error('CRITICAL: WebGLRenderer Initialization Failed.', error);
+    const errorOverlay = document.getElementById('webgl-error-overlay'); // Use the correct ID from index.html
+    const errorDetailsElement = document.getElementById('webgl-error-details');
+
+    if (errorOverlay) {
+        if (errorDetailsElement) {
+            errorDetailsElement.textContent = 'Failed to initialize WebGL renderer: ' + error.message;
+        }
+        errorOverlay.style.display = 'flex'; // Show the overlay
     }
+    // Clean up renderer if partially created and attached
     if (state.renderer && state.renderer.domElement && state.renderer.domElement.parentElement) {
         state.renderer.domElement.parentElement.removeChild(state.renderer.domElement);
     }
