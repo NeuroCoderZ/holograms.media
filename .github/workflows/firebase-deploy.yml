@@ -38,7 +38,7 @@ jobs:
 
       # --- Шаг 4: Сборка проекта с помощью Vite ---
       - name: Build Frontend Project
-        run: npm --prefix frontend run build
+        run: npm run build
         
       # --- Шаг 5: Настройка аутентификации Google для деплоя ---
       - name: Set up Google Cloud Auth
