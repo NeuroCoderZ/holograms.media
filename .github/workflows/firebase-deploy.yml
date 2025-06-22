@@ -31,14 +31,14 @@ jobs:
       - name: Install Frontend Dependencies
         run: npm install --legacy-peer-deps
 
-      # --- Шаг 3: Линтинг (проверка качества кода) ---
+      # --- ШАГ 3: Сборка проекта с помощью Vite ---
+      - name: Build Frontend Project
+        run: npm run build
+
+      # --- Шаг 4: Линтинг (проверка качества кода) ---
       # (Раскомментируйте, когда настроите ESLint в package.json)
       # - name: Run Linter (ESLint)
       #   run: npm --prefix frontend run lint
-
-      # --- Шаг 4: Сборка проекта с помощью Vite ---
-      - name: Build Frontend Project
-        run: npm run build
         
       # --- Шаг 5: Настройка аутентификации Google для деплоя ---
       - name: Set up Google Cloud Auth
