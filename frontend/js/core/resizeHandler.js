@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js'; // Добавляем импорт THREE для доступа к MathUtils
+import * as THREE from 'three'; // Добавляем импорт THREE для доступа к MathUtils
 // import { state } from './init.js'; // Removed import
 import { updateHologramLayout } from '../ui/layoutManager.js'; // Предполагаемое место, пока оставляем как есть
 import { debounce } from '../utils/helpers.js';
