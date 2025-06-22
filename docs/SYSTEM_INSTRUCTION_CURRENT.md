@@ -60,6 +60,7 @@
 
 *   **Точка Входа:** `frontend/js/main.js` инициализирует все основные модули после загрузки DOM.
 *   **3D Рендеринг:** Использует Three.js с рендерером WebGPU (`THREE.WebGPURenderer`). Инициализация сцены, камеры, рендерера происходит в `3d/sceneSetup.js`. Цикл рендеринга управляется `3d/rendering.js`. Голограмма (`HologramRenderer.js`) использует `MeshBasicNodeMaterial` на текущем этапе.
+    *   **Управление зависимостью Three.js:** Для библиотеки Three.js применяется гибридный подход. В режиме разработки (`npm run dev`) она загружается с CDN через `importmap` в `frontend/index.html` для ускорения запуска и обновлений. Для производственной сборки (`npm run build`) Three.js устанавливается как npm-зависимость (в `package.json`) и включается непосредственно в бандл. Конфигурация Vite (`vite.config.js`) включает `three` в `optimizeDeps.exclude` для корректной работы этого подхода в режиме разработки.
 *   **Аудиовизуализация (CWT):**
     *   Захват аудио: `audio/microphoneManager.js` или `audio/audioFilePlayer.js`.
     *   Обработка: `audio/audioProcessing.js` использует `AudioWorklet` (`audio/waveletAnalyzer.js`).
