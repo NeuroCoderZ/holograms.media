@@ -5,7 +5,7 @@ import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { MeshBasicNodeMaterial } from 'three/addons/nodes/Nodes.js';
+// import { MeshBasicNodeMaterial } from 'three/addons/nodes/Nodes.js'; // Removed
 import { semitones, GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE } from '../config/hologramConfig.js';
 
 /**
@@ -272,7 +272,7 @@ export class HologramRenderer {
     columnGroup.userData.initialX = initialX; // Store for later updates
 
     const geometry = new THREE.BoxGeometry(width, 2, 1); // width, height, depth
-    const material = new MeshBasicNodeMaterial({ color: semitone.color }); // Color from semitone data
+    const material = new THREE.MeshBasicMaterial({ color: semitone.color }); // Color from semitone data
     const columnMesh = new THREE.Mesh(geometry, material);
 
     columnMesh.position.set(width / 2, (semitoneIndex + 1) * 2, 0);

@@ -1,5 +1,5 @@
 // frontend/js/ui/layoutManager.js
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+import * as THREE from 'three';
 // Using window.TWEEN as it's included via script tag and updated in rendering.js
 // import * as TWEEN from '@tweenjs/tween.js';
 // import { state } from '../core/init.js'; // Removed import
