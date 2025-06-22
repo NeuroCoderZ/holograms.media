@@ -1,4 +1,4 @@
 # Main dependency for database interaction, consistent with backend/requirements.txt
 asyncpg>=0.29.0
 pydantic>=2.0.0
-firebase-functions>=1.0.0 # Or specific version if needed
+firebase-functions>=0.2.0 # Or specific version if needed
