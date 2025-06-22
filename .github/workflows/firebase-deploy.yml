@@ -29,7 +29,7 @@ jobs:
 
       # --- Шаг 2: Установка зависимостей Frontend ---
       - name: Install Frontend Dependencies
-        run: npm --prefix frontend install --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       # --- Шаг 3: Линтинг (проверка качества кода) ---
       # (Раскомментируйте, когда настроите ESLint в package.json)
