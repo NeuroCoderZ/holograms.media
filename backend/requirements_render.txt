@@ -14,7 +14,7 @@ python-dotenv>=1.0.0
 aiofiles>=23.0.0
 
 # Password Hashing & JWT (Оставляем на случай, если где-то используется для других целей, кроме Firebase Auth)
-passlib[bcrypt]>=2.0.0
+passlib[bcrypt]>=1.7.4
 python-jose[cryptography]>=3.3.0
 
 # Firebase Admin SDK

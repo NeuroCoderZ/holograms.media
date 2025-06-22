@@ -1,5 +1,5 @@
 # Firebase Functions library
-firebase-functions>=1.0.0
+#firebase-functions>=0.2.0
 firebase-admin>=6.0.0
 
 # Main dependency for database interaction (logging)
