@@ -19,7 +19,7 @@ export async function initializeScene(state) {
         // powerPreference: 'high-performance' // Retained for potential relevance
     });
     state.renderer.setPixelRatio(window.devicePixelRatio);
-    state.renderer.outputEncoding = THREE.sRGBEncoding; // Correct encoding for WebGL
+    state.renderer.outputColorSpace = THREE.SRGBColorSpace; // Correct color space for WebGL
 
     console.log('[WebGL Init] WebGLRenderer initialized successfully.');
 
