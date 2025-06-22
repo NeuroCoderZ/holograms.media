@@ -4,6 +4,8 @@ export default defineConfig({
   root: 'frontend',
   server: {
     open: true,
+    host: '0.0.0.0',
+    allowedHosts: true,
   },
   // Мы все еще оставляем это на случай проблем с top-level await
   build: {
