@@ -1,7 +1,7 @@
 // frontend/js/ui/versionManager.js
 
 import * as THREE from 'three'; // Нужен для ObjectLoader
-import { ObjectLoader } from 'three/addons/loaders/ObjectLoader.js';
+const { ObjectLoader } = THREE;
 
 // Переменные для управления версиями и ветками
 let currentBranch = 'main'; // Текущая активная ветка
