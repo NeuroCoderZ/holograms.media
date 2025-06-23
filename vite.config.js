@@ -8,6 +8,7 @@ export default defineConfig({
     allowedHosts: true,
   },
   build: {
+    outDir: 'dist', // Changed from ../dist
     target: 'esnext',
     rollupOptions: {
       input: {
