@@ -1,9 +1,11 @@
 // frontend/js/core/init.js - Инициализация основного состояния и конфигурации приложения
 
-import * as THREE from 'three';
+// import * as THREE from 'three'; // Removed for global THREE
 import { semitones } from '../config/hologramConfig.js';
 
 // Глобальный объект состояния приложения
+// Assuming THREE is global
+const { Scene, OrthographicCamera, WebGLRenderer, AmbientLight, DirectionalLight, HemisphereLight, SpotLight, Color, Vector2, Group } = THREE;
 export const state = {
   // --- Состояние 3D сцены ---
   scene: null,                // Объект сцены Three.js

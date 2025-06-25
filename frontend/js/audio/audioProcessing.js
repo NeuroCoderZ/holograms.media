@@ -1,5 +1,5 @@
 import { state } from '../core/init.js';
-import * as THREE from 'three';
+// import * as THREE from 'three'; // Removed - THREE not used in this file
 
 /**
  * Ensures an AudioContext is available and running.

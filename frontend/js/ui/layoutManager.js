@@ -1,7 +1,9 @@
 // frontend/js/ui/layoutManager.js
-import * as THREE from 'three';
+// import * as THREE from 'three'; // Removed for global THREE
 // Using window.TWEEN as it's included via script tag and updated in rendering.js
 // import * as TWEEN from '@tweenjs/tween.js';
+// Assuming TWEEN is global
+const TWEEN = window.TWEEN;
 // import { state } from '../core/init.js'; // Removed import
 import eventBus from '../core/eventBus.js';
 import { getPanelWidths, getLeftPanelWidth } from '../core/resizeHandler.js';

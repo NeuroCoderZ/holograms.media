@@ -1,8 +1,10 @@
 // frontend/js/core/domEventHandlers.js
 
-import * as THREE from 'three';
+// import * as THREE from 'three'; // Removed for global THREE
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
+// Assuming THREE is global for applyPrompt example
+const { } = THREE; // Placeholder if specific THREE components are needed later, currently none directly in this file after refactor
 
 // --- Initialization Function ---
 
