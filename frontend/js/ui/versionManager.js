@@ -1,8 +1,9 @@
 // frontend/js/ui/versionManager.js
 
-// import * as THREE from 'three'; // Removed for global THREE
-// Assuming THREE is global
-const { ObjectLoader } = THREE;
+import axios from 'axios'; // Added import
+import * as THREE from 'three'; // Now imported via importmap
+// Assuming THREE is global - No longer, THREE is imported
+// const { ObjectLoader } = THREE; // Removed, ObjectLoader will be THREE.ObjectLoader
 
 // Переменные для управления версиями и ветками
 let currentBranch = 'main'; // Текущая активная ветка
@@ -96,7 +97,7 @@ async function switchToVersion(versionId, branch) {
             }
 
             if (scene && mainSequencerGroup) {
-                 const loader = new ObjectLoader(); // Use imported ObjectLoader
+                 const loader = new THREE.ObjectLoader(); // Use THREE.ObjectLoader
                  try {
                      const parsedData = loader.parse(scene_state);
                      console.log("Scene state parsed successfully:", parsedData);
@@ -169,7 +170,7 @@ function loadVersion(version) {
     currentVersion = version;
     // TODO: Восстанавливаем состояние сцены и файлов из объекта version
     if (scene && version.sceneState) {
-        const loader = new ObjectLoader(); // Use imported ObjectLoader
+        const loader = new THREE.ObjectLoader(); // Use THREE.ObjectLoader
         try {
             const sceneData = JSON.parse(version.sceneState);
              if (mainSequencerGroup) {
