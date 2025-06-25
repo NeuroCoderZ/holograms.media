@@ -1,5 +1,6 @@
 // frontend/js/ui/promptManager.js
 
+import axios from 'axios'; // Added import
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js';
 import { addMessageToChat } from '../panels/chatMessages.js'; // Импортируем addMessageToChat для вывода ответов
 
