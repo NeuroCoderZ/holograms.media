@@ -4,7 +4,10 @@
  */
 
 // import { state } from './init.js'; // Removed import
-import * as THREE from 'three';
+// import * as THREE from 'three'; // Removed for global THREE
+
+// Assuming THREE is global
+const { Euler, MathUtils } = THREE;
 
 let localStateRef; // Added module-level variable
 

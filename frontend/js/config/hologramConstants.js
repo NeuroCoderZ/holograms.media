@@ -1,5 +1,7 @@
-import * as THREE from 'three';
+// import * as THREE from 'three'; // Removed for global THREE
 // Константы для генерации цветов
+// Assuming THREE is global
+const { Color } = THREE;
 const START_HUE = 0, END_HUE = 270, SATURATION = 1.0, LIGHTNESS = 0.5;
 // Константы для генерации частот
 const BASE_FREQUENCY = 27.5, NOTES_PER_OCTAVE = 12;
