@@ -1,8 +1,8 @@
-// import * as THREE from 'three'; // Removed for global THREE
+import * as THREE from 'three'; // Now imported via importmap
 // ... (все импорты остаются вверху) ...
 import { initCore, state } from './core/init.js';
-// Assuming THREE is global for command:triggered example
-const { BoxGeometry, MeshBasicMaterial, Mesh } = THREE;
+// THREE is now a module, access its properties directly
+// const { BoxGeometry, MeshBasicMaterial, Mesh } = THREE; // This line is no longer needed if using THREE.BoxGeometry etc.
 import { initializeMainUI } from './ui/uiManager.js';
 import { ConsentManager } from './core/consentManager.js';
 import { initializeMultimedia } from './core/mediaInitializer.js';
