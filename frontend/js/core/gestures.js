@@ -4,10 +4,11 @@
  */
 
 // import { state } from './init.js'; // Removed import
-// import * as THREE from 'three'; // Removed for global THREE
+import * as THREE from 'three'; // Now imported via importmap
+import * as TWEEN from '@tweenjs/tween.js'; // Now imported via importmap
 
-// Assuming THREE is global
-const { Euler, MathUtils } = THREE;
+// Assuming THREE is global - No longer, THREE is imported
+// const { Euler, MathUtils } = THREE; // Removed
 
 let localStateRef; // Added module-level variable
 
@@ -130,15 +131,15 @@ export function initializeHammerGestures(passedState) { // Changed signature
         const hologramPivot = localStateRef.hologramRendererInstance.getHologramPivot(); // Use localStateRef
         if (hologramPivot) {
           // Плавно возвращаем к исходному вращению (initialHologramRotation)
-          if (!window.TWEEN) {
-            console.error('TWEEN library is not available on window.TWEEN. Animation will not work.');
+          if (!TWEEN) {
+            console.error('TWEEN library is not available. Animation will not work.');
             // Без TWEEN просто устанавливаем вращение напрямую
             hologramPivot.rotation.copy(initialHologramRotation);
             return;
           }
-          new window.TWEEN.Tween(hologramPivot.rotation)
+          new TWEEN.Tween(hologramPivot.rotation)
             .to({ x: initialHologramRotation.x, y: initialHologramRotation.y, z: initialHologramRotation.z }, 300)
-            .easing(window.TWEEN.Easing.Cubic.Out)
+            .easing(TWEEN.Easing.Cubic.Out)
             .start();
         } else {
           console.error('Событие panend/pinchend: hologramPivot is null or undefined after calling getHologramPivot()');
