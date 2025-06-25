@@ -1,8 +1,8 @@
 // frontend/js/rendering.js - Модуль для логики 3D-рендеринга
 
 // Импорты
-import * as THREE from 'three';
-import * as TWEEN from '@tweenjs/tween.js';
+// import * as THREE from 'three'; // Removed for global THREE
+// import * as TWEEN from '@tweenjs/tween.js'; // Removed for global TWEEN
 
 // Store appState globally within this module, or pass it differently if preferred.
 // For simplicity in this step, let's assume appState is accessible when animationLoop is called.

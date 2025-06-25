@@ -1,8 +1,10 @@
 // handsTracking.js
 
-import * as THREE from 'three'; // Импортируем THREE для THREE.MathUtils
+// import * as THREE from 'three'; // Removed for global THREE
 // Using window.TWEEN as it's included via script tag and updated in rendering.js
 // import * as TWEEN from '@tweenjs/tween.js';
+// Assuming THREE is global
+const { Vector3, LineBasicMaterial, BufferGeometry, LineSegments, PointsMaterial, Color, Float32BufferAttribute, Group, MathUtils } = THREE;
 import { state } from '../core/init.js'; // Ensure state is imported
 import eventBus from '../core/eventBus.js'; // Import EventBus
 import { updateHologramLayout } from '../ui/layoutManager.js'; // Added import

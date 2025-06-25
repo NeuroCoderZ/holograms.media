@@ -1,6 +1,7 @@
 // frontend/js/ui/versionManager.js
 
-import * as THREE from 'three'; // Нужен для ObjectLoader
+// import * as THREE from 'three'; // Removed for global THREE
+// Assuming THREE is global
 const { ObjectLoader } = THREE;
 
 // Переменные для управления версиями и ветками
