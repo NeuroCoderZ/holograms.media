@@ -1,4 +1,4 @@
-// import * as THREE from 'three'; // Removed for global THREE
+import * as THREE from 'three';
 
 /**
  * Initializes the Three.js scene, camera, renderer, and basic lighting.

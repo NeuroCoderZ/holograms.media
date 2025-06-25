@@ -1,6 +1,7 @@
 // Manages the logic and state of gesture recording,
 // including red line animation, finger trail visualization, and data submission.
 
+import axios from 'axios'; // Added import
 // import EventBus from '../core/eventBus';
 // import GestureUIManager from '../ui/GestureUIManager';
 // import axios from 'axios'; // For sending data to backend
