@@ -1,12 +1,21 @@
-import * as THREE from 'three';
-import { Line2 } from 'three/addons/lines/Line2.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+// import * as THREE from 'three'; // Removed for global THREE
+// import { Line2 } from 'three/addons/lines/Line2.js'; // Removed for global THREE
+// import { LineMaterial } from 'three/addons/lines/LineMaterial.js'; // Removed for global THREE
+// import { LineGeometry } from 'three/addons/lines/LineGeometry.js'; // Removed for global THREE
+// import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'; // Removed for global THREE
+// import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'; // Removed for global THREE
+// import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'; // Removed for global THREE
 // import { MeshBasicNodeMaterial } from 'three/addons/nodes/Nodes.js'; // Removed
 import { semitones, GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE } from '../config/hologramConfig.js';
+
+// Assuming THREE is global
+const { Group, SphereGeometry, MeshBasicMaterial, BufferGeometry, LineBasicMaterial, LineSegments, Vector3, Color, BoxGeometry, Mesh } = THREE;
+const Line2 = THREE.Line2 || function() { console.error("THREE.Line2 not found on global THREE object"); return null; };
+const LineMaterial = THREE.LineMaterial || function() { console.error("THREE.LineMaterial not found on global THREE object"); return null; };
+const LineGeometry = THREE.LineGeometry || function() { console.error("THREE.LineGeometry not found on global THREE object"); return null; };
+const GLTFLoader = THREE.GLTFLoader || function() { console.error("THREE.GLTFLoader not found on global THREE object"); return null; };
+const KTX2Loader = THREE.KTX2Loader || function() { console.error("THREE.KTX2Loader not found on global THREE object"); return null; };
+const MeshoptDecoder = THREE.MeshoptDecoder || function() { console.error("THREE.MeshoptDecoder not found on global THREE object"); return null; };
 
 /**
  * HologramRenderer class manages the 3D visualization of the hologram in the Three.js scene.
