@@ -1,6 +1,8 @@
-import * as THREE from 'three';
+// import * as THREE from 'three'; // Removed for global THREE
 
 // Color configuration constants
+// Assuming THREE is global
+const { Color } = THREE;
 export const START_HUE = 0; // Red
 export const END_HUE = 270; // Violet
 export const SATURATION = 1.0;

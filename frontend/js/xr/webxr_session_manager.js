@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+// import * as THREE from 'three'; // Removed for global THREE
 // File: frontend/js/xr/webxr_session_manager.js
 // Purpose: Manages WebXR sessions, including entering and exiting VR/AR modes.
 // Key Future Dependencies: WebXR Device API (browser), Three.js WebXRManager (if using Three).

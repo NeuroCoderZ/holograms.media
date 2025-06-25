@@ -1,6 +1,6 @@
 // frontend/js/core/events.js
 
-import * as THREE from 'three';
+// import * as THREE from 'three'; // Removed for global THREE
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
 import { uiElements } from '../ui/uiManager.js';
