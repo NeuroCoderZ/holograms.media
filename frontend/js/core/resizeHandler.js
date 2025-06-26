@@ -1,4 +1,3 @@
-import * as THREE from 'three'; // Добавляем импорт THREE для доступа к MathUtils
 // import { state } from './init.js'; // Removed import
 import { updateHologramLayout } from '../ui/layoutManager.js'; // Предполагаемое место, пока оставляем как есть
 import { debounce } from '../utils/helpers.js';
