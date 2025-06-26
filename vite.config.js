@@ -16,6 +16,12 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    exclude: ['three'],
+    include: [
+      'three',
+      '@tweenjs/tween.js'
+    ],
+    esbuildOptions: {
+      target: 'esnext',
+    },
   },
 });
