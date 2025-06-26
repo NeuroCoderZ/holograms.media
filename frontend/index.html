@@ -23,21 +23,6 @@
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
 
-  <!-- Import Map -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/",
-      "@tweenjs/tween.js": "https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@25.0.0/dist/tween.esm.js",
-      "axios": "https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js",
-      "@mediapipe/camera_utils": "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js",
-      "@mediapipe/drawing_utils": "https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js",
-      "@mediapipe/hands": "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
-    }
-  }
-  </script>
-
   <!-- MediaPipe Libraries - These will be loaded via import map if used as modules, or kept if used as global scripts -->
   <!-- <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script> -->
   <!-- <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script> -->
@@ -266,8 +251,8 @@
     </svg>
   </button>
   <!-- Прямое подключение зависимостей будет осуществляться через importmap -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script> -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@25.0.0/dist/tween.umd.js"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/25.0.0/tween.umd.js"></script>
   <!-- ПРИМЕЧАНИЕ: Мы подключаем НЕ .module.js, а .min.js или .umd.js, которые создают глобальные переменные -->
 
   <script type="module" src="/js/main.js"></script>

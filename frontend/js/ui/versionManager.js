@@ -1,7 +1,6 @@
 // frontend/js/ui/versionManager.js
 
 import axios from 'axios'; // Added import
-import * as THREE from 'three'; // Now imported via importmap
 // Assuming THREE is global - No longer, THREE is imported
 // const { ObjectLoader } = THREE; // Removed, ObjectLoader will be THREE.ObjectLoader
 

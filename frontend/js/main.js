@@ -1,4 +1,3 @@
-import * as THREE from 'three'; // Now imported via importmap
 // ... (все импорты остаются вверху) ...
 import { initCore, state } from './core/init.js';
 // THREE is now a module, access its properties directly
