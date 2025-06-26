@@ -27,30 +27,18 @@ jobs:
           cache: 'npm'       # Кешируем зависимости для ускорения будущих сборок
           cache-dependency-path: package-lock.json
 
-      # --- ОТЛАДОЧНЫЙ ШАГ 1: Проверяем, где лежит package.json ---
-      - name: List files in root
-        run: ls -la
-
       # --- Шаг 2: Установка зависимостей Frontend ---
       - name: Install Frontend Dependencies
         run: npm install --legacy-peer-deps
 
-      # --- ОТЛАДОЧНЫЙ ШАГ 2: Проверяем, что vite.config.js на месте ---
-      - name: Check vite.config.js
-        run: cat vite.config.js
-
-      # --- ШАГ 3: Сборка проекта с помощью Vite ---
+      # --- Шаг 3: Сборка проекта с помощью Vite ---
       - name: Build Frontend Project
         run: npm run build
-
-      # --- ОТЛАДОЧНЫЙ ШАГ 3: Проверяем, создалась ли папка dist ---
-      - name: Check for dist directory
-        run: ls -la
 
       # --- Шаг 4: Линтинг (проверка качества кода) ---
       # (Раскомментируйте, когда настроите ESLint в package.json)
       # - name: Run Linter (ESLint)
-      #   run: npm --prefix frontend run lint
+      #   run: npm run lint
         
       # --- Шаг 5: Настройка аутентификации Google для деплоя ---
       - name: Set up Google Cloud Auth
