@@ -1,8 +1,6 @@
 // handsTracking.js
 
-import * as THREE from 'three'; // Now imported via importmap
 // Using window.TWEEN as it's included via script tag and updated in rendering.js
-import * as TWEEN from '@tweenjs/tween.js'; // Now imported via importmap
 // Assuming THREE is global - No longer, THREE is imported
 // const { Vector3, LineBasicMaterial, BufferGeometry, LineSegments, PointsMaterial, Color, Float32BufferAttribute, Group, MathUtils } = THREE; // Removed
 import { state } from '../core/init.js'; // Ensure state is imported
