@@ -1,4 +1,6 @@
 // handsTracking.js
+import * as THREE from 'three';
+import * as TWEEN from '@tweenjs/tween.js';
 
 // Using window.TWEEN as it's included via script tag and updated in rendering.js
 // Assuming THREE is global - No longer, THREE is imported
