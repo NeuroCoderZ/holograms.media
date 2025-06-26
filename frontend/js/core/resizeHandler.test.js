@@ -37,7 +37,6 @@ import { state } from './init.js'; // This will be our mocked state
 import { updateHologramLayout } from '../ui/layoutManager.js'; // Mocked
 import { getPanelWidths } from './resizeHandler.js'; // Mocked
 // const THREE = require('three');
-import * as THREE from 'three';
 
 describe('initializeResizeHandler', () => {
   let mockResizeHandler;
