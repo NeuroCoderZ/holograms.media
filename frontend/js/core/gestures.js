@@ -4,8 +4,6 @@
  */
 
 // import { state } from './init.js'; // Removed import
-import * as THREE from 'three'; // Now imported via importmap
-import * as TWEEN from '@tweenjs/tween.js'; // Now imported via importmap
 
 // Assuming THREE is global - No longer, THREE is imported
 // const { Euler, MathUtils } = THREE; // Removed
