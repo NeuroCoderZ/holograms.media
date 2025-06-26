@@ -1,4 +1,5 @@
 // frontend/js/rendering.js - Модуль для логики 3D-рендеринга
+import * as TWEEN from '@tweenjs/tween.js';
 
 // Импорты
 // import * as THREE from 'three'; // Not directly used in this file
