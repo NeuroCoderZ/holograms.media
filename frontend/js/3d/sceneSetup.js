@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 /**
  * Initializes the Three.js scene, camera, renderer, and basic lighting.
  * Assigns these components to the provided state object.
