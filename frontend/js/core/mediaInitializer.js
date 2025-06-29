@@ -24,7 +24,7 @@ async function initializeMultimedia(appState) { // Added appState parameter
 
         if (appState.microphoneManagerInstance) {
             // This method initializeWithStream will be added to MicrophoneManager class in a subsequent step
-            await appState.microphoneManagerInstance.initializeWithStream(stream);
+            await appState.microphoneManagerInstance.initializeWithStream(stream, appState);
             console.log('Microphone initialized with shared stream.');
 
             const { analyserLeft, analyserRight } = appState.microphoneManagerInstance.getAnalysers();
@@ -76,7 +76,7 @@ async function initializeMultimedia(appState) { // Added appState parameter
                 }
 
                 if (appState.microphoneManagerInstance) {
-                    await appState.microphoneManagerInstance.initializeWithStream(audioStream);
+                    await appState.microphoneManagerInstance.initializeWithStream(audioStream, appState);
                     console.log('Microphone initialized with audio-only stream.');
 
                     const { analyserLeft, analyserRight } = appState.microphoneManagerInstance.getAnalysers();
