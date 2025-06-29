@@ -3,7 +3,6 @@
 
 // Assuming an EventBus class/instance is available and imported
 // import EventBus from '../core/eventBus';
-// Using window.TWEEN as it's included via script tag and updated in rendering.js
 import * as TWEEN from '@tweenjs/tween.js';
 
 class GestureUIManager {

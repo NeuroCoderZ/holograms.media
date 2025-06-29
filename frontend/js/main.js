@@ -1,7 +1,5 @@
-// ... (все импорты остаются вверху) ...
+import * as THREE from 'three';
 import { initCore, state } from './core/init.js';
-// THREE is now a module, access its properties directly
-// const { BoxGeometry, MeshBasicMaterial, Mesh } = THREE; // This line is no longer needed if using THREE.BoxGeometry etc.
 import { initializeMainUI } from './ui/uiManager.js';
 import { ConsentManager } from './core/consentManager.js';
 import { initializeMultimedia } from './core/mediaInitializer.js';
@@ -26,16 +24,25 @@ import MobileInput from './platforms/mobile/mobileInput.js';
 import XRLayout from './platforms/xr/xrLayout.js';
 import XRInput from './platforms/xr/xrInput.js';
 
-window.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log("Приложение: DOM загружен. Запускаем Pre-Start...");
 
-        // --- ЭТАП 1: Базовая инициализация ---
-        // initCore now likely populates the state directly or returns it.
-        // Assuming initCore updates a global or passed-in state object.
-        await initCore();
+        // --- НОВАЯ ПРОВЕРКА ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const isAgentRun = urlParams.get('agent_run') === 'true';
 
-        initializeMainUI(state); // initializeMainUI needs access to state.uiElements
+        if (isAgentRun) {
+            console.log("AGENT RUN DETECTED. SKIPPING 3D/CORE INITIALIZATION.");
+            // Инициализируем только то, что не требует WebGL
+            initializeMainUI(state);
+            // Можно добавить другие безопасные инициализаторы
+        } else {
+            // Стандартный запуск для пользователя
+            await initCore();
+            initializeMainUI(state);
+            // ... остальная логика запуска
+        }
 
         // --- ЭТАП 2: Получение согласия ---
         // ConsentManager constructor might need state if it interacts with UI elements defined in state
@@ -45,28 +52,31 @@ window.addEventListener('DOMContentLoaded', async () => {
         // --- ЭТАП 3: Настройка стартовой кнопки (если она есть) ---
         // Accessing buttons via state.uiElements.buttons
         const startButton = state.uiElements.buttons.startSessionButton;
-        if (startButton) {
-            startButton.addEventListener('click', async () => {
-                try {
-                    await startFullApplication(state);
-                } catch (error) {
-                    console.error("Error during startFullApplication (click handler):", error);
-                    alert("Failed to start the application. Please check the console for details.");
-                }
-            }, { once: true });
-        } else {
-            // Если кнопки нет, но согласие есть, запускаемся автоматически
-            if (localStorage.getItem('userConsentGiven') === 'true') {
-                try {
-                    await startFullApplication(state);
-                } catch (error) {
-                    console.error("Error during startFullApplication (auto-start):", error);
-                    alert("Failed to start the application. Please check the console for details.");
+
+        if (!isAgentRun) { // Only attempt to start full application if not an agent run
+            if (startButton) {
+                startButton.addEventListener('click', async () => {
+                    try {
+                        await startFullApplication(state);
+                    } catch (error) {
+                        console.error("Error during startFullApplication (click handler):", error);
+                        alert("Failed to start the application. Please check the console for details.");
+                    }
+                }, { once: true });
+            } else {
+                // Если кнопки нет, но согласие есть, запускаемся автоматически
+                if (localStorage.getItem('userConsentGiven') === 'true') {
+                    try {
+                        await startFullApplication(state);
+                    } catch (error) {
+                        console.error("Error during startFullApplication (auto-start):", error);
+                        alert("Failed to start the application. Please check the console for details.");
+                    }
                 }
             }
         }
     } catch (error) {
-        console.error("Error during DOMContentLoaded initialization:", error);
+        console.error("Критическая ошибка при инициализации:", error);
         // Display a user-friendly message on the page itself if possible, as alert can be intrusive.
         try {
             const body = document.querySelector('body');
@@ -86,12 +96,19 @@ window.addEventListener('DOMContentLoaded', async () => {
             console.error("Error displaying startup error message:", uiError);
             alert("Critical error during application startup, and failed to display detailed error message. Please check console.");
         }
-        // Optionally, re-throw the error if there are higher-level error handlers or for testing
-        // throw error;
     }
 });
 
 async function startFullApplication(appState) { // Renamed state to appState to avoid conflict with imported state
+    console.log("--- Запуск полного приложения ---");
+
+    // --- ДОБАВИТЬ ЭТОТ БЛОК ---
+    const startModal = document.getElementById('start-session-modal');
+    if (startModal) {
+        startModal.style.display = 'none';
+    }
+    // -------------------------
+
     try {
         console.log("Запуск полного приложения...");
         const startModal = appState.uiElements.modals.startSessionModal;
@@ -246,17 +263,5 @@ async function startFullApplication(appState) { // Renamed state to appState to 
             console.error("Failed to display startFullApplication error message in UI:", uiError);
             alert("Critical error during application startup, and failed to display detailed error message. Please check console.");
         }
-        // Optionally, re-throw the error if there are higher-level error handlers or for testing
-        // throw error;
     }
 }
-
-// Make sure all imported functions are correctly defined and exported in their respective files.
-// For example, in ./core/init.js:
-// export let state = { /* initial state structure */ };
-// export async function initCore() { /* ... */ }
-
-// In ./ui/uiManager.js:
-// export function initializeMainUI(state) { /* ... */ }
-
-// etc. for all other imported modules and functions.

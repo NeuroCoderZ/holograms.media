@@ -21,7 +21,8 @@ class CwtProcessor extends AudioWorkletProcessor {
 
     async initWasm() {
         try {
-            await init(new URL('../wasm/fastcwt/fastcwt_processor_bg.wasm', import.meta.url));
+            const wasmUrl = new URL('../wasm/fastcwt/fastcwt_processor_bg.wasm', self.location.href);
+            await init(wasmUrl);
             this.wasm_ready = true;
             this.port.postMessage({ type: 'WASM_READY' });
             console.log('CwtProcessor: WASM module loaded and ready.');

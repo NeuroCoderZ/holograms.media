@@ -1,9 +1,6 @@
 // frontend/js/ui/layoutManager.js
-// import * as THREE from 'three'; // Removed for global THREE
-// Using window.TWEEN as it's included via script tag and updated in rendering.js
-// import * as TWEEN from '@tweenjs/tween.js';
-// Assuming TWEEN is global
-const TWEEN = window.TWEEN;
+import * as THREE from 'three';
+import * as TWEEN from '@tweenjs/tween.js';
 // import { state } from '../core/init.js'; // Removed import
 import eventBus from '../core/eventBus.js';
 import { getPanelWidths, getLeftPanelWidth } from '../core/resizeHandler.js';
@@ -72,7 +69,7 @@ function animateHologramContainer(appState, handsPresent) { // Added appState
 
     if (currentAnimation) {
         currentAnimation.stop();
-        window.TWEEN.remove(currentAnimation);
+        TWEEN.remove(currentAnimation);
     }
 
     const currentTop = parseFloat(gridContainer.style.top) || initialLayout.top;
@@ -113,14 +110,14 @@ function animateHologramContainer(appState, handsPresent) { // Added appState
         height: currentHeight,
     };
 
-    currentAnimation = new window.TWEEN.Tween(coords)
+    currentAnimation = new TWEEN.Tween(coords)
         .to({
             top: targetLayout.top,
             left: targetLayout.left,
             width: targetLayout.width,
             height: targetLayout.height,
         }, 300) // 300ms animation
-        .easing(window.TWEEN.Easing.Quadratic.Out)
+        .easing(TWEEN.Easing.Quadratic.Out)
         .onUpdate(() => {
             gridContainer.style.top = `${coords.top}px`;
             gridContainer.style.left = `${coords.left}px`;

@@ -1,6 +1,6 @@
+import * as THREE from 'three';
 // frontend/js/core/init.js - Инициализация основного состояния и конфигурации приложения
 
-// import * as THREE from 'three'; // Removed for global THREE
 import { semitones } from '../config/hologramConfig.js';
 
 // Глобальный объект состояния приложения
@@ -59,7 +59,7 @@ export const state = {
     // Data processed by WASM module
     currentDbLevels: new Float32Array(260).fill(-100.0), // 130 Left, 130 Right
     currentPanAngles: new Float32Array(130).fill(0.0), // 130 Pan angles
-    targetFrequencies: semitones.map(s => s.f), // Frequencies for WASM CWT
+    targetFrequencies: semitones.map(s => s.f),
   },
 
   // Группировка мультимодального состояния
