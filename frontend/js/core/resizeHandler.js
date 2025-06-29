@@ -1,4 +1,5 @@
 // import { state } from './init.js'; // Removed import
+import * as THREE from 'three'; // Added import for THREE
 import { updateHologramLayout } from '../ui/layoutManager.js'; // Предполагаемое место, пока оставляем как есть
 import { debounce } from '../utils/helpers.js';
 

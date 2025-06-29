@@ -1,8 +1,8 @@
 // frontend/js/rendering.js - Модуль для логики 3D-рендеринга
 import * as TWEEN from '@tweenjs/tween.js';
+import * as THREE from 'three';
 
 // Импорты
-// import * as THREE from 'three'; // Not directly used in this file
 
 // Store appState globally within this module, or pass it differently if preferred.
 // For simplicity in this step, let's assume appState is accessible when animationLoop is called.
@@ -36,9 +36,12 @@ async function animation(time) { // 'time' is provided by setAnimationLoop, typi
 
     // Hologram updates are currently commented out in hologramRenderer.js for Phase 1.
     // If they were active, they would be called here:
-    // if (appState.hologramRendererInstance && appState.audio.currentDbLevels && appState.audio.currentPanAngles) {
-    //     appState.hologramRendererInstance.updateVisuals(appState.audio.currentDbLevels, appState.audio.currentPanAngles);
-    // }
+    if (appState.hologramRendererInstance && appState.audio.currentDbLevels) {
+        appState.hologramRendererInstance.updateVisuals(
+            appState.audio.currentDbLevels,
+            appState.audio.currentPanAngles
+        );
+    }
 
     // Example: Simple scene rotation or object animation can be done here if needed for testing
     // if (appState.scene && appState.scene.children.length > 0) {
@@ -54,11 +57,9 @@ async function animation(time) { // 'time' is provided by setAnimationLoop, typi
         appState.scene.background.setHSL((timeInSeconds * 0.1) % 1.0, 0.6, 0.7);
     }
 
-    // Render the scene using renderAsync for WebGPU
+    // Render the scene using standard render method for WebGL
     if (appState.renderer && appState.scene && appState.activeCamera) {
-        // For WebGPURenderer, renderer.clear() is often handled internally before renderAsync or is not needed.
-        // await appState.renderer.clearAsync(); // If explicit clear is desired/needed
-        await appState.renderer.renderAsync(appState.scene, appState.activeCamera);
+        appState.renderer.render(appState.scene, appState.activeCamera);
     }
 }
 

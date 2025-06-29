@@ -1,7 +1,6 @@
 // frontend/js/core/domEventHandlers.js
-
+import * as THREE from 'three';
 import axios from 'axios'; // Added import
-// import * as THREE from 'three'; // Removed for global THREE
 import { state } from './init.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
 // Assuming THREE is global for applyPrompt example

@@ -1,4 +1,5 @@
 import { FFT_SIZE, SMOOTHING_TIME_CONSTANT } from '../config/hologramConfig.js';
+import { setupAudioProcessing } from './audioProcessing.js';
 
 export class MicrophoneManager {
   constructor(audioContext, state, fftSize = FFT_SIZE, smoothingTimeConstant = SMOOTHING_TIME_CONSTANT) {
@@ -33,13 +34,10 @@ export class MicrophoneManager {
     }
   }
 
-  async initializeWithStream(stream) {
+  async initializeWithStream(stream, appStateParam) {
+    this.state = appStateParam; // Assign the passed appStateParam to this.state
     try {
-      if (!this.audioContext || this.audioContext.state === 'closed') {
-        // This should ideally not happen if audioContext is passed from initCore and managed globally
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        console.log('New AudioContext created in initializeWithStream (fallback).');
-      } else if (this.audioContext.state === 'suspended') {
+      if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume();
         console.log('AudioContext resumed in initializeWithStream.');
       }
@@ -93,6 +91,8 @@ export class MicrophoneManager {
           console.log('Mono audio nodes connected: Source -> AnalyserLeft & AnalyserRight.');
       }
 
+      setupAudioProcessing(this.source, 'microphone'); // Connect stream to worklet
+
       return {
           analyserLeft: this.analyserLeft,
           analyserRight: this.analyserRight,
@@ -113,10 +113,7 @@ export class MicrophoneManager {
 
   async init() {
     try {
-      if (!this.audioContext || this.audioContext.state === 'closed') {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        console.log('New AudioContext created for init() (fallback).');
-      } else if (this.audioContext.state === 'suspended') {
+      if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume();
         console.log('AudioContext resumed for init().');
       }

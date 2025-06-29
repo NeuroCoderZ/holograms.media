@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 // import * as THREE from 'three'; // Removed for global THREE
 
 // Color configuration constants

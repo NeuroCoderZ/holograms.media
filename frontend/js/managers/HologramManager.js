@@ -1,11 +1,10 @@
 // Manages the hologram's position, scale, and adaptive behavior.
 
-// import * as THREE from 'three'; // Removed for global THREE
-// import TWEEN from '@tweenjs/tween.js'; // Removed for global TWEEN
 
-// Assuming THREE and TWEEN are global
+import * as THREE from 'three';
+import * as TWEEN from '@tweenjs/tween.js';
+
 const { Group } = THREE;
-const TWEEN = window.TWEEN;
 
 
 // Assuming an EventBus class/instance is available and imported

@@ -5,7 +5,7 @@ import { state, config } from './core/init.js';
 import { ui, toggleChatMode, togglePanels } from './core/ui.js';
 import { sendPrompt, insertTextIntoPrompt } from './ai/prompts.js';
 import { sendChatMessage, addMessageToChat } from './ai/chat.js';
-// import { synthesizeSpeech, stopSpeech } from './audio/speech.js';
+// import { synthesizeSpeech, stopSpeech } from './audio/speech.js'; // Commented out as file does not exist
 import { getSelectedModel, setSelectedModel } from './ai/models.js';
 
 // Экспортируем объекты и функции для глобального доступа
@@ -26,8 +26,8 @@ window.legacyAPI = {
   insertTextIntoPrompt,
   
   // Аудио
-  synthesizeSpeech,
-  stopSpeech,
+  // synthesizeSpeech,
+  // stopSpeech,
   
   // Модели
   getSelectedModel,
@@ -45,7 +45,7 @@ export function initLegacyBridge() {
   window.sendPrompt = sendPrompt;
   window.sendChatMessage = sendChatMessage;
   window.addMessageToChat = addMessageToChat;
-  window.synthesizeSpeech = synthesizeSpeech;
+  // window.synthesizeSpeech = synthesizeSpeech;
   
   console.log('Мост обратной совместимости инициализирован.');
 }
