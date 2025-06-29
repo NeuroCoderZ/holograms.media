@@ -1,6 +1,1 @@
-# Ignore Rust build artifacts folder
-/target/
-
-# Ignore Firebase cache
-.firebase/
-node_modules
+GoggleAIStudio
