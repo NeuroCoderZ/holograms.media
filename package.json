@@ -8,13 +8,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@genkit-ai/dev-local-vectorstore": "^1.14.0",
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/drawing_utils": "^0.3.1675466124",
+    "@mediapipe/hands": "^0.4.1675469240",
     "@tweenjs/tween.js": "^23.1.1",
     "axios": "^1.7.2",
     "hammerjs": "^2.0.8",
-    "three": "^0.165.0",
-    "@mediapipe/hands": "^0.4.1675469240",
-    "@mediapipe/camera_utils": "^0.3.1675466862",
-    "@mediapipe/drawing_utils": "^0.3.1675466124"
+    "three": "^0.165.0"
   },
   "devDependencies": {
     "vite": "^5.2.0"
