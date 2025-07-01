@@ -202,40 +202,47 @@ export const knowledgeBaseIndexer = ai.defineFlow(
       }
     }
 
-    // Функция для извлечения метаданных из пути к файлу
-    function extractMetadataFromFile(filePath: string) {
-      const fileName = path.basename(filePath).toLowerCase();
-      let learning_stage = 'general';
-      let topic = 'general';
-      let difficulty = 'intermediate';
+// Вспомогательная функция для извлечения метаданных из пути к файлу
+function extractMetadataFromFile(filePath: string) {
+  const fileName = path.basename(filePath).toLowerCase();
 
-      // Определяем learning_stage
-      if (fileName.includes('onboarding') || fileName.includes('первое знакомство')) {
-        learning_stage = 'onboarding';
-        difficulty = 'beginner';
-      } else if (fileName.includes('tria') || fileName.includes('триа')) {
-        learning_stage = 'tria_creation';
-        difficulty = 'advanced';
-      } else if (fileName.includes('продвинутые')) {
-        learning_stage = 'advanced';
-      }
+  // Значения по умолчанию
+  let learning_stage = 'general';
+  let topic = 'general';
+  let difficulty = 'intermediate';
+  let gesture_affordances = ['navigate', 'select']; // Базовые доступные жесты
 
-      // Определяем topic
-      if (fileName.includes('gesture') || fileName.includes('жесты')) {
-        topic = 'gestures';
-      } else if (fileName.includes('backend') || fileName.includes('fastapi')) {
-        topic = 'backend';
-      } else if (fileName.includes('frontend') || fileName.includes('three.js')) {
-        topic = 'frontend';
-      } else if (fileName.includes('архитектура')) {
-        topic = 'architecture';
-        difficulty = 'expert';
-      } else if (fileName.includes('ux') || fileName.includes('интерфейс')) {
-        topic = 'ux_design';
-      }
+  // --- Логика определения метаданных на основе имени файла ---
 
-      return { learning_stage, topic, difficulty };
-    }
+  // Определяем learning_stage
+  if (fileName.includes('onboarding') || fileName.includes('первое знакомство') || fileName.includes('readme')) {
+    learning_stage = 'onboarding';
+    difficulty = 'beginner';
+  } else if (fileName.includes('tria') || fileName.includes('триа')) {
+    learning_stage = 'tria_creation';
+    topic = 'ai_core';
+    difficulty = 'advanced';
+  } else if (fileName.includes('архитектура') || fileName.includes('system')) {
+    topic = 'architecture';
+    difficulty = 'expert';
+  }
+
+  // Определяем topic и расширяем gesture_affordances
+  if (fileName.includes('gesture') || fileName.includes('жесты')) {
+    topic = 'gestures';
+    // ✅ Для жестов добавляем возможность "скульптурирования" и манипуляции
+    gesture_affordances.push('manipulate', 'sculpt');
+  } else if (fileName.includes('backend') || fileName.includes('fastapi')) {
+    topic = 'backend';
+  } else if (fileName.includes('frontend') || fileName.includes('three.js')) {
+    topic = 'frontend';
+  } else if (fileName.includes('embedding') || fileName.includes('раг')) {
+      topic = 'rag_ai';
+      difficulty = 'expert';
+  }
+
+  return { learning_stage, topic, difficulty, gesture_affordances };
+}
 
     // Конвертация в Genkit Documents
     let genkitDocs: Document[];
@@ -395,10 +402,19 @@ export const askKnowledgeBase = ai.defineFlow(
     
     console.log('🧠 Генерация обучающего ответа через Gemini 1.5 Flash...');
 
-    // Структурированный контекст
+
+    // ✅ Показываем расширенные метаданные для отладки
+    const sources = [...new Set(hits.map(h => h.metadata?.source || 'unknown'))];
+    console.log(`📄 Источники: ${sources.slice(0, 3).map(s => path.basename(s)).join(', ')}${sources.length > 3 ? ` и еще ${sources.length - 3}` : ''}`);
+
+    console.log('🧠 Генерация обучающего ответа через Gemini...');
+
+    // ✅ Формируем структурированный контекст с новыми метаданными
     const contextTxt = hits.map((d, i) => {
-      const source = d.metadata?.source ? path.basename(d.metadata.source, '.txt') : 'unknown';
-      return `[Источник ${i + 1}: ${source}]\n${d.text}`;
+      const source = d.metadata?.source ? path.basename(d.metadata.source) : 'unknown';
+      const topic = d.metadata?.topic || 'general';
+      const difficulty = d.metadata?.difficulty || 'N/A';
+      return `[Источник ${i + 1}: ${source} | Тема: ${topic} | Сложность: ${difficulty}]\n${d.text}`;
     }).join('\n\n═══════════════════════════════════════\n\n');
     
     const prompt = RAG_TEMPLATE
