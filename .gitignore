@@ -1,3 +1,22 @@
-.firebase/
+# Genkit временные файлы
+.genkit/
+*/.genkit/
+
+# Большие файлы базы данных
+__db_*.json
+chunks_cache_2025.json
+indexing_progress_*.json
+
+# Логи
+*.log
+
+# Node modules
 node_modules/
-00
+**/node_modules/
+
+# Environment files
+.env
+.env.local
+
+# Временные файлы VS Code
+.vscode/settings.json

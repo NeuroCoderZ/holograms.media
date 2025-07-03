@@ -1,0 +1,86 @@
+# .github/workflows/vector-indexing.yml
+name: 🚀 Vector Indexing Background Task
+on:
+  workflow_dispatch:
+    inputs:
+      resumeFromBatch:
+        description: 'Resume from batch number'
+        required: true
+        default: '4748'
+      batchSize:
+        description: 'Batch size for processing'
+        required: true
+        default: '5'
+      uploadChunksCache:
+        description: 'Upload new chunks cache file'
+        type: boolean
+        default: false
+
+jobs:
+  indexing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1020  # 17 часов
+    
+    steps:
+      - name: 📁 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'tria-genkit-core/package-lock.json'
+      
+      - name: 📦 Install Dependencies
+        working-directory: ./tria-genkit-core
+        run: npm install
+      
+      - name: ⬇️ Download Chunks Cache
+        if: inputs.uploadChunksCache == false
+        working-directory: ./tria-genkit-core
+        run: |
+          # Скачиваем файл кэша из artifacts предыдущих запусков
+          echo "Downloading chunks cache from previous runs..."
+          # Alternatively, можно загрузить из внешнего источника или S3
+          
+      - name: ⬆️ Upload New Chunks Cache
+        if: inputs.uploadChunksCache == true
+        working-directory: ./tria-genkit-core
+        run: |
+          echo "Using new chunks cache from repository..."
+          ls -la chunks_cache_2025.json || echo "Cache file not found"
+      
+      - name: 🧠 Run Vector Indexing
+        working-directory: ./tria-genkit-core
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          RESUME_FROM_BATCH: ${{ inputs.resumeFromBatch }}
+          BATCH_SIZE: ${{ inputs.batchSize }}
+          NODE_ENV: production
+        run: |
+          echo "🚀 Starting indexing from batch ${{ inputs.resumeFromBatch }}"
+          npm run start:indexing
+      
+      - name: 📊 Upload Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: indexing-logs-${{ github.run_number }}
+          path: |
+            tria-genkit-core/*.log
+            tria-genkit-core/indexing_progress_*.json
+          retention-days: 30
+      
+      - name: 📧 Notify on Success
+        if: success()
+        run: |
+          echo "✅ Vector indexing completed successfully!"
+          echo "Batch range: ${{ inputs.resumeFromBatch }} with size ${{ inputs.batchSize }}"
+      
+      - name: 🚨 Notify on Failure  
+        if: failure()
+        run: |
+          echo "❌ Vector indexing failed!"
+          echo "Check the logs for details."
