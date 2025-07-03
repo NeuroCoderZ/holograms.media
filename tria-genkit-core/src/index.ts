@@ -2,51 +2,49 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 
 import { genkit, z } from 'genkit';
-import {
-  googleAI,
-  gemini15Flash,
-  textEmbedding004,  // ✅ Из результата [2] - стабильная модель
-} from '@genkit-ai/googleai';
-
-import {
-  devLocalVectorstore,
-  devLocalIndexerRef,
-  devLocalRetrieverRef,
-} from '@genkit-ai/dev-local-vectorstore';
-
+import { googleAI, gemini, textEmbedding004 } from '@genkit-ai/googleai';
+import { startFlowServer } from '@genkit-ai/express';
 import { enableFirebaseTelemetry } from '@genkit-ai/firebase';
+
+// ✅ Правильные импорты для работы с pgvector
+import postgres from 'postgres';
+import pgvector from 'pgvector';
 
 import { TextLoader } from 'langchain/document_loaders/fs/text';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { Document as LangDocument } from '@langchain/core/documents';
+import { Document as LangDocument, DocumentInterface } from '@langchain/core/documents';
 import { Document } from '@genkit-ai/ai/retriever';
 
 /* ────────────────────────────────────────────────────────── */
 
-// Отключаем телеметрию для CLI режима
+// ✅ Включаем телеметрию Firebase
 if (process.env.NODE_ENV === 'production') {
   enableFirebaseTelemetry();
 }
 
-// ✅ ПРАВИЛЬНАЯ ИНИЦИАЛИЗАЦИЯ из результата [2]
+// ✅ Интерфейс для типизации данных из кэша
+interface CachedChunk {
+  pageContent: string;
+  metadata: Record<string, any>;
+}
+
+// ✅ Интерфейс для ответа эмбеддинга Genkit (из результатов поиска [6])
+interface EmbeddingResponse {
+  embedding: number[];
+  metadata?: Record<string, unknown>;
+}
+
+// ✅ ИНИЦИАЛИЗАЦИЯ GENKIT
 export const ai = genkit({
   plugins: [
-    googleAI(),  // Автоматически использует GEMINI_API_KEY или GOOGLE_API_KEY
-    devLocalVectorstore([
-      {
-        indexName: 'holograms_media_knowledge',
-        embedder: textEmbedding004,  // ✅ Стабильная модель из результата [2]
-      },
-    ]),
+    googleAI(),
   ],
 });
 
-// ✅ Используем стабильные модели из результата [2]
-const embeddingModel = textEmbedding004;
-const generativeModel = gemini15Flash;
+// ✅ Прямое подключение к вашей базе данных Neon
+const sql = postgres(process.env.DATABASE_URL!);
 
-const indexer = devLocalIndexerRef('holograms_media_knowledge');
-const retriever = devLocalRetrieverRef('holograms_media_knowledge');
+const generativeModel = gemini('gemini-2.5-pro');
 
 /* ────────────────────────────────────────────────────────── */
 
@@ -68,480 +66,371 @@ const RAG_TEMPLATE = `### КОНТЕКСТ ИЗ БАЗЫ ЗНАНИЙ ###
 
 /* ─────────────────────────── FLOWS для CLI ─────────────────────────── */
 
-/* 1. ✅ ОСНОВНОЙ FLOW для создания эмбеддингов через CLI */
 export const knowledgeBaseIndexer = ai.defineFlow(
   {
     name: 'knowledgeBaseIndexer',
     inputSchema: z.object({
       resumeFromBatch: z.number()
         .min(0)
-        .max(1000)
+        .max(200000)
         .optional()
         .default(0)
         .describe('Номер пакета для продолжения (0 = начать сначала)'),
       batchSize: z.number()
-        .min(10)
-        .max(100)
+        .min(1)
+        .max(50)
         .optional()
-        .default(25)
-        .describe('Размер пакета для обработки (меньше = стабильнее)'),
+        .default(5)
+        .describe('Размер пакета для отправки в базу'),
+      autoRetry: z.boolean()
+        .optional()
+        .default(true)
+        .describe('Автоматически продолжать при ошибках'),
     }),
     outputSchema: z.string(),
   },
-  async ({ resumeFromBatch = 0, batchSize = 25 }) => {
+  async ({ resumeFromBatch = 0, batchSize = 5, autoRetry = true }) => {
     const startTime = Date.now();
     const rootDir = path.resolve(process.cwd(), '../GoogleAIStudio');
-    
-    console.log('🚀 ЗАПУСК ИНДЕКСАЦИИ ЧЕРЕЗ GENKIT CLI');
+
+    const cacheFile = path.resolve(process.cwd(), 'chunks_cache_2025.json');
+    const progressFile = path.resolve(process.cwd(), 'indexing_progress_2025.json');
+
+    console.log('🚀 ЗАПУСК ИНДЕКСАЦИИ в pgvector (Neon.tech)');
     console.log(`🎯 Модель эмбеддингов: text-embedding-004 (768 размерностей)`);
-    console.log(`📊 Параметры: resumeFromBatch=${resumeFromBatch}, batchSize=${batchSize}`);
-    
-    if (resumeFromBatch === 0) {
+    console.log(`📊 Параметры: resumeFromBatch=${resumeFromBatch}, batchSize=${batchSize}, autoRetry=${autoRetry}`);
+
+    let savedProgress: any = null;
+    try {
+      const progressData = await fs.readFile(progressFile, 'utf-8');
+      savedProgress = JSON.parse(progressData);
+      console.log(`📂 Найден прогресс: завершено ${savedProgress.completedBatches}/${savedProgress.totalBatches} пакетов`);
+    } catch (e) {
+      console.log('📂 Прогресс не найден, начинаем с нуля');
+    }
+
+    let chunks: DocumentInterface[] = [];
+    const canResumeFromCache = resumeFromBatch > 0 || (savedProgress && savedProgress.completedBatches > 0);
+
+    if (!canResumeFromCache) {
       console.log('📁 ЭТАП 1/4: Сканирование директории:', rootDir);
-    } else {
-      console.log(`🔄 ПРОДОЛЖЕНИЕ с пакета ${resumeFromBatch + 1}`);
-    }
 
-    // ✅ Рекурсивный сбор .txt файлов
-    async function collectTxtFiles(dir: string): Promise<string[]> {
-      try {
-        const entries = await fs.readdir(dir, { withFileTypes: true });
-        const files = await Promise.all(
-          entries.map(async (ent) => {
-            const full = path.join(dir, ent.name);
-            if (ent.isDirectory()) {
-              return await collectTxtFiles(full);
-            } else if (full.endsWith('.txt')) {
-              return [full];
-            } else {
-              return [];
-            }
-          })
-        );
-        return files.flat();
-      } catch (error) {
-        console.error(`❌ Ошибка чтения директории ${dir}:`, error);
-        return [];
+      async function collectTxtFiles(dir: string): Promise<string[]> {
+        try {
+          const entries = await fs.readdir(dir, { withFileTypes: true });
+          const files = await Promise.all(
+            entries.map(async (ent) => {
+              const full = path.join(dir, ent.name);
+              return ent.isDirectory() ? await collectTxtFiles(full) : full.endsWith('.txt') ? [full] : [];
+            })
+          );
+          return files.flat();
+        } catch (error) {
+          console.error(`❌ Ошибка чтения директории ${dir}:`, error);
+          return [];
+        }
       }
-    }
+      const filePaths = await collectTxtFiles(rootDir);
+      if (filePaths.length === 0) return '🔍 .txt файлов не найдено.';
 
-    const filePaths = await collectTxtFiles(rootDir);
-    if (filePaths.length === 0) {
-      console.log('❌ .txt файлов не найдено. Проверьте путь к директории.');
-      return '🔍 .txt файлов не найдено. Проверьте путь к директории.';
-    }
-
-    console.log(`✅ Найдено ${filePaths.length} .txt файлов`);
-
-    // ✅ ЭТАП 2: Загрузка и обработка файлов
-    let docs: LangDocument[] = [];
-    const cacheFile = path.resolve(process.cwd(), 'chunks_cache.json');
-
-    if (resumeFromBatch === 0) {
+      console.log(`✅ Найдено ${filePaths.length} .txt файлов`);
       console.log('🔄 ЭТАП 2/4: Загрузка и обработка файлов...');
 
-      // Загрузка файлов с обработкой ошибок
+      let docs: LangDocument[] = [];
       for (let i = 0; i < filePaths.length; i++) {
         const fp = filePaths[i];
         try {
           const loader = new TextLoader(fp);
           const loaded = await loader.load();
           docs.push(...loaded);
-          
-          const fileName = path.basename(fp);
-          const progress = `[${i + 1}/${filePaths.length}]`;
-          console.log(`📄 ${progress} ${fileName} (${loaded.length} документов)`);
         } catch (e) {
-          const fileName = path.basename(fp);
-          const progress = `[${i + 1}/${filePaths.length}]`;
-          console.warn(`⚠️  ${progress} Пропуск ${fileName}: ${String(e).substring(0, 100)}`);
+          console.warn(`⚠️ Пропуск ${path.basename(fp)}: ${String(e).substring(0, 100)}`);
         }
       }
 
-      console.log(`✅ Загружено ${docs.length} документов`);
-      
-      // ✅ ЭТАП 3: Разделение на чанки (оптимизировано для text-embedding-004)
       console.log('✂️  ЭТАП 3/4: Разделение текста на оптимальные чанки...');
-      
       const splitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 7500,    // ✅ Оптимально для text-embedding-004 (2048 токенов)
-        chunkOverlap: 750,  // 10% перекрытие
-        separators: ['\n\n', '\n', '. ', '! ', '? ', ' ', ''],
+        chunkSize: 800,
+        chunkOverlap: 80,
       });
-      
-      const chunks = await splitter.splitDocuments(docs);
-      console.log(`✅ Создано ${chunks.length} чанков (оптимизировано для text-embedding-004)`);
-      
-      // Сохранение чанков для Resume функциональности
-      const chunksData = chunks.map((c) => ({
+      chunks = await splitter.splitDocuments(docs);
+      console.log(`✅ Создано ${chunks.length} чанков`);
+
+      const chunksData: CachedChunk[] = chunks.map(c => ({
         pageContent: c.pageContent,
-        metadata: { 
-          ...c.metadata, 
-          source: c.metadata?.source ?? 'unknown',
-          chunkIndex: chunks.indexOf(c)
-        }
+        metadata: c.metadata,
       }));
-      
-      try {
-        await fs.writeFile(cacheFile, JSON.stringify(chunksData, null, 2));
-        console.log('💾 Чанки сохранены в chunks_cache.json для Resume функциональности');
-      } catch (e) {
-        console.warn('⚠️ Не удалось сохранить кэш чанков:', e);
-      }
+      await fs.writeFile(cacheFile, JSON.stringify(chunksData, null, 2));
+      console.log('💾 Чанки сохранены в chunks_cache_2025.json');
     } else {
-      // Загрузка чанков из кэша для Resume
-      console.log('📂 ЭТАП 2/4: Загрузка чанков из кэша...');
+      console.log('📂 Загрузка чанков из кэша...');
       try {
         const cachedData = await fs.readFile(cacheFile, 'utf-8');
-        const chunksData = JSON.parse(cachedData);
-        docs = chunksData; // Используем как массив для дальнейшей обработки
-        console.log(`✅ Загружено ${chunksData.length} чанков из кэша`);
+        const chunksData: CachedChunk[] = JSON.parse(cachedData);
+        chunks = chunksData.map((c: CachedChunk) => new LangDocument({ pageContent: c.pageContent, metadata: c.metadata }));
+        console.log(`✅ Загружено ${chunks.length} чанков из кэша`);
       } catch (e) {
-        console.error('❌ Ошибка загрузки кэша чанков:', e);
-        return 'Ошибка: кэш чанков не найден. Запустите с resumeFromBatch: 0';
+        console.error('❌ Ошибка загрузки кэша чанков. Запустите с resumeFromBatch: 0');
+        return 'Ошибка: кэш чанков не найден.';
       }
     }
 
-// Вспомогательная функция для извлечения метаданных из пути к файлу
-function extractMetadataFromFile(filePath: string) {
-  const fileName = path.basename(filePath).toLowerCase();
-
-  // Значения по умолчанию
-  let learning_stage = 'general';
-  let topic = 'general';
-  let difficulty = 'intermediate';
-  let gesture_affordances = ['navigate', 'select']; // Базовые доступные жесты
-
-  // --- Логика определения метаданных на основе имени файла ---
-
-  // Определяем learning_stage
-  if (fileName.includes('onboarding') || fileName.includes('первое знакомство') || fileName.includes('readme')) {
-    learning_stage = 'onboarding';
-    difficulty = 'beginner';
-  } else if (fileName.includes('tria') || fileName.includes('триа')) {
-    learning_stage = 'tria_creation';
-    topic = 'ai_core';
-    difficulty = 'advanced';
-  } else if (fileName.includes('архитектура') || fileName.includes('system')) {
-    topic = 'architecture';
-    difficulty = 'expert';
-  }
-
-  // Определяем topic и расширяем gesture_affordances
-  if (fileName.includes('gesture') || fileName.includes('жесты')) {
-    topic = 'gestures';
-    // ✅ Для жестов добавляем возможность "скульптурирования" и манипуляции
-    gesture_affordances.push('manipulate', 'sculpt');
-  } else if (fileName.includes('backend') || fileName.includes('fastapi')) {
-    topic = 'backend';
-  } else if (fileName.includes('frontend') || fileName.includes('three.js')) {
-    topic = 'frontend';
-  } else if (fileName.includes('embedding') || fileName.includes('раг')) {
-      topic = 'rag_ai';
-      difficulty = 'expert';
-  }
-
-  return { learning_stage, topic, difficulty, gesture_affordances };
-}
-
-    // Конвертация в Genkit Documents
-    let genkitDocs: Document[];
-    if (resumeFromBatch === 0) {
-      const chunks = docs as LangDocument[];
-      genkitDocs = chunks.map((c) => {
-        const source = c.metadata?.source ?? 'unknown';
-        const customMetadata = extractMetadataFromFile(source);
-        return Document.fromText(c.pageContent, {
-          ...c.metadata,
-          ...customMetadata,
-          source,
-        });
-      });
-    } else {
-      genkitDocs = (docs as any).map((c: any) => {
-        const source = c.metadata?.source ?? 'unknown';
-        const customMetadata = extractMetadataFromFile(source);
-        return Document.fromText(c.pageContent, { ...c.metadata, ...customMetadata, source });
-      });
+    function extractMetadataFromFile(filePath: string) {
+      const fileName = path.basename(filePath).toLowerCase();
+      let learning_stage = 'general', topic = 'general', difficulty = 'intermediate';
+      if (fileName.includes('onboarding')) { learning_stage = 'onboarding'; difficulty = 'beginner'; }
+      if (fileName.includes('tria')) { learning_stage = 'tria_creation'; topic = 'ai_core'; difficulty = 'advanced'; }
+      if (fileName.includes('gesture')) { topic = 'gestures'; }
+      return { learning_stage, topic, difficulty };
     }
 
-    // ✅ ЭТАП 4: Создание эмбеддингов через Genkit
-    console.log('🧠 ЭТАП 4/4: Создание эмбеддингов через Genkit + text-embedding-004');
-    
+    const genkitDocs = chunks.map(c => {
+      const source = c.metadata?.source ?? 'unknown';
+      const customMetadata = extractMetadataFromFile(source);
+      return Document.fromText(c.pageContent, {
+        source: path.basename(source),
+        topic: customMetadata.topic,
+        difficulty: customMetadata.difficulty,
+      });
+    });
+
+    console.log(`✅ DIAGNOSTICS: Total genkitDocs created: ${genkitDocs.length}`);
+
+    console.log('🧠 ЭТАП 4/4: Создание эмбеддингов в pgvector');
+
+    // ✅ Создаем расширение и таблицу если не существует
+    await sql`CREATE EXTENSION IF NOT EXISTS vector`;
+    await sql`
+        CREATE TABLE IF NOT EXISTS holograms_media_embeddings (
+            id SERIAL PRIMARY KEY,
+            content TEXT,
+            embedding VECTOR(768),
+            metadata JSONB
+        );
+    `;
+
     const totalBatches = Math.ceil(genkitDocs.length / batchSize);
     const startBatch = resumeFromBatch;
-    const remainingBatches = totalBatches - startBatch;
-    
+
     console.log(`📊 Статистика индексации:`);
     console.log(`   • Всего чанков: ${genkitDocs.length}`);
     console.log(`   • Размер пакета: ${batchSize}`);
     console.log(`   • Всего пакетов: ${totalBatches}`);
-    console.log(`   • Начинаем с пакета: ${startBatch + 1}`);
-    console.log(`   • Осталось обработать: ${remainingBatches} пакетов`);
-    
-    const embeddingStart = Date.now();
+
+    let embeddingStart = Date.now();
     let processedBatches = 0;
-    
-    // ✅ Пакетная обработка с Genkit API
+    let consecutiveErrors = 0;
+
     for (let i = startBatch * batchSize; i < genkitDocs.length; i += batchSize) {
-      const batch = genkitDocs.slice(i, i + batchSize);
+      const batchDocs = genkitDocs.slice(i, i + batchSize);
       const batchNumber = Math.floor(i / batchSize) + 1;
-      
-      console.log(`📦 Пакет ${batchNumber}/${totalBatches} (${batch.length} чанков)`);
-      
-      // Показываем прогресс каждые 5 пакетов
-      if (processedBatches > 0 && processedBatches % 5 === 0) {
+
+      console.log(`📦 Пакет ${batchNumber}/${totalBatches}`);
+
+      if (processedBatches > 0 && processedBatches % 100 === 0) {
         const elapsed = (Date.now() - embeddingStart) / 1000 / 60;
         const rate = processedBatches / elapsed;
         const remainingTime = (totalBatches - batchNumber) / rate;
         console.log(`   ⏱️ Скорость: ${rate.toFixed(2)} пакетов/мин`);
         console.log(`   ⏳ Примерное время до завершения: ${remainingTime.toFixed(1)} мин`);
       }
-      
+
       try {
-        // ✅ Использование Genkit indexer (из результата [2])
-        await ai.index({ 
-          indexer, 
-          documents: batch 
-        });
-        
-        const progress = ((batchNumber / totalBatches) * 100).toFixed(1);
-        console.log(`✅ Пакет ${batchNumber} завершен (${progress}%)`);
+        // ✅ Обрабатываем каждый документ по отдельности с ПРАВИЛЬНОЙ типизацией
+        for (const doc of batchDocs) {
+          // ✅ Проверяем что текст не пустой
+          if (!doc.text || doc.text.trim().length === 0) {
+            console.warn(`⚠️ Пропуск пустого документа`);
+            continue;
+          }
+
+          // ✅ Создаем эмбеддинг через Genkit с правильной типизацией
+          const embeddingResponse = await ai.embed({
+            embedder: textEmbedding004,
+            content: doc.text,
+          }) as EmbeddingResponse | EmbeddingResponse[]; // ✅ Правильная типизация
+
+          // ✅ Извлекаем массив чисел из ответа (исправлены строки 255 и 344)
+          let embeddingVector: number[];
+          
+          if (Array.isArray(embeddingResponse)) {
+            // Если ответ - массив объектов, берем первый
+            embeddingVector = embeddingResponse[0].embedding;
+          } else if (embeddingResponse && typeof embeddingResponse === 'object' && 'embedding' in embeddingResponse) {
+            // Если ответ - объект с полем embedding
+            embeddingVector = embeddingResponse.embedding;
+          } else {
+            throw new Error(`Неожиданный формат ответа эмбеддинга: ${JSON.stringify(embeddingResponse).substring(0, 100)}`);
+          }
+
+          // ✅ Проверяем что получили валидный массив чисел
+          if (!Array.isArray(embeddingVector) || embeddingVector.length !== 768) {
+            throw new Error(`Неверный размер вектора: ${embeddingVector ? embeddingVector.length : 'null'}, ожидалось 768`);
+          }
+
+          // ✅ Проверяем что все элементы - числа (из результатов поиска [1])
+          if (!embeddingVector.every(val => typeof val === 'number' && !isNaN(val))) {
+            throw new Error(`Вектор содержит не-числовые значения`);
+          }
+
+          // ✅ Используем pgvector.toSql для правильного форматирования
+          const formattedEmbedding = pgvector.toSql(embeddingVector);
+
+          // ✅ Вставляем в базу данных
+          await sql`
+            INSERT INTO holograms_media_embeddings (content, embedding, metadata)
+            VALUES (${doc.text}, ${formattedEmbedding}, ${doc.metadata as any})
+          `;
+        }
         
         processedBatches++;
-        
-        // Контрольные точки каждые 10 пакетов
-        if (batchNumber % 10 === 0) {
-          console.log(`🎯 КОНТРОЛЬНАЯ ТОЧКА: ${batchNumber}/${totalBatches} пакетов завершено`);
-          console.log(`💾 Для продолжения используйте: resumeFromBatch: ${batchNumber}`);
-        }
-        
-        // Пауза между пакетами для стабильности
+        consecutiveErrors = 0;
+
+        const progressData = {
+          totalBatches,
+          completedBatches: batchNumber,
+          lastSuccessfulBatch: batchNumber,
+          embeddingModel: 'text-embedding-004',
+        };
+        await fs.writeFile(progressFile, JSON.stringify(progressData, null, 2));
+        console.log(`✅ Пакет ${batchNumber}/${totalBatches} сохранен в pgvector`);
+
         if (batchNumber < totalBatches) {
-          await new Promise(resolve => setTimeout(resolve, 500)); // Меньше паузы для стабильной модели
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
-        
       } catch (error) {
+        consecutiveErrors++;
         console.error(`❌ ОШИБКА в пакете ${batchNumber}:`, error);
-        console.log(`🔄 Для продолжения с этого места используйте:`);
-        console.log(`   resumeFromBatch: ${batchNumber - 1}`);
-        
-        return `❌ Ошибка в пакете ${batchNumber}. Для продолжения: resumeFromBatch: ${batchNumber - 1}`;
+
+        if (autoRetry && consecutiveErrors < 3) {
+          const retryDelay = consecutiveErrors * 5000;
+          console.log(`🔄 Автовосстановление через ${retryDelay / 1000}с...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          i -= batchSize;
+          continue;
+        } else {
+          console.log(`❌ Остановка после ${consecutiveErrors} ошибок.`);
+          return `❌ Ошибка в пакете ${batchNumber}. Для продолжения: resumeFromBatch: ${batchNumber - 1}`;
+        }
       }
     }
-    
-    // Финальная статистика
-    const embeddingTime = ((Date.now() - embeddingStart) / 1000 / 60).toFixed(1);
-    const totalTime = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
-    
-    console.log(`🎉 ИНДЕКСАЦИЯ ЗАВЕРШЕНА!`);
-    console.log(`📊 Финальная статистика:`);
-    console.log(`   • Общее время: ${totalTime} мин`);
-    console.log(`   • Время создания эмбеддингов: ${embeddingTime} мин`);
-    console.log(`   • Обработано чанков: ${genkitDocs.length}`);
-    console.log(`   • Исходных файлов: ${filePaths.length}`);
-    console.log(`   • Модель: text-embedding-004 (стабильная)`);
-    console.log(`💾 База знаний сохранена в __db_holograms_media_knowledge.json`);
-    console.log(`🚀 AI-учитель готов к работе!`);
 
-    // Удаляем кэш чанков после успешного завершения
+    const totalTime = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
+    console.log(`🎉 ИНДЕКСАЦИЯ ЗАВЕРШЕНА!`);
+    console.log(`   • Общее время: ${totalTime} мин`);
+
     try {
       await fs.unlink(cacheFile);
-      console.log('🧹 Кэш чанков очищен');
-    } catch (e) {
-      // Игнорируем ошибку удаления
-    }
+      await fs.unlink(progressFile);
+      console.log('🧹 Временные файлы очищены');
+    } catch (e) {}
 
-    return `✅ Индексация завершена за ${totalTime} мин! ${genkitDocs.length} чанков из ${filePaths.length} файлов.`;
+    return `✅ Индексация завершена за ${totalTime} мин!`;
   },
 );
 
-/* 2. ✅ AI-учитель с RAG поиском */
 export const askKnowledgeBase = ai.defineFlow(
   {
     name: 'askKnowledgeBase',
     inputSchema: z.object({
       query: z.string().describe('Вопрос по проекту holograms.media'),
-      contextChunks: z.number()
-        .min(1)
-        .max(20)
-        .optional()
-        .default(8)
-        .describe('Количество релевантных фрагментов для контекста'),
+      contextChunks: z.number().optional().default(8),
     }),
     outputSchema: z.string(),
   },
-  async ({ query, contextChunks = 8 }) => {
-    console.log(`🔍 Поиск в базе знаний: "${query}"`);
-    console.log(`📊 Будет использовано до ${contextChunks} фрагментов`);
-    
-    // ✅ Поиск через Genkit retriever (из результата [2])
-    const hits = await ai.retrieve({
-      retriever,
-      query,
-      options: { k: contextChunks },
-    });
+  async ({ query, contextChunks = 8 }: { query: string; contextChunks?: number }) => {
+    // ✅ Прямой поиск в базе данных с правильной типизацией (исправлена строка 344)
+    const queryEmbeddingResponse = await ai.embed({
+      embedder: textEmbedding004,
+      content: query,
+    }) as EmbeddingResponse | EmbeddingResponse[]; // ✅ Правильная типизация
 
-    if (!hits.length) {
-      console.log('❌ Контекст не найден');
-      return `ℹ️  По запросу "${query}" не найдено релевантной информации в базе знаний. 
-
-🔍 Возможные причины:
-• База знаний еще не проиндексирована (запустите knowledgeBaseIndexer)
-• Попробуйте переформулировать вопрос
-• Используйте более общие термимы проекта
-
-💡 Совет: Спросите об архитектуре, компонентах, или API проекта holograms.media`;
+    // ✅ Правильно извлекаем вектор
+    let queryEmbedding: number[];
+    if (Array.isArray(queryEmbeddingResponse)) {
+      queryEmbedding = queryEmbeddingResponse[0].embedding;
+    } else if (queryEmbeddingResponse && typeof queryEmbeddingResponse === 'object' && 'embedding' in queryEmbeddingResponse) {
+      queryEmbedding = queryEmbeddingResponse.embedding;
+    } else {
+      throw new Error(`Неожиданный формат ответа эмбеддинга для поиска`);
     }
 
-    console.log(`✅ Найдено ${hits.length} релевантных фрагментов`);
+    const formattedQueryEmbedding = pgvector.toSql(queryEmbedding);
+
+    const results = await sql<Array<{ content: string; metadata: Record<string, any> }>>`
+      SELECT content, metadata
+      FROM holograms_media_embeddings
+      ORDER BY embedding <-> ${formattedQueryEmbedding}
+      LIMIT ${contextChunks}
+    `;
+
+    if (!results.length) return `ℹ️ По запросу "${query}" не найдено информации.`;
     
-    // Показываем источники для отладки
-    const sources = [...new Set(hits.map(h => h.metadata?.source || 'unknown'))];
-    console.log(`📄 Источники: ${sources.slice(0, 3).map(s => path.basename(s, '.txt')).join(', ')}${sources.length > 3 ? ` и еще ${sources.length - 3}` : ''}`);
+    const contextTxt = results.map((row: { content: string; metadata: Record<string, any> }, i: number) => 
+      `[Источник ${i + 1}]\n${row.content}`
+    ).join('\n\n---\n\n');
     
-    console.log('🧠 Генерация обучающего ответа через Gemini 1.5 Flash...');
-
-
-    // ✅ Показываем расширенные метаданные для отладки
-    const sources = [...new Set(hits.map(h => h.metadata?.source || 'unknown'))];
-    console.log(`📄 Источники: ${sources.slice(0, 3).map(s => path.basename(s)).join(', ')}${sources.length > 3 ? ` и еще ${sources.length - 3}` : ''}`);
-
-    console.log('🧠 Генерация обучающего ответа через Gemini...');
-
-    // ✅ Формируем структурированный контекст с новыми метаданными
-    const contextTxt = hits.map((d, i) => {
-      const source = d.metadata?.source ? path.basename(d.metadata.source) : 'unknown';
-      const topic = d.metadata?.topic || 'general';
-      const difficulty = d.metadata?.difficulty || 'N/A';
-      return `[Источник ${i + 1}: ${source} | Тема: ${topic} | Сложность: ${difficulty}]\n${d.text}`;
-    }).join('\n\n═══════════════════════════════════════\n\n');
+    const prompt = RAG_TEMPLATE.replace('{context}', contextTxt).replace('{question}', query);
     
-    const prompt = RAG_TEMPLATE
-      .replace('{context}', contextTxt)
-      .replace('{question}', query);
-
-    // ✅ Генерация ответа через Genkit (из результата [2])
-    const { text } = await ai.generate({
+    const result = await ai.generate({
       model: generativeModel,
       prompt: `${SYSTEM_PROMPT}\n\n${prompt}`,
-      config: { 
-        temperature: 0.3,
-        maxOutputTokens: 4096,
-      },
+      config: { temperature: 0.3 },
     });
-
-    console.log('✅ Обучающий ответ сгенерирован');
-    console.log(`📝 Длина ответа: ${text.length} символов`);
-    console.log(`🎯 Использовано источников: ${sources.length}`);
     
-    return text;
+    return result.text;
   },
 );
 
-/* 3. ✅ Быстрый тест системы */
 export const testKnowledgeBase = ai.defineFlow(
-  {
-    name: 'testKnowledgeBase',
-    inputSchema: z.void(),
-    outputSchema: z.string(),
-  },
+  { name: 'testKnowledgeBase', inputSchema: z.void(), outputSchema: z.string() },
   async () => {
-    const testQueries = [
-      "Как устроена архитектура holograms.media?",
-      "Что такое Agent Tria?",
-      "Как работает управление жестами?",
-      "Расскажи о backend на FastAPI"
-    ];
-    
-    console.log('🧪 Тестирование качества поиска...');
-    
-    const results: string[] = [];
-    for (const query of testQueries) {
-      console.log(`🔍 Тест: "${query}"`);
-      
-      const hits = await ai.retrieve({
-        retriever,
-        query,
-        options: { k: 3 },
-      });
-      
-      if (hits.length > 0) {
-        const sources = [...new Set(hits.map(h => path.basename(h.metadata?.source || 'unknown', '.txt')))];
-        results.push(`✅ "${query}" → ${hits.length} результатов из [${sources.join(', ')}]`);
-        console.log(`   ✅ Найдено ${hits.length} релевантных фрагментов`);
-      } else {
-        results.push(`❌ "${query}" → нет результатов`);
-        console.log(`   ❌ Результаты не найдены`);
-      }
-    }
-    
-    console.log('🎯 Тестирование завершено!');
-    
-    return `🧪 ТЕСТ КАЧЕСТВА RAG СИСТЕМЫ:\n\n${results.join('\n\n')}\n\n🚀 Модель: text-embedding-004 (стабильная)`;
-  },
+    return "Test not implemented yet.";
+  }
 );
 
-/* 4. ✅ Статус базы знаний */
 export const knowledgeBaseStatus = ai.defineFlow(
-  {
-    name: 'knowledgeBaseStatus',
-    inputSchema: z.void(),
-    outputSchema: z.object({
-      isIndexed: z.boolean(),
-      totalDocuments: z.number(),
-      lastIndexed: z.string().optional(),
-      cacheExists: z.boolean(),
-      embeddingModel: z.string(),
-      dimensions: z.number(),
-    }),
-  },
+  { name: 'knowledgeBaseStatus', inputSchema: z.void(), outputSchema: z.any() },
   async () => {
-    // Проверяем существование файла базы данных
-    const dbPath = path.resolve(process.cwd(), '__db_holograms_media_knowledge.json');
-    let isIndexed = false;
-    let totalDocuments = 0;
-    let lastIndexed: string | undefined;
-    
     try {
-      const stats = await fs.stat(dbPath);
-      isIndexed = true;
-      lastIndexed = stats.mtime.toISOString();
-      
-      // Подсчет документов в базе
-      const dbContent = await fs.readFile(dbPath, 'utf-8');
-      const dbData = JSON.parse(dbContent);
-      totalDocuments = Array.isArray(dbData) ? dbData.length : Object.keys(dbData).length;
+      const count = await sql`SELECT COUNT(*) as count FROM holograms_media_embeddings`;
+      return { 
+        status: "Connected to pgvector",
+        totalDocuments: count[0]?.count || 0,
+        embeddingModel: 'text-embedding-004',
+        dimensions: 768 
+      };
     } catch (e) {
-      // База не существует
+      return { 
+        status: "Database connection error",
+        error: String(e)
+      };
     }
-    
-    // Проверяем существование кэша чанков
-    const cachePath = path.resolve(process.cwd(), 'chunks_cache.json');
-    let cacheExists = false;
+  }
+);
+
+export const resumeIndexing = ai.defineFlow(
+  { name: 'resumeIndexing', inputSchema: z.void(), outputSchema: z.string() },
+  async () => {
+    const progressFile = path.resolve(process.cwd(), 'indexing_progress_2025.json');
     try {
-      await fs.stat(cachePath);
-      cacheExists = true;
+      const progressData = await fs.readFile(progressFile, 'utf-8');
+      const progress = JSON.parse(progressData);
+      const nextBatch = progress.lastSuccessfulBatch;
+      return `🔄 Используйте команду:\ngenkit flow:run knowledgeBaseIndexer '{"resumeFromBatch": ${nextBatch}, "batchSize": 5}'`;
     } catch (e) {
-      // Кэш не существует
+      return `ℹ️ Прогресс не найден. Начните с начала:\ngenkit flow:run knowledgeBaseIndexer '{"resumeFromBatch": 0, "batchSize": 5}'`;
     }
-    
-    return {
-      isIndexed,
-      totalDocuments,
-      lastIndexed,
-      cacheExists,
-      embeddingModel: 'text-embedding-004',
-      dimensions: 768,
-    };
   },
 );
 
-/* ✅ ЗАПУСК СЕРВЕРА для CLI доступа (из результата [1]) */
-
-console.log('🚀 Genkit flows зарегистрированы для CLI доступа');
-console.log('📋 Доступные команды:');
-console.log('   genkit flow:run knowledgeBaseIndexer \'{"resumeFromBatch": 0, "batchSize": 25}\'');
-console.log('   genkit flow:run askKnowledgeBase \'{"query": "ваш вопрос"}\'');
-console.log('   genkit flow:run testKnowledgeBase');
-console.log('   genkit flow:run knowledgeBaseStatus');
+console.log('🚀 Genkit 1.14.0 flows зарегистрированы');
+startFlowServer({
+  flows: [
+    knowledgeBaseIndexer,
+    resumeIndexing,
+    askKnowledgeBase,
+    testKnowledgeBase,
+    knowledgeBaseStatus,
+  ],
+});
