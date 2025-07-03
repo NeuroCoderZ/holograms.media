@@ -1,6 +1,3 @@
-cd ~/holograms.media/tria-genkit-core
-
-# Исправьте package.json - объедините scripts:
 cat > package.json << 'EOF'
 {
   "name": "tria-genkit-core",
