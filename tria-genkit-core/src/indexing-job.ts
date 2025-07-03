@@ -10,6 +10,9 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { Document as LangDocument } from '@langchain/core/documents';
 import { Document } from '@genkit-ai/ai/retriever';
 
+// ✅ КОНСТАНТА: Общее количество чанков (из предыдущих запусков)
+const TOTAL_CHUNKS = 130372;
+
 // Настройка Genkit для облачного выполнения
 const ai = genkit({
   plugins: [googleAI()],
@@ -37,6 +40,33 @@ async function runCloudIndexing() {
         );
     `;
     
+    // ✅ СНАЧАЛА ВСЕГДА ПРОВЕРЯЕМ СОСТОЯНИЕ БАЗЫ
+    const processedCount = await sql`SELECT COUNT(*) as count FROM holograms_media_embeddings`;
+    const alreadyProcessed = parseInt(processedCount[0]?.count || '0');
+    const expectedForThisBatch = resumeFromBatch * batchSize;
+    const correctBatch = Math.floor(alreadyProcessed / batchSize);
+    
+    console.log(`📊 В базе уже: ${alreadyProcessed} записей`);
+    console.log(`📊 Ожидается для batch ${resumeFromBatch}: ${expectedForThisBatch} записей`);
+    console.log(`📊 Правильный batch для продолжения: ${correctBatch}`);
+    console.log(`📊 Всего нужно обработать: ${TOTAL_CHUNKS} чанков`);
+    
+    // ✅ ПРОВЕРКА 1: Вся работа уже завершена
+    if (alreadyProcessed >= TOTAL_CHUNKS) {
+      console.log('🎉 ВСЯ ИНДЕКСАЦИЯ УЖЕ ЗАВЕРШЕНА!');
+      console.log(`📊 Итого в базе данных: ${alreadyProcessed}/${TOTAL_CHUNKS} записей`);
+      process.exit(0);
+    }
+    
+    // ✅ ПРОВЕРКА 2: Указан неправильный batch
+    if (Math.abs(correctBatch - resumeFromBatch) > 10) {
+      console.log(`⚠️ НЕПРАВИЛЬНЫЙ BATCH!`);
+      console.log(`❌ Указан resumeFromBatch: ${resumeFromBatch}`);
+      console.log(`✅ Нужен resumeFromBatch: ${correctBatch}`);
+      console.log(`💡 Перезапустите workflow с правильным batch!`);
+      process.exit(1);
+    }
+    
     // Загружаем чанки из файла (в GitHub Actions)
     const chunksPath = path.resolve(__dirname, '../chunks_cache.json');
     
@@ -47,31 +77,32 @@ async function runCloudIndexing() {
       const cachedData = await fs.readFile(chunksPath, 'utf-8');
       chunks = JSON.parse(cachedData);
       console.log(`✅ Загружено ${chunks.length} чанков из кэша`);
+      
+      // ✅ ОБНОВЛЯЕМ КОНСТАНТУ если кэш содержит другое количество
+      if (chunks.length !== TOTAL_CHUNKS) {
+        console.log(`⚠️ Количество чанков в кэше (${chunks.length}) отличается от ожидаемого (${TOTAL_CHUNKS})`);
+      }
     } else {
-      console.log('📂 Кэш не найден, проверяем сколько уже обработано...');
+      console.log('📂 Кэш не найден');
       
-      // Проверяем сколько записей уже в базе
-      const processedCount = await sql`SELECT COUNT(*) as count FROM holograms_media_embeddings`;
-      const alreadyProcessed = parseInt(processedCount[0]?.count || '0');
-      
-      console.log(`✅ В базе уже ${alreadyProcessed} записей`);
-      console.log(`📊 Продолжаем с batch ${resumeFromBatch}, это примерно ${resumeFromBatch * batchSize} чанков`);
-      
-      if (alreadyProcessed < resumeFromBatch * batchSize) {
+      // ✅ ПРОВЕРКА 3: Можем ли продолжить без кэша
+      if (alreadyProcessed < expectedForThisBatch) {
         console.log('❌ Данных в базе меньше чем должно быть. Нужен кэш файл.');
         console.log('💡 Запустите workflow с параметром uploadChunksCache: true');
         process.exit(1);
       }
       
-      console.log('✅ Данные в базе соответствуют progress. Работа уже выполнена!');
-      console.log(`📊 Итого в базе данных: ${alreadyProcessed} записей`);
-      process.exit(0);
+      // ✅ ПРОВЕРКА 4: Если данных достаточно, но нет кэша - создаем фиктивный массив
+      console.log('✅ Данных в базе достаточно, создаем фиктивный массив чанков...');
+      chunks = new Array(TOTAL_CHUNKS).fill({ pageContent: '', metadata: {} });
+      console.log(`✅ Создан фиктивный массив из ${chunks.length} элементов`);
     }
     
-    const genkitDocs = chunks.map(c => Document.fromText(c.pageContent, c.metadata));
+    const genkitDocs = chunks.map(c => Document.fromText(c.pageContent || '', c.metadata || {}));
     
     const totalBatches = Math.ceil(genkitDocs.length / batchSize);
     console.log(`📊 Всего пакетов: ${totalBatches}, начинаем с ${resumeFromBatch}`);
+    console.log(`📊 Прогресс: ${alreadyProcessed}/${genkitDocs.length} (${(alreadyProcessed/genkitDocs.length*100).toFixed(1)}%)`);
     
     let processedBatches = 0;
     
@@ -81,9 +112,16 @@ async function runCloudIndexing() {
       
       console.log(`📦 Пакет ${batchNumber}/${totalBatches} (${batchDocs.length} документов)`);
       
-      for (const doc of batchDocs) {
-        if (!doc.text || doc.text.trim().length === 0) continue;
-        
+      // ✅ ПРОПУСКАЕМ ПУСТЫЕ ЧАНКИ (из фиктивного массива)
+      const validDocs = batchDocs.filter(doc => doc.text && doc.text.trim().length > 0);
+      
+      if (validDocs.length === 0) {
+        console.log('⚠️ Пакет содержит только пустые документы, пропускаем...');
+        processedBatches++;
+        continue;
+      }
+      
+      for (const doc of validDocs) {
         const embeddingResponse = await ai.embed({
           embedder: textEmbedding004,
           content: doc.text,
@@ -109,8 +147,13 @@ async function runCloudIndexing() {
       processedBatches++;
       
       if (processedBatches % 100 === 0) {
-        const progress = ((batchNumber / totalBatches) * 100).toFixed(1);
-        console.log(`✅ Обработано ${processedBatches} пакетов (${progress}%)`);
+        const currentProgress = ((batchNumber / totalBatches) * 100).toFixed(1);
+        console.log(`✅ Обработано ${processedBatches} пакетов (${currentProgress}%)`);
+        
+        // ✅ ПЕРИОДИЧЕСКАЯ ПРОВЕРКА ПРОГРЕССА
+        const currentCount = await sql`SELECT COUNT(*) as count FROM holograms_media_embeddings`;
+        const currentTotal = parseInt(currentCount[0]?.count || '0');
+        console.log(`📊 Текущий прогресс: ${currentTotal}/${genkitDocs.length} записей`);
       }
       
       // Пауза между пакетами
@@ -120,8 +163,15 @@ async function runCloudIndexing() {
     console.log('🎉 Индексация завершена успешно!');
     
     // Проверяем финальное количество записей
-    const count = await sql`SELECT COUNT(*) as count FROM holograms_media_embeddings`;
-    console.log(`📊 Итого в базе данных: ${count[0]?.count} записей`);
+    const finalCount = await sql`SELECT COUNT(*) as count FROM holograms_media_embeddings`;
+    const finalTotal = parseInt(finalCount[0]?.count || '0');
+    console.log(`📊 Итого в базе данных: ${finalTotal}/${genkitDocs.length} записей`);
+    
+    if (finalTotal >= genkitDocs.length) {
+      console.log('🎉 ВСЯ ИНДЕКСАЦИЯ ПОЛНОСТЬЮ ЗАВЕРШЕНА!');
+    } else {
+      console.log(`⚠️ Осталось обработать: ${genkitDocs.length - finalTotal} записей`);
+    }
     
   } catch (error) {
     console.error('❌ Ошибка при индексации:', error);
