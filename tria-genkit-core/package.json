@@ -1,3 +1,7 @@
+cd ~/holograms.media/tria-genkit-core
+
+# Исправьте package.json - объедините scripts:
+cat > package.json << 'EOF'
 {
   "name": "tria-genkit-core",
   "version": "1.0.0",
@@ -6,6 +10,7 @@
   "private": true,
   "scripts": {
     "start": "genkit start",
+    "start:indexing": "tsx src/indexing-job.ts",
     "build": "tsc",
     "watch": "tsc -w",
     "flow:run": "genkit flow:run",
@@ -46,10 +51,5 @@
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   }
-  {
-    "scripts": {
-      "start:indexing": "tsx src/indexing-job.ts",
-      "build": "npm install"
-    }
-  }  
 }
+EOF
