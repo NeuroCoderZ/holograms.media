@@ -25,23 +25,7 @@ async function runCloudIndexing() {
   const batchSize = parseInt(process.env.BATCH_SIZE || '5');
   
   try {
-    // Загружаем чанки из файла (в GitHub Actions)
-    const chunksPath = path.resolve(__dirname, '../chunks_cache_2025.json');
-    
-    let chunks: any[] = [];
-    
-    if (await fs.access(chunksPath).then(() => true).catch(() => false)) {
-      console.log('📂 Загрузка чанков из кэша...');
-      const cachedData = await fs.readFile(chunksPath, 'utf-8');
-      chunks = JSON.parse(cachedData);
-      console.log(`✅ Загружено ${chunks.length} чанков из кэша`);
-    } else {
-      console.log('❌ Кэш чанков не найден');
-      process.exit(1);
-    }
-    
-    const genkitDocs = chunks.map(c => Document.fromText(c.pageContent, c.metadata));
-    
+    // Создание таблицы в pgvector
     console.log('🧠 Создание таблицы в pgvector...');
     await sql`CREATE EXTENSION IF NOT EXISTS vector`;
     await sql`
@@ -52,6 +36,39 @@ async function runCloudIndexing() {
             metadata JSONB
         );
     `;
+    
+    // Загружаем чанки из файла (в GitHub Actions)
+    const chunksPath = path.resolve(__dirname, '../chunks_cache.json');
+    
+    let chunks: any[] = [];
+    
+    if (await fs.access(chunksPath).then(() => true).catch(() => false)) {
+      console.log('📂 Загрузка чанков из кэша...');
+      const cachedData = await fs.readFile(chunksPath, 'utf-8');
+      chunks = JSON.parse(cachedData);
+      console.log(`✅ Загружено ${chunks.length} чанков из кэша`);
+    } else {
+      console.log('📂 Кэш не найден, проверяем сколько уже обработано...');
+      
+      // Проверяем сколько записей уже в базе
+      const processedCount = await sql`SELECT COUNT(*) as count FROM holograms_media_embeddings`;
+      const alreadyProcessed = parseInt(processedCount[0]?.count || '0');
+      
+      console.log(`✅ В базе уже ${alreadyProcessed} записей`);
+      console.log(`📊 Продолжаем с batch ${resumeFromBatch}, это примерно ${resumeFromBatch * batchSize} чанков`);
+      
+      if (alreadyProcessed < resumeFromBatch * batchSize) {
+        console.log('❌ Данных в базе меньше чем должно быть. Нужен кэш файл.');
+        console.log('💡 Запустите workflow с параметром uploadChunksCache: true');
+        process.exit(1);
+      }
+      
+      console.log('✅ Данные в базе соответствуют progress. Работа уже выполнена!');
+      console.log(`📊 Итого в базе данных: ${alreadyProcessed} записей`);
+      process.exit(0);
+    }
+    
+    const genkitDocs = chunks.map(c => Document.fromText(c.pageContent, c.metadata));
     
     const totalBatches = Math.ceil(genkitDocs.length / batchSize);
     console.log(`📊 Всего пакетов: ${totalBatches}, начинаем с ${resumeFromBatch}`);
