@@ -230,6 +230,15 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   console.log('[UIManager] Проверка: chatInputBar в appState.uiElements.containers:', appState.uiElements.containers.chatInputBar ? 'найден' : 'НЕ найден');
   console.log('[UIManager] Проверка: loadingIndicator в appState.uiElements.indicators:', appState.uiElements.indicators.loadingIndicator ? 'найден' : 'НЕ найден');
 
+  // Инициализация контейнера для списка голограмм
+  if (!appState.uiElements.containers) { appState.uiElements.containers = {}; }
+  appState.uiElements.containers.hologramList = document.getElementById('myHologramsView'); // Используем существующий #myHologramsView
+  if (!appState.uiElements.containers.hologramList) {
+      console.warn("#myHologramsView (for hologram list) not found in DOM during UI setup. Hologram panel may not work.");
+  } else {
+      console.log("Hologram list container (#myHologramsView) successfully assigned to state.uiElements.containers.hologramList.");
+  }
+
   // --- Initial UI State and Debugging ---
   // initializePanelState(); // PanelManager now handles this.
   addDebugClasses();      // Add debug classes for styling/inspection.

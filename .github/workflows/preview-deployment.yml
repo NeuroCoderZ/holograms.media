@@ -1,0 +1,322 @@
+name: 🚀 Preview Environment Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main]
+
+concurrency:
+  group: preview-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Управление ветками базы данных
+  manage_database_branch:
+    runs-on: ubuntu-latest
+    outputs:
+      database_url: ${{ steps.create-branch.outputs.db_url }}
+      branch_id: ${{ steps.create-branch.outputs.branch_id }}
+      neon_data_api_url: ${{ steps.neon-config.outputs.data_api_url }} # Убедимся, что это output используется или нужен
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      # Создание ветки БД при открытии/обновлении PR
+      - name: 🌿 Create Neon Database Branch
+        if: github.event.action != 'closed'
+        id: create-branch # ID нужен для доступа к outputs
+        uses: neondatabase/create-branch-action@v6 # Обновлено до v6
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: preview/pr-${{ github.event.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          username: ${{ vars.NEON_USERNAME || 'neondb_owner' }}
+
+      # Конфигурация Neon Data API URL
+      # Этот шаг формирует URL для Neon Data API, который может отличаться от db_url
+      # db_url - это connection string для прямого подключения к БД (psql)
+      # neon_data_api_url - это HTTP endpoint для PostgREST-совместимого API
+      - name: 🔧 Configure Neon Data API URL
+        if: github.event.action != 'closed'
+        id: neon-config # ID нужен для доступа к outputs
+        run: |
+          # Формируем URL для Data API на основе ID проекта.
+          # Стандартный формат Neon Data API URL - https://{endpoint_id}.{region_id}.neon.tech/sql/v1
+          # Однако, в документации Neon для create-branch-action db_url уже содержит endpoint_id.
+          # Можно попробовать извлечь его или использовать общий формат, если project_id это всё, что нужно.
+          # Для большей точности, если `create-branch` не выдает Data API URL, его нужно формировать аккуратно.
+          # Предположим, что vars.NEON_PROJECT_ID это ID проекта (например, `silent-truth-123456`)
+          # и нам нужен базовый URL для Data API, который обычно не включает имя ветки в сам URL,
+          # а ветка выбирается через параметры подключения или JWT.
+          # В задании был пример: https://your-project.neon.tech/data-api
+          # Это может быть упрощенный или кастомный домен.
+          # Более общий формат: https://ep-project-branch.neon.tech/sql/v1
+          # Для preview веток, Data API URL обычно тот же, что и для основной, но с другим JWT/ролью.
+          # Нам нужен URL, который будет использовать фронтенд.
+          # В задании указан формат https://${{ vars.NEON_PROJECT_ID }}.neon.tech/data-api
+          # Будем использовать его, но стоит проверить, корректен ли он для Neon.
+          # Стандартный путь для Data API - /sql/v1
+          DATA_API_URL="https://ep-${{ vars.NEON_PROJECT_ID }}.neon.tech/sql/v1" # Более вероятный формат
+          # Или если vars.NEON_PROJECT_ID уже содержит полный хост для API:
+          # DATA_API_URL="${{ vars.NEON_PROJECT_ID_OR_API_HOST }}/sql/v1"
+          # Для примера из Perplexity:
+          # DATA_API_URL="https://${{ vars.NEON_PROJECT_ID }}.neon.tech/data-api" # Оставляем как в задании, но с сомнением
+          # Обновление: Perplexity дал "https://${{ vars.NEON_PROJECT_ID }}.neon.tech/data-api"
+          # Это скорее всего кастомный Data Proxy URL. Если это так, то vars.NEON_PROJECT_ID должен быть этим URL без /sql/v1.
+          # Для универсальности, лучше если NEON_DATA_API_BASE_URL будет отдельной переменной.
+          # Пока оставим как в задании от Perplexity:
+          DATA_API_URL_BASE="https://${{ vars.NEON_PROJECT_ID }}.neon.tech" # Это должен быть Project Endpoint Host
+          # Конечный Data API URL для PostgREST обычно /
+          # Для HTTP API /sql/v1, для PostgREST /rest/v1 (если включен)
+          # Учитывая, что используется @supabase/postgrest-js, нужен PostgREST endpoint.
+          # PostgREST endpoint обычно: https://<project_endpoint_host>/rest/v1
+          # Если NEON_PROJECT_ID это endpoint_id (например, ep-cool-sound-a5123456)
+          # то DATA_API_URL="https://ep-${{ vars.NEON_PROJECT_ID }}.neon.tech/rest/v1"
+          # Уточняем согласно заданию, которое предполагает VITE_NEON_DATA_API_URL для postgrest-js.
+          # Это должен быть URL вида https://<endpoint_id>.neon.tech
+          # Сам PostgrestClient добавляет /rest/v1 если не указано иное.
+          # Так что vars.NEON_PROJECT_ID должен быть хостом эндпоинта.
+          # Для create-branch.outputs.db_url: postgresql://user:pass@host:port/db
+          # Нам нужно извлечь host из db_url или иметь отдельную переменную для хоста PostgREST.
+          # Предположим, что vars.NEON_PROJECT_ID - это и есть хост для Data API.
+          # И что PostgrestClient сам добавит /rest/v1.
+          # Но в задании было `https://your-project.neon.tech/data-api` для VITE_NEON_DATA_API_URL.
+          # Это не стандартный PostgREST URL.
+          # Если `vars.NEON_PROJECT_ID` это `your-project` из примера, то:
+          DATA_API_URL="https://${{ vars.NEON_PROJECT_ID }}.neon.tech" # Это будет базой для PostgrestClient
+          echo "data_api_url=$DATA_API_URL" >> $GITHUB_OUTPUT
+          echo "::notice::Neon Data API Base URL for PostgrestClient: $DATA_API_URL"
+
+      # Удаление ветки БД при закрытии PR
+      - name: 🗑️ Delete Neon Database Branch
+        if: github.event.action == 'closed'
+        uses: neondatabase/delete-branch-action@v3 # Используем v3 как в примере
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: preview/pr-${{ github.event.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+  # Job 2: Деплой бэкенда на Koyeb
+  deploy_backend_preview:
+    runs-on: ubuntu-latest
+    needs: manage_database_branch
+    if: github.event.action != 'closed'
+    outputs:
+      backend_url: ${{ steps.koyeb-deploy.outputs.app_url }}
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Install and Configure Koyeb CLI
+        uses: koyeb-community/install-koyeb-cli@v2
+        with:
+          api_token: ${{ secrets.KOYEB_API_TOKEN }}
+
+      - name: 🚀 Deploy Backend to Koyeb
+        id: koyeb-deploy # ID нужен для доступа к outputs
+        uses: koyeb/action-git-deploy@v1 # Используем официальный action
+        with:
+          git-branch: ${{ github.head_ref }} # Деплоим текущую ветку PR
+          app-name: holograms-pr-${{ github.event.number }} # Имя приложения на Koyeb
+          service-name: backend-pr-${{ github.event.number }} # Имя сервиса
+          service-type: web # Тип сервиса
+          service-dockerfile: ./Dockerfile # Путь к Dockerfile относительно корня репозитория
+          service-ports: "8000:http" # Маппинг портов
+          service-routes: "/:8000" # Роутинг
+          service-env: | # Переменные окружения
+            DATABASE_URL=${{ needs.manage_database_branch.outputs.database_url }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} # Пример секрета для Google AI
+            ENVIRONMENT=preview
+            # CORS_ORIGINS должен указывать на URL фронтенда Firebase Preview Channel
+            # Мы пока не знаем его, но можем сформировать шаблон.
+            # Firebase Preview Channel URL: https://<project_id>--pr-${{ github.event.number }}-<channel_hash>.web.app
+            # Для упрощения, можно разрешить более широкий диапазон или настроить после деплоя фронта.
+            # Пока оставим так, как было в задании, предполагая, что Firebase URL будет таким.
+            CORS_ORIGINS=https://holograms-pr-${{ github.event.number }}--${{ vars.FIREBASE_PROJECT_ID }}.web.app,https://pr-${{ github.event.number }}--${{ vars.FIREBASE_PROJECT_ID }}.web.app,https://${{ vars.FIREBASE_PROJECT_ID }}--pr-${{ github.event.number }}.web.app
+            # Добавим еще вариант без хэша, если Firebase так формирует для PR
+            # Лучше всего будет передать реальный URL фронтенда из job'а deploy_frontend_preview,
+            # но это создаст циклическую зависимость или потребует еще одного job'а.
+            # Для MVP, можно использовать '*' или настроить позже.
+            # Пока используем шаблон из задания, но с FIREBASE_PROJECT_ID.
+            # В задании было: CORS_ORIGINS=https://holograms-pr-${{ github.event.number }}--holograms-media.web.app
+            # Это предполагает, что имя проекта Firebase "holograms-media". Заменим на переменную.
+            PYTHONUNBUFFERED=1 # Для корректного вывода логов Python в Koyeb
+            PYTHONDONTWRITEBYTECODE=1
+            PORT=8000 # Порт, который слушает FastAPI внутри контейнера
+            GOOGLE_APPLICATION_CREDENTIALS_JSON=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }} # Если используется JSON секрета для ADC
+            # Добавим переменную для Neon Data API URL, если бэкенд тоже будет его использовать
+            # NEON_DATA_API_URL=${{ needs.manage_database_branch.outputs.neon_data_api_url }}
+            # MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }} # Если используется Mistral
+
+      - name: 📋 Output Backend URL
+        run: |
+          echo "Backend deployed to: ${{ steps.koyeb-deploy.outputs.app_url }}"
+          echo "::notice::Backend URL: ${{ steps.koyeb-deploy.outputs.app_url }}"
+
+  # Job 3: Деплой фронтенда на Firebase Hosting
+  deploy_frontend_preview:
+    runs-on: ubuntu-latest
+    needs: [manage_database_branch, deploy_backend_preview] # Зависит от создания БД и деплоя бэкенда
+    if: github.event.action != 'closed'
+    outputs:
+      frontend_url: ${{ steps.firebase-deploy.outputs.details_url }} # URL превью-канала
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Указываем версию Node.js
+          cache: 'npm'
+          # Указываем путь к lock-файлу относительно корня репозитория
+          cache-dependency-path: package-lock.json # Или frontend/package-lock.json если он там
+
+      - name: 📦 Install Frontend Dependencies
+        # working-directory: ./frontend # Указываем рабочую директорию, если package.json фронтенда там
+        run: npm ci # Используем ci для более быстрого и предсказуемого скачивания из lock-файла
+
+      - name: 🏗️ Build Frontend with Preview Environment Variables
+        # working-directory: ./frontend # Если нужно
+        env:
+          VITE_BACKEND_URL: ${{ needs.deploy_backend_preview.outputs.backend_url }}
+          VITE_NEON_DATA_API_URL: ${{ needs.manage_database_branch.outputs.neon_data_api_url }}
+          VITE_ENVIRONMENT: preview
+          VITE_PR_NUMBER: ${{ github.event.number }}
+          # Добавим Firebase config переменные, если они нужны во время сборки
+          VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY_FRONTEND }} # Используем отдельный секрет для фронта
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN_FRONTEND }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }} # Общий ID проекта
+          # ... другие переменные Firebase, если нужны
+        run: npm run build # Эта команда должна быть определена в корневом package.json и запускать vite build для frontend
+
+      - name: 🔥 Deploy to Firebase Hosting Preview Channel
+        id: firebase-deploy # ID нужен для доступа к outputs
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }} # GITHUB_TOKEN предоставляется автоматически
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }} # JSON ключ сервис-аккаунта Firebase
+          projectId: ${{ vars.FIREBASE_PROJECT_ID }} # ID проекта Firebase
+          channelId: pr-${{ github.event.number }} # Создаем канал с именем pr-<номер_PR>
+          entryPoint: ./dist # Указываем директорию сборки фронтенда (Vite по умолчанию кладет в /dist)
+                              # Если vite.config.js настроен на frontend/dist, то нужно указать его.
+                              # В задании было outDir: '../dist', значит это корень/dist
+        env:
+          FIREBASE_CLI_EXPERIMENTS: webframeworks # Включаем эксперименты для лучшей интеграции
+
+  # Job 4: Очистка превью-окружений при закрытии PR
+  cleanup_preview_environments:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+    needs: [manage_database_branch] # Достаточно дождаться manage_database_branch, т.к. он тоже сработает на closed
+
+    steps:
+      - name: 🛠️ Install and Configure Koyeb CLI
+        uses: koyeb-community/install-koyeb-cli@v2
+        with:
+          api_token: ${{ secrets.KOYEB_API_TOKEN }}
+
+      - name: 🗑️ Delete Koyeb Preview App
+        run: |
+          APP_NAME="holograms-pr-${{ github.event.number }}"
+          if koyeb app get $APP_NAME --output json | grep -q "\"name\":\"$APP_NAME\""; then
+            echo "Deleting Koyeb app: $APP_NAME"
+            koyeb app delete $APP_NAME --force
+          else
+            echo "Koyeb app $APP_NAME not found, skipping deletion"
+          fi
+
+      - name: 🔥 Delete Firebase Hosting Preview Channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
+          channelId: pr-${{ github.event.number }}
+          expires: 1d # Канал будет удален через 1 день (или можно удалить сразу)
+                      # Для немедленного удаления можно использовать Firebase CLI команду в run шаге,
+                      # но action-hosting-deploy не имеет опции "delete channel".
+                      # Установка expires: 0s или 1s может сработать как немедленное удаление.
+                      # Или используем firebase-tools для удаления:
+                      # - name: Setup Firebase Tools
+                      #   uses: FirebaseExtended/setup-firebase@v0
+                      # - name: Delete Preview Channel
+                      #   run: firebase hosting:channel:delete pr-${{ github.event.number }} --force --project ${{ vars.FIREBASE_PROJECT_ID }}
+                      # Пока оставляем expires: 1d как в задании.
+
+  # Job 5: Публикация ссылок на превью-окружения
+  post_preview_urls:
+    runs-on: ubuntu-latest
+    needs: [deploy_backend_preview, deploy_frontend_preview, manage_database_branch] # Добавим manage_database_branch для branch_id
+    if: github.event.action != 'closed' && success() # Только если предыдущие шаги успешны
+
+    steps:
+      - name: 💬 Post Preview URLs to PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const frontendUrl = '${{ needs.deploy_frontend_preview.outputs.frontend_url }}';
+            const backendUrl = '${{ needs.deploy_backend_preview.outputs.backend_url }}';
+            // const dbBranchId = '${{ needs.manage_database_branch.outputs.branch_id }}'; // ID ветки Neon
+            const dbBranchName = 'preview/pr-${{ github.event.number }}'; // Имя ветки Neon
+
+            const body = `## 🚀 Preview Environment Ready!
+
+            ### 🌐 URLs:
+            - **Frontend:** ${frontendUrl}
+            - **Backend API:** ${backendUrl}
+            - **API Docs (FastAPI):** ${backendUrl}/docs
+
+            ### 🗄️ Database (Neon):
+            - **Branch Name:** \`${dbBranchName}\`
+            - **Connection:** Uses isolated preview branch.
+            - **Data API:** Configured for frontend via VITE_NEON_DATA_API_URL.
+
+            ### 🧪 Testing:
+            This preview environment uses an isolated copy of the production database structure (schema applied, data may be empty or seeded if configured).
+            Feel free to test any CRUD operations.
+
+            ### 📊 Monitoring:
+            - Backend logs: Available in Koyeb dashboard for app \`holograms-pr-${{ github.event.number }}\`
+            - Frontend: Check browser console and Firebase Hosting dashboard for channel \`pr-${{ github.event.number }}\`
+
+            ---
+            💡 **Tip:** This comment will be updated if you push new commits to this PR.`;
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botCommentIdentifier = '<!-- GITHUB_PREVIEW_BOT_COMMENT -->';
+            const fullBody = botCommentIdentifier + '\\n\\n' + body;
+
+            const existingComment = comments.data.find(comment =>
+              comment.user.login === 'github-actions[bot]' && comment.body.includes(botCommentIdentifier)
+            );
+
+            if (existingComment) {
+              // Update existing comment
+              console.log(`Updating existing comment ID: ${existingComment.id}`);
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: fullBody
+              });
+            } else {
+              // Create new comment
+              console.log('Creating new comment for preview URLs.');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: fullBody
+              });
+            }

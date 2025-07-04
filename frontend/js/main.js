@@ -15,10 +15,12 @@ import { initializeRightPanel } from './panels/rightPanelManager.js';
 import { updateHologramLayout } from './ui/layoutManager.js'; // Assuming updateHologramLayout is in layoutManager
 import { startAnimationLoop } from './3d/rendering.js'; // Assuming animate is in rendering.js
 import { initializeMediaPipeHands } from './multimodal/handsTracking.js'; // Added import for handsTracking
+import { webSocketService } from './services/websocketService.js'; // <-- НОВЫЙ ИМПОРТ
 
 // UI and Core managers that might be platform-specific
 import DesktopLayout from './platforms/desktop/desktopLayout.js';
 import DesktopInput from './platforms/desktop/desktopInput.js';
+import { initializeHologramPanel } from './panels/hologramPanelManager.js'; // <-- НОВЫЙ ИМПОРТ
 import MobileLayout from './platforms/mobile/mobileLayout.js';
 import MobileInput from './platforms/mobile/mobileInput.js';
 import XRLayout from './platforms/xr/xrLayout.js';
@@ -163,6 +165,7 @@ async function startFullApplication(appState) { // Renamed state to appState to 
     initializeResizeHandler(appState); // resizeHandler might need to be initialized earlier if layout depends on it
     initializeHammerGestures(appState);
     initializeRightPanel(appState);
+    initializeHologramPanel(); // <-- ВЫЗЫВАЕМ НАШ НОВЫЙ ИНИЦИАЛИЗАТОР
     // initFileEditor(appState); // If you have a file editor module
 
     // Command handler for gesture-triggered events
@@ -247,6 +250,14 @@ async function startFullApplication(appState) { // Renamed state to appState to 
         // animate function might be part of a renderer or core loop module
         startAnimationLoop(appState);
         console.log("--- Приложение полностью запущено и анимируется. ---");
+
+        // ✅ ПОСЛЕ ВСЕХ ИНИЦИАЛИЗАЦИЙ, УСТАНАВЛИВАЕМ СОЕДИНЕНИЕ
+        try {
+            await webSocketService.connect();
+        } catch (error) {
+            console.error("Не удалось установить WebSocket соединение при старте приложения.", error);
+        }
+
     }, 100);
     } catch (error) {
         console.error("Error within startFullApplication function body:", error);

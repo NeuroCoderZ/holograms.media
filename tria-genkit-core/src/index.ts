@@ -178,23 +178,49 @@ export const knowledgeBaseIndexer = ai.defineFlow(
     function extractMetadataFromFile(filePath: string) {
       const fileName = path.basename(filePath).toLowerCase();
       let learning_stage = 'general', topic = 'general', difficulty = 'intermediate';
-      if (fileName.includes('onboarding')) { learning_stage = 'onboarding'; difficulty = 'beginner'; }
-      if (fileName.includes('tria')) { learning_stage = 'tria_creation'; topic = 'ai_core'; difficulty = 'advanced'; }
-      if (fileName.includes('gesture')) { topic = 'gestures'; }
-      return { learning_stage, topic, difficulty };
+      let gesture_affordances = ['navigate', 'select', 'grab']; // Базовый набор аффордансов
+
+      if (fileName.includes('onboarding')) {
+        learning_stage = 'onboarding';
+        difficulty = 'beginner';
+      }
+      if (fileName.includes('tria')) {
+        learning_stage = 'tria_creation';
+        topic = 'ai_core';
+        difficulty = 'advanced';
+      }
+      // Добавляем специфичные аффордансы
+      if (fileName.includes('gesture') || fileName.includes('жесты')) {
+          topic = 'gestures'; // Обновляем топик, если еще не установлен
+          gesture_affordances.push('sculpt', 'define');
+      } else if (fileName.includes('3d') || fileName.includes('hologram') || fileName.includes('голограмм')) {
+          topic = topic === 'general' ? '3d_rendering' : topic; // Обновляем топик, если еще не установлен
+          gesture_affordances.push('rotate', 'scale', 'transform'); // Добавим 'transform'
+      } else if (fileName.includes('code') || fileName.includes('script') || fileName.includes('код')) {
+          topic = topic === 'general' ? 'coding' : topic;
+          gesture_affordances.push('debug', 'refactor');
+      }
+
+      // Убираем дубликаты аффордансов, если они могли случайно добавиться
+      gesture_affordances = [...new Set(gesture_affordances)];
+
+      return { learning_stage, topic, difficulty, gesture_affordances };
     }
 
     const genkitDocs = chunks.map(c => {
       const source = c.metadata?.source ?? 'unknown';
-      const customMetadata = extractMetadataFromFile(source);
+      const customMetadata = extractMetadataFromFile(source); // Теперь содержит gesture_affordances
       return Document.fromText(c.pageContent, {
-        source: path.basename(source),
+        source: path.basename(source), // Оставляем только имя файла как источник
+        // Остальные метаданные берем из customMetadata
+        learning_stage: customMetadata.learning_stage,
         topic: customMetadata.topic,
         difficulty: customMetadata.difficulty,
+        gesture_affordances: customMetadata.gesture_affordances, // Добавляем аффордансы
       });
     });
 
-    console.log(`✅ DIAGNOSTICS: Total genkitDocs created: ${genkitDocs.length}`);
+    console.log(`✅ DIAGNOSTICS: Total genkitDocs created: ${genkitDocs.length}. First doc metadata example:`, genkitDocs[0]?.metadata);
 
     console.log('🧠 ЭТАП 4/4: Создание эмбеддингов в pgvector');
 
