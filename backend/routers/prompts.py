@@ -1,91 +1,134 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 import asyncpg
+import logging
 
-from backend.core import crud_operations
-from backend.core.models import prompt_models, user_models
+from backend.services.prompt_service import PromptService
+from backend.core import models as core_models
 from backend.auth import security
 from backend.core.db.pg_connector import get_db_connection
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
-    prefix="/users/me/prompts",
-    tags=["User Prompt Versions"],
+    # Prefix will be set in app.py, e.g., /api/v1/prompts
+    tags=["Prompts"],
 )
 
-@router.post("/", response_model=prompt_models.UserPromptVersionDB, status_code=status.HTTP_201_CREATED)
-async def create_new_user_prompt_version(
-    prompt_in: prompt_models.UserPromptVersionCreate,
-    current_user: user_models.UserInDB = Depends(security.get_current_active_user),
+@router.post("/", response_model=core_models.UserPromptVersionDB, status_code=status.HTTP_201_CREATED)
+async def create_prompt_version_endpoint(
+    prompt_in: core_models.UserPromptVersionCreate,
+    current_user: core_models.UserInDB = Depends(security.get_current_active_user),
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
-    try:
-        print(f"[PROMPT ROUTER INFO] User {current_user.firebase_uid} creating prompt version for title: {prompt_in.prompt_title}")
-        created_prompt_version = await crud_operations.create_user_prompt_version(
-            conn=db_conn, user_id=current_user.firebase_uid, prompt_in=prompt_in
-        )
-        if not created_prompt_version:
-            print(f"[PROMPT ROUTER WARN] Prompt version creation failed for user {current_user.firebase_uid}, title: {prompt_in.prompt_title}.")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not create prompt version. It might be a duplicate if versioning logic failed or another database error occurred.")
-        print(f"[PROMPT ROUTER INFO] Prompt version '{created_prompt_version.prompt_title}' v{created_prompt_version.version_number} (ID: {created_prompt_version.id}) created for user {current_user.firebase_uid}.")
-        return created_prompt_version
-    except HTTPException: 
-        raise
-    except Exception as e: 
-        print(f"[PROMPT ROUTER ERROR] Error creating user prompt version for user {current_user.firebase_uid}, title {prompt_in.prompt_title}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error creating prompt version.")
-
-@router.get("/", response_model=List[Dict[str, Any]]) 
-async def list_user_prompt_titles_with_meta( 
-    current_user: user_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
-):
-    print(f"[PROMPT ROUTER INFO] User {current_user.firebase_uid} listing prompt titles with meta.")
-    print(f"[PROMPT ROUTER WARN] CRUD function 'get_distinct_user_prompt_titles_with_meta' not implemented. User: {current_user.firebase_uid}.")
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Functionality to list grouped prompt titles is not available.")
-
-@router.get("/{prompt_title}/versions", response_model=List[prompt_models.UserPromptVersionDB])
-async def list_versions_for_prompt_title(
-    prompt_title: str = Path(..., min_length=1, max_length=255, description="The title of the prompt to fetch versions for."),
-    current_user: user_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection),
-    skip: int = Query(0, ge=0, description="Number of version records to skip for pagination."),
-    limit: int = Query(100, ge=1, le=200, description="Maximum number of version records to return.")
-):
-    print(f"[PROMPT ROUTER INFO] User {current_user.firebase_uid} listing versions for prompt title: '{prompt_title}'. Skip: {skip}, Limit: {limit}")
-    versions = await crud_operations.get_user_prompt_versions_by_title(
-        conn=db_conn, user_id=current_user.firebase_uid, prompt_title=prompt_title, skip=skip, limit=limit
+    prompt_service = PromptService(db_conn)
+    created_prompt_version = await prompt_service.create_new_prompt_version(
+        user_id=current_user.firebase_uid,
+        prompt_data=prompt_in
     )
-    print(f"[PROMPT ROUTER INFO] Found {len(versions)} versions for prompt title '{prompt_title}' for user {current_user.firebase_uid}.")
+    if not created_prompt_version:
+        logger.error(f"Router: Failed to create prompt version for user {current_user.firebase_uid}, title '{prompt_in.prompt_title}'.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not create prompt version.")
+    return created_prompt_version
+
+@router.get("/titles/", response_model=List[core_models.UserPromptTitleInfo])
+async def list_prompt_titles_endpoint(
+    current_user: core_models.UserInDB = Depends(security.get_current_active_user),
+    db_conn: asyncpg.Connection = Depends(get_db_connection)
+):
+    prompt_service = PromptService(db_conn)
+    titles = await prompt_service.list_user_prompt_titles(user_id=current_user.firebase_uid)
+    return titles
+
+@router.get("/{prompt_title}/versions/", response_model=List[core_models.UserPromptVersionDB])
+async def list_versions_for_prompt_title_endpoint(
+    prompt_title: str = Path(..., description="The title of the prompt to fetch versions for."),
+    current_user: core_models.UserInDB = Depends(security.get_current_active_user),
+    db_conn: asyncpg.Connection = Depends(get_db_connection),
+    skip: int = Query(0, ge=0, description="Number of records to skip."),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return.")
+):
+    prompt_service = PromptService(db_conn)
+    versions = await prompt_service.list_versions_for_prompt_title(
+        prompt_title=prompt_title,
+        user_id=current_user.firebase_uid,
+        skip=skip,
+        limit=limit
+    )
     return versions
 
-@router.get("/versions/{version_id}", response_model=prompt_models.UserPromptVersionDB)
-async def get_specific_prompt_version_by_id( 
-    version_id: int = Path(..., description="The ID of the specific prompt version to retrieve."),
-    current_user: user_models.UserInDB = Depends(security.get_current_active_user),
+@router.get("/{prompt_title}/versions/latest/", response_model=core_models.UserPromptVersionDB)
+async def get_latest_prompt_version_endpoint(
+    prompt_title: str = Path(..., description="The title of the prompt."),
+    current_user: core_models.UserInDB = Depends(security.get_current_active_user),
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
-    print(f"[PROMPT ROUTER INFO] User {current_user.firebase_uid} fetching prompt version ID: {version_id}")
-    prompt_version = await crud_operations.get_user_prompt_version_by_id(
-        conn=db_conn, prompt_version_id=version_id, user_id=current_user.firebase_uid
+    prompt_service = PromptService(db_conn)
+    latest_version = await prompt_service.get_latest_prompt_version(
+        prompt_title=prompt_title,
+        user_id=current_user.firebase_uid
+    )
+    if not latest_version:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No prompt found with title '{prompt_title}'.")
+    return latest_version
+
+@router.get("/{prompt_title}/versions/{version_number}", response_model=core_models.UserPromptVersionDB)
+async def get_specific_prompt_version_endpoint(
+    prompt_title: str = Path(..., description="The title of the prompt."),
+    version_number: int = Path(..., description="The version number of the prompt."),
+    current_user: core_models.UserInDB = Depends(security.get_current_active_user),
+    db_conn: asyncpg.Connection = Depends(get_db_connection)
+):
+    prompt_service = PromptService(db_conn)
+    prompt_version = await prompt_service.get_prompt_version(
+        prompt_title=prompt_title,
+        version_number=version_number,
+        user_id=current_user.firebase_uid
     )
     if not prompt_version:
-        print(f"[PROMPT ROUTER WARN] Prompt version ID: {version_id} not found for user {current_user.firebase_uid}.")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prompt version not found.")
-    print(f"[PROMPT ROUTER INFO] Prompt version ID: {version_id} found for user {current_user.firebase_uid}.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prompt version not found for title '{prompt_title}' and version {version_number}.")
     return prompt_version
 
-@router.delete("/versions/{version_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_specific_prompt_version_by_id( 
-    version_id: int = Path(..., description="The ID of the specific prompt version to delete."),
-    current_user: user_models.UserInDB = Depends(security.get_current_active_user),
+@router.get("/versions/{prompt_version_id}", response_model=core_models.UserPromptVersionDB)
+async def get_prompt_version_by_id_endpoint(
+    prompt_version_id: int = Path(..., description="The specific ID of the prompt version."),
+    current_user: core_models.UserInDB = Depends(security.get_current_active_user),
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
-    print(f"[PROMPT ROUTER INFO] User {current_user.firebase_uid} deleting prompt version ID: {version_id}")
-    deleted = await crud_operations.delete_user_prompt_version(
-        conn=db_conn, prompt_version_id=version_id, user_id=current_user.firebase_uid
+    prompt_service = PromptService(db_conn)
+    prompt_version = await prompt_service.get_prompt_version_by_id(
+        prompt_version_id=prompt_version_id,
+        user_id=current_user.firebase_uid
+    )
+    if not prompt_version:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prompt version with ID {prompt_version_id} not found.")
+    return prompt_version
+
+@router.delete("/versions/{prompt_version_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_prompt_version_endpoint(
+    prompt_version_id: int = Path(..., description="The ID of the prompt version to delete."),
+    current_user: core_models.UserInDB = Depends(security.get_current_active_user),
+    db_conn: asyncpg.Connection = Depends(get_db_connection)
+):
+    prompt_service = PromptService(db_conn)
+    deleted = await prompt_service.delete_prompt_version(
+        prompt_version_id=prompt_version_id,
+        user_id=current_user.firebase_uid
     )
     if not deleted:
-        print(f"[PROMPT ROUTER WARN] Prompt version ID: {version_id} not found or not owned by user {current_user.firebase_uid} for deletion.")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prompt version not found or not owned by user.")
-    print(f"[PROMPT ROUTER INFO] Prompt version ID: {version_id} deleted successfully for user {current_user.firebase_uid}.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prompt version not found or could not be deleted.")
     return None
+
+@router.delete("/{prompt_title}/versions/", response_model=Dict[str, int])
+async def delete_all_versions_for_prompt_title_endpoint(
+    prompt_title: str = Path(..., description="The title of the prompt for which all versions will be deleted."),
+    current_user: core_models.UserInDB = Depends(security.get_current_active_user),
+    db_conn: asyncpg.Connection = Depends(get_db_connection)
+):
+    prompt_service = PromptService(db_conn)
+    deleted_count = await prompt_service.delete_prompt_by_title(
+        prompt_title=prompt_title,
+        user_id=current_user.firebase_uid
+    )
+    return {"deleted_versions_count": deleted_count}
+```

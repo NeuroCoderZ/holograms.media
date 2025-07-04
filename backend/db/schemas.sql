@@ -107,8 +107,9 @@ CREATE INDEX IF NOT EXISTS idx_chat_history_user_chat_session_id ON chat_history
 COMMENT ON TABLE chat_history IS 'Stores individual messages within each chat session.';
 
 -- Table: user_gestures
+-- Table: user_gesture_definitions
 -- Stores custom gesture definitions saved by users.
-CREATE TABLE user_gestures (
+CREATE TABLE user_gesture_definitions (
     id SERIAL PRIMARY KEY,
     user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL,
     gesture_name VARCHAR(255) NOT NULL,
@@ -117,9 +118,9 @@ CREATE TABLE user_gestures (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL 
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_gestures_user_id_gesture_name ON user_gestures(user_id, gesture_name);
-CREATE INDEX IF NOT EXISTS idx_user_gestures_user_id ON user_gestures(user_id);
-COMMENT ON TABLE user_gestures IS 'Stores custom gesture definitions saved by users.';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_gesture_definitions_user_id_gesture_name ON user_gesture_definitions(user_id, gesture_name);
+CREATE INDEX IF NOT EXISTS idx_user_gesture_definitions_user_id ON user_gesture_definitions(user_id);
+COMMENT ON TABLE user_gesture_definitions IS 'Stores custom gesture definitions saved by users.';
 
 -- Table: user_holograms
 -- Stores saved states or definitions of holograms created by users.

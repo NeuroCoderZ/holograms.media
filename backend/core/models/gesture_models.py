@@ -74,6 +74,20 @@ class GestureRecognitionResponse(BaseModel):
     raw_gestures_processed: Optional[List[Dict[str, Any]]] = None
     error_message: Optional[str] = None
 
+class GestureUpdate(UserGestureDefinitionBase):
+    """
+    Model for updating an existing user gesture. All fields are optional.
+    Used for PUT/PATCH operations where only provided fields should be updated.
+    """
+    gesture_name: Optional[str] = Field(None, min_length=1, max_length=100) # Re-declare to make Optional
+    gesture_definition: Optional[Dict[str, Any]] = Field(None) # Re-declare to make Optional
+    gesture_data_ref: Optional[int] = Field(None) # Re-declare to make Optional
+
+    # The __init__ from the router that filtered None values is not strictly necessary
+    # if Pydantic's exclude_unset=True or exclude_none=True is used correctly when calling .dict().
+    # UserGestureDefinitionBase already has these fields, but here we explicitly make them Optional
+    # for the purpose of an update model.
+
 # --- Appended content from original backend/core/models/gesture_models.py ---
 
 # Need to import BaseUUIDModel and UUID from uuid for this section.
