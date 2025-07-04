@@ -1,26 +1,3 @@
-# Файл: .gitignore
 
-# Зависимости и артефакты сборки
-node_modules/
-tria-genkit-core/node_modules/
-dist/
-lib/
-build/
-
-# Локальные переменные окружения
-.env
-*.env
-.env.*
-
-# Кэши и временные файлы
-.firebase/
-tria-genkit-core/chunks_cache*.json
-tria-genkit-core/indexing_progress*.json
-tria-genkit-core/__db_*.json
-tria-genkit-core/package.json.backup
-
-# Игнорируем всю базу знаний, она не должна быть в репозитории
-GoogleAIStudio/
-
-# Системные файлы
-.DS_Store
+# Genkit cache and temporary files
+tria-genkit-core/.genkit/
