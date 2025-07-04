@@ -15,7 +15,8 @@
     "@tweenjs/tween.js": "^23.1.1",
     "axios": "^1.7.2",
     "hammerjs": "^2.0.8",
-    "three": "^0.165.0"
+    "three": "^0.165.0",
+    "@supabase/postgrest-js": "^1.15.5"
   },
   "devDependencies": {
     "vite": "^5.2.0"
