@@ -9,10 +9,18 @@ concurrency:
   group: preview-${{ github.event.number }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   # Job 1: Управление ветками базы данных
   manage_database_branch:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     outputs:
       database_url: ${{ steps.create-branch.outputs.db_url }}
       branch_id: ${{ steps.create-branch.outputs.branch_id }}
@@ -96,14 +104,13 @@ jobs:
           project_id: ${{ vars.NEON_PROJECT_ID }}
           branch_name: preview/pr-${{ github.event.number }}
           api_key: ${{ secrets.NEON_API_KEY }}
+    permissions:
+      contents: read
 
   # Job 2: Деплой бэкенда на Koyeb
   deploy_backend_preview:
     runs-on: ubuntu-latest
     needs: manage_database_branch
-    if: github.event.action != 'closed'
-    outputs:
-      backend_url: ${{ steps.koyeb-deploy.outputs.app_url }}
 
     steps:
       - name: 📥 Checkout Repository
