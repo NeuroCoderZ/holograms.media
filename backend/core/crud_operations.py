@@ -137,34 +137,9 @@ async def get_chunk_by_id(db: asyncpg.Connection, chunk_id: UUID) -> Optional[No
     return None # Functionality needs to be re-evaluated or removed.
 
 
-# --- Функция для получения жестов пользователя (из ветки main / PR #56) ---
-async def get_gestures_by_user_id(db: asyncpg.Connection, user_id: str) -> List[UserGestureModel]:
-    """
-    Retrieves all gestures for a given user_id from the user_gestures table.
-    """
-    sql = """
-        SELECT gesture_id, user_id, gesture_name, created_at, thumbnail_url
-        FROM user_gestures
-        WHERE user_id = $1
-        ORDER BY created_at DESC;
-    """
-    logger.info(f"Attempting to retrieve gestures for user_id: {user_id}")
-    try:
-        rows = await db.fetch(sql, user_id)
-        gestures = []
-        if rows:
-            for row_dict in rows:
-                gestures.append(UserGestureModel(**dict(row_dict)))
-            logger.info(f"Found {len(gestures)} gestures for user_id: {user_id}")
-        else:
-            logger.info(f"No gestures found for user_id: {user_id}")
-        return gestures
-    except asyncpg.PostgresError as e:
-        logger.exception(f"Database error while fetching gestures for user_id {user_id}: {e}")
-        raise
-    except Exception as e:
-        logger.exception(f"An unexpected error occurred while fetching gestures for user_id {user_id}: {e}")
-        raise
+# --- Функция для получения жестов пользователя (get_gestures_by_user_id) была здесь ---
+# --- Она удалена, так как ее функциональность покрывается GestureRepository ---
+# --- и использовала неконсистентную модель UserGestureModel для таблицы user_gestures.---
 
 # --- Функция для получения голограмм пользователя (из ветки feature/backend-my-holograms-jules / PR #57) ---
 # Эта функция была удалена, так как ее логика перенесена в HologramRepository.
