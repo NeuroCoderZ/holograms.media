@@ -39,6 +39,7 @@ from backend.routers.holograms import router as legacy_user_holograms_router
 from backend.routers.interaction_chunks import router as legacy_interaction_chunks_router
 from backend.routers.prompts import router as legacy_prompts_router
 # from backend.routers.tria import router as legacy_tria_router
+from backend.routers import gestures_ws # <-- НОВЫЙ ИМПОРТ
 
 API_V1_PREFIX = "/api/v1"
 
@@ -56,6 +57,13 @@ app.include_router(legacy_user_holograms_router, prefix=API_V1_PREFIX, tags=["Cu
 app.include_router(legacy_interaction_chunks_router, prefix=f"{API_V1_PREFIX}/chunks", tags=["Interaction Chunks (Legacy)"])
 app.include_router(legacy_prompts_router, prefix=f"{API_V1_PREFIX}/prompts", tags=["Prompts (Legacy)"])
 # app.include_router(legacy_tria_router, prefix=f"{API_V1_PREFIX}/tria-system", tags=["Tria System (Legacy)"])
+
+# Подключаем новый WebSocket роутер
+# Обычно WebSocket роутеры не имеют префикса, так как путь определяется в самом роутере.
+# Если WebSocket эндпоинт в gestures_ws.router определен как "/ws/v1/gesture-intent",
+# то он будет доступен по этому пути относительно корня приложения.
+app.include_router(gestures_ws.router)
+
 
 @app.get("/", tags=["Root"])
 async def read_root():

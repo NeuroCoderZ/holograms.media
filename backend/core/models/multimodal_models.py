@@ -1,12 +1,12 @@
 from pydantic import Field, BaseModel
-from typing import Optional, Dict, Any, List # Added List
+from typing import Optional, Dict, Any, List
 from uuid import UUID
 from datetime import datetime
-import uuid # Imported for backend/models content
+import uuid
 
-from .base_models import BaseUUIDModel # Assuming BaseUUIDModel provides id, created_at, updated_at
+from .base_models import BaseUUIDModel
 
-class AudiovisualGesturalChunkModel(BaseUUIDModel): # Inherits id, created_at, updated_at
+class AudiovisualGesturalChunkModel(BaseUUIDModel):
     user_id: str = Field(..., description="Firebase UID of the user who uploaded/owns this chunk.")
     chunk_type: str = Field(..., description="Type of the chunk (e.g., 'audio', 'video', 'audiovisual', 'gesture_only').")
     storage_ref: str = Field(..., description="Reference to the chunk's location in Firebase Storage (e.g., gs://bucket_name/path/to/file).")
@@ -45,7 +45,7 @@ class AudiovisualGesturalChunkModel(BaseUUIDModel): # Inherits id, created_at, u
             ]
         }
 
-class UserGestureModel(BaseModel): # Kept as is from original core file
+class UserGestureModel(BaseModel):
     gesture_id: int = Field(..., description="Primary key for the gesture.")
     user_id: str = Field(..., description="Firebase UID of the user who owns this gesture.")
     gesture_name: str = Field(..., description="Name of the gesture.")
@@ -65,44 +65,6 @@ class UserGestureModel(BaseModel): # Kept as is from original core file
                 }
             ]
         }
-
-# --- Content appended from backend/models/multimodal_models.py ---
-
-class InteractionChunkBase(BaseModel):
-    session_id: Optional[str] = Field(None, max_length=255, description="Identifier for a user session")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Timestamp of the interaction")
-
-    audio_file_id: Optional[int] = None
-    video_file_id: Optional[int] = None
-
-    hand_landmarks: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Raw hand landmark data")
-    gesture_classification_client: Optional[str] = Field(None, description="Client-side initial gesture classification")
-    gesture_confidence_client: Optional[float] = Field(None, ge=0.0, le=1.0, description="Client-side confidence for the classification")
-    speech_transcription_client: Optional[str] = Field(None, description="Client-side speech transcription")
-    environment_context: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Contextual information about the user's environment")
-
-    user_feedback_rating: Optional[int] = Field(None, ge=1, le=5, description="User rating for Tria's response (e.g., 1-5 stars)")
-    user_feedback_text: Optional[str] = Field(None, description="User textual feedback")
-    user_flagged_issue: Optional[bool] = Field(default=False, description="Whether the user flagged an issue")
-
-    tria_processed_flag: Optional[bool] = Field(default=False, description="Whether Tria has fully processed this chunk")
-    processing_tags: Optional[List[str]] = Field(default_factory=list, description="Tags added during processing by Tria")
-    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Other miscellaneous metadata")
-    raw_data_blob: Optional[Dict[str, Any]] = Field(default_factory=dict, description="For any other raw data associated with the chunk")
-
-class InteractionChunkCreate(InteractionChunkBase):
-    user_id: str
-
-class InteractionChunkDB(InteractionChunkBase):
-    id: int
-    user_id: str
-    chunk_embedding: Optional[List[float]] = None
-
-    class Config:
-        orm_mode = True
-
-class InteractionChunkPublic(InteractionChunkDB):
-    pass
 
 class MediaFileBase(BaseModel):
     file_name: str = Field(..., max_length=255)

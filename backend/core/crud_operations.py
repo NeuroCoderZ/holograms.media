@@ -167,51 +167,6 @@ async def get_gestures_by_user_id(db: asyncpg.Connection, user_id: str) -> List[
         raise
 
 # --- Функция для получения голограмм пользователя (из ветки feature/backend-my-holograms-jules / PR #57) ---
-async def get_holograms_by_user_id(db: asyncpg.Connection, user_id: str) -> List[UserHologramResponseModel]:
-    """
-    Retrieves all holograms associated with a specific user_id from the user_holograms table.
-    """
-    # В схеме user_holograms поля: hologram_id (PK, UUID), user_id (TEXT), hologram_name (TEXT), definition_json (JSONB), created_at, updated_at
-    # UserHologramResponseModel ожидает: hologram_id (int), hologram_name (str), created_at (datetime), preview_url (Optional[str])
-    # Из-за несоответствия типа hologram_id (UUID в БД, int в модели ответа), SQL-запрос и маппинг нужно скорректировать,
-    # Либо модель UserHologramResponseModel должна ожидать UUID.
-    # Пока оставляем как было в ветке Jules, но это потенциальная проблема.
-    # Также, `user_holograms.id` не существует, есть `hologram_id`.
-    sql = """
-        SELECT hologram_id, hologram_name, created_at 
-        FROM user_holograms 
-        WHERE user_id = $1
-        ORDER BY created_at DESC;
-    """
-    logger.info(f"Fetching holograms for user_id: {user_id}")
-    try:
-        rows = await db.fetch(sql, user_id)
-        holograms = []
-        if rows:
-            for row_dict in rows:
-                # Преобразуем UUID hologram_id в int для UserHologramResponseModel - ЭТО НЕКОРРЕКТНО!
-                # Правильнее было бы, чтобы UserHologramResponseModel принимала UUID или str.
-                # Или если hologram_id в таблице user_holograms действительно SERIAL (int), то все ок.
-                # Судя по schema.sql, user_holograms.hologram_id UUID PRIMARY KEY DEFAULT gen_random_uuid()
-                # Значит, UserHologramResponseModel.hologram_id должна быть UUID или str.
-                # Пока оставляем как есть, предполагая, что модель ответа будет исправлена,
-                # или что в таблице user_holograms id - это SERIAL int, а не UUID.
-                # В отчете Jules модель UserHologramResponseModel имела hologram_id: int.
-                holograms.append(
-                    UserHologramResponseModel(
-                        hologram_id=row_dict['hologram_id'], # Если в БД UUID, а модель ждет int, будет ошибка
-                        hologram_name=row_dict['hologram_name'],
-                        created_at=row_dict['created_at'],
-                        preview_url=None 
-                    )
-                )
-            logger.info(f"Found {len(holograms)} holograms for user_id: {user_id}")
-        else:
-            logger.info(f"No holograms found for user_id: {user_id}")
-        return holograms
-    except asyncpg.PostgresError as e:
-        logger.exception(f"Database error while fetching holograms for user_id {user_id}: {e}")
-        raise
-    except Exception as e:
-        logger.exception(f"An unexpected error occurred while fetching holograms for user_id {user_id}: {e}")
-        raise
+# Эта функция была удалена, так как ее логика перенесена в HologramRepository.
+# async def get_holograms_by_user_id(db: asyncpg.Connection, user_id: str) -> List[UserHologramResponseModel]:
+#    ... (код функции)

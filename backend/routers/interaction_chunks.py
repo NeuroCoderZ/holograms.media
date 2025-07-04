@@ -10,8 +10,7 @@ from backend.core.models.user_models import UserInDB
 from backend.auth import security 
 
 router = APIRouter(
-    prefix="/api/v1/interaction_chunks",
-    tags=["Interaction Chunks"],
+    tags=["Interaction Chunks (Legacy)"],
 )
 
 @router.post("/submit", response_model=InteractionChunkDB, status_code=status.HTTP_201_CREATED)
