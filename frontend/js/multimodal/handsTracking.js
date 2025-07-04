@@ -156,17 +156,54 @@ function onResults(results) {
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const handLandmarks = results.multiHandLandmarks[0];
 
-        // --- ✅ НОВАЯ ЛОГИКА: Классификация и вывод намерения ---
-        if (state.gestureIntentClassifier) {
+        // --- ✅ НОВАЯ ЛОГИКА: Классификация, формирование deltaVector и применение к WebAudioEngine ---
+        if (state.gestureIntentClassifier && state.webAudioEngine && state.webAudioEngine.isInitialized) {
             state.gestureIntentClassifier.predict(handLandmarks).then(intent => {
                 if (intent) {
-                    // ✅ ЗАМЕНЯЕМ console.log НА ОТПРАВКУ ДАННЫХ
-                    console.log(`[Gesture Intent Pipeline] Отправка намерения: %c${intent}`, 'color: lightblue; font-weight: bold;');
-                    webSocketService.sendIntent(intent, { currentView: 'hologram_1' }); // Отправляем намерение и пример контекста
+                    console.log(`[Gesture Intent Pipeline] Распознано намерение: %c${intent}`, 'color: lightblue; font-weight: bold;');
+
+                    let deltaVector = { gain: 0, pan: 0 }; // Default no change
+
+                    // Примерная логика для формирования deltaVector на основе намерения
+                    // Эту логику нужно будет расширить и уточнить
+                    switch (intent.action) {
+                        case 'increase_volume': // Предположим, 'increase_volume' - это одно из возможных действий
+                            deltaVector.gain = 0.1;
+                            break;
+                        case 'decrease_volume':
+                            deltaVector.gain = -0.1;
+                            break;
+                        case 'pan_left':
+                            deltaVector.pan = -0.2;
+                            break;
+                        case 'pan_right':
+                            deltaVector.pan = 0.2;
+                            break;
+                        // TODO: Добавить больше кейсов для других интентов (navigate, scale и т.д.)
+                        // и соответствующим образом изменять gain, pan или другие параметры.
+                        // Например, 'scale_up' может увеличивать громкость, 'navigate_left' панорамировать влево.
+                        default:
+                            // console.log(`Намерение "${intent.action}" не имеет сопоставленного аудиоэффекта.`);
+                            break;
+                    }
+
+                    if (deltaVector.gain !== 0 || deltaVector.pan !== 0) {
+                        console.log(`[Gesture Audio Control] Применение deltaVector:`, deltaVector);
+                        state.webAudioEngine.applyDelta(deltaVector);
+                    }
+
+                    // Отправка намерения по WebSocket, если это все еще необходимо
+                    // webSocketService.sendIntent(intent, { currentView: 'hologram_1' });
                 }
+            }).catch(error => {
+                console.error("Ошибка при предсказании намерения жеста:", error);
             });
+        } else {
+            if (!state.gestureIntentClassifier) console.warn("GestureIntentClassifier не инициализирован.");
+            if (!state.webAudioEngine) console.warn("WebAudioEngine не инициализирован.");
+            else if (!state.webAudioEngine.isInitialized) console.warn("WebAudioEngine не инициализирован (isInitialized false).");
         }
-        // --- ❌ СТАРАЯ ЛОГИКА ЗАКОММЕНТИРОВАНА ---
+        // --- ❌ СТАРАЯ ЛОГИКА С WebSocketService (если заменяется полностью) ЗАКОММЕНТИРОВАНА ---
         /*
         if (state.atomicGestureClassifier && state.gestureSequencer) {
             const atomicGesture = state.atomicGestureClassifier.classify(handLandmarks);
