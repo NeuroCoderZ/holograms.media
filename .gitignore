@@ -1,23 +1,26 @@
-# Genkit временные файлы
-.genkit/
-*/.genkit/
+# Файл: .gitignore
 
-# Большие файлы базы данных
-__db_*.json
-chunks_cache_2025.json
-indexing_progress_*.json
-
-# Логи
-*.log
-
-# Node modules
+# Зависимости и артефакты сборки
 node_modules/
-**/node_modules/
+tria-genkit-core/node_modules/
+dist/
+lib/
+build/
 
-# Environment files
+# Локальные переменные окружения
 .env
-.env.local
+*.env
+.env.*
 
-# Временные файлы VS Code
-.vscode/settings.json
-chunks_cache.json
+# Кэши и временные файлы
+.firebase/
+tria-genkit-core/chunks_cache*.json
+tria-genkit-core/indexing_progress*.json
+tria-genkit-core/__db_*.json
+tria-genkit-core/package.json.backup
+
+# Игнорируем всю базу знаний, она не должна быть в репозитории
+GoogleAIStudio/
+
+# Системные файлы
+.DS_Store
