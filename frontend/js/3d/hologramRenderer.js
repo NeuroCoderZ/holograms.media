@@ -7,6 +7,7 @@ import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 // import { MeshBasicNodeMaterial } from 'three/addons/nodes/Nodes.js'; // This was commented out, keeping it so
 import { semitones, GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE } from '../config/hologramConfig.js';
+import eventBus from '../core/eventBus.js'; // Added for WebAudioEngine integration
 
 // Direct imports are used, so these lines are not necessary.
 
@@ -21,6 +22,7 @@ export class HologramRenderer {
    */
   constructor(scene) {
     this.scene = scene;
+    this.eventBus = eventBus;
 
     // hologramPivot is the main group that holds all hologram elements.
     // It allows for easy positioning, rotation, and scaling of the entire hologram.
@@ -49,6 +51,19 @@ export class HologramRenderer {
 
     // Add the main hologram pivot to the Three.js scene.
     this.scene.add(this.hologramPivot);
+
+    // Subscribe to CWT results from WebAudioEngine
+    this.eventBus.on('cwtResult', this.handleCwtResult.bind(this));
+  }
+
+  handleCwtResult(data) {
+    if (data && data.dbLevels && data.panAngles) {
+        this.updateVisuals(data.dbLevels, data.panAngles);
+    } else {
+        // console.warn("HologramRenderer: Received incomplete CWT data", data);
+        // Optionally, reset visuals if data is malformed or indicates silence/error
+        this.updateVisuals(null, null); // Call with null to trigger reset logic
+    }
   }
 
   // --- Private Helper Methods for 3D Object Creation ---
@@ -312,12 +327,13 @@ export class HologramRenderer {
    * Updates the visual appearance of the columns based on real-time audio data.
    * Each column's Z-scale (depth) and front-face brightness (emissiveIntensity) are adjusted.
    * Their X-position is also adjusted based on pan angles.
-   * @param {Float32Array} dbLevels - Array of 260 decibel values (130 for left, 130 for right).
-   * @param {Float32Array} panAngles - Array of 130 pan angles in degrees (-90 to +90).
+   * @param {Float32Array | null} dbLevels - Array of 260 decibel values (130 for left, 130 for right), or null to reset.
+   * @param {Float32Array | null} panAngles - Array of 130 pan angles in degrees (-90 to +90), or null to reset.
    */
   updateVisuals(dbLevels, panAngles) {
+    // If dbLevels or panAngles are explicitly null (or undefined), or lengths don't match, reset visuals.
     if (!dbLevels || !panAngles || dbLevels.length !== 260 || panAngles.length !== 130) {
-        // Optionally, reset all columns to a default silent/centered state
+        // console.log("HologramRenderer: Resetting visuals due to invalid or null data.");
         this.columns.forEach((columnPair) => {
             const channels = [
                 { meshGroup: columnPair.left, isLeft: true },
