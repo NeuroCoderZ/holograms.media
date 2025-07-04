@@ -252,18 +252,35 @@ CREATE INDEX IF NOT EXISTS idx_azr_task_solutions_task_id ON tria_azr_task_solut
 COMMENT ON TABLE tria_azr_task_solutions IS 'Stores solutions or outcomes for AZR tasks.';
 
 -- Table: tria_learning_log
--- Logs significant learning events, model updates, or evolutionary changes in Tria.
+-- Logs interactions for training LearningBot and other analytical purposes.
+-- Эта таблица была обновлена для соответствия модели TriaLearningLogDB.
+DROP TABLE IF EXISTS tria_learning_log CASCADE; -- Удаляем старую версию, если существует, для чистого создания
 CREATE TABLE tria_learning_log (
-    log_id SERIAL PRIMARY KEY,
-    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    event_type TEXT NOT NULL, -- Type of learning event (e.g., 'model_update', 'new_pattern_discovered')
-    bot_affected_id TEXT, -- ID of the bot affected or involved
-    summary_text TEXT NOT NULL, -- Summary of the learning event
-    details_json JSONB -- Detailed information about the event
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Используем uuid_generate_v4() если gen_random_uuid() недоступен
+    user_id VARCHAR(255) NOT NULL, -- Firebase UID
+    session_id VARCHAR(255),
+    intent_vector JSONB NOT NULL, -- Содержит type, intensity, target_context
+    context_embedding_id UUID REFERENCES holograms_media_embeddings(id) ON DELETE SET NULL, -- Ссылка на эмбеддинг, к которому применялся интент
+    action_result VARCHAR(50) NOT NULL, -- 'success', 'ignored', 'error'
+    result_message TEXT, -- Сообщение, возвращенное пользователю или детали ошибки/игнорирования
+    modified_embedding_id UUID, -- ID эмбеддинга, если он был изменен (может совпадать с context_embedding_id)
+    feedback_signal SMALLINT, -- Будущая оценка от пользователя (-1, 0, 1)
+    additional_metadata JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    -- Старые поля из предыдущей версии таблицы tria_learning_log (можно удалить после миграции данных, если они были)
+    legacy_timestamp TIMESTAMPTZ,
+    legacy_event_type TEXT,
+    legacy_bot_affected_id TEXT,
+    legacy_summary_text TEXT,
+    legacy_details_json JSONB
 );
-CREATE INDEX IF NOT EXISTS idx_tria_learning_log_timestamp ON tria_learning_log(timestamp DESC);
-CREATE INDEX IF NOT EXISTS idx_tria_learning_log_event_type ON tria_learning_log(event_type);
-COMMENT ON TABLE tria_learning_log IS 'Logs significant learning events or evolutionary changes in Tria.';
+CREATE INDEX IF NOT EXISTS idx_tria_learning_log_user_id ON tria_learning_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_tria_learning_log_session_id ON tria_learning_log(session_id);
+CREATE INDEX IF NOT EXISTS idx_tria_learning_log_action_result ON tria_learning_log(action_result);
+CREATE INDEX IF NOT EXISTS idx_tria_learning_log_created_at ON tria_learning_log(created_at DESC);
+COMMENT ON TABLE tria_learning_log IS 'Logs interactions and their outcomes for Tria''s learning and analysis.';
 
 -- Table: tria_bot_configurations
 -- Stores configurations for Tria's various bots, allowing for dynamic updates.

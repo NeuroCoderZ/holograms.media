@@ -2,20 +2,31 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Dict, Any, Optional
 import asyncpg
 
-from backend.core import crud_operations
+from backend.services.hologram_service import HologramService # <-- НОВЫЙ ИМПОРТ
 from backend.core.models import hologram_models, user_models
 from backend.auth import security
-from backend.core.db.pg_connector import get_db_connection
+from backend.core.db.pg_connector import get_db_connection # <-- ИМПОРТ КОННЕКТОРА
 from pydantic import Field
 
 router = APIRouter(
     prefix="/users/me/holograms",
-    tags=["User Holograms"],
+    # Тег был "User Holograms", но в app.py для legacy_user_holograms_router "Current User Holograms (Legacy)"
+    tags=["Current User Holograms (Legacy)"],
 )
 
+# Модель HologramUpdate используется для PUT запроса.
+# Оставляем ее здесь, как было.
 class HologramUpdate(hologram_models.UserHologramBase):
     hologram_name: Optional[str] = Field(None, min_length=1, max_length=100)
     hologram_state_data: Optional[Dict[str, Any]] = None
+
+    # Для соответствия оригиналу оставим конструктор, хотя dict(exclude_unset=True) предпочтительнее
+    # def __init__(self, **data: Any):
+    #     super().__init__(**{k: v for k, v in data.items() if v is not None})
+    # Примечание: Pydantic v2 модели по умолчанию не включают None значения при .dict(),
+    # если не указано обратное, так что специальный конструктор может быть не нужен.
+    # Для HologramUpdate.dict(exclude_unset=True) это поведение контролируется exclude_unset.
+
 
 @router.post("/", response_model=hologram_models.UserHologramDB, status_code=status.HTTP_201_CREATED)
 async def create_new_user_hologram(
@@ -23,10 +34,11 @@ async def create_new_user_hologram(
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
+    hologram_service = HologramService(db_conn)
     try:
         print(f"[HOLOGRAM ROUTER INFO] User {current_user.firebase_uid} creating hologram: {hologram_in.hologram_name}")
-        created_hologram = await crud_operations.create_user_hologram(
-            conn=db_conn, user_id=current_user.firebase_uid, hologram_in=hologram_in
+        created_hologram = await hologram_service.create_new_user_hologram(
+            user_id=current_user.firebase_uid, hologram_in=hologram_in
         )
         if not created_hologram:
             print(f"[HOLOGRAM ROUTER WARN] Hologram creation failed for user {current_user.firebase_uid}, name: {hologram_in.hologram_name}. May be a duplicate.")
@@ -37,7 +49,7 @@ async def create_new_user_hologram(
         raise
     except Exception as e:
         print(f"[HOLOGRAM ROUTER ERROR] Error creating user hologram for {current_user.firebase_uid}, name {hologram_in.hologram_name}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error creating hologram.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error creating hologram: {str(e)}")
 
 @router.get("/", response_model=List[hologram_models.UserHologramDB])
 async def list_user_holograms(
@@ -46,9 +58,10 @@ async def list_user_holograms(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200)
 ):
+    hologram_service = HologramService(db_conn)
     print(f"[HOLOGRAM ROUTER INFO] User {current_user.firebase_uid} listing holograms. Skip: {skip}, Limit: {limit}")
-    holograms = await crud_operations.get_user_holograms(
-        conn=db_conn, user_id=current_user.firebase_uid, skip=skip, limit=limit
+    holograms = await hologram_service.get_user_holograms(
+        user_id=current_user.firebase_uid, skip=skip, limit=limit
     )
     print(f"[HOLOGRAM ROUTER INFO] Found {len(holograms)} holograms for user {current_user.firebase_uid}.")
     return holograms
@@ -59,9 +72,10 @@ async def get_specific_user_hologram(
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
+    hologram_service = HologramService(db_conn)
     print(f"[HOLOGRAM ROUTER INFO] User {current_user.firebase_uid} fetching hologram ID: {hologram_id}")
-    hologram = await crud_operations.get_user_hologram_by_id(
-        conn=db_conn, hologram_id=hologram_id, user_id=current_user.firebase_uid
+    hologram = await hologram_service.get_specific_user_hologram(
+        hologram_id=hologram_id, user_id=current_user.firebase_uid
     )
     if not hologram:
         print(f"[HOLOGRAM ROUTER WARN] Hologram ID: {hologram_id} not found for user {current_user.firebase_uid}.")
@@ -76,14 +90,16 @@ async def update_existing_user_hologram(
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
-    print(f"[HOLOGRAM ROUTER INFO] User {current_user.firebase_uid} updating hologram ID: {hologram_id} with data: {hologram_update.dict(exclude_unset=True)}")
-    update_data = hologram_update.dict(exclude_unset=True)
+    hologram_service = HologramService(db_conn)
+    update_data = hologram_update.dict(exclude_unset=True) # exclude_unset=True важно
+
     if not update_data:
         print(f"[HOLOGRAM ROUTER WARN] No update data provided for hologram ID: {hologram_id} by user {current_user.firebase_uid}.")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided.")
 
-    updated_hologram = await crud_operations.update_user_hologram(
-        conn=db_conn, hologram_id=hologram_id, user_id=current_user.firebase_uid, hologram_update_data=update_data
+    print(f"[HOLOGRAM ROUTER INFO] User {current_user.firebase_uid} updating hologram ID: {hologram_id} with data: {update_data}")
+    updated_hologram = await hologram_service.update_existing_user_hologram(
+        hologram_id=hologram_id, user_id=current_user.firebase_uid, hologram_update_data=update_data
     )
     if not updated_hologram:
         print(f"[HOLOGRAM ROUTER WARN] Hologram ID: {hologram_id} not found or update failed for user {current_user.firebase_uid} (e.g., name conflict).")
@@ -97,12 +113,13 @@ async def delete_user_saved_hologram(
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
+    hologram_service = HologramService(db_conn)
     print(f"[HOLOGRAM ROUTER INFO] User {current_user.firebase_uid} deleting hologram ID: {hologram_id}")
-    deleted = await crud_operations.delete_user_hologram(
-        conn=db_conn, hologram_id=hologram_id, user_id=current_user.firebase_uid
+    deleted = await hologram_service.delete_user_saved_hologram(
+        hologram_id=hologram_id, user_id=current_user.firebase_uid
     )
     if not deleted:
         print(f"[HOLOGRAM ROUTER WARN] Hologram ID: {hologram_id} not found for deletion by user {current_user.firebase_uid}.")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Hologram not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Hologram not found or not owned by user.")
     print(f"[HOLOGRAM ROUTER INFO] Hologram ID: {hologram_id} deleted successfully for user {current_user.firebase_uid}.")
     return None

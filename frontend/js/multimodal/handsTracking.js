@@ -5,9 +5,11 @@ import { Camera } from '@mediapipe/camera_utils';
 import { state } from '../core/init.js';
 import eventBus from '../core/eventBus.js';
 import { updateHologramLayout } from '../ui/layoutManager.js';
-import { AtomicGestureClassifier } from '../gestures/AtomicGestureClassifier.js';
-import { GestureSequencer } from '../gestures/GestureSequencer.js';
-import { GESTURE_SEQUENCES } from '../config/gestureSequences.js';
+// import { AtomicGestureClassifier } from '../gestures/AtomicGestureClassifier.js'; // Старый классификатор
+// import { GestureSequencer } from '../gestures/GestureSequencer.js'; // Старый секвенсор
+// import { GESTURE_SEQUENCES } from '../config/gestureSequences.js'; // Старые конфигурации последовательностей
+import { GestureIntentClassifier } from '../ai/gestureIntentClassifier.js';
+import { webSocketService } from '../services/websocketService.js'; // <-- НОВЫЙ ИМПОРТ
 
 // --- Constants ---
 const HAND_CONNECTIONS = [ 
@@ -97,8 +99,6 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
     }
 }
 
-// ... (остальной код onResults и других функций без изменений) ...
-
 // Function to initialize MediaPipe Hands
 export function initializeMediaPipeHands() {
     console.log("Инициализация MediaPipe Hands...");
@@ -113,12 +113,88 @@ export function initializeMediaPipeHands() {
         locateFile: (file) => {
             return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
         },
-        // Pass the existing WebGL context from Three.js to MediaPipe
-        // This assumes state.renderer is a THREE.WebGLRenderer and has been initialized
         gl: state.renderer ? state.renderer.getContext() : undefined
     });
 
-    // ... (остальная часть функции без изменений) ...
+    state.multimodal.handsInstance.setOptions({
+        selfieMode: true,
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.7,
+    });
+
+    state.multimodal.handsInstance.onResults(onResults);
+
+    // Инициализация нового классификатора намерения
+    state.gestureIntentClassifier = new GestureIntentClassifier();
+    console.log("Экземпляр GestureIntentClassifier создан и сохранен в state.");
+
+    // Закомментируем инициализацию старых классификаторов, если они больше не нужны
+    // state.atomicGestureClassifier = new AtomicGestureClassifier();
+    // state.gestureSequencer = new GestureSequencer(GESTURE_SEQUENCES);
+    // console.log("Старые AtomicGestureClassifier и GestureSequencer инициализированы (на всякий случай).");
+
+
+    console.log("MediaPipe Hands инициализирован, onResults настроен.");
+}
+
+
+function onResults(results) {
+    if (!state.multimodal.gestureCanvasCtx || !state.multimodal.gestureCanvas) {
+        // console.warn("Canvas context or canvas not ready for drawing hand landmarks.");
+        return;
+    }
+
+    const canvasCtx = state.multimodal.gestureCanvasCtx;
+    const canvasElement = state.multimodal.gestureCanvas;
+    canvasCtx.save();
+    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+    state.multimodal.lastHandData = results.multiHandLandmarks;
+
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const handLandmarks = results.multiHandLandmarks[0];
+
+        // --- ✅ НОВАЯ ЛОГИКА: Классификация и вывод намерения ---
+        if (state.gestureIntentClassifier) {
+            state.gestureIntentClassifier.predict(handLandmarks).then(intent => {
+                if (intent) {
+                    // ✅ ЗАМЕНЯЕМ console.log НА ОТПРАВКУ ДАННЫХ
+                    console.log(`[Gesture Intent Pipeline] Отправка намерения: %c${intent}`, 'color: lightblue; font-weight: bold;');
+                    webSocketService.sendIntent(intent, { currentView: 'hologram_1' }); // Отправляем намерение и пример контекста
+                }
+            });
+        }
+        // --- ❌ СТАРАЯ ЛОГИКА ЗАКОММЕНТИРОВАНА ---
+        /*
+        if (state.atomicGestureClassifier && state.gestureSequencer) {
+            const atomicGesture = state.atomicGestureClassifier.classify(handLandmarks);
+            state.gestureSequencer.emitGesture(atomicGesture);
+        }
+        */
+
+        // Оставим рисование для отладки, если необходимо
+        // for (const landmarks of results.multiHandLandmarks) {
+        //     drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+        //     drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', lineWidth: 1, radius: 3 });
+        // }
+
+        if (!state.multimodal.handsVisible) {
+            state.multimodal.handsVisible = true;
+            // eventBus.emit('handsVisibilityChanged', true); // Пока не используем eventBus для этого
+        }
+    } else {
+        if (state.multimodal.handsVisible) {
+            state.multimodal.handsVisible = false;
+            // eventBus.emit('handsVisibilityChanged', false); // Пока не используем eventBus для этого
+        }
+        // Если руки не видны, старая логика отправляла null в секвенсор
+        // if (state.gestureSequencer) { // Старая логика
+        //    state.gestureSequencer.emitGesture(null);
+        // }
+    }
+    canvasCtx.restore();
 }
 
 // Function to stop the video stream
