@@ -85,10 +85,17 @@ class SceneElementUpdate(BaseModel):
     # Add other updatable fields
 
 class UserHologramResponseModel(BaseModel):
-    hologram_id: UUID # Corrected type to UUID
+    id: int # Changed from hologram_id: UUID to id: int
     hologram_name: str
     created_at: datetime
     preview_url: Optional[str] = Field(default=None, description="URL for the hologram preview image")
 
     class Config:
         from_attributes = True # If ORM objects are used
+
+class HologramUpdate(UserHologramBase):
+    """
+    Model for updating an existing user hologram. All fields are optional.
+    """
+    hologram_name: Optional[str] = Field(None, min_length=1, max_length=255) # Re-declare to make Optional
+    hologram_state_data: Optional[Dict[str, Any]] = Field(None) # Re-declare to make Optional

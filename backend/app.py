@@ -31,31 +31,42 @@ from backend.api.v1.endpoints.tria_commands import router as tria_commands_route
 from backend.api.v1.endpoints.chunks import router as chunks_router
 
 # from backend.routers.auth import router as legacy_auth_router
-from backend.routers.chat import router as public_chat_router
+from backend.routers.chat import router as user_chat_router # Renamed for clarity, points to the new chat router
 # from backend.routers.chat import router as legacy_chat_router # This was the old one
-from backend.routers.chat_sessions import router as legacy_chat_sessions_router
-from backend.routers.gestures import router as legacy_user_me_gestures_router
-from backend.routers.holograms import router as legacy_user_holograms_router
+from backend.routers.chat_sessions import router as legacy_chat_sessions_router # This might be redundant now
+from backend.routers.gestures import router as user_gestures_router # Renamed for clarity
+from backend.routers.holograms import router as user_holograms_router # Renamed for clarity
 from backend.routers.interaction_chunks import router as legacy_interaction_chunks_router
-from backend.routers.prompts import router as legacy_prompts_router
+from backend.routers.prompts import router as user_prompts_router # Renamed for clarity
 # from backend.routers.tria import router as legacy_tria_router
 from backend.routers import gestures_ws # <-- НОВЫЙ ИМПОРТ
 
 API_V1_PREFIX = "/api/v1"
 
+# These seem to be different routers from backend.api.v1.endpoints, keeping them as is.
 app.include_router(public_gestures_router, prefix=API_V1_PREFIX, tags=["Gestures (User Specific)"])
 app.include_router(public_holograms_router, prefix=API_V1_PREFIX, tags=["Holograms (User Specific)"])
 app.include_router(tria_commands_router, prefix=f"{API_V1_PREFIX}/tria-commands", tags=["Tria Commands"])
 app.include_router(chunks_router, prefix=API_V1_PREFIX, tags=["Chunks"])
 
-# app.include_router(legacy_auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["Authentication (Legacy)"])
-app.include_router(public_chat_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat"])
-# app.include_router(legacy_chat_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat (Legacy)"]) # This was the old one
+
+# Updated Routers for user-specific CRUD operations
+# The user_chat_router (formerly public_chat_router) handles /sessions and /sessions/{session_id}/messages
+app.include_router(user_chat_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat Sessions"])
+
+# The legacy_chat_sessions_router might be redundant if user_chat_router covers its functionality.
+# For now, keeping it to see if it serves a different purpose or needs removal later.
 app.include_router(legacy_chat_sessions_router, prefix=f"{API_V1_PREFIX}/chat-sessions", tags=["Chat Sessions (Legacy)"])
-app.include_router(legacy_user_me_gestures_router, prefix=API_V1_PREFIX, tags=["Current User Gestures (Legacy)"])
-app.include_router(legacy_user_holograms_router, prefix=API_V1_PREFIX, tags=["Current User Holograms (Legacy)"])
+
+app.include_router(user_gestures_router, prefix=f"{API_V1_PREFIX}/users/me/gestures", tags=["Current User Gestures"]) # Prefix added here
+app.include_router(user_holograms_router, prefix=f"{API_V1_PREFIX}/users/me/holograms", tags=["Current User Holograms"]) # Prefix added here
+app.include_router(user_prompts_router, prefix=f"{API_V1_PREFIX}/users/me/prompts", tags=["Current User Prompts"]) # New router added
+
+# Legacy routers - review if these are still needed or if functionality is covered by new routers
 app.include_router(legacy_interaction_chunks_router, prefix=f"{API_V1_PREFIX}/chunks", tags=["Interaction Chunks (Legacy)"])
-app.include_router(legacy_prompts_router, prefix=f"{API_V1_PREFIX}/prompts", tags=["Prompts (Legacy)"])
+# app.include_router(legacy_prompts_router, prefix=f"{API_V1_PREFIX}/prompts", tags=["Prompts (Legacy)"]) # This might be replaced by user_prompts_router
+
+# app.include_router(legacy_auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["Authentication (Legacy)"])
 # app.include_router(legacy_tria_router, prefix=f"{API_V1_PREFIX}/tria-system", tags=["Tria System (Legacy)"])
 
 # Подключаем новый WebSocket роутер
