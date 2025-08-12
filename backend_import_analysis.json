@@ -1,0 +1,58 @@
+{
+  "backend/api/v1/endpoints/chunks.py": {
+    "external": [
+      "fastapi",
+      "logging",
+      "os",
+      "uuid"
+    ],
+    "internal": [
+      "backend/app.py",
+      "backend/core/tria_bots/ChunkProcessorBot.py"
+    ],
+    "errors": []
+  },
+  "backend/app.py": {
+    "external": [
+      "fastapi",
+      "typing",
+      "firebase_admin",
+      "os",
+      "logging",
+      "boto3",
+      "base64",
+      "json"
+    ],
+    "internal": [
+      "backend/api/v1/endpoints/gesture_routes.py",
+      "backend/api/v1/endpoints/public_holograms.py",
+      "backend/api/v1/endpoints/tria_commands.py",
+      "backend/api/v1/endpoints/chunks.py",
+      "backend/routers/auth.py",
+      "backend/routers/chat.py",
+      "backend/routers/chat_sessions.py",
+      "backend/routers/gestures.py",
+      "backend/routers/holograms.py",
+      "backend/routers/interaction_chunks.py",
+      "backend/routers/prompts.py",
+      "backend/routers/tria.py"
+    ],
+    "errors": []
+  },
+  "backend/auth/security.py": {
+    "external": [
+      "os",
+      "typing",
+      "firebase_admin",
+      "fastapi",
+      "fastapi.security",
+      "asyncpg"
+    ],
+    "internal": [
+      "backend/models/user_models.py",
+      "backend/db/crud_operations.py",
+      "backend/db/pg_connector.py"
+    ],
+    "errors": []
+  }
+}

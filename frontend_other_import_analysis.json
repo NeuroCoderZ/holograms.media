@@ -1,0 +1,60 @@
+{
+  "tria-genkit-core/flows/process_chunk_flow.ts": {
+    "external": [
+      "@genkit-ai/flow",
+      "zod"
+    ],
+    "internal": [],
+    "errors": []
+  },
+  "tria-genkit-core/flows/generate_hologram_flow.ts": {
+    "external": [],
+    "internal": [],
+    "errors": []
+  },
+  "tria-genkit-core/flows/tria_learning_flow.ts": {
+    "external": [],
+    "internal": [],
+    "errors": []
+  },
+  "tria-genkit-core/tools/llm_tools.ts": {
+    "external": [],
+    "internal": [],
+    "errors": []
+  },
+  "tria-genkit-core/tools/external_api_tools.ts": {
+    "external": [],
+    "internal": [],
+    "errors": []
+  },
+  "tria-genkit-core/tools/db_tools.ts": {
+    "external": [],
+    "internal": [],
+    "errors": []
+  },
+  "tria-genkit-core/src/index.ts": {
+    "external": [
+      "@genkit-ai/core",
+      "@genkit-ai/firebase"
+    ],
+    "internal": [
+      "tria-genkit-core/src/flows/process_chunk_flow.ts"
+    ],
+    "errors": [
+      "Internal import 'tria-genkit-core/src/flows/process_chunk_flow.ts' (from './flows/process_chunk_flow') not found in the initial file list. The actual file might be 'tria-genkit-core/flows/process_chunk_flow.ts', suggesting a possible baseUrl or path alias configuration not accounted for in simple relative path resolution."
+    ]
+  },
+  "tria-genkit-core/genkit.config.ts": {
+    "external": [
+      "@genkit-ai/core",
+      "@genkit-ai/google-cloud"
+    ],
+    "internal": [],
+    "errors": []
+  },
+  "nethologlyph/client/nethologlyph_client.js": {
+    "external": [],
+    "internal": [],
+    "errors": []
+  }
+}

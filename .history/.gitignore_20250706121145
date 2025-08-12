@@ -1,0 +1,4 @@
+
+# Genkit cache and temporary files
+tria-genkit-core/.genkit/
+/node_modules
