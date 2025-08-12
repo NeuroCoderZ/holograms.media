@@ -1,0 +1,105 @@
+/* Fade-in animation on page load */
+@keyframes fadeInEffect {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.u-fade-in-on-load {
+  /* opacity: 0; /* Initial state set by u-initially-hidden or directly if preferred */
+  /* transform: translateY(20px); /* Initial state for transform */
+  animation-name: fadeInEffect;
+  animation-duration: 1s;
+  animation-fill-mode: forwards;
+  animation-timing-function: ease-out;
+}
+
+@keyframes pulseHighlight {
+  0% {
+    box-shadow: 0 0 15px 5px rgba(255, 255, 0, 0.7);
+    /* Yellow */
+    outline: 2px solid rgba(255, 255, 0, 0.7);
+  }
+
+  50% {
+    box-shadow: 0 0 25px 10px rgba(255, 215, 0, 0.9);
+    /* Gold */
+    outline: 3px solid rgba(255, 215, 0, 0.9);
+  }
+
+  100% {
+    box-shadow: 0 0 15px 5px rgba(255, 255, 0, 0.7);
+    /* Yellow */
+    outline: 2px solid rgba(255, 255, 0, 0.7);
+  }
+}
+
+@keyframes dot-animation {
+
+  0%,
+  20% {
+    content: "   ";
+  }
+
+  40% {
+    content: ".  ";
+  }
+
+  60% {
+    content: ".. ";
+  }
+
+  80%,
+  100% {
+    content: "...";
+  }
+}
+
+#loading-spinner::after {
+  content: "";
+  animation: dot-animation 1.5s infinite;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--color-white-100);
+  font-family: 'Roboto', sans-serif;
+  display: inline-block;
+  letter-spacing: 3px;
+}
+
+@keyframes chat-dot-animation {
+
+  0%,
+  20% {
+    content: "   ";
+  }
+
+  40% {
+    content: ".  ";
+  }
+
+  60% {
+    content: ".. ";
+  }
+
+  80%,
+  100% {
+    content: "...";
+  }
+}
+
+#loadingIndicator::after {
+  content: "";
+  animation: chat-dot-animation 1.5s infinite;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--color-white-100);
+  font-family: 'Roboto', sans-serif;
+  display: inline-block;
+  letter-spacing: 3px;
+}

@@ -1,0 +1,35 @@
+/* frontend/combined_gesture_styles_block2_3.css */
+/* Styles for #gesture-area height animation (Block 2) */
+#gesture-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #333;
+    border-top: 1px solid #555;
+    box-sizing: border-box;
+    z-index: 100;
+    transition: height 0.3s ease-in-out;
+    height: 4px; /* Initial state */
+
+    /* For Block 3: ensure relative positioning for children and overflow hidden */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Styles for #gesture-red-line and .gesture-finger-dot (Block 3) */
+/* These are mostly set by GestureUIManager.js, but placeholders can be useful */
+/* div#gesture-red-line { ... } */
+/* .gesture-finger-dot { ... } */
+
+/* Styles for gesture recording feedback (Block 3) */
+#gesture-area.recording-active {
+    /* Example: subtle visual cue that recording is active */
+    outline: 2px solid yellow;
+    /* Or change background, border, etc. */
+}
+
+.gesture-finger-trail {
+    /* Styles are mostly set by JS (position, zIndex, pointerEvents) */
+    /* This class is applied to <canvas> elements for trails */
+}

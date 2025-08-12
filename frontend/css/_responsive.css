@@ -1,0 +1,505 @@
+/* ============================================= */
+/* ==       MOBILE-FIRST RESPONSIVE STYLES      == */
+/* ============================================= */
+
+/* Применяется к экранам шириной до 768px (смартфоны, планшеты в портретном режиме) */
+@media (max-width: 768px) {
+
+  /* --- СТИЛИ ПАНЕЛЕЙ --- */
+
+  /* 1. Позиционируем панели, задаем базовый вид и анимацию */
+  /* Using .panel.left-panel and .panel.right-panel for consistency */
+  .panel.left-panel,
+  .panel.right-panel {
+    /* Mobile: Panels start off-screen */
+    transform: translateX(-100%);
+    /* Left panel off-screen to the left */
+    opacity: 0;
+    /* Start hidden */
+    pointer-events: none;
+    /* Not interactive when hidden */
+    visibility: hidden;
+    /* Hidden from screen readers */
+    transition: transform 0.3s ease-in-out,
+      opacity 0.3s ease-in-out,
+      visibility 0s linear 0.3s; /* Delay visibility:hidden when hiding */
+  }
+
+  .panel.right-panel {
+    transform: translateX(100%);
+    /* Right panel off-screen to the right */
+  }
+
+  /* 2. Стили для видимых панелей на мобильных устройствах */
+  .panel.left-panel.visible {
+    transform: translateX(0);
+    /* Slide in from left */
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s; /* Show immediately */
+    width: 100%; /* Full width on mobile */
+    max-width: 100%; /* Ensure it takes full width */
+  }
+
+  .panel.right-panel.visible {
+    transform: translateX(0);
+    /* Slide in from right */
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s; /* Show immediately */
+    width: 66.66% !important; /* Changed to 2/3 width on mobile */
+    max-width: 66.66% !important; /* Ensure it takes 2/3 width */
+  }
+
+  /* 3. Стили для центральной области при открытых панелях */
+  body.left-panel-open .main-area,
+  body.right-panel-open .main-area {
+    display: none; /* Hide main area when a panel is open */
+  }
+
+  /* 4. Стили для кнопки переключения панелей на мобильных устройствах */
+  #togglePanelsButton {
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 1000;
+  }
+
+  /* 5. Стили для области жестов на мобильных устройствах */
+  #gesture-area {
+    height: 4px; /* Thin line by default */
+  }
+
+  #gesture-area.hands-detected {
+    height: 25vh; /* Expanded height */
+  }
+
+  /* 6. Стили для чата на мобильных устройствах */
+  #chatHistory {
+    min-height: 150px; /* Adjust as needed */
+  }
+
+  /* 7. Стили для полей ввода на мобильных устройствах */
+  #topPromptInput,
+  #chatInput {
+    min-height: 80px; /* Adjust as needed */
+  }
+
+  /* 8. Стили для модальных окон на мобильных устройствах */
+  .modal-content {
+    width: 95%; /* Wider on mobile */
+  }
+
+  /* 9. Стили для левой панели на мобильных устройствах */
+  .panel.left-panel {
+    width: 100%; /* Full width */
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  /* 10. Стили для правой панели на мобильных устройствах */
+  .panel.right-panel {
+    width: 100%; /* Full width */
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  /* 11. Стили для кнопок в левой панели на мобильных устройствах */
+  .left-panel-group.central-block {
+    grid-template-columns: 1fr; /* Single column layout */
+  }
+
+  .panel-button {
+    width: 100%; /* Full width */
+  }
+
+  /* 12. Стили для скроллбаров на мобильных устройствах */
+  #chatMessages::-webkit-scrollbar,
+  #chatInput::-webkit-scrollbar,
+  #versionTimeline::-webkit-scrollbar {
+    width: 0; /* Hide scrollbars */
+  }
+
+  #chatMessages,
+  #chatInput,
+  #versionTimeline {
+    scrollbar-width: none; /* Hide scrollbars for Firefox */
+  }
+
+  /* 13. Стили для текста на мобильных устройствах */
+  :root {
+    --font-size-base: clamp(14px, 2vmin, 18px);
+    --font-size-small: clamp(12px, 1.8vmin, 16px);
+    --font-size-large: clamp(16px, 2.2vmin, 20px);
+    --font-size-button: clamp(15px, 2vmin, 18px);
+    --font-size-code: clamp(13px, 1.8vmin, 16px);
+  }
+
+  /* 14. Стили для отступов на мобильных устройствах */
+  :root {
+    --spacing-xs: clamp(3px, 0.8vmin, 6px);
+    --spacing-sm: clamp(6px, 1.2vmin, 10px);
+    --spacing-md: clamp(10px, 1.5vmin, 15px);
+    --spacing-lg: clamp(15px, 2.2vmin, 20px);
+  }
+
+  /* 15. Стили для кнопок действий на мобильных устройствах */
+  :root {
+    --button-size: clamp(50px, 6vmin, 70px);
+    --icon-size: calc(var(--button-size) * 0.6);
+    --icon-button-size: clamp(32px, 4vmin, 40px);
+    --icon-size-small: clamp(20px, 2.5vmin, 25px);
+  }
+
+  /* 16. Стили для контейнеров на мобильных устройствах */
+  .content-container {
+    margin-bottom: 20px; /* More space */
+  }
+
+  .input-container {
+    margin-top: 20px; /* More space */
+  }
+
+  .controls-container {
+    height: 50px; /* Taller */
+  }
+
+  /* 17. Стили для модальных кнопок на мобильных устройствах */
+  .modal button {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-button);
+  }
+
+  /* 18. Стили для модального текста на мобильных устройствах */
+  .modal h2 {
+    font-size: var(--font-size-large);
+  }
+
+  .modal p {
+    font-size: var(--font-size-base);
+  }
+
+  /* 19. Стили для модальных списков на мобильных устройствах */
+  .modal ul {
+    padding-left: 20px;
+  }
+
+  /* 20. Стили для модальных деталей на мобильных устройствах */
+  #webgl-error-details {
+    font-size: 0.9em;
+  }
+
+  /* 21. Стили для прелоадера на мобильных устройствах */
+  #loading-spinner {
+    left: 10px;
+    bottom: 5px;
+  }
+
+  /* 22. Стили для индикатора загрузки чата на мобильных устройствах */
+  #loadingIndicator {
+    left: 10px;
+    bottom: 10px;
+  }
+
+  /* 23. Стили для кнопок в левой панели на мобильных устройствах */
+  .left-panel-group.top-group .panel-button,
+  .left-panel-group.top-group .social-login-button {
+    width: var(--button-size);
+    height: var(--button-size);
+  }
+
+  /* 24. Стили для иконок в левой панели на мобильных устройствах */
+  .panel-icon-link {
+    font-size: calc(var(--icon-size) * 1.5);
+  }
+
+  /* 25. Стили для Google Login кнопки на мобильных устройствах */
+  #login-google-btn.control-button {
+    width: var(--button-size);
+    height: var(--button-size);
+  }
+
+  #login-google-btn.control-button .fab.fa-google {
+    font-size: var(--icon-size);
+  }
+
+  /* 26. Стили для кнопок в центральном блоке левой панели на мобильных устройствах */
+  .left-panel-group.central-block .control-button.panel-button svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+  }
+
+  /* 27. Стили для кнопок в нижней группе левой панели на мобильных устройствах */
+  .left-panel-group.bottom-group {
+    padding: 0 var(--spacing-sm);
+  }
+
+  /* 28. Стили для кнопок в правой панели на мобильных устройствах */
+  .view-toggle-btn {
+    font-size: 14px;
+  }
+
+  /* 29. Стили для таймлайна на мобильных устройствах */
+  .timeline-item .version-label {
+    font-size: var(--font-size-small);
+  }
+
+  .version-text p {
+    font-size: var(--font-size-small);
+  }
+
+  /* 30. Стили для редактора файлов на мобильных устройствах */
+  #integratedFileEditor h3 {
+    font-size: var(--font-size-large);
+  }
+
+  #integratedFileEditor li {
+    font-size: var(--font-size-base);
+  }
+
+  #integratedFileEditor textarea {
+    font-size: var(--font-size-code);
+  }
+
+  #integratedFileEditor button#saveFile {
+    font-size: var(--font-size-button);
+  }
+
+  /* 31. Стили для промпт-бара на мобильных устройствах */
+  #promptBar {
+    height: 100px; /* Shorter */
+  }
+
+  /* 32. Стили для инпутов промпт-бара на мобильных устройствах */
+  #topPromptInput,
+  #chatInput {
+    min-height: 60px; /* Shorter */
+  }
+
+  /* 33. Стили для кнопок промпт-бара на мобильных устройствах */
+  #submitTopPrompt,
+  #submitChatMessage {
+    font-size: var(--font-size-button);
+  }
+
+  /* 34. Стили для селектора модели на мобильных устройствах */
+  .prompt-controls select {
+    font-size: var(--font-size-base);
+  }
+
+  /* 35. Стили для кнопок чата на мобильных устройствах */
+  #chatButton {
+    width: var(--icon-button-size) !important;
+    height: var(--icon-button-size) !important;
+  }
+
+  #chatButton svg {
+    width: var(--icon-size-small);
+    height: var(--icon-size-small);
+  }
+
+  /* 36. Стили для кнопки переключения файлов на мобильных устройствах */
+  #toggleFilesButton {
+    font-size: var(--font-size-base);
+  }
+
+  /* 37. Стили для сообщений чата на мобильных устройствах */
+  .chat-message {
+    font-size: var(--font-size-base);
+  }
+
+  /* 38. Стили для скроллбаров чата на мобильных устройствах */
+  #chatMessages::-webkit-scrollbar,
+  #chatInput::-webkit-scrollbar {
+    width: 0;
+  }
+
+  #chatMessages,
+  #chatInput {
+    scrollbar-width: none;
+  }
+
+  /* 39. Стили для области жестов на мобильных устройствах */
+  #gesture-area {
+    height: 4px;
+  }
+
+  #gesture-area.hands-detected {
+    height: 25vh;
+  }
+
+  /* 40. Стили для линии жестов на мобильных устройствах */
+  #gesture-line {
+    height: 2px;
+  }
+
+  /* 41. Стили для точек пальцев на мобильных устройствах */
+  .finger-dot-on-line {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* 42. Стили для прелоадера на мобильных устройствах */
+  #loading-spinner {
+    left: 10px;
+    bottom: 5px;
+  }
+
+  /* 43. Стили для индикатора загрузки чата на мобильных устройствах */
+  #loadingIndicator {
+    left: 10px;
+    bottom: 10px;
+  }
+
+  /* 44. Стили для кнопок в левой панели на мобильных устройствах */
+  .left-panel-group.top-group .panel-button,
+  .left-panel-group.top-group .social-login-button {
+    width: var(--button-size);
+    height: var(--button-size);
+  }
+
+  /* 45. Стили для иконок в левой панели на мобильных устройствах */
+  .panel-icon-link {
+    font-size: calc(var(--icon-size) * 1.5);
+  }
+
+  /* 46. Стили для Google Login кнопки на мобильных устройствах */
+  #login-google-btn.control-button {
+    width: var(--button-size);
+    height: var(--button-size);
+  }
+
+  #login-google-btn.control-button .fab.fa-google {
+    font-size: var(--icon-size);
+  }
+
+  /* 47. Стили для кнопок в центральном блоке левой панели на мобильных устройствах */
+  .left-panel-group.central-block .control-button.panel-button svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+  }
+
+  /* 48. Стили для кнопок в нижней группе левой панели на мобильных устройствах */
+  .left-panel-group.bottom-group {
+    padding: 0 var(--spacing-sm);
+  }
+
+  /* 49. Стили для кнопок в правой панели на мобильных устройствах */
+  .view-toggle-btn {
+    font-size: 14px;
+  }
+
+  /* 50. Стили для таймлайна на мобильных устройствах */
+  .timeline-item .version-label {
+    font-size: var(--font-size-small);
+  }
+
+  .version-text p {
+    font-size: var(--font-size-small);
+  }
+
+  /* 51. Стили для редактора файлов на мобильных устройствах */
+  #integratedFileEditor h3 {
+    font-size: var(--font-size-large);
+  }
+
+  #integratedFileEditor li {
+    font-size: var(--font-size-base);
+  }
+
+  #integratedFileEditor textarea {
+    font-size: var(--font-size-code);
+  }
+
+  #integratedFileEditor button#saveFile {
+    font-size: var(--font-size-button);
+  }
+
+  /* 52. Стили для промпт-бара на мобильных устройствах */
+  #promptBar {
+    height: 100px; /* Shorter */
+  }
+
+  /* 53. Стили для инпутов промпт-бара на мобильных устройствах */
+  #topPromptInput,
+  #chatInput {
+    min-height: 60px; /* Shorter */
+  }
+
+  /* 54. Стили для кнопок промпт-бара на мобильных устройствах */
+  #submitTopPrompt,
+  #submitChatMessage {
+    font-size: var(--font-size-button);
+  }
+
+  /* 55. Стили для селектора модели на мобильных устройствах */
+  .prompt-controls select {
+    font-size: var(--font-size-base);
+  }
+
+  /* 56. Стили для кнопок чата на мобильных устройствах */
+  #chatButton {
+    width: var(--icon-button-size) !important;
+    height: var(--icon-button-size) !important;
+  }
+
+  #chatButton svg {
+    width: var(--icon-size-small);
+    height: var(--icon-size-small);
+  }
+
+  /* 57. Стили для кнопки переключения файлов на мобильных устройствах */
+  #toggleFilesButton {
+    font-size: var(--font-size-base);
+  }
+
+  /* 58. Стили для сообщений чата на мобильных устройствах */
+  .chat-message {
+    font-size: var(--font-size-base);
+  }
+
+  /* 59. Стили для скроллбаров чата на мобильных устройствах */
+  #chatMessages::-webkit-scrollbar,
+  #chatInput::-webkit-scrollbar {
+    width: 0;
+  }
+
+  #chatMessages,
+  #chatInput {
+    scrollbar-width: none;
+  }
+
+  /* 60. Стили для области жестов на мобильных устройствах */
+  #gesture-area {
+    height: 4px;
+  }
+
+  #gesture-area.hands-detected {
+    height: 25vh;
+  }
+
+  /* 61. Стили для линии жестов на мобильных устройствах */
+  #gesture-line {
+    height: 2px;
+  }
+
+  /* 62. Стили для точек пальцев на мобильных устройствах */
+  .finger-dot-on-line {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* 63. Стили для прелоадера на мобильных устройствах */
+  #loading-spinner {
+    left: 10px;
+    bottom: 5px;
+  }
+
+  /* 64. Стили для индикатора загрузки чата на мобильных устройствах */
+  #loadingIndicator {
+    left: 10px;
+    bottom: 10px;
+  }
+
+}

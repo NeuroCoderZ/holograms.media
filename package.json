@@ -1,0 +1,39 @@
+{
+  "name": "holograms-media",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite --host",
+    "vite": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "dev:full": "concurrently \"npm run dev -- --host\" \"bash -c 'source /home/neurocoderz/miniconda3/bin/activate holograms_env && uvicorn backend.app:app --reload --host 0.0.0.0 --port 8001 --log-level debug --ws wsproto'\"",
+    "stop": "kill-port 8000 8001"
+  },
+  "dependencies": {
+    "@genkit-ai/dev-local-vectorstore": "^1.14.0",
+    "@google/generative-ai": "^0.11.5",
+    "@langchain/google-genai": "^0.0.11",
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/drawing_utils": "^0.3.1675466124",
+    "@mediapipe/hands": "^0.4.1675469240",
+    "@supabase/postgrest-js": "^1.15.5",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-node": "^4.22.0",
+    "@tweenjs/tween.js": "^23.1.1",
+    "@xenova/transformers": "^2.17.2",
+    "axios": "^1.7.2",
+    "firebase": "^10.0.0",
+    "hammerjs": "^2.0.8",
+    "langchain": "^0.3.29",
+    "sql.js": "^1.13.0",
+    "sql.js-fts5": "^1.4.0",
+    "sqlite3": "^5.1.7",
+    "three": "^0.165.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "kill-port": "^2.0.1",
+    "vite": "^7.0.2"
+  }
+}

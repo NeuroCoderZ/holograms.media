@@ -1,0 +1,9 @@
+{
+  "embedding_model": "gemini-embedding-001",
+  "embedding_dimensionality": 3072,
+  "output_file": "/home/neurocoderz/Projects/Holograms.Media/GitHub/holograms.media-main/tria-genkit-core/holographic_memory_v1.json",
+  "batch_size": 100,
+  "save_every": 1,
+  "max_retries": 3,
+  "retry_delay": 1.0
+}

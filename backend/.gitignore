@@ -1,0 +1,40 @@
+# Python bytecode
+__pycache__/
+*.py[cod] # Более общее правило для байткода
+
+# Python virtual environment
+venv/
+.venv/ # Распространенное имя для venv
+
+# Distribution / packaging
+*.egg-info/
+.eggs/
+dist/
+build/
+*.tar.gz
+*.whl
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.DS_Store # macOS
+
+# Firebase
+/.firebase/ # Служебная папка Firebase CLI
+firebase-debug.log
+firebase-debug.*.log
+*.local # Уже есть
+
+# Environment variables (NEVER commit .env files with secrets)
+*.env
+*.env.*
+!*.env.example # Но .env.example должен быть в репозитории
+
+# Logs
+logs/
+*.log
+
+# Other
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

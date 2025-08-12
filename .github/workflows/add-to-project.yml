@@ -1,0 +1,16 @@
+name: Add to Project
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add issue to Project
+        uses: actions/add-to-project@v0.3.0
+        with:
+          project-url: https://github.com/NeuroCoderZ/holograms.media/projects/2
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          column-name: To Do
