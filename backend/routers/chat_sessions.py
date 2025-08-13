@@ -9,7 +9,7 @@ import asyncpg
 from backend.services.chat_service import ChatService # ADDED
 from backend.core.models import chat_models, user_models
 from backend.auth import security
-from backend.core.db.pg_connector import get_db_connection
+from backend.core.dependencies import get_db_connection
 
 # Removed: async def get_llm_response(...) - this logic is now in ChatService (as a stub)
 

@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-  pull_request: # Также запускаем проверки на Pull Request, но без деплоя
+  pull_request:
     branches:
       - main
 
@@ -14,7 +14,7 @@ jobs:
   build_and_deploy:
     name: Build, Test and Deploy
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
       # (Раскомментируйте, когда настроите ESLint в package.json)
       # - name: Run Linter (ESLint)
       #   run: npm run lint
-        
+    
       # --- Шаг 5: Настройка аутентификации Google для деплоя ---
       - name: Set up Google Cloud Auth
         # Этот шаг выполняется только для ветки main, а не для PR

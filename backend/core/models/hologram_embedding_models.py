@@ -44,10 +44,9 @@ class HologramSemanticEmbedding(BaseUUIDModel):
     source_file_path: Optional[str] = Field(default=None, description="Original file path of the source data, if applicable.")
     original_content_hash: Optional[str] = Field(default=None, description="Hash of the original content from which embedding was derived.")
 
-    model_config = ConfigDict(from_attributes=True)
-
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "examples": [
                 {
                     "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
@@ -67,4 +66,5 @@ class HologramSemanticEmbedding(BaseUUIDModel):
                 }
             ]
         }
+    )
 

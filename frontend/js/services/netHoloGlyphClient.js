@@ -45,7 +45,7 @@ class NetHoloGlyphClient {
             this.websocket.close();
         }
 
-        const url = `ws://192.168.1.117:8001/ws/signaling/${roomId}`;
+        const url = `wss://common-elita-holograms-media-59398dd8.koyeb.app/ws/signaling/${roomId}`;
         this.websocket = new WebSocket(url);
 
         this.websocket.onopen = () => {
