@@ -69,7 +69,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:8000",
     "https://holograms.media",
-    "http://holograms-media.web.app",
+    "https://holograms-media.web.app",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -264,7 +264,7 @@ def initialize_firebase_from_base64(base64_string, logger_instance):
         service_account_info = json.loads(service_account_info_str)
         cred = credentials.Certificate(service_account_info)
         firebase_admin.initialize_app(cred)
-        logger.info("Firebase Admin SDK initialized successfully using FIREBASE_SERVICE_ACCOUNT_BASE64.")
+        logger_instance.info("Firebase Admin SDK initialized successfully using FIREBASE_SERVICE_ACCOUNT_BASE64.")
     except json.JSONDecodeError as e_json:
         logger_instance.error(f"JSONDecodeError while parsing FIREBASE_SERVICE_ACCOUNT_BASE64: {e_json}", exc_info=True)
         logger_instance.warning("Firebase Admin SDK not initialized from Base64 due to JSON parsing error.")
