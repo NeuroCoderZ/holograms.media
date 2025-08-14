@@ -1,0 +1,111 @@
+
+:root {
+  /* Размеры */
+  --base-size: clamp(8px, 1.5vmin, 14px);
+  --button-spacing: 0.5vmin !important;
+  --padding: clamp(5px, 1vmin, 8px);
+  --button-size: clamp(44px, 5vmin, 60px) !important;
+  --button-margin: clamp(6px, 1.5vmin, 14px);
+  --icon-size: calc(var(--button-size) * 0.55);
+  --text-size: calc(var(--button-size) * 0.35);
+  --control-panel-height: calc(var(--button-size) + var(--button-margin) * 2);
+  /* Используется как ширина левой панели */
+  --timeline-width: clamp(20vw, 25vw, 30vw);
+  /* Обновленная ширина правой панели */
+  --line-width-vmin: 0.2vmin;
+  /* !!! Возвращаем адаптивную ширину */
+
+  /* Новые переменные для шрифтов */
+  --font-size-base: clamp(13px, 1.8vmin, 16px);
+  /* Основной размер текста */
+  --font-size-small: clamp(11px, 1.5vmin, 14px);
+  /* Мелкий текст (лейблы, метки) */
+  --font-size-large: clamp(15px, 2vmin, 18px);
+  /* Крупный текст (заголовки) */
+  --font-size-button: clamp(14px, 1.8vmin, 16px);
+  /* Текст на кнопках */
+  --font-size-code: clamp(12px, 1.6vmin, 14px);
+  /* Моноширинный текст */
+
+  /* Новые переменные для элементов управления */
+  --input-height: clamp(80px, 15vmin, 120px);
+  /* Высота полей ввода */
+  --control-height: clamp(28px, 3.5vmin, 32px);
+  /* Высота элементов управления */
+  --button-action-width: clamp(90px, 12vmin, 120px);
+  /* Ширина кнопок действий */
+  --icon-button-size: clamp(28px, 3.5vmin, 32px);
+  /* Размер кнопок с иконками */
+  --icon-size-small: clamp(18px, 2.3vmin, 22px);
+  /* Размер маленьких иконок */
+
+  /* Новые переменные для отступов */
+  --spacing-xs: clamp(2px, 0.5vmin, 4px);
+  /* Очень маленький отступ */
+  --spacing-sm: clamp(4px, 0.8vmin, 6px);
+  /* Маленький отступ */
+  --spacing-md: clamp(8px, 1.2vmin, 12px);
+  /* Средний отступ */
+  --spacing-lg: clamp(12px, 1.8vmin, 16px);
+  /* Большой отступ */
+
+  /* Радиусы скругления */
+  --border-radius-sm: clamp(3px, 0.5vmin, 4px);
+  /* Маленький радиус */
+  --border-radius-md: clamp(5px, 0.8vmin, 6px);
+  /* Средний радиус */
+
+  /* Цвета (Новая палитра v20.2) */
+  --color-black-100: #000000;
+  /* Чистый черный */
+  --color-black-95: rgba(255, 255, 255, 0.05);
+  /* 95% черный (5% белый на черном) */
+  --color-black-66: rgba(255, 255, 255, 0.34);
+  /* 66% черный (~34% белый) */
+  --color-black-33: rgba(255, 255, 255, 0.67);
+  /* 33% черный (~67% белый) */
+  --color-white-100: #ffffff;
+  /* Чистый белый */
+  --color-green-100: #00cc00;
+  /* Чистый зеленый */
+  --color-red-100: #ff0000;
+  /* Чистый красный */
+  --color-purple-100: #800080;
+  /* Чистый фиолетовый */
+
+  /* Переопределение старых переменных (или их замена по всему файлу) */
+  --color-pure-black: var(--color-black-100);
+  --color-primary: var(--color-white-100);
+  /* Основной текст - белый */
+  --panel-bg: var(--color-black-100);
+  /* Панели черные */
+  --panel-border: var(--color-black-66);
+  /* Границы панелей - темно-серые */
+  --input-bg: var(--color-black-95);
+  /* Фон инпутов - почти черный */
+  --input-border: var(--color-black-66);
+  /* Границы инпутов - темно-серые */
+  --button-action-bg: #007bff;
+  /* Оставим синий для кнопок действий */
+  --button-action-hover: #0056b3;
+  --button-hover-bg: rgba(255, 255, 255, 0.08);
+  /* Фон кнопки при ховере */
+  --color-icon: var(--color-black-33);
+  /* Неактивная иконка - светло-серый */
+  --color-icon-active: var(--color-white-100);
+  /* Активная иконка - белый */
+  --color-icon-disabled: var(--color-black-66);
+  /* Отключенная иконка - темно-серый */
+  --placeholder-bg: var(--color-black-95);
+  /* Фон плейсхолдера - почти черный */
+}
+
+/* Адаптивность */
+@media screen and (min-width: 1024px) {
+  :root {
+    /* Увеличиваем кнопки на больших экранах */
+    --button-size: clamp(45px, 5vmin, 60px);
+    --button-spacing: clamp(6px, 1vmin, 14px);
+    --button-margin: clamp(8px, 2vmin, 16px);
+  }
+}

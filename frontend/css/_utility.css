@@ -1,0 +1,194 @@
+/* Utility class for initial hiding to prevent FOUC */
+.u-initially-hidden {
+  opacity: 0 !important;
+}
+
+/* Styles for highlighting elements and dimming the background */
+body.dimmed>*:not(.highlight) {
+  opacity: 0.25;
+  pointer-events: none;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.highlight {
+  opacity: 1 !important;
+  /* Ensure highlighted element is fully visible */
+  pointer-events: auto !important;
+  /* Ensure highlighted element is interactive */
+  box-shadow: 0 0 15px 5px rgba(0, 255, 132, 0.7);
+  /* Greenish glow */
+  border-radius: 50%;
+  /* Make the highlight area circular - adjust if needed */
+  transition: box-shadow 0.3s ease-in-out;
+  position: relative;
+  /* For z-index to take effect */
+  z-index: 9999;
+  /* High z-index to be on top */
+}
+
+/* If using a separate overlay div instead of body class: */
+
+.highlighted-element {
+  position: relative;
+  /* Needed for z-index to work reliably */
+  z-index: 9999 !important;
+  /* Ensure highlighted element is on top */
+  opacity: 1 !important;
+  /* Ensure highlighted element is fully visible */
+  pointer-events: auto !important;
+  /* Allow interaction with highlighted element */
+  border-radius: 5px;
+  /* Optional: adds rounded corners to the highlight effect */
+  transition: box-shadow 0.3s ease-in-out, outline 0.3s ease-in-out;
+  /* Smooth transitions if animation is removed/paused */
+}
+
+/* --- Interactive Tour Styles --- */
+body.dimmed-for-tour>*:not(.highlighted-element) {
+  opacity: 0.25 !important;
+  /* Ensure this overrides other opacity styles */
+  pointer-events: none !important;
+  /* Prevent interaction with non-highlighted elements */
+  transition: opacity 0.5s ease-in-out;
+}
+
+/* --- PWA Install Button Styles --- */
+.pwa-install-button {
+  display: none;
+  /* Hidden by default */
+}
+
+.pwa-install-button.visible {
+  display: flex;
+  /* Or 'block', or 'grid', depending on how .control-button.panel-button is styled */
+}
+
+/* Скрыть мигающий курсор в пустых полях ввода */
+textarea:placeholder-shown {
+  caret-color: var(--color-white-100);
+  /* Всегда показываем курсор */
+}
+
+/* Вернуть видимый курсор при фокусе, когда пользователь начинает вводить текст */
+textarea:focus:not(:placeholder-shown) {
+  caret-color: var(--color-white-100);
+}
+
+/* Обновление для placeholder в chat input, добавление пробела после "Tria" */
+#chatInput::placeholder {
+  letter-spacing: 0.2px;
+  /* Небольшой отступ между символами */
+  word-spacing: 3px;
+  /* Увеличенный отступ между словами */
+}
+
+/* Автофокус в режиме чата */
+.chat-mode {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.chat-mode:focus-within {
+  outline: none;
+}
+
+/* Разделительная линия */
+.panel-divider {
+  height: 1px;
+  background-color: var(--panel-border);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  position: relative;
+  border: none;
+}
+
+/* Контейнер для содержимого (верхняя часть панели) */
+.content-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 200px;
+  margin-bottom: 10px;
+  /* Увеличенный отступ снизу */
+}
+
+/* Контейнер для ввода (средняя часть) */
+.input-container {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+  max-height: 200px;
+  margin-top: 10px;
+  /* Увеличенный отступ сверху */
+}
+
+/* Блок с элементами управления (нижняя часть панели) */
+.controls-container {
+  flex-shrink: 0;
+  padding: 5px;
+  background-color: var(--color-pure-black);
+  display: flex;
+  flex-direction: column;
+  border-top: none;
+  height: 40px;
+  /* Фиксированная высота */
+}
+
+#chatButton.active {
+  color: var(--color-icon-active);
+}
+
+#modelSelect {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Стили для кода */
+.code-block,
+pre,
+code,
+#fileContent {
+  font-family: 'Roboto Mono', monospace;
+  /* Моноширинный шрифт для кода */
+}
+
+/* Классы шрифтов для разных элементов */
+.font-interface {
+  font-family: 'Inter', sans-serif;
+}
+
+.font-chat {
+  font-family: 'Roboto', sans-serif;
+}
+
+.font-code {
+  font-family: 'Roboto Mono', monospace;
+}
+
+.font-tooltip {
+  font-family: 'Open Sans', sans-serif;
+}
+
+/* Применяем шрифты к конкретным элементам */
+#versionTimeline .version-text p {
+  font-family: 'Roboto', sans-serif;
+}
+
+.control-button,
+.panel-section h3,
+.prompt-controls select {
+  font-family: 'Inter', sans-serif;
+}
+
+#topPromptInput,
+#chatInput {
+  font-family: 'Roboto', sans-serif;
+}
+
+#integratedFileEditor textarea {
+  font-family: 'Roboto Mono', monospace;
+}

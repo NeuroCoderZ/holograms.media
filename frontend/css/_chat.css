@@ -1,0 +1,213 @@
+/* Стили для чата */
+#chatHistory {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+  /* Скрываем переполнение самого контейнера */
+  padding: 0;
+  min-height: 50px;
+  background-color: var(--color-pure-black);
+  position: relative;
+}
+
+#chatMessages {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  /* Позволяет flex-контейнеру сжиматься ниже контента */
+  overflow-y: auto;
+  /* Включаем вертикальный скроллбар */
+  padding: 6px 8px 6px 6px;
+  /* Увеличиваем правый отступ для скроллбара */
+  gap: 6px;
+  position: relative;
+  scrollbar-width: thin;
+  /* Тонкий скроллбар для Firefox */
+  scrollbar-color: var(--color-black-66) var(--color-black-100);
+  box-sizing: border-box;
+}
+
+/* Добавляем псевдоэлемент для обозначения места скроллбара также как в текстовом поле */
+#chatHistory::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  /* Ширина скроллбара */
+  height: 100%;
+  background-color: var(--color-black-100);
+  /* Цвет как у трека скроллбара */
+  z-index: 10;
+  pointer-events: none;
+  /* Чтобы элемент не перехватывал клики */
+}
+
+/* Стили скроллбара для WebKit (Chrome, Safari) */
+#chatMessages::-webkit-scrollbar {
+  width: 4px;
+  /* Узенький скроллбар */
+  position: absolute;
+  right: 0;
+}
+
+#chatMessages::-webkit-scrollbar-thumb {
+  background: var(--color-black-66);
+  /* Темносерый ползунок */
+  border-radius: 0;
+}
+
+#chatMessages::-webkit-scrollbar-track {
+  background: var(--color-black-100);
+  /* Черный фон */
+  margin: 0;
+  border-radius: 0;
+}
+
+.chat-message {
+  padding: var(--spacing-sm);
+  margin: var(--spacing-xs) 0;
+  border-radius: var(--border-radius-sm);
+  max-width: 60%;
+  word-wrap: break-word;
+  background-color: transparent !important;
+  font-family: 'Roboto', sans-serif;
+  border: none !important;
+  font-size: var(--font-size-base);
+}
+
+/* Сообщения пользователя выравниваются справа */
+.user-message {
+  align-self: flex-end;
+  margin-left: auto;
+  margin-right: 0;
+  /* Отступ справа 0 */
+}
+
+/* Сообщения Триа выравниваются слева */
+.tria-message {
+  align-self: flex-start;
+  border-right: 2px solid var(--button-action-bg);
+  margin-right: auto;
+  margin-left: 0;
+  /* Отступ слева 0 */
+}
+
+#chatInputBar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 5px 4px 5px 5px;
+  /* Устанавливаем правый отступ для резервирования места под скроллбар */
+  background-color: var(--color-pure-black);
+  border-top: none;
+  width: 100%;
+  position: relative;
+  /* Добавляем для правильного позиционирования псевдоэлемента */
+}
+
+/* Добавляем псевдоэлемент для резервирования места скроллбара */
+#chatInputBar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  /* Ширина скроллбара */
+  height: 100%;
+  background-color: var(--color-black-100);
+  /* Цвет как у трека скроллбара */
+  z-index: 10;
+}
+
+#chatInput {
+  flex-grow: 1;
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  margin-right: 4px;
+  /* Добавляем отступ справа для скроллбара */
+  width: calc(100% - 4px);
+  /* Учитываем отступ в ширине */
+  box-sizing: border-box;
+  background-color: var(--color-pure-black);
+  color: var(--color-primary);
+  outline: none;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  min-height: calc(var(--input-height) * 0.8);
+  resize: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-black-66) var(--color-black-100);
+  font-size: var(--font-size-base);
+  font-family: 'Roboto', sans-serif;
+}
+
+#chatInput::-webkit-scrollbar {
+  width: 4px;
+  position: absolute;
+  right: 0;
+}
+
+#chatInput::-webkit-scrollbar-thumb {
+  background: var(--color-black-66);
+  border-radius: 0;
+}
+
+#chatInput::-webkit-scrollbar-track {
+  background: var(--color-black-100);
+  margin: 0;
+  border-radius: 0;
+}
+
+#chatButton.active {
+  color: var(--color-icon-active);
+}
+
+/* Индикатор загрузки для чата */
+#loadingIndicator {
+  position: absolute;
+  left: 15px;
+  bottom: 15px;
+  width: 40px;
+  height: 20px;
+  z-index: 1000;
+  display: none;
+}
+
+@keyframes chat-dot-animation {
+
+  0%,
+  20% {
+    content: "   ";
+  }
+
+  40% {
+    content: ".  ";
+  }
+
+  60% {
+    content: ".. ";
+  }
+
+  80%,
+  100% {
+    content: "...";
+  }
+}
+
+#loadingIndicator::after {
+  content: "";
+  animation: chat-dot-animation 1.5s infinite;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--color-white-100);
+  font-family: 'Roboto', sans-serif;
+  display: inline-block;
+  letter-spacing: 3px;
+}

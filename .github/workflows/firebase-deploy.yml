@@ -1,0 +1,49 @@
+name: Build, Test and Deploy to Firebase
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    name: Build, Test and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # --- Шаг 1: Чек-аут кода ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- Шаг 2: Установка Node.js ---
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # --- Шаг 3: Установка зависимостей фронтенда (если нужно) ---
+      # Если у вас есть package.json в корне или в /frontend
+      # - name: Install Frontend Dependencies
+      #   run: npm install 
+
+      # --- Шаг 4: Установка Python ---
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # Убедитесь, что версия совпадает с вашей
+
+      # --- Шаг 5: Установка зависимостей бэкенда ---
+      - name: Install Backend Dependencies
+        run: pip install -r backend/requirements.txt
+
+      # --- Шаг 6: Установка Firebase CLI ---
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      # --- Шаг 7: Деплой на Firebase Hosting ---
+      - name: Deploy to Hosting
+        if: github.ref == 'refs/heads/main'
+        run: firebase deploy --only hosting

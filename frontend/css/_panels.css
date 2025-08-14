@@ -1,0 +1,357 @@
+/* Левая панель (Кнопки) */
+.panel.left-panel,
+.panel.right-panel {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px); /* Added: Blur effect */
+  padding: var(--button-spacing);
+  flex-shrink: 0;
+  height: 100vh;
+  overflow: hidden;
+  transition: transform 0.3s ease-in-out,
+    opacity 0.3s ease-in-out; /* Optimized for performance */
+}
+
+.panel.left-panel {
+  max-width: 180px !important;
+  min-width: 120px !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.panel.left-panel::-webkit-scrollbar {
+  display: none;
+}
+
+.panel.right-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+.right-panel .panel-section {
+  transition: all 0.3s ease-in-out;
+}
+
+/* DESKTOP: Panels are hidden by default unless '.visible' is present */
+.panel.left-panel {
+  transform: translateX(-100%);
+  /* Hide left panel off-screen */
+}
+
+.panel.right-panel {
+  transform: translateX(100%);
+  /* Hide right panel off-screen */
+}
+
+.panel.left-panel,
+.panel.right-panel {
+  opacity: 0 !important;
+  flex: 0 0 0; /* Added: Collapse width and prevent taking space */
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-left-width: 0 !important;
+  border-right-width: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden;
+  /* Will be toggled with delay */
+  overflow: hidden !important;
+  /* Ensure content is clipped */
+  transition: transform 0.3s ease-in-out,
+    opacity 0.3s ease-in-out,
+    visibility 0s linear 0.3s;
+  /* Delay visibility:hidden when hiding */
+}
+
+/* DESKTOP: '.visible' class restores panel dimensions and opacity */
+.panel.left-panel.visible {
+  transform: translateX(0) !important;
+  flex: 0 0 calc(var(--button-size) * 2 + var(--button-spacing) * 3) !important; /* Original width */
+  max-width: 180px !important;
+  /* Original max-width */
+  opacity: 1 !important;
+  visibility: visible !important;
+  /* Show immediately */
+  pointer-events: auto !important;
+  padding: var(--button-spacing) !important;
+  /* Original padding */
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-left-width: 0 !important;
+  border-right-width: 0 !important;
+  overflow-y: auto !important;
+  /* Restore overflow */
+  transition-delay: 0s;
+  /* Ensure no delay when showing */
+}
+
+.panel.right-panel.visible {
+  width: clamp(20vw, 25vw, 30vw) !important;
+  /* Original width */
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+  padding: var(--button-spacing) !important;
+  /* Original padding */
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-left-width: 0 !important;
+  border-right-width: 0 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  /* Show immediately */
+  overflow-y: auto !important;
+  /* Restore overflow */
+  transition-delay: 0s;
+  /* Ensure no delay when showing */
+}
+
+/* --- Left Panel Restructure Styles --- */
+.panel.left-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Center groups horizontally */
+  padding-top: var(--spacing-md);
+  /* Add some padding at the top */
+  padding-bottom: var(--spacing-md);
+  /* Add some padding at the bottom */
+  gap: var(--spacing-sm);
+  /* Space between direct children (groups and HRs) */
+}
+
+.left-panel-group {
+  display: flex;
+  flex-direction: column;
+  /* Stack buttons within groups */
+  align-items: center;
+  /* Center buttons horizontally within groups */
+  width: 100%;
+  /* Groups take full width of panel */
+  gap: var(--button-spacing);
+  /* Space between buttons in a group */
+}
+
+/* Styling for buttons in the top group of the left panel */
+.left-panel-group.top-group .panel-button,
+.left-panel-group.top-group .social-login-button {
+  width: var(--button-size);
+  /* Unified size for icon buttons */
+  height: var(--button-size);
+  /* Ensure height matches for square buttons */
+  padding: 0;
+  /* Remove padding if it's an icon-only button from .control-button */
+  margin-left: auto;
+  /* Still allow auto margins if needed for centering within a sub-flex */
+  margin-right: auto;
+  /* background-color, border, color will be determined by .control-button styles */
+}
+
+.left-panel-group.central-block {
+  display: grid;
+  /* Revert to grid for central block for 2-column layout */
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--button-spacing);
+  width: 100%;
+  /* Ensure it uses the panel width */
+  padding-left: var(--button-spacing);
+  /* Align with panel padding */
+  padding-right: var(--button-spacing);
+}
+
+.panel-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Center content (icon + text) */
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin: 0;
+  /* Remove default margins if any, rely on gap */
+  width: 100%;
+  /* Default to full width for stacking buttons */
+  text-align: left;
+  background-color: var(--input-bg);
+  /* A slightly different bg for panel buttons */
+  color: var(--color-primary);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-button);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.panel-button i {
+  margin-right: var(--spacing-sm);
+  /* Space between icon and text */
+  font-size: calc(var(--icon-size) * 0.8);
+  /* Slightly smaller icons in text buttons */
+  width: calc(var(--icon-size) * 0.8);
+  /* Ensure icon takes up defined space */
+  text-align: center;
+}
+
+.panel-button .button-text {
+  flex-grow: 1;
+  /* Allow text to take remaining space */
+}
+
+.panel-button:hover {
+  background-color: var(--button-hover-bg);
+  color: var(--color-icon-active);
+}
+
+/* Unified styling for icon buttons on the left panel that might also have .panel-button */
+/* This ensures they look like .control-buttons (transparent, no border from .panel-button) */
+#left-panel .panel-button.control-button {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  /* Reset padding from .panel-button */
+  /* width and height are primarily controlled by .control-button's !important */
+  /* color is set by .control-button */
+  /* font-size for icon is set by .control-button */
+}
+
+/* Hover specifically for these combined buttons, ensuring it matches .control-button hover */
+#left-panel .panel-button.control-button:not(:disabled):hover {
+  background-color: var(--button-hover-bg);
+  color: var(--color-icon-active);
+  /* Ensure icon color changes */
+  transform: scale(1.05);
+  /* Match .control-button hover */
+}
+
+/* Ensure active state is also consistent */
+#left-panel .panel-button.control-button.active {
+  background-color: var(--button-hover-bg);
+  color: var(--color-icon-active);
+}
+
+
+
+
+
+
+.left-panel-group.central-block .control-button.panel-button svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+
+
+
+.google-login-button {
+  background-color: #4285F4;
+  /* Google Blue */
+  color: white;
+  border-color: #4285F4;
+}
+
+.google-login-button:hover {
+  background-color: #357ae8;
+  border-color: #357ae8;
+}
+
+.panel-hr {
+  width: 90%;
+  border: none;
+  height: 1px;
+  background-color: var(--panel-border);
+  margin-top: var(--spacing-sm);
+  /* Use theme spacing */
+  margin-bottom: var(--spacing-sm);
+}
+
+.left-panel-group.bottom-group {
+  flex-direction: row;
+  /* Icons side-by-side */
+  justify-content: space-around;
+  /* Distribute icons evenly */
+  padding: 0 var(--spacing-md);
+  /* Add some padding to the sides of the group */
+}
+
+.panel-icon-link {
+  color: var(--color-icon);
+  font-size: calc(var(--icon-size) * 1.2);
+  /* Larger icons for bottom links */
+  text-decoration: none;
+  transition: color 0.2s ease;
+  padding: var(--spacing-xs);
+}
+
+.panel-icon-link:hover {
+  color: var(--color-icon-active);
+}
+
+/* Ensure avatar button is more like an icon button if it's just an icon */
+
+/* Styling for the icon-only Google login button */
+#login-google-btn.control-button {
+  background-color: transparent;
+  /* Override Google Blue */
+  color: var(--color-icon);
+  /* Standard icon color */
+  border: none;
+  /* Remove border if any from panel-button or social-login-button */
+  width: var(--button-size);
+  /* Ensure square size like other control buttons */
+  height: var(--button-size);
+  padding: 0;
+  /* Reset padding */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* margin-left: auto; */
+  /* Ensure it behaves like other control buttons in a flex/grid */
+  /* margin-right: auto; */
+}
+
+#login-google-btn.control-button .fab.fa-google {
+  font-size: var(--icon-size);
+  /* Ensure icon size matches other control buttons */
+  color: currentColor;
+  /* Inherit color from the button itself */
+}
+
+#login-google-btn.control-button:hover {
+  background-color: var(--button-hover-bg);
+  /* Standard hover background */
+  color: var(--color-icon-active);
+  /* Standard active icon color */
+}
+
+
+
+/* --- End Left Panel Restructure Styles --- */
+
+/* Removed old .panel.hidden styles as .visible class now controls visibility */
+
+/* Стили для голограммы */
+.hologram {
+  transition: transform 0.5s ease-in-out, margin-top 0.5s ease-in-out !important;
+  transform-origin: center center !important;
+  will-change: transform, margin-top !important;
+}
+
+.gesture-area.active~.main-area .hologram,
+.gesture-area.active+.main-area .hologram {
+  transform: scale(0.8) !important;
+  margin-top: 5vh !important;
+}
+
+/* Стили для отладки */
+.debug-panel {
+  outline: 1px solid blue !important;
+}
+
+.debug-label {
+  outline: 1px solid green !important;
+}
+
+/* Стили панелей */
+.panel-section {
+  transition: all 0.3s ease-in-out;
+}
