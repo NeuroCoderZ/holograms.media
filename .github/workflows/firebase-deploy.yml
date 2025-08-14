@@ -56,4 +56,4 @@ jobs:
       # --- Шаг 7: Деплой на Firebase Hosting ---
       - name: Deploy to Hosting
         if: github.ref == 'refs/heads/main'
-        run: firebase deploy --only hosting
+        run: firebase deploy --only hosting                                                                                                                                                 

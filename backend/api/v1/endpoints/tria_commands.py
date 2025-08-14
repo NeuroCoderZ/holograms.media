@@ -15,18 +15,21 @@ async def handle_tria_prompt(request: Request, prompt_data: TriaPromptRequest):
     try:
         logger.info(f"Received prompt for Tria: '{prompt_data.prompt}'")
         
-        # Получаем экземпляр оркестратора из состояния приложения
-        tria_orchestrator = request.app.state.tria_orchestrator
-        if not tria_orchestrator:
-            raise HTTPException(status_code=503, detail="Tria service is not available.")
+        # --- Temporarily Disabled Tria Orchestrator ---
+        # tria_orchestrator = request.app.state.tria_orchestrator
+        # if not tria_orchestrator:
+        #     raise HTTPException(status_code=503, detail="Tria service is not available.")
+        #
+        # tria_response_text = await tria_orchestrator.process_user_prompt(prompt_data.prompt)
+        #
+        # if tria_response_text is None:
+        #     raise HTTPException(status_code=500, detail="Tria returned an empty response.")
+        
+        # --- Temporary Placeholder Response ---
+        tria_response_text = "Tria (self-hosted) is temporarily disabled. Using external API."
+        logger.info(f"Tria (self-hosted) is disabled. Returning placeholder response.")
+        # -----------------------------------------
 
-        # Передаем промпт в оркестратор
-        # ПРЕДПОЛОЖЕНИЕ: У оркестратора есть метод process_user_prompt
-        # Если его нет, нам нужно будет его создать.
-        tria_response_text = await tria_orchestrator.process_user_prompt(prompt_data.prompt)
-
-        if tria_response_text is None:
-            raise HTTPException(status_code=500, detail="Tria returned an empty response.")
 
         logger.info(f"Tria response: '{tria_response_text}'")
 

@@ -16,17 +16,17 @@ protobuf>=4.25.0
 email-validator>=2.0.0
 numpy==1.26.4
 google-generativeai
-# Dependencies for Tria RAG Service & Knowledge Graph
-rank_bm25
-sentence_transformers
-faiss-cpu
-networkx
-pandas
-scikit-learn
-tensorflow==2.19.0
-tensorflow_hub
-tensorflow_text
-sentencepiece
 # Watchdog for Live Code Analyzer
-watchdog
+# watchdog
 
+# Dependencies for Tria RAG Service & Knowledge Graph (Temporarily disabled)
+# rank_bm25
+# sentence_transformers
+# faiss-cpu
+# networkx
+# pandas
+# scikit-learn
+# tensorflow==2.19.0
+# tensorflow_hub
+# tensorflow_text
+# sentencepiece
