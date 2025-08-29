@@ -1,0 +1,1 @@
+/home/neurocoderz/holograms.media/holographic_core/target/wasm32-unknown-unknown/release/holographic_core.wasm: /home/neurocoderz/holograms.media/holographic_core/src/audio_processor.rs /home/neurocoderz/holograms.media/holographic_core/src/lib.rs
