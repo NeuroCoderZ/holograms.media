@@ -1,0 +1,10 @@
+/home/neurocoderz/Projects/Holograms.Media/GitHub/holograms.media-main/holographic_core/target/wasm32-unknown-unknown/release/deps/num_complex-ffd0d38c247026a8.d: /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/lib.rs /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/cast.rs /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/pow.rs /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/complex_float.rs
+
+/home/neurocoderz/Projects/Holograms.Media/GitHub/holograms.media-main/holographic_core/target/wasm32-unknown-unknown/release/deps/libnum_complex-ffd0d38c247026a8.rlib: /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/lib.rs /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/cast.rs /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/pow.rs /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/complex_float.rs
+
+/home/neurocoderz/Projects/Holograms.Media/GitHub/holograms.media-main/holographic_core/target/wasm32-unknown-unknown/release/deps/libnum_complex-ffd0d38c247026a8.rmeta: /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/lib.rs /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/cast.rs /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/pow.rs /home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/complex_float.rs
+
+/home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/lib.rs:
+/home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/cast.rs:
+/home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/pow.rs:
+/home/neurocoderz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-complex-0.4.6/src/complex_float.rs:
