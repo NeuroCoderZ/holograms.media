@@ -30,3 +30,6 @@ pip-wheel-metadata/
 *.egg-info/
 .env
 .env.*
+ 
+# Ignore holographic_core entirely (build artifacts, pkg, sources)
+holographic_core/
