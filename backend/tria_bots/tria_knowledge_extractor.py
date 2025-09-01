@@ -3,7 +3,7 @@ import os
 import re
 import ast
 import logging
-from typing import List, Dict, Any, NamedTuple
+from typing import List, Dict, Any, NamedTuple, Optional
 
 logger = logging.getLogger(__name__)
 
