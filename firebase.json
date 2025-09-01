@@ -16,16 +16,5 @@
         "destination": "/index.html"
       }
     ]
-  },
-  "functions": [
-    {
-      "source": "backend",
-      "runtime": "python312",
-      "codebase": "holograms-backend",
-      "ignore": ["venv", ".git", "firebase-debug.log", "firebase-debug.*.log", "*.local"]
-    }
-  ],
-  "storage": {
-    "rules": "storage.rules"
   }
 }
