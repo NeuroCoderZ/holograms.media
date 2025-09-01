@@ -56,5 +56,5 @@ class GestureIntentClient {
     }
 }
 
-const gestureIntentClient = new GestureIntentClient(`ws://192.168.1.117:8001/ws/v1/gesture-intent`);
+const gestureIntentClient = new GestureIntentClient(`wss://common-elita-holograms-media-59398dd8.koyeb.app/ws/v1/gesture-intent`);
 export default gestureIntentClient;
