@@ -11,6 +11,11 @@ export function startAnimationLoop(appState) {
         appState.renderer.setAnimationLoop(animate); // Ensures continuous loop
         TWEEN.update(time);
 
+        // Auto-return animation for camera controls
+        if (appState.animateReturn) {
+            appState.animateReturn();
+        }
+
         // Placeholder for future hologram updates
         if (appState.hologramData && appState.hologramRendererInstance) {
             // appState.hologramRendererInstance.updateVisuals(appState.hologramData);

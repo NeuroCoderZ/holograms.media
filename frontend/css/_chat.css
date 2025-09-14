@@ -7,7 +7,8 @@
   /* Скрываем переполнение самого контейнера */
   padding: 0;
   min-height: 50px;
-  background-color: var(--color-pure-black);
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border-radius: var(--border-radius-lg) !important;
   position: relative;
 }
 
@@ -71,7 +72,7 @@
 .chat-message {
   padding: var(--spacing-sm);
   margin: var(--spacing-xs) 0;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   max-width: 60%;
   word-wrap: break-word;
   background-color: transparent !important;
@@ -104,7 +105,8 @@
   align-items: stretch;
   padding: 5px 4px 5px 5px;
   /* Устанавливаем правый отступ для резервирования места под скроллбар */
-  background-color: var(--color-pure-black);
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border-radius: var(--border-radius-lg) !important;
   border-top: none;
   width: 100%;
   position: relative;
@@ -134,11 +136,11 @@
   width: calc(100% - 4px);
   /* Учитываем отступ в ширине */
   box-sizing: border-box;
-  background-color: var(--color-pure-black);
+  background-color: rgba(0, 0, 0, 0.8) !important;
   color: var(--color-primary);
   outline: none;
   border: none;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md) !important;
   min-height: calc(var(--input-height) * 0.8);
   resize: none;
   overflow-y: auto;
@@ -210,4 +212,105 @@
   font-family: 'Roboto', sans-serif;
   display: inline-block;
   letter-spacing: 3px;
+}
+
+/* Специфические стили для правой панели чата */
+.panel.right-panel #chatHistory {
+  display: flex !important;
+  flex-direction: column !important;
+  flex-grow: 1 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  min-height: 50px !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border-radius: var(--border-radius-lg) !important;
+  position: relative !important;
+}
+
+.panel.right-panel #chatMessages {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding: 6px 8px 6px 6px !important;
+  gap: 6px !important;
+  position: relative !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--color-black-66) var(--color-black-100) !important;
+  box-sizing: border-box !important;
+}
+
+.panel.right-panel #chatHistory::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 4px !important;
+  height: 100% !important;
+  background-color: var(--color-black-100) !important;
+  z-index: 10 !important;
+  pointer-events: none !important;
+}
+
+.panel.right-panel #chatMessages::-webkit-scrollbar {
+  width: 4px !important;
+  position: absolute !important;
+  right: 0 !important;
+}
+
+.panel.right-panel #chatMessages::-webkit-scrollbar-thumb {
+  background: var(--color-black-66) !important;
+  border-radius: 0 !important;
+}
+
+.panel.right-panel #chatMessages::-webkit-scrollbar-track {
+  background: var(--color-black-100) !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+.panel.right-panel .chat-message {
+  padding: var(--spacing-sm) !important;
+  margin: var(--spacing-xs) 0 !important;
+  border-radius: var(--border-radius-md) !important;
+  max-width: 60% !important;
+  word-wrap: break-word !important;
+  background-color: transparent !important;
+  font-family: 'Roboto', sans-serif !important;
+  border: none !important;
+  font-size: var(--font-size-base) !important;
+}
+
+.panel.right-panel .user-message {
+  align-self: flex-end !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.panel.right-panel .tria-message {
+  align-self: flex-start !important;
+  border-right: 2px solid var(--button-action-bg) !important;
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+.panel.right-panel #chatInputBar {
+  flex-shrink: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  padding: 5px 4px 5px 5px !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border-radius: var(--border-radius-lg) !important
+}
+/* Стили для приближения окон к разделительной линии */
+.content-container {
+  margin-bottom: 0 !important;
+}
+
+.input-container {
+  margin-top: 0 !important;
 }

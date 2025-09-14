@@ -88,45 +88,6 @@ export const uiElements = {
   togglePanelsButton: null, // Button to hide/show both side panels - Managed by PanelManager
 };
 
-/**
- * Toggles the visibility of the left and right side panels.
- * Also updates the icon on the toggle button.
- * @param {object} appState - The global application state object.
- */
-function togglePanels(appState) {
-    const leftPanel = appState.uiElements.leftPanel;
-    const rightPanel = appState.uiElements.rightPanel;
-    const toggleButton = appState.uiElements.togglePanelsButton;
-
-    if (!leftPanel || !rightPanel || !toggleButton) {
-        console.warn("Cannot toggle panels: one or more panel/button elements not found.");
-        return;
-    }
-
-    const arePanelsVisible = leftPanel.classList.contains('visible');
-
-    if (arePanelsVisible) {
-        // Hide panels
-        leftPanel.classList.remove('visible');
-        rightPanel.classList.remove('visible');
-        toggleButton.classList.remove('show-mode'); // Change icon to 'show panels'
-        document.body.classList.remove('panels-open'); // Remove class from body
-        document.body.classList.remove('panels-open'); // Remove class from body
-        console.log("Panels hidden.");
-    } else {
-        // Show panels
-        leftPanel.classList.add('visible');
-        rightPanel.classList.add('visible');
-        toggleButton.classList.add('show-mode'); // Change icon to 'hide panels'
-        document.body.classList.add('panels-open'); // Add class to body
-        document.body.classList.add('panels-open'); // Add class to body
-        console.log("Panels shown.");
-    }
-
-    // Trigger a window resize event to force layoutManager to recalculate
-    // This is a common pattern to ensure responsive layout updates.
-    window.dispatchEvent(new Event('resize'));
-}
 
 /**
  * Adds debug CSS classes to specific UI elements. 
@@ -177,15 +138,6 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   }
   if (!uiElements.rightPanel) {
     console.error('[UIManager CRITICAL] #right-panel not found!');
-  }
-  if (!uiElements.togglePanelsButton) {
-    // DesktopLayout handles the case where this button might be missing, so a warning is appropriate.
-    console.warn('[UIManager WARN] #togglePanelsButton not found!');
-  } else {
-    // Attach event listener for the toggle panels button
-    uiElements.togglePanelsButton.addEventListener('click', () => {
-        togglePanels(appState);
-    });
   }
 
   // --- Get references to all interactive UI elements by ID ---
@@ -268,6 +220,15 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   console.log('[UIManager] Проверка: leftPanel в appState.uiElements:', appState.uiElements.leftPanel ? 'найден' : 'НЕ найден');
   console.log('[UIManager] Проверка: rightPanel в appState.uiElements:', appState.uiElements.rightPanel ? 'найден' : 'НЕ найден');
   console.log('[UIManager] Проверка: togglePanelsButton в appState.uiElements:', appState.uiElements.togglePanelsButton ? 'найден' : 'НЕ найден');
+  if (appState.uiElements.togglePanelsButton) {
+    console.log('[UIManager] togglePanelsButton style.display:', appState.uiElements.togglePanelsButton.style.display);
+    console.log('[UIManager] togglePanelsButton computed style display:', window.getComputedStyle(appState.uiElements.togglePanelsButton).display);
+    console.log('[UIManager] togglePanelsButton visibility:', window.getComputedStyle(appState.uiElements.togglePanelsButton).visibility);
+    console.log('[UIManager] togglePanelsButton opacity:', window.getComputedStyle(appState.uiElements.togglePanelsButton).opacity);
+    console.log('[UIManager] togglePanelsButton computed left:', window.getComputedStyle(appState.uiElements.togglePanelsButton).left);
+    console.log('[UIManager] togglePanelsButton computed position:', window.getComputedStyle(appState.uiElements.togglePanelsButton).position);
+    console.log('[UIManager] togglePanelsButton computed transform:', window.getComputedStyle(appState.uiElements.togglePanelsButton).transform);
+}
   // Ensure these new elements are also logged or checked if you have debugging patterns for that.
   // For example, adding to logLayoutState or the verification console.logs:
   console.log('[UIManager] Проверка: triaVersion в appState.uiElements.labels:', appState.uiElements.labels.triaVersion ? 'найден' : 'НЕ найден', appState.uiElements.labels.triaVersion);
@@ -510,7 +471,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
  * initializePanelState and togglePanels are removed as PanelManager handles this.
  * toggleChatMode is removed as PanelManager.openContentPanel('chatHistory') handles this.
  */
-export { logLayoutState, togglePanels };
+export { logLayoutState };
 
 // Ensure that PanelManager's methods like initializeMainPanelState are called
 // after the main UI (including panels themselves) has been initialized.

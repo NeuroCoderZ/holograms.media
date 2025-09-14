@@ -28,6 +28,8 @@
   .panel.right-panel {
     transform: translateX(100%);
     /* Right panel off-screen to the right */
+    opacity: 0.5;
+    backdrop-filter: blur(10px);
   }
 
   /* 2. Стили для видимых панелей на мобильных устройствах */
@@ -38,8 +40,8 @@
     visibility: visible;
     pointer-events: auto;
     transition-delay: 0s; /* Show immediately */
-    width: 100%; /* Full width on mobile */
-    max-width: 100%; /* Ensure it takes full width */
+    width: calc(2 * 45px + 5 * var(--button-spacing)); /* Minimal width for buttons */
+    max-width: calc(2 * 45px + 5 * var(--button-spacing)); /* Ensure it takes minimal width */
   }
 
   .panel.right-panel.visible {
@@ -49,8 +51,8 @@
     visibility: visible;
     pointer-events: auto;
     transition-delay: 0s; /* Show immediately */
-    width: 66.66% !important; /* Changed to 2/3 width on mobile */
-    max-width: 66.66% !important; /* Ensure it takes 2/3 width */
+    width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))) !important; /* Fill remaining space */
+    max-width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))) !important; /* Ensure it takes remaining space */
   }
 
   /* 3. Стили для центральной области при открытых панелях */
@@ -61,14 +63,15 @@
 
   /* 4. Стили для кнопки переключения панелей на мобильных устройствах */
   #togglePanelsButton {
-    bottom: 1rem;
-    left: 1rem;
-    z-index: 1000;
+    top: calc(var(--button-size) * 4 + var(--spacing-md) * 3) !important; /* ниже 4 кнопок */
+    left: 0px !important;
+    position: fixed !important;
+    z-index: 10001 !important;
   }
 
   /* 5. Стили для области жестов на мобильных устройствах */
   #gesture-area {
-    height: 4px; /* Thin line by default */
+    height: 40px; /* Thicker line by default */
   }
 
   #gesture-area.hands-detected {
@@ -93,16 +96,16 @@
 
   /* 9. Стили для левой панели на мобильных устройствах */
   .panel.left-panel {
-    width: 100%; /* Full width */
-    max-width: 100%;
-    min-width: 100%;
+    width: calc(2 * 45px + 5 * var(--button-spacing)); /* Minimal width */
+    max-width: calc(2 * 45px + 5 * var(--button-spacing));
+    min-width: calc(2 * 45px + 5 * var(--button-spacing));
   }
 
   /* 10. Стили для правой панели на мобильных устройствах */
   .panel.right-panel {
-    width: 100%; /* Full width */
-    max-width: 100%;
-    min-width: 100%;
+    width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))); /* Fill remaining space */
+    max-width: calc(100vw - (2 * 45px + 5 * var(--button-spacing)));
+    min-width: calc(100vw - (2 * 45px + 5 * var(--button-spacing)));
   }
 
   /* 11. Стили для кнопок в левой панели на мобильных устройствах */
@@ -222,6 +225,21 @@
 
   #login-google-btn.control-button .fab.fa-google {
     font-size: var(--icon-size);
+  }
+
+  #login-google-btn.control-button svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+  }
+
+  #login-google-btn.control-button svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+  }
+
+  #login-google-btn.control-button svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
   }
 
   /* 26. Стили для кнопок в центральном блоке левой панели на мобильных устройствах */
@@ -372,6 +390,11 @@
 
   #login-google-btn.control-button .fab.fa-google {
     font-size: var(--icon-size);
+  }
+
+  #login-google-btn.control-button svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
   }
 
   /* 47. Стили для кнопок в центральном блоке левой панели на мобильных устройствах */

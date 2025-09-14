@@ -116,6 +116,11 @@ async function startFullApplication(appState) {
         if(leftPanel) leftPanel.classList.remove('u-initially-hidden');
         if(mainArea) mainArea.classList.remove('u-initially-hidden');
 
+        // Обновляем размеры рендерера после показа интерфейса
+        if (appState.updateRendererSize) {
+          appState.updateRendererSize();
+        }
+
 
         console.log("✅ Application is fully initialized and running.");
 
