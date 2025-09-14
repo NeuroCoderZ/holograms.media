@@ -34,11 +34,12 @@ export class HologramRenderer {
     // hologramPivot is the main group that holds all hologram elements.
     // It allows for easy positioning, rotation, and scaling of the entire hologram.
     this.hologramPivot = new THREE.Group();
+    this.hologramPivot.position.set(0, 0, 0); // Center the hologram at origin
 
     // mainSequencerGroup holds the left and right sequencer grids. It's positioned
     // relative to the hologramPivot.
     this.mainSequencerGroup = new THREE.Group();
-    this.mainSequencerGroup.position.set(0, 0, 0); // Changed: No longer vertically centering mainSequencerGroup itself
+    this.mainSequencerGroup.position.set(0, 0, 0); // Center the grids at origin
     this.hologramPivot.add(this.mainSequencerGroup);
 
     // Add a central white sphere to the hologramPivot's origin
@@ -182,10 +183,22 @@ export class HologramRenderer {
     axisGroup.add(this._createLine2ForAxis([origin.x, origin.y, origin.z, zEndPos.x, zEndPos.y, zEndPos.z], colorZpos, desiredLineWidth));
 
     // Create spheres at the ends of the axes
-    axisGroup.add(this._createSphereForAxis(sphereRadius, colorXpos).translateX(xLength));
-    axisGroup.add(this._createSphereForAxis(sphereRadius, colorXneg).translateX(-xLength));
-    axisGroup.add(this._createSphereForAxis(sphereRadius, colorYpos).translateY(yLength));
-    axisGroup.add(this._createSphereForAxis(sphereRadius, colorZpos).translateZ(zLength));
+    const redSphere = this._createSphereForAxis(sphereRadius, colorXpos).translateX(xLength);
+    const purpleSphere = this._createSphereForAxis(sphereRadius, colorXneg).translateX(0);
+    if (!isLeftGrid) {
+        axisGroup.add(redSphere);
+    }
+    if (isLeftGrid) {
+        axisGroup.add(purpleSphere);
+    }
+    const greenSphere = this._createSphereForAxis(sphereRadius, colorYpos).translateY(yLength);
+    const whiteSphere = this._createSphereForAxis(sphereRadius, colorZpos).translateZ(zLength);
+    if (isLeftGrid) {
+        greenSphere.translateX(128);
+        whiteSphere.translateX(128);
+    }
+    axisGroup.add(greenSphere);
+    axisGroup.add(whiteSphere);
 
     return axisGroup;
   }
@@ -295,6 +308,13 @@ export class HologramRenderer {
       false // Indicate it's the right grid
     );
     this.mainSequencerGroup.add(this.rightSequencerGroup);
+
+    // Blue center point at the junction of both grids (x=128)
+    const blueGeometry = new THREE.SphereGeometry(4, 8, 8);
+    const blueMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+    const blueSphere = new THREE.Mesh(blueGeometry, blueMaterial);
+    blueSphere.position.set(0, -128, -64);
+    this.mainSequencerGroup.add(blueSphere);
   }
 
   /**

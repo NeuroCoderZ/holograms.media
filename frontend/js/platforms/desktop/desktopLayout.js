@@ -26,6 +26,8 @@ export default class DesktopLayout {
         this.rightPanelElement = this.state.uiElements.rightPanel;
         this.togglePanelsButtonElement = this.state.uiElements.togglePanelsButton;
 
+        console.log('[DesktopLayout] togglePanelsButtonElement:', this.togglePanelsButtonElement);
+
         let criticalElementMissing = false;
         if (!this.leftPanelElement) {
             console.error('[CRITICAL ERROR][DesktopLayout] Left panel element (#left-panel) not found. Further initialization of DesktopLayout aborted.');
@@ -47,11 +49,12 @@ export default class DesktopLayout {
 
         this.initializeMainPanelState();
 
-        this.toggleMainPanels(); // First toggle
+        // this.toggleMainPanels(); // First toggle - REMOVED to preserve localStorage state
         // this.toggleMainPanels(); // Second toggle - REMOVED FOR DEBUGGING
         // console.log("DesktopLayout: toggleMainPanels() called twice for debug.");
 
         if (this.togglePanelsButtonElement) {
+            console.log('[DesktopLayout] Adding click listener to togglePanelsButton');
             this.togglePanelsButtonElement.addEventListener('click', () => this.toggleMainPanels());
         }
         console.log("DesktopLayout initialized.");
@@ -59,6 +62,7 @@ export default class DesktopLayout {
 
     initializeMainPanelState() {
         const panelsShouldBeHidden = localStorage.getItem('panelsHidden') === 'true';
+        console.log('[DesktopLayout] panelsShouldBeHidden:', panelsShouldBeHidden);
         if (this.leftPanelElement && this.rightPanelElement && this.togglePanelsButtonElement) {
             if (panelsShouldBeHidden) {
                 this.leftPanelElement.classList.remove('visible');
@@ -68,11 +72,17 @@ export default class DesktopLayout {
                 this.leftPanelElement.classList.add('visible');
                 this.rightPanelElement.classList.add('visible');
                 this.togglePanelsButtonElement.classList.remove('show-mode');
+                // Apply transparency and blur to panels
+                this.leftPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.25)';
+                this.leftPanelElement.style.backdropFilter = 'blur(20px) saturate(180%)';
+                this.rightPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.25)';
+                this.rightPanelElement.style.backdropFilter = 'blur(20px) saturate(180%)';
             }
             // Ensure old 'hidden' class (if it was ever used) is removed
             this.leftPanelElement.classList.remove('hidden');
             this.rightPanelElement.classList.remove('hidden');
              console.log(`[DesktopLayout] Panels initialized from localStorage. Hidden: ${panelsShouldBeHidden}`);
+             console.log('[DesktopLayout] leftPanel has visible after init:', this.leftPanelElement.classList.contains('visible'));
         } else {
             console.warn("[DesktopLayout] Panel elements not fully available for state initialization.");
         }
@@ -92,6 +102,16 @@ export default class DesktopLayout {
         this.leftPanelElement.classList.toggle('visible');
         this.rightPanelElement.classList.toggle('visible');
         this.togglePanelsButtonElement.classList.toggle('show-mode', arePanelsCurrentlyVisible); // show-mode means panels are now hidden
+
+        // Apply transparency and blur to panels if visible
+        if (this.leftPanelElement.classList.contains('visible')) {
+            this.leftPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.25)';
+            this.leftPanelElement.style.backdropFilter = 'blur(20px) saturate(180%)';
+        }
+        if (this.rightPanelElement.classList.contains('visible')) {
+            this.rightPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.25)';
+            this.rightPanelElement.style.backdropFilter = 'blur(20px) saturate(180%)';
+        }
 
         const newState = this.leftPanelElement.classList.contains('visible') ? 'visible' : 'hidden';
         console.log(`[DesktopLayout][toggleMainPanels] Panels toggled. New state: ${newState}. leftPanel visible: ${this.leftPanelElement.classList.contains('visible')}`);

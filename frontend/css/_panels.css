@@ -1,22 +1,27 @@
 /* Левая панель (Кнопки) */
 .panel.left-panel,
 .panel.right-panel {
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px); /* Added: Blur effect */
+  background-color: rgba(0, 0, 0, 0.4); /* Increased opacity for less transparency */
+  backdrop-filter: blur(30px) saturate(180%); /* Increased blur */
+  -webkit-backdrop-filter: blur(20px) saturate(180%); /* Safari support */
   padding: var(--button-spacing);
   flex-shrink: 0;
-  height: 100vh;
+  min-height: 100vh; /* Changed to min-height for auto vertical adjustment */
+  height: auto; /* Allow auto height */
   overflow: hidden;
+  z-index: 20; /* Above main-area */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3); /* Soft shadow */
   transition: transform 0.3s ease-in-out,
     opacity 0.3s ease-in-out; /* Optimized for performance */
 }
 
 .panel.left-panel {
-  max-width: 180px !important;
-  min-width: 120px !important;
-  overflow-y: auto !important;
+  width: calc(2 * 45px + 5 * var(--button-spacing)) !important;
+  overflow-y: auto !important; /* Enable scrolling for auto height adjustment */
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+  touch-action: none !important; /* Prevent browser from interpreting touch as pan/scroll */
 }
 
 .panel.left-panel::-webkit-scrollbar {
@@ -27,36 +32,42 @@
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
-  height: 100vh !important;
+  min-height: 100vh !important; /* Changed to min-height for auto vertical adjustment */
+  height: auto !important; /* Allow auto height */
+  width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))) !important;
+  touch-action: none !important; /* Prevent browser from interpreting touch as pan/scroll */
 }
 
 .right-panel .panel-section {
   transition: all 0.3s ease-in-out;
 }
 
-/* DESKTOP: Panels are hidden by default unless '.visible' is present */
+/* DESKTOP: Panels are visible by default */
 .panel.left-panel {
-  transform: translateX(-100%);
-  /* Hide left panel off-screen */
+  position: absolute;
+  left: 0;
+  transform: translateX(0);
+  /* Show left panel */
 }
 
 .panel.right-panel {
-  transform: translateX(100%);
-  /* Hide right panel off-screen */
+  position: absolute;
+  right: 0;
+  transform: translateX(0);
+  /* Show right panel */
 }
 
 .panel.left-panel,
 .panel.right-panel {
-  opacity: 0 !important;
-  flex: 0 0 0; /* Added: Collapse width and prevent taking space */
+  opacity: 1 !important;
+  flex: 0 0 auto; /* Allow width */
   padding-left: 0 !important;
   padding-right: 0 !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
   border-left-width: 0 !important;
   border-right-width: 0 !important;
-  pointer-events: none !important;
-  visibility: hidden;
+  pointer-events: auto !important;
   /* Will be toggled with delay */
   overflow: hidden !important;
   /* Ensure content is clipped */
@@ -66,31 +77,44 @@
   /* Delay visibility:hidden when hiding */
 }
 
+.panel.left-panel {
+  opacity: 0.3 !important;
+}
+
+.panel.right-panel {
+   opacity: 0.3 !important;
+}
+
+/* Отключение backdrop-filter для скрытых панелей */
+.panel.left-panel:not(.visible),
+.panel.right-panel:not(.visible) {
+ backdrop-filter: none;
+}
+
 /* DESKTOP: '.visible' class restores panel dimensions and opacity */
 .panel.left-panel.visible {
-  transform: translateX(0) !important;
-  flex: 0 0 calc(var(--button-size) * 2 + var(--button-spacing) * 3) !important; /* Original width */
-  max-width: 180px !important;
-  /* Original max-width */
-  opacity: 1 !important;
-  visibility: visible !important;
-  /* Show immediately */
-  pointer-events: auto !important;
-  padding: var(--button-spacing) !important;
-  /* Original padding */
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  border-left-width: 0 !important;
-  border-right-width: 0 !important;
-  overflow-y: auto !important;
-  /* Restore overflow */
-  transition-delay: 0s;
-  /* Ensure no delay when showing */
+    transform: translateX(0) !important;
+    width: calc(2 * 45px + 5 * var(--button-spacing)) !important;
+    /* New width */
+    opacity: 1 !important;
+    visibility: visible !important;
+    /* Show immediately */
+    pointer-events: auto !important;
+    padding: var(--button-spacing) !important;
+    /* Original padding */
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    overflow-y: auto !important;
+    /* Restore overflow */
+    transition-delay: 0s;
+    /* Ensure no delay when showing */
 }
 
 .panel.right-panel.visible {
-  width: clamp(20vw, 25vw, 30vw) !important;
-  /* Original width */
+  width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))) !important;
+  /* New width */
   opacity: 1 !important;
   transform: translateX(0) !important;
   padding: var(--button-spacing) !important;
@@ -106,6 +130,7 @@
   /* Restore overflow */
   transition-delay: 0s;
   /* Ensure no delay when showing */
+  touch-action: none !important; /* Prevent browser from interpreting touch as pan/scroll */
 }
 
 /* --- Left Panel Restructure Styles --- */
@@ -132,6 +157,11 @@
   /* Groups take full width of panel */
   gap: var(--button-spacing);
   /* Space between buttons in a group */
+  margin-top: -20px; /* Lift groups up */
+}
+
+.left-panel-group.top-group {
+  gap: 5px; /* Уменьшить расстояние между кнопками в top-group для приближения к линии */
 }
 
 /* Styling for buttons in the top group of the left panel */
@@ -151,14 +181,25 @@
 
 .left-panel-group.central-block {
   display: grid;
-  /* Revert to grid for central block for 2-column layout */
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--button-spacing);
+  /* Grid for central block with 2-column layout: odd buttons left, even buttons right */
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
   width: 100%;
   /* Ensure it uses the panel width */
   padding-left: var(--button-spacing);
   /* Align with panel padding */
   padding-right: var(--button-spacing);
+  justify-items: center; /* Center buttons horizontally in their grid cells */
+  align-items: center; /* Center buttons vertically in their grid cells */
+}
+
+/* Arrange buttons: odd ones (1st, 3rd, 5th...) in left column, even ones (2nd, 4th, 6th...) in right column */
+.left-panel-group.central-block .control-button:nth-child(odd) {
+  grid-column: 1;
+}
+
+.left-panel-group.central-block .control-button:nth-child(even) {
+  grid-column: 2;
 }
 
 .panel-button {
@@ -259,18 +300,31 @@
   border: none;
   height: 1px;
   background-color: var(--panel-border);
-  margin-top: var(--spacing-sm);
-  /* Use theme spacing */
+  margin-top: calc(var(--spacing-sm) - 40px);
+  /* Lift up */
   margin-bottom: var(--spacing-sm);
 }
 
 .left-panel-group.bottom-group {
-  flex-direction: row;
-  /* Icons side-by-side */
-  justify-content: space-around;
-  /* Distribute icons evenly */
-  padding: 0 var(--spacing-md);
-  /* Add some padding to the sides of the group */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--button-spacing);
+  width: 100%;
+  padding-left: var(--button-spacing);
+  padding-right: var(--button-spacing);
+  justify-items: center;
+  align-items: center;
+}
+
+/* Arrange buttons: odd ones in left column, even ones in right column */
+.left-panel-group.bottom-group .control-button:nth-child(odd),
+.left-panel-group.bottom-group .panel-icon-link:nth-child(odd) {
+  grid-column: 1;
+}
+
+.left-panel-group.bottom-group .control-button:nth-child(even),
+.left-panel-group.bottom-group .panel-icon-link:nth-child(even) {
+  grid-column: 2;
 }
 
 .panel-icon-link {
@@ -354,4 +408,52 @@
 /* Стили панелей */
 .panel-section {
   transition: all 0.3s ease-in-out;
+}
+
+/* Ensure content inside panels is fully opaque */
+.panel .control-button,
+.panel .panel-button,
+.panel .view-toggle-btn,
+.panel .panel-icon-link,
+.panel .panel-hr,
+.panel .panel-section,
+.panel .content-container,
+.panel .input-container,
+.panel .controls-container,
+.panel .left-panel-group,
+.panel .central-block,
+.panel .bottom-group,
+.panel .right-panel-view,
+.panel .timeline-item,
+.panel .version-label,
+.panel .version-text,
+.panel .chat-message,
+.panel .modal-content,
+.panel .modal h2,
+.panel .modal p,
+.panel .modal ul,
+.panel .modal li,
+.panel .modal button,
+.panel .modal textarea,
+.panel .modal select,
+.panel .modal input,
+.panel svg,
+.panel .button-text,
+.panel .fab,
+.panel .icon-show-panels,
+.panel .icon-hide-panels,
+.panel #gesture-line {
+  opacity: 1 !important;
+  color: rgba(255, 255, 255, 1) !important;
+}
+
+/* Стили для окон в правой панели с отступами 5% и закругленными углами */
+#myHologramsView,
+#myGesturesView,
+#chatHistory {
+  padding: 5% !important;
+  border-radius: 15px !important;
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  margin: 10px 0 !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
 }

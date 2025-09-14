@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as TWEEN from '@tweenjs/tween.js';
 
 /**
  * Initializes the Three.js scene, camera, renderer, and basic lighting.
@@ -10,6 +12,7 @@ export async function initializeScene(state) {
   // Scene
   state.scene = new THREE.Scene();
   state.scene.background = new THREE.Color(0x000000); // Black background
+  state.scene.position.set(0, 0, 0); // Shift scene left by 128 units
 
   // --- WebGL Renderer Initialization ---
   try {
@@ -86,8 +89,8 @@ export async function initializeScene(state) {
 
   // Camera - Orthographic
   // Dimensions based on gridContainer, ensuring it's available
-  const containerWidth = gridContainer ? gridContainer.clientWidth : window.innerWidth;
-  const containerHeight = gridContainer ? gridContainer.clientHeight : window.innerHeight;
+  const containerWidth = gridContainer && gridContainer.clientWidth > 0 ? gridContainer.clientWidth : window.innerWidth;
+  const containerHeight = gridContainer && gridContainer.clientHeight > 0 ? gridContainer.clientHeight : window.innerHeight;
   console.log(`[sceneSetup] Container dimensions: Width = ${containerWidth}, Height = ${containerHeight}`);
 
   const camLeft = -containerWidth / 2;
@@ -102,6 +105,73 @@ export async function initializeScene(state) {
   state.camera.lookAt(0, 0, 0); // Ensure camera looks at the origin
   state.activeCamera = state.camera; // Set default active camera
 
+  // Add OrbitControls for orthographic camera
+  state.controls = new OrbitControls(state.camera, state.renderer.domElement);
+  state.controls.enableRotate = true;
+  state.controls.enableZoom = false;
+  state.controls.enablePan = true;
+  state.controls.minPolarAngle = 0; // 0 degrees
+  state.controls.maxPolarAngle = Math.PI; // 180 degrees
+  state.controls.minAzimuthAngle = -Math.PI / 2; // -90 degrees
+  state.controls.maxAzimuthAngle = Math.PI / 2; // 90 degrees
+
+  // Store initial camera position and target for auto-return
+  state.initialCameraPosition = state.camera.position.clone();
+  state.initialControlsTarget = new THREE.Vector3(0, 0, 0); // Target at origin
+  state.controls.target.copy(state.initialControlsTarget);
+
+  // Auto-return animation properties
+  state.returnTween = null;
+  state.returnDelay = 0; // No delay before starting return animation
+
+  // Add event listener for when user stops interacting
+  state.controls.addEventListener('end', () => {
+    // Clear any existing tween
+    if (state.returnTween) {
+      state.returnTween.stop();
+    }
+
+    // Start delayed return animation
+    setTimeout(() => {
+      state.startReturnAnimation();
+    }, state.returnDelay);
+  });
+
+  // Function to start TWEEN-based return animation
+  state.startReturnAnimation = function() {
+    const startPosition = state.camera.position.clone();
+    const startTarget = state.controls.target.clone();
+
+    // Create tween for camera position
+    const positionTween = new TWEEN.Tween(startPosition)
+      .to(state.initialCameraPosition, 300) // 0.3 seconds duration
+      .easing(TWEEN.Easing.Quadratic.Out) // Smooth easing
+      .onUpdate(() => {
+        state.camera.position.copy(startPosition);
+        state.camera.lookAt(0, 0, 0); // Update lookAt during animation
+      });
+
+    // Create tween for controls target
+    const targetTween = new TWEEN.Tween(startTarget)
+      .to(state.initialControlsTarget, 300)
+      .easing(TWEEN.Easing.Quadratic.Out)
+      .onUpdate(() => {
+        state.controls.target.copy(startTarget);
+        state.controls.update();
+      });
+
+    // Start both tweens
+    positionTween.start();
+    targetTween.start();
+
+    state.returnTween = positionTween; // Store reference to stop if needed
+  };
+
+  // Function to animate return (now just updates TWEEN)
+  state.animateReturn = function() {
+    // TWEEN update is handled in rendering.js
+  };
+
   // Set renderer size AFTER camera is configured with container dimensions
   state.renderer.setSize(containerWidth, containerHeight);
 
@@ -113,6 +183,41 @@ export async function initializeScene(state) {
     console.warn('#grid-container not found for renderer. Appending to document.body as a fallback.');
     document.body.appendChild(state.renderer.domElement);
   }
+
+  // Function to update renderer and camera sizes
+  state.updateRendererSize = function() {
+    const newWidth = gridContainer && gridContainer.clientWidth > 0 ? gridContainer.clientWidth : window.innerWidth;
+    const newHeight = gridContainer && gridContainer.clientHeight > 0 ? gridContainer.clientHeight : window.innerHeight;
+
+    state.renderer.setSize(newWidth, newHeight);
+    state.camera.left = -newWidth / 2;
+    state.camera.right = newWidth / 2;
+    state.camera.top = newHeight / 2;
+    state.camera.bottom = -newHeight / 2;
+    state.camera.updateProjectionMatrix();
+
+    // Update controls after camera changes
+    if (state.controls) {
+      state.controls.update();
+    }
+
+    // Обновление позиции и масштаба hologramPivot при resize
+    if (state.hologramRendererInstance) {
+      const hologramPivot = state.hologramRendererInstance.getHologramPivot();
+      if (hologramPivot) {
+        // Center hologram: account for scaled width (312), shifted left by 7%
+        const dynamicOffset = (newWidth / 2) - 156 - 0.07 * newWidth;
+        hologramPivot.position.x = dynamicOffset;
+        hologramPivot.scale.set(1.236, 1.236, 1.236); // Increased scale by 3%
+        console.log(`[sceneSetup] HologramPivot updated on resize: position x=${dynamicOffset}, scale x=1, y=1, z=1`);
+      }
+    }
+
+    console.log(`[sceneSetup] Updated renderer size: Width = ${newWidth}, Height = ${newHeight}`);
+  };
+
+  // Add resize event listener
+  window.addEventListener('resize', state.updateRendererSize);
 
   // Basic Lighting
   // Ambient light: provides overall illumination to the scene

@@ -11,3 +11,9 @@
 @import './css/_utility.css';
 @import './css/_responsive.css';
 @import './css/_animations.css';
+
+/* Fix for hidden scroll area */
+html, body {
+  height: 100vh !important;
+  overflow: hidden !important;
+}

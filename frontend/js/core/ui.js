@@ -200,19 +200,14 @@ export function togglePanels() {
     console.error('Required elements not found for togglePanels');
     return;
   }
-  
+
   const willBeHidden = !ui.leftPanel.classList.contains('hidden');
-  
-  // Перемещаем кнопку в body, если она еще не там
-  if (ui.togglePanelsButton.parentNode !== document.body) {
-    document.body.appendChild(ui.togglePanelsButton);
-  }
-  
+
   ui.leftPanel.classList.toggle('hidden', willBeHidden);
   ui.rightPanel.classList.toggle('hidden', willBeHidden);
   ui.togglePanelsButton.classList.toggle('show-mode', willBeHidden);
   localStorage.setItem('panelsHidden', willBeHidden.toString());
-  
+
   setTimeout(() => {
     window.dispatchEvent(new Event('resize'));
   }, 50);
