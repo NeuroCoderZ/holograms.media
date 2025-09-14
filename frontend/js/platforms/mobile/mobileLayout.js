@@ -46,6 +46,34 @@ export default class MobileLayout {
             return; // Abort initialization
         }
 
+        // Dynamic positioning for toggle button - centralized mobile/desktop logic
+        const isMobile = window.innerWidth <= 768;
+        if (this.togglePanelsButtonElement) {
+            this.togglePanelsButtonElement.style.position = 'fixed';
+            this.togglePanelsButtonElement.style.left = isMobile ? '0px' : '20px';
+            this.togglePanelsButtonElement.style.top = 'auto';
+            this.togglePanelsButtonElement.style.zIndex = '10001';
+            console.log(`[MobileLayout] Dynamic left set for #togglePanelsButton: ${isMobile ? '0px' : '20px'} (isMobile: ${isMobile})`);
+            console.log('[MobileLayout] Left panel rect left:', this.leftPanelElement ? this.leftPanelElement.getBoundingClientRect().left : 'N/A');
+            console.log('[MobileLayout] Button computed left after set:', window.getComputedStyle(this.togglePanelsButtonElement).left);
+        }
+
+        if (isMobile && this.togglePanelsButtonElement) {
+            setTimeout(() => {
+                console.log('[MobileLayout] Initial position update after 1500ms timeout');
+                this.updateToggleButtonPosition();
+            }, 1500);
+        }
+
+        if (this.leftPanelElement) {
+            const observer = new MutationObserver(() => {
+                console.log('[MobileLayout] Mutation in left-panel detected, updating toggle button position');
+                this.updateToggleButtonPosition();
+            });
+            observer.observe(this.leftPanelElement, { childList: true, subtree: true });
+            console.log('[MobileLayout] MutationObserver set up for left-panel changes');
+        }
+
         this.initializeMainPanelState();
         this.initializeGestureArea();
 
@@ -53,6 +81,12 @@ export default class MobileLayout {
             this.togglePanelsButtonElement.addEventListener('click', () => this.toggleMainPanels());
         }
         console.log("MobileLayout initialized.");
+        if (this.togglePanelsButtonElement) {
+            window.addEventListener('resize', () => {
+                console.log('[MobileLayout] Resize event triggered, updating toggle button position');
+                this.updateToggleButtonPosition();
+            });
+        }
     }
 
     initializeMainPanelState() {
@@ -106,6 +140,57 @@ export default class MobileLayout {
         const isPortrait = window.innerHeight > window.innerWidth;
         this.gestureAreaElement.classList.toggle('portrait', isPortrait);
         this.gestureAreaElement.classList.toggle('landscape', !isPortrait);
+
+        // Set hologram margins to 5% left and right for portrait orientation on smartphone
+        if (isPortrait) {
+            const gridContainer = document.getElementById('grid-container');
+            if (gridContainer) {
+                const windowWidth = window.innerWidth;
+                const marginSides = windowWidth * 0.05;
+                const marginTop = window.innerHeight * 0.05;
+                const marginBottom = window.innerHeight * 0.01;
+
+                gridContainer.style.left = `${marginSides}px`;
+                gridContainer.style.width = `${windowWidth - (2 * marginSides)}px`;
+                gridContainer.style.top = `${marginTop}px`;
+                gridContainer.style.height = `${window.innerHeight - marginTop - marginBottom}px`;
+
+                // Update renderer and camera
+                if (this.state.renderer) {
+                    this.state.renderer.setSize(windowWidth - (2 * marginSides), window.innerHeight - marginTop - marginBottom);
+                }
+                if (this.state.activeCamera) {
+                    if (this.state.activeCamera.isOrthographicCamera) {
+                        this.state.activeCamera.left = -(windowWidth - (2 * marginSides)) / 2;
+                        this.state.activeCamera.right = (windowWidth - (2 * marginSides)) / 2;
+                        this.state.activeCamera.top = (window.innerHeight - marginTop - marginBottom) / 2;
+                        this.state.activeCamera.bottom = -(window.innerHeight - marginTop - marginBottom) / 2;
+                        this.state.activeCamera.updateProjectionMatrix();
+                    } else if (this.state.activeCamera.isPerspectiveCamera) {
+                        this.state.activeCamera.aspect = (windowWidth - (2 * marginSides)) / (window.innerHeight - marginTop - marginBottom);
+                        this.state.activeCamera.updateProjectionMatrix();
+                    }
+                }
+            }
+        }
+
         console.log(`[MobileLayout] Orientation changed. Portrait: ${isPortrait}`);
+    }
+
+    /**
+     * Positions the toggle button at fixed top below Telegram on mobile.
+     */
+    updateToggleButtonPosition() {
+        if (!this.togglePanelsButtonElement) {
+            console.warn('[MobileLayout] Toggle button element not available for positioning.');
+            return;
+        }
+
+        if (window.innerWidth > 768) {
+            return; // Only for mobile
+        }
+
+        this.togglePanelsButtonElement.style.top = 'calc(var(--button-size) * 25 + var(--spacing-md) * 3)';
+        console.log('[MobileLayout] Toggle button positioned at fixed top: calc(var(--button-size) * 4 + var(--spacing-md) * 3)');
     }
 }

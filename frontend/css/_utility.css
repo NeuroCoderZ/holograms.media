@@ -97,7 +97,7 @@ textarea:focus:not(:placeholder-shown) {
   height: 1px;
   background-color: var(--panel-border);
   width: 100%;
-  margin: 0;
+  margin: calc(var(--spacing-sm) + 2px) 0;
   padding: 0;
   flex-shrink: 0;
   position: relative;
@@ -111,8 +111,8 @@ textarea:focus:not(:placeholder-shown) {
   flex-direction: column;
   overflow: hidden;
   min-height: 200px;
-  margin-bottom: 10px;
-  /* Увеличенный отступ снизу */
+  margin-bottom: 0;
+  /* Убираем отступ для максимального приближения к линии */
 }
 
 /* Контейнер для ввода (средняя часть) */
@@ -122,8 +122,8 @@ textarea:focus:not(:placeholder-shown) {
   flex-direction: column;
   min-height: 120px;
   max-height: 200px;
-  margin-top: 10px;
-  /* Увеличенный отступ сверху */
+  margin-top: 0;
+  /* Убираем отступ для максимального приближения к линии */
 }
 
 /* Блок с элементами управления (нижняя часть панели) */

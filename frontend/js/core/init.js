@@ -166,6 +166,12 @@ export async function initCore() {
   state.hologramRendererInstance = new HologramRenderer(state.scene, "test_room", "user_local_test");
   console.log('HologramRenderer initialized.');
 
+  // Установка позиции и масштаба hologramPivot
+  const hologramPivot = state.hologramRendererInstance.getHologramPivot();
+  hologramPivot.position.x = 0; // Центрирование голограммы
+  hologramPivot.scale.set(1, 1, 1); // Оригинальный размер без масштабирования
+  console.log(`HologramPivot positioned: x=65, scaled: x=1, y=1, z=1`);
+
   if (state.renderer) {
     state.xrSessionManagerInstance = new XRSessionManager(state.renderer);
     console.log('XRSessionManager initialized.');
