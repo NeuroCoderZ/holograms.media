@@ -1,5 +1,5 @@
 // import { state } from './init.js'; // Removed import
-import * as THREE from 'three'; // Added import for THREE
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js'; // Added import for THREE
 import { updateHologramLayout } from '../ui/layoutManager.js'; // Предполагаемое место, пока оставляем как есть
 import { debounce } from '../utils/helpers.js';
 

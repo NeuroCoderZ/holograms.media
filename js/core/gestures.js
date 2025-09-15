@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
 /**
  * Модуль для управления жестами с использованием Hammer.js
  * Отвечает за обработку жестов панорамирования и масштабирования для голограммы
@@ -27,7 +27,7 @@ const initialHologramRotation = new THREE.Euler(0, 0, 0); // Исходное в
 export function initializeHammerGestures(passedState) { // Changed signature
   localStateRef = passedState; // Assign passedState
   console.log('Инициализация обработчиков жестов Hammer.js...');
-  
+
   // Инициализация Hammer.js только если localStateRef.renderer.domElement существует
   let hammer;
   if (localStateRef.renderer && localStateRef.renderer.domElement) { // Use localStateRef

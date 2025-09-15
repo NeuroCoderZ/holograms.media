@@ -1,8 +1,8 @@
 // Manages the hologram's position, scale, and adaptive behavior.
 
 
-import * as THREE from 'three';
 import * as TWEEN from '@tweenjs/tween.js';
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
 
 const { Group } = THREE;
 

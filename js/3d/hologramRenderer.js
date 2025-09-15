@@ -1,20 +1,17 @@
-import * as THREE from 'three';
-import { Line2 } from 'three/addons/lines/Line2.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { semitones, GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE } from '../config/hologramConfig.js';
+import { Line2 } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/lines/Line2.js';
+import { LineGeometry } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/lines/LineGeometry.js';
+import { LineMaterial } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/lines/LineMaterial.js';
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../config/hologramConfig.js';
 // import { MeshBasicNodeMaterial } from 'three/addons/nodes/Nodes.js'; // This was commented out, keeping it so
-import netHoloGlyphClient from '../services/netHoloGlyphClient.js'; // New WebRTC client
 import eventBus from '../core/eventBus.js'; // Added for WebAudioEngine integration
+import netHoloGlyphClient from '../services/netHoloGlyphClient.js'; // New WebRTC client
 
 // Direct imports are used, so these lines are not necessary.
 
 /**
  * HologramRenderer class manages the 3D visualization of the hologram in the Three.js scene.
- * It creates and updates a grid-like structure representing audio data, with columns 
+ * It creates and updates a grid-like structure representing audio data, with columns
  * that react to audio levels.
  */
 export class HologramRenderer {
@@ -163,7 +160,7 @@ export class HologramRenderer {
     const desiredLineWidth = 0.02; // World units for LineMaterial
 
     const origin = new THREE.Vector3(0, 0, 0);
-    
+
     // Define end points for positive and negative axes
     const xEndPos = new THREE.Vector3(xLength, 0, 0);
     const xEndNeg = new THREE.Vector3(-xLength, 0, 0); // Negative X-axis
@@ -263,7 +260,7 @@ export class HologramRenderer {
    */
   _createSequencerGrid(width, height, depth, cellSize, color, position, isLeftGrid) {
     const group = new THREE.Group();
-    
+
     const sphereRadiusForAxis = cellSize * 0.5;
 
     const gridVis = this._createGridVisualization(width, height, depth, cellSize, color);
@@ -342,7 +339,7 @@ export class HologramRenderer {
     const columnMesh = new THREE.Mesh(geometry, material);
 
     columnMesh.position.set(width / 2, (semitoneIndex + 1) * 2, 0);
-    
+
     columnGroup.add(columnMesh);
 
     return columnGroup;
@@ -405,7 +402,7 @@ export class HologramRenderer {
       const leftLevelDb = dbLevels[index];
       const rightLevelDb = dbLevels[index + 130]; // 130 is the number of frequencies
       const panAngle = panAngles[index];
-      
+
       const channels = [
         { meshGroup: columnPair.left, levelDb: leftLevelDb, isLeft: true },
         { meshGroup: columnPair.right, levelDb: rightLevelDb, isLeft: false },
