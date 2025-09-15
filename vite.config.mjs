@@ -6,6 +6,7 @@ import { defineConfig } from 'vite';
 const __dirname = resolve();
 
 export default defineConfig({
+  base: '/',
   root: '.',
   server: {
     host: true,
