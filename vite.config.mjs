@@ -1,5 +1,4 @@
 // vite.config.js (ФИНАЛЬНАЯ, АБСОЛЮТНАЯ ВЕРСИЯ)
-import fs from 'fs';
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
 
@@ -7,11 +6,11 @@ import { defineConfig } from 'vite';
 const __dirname = resolve();
 
 export default defineConfig({
-  root: 'frontend',
+  root: '.',
   server: {
     host: true,
     port: 8000,
-    
+
     proxy: {
       '/ws': {
         target: 'ws://127.0.0.1:8001',

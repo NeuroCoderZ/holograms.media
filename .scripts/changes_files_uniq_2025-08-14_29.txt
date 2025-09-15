@@ -1,0 +1,101 @@
+# Аннотированный список кандидатов (решения: ОСТАВИТЬ / ИСКЛЮЧИТЬ / ОСТАВИТЬ_ЧАСТИЧНО)
+# Политика: большие файлы (>1MB) добавляем в .gitignore, за исключением WASM, которые включаем по отдельному согласию.
+# Tria: оставляем код и мелкие glue-файлы (Triabots, сборщики запросов), ИСКЛЮЧАЕМ большие артефакты (эмбеддинги, faiss, .db, autorag_final_chunks).
+
+backend/api/v1/endpoints/tria_commands.py  — ОСТАВИТЬ (запросы Tria к Cloudflare autorag)
+backend/app.py  — ОСТАВИТЬ (основное приложение FastAPI; нужно для сигнального сервера)
+backend/core/models/hologram_embedding_models.py  — ОСТАВИТЬ
+backend/models/tria_models.py  — ОСТАВИТЬ (модели для Tria endpoints; маленький файл)
+backend/requirements.txt  — ОСТАВИТЬ (содержит тяжёлые опции; отметить в README как optional)
+backend/routers/chat_sessions.py  — ОСТАВИТЬ
+backend/routers/gestures_ws.py  — ОСТАВИТЬ
+backend/routers/interaction_chunks.py  — ОСТАВИТЬ
+backend/Tria  — ОСТАВИТЬ_ЧАСТИЧНО (оставляем код и интеграции; ИСКЛЮЧАЕМ большие данные: *.jsonl, *.faiss, *.db, /autorag_final_chunks/)
+backend/tria_bots/CoordinationService.py  — ОСТАВИТЬ (код triabots разрешён)
+backend/tria_bots/LiveCodeAnalyzer.py  — ОСТАВИТЬ
+backend/tria_bots/tria_agents.py  — ОСТАВИТЬ
+backend/tria_bots/tria_context.py  — ОСТАВИТЬ
+backend/tria_bots/tria_knowledge_extractor.py  — ОСТАВИТЬ
+backend/tria_bots/tria_orchestrator.py  — ОСТАВИТЬ
+Dockerfile  — ОСТАВИТЬ (проверить на наличие секретов перед пушем)
+docs/HologramsMedia.md  — ОСТАВИТЬ (канонический документ)
+docs/NEOLANG_WHITEPAPER_1.1.txt  — ОСТАВИТЬ
+docs/RU/HolographicMemory_Android_WhitePaper.md  — ОСТАВИТЬ
+frontend/css/_animations.css  — ОСТАВИТЬ
+frontend/css/_auth.css  — ОСТАВИТЬ
+frontend/css/_base.css  — ОСТАВИТЬ
+frontend/css/_buttons.css  — ОСТАВИТЬ
+frontend/css/_chat.css  — ОСТАВИТЬ
+frontend/css/_editor.css  — ОСТАВИТЬ
+frontend/css/fontawesome.css  — ОСТАВИТЬ (проверить лицензию)
+frontend/css/_main_area.css  — ОСТАВИТЬ
+frontend/css/_modals.css  — ОСТАВИТЬ
+frontend/css/_panels.css  — ОСТАВИТЬ
+frontend/css/_responsive.css  — ОСТАВИТЬ
+frontend/css/_timeline.css  — ОСТАВИТЬ
+frontend/css/_utility.css  — ОСТАВИТЬ
+frontend/css/_variables.css  — ОСТАВИТЬ
+frontend/js/3d/hologramRenderer.js  — ОСТАВИТЬ
+frontend/js/agents/AudioAgent.js  — ОСТАВИТЬ
+frontend/js/agents/BaseAgent.js  — ОСТАВИТЬ
+frontend/js/agents/MemoryAgent.js  — ОСТАВИТЬ
+frontend/js/agents/OrchestrationAgent.js  — ОСТАВИТЬ
+frontend/js/agents/SynthesisAgent.js  — ОСТАВИТЬ
+frontend/js/agents/VisualAgent.js  — ОСТАВИТЬ
+frontend/js/config/hologramConfig.js  — ОСТАВИТЬ
+frontend/js/core/init.js  — ОСТАВИТЬ
+frontend/js/core/SQLiteEmbeddingService.js  — ОСТАВИТЬ (проверить, нет ли встроенных БД)
+frontend/js/core/TriaBiosService.js  — ОСТАВИТЬ (frontend glue для Tria — нужен)
+frontend/js/core/TriaDBClient.js  — ОСТАВИТЬ (Tria glue)
+frontend/js/core/TriaOrchestrator.js  — ОСТАВИТЬ (Tria glue)
+frontend/js/services/gestureIntentClient.js  — ОСТАВИТЬ
+frontend/js/services/netHoloGlyphClient.js  — ОСТАВИТЬ
+frontend/js/services/netHoloGlyphClient.mjs  — ОСТАВИТЬ
+frontend/js/services/netHoloGlyphClient_new.mjs  — ОСТАВИТЬ
+frontend/js/SmartHologram.js  — ОСТАВИТЬ
+frontend/js/workers/tria_db_worker.js  — ОСТАВИТЬ (код worker'а оставить; проверить на бины)
+frontend/public/data/embeddings_new_3072d_archive.json  — ИСКЛЮЧИТЬ (эмбеддинги создаются и хранятся в Cloudflare)
+frontend/public/sql-wasm.js  — ОСТАВИТЬ
+frontend/public/sql-wasm.wasm  — ОСТАВИТЬ (WASM runtime — исключение правил про >1MB)
+frontend/public/wasm/holographic_core_bg.wasm  — ОСТАВИТЬ (WASM core — включаем)
+frontend/public/wasm/holographic_core_bg.wasm.d.ts  — ОСТАВИТЬ
+frontend/public/wasm/holographic_core.d.ts  — ОСТАВИТЬ
+frontend/public/wasm/holographic_core.js  — ОСТАВИТЬ (если включаем wasm — оставить wrapper)
+frontend/public/wasm/package.json  — ОСТАВИТЬ
+.gitignore  — ОСТАВИТЬ (убедиться, что перечислены большие артефакты и node_modules)
+gold_memory_tria.jsonl  — ИСКЛЮЧИТЬ (эмбеддинги Tria — НЕ пушить)
+holographic_core/Cargo.lock  — ОСТАВИТЬ
+holographic_core/Cargo.toml  — ОСТАВИТЬ
+holographic_core/src/audio_processor.rs  — ОСТАВИТЬ
+holographic_core/src/gesture_mapper.rs  — ОСТАВИТЬ
+holographic_core/src/hologram_generator.rs  — ОСТАВИТЬ
+holographic_core/src/lib.rs  — ОСТАВИТЬ
+jsconfig.json  — ОСТАВИТЬ
+localhost+4-key.pem  — ИСКЛЮЧИТЬ (приватный ключ — не пушить)
+localhost+4.pem  — ИСКЛЮЧИТЬ (сертификат/ключ — не пушить)
+package.json  — ОСТАВИТЬ
+package-lock.json  — ОСТАВИТЬ
+search_memory.js  — ОСТАВИТЬ
+search_memory.js.simple_backup  — ОСТАВИТЬ (можно объединить с основным позже)
+tria_bios_test/index.html  — ОСТАВИТЬ (маленький демо-файл)
+tria_bios_test/test.js  — ОСТАВИТЬ
+vite  — ОСТАВИТЬ (проверить содержимое; исключить build артефакты если есть)
+vite.config.mjs  — ОСТАВИТЬ
+
+# Рекомендации / следующие действия:
+# 1) Добавить в .gitignore следующие шаблоны (я уже внес базовые):
+#    /backend/Tria/*.jsonl
+#    /backend/Tria/*.faiss
+#    /backend/Tria/*.db
+#    /backend/Tria/autorag_final_chunks/
+#    /tria-genkit-core/holographic_memory_v1.*
+#    /holographic_memory_v1.tar.gz
+#    /gold_memory_tria.jsonl
+#    node_modules/
+#    *.pem
+#
+# 2) Если вы подтвердите — я создам новую ветку 'otpravit-bez-tria' на основе origin/main
+#    и подготовлю коммит с этими файлами (без push). Я покажу список включённых файлов и diff.
+# 3) После вашего ревью сделаю git push --dry-run и покажу что бы пошло; вы дадите финальный ОК для реального push.
+
+# Примечание: Я не удаляю файлы, только маркирую их. После вашей явной команды выполню нужные git-операции.
