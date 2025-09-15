@@ -45,7 +45,9 @@ mcp.json
 *.mp4
 *.zip
 *.pdf
+*.tar.gz
 .genkit/
 backend/Tria/TriaMobile/
 backend/Tria/universal-sentence-encoder-tensorflow1-lite-v2/
 backend/Tria/autorag_final_chunks/
+tria-genkit-core/
