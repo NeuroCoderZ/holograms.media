@@ -1,8 +1,8 @@
 // frontend/js/core/domEventHandlers.js
-import * as THREE from 'three';
 import axios from 'axios'; // Added import
-import { state } from './init.js';
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
+import { state } from './init.js';
 // Assuming THREE is global for applyPrompt example
 const { } = THREE; // Placeholder if specific THREE components are needed later, currently none directly in this file after refactor
 

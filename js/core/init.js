@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
 // frontend/js/core/init.js - Инициализация основного состояния и конфигурации приложения
 
 import { semitones } from '../config/hologramConfig.js';
@@ -47,7 +47,7 @@ export const state = {
     pausedAt: 0,
     startOffset: 0,
     activeSource: 'microphone',
-    
+
     // Specific for file player (from script.js logic)
     filePlayerAnalysers: null,
     filePlayerGainNode: null,
@@ -127,16 +127,16 @@ export const state = {
 };
 
 // Импортируем функцию инициализации Three.js сцены
-import { initializeScene } from '../3d/sceneSetup.js';
-import { MicrophoneManager } from '../audio/microphoneManager.js';
-import { AudioFilePlayer } from '../audio/audioFilePlayer.js'; // Added AudioFilePlayer import
 import { HologramRenderer } from '../3d/hologramRenderer.js';
-import { XRSessionManager } from '../xr/webxr_session_manager.js';
+import { initializeScene } from '../3d/sceneSetup.js';
+import { AudioFilePlayer } from '../audio/audioFilePlayer.js'; // Added AudioFilePlayer import
+import { MicrophoneManager } from '../audio/microphoneManager.js';
 import PanelManager from '../ui/panelManager.js';
+import { XRSessionManager } from '../xr/webxr_session_manager.js';
 
 export async function initCore() {
   console.log('Инициализация ядра приложения...');
-  
+
   const sceneInitialized = await initializeScene(state);
 
   if (!sceneInitialized) {
@@ -203,7 +203,7 @@ export async function initCore() {
   // Removed auto-initialization of microphone here, it's now handled by initializeMultimedia on user action (or by explicit call in main.js)
   // The check for localStorage.getItem('microphonePermissionRequestedOnce') should be in initializeMultimedia or its caller
   console.log('Microphone and AudioFilePlayer instances initialized, auto-initialization logic for microphone moved.');
-  
+
   if (state.camera) {
     state.camera.aspect = window.innerWidth / window.innerHeight;
     state.camera.updateProjectionMatrix();

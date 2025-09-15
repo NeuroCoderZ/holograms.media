@@ -1,6 +1,6 @@
 // frontend/js/SmartHologram.js
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/controls/OrbitControls.js';
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
 
 export class SmartHologram {
     constructor(container, aiEngine) {
@@ -12,7 +12,7 @@ export class SmartHologram {
         this.ai = aiEngine; // Принимаем экземпляр AI-движка извне
         this.hologramObjects = new THREE.Group();
     }
-    
+
     async init() {
         console.log('Initializing SmartHologram...');
         // Renderer setup
@@ -20,18 +20,18 @@ export class SmartHologram {
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.container.appendChild(this.renderer.domElement);
         console.log('Renderer created and appended.');
-        
+
         // Scene setup
         this.scene.background = new THREE.Color(0x101020);
         this.scene.add(this.hologramObjects);
         this.setupLighting();
         this.setupCamera();
         console.log('Scene, lighting, and camera setup complete.');
-        
+
         // UI
         this.setupInterface();
         console.log('UI setup complete.');
-        
+
         // Start animation loop
         this.animate();
 
@@ -39,19 +39,19 @@ export class SmartHologram {
         window.addEventListener('resize', () => this.onWindowResize());
         console.log('SmartHologram initialization complete.');
     }
-    
+
     setupLighting() {
         this.scene.add(new THREE.AmbientLight(0x404040, 2));
         const light = new THREE.DirectionalLight(0xffffff, 1.5);
         light.position.set(10, 10, 10);
         this.scene.add(light);
     }
-    
+
     setupCamera() {
         this.camera.position.set(0, 5, 15);
         this.controls.update();
     }
-    
+
     setupInterface() {
         const uiContainer = document.createElement('div');
         uiContainer.style.cssText = 'position: fixed; top: 10px; left: 10px; z-index: 100; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px;';
@@ -117,7 +117,7 @@ export class SmartHologram {
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
-    
+
     animate() {
         requestAnimationFrame(() => this.animate());
         this.controls.update();

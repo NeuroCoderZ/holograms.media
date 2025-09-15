@@ -1,10 +1,8 @@
 // frontend/js/ui/layoutManager.js
-import * as THREE from 'three';
 import * as TWEEN from '@tweenjs/tween.js';
 // import { state } from '../core/init.js'; // Removed import
-import eventBus from '../core/eventBus.js';
-import { getPanelWidths, getLeftPanelWidth } from '../core/resizeHandler.js';
 import { HOLOGRAM_REFERENCE_HEIGHT } from '../config/hologramConfig.js';
+import eventBus from '../core/eventBus.js';
 
 let gridContainer = null;
 let initialLayout = { top: 0, left: 0, width: 0, height: 0 };
