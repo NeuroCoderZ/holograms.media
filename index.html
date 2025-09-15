@@ -4,12 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Holograms Media</title>
-  
-  
+
+
 
   <link rel="stylesheet" href="style.css">
   <!-- Font Awesome for icons (add if not already present) -->
   <link rel="stylesheet" href="/css/fontawesome.css">
+
+  <!-- NLWeb Search Styles -->
+  <link rel="stylesheet" href="https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev/nlweb-dropdown-chat.css">
+  <link rel="stylesheet" href="https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev/common-chat-styles.css">
   <!-- Favicon and Meta -->
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="manifest" href="manifest.json">
@@ -21,7 +25,7 @@
   <meta name="twitter:card" content="summary_large_image">
 
   <!-- MediaPipe Libraries - These will be loaded via import map if used as modules, or kept if used as global scripts -->
-  
+
   <style>
     /* Стили для кнопок аутентификации и аватара */
     #auth-group { display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; }
@@ -141,7 +145,7 @@
       <!-- Сюда будут добавляться сообщения чата -->
       <p style="text-align: center; margin-top: 20px; color: grey;">История чата пуста</p>
         </div>
-    
+
     <!-- Общая разделительная линия (всегда видимая) -->
     <div class="panel-divider"></div>
 
@@ -151,7 +155,7 @@
       <div id="promptBar" class="panel-section default-mode" style="display: none;">
         <textarea id="topPromptInput" rows="3" placeholder="Что бы вы хотели изменить?"></textarea>
       </div>
-      
+
       <!-- Поле ввода чата (Режим чата) -->
       <div id="chatInputBar" class="panel-section chat-mode">
         <textarea id="chatInput" rows="3" placeholder="Введите сообщение для Триа ..."></textarea>
@@ -207,7 +211,7 @@
       <h2>Project Files</h2>
       <div id="integratedFileEditor">
         <ul id="fileList">
-          
+
           <li data-file="style.css">style.css</li>
           <li data-file="index.html">index.html</li>
         </ul>
@@ -234,6 +238,21 @@
     </svg>
   </button>
 
+  <!-- NLWeb Search Container -->
+  <div id="docs-search-container"></div>
+
   <script type="module" src="/js/main.js"></script>
+
+  <!-- NLWeb Search JavaScript -->
+  <script type="module">
+    import { NLWebDropdownChat } from 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev/nlweb-dropdown-chat.js';
+
+    const chat = new NLWebDropdownChat({
+      containerId: 'docs-search-container',
+      site: 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev',
+      placeholder: 'Поиск по документации Holograms Media...',
+      endpoint: 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev'
+    });
+  </script>
 </body>
 </html>
