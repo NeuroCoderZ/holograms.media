@@ -1,4 +1,4 @@
 # Root requirements.txt
 # Will be populated later.
 # Backend requirements are in backend/requirements.txt
-\npython-dotenv
+python-dotenv
