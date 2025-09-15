@@ -1,0 +1,35 @@
+2025-07-29 20:09:02,644 - INFO - Начало обработки запроса: 'как организована работа окна для записи жестов в голографических медиа'
+2025-07-29 20:48:27,641 - INFO - Начало обработки запроса: 'импорты модулей в main.js'
+2025-07-29 20:52:16,852 - INFO - Начало обработки запроса: 'импорты модулей в main.js'
+2025-07-29 21:01:12,622 - INFO - Начало обработки запроса: 'эволюция импортов в main.js от script.js'
+2025-07-29 22:39:28,144 - INFO - Начало обработки запроса: 'этапы рефакторинга script.js в модульную систему'
+2025-07-29 22:49:50,232 - INFO - Начало обработки запроса: 'эволюция импортов в main.js от script.js'
+2025-07-29 22:51:21,076 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-29 22:53:27,590 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-29 22:54:59,468 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-29 22:59:11,747 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-29 23:00:44,654 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-29 23:05:44,136 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-29 23:07:16,236 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-29 23:30:23,478 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-29 23:31:54,249 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-30 08:26:41,005 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-30 08:28:38,008 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-30 08:45:54,523 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-30 08:47:56,072 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-30 08:57:16,661 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-30 08:59:13,841 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-30 09:07:11,970 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-30 09:09:14,680 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-30 09:13:40,026 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-30 09:15:37,875 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-30 09:29:12,617 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-30 09:31:32,685 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-30 09:33:36,808 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-30 09:35:35,721 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-30 10:30:14,437 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-30 10:32:16,330 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-30 11:14:55,379 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-30 11:16:48,844 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
+2025-07-30 11:19:03,820 - INFO - Начало обработки запроса: 'история изменений импортов в main.js'
+2025-07-30 11:21:02,243 - ERROR - Critical error during search: 'utf-8' codec can't decode byte 0xf1 in position 38: invalid continuation byte
