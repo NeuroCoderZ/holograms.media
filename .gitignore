@@ -14,8 +14,6 @@ dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
-frontend/package-lock.json
 
 # Python
 __pycache__/
@@ -30,7 +28,6 @@ pip-wheel-metadata/
 *.egg-info/
 .env
 .env.*
-<<<<<<< Updated upstream
 
 # Ignore holographic_core entirely (build artifacts, pkg, sources)
 holographic_core/
@@ -52,8 +49,3 @@ mcp.json
 backend/Tria/TriaMobile/
 backend/Tria/universal-sentence-encoder-tensorflow1-lite-v2/
 backend/Tria/autorag_final_chunks/
-=======
- 
-# Ignore holographic_core entirely (build artifacts, pkg, sources)
-holographic_core/
->>>>>>> Stashed changes
