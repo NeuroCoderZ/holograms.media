@@ -1,10 +1,10 @@
 // frontend/js/audio/audioProcessing.js (REWRITTEN for new WASM interface)
-import { state } from '../core/init.js';
 import eventBus from '../core/eventBus.js';
+import { state } from '../core/init.js';
 
 // Define constants for audio processing
 const CHUNK_SIZE = 1024; // Standard chunk size for audio processing
-const NUM_BINS = 130;    // Number of frequency bins for CWT analysis
+const NUM_BINS = 128;    // Number of frequency bins for CWT analysis
 
 /**
  * Initializes or retrieves the global AudioContext.

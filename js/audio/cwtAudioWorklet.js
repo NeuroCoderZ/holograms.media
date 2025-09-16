@@ -15,8 +15,8 @@ class CwtProcessor extends AudioWorkletProcessor {
         this.processingChunkSize = options.processorOptions.processingChunkSize || 128; // Default to 128 if not provided
         this.sampleRate = options.processorOptions.sampleRate || sampleRate; // sampleRate is global in AudioWorkletProcessor scope
 
-        this.outputDbLevels = new Float32Array(260); // 130 for left, 130 for right
-        this.outputPanAngles = new Float32Array(130);
+        this.outputDbLevels = new Float32Array(256); // 128 for left, 128 for right
+        this.outputPanAngles = new Float32Array(128);
 
         if (!this.wasmExports || typeof this.wasmExports.encode_audio_to_hologram !== 'function') {
             this.port.postMessage({ type: 'workletError', payload: 'WASM module or encode_audio_to_hologram function not available in worklet.' });
@@ -111,16 +111,16 @@ class CwtProcessor extends AudioWorkletProcessor {
                     currentChunkSize,         // Length of right channel data
                     this.sampleRate,
                     this.targetFrequenciesPtr, // Pointer to target frequencies
-                    130,                      // Length of target frequencies
+                    128,                      // Length of target frequencies
                     this.outputDbLevelsPtr,    // Pointer for output dB levels
-                    260,                      // Length of dB levels (stereo)
+                    256,                      // Length of dB levels (stereo)
                     this.outputPanAnglesPtr,   // Pointer for output pan angles
-                    130                       // Length of pan angles
+                    128                       // Length of pan angles
                 );
 
                 // Read results back from WASM memory
-                this.outputDbLevels.set(new Float32Array(this.wasmMemoryBuffer, this.outputDbLevelsPtr, 260));
-                this.outputPanAngles.set(new Float32Array(this.wasmMemoryBuffer, this.outputPanAnglesPtr, 130));
+                this.outputDbLevels.set(new Float32Array(this.wasmMemoryBuffer, this.outputDbLevelsPtr, 256));
+                this.outputPanAngles.set(new Float32Array(this.wasmMemoryBuffer, this.outputPanAnglesPtr, 128));
 
             } else {
                 // Fallback or error if direct memory access isn't configured (less likely with current setup)
@@ -155,9 +155,9 @@ class CwtProcessor extends AudioWorkletProcessor {
                 // Revised approach for `&[f32]` signature:
                 const wasmInputLeftView = new Float32Array(this.wasmMemoryBuffer, this.inputLeftChannelPtr, currentChunkSize);
                 const wasmInputRightView = new Float32Array(this.wasmMemoryBuffer, this.inputRightChannelPtr, currentChunkSize);
-                const wasmTargetFreqView = new Float32Array(this.wasmMemoryBuffer, this.targetFrequenciesPtr, 130);
-                const wasmOutputDbView = new Float32Array(this.wasmMemoryBuffer, this.outputDbLevelsPtr, 260);
-                const wasmOutputPanView = new Float32Array(this.wasmMemoryBuffer, this.outputPanAnglesPtr, 130);
+                const wasmTargetFreqView = new Float32Array(this.wasmMemoryBuffer, this.targetFrequenciesPtr, 128);
+                const wasmOutputDbView = new Float32Array(this.wasmMemoryBuffer, this.outputDbLevelsPtr, 256);
+                const wasmOutputPanView = new Float32Array(this.wasmMemoryBuffer, this.outputPanAnglesPtr, 128);
 
                 wasmInputLeftView.set(leftChannel);
                 wasmInputRightView.set(rightChannel);

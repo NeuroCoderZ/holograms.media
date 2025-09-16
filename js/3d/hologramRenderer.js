@@ -373,8 +373,8 @@ export class HologramRenderer {
    * Updates the visual appearance of the columns based on real-time audio data.
    * Each column's Z-scale (depth) and front-face brightness (emissiveIntensity) are adjusted.
    * Their X-position is also adjusted based on pan angles.
-   * @param {Float32Array | null} dbLevels - Array of 260 decibel values (130 for left, 130 for right), or null to reset.
-   * @param {Float32Array | null} panAngles - Array of 130 pan angles in degrees (-90 to +90), or null to reset.
+   * @param {Float32Array | null} dbLevels - Array of 256 decibel values (128 for left, 128 for right), or null to reset.
+   * @param {Float32Array | null} panAngles - Array of 128 pan angles in degrees (-90 to +90), or null to reset.
    */
   updateVisuals() {
     const audioData = this.latestAudioData;
@@ -400,7 +400,7 @@ export class HologramRenderer {
 
     this.columns.forEach((columnPair, index) => {
       const leftLevelDb = dbLevels[index];
-      const rightLevelDb = dbLevels[index + 130]; // 130 is the number of frequencies
+      const rightLevelDb = dbLevels[index + 128]; // 128 is the number of frequencies
       const panAngle = panAngles[index];
 
       const channels = [

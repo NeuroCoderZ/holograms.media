@@ -22,8 +22,8 @@ class HologramManager {
         this.hologramPivot = new THREE.Group();
         this.mainSequencerGroup = new THREE.Group();
 
-        this.GRID_WIDTH = 130;
-        this.GRID_HEIGHT = 260;
+        this.GRID_WIDTH = 128;
+        this.GRID_HEIGHT = 256;
 
         console.log("HologramManager initialized");
         this.initializeEventListeners();
