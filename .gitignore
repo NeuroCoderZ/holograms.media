@@ -51,3 +51,7 @@ backend/Tria/TriaMobile/
 backend/Tria/universal-sentence-encoder-tensorflow1-lite-v2/
 backend/Tria/autorag_final_chunks/
 tria-genkit-core/
+-e 
+# Rust/WASM временные файлы
+core/target/
+core/Cargo.lock
