@@ -1,30 +1,27 @@
 // handsTracking.js
-import { Hands } from '@mediapipe/hands';
 import { Camera } from '@mediapipe/camera_utils';
+import { Hands } from '@mediapipe/hands';
 
 import { state } from '../core/init.js';
-import eventBus from '../core/eventBus.js';
-import { updateHologramLayout } from '../ui/layoutManager.js';
 // import { AtomicGestureClassifier } from '../gestures/AtomicGestureClassifier.js'; // Старый классификатор
 // import { GestureSequencer } from '../gestures/GestureSequencer.js'; // Старый секвенсор
 // import { GESTURE_SEQUENCES } from '../config/gestureSequences.js'; // Старые конфигурации последовательностей
 import { GestureIntentClassifier } from '../ai/gestureIntentClassifier.js';
-import { webSocketService } from '../services/websocketService.js'; // <-- НОВЫЙ ИМПОРТ
 
 // --- Constants ---
-const HAND_CONNECTIONS = [ 
-    [0, 1], [1, 2], [2, 3], [3, 4], 
-    [0, 5], [5, 6], [6, 7], [7, 8], 
-    [5, 9], [9, 10], [10, 11], [11, 12], 
-    [9, 13], [13, 14], [14, 15], [15, 16], 
-    [0, 17], [13, 17], [17, 18], [18, 19], [19, 20] 
+const HAND_CONNECTIONS = [
+    [0, 1], [1, 2], [2, 3], [3, 4],
+    [0, 5], [5, 6], [6, 7], [7, 8],
+    [5, 9], [9, 10], [10, 11], [11, 12],
+    [9, 13], [13, 14], [14, 15], [15, 16],
+    [0, 17], [13, 17], [17, 18], [18, 19], [19, 20]
 ];
 const FINGER_TIP_INDICES = [4, 8, 12, 16, 20];
 
 // GRID constants
-const GRID_WIDTH = state.config?.GRID?.WIDTH || 130;
-const GRID_HEIGHT = state.config?.GRID?.HEIGHT || 260;
-const GRID_DEPTH = state.config?.GRID?.DEPTH || 130;
+const GRID_WIDTH = state.config?.GRID?.WIDTH || 128;
+const GRID_HEIGHT = state.config?.GRID?.HEIGHT || 256;
+const GRID_DEPTH = state.config?.GRID?.DEPTH || 128;
 
 // --- MediaPipe Hands Functions ---
 
@@ -85,7 +82,7 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                     width: 320,
                     height: 240
                 });
-                
+
                 // Запускаем камеру
                 state.multimodal.cameraInstance.start();
                 state.multimodal.isGestureCanvasReady = true;

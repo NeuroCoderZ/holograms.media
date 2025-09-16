@@ -29,7 +29,8 @@
     "sql.js": "^1.13.0",
     "sql.js-fts5": "^1.4.0",
     "sqlite3": "^5.1.7",
-    "three": "^0.165.0"
+    "three": "^0.165.0",
+    "@magenta/music": "^1.23.1"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

@@ -1,14 +1,14 @@
-import { loadWasmModule } from '../wasm/wasm_loader.js';
 import eventBus from '../core/eventBus.js';
+import { loadWasmModule } from '../wasm/wasm_loader.js';
 
-const TARGET_FREQUENCIES = new Float32Array(130); // Placeholder, will need actual frequencies
+const TARGET_FREQUENCIES = new Float32Array(128); // Placeholder, will need actual frequencies
 const SAMPLE_RATE = 48000; // Assuming a common sample rate
 
 // Populate TARGET_FREQUENCIES (example: logarithmic scale)
 // This should match the expected input of the WASM module if it has specific frequency bins
 // For now, a simple linear scale for placeholder purposes
-for (let i = 0; i < 130; i++) {
-    TARGET_FREQUENCIES[i] = 20 * Math.pow(2, (i / 12)); // Example: 130 steps over some octaves starting from 20Hz
+for (let i = 0; i < 128; i++) {
+    TARGET_FREQUENCIES[i] = 20 * Math.pow(2, (i / 12)); // Example: 128 steps over some octaves starting from 20Hz
 }
 
 
@@ -66,10 +66,10 @@ export class WebAudioEngine {
                 this.inputLeftChannelPtr = this.wasmExports.allocate_f32_array ? this.wasmExports.allocate_f32_array(this.processingChunkSize) : this.wasmExports.__wbindgen_malloc(bufferByteSize);
                 this.inputRightChannelPtr = this.wasmExports.allocate_f32_array ? this.wasmExports.allocate_f32_array(this.processingChunkSize) : this.wasmExports.__wbindgen_malloc(bufferByteSize);
 
-                // Output buffers: 130 for db levels (x2 for stereo), 130 for pan angles
-                this.outputDbLevelsPtr = this.wasmExports.allocate_f32_array ? this.wasmExports.allocate_f32_array(260) : this.wasmExports.__wbindgen_malloc(260 * Float32Array.BYTES_PER_ELEMENT);
-                this.outputPanAnglesPtr = this.wasmExports.allocate_f32_array ? this.wasmExports.allocate_f32_array(130) : this.wasmExports.__wbindgen_malloc(130 * Float32Array.BYTES_PER_ELEMENT);
-                this.targetFrequenciesPtr = this.wasmExports.allocate_f32_array ? this.wasmExports.allocate_f32_array(130) : this.wasmExports.__wbindgen_malloc(130 * Float32Array.BYTES_PER_ELEMENT);
+                // Output buffers: 128 for db levels (x2 for stereo), 128 for pan angles
+                this.outputDbLevelsPtr = this.wasmExports.allocate_f32_array ? this.wasmExports.allocate_f32_array(256) : this.wasmExports.__wbindgen_malloc(256 * Float32Array.BYTES_PER_ELEMENT);
+                this.outputPanAnglesPtr = this.wasmExports.allocate_f32_array ? this.wasmExports.allocate_f32_array(128) : this.wasmExports.__wbindgen_malloc(128 * Float32Array.BYTES_PER_ELEMENT);
+                this.targetFrequenciesPtr = this.wasmExports.allocate_f32_array ? this.wasmExports.allocate_f32_array(128) : this.wasmExports.__wbindgen_malloc(128 * Float32Array.BYTES_PER_ELEMENT);
 
                 console.log("WASM memory allocated: ", {
                     inputLeftChannelPtr: this.inputLeftChannelPtr,
@@ -89,7 +89,7 @@ export class WebAudioEngine {
                 }
 
                 // Copy TARGET_FREQUENCIES to WASM memory
-                new Float32Array(this.wasmMemory.buffer, this.targetFrequenciesPtr, 130).set(TARGET_FREQUENCIES);
+                new Float32Array(this.wasmMemory.buffer, this.targetFrequenciesPtr, 128).set(TARGET_FREQUENCIES);
 
             } else {
                 console.warn("WASM module does not export memory. Direct memory manipulation might not be possible or needed if using wasm-bindgen's higher-level features.");
@@ -193,9 +193,9 @@ export class WebAudioEngine {
             const bufferByteSize = this.processingChunkSize * Float32Array.BYTES_PER_ELEMENT;
             if (this.inputLeftChannelPtr) this.wasmExports.__wbindgen_free(this.inputLeftChannelPtr, bufferByteSize);
             if (this.inputRightChannelPtr) this.wasmExports.__wbindgen_free(this.inputRightChannelPtr, bufferByteSize);
-            if (this.outputDbLevelsPtr) this.wasmExports.__wbindgen_free(this.outputDbLevelsPtr, 260 * Float32Array.BYTES_PER_ELEMENT);
-            if (this.outputPanAnglesPtr) this.wasmExports.__wbindgen_free(this.outputPanAnglesPtr, 130 * Float32Array.BYTES_PER_ELEMENT);
-            if (this.targetFrequenciesPtr) this.wasmExports.__wbindgen_free(this.targetFrequenciesPtr, 130 * Float32Array.BYTES_PER_ELEMENT);
+            if (this.outputDbLevelsPtr) this.wasmExports.__wbindgen_free(this.outputDbLevelsPtr, 256 * Float32Array.BYTES_PER_ELEMENT);
+            if (this.outputPanAnglesPtr) this.wasmExports.__wbindgen_free(this.outputPanAnglesPtr, 128 * Float32Array.BYTES_PER_ELEMENT);
+            if (this.targetFrequenciesPtr) this.wasmExports.__wbindgen_free(this.targetFrequenciesPtr, 128 * Float32Array.BYTES_PER_ELEMENT);
             console.log("WASM memory deallocated.");
         }
     }

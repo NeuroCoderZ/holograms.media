@@ -57,8 +57,8 @@ export const state = {
     microphoneGainNode: null,
 
     // Data processed by WASM module
-    currentDbLevels: new Float32Array(260).fill(-100.0), // 130 Left, 130 Right
-    currentPanAngles: new Float32Array(130).fill(0.0), // 130 Pan angles
+    currentDbLevels: new Float32Array(256).fill(-100.0), // 128 Left, 128 Right
+    currentPanAngles: new Float32Array(128).fill(0.0), // 128 Pan angles
     targetFrequencies: semitones.map(s => s.f),
   },
 
@@ -106,9 +106,9 @@ export const state = {
   // --- Конфигурация приложения (может загружаться извне) ---
   config: {
     GRID: {
-      WIDTH: 130,
-      HEIGHT: 260,
-      DEPTH: 130, // Updated to 130 for Z-scale
+      WIDTH: 128,
+      HEIGHT: 256,
+      DEPTH: 128, // Updated to 128 for Z-scale
     },
     CAMERA: {
       fov: 75,

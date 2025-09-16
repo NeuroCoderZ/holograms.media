@@ -62,7 +62,7 @@ pub fn encode_audio_to_hologram(
     output_pan_angles: &mut [f32]
 ) {
     let chunk_size = left_channel.len();
-    if chunk_size == 0 || target_frequencies.len() != 130 || output_db_levels.len() != 260 || output_pan_angles.len() != 130 {
+    if chunk_size == 0 || target_frequencies.len() != 128 || output_db_levels.len() != 256 || output_pan_angles.len() != 128 {
         // Log errors or return early if input/output sizes are incorrect
         // For simplicity, we just return if sizes are not as expected.
         // In a production system, more robust error handling would be needed.
@@ -132,7 +132,7 @@ pub fn encode_audio_to_hologram(
 
         // Clamp dB values to [-100.0, 0.0]
         output_db_levels[i] = db_left.max(-100.0).min(0.0);
-        output_db_levels[i + 130] = db_right.max(-100.0).min(0.0);
+        output_db_levels[i + 128] = db_right.max(-100.0).min(0.0);
 
         // Extracting Panorama (Angle) - Interaural Phase Difference (IPD)
         // Calculate phase angles
