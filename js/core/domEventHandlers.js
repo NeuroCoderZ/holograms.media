@@ -1,6 +1,6 @@
 // frontend/js/core/domEventHandlers.js
 import axios from 'axios'; // Added import
-import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import { applyPromptWithTriaMode } from '../ai/tria_mode.js'; // Убедитесь, что путь правильный
 import { state } from './init.js';
 // Assuming THREE is global for applyPrompt example
