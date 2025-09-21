@@ -69,3 +69,20 @@ function initializeTriaChat() {
 }
 
 export { initializeTriaChat };
+// Алиасы для совместимости с импортами в main.js
+export const setupChat = initializeTriaChat;
+
+/**
+ * Отправляет сообщение в чат, если интерфейс инициализирован.
+ * @param {string} message - Сообщение для отправки.
+ */
+function sendChatMessage(message) {
+  if (triaInterface) {
+    triaInterface.sendMessage(message);
+  } else {
+    console.warn("Чат не инициализирован. Вызовите initializeTriaChat() сначала.");
+  }
+}
+
+export { sendChatMessage };
+
