@@ -29,6 +29,7 @@ async function main() {
 
         // 3. Инициализация UI (кэширование DOM-элементов)
         initializeMainUI(state);
+    initializeTriaChat();
         console.log("Main UI elements cached.");
 
         // 4. Запуск полной инициализации приложения
@@ -70,6 +71,37 @@ function initializeChatHandlers() {
 }
 
 /**
+ * Инициализирует обработчики событий для промпта.
+ */
+function initializePromptHandlers() {
+    const promptInput = document.getElementById('topPromptInput');
+    const submitPromptButton = document.getElementById('submitTopPrompt');
+    const modelSelect = document.getElementById('modelSelect');
+
+    if (!promptInput || !submitPromptButton || !modelSelect) {
+        console.warn("Prompt input, submit button, or model selector not found, prompt functionality will be limited.");
+        return;
+    }
+
+    submitPromptButton.addEventListener('click', async () => {
+        const prompt = promptInput.value;
+        const selectedModel = modelSelect.value;
+        await applyPromptWithTriaMode(prompt, selectedModel);
+    });
+
+    promptInput.addEventListener('keydown', async (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            const prompt = promptInput.value;
+            const selectedModel = modelSelect.value;
+            await applyPromptWithTriaMode(prompt, selectedModel);
+        }
+    });
+
+    console.log("Prompt event handlers initialized.");
+}
+
+/**
  * Запускает полную инициализацию после получения согласия и базовой настройки.
  * @param {object} appState - Глобальный объект состояния.
  */
@@ -99,6 +131,7 @@ async function startFullApplication(appState) {
         // 3. Инициализация чата
         setupChat(appState);
         initializeChatHandlers();
+        initializePromptHandlers();
 
         // 4. Запуск главного цикла анимации
         startAnimationLoop(appState);

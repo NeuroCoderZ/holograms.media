@@ -12,6 +12,7 @@ import { setupChunkUpload } from '../services/firebaseStorageService.js'; // Imp
 // import PanelManager from './panelManager.js'; // PanelManager is now globally managed via state.panelManager
 import { toggleFullscreen, initFullscreenListeners } from '../utils/fullscreen.js'; // Import for fullscreen
 import { toggleTriaLearningMode } from '../ai/tria.js'; // Import for Tria button
+import { initializeRightPanel } from '../panels/rightPanelManager.js'; // Import for right panel logic
 
 /**
  * uiElements is a central object holding references to all significant DOM elements
@@ -35,7 +36,7 @@ export const uiElements = {
     telegramLinkButton: null,  // Link to Telegram chat
     githubButton: null,       // Link to GitHub repository
     triaButton: null,         // Placeholder for activating Tria AI training/modes
-    chatButton: null,         // Button to open the chat panel
+    promptModeButton: null,   // Button to toggle between Prompt and Chat modes
     installPwaButton: null,   // Button to prompt PWA installation
   },
   
@@ -156,7 +157,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   uiElements.buttons.telegramLinkButton = document.getElementById('telegramLinkButton');
   uiElements.buttons.githubButton = document.getElementById('githubButton');
   uiElements.buttons.triaButton = document.getElementById('triaButton'); // For "Activate Tria Training"
-  uiElements.buttons.chatButton = document.getElementById('chatButton'); // For Toggling Chat Mode / Opening Chat Panel
+  uiElements.buttons.promptModeButton = document.getElementById('promptModeButton'); // For Toggling Chat Mode / Opening Chat Panel
   uiElements.buttons.installPwaButton = document.getElementById('installPwaButton');
   uiElements.buttons.avatarButton = document.getElementById('avatarButton'); // Added Avatar button
   
@@ -401,27 +402,11 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   addButtonListener(uiElements.buttons.githubButton, () => window.open('https://github.com/NeuroCoderZ/holograms.media/', '_blank'), "GitHub link button clicked.");
 
   // --- PWA Install Button ---
-  // addButtonListener(uiElements.buttons.installPwaButton, null, "Install PWA button clicked - PWA installation logic to be implemented.");
   // The event listener for installPwaButton has been removed as per the task.
   // The PWA installation is typically triggered by the browser's own UI prompts
   // or by a button managed by initializePwaInstall itself if it decides to show one.
   // The handleInstallButtonClick was likely called directly by this listener,
   // but initializePwaInstall should handle its own UI interactions.
-
-  // --- Chat Panel Button ---
-  // This button's primary role is to open the chat interface.
-  if (uiElements.buttons.chatButton) {
-    uiElements.buttons.chatButton.addEventListener('click', () => {
-        console.log("Chat Mode/Panel button clicked. Opening 'chatHistory' panel.");
-        if (appState.panelManager) {
-          appState.panelManager.openContentPanel('chatHistory'); // Opens the dedicated chat history panel.
-        } else {
-          console.error("PanelManager not found in state. Cannot open 'chatHistory' panel.");
-        }
-    });
-  } else {
-      console.warn("Chat button (for toggling chat mode/panel) not found. Chat panel access disabled.");
-  }
 
   // --- Tria Button ---
   if (uiElements.buttons.triaButton && uiElements.inputs.modelSelect) {
@@ -464,6 +449,9 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
 
   // Initialize PWA install logic
   initializePwaInstall();
+
+  // Initialize Right Panel Logic
+  initializeRightPanel(appState);
 }
 
 /**

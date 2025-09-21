@@ -60,7 +60,7 @@ export async function applyPromptWithTriaMode(prompt, model) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: prompt, model: model || 'mistral-small-latest' }) // Используем тот же промпт
+        body: JSON.stringify({ message: prompt, model: model }) // Используем тот же промпт
       });
 
       if (!response.ok) {

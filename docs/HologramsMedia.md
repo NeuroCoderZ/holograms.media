@@ -62,7 +62,7 @@ graph TD
 *   **Backend:** **FastAPI** (Python).
 *   **WASM-Ядро:** **Rust** (`fastcwt_processor`).
 *   **Базы Данных и RAG:** **Tria API** (на базе Cloudflare, `autorag`).
-*   **Аутентификация:** **Firebase Authentication**.
+*   **Аутентификация:** **Google OAuth 2.0** + собственные **JWT-токены**.
 
 ### 7. NetHoloGlyph — Кровеносная Система Коллективного Опыта
 
