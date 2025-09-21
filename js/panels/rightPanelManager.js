@@ -112,3 +112,14 @@ export function getCurrentMode() {
   if (!elements.promptModeButton) return 'unknown';
   return elements.promptModeButton.classList.contains('active') ? 'prompt' : 'chat';
 }
+/**
+ * Переключает правую панель в режим чата.
+ */
+export function switchToChatMode() {
+  if (elements.promptModeButton) {
+    elements.promptModeButton.classList.remove("active");
+  }
+  updateUIVisibility(true);
+  console.log("Режим правой панели переключен на: Чат");
+}
+
