@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+import * as THREE from 'three';
 /**
  * Модуль для управления жестами с использованием Hammer.js
  * Отвечает за обработку жестов панорамирования и масштабирования для голограммы

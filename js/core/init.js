@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+import * as THREE from 'three';
 import { GestureManager } from '../managers/GestureManager.js';
 // frontend/js/core/init.js - Инициализация основного состояния и конфигурации приложения
 
