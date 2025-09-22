@@ -11,9 +11,6 @@
   <!-- Font Awesome for icons (add if not already present) -->
   <link rel="stylesheet" href="/css/fontawesome.css">
 
-  <!-- NLWeb Search Styles -->
-  <link rel="stylesheet" href="https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev/nlweb-dropdown-chat.css">
-  <link rel="stylesheet" href="https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev/common-chat-styles.css">
   <!-- Favicon and Meta -->
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="manifest" href="manifest.json">
@@ -165,14 +162,12 @@
     <!-- Блок с элементами управления (всегда видимый внизу) -->
     <div class="controls-container">
         <div class="prompt-controls">
-        <button id="chatButton" class="control-button" title="Чат">
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
-            <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z"/>
-          </svg>
+        <button id="promptModeButton" class="control-button" title="Промпт">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H160v400Zm140-40-56-56 103-104-104-104 57-56 160 160-160 160Zm180 0v-80h240v80H480Z"/></svg>
         </button>
           <select id="modelSelect" style="display: none;">
-            <option value="mistral/mistral-small-latest">Mistral Small</option>
-            <option value="mistral/mistral-large-latest">Mistral Large</option>
+            <option value="mistral/mistral-medium-latest" selected>Mistral Medium</option>
+            <option value="mistral/devstral-medium-latest">Devstral Medium</option>
             <option value="codestral/codestral-latest">Codestral</option>
           </select>
         <!-- Кнопка применить (видима в режиме по умолчанию) -->
@@ -238,21 +233,7 @@
     </svg>
   </button>
 
-  <!-- NLWeb Search Container -->
-  <div id="docs-search-container"></div>
-
   <script type="module" src="/js/main.js"></script>
 
-  <!-- NLWeb Search JavaScript -->
-  <script type="module">
-    import { NLWebDropdownChat } from 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev/nlweb-dropdown-chat.js';
-
-    const chat = new NLWebDropdownChat({
-      containerId: 'docs-search-container',
-      site: 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev',
-      placeholder: 'Спроси меня про голограммы, жесты, визуализацию звука...',
-      endpoint: 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev'
-    });
-  </script>
-</body>
+  </body>
 </html>

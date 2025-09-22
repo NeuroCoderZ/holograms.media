@@ -1,111 +1,88 @@
-// frontend/js/ai/chat.js - Функционал чата и взаимодействие с Tria
-import { state } from '../core/init.js';
-import { sendChatMessage as sendChatApiRequest } from '../services/apiService.js'; // ИМПОРТИРУЕМ НОВУЮ ФУНКЦИЮ
-import { auth } from '../core/firebaseInit.js'; // Импортируем auth для получения токена
+// js/ai/chat.js
 
-let isWaitingForResponse = false;
-let chatHistoryContainer = null; 
-let moduleScopedChatInput = null;
+// Импортируем напрямую "мозг" NLWeb, минуя его стандартный UI
+import { ModernChatInterface } from 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev/fp-chat-interface-snippet.js';
 
-// Добавление сообщения в чат
-function addMessageToChat(sender, messageText) {
-    if (!chatHistoryContainer) {
-        console.error('Контейнер для сообщений чата не найден!');
-        return;
+let triaInterface;
+
+/**
+ * Инициализирует и настраивает чат Триа на базе NLWeb.
+ * Эта функция подключает логику NLWeb к существующим элементам UI.
+ */
+function initializeTriaChat() {
+  console.log("Инициализация чата Триа на базе NLWeb...");
+
+  // Находим обязательные элементы UI в DOM
+  const messagesContainer = document.getElementById('chatMessages');
+  const chatInput = document.getElementById('chatInput');
+  const sendButton = document.getElementById('submitChatMessage');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+
+  // Проверяем, все ли элементы на месте
+  if (!messagesContainer || !chatInput || !sendButton || !loadingIndicator) {
+    console.error("Не удалось инициализировать чат: один или несколько HTML-элементов не найдены.");
+    return;
+  }
+
+  // Создаем экземпляр интерфейса чата
+  triaInterface = new ModernChatInterface({
+    skipAutoInit: true // Мы инициализируем его вручную
+  });
+
+  // "Скармливаем" нашему экземпляру чата наши собственные элементы DOM.
+  // Теперь он будет выводить сообщения и слушать события ввода в нашем интерфейсе.
+  triaInterface.elements.messagesContainer = messagesContainer;
+  triaInterface.elements.chatInput = chatInput;
+  triaInterface.elements.sendButton = sendButton;
+  triaInterface.elements.loadingIndicator = loadingIndicator;
+
+  // Настраиваем сайт/контекст для запросов
+  triaInterface.selectedSite = 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev';
+
+  // Создаем новую сессию чата
+  triaInterface.createNewChat(null, triaInterface.selectedSite);
+
+  // Переопределяем стандартные обработчики событий, чтобы они работали с нашим UI
+  sendButton.onclick = () => {
+    const message = chatInput.value.trim();
+    if (message) {
+      triaInterface.sendMessage(message);
+      chatInput.value = '';
+      chatInput.style.height = 'auto'; // Сбрасываем высоту поля ввода
     }
-    
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('chat-message', sender);
-    
-    const formattedMessage = formatMessage(messageText);
-    messageElement.innerHTML = `<span class="sender">${sender === 'user' ? 'Вы' : 'Триа'}:</span> ${formattedMessage}`;
-    
-    chatHistoryContainer.appendChild(messageElement);
-    
-    setTimeout(() => {
-        chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
-    }, 10);
+  };
+
+  chatInput.onkeypress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendButton.click();
+    }
+  };
+  
+  // Добавляем авто-изменение размера поля ввода
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = `${Math.min(chatInput.scrollHeight, 200)}px`;
+  });
+
+  console.log("Чат Триа успешно инициализирован и готов к работе.");
 }
 
-// Форматирование сообщения (базовый маркдаун)
-function formatMessage(message) {
-    if (!message) return '';
-    
-    let formatted = message
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    
-    formatted = formatted.replace(/```([\s\S]*?)```/g, (_, code) => {
-        return `<pre><code>${code.trim()}</code></pre>`;
-    });
-    
-    formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
-    formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    formatted = formatted.replace(/\n/g, '<br>');
+export { initializeTriaChat };
+// Алиасы для совместимости с импортами в main.js
+export const setupChat = initializeTriaChat;
 
-    return formatted;
+/**
+ * Отправляет сообщение в чат, если интерфейс инициализирован.
+ * @param {string} message - Сообщение для отправки.
+ */
+function sendChatMessage(message) {
+  if (triaInterface) {
+    triaInterface.sendMessage(message);
+  } else {
+    console.warn("Чат не инициализирован. Вызовите initializeTriaChat() сначала.");
+  }
 }
 
-function showLoadingIndicator(show) {
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    if (loadingIndicator) {
-        loadingIndicator.style.display = show ? 'flex' : 'none'; // Используем flex для центрирования
-    }
-}
+export { sendChatMessage };
 
-export function setupChat(appState) {
-    console.log('Инициализация чата...');
-    chatHistoryContainer = appState.uiElements.containers.chatMessages;
-    moduleScopedChatInput = appState.uiElements.inputs.chatInput;
-
-    if (!chatHistoryContainer) {
-        console.error('Контейнер для истории чата (chatMessages) не найден!');
-        return;
-    }
-    if (!moduleScopedChatInput) {
-        console.error('Поле ввода чата (chatInput) не найдено!');
-        return;
-    }
-    
-    console.log('Чат инициализирован.');
-}
-
-export async function sendChatMessage(messageText) {
-    if (!messageText || messageText.trim().length === 0 || isWaitingForResponse) {
-        return;
-    }
-
-    const user = auth.currentUser;
-    if (!user) {
-        addMessageToChat('tria', 'Ошибка: вы должны быть авторизованы, чтобы использовать чат.');
-        return;
-    }
-
-    isWaitingForResponse = true;
-    const userMessage = messageText.trim();
-    
-    if (moduleScopedChatInput) moduleScopedChatInput.value = '';
-    addMessageToChat('user', userMessage);
-    
-    try {
-        showLoadingIndicator(true);
-        console.log(`Sending to Tria API: "${userMessage}"`);
-        
-        const idToken = await user.getIdToken();
-        const triaResponseText = await sendChatApiRequest(userMessage, idToken);
-
-        if (triaResponseText) {
-            addMessageToChat('tria', triaResponseText);
-        } else {
-            addMessageToChat('tria', 'Извините, Tria вернула пустой ответ.');
-        }
-    } catch (error) {
-        console.error('Ошибка при отправке сообщения в sendChatMessage:', error);
-        addMessageToChat('tria', `Произошла критическая ошибка: ${error.message}`);
-    } finally {
-        showLoadingIndicator(false);
-        isWaitingForResponse = false;
-    }
-}

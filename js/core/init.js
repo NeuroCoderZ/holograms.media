@@ -1,4 +1,5 @@
-import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+import { GestureManager } from '../managers/GestureManager.js';
 // frontend/js/core/init.js - Инициализация основного состояния и конфигурации приложения
 
 import { semitones } from '../config/hologramConfig.js';
@@ -165,6 +166,18 @@ export async function initCore() {
 
   state.hologramRendererInstance = new HologramRenderer(state.scene, "test_room", "user_local_test");
   console.log('HologramRenderer initialized.');
+
+  // Инициализируем GestureManager
+  state.gestureManager = new GestureManager();
+  
+  // Инициализируем GestureManager после создания контейнера
+  const gridContainer = document.getElementById('grid-container');
+  if (gridContainer) {
+    await state.gestureManager.init(gridContainer);
+    console.log('GestureManager initialized with SmartHologram.');
+  } else {
+    console.warn('Grid container not found, GestureManager not initialized.');
+  }
 
   // Установка позиции и масштаба hologramPivot
   const hologramPivot = state.hologramRendererInstance.getHologramPivot();
