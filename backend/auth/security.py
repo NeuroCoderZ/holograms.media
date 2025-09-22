@@ -1,87 +1,96 @@
+# backend/auth/security.py
 import os
+from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-import firebase_admin
-from firebase_admin import credentials, auth
-from fastapi import Depends, HTTPException, status
-import logging
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from backend.core.models.user_models import UserInDB # Keep this for type hinting
+from fastapi import Depends, HTTPException, status, WebSocket, Query
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+import logging
+
+# Предполагается, что модель пользователя и функции для работы с БД будут импортированы
+# from backend.db.user_repository import get_user_by_google_id, create_user_from_google_info
+# from backend.models.user import UserInDB
 
 logger = logging.getLogger(__name__)
 
-# This part of the code for initializing Firebase is better handled
-# in the main app.py startup event to ensure it runs once.
-# However, to keep it self-contained for now, we'll leave the logic
-# but acknowledge it's not ideal.
+# --- Конфигурация JWT ---
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "a_very_secret_key_that_should_be_in_env")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-firebase_bearer_scheme = HTTPBearer()
+# --- Конфигурация Google OAuth ---
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "your_google_client_id.apps.googleusercontent.com")
 
-async def get_current_firebase_user(
-    bearer_token: HTTPAuthorizationCredentials = Depends(firebase_bearer_scheme)
-) -> Dict[str, Any]:
-    """
-    Verifies Firebase ID token and returns decoded token payload.
-    This is the primary function for checking authentication.
-    """
-    if not bearer_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated (no bearer token)",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    id_token = bearer_token.credentials
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Создает JWT токен."""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def verify_google_token(token: str) -> Dict[str, Any]:
+    """Проверяет ID токен от Google."""
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Google token is missing")
     try:
-        decoded_token = auth.verify_id_token(id_token)
-        return decoded_token
-    except firebase_admin.auth.InvalidIdTokenError as e:
-        logger.error(f"Invalid Firebase ID token: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid Firebase ID token: {e}",
-            headers={'WWW-Authenticate': 'Bearer error="invalid_token"'},
-        )
+        idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), GOOGLE_CLIENT_ID)
+        return idinfo
+    except ValueError as e:
+        logger.error(f"Invalid Google token: {e}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid Google token: {e}")
     except Exception as e:
-        logger.error(f"Error verifying Firebase ID token: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Could not process token: {e}",
-        )
+        logger.error(f"Error verifying Google token: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Could not process Google token: {e}")
 
-async def get_current_user(
-    decoded_token: Dict[str, Any] = Depends(get_current_firebase_user)
-) -> UserInDB:
-    """
-    Creates a UserInDB model instance directly from the decoded Firebase token.
-    This function no longer depends on the database.
-    """
-    firebase_uid = decoded_token.get("uid")
-    email = decoded_token.get("email")
-
-    if not firebase_uid:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token: UID missing.",
-        )
-    
-    # Create a Pydantic model on-the-fly from the token data.
-    # This satisfies dependencies that expect a UserInDB object
-    # without needing a database lookup.
-    return UserInDB(
-        user_id_firebase=firebase_uid,
-        email=email,
-        is_active=True, # Assume user is active if token is valid
-        # Add other fields with default values if your UserInDB model has them
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    """Декодирует JWT из заголовка для HTTP эндпоинтов."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
     )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        google_id: str = payload.get("sub")
+        if google_id is None:
+            raise credentials_exception
+        
+        # ЗАГЛУШКА: Возвращаем данные из токена, пока нет интеграции с БД
+        user_data = {
+            "id": google_id, # Добавляем поле id для совместимости
+            "google_id": google_id,
+            "email": payload.get("email"),
+            "is_active": True
+        }
+        return user_data
 
-async def get_current_active_user(current_user: UserInDB = Depends(get_current_user)) -> UserInDB:
-    """
-    Ensures the current user (fetched via Firebase token) is active.
-    """
-    if not current_user.is_active:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+    except JWTError:
+        raise credentials_exception
+
+async def get_current_user_ws(token: str = Query(...)):
+    """Декодирует JWT из query-параметра для WebSocket."""
+    # Эта функция дублирует get_current_user, но берет токен из Query.
+    # В будущем можно будет рефакторить для избежания дублирования.
+    return await get_current_user(token)
+
+
+async def get_current_active_user(current_user: dict = Depends(get_current_user)):
+    """Проверяет, активен ли пользователь (для HTTP)."""
+    if not current_user.get("is_active", False):
+         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     return current_user
 
-# The get_current_admin_user function can be added here if needed,
-# assuming the UserInDB model has a 'role' field populated from the token's custom claims.
+async def get_current_active_user_ws(current_user: dict = Depends(get_current_user_ws)):
+    """Проверяет, активен ли пользователь (для WS)."""
+    if not current_user.get("is_active", False):
+         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+    return current_user

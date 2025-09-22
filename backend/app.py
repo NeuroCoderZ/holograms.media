@@ -9,8 +9,6 @@ from botocore.exceptions import ClientError
 # Load environment variables from .env file before other imports
 load_dotenv()
 
-import firebase_admin
-from firebase_admin import credentials
 import os
 import logging
 import boto3
@@ -32,21 +30,22 @@ from backend.api.v1.endpoints.gesture_routes import router as public_gestures_ro
 from backend.routers.public_holograms import router as public_holograms_router
 from backend.api.v1.endpoints.tria_commands import router as tria_commands_router
 from backend.api.v1.endpoints.chunks import router as chunks_router
-from backend.routers.chat import router as user_chat_router
 # from backend.routers.gestures import router as user_gestures_router
 # from backend.routers.holograms import router as user_holograms_router
 # from backend.routers.prompts import router as user_prompts_router
 from backend.routers import gestures_ws
 from backend.routers.signaling import router as signaling_router # New signaling router
+from backend.routers.auth import router as auth_router # Import the new auth router
 
 API_V1_PREFIX = "/api/v1"
 
 # --- Include routers ---
+app.include_router(auth_router, prefix=API_V1_PREFIX, tags=["Authentication"]) # Add the new auth router
 app.include_router(public_gestures_router, prefix=API_V1_PREFIX, tags=["Gestures (Public)"])
 app.include_router(public_holograms_router, prefix=API_V1_PREFIX, tags=["Holograms (Public)"])
 app.include_router(tria_commands_router, prefix=f"{API_V1_PREFIX}/tria", tags=["Tria Commands"])
 app.include_router(chunks_router, prefix=API_V1_PREFIX, tags=["Chunks"])
-app.include_router(user_chat_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat Sessions"])
+hat", tags=["Chat Sessions"])/d
 # app.include_router(user_gestures_router, prefix=f"{API_V1_PREFIX}/users/me/gestures", tags=["Current User Gestures"])
 # app.include_router(user_holograms_router, prefix=f"{API_V1_PREFIX}/users/me/holograms", tags=["Current User Holograms"])
 # app.include_router(user_prompts_router, prefix=f"{API_V1_PREFIX}/users/me/prompts", tags=["Current User Prompts"])
@@ -85,27 +84,6 @@ async def startup_event():
 
     
 
-    # 2. Initialize Firebase Admin SDK
-    logger.info("Attempting to initialize Firebase Admin SDK...")
-    try:
-        cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-        firebase_service_account_base64 = os.getenv("FIREBASE_SERVICE_ACCOUNT_BASE64")
-
-        if not firebase_admin._apps:
-            if cred_path and os.path.exists(cred_path):
-                cred = credentials.Certificate(cred)
-                firebase_admin.initialize_app(cred)
-                logger.info("Firebase Admin SDK initialized successfully using GOOGLE_APPLICATION_CREDENTIALS file.")
-            elif firebase_service_account_base64:
-                initialize_firebase_from_base64(firebase_service_account_base64, logger)
-            else:
-                logger.warning("Neither GOOGLE_APPLICATION_CREDENTIALS nor FIREBASE_SERVICE_ACCOUNT_BASE64 are set. Firebase Admin SDK not initialized.")
-        else:
-            logger.info("Firebase Admin SDK already initialized.")
-    except Exception as e:
-        logger.error(f"Critical error during Firebase Admin SDK initialization: {e}", exc_info=True)
-
-    # 3. Initialization of S3 client for Backblaze B2
     b2_endpoint_url = os.getenv("B2_ENDPOINT_URL")
     b2_access_key_id = os.getenv("B2_ACCESS_KEY_ID")
     b2_secret_access_key = os.getenv("B2_SECRET_ACCESS_KEY")
@@ -254,23 +232,3 @@ async def verify_chunk(chunk_id: str, original_data: bytes, b2_bucket_name: str,
         logger.error(f"Unexpected error verifying S3 key {s3_object_key} in bucket {b2_bucket_name}: {e}", exc_info=True)
         return False
 
-def initialize_firebase_from_base64(base64_string, logger_instance):
-    import base64
-    import json
-    try:
-        logger_instance.info("Attempting to decode FIREBASE_SERVICE_ACCOUNT_BASE64...")
-        decoded_service_account_bytes = base64.b64decode(base64_string)
-        service_account_info_str = decoded_service_account_bytes.decode('utf-8')
-        service_account_info = json.loads(service_account_info_str)
-        cred = credentials.Certificate(service_account_info)
-        firebase_admin.initialize_app(cred)
-        logger_instance.info("Firebase Admin SDK initialized successfully using FIREBASE_SERVICE_ACCOUNT_BASE64.")
-    except json.JSONDecodeError as e_json:
-        logger_instance.error(f"JSONDecodeError while parsing FIREBASE_SERVICE_ACCOUNT_BASE64: {e_json}", exc_info=True)
-        logger_instance.warning("Firebase Admin SDK not initialized from Base64 due to JSON parsing error.")
-    except base64.binascii.Error as e_b64_decode:
-        logger_instance.error(f"Base64 Decode Error for FIREBASE_SERVICE_ACCOUNT_BASE64: {e_b64_decode}", exc_info=True)
-        logger_instance.warning("Firebase Admin SDK not initialized from Base64 due to decoding error.")
-    except Exception as e_b64_general:
-        logger_instance.error(f"An unexpected error occurred while initializing Firebase from Base64: {e_b64_general}", exc_info=True)
-        logger_instance.warning("Firebase Admin SDK not initialized from Base64 due to an unexpected error.")

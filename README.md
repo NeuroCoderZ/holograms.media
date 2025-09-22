@@ -1,130 +1,175 @@
-# Holographic Media Frontend
+# 🎭 Holograms.Media
 
-This directory (`frontend/`) contains all client-side code for the Holographic Media project. It is responsible for rendering the 3D holograms, handling user interactions (UI, gestures, voice), and communicating with the Firebase backend (Cloud Functions, Authentication, Storage). The frontend is designed as a Single Page Application (SPA) and is deployed using **Firebase Hosting**.
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org/)
+[![Three.js](https://img.shields.io/badge/Three.js-r150+-orange.svg)](https://threejs.org/)
 
-## Structure Overview
+> **Инновационная платформа для создания и взаимодействия с голографическими медиа через естественные жесты и голос**
 
--   **`index.html`**: The main HTML entry point for the application.
--   **`style.css`**: Main stylesheet for the application.
--   **`manifest.json`**: Web application manifest for PWA capabilities.
--   **`vite.config.js`**: Configuration for Vite, used as the frontend build tool and dev server. The output of the build (e.g., a `dist` folder within `frontend/`) is what should be deployed to Firebase Hosting. Ensure `firebase.json` (in the project root) has `hosting.public` pointing to this build output directory (e.g., `frontend/dist`).
--   **`/js`**: Contains all JavaScript modules, organized by feature/concern.
-    -   **`main.js`**: The main entry point for JavaScript execution, orchestrates initialization of other modules.
-    -   **`/core`**: Core application logic, including:
-        -   `init.js`: Initializes the global state, Three.js scene, and core components.
-        -   `auth.js`: Handles Firebase Authentication logic (sign-up, login, state observation).
-        -   `eventBus.js`, `domEventHandlers.js`: Manage application-wide events and DOM interactions.
-        -   `diagnostics.js`: For logging and debugging.
-    -   **`/3d`**: Core 3D rendering logic.
-        -   `sceneSetup.js`: Initializes the Three.js scene, camera, lights.
-        -   `hologramRenderer.js`: Manages the rendering of the main hologram object.
-        -   `rendering.js`: General rendering utilities and the main animation loop.
-        -   `/webgpu` (R&D): Components for future WebGPU integration.
-    -   **`/audio`**: Audio processing, playback, and analysis.
-        -   `audioAnalyzer.js`: Microphone input, FFT analysis for audio-reactivity.
-        -   `audioVisualizer.js`: Connects audio analysis to hologram visuals.
-        -   `speechInput.js`: Integration with Web Speech API.
-    -   **`/ui`**: General UI management and components.
-        -   `uiManager.js`: Manages overall UI elements, interactions, and state.
-        -   `panelManager.js`, `rightPanelManager.js`: Logic for specific UI panels.
-        -   Modules for chat interaction (e.g., in `ai/` or `panels/`).
-    -   **`/services`**: Modules for interacting with backend services.
-        -   `apiService.js`: Handles HTTP requests to Firebase Cloud Functions.
-        -   `firebaseStorageService.js`: Manages file uploads to Firebase Storage.
-    -   **`/multimodal`**: Handling of diverse input methods.
-        -   `handsTracking.js`: MediaPipe integration for hand tracking.
-    -   **`/ai`**: Client-side logic related to Tria AI interaction (e.g., `tria.js`, `tria_mode.js`).
-    -   **`/wasm`** (R&D): For future WebAssembly modules and their source (e.g. `/js/wasm/src`).
-    -   **`/xr`** (R&D): For future WebXR integration.
-    -   **`/panels`**, **`/config`**, **`/utils`**, **`/gestures`**: Other specialized modules as per the project structure.
--   **`/public`**: Static assets that are copied directly to the build output directory by Vite. `favicon.ico` is typically placed here.
--   **`robots.txt`**, **`sitemap.xml`**: Standard web files, typically placed in the `public/` directory for Vite to handle, or generated during the build.
+Holograms.Media - это полнофункциональное веб-приложение, которое сочетает передовые технологии 3D-визуализации, машинного обучения и естественного взаимодействия человека с компьютером. Проект создает мост между традиционными медиа и иммерсивными голографическими технологиями.
 
-## Core Technologies
+## ✨ Возможности
 
--   **Vanilla JavaScript (ES6 Modules):** Primary language for application logic.
--   **HTML5, CSS3:** Standard web technologies.
--   **Three.js (using WebGL):** Current primary 3D library for hologram rendering (MVP).
--   **Vite:** Frontend build tool and development server.
--   **Firebase SDK for JavaScript:** Used for:
-    -   Firebase Authentication (client-side).
-    -   Firebase Storage (file uploads).
-    -   Calling Firebase Cloud Functions (via their HTTP triggers, using `fetch` or a library in `apiService.js`).
--   **MediaPipe Hands:** For client-side real-time hand tracking.
--   **Web Speech API:** For voice input.
--   **WebGPU & WebXR:** Future R&D for enhanced performance and immersion.
--   **WebAssembly (Rust/C++):** Future R&D for performance-critical tasks.
+### 🎨 3D-Визуализация в Реальном Времени
+- **Динамические голограммы**: Создание и визуализация 3D-объектов с использованием Three.js и WebGL
+- **Аудио-реактивность**: Визуализация звука в реальном времени с помощью непрерывного вейвлет-преобразования (CWT)
+- **WebAssembly**: Высокопроизводительная обработка аудио с использованием Rust/WASM
 
-## Local Development
+### 🤖 Искусственный Интеллект
+- **Самообучающийся AI-ассистент "Триа"**: Интеллектуальный помощник на базе Mistral LLM
+- **Распознавание жестов**: Управление через MediaPipe Hands с поддержкой TensorFlow.js
+- **Мультимодальный ввод**: Голосовое управление через Web Speech API
 
-1.  **Prerequisites:**
-    *   Node.js and npm (or yarn) installed.
-    *   Firebase CLI installed (`npm install -g firebase-tools`) and configured (`firebase login`).
-    *   Firebase Local Emulator Suite running for backend services:
-        ```bash
-        firebase emulators:start --only functions,auth,storage,hosting
-        # Add ,firestore if used by the backend
-        ```
-2.  **Install Dependencies:**
-    *   Navigate to the root of the project (where the main `package.json` is located).
-        ```bash
-        npm install
-        # or yarn install
-        ```
-3.  **Running the Frontend Development Server (Vite):**
-    *   From the project root, run the Vite development server script defined in `package.json`:
-        ```bash
-        npm run dev
-        # Or a specific script like 'npm run start:frontend' if defined.
-        ```
-    *   This will typically start a local server (e.g., on `http://localhost:5173`, check Vite output) with Hot Module Replacement (HMR).
-    *   The frontend's `firebaseInit.js` (in `frontend/js/core/`) and `apiService.js` (in `frontend/js/services/`) should be configured to connect to the local Firebase Emulators when the app is not running in a production environment.
+### 🌐 Современная Архитектура
+- **P2P-обмен данными**: WebRTC для прямого обмена между клиентами
+- **Масштабируемый бэкенд**: FastAPI на Python с развертыванием на Koyeb
+- **Облачное хранение**: Backblaze B2 и Astra Database (Cassandra)
+- **CDN**: Cloudflare Pages для быстрой доставки контента
 
-4.  **Firebase SDK Configuration for Emulators:**
-    *   In `frontend/js/core/firebaseInit.js` (or a similar initialization file), ensure the Firebase SDK is configured to use the emulators when in a development environment. Example:
-        ```javascript
-        // import { initializeApp } from "firebase/app";
-        // import { getAuth, connectAuthEmulator } from "firebase/auth";
-        // import { getStorage, connectStorageEmulator } from "firebase/storage";
-        // import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+## 🏗️ Архитектура Проекта
 
-        // const firebaseConfig = { /* your firebase config from Firebase console */ };
-        // const app = initializeApp(firebaseConfig);
-        // const auth = getAuth(app);
-        // const storage = getStorage(app);
-        // const functions = getFunctions(app, "your-functions-region"); // Specify region if not default
+```
+holograms.media/
+├── 📁 js/                    # Frontend JavaScript модули
+│   ├── core/                # Ядро приложения
+│   ├── 3d/                  # 3D-рендеринг (Three.js)
+│   ├── audio/               # Аудио обработка и анализ
+│   ├── multimodal/          # Мультимодальный ввод
+│   ├── ai/                  # AI интеграции
+│   └── services/            # Внешние сервисы
+├── 📁 backend/              # Python FastAPI бэкенд
+│   ├── api/                 # REST API эндпоинты
+│   ├── core/                # Бизнес-логика
+│   ├── services/            # Сервисы (AI, хранение)
+│   └── tria_bots/           # AI-боты
+├── 📁 css/                  # Стили приложения
+├── 📁 docs/                 # Документация
+└── 📁 public/               # Статические ресурсы
+```
 
-        // // Check if running locally and connect to emulators
-        // if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-        //   try {
-        //     connectAuthEmulator(auth, "http://localhost:9099");
-        //     connectStorageEmulator(storage, "localhost", 9199);
-        //     connectFunctionsEmulator(functions, "localhost", 5001); // Ensure port matches your functions emulator port
-        //     console.log("Firebase SDK connected to local emulators.");
-        //   } catch (error) {
-        //     console.error("Error connecting Firebase SDK to emulators: ", error);
-        //   }
-        // }
-        ```
+## 🚀 Быстрый Старт
 
-## Build & Deployment
+### Предварительные Требования
+- **Node.js** 18+ и **npm**
+- **Python** 3.9+ с **pip**
+- **Git** для клонирования репозитория
 
--   **Build:**
-    *   A build script (likely `npm run build` or `npm run build:frontend` in the root `package.json`) uses Vite to compile and bundle the frontend assets.
-    *   The output directory (e.g., `frontend/dist/`) **must** match the `hosting.public` setting in the main `firebase.json` at the project root. For example, if Vite builds to `frontend/dist/`, then `firebase.json` should be updated to `hosting.public: "frontend/dist"`. (Currently, `firebase.json` has `hosting.public: "frontend"`. This implies Vite might be configured to output directly to `frontend` or that `firebase.json` needs an update if Vite uses a `dist` subfolder). **This configuration needs verification and alignment.**
--   **Deployment:**
-    *   The frontend is deployed to **Firebase Hosting**.
-    *   Deploy using the Firebase CLI from the project root:
-        ```bash
-        firebase deploy --only hosting
-        ```
+### Установка и Запуск
 
-## Key Tasks & TODO (Frontend MVP Focus)
+1. **Клонируйте репозиторий:**
+   ```bash
+   git clone https://github.com/your-username/holograms.media.git
+   cd holograms.media
+   ```
 
-*   Ensure stable and performant audio-reactive hologram visualization on Firebase Hosting, using Three.js/WebGL.
-*   Implement all UI elements and interactions for MVP features (Authentication, chunk upload, Tria chat, panel management) as defined in `ULTIMATE_ROAD_TO_MVP_JUNE_9.md`.
-*   Thoroughly test frontend functionality across target browsers, including interactions with emulated and deployed Firebase services.
-*   Refine client-side state management (e.g., using `frontend/js/core/stateManager.js` or a similar pattern).
-*   Ensure seamless integration with Firebase Authentication, Firebase Storage (for uploads), and Firebase Cloud Functions (via `apiService.js`).
-*   Manage client-side configuration for Firebase SDK and API endpoints effectively, distinguishing between development (emulator) and production environments.
-*   **Verify and align Vite's build output directory with the `hosting.public` setting in the root `firebase.json`.**
+2. **Установите зависимости:**
+   ```bash
+   # Frontend зависимости
+   npm install
+   
+   # Backend зависимости
+   cd backend
+   pip install -r requirements.txt
+   cd ..
+   ```
+
+3. **Запустите приложение:**
+   ```bash
+   # Frontend (в одном терминале)
+   npm run dev
+   
+   # Backend (в другом терминале)
+   cd backend
+   python -m uvicorn main:app --reload
+   ```
+
+4. **Откройте браузер:**
+   Перейдите на `http://localhost:5173` для доступа к приложению
+
+## 🎯 Ключевые Функции
+
+### Визуализация Аудио
+- **CWT-анализ**: Непрерывное вейвлет-преобразование для точного анализа частот
+- **Стерео-визуализация**: Отдельная обработка левого и правого каналов
+- **WebAssembly**: Оптимизированная производительность с Rust
+
+### Управление Жестами
+- **MediaPipe Hands**: Распознавание ключевых точек рук в реальном времени
+- **GestureIntentClassifier**: Интеллектуальная классификация намерений
+- **Естественное взаимодействие**: Управление без клавиатуры и мыши
+
+### AI-Ассистент Триа
+- **Контекстное обучение**: Самосовершенствующийся AI
+- **Мультимодальный ввод**: Обработка текста, голоса и жестов
+- **RAG-система**: Семантический поиск по базе знаний
+
+## 🛠️ Технологический Стек
+
+### Frontend
+- **JavaScript ES6+** - Основной язык программирования
+- **Three.js** - 3D-графика и WebGL
+- **TensorFlow.js** - Машинное обучение в браузере
+- **MediaPipe** - Компьютерное зрение
+- **WebRTC** - P2P-коммуникации
+
+### Backend
+- **FastAPI** - Современный Python веб-фреймворк
+- **Mistral AI** - Языковая модель
+- **Astra Database** - NoSQL база данных
+- **WebRTC** - P2P-сервер
+
+### DevOps & Инфраструктура
+- **Cloudflare Pages** - Хостинг и CDN
+- **Koyeb** - Вычисления и API
+- **Backblaze B2** - Хранение файлов
+- **Docker** - Контейнеризация
+
+## 📚 Документация
+
+Подробная документация доступна в папке [`docs/`](docs/):
+
+- **[Архитектура системы](docs/RU/Architecture/)** - Техническая документация
+- **[Руководство по развертыванию](docs/RU/Architecture/Infrastructure/)** - Инструкции по деплою
+- **[API спецификации](docs/RU/Architecture/ApiSpecifications/)** - Документация API
+
+## 🤝 Вклад в Проект
+
+Мы приветствуем вклад сообщества! Вот как вы можете помочь:
+
+1. **Fork** репозиторий
+2. Создайте **feature branch** (`git checkout -b feature/amazing-feature`)
+3. **Commit** изменения (`git commit -m 'Add amazing feature'`)
+4. **Push** в branch (`git push origin feature/amazing-feature`)
+5. Откройте **Pull Request**
+
+### Требования к коду
+- Следуйте принципам **SOLID** и **DRY**
+- Используйте **ES6+ синтаксис**
+- Добавляйте **JSDoc комментарии** на русском языке
+- Соблюдайте **максимальную длину строки 120 символов**
+
+## 📄 Лицензия
+
+Этот проект распространяется под лицензией MIT. Подробности в файле [LICENSE](LICENSE).
+
+## 🙏 Благодарности
+
+- **Three.js** за невероятную 3D-библиотеку
+- **MediaPipe** за инструменты компьютерного зрения
+- **Mistral AI** за мощную языковую модель
+- **Cloudflare** за инфраструктуру и поддержку
+
+## 📞 Контакты
+
+- **Автор**: Нейрокодер
+- **Email**: [ваш-email@example.com]
+- **Telegram**: [@your_telegram]
+- **Discord**: [ссылка на сервер]
+
+---
+
+<div align="center">
+  <p><strong>🌟 Создавайте будущее вместе с нами! 🌟</strong></p>
+  <p>Каждый вклад приближает нас к новой эре взаимодействия человека с технологиями</p>
+</div>

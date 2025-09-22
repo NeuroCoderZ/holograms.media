@@ -1,7 +1,7 @@
-import { Line2 } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/lines/Line2.js';
-import { LineGeometry } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/lines/LineGeometry.js';
-import { LineMaterial } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/lines/LineMaterial.js';
-import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+import { Line2 } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/lines/Line2.js';
+import { LineGeometry } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/lines/LineGeometry.js';
+import { LineMaterial } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/lines/LineMaterial.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../config/hologramConfig.js';
 // import { MeshBasicNodeMaterial } from 'three/addons/nodes/Nodes.js'; // This was commented out, keeping it so
 import eventBus from '../core/eventBus.js'; // Added for WebAudioEngine integration

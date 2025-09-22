@@ -1,0 +1,315 @@
+// API V1 Спецификация - АКТУАЛЬНАЯ ВЕРСИЯ
+// Дата актуализации: 2024-12-01
+// Этот документ описывает текущую реализацию API v1 проекта Holograms.Media
+// Автоматическая документация FastAPI доступна по адресу /docs на развернутом бэкенде
+
+{
+  "api_info": {
+    "title": "Holograms Media Backend API",
+    "version": "1.0.0",
+    "description": "Backend сервисы для проекта Holograms.Media, предоставляющие API эндпоинты для взаимодействия пользователей, обработки медиа и AI ассистента Tria",
+    "base_url": "https://api.holograms.media",
+    "documentation_url": "/docs"
+  },
+  "authentication": {
+    "type": "JWT Token + Firebase Auth",
+    "description": "Большинство эндпоинтов требуют аутентификации через JWT токены с Firebase UID"
+  },
+  "endpoints": [
+    {
+      "path": "/",
+      "method": "GET",
+      "description": "Корневой эндпоинт API с приветственным сообщением",
+      "tags": ["Root"],
+      "responses": {
+        "200": {
+          "description": "Успешный ответ",
+          "content": {
+            "application/json": {
+              "example": {
+                "message": "Welcome to the Holograms Media API. Visit /docs for API documentation."
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/healthz",
+      "method": "GET", 
+      "description": "Проверка состояния здоровья FastAPI приложения",
+      "tags": ["System"],
+      "responses": {
+        "200": {
+          "description": "Сервис работает нормально",
+          "content": {
+            "application/json": {
+              "example": {
+                "status": "ok",
+                "message": "FastAPI is healthy"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/upload-chunk",
+      "method": "POST",
+      "description": "Загрузка медиа-чанков в Backblaze B2 с поддержкой multipart upload",
+      "tags": ["Chunks"],
+      "parameters": {
+        "chunk": {
+          "type": "file",
+          "description": "Файл чанка для загрузки"
+        },
+        "chunk_id": {
+          "type": "string",
+          "description": "Уникальный идентификатор чанка"
+        },
+        "file_id": {
+          "type": "string", 
+          "description": "Идентификатор файла"
+        },
+        "part_number": {
+          "type": "integer",
+          "description": "Номер части в multipart upload"
+        },
+        "upload_id": {
+          "type": "string",
+          "description": "Идентификатор multipart upload сессии"
+        },
+        "b2_bucket_name": {
+          "type": "string",
+          "description": "Имя B2 бакета для загрузки"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Чанк успешно загружен",
+          "content": {
+            "application/json": {
+              "example": {
+                "success": true,
+                "message": "Chunk 1 uploaded successfully.",
+                "ETag": "\"abc123...\"",
+                "PartNumber": 1,
+                "file_id": "user_file.mp4",
+                "upload_id": "upload123"
+              }
+            }
+          }
+        },
+        "503": {
+          "description": "Сервис хранения недоступен"
+        }
+      }
+    },
+    {
+      "path": "/api/v1/chunks/generate-upload-url",
+      "method": "POST",
+      "description": "Генерация presigned POST URL для прямой загрузки файла в Cloudflare R2",
+      "tags": ["Chunks"],
+      "authentication": "Требуется",
+      "request_body": {
+        "filename": {
+          "type": "string",
+          "example": "myvideo.mp4",
+          "description": "Имя файла"
+        },
+        "content_type": {
+          "type": "string", 
+          "example": "video/mp4",
+          "description": "MIME тип файла"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Presigned URL сгенерирован успешно",
+          "content": {
+            "application/json": {
+              "example": {
+                "url": "https://r2-bucket-url.com",
+                "fields": {
+                  "Content-Type": "video/mp4",
+                  "key": "user_uploads/uuid/filename.mp4"
+                },
+                "object_key": "user_uploads/uuid/filename.mp4"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Не авторизован"
+        },
+        "503": {
+          "description": "R2 сервис недоступен"
+        }
+      }
+    },
+    {
+      "path": "/api/v1/chunks/upload_chunk/{user_id}",
+      "method": "POST",
+      "description": "Загрузка медиа-чанков для конкретного пользователя в R2 с автоматической обработкой метаданных",
+      "tags": ["Chunks"],
+      "parameters": {
+        "user_id": {
+          "type": "string",
+          "description": "ID пользователя"
+        },
+        "file": {
+          "type": "file",
+          "description": "Файл чанка для загрузки"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Чанк загружен и обработка метаданных инициирована",
+          "content": {
+            "application/json": {
+              "example": {
+                "message": "Chunk uploaded successfully. Metadata processing initiated.",
+                "user_id": "user123",
+                "original_filename": "video.mp4",
+                "stored_filename": "uuid.mp4",
+                "storage_key": "user_chunks/user123/uuid.mp4",
+                "content_type": "video/mp4",
+                "size": 1048576
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Ошибка загрузки или обработки"
+        }
+      }
+    },
+    {
+      "path": "/api/v1/interaction_chunks/submit",
+      "method": "POST",
+      "description": "Отправка интерактивного чанка с метаданными (устаревший, legacy эндпоинт)",
+      "tags": ["Interaction Chunks (Legacy)"],
+      "authentication": "Требуется",
+      "deprecated": true,
+      "request_body": {
+        "session_id": {
+          "type": "string",
+          "description": "ID сессии"
+        },
+        "audio_data_ref": {
+          "type": "string",
+          "description": "Ссылка на аудиоданные"
+        },
+        "video_data_ref": {
+          "type": "string", 
+          "description": "Ссылка на видеоданные"
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Чанк успешно сохранен"
+        },
+        "403": {
+          "description": "Firebase UID отсутствует"
+        },
+        "500": {
+          "description": "Ошибка базы данных"
+        }
+      }
+    },
+    {
+      "path": "/api/v1/gestures/",
+      "method": "GET",
+      "description": "Получение списка публичных жестов",
+      "tags": ["Gestures (Public)"],
+      "responses": {
+        "200": {
+          "description": "Список жестов",
+          "content": {
+            "application/json": {
+              "example": [
+                {
+                  "id": "gesture1",
+                  "name": "Victory",
+                  "description": "Жест победы"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/api/v1/holograms/",
+      "method": "GET", 
+      "description": "Получение списка публичных голограмм",
+      "tags": ["Holograms (Public)"],
+      "responses": {
+        "200": {
+          "description": "Список голограмм",
+          "content": {
+            "application/json": {
+              "example": [
+                {
+                  "id": "hologram1",
+                  "title": "Sample Hologram",
+                  "description": "Пример голограммы"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/api/v1/tria/invoke",
+      "method": "POST",
+      "description": "Вызов AI ассистента Tria для выполнения задач",
+      "tags": ["Tria Commands"],
+      "request_body": {
+        "query": {
+          "type": "string",
+          "description": "Запрос для выполнения"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Ответ от Tria",
+          "content": {
+            "application/json": {
+              "example": {
+                "response": "Задача выполнена успешно",
+                "should_vocalize": false
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "websocket_endpoints": [
+    {
+      "path": "/ws/gestures",
+      "description": "WebSocket для обработки жестов в реальном времени",
+      "tags": ["WebSocket"]
+    },
+    {
+      "path": "/ws/signaling", 
+      "description": "WebSocket для сигнализации WebRTC",
+      "tags": ["WebRTC", "Signaling"]
+    }
+  ],
+  "infrastructure": {
+    "storage": "Backblaze B2 + Cloudflare R2",
+    "database": "Astra Database (Cassandra)",
+    "compute": "Koyeb",
+    "cdn": "Cloudflare Pages + Cloudflare CDN"
+  },
+  "notes": [
+    "Полная автоматическая документация доступна по адресу /docs",
+    "Большинство эндпоинтов требуют аутентификации через Firebase",
+    "API использует стандартные HTTP статус коды",
+    "Все загрузки файлов используют presigned URLs для безопасности",
+    "WebSocket эндпоинты поддерживают real-time коммуникацию"
+  ]
+}
