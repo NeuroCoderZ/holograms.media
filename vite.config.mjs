@@ -29,5 +29,10 @@ export default defineConfig({
     alias: {
       '@holographic-core': resolve(__dirname, 'holographic_core/target/pkg')
     }
+  },
+  build: {
+    rollupOptions: {
+      external: ['three']
+    }
   }
 });

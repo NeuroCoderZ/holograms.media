@@ -4,7 +4,7 @@
  * Предотвращает дублирование импортов и конфликты версий
  */
 
-import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r165/three.module.min.js';
+import * as THREE from 'three';
 
 // Экспортируем основные классы Three.js
 export { THREE };

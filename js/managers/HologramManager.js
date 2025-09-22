@@ -2,7 +2,7 @@
 
 
 import * as TWEEN from '@tweenjs/tween.js';
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+import * as THREE from 'three';
 
 const { Group } = THREE;
 
