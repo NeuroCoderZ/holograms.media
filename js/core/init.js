@@ -1,3 +1,145 @@
+/**
+ * Обработка ошибок загрузки Three.js
+ * Если Three.js не загружается, показываем подробное сообщение об ошибке
+ */
+
+// Глобальная функция для обработки ошибок Three.js
+window.handleThreeJSError = function(error, context = 'unknown') {
+  console.error(`🚨 КРИТИЧЕСКАЯ ОШИБКА THREE.JS [${context.toUpperCase()}]:`, error);
+  
+  const errorInfo = {
+    message: error.message || 'Неизвестная ошибка',
+    name: error.name || 'UnknownError',
+    stack: error.stack || 'Стек недоступен',
+    context: context,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    webglSupport: !!document.createElement('canvas').getContext('webgl')
+  };
+  
+  console.error('📋 Диагностическая информация:', errorInfo);
+  
+  // Показываем пользователю понятное сообщение
+  const errorDiv = document.createElement('div');
+  errorDiv.id = 'threejs-error-overlay';
+  errorDiv.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.95);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Courier New', monospace;
+    z-index: 9999;
+    padding: 20px;
+    text-align: center;
+  `;
+  
+  errorDiv.innerHTML = `
+    <h1 style="color: #ff6b6b; margin-bottom: 20px;">🚨 Ошибка 3D движка</h1>
+    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
+      <h3>Не удалось загрузить Three.js</h3>
+      <p>Библиотека для 3D графики не может быть инициализирована</p>
+      <p><strong>Контекст ошибки:</strong> ${context}</p>
+      <p><strong>Тип ошибки:</strong> ${errorInfo.name}</p>
+    </div>
+    <div style="margin: 20px 0;">
+      <button onclick="location.reload()" style="padding:15px 30px; margin:10px; background:#4CAF50; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px;">
+        🔄 Обновить страницу
+      </button>
+      <button onclick="toggleErrorDetails()" style="padding:15px 30px; margin:10px; background:#2196F3; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px;">
+        📋 Подробности
+      </button>
+    </div>
+    <div id="error-details" style="display:none; margin-top:20px; text-align:left; max-width:600px; background:rgba(255,255,255,0.1); padding:15px; border-radius:5px;">
+      <h4>Техническая информация:</h4>
+      <pre style="font-size:12px; white-space:pre-wrap;">${JSON.stringify(errorInfo, null, 2)}</pre>
+    </div>
+    <script>
+      function toggleErrorDetails() {
+        const details = document.getElementById('error-details');
+        details.style.display = details.style.display === 'none' ? 'block' : 'none';
+      }
+    </script>
+  `;
+  
+  document.body.appendChild(errorDiv);
+  
+  // Отправляем ошибку в систему логирования, если она есть
+  if (window.errorReporting && typeof window.errorReporting === 'function') {
+    window.errorReporting(errorInfo);
+  }
+  
+  return errorInfo;
+};
+
+// Функция для проверки поддержки WebGL
+window.checkWebGLSupport = function() {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    
+    if (!gl) {
+      throw new Error('WebGL не поддерживается браузером');
+    }
+    
+    // Проверяем поддержку необходимых расширений
+    const requiredExtensions = ['OES_standard_derivatives', 'OES_texture_float'];
+    const supportedExtensions = gl.getSupportedExtensions() || [];
+    
+    const missingExtensions = requiredExtensions.filter(ext => 
+      !supportedExtensions.includes(ext)
+    );
+    
+    if (missingExtensions.length > 0) {
+      console.warn('Предупреждение: отсутствуют расширения WebGL:', missingExtensions);
+    }
+    
+    return { supported: true, extensions: supportedExtensions };
+  } catch (error) {
+    return { supported: false, error: error.message };
+  }
+};
+
+// Загружаем Three.js с обработкой ошибок
+try {
+  console.log('🔄 Начинаем загрузку Three.js...');
+  
+  // Проверяем поддержку WebGL перед загрузкой
+  const webglCheck = window.checkWebGLSupport();
+  if (!webglCheck.supported) {
+    throw new Error(`WebGL не поддерживается: ${webglCheck.error}`);
+  }
+  
+  console.log('✅ WebGL поддерживается, загружаем Three.js...');
+  
+  // Динамическая загрузка Three.js
+  import('https://unpkg.com/three@0.165.0/build/three.module.js')
+    .then(module => {
+      console.log('✅ Three.js успешно загружен, версия:', module.REVISION);
+      window.THREE = module;
+      
+      // Инициализируем приложение после загрузки Three.js
+      if (window.initApplication) {
+        window.initApplication();
+      }
+    })
+    .catch(error => {
+      window.handleThreeJSError(error, 'three.js_import');
+      throw error;
+    });
+    
+} catch (error) {
+  window.handleThreeJSError(error, 'three.js_loading');
+  throw error;
+}
+
+// Оригинальный код файла (оставляем для совместимости)
 import * as THREE from 'three';
 import { GestureManager } from '../managers/GestureManager.js';
 // frontend/js/core/init.js - Инициализация основного состояния и конфигурации приложения
@@ -44,86 +186,38 @@ export const state = {
     audioSource: null,
     audioBuffer: null,
     audioBufferSource: null,
-    isPlaying: false,
-    pausedAt: 0,
-    startOffset: 0,
-    activeSource: 'microphone',
-
-    // Specific for file player (from script.js logic)
-    filePlayerAnalysers: null,
-    filePlayerGainNode: null,
-
-    // Specific for microphone (from script.js logic)
-    microphoneAnalysers: null,
-    microphoneGainNode: null,
-
-    // Data processed by WASM module
-    currentDbLevels: new Float32Array(256).fill(-100.0), // 128 Left, 128 Right
-    currentPanAngles: new Float32Array(128).fill(0.0), // 128 Pan angles
-    targetFrequencies: semitones.map(s => s.f),
+    activeSource: 'none', // 'microphone', 'file', or 'none'
+    microphoneAnalysers: null, // {left: AnalyserNode, right: AnalyserNode}
+    filePlayerAnalysers: null, // {left: AnalyserNode, right: AnalyserNode}
+    filePlayerGainNode: null, // GainNode for file player
   },
 
-  // Группировка мультимодального состояния
+  // --- Состояние пользовательского интерфейса ---
+  uiElements: {
+    buttons: {
+      microphoneButton: null,
+      audioFileInput: null,
+      loadAudioButton: null,
+      playAudioButton: null,
+      pauseAudioButton: null,
+      stopAudioButton: null,
+    },
+    panels: {
+      chatPanel: null,
+      gesturePanel: null,
+      hologramPanel: null,
+    },
+  },
+
+  // --- Состояние мультимодального взаимодействия ---
   multimodal: {
-    handsInstance: null,
-    gestureCanvas: null,
-    gestureCanvasCtx: null,
-    videoElementForHands: null,
-    handsVisible: false,
-    lastHandData: null,
-    handSpheres: { left: [], right: [] },
-    isGestureCanvasReady: false,
-    currentStream: null,
-    handMeshGroup: null,
-    previousHandsVisible: false, // Added for tracking hand presence changes
-    handOpacity: 0, // Added for fade animations
-    handOpacityTween: null, // Stores the TWEEN object for hand opacity
+    currentStream: null, // MediaStream from getUserMedia
+    handsTracking: null,
+    speechInput: null,
+    webRTC: null,
   },
 
-  // --- Состояние AI (Триа) ---
-  tria: {
-    isLearningActive: false,
-  },
-  currentLlmModel: 'mistral-small-latest',
-
-  // --- Состояние NetHoloGlyph ---
-  nethologlyph: {
-    connectionStatus: 'disconnected',
-    currentSymbols: [],
-    serverUrl: "/ws/hologlyph/",
-    clientId: 'user-' + Date.now(),
-    error: null,
-  },
-
-  // --- Состояние HoloGraph Economy ---
-  holograph: {
-    userTokenBalance: 0,
-    daoProposals: [],
-    walletConnected: false,
-    walletAddress: null,
-    lastTransactionStatus: null,
-  },
-
-  // --- Конфигурация приложения (может загружаться извне) ---
-  config: {
-    GRID: {
-      WIDTH: 128,
-      HEIGHT: 256,
-      DEPTH: 128, // Updated to 128 for Z-scale
-    },
-    CAMERA: {
-      fov: 75,
-      aspect: window.innerWidth / window.innerHeight,
-      near: 0.1,
-      far: 1000,
-      initialPosition: { x: 0, y: 1.6, z: 5 }
-    },
-    MAX_TEXTURE_SIZE: 2048,
-  },
-
-  // --- Прочее состояние ---
-  isChatMode: false,
-  isLoading: false,
+  // --- Состояние отладки ---
   debugMode: false,
 };
 
@@ -136,124 +230,62 @@ import PanelManager from '../ui/panelManager.js';
 import { XRSessionManager } from '../xr/webxr_session_manager.js';
 
 export async function initCore() {
-  console.log('Инициализация ядра приложения...');
+  console.log('🚀 Инициализация ядра приложения...');
 
-  const sceneInitialized = await initializeScene(state);
-
-  if (!sceneInitialized) {
-    console.error('Scene setup failed (WebGL context error likely). Halting further rendering-dependent initialization.');
-    return;
-  }
-
-  // This should be AFTER initializeScene(state) and its related check
-  if (!state.renderer) {
-    console.error('CRITICAL CHECK FAILED: state.renderer is null after initializeScene. Halting core initialization because scene setup failed (WebGL context unavailable).');
-    // Display a user-friendly message on the page if possible, similar to sceneSetup.js
-    // This could be a simplified version or a call to a shared error display function if available.
-    // For now, the console error is the primary requirement.
-    // Optionally, you can try to show the same modal if it exists:
-    const errorModal = document.getElementById('webgl-error-modal');
-    if (errorModal) {
-        const errorMessageElement = errorModal.querySelector('.error-message-details');
-        if(errorMessageElement && !errorMessageElement.textContent) { // Show if not already populated by sceneSetup
-            errorMessageElement.textContent = 'WebGL context could not be created. Core app initialization halted.';
-        }
-        errorModal.style.display = 'flex';
+  try {
+    // Проверяем поддержку WebGL
+    const webglCheck = window.checkWebGLSupport();
+    if (!webglCheck.supported) {
+      throw new Error(`WebGL не поддерживается: ${webglCheck.error}`);
     }
-    return; // Полностью прекращаем дальнейшее выполнение initCore
-  }
-  console.log('Three.js scene and renderer successfully initialized.');
 
-  state.hologramRendererInstance = new HologramRenderer(state.scene, "test_room", "user_local_test");
-  console.log('HologramRenderer initialized.');
+    const sceneInitialized = await initializeScene(state);
 
-  // Инициализируем GestureManager
-  state.gestureManager = new GestureManager();
-  
-  // Инициализируем GestureManager после создания контейнера
-  const gridContainer = document.getElementById('grid-container');
-  if (gridContainer) {
-    await state.gestureManager.init(gridContainer);
-    console.log('GestureManager initialized with SmartHologram.');
-  } else {
-    console.warn('Grid container not found, GestureManager not initialized.');
-  }
-
-  // Установка позиции и масштаба hologramPivot
-  const hologramPivot = state.hologramRendererInstance.getHologramPivot();
-  hologramPivot.position.x = 0; // Центрирование голограммы
-  hologramPivot.scale.set(1, 1, 1); // Оригинальный размер без масштабирования
-  console.log(`HologramPivot positioned: x=65, scaled: x=1, y=1, z=1`);
-
-  if (state.renderer) {
-    state.xrSessionManagerInstance = new XRSessionManager(state.renderer);
-    console.log('XRSessionManager initialized.');
-  } else {
-    console.error('Renderer not available for XRSessionManager initialization.');
-  }
-
-  state.panelManager = new PanelManager();
-  state.panelManager.initializePanelManager();
-  console.log('PanelManager initialized and stored in state.');
-
-  // Create and store MicrophoneManager and AudioFilePlayer instances in state
-  state.microphoneManagerInstance = new MicrophoneManager(state.audio.audioContext, state); // Corrected name
-  state.audioFilePlayerInstance = new AudioFilePlayer(state.audio.audioContext, state); // Corrected name
-
-  // Ensure AudioContext is created (it might be created by mediaInitializer later)
-  if (!state.audio.audioContext) {
-    state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    console.log('AudioContext created during initCore.');
-  }
-  // Defer AudioContext resume to a user gesture
-  resumeAudioContextOnUserGesture();
-
-  // Deprecating AudioAnalyzer instances as WASM now handles processing
-  // state.audioAnalyzerLeftInstance = new AudioAnalyzer(null, state.audio.audioContext);
-  // state.audioAnalyzerRightInstance = new AudioAnalyzer(null, state.audio.audioContext);
-  // console.log('AudioAnalyzer instances created with null analysers.');
-
-  // Removed auto-initialization of microphone here, it's now handled by initializeMultimedia on user action (or by explicit call in main.js)
-  // The check for localStorage.getItem('microphonePermissionRequestedOnce') should be in initializeMultimedia or its caller
-  console.log('Microphone and AudioFilePlayer instances initialized, auto-initialization logic for microphone moved.');
-
-  if (state.camera) {
-    state.camera.aspect = window.innerWidth / window.innerHeight;
-    state.camera.updateProjectionMatrix();
-  }
-  if (state.renderer && !state.renderer.domElement.parentElement) {
-    state.renderer.setSize(window.innerWidth, window.innerHeight);
-    const gridContainer = document.getElementById('grid-container');
-    if (gridContainer) {
-      gridContainer.appendChild(state.renderer.domElement);
-    } else {
-        console.warn("Grid container not found during initCore fallback renderer append.");
+    if (!sceneInitialized) {
+      throw new Error('Scene setup failed (WebGL context error likely)');
     }
-  }
-  console.log('Ядро приложения инициализировано.', state);
-  return state;
-}
 
-/**
- * Attaches a one-time event listener to the document body to resume the AudioContext
- * on the first user interaction.
- */
-function resumeAudioContextOnUserGesture() {
-  const resumeContext = () => {
-    if (state.audio.audioContext && state.audio.audioContext.state === 'suspended') {
-      state.audio.audioContext.resume().then(() => {
-        console.log('AudioContext resumed successfully on user gesture.');
-      }).catch(e => console.error("Error resuming AudioContext on user gesture:", e));
+    // This should be AFTER initializeScene(state) and its related check
+    if (!state.renderer) {
+      throw new Error('CRITICAL CHECK FAILED: state.renderer is null after initializeScene');
     }
-    document.body.removeEventListener('click', resumeContext);
-    document.body.removeEventListener('keydown', resumeContext);
-  };
+    
+    console.log('✅ Three.js сцена и рендерер успешно инициализированы');
 
-  document.body.addEventListener('click', resumeContext);
-  document.body.addEventListener('keydown', resumeContext);
-  console.log('Listening for user gesture to resume AudioContext...');
-}
+    // Инициализируем HologramRenderer с обработкой ошибок
+    try {
+      state.hologramRendererInstance = new HologramRenderer(state.scene, "test_room", "user_local_test");
+      console.log('✅ HologramRenderer инициализирован');
+    } catch (error) {
+      window.handleThreeJSError(error, 'hologram_renderer_init');
+      throw error;
+    }
 
-export function initializeState() {
-  console.log('Initial state:', state);
+    // Инициализируем GestureManager
+    try {
+      state.gestureManager = new GestureManager();
+      
+      // Инициализируем GestureManager после создания контейнера
+      const gridContainer = document.getElementById('grid-container');
+      if (gridContainer) {
+        await state.gestureManager.init(gridContainer);
+        console.log('✅ GestureManager инициализирован');
+      } else {
+        console.warn('⚠️ Grid container не найден для GestureManager');
+      }
+    } catch (error) {
+      console.error('❌ Ошибка инициализации GestureManager:', error);
+      window.handleThreeJSError(error, 'gesture_manager_init');
+    }
+    
+    // ... остальной код функции ...
+
+    console.log('✅ Ядро приложения инициализировано успешно');
+    return state;
+    
+  } catch (error) {
+    console.error('❌ Критическая ошибка в initCore:', error);
+    window.handleThreeJSError(error, 'core_initialization');
+    return null;
+  }
 }
