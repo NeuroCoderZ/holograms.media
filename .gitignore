@@ -6,7 +6,6 @@
 .DS_Store
 
 # Firebase
-.firebase/
 
 # Node
 node_modules/

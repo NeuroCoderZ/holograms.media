@@ -3,10 +3,10 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Table: users
 -- Stores user authentication and basic profile information.
--- Firebase UID is used as the primary key.
+-- Пользовательский идентификатор is used as the primary key.
 CREATE TABLE users (
-    firebase_uid TEXT PRIMARY KEY,
-    email VARCHAR(255) UNIQUE, -- User's email, should be kept in sync with Firebase Auth
+    user_id TEXT PRIMARY KEY,
+    email VARCHAR(255) UNIQUE, -- User's email, should be kept in sync with системой аутентификации
     role VARCHAR(50) DEFAULT 'user' NOT NULL CHECK (role IN ('admin', 'core_developer', 'beta_tester', 'user')),
     last_login_at TIMESTAMP WITH TIME ZONE, -- Timestamp of the last login
     is_active BOOLEAN DEFAULT TRUE NOT NULL, -- Whether the user account is active
@@ -15,15 +15,15 @@ CREATE TABLE users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP -- Application-level handling for updates
 );
-COMMENT ON TABLE users IS 'Stores user authentication and basic profile information. Firebase UID is primary key.';
+COMMENT ON TABLE users IS 'Stores user authentication and basic profile information. Пользовательский идентификатор is primary key.';
 
 -- Table: media_files
--- Stores metadata for media files, linking to Cloud Storage paths.
+-- Stores metadata for media files, linking to облачным хранилищем paths.
 CREATE TABLE media_files (
     id SERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(firebase_uid) ON DELETE SET NULL, -- User who uploaded or owns the file
+    user_id TEXT REFERENCES users(user_id) ON DELETE SET NULL, -- User who uploaded or owns the file
     file_name VARCHAR(255) NOT NULL,
-    storage_path VARCHAR(1024) NOT NULL UNIQUE, -- Full path in Cloud Storage (e.g., gs://bucket_name/path/to/file)
+    storage_path VARCHAR(1024) NOT NULL UNIQUE, -- Full path in облачным хранилищем (e.g., gs://bucket_name/path/to/file)
     file_type VARCHAR(100), -- MIME type or general type (e.g., 'audio/wav', 'video/mp4', 'image/jpeg')
     file_size_bytes BIGINT,
     duration_seconds FLOAT, -- For audio/video files
@@ -35,13 +35,13 @@ CREATE TABLE media_files (
 );
 CREATE INDEX IF NOT EXISTS idx_media_files_user_id ON media_files(user_id);
 CREATE INDEX IF NOT EXISTS idx_media_files_file_type ON media_files(file_type);
-COMMENT ON TABLE media_files IS 'Stores metadata for media files, linking to Cloud Storage paths.';
+COMMENT ON TABLE media_files IS 'Stores metadata for media files, linking to облачным хранилищем paths.';
 
 -- Table: audiovisual_gestural_chunks
 -- Stores raw and partially processed data from user interactions.
 CREATE TABLE audiovisual_gestural_chunks (
     id SERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL,
+    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
     session_id VARCHAR(255), -- Identifier for a user session
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     audio_file_id INTEGER REFERENCES media_files(id) ON DELETE SET NULL, -- Reference to audio file in media_files
@@ -70,7 +70,7 @@ COMMENT ON TABLE audiovisual_gestural_chunks IS 'Stores raw and partially proces
 CREATE TABLE gesture_sequences (
     id SERIAL PRIMARY KEY,
     chunk_id INTEGER REFERENCES audiovisual_gestural_chunks(id) ON DELETE CASCADE NOT NULL,
-    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL,
+    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
     duration_ms FLOAT, -- Total duration of the interpreted gesture sequence
     primitives JSONB, -- Array of gestural primitives (type, timestamp, hand, confidence, spatial_data)
     semantic_hypotheses JSONB, -- List of semantic hypotheses with confidence (intent, parameters, confidence)
@@ -85,7 +85,7 @@ COMMENT ON TABLE gesture_sequences IS 'Stores interpreted gesture sequences comp
 -- Defines a specific chat session for a user.
 CREATE TABLE user_chat_sessions (
     id SERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL,
+    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
     session_title VARCHAR(255), 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL 
@@ -111,7 +111,7 @@ COMMENT ON TABLE chat_history IS 'Stores individual messages within each chat se
 -- Stores custom gesture definitions saved by users.
 CREATE TABLE user_gesture_definitions (
     id SERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL,
+    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
     gesture_name VARCHAR(255) NOT NULL,
     gesture_data_ref INTEGER REFERENCES audiovisual_gestural_chunks(id) ON DELETE SET NULL, -- Optional link to an example chunk
     gesture_definition JSONB NOT NULL, -- User-defined parameters or sequence for the gesture
@@ -126,7 +126,7 @@ COMMENT ON TABLE user_gesture_definitions IS 'Stores custom gesture definitions 
 -- Stores saved states or definitions of holograms created by users.
 CREATE TABLE user_holograms (
     id SERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL,
+    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
     hologram_name VARCHAR(255) NOT NULL,
     hologram_state_data JSONB NOT NULL, -- JSON representing the state or definition of the hologram
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -140,7 +140,7 @@ COMMENT ON TABLE user_holograms IS 'Stores saved states or definitions of hologr
 -- Stores versions of prompts created by users.
 CREATE TABLE user_prompt_versions (
     id SERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(firebase_uid) ON DELETE CASCADE NOT NULL,
+    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
     prompt_title VARCHAR(255) NOT NULL, -- Title given by the user to a set of prompt versions
     prompt_text TEXT NOT NULL, -- The actual text of this version of the prompt
     version_number INTEGER NOT NULL, -- Version number for this title, managed by application
@@ -258,7 +258,7 @@ COMMENT ON TABLE tria_azr_task_solutions IS 'Stores solutions or outcomes for AZ
 DROP TABLE IF EXISTS tria_learning_log CASCADE; -- Удаляем старую версию, если существует, для чистого создания
 CREATE TABLE tria_learning_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Используем uuid_generate_v4() если gen_random_uuid() недоступен
-    user_id VARCHAR(255) NOT NULL, -- Firebase UID
+    user_id VARCHAR(255) NOT NULL, -- Пользовательский идентификатор
     session_id VARCHAR(255),
     intent_vector JSONB NOT NULL, -- Содержит type, intensity, target_context
     context_embedding_id UUID REFERENCES holograms_media_embeddings(id) ON DELETE SET NULL, -- Ссылка на эмбеддинг, к которому применялся интент
@@ -331,7 +331,7 @@ $$ LANGUAGE plpgsql;
 -- SERIAL is used for auto-incrementing primary keys.
 -- Comments are added to tables for better understanding.
 -- The 'holograph_data' table is kept as a placeholder from the original schema.sql.
--- The 'media_files' table is added to manage paths to Cloud Storage.
+-- The 'media_files' table is added to manage paths to облачным хранилищем.
 -- The 'gesture_sequences' table is added to store interpreted gesture sequences.
 -- `audio_data_path` and `video_data_path` in `audiovisual_gestural_chunks` are changed to `audio_file_id` and `video_file_id`
 -- and now reference the `media_files` table.
