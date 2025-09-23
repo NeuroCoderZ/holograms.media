@@ -42,7 +42,7 @@ This directory contains the server-side application logic for the Holographic Me
 4.  **Firebase Emulators (for Frontend and Auth Testing):**
     *   While the backend runs with Uvicorn, you might still use Firebase Emulators for testing frontend interactions with Firebase Authentication.
         ```bash
-        firebase emulators:start --only hosting,auth
+        локальным сервером разработки
         ```
     *   Ensure your frontend application is configured to use the emulated Firebase services when running locally.
 

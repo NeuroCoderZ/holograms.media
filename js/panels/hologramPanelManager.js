@@ -111,7 +111,7 @@ export function initializeHologramPanel() {
 
     // Слушаем событие изменения состояния аутентификации
     // Заменил 'auth-state-changed' на 'userLoggedIn' и 'userLoggedOut' для большей ясности,
-    // предполагая, что firebaseInit.js или другой модуль будет генерировать такие события.
+    // предполагая, что модулем инициализации или другой модуль будет генерировать такие события.
     // Если используется 'auth-state-changed' с e.detail.loggedIn, то нужно вернуть тот код.
     // Для примера, оставим с 'userLoggedIn'.
     eventBus.on('userLoggedIn', () => {
