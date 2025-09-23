@@ -1,4 +1,3 @@
-import * as TWEEN from '@tweenjs/tween.js';
 
 export function startAnimationLoop(appState) {
     if (!appState || !appState.renderer) {
@@ -9,7 +8,7 @@ export function startAnimationLoop(appState) {
 
     function animate(time) {
         appState.renderer.setAnimationLoop(animate); // Ensures continuous loop
-        TWEEN.update(time);
+        window.TWEEN.update(time);
 
         // Auto-return animation for camera controls
         if (appState.animateReturn) {

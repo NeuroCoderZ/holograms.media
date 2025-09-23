@@ -1,4 +1,3 @@
-import * as TWEEN from '@tweenjs/tween.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as THREE from 'three';
 
@@ -143,18 +142,18 @@ export async function initializeScene(state) {
     const startTarget = state.controls.target.clone();
 
     // Create tween for camera position
-    const positionTween = new TWEEN.Tween(startPosition)
+    const positionTween = new window.TWEEN.Tween(startPosition)
       .to(state.initialCameraPosition, 300) // 0.3 seconds duration
-      .easing(TWEEN.Easing.Quadratic.Out) // Smooth easing
+      .easing(window.TWEEN.Easing.Quadratic.Out) // Smooth easing
       .onUpdate(() => {
         state.camera.position.copy(startPosition);
         state.camera.lookAt(0, 0, 0); // Update lookAt during animation
       });
 
     // Create tween for controls target
-    const targetTween = new TWEEN.Tween(startTarget)
+    const targetTween = new window.TWEEN.Tween(startTarget)
       .to(state.initialControlsTarget, 300)
-      .easing(TWEEN.Easing.Quadratic.Out)
+      .easing(window.TWEEN.Easing.Quadratic.Out)
       .onUpdate(() => {
         state.controls.target.copy(startTarget);
         state.controls.update();

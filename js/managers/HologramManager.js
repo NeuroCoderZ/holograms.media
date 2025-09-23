@@ -1,7 +1,6 @@
 // Manages the hologram's position, scale, and adaptive behavior.
 
 
-import * as TWEEN from '@tweenjs/tween.js';
 import * as THREE from 'three';
 
 const { Group } = THREE;
@@ -141,17 +140,17 @@ class HologramManager {
         }
 
         // Stop any ongoing animations on the same properties to prevent conflicts
-        TWEEN.remove(this.hologramPivot.scale_tween); // Assuming we store tweens like this
-        TWEEN.remove(this.hologramPivot.position_tween);
+        window.TWEEN.remove(this.hologramPivot.scale_tween); // Assuming we store tweens like this
+        window.TWEEN.remove(this.hologramPivot.position_tween);
 
-        this.hologramPivot.scale_tween = new TWEEN.Tween(this.hologramPivot.scale)
+        this.hologramPivot.scale_tween = new window.TWEEN.Tween(this.hologramPivot.scale)
             .to({ x: targetScale, y: targetScale, z: targetScale }, 500)
-            .easing(TWEEN.Easing.Quadratic.InOut)
+            .easing(window.TWEEN.Easing.Quadratic.InOut)
             .start();
 
-        this.hologramPivot.position_tween = new TWEEN.Tween(this.hologramPivot.position)
+        this.hologramPivot.position_tween = new window.TWEEN.Tween(this.hologramPivot.position)
             .to({ y: targetPositionY }, 500)
-            .easing(TWEEN.Easing.Quadratic.InOut)
+            .easing(window.TWEEN.Easing.Quadratic.InOut)
             .onComplete(() => console.log("Hologram layout animation complete."))
             .start();
 
@@ -168,10 +167,10 @@ class HologramManager {
 
     resetRotation() {
         if (this.hologramPivot) {
-            TWEEN.remove(this.hologramPivot.rotation_tween);
-            this.hologramPivot.rotation_tween = new TWEEN.Tween(this.hologramPivot.rotation)
+            window.TWEEN.remove(this.hologramPivot.rotation_tween);
+            this.hologramPivot.rotation_tween = new window.TWEEN.Tween(this.hologramPivot.rotation)
                 .to({ x: 0, y: 0, z: 0 }, 300)
-                .easing(TWEEN.Easing.Cubic.Out)
+                .easing(window.TWEEN.Easing.Cubic.Out)
                 .start();
             console.log("Hologram rotation reset initiated.");
         }
@@ -194,9 +193,9 @@ class HologramManager {
         window.removeEventListener('resize', this.handleResize.bind(this));
         // Stop any ongoing tweens associated with hologramPivot
         if (this.hologramPivot) {
-            TWEEN.remove(this.hologramPivot.scale_tween);
-            TWEEN.remove(this.hologramPivot.position_tween);
-            TWEEN.remove(this.hologramPivot.rotation_tween);
+            window.TWEEN.remove(this.hologramPivot.scale_tween);
+            window.TWEEN.remove(this.hologramPivot.position_tween);
+            window.TWEEN.remove(this.hologramPivot.rotation_tween);
         }
         console.log("HologramManager destroyed, events unsubscribed, tweens removed.");
     }

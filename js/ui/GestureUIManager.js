@@ -3,7 +3,6 @@
 
 // Assuming an EventBus class/instance is available and imported
 // import EventBus from '../core/eventBus';
-import * as TWEEN from '@tweenjs/tween.js';
 
 class GestureUIManager {
     constructor(eventBus, state) { // appState changed to state
@@ -85,7 +84,7 @@ class GestureUIManager {
 
         if (this.currentAnimation) {
             this.currentAnimation.stop();
-            TWEEN.remove(this.currentAnimation); // Clean up old tween
+            window.TWEEN.remove(this.currentAnimation); // Clean up old tween
         }
 
         const initialHeightStyle = this.gestureAreaElement.style.height || getComputedStyle(this.gestureAreaElement).height;
@@ -113,9 +112,9 @@ class GestureUIManager {
         }
 
         const coords = { height: initialHeightPx };
-        this.currentAnimation = new TWEEN.Tween(coords)
+        this.currentAnimation = new window.TWEEN.Tween(coords)
             .to({ height: targetHeightPx }, 300) // 300ms animation duration
-            .easing(TWEEN.Easing.Quadratic.Out)
+            .easing(window.TWEEN.Easing.Quadratic.Out)
             .onUpdate(() => {
                 this.gestureAreaElement.style.height = `${coords.height}px`;
             })
@@ -252,7 +251,7 @@ class GestureUIManager {
         }
         if (this.currentAnimation) {
             this.currentAnimation.stop();
-            TWEEN.remove(this.currentAnimation);
+            window.TWEEN.remove(this.currentAnimation);
         }
         if (this.redLineElement) this.redLineElement.remove();
         this.clearFingerDots();

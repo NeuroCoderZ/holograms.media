@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org/)
-[![Three.js](https://img.shields.io/badge/Three.js-r150+-orange.svg)](https://threejs.org/)
+[![Three.js](https://img.shields.io/badge/Three.js-0.165.0+-orange.svg)](https://threejs.org/)
 
 > **Инновационная платформа для создания и взаимодействия с голографическими медиа через естественные жесты и голос**
 
@@ -59,7 +59,7 @@ holograms.media/
 
 1. **Клонируйте репозиторий:**
    ```bash
-   git clone https://github.com/your-username/holograms.media.git
+   git clone https://github.com/NeuroCoderZ/holograms.media.git
    cd holograms.media
    ```
 
@@ -108,15 +108,16 @@ holograms.media/
 
 ### Frontend
 - **JavaScript ES6+** - Основной язык программирования
-- **Three.js** - 3D-графика и WebGL
-- **TensorFlow.js** - Машинное обучение в браузере
+- **Three.js 0.165.0** - 3D-графика и WebGL
+- **TensorFlow.js 2.8.6** - Машинное обучение в браузере
 - **MediaPipe** - Компьютерное зрение
 - **WebRTC** - P2P-коммуникации
+- **@tweenjs/tween.js 23.1.1** - Анимации
 
 ### Backend
 - **FastAPI** - Современный Python веб-фреймворк
 - **Mistral AI** - Языковая модель
-- **Astra Database** - NoSQL база данных
+- **Astra Database (Cassandra)** - NoSQL база данных
 - **WebRTC** - P2P-сервер
 
 ### DevOps & Инфраструктура
@@ -124,6 +125,7 @@ holograms.media/
 - **Koyeb** - Вычисления и API
 - **Backblaze B2** - Хранение файлов
 - **Docker** - Контейнеризация
+- **Vite 7.0.2** - Сборщик и dev-сервер
 
 ## 📚 Документация
 
@@ -162,10 +164,9 @@ holograms.media/
 
 ## 📞 Контакты
 
-- **Автор**: Нейрокодер
-- **Email**: [ваш-email@example.com]
-- **Telegram**: [@your_telegram]
-- **Discord**: [ссылка на сервер]
+- **Автор**: Нейрокодер (NeuroCoder)
+- **Репозиторий**: [https://github.com/NeuroCoderZ/holograms.media](https://github.com/NeuroCoderZ/holograms.media)
+- **Документация**: [docs/](docs/)
 
 ---
 

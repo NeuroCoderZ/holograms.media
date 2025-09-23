@@ -1,5 +1,4 @@
 // frontend/js/ui/layoutManager.js
-import * as TWEEN from '@tweenjs/tween.js';
 // import { state } from '../core/init.js'; // Removed import
 import { HOLOGRAM_REFERENCE_HEIGHT } from '../config/hologramConfig.js';
 import eventBus from '../core/eventBus.js';
@@ -67,7 +66,7 @@ function animateHologramContainer(appState, handsPresent) { // Added appState
 
     if (currentAnimation) {
         currentAnimation.stop();
-        TWEEN.remove(currentAnimation);
+        window.TWEEN.remove(currentAnimation);
     }
 
     const currentTop = parseFloat(gridContainer.style.top) || initialLayout.top;
@@ -108,14 +107,14 @@ function animateHologramContainer(appState, handsPresent) { // Added appState
         height: currentHeight,
     };
 
-    currentAnimation = new TWEEN.Tween(coords)
+    currentAnimation = new window.TWEEN.Tween(coords)
         .to({
             top: targetLayout.top,
             left: targetLayout.left,
             width: targetLayout.width,
             height: targetLayout.height,
         }, 300) // 300ms animation
-        .easing(TWEEN.Easing.Quadratic.Out)
+        .easing(window.TWEEN.Easing.Quadratic.Out)
         .onUpdate(() => {
             gridContainer.style.top = `${coords.top}px`;
             gridContainer.style.left = `${coords.left}px`;
