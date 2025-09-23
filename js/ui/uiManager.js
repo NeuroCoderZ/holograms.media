@@ -3,11 +3,8 @@
 // Импортируем необходимые зависимости
 // import { state } from '../core/init.js'; // Removed direct import, appState will be used
 // import { auth } from '../core/firebaseInit.js';
-// import { uploadFileToFirebaseStorage } from '../services/firebaseStorageService.js'; // Old Firebase Storage upload
-import { uploadFileToR2 } from '../services/firebaseStorageService.js'; // New R2 upload via presigned URL
 // import { uploadChunk } from '../services/apiService.js'; // Old direct backend upload, now replaced by R2 presigned
 import { initializePwaInstall } from '../core/pwaInstall.js';
-import { setupChunkUpload } from '../services/firebaseStorageService.js'; // Import for chunk upload
 // panelManager is used to switch visible content panels in the right sidebar.
 // import PanelManager from './panelManager.js'; // PanelManager is now globally managed via state.panelManager
 import { toggleFullscreen, initFullscreenListeners } from '../utils/fullscreen.js'; // Import for fullscreen
@@ -254,7 +251,6 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
 
   // --- Event Listeners ---
 
-  // Setup chunk upload functionality (moved to firebaseStorageService.js)
   // IMPORTANT: uiElements.buttons.fileButton (loadAudioButton) is ALSO used by audioFilePlayer.js
   // This will cause two file dialogs to open.
   // For now, commenting out the generic chunk upload trigger via this button.
