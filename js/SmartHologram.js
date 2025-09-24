@@ -149,7 +149,6 @@ export class SmartHologram {
      * Настройка слушателей событий жестов
      */
     setupGestureListeners() {
-        console.log('SmartHologram: setupGestureListeners, gestureManager:', this.gestureManager);
         console.log('SmartHologram: gestureManager methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.gestureManager)));
 
         // Слушаем события от gestureManager

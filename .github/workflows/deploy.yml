@@ -32,7 +32,7 @@ jobs:
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             ENVIRONMENT=production
             CORS_ORIGIN_1=https://holograms.media
-           CORS_ORIGIN_2=https://www.holograms.media
+            CORS_ORIGIN_2=https://www.holograms.media
             PYTHONUNBUFFERED=1
             PYTHONDONTWRITEBYTECODE=1
             PORT=8000
