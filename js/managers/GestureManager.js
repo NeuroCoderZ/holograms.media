@@ -403,7 +403,6 @@ class GestureCodeInterpreter {
 /**
  * Cloud Storage для жестов
  */
-}
 
 // Создаем глобальный экземпляр
 export const gestureManager = new GestureManager();
