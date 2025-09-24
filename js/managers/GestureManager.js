@@ -21,6 +21,7 @@ export class GestureManager {
 
         // Cloud storage для жестов
         this.cloudStorage = new CloudGestureStorage();
+        this.loadFromLocalStorage();
     }
 
     /**
@@ -259,11 +260,12 @@ export class GestureManager {
         };
 
         this.customGestures.set(name, gestureData);
+        this.saveToLocalStorage();
 
         // Сохраняем в облако
         await this.cloudStorage.saveGesture(gestureData);
 
-        console.log(`Пользовательский жест "${name}" сохранен в облако`);
+        console.log(`Пользовательский жест "${name}" сохранен локально`);
     }
 
     /**

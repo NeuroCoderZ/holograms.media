@@ -207,6 +207,12 @@ class AstraGestureClient {
     }
 
     async saveGesture(gestureData) {
+        // Проверка на placeholder - возвращаем mock успех
+        if (this.baseUrl.includes('placeholder')) {
+            console.log('Astra: placeholder URL, пропускаем сохранение');
+            return { success: true };
+        }
+
         const response = await fetch(`${this.baseUrl}/keyspaces/holograms/gestures`, {
             method: 'POST',
             headers: {
@@ -230,6 +236,12 @@ class AstraGestureClient {
     }
 
     async loadUserGestures(userId) {
+        // Проверка на placeholder - возвращаем пустой массив
+        if (this.baseUrl.includes('placeholder')) {
+            console.log('Astra: placeholder URL, возвращаем пустой список жестов');
+            return [];
+        }
+
         const response = await fetch(`${this.baseUrl}/keyspaces/holograms/gestures?user_id=${userId}`, {
             headers: {
                 'X-Cassandra-Token': this.config.token
@@ -251,6 +263,12 @@ class AstraGestureClient {
     }
 
     async deleteGesture(gestureId, userId) {
+        // Проверка на placeholder - возвращаем успех
+        if (this.baseUrl.includes('placeholder')) {
+            console.log('Astra: placeholder URL, пропускаем удаление');
+            return true;
+        }
+
         const response = await fetch(`${this.baseUrl}/keyspaces/holograms/gestures/${gestureId}`, {
             method: 'DELETE',
             headers: {
@@ -273,6 +291,12 @@ class BackblazeGestureClient {
     }
 
     async authenticate() {
+        // Проверка на placeholder - пропускаем аутентификацию
+        if (this.config.apiUrl.includes('placeholder')) {
+            console.log('Backblaze: placeholder URL, пропускаем аутентификацию');
+            return;
+        }
+
         if (this.authToken && this.apiUrl) return;
 
         const response = await fetch(`${this.config.apiUrl}/b2_authorize_account`, {
@@ -291,6 +315,12 @@ class BackblazeGestureClient {
     }
 
     async saveGestureTrajectories(gestureData) {
+        // Проверка на placeholder - возвращаем успех
+        if (this.config.apiUrl.includes('placeholder')) {
+            console.log('Backblaze: placeholder URL, пропускаем сохранение траекторий');
+            return { success: true };
+        }
+
         await this.authenticate();
 
         const fileName = `gestures/${gestureData.userId}/${gestureData.name}_${Date.now()}.json`;
@@ -355,6 +385,12 @@ class BackblazeGestureClient {
     }
 
     async listGestureTrajectories(userId) {
+        // Проверка на placeholder - возвращаем пустой массив
+        if (this.config.apiUrl.includes('placeholder')) {
+            console.log('Backblaze: placeholder URL, возвращаем пустой список траекторий');
+            return [];
+        }
+
         await this.authenticate();
 
         const response = await fetch(`${this.apiUrl}/b2api/v2/b2_list_file_names`, {
@@ -377,6 +413,12 @@ class BackblazeGestureClient {
     }
 
     async deleteGestureTrajectories(gestureId) {
+        // Проверка на placeholder - возвращаем успех
+        if (this.config.apiUrl.includes('placeholder')) {
+            console.log('Backblaze: placeholder URL, пропускаем удаление траекторий');
+            return true;
+        }
+
         // Реализация удаления файлов из B2
         return true;
     }
@@ -392,6 +434,12 @@ class CloudflareGestureClient {
     }
 
     async saveGesture(gestureData) {
+        // Проверка на placeholder - возвращаем успех
+        if (this.baseUrl.includes('placeholder')) {
+            console.log('Cloudflare: placeholder URL, пропускаем сохранение');
+            return { success: true };
+        }
+
         const response = await fetch(`${this.baseUrl}/save`, {
             method: 'POST',
             headers: {
@@ -409,6 +457,12 @@ class CloudflareGestureClient {
     }
 
     async loadUserGestures(userId) {
+        // Проверка на placeholder - возвращаем пустой массив
+        if (this.baseUrl.includes('placeholder')) {
+            console.log('Cloudflare: placeholder URL, возвращаем пустой список жестов');
+            return [];
+        }
+
         const response = await fetch(`${this.baseUrl}/user/${userId}`, {
             headers: {
                 'Authorization': `Bearer ${this.config.triaApiToken}`
@@ -423,6 +477,12 @@ class CloudflareGestureClient {
     }
 
     async deleteGesture(gestureId, userId) {
+        // Проверка на placeholder - возвращаем успех
+        if (this.baseUrl.includes('placeholder')) {
+            console.log('Cloudflare: placeholder URL, пропускаем удаление');
+            return true;
+        }
+
         const response = await fetch(`${this.baseUrl}/delete/${gestureId}`, {
             method: 'DELETE',
             headers: {
@@ -444,6 +504,12 @@ class KoyebGestureClient {
     }
 
     async processGesture(gestureData) {
+        // Проверка на placeholder - возвращаем успех
+        if (this.baseUrl.includes('placeholder')) {
+            console.log('Koyeb: placeholder URL, пропускаем обработку');
+            return { success: true };
+        }
+
         const response = await fetch(`${this.baseUrl}${this.config.gestureProcessingEndpoint}`, {
             method: 'POST',
             headers: {
