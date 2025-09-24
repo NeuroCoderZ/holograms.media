@@ -20,6 +20,12 @@ function initializeTriaChat() {
 
   // Проверяем, все ли элементы на месте
   if (!messagesContainer || !chatInput || !sendButton || !loadingIndicator) {
+    console.warn("Chat elements status:", {
+      messagesContainer: !!messagesContainer,
+      chatInput: !!chatInput,
+      sendButton: !!sendButton,
+      loadingIndicator: !!loadingIndicator
+    });
     console.error("Не удалось инициализировать чат: один или несколько HTML-элементов не найдены.");
     return;
   }
