@@ -1,12 +1,7 @@
 // js/managers/GestureManager.js
 import { SmartHologram } from '../SmartHologram.js';
 import { state } from '../core/init.js';
-
-/**
- * GestureManager - менеджер управления жестами и их интеграцией с голографической системой
- * Преобразует траектории движения пальцев в "жестовый код" и вшивает его в голограммы
- * для изменения визуализации и аудиализации через программные события
- */
+import { CloudGestureStorage } from '../services/CloudGestureStorage.js';
 export class GestureManager {
     constructor() {
         this.smartHologram = null;
@@ -408,52 +403,6 @@ class GestureCodeInterpreter {
 /**
  * Cloud Storage для жестов
  */
-class GestureCloudStorage {
-    constructor() {
-        this.apiEndpoint = '/api/gestures'; // Cloudflare Workers или Koyeb endpoint
-    }
-
-    /**
-     * Сохранение жеста в облако
-     */
-    async saveGesture(gestureData) {
-        try {
-            const response = await fetch(`${this.apiEndpoint}/save`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(gestureData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Ошибка сохранения жеста в облако:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Загрузка жестов пользователя из облака
-     */
-    async loadUserGestures(userId) {
-        try {
-            const response = await fetch(`${this.apiEndpoint}/user/${userId}`);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Ошибка загрузки жестов из облака:', error);
-            return [];
-        }
-    }
 }
 
 // Создаем глобальный экземпляр
