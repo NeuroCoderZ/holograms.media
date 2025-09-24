@@ -261,7 +261,6 @@ export class GestureManager {
 
         this.customGestures.set(name, gestureData);
         this.saveToLocalStorage();
-        this.saveToLocalStorage();
 
         // Сохраняем в облако
         await this.cloudStorage.saveGesture(gestureData);
@@ -329,7 +328,6 @@ export class GestureManager {
         }
     }
 
-    addEventListener(eventType, callback) {
     addEventListener(eventType, callback) {
         if (!this.eventListeners.has(eventType)) {
             this.eventListeners.set(eventType, []);
