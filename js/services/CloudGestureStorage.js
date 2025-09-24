@@ -1,5 +1,16 @@
 // js/services/CloudGestureStorage.js
-import { cloudConfig } from '../config/cloudConfig.js';
+// Конфигурация для облачного хранилища (заглушки для сборки)
+// Реальные ключи будут получены из Cloudflare Secrets Store
+
+// Локальная конфигурация для сборки (заглушки)
+// Реальные ключи будут получены из Cloudflare Secrets Store
+const cloudConfig = {
+  performance: { cacheExpiration: 300000 },
+  astra: { token: "placeholder", databaseId: "placeholder", region: "us-east-1" },
+  backblaze: { keyId: "placeholder", applicationKey: "placeholder", bucketName: "placeholder", apiUrl: "https://api.backblazeb2.com/b2api/v2" },
+  cloudflare: { gestureApiUrl: "https://placeholder.cloudflare.example", triaApiToken: "placeholder" },
+  koyeb: { apiUrl: "https://placeholder.koyeb.example", deploymentId: "placeholder" }
+};
 
 /**
  * Облачное хранилище для жестов Holograms.Media
