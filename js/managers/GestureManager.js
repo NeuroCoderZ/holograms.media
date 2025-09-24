@@ -329,7 +329,7 @@ export class GestureManager {
         }
     }
 
-    /**
+    addEventListener(eventType, callback) {
     addEventListener(eventType, callback) {
         if (!this.eventListeners.has(eventType)) {
             this.eventListeners.set(eventType, []);
