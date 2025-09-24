@@ -36,14 +36,14 @@ function initializeTriaChat() {
   });
 
   // "Скармливаем" нашему экземпляру чата наши собственные элементы DOM.
-  // Теперь он будет выводить сообщения и слушать события ввода в нашем интерфейсе.
+  // Настраиваем сайт/контекст для запросов
+  triaInterface.selectedSite = 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev';
   triaInterface.elements.messagesContainer = messagesContainer;
   triaInterface.elements.chatInput = chatInput;
   triaInterface.elements.sendButton = sendButton;
   triaInterface.elements.loadingIndicator = loadingIndicator;
 
-  // Настраиваем сайт/контекст для запросов
-  triaInterface.selectedSite = 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev';
+
 
   // Создаем новую сессию чата
   triaInterface.createNewChat(null, triaInterface.selectedSite);
