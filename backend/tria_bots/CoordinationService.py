@@ -14,7 +14,7 @@ class CoordinationService:
         self.gesture_bot = GestureBot(self.db_conn)
         self.memory_bot = MemoryBot(self.db_conn)
         self.gesture_intent_service = GestureIntentService(self.db_conn)
-        self.learning_bot = LearningBot() # <-- No longer needs db_conn
+        self.learning_bot = LearningBot(self.db_conn)
         logger.info("CoordinationService initialized with GestureBot, MemoryBot, GestureIntentService, and LearningBot.")
 
     async def handle_gesture_intent(self, user_id: str, intent_data: dict):
@@ -60,6 +60,6 @@ class CoordinationService:
         }
         # В реальном приложении это был бы вызов через очередь задач (Celery, etc.)
         # Сейчас просто вызываем асинхронный метод
-        asyncio.create_task(self.learning_bot.log_for_learning(log_data_for_learning))
+        asyncio.create_task(self.learning_bot.process_interaction_for_learning(log_data_for_learning))
 
         return result

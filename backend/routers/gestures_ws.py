@@ -10,7 +10,7 @@ import asyncpg
 # Поскольку мы создаем сервис на следующем шаге, пока оставляем как есть.
 # from backend.services.gesture_intent_service import GestureIntentService # Заменено на CoordinationService
 from backend.tria_bots.CoordinationService import CoordinationService # <-- НОВЫЙ ИМПОРТ
-# from backend.core.db.pg_connector import get_db_connection
+from backend.core.db.pg_connector import get_db_connection
 # Для аутентификации предполагается, что UserInDB импортируется security
 from backend.auth.security import get_current_active_user_ws
 
@@ -21,14 +21,14 @@ logger = logging.getLogger(__name__)
 async def websocket_endpoint(
     websocket: WebSocket,
     user: dict = Depends(get_current_active_user_ws),
-    # db: asyncpg.Connection = Depends(get_db_connection)
+        db: asyncpg.Connection = Depends(get_db_connection),
 ):
     await websocket.accept()
     logger.info(f"WebSocket connection established for user {user.id if user else 'unknown'}")
 
 
     # ✅ Инициализируем CoordinationService
-    coordination_service = CoordinationService(None) # Передаем None вместо db
+    coordination_service = CoordinationService(db) # Передаем db_conn
 
     try:
         while True:
