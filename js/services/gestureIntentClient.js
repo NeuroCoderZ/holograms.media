@@ -56,7 +56,7 @@ class GestureIntentClient {
     }
 }
 
-const wsProtocol = window.location.protocol === 'https' ? 'wss' : 'ws';
+const wsProtocol = 'wss'; // Всегда используем WSS для HTTPS
 const wsUrl = `${wsProtocol}://common-elita-holograms-media-59398dd8.koyeb.app/ws/v1/gesture-intent`;
 
 const gestureIntentClient = new GestureIntentClient(wsUrl);
