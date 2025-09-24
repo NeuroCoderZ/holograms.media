@@ -44,39 +44,66 @@ export async function initializeScene(state) {
 
     console.log('[WebGL Init] WebGLRenderer initialized successfully.');
 
-  } catch (error) {
-    console.error('CRITICAL: WebGLRenderer Initialization Failed.', error);
-    const errorOverlay = document.getElementById('webgl-error-overlay');
-    const errorDetailsElement = document.getElementById('webgl-error-details');
-    let userMessage = 'Не удалось инициализировать 3D-графику (WebGL). Ваш браузер или устройство не поддерживают WebGL, или возникла критическая ошибка.';
-
-    if (error.message.includes('context loss and was blocked')) {
-        userMessage = 'Не удалось инициализировать 3D-графику (WebGL). Браузер заблокировал создание контекста. Это часто происходит, если вы используете IP-адрес вместо "localhost" или HTTPS. Пожалуйста, попробуйте открыть приложение через "localhost" или безопасное соединение (HTTPS).';
-    } else if (error.message.includes('WebGL context')) {
-        userMessage = 'Не удалось инициализировать 3D-графику (WebGL). Возможно, ваш браузер не поддерживает WebGL или драйверы устарели.';
-    }
-
-    if (errorOverlay) {
-        if (errorDetailsElement) {
-            errorDetailsElement.textContent = userMessage + ' (Подробности в консоли: ' + error.message + ')';
-        }
-        errorOverlay.style.display = 'flex';
-    } else {
-        // Fallback if overlay is not found
-        const fallbackDiv = document.createElement('div');
-        fallbackDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px; font-size: 1.2em; z-index: 9999;';
-        fallbackDiv.textContent = userMessage;
-        document.body.appendChild(fallbackDiv);
-    }
-
-    if (state.renderer && state.renderer.domElement && state.renderer.domElement.parentElement) {
-        state.renderer.domElement.parentElement.removeChild(state.renderer.domElement);
-    }
-    state.renderer = null;
-    state.scene = null;
-    state.camera = null;
-    return { scene: null, renderer: null, camera: null };
-  }
+   } catch (error) {
+     console.error('CRITICAL: WebGLRenderer Initialization Failed.', error);
+     
+     // Попытка создать fallback Canvas2D рендерер
+     console.log('[Fallback] Attempting to create Canvas2D fallback renderer...');
+     try {
+       const canvas = document.createElement('canvas');
+       const ctx = canvas.getContext('2d');
+       
+       // Создаем простой mock-рендерер с минимальным API
+       state.renderer = {
+         domElement: canvas,
+         setSize: function(width, height) {
+           canvas.width = width;
+           canvas.height = height;
+           this.renderFallback(width, height);
+         },
+         setPixelRatio: function() {},
+         renderFallback: function(width, height) {
+           ctx.fillStyle = '#000000';
+           ctx.fillRect(0, 0, width, height);
+           ctx.fillStyle = '#ffffff';
+           ctx.font = '24px Arial';
+           ctx.textAlign = 'center';
+           ctx.fillText('WebGL не поддерживается в этой среде', width/2, height/2 - 50);
+           ctx.fillText('Попробуйте другой браузер или устройство', width/2, height/2);
+           ctx.fillText('Остальные функции приложения доступны', width/2, height/2 + 50);
+         },
+         render: function() {} // Пустая функция для совместимости
+       };
+       
+       state.renderer.setSize(window.innerWidth, window.innerHeight);
+       console.log('[Fallback] Canvas2D fallback renderer created successfully.');
+       
+     } catch (fallbackError) {
+       console.error('CRITICAL: Even Canvas2D fallback failed:', fallbackError);
+       
+       // Показываем сообщение об ошибке
+       const errorOverlay = document.getElementById('webgl-error-overlay');
+       const errorDetailsElement = document.getElementById('webgl-error-details');
+       const userMessage = 'Критическая ошибка: 3D-графика недоступна. Приложение продолжит работу без визуализации.';
+       
+       if (errorOverlay) {
+         if (errorDetailsElement) {
+           errorDetailsElement.textContent = userMessage + ' (Подробности в консоли)';
+         }
+         errorOverlay.style.display = 'flex';
+       } else {
+         const fallbackDiv = document.createElement('div');
+         fallbackDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px; font-size: 1.2em; z-index: 9999;';
+         fallbackDiv.textContent = userMessage;
+         document.body.appendChild(fallbackDiv);
+       }
+       
+       state.renderer = null;
+       state.scene = null;
+       state.camera = null;
+       return { scene: null, renderer: null, camera: null };
+     }
+   }
 
   const gridContainer = document.getElementById('grid-container');
   if (!gridContainer) {
