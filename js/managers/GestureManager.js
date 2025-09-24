@@ -31,7 +31,7 @@ export class GestureManager {
 
         try {
             // Создаем SmartHologram для работы с существующими голограммами
-            this.smartHologram = new SmartHologram(container, this, state.aiEngine);
+            this.smartHologram = new SmartHologram(container, this, state.aiEngine, state.renderer);
             await this.smartHologram.init();
 
             // Настраиваем слушателей событий
