@@ -7,7 +7,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
  * Теперь работает с жестами вместо текстового ввода
  */
 export class SmartHologram {
-    constructor(container, gestureManager, aiEngine) {
+    constructor(container, gestureManager, aiEngine, renderer = null) {
         this.container = container;
         this.gestureManager = gestureManager;
         this.ai = aiEngine;
@@ -15,8 +15,28 @@ export class SmartHologram {
         // Three.js компоненты
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        
+        // Используем переданный рендерер или создаем новый (только если WebGL доступен)
+        if (renderer) {
+            this.renderer = renderer;
+        } else {
+            try {
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+            } catch (error) {
+                console.error('SmartHologram: WebGL не доступен, создаем fallback');
+                // Создаем простой fallback рендерер
+                const canvas = document.createElement('canvas');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                this.renderer = {
+                    domElement: canvas,
+                    setSize: () => {},
+                    render: () => {}
+                };
+            }
+        }
+        
+        this.controls = this.renderer.domElement ? new OrbitControls(this.camera, this.renderer.domElement) : null;
 
         // Голографические объекты
         this.hologramObjects = new THREE.Group();

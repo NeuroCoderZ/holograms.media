@@ -29,7 +29,6 @@ async function main() {
 
         // 3. Инициализация UI (кэширование DOM-элементов)
         initializeMainUI(state);
-    initializeTriaChat();
         console.log("Main UI elements cached.");
 
         // 4. Запуск полной инициализации приложения
