@@ -15,9 +15,9 @@ export function startAnimationLoop(appState) {
             appState.animateReturn();
         }
 
-        // Placeholder for future hologram updates
-        if (appState.hologramData && appState.hologramRendererInstance) {
-            // appState.hologramRendererInstance.updateVisuals(appState.hologramData);
+        // Update hologram visuals
+        if (appState.hologramRendererInstance) {
+            appState.hologramRendererInstance.updateVisuals();
         }
 
         appState.renderer.render(appState.scene, appState.activeCamera);

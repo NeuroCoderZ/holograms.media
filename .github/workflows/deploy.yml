@@ -1,0 +1,44 @@
+name: 🚀 Deploy Backend to Koyeb (Production)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy_backend_production:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Install and Configure Koyeb CLI
+        uses: koyeb-community/install-koyeb-cli@v2
+        with:
+          api_token: ${{ secrets.KOYEB_API_TOKEN }}
+
+      - name: 🚀 Deploy Backend to Koyeb
+        id: koyeb-deploy
+        uses: koyeb/action-git-deploy@v1
+        with:
+          git-branch: main
+          app-name: holograms-media
+          service-name: backend
+          service-type: web
+          service-dockerfile: ./Dockerfile
+          service-ports: "8000:http"
+          service-routes: "/:8000"
+          service-env: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            ENVIRONMENT=production
+            CORS_ORIGINS=https://holograms.media,https://www.holograms.media
+            PYTHONUNBUFFERED=1
+            PYTHONDONTWRITEBYTECODE=1
+            PORT=8000
+            GOOGLE_APPLICATION_CREDENTIALS_JSON=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+
+      - name: 📋 Output Backend URL
+        run: |
+          echo "Backend deployed to: ${{ steps.koyeb-deploy.outputs.app_url }}"
+          echo "::notice::Production Backend URL: ${{ steps.koyeb-deploy.outputs.app_url }}"
