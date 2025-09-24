@@ -45,7 +45,7 @@ app.include_router(public_gestures_router, prefix=API_V1_PREFIX, tags=["Gestures
 app.include_router(public_holograms_router, prefix=API_V1_PREFIX, tags=["Holograms (Public)"])
 app.include_router(tria_commands_router, prefix=f"{API_V1_PREFIX}/tria", tags=["Tria Commands"])
 app.include_router(chunks_router, prefix=API_V1_PREFIX, tags=["Chunks"])
-hat", tags=["Chat Sessions"])/d
+app.include_router(chat_sessions_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat Sessions"])
 # app.include_router(user_gestures_router, prefix=f"{API_V1_PREFIX}/users/me/gestures", tags=["Current User Gestures"])
 # app.include_router(user_holograms_router, prefix=f"{API_V1_PREFIX}/users/me/holograms", tags=["Current User Holograms"])
 # app.include_router(user_prompts_router, prefix=f"{API_V1_PREFIX}/users/me/prompts", tags=["Current User Prompts"])
