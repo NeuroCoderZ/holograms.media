@@ -25,7 +25,6 @@ jobs:
           app-name: holograms-media
           service-name: backend
           service-type: web
-          service-dockerfile: ./Dockerfile
           service-ports: "8000:http"
           service-routes: "/:8000"
           service-env: |
