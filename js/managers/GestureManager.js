@@ -16,6 +16,7 @@ export class GestureManager {
 
         // Система обучения жестам
         this.customGestures = new Map(); // name -> gesture data
+        this.loadFromLocalStorage(); // Загружаем сохраненные жесты
         this.learningMode = false;
         this.currentRecording = null;
 
@@ -260,6 +261,8 @@ export class GestureManager {
         };
 
         this.customGestures.set(name, gestureData);
+        // Сохраняем локально в localStorage
+        this.saveToLocalStorage();
         this.saveToLocalStorage();
 
         // Сохраняем в облако
@@ -372,6 +375,35 @@ export class GestureManager {
     /**
      * Уничтожение GestureManager
      */
+    /**
+     * Сохранить жесты в localStorage
+     */
+    saveToLocalStorage() {
+        try {
+            const gesturesArray = Array.from(this.customGestures.entries());
+            localStorage.setItem('holograms_gestures', JSON.stringify(gesturesArray));
+        } catch (error) {
+            console.warn('Ошибка сохранения жестов в localStorage:', error);
+        }
+    }
+
+    /**
+     * Загрузить жесты из localStorage
+     */
+    loadFromLocalStorage() {
+        try {
+            const stored = localStorage.getItem('holograms_gestures');
+            if (stored) {
+                const gesturesArray = JSON.parse(stored);
+                this.customGestures = new Map(gesturesArray);
+                console.log(`Загружено ${this.customGestures.size} жестов из localStorage`);
+            }
+        } catch (error) {
+            console.warn('Ошибка загрузки жестов из localStorage:', error);
+        }
+    }
+
+    /**
     dispose() {
         if (this.smartHologram) {
             this.smartHologram.dispose();
