@@ -57,7 +57,7 @@ class GestureIntentClient {
 }
 
 const wsProtocol = window.location.protocol === 'https' ? 'wss' : 'ws';
-const wsUrl = `${wsProtocol}://${window.location.host}/ws/v1/gesture-intent`;
+const wsUrl = `${wsProtocol}://common-elita-holograms-media-59398dd8.koyeb.app/ws/v1/gesture-intent`;
 
 const gestureIntentClient = new GestureIntentClient(wsUrl);
 export default gestureIntentClient;
