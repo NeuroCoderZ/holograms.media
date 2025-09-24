@@ -2,7 +2,7 @@ name: 🚀 Deploy Backend to Koyeb (Production)
 
 on:
   push:
-    branches: [master]
+    branches: [master, main]
 
 jobs:
   deploy_backend_production:
@@ -29,15 +29,12 @@ jobs:
           service-routes: "/:8000"
           service-instance-type: micro
           service-env: |
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             ENVIRONMENT=production
             CORS_ORIGIN_1=https://holograms.media
             CORS_ORIGIN_2=https://www.holograms.media
             PYTHONUNBUFFERED=1
             PYTHONDONTWRITEBYTECODE=1
             PORT=8000
-            GOOGLE_APPLICATION_CREDENTIALS_JSON=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
 
       - name: 📋 Output Backend URL
         run: |
