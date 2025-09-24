@@ -123,12 +123,12 @@ async function startFullApplication(appState) {
         inputManager.initialize();
 
         // Connect to the gesture intent WebSocket
-        gestureIntentClient.connect();
+        try { gestureIntentClient.connect(); } catch (error) { console.warn("GestureIntentClient connection failed:", error); }
 
         console.log("Platform-specific layout and input managers initialized.");
 
         // 3. Инициализация чата
-        setupChat(appState);
+        console.log("Chat temporarily disabled - backend not ready");
         initializeChatHandlers();
         initializePromptHandlers();
 
