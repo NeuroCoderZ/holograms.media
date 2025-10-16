@@ -229,7 +229,7 @@ CREATE TABLE tria_azr_tasks (
     priority INTEGER DEFAULT 0,
     complexity_score FLOAT, -- Estimated complexity of the task
     generation_source TEXT, -- How this task was generated (e.g., 'LearningBot', 'manual')
-    related_bot_id TEXT, -- ID of the bot primarily responsible or affected
+    related_bot_id TEXT, -- ID of the agent primarily responsible or affected
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     started_at TIMESTAMP WITH TIME ZONE, -- When Tria started working on this task
     completed_at TIMESTAMP WITH TIME ZONE, -- When Tria completed or aborted this task
@@ -284,17 +284,17 @@ CREATE INDEX IF NOT EXISTS idx_tria_learning_log_created_at ON tria_learning_log
 COMMENT ON TABLE tria_learning_log IS 'Logs interactions and their outcomes for Tria''s learning and analysis.';
 
 -- Table: tria_bot_configurations
--- Stores configurations for Tria's various bots, allowing for dynamic updates.
+-- Stores configurations for Tria's various agents, allowing for dynamic updates.
 CREATE TABLE tria_bot_configurations (
     config_id SERIAL PRIMARY KEY,
-    bot_id VARCHAR(255) UNIQUE NOT NULL,      -- Identifier for the bot (e.g., "GestureBot", "AudioBot")
+    bot_id VARCHAR(255) UNIQUE NOT NULL,      -- Identifier for the agent (e.g., "GestureBot", "AudioBot")
     current_version INTEGER NOT NULL DEFAULT 1,
-    config_parameters_json JSONB NOT NULL,    -- The actual configuration parameters for the bot
+    config_parameters_json JSONB NOT NULL,    -- The actual configuration parameters for the agent
     last_updated_by TEXT DEFAULT 'system',    -- Who or what updated this config (e.g., "LearningBot", "admin_user")
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     notes TEXT                                -- Any notes about this configuration
 );
-COMMENT ON TABLE tria_bot_configurations IS 'Stores configurations for Tria''s bots.';
+COMMENT ON TABLE tria_bot_configurations IS 'Stores configurations for Tria''s agents.';
 
 -- Function to automatically update 'updated_at' timestamp (Optional, if not handled by application)
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()

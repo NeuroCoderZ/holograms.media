@@ -2,7 +2,7 @@
 
 This directory explores concepts and mechanisms for "intellectual mining" -
 rewarding users for valuable contributions to the Holographic Media ecosystem,
-such as providing high-quality data, computational resources, or developing Tria bots.
+such as providing high-quality data, computational resources, or developing Tria agents.
 
 ## TODO
 - Define clear metrics for valuing different types of contributions.

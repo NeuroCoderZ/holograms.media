@@ -56,7 +56,7 @@ class UserHologramCreate(UserHologramBase):
 
 class UserHologramDB(UserHologramBase):
     id: int
-    user_id: str # Firebase UID
+    user_id: str # The user's unique ID
     created_at: datetime
     updated_at: datetime
 
@@ -71,7 +71,7 @@ class HolographicScene(BaseModel):
     elements: List[Dict[str, Any]] = Field(default_factory=list) # List of various HolographicElementBase derived models
     # Or, more strongly typed if all elements are known:
     # elements: List[Union[HolographicSymbolModel, ThreeDEmojiModel, AudioVisualizationStateModel]] = Field(default_factory=list)
-    user_id: Optional[str] = None # Firebase UID if user-specific
+    user_id: Optional[str] = None # The user's unique ID if user-specific
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

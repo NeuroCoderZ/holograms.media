@@ -4,6 +4,7 @@ import asyncpg
 from backend.core import crud_operations
 from backend.core.models.interaction_chunk_model import InteractionChunkCreate, InteractionChunkDB
 from backend.core.models.hologram_embedding_models import HologramSemanticEmbedding # Import the new model
+from backend.repositories.interaction_chunk_repository import InteractionChunkRepository # ADDED
 
 # Assuming these would be initialized elsewhere and passed (e.g., via dependency injection)
 # For now, just a placeholder for dependencies like LLM client for embedding generation.
@@ -12,18 +13,19 @@ llm_client_placeholder: Any = None # Replace with actual LLM client instance
 async def process_new_chunk_and_generate_embedding(
     db_conn: asyncpg.Connection,
     chunk_create_data: InteractionChunkCreate,
-    firebase_uid: str
+    user_id: str
 ) -> dict:
     """
     Processes a new interaction chunk, generates/updates its associated semantic embedding,
     and stores both in the database.
     """
-    print(f"[CHUNK PROCESSOR] Starting processing for chunk: {chunk_create_data.id} from user: {firebase_uid}")
+    print(f"[CHUNK PROCESSOR] Starting processing for chunk: {chunk_create_data.id} from user: {user_id}")
+
+    interaction_chunk_repo = InteractionChunkRepository(db_conn)
 
     # 1. Save the initial interaction chunk metadata
-    created_chunk = await crud_operations.create_audiovisual_gestural_chunk(
-        conn=db_conn,
-        firebase_uid=firebase_uid,
+    created_chunk = await interaction_chunk_repo.create_chunk(
+        user_id=user_id,
         chunk_create=chunk_create_data
     )
 
@@ -59,7 +61,7 @@ async def process_new_chunk_and_generate_embedding(
         vector_operators=simulated_vector_operators,
         learning_targets=simulated_learning_targets,
         evolution_timestamps=simulated_evolution_timestamps,
-        user_id=firebase_uid,
+        user_id=user_id,
         confidence_score=simulated_confidence_score,
         liquidity_score=simulated_liquidity_score,
         related_chunk_ids=[created_chunk.id] # Link to the chunk that generated it

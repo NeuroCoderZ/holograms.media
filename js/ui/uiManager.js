@@ -2,7 +2,7 @@
 
 // Импортируем необходимые зависимости
 // import { state } from '../core/init.js'; // Removed direct import, appState will be used
-// import { auth } from '../core/firebaseInit.js';
+
 // import { uploadChunk } from '../services/apiService.js'; // Old direct backend upload, now replaced by R2 presigned
 import { initializePwaInstall } from '../core/pwaInstall.js';
 // panelManager is used to switch visible content panels in the right sidebar.

@@ -1,7 +1,7 @@
 ```markdown
 # Holograms.Media Infrastructure Guide
 
-**Last Updated:** 2024-12-01
+**Last Updated:** September 26, 2025
 
 This guide describes the current infrastructure of the holograms.media project, which uses modern cloud services to ensure high performance and scalability.
 

@@ -11,11 +11,11 @@ const urlsToCache = [
   '/js/core/stateManager.js',
   '/js/core/pwaInstall.js',
   '/js/core/appStatePersistence.js', // Added, seems important
-  '/js/core/firebaseInit.js', // Added, seems important
+
   '/js/lib/utils.js',
   '/js/services/api.js',
   '/js/services/auth.js',
-  '/js/services/firebaseStorageService.js', // Added
+
   '/js/ui/uiManager.js',
   '/js/ui/mainUI.js', // This might be part of uiManager or a separate init
   '/js/ui/panelManager.js',

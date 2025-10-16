@@ -1,7 +1,7 @@
 ```markdown
 # Project Roadmap for "Holographic Media"
 
-**Last Updated:** 2024-07-31
+**Last Updated:** 2025-09-25
 **Repository:** https://github.com/NeuroCoderZ/holograms.media
 **Key Satellite Documents:** [PROJECT_CONTEXT.md](./ProjectContext.md), [SYSTEM_ARCHITECTURE.MD](../Architecture/SystemDescription.MD), [CONCEPT_AND_PHILOSOPHY.md](./ConceptAndPhilosophy.md)
 
@@ -16,7 +16,7 @@ This phase is focused on creating a stable, well-documented, and understandable 
 *Goal:* Eliminate all critical JavaScript errors (SyntaxError, ReferenceError, Import/Export errors) after refactoring script.js.
 *Key tasks:*
     *   Fix remaining issues in `cameraManager.js`, `rightPanelManager.js`, and other problematic modules.
-    *   Ensure correct loading and operation of the basic UI on **Firebase Hosting**.
+    *   Ensure correct loading and operation of the basic UI on **Cloudflare Pages**.
     *   Render the basic 3D scene (holograms) without errors.
 *Result:* A working and predictable frontend.
 
@@ -41,7 +41,7 @@ This phase is focused on creating a stable, well-documented, and understandable 
 *Result:* Ready DB schema, backend prepared for PostgreSQL connection.
 
 **CI/CD and Automation:**
-*   Set up GitHub Actions for automatic deployment to Firebase Hosting and Koyeb.
+*   Set up GitHub Actions for automatic deployment to Cloudflare Pages and Koyeb.
 
 ### Q3 2025 (July - September)
 
@@ -51,7 +51,7 @@ This phase is focused on creating a stable, well-documented, and understandable 
 *Key tasks:*
     *   Select and integrate Vite (main candidate).
     *   Set up Hot Module Replacement (HMR) for local development.
-    *   Adapt deployment process on **Firebase Hosting** to use built artifacts.
+    *   Adapt deployment process on **Cloudflare Pages** to use built artifacts.
 *Result:* Faster development cycles, optimized frontend.
 
 **Full Backend Migration to PostgreSQL + pgvector: (COMPLETED)**
@@ -70,7 +70,7 @@ This phase is focused on creating a stable, well-documented, and understandable 
 *Key tasks:*
     *   Stable operation of MediaPipe Hands (`handsTracking.js`) for gesture capture.
     *   Set up WebRTC for video context capture (optional).
-    *   Implement API endpoint on FastAPI backend (Koyeb) for receiving chunks, uploading media files to **Backblaze B2**, and saving metadata in **AstraDB**.
+    *   Implement API endpoint on FastAPI backend (Koyeb) for receiving chunks, uploading media files to **Cloudflare R2**, and saving metadata in **AstraDB**.
 *Result:* Data collection system for Tria training.
 
 **Key Documentation Updates ([SYSTEM_ARCHITECTURE.MD](../Architecture/SystemDescription.MD), [ROADMAP.MD](./Roadmap.md), etc.):**
@@ -84,13 +84,13 @@ This phase focuses on developing Tria's intelligence, implementing new interacti
 
 ### Q4 2025 (October - December)
 
-**Development of First Specialized Tria Bots:**
+**Development of First Specialized Tria Agents:**
 
-*Goal:* Create and integrate basic versions of GestureBot and MemoryBot on the FastAPI backend.
+*Goal:* Create and integrate basic versions of GestureAgent and MemoryAgent on the FastAPI backend.
 *Key tasks:*
-    *   GestureBot: Basic interpretation of gestures from chunks.
-    *   MemoryBot: Implement RAG using PostgreSQL+pgvector for searching saved chunks/knowledge.
-    *   Integrate bots via the Tria coordination service on FastAPI backend.
+    *   GestureAgent: Basic interpretation of gestures from chunks.
+    *   MemoryAgent: Implement RAG using PostgreSQL+pgvector for searching saved chunks/knowledge.
+    *   Integrate agents via the Tria coordination service on FastAPI backend.
 *Result:* First meaningful Tria reactions to user gestures.
 
 **Prototyping Absolute Zero Reasoning (AZR) for Tria:**
@@ -98,7 +98,7 @@ This phase focuses on developing Tria's intelligence, implementing new interacti
 *Goal:* Research and implement a basic self-learning cycle for Tria based on AZR principles.
 *Key tasks:*
     *   Define specific tasks for self-generation (related to gestures, visualization).
-    *   Develop TaskGenerator and TaskSolver modules in `backend/tria_bots/azr/`.
+    *   Develop TaskGenerator and TaskSolver modules in `backend/tria_agents/azr/`.
     *   Set up a simple self-play cycle with verification.
 *Result:* Tria prototype capable of generating and solving its own tasks.
 
@@ -112,7 +112,7 @@ This phase focuses on developing Tria's intelligence, implementing new interacti
 
 ### Q1 2026 (January - March)
 
-**LearningBot Development and Deeper AZR Integration:**
+**LearningAgent Development and Deeper AZR Integration:**
 
 *Goal:* Improve Tria's self-learning and adaptation capabilities.
 *Key tasks:*

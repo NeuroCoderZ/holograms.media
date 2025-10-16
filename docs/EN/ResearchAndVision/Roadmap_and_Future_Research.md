@@ -1,7 +1,7 @@
 ```markdown
 # Roadmap and Future Research
 
-This document outlines the horizons of our project. Here are the ideas and technologies we plan to explore and implement in the future. These are not promises, but vectors for our scientific and technical search.
+**Last Updated:** September 26, 2025
 
 ## 1. Neuromorphic Computing: Transition to SNN
 

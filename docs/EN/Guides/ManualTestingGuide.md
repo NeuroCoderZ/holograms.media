@@ -1,7 +1,7 @@
 ```markdown
 # Manual Testing Guide for the "Holographic Media" Project
 
-This document is the central entry point for manual testing documentation for the "Holographic Media" project. Since automated testing is not widely used in the project, quality assurance tasks are performed manually.
+**Last updated: September 26, 2025**
 
 ## General Principles for Manual Testing
 
@@ -81,14 +81,14 @@ Follow the described steps: register a new user via Google sign-in, verify backe
 
 ---
 
-## E2E Test Plan — Tria Bot Interaction
+## E2E Test Plan — Tria Agent Interaction
 
-**Goal:** Validate chat interaction with the Tria bot via the FastAPI backend on Koyeb.
+**Goal:** Validate chat interaction with the Tria agent via the FastAPI backend on Koyeb.
 
 ### Preconditions
 
 * User is authenticated.
-* Backend is deployed and `ChatBot` / `LLMService` are configured (Mistral or other model access).
+* Backend is deployed and `ChatAgent` / `LLMService` are configured (Mistral or other model access).
 * AstraDB and `tria_learning_log` table are available.
 
 ### Steps
@@ -96,7 +96,7 @@ Follow the described steps: register a new user via Google sign-in, verify backe
 1. Send a chat message from frontend.
 2. Verify frontend shows the message and an in-progress indicator.
 3. Inspect backend logs to confirm request handling, token validation and invocation of the LLM service.
-4. Confirm the bot response appears in the frontend chat.
+4. Confirm the agent response appears in the frontend chat.
 5. Verify that `tria_learning_log` contains an entry for the interaction.
 
 ---

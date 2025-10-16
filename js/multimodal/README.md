@@ -6,4 +6,4 @@ including gestures, voice, and potentially other biometric data.
 ## TODO
 - Create dedicated modules for voice input processing (e.g., speech-to-text client).
 - Design a system for fusing data from multiple modalities.
-- Integrate with Tria bots for interpreting multimodal commands.
+- Integrate with Tria agents for interpreting multimodal commands.

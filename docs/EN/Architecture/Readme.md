@@ -1,7 +1,7 @@
 ```markdown
 # System Architecture
 
-This section contains detailed information about the architecture of the "holograms.media" system. It gathers the main documents that describe the project's architecture, including system specifications, module interfaces, APIs, and testing strategies.
+**Last Updated:** September 26, 2025
 
 ## Document Structure
 
@@ -17,7 +17,6 @@ This section contains detailed information about the architecture of the "hologr
 
 ### Infrastructure
 - **Infrastructure/DeploymentStrategy.md** - System deployment strategy
-- **Infrastructure/FirebaseAndGcpServicesGuide.md** - Guide to using Firebase and GCP services
 - **Infrastructure/KoyebR2DeploymentGuide.md** - Deployment guide for Koyeb and Cloudflare R2
 - **Infrastructure/WebGPUMigrationGuide.md** - Guide for migrating to WebGPU
 
@@ -38,7 +37,7 @@ This section contains detailed information about the architecture of the "hologr
 ## Key Technologies
 
 - **Frontend**: HTML5, CSS3, JavaScript ES6+, Three.js, WebGL, WebRTC
-- **Backend**: Python (FastAPI), Node.js, Firebase
+- **Backend**: Python (FastAPI), Node.js
 - **Databases**: PostgreSQL, SQLite, Astra Database (Cassandra)
 - **AI/ML**: TensorFlow.js, MediaPipe, WebRTC
 - **Infrastructure**: Docker, Cloudflare Pages, Koyeb, Backblaze B2

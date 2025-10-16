@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 import logging
 import os
 import uuid
-from backend.core.tria_bots.ChunkProcessorBot import ChunkProcessorBot
+from backend.tria_agents.ChunkProcessorBot import ChunkProcessorBot
 from backend.auth.security import get_current_active_user # Assuming this is your dependency for auth
 from backend.core.models.user_models import UserInDB # Assuming this is your user model
 
@@ -49,7 +49,7 @@ async def generate_upload_url(
     file_extension = os.path.splitext(request_data.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
     # Include user ID in the path for better organization, if desired
-    object_key = f"user_uploads/{current_user.firebase_uid}/{unique_filename}"
+    object_key = f"user_uploads/{current_user.user_id}/{unique_filename}"
 
     try:
         presigned_post = s3_client.generate_presigned_post(
@@ -59,14 +59,14 @@ async def generate_upload_url(
             Conditions=[{"Content-Type": request_data.content_type}],
             ExpiresIn=3600  # URL expires in 1 hour
         )
-        logger.info(f"Generated presigned POST URL for {object_key} for user {current_user.firebase_uid}")
+        logger.info(f"Generated presigned POST URL for {object_key} for user {current_user.user_id}")
         return PresignedUrlResponse(
             url=presigned_post['url'],
             fields=presigned_post['fields'],
             object_key=object_key
         )
     except Exception as e:
-        logger.error(f"Failed to generate presigned URL for user {current_user.firebase_uid}. Error: {e}", exc_info=True)
+        logger.error(f"Failed to generate presigned URL for user {current_user.user_id}. Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to generate presigned URL: {str(e)}")
 
 

@@ -121,8 +121,8 @@ export async function sendChatMessage(messageText, idToken) {
                 errorData.responseText = errorBodyText;
             }
             const errorMessage = errorData.message || errorData.error || errorData.responseText || `HTTP error! Status: ${response.status}`;
-            console.error('Error sending message to Tria bot:', response.status, errorMessage);
-            throw new Error(`Tria bot request failed: ${errorMessage}`);
+            console.error('Error sending message to Tria agent:', response.status, errorMessage);
+            throw new Error(`Tria agent request failed: ${errorMessage}`);
         }
         
         const contentType = response.headers.get("content-type");

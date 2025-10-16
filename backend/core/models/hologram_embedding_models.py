@@ -35,7 +35,7 @@ class HologramSemanticEmbedding(BaseUUIDModel):
     )
     
     # Metadata for Personalization and Liquid Data Structure
-    user_id: Optional[str] = Field(None, description="Firebase UID of the user this embedding is personalized for, if applicable.")
+    user_id: Optional[str] = Field(None, description="The unique ID of the user this embedding is personalized for, if applicable.")
     confidence_score: float = Field(default=1.0, ge=0.0, le=1.0, description="System's confidence in the accuracy/relevance of this embedding (0.0 to 1.0).")
     liquidity_score: float = Field(default=0.5, ge=0.0, le=1.0, description="Measure of how 'liquid' or adaptable this embedding is (0.0=stable, 1.0=highly adaptable).")
     related_chunk_ids: List[UUID] = Field(default_factory=list, description="List of InteractionChunk IDs that contributed to this embedding.")
@@ -57,7 +57,7 @@ class HologramSemanticEmbedding(BaseUUIDModel):
                     "vector_operators": {"emphasize": {"dimension_indices": [0, 1]}},
                     "learning_targets": {"refinement_priority": "medium"},
                     "evolution_timestamps": {"last_adapted": "2025-06-10T12:00:00Z"},
-                    "user_id": "some_firebase_uid",
+                    "user_id": "some_user_id",
                     "confidence_score": 0.95,
                     "liquidity_score": 0.7,
                     "related_chunk_ids": [],

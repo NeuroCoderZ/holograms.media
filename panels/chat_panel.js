@@ -1,8 +1,17 @@
-// chat_panel.js - Модуль для управления панелью Чат
+import { initChatUI } from '../js/core/ui/chatUI.js';
+
+function getUserIdFromLocalStorage() {
+    // Placeholder: In a real app, this would retrieve the user ID from a secure source
+    // like a JWT in localStorage/sessionStorage, or a global auth state.
+    // For now, it returns a dummy ID or null.
+    return localStorage.getItem('user_id') || "dummy_user_id"; // Replace with actual logic
+}
+
+let chatPanelElement = null;
 
 import { addMessageToChat } from '../js/panels/chatMessages.js'; // Import the message display function
 import { sendChatMessage as sendChatMessageToApi } from '../js/services/apiService.js'; // Import API service function
-import { auth } from '../js/core/firebaseInit.js'; // Import auth instance for token
+ // Import auth instance for token
 import { getIdToken } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js"; // Import getIdToken
 
 // Экспортируем функцию для инициализации панели Чат
@@ -82,13 +91,11 @@ async function sendChatMessage(message) { // Made private, for internal use only
   addMessageToChat('user', message); // Use the imported addMessageToChat
   
   try {
-    const user = auth.currentUser;
-    if (!user) {
-      console.error("User not authenticated. Cannot send chat message.");
-      addMessageToChat('system', 'Ошибка: пользователь не аутентифицирован.');
-      return;
-    }
-    const idToken = await getIdToken(user); // Get the Firebase ID token
+    const userId = getUserIdFromLocalStorage(); // Placeholder for actual user ID retrieval
+    if (!userId) {
+        console.error("No user ID found. Cannot send chat message.");
+        return;
+    } // Get the Firebase ID token
 
     const response = await sendChatMessageToApi(message, idToken); // Call the API service
     

@@ -21,45 +21,38 @@ from backend.core.models.hologram_models import UserHologramResponseModel
 logger = logging.getLogger(__name__)
 
 
-async def get_user_by_firebase_uid(db: asyncpg.Connection, firebase_uid: str) -> Optional[UserInDB]:
+async def get_user_by_id(db: asyncpg.Connection, user_id: str) -> Optional[UserInDB]:
     """
-    Retrieves a user from the database by their Firebase UID.
+    Retrieves a user from the database by their user ID.
 
     Args:
         db: An active asyncpg database connection.
-        firebase_uid: The Firebase UID (maps to 'user_id' column in DB) of the user to retrieve.
+        user_id: The ID of the user to retrieve.
 
     Returns:
         A UserInDB instance if the user is found, otherwise None.
-        A locally generated UUID for the 'id' field is added if UserInDB expects it.
     
     Raises:
         asyncpg.PostgresError: If a database error occurs during the fetch operation.
     """
     sql = """
-        SELECT user_id, email, created_at, updated_at
+        SELECT user_id, email, created_at, updated_at, email_verified
         FROM users
         WHERE user_id = $1;
     """
-    logger.info(f"Attempting to retrieve user with Firebase UID: {firebase_uid}")
+    logger.info(f"Attempting to retrieve user with ID: {user_id}")
     try:
-        row = await db.fetchrow(sql, firebase_uid)
+        row = await db.fetchrow(sql, user_id)
         if row:
             user_data = dict(row)
-            if 'user_id' in user_data and 'user_id_firebase' not in user_data:
-                user_data['user_id_firebase'] = user_data.pop('user_id')
-            
-            if hasattr(UserInDB, 'id') and not 'id' in user_data: # If UserInDB expects an 'id' (e.g. from BaseUUIDModel)
-                user_data['id'] = uuid4() # This ID is not from the 'users' table.
-
             user = UserInDB(**user_data)
-            logger.info(f"User {firebase_uid} found in database.")
+            logger.info(f"User {user_id} found in database.")
             return user
         else:
-            logger.info(f"User with Firebase UID {firebase_uid} not found in database.")
+            logger.info(f"User with ID {user_id} not found in database.")
             return None
     except asyncpg.PostgresError as e:
-        logger.exception(f"Database error while fetching user by Firebase UID {firebase_uid}.")
+        logger.exception(f"Database error while fetching user by ID {user_id}.")
         raise
 
 

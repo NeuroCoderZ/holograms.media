@@ -17,7 +17,7 @@ can be incentivized through HGT rewards.
 ## Types of Contributed Resources
 
 1.  **Distributed Tria Training:**
-    *   **Resource:** GPU/CPU cycles for training specific Tria bot models or parts of the LearningBot's AZR process.
+    *   **Resource:** GPU/CPU cycles for training specific Tria agent models or parts of the LearningBot's AZR process.
     *   **Measurement:** Proof-of-Computation (e.g., verifiable completion of training tasks assigned by a coordinator).
     *   **Verification:** Results of training tasks (e.g., model improvements) validated by the LearningBot or a specialized oracle.
 

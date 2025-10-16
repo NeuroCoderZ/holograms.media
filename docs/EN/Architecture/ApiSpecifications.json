@@ -4,11 +4,12 @@
     "version": "1.0.0",
     "description": "Backend services for the Holograms.Media project providing endpoints for user interaction, media processing and the Tria AI assistant",
     "base_url": "https://api.holograms.media",
-    "documentation_url": "/docs"
+    "documentation_url": "/docs",
+    "last_updated": "2025-09-26"
   },
   "authentication": {
-    "type": "JWT Token + Firebase Auth",
-    "description": "Most endpoints require authentication via JWT tokens associated with Firebase UIDs"
+    "type": "OAuth 2.0 with Google Sign-In",
+    "description": "Most endpoints require authentication via JWT tokens issued after Google OAuth 2.0 validation"
   },
   "endpoints": [
     {
@@ -204,9 +205,6 @@
         "201": {
           "description": "Chunk saved"
         },
-        "403": {
-          "description": "Firebase UID missing"
-        },
         "500": {
           "description": "Database error"
         }
@@ -302,7 +300,7 @@
   },
   "notes": [
     "Full automatic documentation available at /docs",
-    "Most endpoints require Firebase authentication",
+    "Most endpoints require Google OAuth 2.0 authentication",
     "API uses standard HTTP status codes",
     "All file uploads use presigned URLs for security",
     "WebSocket endpoints support real-time communication"

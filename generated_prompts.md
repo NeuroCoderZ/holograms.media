@@ -33,9 +33,9 @@
     - Базовой обработки ошибок.
 - **Ожидаемый результат:** Файл `backend/core/tria_bots/ChunkProcessorBot.py` создан с базовой реализацией класса `ChunkProcessorBot` и его методов. Cloud Function `process_chunk` должна быть обновлена для его использования.
 - **MVP Task Dependencies:**
-    - Section D: (Optional for MVP) Can then trigger a simple Tria bot logic...
+    - Section D: (Optional for MVP) Can then trigger a simple Tria agent logic...
     - Section F: Implement `ChunkProcessorBot.py` and `ChatBot.py` modules...
-    - Section F: Ensure `process_chunk` Cloud Functions correctly use these bot modules.
+    - Section F: Ensure `process_chunk` Cloud Functions correctly use these agent modules.
 - **Критичность:** Высокая (Блокер)
 - ** Ответственный:** Backend Team
 - ** Прогресс:** ✅ Done
@@ -52,7 +52,7 @@
 - **MVP Task Dependencies:**
     - Section F: Confirm LLM API key availability and free tier usage conditions.
     - Section F: Implement `llm_service.py` (зависит от знания, какие API использовать).
-    - Section IV: Tria Bot LLM calls use Mistral/Devstral...
+    - Section IV: Tria Agent LLM calls use Mistral/Devstral...
 - **Критичность:** Высокая (Блокер)
 - ** Ответственный:** Research/Lead Dev
 - ** Прогресс:** ✅ Done
@@ -266,7 +266,7 @@
 - **Контекст:** Переиспользование кода важно для поддержки и консистентности.
 - **Атомарное действие:** Проведен code review `main.py` файлов для Cloud Functions (`auth_sync`, `process_chunk`, `tria_chat_handler`). Подтверждено, что импорты из `backend.core.*` корректны, экземпляры классов создаются правильно, и методы вызываются с ожидаемыми параметрами. Изменений не потребовалось.
 - **Ожидаемый результат:** Cloud Functions эффективно используют общую логику из `backend/core/`.
-- **MVP Task Dependencies:** Section E: Functions import shared logic from `backend/core/`. Section F: Ensure Cloud Functions use bot modules.
+- **MVP Task Dependencies:** Section E: Functions import shared logic from `backend/core/`. Section F: Ensure Cloud Functions use agent modules.
 - **Критичность:** Средняя
 - ** Ответственный:** Backend Team
 - ** Прогресс:** ✅ Done
@@ -360,7 +360,7 @@
 - ** Прогресс:** ✅ Done
 - **Результат:** Коммит `610c1ec` (ветка `feat/mvp-auth-integration-flash`) - firebaseStorageService.js проанализирован, код корректен.
 
-## Section F: Backend - MVP Tria Bot Logic
+## Section F: Backend - MVP Tria Agent Logic
 
 ---
 **Промпт:**
@@ -434,7 +434,7 @@
 - **Критичность:** Высокая
 - ** Ответственный:** QA/Testing Team (или разработчики)
 - ** Прогресс:** ✅ Done
-- **Результат:** Коммит `8630dc8` (ветка `feat/mvp-auth-integration-flash`) - Создан план E2E тестирования Tria Bot.
+- **Результат:** Коммит `8630dc8` (ветка `feat/mvp-auth-integration-flash`) - Создан план E2E тестирования Tria Agent.
 
 ---
 **Промпт:**

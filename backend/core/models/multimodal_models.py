@@ -7,9 +7,9 @@ import uuid
 from .base_models import BaseUUIDModel
 
 class AudiovisualGesturalChunkModel(BaseUUIDModel):
-    user_id: str = Field(..., description="Firebase UID of the user who uploaded/owns this chunk.")
+    user_id: str = Field(..., description="The unique ID of the user who uploaded/owns this chunk.")
     chunk_type: str = Field(..., description="Type of the chunk (e.g., 'audio', 'video', 'audiovisual', 'gesture_only').")
-    storage_ref: str = Field(..., description="Reference to the chunk's location in Firebase Storage (e.g., gs://bucket_name/path/to/file).")
+    storage_ref: str = Field(..., description="Reference to the chunk's location in object storage (e.g., a path or key).")
     
     original_filename: Optional[str] = Field(default=None, description="Original filename of the uploaded chunk.")
     mime_type: Optional[str] = Field(default=None, description="MIME type of the chunk.")
@@ -31,9 +31,9 @@ class AudiovisualGesturalChunkModel(BaseUUIDModel):
             "examples": [
                 {
                     "id": "d4eebc99-9c0b-4ef8-bb6d-6bb9bd380a66",
-                    "user_id": "aBcDeFgHiJkLmNoPqRsTuVwXyZ12345",
+                    "user_id": "user-id-12345",
                     "chunk_type": "audio",
-                    "storage_ref": "gs://holograms-media-mvp.appspot.com/user_uploads/user_abc/audio_chunk_1.wav",
+                    "storage_ref": "user_uploads/user-id-12345/audio_chunk_1.wav",
                     "original_filename": "my_voice_memo.wav",
                     "mime_type": "audio/wav",
                     "duration_seconds": 15.7,
@@ -47,7 +47,7 @@ class AudiovisualGesturalChunkModel(BaseUUIDModel):
 
 class UserGestureModel(BaseModel):
     gesture_id: int = Field(..., description="Primary key for the gesture.")
-    user_id: str = Field(..., description="Firebase UID of the user who owns this gesture.")
+    user_id: str = Field(..., description="The unique ID of the user who owns this gesture.")
     gesture_name: str = Field(..., description="Name of the gesture.")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp of when the gesture was created.")
     thumbnail_url: Optional[str] = Field(default=None, description="Placeholder for gesture thumbnail URL.")
@@ -58,7 +58,7 @@ class UserGestureModel(BaseModel):
             "examples": [
                 {
                     "gesture_id": 1,
-                    "user_id": "aBcDeFgHiJkLmNoPqRsTuVwXyZ12345",
+                    "user_id": "user-id-12345",
                     "gesture_name": "Wave_Hello",
                     "created_at": "2024-06-15T10:00:00Z",
                     "thumbnail_url": "https://example.com/thumbnails/wave_hello.png"

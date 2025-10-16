@@ -1,76 +1,107 @@
 # backend/core/auth_service.py
+import logging
+from jose import jwt, JWTError
+from datetime import datetime, timedelta
+from backend.core.config import settings
 
-import firebase_admin
-from firebase_admin import credentials, auth
-import asyncio # Imported but not used in the current synchronous implementation of verify_id_token.
+logger = logging.getLogger(__name__)
 
-# Custom exception for invalid tokens. This provides a specific error type
-# for token verification failures, allowing callers to handle them distinctly.
 class InvalidTokenError(Exception):
-    """Custom exception for Firebase ID Token verification failures."""
+    """Custom exception for JWT verification failures."""
     pass
 
 class AuthService:
     """
-    Service class for Firebase Authentication related operations, primarily focused on verifying
-    Firebase ID Tokens issued to authenticated users. This service acts as a bridge
-    between the client's Firebase authentication and the backend's secure operations.
+    Service class for handling JWT-based authentication.
+    This service is responsible for creating, encoding, decoding, and verifying JWTs
+    for user sessions after they have been authenticated by an external provider (e.g., Google).
     """
-    def __init__(self):
-        # Initialize Firebase Admin SDK. This is a critical step for any backend service
-        # that interacts with Firebase (e.g., verifying tokens, accessing Firestore/Realtime Database).
-        # The check `if not firebase_admin._apps:` prevents re-initialization if the function
-        # instance is 'warm' (reused) in a Cloud Function environment, which is good practice.
-        # In Google Cloud environments (like Cloud Functions), the SDK will automatically
-        # pick up default credentials, avoiding the need for explicit service account keys.
-        if not firebase_admin._apps:
-            firebase_admin.initialize_app() # Initializes with default credentials from the environment.
-            print("Firebase Admin SDK initialized in AuthService.")
-        else:
-            print("Firebase Admin SDK already initialized in AuthService.")
+    
+    SECRET_KEY = settings.SECRET_KEY
+    ALGORITHM = settings.JWT_ALGORITHM
+    ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-    def verify_firebase_token(self, id_token_string: str) -> dict:
+    def create_access_token(self, data: dict) -> str:
         """
-        Verifies a Firebase ID Token string against Firebase Authentication services.
-        This function ensures that the provided token is valid, unexpired, and unrevoked.
-        It's a crucial security step to protect backend resources.
+        Generates a new JWT access token.
         
         Args:
-            id_token_string: The Firebase ID Token received from the client-side.
+            data: A dictionary of claims to include in the token payload. 
+                  Must contain 'user_id'.
+        
+        Returns:
+            A string containing the encoded JWT.
+        """
+        to_encode = data.copy()
+        expire = datetime.utcnow() + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
+        return encoded_jwt
+
+    def verify_and_decode_token(self, token: str) -> dict:
+        """
+        Decodes and verifies a JWT access token.
+        
+        Args:
+            token: The JWT string to decode.
             
         Returns:
-            A dictionary containing the decoded token payload. This payload includes
-            user information like `uid` (Firebase User ID), `email`, `name`, etc.,
-            which can then be used to identify or synchronize the user in the backend database.
+            A dictionary containing the decoded token payload (claims).
             
         Raises:
-            InvalidTokenError: Raised if the token is invalid (e.g., malformed, expired,
-                               revoked, or has an incorrect signature). This custom exception
-                               wraps specific Firebase Admin SDK errors for clarity.
-            Exception: For any other unexpected errors that might occur during the verification
-                       process, indicating a potential server-side issue or misconfiguration.
+            InvalidTokenError: If the token is invalid, expired, or has a bad signature.
         """
         try:
-            # `auth.verify_id_token` performs cryptographic validation and checks against
-            # Firebase's token revocation lists. It contacts Firebase servers to do this.
-            # Although it's a blocking call, for single-request Cloud Functions, it's typically
-            # acceptable. For long-running asynchronous applications, it might be offloaded
-            # to a thread pool (e.g., using `asyncio.to_thread`).
-            decoded_token = auth.verify_id_token(id_token_string)
-            return decoded_token
-        except auth.InvalidIdTokenError as e:
-            # Catches general invalid token errors (e.g., malformed, bad signature).
-            print(f"Firebase Invalid ID Token Error: {e}")
-            raise InvalidTokenError(f"Invalid Firebase ID Token: {e}")
-        except auth.ExpiredIdTokenError as e:
-            # Catches tokens that have passed their expiration time.
-            print(f"Firebase Expired ID Token Error: {e}")
-            raise InvalidTokenError(f"Expired Firebase ID Token: {e}")
-        except auth.RevokedIdTokenError as e:
-            # Catches tokens that have been explicitly revoked by Firebase (e.g., user changed password).
-            print(f"Firebase Revoked ID Token Error: {e}")
-            raise InvalidTokenError(f"Revoked Firebase ID Token: {e}")
-        except Exception as e:
-            # Catch-all for any other unexpected errors during the process.
-            print(f"An unexpected error occurred during Firebase ID Token verification: {e}")
-            raise Exception(f"Token verification failed due to an unexpected error: {e}")
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            return payload
+        except JWTError as e:
+            logger.error(f"JWT Error during token decoding: {e}")
+            raise InvalidTokenError(f"Could not validate credentials: {e}")
+
+    async def verify_google_id_token(self, token: str) -> dict:
+        """
+        Verifies an ID token issued by Google OAuth 2.0.
+        
+        This is a placeholder for the actual implementation that would use a library
+        like `google-auth` to verify the token against Google's public keys.
+        
+        Args:
+            token: The Google ID token string.
+            
+        Returns:
+            A dictionary with the user's information from the token payload.
+            
+        Raises:
+            InvalidTokenError: If the token is invalid.
+        """
+        # TODO: Implement actual Google ID token verification.
+        # This would involve:
+        # 1. Importing the necessary library (e.g., from google.oauth2 import id_token).
+        # 2. Calling id_token.verify_oauth2_token(token, requests.Request(), GOOGLE_CLIENT_ID).
+        # 3. Handling exceptions and extracting user info (sub, email, name, etc.).
+        
+        logger.warning("Google ID Token verification is currently a placeholder and not secure.")
+        
+        # --- Placeholder Logic ---
+        # This is insecure and for development purposes only.
+        # It simulates a successful verification.
+        if not token or "test-token" not in token:
+             raise InvalidTokenError("Invalid or missing test token.")
+        
+        # Simulate a decoded payload from a real Google token
+        user_info = {
+            "sub": "google-user-id-12345", # Google's unique user ID
+            "email": "test.user@example.com",
+            "name": "Test User",
+            "given_name": "Test",
+            "family_name": "User",
+            "picture": "https://example.com/avatar.jpg",
+            "email_verified": True,
+            "locale": "en"
+        }
+        # --- End Placeholder Logic ---
+        
+        return user_info
+
+# Instantiate the service for use in dependencies
+auth_service = AuthService()

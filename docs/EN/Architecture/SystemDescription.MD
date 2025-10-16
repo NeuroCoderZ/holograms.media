@@ -12,10 +12,10 @@ This document describes the high-level architecture, key components, and data fl
   - **Hosting:** Cloudflare Pages (site builds on Cloudflare Pages).
 - **Backend:** FastAPI (Python).
   - **Hosting:** Koyeb (Docker deployment).
-  - **Authentication:** OAuth 2.0 with Google Sign-In. FastAPI verifies Firebase-issued JWT tokens using Firebase Admin SDK.
+  - **Authentication:** OAuth 2.0 with Google Sign-In. The FastAPI service validates JWT tokens issued by Google and issues its own JWT for the session.
 - **Knowledge Store (RAG):** Astra Database (Cassandra) accessed via Tria API for storing and performing semantic search across project data.
 - **File Storage:** Cloudflare R2 for storing interaction "chunks" (audio, video files).
-- **Auxiliary Functions:** Cloudflare Workers are used for event-driven tasks triggered by Firebase (e.g., user onboarding hooks).
+
 - **AI Orchestration:** Future plans include using Mistral LLM flows orchestrated within the FastAPI backend.
 
 ## 3. Data Flow Architecture
@@ -46,21 +46,21 @@ Step 1 — Local input and processing (Frontend):
 - **Preparing a chunk for backend upload:**
   1. `handsTracking.js` uses MediaPipe to capture keypoints for gestures.
   2. The user may record or upload audio/video.
-  3. The frontend constructs a "chunk" object with metadata (`timestamp`, Firebase `user_id`) and prepares the media file for upload.
+  3. The frontend constructs a "chunk" object with metadata (`timestamp`, Google OAuth 2.0 `user_id`) and prepares the media file for upload.
 
 Step 2 — Sending data to the backend (Frontend -> Backend):
 
 1. The client (via `services/apiService.js`) sends a request to a FastAPI endpoint (e.g., `/api/v1/interactions/upload`) containing metadata and the chunk file.
-2. Requests to FastAPI are authenticated. The client attaches a Firebase-issued JWT token in the `Authorization` header.
+2. Requests to FastAPI are authenticated. The client attaches a Google OAuth 2.0-issued JWT token in the `Authorization` header.
 
 Step 3 — Backend processing (FastAPI on Koyeb):
 
-1. **Authentication:** The endpoint verifies the JWT with Firebase Admin SDK and identifies the user.
+1. **Authentication:** The endpoint verifies the JWT issued by Google and identifies the user.
 2. **Validation:** Pydantic models validate incoming payloads.
 3. **File Storage:** FastAPI stores the media file in Cloudflare R2.
 4. **Knowledge Store:** Chunk metadata (including `user_id` and R2 file links) and any extracted content are indexed via Tria API into Astra Database (Cassandra).
-5. **Tria orchestration:** Tria orchestrates downstream processing using bots (`tria_bots`), such as `GestureBot`, `AudioBot`, and `MemoryBot`.
-   - `MemoryBot` performs semantic search in the knowledge store via Tria API to retrieve relevant context.
+5. **Tria orchestration:** Tria orchestrates downstream processing using agents (`tria_agents`), such as `GestureAgent`, `AudioAgent`, and `MemoryAgent`.
+   - `MemoryAgent` performs semantic search in the knowledge store via Tria API to retrieve relevant context.
    - Tria may call external LLMs (e.g., Google Gemini) as needed.
 6. **Response assembly:** FastAPI composes a structured response (e.g., chat text, UI/hologram update commands).
 
@@ -75,19 +75,14 @@ Step 4 — Client reaction (Backend -> Frontend):
 ### 3.3. Scenario: Training Tria
 
 1. **Data collection:** All chunks and user feedback (explicit and implicit) are stored in Cloudflare R2 (files) and indexed in Astra Database (Cassandra).
-2. **LearningBot:** A backend background process (or periodic Mistral flow) executes `LearningBot` that analyzes accumulated data and evaluates model configurations.
-3. **Evolution cycle:** `LearningBot` may mutate model parameters, generate new configurations, or update the knowledge store to gradually improve system behavior.
+2. **LearningAgent:** A backend background process (or periodic Mistral flow) executes `LearningAgent` that analyzes accumulated data and evaluates model configurations.
+3. **Evolution cycle:** `LearningAgent` may mutate model parameters, generate new configurations, or update the knowledge store to gradually improve system behavior.
 
 ## 4. High-level Flow Diagram
 
 ```mermaid
 graph LR
     A[User] -->|Gestures, Voice, Files, Text| B(Frontend on Cloudflare Pages)
-
-    subgraph Firebase
-        FB_AUTH[OAuth 2.0 via Google Sign-In]
-        FCF[Cloud Functions (auxiliary tasks)]
-    end
 
     subgraph Backend on Koyeb
         FASTAPI[FastAPI (Main API + Tria orchestration)]
@@ -100,12 +95,10 @@ graph LR
 
     LLM_API[External LLM APIs (Gemini, Mistral)]
 
-    B -- 1. Authenticate --> FB_AUTH
-    FB_AUTH -- 2. JWT token --> B
+    B -- 1. Authenticate (Google OAuth 2.0) --> FASTAPI
 
     B -- 3. Authenticated request (HTTPS) --> FASTAPI
 
-    FASTAPI -- 4. Verify token --> FB_AUTH
     FASTAPI -- 5. Upload file --> R2
     FASTAPI -- 6. Index chunk --> RAG
     FASTAPI -- 7. Call LLM --> LLM_API
@@ -113,6 +106,7 @@ graph LR
 
     B -- 9. UI / Hologram update --> A
 
-    FCF -- triggers --> FASTAPI
+    Cloudflare Workers[Cloudflare Workers (auxiliary tasks)]
+    Cloudflare Workers -- triggers --> FASTAPI
 
 ```
