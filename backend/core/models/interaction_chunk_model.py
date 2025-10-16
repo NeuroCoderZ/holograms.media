@@ -87,7 +87,7 @@ class InteractionChunkDB(InteractionChunkBase):
     id: int = Field(..., description="Unique identifier for the interaction chunk in the database.")
     # Add any other fields that are specific to the database representation,
     # e.g., vector embeddings if stored directly, server-side classification results.
-    gesture_classification_server: Optional[str] = Field(None, description="Gesture classification performed by server-side Tria bots.")
+    gesture_classification_server: Optional[str] = Field(None, description="Gesture classification performed by server-side Tria agents.")
     gesture_confidence_server: Optional[float] = Field(None, description="Confidence score for server-side gesture classification.")
     speech_transcription_server: Optional[str] = Field(None, description="Server-side speech transcription, if performed or refined.")
     audio_embedding_ref: Optional[str] = Field(None, description="Reference to stored audio embedding vector.")

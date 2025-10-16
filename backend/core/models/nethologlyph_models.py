@@ -21,7 +21,7 @@ class QuaternionNetModel(BaseModel):
 class NetHoloPacketHeader(BaseModel):
     packet_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: float = Field(default_factory=datetime.utcnow().timestamp, description="Epoch seconds UTC")
-    source_id: str # e.g., user_firebase_uid or service_id
+    source_id: str # e.g., user_id or service_id
     target_id: Optional[str] = None # For direct messages
     version: str = Field(default="0.1.0")
 

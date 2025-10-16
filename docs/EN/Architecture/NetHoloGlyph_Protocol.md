@@ -3,7 +3,7 @@
 
 ## 1. Overview
 
-The NetHoloGlyph protocol is designed for exchanging "quanta" of multimodal data between clients and server in the holograms.media system. Each quantum is an atomic unit of information that describes a change in the state of an audio hologram — usually triggered by a user's gesture — and includes the semantic and audio-visual context associated with that change.
+**Last Updated:** September 26, 2025
 
 The protocol's goal is to provide reliable, low-latency data exchange for collaborative, real-time synchronization of hologram state.
 
@@ -25,7 +25,7 @@ package holograms.media.nethologlyph.v1;
 // Based on the deltaVector concept from earlier discussions.
 // Estimated size: 60–120 bytes.
 message GestureDelta {
-  // Compact user identifier (for example, CRC32 of a Firebase UID or another compact id).
+  // Compact user identifier (e.g., a compact user ID).
   uint32 user_id = 1;
   // Monotonic timestamp in microseconds (client local time or synchronized).
   uint64 timestamp_us = 2;

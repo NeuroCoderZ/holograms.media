@@ -12,15 +12,15 @@ class LLMService:
     for the public-facing informational chatbot.
     """
     def __init__(self):
-        # API key for the public bot (mistral-small-latest)
+        # API key for the public agent (mistral-small-latest)
         self.public_bot_api_key = "MISTRAL_API_KEY_REDACTED"
         if not self.public_bot_api_key: # Should always be true as it's hardcoded
-            logger.error("Public bot API key is not set. LLMService will not function correctly for public bot.")
+            logger.error("Public agent API key is not set. LLMService will not function correctly for public agent.")
         
         # Base URL for Mistral's chat completions API.
         self.api_url = "https://api.mistral.ai/v1/chat/completions"
         
-        # System prompt for the public informational bot
+        # System prompt for the public informational agent
         self.public_bot_system_prompt = """
         Ты — Триа, дружелюбный AI-гид по веб-приложению "Holographic Media". Твоя задача — кратко и понятно отвечать на вопросы пользователя о проекте и его интерфейсе. При упоминании конкретной кнопки или элемента, ВСЕГДА используй его ID в формате #elementId.
 
@@ -38,7 +38,7 @@ class LLMService:
 
     async def call_mistral_public_chatbot(self, user_prompt: str) -> str:
         """
-        Sends a chat completion request to the Mistral Small model for the public informational bot.
+        Sends a chat completion request to the Mistral Small model for the public informational agent.
         
         Args:
             user_prompt (str): The message or query from the user.
@@ -47,7 +47,7 @@ class LLMService:
             str: The generated response from the LLM, or an error message if the API call fails.
         """
         if not self.public_bot_api_key:
-            logger.error("Public bot API key is missing.")
+            logger.error("Public agent API key is missing.")
             return "Error: Chatbot not configured (API key missing)."
 
         headers = {
@@ -66,38 +66,38 @@ class LLMService:
             "max_tokens": 500
         }
 
-        logger.debug(f"Sending payload to Mistral (public bot): {json.dumps(payload, indent=2)}")
+        logger.debug(f"Sending payload to Mistral (public agent): {json.dumps(payload, indent=2)}")
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             try:
                 response = await client.post(self.api_url, json=payload, headers=headers)
                 response.raise_for_status()
                 response_data = response.json()
-                logger.debug(f"Mistral API Raw Response (public bot): {json.dumps(response_data, indent=2)}")
+                logger.debug(f"Mistral API Raw Response (public agent): {json.dumps(response_data, indent=2)}")
 
                 if response_data.get("choices") and len(response_data["choices"]) > 0:
                     message_content = response_data["choices"][0].get("message", {}).get("content")
                     if message_content:
-                        logger.info("Successfully received content from Mistral API (public bot).")
+                        logger.info("Successfully received content from Mistral API (public agent).")
                         return message_content.strip()
                     else:
-                        logger.error("Mistral API response (public bot) contained no content in the message.")
+                        logger.error("Mistral API response (public agent) contained no content in the message.")
                         return "Error: LLM response format unexpected (no content)."
                 else:
-                    logger.error("Mistral API response (public bot) contained no choices or empty choices list.")
+                    logger.error("Mistral API response (public agent) contained no choices or empty choices list.")
                     return "Error: LLM response format unexpected (no choices)."
 
             except httpx.HTTPStatusError as e:
-                logger.error(f"HTTP Status Error calling Mistral API (public bot): {e.response.status_code} - {e.response.text}")
+                logger.error(f"HTTP Status Error calling Mistral API (public agent): {e.response.status_code} - {e.response.text}")
                 return f"Error: LLM API request failed with status {e.response.status_code}."
             except httpx.RequestError as e:
-                logger.error(f"Request Error calling Mistral API (public bot): {e}")
+                logger.error(f"Request Error calling Mistral API (public agent): {e}")
                 return f"Error: LLM API request failed due to a network issue or client error."
             except json.JSONDecodeError as e:
-                logger.error(f"JSON Decode Error from Mistral API (public bot): {e}. Response text: {response.text if 'response' in locals() else 'N/A'}")
+                logger.error(f"JSON Decode Error from Mistral API (public agent): {e}. Response text: {response.text if 'response' in locals() else 'N/A'}")
                 return "Error: Failed to decode LLM response."
             except Exception as e:
-                logger.exception("An unexpected error occurred while calling Mistral API (public bot).")
+                logger.exception("An unexpected error occurred while calling Mistral API (public agent).")
                 return "Error: An unexpected error occurred with the LLM service."
 
     async def get_public_bot_response(self, user_prompt: str) -> str:

@@ -11,7 +11,7 @@ This directory contains the server-side application logic for the Holographic Me
     *   **`core/db/`:** Modules for interacting with the Neon.tech PostgreSQL database (e.g., `pg_connector.py` for connection management using `asyncpg`, `crud_operations.py` for data operations, `schema.sql` for DB structure reference).
     *   **`core/models/` (deprecated, see `models/`):** This might contain older Pydantic models. The primary location for Pydantic models is now the top-level `models/` directory within `backend/`.
     *   **`core/services/`:** Shared services, such as `llm_service.py` (if any direct LLM calls are made from backend).
-    *   **`core/tria_bots/`:** Modules for specialized AI bots, if their logic is directly invoked or managed by the FastAPI app.
+    *   **`core/tria_bots/`:** Modules for specialized AI agents, if their logic is directly invoked or managed by the FastAPI app.
     *   **`auth/` (at `backend/auth/`):** Contains authentication logic, including security dependencies for FastAPI using Firebase Admin SDK.
 -   **`models/`:** Contains Pydantic models for data validation (incoming requests, database objects) and defining data structures used across the application.
 -   **`requirements.txt`:** Lists all Python package dependencies required for the FastAPI application.
@@ -67,7 +67,7 @@ For deployed applications on Koyeb, environment variables (as listed in `.env.ex
 ## Key Areas of Development & TODO
 
 *   **Refine API Endpoints:** Ensure all API endpoints in `routers/` and `api/v1/endpoints/` are robust, well-documented, and secure.
-*   **Tria Bot Integration:** Solidify how Tria bot logic (potentially from `core/tria_bots/` or external services like Genkit flows) is invoked and managed by the FastAPI backend.
+*   **Tria Agent Integration:** Solidify how Tria agent logic (potentially from `core/tria_bots/` or external services like Genkit flows) is invoked and managed by the FastAPI backend.
 *   **Database Interactions:** Continue to ensure `crud_operations.py` are efficient and secure.
 *   **Error Handling & Logging:** Implement comprehensive error handling and structured logging throughout the FastAPI application.
 *   **Security:** Secure API endpoints using Firebase Authentication (via `backend.auth.security`). Review R2 bucket policies and CORS configurations.

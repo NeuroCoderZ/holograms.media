@@ -9,7 +9,7 @@ This directory contains all project-related documentation for "holograms.media".
 - `research_and_vision/`: R&D, visionary concepts, and specific research explorations.
 - `reports_and_logs/`: System reports, task summaries, and logs.
 - `glossary.md`: Definitions of key project terms (note: current glossary has a disclaimer about its conceptual nature).
-- `AI_TRIA/`: Documents specifically related to the Tria AI system.
+
 - `TESTING/`: Test plans, strategies, and reports.
 - `USER_GUIDES/`: Manuals and guides for end-users or specific system functionalities.
 - `LEGAL/`: Legal documents, such as privacy policy and terms of service.
@@ -18,4 +18,4 @@ This directory contains all project-related documentation for "holograms.media".
 
 Please refer to the `README.md` within each subdirectory (if present) for more details on its contents.
 
-Last Updated: July 30, 2024
+Last Updated: September 26, 2025

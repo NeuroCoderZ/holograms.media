@@ -1,7 +1,7 @@
 # Гайд по развертыванию Python/FastAPI бэкенда на Koyeb с Astra Database и Backblaze B2
 
 **ID для отчета:** [KOYEB_ASTRA_B2_PLAN_FINAL]
-**Дата Актуализации:** 2024-12-01
+**Дата Актуализации:** 2025-09-26
 
 Этот документ описывает шаги и рекомендации для развертывания Python/FastAPI бэкенда проекта holograms.media на платформе Koyeb, с использованием Astra Database (Cassandra) и Backblaze B2 для хранения файлов.
 

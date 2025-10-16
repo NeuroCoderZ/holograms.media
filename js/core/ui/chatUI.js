@@ -1,11 +1,17 @@
 // frontend/js/core/ui/chatUI.js - Core Chat UI logic.
 
-// import { auth } from '../firebaseInit.js'; // Firebase Auth for currentUser
+
 
 // Placeholder for the Cloud Function URL.
 // Replace this with your actual deployed Cloud Function URL.
-const TRIA_CHAT_HANDLER_URL = 'https://europe-west1-holograms-media.cloudfunctions.net/tria_chat_handler_on_request';
-// Example: 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/tria_chat_handler_on_request';
+const TRIA_CHAT_HANDLER_URL = 'https://europe-west1-holograms-media.cloudfunctions.net/tria_chat_handler_on_request'; // TODO: Обновить этот URL на новый эндпоинт бэкенда, не связанный с Firebase Cloud Functions.
+
+function getUserIdFromLocalStorage() {
+    // Placeholder: In a real app, this would retrieve the user ID from a secure source
+    // like a JWT in localStorage/sessionStorage, or a global auth state.
+    // For now, it returns a dummy ID or null.
+    return localStorage.getItem('user_id') || "dummy_user_id"; // Replace with actual logic
+}
 
 let chatMessagesContainer = null;
 let chatInputElement = null;
@@ -54,13 +60,11 @@ async function sendMessage() {
         return; // Do nothing if input is empty
     }
 
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-        console.error("No user signed in. Cannot send chat message.");
-        // appendMessage("System", "Error: You must be signed in to chat."); // Removed as per request
+    const userId = getUserIdFromLocalStorage(); // Placeholder for actual user ID retrieval
+    if (!userId) {
+        console.error("No user ID found. Cannot send chat message.");
         return;
     }
-    const firebaseUserId = currentUser.uid;
 
     appendMessage("User", inputText); // Display user's message immediately
     chatInputElement.value = ''; // Clear the input field
@@ -74,7 +78,7 @@ async function sendMessage() {
             },
             body: JSON.stringify({
                 text: inputText,
-                firebase_user_id: firebaseUserId,
+                user_id: userId,
             }),
         });
 

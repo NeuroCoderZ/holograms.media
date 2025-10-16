@@ -12,7 +12,7 @@ class TriaLearningLogModel(BaseModel):
     user_id: Optional[str] = Field(default=None, description="ID of the user associated with this log event, references users table.") # Added from schema
     session_id: Optional[str] = Field(default=None, description="ID of the chat session associated with this log event.") # Added from schema, using str for UUID
     event_type: str = Field(..., description="Type of event being logged (e.g., 'model_retrained', 'feedback_received', 'error_encountered').")
-    bot_affected_id: Optional[str] = Field(default=None, description="Identifier of the Tria bot or component affected by the event, if applicable.")
+    bot_affected_id: Optional[str] = Field(default=None, description="Identifier of the Tria agent or component affected by the event, if applicable.")
     summary_text: Optional[str] = Field(default=None, description="A brief summary of the learning event.")
     prompt_text: Optional[str] = Field(default=None, description="Full text of the prompt given by the user or system.") # Added from schema
     tria_response_text: Optional[str] = Field(default=None, description="Full text of Tria's response.") # Added from schema
@@ -51,7 +51,7 @@ class TriaLearningLogModel(BaseModel):
                     "bot_affected_id": "tria_intent_parser_v1.2",
                     "summary_text": "Handled an unexpected null value during intent parsing.",
                     "prompt_text": "User input for error case.",
-                    "tria_response_text": "Error message from bot.",
+                    "tria_response_text": "Error message from agent.",
                     "model_used": None,
                     "feedback_score": None,
                     "custom_data": {

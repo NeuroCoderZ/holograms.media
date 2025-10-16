@@ -78,9 +78,9 @@ class UUIDDBBaseModel(BaseModel):
 #     name: str
 #     description: Optional[str] = None
 
-# If many models share a user_id (Firebase UID), you could consider a base for that too:
-# class UserOwnedModelBase(BaseModel):
-#     user_id: str = Field(..., description="Firebase UID of the owner/user.")
+# If many models share a user_id, you could consider a base for that too:
+# class BaseUserModel(BaseModel):
+#     user_id: str = Field(..., description="The unique ID of the owner/user.")
 #
 # class MyUserOwnedData(UserOwnedModelBase, DBBaseModel): # Example of multiple inheritance
 #     data_field: str

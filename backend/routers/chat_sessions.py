@@ -26,15 +26,15 @@ async def create_new_chat_session_for_user(
 ):
     chat_service = ChatService(db_conn)
     # Логика присвоения default title теперь в сервисе
-    print(f"[CHAT SESSION ROUTER INFO] User {current_user.firebase_uid} creating chat session: {session_in.session_title or 'Default Title'}")
+    print(f"[CHAT SESSION ROUTER INFO] User {current_user.user_id} creating chat session: {session_in.session_title or 'Default Title'}")
     created_session = await chat_service.create_new_chat_session(
-        user_id=current_user.firebase_uid, session_in=session_in
+        user_id=current_user.user_id, session_in=session_in
     )
     if not created_session:
-        print(f"[CHAT SESSION ROUTER ERROR] Could not create chat session for user {current_user.firebase_uid}.")
+        print(f"[CHAT SESSION ROUTER ERROR] Could not create chat session for user {current_user.user_id}.")
         # Сервис может вернуть None при ошибке, здесь мы это преобразуем в HTTPException
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not create chat session.")
-    print(f"[CHAT SESSION ROUTER INFO] Chat session ID {created_session.id} created for user {current_user.firebase_uid}.")
+    print(f"[CHAT SESSION ROUTER INFO] Chat session ID {created_session.id} created for user {current_user.user_id}.")
     return created_session
 
 @router.get("/", response_model=List[chat_models.UserChatSessionDB])
@@ -45,11 +45,11 @@ async def list_user_chat_sessions(
     limit: int = Query(100, ge=1, le=200)
 ):
     chat_service = ChatService(db_conn)
-    print(f"[CHAT SESSION ROUTER INFO] User {current_user.firebase_uid} listing chat sessions. Skip: {skip}, Limit: {limit}")
+    print(f"[CHAT SESSION ROUTER INFO] User {current_user.user_id} listing chat sessions. Skip: {skip}, Limit: {limit}")
     sessions = await chat_service.list_user_chat_sessions(
-        user_id=current_user.firebase_uid, skip=skip, limit=limit
+        user_id=current_user.user_id, skip=skip, limit=limit
     )
-    print(f"[CHAT SESSION ROUTER INFO] Found {len(sessions)} chat sessions for user {current_user.firebase_uid}.")
+    print(f"[CHAT SESSION ROUTER INFO] Found {len(sessions)} chat sessions for user {current_user.user_id}.")
     return sessions
 
 @router.get("/{session_id}", response_model=chat_models.UserChatSessionDB)
@@ -59,14 +59,14 @@ async def get_specific_user_chat_session(
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
     chat_service = ChatService(db_conn)
-    print(f"[CHAT SESSION ROUTER INFO] User {current_user.firebase_uid} fetching chat session ID: {session_id}")
+    print(f"[CHAT SESSION ROUTER INFO] User {current_user.user_id} fetching chat session ID: {session_id}")
     session = await chat_service.get_specific_user_chat_session(
-        session_id=session_id, user_id=current_user.firebase_uid
+        session_id=session_id, user_id=current_user.user_id
     )
     if not session:
-        print(f"[CHAT SESSION ROUTER WARN] Chat session ID: {session_id} not found for user {current_user.firebase_uid}.")
+        print(f"[CHAT SESSION ROUTER WARN] Chat session ID: {session_id} not found for user {current_user.user_id}.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found.")
-    print(f"[CHAT SESSION ROUTER INFO] Chat session ID: {session_id} found for user {current_user.firebase_uid}.")
+    print(f"[CHAT SESSION ROUTER INFO] Chat session ID: {session_id} found for user {current_user.user_id}.")
     return session
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -76,14 +76,14 @@ async def delete_specific_user_chat_session(
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
     chat_service = ChatService(db_conn)
-    print(f"[CHAT SESSION ROUTER INFO] User {current_user.firebase_uid} deleting chat session ID: {session_id}")
+    print(f"[CHAT SESSION ROUTER INFO] User {current_user.user_id} deleting chat session ID: {session_id}")
     deleted = await chat_service.delete_specific_user_chat_session(
-        session_id=session_id, user_id=current_user.firebase_uid
+        session_id=session_id, user_id=current_user.user_id
     )
     if not deleted:
-        print(f"[CHAT SESSION ROUTER WARN] Chat session ID: {session_id} not found or not owned by user {current_user.firebase_uid} for deletion.")
+        print(f"[CHAT SESSION ROUTER WARN] Chat session ID: {session_id} not found or not owned by user {current_user.user_id} for deletion.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found or not owned by user.")
-    print(f"[CHAT SESSION ROUTER INFO] Chat session ID: {session_id} deleted for user {current_user.firebase_uid}.")
+    print(f"[CHAT SESSION ROUTER INFO] Chat session ID: {session_id} deleted for user {current_user.user_id}.")
     return None # FastAPI автоматически вернет 204 No Content
 
 @router.get("/{session_id}/history", response_model=List[chat_models.ChatMessagePublic])
@@ -94,18 +94,18 @@ async def get_messages_for_session(
     limit: int = Query(50, ge=1, le=200) 
 ):
     chat_service = ChatService(db_conn)
-    print(f"[CHAT MSG ROUTER INFO] User {current_user.firebase_uid} fetching history for session ID: {session_id}. Limit: {limit}")
+    print(f"[CHAT MSG ROUTER INFO] User {current_user.user_id} fetching history for session ID: {session_id}. Limit: {limit}")
 
     # Сервис сам проверит доступ к сессии и вернет None если нет доступа или сессии
     messages = await chat_service.get_messages_for_session(
-        session_id=session_id, user_id=current_user.firebase_uid, limit=limit
+        session_id=session_id, user_id=current_user.user_id, limit=limit
     )
 
     if messages is None: # Проверяем, что сервис не вернул None (означает, что сессия не найдена/недоступна)
-        print(f"[CHAT MSG ROUTER WARN] Session ID: {session_id} not found or not accessible by user {current_user.firebase_uid} for history.")
+        print(f"[CHAT MSG ROUTER WARN] Session ID: {session_id} not found or not accessible by user {current_user.user_id} for history.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found or not accessible.")
         
-    print(f"[CHAT MSG ROUTER INFO] Found {len(messages)} messages for session ID: {session_id} for user {current_user.firebase_uid}.")
+    print(f"[CHAT MSG ROUTER INFO] Found {len(messages)} messages for session ID: {session_id} for user {current_user.user_id}.")
     return messages
 
 @router.post("/{session_id}/messages", response_model=chat_models.ChatMessagePublic)
@@ -117,7 +117,7 @@ async def add_message_to_session(
     db_conn: asyncpg.Connection = Depends(get_db_connection)
 ):
     chat_service = ChatService(db_conn)
-    print(f"[CHAT MSG ROUTER INFO] User {current_user.firebase_uid} adding message to session ID: {session_id}.")
+    print(f"[CHAT MSG ROUTER INFO] User {current_user.user_id} adding message to session ID: {session_id}.")
 
     try:
         assistant_response_message = await chat_service.add_message_to_session(

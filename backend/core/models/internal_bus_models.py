@@ -15,7 +15,7 @@ class InternalMessage(BaseModel):
     correlation_id: Optional[str] = Field(default=None, description="Optional ID to correlate related messages, e.g., a request and its subsequent response or a series of events in a flow.")
 
     # Fields added from backend/models/internal_bus_models.py
-    user_id: Optional[str] = Field(None, description="Firebase UID of the user associated with this event, if applicable.")
+    user_id: Optional[str] = Field(None, description="Unique user ID of the user associated with this event, if applicable.")
     session_id: Optional[str] = Field(None, description="Session ID associated with this event, if applicable.")
     priority: Optional[int] = Field(default=0, description="Message priority, if applicable.")
 
@@ -36,7 +36,7 @@ class InternalMessage(BaseModel):
                         "position": {"x": 1.0, "y": 2.0, "z": 0.5}
                     },
                     "correlation_id": "request_frontend_123",
-                    "user_id": "user_firebase_uid_example",
+                    "user_id": "user_id_example",
                     "session_id": "session_example_123",
                     "priority": 1
                 }

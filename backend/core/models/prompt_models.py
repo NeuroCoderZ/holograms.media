@@ -11,12 +11,12 @@ class UserPromptVersionBase(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Any other metadata")
 
 class UserPromptVersionCreate(UserPromptVersionBase):
-    # user_id (Firebase UID) and version_number will be handled at the service layer
+    # user_id and version_number will be handled at the service layer
     pass
 
 class UserPromptVersionDB(UserPromptVersionBase):
     id: int
-    user_id: str # Firebase UID
+    user_id: str # The user's unique ID
     version_number: int
     created_at: datetime
 

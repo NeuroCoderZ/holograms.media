@@ -60,15 +60,15 @@ This report details the status and findings for sections A-F, G, III, and IV of 
 
 ---
 
-### F. Backend - MVP Tria Bot Logic (Python modules in `backend/core/tria_bots/`)
+### F. Backend - MVP Tria Agent Logic (Python modules in `backend/core/tria_bots/`)
 
 *   **Overall Status:** Partially Implemented.
 *   **Files to Modify/Create:**
     *   `backend/core/tria_bots/ChatBot.py`: **Exists.**
     *   `backend/core/tria_bots/ChunkProcessorBot.py`: **Not Found.** Action required.
     *   `backend/core/services/llm_service.py`: **Exists.**
-    *   Cloud Function files (`tria_chat_handler/main.py`, `process_chunk/main.py`): **Exist.** Need review for bot module usage.
-*   **Key Challenges/Considerations:** LLM API access (free tier, no card), LLM latency, bot logic structure. Logging to `tria_learning_log` (schema missing).
+    *   Cloud Function files (`tria_chat_handler/main.py`, `process_chunk/main.py`): **Exist.** Need review for agent module usage.
+*   **Key Challenges/Considerations:** LLM API access (free tier, no card), LLM latency, agent logic structure. Logging to `tria_learning_log` (schema missing).
 
 ---
 
@@ -106,7 +106,7 @@ This section simulates the final check based on current audit findings.
         *   *Audit Finding:* Cloud Functions structure (`backend/cloud_functions/`) exists. Document confirms Firebase choice due to no-card constraint. Actual billing status of GCP project is an external check, assumed met per document.
     *   [X] **Firebase Auth & Storage** used (verified no card needed for free tiers).
         *   *Audit Finding:* Relevant SDKs/services are integrated (`frontend/js/core/auth.js`, `frontend/js/services/firebaseStorageService.js`). Document confirms no-card constraint.
-    *   [?] Tria Bot LLM calls use Mistral/Devstral/Gemini with API keys not requiring a credit card for free/dev usage.
+    *   [?] Tria Agent LLM calls use Mistral/Devstral/Gemini with API keys not requiring a credit card for free/dev usage.
         *   *Audit Finding:* `llm_service.py` exists. **External verification of API key (no card, free tier) is PENDING.** (Marked as '?')
     *   [X] No other services requiring credit card for free tier are used.
         *   *Audit Finding:* Based on the document's explicit strategy, this is assumed true. No other services identified in the audit.
@@ -120,7 +120,7 @@ This section simulates the final check based on current audit findings.
         *   *Audit Finding:* `frontend/js/services/firebaseStorageService.js` exists. **NEEDS VERIFICATION & TESTING.**
     *   [?] `process_chunk` Cloud Function (Storage triggered) saves chunk metadata to Neon.tech PostgreSQL.
         *   *Audit Finding:* `backend/cloud_functions/process_chunk/main.py` exists. `audiovisual_gestural_chunks` schema exists. **NEEDS VERIFICATION & TESTING.** Integration with missing `ChunkProcessorBot.py` is an issue.
-    *   [?] Basic Tria bot (via `tria_chat_handler` Cloud Function) provides an LLM-generated acknowledgment/response visible in UI.
+    *   [?] Basic Tria agent (via `tria_chat_handler` Cloud Function) provides an LLM-generated acknowledgment/response visible in UI.
         *   *Audit Finding:* `ChatBot.py`, `llm_service.py`, `tria_chat_handler/main.py` exist. `chatUI.js` is uncertain. **NEEDS VERIFICATION & TESTING.** Depends on LLM key confirmation and `tria_learning_log` schema for logging.
     *   [?] Hologram visualization (basic shape) is displayed on Firebase Hosting.
         *   *Audit Finding:* `hologramRenderer.js` exists. Firebase Hosting setup is external. **NEEDS VERIFICATION & TESTING.**
@@ -155,7 +155,7 @@ This section simulates the final check based on current audit findings.
     *   [X] Features are within the defined MVP scope as per `ULTIMATE_ROAD_TO_MVP_JUNE_9.md`. No scope creep.
         *   *Audit Finding:* Based on the audit of sections A-G, the work seems aligned with the document's scope.
     *   [?] Complexity is managed; "keep it simple" principle applied, especially for Cloud Function logic and Tria MVP features.
-        *   *Audit Finding:* **General code review needed.** Cloud function logic seems to rely on distinct bots, which is good. Missing `ChunkProcessorBot.py` and incomplete schemas are current complexity issues.
+        *   *Audit Finding:* **General code review needed.** Cloud function logic seems to rely on distinct agents, which is good. Missing `ChunkProcessorBot.py` and incomplete schemas are current complexity issues.
 
 **Summary of Section IV Audit:**
 Many items are marked with '[?]' (Needs Verification/Testing/Review) because they depend on:
@@ -168,7 +168,7 @@ The checklist highlights that while many individual files and components exist, 
 
 ---
 **Overall Audit Conclusion:**
-The project has a foundational structure with many components existing as per the `ULTIMATE_ROAD_TO_MVP_JUNE_9.md`. However, critical gaps (missing schemas, a core bot module), pending external verifications (LLM keys), and the need for extensive integration, review, and testing across almost all sections indicate that the MVP is **not currently complete** and the **June 9th timeline is highly optimistic / at severe risk.**
+The project has a foundational structure with many components existing as per the `ULTIMATE_ROAD_TO_MVP_JUNE_9.md`. However, critical gaps (missing schemas, a core agent module), pending external verifications (LLM keys), and the need for extensive integration, review, and testing across almost all sections indicate that the MVP is **not currently complete** and the **June 9th timeline is highly optimistic / at severe risk.**
 
 **Priority Actions Recommended:**
 1.  **Address Blockers:**

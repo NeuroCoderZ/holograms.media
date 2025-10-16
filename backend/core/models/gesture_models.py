@@ -28,12 +28,11 @@ class InterpretedGestureSequenceBase(BaseModel):
 
 class InterpretedGestureSequenceCreate(InterpretedGestureSequenceBase):
     chunk_id: int # Foreign key to audiovisual_gestural_chunks
-    user_id: str  # Firebase UID, foreign key to users
+    user_id: str  # The user's unique ID, foreign key to users
 
 class InterpretedGestureSequenceDB(InterpretedGestureSequenceBase):
     id: int # Primary key for gesture_sequences table
-    chunk_id: int
-    user_id: str # Firebase UID
+user_id: str # The user's unique ID
     created_at: datetime
 
     class Config:

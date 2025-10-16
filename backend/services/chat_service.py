@@ -77,7 +77,7 @@ class ChatService:
         metadata: Optional[Dict[str, Any]] = None # Added metadata parameter
     ) -> Optional[ChatMessagePublic]: # Return type is ChatMessagePublic, which is fine.
 
-        logger.info(f"Service: Adding message to session {session_id} (user: {user.firebase_uid}), role: {role}.")
+        logger.info(f"Service: Adding message to session {session_id} (user: {user.user_id}), role: {role}.")
 
         # Construct ChatMessageCreate before passing to repository
         message_in_create = ChatMessageCreate(
@@ -88,16 +88,16 @@ class ChatService:
         )
 
         # Repository's add_message_to_history now takes ChatMessageCreate and user_id for check
-        user_saved_message = await self.repo.add_message_to_history(message_in=message_in_create, user_id=user.firebase_uid)
+        user_saved_message = await self.repo.add_message_to_history(message_in=message_in_create, user_id=user.user_id)
 
         if not user_saved_message:
-            logger.warning(f"Service: Failed to save user message to session {session_id} for user {user.firebase_uid}.")
+            logger.warning(f"Service: Failed to save user message to session {session_id} for user {user.user_id}.")
             return None # Indicates failure to save user message
 
         # If the message is from the user, then get LLM response
         if role == "user":
             logger.info(f"Service: User message saved (ID: {user_saved_message.id}), now getting LLM response.")
-            history_for_llm = await self.repo.get_messages_by_session_id(session_id=session_id, user_id=user.firebase_uid, limit=20) # Get recent history
+            history_for_llm = await self.repo.get_messages_by_session_id(session_id=session_id, user_id=user.user_id, limit=20) # Get recent history
 
             try:
                 llm_response_content = await get_llm_response_stub(message_content, history_for_llm)
@@ -109,7 +109,7 @@ class ChatService:
                     message_content=f"Error: Could not get AI response. Details: {str(e)[:100]}...",
                     metadata={"error": True, "source": "llm_service_error"}
                 )
-                await self.repo.add_message_to_history(message_in=error_message_in, user_id=user.firebase_uid) # System messages associated with user
+                await self.repo.add_message_to_history(message_in=error_message_in, user_id=user.user_id) # System messages associated with user
                 # Depending on desired behavior, could return user_saved_message or raise an error to be caught by router
                 return ChatMessagePublic(**user_saved_message.dict()) # Return the user's message if LLM fails
 
@@ -119,7 +119,7 @@ class ChatService:
                 message_content=llm_response_content,
                 metadata={"llm_model_name": "simulated_tria_v1_stub"}
             )
-            assistant_saved_message = await self.repo.add_message_to_history(message_in=assistant_message_in, user_id=user.firebase_uid) # user_id for audit, though RLS won't apply to assistant messages in same way
+            assistant_saved_message = await self.repo.add_message_to_history(message_in=assistant_message_in, user_id=user.user_id) # user_id for audit, though RLS won't apply to assistant messages in same way
 
             if not assistant_saved_message:
                 logger.error(f"Service: User message saved, but failed to save assistant response for session {session_id}.")

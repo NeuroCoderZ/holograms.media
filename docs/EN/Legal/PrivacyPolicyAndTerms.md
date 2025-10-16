@@ -1,7 +1,7 @@
 ```markdown
 # Privacy Policy and Terms of Use for Holograms.Media
 
-**Last updated: December 18, 2024**
+**Last updated: September 26, 2025**
 
 Please read this Privacy Policy and Terms of Use (“Terms”) carefully before using our web application Holograms.Media (“Application”).
 
@@ -13,8 +13,8 @@ All main data you create and process in the Application is stored and processed 
 ### 1.2. Anonymized Data for Tria AI Training
 To improve and train our artificial intelligence "Tria", the Application may collect anonymized data about your gestures and interactions with the hologram interface. This data does not contain any personal information that could identify you. Examples of collected data: types of gestures performed, interaction sequences, general usage patterns.
 
-### 1.3. Consent to Collect Anonymized Data
-By using the Application, you consent to the collection, processing, and use of such anonymized data for the purpose of training and improving Tria AI and the overall functionality of the Application. You may withdraw this consent at any time by disabling the relevant option in the Application settings.
+### 1.3. Consent to Anonymous Data Collection
+By using the Application, you consent to the collection, processing, and use of anonymized data about your interactions with the Application (e.g., types of gestures performed, sequences of feature usage) for the purpose of training and improving the Tria AI and overall functionality. This data does not contain any personal information that could identify you and is used only for aggregated analysis. You can withdraw this consent at any time by disabling the corresponding option in the Application settings.
 
 ### 1.4. Data for Media Uploads
 When uploading media files to the server, files are transmitted via secure connections (HTTPS) and stored in accordance with our data storage policy. File metadata may be saved to ensure application functionality.

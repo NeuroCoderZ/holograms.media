@@ -3,7 +3,7 @@
 
 ## 1. Introduction
 
-This document describes the architecture of the real-time audio-stream visualization system for the "Three-dimensional audio-visual technology" project. The system creates a dynamic visual representation of audio captured from the user's microphone using continuous wavelet transform (CWT) analysis and rendering with Three.js. Visualization control is performed via hand gestures recognized by the `MediaPipe Hands` library and a `GestureIntentClassifier`.
+**Last Updated:** September 26, 2025
 
 ## 2. System Overview
 

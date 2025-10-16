@@ -19,7 +19,7 @@ It is designed to incentivize participation, reward contributions, and facilitat
 - **Governance:** HGT holders can participate in DAO decisions regarding platform development, feature prioritization, and treasury management.
 - **Staking:** Staking HGT may be required for certain roles (e.g., validators, oracle providers) or provide rewards.
 - **Payments:** HGT can be used for accessing premium features, services, or content within the ecosystem.
-- **Rewards:** HGT is used to reward users for "intellectual mining" - providing valuable data (interaction chunks), computational resources, or developing new Tria bots/modules.
+- **Rewards:** HGT is used to reward users for "intellectual mining" - providing valuable data (interaction chunks), computational resources, or developing new Tria agents/modules.
 
 ## 3. Token Supply & Allocation
 - **Total Supply:** (e.g., 1,000,000,000 HGT) - To be finalized.
@@ -35,7 +35,7 @@ It is designed to incentivize participation, reward contributions, and facilitat
 - Users are rewarded with HGT for:
     - Submitting high-quality, validated interaction chunks that improve Tria's training.
     - Providing computational resources for distributed Tria training or NetHoloGlyph operations.
-    - Developing and deploying useful Tria bots or modules approved by the DAO.
+    - Developing and deploying useful Tria agents or modules approved by the DAO.
 - Reward mechanisms will be managed by smart contracts and potentially validated by oracles or a decentralized validator network.
 
 ## 5. DAO and Treasury Management

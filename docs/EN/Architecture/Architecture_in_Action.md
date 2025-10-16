@@ -1,6 +1,6 @@
 # Architecture in Action
 
-This document describes how system components interact during runtime.
+**Last Updated:** September 26, 2025
 
 ## Core Data Flows
 

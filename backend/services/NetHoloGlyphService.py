@@ -152,7 +152,7 @@ class NetHoloGlyphService:
             # Populate header
             proto_packet.header.packet_id = str(internal_message.message_id) # Assuming message_id is UUID
             proto_packet.header.timestamp.FromDatetime(internal_message.timestamp.replace(tzinfo=timezone.utc)) # Ensure datetime is offset-aware
-            proto_packet.header.source_id = internal_message.source_service # e.g., "TriaSystem" or specific bot
+            proto_packet.header.source_id = internal_message.source_service # e.g., "TriaSystem" or specific agent
             if target_client_id:
                  proto_packet.header.target_id = target_client_id
             # proto_packet.header.version = "0.1.0" # Set your protocol version

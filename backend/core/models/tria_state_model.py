@@ -4,7 +4,7 @@
 # Main Future Exports/API: TriaState.
 # Link to Legacy Logic (if applicable): N/A
 # Intended Technology Stack: Python, Pydantic.
-# TODO: Define fields for Tria's current mode, active bots, response data.
+# TODO: Define fields for Tria's current mode, active agents, response data.
 # TODO: Model for Tria commands.
 
 from pydantic import BaseModel

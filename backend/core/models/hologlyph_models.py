@@ -97,7 +97,7 @@ class AudioVisualizationStateModel(BaseUUIDModel): # Kept from original core
 class TriaStateUpdateModel(BaseUUIDModel): # Kept from original core
     state_key: str = Field(..., description="Key identifying the part of Tria's state being updated (e.g., 'current_mood', 'active_task_id').")
     state_value_json: Dict[str, Any] = Field(..., description="The value of the state, can be complex.")
-    bot_id: Optional[str] = Field(default=None, description="ID of the bot whose state is being updated, if applicable.")
+    bot_id: Optional[str] = Field(default=None, description="ID of the agent whose state is being updated, if applicable.")
     pass
 
     class Config:
