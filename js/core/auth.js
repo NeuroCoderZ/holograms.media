@@ -1,147 +1,144 @@
-// frontend/js/core/auth.js
+/**
+ * @file auth.js
+ * @description Управляет аутентификацией пользователей через Google Identity Services.
+ *              Обрабатывает получение токена от Google, обмен его на JWT-токен бэкенда
+ *              и управление сессией пользователя.
+ */
 
-// Import necessary Firebase Auth modules and custom services.
-// import { auth, GoogleAuthProvider } from './firebaseInit.js';
-import { signInWithPopup, signOut, onAuthStateChanged, getIdToken } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
-import { syncUserAuth } from './services/apiService.js'; // Import the service to sync user with backend
+import { state } from './state.js';
+import { updateAuthUI } from '../managers/uiManager.js';
+import { showNotification } from '../utils/notifications.js';
 
-// --- DOM Element References ---
-// These variables will hold references to HTML elements related to authentication UI.
-// They are initially null and set dynamically after the DOM is loaded.
-let signInButton = null;
-let signOutButton = null;
-let userStatusDiv = null;
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // TODO: Заменить на реальный ID из Cloudflare Secrets
+const BACKEND_TOKEN_URL = '/api/v1/auth/token';
 
 /**
- * Sets the DOM elements for authentication UI from their respective IDs.
- * This function should be called once the DOM is ready (e.g., from uiManager.js or main.js).
- * Attaches event listeners to the sign-in and sign-out buttons.
- * @param {string} signInBtnId - The DOM ID of the Google Sign-In button.
- * @param {string} signOutBtnId - The DOM ID of the Sign-Out button.
- * @param {string} userStatusId - The DOM ID of the div/span displaying user status.
+ * Динамически загружает скрипт Google Sign-In.
+ * @returns {Promise<void>}
  */
-export function setAuthDOMElements(signInBtnId, signOutBtnId, userStatusId) {
-    signInButton = document.getElementById(signInBtnId);
-    signOutButton = document.getElementById(signOutBtnId);
-    userStatusDiv = document.getElementById(userStatusId);
-
-    // Attach event listeners to the buttons if they exist in the DOM.
-    if (signInButton) {
-        signInButton.addEventListener('click', signInWithGoogle);
-    }
-    if (signOutButton) {
-        signOutButton.addEventListener('click', userSignOut);
-    }
+function loadGoogleGsiScript() {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
 }
 
 /**
- * Initiates the Google Sign-In process using Firebase Authentication.
- * Opens a pop-up window for the user to select their Google account.
- * Handles success by updating UI and logs errors.
+ * Обрабатывает ответ от Google Sign-In.
+ * @param {object} response - Объект ответа от Google.
  */
-export async function signInWithGoogle() {
-    const provider = new GoogleAuthProvider(); // Create a new Google Auth Provider instance.
-    try {
-        // Open the sign-in pop-up and wait for the result.
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        // Update UI to reflect the signed-in user's display name or email.
-        if (userStatusDiv) userStatusDiv.textContent = `Signed in as: ${user.displayName || user.email}`;
-        // The ID token will be automatically handled by the onAuthStateChanged observer.
-    } catch (error) {
-        console.error("Error during Google Sign-In:", error);
-        // Display error message in the UI.
-        if (userStatusDiv) userStatusDiv.textContent = `Error: ${error.message}`;
-    }
-}
+async function handleGoogleCredentialResponse(response) {
+  const googleIdToken = response.credential;
+  console.log('Получен Google ID токен:', googleIdToken);
 
-/**
- * Signs out the currently authenticated user from Firebase.
- * Updates UI to reflect the signed-out state.
- */
-export async function userSignOut() {
-    try {
-        await signOut(auth);
-        // Update UI to indicate no user is signed in.
-        if (userStatusDiv) userStatusDiv.textContent = '';
-    } catch (error) {
-        console.error("Error during sign out:", error);
-    }
-}
-
-/**
- * Initializes an observer for Firebase Authentication state changes.
- * This observer runs whenever the user's sign-in state changes (e.g., sign-in, sign-out, token refresh).
- * It updates the UI and retrieves the Firebase ID token, passing it to a provided callback function.\
- * @param {function(string|null): Promise<void>} callbackAfterToken - A callback function that receives the Firebase ID Token (or null if signed out).
- *   This callback is typically used to synchronize the user with the backend or perform other authenticated actions.
- */
-export function initAuthObserver(callbackAfterToken) {
-    const userAvatarElement = document.getElementById('userAvatar');
-
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // User is signed in. Update UI accordingly.
-            if (userStatusDiv) userStatusDiv.textContent = `User: ${user.displayName || user.email}`;
-
-            if (userAvatarElement) {
-                if (user.photoURL) {
-                    userAvatarElement.src = user.photoURL;
-                    userAvatarElement.style.display = 'block';
-                } else {
-                    userAvatarElement.style.display = 'none';
-                }
-            }
-
-            if (signInButton) signInButton.style.display = 'none'; // Hide sign-in button
-            if (signOutButton) signOutButton.style.display = 'block'; // Show sign-out button
-
-            try {
-                // Get the Firebase ID token for the current user. This token is used for backend authentication.
-                const idToken = await getIdToken(user);
-                // console.log("User ID Token:", idToken); // Uncomment for debugging token
-                // Call the provided callback with the ID token.
-                if (callbackAfterToken && typeof callbackAfterToken === 'function') {
-                    await callbackAfterToken(idToken); // Await the callback if it's async
-                }
-            } catch (error) {
-                console.error("Error getting ID token:", error);
-            }
-
-        } else {
-            // User is signed out. Update UI accordingly.
-            if (userStatusDiv) userStatusDiv.textContent = '';
-
-            if (userAvatarElement) {
-                userAvatarElement.style.display = 'none';
-            }
-
-            if (signInButton) signInButton.style.display = 'block'; // Show sign-in button
-            if (signOutButton) signOutButton.style.display = 'none'; // Hide sign-out button
-            // Call the provided callback with null, indicating no user token.\
-            if (callbackAfterToken && typeof callbackAfterToken === 'function') {
-                await callbackAfterToken(null); // Await the callback if it's async
-            }
-        }
+  try {
+    const backendResponse = await fetch(BACKEND_TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token: googleIdToken }),
     });
+
+    if (!backendResponse.ok) {
+      throw new Error(`Ошибка бэкенда: ${backendResponse.statusText}`);
+    }
+
+    const { access_token } = await backendResponse.json();
+    console.log('Получен JWT от бэкенда.');
+
+    localStorage.setItem('jwtToken', access_token);
+    state.isAuthenticated = true;
+    // TODO: Получить и сохранить информацию о пользователе.
+    // state.user = ...;
+
+    updateAuthUI();
+    showNotification('Аутентификация прошла успешно!', 'success');
+    document.getElementById('start-session-modal').style.display = 'none';
+
+  } catch (error) {
+    console.error('Ошибка при обмене токена Google на JWT:', error);
+    showNotification('Ошибка аутентификации.', 'error');
+    signOut();
+  }
 }
 
 /**
- * Handles the received Firebase ID token by sending it to the backend's authentication synchronization function.
- * This function acts as the `callbackAfterToken` for `initAuthObserver`.\
- * @param {string|null} token - The Firebase ID Token string, or null if the user is signed out.\
+ * Инициализирует Google Identity Services и отрисовывает кнопку входа.
  */
-export async function handleTokenForBackend(token) {
-    if (token) {
-        console.log("Auth.js: Received token. Attempting to send to backend auth_sync function.", token.substring(0,20) + "...");
-        try {
-            // Call the backend API service to synchronize user authentication.
-            const response = await syncUserAuth(token);
-            console.log("Auth.js: Backend sync successful:", response);
-        } catch (error) {
-            console.error("Auth.js: Error syncing user with backend:", error);
-        }
-    } else {
-        console.log("Auth.js: User signed out or no token received.");
-    }
+async function initializeGoogleSignIn() {
+  if (window.google) {
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredentialResponse,
+    });
+    window.google.accounts.id.renderButton(
+      document.getElementById('google-signin-container'),
+      { theme: 'outline', size: 'large', text: 'signin_with', shape: 'rectangular' }
+    );
+    // window.google.accounts.id.prompt(); // Показывает One Tap UI
+  } else {
+    console.error('Объект Google GSI не найден.');
+  }
+}
+
+/**
+ * Проверяет наличие JWT в localStorage при загрузке страницы.
+ */
+function checkInitialAuthState() {
+  const token = localStorage.getItem('jwtToken');
+  if (token) {
+    // TODO: Добавить проверку валидности и срока действия токена.
+    // Можно сделать запрос на специальный эндпоинт /users/me
+    state.isAuthenticated = true;
+    console.log('Пользователь аутентифицирован (найден JWT).');
+  } else {
+    state.isAuthenticated = false;
+    console.log('Пользователь не аутентифицирован.');
+  }
+  updateAuthUI();
+}
+
+/**
+ * Выполняет выход пользователя из системы.
+ */
+export function signOut() {
+  localStorage.removeItem('jwtToken');
+  state.isAuthenticated = false;
+  state.user = null;
+
+  if (window.google && window.google.accounts && window.google.accounts.id) {
+    window.google.accounts.id.disableAutoSelect();
+  }
+
+  console.log('Пользователь вышел из системы.');
+  updateAuthUI();
+  showNotification('Вы вышли из системы.', 'info');
+}
+
+/**
+ * Главная функция инициализации модуля аутентификации.
+ */
+export async function initAuth() {
+  try {
+    await loadGoogleGsiScript();
+    await initializeGoogleSignIn();
+    checkInitialAuthState();
+  } catch (error) {
+    console.error('Не удалось загрузить или инициализировать Google GSI:', error);
+    showNotification('Не удалось загрузить сервис аутентификации.', 'error');
+  }
+}
+
+/**
+ * Возвращает текущий JWT токен.
+ * @returns {string|null}
+ */
+export function getJwtToken() {
+  return localStorage.getItem('jwtToken');
 }
