@@ -58,20 +58,40 @@ export class AudioAnalyzer {
 
     /**
      * Pre-calculates which FFT bins correspond to which semitone index.
+     * Uses multiple bins for low frequencies and skips bin 0 (DC offset).
      */
     _calculateBinMap() {
         const sampleRate = this.audioContext.sampleRate;
         const fftSize = this.analyserL.fftSize;
         const binWidth = sampleRate / fftSize;
+        const maxBin = this.frequencyDataL.length - 1;
 
         const map = [];
 
         for (let i = 0; i < semitones.length; i++) {
             const noteFreq = semitones[i].f;
-            const centerBin = Math.round(noteFreq / binWidth);
-            // Ensure within bounds
-            const safeBin = Math.max(0, Math.min(centerBin, this.frequencyDataL.length - 1));
-            map.push([safeBin]);
+
+            // Calculate center bin, but skip bin 0 (DC offset)
+            let centerBin = Math.round(noteFreq / binWidth);
+            centerBin = Math.max(1, centerBin); // Skip bin 0
+
+            // For low frequencies, use a range of bins (±1) for better accuracy
+            const bins = [];
+            if (noteFreq < 100) {
+                // Low frequencies: use 3 adjacent bins
+                for (let b = Math.max(1, centerBin - 1); b <= Math.min(maxBin, centerBin + 1); b++) {
+                    bins.push(b);
+                }
+            } else if (noteFreq < 500) {
+                // Mid-low frequencies: use 2 bins
+                bins.push(centerBin);
+                if (centerBin + 1 <= maxBin) bins.push(centerBin + 1);
+            } else {
+                // Higher frequencies: single bin
+                bins.push(Math.min(centerBin, maxBin));
+            }
+
+            map.push(bins);
         }
         return map;
     }

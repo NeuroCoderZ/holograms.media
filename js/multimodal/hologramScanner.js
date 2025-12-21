@@ -49,10 +49,6 @@ export class HologramScanner {
         });
     }
 
-    /**
-     * Starts the scanner with the specified video input device.
-     * @param {string} deviceId - Optional camera device ID
-     */
     async start(deviceId = null) {
         if (this.isActive) {
             console.warn('[HologramScanner] Already active');
@@ -76,11 +72,27 @@ export class HologramScanner {
 
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
-            // Create hidden video element
+            // Create viewfinder overlay
+            this._createViewfinderUI();
+
+            // Create video element for camera feed
             this.videoElement = document.createElement('video');
             this.videoElement.srcObject = stream;
             this.videoElement.playsInline = true;
             this.videoElement.muted = true;
+            this.videoElement.id = 'scanner-video';
+            this.videoElement.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 80vw;
+                max-width: 640px;
+                height: auto;
+                border-radius: 8px;
+                z-index: 1001;
+            `;
+            document.body.appendChild(this.videoElement);
             await this.videoElement.play();
 
             // Create canvas for frame processing
@@ -97,16 +109,111 @@ export class HologramScanner {
             console.log('[HologramScanner] Started with resolution:',
                 this.canvasElement.width, 'x', this.canvasElement.height);
 
+            // Disable hand tracking while scanning
+            eventBus.emit('scannerStarted');
+
             // Start frame processing loop
             this._processFrame();
-
-            eventBus.emit('scannerStarted');
 
         } catch (error) {
             console.error('[HologramScanner] Failed to start:', error);
             this.stop();
             throw error;
         }
+    }
+
+    /**
+     * Creates the viewfinder overlay UI (QR-scanner style).
+     */
+    _createViewfinderUI() {
+        // Remove any existing overlay
+        const existing = document.getElementById('scanner-overlay');
+        if (existing) existing.remove();
+
+        // Create overlay container
+        this.overlayElement = document.createElement('div');
+        this.overlayElement.id = 'scanner-overlay';
+        this.overlayElement.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        `;
+
+        // Create scanning frame
+        const frame = document.createElement('div');
+        frame.id = 'scanner-frame';
+        frame.style.cssText = `
+            position: relative;
+            width: 80vw;
+            max-width: 640px;
+            aspect-ratio: 16/9;
+            border: 3px solid #00ff88;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+        `;
+
+        // Corner markers
+        const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        corners.forEach(corner => {
+            const marker = document.createElement('div');
+            marker.className = 'scanner-corner';
+            const [v, h] = corner.split('-');
+            marker.style.cssText = `
+                position: absolute;
+                width: 30px;
+                height: 30px;
+                border: 4px solid #00ff88;
+                ${v}: -2px;
+                ${h}: -2px;
+                border-${v === 'top' ? 'bottom' : 'top'}: none;
+                border-${h === 'left' ? 'right' : 'left'}: none;
+                border-radius: ${corner === 'top-left' ? '12px 0 0 0' :
+                    corner === 'top-right' ? '0 12px 0 0' :
+                        corner === 'bottom-left' ? '0 0 0 12px' : '0 0 12px 0'};
+            `;
+            frame.appendChild(marker);
+        });
+
+        // Status text
+        const statusText = document.createElement('div');
+        statusText.id = 'scanner-status';
+        statusText.textContent = '🎵 Сканирование голограммы...';
+        statusText.style.cssText = `
+            color: #00ff88;
+            font-size: 16px;
+            margin-top: 20px;
+            font-family: system-ui, sans-serif;
+        `;
+
+        // Close button
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '✕ Закрыть';
+        closeBtn.style.cssText = `
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        `;
+        closeBtn.onclick = () => this.stop();
+
+        this.overlayElement.appendChild(frame);
+        this.overlayElement.appendChild(statusText);
+        this.overlayElement.appendChild(closeBtn);
+        document.body.appendChild(this.overlayElement);
     }
 
     /**
@@ -123,6 +230,18 @@ export class HologramScanner {
         if (this.videoElement && this.videoElement.srcObject) {
             this.videoElement.srcObject.getTracks().forEach(t => t.stop());
             this.videoElement.srcObject = null;
+        }
+
+        // Remove video element from DOM
+        if (this.videoElement && this.videoElement.parentNode) {
+            this.videoElement.parentNode.removeChild(this.videoElement);
+            this.videoElement = null;
+        }
+
+        // Remove overlay from DOM
+        if (this.overlayElement && this.overlayElement.parentNode) {
+            this.overlayElement.parentNode.removeChild(this.overlayElement);
+            this.overlayElement = null;
         }
 
         if (this.synthesizer) {
