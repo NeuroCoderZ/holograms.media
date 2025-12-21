@@ -182,6 +182,23 @@ export function initializeMediaPipeHands() {
     // state.gestureSequencer = new GestureSequencer(GESTURE_SEQUENCES);
     // console.log("Старые AtomicGestureClassifier и GestureSequencer инициализированы (на всякий случай).");
 
+    // --- Scanner mode event listeners ---
+    // Pause hand tracking when scanner is active to prevent conflicts
+    eventBus.on('scannerStarted', () => {
+        console.log('[HandsTracking] Scanner started - pausing hand tracking');
+        state.multimodal.scannerActive = true;
+        if (state.multimodal.cameraInstance) {
+            state.multimodal.cameraInstance.stop();
+        }
+    });
+
+    eventBus.on('scannerStopped', () => {
+        console.log('[HandsTracking] Scanner stopped - resuming hand tracking');
+        state.multimodal.scannerActive = false;
+        if (state.multimodal.cameraInstance) {
+            state.multimodal.cameraInstance.start();
+        }
+    });
 
     console.log("MediaPipe Hands инициализирован, onResults настроен.");
 }
