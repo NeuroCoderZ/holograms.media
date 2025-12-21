@@ -20,7 +20,7 @@ export const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#'
 
 // Add microphone processing constants
 export const FFT_SIZE = 4096;
-export const SMOOTHING_TIME_CONSTANT = 0.85;
+export const SMOOTHING_TIME_CONSTANT = 0.0;
 
 // Grid and Scale Configuration
 export const GRID_WIDTH = 128;

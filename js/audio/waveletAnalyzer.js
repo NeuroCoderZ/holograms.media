@@ -1,93 +1,146 @@
-// frontend/js/audio/waveletAnalyzer.js (REWRITTEN for new WASM interface)
-import init, { init_processor, process_audio } from '../wasm/fastcwt/holographic_core.js';
+// frontend/js/audio/waveletAnalyzer.js
+// CWT AudioWorklet Processor using WASM HoloAnalyzer (Morlet Wavelet)
 
+import init, { HoloAnalyzer } from '../wasm/holographic_core.js';
+
+/**
+ * CwtProcessor - AudioWorkletProcessor for Continuous Wavelet Transform analysis.
+ * Uses WASM-compiled Morlet wavelet for accurate semitone frequency detection.
+ */
 class CwtProcessor extends AudioWorkletProcessor {
-    constructor() {
+    constructor(options) {
         super();
         this.wasm_ready = false;
-        this.processor_ready = false;
-        
-        // Buffers for audio data
-        this.left_buffer = new Float32Array(1024); // Assuming chunk size is 1024
-        this.right_buffer = new Float32Array(1024);
+        this.analyzer = null;
 
+        // Get adaptive parameters from processor options
+        const processorOptions = options.processorOptions || {};
+        this.sampleRate = processorOptions.sampleRate || 48000;
+        this.numBins = processorOptions.numBins || 128;
+        this.chunkSize = processorOptions.chunkSize || 1024;
+        this.channelCount = processorOptions.channelCount || 2;
+
+        // Buffers for audio data accumulation
+        this.currentFrame = 0;
+        this.left_accumulator = new Float32Array(this.chunkSize);
+        this.right_accumulator = new Float32Array(this.chunkSize);
+
+        // Pre-calculate target frequencies: 128 semitones in equal temperament
+        // Starting from A0 = 27.5 Hz
+        const BASE_FREQUENCY = 27.5;
+        const NOTES_PER_OCTAVE = 12;
+        this.target_frequencies = new Float32Array(this.numBins);
+        for (let i = 0; i < this.numBins; i++) {
+            this.target_frequencies[i] = BASE_FREQUENCY * Math.pow(2, i / NOTES_PER_OCTAVE);
+        }
+
+        console.log(`[CwtProcessor] Initializing with sampleRate=${this.sampleRate}, chunkSize=${this.chunkSize}, channels=${this.channelCount}`);
+
+        // Initialize WASM module
         this.initWasm();
-
-        this.port.onmessage = (event) => {
-            if (event.data.type === 'INIT_PROCESSOR') {
-                if (this.wasm_ready) {
-                    console.log('CwtProcessor: Initializing WASM processor...');
-                    init_processor(event.data.sampleRate, event.data.numBins, event.data.chunkSize);
-                    this.processor_ready = true;
-                    console.log('CwtProcessor: WASM processor initialized.');
-                } else {
-                    console.error('CwtProcessor: Attempted to initialize processor before WASM was ready.');
-                }
-            }
-        };
     }
 
     async initWasm() {
         try {
-            // The generated glue code handles the WASM path, so we just need to call init.
             await init();
+            console.log('[CwtProcessor] WASM module loaded.');
+
+            this.analyzer = new HoloAnalyzer(this.sampleRate, this.numBins, this.chunkSize);
             this.wasm_ready = true;
             this.port.postMessage({ type: 'WASM_READY' });
-            console.log('CwtProcessor: WASM module loaded and ready.');
+            console.log('[CwtProcessor] HoloAnalyzer initialized successfully.');
         } catch (e) {
-            console.error("CwtProcessor: Failed to load WASM module", e);
+            console.error("[CwtProcessor] Failed to load WASM module:", e);
         }
     }
 
+    /**
+     * Main audio processing callback.
+     * Accumulates samples and triggers CWT analysis when buffer is full.
+     */
     process(inputs, outputs, parameters) {
-        // Ensure the processor is ready and there's input data.
-        if (!this.processor_ready || !inputs[0] || !inputs[0][0]) {
-            return true; // Keep processor alive
+        const input = inputs[0];
+        const output = outputs[0];
+
+        if (!input || !input[0]) return true;
+
+        // Get stereo channels (or duplicate mono)
+        const leftIn = input[0];
+        const rightIn = input[1] || leftIn; // Fallback to mono if single channel
+
+        // --- 1. Audio Pass-through (user hears the audio) ---
+        if (output && output[0]) {
+            output[0].set(leftIn);
+            if (output[1]) {
+                output[1].set(rightIn);
+            }
         }
 
-        const leftChannel = inputs[0][0];
-        const rightChannel = inputs[0][1] || leftChannel; // Fallback to left for mono
+        // --- 2. Accumulate samples for CWT processing ---
+        if (this.wasm_ready && this.analyzer) {
+            const frameSize = leftIn.length; // Usually 128 samples per render quantum
 
-        // For simplicity, we assume the input buffer size matches our expected chunk size.
-        // In a real-world scenario, you might need to handle buffer accumulation.
-        if (leftChannel.length !== this.left_buffer.length) {
-             console.warn(`Input buffer size (${leftChannel.length}) does not match expected chunk size (${this.left_buffer.length}). Skipping frame.`);
-             return true;
+            // Check if we have space in accumulator
+            if (this.currentFrame + frameSize <= this.chunkSize) {
+                // Add samples to accumulators
+                this.left_accumulator.set(leftIn, this.currentFrame);
+                this.right_accumulator.set(rightIn, this.currentFrame);
+                this.currentFrame += frameSize;
+            } else {
+                // Buffer overflow - start fresh (shouldn't happen with proper sizing)
+                this.currentFrame = 0;
+            }
+
+            // If accumulator is full, run CWT analysis
+            if (this.currentFrame >= this.chunkSize) {
+                this.runAnalysis();
+                this.currentFrame = 0; // Reset for next batch
+            }
         }
 
-        this.left_buffer.set(leftChannel);
-        this.right_buffer.set(rightChannel);
+        return true; // CRITICAL: Keep worklet alive
+    }
 
+    /**
+     * Performs CWT analysis using WASM and sends results to main thread.
+     */
+    runAnalysis() {
         try {
-            // Call the exported Rust function
-            const results_json = process_audio(this.left_buffer, this.right_buffer);
+            // Call WASM CWT processor
+            // Returns array of { volume_db, pan_lr } for each semitone
+            const results = this.analyzer.process(
+                this.left_accumulator,
+                this.right_accumulator,
+                this.target_frequencies
+            );
 
-            if (results_json && results_json.length > 0) {
-                // The result is an array of SemitoneOutput objects.
-                // We need to transform it into the format expected by the main thread.
-                const num_bins = results_json.length;
-                const dbLevels = new Float32Array(num_bins * 2); // left and right
+            if (results && results.length > 0) {
+                const num_bins = this.numBins;
+                const dbLevels = new Float32Array(num_bins * 2); // 128 Left + 128 Right
                 const panAngles = new Float32Array(num_bins);
 
-                results_json.forEach((output, i) => {
-                    // This is a simplification. The old system had separate L/R levels.
-                    // The new Rust code gives a single volume_db and a pan_lr.
-                    // We'll reconstruct L/R levels based on pan.
-                    const pan = output.pan_lr; // -1 (L) to +1 (R)
-                    const volume = output.volume_db;
+                results.forEach((output, i) => {
+                    const pan = output.pan_lr;       // -1 (Left) to +1 (Right)
+                    const volume = output.volume_db; // Volume in dB
 
-                    // A simple way to map pan back to L/R levels.
-                    // When pan is -1, right is lower. When pan is +1, left is lower.
-                    const left_gain = Math.cos((pan + 1) * Math.PI / 4);
-                    const right_gain = Math.sin((pan + 1) * Math.PI / 4);
-                    
-                    // This is not a perfect dB conversion, but it preserves the stereo image.
-                    dbLevels[i] = volume * left_gain;
-                    dbLevels[i + num_bins] = volume * right_gain;
-                    
-                    panAngles[i] = pan * 90; // Convert pan from -1..1 to -90..+90 degrees
+                    // Reconstruct stereo levels based on pan position
+                    // Using constant-power panning law
+                    const panNorm = (pan + 1) / 2; // 0 to 1
+                    const left_gain = Math.cos(panNorm * Math.PI / 2);
+                    const right_gain = Math.sin(panNorm * Math.PI / 2);
+
+                    // Calculate individual channel levels in dB
+                    // Safe log with epsilon to prevent -Infinity
+                    const epsilon = 1e-6;
+                    const leftDb = volume + 20 * Math.log10(left_gain + epsilon);
+                    const rightDb = volume + 20 * Math.log10(right_gain + epsilon);
+
+                    dbLevels[i] = leftDb;              // Left channel: 0-127
+                    dbLevels[i + num_bins] = rightDb;  // Right channel: 128-255
+                    panAngles[i] = pan;                // -1 to +1 (used for column shift)
                 });
 
+                // Send results to main thread
                 this.port.postMessage({
                     type: 'AUDIO_DATA',
                     levels: dbLevels,
@@ -95,11 +148,10 @@ class CwtProcessor extends AudioWorkletProcessor {
                 });
             }
         } catch (e) {
-            console.error("CwtProcessor: Error processing audio in WASM:", e);
+            console.error("[CwtProcessor] Analysis error:", e);
         }
-
-        return true; // Keep the AudioWorkletNode alive
     }
 }
 
+// Register the processor
 registerProcessor('cwt-processor', CwtProcessor);

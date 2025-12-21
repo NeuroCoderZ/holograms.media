@@ -62,14 +62,14 @@ export class AudioFilePlayer {
       try {
         this.ensureAudioContext(); // Ensure context is ready before decoding
         if (!this.audioContext) {
-            console.error('AudioContext could not be initialized for decoding.');
-            if (fileButton) fileButton.classList.remove('active');
-            if (playButton) playButton.disabled = true;
-            if (pauseButton) pauseButton.disabled = true;
-            if (stopButton) stopButton.disabled = true;
-            return;
+          console.error('AudioContext could not be initialized for decoding.');
+          if (fileButton) fileButton.classList.remove('active');
+          if (playButton) playButton.disabled = true;
+          if (pauseButton) pauseButton.disabled = true;
+          if (stopButton) stopButton.disabled = true;
+          return;
         }
-        
+
         if (this.audioBufferSource || this.isPlaying || this.pausedAt > 0) {
           this.stopAudio();
         }
@@ -85,11 +85,14 @@ export class AudioFilePlayer {
         if (playButton) playButton.disabled = false;
         if (pauseButton) pauseButton.disabled = false;
         if (stopButton) stopButton.disabled = false;
-        if (fileButton) fileButton.classList.add('active');
-        
+        // Requirement: Button "+" should become light-gray (inactive state) after loading
+        if (fileButton) fileButton.classList.remove('active');
+
         this.pausedAt = 0;
         this.startOffset = 0;
         this.isPlaying = false;
+        this.state.audio.isPlaying = false;
+        this.state.audio.isPaused = false;
         this.state.audio.activeSource = 'file';
 
       } catch (_error) {
@@ -97,8 +100,8 @@ export class AudioFilePlayer {
         if (this.state.multimodal.currentStream && this.state.multimodal.currentStream.getAudioTracks().length > 0) {
           const audioTracks = this.state.multimodal.currentStream.getAudioTracks();
           if (audioTracks.some(track => !track.enabled)) {
-              console.log("Re-enabling microphone tracks due to audio file load error.");
-              audioTracks.forEach(track => track.enabled = true);
+            console.log("Re-enabling microphone tracks due to audio file load error.");
+            audioTracks.forEach(track => track.enabled = true);
           }
         }
         if (fileButton) fileButton.classList.remove('active');
@@ -108,11 +111,11 @@ export class AudioFilePlayer {
       }
     };
     reader.readAsArrayBuffer(file);
-    currentFileInput.value = ''; 
+    currentFileInput.value = '';
   }
 
   /**
-   * Обработчик нажатия кнопки Play.
+   * Obrabotchik nazhatiya knopki Play.
    */
   playAudio() {
     this.state.audio.activeSource = 'file';
@@ -123,13 +126,13 @@ export class AudioFilePlayer {
       if (this.isPlaying) console.warn("Audio is already playing.");
       return;
     }
-    if (!this.audioContext) { 
-        console.error("Cannot play audio, AudioContext not available.");
-        this.state.audio.activeSource = 'none'; 
-        return;
+    if (!this.audioContext) {
+      console.error("Cannot play audio, AudioContext not available.");
+      this.state.audio.activeSource = 'none';
+      return;
     }
 
-    if (this.audioBufferSource) { 
+    if (this.audioBufferSource) {
       try {
         this.audioBufferSource.stop();
       } catch (_error) {
@@ -140,71 +143,89 @@ export class AudioFilePlayer {
 
     this.audioBufferSource = this.audioContext.createBufferSource();
     this.audioBufferSource.buffer = this.audioBuffer;
-    
-    setupAudioProcessing(this.audioBufferSource, 'file'); 
 
-    if (this.state.audioAnalyzerLeftInstance && this.state.audio.filePlayerAnalysers?.left) {
-      this.state.audioAnalyzerLeftInstance.setAnalyserNode(this.state.audio.filePlayerAnalysers.left);
+    setupAudioProcessing(this.audioBufferSource, this.audioContext);
+
+    // Connect file source to global analyzer
+    if (!this.state.audio.globalAnalyzer) {
+      this.state.audio.globalAnalyzer = new AudioAnalyzer(this.audioContext);
     }
-    if (this.state.audioAnalyzerRightInstance && this.state.audio.filePlayerAnalysers?.right) {
-      this.state.audioAnalyzerRightInstance.setAnalyserNode(this.state.audio.filePlayerAnalysers.right);
-    }
+    this.state.audio.globalAnalyzer.connectSource(this.audioBufferSource);
 
     const offsetToPlay = this.pausedAt;
     this.audioBufferSource.start(0, offsetToPlay);
-    this.startOffset = this.audioContext.currentTime - offsetToPlay; 
+    this.startOffset = this.audioContext.currentTime - offsetToPlay;
     this.isPlaying = true;
+    this.state.audio.isPlaying = true; // Sync global state
+    this.state.audio.isPaused = false;
 
     this.audioBufferSource.onended = () => {
       console.log("Audio file playback finished naturally.");
       if (this.isPlaying) {
-          this.isPlaying = false;
-          this.state.audio.activeSource = 'microphone';
+        this.isPlaying = false;
+        this.state.audio.isPlaying = false; // Sync global state
+        this.state.audio.activeSource = 'microphone';
 
-          if (this.state.multimodal.currentStream && this.state.multimodal.currentStream.getAudioTracks().length > 0) {
-              this.state.multimodal.currentStream.getAudioTracks().forEach(track => track.enabled = true);
-              console.log("Microphone tracks re-enabled after file playback finished.");
-          }
+        if (this.state.multimodal.currentStream && this.state.multimodal.currentStream.getAudioTracks().length > 0) {
+          this.state.multimodal.currentStream.getAudioTracks().forEach(track => track.enabled = true);
+          console.log("Microphone tracks re-enabled after file playback finished.");
+        }
 
-          if (this.state.audio.microphoneAnalysers?.left && this.state.audio.microphoneAnalysers?.right) {
-              if (this.state.audioAnalyzerLeftInstance) {
-                  this.state.audioAnalyzerLeftInstance.setAnalyserNode(this.state.audio.microphoneAnalysers.left);
+        if (this.state.audio.microphoneAnalysers?.left && this.state.audio.microphoneAnalysers?.right) {
+          // Reconnect microphone to global analyzer
+          if (this.state.multimodal.currentStream) {
+            // Assuming currentStream is the mic stream source. 
+            // We need the SourceNode from MicrophoneManager. 
+            // However, MicrophoneManager manages its own connection.
+            // Best way is to call toggleMicrophone to reset or just let user do it?
+            // Or better: accessing the stored mic source if available.
+            // MicrophoneManager stores `this.source`. Ideally we should use MicrophoneManager to restart/reconnect.
+            if (this.state.microphoneManagerInstance) {
+              // Disconnect file source first (already done implicitly by buffer end?)
+              // Reconnect mic logic:
+              if (this.state.microphoneManagerInstance.source && this.state.audio.globalAnalyzer) {
+                this.state.audio.globalAnalyzer.connectSource(this.state.microphoneManagerInstance.source);
               }
-              if (this.state.audioAnalyzerRightInstance) {
-                  this.state.audioAnalyzerRightInstance.setAnalyserNode(this.state.audio.microphoneAnalysers.right);
-              }
-              console.log("Global analysers switched back to microphone after file ended.");
-          } else {
-              if (this.state.audioAnalyzerLeftInstance) this.state.audioAnalyzerLeftInstance.setAnalyserNode(null);
-              if (this.state.audioAnalyzerRightInstance) this.state.audioAnalyzerRightInstance.setAnalyserNode(null);
-              console.log("Microphone analysers not available, global analysers cleared after file ended.");
+            }
           }
+          console.log("Global analysers switched back to microphone after file ended.");
+        } else {
+          // If no mic, maybe disconnect analyzer source
+          if (this.state.audio.globalAnalyzer && this.audioBufferSource) {
+            this.state.audio.globalAnalyzer.disconnectSource(this.audioBufferSource);
+          }
+          console.log("Microphone analysers not available, global analysers cleared after file ended.");
+        }
 
-          if (playButton) playButton.classList.remove('active');
-          if (pauseButton) pauseButton.classList.remove('active');
+        if (playButton) playButton.classList.remove('active');
+        if (pauseButton) pauseButton.classList.remove('active');
       }
     };
 
+    // Update UI
     if (playButton) playButton.classList.add('active');
     if (pauseButton) pauseButton.classList.remove('active');
     if (stopButton) stopButton.classList.remove('active');
   }
 
   /**
-   * Обработчик нажатия кнопки Pause.
+   * Obrabotchik nazhatiya knopki Pause.
    */
   pauseAudio() {
     if (!this.isPlaying || !this.audioBufferSource) return;
 
-    this.pausedAt = this.audioContext.currentTime - this.startOffset; 
+    this.pausedAt = this.audioContext.currentTime - this.startOffset;
     try {
-      this.audioBufferSource.stop(); 
+      this.audioBufferSource.stop();
     } catch (_error) {
       console.error('Audio source stop error during pause:', _error);
     }
     this.isPlaying = false;
+    this.state.audio.isPlaying = false; // Sync global state
+    this.state.audio.isPaused = true;   // Flag paused state
     this.state.audio.activeSource = 'file';
 
+    // Update UI
     if (playButton) playButton.classList.remove('active');
     if (pauseButton) pauseButton.classList.add('active');
   }
@@ -214,55 +235,57 @@ export class AudioFilePlayer {
    */
   stopAudio() {
     this.isPlaying = false;
+    this.state.audio.isPlaying = false;
+    this.state.audio.isPaused = false;
 
     if (!this.audioBufferSource && this.pausedAt === 0) {
-        if (this.state.audio.activeSource !== 'microphone') {
-            this.state.audio.activeSource = 'microphone';
-            if (this.state.multimodal.currentStream && this.state.multimodal.currentStream.getAudioTracks().length > 0) {
-                this.state.multimodal.currentStream.getAudioTracks().forEach(track => track.enabled = true);
-                console.log("Microphone tracks re-enabled on stopAudio (no active playback).");
-            }
-            if (this.state.audio.microphoneAnalysers?.left && this.state.audio.microphoneAnalysers?.right) {
-                if (this.state.audioAnalyzerLeftInstance) {
-                    this.state.audioAnalyzerLeftInstance.setAnalyserNode(this.state.audio.microphoneAnalysers.left);
-                }
-                if (this.state.audioAnalyzerRightInstance) {
-                    this.state.audioAnalyzerRightInstance.setAnalyserNode(this.state.audio.microphoneAnalysers.right);
-                }
-                console.log("Global analysers switched back to microphone on stopAudio (no active playback).");
-            } else {
-                if (this.state.audioAnalyzerLeftInstance) this.state.audioAnalyzerLeftInstance.setAnalyserNode(null);
-                if (this.state.audioAnalyzerRightInstance) this.state.audioAnalyzerRightInstance.setAnalyserNode(null);
-                console.log("Microphone analysers not available, global analysers cleared on stopAudio (no active playback).");
-            }
+      if (this.state.audio.activeSource !== 'microphone') {
+        this.state.audio.activeSource = 'microphone';
+        if (this.state.multimodal.currentStream && this.state.multimodal.currentStream.getAudioTracks().length > 0) {
+          this.state.multimodal.currentStream.getAudioTracks().forEach(track => track.enabled = true);
+          console.log("Microphone tracks re-enabled on stopAudio (no active playback).");
         }
-        if (playButton) playButton.classList.remove('active');
-        if (pauseButton) pauseButton.classList.remove('active');
-        if (stopButton) stopButton.classList.remove('active');
-        return;
+        if (this.state.audio.microphoneAnalysers?.left && this.state.audio.microphoneAnalysers?.right) {
+          if (this.state.audioAnalyzerLeftInstance) {
+            this.state.audioAnalyzerLeftInstance.setAnalyserNode(this.state.audio.microphoneAnalysers.left);
+          }
+          if (this.state.audioAnalyzerRightInstance) {
+            this.state.audioAnalyzerRightInstance.setAnalyserNode(this.state.audio.microphoneAnalysers.right);
+          }
+          console.log("Global analysers switched back to microphone on stopAudio (no active playback).");
+        } else {
+          if (this.state.audioAnalyzerLeftInstance) this.state.audioAnalyzerLeftInstance.setAnalyserNode(null);
+          if (this.state.audioAnalyzerRightInstance) this.state.audioAnalyzerRightInstance.setAnalyserNode(null);
+          console.log("Microphone analysers not available, global analysers cleared on stopAudio (no active playback).");
+        }
+      }
+      if (playButton) playButton.classList.remove('active');
+      if (pauseButton) pauseButton.classList.remove('active');
+      if (stopButton) stopButton.classList.remove('active');
+      return;
     }
-    
+
     if (this.audioBufferSource) {
       this.audioBufferSource.onended = null;
       try {
         this.audioBufferSource.stop();
       } catch (error) {
       }
-      this.audioBufferSource.disconnect(); 
+      this.audioBufferSource.disconnect();
       this.audioBufferSource = null;
     }
-    
+
     if (this.state.audio.filePlayerGainNode) {
-      this.state.audio.filePlayerGainNode.disconnect(); 
+      this.state.audio.filePlayerGainNode.disconnect();
       this.state.audio.filePlayerGainNode = null;
     }
-    
+
     if (this.state.audio.filePlayerAnalysers) {
-        if (this.state.audio.filePlayerAnalysers.left) this.state.audio.filePlayerAnalysers.left.disconnect();
-        if (this.state.audio.filePlayerAnalysers.right) this.state.audio.filePlayerAnalysers.right.disconnect();
-        this.state.audio.filePlayerAnalysers = null;
+      if (this.state.audio.filePlayerAnalysers.left) this.state.audio.filePlayerAnalysers.left.disconnect();
+      if (this.state.audio.filePlayerAnalysers.right) this.state.audio.filePlayerAnalysers.right.disconnect();
+      this.state.audio.filePlayerAnalysers = null;
     }
-    
+
     this.pausedAt = 0;
     this.startOffset = 0;
 
@@ -275,17 +298,17 @@ export class AudioFilePlayer {
     }
 
     if (this.state.audio.microphoneAnalysers?.left && this.state.audio.microphoneAnalysers?.right) {
-        if (this.state.audioAnalyzerLeftInstance) {
-            this.state.audioAnalyzerLeftInstance.setAnalyserNode(this.state.audio.microphoneAnalysers.left);
-        }
-        if (this.state.audioAnalyzerRightInstance) {
-            this.state.audioAnalyzerRightInstance.setAnalyserNode(this.state.audio.microphoneAnalysers.right);
-        }
-        console.log("Global analysers switched back to microphone.");
+      if (this.state.microphoneManagerInstance && this.state.microphoneManagerInstance.source && this.state.audio.globalAnalyzer) {
+        this.state.audio.globalAnalyzer.connectSource(this.state.microphoneManagerInstance.source);
+      }
+      console.log("Global analysers switched back to microphone.");
     } else {
-        if (this.state.audioAnalyzerLeftInstance) this.state.audioAnalyzerLeftInstance.setAnalyserNode(null);
-        if (this.state.audioAnalyzerRightInstance) this.state.audioAnalyzerRightInstance.setAnalyserNode(null);
-        console.log("Microphone analysers not available on stop, global analysers cleared.");
+      if (this.state.audio.globalAnalyzer && this.audioBufferSource) {
+        try {
+          this.state.audio.globalAnalyzer.disconnectSource(this.audioBufferSource);
+        } catch (e) { }
+      }
+      console.log("Microphone analysers not available on stop, global analysers cleared.");
     }
 
     if (playButton && pauseButton && stopButton) {
@@ -301,7 +324,7 @@ export class AudioFilePlayer {
    * Инициализация элементов управления аудиоплеером и обработчиков событий.
    */
   initializeAudioPlayerControls() {
-    fileInput = document.getElementById('audioFileInput'); 
+    fileInput = document.getElementById('audioFileInput');
     fileButton = document.getElementById('loadAudioButton');
     playButton = document.getElementById('playAudioButton');
     pauseButton = document.getElementById('pauseAudioButton');

@@ -4,9 +4,9 @@
  */
 
 // Глобальная функция для обработки ошибок Three.js
-window.handleThreeJSError = function(error, context = 'unknown') {
+window.handleThreeJSError = function (error, context = 'unknown') {
   console.error(`🚨 КРИТИЧЕСКАЯ ОШИБКА THREE.JS [${context.toUpperCase()}]:`, error);
-  
+
   const errorInfo = {
     message: error.message || 'Неизвестная ошибка',
     name: error.name || 'UnknownError',
@@ -16,9 +16,9 @@ window.handleThreeJSError = function(error, context = 'unknown') {
     userAgent: navigator.userAgent,
     webglSupport: !!document.createElement('canvas').getContext('webgl')
   };
-  
+
   console.error('📋 Диагностическая информация:', errorInfo);
-  
+
   // Показываем пользователю понятное сообщение
   const errorDiv = document.createElement('div');
   errorDiv.id = 'threejs-error-overlay';
@@ -39,7 +39,7 @@ window.handleThreeJSError = function(error, context = 'unknown') {
     padding: 20px;
     text-align: center;
   `;
-  
+
   errorDiv.innerHTML = `
     <h1 style="color: #ff6b6b; margin-bottom: 20px;">🚨 Ошибка 3D движка</h1>
     <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
@@ -67,39 +67,39 @@ window.handleThreeJSError = function(error, context = 'unknown') {
       }
     </script>
   `;
-  
+
   document.body.appendChild(errorDiv);
-  
+
   // Отправляем ошибку в систему логирования, если она есть
   if (window.errorReporting && typeof window.errorReporting === 'function') {
     window.errorReporting(errorInfo);
   }
-  
+
   return errorInfo;
 };
 
 // Функция для проверки поддержки WebGL
-window.checkWebGLSupport = function() {
+window.checkWebGLSupport = function () {
   try {
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    
+
     if (!gl) {
       throw new Error('WebGL не поддерживается браузером');
     }
-    
+
     // Проверяем поддержку необходимых расширений
     const requiredExtensions = ['OES_standard_derivatives', 'OES_texture_float'];
     const supportedExtensions = gl.getSupportedExtensions() || [];
-    
-    const missingExtensions = requiredExtensions.filter(ext => 
+
+    const missingExtensions = requiredExtensions.filter(ext =>
       !supportedExtensions.includes(ext)
     );
-    
+
     if (missingExtensions.length > 0) {
       console.warn('Предупреждение: отсутствуют расширения WebGL:', missingExtensions);
     }
-    
+
     return { supported: true, extensions: supportedExtensions };
   } catch (error) {
     return { supported: false, error: error.message };
@@ -109,21 +109,21 @@ window.checkWebGLSupport = function() {
 // Загружаем Three.js с обработкой ошибок
 try {
   console.log('🔄 Начинаем загрузку Three.js...');
-  
+
   // Проверяем поддержку WebGL перед загрузкой
   const webglCheck = window.checkWebGLSupport();
   if (!webglCheck.supported) {
     throw new Error(`WebGL не поддерживается: ${webglCheck.error}`);
   }
-  
+
   console.log('✅ WebGL поддерживается, загружаем Three.js...');
-  
+
   // Динамическая загрузка Three.js
-  import('https://unpkg.com/three@0.165.0/build/three.module.js')
+  import('three')
     .then(module => {
       console.log('✅ Three.js успешно загружен, версия:', module.REVISION);
       window.THREE = module;
-      
+
       // Инициализируем приложение после загрузки Three.js
       if (window.initApplication) {
         window.initApplication();
@@ -133,7 +133,7 @@ try {
       window.handleThreeJSError(error, 'three.js_import');
       throw error;
     });
-    
+
 } catch (error) {
   window.handleThreeJSError(error, 'three.js_loading');
   throw error;
@@ -166,8 +166,8 @@ export const state = {
   gridPointLight: null,       // Added in previous step
   // --- Properties for new class instances ---
   microphoneManagerInstance: null, // Corrected to match mediaInitializer.js
-  audioAnalyzerLeftInstance: null,
-  audioAnalyzerRightInstance: null,
+  // audioAnalyzerLeftInstance: null, // Obsolete
+  // audioAnalyzerRightInstance: null, // Obsolete
   hologramRendererInstance: null,
   xrSessionManagerInstance: null, // Added for WebXR
   audioFilePlayerInstance: null, // Corrected to match mediaInitializer.js
@@ -249,7 +249,7 @@ export async function initCore() {
     if (!state.renderer) {
       throw new Error('CRITICAL CHECK FAILED: state.renderer is null after initializeScene');
     }
-    
+
     console.log('✅ Three.js сцена и рендерер успешно инициализированы');
 
     // Инициализируем HologramRenderer с обработкой ошибок
@@ -264,7 +264,7 @@ export async function initCore() {
     // Инициализируем GestureManager
     try {
       state.gestureManager = new GestureManager();
-      
+
       // Инициализируем GestureManager после создания контейнера
       const gridContainer = document.getElementById('grid-container');
       if (gridContainer) {
@@ -277,12 +277,53 @@ export async function initCore() {
       console.error('❌ Ошибка инициализации GestureManager:', error);
       window.handleThreeJSError(error, 'gesture_manager_init');
     }
-    
-    // ... остальной код функции ...
+
+    // Инициализируем PanelManager
+    try {
+      state.panelManager = new PanelManager();
+      state.panelManager.initializePanelManager();
+      console.log('✅ PanelManager инициализирован');
+    } catch (error) {
+      console.error('❌ Ошибка инициализации PanelManager:', error);
+    }
+
+    // Инициализируем XRSessionManager
+    if (state.renderer) {
+      state.xrSessionManagerInstance = new XRSessionManager(state.renderer);
+      console.log('✅ XRSessionManager инициализирован');
+    }
+
+    // Инициализируем аудио компоненты
+    if (!state.audio.audioContext) {
+      state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      console.log('✅ AudioContext создан');
+    }
+
+    // Предзагрузка CWT AudioWorklet для оптимальной производительности
+    try {
+      const { initializeCwtWorklet } = await import('../audio/audioProcessing.js');
+      await initializeCwtWorklet(state.audio.audioContext);
+      console.log('✅ CWT AudioWorklet инициализирован');
+    } catch (error) {
+      console.warn('⚠️ CWT Worklet не загружен, будет использоваться FFT fallback:', error.message);
+    }
+
+    state.microphoneManagerInstance = new MicrophoneManager(state.audio.audioContext, state);
+    state.audioFilePlayerInstance = new AudioFilePlayer(state.audio.audioContext, state);
+
+    // Инициализируем обработчики для кнопок плеера (включая кнопку "+" / loadAudioButton)
+    state.audioFilePlayerInstance.initializeAudioPlayerControls();
+    console.log('✅ Обработчики аудио плеера инициализированы');
+
+    // Обновляем размер камеры
+    if (state.camera) {
+      state.camera.aspect = window.innerWidth / window.innerHeight;
+      state.camera.updateProjectionMatrix();
+    }
 
     console.log('✅ Ядро приложения инициализировано успешно');
     return state;
-    
+
   } catch (error) {
     console.error('❌ Критическая ошибка в initCore:', error);
     window.handleThreeJSError(error, 'core_initialization');

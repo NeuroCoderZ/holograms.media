@@ -59,45 +59,46 @@ export class MicrophoneManager {
 
       const audioTracks = stream.getAudioTracks();
       if (audioTracks.length === 0) {
-          throw new Error("Provided stream has no audio tracks.");
+        throw new Error("Provided stream has no audio tracks.");
       }
 
       if (this.splitter) {
-          this.splitter.disconnect();
-          this.splitter = null;
+        this.splitter.disconnect();
+        this.splitter = null;
       }
       if (this.source && this.source.numberOfOutputs > 0) {
-          this.source.disconnect();
+        this.source.disconnect();
       }
 
       const channelCount = audioTracks[0].getSettings().channelCount;
       console.log(`Audio track channel count: ${channelCount}`);
 
       if (channelCount === 2) {
-          console.log("Stereo stream detected. Using ChannelSplitter.");
-          this.splitter = this.audioContext.createChannelSplitter(2);
-          this.source.connect(this.splitter);
-          this.splitter.connect(this.analyserLeft, 0);
-          this.splitter.connect(this.analyserRight, 1);
-          console.log('Stereo audio nodes connected: Source -> Splitter -> Analysers.');
+        console.log("Stereo stream detected. Using ChannelSplitter.");
+        this.splitter = this.audioContext.createChannelSplitter(2);
+        this.source.connect(this.splitter);
+        this.splitter.connect(this.analyserLeft, 0);
+        this.splitter.connect(this.analyserRight, 1);
+        console.log('Stereo audio nodes connected: Source -> Splitter -> Analysers.');
       } else {
-          console.log("Mono stream detected (or channelCount not 2). Duplicating source to both analysers.");
-          if (this.splitter) {
-              this.splitter.disconnect();
-              this.splitter = null;
-          }
-          this.source.connect(this.analyserLeft);
-          this.source.connect(this.analyserRight); // Connect source to both for mono
-          console.log('Mono audio nodes connected: Source -> AnalyserLeft & AnalyserRight.');
+        console.log("Mono stream detected (or channelCount not 2). Duplicating source to both analysers.");
+        if (this.splitter) {
+          this.splitter.disconnect();
+          this.splitter = null;
+        }
+        this.source.connect(this.analyserLeft);
+        this.source.connect(this.analyserRight); // Connect source to both for mono
+        console.log('Mono audio nodes connected: Source -> AnalyserLeft & AnalyserRight.');
       }
 
-      setupAudioProcessing(this.source, 'microphone'); // Connect stream to worklet
+      // Connect stream to global analyzer WTHOUT connecting to destination (prevent feedback loop)
+      setupAudioProcessing(this.source, this.audioContext, false);
 
       return {
-          analyserLeft: this.analyserLeft,
-          analyserRight: this.analyserRight,
-          audioContext: this.audioContext,
-          stream: this.microphoneStream // Return the stream as well
+        analyserLeft: this.analyserLeft,
+        analyserRight: this.analyserRight,
+        audioContext: this.audioContext,
+        stream: this.microphoneStream // Return the stream as well
       };
     } catch (error) {
       console.error('Error during microphone initialization with stream:', error);
@@ -124,7 +125,14 @@ export class MicrophoneManager {
       }
 
       console.log('Requesting microphone access for init()...');
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, channelCount: 2 } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          channelCount: 2
+        }
+      });
       console.log('Microphone access granted for init().');
 
       return await this.initializeWithStream(stream);
@@ -132,10 +140,10 @@ export class MicrophoneManager {
     } catch (error) {
       console.error('Error during microphone init() (getUserMedia part or subsequent initializeWithStream):', error);
       if (this.microphoneStream && this.microphoneStream.getTracks().some(track => track.readyState === 'live')) {
-           console.log("Stopping tracks of stream created by init() due to an error.");
-           this.microphoneStream.getTracks().forEach(track => track.stop());
+        console.log("Stopping tracks of stream created by init() due to an error.");
+        this.microphoneStream.getTracks().forEach(track => track.stop());
       }
-      this.microphoneStream = null; 
+      this.microphoneStream = null;
       throw error;
     }
   }
@@ -181,65 +189,61 @@ export class MicrophoneManager {
   }
 
   async toggleMicrophone() {
-    const micButtonElement = this.state.uiElements?.buttons?.microphoneButton; 
+    const micButtonElement = this.state.uiElements?.buttons?.microphoneButton;
 
-    if (!this.state || !this.state.audio || !this.state.audioAnalyzerLeftInstance || !this.state.audioAnalyzerRightInstance) {
-        console.error("Global state object or required audio properties not fully initialized in toggleMicrophone.");
-        if (micButtonElement) micButtonElement.textContent = "Mic Error";
-        return;
+    if (!this.state || !this.state.audio) {
+      console.error("Global state object or required audio properties not fully initialized in toggleMicrophone.");
+      if (micButtonElement) micButtonElement.textContent = "Mic Error";
+      return;
     }
 
     try {
-        if (this.state.audio.activeSource === 'microphone') {
-            this.stop();
-            this.state.audio.activeSource = 'none';
-
-            if (this.state.audioAnalyzerLeftInstance) {
-                this.state.audioAnalyzerLeftInstance.setAnalyserNode(null);
-            }
-            if (this.state.audioAnalyzerRightInstance) {
-                this.state.audioAnalyzerRightInstance.setAnalyserNode(null);
-            }
-
-            if (micButtonElement) {
-                micButtonElement.classList.remove('active');
-                micButtonElement.title = "Включить микрофон";
-            }
-            console.log("Microphone stopped via toggleMicrophone and global analysers reset.");
-        } else {
-            if (this.audioContext.state === 'suspended') {
-                await this.audioContext.resume();
-                console.log('AudioContext resumed by toggleMicrophone before getting stream.');
-            }
-
-            const { stream, analyserLeft, analyserRight, audioContext } = await this.init(); 
-
-            this.state.audio.audioContext = audioContext; 
-            this.state.audio.microphoneStream = stream; 
-            this.state.audio.microphoneAnalysers = { left: analyserLeft, right: analyserRight };
-
-            if (this.state.audioAnalyzerLeftInstance) {
-                this.state.audioAnalyzerLeftInstance.setAnalyserNode(analyserLeft);
-            }
-            if (this.state.audioAnalyzerRightInstance) {
-                this.state.audioAnalyzerRightInstance.setAnalyserNode(analyserRight);
-            }
-
-            this.state.audio.activeSource = 'microphone';
-            if (micButtonElement) {
-                micButtonElement.classList.add('active');
-                micButtonElement.title = "Выключить микрофон";
-            }
-            console.log("Microphone started via toggleMicrophone.");
-        }
-    } catch (error) {
-        console.error("Error toggling microphone:", error);
-        if (micButtonElement) micButtonElement.textContent = "Mic Error";
+      if (this.state.audio.activeSource === 'microphone') {
+        this.stop();
         this.state.audio.activeSource = 'none';
-        if (this.microphoneStream) {
-            this.microphoneStream.getTracks().forEach(track => track.stop());
-            this.microphoneStream = null;
+
+        // Disconnect from global analyzer if active
+        if (this.state.audio.globalAnalyzer && this.source) {
+          this.state.audio.globalAnalyzer.disconnectSource(this.source);
         }
+
+        if (micButtonElement) {
+          micButtonElement.classList.remove('active');
+          micButtonElement.title = "Включить микрофон";
+        }
+        console.log("Microphone stopped via toggleMicrophone and global analysers reset.");
+      } else {
+        if (this.audioContext.state === 'suspended') {
+          await this.audioContext.resume();
+          console.log('AudioContext resumed by toggleMicrophone before getting stream.');
+        }
+
+        const { stream, analyserLeft, analyserRight, audioContext } = await this.init();
+
+        this.state.audio.audioContext = audioContext;
+        this.state.audio.microphoneStream = stream;
+        this.state.audio.microphoneAnalysers = { left: analyserLeft, right: analyserRight };
+
+        if (!this.state.audio.globalAnalyzer) {
+          this.state.audio.globalAnalyzer = new AudioAnalyzer(audioContext); // Ensure analyzer exists
+        }
+        this.state.audio.globalAnalyzer.connectSource(this.source);
+
+        this.state.audio.activeSource = 'microphone';
+        if (micButtonElement) {
+          micButtonElement.classList.add('active');
+          micButtonElement.title = "Выключить микрофон";
+        }
+        console.log("Microphone started via toggleMicrophone.");
+      }
+    } catch (error) {
+      console.error("Error toggling microphone:", error);
+      if (micButtonElement) micButtonElement.textContent = "Mic Error";
+      this.state.audio.activeSource = 'none';
+      if (this.microphoneStream) {
+        this.microphoneStream.getTracks().forEach(track => track.stop());
+        this.microphoneStream = null;
+      }
     }
   }
 }

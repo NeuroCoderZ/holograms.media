@@ -1,196 +1,151 @@
-/* Левая панель (Кнопки) */
 .panel.left-panel,
 .panel.right-panel {
-  background-color: rgba(0, 0, 0, 0.4); /* Increased opacity for less transparency */
-  backdrop-filter: blur(30px) saturate(180%); /* Increased blur */
-  -webkit-backdrop-filter: blur(20px) saturate(180%); /* Safari support */
-  padding: var(--button-spacing);
-  flex-shrink: 0;
-  min-height: 100vh; /* Changed to min-height for auto vertical adjustment */
-  height: auto; /* Allow auto height */
-  overflow: hidden;
-  z-index: 20; /* Above main-area */
-  border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3); /* Soft shadow */
-  transition: transform 0.3s ease-in-out,
-    opacity 0.3s ease-in-out; /* Optimized for performance */
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(30px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  padding: 0;
+  /* Clear shared padding */
+  height: 90vh !important;
+  top: 5vh !important;
+  flex: 0 0 auto;
+  z-index: 1001;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease-in-out !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute;
 }
 
 .panel.left-panel {
-  width: calc(2 * 45px + 5 * var(--button-spacing)) !important;
-  overflow-y: auto !important; /* Enable scrolling for auto height adjustment */
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-  touch-action: none !important; /* Prevent browser from interpreting touch as pan/scroll */
-}
-
-.panel.left-panel::-webkit-scrollbar {
-  display: none;
-}
-
-.panel.right-panel {
+  left: 0;
+  width: 110px !important;
+  transform: translateX(-100%) !important;
+  overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
-  overflow: hidden !important;
-  min-height: 100vh !important; /* Changed to min-height for auto vertical adjustment */
-  height: auto !important; /* Allow auto height */
-  width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))) !important;
-  touch-action: none !important; /* Prevent browser from interpreting touch as pan/scroll */
-}
-
-.right-panel .panel-section {
-  transition: all 0.3s ease-in-out;
-}
-
-/* DESKTOP: Panels are visible by default */
-.panel.left-panel {
-  position: absolute;
-  left: 0;
-  transform: translateX(0);
-  /* Show left panel */
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  padding: 0 !important;
+  padding-bottom: 75px !important;
+  align-items: center !important;
 }
 
 .panel.right-panel {
-  position: absolute;
   right: 0;
-  transform: translateX(0);
-  /* Show right panel */
+  width: var(--panel-width-right) !important;
+  transform: translateX(100%) !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
-.panel.left-panel,
-.panel.right-panel {
+/* Visible state triggered by JS classes */
+.panel.left-panel.visible,
+.panel.right-panel.visible {
   opacity: 1 !important;
-  flex: 0 0 auto; /* Allow width */
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  border-left-width: 0 !important;
-  border-right-width: 0 !important;
+  visibility: visible !important;
   pointer-events: auto !important;
-  /* Will be toggled with delay */
-  overflow: hidden !important;
-  /* Ensure content is clipped */
-  transition: transform 0.3s ease-in-out,
-    opacity 0.3s ease-in-out,
-    visibility 0s linear 0.3s;
-  /* Delay visibility:hidden when hiding */
+  transform: translateX(0) !important;
 }
 
-.panel.left-panel {
-  opacity: 0.3 !important;
+
+
+/* --- Universal Layout Variables --- */
+:root {
+  /* Desktop Layout (Landscape) */
+  --panel-width-left: clamp(280px, 20vw, 320px);
+  --panel-width-right: clamp(320px, 25vw, 400px);
 }
 
-.panel.right-panel {
-   opacity: 0.3 !important;
+@media (orientation: portrait) or (max-width: 768px) {
+  :root {
+    /* Mobile Layout (Portrait) */
+    --panel-width-left: 80px;
+    /* Narrow strip for icons */
+    --panel-width-right: 100vw;
+    /* Full screen for chat/content */
+  }
 }
 
-/* Отключение backdrop-filter для скрытых панелей */
-.panel.left-panel:not(.visible),
-.panel.right-panel:not(.visible) {
- backdrop-filter: none;
-}
+
 
 /* DESKTOP: '.visible' class restores panel dimensions and opacity */
 .panel.left-panel.visible {
-    transform: translateX(0) !important;
-    width: calc(2 * 45px + 5 * var(--button-spacing)) !important;
-    /* New width */
-    opacity: 1 !important;
-    visibility: visible !important;
-    /* Show immediately */
-    pointer-events: auto !important;
-    padding: var(--button-spacing) !important;
-    /* Original padding */
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    border-left-width: 0 !important;
-    border-right-width: 0 !important;
-    overflow-y: auto !important;
-    /* Restore overflow */
-    transition-delay: 0s;
-    /* Ensure no delay when showing */
+  transform: translateX(0) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  overflow: hidden !important;
+  transition-delay: 0s;
 }
 
 .panel.right-panel.visible {
-  width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))) !important;
-  /* New width */
   opacity: 1 !important;
   transform: translateX(0) !important;
-  padding: var(--button-spacing) !important;
-  /* Original padding */
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  border-left-width: 0 !important;
-  border-right-width: 0 !important;
   pointer-events: auto !important;
   visibility: visible !important;
-  /* Show immediately */
   overflow-y: auto !important;
-  /* Restore overflow */
   transition-delay: 0s;
-  /* Ensure no delay when showing */
-  touch-action: none !important; /* Prevent browser from interpreting touch as pan/scroll */
+  touch-action: none !important;
+  left: auto;
+  right: 0;
+}
+
+/* DESKTOP: '.hidden' class support for toggling panels */
+.panel.left-panel.hidden {
+  transform: translateX(-100%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.panel.right-panel.hidden {
+  transform: translateX(100%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 /* --- Left Panel Restructure Styles --- */
-.panel.left-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  /* Center groups horizontally */
-  padding-top: var(--spacing-md);
-  /* Add some padding at the top */
-  padding-bottom: var(--spacing-md);
-  /* Add some padding at the bottom */
-  gap: var(--spacing-sm);
-  /* Space between direct children (groups and HRs) */
-}
 
 .left-panel-group {
   display: flex;
   flex-direction: column;
-  /* Stack buttons within groups */
   align-items: center;
-  /* Center buttons horizontally within groups */
   width: 100%;
-  /* Groups take full width of panel */
-  gap: var(--button-spacing);
-  /* Space between buttons in a group */
-  margin-top: -20px; /* Lift groups up */
+  gap: 2px;
+  /* Very compact */
 }
 
 .left-panel-group.top-group {
-  gap: 5px; /* Уменьшить расстояние между кнопками в top-group для приближения к линии */
+  flex-direction: row !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  flex-wrap: nowrap !important;
+  margin-top: 0 !important;
+  /* Panel itself is offset by 5vh */
 }
 
 /* Styling for buttons in the top group of the left panel */
 .left-panel-group.top-group .panel-button,
 .left-panel-group.top-group .social-login-button {
-  width: var(--button-size);
-  /* Unified size for icon buttons */
-  height: var(--button-size);
-  /* Ensure height matches for square buttons */
+  width: 45px !important;
+  height: 48px !important;
+  /* Match rectangular buttons */
   padding: 0;
-  /* Remove padding if it's an icon-only button from .control-button */
   margin-left: auto;
-  /* Still allow auto margins if needed for centering within a sub-flex */
   margin-right: auto;
-  /* background-color, border, color will be determined by .control-button styles */
 }
 
 .left-panel-group.central-block {
   display: grid;
-  /* Grid for central block with 2-column layout: odd buttons left, even buttons right */
   grid-template-columns: 1fr 1fr;
   gap: 5px;
   width: 100%;
-  /* Ensure it uses the panel width */
-  padding-left: var(--button-spacing);
-  /* Align with panel padding */
-  padding-right: var(--button-spacing);
-  justify-items: center; /* Center buttons horizontally in their grid cells */
-  align-items: center; /* Center buttons vertically in their grid cells */
+  padding: 0 5px;
+  justify-items: center;
+  align-items: center;
 }
 
 /* Arrange buttons: odd ones (1st, 3rd, 5th...) in left column, even ones (2nd, 4th, 6th...) in right column */
@@ -215,12 +170,13 @@
   text-align: left;
   background-color: var(--input-bg);
   /* A slightly different bg for panel buttons */
-  color: var(--color-primary);
+  color: #888 !important;
+  /* Force gray for panel buttons */
   border: 1px solid var(--panel-border);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-button);
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: all 0.15s ease-in-out !important;
 }
 
 .panel-button i {
@@ -238,9 +194,11 @@
   /* Allow text to take remaining space */
 }
 
-.panel-button:hover {
+.panel-button:hover,
+.panel-button.active {
   background-color: var(--button-hover-bg);
-  color: var(--color-icon-active);
+  color: white !important;
+  /* White on hover/active */
 }
 
 /* Unified styling for icon buttons on the left panel that might also have .panel-button */
@@ -258,16 +216,16 @@
 /* Hover specifically for these combined buttons, ensuring it matches .control-button hover */
 #left-panel .panel-button.control-button:not(:disabled):hover {
   background-color: var(--button-hover-bg);
-  color: var(--color-icon-active);
+  color: white !important;
   /* Ensure icon color changes */
   transform: scale(1.05);
-  /* Match .control-button hover */
+  transition: all 0.15s ease-in-out !important;
 }
 
 /* Ensure active state is also consistent */
 #left-panel .panel-button.control-button.active {
   background-color: var(--button-hover-bg);
-  color: var(--color-icon-active);
+  color: white !important;
 }
 
 
@@ -296,36 +254,50 @@
 }
 
 .panel-hr {
-  width: 90%;
+  width: 80%;
   border: none;
   height: 1px;
   background-color: var(--panel-border);
-  margin-top: calc(var(--spacing-sm) - 40px);
-  /* Lift up */
-  margin-bottom: var(--spacing-sm);
+  margin: 8px auto !important;
+}
+
+#left-panel .panel-hr:first-of-type {
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+#left-panel .panel-hr:last-of-type {
+  margin-top: 15px !important;
+  /* Space after Install button */
+  margin-bottom: 8px !important;
 }
 
 .left-panel-group.bottom-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--button-spacing);
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 15px !important;
   width: 100%;
-  padding-left: var(--button-spacing);
-  padding-right: var(--button-spacing);
-  justify-items: center;
+  padding: 0 10px;
+  justify-content: center !important;
   align-items: center;
+  flex-wrap: nowrap !important;
+  margin-top: 0 !important;
+  /* Content is pushed by the HR above it */
 }
 
-/* Arrange buttons: odd ones in left column, even ones in right column */
-.left-panel-group.bottom-group .control-button:nth-child(odd),
-.left-panel-group.bottom-group .panel-icon-link:nth-child(odd) {
-  grid-column: 1;
+#telegramLinkButton svg {
+  width: 36px !important;
+  /* Reduced from 40px, but larger than 32px */
+  height: 36px !important;
 }
 
-.left-panel-group.bottom-group .control-button:nth-child(even),
-.left-panel-group.bottom-group .panel-icon-link:nth-child(even) {
-  grid-column: 2;
+#githubButton svg {
+  width: 24px !important;
+  /* Restore standard size */
+  height: 24px !important;
 }
+
+/* Bottom link hover transition moved to generic icon link */
 
 .panel-icon-link {
   color: var(--color-icon);
@@ -396,15 +368,6 @@
   margin-top: 5vh !important;
 }
 
-/* Стили для отладки */
-.debug-panel {
-  outline: 1px solid blue !important;
-}
-
-.debug-label {
-  outline: 1px solid green !important;
-}
-
 /* Стили панелей */
 .panel-section {
   transition: all 0.3s ease-in-out;
@@ -416,35 +379,8 @@
 .panel .view-toggle-btn,
 .panel .panel-icon-link,
 .panel .panel-hr,
-.panel .panel-section,
-.panel .content-container,
-.panel .input-container,
-.panel .controls-container,
-.panel .left-panel-group,
-.panel .central-block,
-.panel .bottom-group,
-.panel .right-panel-view,
-.panel .timeline-item,
-.panel .version-label,
-.panel .version-text,
-.panel .chat-message,
-.panel .modal-content,
-.panel .modal h2,
-.panel .modal p,
-.panel .modal ul,
-.panel .modal li,
-.panel .modal button,
-.panel .modal textarea,
-.panel .modal select,
-.panel .modal input,
-.panel svg,
-.panel .button-text,
-.panel .fab,
-.panel .icon-show-panels,
-.panel .icon-hide-panels,
-.panel #gesture-line {
+.panel .panel-section {
   opacity: 1 !important;
-  color: rgba(255, 255, 255, 1) !important;
 }
 
 /* Стили для окон в правой панели с отступами 5% и закругленными углами */

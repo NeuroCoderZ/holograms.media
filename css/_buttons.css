@@ -1,9 +1,16 @@
+/* UI adjustments */
+#triaButton svg {
+  width: 30px !important;
+  height: 30px !important;
+}
+
 /* Toggle button styles */
 #togglePanelsButton {
   position: fixed !important;
-  z-index: 9999 !important;
-  top: calc(100vh - 115px) !important;
-  left: 20px !important; /* Сдвинуто ещё правее */
+  z-index: 10000 !important;
+  bottom: 5vh !important;
+  left: 5px !important;
+  /* Align with the left row of buttons on the panel (which starts at 5px) */
   width: var(--button-size) !important;
   height: var(--button-size) !important;
   display: flex !important;
@@ -12,13 +19,12 @@
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
-  background-color: transparent !important; /* Fully transparent background */
-  border: none !important; /* No border */
+  background-color: transparent !important;
+  border: none !important;
   cursor: pointer !important;
-  color: lightgray !important; /* Light gray for active state */
-  box-shadow: none !important; /* No shadow */
-  transition: color 0.15s ease-in-out !important;
-  z-index: 10000 !important; /* Ensure it's on top */
+  color: #888 !important;
+  /* Default: Gray */
+  transition: all 0.15s ease-in-out !important;
 }
 
 #togglePanelsButton:hover {
@@ -50,11 +56,8 @@
 
 /* Ensure button remains visible when show-mode is active */
 #togglePanelsButton.show-mode {
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-  z-index: 10000 !important;
-  color: darkgray !important; /* Dark gray for inactive state */
+  color: white !important;
+  /* Active state: White when panels are hidden */
 }
 
 #fullscreenButton .icon-exit-fullscreen {
@@ -76,24 +79,24 @@
   gap: var(--button-spacing);
   justify-content: center;
   align-content: flex-start;
-    align-content: flex-start;
-    padding: 0;
-    width: 100%;
-  }
+  align-content: flex-start;
+  padding: 0;
+  width: 100%;
+}
 
-  /* Стилизация скроллбара для Webkit (Chrome, Safari) */
-  #button-container::-webkit-scrollbar {
-    width: 5px;
-  }
+/* Стилизация скроллбара для Webkit (Chrome, Safari) */
+#button-container::-webkit-scrollbar {
+  width: 5px;
+}
 
-  #button-container::-webkit-scrollbar-thumb {
-    background: var(--color-icon-disabled);
-    border-radius: 3px;
-  }
+#button-container::-webkit-scrollbar-thumb {
+  background: var(--color-icon-disabled);
+  border-radius: 3px;
+}
 
-  #button-container::-webkit-scrollbar-track {
-    background: var(--color-pure-black);
-  }
+#button-container::-webkit-scrollbar-track {
+  background: var(--color-pure-black);
+}
 
 /* Кнопки переключения видов правой панели */
 .view-toggles {
@@ -213,25 +216,35 @@
 /* Кнопки управления */
 .control-button {
   width: 45px !important;
-  height: 60px !important;
+  height: 48px !important;
+  /* Increased as requested (was 45px) */
   padding: 0;
   background-color: transparent;
   border: none;
   cursor: pointer;
-  color: var(--color-icon);
+  color: #888 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-md);
-  transition: color 0.15s ease-in-out;
-  font-size: calc(var(--button-size) * 0.6) !important;
+  transition: all 0.15s ease-in-out !important;
+  font-size: 24px !important;
+  /* Keep icon size large */
+}
+
+/* Increased size for playback transport icons and Add button */
+#loadAudioButton svg,
+#playAudioButton svg,
+#stopAudioButton svg {
+  width: 28px !important;
+  height: 28px !important;
 }
 
 .control-button svg {
-  width: var(--icon-size);
-  height: var(--icon-size);
-  transition: all 0.2s ease;
-  fill: currentColor;
+  width: 24px !important;
+  height: 24px !important;
+  transition: all 0.15s ease-in-out !important;
+  fill: currentColor !important;
   pointer-events: none;
 }
 
@@ -243,52 +256,35 @@
   pointer-events: none;
 }
 
-.control-button.active {
-  color: var(--color-icon-active);
-  background-color: var(--button-hover-bg);
-}
-
 .control-button:not(:disabled):hover {
-  background-color: var(--button-hover-bg);
-  color: var(--color-icon-active);
+  color: white !important;
+  /* Hover: White */
   transform: scale(1.05);
 }
 
+.control-button.active {
+  color: white !important;
+  /* Active/Toggled: White */
+}
+
 .control-button:disabled {
-  color: var(--color-icon-disabled);
+  color: #444 !important;
+  /* Disabled/Inactive: Dark gray */
   cursor: not-allowed;
   transform: none;
 }
 
 /* Общий стиль для SVG внутри кнопок */
-.control-button svg {
+/* SVG and icons inside buttons inherit color */
+.control-button svg,
+.control-button img {
   width: var(--icon-size);
   height: var(--icon-size);
-  fill: currentColor;
+  fill: currentColor !important;
+  transition: all 0.15s ease-in-out !important;
 }
 
-/* Стиль для родительской кнопки */
-.control-button {
-  color: var(--color-icon);
-  transition: color 0.15s ease-in-out;
-}
-
-/* Стиль для ховера на НЕотключенную кнопку */
-.control-button:not(:disabled):hover {
-  color: var(--color-icon-active);
-}
-
-/* Стиль для отключенной кнопки */
-.control-button:disabled {
-  color: var(--color-icon-disabled);
-  cursor: not-allowed;
-  fill: currentColor;
-}
-
-#togglePanelsButton:hover svg {
-  fill: var(--color-icon-active) !important;
-  /* Белый цвет иконки */
-}
+/* Cleanup redundant rules */
 
 /* Логика иконок */
 .google-login-button {
@@ -326,11 +322,10 @@
   /* margin-right: auto; */
 }
 
-#login-google-btn.control-button .fab.fa-google {
-  font-size: var(--icon-size);
-  /* Ensure icon size matches other control buttons */
+#login-google-btn.control-button svg {
+  width: 20px !important;
+  height: 20px !important;
   color: currentColor;
-  /* Inherit color from the button itself */
 }
 
 #login-google-btn.control-button:hover {
@@ -339,4 +334,3 @@
   color: var(--color-icon-active);
   /* Standard active icon color */
 }
-

@@ -22,7 +22,8 @@
     /* Hidden from screen readers */
     transition: transform 0.3s ease-in-out,
       opacity 0.3s ease-in-out,
-      visibility 0s linear 0.3s; /* Delay visibility:hidden when hiding */
+      visibility 0s linear 0.3s;
+    /* Delay visibility:hidden when hiding */
   }
 
   .panel.right-panel {
@@ -39,9 +40,12 @@
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transition-delay: 0s; /* Show immediately */
-    width: calc(2 * 45px + 5 * var(--button-spacing)); /* Minimal width for buttons */
-    max-width: calc(2 * 45px + 5 * var(--button-spacing)); /* Ensure it takes minimal width */
+    transition-delay: 0s;
+    /* Show immediately */
+    width: calc(2 * 45px + 5 * var(--button-spacing));
+    /* Minimal width for buttons */
+    max-width: calc(2 * 45px + 5 * var(--button-spacing));
+    /* Ensure it takes minimal width */
   }
 
   .panel.right-panel.visible {
@@ -50,20 +54,25 @@
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transition-delay: 0s; /* Show immediately */
-    width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))) !important; /* Fill remaining space */
-    max-width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))) !important; /* Ensure it takes remaining space */
+    transition-delay: 0s;
+    /* Show immediately */
+    width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))) !important;
+    /* Fill remaining space */
+    max-width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))) !important;
+    /* Ensure it takes remaining space */
   }
 
   /* 3. Стили для центральной области при открытых панелях */
   body.left-panel-open .main-area,
   body.right-panel-open .main-area {
-    display: none; /* Hide main area when a panel is open */
+    display: none;
+    /* Hide main area when a panel is open */
   }
 
   /* 4. Стили для кнопки переключения панелей на мобильных устройствах */
   #togglePanelsButton {
-    top: calc(var(--button-size) * 4 + var(--spacing-md) * 3) !important; /* ниже 4 кнопок */
+    top: calc(var(--button-size) * 4 + var(--spacing-md) * 3) !important;
+    /* ниже 4 кнопок */
     left: 0px !important;
     position: fixed !important;
     z-index: 10001 !important;
@@ -71,63 +80,74 @@
 
   /* 5. Стили для области жестов на мобильных устройствах */
   #gesture-area {
-    height: 40px; /* Thicker line by default */
+    height: 40px;
+    /* Thicker line by default */
   }
 
   #gesture-area.hands-detected {
-    height: 25vh; /* Expanded height */
+    height: 25vh;
+    /* Expanded height */
   }
 
   /* 6. Стили для чата на мобильных устройствах */
   #chatHistory {
-    min-height: 150px; /* Adjust as needed */
+    min-height: 150px;
+    /* Adjust as needed */
   }
 
   /* 7. Стили для полей ввода на мобильных устройствах */
   #topPromptInput,
   #chatInput {
-    min-height: 80px; /* Adjust as needed */
+    min-height: 80px;
+    /* Adjust as needed */
   }
 
   /* 8. Стили для модальных окон на мобильных устройствах */
   .modal-content {
-    width: 95%; /* Wider on mobile */
+    width: 95%;
+    /* Wider on mobile */
   }
 
   /* 9. Стили для левой панели на мобильных устройствах */
   .panel.left-panel {
-    width: calc(2 * 45px + 5 * var(--button-spacing)); /* Minimal width */
+    width: calc(2 * 45px + 5 * var(--button-spacing));
+    /* Minimal width */
     max-width: calc(2 * 45px + 5 * var(--button-spacing));
     min-width: calc(2 * 45px + 5 * var(--button-spacing));
   }
 
   /* 10. Стили для правой панели на мобильных устройствах */
   .panel.right-panel {
-    width: calc(100vw - (2 * 45px + 5 * var(--button-spacing))); /* Fill remaining space */
+    width: calc(100vw - (2 * 45px + 5 * var(--button-spacing)));
+    /* Fill remaining space */
     max-width: calc(100vw - (2 * 45px + 5 * var(--button-spacing)));
     min-width: calc(100vw - (2 * 45px + 5 * var(--button-spacing)));
   }
 
   /* 11. Стили для кнопок в левой панели на мобильных устройствах */
   .left-panel-group.central-block {
-    grid-template-columns: 1fr; /* Single column layout */
+    grid-template-columns: 1fr;
+    /* Single column layout */
   }
 
   .panel-button {
-    width: 100%; /* Full width */
+    width: 100%;
+    /* Full width */
   }
 
   /* 12. Стили для скроллбаров на мобильных устройствах */
   #chatMessages::-webkit-scrollbar,
   #chatInput::-webkit-scrollbar,
   #versionTimeline::-webkit-scrollbar {
-    width: 0; /* Hide scrollbars */
+    width: 0;
+    /* Hide scrollbars */
   }
 
   #chatMessages,
   #chatInput,
   #versionTimeline {
-    scrollbar-width: none; /* Hide scrollbars for Firefox */
+    scrollbar-width: none;
+    /* Hide scrollbars for Firefox */
   }
 
   /* 13. Стили для текста на мобильных устройствах */
@@ -157,15 +177,18 @@
 
   /* 16. Стили для контейнеров на мобильных устройствах */
   .content-container {
-    margin-bottom: 20px; /* More space */
+    margin-bottom: 20px;
+    /* More space */
   }
 
   .input-container {
-    margin-top: 20px; /* More space */
+    margin-top: 20px;
+    /* More space */
   }
 
   .controls-container {
-    height: 50px; /* Taller */
+    height: 50px;
+    /* Taller */
   }
 
   /* 17. Стили для модальных кнопок на мобильных устройствах */
@@ -286,13 +309,15 @@
 
   /* 31. Стили для промпт-бара на мобильных устройствах */
   #promptBar {
-    height: 100px; /* Shorter */
+    height: 100px;
+    /* Shorter */
   }
 
   /* 32. Стили для инпутов промпт-бара на мобильных устройствах */
   #topPromptInput,
   #chatInput {
-    min-height: 60px; /* Shorter */
+    min-height: 60px;
+    /* Shorter */
   }
 
   /* 33. Стили для кнопок промпт-бара на мобильных устройствах */
@@ -441,13 +466,15 @@
 
   /* 52. Стили для промпт-бара на мобильных устройствах */
   #promptBar {
-    height: 100px; /* Shorter */
+    height: 100px;
+    /* Shorter */
   }
 
   /* 53. Стили для инпутов промпт-бара на мобильных устройствах */
   #topPromptInput,
   #chatInput {
-    min-height: 60px; /* Shorter */
+    min-height: 60px;
+    /* Shorter */
   }
 
   /* 54. Стили для кнопок промпт-бара на мобильных устройствах */
