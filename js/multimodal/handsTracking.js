@@ -1,6 +1,8 @@
 // handsTracking.js
 import { Camera } from '@mediapipe/camera_utils';
 import { Hands } from '@mediapipe/hands';
+import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
+import eventBus from '../core/eventBus.js';
 
 import { state } from '../core/init.js';
 // import { AtomicGestureClassifier } from '../gestures/AtomicGestureClassifier.js'; // Старый классификатор
@@ -58,6 +60,26 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
         videoElement.onloadeddata = () => {
             console.log(">>> Video data loaded. Waiting before starting hands processing...");
 
+            // --- MOVE VIDEO TO GESTURE AREA ---
+            const gestureArea = document.getElementById('gesture-area');
+            if (gestureArea && videoElement) {
+                gestureArea.appendChild(videoElement);
+                Object.assign(videoElement.style, {
+                    display: 'block',
+                    position: 'absolute',
+                    top: '0',
+                    left: '0',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    zIndex: '0', // Below dots (zIndex 2) and line (zIndex 105?)
+                    opacity: '0.6', // Slightly transparent to blend
+                    transform: 'scaleX(-1)' // Mirror effect
+                });
+                console.log("Video element moved to gesture-area and styled.");
+            }
+            // ----------------------------------
+
             setTimeout(() => {
                 console.log(">>> Starting hands processing after delay");
 
@@ -96,7 +118,7 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
     }
 }
 
-// Function to initialize MediaPipe Hands
+// function initializeMediaPipeHands() {
 export function initializeMediaPipeHands() {
     console.log("Инициализация MediaPipe Hands...");
 
@@ -104,6 +126,34 @@ export function initializeMediaPipeHands() {
     if (!state.multimodal.videoElementForHands) {
         console.error("Error: videoElementForHands not found in DOM for handsTracking.");
         return;
+    }
+
+    // Setup Canvas for Skeleton Overlay
+    const previewCanvas = document.getElementById('previewCanvas');
+    if (previewCanvas) {
+        state.multimodal.gestureCanvas = previewCanvas;
+        state.multimodal.gestureCanvasCtx = previewCanvas.getContext('2d');
+
+        // Configure overlay styles
+        Object.assign(previewCanvas.style, {
+            display: 'block',
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            zIndex: '1000',
+            pointerEvents: 'none'
+        });
+
+        // Resize canvas to match window
+        previewCanvas.width = window.innerWidth;
+        previewCanvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            previewCanvas.width = window.innerWidth;
+            previewCanvas.height = window.innerHeight;
+        });
     }
 
     state.multimodal.handsInstance = new Hands({
@@ -115,7 +165,7 @@ export function initializeMediaPipeHands() {
 
     state.multimodal.handsInstance.setOptions({
         selfieMode: true,
-        maxNumHands: 1,
+        maxNumHands: 2, // User asked for two hands if present
         modelComplexity: 1,
         minDetectionConfidence: 0.7,
         minTrackingConfidence: 0.7,
@@ -140,13 +190,32 @@ export function initializeMediaPipeHands() {
 function onResults(results) {
     if (!state.multimodal.gestureCanvasCtx || !state.multimodal.gestureCanvas) {
         // console.warn("Canvas context or canvas not ready for drawing hand landmarks.");
-        return;
+        // Non-blocking return if canvas is missing, but logic runs
     }
 
-    const canvasCtx = state.multimodal.gestureCanvasCtx;
-    const canvasElement = state.multimodal.gestureCanvas;
-    canvasCtx.save();
-    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    // Draw Skeleton if canvas exists
+    if (state.multimodal.gestureCanvasCtx && state.multimodal.gestureCanvas) {
+        const canvasCtx = state.multimodal.gestureCanvasCtx;
+        const canvasElement = state.multimodal.gestureCanvas;
+
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+        // Draw Skeleton
+        if (results.multiHandLandmarks) {
+            for (const landmarks of results.multiHandLandmarks) {
+                // Use global drawing utils if available, or simple line drawing.
+                // Assuming drawConnectors/drawLandmarks are globally available from MediaPipe Utils
+                // If not, we need to import them or implement simple drawing.
+                // Since drawConnectors was used in commented code, we assume it's available.
+                if (typeof drawConnectors === 'function' && typeof drawLandmarks === 'function') {
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+                    drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', lineWidth: 1, radius: 3 });
+                }
+            }
+        }
+        canvasCtx.restore();
+    }
 
     state.multimodal.lastHandData = results.multiHandLandmarks;
 
@@ -216,12 +285,12 @@ function onResults(results) {
 
         if (!state.multimodal.handsVisible) {
             state.multimodal.handsVisible = true;
-            // eventBus.emit('handsVisibilityChanged', true); // Пока не используем eventBus для этого
+            eventBus.emit('handsDetected');
         }
     } else {
         if (state.multimodal.handsVisible) {
             state.multimodal.handsVisible = false;
-            // eventBus.emit('handsVisibilityChanged', false); // Пока не используем eventBus для этого
+            eventBus.emit('handsLost');
         }
         // Если руки не видны, старая логика отправляла null в секвенсор
         // if (state.gestureSequencer) { // Старая логика

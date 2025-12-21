@@ -130,12 +130,12 @@ textarea:focus:not(:placeholder-shown) {
 .controls-container {
   flex-shrink: 0;
   padding: 5px;
-  background-color: var(--color-pure-black);
+  background-color: transparent !important;
   display: flex;
   flex-direction: column;
   border-top: none;
-  height: 40px;
-  /* Фиксированная высота */
+  min-height: 40px;
+  /* Replaced fixed height with min-height */
 }
 
 #chatButton.active {

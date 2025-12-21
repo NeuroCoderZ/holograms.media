@@ -61,32 +61,44 @@ export default class XrLayout {
     }
 
     initializeMainPanelState() {
-        const panelsShouldBeHidden = localStorage.getItem('panelsHidden') === 'true';
-        console.log('[XrLayout] panelsShouldBeHidden:', panelsShouldBeHidden);
+        const storedState = localStorage.getItem('panelsHidden');
+        // Default to VISIBLE (false) if no state is stored (first visit) or if explicitly false
+        const panelsShouldBeHidden = storedState === 'true';
+        // If storedState is null, it defaults to false, which is what we want for desktop.
+
+        console.log('[XrLayout] panelsShouldBeHidden:', panelsShouldBeHidden, '(from storage:', storedState, ')');
         if (this.leftPanelElement && this.rightPanelElement && this.togglePanelsButtonElement) {
             if (panelsShouldBeHidden) {
                 this.leftPanelElement.classList.remove('visible');
                 this.rightPanelElement.classList.remove('visible');
+
+                // Add hidden class for desktop support
+                this.leftPanelElement.classList.add('hidden');
+                this.rightPanelElement.classList.add('hidden');
+
                 this.togglePanelsButtonElement.classList.add('show-mode');
             } else {
                 this.leftPanelElement.classList.add('visible');
                 this.rightPanelElement.classList.add('visible');
+
+                // Remove hidden class
+                this.leftPanelElement.classList.remove('hidden');
+                this.rightPanelElement.classList.remove('hidden');
+
                 this.togglePanelsButtonElement.classList.remove('show-mode');
-                // Apply transparency and blur to panels
-                this.leftPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
-                this.leftPanelElement.style.backdropFilter = 'blur(20px)';
-                this.rightPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
-                this.rightPanelElement.style.backdropFilter = 'blur(20px)';
             }
-            // Ensure old 'hidden' class (if it was ever used) is removed
-            this.leftPanelElement.classList.remove('hidden');
-            this.rightPanelElement.classList.remove('hidden');
-              console.log(`[XrLayout] Panels initialized from localStorage. Hidden: ${panelsShouldBeHidden}`);
-              console.log('[XrLayout] leftPanel has visible after init:', this.leftPanelElement.classList.contains('visible'));
+            console.log(`[XrLayout] Panels initialized from localStorage. Hidden: ${panelsShouldBeHidden}`);
+            console.log('[XrLayout] leftPanel has visible after init:', this.leftPanelElement.classList.contains('visible'));
         } else {
             console.warn("[XrLayout] Panel elements not fully available for state initialization.");
         }
         updateHologramLayout(this.state);
+
+        // Initial update of renderer size and centering based on loaded state
+        if (this.state.updateRendererSize) {
+            const shouldCenter = panelsShouldBeHidden; // If hidden on init, center it
+            this.state.updateRendererSize(shouldCenter);
+        }
     }
 
     toggleMainPanels() {
@@ -98,19 +110,20 @@ export default class XrLayout {
         const arePanelsCurrentlyVisible = this.leftPanelElement.classList.contains('visible');
         console.log(`[XrLayout][toggleMainPanels] Panels currently visible (before toggle): ${arePanelsCurrentlyVisible}`);
 
-        // Toggle visibility classes
-        this.leftPanelElement.classList.toggle('visible');
-        this.rightPanelElement.classList.toggle('visible');
-        this.togglePanelsButtonElement.classList.toggle('show-mode', arePanelsCurrentlyVisible); // show-mode means panels are now hidden
-
-        // Apply transparency and blur to panels if visible
-        if (this.leftPanelElement.classList.contains('visible')) {
-            this.leftPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
-            this.leftPanelElement.style.backdropFilter = 'blur(20px)';
-        }
-        if (this.rightPanelElement.classList.contains('visible')) {
-            this.rightPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
-            this.rightPanelElement.style.backdropFilter = 'blur(20px)';
+        if (arePanelsCurrentlyVisible) {
+            // Hide panels
+            this.leftPanelElement.classList.remove('visible');
+            this.rightPanelElement.classList.remove('visible');
+            this.leftPanelElement.classList.add('hidden');
+            this.rightPanelElement.classList.add('hidden');
+            this.togglePanelsButtonElement.classList.add('show-mode');
+        } else {
+            // Show panels
+            this.leftPanelElement.classList.add('visible');
+            this.rightPanelElement.classList.add('visible');
+            this.leftPanelElement.classList.remove('hidden');
+            this.rightPanelElement.classList.remove('hidden');
+            this.togglePanelsButtonElement.classList.remove('show-mode');
         }
 
         const newState = this.leftPanelElement.classList.contains('visible') ? 'visible' : 'hidden';

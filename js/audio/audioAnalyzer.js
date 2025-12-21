@@ -1,65 +1,121 @@
-// js/audio/audioAnalyzer.js
-// Класс AudioAnalyzer - обертка для совместимости с WASM-based аудио анализом
-
-import { state } from '../core/init.js';
+import { semitones, SMOOTHING_TIME_CONSTANT } from '../config/hologramConfig.js';
 
 /**
- * Класс AudioAnalyzer для получения уровней семитонов
- * В текущей реализации использует данные из WASM CWT анализа
+ * AudioAnalyzer class wraps the native Web Audio API AnalyserNode.
+ * It provides methods to get frequency data and map it to the 128 semitones
+ * defined in the application configuration.
  */
 export class AudioAnalyzer {
-    /**
-     * Конструктор AudioAnalyzer
-     * @param {string} channel - 'left' или 'right' для канала
-     */
-    constructor(channel = 'left') {
-        this.channel = channel;
-        this.semitoneLevels = new Float32Array(128); // 128 семитонов
+    constructor(audioContext) {
+        this.audioContext = audioContext;
+        this.splitter = this.audioContext.createChannelSplitter(2);
+        this.analyserL = this.audioContext.createAnalyser();
+        this.analyserR = this.audioContext.createAnalyser();
 
-        console.log(`AudioAnalyzer initialized for ${channel} channel (WASM-based)`);
+        // Configure FFT
+        // 4096 is good for bass resolution.
+        this.analyserL.fftSize = 4096;
+        this.analyserR.fftSize = 4096;
+
+        // Use global smoothing constant
+        this.analyserL.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
+        this.analyserR.smoothingTimeConstant = SMOOTHING_TIME_CONSTANT;
+
+        this.splitter.connect(this.analyserL, 0);
+        this.splitter.connect(this.analyserR, 1);
+
+        this.frequencyDataL = new Uint8Array(this.analyserL.frequencyBinCount);
+        this.frequencyDataR = new Uint8Array(this.analyserR.frequencyBinCount);
+
+        // Pre-calculate bin ranges for each semitone to optimize the render loop
+        // Both analysers have same settings, so one map is enough
+        this.binMap = this._calculateBinMap();
     }
 
-    /**
-     * Установить узел анализатора (для совместимости, не используется в WASM версии)
-     * @param {AnalyserNode} analyserNode - Узел анализатора
-     */
-    setAnalyserNode(analyserNode) {
-        // В WASM версии анализатор не используется напрямую
-        console.log('AudioAnalyzer: setAnalyserNode called (ignored in WASM version)');
+    get inputInfo() {
+        return {
+            splitter: this.splitter,
+            analyserL: this.analyserL,
+            analyserR: this.analyserR
+        };
     }
 
-    /**
-     * Получить узел анализатора (для совместимости)
-     * @returns {null} Всегда null в WASM версии
-     */
-    getAnalyserNode() {
-        return null;
+    connectSource(sourceNode) {
+        // Connect source to splitter. 
+        // If source is mono, splitter duplicates channel 0 to outputs 0 and 1 usually, 
+        // or we relying on up-mixing. 
+        // MediaStreamAudioSourceNode usually handles channel count.
+        sourceNode.connect(this.splitter);
     }
 
-    /**
-     * Получить текущие уровни для каждого семитона из WASM данных
-     * @returns {Float32Array} Массив уровней для 128 семитонов (0-1)
-     */
-    getSemitoneLevels() {
-        if (!state.audio || !state.audio.currentDbLevels) {
-            return this.semitoneLevels.fill(0);
+    disconnectSource(sourceNode) {
+        try {
+            sourceNode.disconnect(this.splitter);
+        } catch (e) {
+            // Ignore if already disconnected
         }
+    }
 
-        const dbLevels = state.audio.currentDbLevels;
-        const isLeft = this.channel === 'left';
+    /**
+     * Pre-calculates which FFT bins correspond to which semitone index.
+     */
+    _calculateBinMap() {
+        const sampleRate = this.audioContext.sampleRate;
+        const fftSize = this.analyserL.fftSize;
+        const binWidth = sampleRate / fftSize;
 
-        // WASM возвращает 256 значений: 128 left + 128 right
-        const channelOffset = isLeft ? 0 : 128;
+        const map = [];
 
-        // Прямое копирование 128 значений для канала
+        for (let i = 0; i < semitones.length; i++) {
+            const noteFreq = semitones[i].f;
+            const centerBin = Math.round(noteFreq / binWidth);
+            // Ensure within bounds
+            const safeBin = Math.max(0, Math.min(centerBin, this.frequencyDataL.length - 1));
+            map.push([safeBin]);
+        }
+        return map;
+    }
+
+    /**
+     * Retrieves the current audio data, mapped to 128 semitones.
+     * Returns true stereo data for L and R channels.
+     */
+    getAnalysisData() {
+        if (!this.analyserL || !this.analyserR) return null;
+
+        // Get raw frequency data for both channels
+        this.analyserL.getByteFrequencyData(this.frequencyDataL);
+        this.analyserR.getByteFrequencyData(this.frequencyDataR);
+
+        const dbLevels = new Float32Array(256); // 128 Left, 128 Right
+        const panAngles = new Float32Array(128);
+
         for (let i = 0; i < 128; i++) {
-            const db = dbLevels[channelOffset + i];
-            // Предполагаем, что db в диапазоне -100 до 0 dB
-            // Преобразование в линейный уровень 0-1
-            const linear = Math.pow(10, db / 20);
-            this.semitoneLevels[i] = Math.max(0, Math.min(1, linear));
+            const bins = this.binMap[i];
+
+            // Calculate Level for Left
+            let sumL = 0;
+            for (let j = 0; j < bins.length; j++) sumL += this.frequencyDataL[bins[j]];
+            const rawL = bins.length > 0 ? sumL / bins.length : 0;
+            const dbL = (rawL / 255.0) * 128.0 - 128.0;
+
+            // Calculate Level for Right
+            let sumR = 0;
+            for (let j = 0; j < bins.length; j++) sumR += this.frequencyDataR[bins[j]];
+            const rawR = bins.length > 0 ? sumR / bins.length : 0;
+            const dbR = (rawR / 255.0) * 128.0 - 128.0;
+
+            dbLevels[i] = dbL;       // Left 0-127
+            dbLevels[i + 128] = dbR; // Right 128-255
+
+            // Placeholder for panAngles - calculation is now done in Renderer for visualization
+            // But we can validly put 0 here as we pass raw L/R data.
+            panAngles[i] = 0;
         }
 
-        return this.semitoneLevels;
+        return {
+            dbLevels,
+            panAngles
+        };
     }
 }

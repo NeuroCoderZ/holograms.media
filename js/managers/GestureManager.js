@@ -22,7 +22,7 @@ export class GestureManager {
 
         // Cloud storage для жестов
         this.cloudStorage = new CloudGestureStorage();
-        this.loadFromLocalStorage();
+
     }
 
     /**
@@ -263,7 +263,7 @@ export class GestureManager {
         this.customGestures.set(name, gestureData);
         // Сохраняем локально в localStorage
         this.saveToLocalStorage();
-        this.saveToLocalStorage();
+
 
         // Сохраняем в облако
         await this.cloudStorage.saveGesture(gestureData);
@@ -300,36 +300,6 @@ export class GestureManager {
     /**
      * Добавление слушателя событий
      */
-    /**
-     * Загрузка жестов из localStorage
-     */
-    loadFromLocalStorage() {
-        try {
-            const stored = localStorage.getItem('holograms_gestures');
-            if (stored) {
-                const gestures = JSON.parse(stored);
-                gestures.forEach(gesture => {
-                    this.customGestures.set(gesture.name, gesture);
-                    this.gestureCodes.set(gesture.code, gesture);
-                });
-                console.log(`Загружено ${gestures.length} жестов из localStorage`);
-            }
-        } catch (error) {
-            console.error('Ошибка загрузки жестов из localStorage:', error);
-        }
-    }
-
-    /**
-     * Сохранение жестов в localStorage
-     */
-    saveToLocalStorage() {
-        try {
-            const gestures = Array.from(this.customGestures.values());
-            localStorage.setItem('holograms_gestures', JSON.stringify(gestures));
-        } catch (error) {
-            console.error('Ошибка сохранения жестов в localStorage:', error);
-        }
-    }
 
     addEventListener(eventType, callback) {
         if (!this.eventListeners.has(eventType)) {
@@ -404,6 +374,8 @@ export class GestureManager {
     }
 
     /**
+     * Освобождение ресурсов
+     */
     dispose() {
         if (this.smartHologram) {
             this.smartHologram.dispose();

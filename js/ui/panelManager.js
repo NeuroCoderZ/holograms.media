@@ -15,14 +15,23 @@ class PanelManager {
             chatHistory: 'chatHistory',
             versionTimeline: 'versionTimeline'
         };
+
+        // Main panels references
+        this.leftPanelElement = null;
+        this.rightPanelElement = null;
+        this.togglePanelsButtonElement = null;
+
         console.log("PanelManager (core content logic) initialized.");
     }
 
-    initializePanelManager() { // Renamed or refocused from original
-        console.log('Initializing content panel management...');
+    initializePanelManager() {
+        console.log('Initializing panel management...');
         this.initializeContentPanels();
-        console.log('Content panel management initialization complete.');
+        console.log('Panel management initialization complete.');
     }
+
+    // Main panel toggling is now handled strictly by layout managers (e.g., XrLayout)
+    // to avoid duplicate event listeners and state conflicts.
 
     initializeContentPanels() {
         let allFound = true;
@@ -39,7 +48,8 @@ class PanelManager {
 
         if (this.contentPanels.versionTimeline) {
             this.contentPanels.versionTimeline.style.display = 'block';
-            if (uiElements.inputs.topPromptInput) {
+            // Rest of initialization logic...
+            if (uiElements.inputs && uiElements.inputs.topPromptInput) { // Check for uiElements.inputs existence
                 uiElements.inputs.topPromptInput.placeholder = "Что бы вы хотели изменить?";
                 if (document.getElementById('promptBar')) document.getElementById('promptBar').style.display = 'block';
                 if (document.getElementById('chatInputBar')) document.getElementById('chatInputBar').style.display = 'none';

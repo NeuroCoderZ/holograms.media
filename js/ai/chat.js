@@ -1,7 +1,7 @@
 // js/ai/chat.js
 
-// Импортируем напрямую "мозг" NLWeb, минуя его стандартный UI
-import { ModernChatInterface } from 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev/fp-chat-interface-snippet.js';
+// Импортируем локальный мок вместо недоступного внешнего скрипта
+import { ModernChatInterface } from './ModernChatInterface.js';
 
 let triaInterface;
 
@@ -64,7 +64,7 @@ function initializeTriaChat() {
       sendButton.click();
     }
   };
-  
+
   // Добавляем авто-изменение размера поля ввода
   chatInput.addEventListener('input', () => {
     chatInput.style.height = 'auto';

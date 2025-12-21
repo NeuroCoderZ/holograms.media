@@ -1,82 +1,167 @@
-// frontend/js/audio/audioProcessing.js (REWRITTEN for new WASM interface)
-import eventBus from '../core/eventBus.js';
-import { state } from '../core/init.js';
+// frontend/js/audio/audioProcessing.js
+// CWT-based audio processing with AudioWorklet and WASM
 
-// Define constants for audio processing
-const CHUNK_SIZE = 1024; // Standard chunk size for audio processing
-const NUM_BINS = 128;    // Number of frequency bins for CWT analysis
+import { state } from '../core/init.js';
+import { AudioAnalyzer } from './audioAnalyzer.js';
+import { deviceCapabilities } from '../utils/deviceCapabilities.js';
+import eventBus from '../core/eventBus.js';
+
+let cwtWorkletNode = null;
+let cwtWorkletReady = false;
 
 /**
  * Initializes or retrieves the global AudioContext.
  * @returns {AudioContext} The application's AudioContext.
  */
 export function getAudioContext() {
-    if (state.audioContext && state.audioContext.state !== 'closed') {
-        return state.audioContext;
+    if (state.audio && state.audio.audioContext && state.audio.audioContext.state !== 'closed') {
+        return state.audio.audioContext;
     }
-    state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    return state.audioContext;
+    if (!state.audio) state.audio = {};
+    state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    return state.audio.audioContext;
 }
 
 /**
- * Sets up the audio processing pipeline using a modern AudioWorklet.
- * This function creates a 'cwt-processor' node from waveletAnalyzer.js,
- * connects it to the audio source, and sets up a communication channel
- * to receive analysis results and publish them to the eventBus.
- *
- * @param {AudioNode} sourceNode - The audio source (e.g., from a microphone or file).
- * @param {AudioContext} audioContext - The global AudioContext.
+ * Initializes the CWT AudioWorklet.
+ * Should be called once during app initialization.
+ * @param {AudioContext} audioContext 
  */
-export async function setupAudioProcessing(sourceNode, audioContext) {
+export async function initializeCwtWorklet(audioContext) {
+    if (cwtWorkletReady) {
+        console.log('[AudioProcessing] CWT Worklet already initialized.');
+        return;
+    }
+
     try {
-        // 1. Load the AudioWorklet module.
-        await audioContext.audioWorklet.addModule('./waveletAnalyzer.js');
-        console.log('AudioWorklet module loaded successfully.');
+        // Detect device capabilities for optimal parameters
+        const caps = await deviceCapabilities.detect();
+        const { sampleRate, chunkSize, numBins, channelCount } = caps.optimal;
 
-        // 2. Create the AudioWorkletNode.
-        const cwtNode = new AudioWorkletNode(audioContext, 'cwt-processor', {
+        console.log(`[AudioProcessing] Initializing CWT Worklet with: 
+      sampleRate=${sampleRate}, chunkSize=${chunkSize}, numBins=${numBins}, channels=${channelCount}`);
+
+        // Load the AudioWorklet module
+        await audioContext.audioWorklet.addModule('/js/audio/waveletAnalyzer.js');
+        console.log('[AudioProcessing] AudioWorklet module loaded.');
+
+        // Create the CWT processor node
+        cwtWorkletNode = new AudioWorkletNode(audioContext, 'cwt-processor', {
             processorOptions: {
-                chunkSize: CHUNK_SIZE,
-                numBins: NUM_BINS,
-                sampleRate: audioContext.sampleRate
-            }
+                sampleRate: sampleRate,
+                numBins: numBins,
+                chunkSize: chunkSize,
+                channelCount: channelCount
+            },
+            numberOfInputs: 1,
+            numberOfOutputs: 1,
+            outputChannelCount: [2] // Stereo output for pass-through
         });
-        console.log('CWT Processor node created.');
 
-        // 3. Set up message handling from the worklet.
-        cwtNode.port.onmessage = (event) => {
-            if (event.data.type === 'WASM_READY') {
-                console.log('WASM module is ready in AudioWorklet. Sending init data...');
-                // Once WASM is ready, send the necessary configuration data to initialize the processor.
-                cwtNode.port.postMessage({
-                    type: 'INIT_PROCESSOR',
-                    sampleRate: audioContext.sampleRate,
-                    numBins: NUM_BINS,
-                    chunkSize: CHUNK_SIZE
-                });
-            } else if (event.data.type === 'AUDIO_DATA') {
-                // 4. Receive analysis results and publish them to the event bus.
+        // Handle messages from the worklet
+        cwtWorkletNode.port.onmessage = (event) => {
+            const { type } = event.data;
+
+            if (type === 'WASM_READY') {
+                cwtWorkletReady = true;
+                console.log('[AudioProcessing] CWT WASM module ready in AudioWorklet.');
+            } else if (type === 'AUDIO_DATA') {
+                // Emit CWT results to the application via eventBus
                 eventBus.emit('cwtResult', {
                     dbLevels: event.data.levels,
                     panAngles: event.data.angles
                 });
+
+                // Also store in global state for direct access
+                state.audio.latestCwtData = {
+                    dbLevels: event.data.levels,
+                    panAngles: event.data.angles,
+                    timestamp: performance.now()
+                };
             }
         };
 
-        cwtNode.port.onmessageerror = (event) => {
-            console.error('Error message from CWT Processor:', event);
-        };
+        // Connect worklet to destination for audio pass-through
+        cwtWorkletNode.connect(audioContext.destination);
 
-        // 5. Connect the audio graph: source -> CWT node -> destination.
-        // Note: A ScriptProcessorNode is no longer needed with AudioWorklets.
-        sourceNode.connect(cwtNode).connect(audioContext.destination);
-        console.log('Audio processing pipeline connected using AudioWorklet.');
-
-        // Store the node in the global state for potential future control.
-        state.cwtProcessorNode = cwtNode;
+        console.log('[AudioProcessing] CWT AudioWorklet initialized and ready.');
 
     } catch (error) {
-        console.error('Failed to set up audio processing pipeline:', error);
-        // Optionally, display an error to the user.
+        console.error('[AudioProcessing] Failed to initialize CWT Worklet:', error);
+        console.log('[AudioProcessing] Falling back to native FFT analyzer.');
+        // Fallback will use the existing AudioAnalyzer
     }
+}
+
+/**
+ * Sets up the audio processing pipeline.
+ * Uses CWT AudioWorklet if available, falls back to native FFT.
+ *
+ * @param {AudioNode} sourceNode - The audio source.
+ * @param {AudioContext} audioContext - The global AudioContext.
+ * @param {boolean} connectToOutput - Whether to connect source to speakers.
+ * @returns {AudioAnalyzer|AudioWorkletNode} The analyzer being used.
+ */
+export function setupAudioProcessing(sourceNode, audioContext, connectToOutput = true) {
+    // Ensure CWT worklet is initialized
+    if (!cwtWorkletReady && cwtWorkletNode === null) {
+        // Try async initialization (won't block, but will enable for future sources)
+        initializeCwtWorklet(audioContext);
+    }
+
+    // If CWT worklet is ready, use it
+    if (cwtWorkletReady && cwtWorkletNode) {
+        // Connect source → CWT Worklet → destination
+        sourceNode.connect(cwtWorkletNode);
+        console.log('[AudioProcessing] Source connected to CWT AudioWorklet.');
+
+        // Note: connectToOutput is handled by the worklet's pass-through
+        return cwtWorkletNode;
+    }
+
+    // Fallback: Use native FFT analyzer
+    console.log('[AudioProcessing] Using native FFT analyzer (CWT not ready).');
+
+    if (!state.audio.globalAnalyzer) {
+        state.audio.globalAnalyzer = new AudioAnalyzer(audioContext);
+    }
+
+    // Connect source to the analyzer
+    state.audio.globalAnalyzer.connectSource(sourceNode);
+
+    // Connect source to destination so we can hear it (if it's a file player)
+    if (connectToOutput) {
+        sourceNode.connect(audioContext.destination);
+    }
+
+    console.log('[AudioProcessing] Audio processing pipeline connected using Native FFT AudioAnalyzer.');
+    return state.audio.globalAnalyzer;
+}
+
+/**
+ * Disconnects a source from the CWT worklet.
+ * @param {AudioNode} sourceNode 
+ */
+export function disconnectFromCwt(sourceNode) {
+    if (cwtWorkletNode) {
+        try {
+            sourceNode.disconnect(cwtWorkletNode);
+        } catch (e) {
+            // Already disconnected
+        }
+    }
+}
+
+/**
+ * Returns whether CWT processing is active.
+ */
+export function isCwtActive() {
+    return cwtWorkletReady && cwtWorkletNode !== null;
+}
+
+/**
+ * Gets the CWT worklet node for direct connection.
+ */
+export function getCwtWorkletNode() {
+    return cwtWorkletNode;
 }

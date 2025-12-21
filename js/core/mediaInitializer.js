@@ -30,12 +30,10 @@ async function initializeMultimedia(appState) { // Added appState parameter
             const { analyserLeft, analyserRight } = appState.microphoneManagerInstance.getAnalysers();
             if (analyserLeft && analyserRight) {
                 appState.audio.microphoneAnalysers = { left: analyserLeft, right: analyserRight };
-                if (appState.audioAnalyzerLeftInstance) {
-                    appState.audioAnalyzerLeftInstance.setAnalyserNode(analyserLeft);
-                }
-                if (appState.audioAnalyzerRightInstance) {
-                    appState.audioAnalyzerRightInstance.setAnalyserNode(analyserRight);
-                }
+
+                // Ensure global analyzer exists and connect logic is handled by MicrophoneManager or here if needed
+                // But MicrophoneManager.initializeWithStream already calls setupAudioProcessing which sets globalAnalyzer
+
                 appState.audio.activeSource = 'microphone'; // Set active source
                 console.log('Microphone analysers set to global state and activeSource is microphone (audio/video stream).');
             } else {
@@ -82,12 +80,9 @@ async function initializeMultimedia(appState) { // Added appState parameter
                     const { analyserLeft, analyserRight } = appState.microphoneManagerInstance.getAnalysers();
                     if (analyserLeft && analyserRight) {
                         appState.audio.microphoneAnalysers = { left: analyserLeft, right: analyserRight };
-                        if (appState.audioAnalyzerLeftInstance) {
-                            appState.audioAnalyzerLeftInstance.setAnalyserNode(analyserLeft);
-                        }
-                        if (appState.audioAnalyzerRightInstance) {
-                            appState.audioAnalyzerRightInstance.setAnalyserNode(analyserRight);
-                        }
+
+                        // Obsolete specific instance setting removed
+
                         appState.audio.activeSource = 'microphone'; // Set active source
                         console.log('Microphone analysers set to global state and activeSource is microphone (audio-only stream).');
                     } else {

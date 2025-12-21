@@ -17,6 +17,11 @@ export default class DesktopLayout {
         console.log("[DesktopLayout] Received state:", this.state);
         console.log("[DesktopLayout] localStorage panelsHidden:", localStorage.getItem('panelsHidden'));
 
+        // Ensure panels are visible by default on very first visit
+        if (localStorage.getItem('panelsHidden') === null) {
+            localStorage.setItem('panelsHidden', 'false');
+        }
+
         // Get elements from state.uiElements
         if (!this.state || !this.state.uiElements) {
             console.error('[CRITICAL ERROR][DesktopLayout] State or uiElements not available on initialization.');
@@ -72,17 +77,12 @@ export default class DesktopLayout {
                 this.leftPanelElement.classList.add('visible');
                 this.rightPanelElement.classList.add('visible');
                 this.togglePanelsButtonElement.classList.remove('show-mode');
-                // Apply transparency and blur to panels
-                this.leftPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.25)';
-                this.leftPanelElement.style.backdropFilter = 'blur(20px) saturate(180%)';
-                this.rightPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.25)';
-                this.rightPanelElement.style.backdropFilter = 'blur(20px) saturate(180%)';
             }
             // Ensure old 'hidden' class (if it was ever used) is removed
             this.leftPanelElement.classList.remove('hidden');
             this.rightPanelElement.classList.remove('hidden');
-             console.log(`[DesktopLayout] Panels initialized from localStorage. Hidden: ${panelsShouldBeHidden}`);
-             console.log('[DesktopLayout] leftPanel has visible after init:', this.leftPanelElement.classList.contains('visible'));
+            console.log(`[DesktopLayout] Panels initialized from localStorage. Hidden: ${panelsShouldBeHidden}`);
+            console.log('[DesktopLayout] leftPanel has visible after init:', this.leftPanelElement.classList.contains('visible'));
         } else {
             console.warn("[DesktopLayout] Panel elements not fully available for state initialization.");
         }
@@ -102,16 +102,6 @@ export default class DesktopLayout {
         this.leftPanelElement.classList.toggle('visible');
         this.rightPanelElement.classList.toggle('visible');
         this.togglePanelsButtonElement.classList.toggle('show-mode', arePanelsCurrentlyVisible); // show-mode means panels are now hidden
-
-        // Apply transparency and blur to panels if visible
-        if (this.leftPanelElement.classList.contains('visible')) {
-            this.leftPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.25)';
-            this.leftPanelElement.style.backdropFilter = 'blur(20px) saturate(180%)';
-        }
-        if (this.rightPanelElement.classList.contains('visible')) {
-            this.rightPanelElement.style.backgroundColor = 'rgba(0, 0, 0, 0.25)';
-            this.rightPanelElement.style.backdropFilter = 'blur(20px) saturate(180%)';
-        }
 
         const newState = this.leftPanelElement.classList.contains('visible') ? 'visible' : 'hidden';
         console.log(`[DesktopLayout][toggleMainPanels] Panels toggled. New state: ${newState}. leftPanel visible: ${this.leftPanelElement.classList.contains('visible')}`);

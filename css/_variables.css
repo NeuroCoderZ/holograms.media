@@ -1,4 +1,3 @@
-
 :root {
   /* Размеры */
   --base-size: clamp(8px, 1.5vmin, 14px);
@@ -90,7 +89,7 @@
   --button-action-hover: #0056b3;
   --button-hover-bg: rgba(255, 255, 255, 0.08);
   /* Фон кнопки при ховере */
-  --color-icon: var(--color-black-33);
+  --color-icon: #888;
   /* Неактивная иконка - светло-серый */
   --color-icon-active: var(--color-white-100);
   /* Активная иконка - белый */

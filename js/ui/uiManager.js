@@ -10,6 +10,7 @@ import { initializePwaInstall } from '../core/pwaInstall.js';
 import { toggleFullscreen, initFullscreenListeners } from '../utils/fullscreen.js'; // Import for fullscreen
 import { toggleTriaLearningMode } from '../ai/tria.js'; // Import for Tria button
 import { initializeRightPanel } from '../panels/rightPanelManager.js'; // Import for right panel logic
+import { hologramScanner } from '../multimodal/hologramScanner.js'; // Import for Scanner button
 
 /**
  * uiElements is a central object holding references to all significant DOM elements
@@ -36,25 +37,25 @@ export const uiElements = {
     promptModeButton: null,   // Button to toggle between Prompt and Chat modes
     installPwaButton: null,   // Button to prompt PWA installation
   },
-  
+
   // --- Elements in the right sidebar (main content areas) ---
   versionTimeline: null,    // Container for version timeline content
   chatHistory: null,        // Container for chat messages with Tria
-  
+
   // --- Main application layout containers ---
   gridContainer: null,      // Main 3D visualization area
   gestureArea: null,        // Area for gesture visualization/interaction
   containers: {
     chatMessages: null       // Specific div within chatHistory for messages
   },
-  
+
   // --- Modal dialog windows ---
   modals: {
     gestureModal: null,       // Modal for gesture recording
     promptModal: null,        // Modal for complex prompt input
     fileEditorModal: null,    // Modal for integrated file editor
   },
-  
+
   // --- Input fields ---
   inputs: {
     fileInput: null,          // Generic file input (possibly hidden, triggered by fileButton)
@@ -65,7 +66,7 @@ export const uiElements = {
     promptText: null,         // Textarea within the prompt modal
     modelSelect: null,        // Dropdown for selecting LLM models
   },
-  
+
   // --- Action buttons (often within input forms or modals) ---
   // Listeners for these are typically set up in other modules (e.g., chat.js, fileEditor.js).
   actions: {
@@ -79,7 +80,7 @@ export const uiElements = {
     closePromptModal: null,     // Close button for prompt modal
     closeFileEditorModal: null, // Close button for file editor modal
   },
-  
+
   // --- Panel elements and toggles ---
   leftPanel: null,          // Reference to the left sidebar DOM element - Managed by PanelManager
   rightPanel: null,         // Reference to the right sidebar DOM element - Managed by PanelManager
@@ -96,7 +97,7 @@ function addDebugClasses() {
     panel: document.querySelector('.panel.left-panel'),
     label: document.querySelector('.version-label')
   };
-  
+
   Object.entries(elements).forEach(([key, element]) => {
     if (element) {
       element.classList.add(`debug-${key}`);
@@ -157,21 +158,21 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   uiElements.buttons.promptModeButton = document.getElementById('promptModeButton'); // For Toggling Chat Mode / Opening Chat Panel
   uiElements.buttons.installPwaButton = document.getElementById('installPwaButton');
   uiElements.buttons.avatarButton = document.getElementById('avatarButton'); // Added Avatar button
-  
+
   // Right panel content sections
   uiElements.versionTimeline = document.getElementById('versionTimeline');
   uiElements.chatHistory = document.getElementById('chatHistory');
-  
+
   // Main layout containers
   uiElements.gridContainer = document.getElementById('grid-container');
   uiElements.gestureArea = document.getElementById('gesture-area');
   uiElements.containers.chatMessages = document.getElementById('chatMessages'); // Specific div for chat messages
-  
+
   // Modal dialogs
   uiElements.modals.gestureModal = document.getElementById('gestureModal');
   uiElements.modals.promptModal = document.getElementById('promptModal');
   uiElements.modals.fileEditorModal = document.getElementById('fileEditorModal');
-  
+
   // Input fields
   uiElements.inputs.fileInput = document.getElementById('fileInput');
   uiElements.inputs.audioFileInput = document.getElementById('audioFileInput');
@@ -180,7 +181,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   uiElements.inputs.chatInput = document.getElementById('chatInput');
   uiElements.inputs.promptText = document.getElementById('promptText');
   uiElements.inputs.modelSelect = document.getElementById('modelSelect');
-  
+
   // Action-specific buttons
   uiElements.actions.submitTopPrompt = document.getElementById('submitTopPrompt');
   uiElements.actions.submitChatMessage = document.getElementById('submitChatMessage');
@@ -226,7 +227,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
     console.log('[UIManager] togglePanelsButton computed left:', window.getComputedStyle(appState.uiElements.togglePanelsButton).left);
     console.log('[UIManager] togglePanelsButton computed position:', window.getComputedStyle(appState.uiElements.togglePanelsButton).position);
     console.log('[UIManager] togglePanelsButton computed transform:', window.getComputedStyle(appState.uiElements.togglePanelsButton).transform);
-}
+  }
   // Ensure these new elements are also logged or checked if you have debugging patterns for that.
   // For example, adding to logLayoutState or the verification console.logs:
   console.log('[UIManager] Проверка: triaVersion в appState.uiElements.labels:', appState.uiElements.labels.triaVersion ? 'найден' : 'НЕ найден', appState.uiElements.labels.triaVersion);
@@ -238,9 +239,9 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   if (!appState.uiElements.containers) { appState.uiElements.containers = {}; }
   appState.uiElements.containers.hologramList = document.getElementById('myHologramsView'); // Используем существующий #myHologramsView
   if (!appState.uiElements.containers.hologramList) {
-      console.warn("#myHologramsView (for hologram list) not found in DOM during UI setup. Hologram panel may not work.");
+    console.warn("#myHologramsView (for hologram list) not found in DOM during UI setup. Hologram panel may not work.");
   } else {
-      console.log("Hologram list container (#myHologramsView) successfully assigned to state.uiElements.containers.hologramList.");
+    console.log("Hologram list container (#myHologramsView) successfully assigned to state.uiElements.containers.hologramList.");
   }
 
   // --- Initial UI State and Debugging ---
@@ -310,11 +311,11 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
     // or simply set class based on initial appState.audio.activeSource.
     // For now, let's ensure the class and title are set based on initial state.
     if (appState.audio && appState.audio.activeSource === 'microphone') {
-        uiElements.buttons.micButton.classList.add('active');
-        uiElements.buttons.micButton.title = "Выключить микрофон";
+      uiElements.buttons.micButton.classList.add('active');
+      uiElements.buttons.micButton.title = "Выключить микрофон";
     } else {
-        uiElements.buttons.micButton.classList.remove('active');
-        uiElements.buttons.micButton.title = "Включить микрофон";
+      uiElements.buttons.micButton.classList.remove('active');
+      uiElements.buttons.micButton.title = "Включить микрофон";
     }
   }
 
@@ -331,7 +332,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
       }
     });
   } else {
-      console.warn("Fullscreen button element not found. Fullscreen toggle functionality disabled.");
+    console.warn("Fullscreen button element not found. Fullscreen toggle functionality disabled.");
   }
 
   // --- Other Feature Buttons ---
@@ -357,28 +358,48 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   } else {
     console.warn("XR button element not found.");
   }
-  
+
   // Gesture Record button also opens the 'My Gestures' panel.
   addButtonListener(uiElements.buttons.gestureRecordButton, () => {
-      console.log("Gesture Record button clicked. Opening 'My Gestures' panel.");
-      if (appState.panelManager) {
-        appState.panelManager.openContentPanel('myGestures'); // Opens the specific panel for gestures.
-      } else {
-        console.error("PanelManager not found in state. Cannot open 'myGestures' panel.");
-      }
+    console.log("Gesture Record button clicked. Opening 'My Gestures' panel.");
+    if (appState.panelManager) {
+      appState.panelManager.openContentPanel('myGestures'); // Opens the specific panel for gestures.
+    } else {
+      console.error("PanelManager not found in state. Cannot open 'myGestures' panel.");
+    }
   }, "Gesture Record button also attempts to open 'myGesturesView' panel.");
 
   // Hologram List button opens the 'My Holograms' panel.
   addButtonListener(uiElements.buttons.hologramListButton, () => {
-      console.log("Hologram List button clicked. Opening 'My Holograms' panel.");
-      if (appState.panelManager) {
-        appState.panelManager.openContentPanel('myHolograms'); // Opens the specific panel for holograms.
-      } else {
-        console.error("PanelManager not found in state. Cannot open 'myHolograms' panel.");
-      }
+    console.log("Hologram List button clicked. Opening 'My Holograms' panel.");
+    if (appState.panelManager) {
+      appState.panelManager.openContentPanel('myHolograms'); // Opens the specific panel for holograms.
+    } else {
+      console.error("PanelManager not found in state. Cannot open 'myHolograms' panel.");
+    }
   }, "Hologram List button opens 'myHologramsView' panel.");
 
-  // addButtonListener(uiElements.buttons.scanButton, null, "Scan button clicked - functionality pending."); // Logic implemented elsewhere
+  // --- Scanner Button ---
+  // Toggles hologram scanning mode (camera → audio synthesis)
+  if (uiElements.buttons.scanButton) {
+    uiElements.buttons.scanButton.addEventListener('click', async () => {
+      try {
+        if (hologramScanner.isActive) {
+          hologramScanner.stop();
+          uiElements.buttons.scanButton.classList.remove('active');
+          console.log('[UIManager] Scanner stopped.');
+        } else {
+          await hologramScanner.start();
+          uiElements.buttons.scanButton.classList.add('active');
+          console.log('[UIManager] Scanner started.');
+        }
+      } catch (error) {
+        console.error('[UIManager] Scanner toggle failed:', error);
+        uiElements.buttons.scanButton.classList.remove('active');
+      }
+    });
+    console.log('[UIManager] Scanner button initialized.');
+  }
   // addButtonListener(uiElements.buttons.bluetoothButton, null, "Bluetooth button clicked - functionality pending."); // Logic implemented elsewhere
   // addButtonListener(uiElements.buttons.triaButton, null, "Tria (Activate Training) button clicked - functionality pending."); // Logic implemented elsewhere
 

@@ -82,34 +82,4 @@ hr.left-panel-separator {
   /* Use existing panel border color or a fallback */
 }
 
-.panel-hr {
-  width: 90%;
-  border: none;
-  height: 1px;
-  background-color: var(--panel-border);
-  margin-top: var(--spacing-sm);
-  /* Use theme spacing */
-  margin-bottom: var(--spacing-sm);
-}
-
-.left-panel-group.bottom-group {
-  flex-direction: row;
-  /* Icons side-by-side */
-  justify-content: space-around;
-  /* Distribute icons evenly */
-  padding: 0 var(--spacing-md);
-  /* Add some padding to the sides of the group */
-}
-
-.panel-icon-link {
-  color: var(--color-icon);
-  font-size: calc(var(--icon-size) * 1.2);
-  /* Larger icons for bottom links */
-  text-decoration: none;
-  transition: color 0.2s ease;
-  padding: var(--spacing-xs);
-}
-
-.panel-icon-link:hover {
-  color: var(--color-icon-active);
-}
+/* Removed redundant left panel overrides to prevent conflicts with _panels.css */

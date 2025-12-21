@@ -7,7 +7,7 @@
   /* Скрываем переполнение самого контейнера */
   padding: 0;
   min-height: 50px;
-  background-color: rgba(0, 0, 0, 0.8) !important;
+  background-color: transparent !important;
   border-radius: var(--border-radius-lg) !important;
   position: relative;
 }
@@ -105,7 +105,7 @@
   align-items: stretch;
   padding: 5px 4px 5px 5px;
   /* Устанавливаем правый отступ для резервирования места под скроллбар */
-  background-color: rgba(0, 0, 0, 0.8) !important;
+  background-color: transparent !important;
   border-radius: var(--border-radius-lg) !important;
   border-top: none;
   width: 100%;
@@ -136,11 +136,14 @@
   width: calc(100% - 4px);
   /* Учитываем отступ в ширине */
   box-sizing: border-box;
-  background-color: rgba(0, 0, 0, 0.8) !important;
-  color: var(--color-primary);
+  background-color: transparent !important;
+  color: white !important;
   outline: none;
   border: none;
   border-radius: var(--border-radius-md) !important;
+  font-family: 'Roboto', sans-serif;
+  font-size: var(--font-size-base);
+  resize: none;
   min-height: calc(var(--input-height) * 0.8);
   resize: none;
   overflow-y: auto;
@@ -222,7 +225,7 @@
   overflow: hidden !important;
   padding: 0 !important;
   min-height: 50px !important;
-  background-color: rgba(0, 0, 0, 0.8) !important;
+  background-color: transparent !important;
   border-radius: var(--border-radius-lg) !important;
   position: relative !important;
 }
@@ -299,13 +302,14 @@
 
 .panel.right-panel #chatInputBar {
   flex-shrink: 0 !important;
-  display: flex !important;
+  display: flex;
   flex-direction: column !important;
   align-items: stretch !important;
   padding: 5px 4px 5px 5px !important;
-  background-color: rgba(0, 0, 0, 0.8) !important;
+  background-color: transparent !important;
   border-radius: var(--border-radius-lg) !important
 }
+
 /* Стили для приближения окон к разделительной линии */
 .content-container {
   margin-bottom: 0 !important;
@@ -313,4 +317,18 @@
 
 .input-container {
   margin-top: 0 !important;
+}
+
+#topPromptInput {
+  width: 100%;
+  background-color: transparent !important;
+  color: white !important;
+  border: none;
+  outline: none;
+  padding: var(--spacing-sm);
+  font-family: 'Roboto', sans-serif;
+  font-size: var(--font-size-base);
+  resize: none;
+  border-radius: var(--border-radius-md);
+  box-sizing: border-box;
 }

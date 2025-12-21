@@ -11,7 +11,8 @@
   /* !!! Убираем все внутренние отступы */
   min-width: 100vw;
   /* Гарантируем минимальную ширину */
-  z-index: 5; /* Below panels */
+  z-index: 5;
+  /* Below panels */
 }
 
 #grid-container {
@@ -96,13 +97,4 @@
 .gesture-area.active+.main-area .hologram {
   transform: scale(0.8) !important;
   margin-top: 5vh !important;
-}
-
-/* Стили для отладки */
-.debug-panel {
-  outline: 1px solid blue !important;
-}
-
-.debug-label {
-  outline: 1px solid green !important;
 }

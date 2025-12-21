@@ -17,93 +17,93 @@ export async function initializeScene(state) {
   try {
     console.log('[WebGL Init] Attempting to create WebGLRenderer...');
     state.renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        // powerPreference: 'high-performance' // Retained for potential relevance
+      antialias: true,
+      // powerPreference: 'high-performance' // Retained for potential relevance
     });
     state.renderer.setPixelRatio(window.devicePixelRatio);
     state.renderer.outputColorSpace = THREE.SRGBColorSpace; // Correct color space for WebGL
 
     const canvas = state.renderer.domElement;
 
-    canvas.addEventListener('webglcontextlost', function(event) {
-        event.preventDefault();
-        console.warn('!!! CONTEXT LOST! Stopping animation loop.');
-        // Здесь мы должны остановить цикл анимации, если он есть
-        // В нашем случае, мы пока просто логируем.
+    canvas.addEventListener('webglcontextlost', function (event) {
+      event.preventDefault();
+      console.warn('!!! CONTEXT LOST! Stopping animation loop.');
+      // Здесь мы должны остановить цикл анимации, если он есть
+      // В нашем случае, мы пока просто логируем.
     }, false);
 
-    canvas.addEventListener('webglcontextrestored', function() {
-        console.log('✅ CONTEXT RESTORED! Re-initializing scene...');
-        // Здесь мы должны были бы заново создать все текстуры и буферы.
-        // Для нашего теста, мы просто перезагрузим страницу, чтобы все пересоздалось.
-        alert('WebGL context was restored. Reloading the page.');
-        window.location.reload();
+    canvas.addEventListener('webglcontextrestored', function () {
+      console.log('✅ CONTEXT RESTORED! Re-initializing scene...');
+      // Здесь мы должны были бы заново создать все текстуры и буферы.
+      // Для нашего теста, мы просто перезагрузим страницу, чтобы все пересоздалось.
+      alert('WebGL context was restored. Reloading the page.');
+      window.location.reload();
     }, false);
 
     console.log('WebGL context loss handlers attached.');
 
     console.log('[WebGL Init] WebGLRenderer initialized successfully.');
 
-   } catch (error) {
-     console.error('CRITICAL: WebGLRenderer Initialization Failed.', error);
-     
-     // Попытка создать fallback Canvas2D рендерер
-     console.log('[Fallback] Attempting to create Canvas2D fallback renderer...');
-     try {
-       const canvas = document.createElement('canvas');
-       const ctx = canvas.getContext('2d');
-       
-       // Создаем простой mock-рендерер с минимальным API
-       state.renderer = {
-         domElement: canvas,
-         setSize: function(width, height) {
-           canvas.width = width;
-           canvas.height = height;
-           this.renderFallback(width, height);
-         },
-         setPixelRatio: function() {},
-         renderFallback: function(width, height) {
-           ctx.fillStyle = '#000000';
-           ctx.fillRect(0, 0, width, height);
-           ctx.fillStyle = '#ffffff';
-           ctx.font = '24px Arial';
-           ctx.textAlign = 'center';
-           ctx.fillText('WebGL не поддерживается в этой среде', width/2, height/2 - 50);
-           ctx.fillText('Попробуйте другой браузер или устройство', width/2, height/2);
-           ctx.fillText('Остальные функции приложения доступны', width/2, height/2 + 50);
-         },
-         render: function() {} // Пустая функция для совместимости
-       };
-       
-       state.renderer.setSize(window.innerWidth, window.innerHeight);
-       console.log('[Fallback] Canvas2D fallback renderer created successfully.');
-       
-     } catch (fallbackError) {
-       console.error('CRITICAL: Even Canvas2D fallback failed:', fallbackError);
-       
-       // Показываем сообщение об ошибке
-       const errorOverlay = document.getElementById('webgl-error-overlay');
-       const errorDetailsElement = document.getElementById('webgl-error-details');
-       const userMessage = 'Критическая ошибка: 3D-графика недоступна. Приложение продолжит работу без визуализации.';
-       
-       if (errorOverlay) {
-         if (errorDetailsElement) {
-           errorDetailsElement.textContent = userMessage + ' (Подробности в консоли)';
-         }
-         errorOverlay.style.display = 'flex';
-       } else {
-         const fallbackDiv = document.createElement('div');
-         fallbackDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px; font-size: 1.2em; z-index: 9999;';
-         fallbackDiv.textContent = userMessage;
-         document.body.appendChild(fallbackDiv);
-       }
-       
-       state.renderer = null;
-       state.scene = null;
-       state.camera = null;
-       return { scene: null, renderer: null, camera: null };
-     }
-   }
+  } catch (error) {
+    console.error('CRITICAL: WebGLRenderer Initialization Failed.', error);
+
+    // Попытка создать fallback Canvas2D рендерер
+    console.log('[Fallback] Attempting to create Canvas2D fallback renderer...');
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Создаем простой mock-рендерер с минимальным API
+      state.renderer = {
+        domElement: canvas,
+        setSize: function (width, height) {
+          canvas.width = width;
+          canvas.height = height;
+          this.renderFallback(width, height);
+        },
+        setPixelRatio: function () { },
+        renderFallback: function (width, height) {
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, 0, width, height);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '24px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('WebGL не поддерживается в этой среде', width / 2, height / 2 - 50);
+          ctx.fillText('Попробуйте другой браузер или устройство', width / 2, height / 2);
+          ctx.fillText('Остальные функции приложения доступны', width / 2, height / 2 + 50);
+        },
+        render: function () { } // Пустая функция для совместимости
+      };
+
+      state.renderer.setSize(window.innerWidth, window.innerHeight);
+      console.log('[Fallback] Canvas2D fallback renderer created successfully.');
+
+    } catch (fallbackError) {
+      console.error('CRITICAL: Even Canvas2D fallback failed:', fallbackError);
+
+      // Показываем сообщение об ошибке
+      const errorOverlay = document.getElementById('webgl-error-overlay');
+      const errorDetailsElement = document.getElementById('webgl-error-details');
+      const userMessage = 'Критическая ошибка: 3D-графика недоступна. Приложение продолжит работу без визуализации.';
+
+      if (errorOverlay) {
+        if (errorDetailsElement) {
+          errorDetailsElement.textContent = userMessage + ' (Подробности в консоли)';
+        }
+        errorOverlay.style.display = 'flex';
+      } else {
+        const fallbackDiv = document.createElement('div');
+        fallbackDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px; font-size: 1.2em; z-index: 9999;';
+        fallbackDiv.textContent = userMessage;
+        document.body.appendChild(fallbackDiv);
+      }
+
+      state.renderer = null;
+      state.scene = null;
+      state.camera = null;
+      return { scene: null, renderer: null, camera: null };
+    }
+  }
 
   const gridContainer = document.getElementById('grid-container');
   if (!gridContainer) {
@@ -164,7 +164,7 @@ export async function initializeScene(state) {
   });
 
   // Function to start TWEEN-based return animation
-  state.startReturnAnimation = function() {
+  state.startReturnAnimation = function () {
     const startPosition = state.camera.position.clone();
     const startTarget = state.controls.target.clone();
 
@@ -194,7 +194,7 @@ export async function initializeScene(state) {
   };
 
   // Function to animate return (now just updates TWEEN)
-  state.animateReturn = function() {
+  state.animateReturn = function () {
     // TWEEN update is handled in rendering.js
   };
 
@@ -211,7 +211,7 @@ export async function initializeScene(state) {
   }
 
   // Function to update renderer and camera sizes
-  state.updateRendererSize = function() {
+  state.updateRendererSize = function () {
     const newWidth = gridContainer && gridContainer.clientWidth > 0 ? gridContainer.clientWidth : window.innerWidth;
     const newHeight = gridContainer && gridContainer.clientHeight > 0 ? gridContainer.clientHeight : window.innerHeight;
 
@@ -229,13 +229,21 @@ export async function initializeScene(state) {
 
     // Обновление позиции и масштаба hologramPivot при resize
     if (state.hologramRendererInstance) {
-      const hologramPivot = state.hologramRendererInstance.getHologramPivot();
+      const hologramRenderer = state.hologramRendererInstance;
+      // Ensure we are calling the correct method if it exists, simplified for this context
+      // Assuming getHologramPivot is available on the instance
+      const hologramPivot = hologramRenderer.getHologramPivot ? hologramRenderer.getHologramPivot() : null;
+
       if (hologramPivot) {
-        // Center hologram: account for scaled width (312), shifted left by 7%
-        const dynamicOffset = (newWidth / 2) - 156 - 0.07 * newWidth;
-        hologramPivot.position.x = dynamicOffset;
-        hologramPivot.scale.set(1.236, 1.236, 1.236); // Increased scale by 3%
-        console.log(`[sceneSetup] HologramPivot updated on resize: position x=${dynamicOffset}, scale x=1, y=1, z=1`);
+        // Dynamic Scaling: Occupy 90% of screen height (GRID_HEIGHT=256)
+        const targetScale = (newHeight * 0.9) / 256;
+
+        // Exact Centering: Point of junction (x=0) aligns with screen center
+        hologramPivot.position.x = 0;
+        hologramPivot.position.y = 0;
+
+        hologramPivot.scale.set(targetScale, targetScale, targetScale);
+        console.log(`[sceneSetup] HologramPivot updated on resize: scale=${targetScale.toFixed(4)}, heightPxl=${(newHeight * 0.9).toFixed(1)}, pos.x=0`);
       }
     }
 
