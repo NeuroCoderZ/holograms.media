@@ -8,7 +8,11 @@ import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../co
 import eventBus from '../core/eventBus.js'; // Added for WebAudioEngine integration
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js'; // New WebRTC client
 
-// Direct imports are used, so these lines are not necessary.
+// Column width constants
+const MIN_DEG_INPUT = 1.40625;
+const MAX_DEG_INPUT = 180;
+const MIN_COLUMN_WIDTH = 2;
+const MAX_COLUMN_WIDTH = 16;
 
 /**
  * HologramRenderer class manages the 3D visualization of the hologram in the Three.js scene.
@@ -294,7 +298,7 @@ export class HologramRenderer {
    */
   _createSequencerGrids() {
     const leftColor = semitones.length > 0 ? semitones[semitones.length - 1].color : new THREE.Color(0x800080);
-    const rightColor = semitones.length > 0 ? semitones[0].color : new THREE.Color(0xFF0000);
+    const rightColor = semitones.length > 0 ? semitones[0].color :.new THREE.Color(0xFF0000);
 
     const commonSpinePosition = new THREE.Vector3(0, -GRID_HEIGHT / 2, -GRID_DEPTH / 2);
 
@@ -337,7 +341,7 @@ export class HologramRenderer {
     if (!semitone) {
       return new THREE.Group();
     }
-    const width = semitone.width;
+    const width = THREE.MathUtils.mapLinear(semitone.deg, MIN_DEG_INPUT, MAX_DEG_INPUT, MIN_COLUMN_WIDTH, MAX_COLUMN_WIDTH);
     const columnGroup = new THREE.Group();
 
     const baseColorObj = new THREE.Color(semitone.color);
@@ -462,7 +466,7 @@ export class HologramRenderer {
       // Pan 0 = center (source in front)
       // Pan -1 = inner wall (source left/behind-left for left grid)
       // Pan +1 = outer wall (source right/behind-right)
-      const colWidth = columnPair.semitoneData.width;
+      const colWidth = THREE.MathUtils.mapLinear(columnPair.semitoneData.deg, MIN_DEG_INPUT, MAX_DEG_INPUT, MIN_COLUMN_WIDTH, MAX_COLUMN_WIDTH);
       const maxShift = (GRID_WIDTH - colWidth) / 2;
 
       // Shift based on CWT-calculated pan for THIS semitone
