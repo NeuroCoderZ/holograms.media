@@ -1,0 +1,11 @@
+
+> holograms-media@0.1.0 dev
+> vite --host
+
+
+  VITE v7.3.0  ready in 235 ms
+
+  ➜  Local:   http://localhost:8000/
+  ➜  Network: http://192.168.0.2:8000/
+3:33:24 PM [vite] (client) page reload js/config/hologramConfig.js
+3:34:12 PM [vite] (client) page reload js/3d/hologramRenderer.js
