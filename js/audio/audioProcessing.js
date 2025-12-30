@@ -1,17 +1,23 @@
 // frontend/js/audio/audioProcessing.js
-// CWT-based audio processing with AudioWorklet and WASM
+// CQT-based audio processing with AudioWorklet and WASM
+// PROXY NODE ARCHITECTURE: Synchronous graph, async WASM loading
 
 import { state } from '../core/init.js';
-import { AudioAnalyzer } from './audioAnalyzer.js';
 import { deviceCapabilities } from '../utils/deviceCapabilities.js';
 import eventBus from '../core/eventBus.js';
 
+// Global state
 let cwtWorkletNode = null;
 let cwtWorkletReady = false;
+let engineMode = 'INITIALIZING';
+
+// PROXY NODE: Always-available input collector
+// This allows synchronous graph connection even before WASM is ready
+let inputProxyNode = null;
+let proxyConnectedToWorklet = false;
 
 /**
  * Initializes or retrieves the global AudioContext.
- * @returns {AudioContext} The application's AudioContext.
  */
 export function getAudioContext() {
     if (state.audio && state.audio.audioContext && state.audio.audioContext.state !== 'closed') {
@@ -23,129 +29,223 @@ export function getAudioContext() {
 }
 
 /**
- * Initializes the CWT AudioWorklet.
- * Should be called once during app initialization.
- * @param {AudioContext} audioContext 
+ * Gets or creates the input proxy node.
+ * This node collects ALL audio sources and routes them to the CQT worklet.
+ */
+function getInputProxyNode(audioContext) {
+    if (!inputProxyNode) {
+        inputProxyNode = audioContext.createGain();
+        inputProxyNode.gain.value = 1.0;
+        console.log('[AudioProcessing] 🔗 Input proxy node created.');
+    }
+    return inputProxyNode;
+}
+
+/**
+ * Connects the proxy node to the worklet (called after worklet is ready).
+ */
+function connectProxyToWorklet() {
+    if (inputProxyNode && cwtWorkletNode && !proxyConnectedToWorklet) {
+        inputProxyNode.connect(cwtWorkletNode);
+        proxyConnectedToWorklet = true;
+        console.log('[AudioProcessing] 🔗 Proxy node connected to CQT worklet. Audio will now flow!');
+    }
+}
+
+/**
+ * Attempts to fetch WASM from multiple possible paths.
+ */
+async function fetchWasmWithFallbackPaths() {
+    const possiblePaths = [
+        '/wasm/holographic_core_bg.wasm',
+        '/js/wasm/holographic_core_bg.wasm',
+        '/holographic_core_bg.wasm',
+        '/assets/holographic_core_bg.wasm',
+        new URL('../wasm/holographic_core_bg.wasm', import.meta.url).href
+    ];
+
+    for (const path of possiblePaths) {
+        try {
+            console.log(`[AudioProcessing] Trying WASM path: ${path}`);
+            const response = await fetch(path);
+            if (response.ok) {
+                const bytes = await response.arrayBuffer();
+                console.log(`[AudioProcessing] ✅ WASM loaded from: ${path} (${bytes.byteLength} bytes)`);
+                return bytes;
+            }
+        } catch (e) {
+            // Continue to next path
+        }
+    }
+    throw new Error('[AudioProcessing] WASM file not found in any location.');
+}
+
+/**
+ * Initializes the CQT AudioWorklet with WASM.
  */
 export async function initializeCwtWorklet(audioContext) {
     if (cwtWorkletReady) {
-        console.log('[AudioProcessing] CWT Worklet already initialized.');
-        return;
+        console.log('[AudioProcessing] CQT Worklet already initialized.');
+        connectProxyToWorklet(); // Ensure proxy is connected
+        return true;
     }
 
+    console.log('[AudioProcessing] ========================================');
+    console.log('[AudioProcessing] INITIALIZING WASM CQT ENGINE');
+    console.log('[AudioProcessing] ========================================');
+
+    // Ensure proxy node exists
+    getInputProxyNode(audioContext);
+
+    const caps = await deviceCapabilities.detect();
+    const { sampleRate, chunkSize, numBins, channelCount } = caps.optimal;
+
+    console.log(`[AudioProcessing] CQT Config: sampleRate=${sampleRate}, chunkSize=${chunkSize}, numBins=${numBins}`);
+
+    // 1. Load AudioWorklet module
     try {
-        // Detect device capabilities for optimal parameters
-        const caps = await deviceCapabilities.detect();
-        const { sampleRate, chunkSize, numBins, channelCount } = caps.optimal;
-
-        console.log(`[AudioProcessing] Initializing CWT Worklet with: 
-      sampleRate=${sampleRate}, chunkSize=${chunkSize}, numBins=${numBins}, channels=${channelCount}`);
-
-        // Load the AudioWorklet module
         await audioContext.audioWorklet.addModule('/js/audio/waveletAnalyzer.js');
-        console.log('[AudioProcessing] AudioWorklet module loaded.');
+        console.log('[AudioProcessing] ✅ AudioWorklet module loaded.');
+    } catch (e) {
+        throw new Error(`[AudioProcessing] Failed to load AudioWorklet: ${e.message}`);
+    }
 
-        // Create the CWT processor node
-        cwtWorkletNode = new AudioWorkletNode(audioContext, 'cwt-processor', {
-            processorOptions: {
-                sampleRate: sampleRate,
-                numBins: numBins,
-                chunkSize: chunkSize,
-                channelCount: channelCount
-            },
-            numberOfInputs: 1,
-            numberOfOutputs: 1,
-            outputChannelCount: [2] // Stereo output for pass-through
-        });
+    // 2. Fetch and compile WASM
+    console.log('[AudioProcessing] Loading WASM module...');
+    const wasmBytes = await fetchWasmWithFallbackPaths();
+    const wasmModule = await WebAssembly.compile(wasmBytes);
+    console.log('[AudioProcessing] ✅ WASM compiled.');
 
-        // Handle messages from the worklet
+    // 3. Create worklet node with flexible channel handling
+    cwtWorkletNode = new AudioWorkletNode(audioContext, 'cwt-processor', {
+        processorOptions: {
+            sampleRate: sampleRate,
+            numBins: numBins,
+            chunkSize: chunkSize,
+            channelCount: channelCount
+        },
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        channelCount: 2,
+        channelCountMode: 'max',
+        channelInterpretation: 'speakers'
+    });
+
+    // Connect worklet to destination (passthrough audio)
+    // CRITICAL FIX: Disconnect / Comment out to prevent feedback loop
+    // cwtWorkletNode.connect(audioContext.destination);
+
+    // CRITICAL: Connect proxy to worklet NOW
+    connectProxyToWorklet();
+
+    // 4. Wait for WASM_READY
+    return new Promise((resolve) => {
+        const timeoutId = setTimeout(() => {
+            console.warn('[AudioProcessing] ⚠ WASM init timeout (5s). Using JS Goertzel fallback.');
+            cwtWorkletReady = true;
+            engineMode = 'JS_GOERTZEL';
+            resolve(true);
+        }, 5000);
+
         cwtWorkletNode.port.onmessage = (event) => {
             const { type } = event.data;
 
             if (type === 'WASM_READY') {
+                clearTimeout(timeoutId);
                 cwtWorkletReady = true;
-                console.log('[AudioProcessing] CWT WASM module ready in AudioWorklet.');
+                engineMode = 'CQT_WASM';
+                console.log('[AudioProcessing] ✅ CQT WASM engine ready.');
+                console.log(`[AudioProcessing] 🚀 Engine ACTIVE. Mode: ${engineMode}`);
+                resolve(true);
             } else if (type === 'AUDIO_DATA') {
-                // Emit CWT results to the application via eventBus
-                eventBus.emit('cwtResult', {
-                    dbLevels: event.data.levels,
-                    panAngles: event.data.angles
-                });
+                // Emit audio data for visualization
+                const levels = event.data.levels;
+                const pans = event.data.angles;
 
-                // Also store in global state for direct access
-                state.audio.latestCwtData = {
-                    dbLevels: event.data.levels,
-                    panAngles: event.data.angles,
+                const fullPans = new Float32Array(256);
+                if (pans && pans.length === 128) {
+                    fullPans.set(pans, 0);
+                    fullPans.set(pans, 128);
+                } else if (pans && pans.length >= 256) {
+                    fullPans.set(pans.subarray(0, 256));
+                }
+
+                const payload = { levels: levels, pans: fullPans };
+                eventBus.emit('audioData', payload);
+
+                state.audio.latestAudioData = {
+                    ...payload,
                     timestamp: performance.now()
                 };
+            } else if (type === 'WASM_ERROR') {
+                clearTimeout(timeoutId);
+                console.warn('[AudioProcessing] ⚠ WASM error, using JS fallback.');
+                cwtWorkletReady = true;
+                engineMode = 'JS_GOERTZEL';
+                resolve(true);
             }
         };
 
-        // Connect worklet to destination for audio pass-through
-        cwtWorkletNode.connect(audioContext.destination);
-
-        console.log('[AudioProcessing] CWT AudioWorklet initialized and ready.');
-
-    } catch (error) {
-        console.error('[AudioProcessing] Failed to initialize CWT Worklet:', error);
-        console.log('[AudioProcessing] Falling back to native FFT analyzer.');
-        // Fallback will use the existing AudioAnalyzer
-    }
+        // Send WASM module to worklet
+        cwtWorkletNode.port.postMessage({
+            type: 'WASM_MODULE',
+            module: wasmModule
+        });
+    });
 }
 
 /**
- * Sets up the audio processing pipeline.
- * Uses CWT AudioWorklet if available, falls back to native FFT.
- *
- * @param {AudioNode} sourceNode - The audio source.
- * @param {AudioContext} audioContext - The global AudioContext.
- * @param {boolean} connectToOutput - Whether to connect source to speakers.
- * @returns {AudioAnalyzer|AudioWorkletNode} The analyzer being used.
+ * Sets up audio processing for a source node.
+ * SYNCHRONOUS GRAPH CONNECTION via proxy node.
+ * Async WASM loading happens in background.
  */
-export function setupAudioProcessing(sourceNode, audioContext, connectToOutput = true) {
-    // Ensure CWT worklet is initialized
-    if (!cwtWorkletReady && cwtWorkletNode === null) {
-        // Try async initialization (won't block, but will enable for future sources)
-        initializeCwtWorklet(audioContext);
+export async function setupAudioProcessing(sourceNode, audioContext, connectToOutput = true) {
+    // Ensure AudioContext is running
+    if (audioContext.state === 'suspended') {
+        console.log('[AudioProcessing] ⚠ AudioContext suspended. Resuming...');
+        await audioContext.resume();
+        console.log(`[AudioProcessing] ✅ AudioContext state: ${audioContext.state}`);
     }
 
-    // If CWT worklet is ready, use it
-    if (cwtWorkletReady && cwtWorkletNode) {
-        // Connect source → CWT Worklet → destination
-        sourceNode.connect(cwtWorkletNode);
-        console.log('[AudioProcessing] Source connected to CWT AudioWorklet.');
+    // Get proxy node (creates if doesn't exist)
+    const proxy = getInputProxyNode(audioContext);
 
-        // Note: connectToOutput is handled by the worklet's pass-through
-        return cwtWorkletNode;
+    // SYNCHRONOUS CONNECTION: Source -> Proxy
+    // This happens IMMEDIATELY, no waiting for WASM
+    sourceNode.connect(proxy);
+    console.log(`[AudioProcessing] ✅ Source connected to proxy. Type: ${sourceNode.constructor.name}`);
+
+    // Start WASM initialization if not already running
+    if (!cwtWorkletReady && !cwtWorkletNode) {
+        // Fire and forget - don't block
+        initializeCwtWorklet(audioContext)
+            .then(() => {
+                console.log('[AudioProcessing] ✅ CQT engine ready (background init).');
+            })
+            .catch((err) => {
+                console.warn('[AudioProcessing] ⚠ CQT init failed:', err.message);
+            });
+    } else {
+        // Worklet already exists, ensure proxy is connected
+        connectProxyToWorklet();
     }
 
-    // Fallback: Use native FFT analyzer
-    console.log('[AudioProcessing] Using native FFT analyzer (CWT not ready).');
-
-    if (!state.audio.globalAnalyzer) {
-        state.audio.globalAnalyzer = new AudioAnalyzer(audioContext);
-    }
-
-    // Connect source to the analyzer
-    state.audio.globalAnalyzer.connectSource(sourceNode);
-
-    // Connect source to destination so we can hear it (if it's a file player)
+    // Connect source directly to output if requested (for hearing audio)
     if (connectToOutput) {
         sourceNode.connect(audioContext.destination);
     }
 
-    console.log('[AudioProcessing] Audio processing pipeline connected using Native FFT AudioAnalyzer.');
-    return state.audio.globalAnalyzer;
+    console.log('[AudioProcessing] ✅ Audio source connected to processing pipeline.');
+    return proxy;
 }
 
 /**
- * Disconnects a source from the CWT worklet.
- * @param {AudioNode} sourceNode 
+ * Disconnects a source from the CQT worklet.
  */
 export function disconnectFromCwt(sourceNode) {
-    if (cwtWorkletNode) {
+    if (inputProxyNode) {
         try {
-            sourceNode.disconnect(cwtWorkletNode);
+            sourceNode.disconnect(inputProxyNode);
         } catch (e) {
             // Already disconnected
         }
@@ -153,14 +253,21 @@ export function disconnectFromCwt(sourceNode) {
 }
 
 /**
- * Returns whether CWT processing is active.
+ * Returns whether CQT processing is active.
  */
 export function isCwtActive() {
     return cwtWorkletReady && cwtWorkletNode !== null;
 }
 
 /**
- * Gets the CWT worklet node for direct connection.
+ * Gets the current engine mode.
+ */
+export function getEngineMode() {
+    return engineMode;
+}
+
+/**
+ * Gets the CQT worklet node for direct connection.
  */
 export function getCwtWorkletNode() {
     return cwtWorkletNode;

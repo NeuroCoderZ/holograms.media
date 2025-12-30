@@ -305,7 +305,7 @@ export async function initCore() {
       await initializeCwtWorklet(state.audio.audioContext);
       console.log('✅ CWT AudioWorklet инициализирован');
     } catch (error) {
-      console.warn('⚠️ CWT Worklet не загружен, будет использоваться FFT fallback:', error.message);
+      console.warn('⚠️ CWT Worklet не загружен. Работа приложения в режиме без аудио-анализа:', error.message);
     }
 
     state.microphoneManagerInstance = new MicrophoneManager(state.audio.audioContext, state);

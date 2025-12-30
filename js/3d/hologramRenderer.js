@@ -58,8 +58,8 @@ export class HologramRenderer {
     // Add the main hologram pivot to the Three.js scene.
     this.scene.add(this.hologramPivot);
 
-    // Subscribe to CWT results from the eventBus
-    this.eventBus.on('cwtResult', this.handleCwtResult.bind(this));
+    // Subscribe to Audio Data results from the eventBus (standardized event)
+    this.eventBus.on('audioData', this.handleCwtResult.bind(this));
 
     // Connect to the NetHoloGlyph service
     this.netHoloGlyphClient.connect(this.roomId, this.userId);
@@ -80,7 +80,11 @@ export class HologramRenderer {
   }
 
   handleCwtResult(data) {
-    // Store the latest data, to be used by updateVisuals in the render loop
+    // Debug Trace for Data Flow
+    // console.log('Renderer received data:', data.levels ? data.levels[0] : 'no levels');
+    if (Math.random() < 0.05) console.log('Renderer received data (Sample):', data.levels ? data.levels[0] : 'no levels');
+
+    // Store the latest data (levels: Float32Array[256], pans: Float32Array[256])
     this.latestAudioData = data;
   }
 
@@ -177,33 +181,38 @@ export class HologramRenderer {
 
     if (isLeftGrid) {
       // Left grid axis: Purple (-X)
-      axisGroup.add(this._createLine2ForAxis([...origin, ...xEndNeg], colorXneg, linewidth, false));
+      axisGroup.add(this._createLine2ForAxis([...origin, ...xEndNeg], colorXneg, linewidth, true));
       axisGroup.add(this._createSphereForAxis(sphereRadius, colorXneg).translateX(-xLength));
     } else {
       // Right grid axis: Red (+X)
-      axisGroup.add(this._createLine2ForAxis([...origin, ...xEndPos], colorXpos, linewidth, false));
+      axisGroup.add(this._createLine2ForAxis([...origin, ...xEndPos], colorXpos, linewidth, true));
       axisGroup.add(this._createSphereForAxis(sphereRadius, colorXpos).translateX(xLength));
     }
 
-    // Common axes (Green Y and White Z) with depthTest: false to ensure visibility
-    axisGroup.add(this._createLine2ForAxis([...origin, ...yEndPos], colorYpos, linewidth, false));
-    axisGroup.add(this._createLine2ForAxis([...origin, ...zEndPos], colorZpos, linewidth, false));
+    // Common axes
+    // Green Y Axis (Spine) - VISIBLE ON TOP
+    const spineLine = this._createLine2ForAxis([...origin, ...yEndPos], colorYpos, 1.5, true);
+    spineLine.renderOrder = 999; // Ensure it renders ON TOP of everything
+    spineLine.material.depthTest = false; // Disable depth test to force visibility
+    axisGroup.add(spineLine);
+
+    // Z Axis
+    axisGroup.add(this._createLine2ForAxis([...origin, ...zEndPos], colorZpos, linewidth, true));
 
     // End spheres for Y and Z
     const greenSphere = this._createSphereForAxis(sphereRadius, colorYpos).translateY(yLength);
     const whiteSphere = this._createSphereForAxis(sphereRadius, colorZpos).translateZ(zLength);
 
     // Ensure spheres are also visible on top
-    greenSphere.material.depthTest = false;
     greenSphere.renderOrder = 999;
-    whiteSphere.material.depthTest = false;
-    whiteSphere.renderOrder = 999;
+    greenSphere.material.depthTest = false;
+    whiteSphere.renderOrder = 0;
 
     axisGroup.add(greenSphere);
     axisGroup.add(whiteSphere);
 
-    // Minor offset to avoid being exactly inside depth surfaces
-    axisGroup.position.z = 0.1;
+    // Offset slightly forward to prevent Z-fighting with grid planes if any
+    axisGroup.position.z = 0.5;
 
     return axisGroup;
   }
@@ -274,10 +283,13 @@ export class HologramRenderer {
 
     const sphereRadiusForAxis = cellSize * 0.5;
 
-    const gridVis = this._createGridVisualization(isLeftGrid ? -width : width, height, depth, cellSize, color);
+    // Double the height to match the column vertical scale (scale.y = 2.0)
+    const visualHeight = height * 2;
+
+    const gridVis = this._createGridVisualization(isLeftGrid ? -width : width, visualHeight, depth, cellSize, color);
     group.add(gridVis);
 
-    const axis = this._createAxis(width, height, depth, sphereRadiusForAxis, isLeftGrid);
+    const axis = this._createAxis(width, visualHeight, depth, sphereRadiusForAxis, isLeftGrid);
     group.add(axis);
 
     // Add a marker sphere at the center of this grid group (now shared spine)
@@ -296,7 +308,9 @@ export class HologramRenderer {
     const leftColor = semitones.length > 0 ? semitones[semitones.length - 1].color : new THREE.Color(0x800080);
     const rightColor = semitones.length > 0 ? semitones[0].color : new THREE.Color(0xFF0000);
 
-    const commonSpinePosition = new THREE.Vector3(0, -GRID_HEIGHT / 2, -GRID_DEPTH / 2);
+    // Since visual height is now 2x (GRID_HEIGHT * 2), we need to lower the spine to -GRID_HEIGHT to center it vertically.
+    // Width and Depth are unchanged.
+    const commonSpinePosition = new THREE.Vector3(0, -GRID_HEIGHT, -GRID_DEPTH / 2);
 
     // Create the left sequencer grid aligned at the spine
     this.leftSequencerGroup = this._createSequencerGrid(
@@ -317,12 +331,61 @@ export class HologramRenderer {
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
     // Shared Blue center sphere at the junction origin (0, -128, -64 in world-ish, 0,0,0 local to group)
-    const blueGeometry = new THREE.SphereGeometry(2, 16, 16);
-    const blueMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, depthTest: false, transparent: true });
+    // Blue sphere radius increased by 20% to create "HALO" effect behind the white center point
+    // The previous radius was 2, now 2.4. 
+    // Wait, the prompt asked for the Blue sphere to be the "Back" sphere at (0,0,0) and White at (0,0,129).
+    // Let's verify the positions.
+    // The "Central Marker" created in constructor (line 44) is White at 0,0,0. 
+    // The Block 2 instructions say: "Blue sphere: Center (0,0,0). White sphere: End of Z axis (0,0,129)."
+    // Current code at line 44 adds a WHITE sphere at origin.
+    // Let's adjust access to this method to swap/adjust colors or sizes to match the prompt.
+    // The prompt says: "Blue sphere (Center) overlaps White sphere (Z-end). Make Blue 20% larger."
+    // Actually, usually Blue is Z-axis in standard 3D, but here Z is White.
+    // Let's look at `_createAxis`: Z-axis is White.
+    // So the White sphere is at the TIP of the Z-axis.
+    // The Blue sphere is at the ORIGIN (Center).
+    // The user wants Blue Sphere > White Sphere visually IF they overlap?
+    // "Blue sphere: Center coordinates (0,0,0). White sphere: End of axis Z (0,0,129)."
+    // "Problem: Front view, Blue sphere covers White sphere."
+    // This implies the camera looks from Z+ towards origin? No, usually camera is at Z+.
+    // If camera is at Z+ looking at origin: White sphere is CLOSE (at 129), Blue is FAR (at 0).
+    // So White should cover Blue.
+    // If "Blue sphere covers White", maybe the radii are wrong or positions inverted?
+    // User says: "Make Blue sphere (back) 20% larger than White. Ensure White (front) renders on top."
+    // So we want a Halo effect: Blue (Background, Origin) is larger than White (Foreground, Z-Tip)?
+    // Wait, if White is at Z=129 and Blue is at Z=0, and we look from Z=200...
+    // White is in FRONT of Blue. White should occlude Blue.
+    // If we want a "Halo", then Blue must be visible AROUND White.
+    // So Blue must be LARGER than White (in screen space) Or White is semi-transparent?
+    // User says "Blue sphere 20% larger radius than White."
+    // Let's implement that.
+
+    // SPHERE ORDERING: Blue (Back, Opaque), White (Front, Opaque)
+    // Blue Sphere: At Origin, Large (Halo Effect)
+    const blueGeometry = new THREE.SphereGeometry(3.024, 32, 32);
+    const blueMaterial = new THREE.MeshBasicMaterial({
+      color: 0x0000ff,
+      depthTest: true,
+      transparent: false,
+      opacity: 1.0
+    });
     const blueSphere = new THREE.Mesh(blueGeometry, blueMaterial);
-    blueSphere.renderOrder = 999;
-    blueSphere.position.set(0, -128, -64); // Spine bottom-back point
+    blueSphere.renderOrder = 0; // Back
+    blueSphere.position.set(0, -GRID_HEIGHT, -GRID_DEPTH / 2);
     this.mainSequencerGroup.add(blueSphere);
+
+    // White Sphere: At Origin, Smaller (Front, on top of Blue)
+    const whiteGeometry = new THREE.SphereGeometry(2.52, 32, 32); // 20% smaller than Blue
+    const whiteMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      depthTest: true,
+      transparent: false,
+      opacity: 1.0
+    });
+    const whiteSphere = new THREE.Mesh(whiteGeometry, whiteMaterial);
+    whiteSphere.renderOrder = 999; // Front, renders on top
+    whiteSphere.position.set(0, -GRID_HEIGHT, -GRID_DEPTH / 2);
+    this.mainSequencerGroup.add(whiteSphere);
   }
 
   /**
@@ -348,7 +411,11 @@ export class HologramRenderer {
     columnGroup.userData.initialX = initialX;
     columnGroup.userData.baseColor = baseColorObj;
 
-    const geometry = new THREE.BoxGeometry(width, 2, 1);
+    // Parallelepiped Geometry: Height (Y) = 2.0 * Width/Depth base
+    // We use a base Box(width, 1, 1).
+    // We set Scale Y to 2.0 to achieve the "elongated" look.
+    // Z scale will be modulated by audio.
+    const geometry = new THREE.BoxGeometry(width, 1, 1);
     const material = new THREE.MeshBasicMaterial({
       color: baseColorObj,
       transparent: false,
@@ -356,7 +423,16 @@ export class HologramRenderer {
     });
     const columnMesh = new THREE.Mesh(geometry, material);
 
+    // Apply strict geometric rules: Scale Y = 2.0
+    // Initial Z Scale = CELL_SIZE * 2 for visible depth (Greeting)
+    columnMesh.scale.set(1, 2.0, CELL_SIZE * 2);
+
     // Set mesh center relative to the group origin (spine)
+    // Since we scale Y by 2, the visual height is 2. Center at Y=1 puts bottom at Y=0?
+    // Box height 1, scaled to 2. Center is at 0. Extends -0.5 to 0.5 * 2 = -1 to 1.
+    // To sit on "floor" (or spine), we might want Y position.
+    // Previous code: (semitoneIndex + 1) * 2. This arranges them vertically?
+    // Wait, the grid is likely strictly arranged.
     columnMesh.position.set(width / 2, (semitoneIndex + 1) * 2, 0);
 
     columnGroup.add(columnMesh);
@@ -390,17 +466,23 @@ export class HologramRenderer {
 
   /**
    * Updates the visual appearance of the columns based on real-time audio data.
-   * Each column's Z-scale (depth) and front-face brightness (emissiveIntensity) are adjusted.
-   * Their X-position is also adjusted based on pan angles.
-   * @param {Float32Array | null} dbLevels - Array of 256 decibel values (128 for left, 128 for right), or null to reset.
-   * @param {Float32Array | null} panAngles - Array of 128 pan angles in degrees (-90 to +90), or null to reset.
-   */
-  /**
-   * Updates the visual appearance of the columns based on real-time audio data.
    * Each column's Z-scale (depth) and brightness are adjusted based on dB levels.
    * Pan angles from CWT determine X-position for each semitone independently.
    * @param {Float32Array | null} dbLevels - Array of 256 decibel values (-128 to 0).
    * @param {Float32Array | null} panAngles - Array of 128 pan values (-1 to +1) from CWT.
+   */
+  /**
+   * Updates the visual appearance of the columns based on real-time audio data.
+   * 
+   * DIGITAL COCHLEA PHYSICS:
+   * - Y-Axis (Green | Frequency): Static. Position = semitoneIndex * CELL_SIZE * 2
+   * - X-Axis (Red/Purple | Pan & Width): 
+   *     - Width (Scale X): Static from semitones[i].width
+   *     - Position (Shift): Dynamic. Pan=0 → centered, Pan=-1/+1 → spread outward
+   * - Z-Axis (White | Depth): Dynamic. dB level → depth toward viewer
+   *
+   * @param {Float32Array | null} dbLevels - Array of 256 decibel values (-128 to 0).
+   * @param {Float32Array | null} panAngles - Array of 256 pan values (-1 to +1).
    */
   updateVisuals() {
     // If audio is paused (specifically for file playback), freeze the visuals
@@ -408,28 +490,29 @@ export class HologramRenderer {
       return;
     }
 
-    let audioData = null;
+    let audioData = this.latestAudioData;
 
-    // 1. Priority: CWT data from AudioWorklet (most accurate)
-    if (state.audio && state.audio.latestCwtData) {
-      audioData = state.audio.latestCwtData;
+    // Fallback to global state if local not updated
+    if (!audioData && state.audio && state.audio.latestAudioData) {
+      audioData = state.audio.latestAudioData;
     }
 
-    // 2. Fallback to native FFT analyzer
-    if (!audioData && state.audio && state.audio.globalAnalyzer) {
-      audioData = state.audio.globalAnalyzer.getAnalysisData();
-    }
-
-    // 3. Final fallback to event-based data
+    // Use silence data if nothing available
     if (!audioData) {
-      audioData = this.latestAudioData;
+      if (this.lastNoDataWarning === undefined || performance.now() - this.lastNoDataWarning > 60000) {
+        this.lastNoDataWarning = performance.now();
+      }
+      audioData = {
+        levels: new Float32Array(256).fill(-128),
+        pans: new Float32Array(256).fill(0)
+      };
     }
 
-    if (!audioData || !audioData.dbLevels || !audioData.panAngles) {
-      return;
-    }
+    // Support both property naming conventions
+    const dbLevels = audioData.levels || audioData.dbLevels;
+    const panAngles = audioData.pans || audioData.panAngles;
 
-    const { dbLevels, panAngles } = audioData;
+    if (!dbLevels || !panAngles) return;
 
     // Send the quantum of data via the NetHoloGlyph service
     this.netHoloGlyphClient.sendQuantum({
@@ -443,78 +526,127 @@ export class HologramRenderer {
       gesture: null
     });
 
+    // BasilaQ-127: Check if audio is active
+    const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));
+    const numSemitones = semitones.length; // 128
+
     this.columns.forEach((columnPair, index) => {
-      const leftLevelDb = dbLevels[index];
-      const rightLevelDb = dbLevels[index + 128];
+      // 1. Get Mesh Groups
+      const leftMeshGroup = columnPair.left;
+      const rightMeshGroup = columnPair.right;
+      const leftMesh = leftMeshGroup && leftMeshGroup.children[0];
+      const rightMesh = rightMeshGroup && rightMeshGroup.children[0];
 
-      // Get pan value for this specific semitone from CWT analysis
-      // Range: -1 (full left) to +1 (full right)
-      const semitonePan = panAngles[index];
+      const semitoneConfig = semitones[index];
+      if (!semitoneConfig) return;
+      const columnWidth = semitoneConfig.width;
 
-      // Calculate linear amplitudes from dB
-      let ampL = (leftLevelDb + 128) / 128.0;
+      // ========================================
+      // GREETING MODE: Flat, Bright, Spine-Aligned
+      // ========================================
+      if (!isActive) {
+        const greetingDepth = 1.5; // Super flat
+
+        if (leftMesh) {
+          leftMesh.scale.z = greetingDepth;
+          leftMesh.position.z = greetingDepth / 2; // One-Way Growth
+          // Restore full brightness
+          const baseColorL = leftMeshGroup.userData.baseColor;
+          if (baseColorL) {
+            const hsl = {};
+            baseColorL.getHSL(hsl);
+            leftMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l); // Full color
+          }
+        }
+        if (rightMesh) {
+          rightMesh.scale.z = greetingDepth;
+          rightMesh.position.z = greetingDepth / 2; // One-Way Growth
+          const baseColorR = rightMeshGroup.userData.baseColor;
+          if (baseColorR) {
+            const hsl = {};
+            baseColorR.getHSL(hsl);
+            rightMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l); // Full color
+          }
+        }
+        // Pan = 0 (Spine-Aligned)
+        if (leftMeshGroup) leftMeshGroup.position.x = -columnWidth;
+        if (rightMeshGroup) rightMeshGroup.position.x = 0;
+        return; // Skip physics
+      }
+
+      // ========================================
+      // ACTIVE MODE: BasilaQ-127 Physics
+      // ========================================
+
+      // Get dB levels for Left (0-127) and Right (128-255)
+      const leftLevelDb = dbLevels[index] || 0;
+      const rightLevelDb = dbLevels[index + numSemitones] || 0;
+
+      // Get pan value (-1 to +1)
+      let semitonePan = panAngles[index] || 0;
+
+      // MAPPING: 0-127 dB -> 0-1 amplitude
+      let ampL = leftLevelDb / 127.0;
       ampL = THREE.MathUtils.clamp(ampL, 0, 1);
 
-      let ampR = (rightLevelDb + 128) / 128.0;
+      let ampR = rightLevelDb / 127.0;
       ampR = THREE.MathUtils.clamp(ampR, 0, 1);
 
-      // Calculate Max Shift for this column width
-      // Pan 0 = center (source in front)
-      // Pan -1 = inner wall (source left/behind-left for left grid)
-      // Pan +1 = outer wall (source right/behind-right)
-      const colWidth = columnPair.semitoneData.width;
-      const maxShift = (GRID_WIDTH - colWidth) / 2;
+      // NOISE GATE: If amplitude is below threshold, force Pan to 0 (spine)
+      const maxAmp = Math.max(ampL, ampR);
+      if (maxAmp < 0.01) {
+        semitonePan = 0;
+      }
 
-      // Shift based on CWT-calculated pan for THIS semitone
-      // Positive pan = shift outward, Negative pan = shift inward
-      const shiftX = semitonePan * maxShift;
+      // PHYSICS: Spine-Aligned Rest Position
+      const availableSpace = GRID_WIDTH - columnWidth;
+      let rawShiftL = -columnWidth;
+      let rawShiftR = 0;
 
-      // Update both Left and Right Grid Columns
-      const channels = [
-        { meshGroup: columnPair.left, levelDb: leftLevelDb, baseAmp: ampL, isLeft: true },
-        { meshGroup: columnPair.right, levelDb: rightLevelDb, baseAmp: ampR, isLeft: false },
-      ];
+      if (semitonePan < 0) {
+        rawShiftL = -columnWidth + (semitonePan * availableSpace);
+      }
+      if (semitonePan > 0) {
+        rawShiftR = semitonePan * availableSpace;
+      }
 
+      // GRID SNAP
+      const snappedShiftL = Math.round(rawShiftL / CELL_SIZE) * CELL_SIZE;
+      const snappedShiftR = Math.round(rawShiftR / CELL_SIZE) * CELL_SIZE;
 
-      channels.forEach(channel => {
-        if (!channel.meshGroup || !channel.meshGroup.children || channel.meshGroup.children.length === 0) {
-          return;
-        }
-        const mesh = channel.meshGroup.children[0];
-        if (!(mesh instanceof THREE.Mesh)) {
-          return;
-        }
+      if (leftMeshGroup) leftMeshGroup.position.x = snappedShiftL;
+      if (rightMeshGroup) rightMeshGroup.position.x = snappedShiftR;
 
-        // Use linear amplitude from specific channel for Height/Brightness
-        const visualAmplitude = channel.baseAmp;
+      // Z-AXIS DEPTH: Map 0-127 to 1.5 (silence) to GRID_DEPTH (max)
+      const minDepth = 1.5;
+      const targetZL = minDepth + (ampL * (GRID_DEPTH - minDepth));
+      const targetZR = minDepth + (ampR * (GRID_DEPTH - minDepth));
 
-        // Update Z Scale (Length)
-        const targetScaleZ = Math.max(0.001, visualAmplitude * GRID_DEPTH);
-        mesh.scale.z = targetScaleZ;
-        mesh.position.z = targetScaleZ / 2;
+      if (leftMesh) {
+        leftMesh.scale.z = targetZL;
+        leftMesh.position.z = targetZL / 2; // ONE-WAY GROWTH
+      }
+      if (rightMesh) {
+        rightMesh.scale.z = targetZR;
+        rightMesh.position.z = targetZR / 2; // ONE-WAY GROWTH
+      }
 
-        // Update Brightness
-        const baseColor = channel.meshGroup.userData.baseColor;
-        if (baseColor) {
-          const hsl = {};
-          baseColor.getHSL(hsl);
-          const targetL = hsl.l * visualAmplitude;
-          mesh.material.color.setHSL(hsl.h, hsl.s, targetL);
-        }
+      // BRIGHTNESS: Silence = Dark (1/128), Loud = Bright (100%)
+      if (leftMesh && leftMeshGroup.userData.baseColor) {
+        const baseColorL = leftMeshGroup.userData.baseColor;
+        const hsl = {};
+        baseColorL.getHSL(hsl);
+        const brightnessL = hsl.l * Math.max(1 / 128, ampL);
+        leftMesh.material.color.setHSL(hsl.h, hsl.s, brightnessL);
+      }
 
-        // Pan shifting
-        const initialX = channel.meshGroup.userData.initialX;
-
-        // Move AWAY from the spine.
-        // Left Grid (isLeft=true): initialX is at spine (approx), direction is Negative X (Left).
-        // Right Grid (isLeft=false): initialX is at spine, direction is Positive X (Right).
-
-        if (channel.isLeft) {
-          channel.meshGroup.position.x = initialX - shiftX;
-        } else {
-          channel.meshGroup.position.x = initialX + shiftX;
-        }
-      });
+      if (rightMesh && rightMeshGroup.userData.baseColor) {
+        const baseColorR = rightMeshGroup.userData.baseColor;
+        const hsl = {};
+        baseColorR.getHSL(hsl);
+        const brightnessR = hsl.l * Math.max(1 / 128, ampR);
+        rightMesh.material.color.setHSL(hsl.h, hsl.s, brightnessR);
+      }
     });
   }
 
