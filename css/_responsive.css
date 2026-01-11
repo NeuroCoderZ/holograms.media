@@ -71,11 +71,13 @@
 
   /* 4. Стили для кнопки переключения панелей на мобильных устройствах */
   #togglePanelsButton {
-    bottom: 5dvh !important;
+    bottom: calc(15svh + env(safe-area-inset-bottom)) !important;
     top: auto !important;
-    left: 5px !important;
+    left: 10px !important;
     position: fixed !important;
     z-index: 10001 !important;
+    display: flex !important;
+    visibility: visible !important;
   }
 
   /* 5. Стили для области жестов на мобильных устройствах */
@@ -310,10 +312,9 @@
   /* 31. Стили для промпт-бара на мобильных устройствах */
   #promptBar {
     height: auto !important;
-    /* Allow it to grow slightly if needed */
-    padding-bottom: 5dvh !important;
-    /* Safety margin for mobile keyboards/bars */
-    min-height: 100px;
+    padding-bottom: calc(12svh + env(safe-area-inset-bottom)) !important;
+    min-height: 120px;
+    background-color: var(--color-pure-black);
   }
 
   /* 32. Стили для инпутов промпт-бара на мобильных устройствах */
