@@ -84,10 +84,10 @@ hologram_data/
 ### 3.3. Working with B2 API
 
 ```python
-import boto3
+import agento3
 
 # Initialize client
-s3_client = boto3.client(
+s3_client = agento3.client(
     service_name='s3',
     endpoint_url='https://s3.us-west-002.backblazeb2.com',
     aws_access_key_id='your_access_key',

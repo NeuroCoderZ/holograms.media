@@ -16,7 +16,6 @@
 
 ### Инфраструктура
 - **Infrastructure/DeploymentStrategy.md** - Стратегия развертывания системы
-- **Infrastructure/FirebaseAndGcpServicesGuide.md** - Руководство по использованию Firebase и GCP сервисов
 - **Infrastructure/KoyebR2DeploymentGuide.md** - Руководство по развертыванию на Koyeb и Cloudflare R2
 - **Infrastructure/WebGPUMigrationGuide.md** - Руководство по миграции на WebGPU
 
@@ -37,7 +36,6 @@
 ## Ключевые Технологии
 
 - **Frontend**: HTML5, CSS3, JavaScript ES6+, Three.js, WebGL, WebRTC
-- **Backend**: Python (FastAPI), Node.js, Firebase
 - **Базы данных**: PostgreSQL, SQLite, Astra Database (Cassandra)
 - **AI/ML**: TensorFlow.js, MediaPipe, WebRTC
 - **Инфраструктура**: Docker, Cloudflare Pages, Koyeb, Backblaze B2

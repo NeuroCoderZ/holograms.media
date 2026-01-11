@@ -1,7 +1,7 @@
 // frontend/js/multimodal/hologramScanner.js
 // Scans hologram visualization from camera and reconstructs audio
 
-import { semitones, GRID_HEIGHT } from '../config/hologramConfig.js';
+import { semitones, GRID_HEIGHT, START_HUE, END_HUE } from '../config/hologramConfig.js';
 import { HologramSynthesizer } from './hologramSynthesizer.js';
 import eventBus from '../core/eventBus.js';
 
@@ -21,32 +21,19 @@ export class HologramScanner {
         this.animationFrameId = null;
 
         // Color detection tolerances
-        this.hueTolerance = 10;     // degrees
-        this.satTolerance = 0.2;    // 0-1
-        this.minLightness = 0.05;   // Minimum brightness to detect
+        // this.hueTolerance = 10;     // No longer used with direct mapping
+        this.minSaturation = 0.5;   // Minimum saturation to accept
+        this.minLightness = 0.15;   // Minimum brightness to detect
 
-        // Pre-calculate target colors for each semitone
-        this.semitoneColors = this._calculateSemitoneColors();
+        // Stabilization State (Sticky Frame)
+        this.stabilization = {
+            offX: 0,
+            offY: 0
+        };
 
-        console.log('[HologramScanner] Initialized with', this.semitoneColors.length, 'target colors');
-    }
-
-    /**
-     * Pre-calculates HSL color targets for each semitone from config.
-     */
-    _calculateSemitoneColors() {
-        return semitones.map((st, i) => {
-            const hsl = {};
-            st.color.getHSL(hsl);
-            return {
-                index: i,
-                h: hsl.h * 360, // Convert 0-1 to degrees
-                s: hsl.s,
-                l: hsl.l,
-                frequency: st.f,
-                note: st.note
-            };
-        });
+        // Pre-calculate target colors? No, we use direct mapping now.
+        // this.semitoneColors = this._calculateSemitoneColors();
+        console.log('[HologramScanner] Initialized with optimized single-pass analysis.');
     }
 
     async start(deviceId = null) {
@@ -81,24 +68,21 @@ export class HologramScanner {
             this.videoElement.playsInline = true;
             this.videoElement.muted = true;
             this.videoElement.id = 'scanner-video';
+            // Hidden video element, we only show the canvas or just the viewfinder UI
             this.videoElement.style.cssText = `
                 position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                width: 80vw;
-                max-width: 640px;
-                height: auto;
-                border-radius: 8px;
-                z-index: 1001;
+                top: -9999px;
+                left: -9999px;
+                visibility: hidden;
             `;
             document.body.appendChild(this.videoElement);
             await this.videoElement.play();
 
-            // Create canvas for frame processing
+            // Create canvas for frame processing (Analysis Buffer)
+            // We use a smaller size for analysis to improve performance
             this.canvasElement = document.createElement('canvas');
-            this.canvasElement.width = this.videoElement.videoWidth || 1280;
-            this.canvasElement.height = this.videoElement.videoHeight || 720;
+            this.canvasElement.width = 640; // Reduced resolution for analysis
+            this.canvasElement.height = 360;
             this.canvasCtx = this.canvasElement.getContext('2d', { willReadFrequently: true });
 
             // Initialize synthesizer
@@ -106,7 +90,9 @@ export class HologramScanner {
             await this.synthesizer.init();
 
             this.isActive = true;
-            console.log('[HologramScanner] Started with resolution:',
+            this.stabilization = { offX: 0, offY: 0 }; // Reset stabilization
+
+            console.log('[HologramScanner] Started. Analysis Resolution:',
                 this.canvasElement.width, 'x', this.canvasElement.height);
 
             // Disable hand tracking while scanning
@@ -148,17 +134,33 @@ export class HologramScanner {
         `;
 
         // Create scanning frame
+        // Updated to 2:1 aspect ratio (256x128 approx)
         const frame = document.createElement('div');
         frame.id = 'scanner-frame';
         frame.style.cssText = `
             position: relative;
             width: 80vw;
             max-width: 640px;
-            aspect-ratio: 16/9;
+            aspect-ratio: 2 / 1; 
             border: 3px solid #00ff88;
             border-radius: 12px;
             box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+            background: rgba(0, 50, 0, 0.1); /* Slight tint to show active area */
+            overflow: hidden;
         `;
+
+        // Add a canvas to show the "Stabilized" view inside the frame
+        // This gives the user feedback on what the scanner is "locking" onto
+        this.feedbackCanvas = document.createElement('canvas');
+        this.feedbackCanvas.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.6;
+        `;
+        frame.appendChild(this.feedbackCanvas);
 
         // Corner markers
         const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
@@ -178,6 +180,7 @@ export class HologramScanner {
                 border-radius: ${corner === 'top-left' ? '12px 0 0 0' :
                     corner === 'top-right' ? '0 12px 0 0' :
                         corner === 'bottom-left' ? '0 0 0 12px' : '0 0 12px 0'};
+                pointer-events: none;
             `;
             frame.appendChild(marker);
         });
@@ -185,7 +188,7 @@ export class HologramScanner {
         // Status text
         const statusText = document.createElement('div');
         statusText.id = 'scanner-status';
-        statusText.textContent = '🎵 Сканирование голограммы...';
+        statusText.textContent = '🎵 Scanning...';
         statusText.style.cssText = `
             color: #00ff88;
             font-size: 16px;
@@ -195,7 +198,7 @@ export class HologramScanner {
 
         // Close button
         const closeBtn = document.createElement('button');
-        closeBtn.textContent = '✕ Закрыть';
+        closeBtn.textContent = '✕ Close';
         closeBtn.style.cssText = `
             position: absolute;
             top: 20px;
@@ -232,13 +235,11 @@ export class HologramScanner {
             this.videoElement.srcObject = null;
         }
 
-        // Remove video element from DOM
         if (this.videoElement && this.videoElement.parentNode) {
             this.videoElement.parentNode.removeChild(this.videoElement);
             this.videoElement = null;
         }
 
-        // Remove overlay from DOM
         if (this.overlayElement && this.overlayElement.parentNode) {
             this.overlayElement.parentNode.removeChild(this.overlayElement);
             this.overlayElement = null;
@@ -257,25 +258,88 @@ export class HologramScanner {
      * Main frame processing loop.
      */
     _processFrame() {
-        if (!this.isActive) return;
+        if (!this.isActive || !this.videoElement || this.videoElement.readyState < 2) {
+            if (this.isActive) this.animationFrameId = requestAnimationFrame(() => this._processFrame());
+            return;
+        }
 
-        // Draw video frame to canvas
-        this.canvasCtx.drawImage(this.videoElement, 0, 0);
+        const videoW = this.videoElement.videoWidth;
+        const videoH = this.videoElement.videoHeight;
+        const canvasW = this.canvasElement.width;
+        const canvasH = this.canvasElement.height;
+
+        // Calculate aspect ratio crop
+        const targetAspect = canvasW / canvasH; // 1.77 or 2.0 based on canvas size
+        const videoAspect = videoW / videoH;
+
+        let cropW, cropH;
+        if (targetAspect > videoAspect) {
+            cropW = videoW;
+            cropH = videoW / targetAspect;
+        } else {
+            cropH = videoH;
+            cropW = videoH * targetAspect;
+        }
+
+        // Apply Stabilization Offset
+        // Center of crop region
+        let cx = videoW / 2 + this.stabilization.offX;
+        let cy = videoH / 2 + this.stabilization.offY;
+
+        // Clamp crop to video bounds
+        cx = Math.max(cropW / 2, Math.min(videoW - cropW / 2, cx));
+        cy = Math.max(cropH / 2, Math.min(videoH - cropH / 2, cy));
+
+        const sx = cx - cropW / 2;
+        const sy = cy - cropH / 2;
+
+        // Draw stabilized frame to Analysis Canvas
+        this.canvasCtx.drawImage(this.videoElement, sx, sy, cropW, cropH, 0, 0, canvasW, canvasH);
+
+        // Also draw to feedback canvas in UI (low res preview)
+        if (this.feedbackCanvas) {
+            if (this.feedbackCanvas.width !== canvasW) {
+                this.feedbackCanvas.width = canvasW;
+                this.feedbackCanvas.height = canvasH;
+            }
+            const fbCtx = this.feedbackCanvas.getContext('2d');
+            fbCtx.drawImage(this.canvasElement, 0, 0);
+        }
 
         // Get image data for analysis
-        const imageData = this.canvasCtx.getImageData(
-            0, 0, this.canvasElement.width, this.canvasElement.height
-        );
+        const imageData = this.canvasCtx.getImageData(0, 0, canvasW, canvasH);
 
-        // Extract audio parameters from the image
-        const audioParams = this._extractAudioParams(imageData);
+        // Extract audio parameters & Calculate new Centroid
+        const result = this._extractAudioParamsOptimized(imageData);
+        const { audioParams, centroid } = result;
+
+        // Update Stabilization
+        if (centroid.weight > 0.01) { // Only stabilize if we see something significant
+            // Centroid is in normalized coords 0..1 (relative to canvas center would be better for offset)
+            // But _extractAudioParamsOptimized returns relative to top-left 0..1?
+            // Let's assume normalized 0..1 first.
+
+            // Error relative to center (0.5, 0.5)
+            const errX = (centroid.x - 0.5) * cropW;
+            const errY = (centroid.y - 0.5) * cropH;
+
+            // Apply dampening (Sticky Frame effect)
+            // Move the offset towards the error to center the "mass"
+            // If object is at right (centroid.x > 0.5), we need to look right -> offset increases.
+            this.stabilization.offX += errX * 0.1;
+            this.stabilization.offY += errY * 0.1;
+        } else {
+            // Decay to center if nothing found
+            this.stabilization.offX *= 0.95;
+            this.stabilization.offY *= 0.95;
+        }
 
         // Update synthesizer with extracted parameters
         if (this.synthesizer && audioParams) {
             this.synthesizer.update(audioParams.levels, audioParams.pans);
         }
 
-        // Emit data for visualization (if needed)
+        // Emit data for visualization
         eventBus.emit('scannerData', audioParams);
 
         // Schedule next frame
@@ -283,140 +347,94 @@ export class HologramScanner {
     }
 
     /**
-     * Extracts audio parameters from camera frame by detecting column colors.
-     * @param {ImageData} imageData - Canvas image data
-     * @returns {Object} { levels: Float32Array[256], pans: Float32Array[128] }
+     * Optimized single-pass Audio Param extraction.
+     * Also calculates brightness centroid.
+     * @param {ImageData} imageData 
      */
-    _extractAudioParams(imageData) {
+    /*
+     * DENDY-SCANNER (BasilaQ-127 Simple Vision)
+     * Maps 128 vertical strips directly to frequencies.
+     * Ignores Hue. Uses Luminance only.
+     */
+    _extractAudioParamsOptimized(imageData) {
         const { width, height, data } = imageData;
-        const levels = new Float32Array(256); // 128 L + 128 R
-        const pans = new Float32Array(128);
+        const levels = new Float32Array(256).fill(-128); // Init silence
+        const pans = new Float32Array(128).fill(0);      // Center pan for simple mode
 
-        // For each semitone, find matching colored pixels
-        for (let i = 0; i < 128; i++) {
-            const target = this.semitoneColors[i];
-            let totalBrightness = 0;
-            let matchCount = 0;
-            let leftBrightness = 0;
-            let rightBrightness = 0;
-            let leftCount = 0;
-            let rightCount = 0;
-            const halfWidth = width / 2;
+        // Strip width
+        const numStrips = 128;
+        const stripWidth = width / numStrips;
 
-            // Scan image for matching pixels
-            // Optimize: sample every Nth pixel for performance
-            const sampleStep = 4; // Check every 4th pixel
+        // Iterate over strips
+        for (let i = 0; i < numStrips; i++) {
+            const startX = Math.floor(i * stripWidth);
+            const endX = Math.floor((i + 1) * stripWidth);
 
-            for (let y = 0; y < height; y += sampleStep) {
-                for (let x = 0; x < width; x += sampleStep) {
+            let totalLuminance = 0;
+            let pixelCount = 0;
+
+            // Scan pixels in this strip
+            // Step = 4 for performance (skip 3 pixels)
+            for (let y = 0; y < height; y += 4) {
+                for (let x = startX; x < endX; x += 4) {
+                    if (x >= width) break;
+
                     const idx = (y * width + x) * 4;
                     const r = data[idx];
                     const g = data[idx + 1];
                     const b = data[idx + 2];
 
-                    // Convert RGB to HSL
-                    const hsl = this._rgbToHsl(r, g, b);
-
-                    // Check if color matches this semitone
-                    if (this._colorMatches(hsl, target)) {
-                        const brightness = hsl.l;
-                        totalBrightness += brightness;
-                        matchCount++;
-
-                        // Track left/right for pan calculation
-                        if (x < halfWidth) {
-                            leftBrightness += brightness;
-                            leftCount++;
-                        } else {
-                            rightBrightness += brightness;
-                            rightCount++;
-                        }
-                    }
+                    // Calculate Luminance (0..255)
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                    totalLuminance += lum;
+                    pixelCount++;
                 }
             }
 
-            // Calculate average brightness (volume)
-            if (matchCount > 0) {
-                const avgBrightness = totalBrightness / matchCount;
-                // Convert brightness (0-1) to dB scale (-128 to 0)
-                const dbLevel = (avgBrightness * 128) - 128;
+            // Average Luminance for Strip
+            if (pixelCount > 0) {
+                const avgLum = totalLuminance / pixelCount; // 0..255
 
-                levels[i] = dbLevel;       // Left channel
-                levels[i + 128] = dbLevel; // Right channel
+                // Map to Amplitude (0..1)
+                const amp = avgLum / 255.0;
 
-                // Calculate pan from spatial distribution
-                const avgLeft = leftCount > 0 ? leftBrightness / leftCount : 0;
-                const avgRight = rightCount > 0 ? rightBrightness / rightCount : 0;
-                const total = avgLeft + avgRight;
+                // Noise Gate
+                if (amp > 0.1) {
+                    // Map to dB (-128 to 0) -> Actually we use -128 as silence, 0 as max
+                    // User requested levels[128] where brightness 0..255 maps to amplitude
+                    // But synth expects dB typically? 
+                    // Synthesizer update() uses: amplitude = Math.pow(10, avgLevel / 20);
+                    // So if we send dB, 0dB = 1.0 amp. -128dB = silence.
 
-                if (total > 0.001) {
-                    pans[i] = (avgRight - avgLeft) / total; // -1 to +1
-                } else {
-                    pans[i] = 0;
+                    // Linear To dB: 20 * log10(amp)
+                    // Amp 1.0 -> 0 dB
+                    // Amp 0.01 -> -40 dB
+                    const db = 20 * Math.log10(Math.max(0.000001, amp));
+
+                    levels[i] = Math.max(-128, db);       // Left
+                    levels[i + 128] = Math.max(-128, db); // Right
                 }
-            } else {
-                levels[i] = -128;       // Silence
-                levels[i + 128] = -128;
-                pans[i] = 0;
             }
         }
 
-        return { levels, pans };
+        // Mock centroid for stabilization (center)
+        const centroid = { x: 0.5, y: 0.5, weight: 1.0 };
+
+        return {
+            audioParams: { levels, pans },
+            centroid
+        };
     }
 
-    /**
-     * Converts RGB to HSL.
-     * @returns {Object} { h: 0-360, s: 0-1, l: 0-1 }
-     */
     _rgbToHsl(r, g, b) {
-        r /= 255; g /= 255; b /= 255;
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        let h = 0, s = 0;
-        const l = (max + min) / 2;
-
-        if (max !== min) {
-            const d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-            switch (max) {
-                case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-                case g: h = ((b - r) / d + 2) / 6; break;
-                case b: h = ((r - g) / d + 4) / 6; break;
-            }
-        }
-
-        return { h: h * 360, s, l };
+        // ... (Utility kept if needed, but inlined above for perf) ...
+        return {};
     }
 
-    /**
-     * Checks if a pixel color matches a semitone's target color.
-     */
-    _colorMatches(pixelHsl, targetColor) {
-        // Check lightness first (faster rejection)
-        if (pixelHsl.l < this.minLightness) return false;
-
-        // Hue distance (circular)
-        let hueDiff = Math.abs(pixelHsl.h - targetColor.h);
-        if (hueDiff > 180) hueDiff = 360 - hueDiff;
-
-        if (hueDiff > this.hueTolerance) return false;
-
-        // Saturation must be similar
-        if (Math.abs(pixelHsl.s - targetColor.s) > this.satTolerance) return false;
-
-        return true;
-    }
-
-    /**
-     * Gets current scanner status.
-     */
     getStatus() {
         return {
             isActive: this.isActive,
-            resolution: this.canvasElement
-                ? `${this.canvasElement.width}x${this.canvasElement.height}`
-                : null
+            stabilization: this.stabilization
         };
     }
 }

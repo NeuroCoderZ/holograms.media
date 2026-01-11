@@ -12,8 +12,6 @@
     "documentation_url": "/docs"
   },
   "authentication": {
-    "type": "JWT Token + Firebase Auth",
-    "description": "Большинство эндпоинтов требуют аутентификации через JWT токены с Firebase UID"
   },
   "endpoints": [
     {
@@ -210,7 +208,6 @@
           "description": "Чанк успешно сохранен"
         },
         "403": {
-          "description": "Firebase UID отсутствует"
         },
         "500": {
           "description": "Ошибка базы данных"
@@ -307,7 +304,6 @@
   },
   "notes": [
     "Полная автоматическая документация доступна по адресу /docs",
-    "Большинство эндпоинтов требуют аутентификации через Firebase",
     "API использует стандартные HTTP статус коды",
     "Все загрузки файлов используют presigned URLs для безопасности",
     "WebSocket эндпоинты поддерживают real-time коммуникацию"

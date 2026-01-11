@@ -4,7 +4,7 @@ function debugString(val) {
     // primitive types
     const type = typeof val;
     if (type == 'number' || type == 'boolean' || val == null) {
-        return  `${val}`;
+        return `${val}`;
     }
     if (type == 'string') {
         return `"${val}"`;
@@ -32,7 +32,7 @@ function debugString(val) {
         if (length > 0) {
             debug += debugString(val[0]);
         }
-        for(let i = 1; i < length; i++) {
+        for (let i = 1; i < length; i++) {
             debug += ', ' + debugString(val[i]);
         }
         debug += ']';
@@ -76,20 +76,20 @@ function getUint8ArrayMemory0() {
     return cachedUint8ArrayMemory0;
 }
 
-const cachedTextEncoder = (typeof TextEncoder !== 'undefined' ? new TextEncoder('utf-8') : { encode: () => { throw Error('TextEncoder not available') } } );
+const cachedTextEncoder = (typeof TextEncoder !== 'undefined' ? new TextEncoder('utf-8') : { encode: () => { throw Error('TextEncoder not available') } });
 
 const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
     ? function (arg, view) {
-    return cachedTextEncoder.encodeInto(arg, view);
-}
+        return cachedTextEncoder.encodeInto(arg, view);
+    }
     : function (arg, view) {
-    const buf = cachedTextEncoder.encode(arg);
-    view.set(buf);
-    return {
-        read: arg.length,
-        written: buf.length
-    };
-});
+        const buf = cachedTextEncoder.encode(arg);
+        view.set(buf);
+        return {
+            read: arg.length,
+            written: buf.length
+        };
+    });
 
 function passStringToWasm0(arg, malloc, realloc) {
 
@@ -139,7 +139,7 @@ function getDataViewMemory0() {
     return cachedDataViewMemory0;
 }
 
-const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
+const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } });
 
 if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
 
@@ -171,7 +171,7 @@ function takeFromExternrefTable0(idx) {
 }
 
 const HoloAnalyzerFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
+    ? { register: () => { }, unregister: () => { } }
     : new FinalizationRegistry(ptr => wasm.__wbg_holoanalyzer_free(ptr >>> 0, 1));
 
 export class HoloAnalyzer {
@@ -253,28 +253,28 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbg_new_405e22f390576ce2 = function() {
+    imports.wbg.__wbg_new_405e22f390576ce2 = function () {
         const ret = new Object();
         return ret;
     };
-    imports.wbg.__wbg_new_78feb108b6472713 = function() {
+    imports.wbg.__wbg_new_78feb108b6472713 = function () {
         const ret = new Array();
         return ret;
     };
-    imports.wbg.__wbg_set_37837023f3d740e8 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbg_set_37837023f3d740e8 = function (arg0, arg1, arg2) {
         arg0[arg1 >>> 0] = arg2;
     };
-    imports.wbg.__wbg_set_3f1d0b984ed272ed = function(arg0, arg1, arg2) {
+    imports.wbg.__wbg_set_3f1d0b984ed272ed = function (arg0, arg1, arg2) {
         arg0[arg1] = arg2;
     };
-    imports.wbg.__wbindgen_debug_string = function(arg0, arg1) {
+    imports.wbg.__wbindgen_debug_string = function (arg0, arg1) {
         const ret = debugString(arg1);
         const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
         getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
         getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
     };
-    imports.wbg.__wbindgen_init_externref_table = function() {
+    imports.wbg.__wbindgen_init_externref_table = function () {
         const table = wasm.__wbindgen_export_2;
         const offset = table.grow(4);
         table.set(0, undefined);
@@ -284,15 +284,15 @@ function __wbg_get_imports() {
         table.set(offset + 3, false);
         ;
     };
-    imports.wbg.__wbindgen_number_new = function(arg0) {
+    imports.wbg.__wbindgen_number_new = function (arg0) {
         const ret = arg0;
         return ret;
     };
-    imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
+    imports.wbg.__wbindgen_string_new = function (arg0, arg1) {
         const ret = getStringFromWasm0(arg0, arg1);
         return ret;
     };
-    imports.wbg.__wbindgen_throw = function(arg0, arg1) {
+    imports.wbg.__wbindgen_throw = function (arg0, arg1) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
 
@@ -321,7 +321,7 @@ function initSync(module) {
 
     if (typeof module !== 'undefined') {
         if (Object.getPrototypeOf(module) === Object.prototype) {
-            ({module} = module)
+            ({ module } = module)
         } else {
             console.warn('using deprecated parameters for `initSync()`; pass a single object instead')
         }
@@ -346,16 +346,25 @@ async function __wbg_init(module_or_path) {
 
     if (typeof module_or_path !== 'undefined') {
         if (Object.getPrototypeOf(module_or_path) === Object.prototype) {
-            ({module_or_path} = module_or_path)
+            ({ module_or_path } = module_or_path)
         } else {
             console.warn('using deprecated parameters for the initialization function; pass a single object instead')
         }
     }
 
     if (typeof module_or_path === 'undefined') {
-        module_or_path = new URL('holographic_core_bg.wasm', import.meta.url);
+        try {
+            module_or_path = new URL('holographic_core_bg.wasm', import.meta.url);
+        } catch (e) {
+            // Fallback for environments without import.meta.url, like AudioWorklet
+            module_or_path = '/js/wasm/holographic_core_bg.wasm';
+        }
     }
     const imports = __wbg_get_imports();
+
+    if (typeof fetch === 'undefined') {
+        throw new Error('fetch is not defined. WASM module cannot be loaded in this context (e.g., AudioWorklet). Please load the module in the main thread and pass it directly.');
+    }
 
     if (typeof module_or_path === 'string' || (typeof Request === 'function' && module_or_path instanceof Request) || (typeof URL === 'function' && module_or_path instanceof URL)) {
         module_or_path = fetch(module_or_path);

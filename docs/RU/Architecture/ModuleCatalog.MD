@@ -78,7 +78,6 @@
     - `/services/` - Сервисы для взаимодействия с бэкендом.
         - `apiService.js`
         - `CloudGestureStorage.js`
-        - `firebaseStorageService.js`
         - `hologlyphService.js`
         - `netHoloGlyphClient.js`
         - `websocketService.js`

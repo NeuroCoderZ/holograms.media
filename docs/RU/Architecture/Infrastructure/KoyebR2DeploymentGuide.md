@@ -49,7 +49,7 @@ hologram_data/{hologram_id}/{version}/{filename}
 Эндпоинт для загрузки чанков реализован в `backend/routers/interaction_chunks.py`.
 
 **Ключевые моменты реализации:**
-* Использует библиотеку `boto3` для взаимодействия с S3-совместимым API
+* Использует библиотеку `agento3` для взаимодействия с S3-совместимым API
 * Аутентификация через JWT токены
 * Генерация уникальных имен файлов с UUID
 * Валидация типов файлов и размеров
@@ -218,11 +218,11 @@ class ChunkRepository:
 
 ```python
 # backend/services/storage_service.py
-import boto3
+import agento3
 import os
 
 def get_b2_client():
-    return boto3.client(
+    return agento3.client(
         service_name='s3',
         endpoint_url='https://s3.us-west-002.backblazeb2.com',
         aws_access_key_id=os.getenv('BACKBLAZE_ACCESS_KEY'),

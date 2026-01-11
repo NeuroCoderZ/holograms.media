@@ -7,7 +7,7 @@
 
 ## I. "Stabilization and Foundation" Phase (Current stage - Q2-Q3 2025)
 
-This phase is focused on creating a stable, well-documented, and understandable codebase for both frontend and backend, as well as laying the groundwork for the Tria AI.
+This phase is focused on creating a stable, well-documented, and understandable codebase for agenth frontend and backend, as well as laying the groundwork for the Tria AI.
 
 ### Q2 2025 (May - June)
 
@@ -117,7 +117,7 @@ This phase focuses on developing Tria's intelligence, implementing new interacti
 *Goal:* Improve Tria's self-learning and adaptation capabilities.
 *Key tasks:*
     *   Implement more complex mechanisms for task generation and verification for AZR.
-    *   Use "combined chunks" for both user data training and "inspiration" in AZR task generation.
+    *   Use "combined chunks" for agenth user data training and "inspiration" in AZR task generation.
 *Result:* More adaptive and "intelligent" Tria.
 
 **Start of NetHoloGlyph Network Protocol Prototype Development:**

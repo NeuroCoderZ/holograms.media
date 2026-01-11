@@ -15,7 +15,7 @@ export class SmartHologram {
         // Three.js компоненты
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        
+
         // Используем переданный рендерер или создаем новый (только если WebGL доступен)
         if (renderer) {
             this.renderer = renderer;
@@ -30,12 +30,12 @@ export class SmartHologram {
                 canvas.height = window.innerHeight;
                 this.renderer = {
                     domElement: canvas,
-                    setSize: () => {},
-                    render: () => {}
+                    setSize: () => { },
+                    render: () => { }
                 };
             }
         }
-        
+
         this.controls = this.renderer.domElement ? new OrbitControls(this.camera, this.renderer.domElement) : null;
 
         // Голографические объекты
@@ -187,8 +187,9 @@ export class SmartHologram {
                 );
 
                 if (distance < 10) {
-                    // Клик - создать объект
-                    this.createObjectAtPosition(endPosition);
+                    // Клик - больше не создаем тестовые объекты
+                    // this.createObjectAtPosition(endPosition);
+                    // console.log('Click at', endPosition);
                 }
             }
             isMouseDown = false;

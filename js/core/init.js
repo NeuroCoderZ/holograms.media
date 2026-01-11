@@ -227,7 +227,10 @@ import { initializeScene } from '../3d/sceneSetup.js';
 import { AudioFilePlayer } from '../audio/audioFilePlayer.js'; // Added AudioFilePlayer import
 import { MicrophoneManager } from '../audio/microphoneManager.js';
 import PanelManager from '../ui/panelManager.js';
+import { WebAudioEngine } from '../audio/webAudioEngine.js';
 import { XRSessionManager } from '../xr/webxr_session_manager.js';
+import GestureUIManager from '../ui/GestureUIManager.js';
+import eventBus from '../core/eventBus.js';
 
 export async function initCore() {
   console.log('🚀 Инициализация ядра приложения...');
@@ -287,6 +290,14 @@ export async function initCore() {
       console.error('❌ Ошибка инициализации PanelManager:', error);
     }
 
+    // Инициализируем GestureUIManager
+    try {
+      state.gestureUIManager = new GestureUIManager(eventBus, state);
+      console.log('✅ GestureUIManager инициализирован');
+    } catch (error) {
+      console.error('❌ Ошибка инициализации GestureUIManager:', error);
+    }
+
     // Инициализируем XRSessionManager
     if (state.renderer) {
       state.xrSessionManagerInstance = new XRSessionManager(state.renderer);
@@ -294,9 +305,18 @@ export async function initCore() {
     }
 
     // Инициализируем аудио компоненты
-    if (!state.audio.audioContext) {
-      state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      console.log('✅ AudioContext создан');
+    try {
+      if (!state.webAudioEngine) {
+        state.webAudioEngine = new WebAudioEngine();
+        await state.webAudioEngine.initialize();
+        console.log('✅ WebAudioEngine инициализирован');
+      }
+      if (!state.audio.audioContext) {
+        state.audio.audioContext = state.webAudioEngine.getAudioContext() || new (window.AudioContext || window.webkitAudioContext)();
+        console.log('✅ AudioContext получен из WebAudioEngine');
+      }
+    } catch (audioError) {
+      console.warn('⚠️ Ошибка инициализации WebAudioEngine:', audioError.message);
     }
 
     // Предзагрузка CWT AudioWorklet для оптимальной производительности
@@ -311,9 +331,26 @@ export async function initCore() {
     state.microphoneManagerInstance = new MicrophoneManager(state.audio.audioContext, state);
     state.audioFilePlayerInstance = new AudioFilePlayer(state.audio.audioContext, state);
 
-    // Инициализируем обработчики для кнопок плеера (включая кнопку "+" / loadAudioButton)
+    // Инициализируем обработчики для кнопок плеера
     state.audioFilePlayerInstance.initializeAudioPlayerControls();
     console.log('✅ Обработчики аудио плеера инициализированы');
+
+    // --- MediaPipe Hands Initialization ---
+    try {
+      const { initializeMediaPipeHands, startVideoStream } = await import('../multimodal/handsTracking.js');
+      initializeMediaPipeHands();
+
+      if (state.multimodal.videoElementForHands && state.multimodal.handsInstance) {
+        await startVideoStream(state.multimodal.videoElementForHands, state.multimodal.handsInstance);
+        console.log('✅ MediaPipe HandTracking started successfully.');
+      } else {
+        console.warn('⚠️ MediaPipe initialized but videoElement or handsInstance is missing.');
+      }
+
+    } catch (mpError) {
+      console.error('❌ Failed to initialize MediaPipe Hands:', mpError);
+    }
+    // --------------------------------------
 
     // Обновляем размер камеры
     if (state.camera) {

@@ -193,7 +193,6 @@ This document describes public APIs and key dependencies for JavaScript modules.
 
 * **Purpose:** Provides functions for interacting with backend APIs (deployed on Koyeb), such as user auth synchronization (`/auth_sync`) and sending chat messages (`/tria_chat_handler`).
 * **Exported API:**
-  * `syncUserAuth(idToken)` (async function): Sends Firebase ID token to backend to synchronize user. Uses `fetch`.
   * `sendChatMessage(messageText, idToken)` (async function): Sends chat message and ID token to backend. Uses `fetch`.
 * **Key dependencies:** No direct project dependencies, uses native `fetch`.
 * **Interaction with `state`:** None.
@@ -211,7 +210,6 @@ This document describes public APIs and key dependencies for JavaScript modules.
 * **Exported API:**
   * `initChatUI()` (function): Initializes chat DOM references and event listeners for sending messages.
 * **Key dependencies:**
-  * `../firebaseInit.js` (for `auth` — getting the current user).
 * **Interaction with `state`:** None. Uses `auth.currentUser` to obtain the user ID.
 
 ## `js/core/ui/panelManager.js`
@@ -394,7 +392,7 @@ This document describes public APIs and key dependencies for JavaScript modules.
 * **Purpose:** Handles chat logic and UI, including an interactive UI tour, sending messages to the backend (FastAPI or a public endpoint), and speech synthesis. Also formats messages (basic Markdown).
 * **Exported API:**
   * `setupChat(appState)` (function): Initializes chat UI, obtains DOM references from `appState` and sets up input handlers.
-  * `sendChatMessage(messageText)` (async function): Sends a user message to the backend, processes the response, manages tour state (if active) and displays the bot reply. Uses `fetch`.
+  * `sendChatMessage(messageText)` (async function): Sends a user message to the backend, processes the response, manages tour state (if active) and displays the agent reply. Uses `fetch`.
   * `addMessageToChat(sender, message)` (function): Adds a formatted message to the chat UI and to the `chatMessages` array.
   * `chatMessages` (array): Chat message history.
 * **Key dependencies:**

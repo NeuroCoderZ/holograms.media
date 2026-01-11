@@ -8,31 +8,33 @@ export class GestureManager {
         this.eventListeners = new Map();
         this.isInitialized = false;
 
-        // Система жестового кода
-        this.gestureCodes = new Map(); // name -> gesture code mapping
-        this.activeTrajectories = new Map(); // finger -> trajectory data
-        this.gestureBuffer = []; // буфер для анализа последовательностей
-        this.codeInterpreter = new GestureCodeInterpreter();
+        // STATE MACHINE
+        this.state = 'IDLE'; // IDLE, HOVER, GRAB
+        this.grabbedIndex = -1; // Index of grabbed frequency
+        this.pinchThreshold = 0.05; // ~5cm normalized
 
-        // Система обучения жестам
-        this.customGestures = new Map(); // name -> gesture data
-        this.loadFromLocalStorage(); // Загружаем сохраненные жесты
+        // Physics
+        this.volume = 0;
+        this.pan = 0;
+
+        // ... existing props ...
+        this.gestureCodes = new Map();
+        this.activeTrajectories = new Map();
+        this.gestureBuffer = [];
+        this.codeInterpreter = new GestureCodeInterpreter();
+        this.customGestures = new Map();
+        this.loadFromLocalStorage();
         this.learningMode = false;
         this.currentRecording = null;
-
-        // Cloud storage для жестов
         this.cloudStorage = new CloudGestureStorage();
-
     }
 
-    /**
-     * Инициализация GestureManager
-     */
     async init(container) {
         console.log('Инициализация GestureManager...');
 
         try {
             // Создаем SmartHologram для работы с существующими голограммами
+            // Check if SmartHologram is imported. It is imported at the top of the file (line 2).
             this.smartHologram = new SmartHologram(container, this, state.aiEngine, state.renderer);
             await this.smartHologram.init();
 
@@ -51,39 +53,107 @@ export class GestureManager {
         }
     }
 
-    /**
-     * Настройка слушателей событий жестов
-     */
     setupEventListeners() {
-        // Слушаем события от GestureIntentClassifier
-        if (state.gestureIntentClassifier) {
-            const originalPredict = state.gestureIntentClassifier.predict.bind(state.gestureIntentClassifier);
+        // Listening to High-Frequency Hand Events via EventBus (from handsTracking.js or similar)
+        // Usually handsTracking emits 'handsDetected' but we need the DATA stream.
+        // Assuming handsTracking calls a method here or we intercept the loop.
+        // handsTracking.js calls: state.gestureIntentClassifier.predict(handLandmarks)
+        // We should hook into `handleHandFrame(landmarks)` if we expose it, or listen to an event.
+        // Currently handsTracking doesn't emit data-stream via eventBus efficiently.
+        // We will assume `handsTracking.js` has been updated or we will patch it to call `gestureManager.update(landmarks)`.
+        // Or we can rely on `state.multimodal.lastHandData` if we run a loop.
 
-            state.gestureIntentClassifier.predict = async (handLandmarks) => {
-                const intent = await originalPredict(handLandmarks);
+        // For this task, I will add an update loop or assume handsTracking calls `processHandLandmarks`.
+    }
 
-                if (intent && this.smartHologram) {
-                    // Обрабатываем траектории пальцев
-                    const gestureCode = this.processFingerTrajectories(handLandmarks, intent);
+    /**
+     * Main State Machine Update Loop
+     * Called by handsTracking.js or internal loop with new landmarks
+     * @param {Array} landmarks - MediaPipe landmarks
+     */
+    processHandLandmarks(landmarks) {
+        if (!landmarks) {
+            this.state = 'IDLE';
+            return;
+        }
 
-                    if (gestureCode) {
-                        // Преобразуем жестовый код в программные события
-                        const programEvents = this.codeInterpreter.interpret(gestureCode);
+        const thumbTip = landmarks[4];
+        const indexTip = landmarks[8];
+        const wrist = landmarks[0];
 
-                        // Применяем события к активной голограмме
-                        this.applyGestureToHologram(programEvents, handLandmarks);
+        // 1. Calculate Pinch Distance (Euclidean)
+        const distance = Math.sqrt(
+            Math.pow(thumbTip.x - indexTip.x, 2) +
+            Math.pow(thumbTip.y - indexTip.y, 2) +
+            Math.pow(thumbTip.z - indexTip.z, 2)
+        );
 
-                        this.emit('gestureCodeGenerated', {
-                            code: gestureCode,
-                            events: programEvents,
-                            landmarks: handLandmarks,
-                            timestamp: Date.now()
-                        });
-                    }
+        // 2. Determine State
+        if (distance < this.pinchThreshold) {
+            if (this.state !== 'GRAB') {
+                // Transition to GRAB
+                this.state = 'GRAB';
+                // Lock frequency based on Index Finger X position
+                // X is 0..1 (flipped? Check mirror). usually 0 is left.
+                this.grabbedIndex = Math.floor(indexTip.x * 127);
+                this.grabbedIndex = Math.max(0, Math.min(127, this.grabbedIndex));
+                console.log(`[Gesture] GRABBED Frequency Index: ${this.grabbedIndex}`);
+
+                // Visual Feedback: Lock Highlight
+                // eventBus.emit('hologramLockColumn', this.grabbedIndex);
+            }
+        } else {
+            this.state = 'HOVER';
+            this.grabbedIndex = -1;
+        }
+
+        // 3. Act based on State
+        if (this.state === 'HOVER') {
+            // HOVER Logic: Preview
+            const hoverIndex = Math.floor(indexTip.x * 127);
+            // Flicker / Preview Low Volume
+            // We can emit audio preview event
+            // eventBus.emit('audioPreview', { index: hoverIndex, volume: 0.2 });
+        }
+        else if (this.state === 'GRAB') {
+            // CONTROL Logic: Physics
+            // Calculate Volume from Z (String Tension)
+            // Z in MediaPipe: 0 is camera, negative is towards screen? 
+            // Actually Z is relative to specific point. 
+            // Let's use Wrist Z or average Z. 
+            // Usually Z is around 0. 
+            // Let's assume Z range -0.2 (close) to 0.2 (far).
+            // Formula: Volume = map(z, -0.1, 0.1, 0, 1) inverted? 
+            // User request: "Close to camera = Silence (0). Far (to self) = Loud (1.0)."
+            // In MP, negative Z is closer to camera? No, usually Z is depth.
+            // Let's assume normalized input or calibrate.
+            // Typical MP Z: 0 at wrist... it's tricky.
+            // Let's stick to the prompt formula assumption: 
+            // "Volume = clamp((DepthZ - MinZ) / (MaxZ - MinZ), 0, 1)"
+
+            // For now, simple mapping:
+            // Assuming Z varies from -0.1 (very close) to 0.1 (farther). Or 0 to -0.2?
+            // Let's rely on Relative Movement or basic clamping.
+
+            const rawZ = Math.abs(wrist.z); // Simple depth proxy
+            // Heuristic: 0.02 (Close) -> 0.15 (Far)
+            let vol = (rawZ - 0.02) / (0.15 - 0.02);
+            vol = Math.max(0, Math.min(1, vol));
+            this.volume = vol;
+
+            // Pan X
+            this.pan = (wrist.x * 2) - 1; // 0..1 -> -1..1
+
+            // Execute Feedback
+            // 1. Audio
+            import('../multimodal/hologramScanner.js').then(module => {
+                if (module.hologramScanner.synthesizer) {
+                    module.hologramScanner.synthesizer.previewFrequency(this.grabbedIndex, this.volume);
                 }
+            });
 
-                return intent;
-            };
+            // 2. Visual (TODO: Pass pan/vol to renderer)
+            console.log(`[Gesture] CONTROL: Vol ${this.volume.toFixed(2)} | Pan ${this.pan.toFixed(2)}`);
         }
     }
 

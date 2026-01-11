@@ -16,7 +16,7 @@ The system consists of the following key modules:
 
 ## 3. Continuous Wavelet Transform (CWT) Audio Analysis
 
-Unlike the traditional fast Fourier transform (FFT), CWT provides better resolution in both time and frequency domains, enabling more detailed and responsive visualizations.
+Unlike the traditional fast Fourier transform (FFT), CWT provides better resolution in agenth time and frequency domains, enabling more detailed and responsive visualizations.
 
 ### 3.1. Wavelet Selection
 

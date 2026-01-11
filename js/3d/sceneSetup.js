@@ -1,5 +1,6 @@
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as THREE from 'three';
+import { renderingCapabilities } from '../utils/renderingCapabilities.js';
 
 /**
  * Initializes the Three.js scene, camera, renderer, and basic lighting.
@@ -13,96 +14,32 @@ export async function initializeScene(state) {
   state.scene.background = new THREE.Color(0x000000); // Black background
   state.scene.position.set(0, 0, 0); // Shift scene left by 128 units
 
-  // --- WebGL Renderer Initialization ---
+  // --- Детект возможностей рендеринга и выбор рендерера ---
   try {
-    console.log('[WebGL Init] Attempting to create WebGLRenderer...');
-    state.renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      // powerPreference: 'high-performance' // Retained for potential relevance
-    });
-    state.renderer.setPixelRatio(window.devicePixelRatio);
-    state.renderer.outputColorSpace = THREE.SRGBColorSpace; // Correct color space for WebGL
+    console.log('[Renderer Detection] Определение поддерживаемых технологий рендеринга...');
+    const capabilities = await renderingCapabilities.detect();
+    console.log('[Renderer Detection] Обнаружены возможности:', capabilities);
 
-    const canvas = state.renderer.domElement;
+    // Выбор предпочтительного рендерера
+    const preferredRenderer = capabilities.preferred;
+    console.log(`[Renderer Detection] Выбран рендерер: ${preferredRenderer}`);
 
-    canvas.addEventListener('webglcontextlost', function (event) {
-      event.preventDefault();
-      console.warn('!!! CONTEXT LOST! Stopping animation loop.');
-      // Здесь мы должны остановить цикл анимации, если он есть
-      // В нашем случае, мы пока просто логируем.
-    }, false);
+    state.renderingCapabilities = capabilities;
+    state.currentRenderer = preferredRenderer;
 
-    canvas.addEventListener('webglcontextrestored', function () {
-      console.log('✅ CONTEXT RESTORED! Re-initializing scene...');
-      // Здесь мы должны были бы заново создать все текстуры и буферы.
-      // Для нашего теста, мы просто перезагрузим страницу, чтобы все пересоздалось.
-      alert('WebGL context was restored. Reloading the page.');
-      window.location.reload();
-    }, false);
-
-    console.log('WebGL context loss handlers attached.');
-
-    console.log('[WebGL Init] WebGLRenderer initialized successfully.');
+    // --- Инициализация рендерера в зависимости от возможностей устройства ---
+    if (preferredRenderer === 'webgpu') {
+      await initializeWebGPURenderer(state);
+    } else if (preferredRenderer === 'webgl') {
+      await initializeWebGLRenderer(state);
+    } else {
+      await initializeCanvas2DRenderer(state);
+    }
 
   } catch (error) {
-    console.error('CRITICAL: WebGLRenderer Initialization Failed.', error);
-
-    // Попытка создать fallback Canvas2D рендерер
-    console.log('[Fallback] Attempting to create Canvas2D fallback renderer...');
-    try {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      // Создаем простой mock-рендерер с минимальным API
-      state.renderer = {
-        domElement: canvas,
-        setSize: function (width, height) {
-          canvas.width = width;
-          canvas.height = height;
-          this.renderFallback(width, height);
-        },
-        setPixelRatio: function () { },
-        renderFallback: function (width, height) {
-          ctx.fillStyle = '#000000';
-          ctx.fillRect(0, 0, width, height);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '24px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('WebGL не поддерживается в этой среде', width / 2, height / 2 - 50);
-          ctx.fillText('Попробуйте другой браузер или устройство', width / 2, height / 2);
-          ctx.fillText('Остальные функции приложения доступны', width / 2, height / 2 + 50);
-        },
-        render: function () { } // Пустая функция для совместимости
-      };
-
-      state.renderer.setSize(window.innerWidth, window.innerHeight);
-      console.log('[Fallback] Canvas2D fallback renderer created successfully.');
-
-    } catch (fallbackError) {
-      console.error('CRITICAL: Even Canvas2D fallback failed:', fallbackError);
-
-      // Показываем сообщение об ошибке
-      const errorOverlay = document.getElementById('webgl-error-overlay');
-      const errorDetailsElement = document.getElementById('webgl-error-details');
-      const userMessage = 'Критическая ошибка: 3D-графика недоступна. Приложение продолжит работу без визуализации.';
-
-      if (errorOverlay) {
-        if (errorDetailsElement) {
-          errorDetailsElement.textContent = userMessage + ' (Подробности в консоли)';
-        }
-        errorOverlay.style.display = 'flex';
-      } else {
-        const fallbackDiv = document.createElement('div');
-        fallbackDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px; font-size: 1.2em; z-index: 9999;';
-        fallbackDiv.textContent = userMessage;
-        document.body.appendChild(fallbackDiv);
-      }
-
-      state.renderer = null;
-      state.scene = null;
-      state.camera = null;
-      return { scene: null, renderer: null, camera: null };
-    }
+    console.error('[Renderer Detection] Ошибка при определении возможностей рендеринга:', error);
+    console.log('[Renderer Detection] Использование WebGL как fallback...');
+    await initializeWebGLRenderer(state);
   }
 
   const gridContainer = document.getElementById('grid-container');
@@ -235,8 +172,11 @@ export async function initializeScene(state) {
       const hologramPivot = hologramRenderer.getHologramPivot ? hologramRenderer.getHologramPivot() : null;
 
       if (hologramPivot) {
-        // Dynamic Scaling: Occupy 90% of screen height (GRID_HEIGHT=256)
-        const targetScale = (newHeight * 0.9) / 256;
+        // Dynamic Scaling: Occupy 90% of screen width or height (GRID_WIDTH=128+128=256)
+        // This ensures the hologram always fits with 5% margins on sides (0.9 factor)
+        const scaleW = (newWidth * 0.9) / 256;
+        const scaleH = (newHeight * 0.9) / 256;
+        const targetScale = Math.min(scaleW, scaleH);
 
         // Exact Centering: Point of junction (x=0) aligns with screen center
         hologramPivot.position.x = 0;
@@ -267,4 +207,126 @@ export async function initializeScene(state) {
 
   console.log('sceneSetup.js: Scene initialized successfully');
   return { scene: state.scene, renderer: state.renderer, camera: state.camera };
+}
+
+/**
+ * Инициализация WebGL рендерера
+ * @param {object} state - Глобальное состояние приложения
+ */
+async function initializeWebGLRenderer(state) {
+  console.log('[WebGL Init] Инициализация WebGL рендерера...');
+
+  try {
+    state.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
+
+    state.renderer.setPixelRatio(window.devicePixelRatio);
+    state.renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const canvas = state.renderer.domElement;
+
+    // Обработчики потери контекста WebGL
+    canvas.addEventListener('webglcontextlost', function (event) {
+      event.preventDefault();
+      console.warn('!!! WebGL CONTEXT LOST! Остановка цикла анимации.');
+    }, false);
+
+    canvas.addEventListener('webglcontextrestored', function () {
+      console.log('✅ WebGL CONTEXT RESTORED! Переинициализация сцены...');
+      alert('WebGL контекст восстановлен. Перезагружаем страницу.');
+      window.location.reload();
+    }, false);
+
+    console.log('[WebGL Init] WebGLRenderer успешно инициализирован.');
+
+  } catch (error) {
+    console.error('[WebGL Init] Ошибка инициализации WebGL:', error);
+    throw error;
+  }
+}
+
+/**
+ * Инициализация WebGPU рендерера (экспериментальная поддержка)
+ * @param {object} state - Глобальное состояние приложения
+ */
+async function initializeWebGPURenderer(state) {
+  console.log('[WebGPU Init] Инициализация WebGPU рендерера...');
+
+  try {
+    // Проверка поддержки WebGPU
+    if (!navigator.gpu) {
+      throw new Error('WebGPU не поддерживается в этом браузере');
+    }
+
+    // Создание WebGPU рендерера через Three.js
+    // В будущем здесь будет WebGPURenderer от Three.js
+    console.log('[WebGPU Init] WebGPU поддерживается, но рендерер Three.js WebGPU еще в разработке');
+
+    // Пока используем WebGL как fallback
+    console.log('[WebGPU Init] Использование WebGL как временное решение...');
+    await initializeWebGLRenderer(state);
+    state.currentRenderer = 'webgl';
+
+  } catch (error) {
+    console.error('[WebGPU Init] Ошибка инициализации WebGPU:', error);
+    console.log('[WebGPU Init] Переключение на WebGL...');
+    await initializeWebGLRenderer(state);
+    state.currentRenderer = 'webgl';
+  }
+}
+
+/**
+ * Инициализация Canvas2D рендерера (fallback)
+ * @param {object} state - Глобальное состояние приложения
+ */
+async function initializeCanvas2DRenderer(state) {
+  console.log('[Canvas2D Init] Инициализация Canvas2D fallback рендерера...');
+
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Создание mock-рендерера с минимальным API для совместимости
+    state.renderer = {
+      domElement: canvas,
+      setSize: function (width, height) {
+        canvas.width = width;
+        canvas.height = height;
+        this.renderFallback(width, height);
+      },
+      setPixelRatio: function () { },
+      renderFallback: function (width, height) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('3D-графика недоступна в этой среде', width / 2, height / 2 - 50);
+        ctx.fillText('Попробуйте другой браузер или устройство', width / 2, height / 2);
+        ctx.fillText('Остальные функции приложения доступны', width / 2, height / 2 + 50);
+
+        // Показ информации о рендерере
+        ctx.fillStyle = '#00ff00';
+        ctx.font = '16px Arial';
+        ctx.fillText('Canvas2D Fallback Active', width / 2, height / 2 + 100);
+      },
+      render: function () { } // Пустая функция для совместимости
+    };
+
+    state.renderer.setSize(window.innerWidth, window.innerHeight);
+    console.log('[Canvas2D Init] Canvas2D fallback рендерер успешно создан.');
+
+  } catch (error) {
+    console.error('[Canvas2D Init] Ошибка создания Canvas2D рендерера:', error);
+
+    // Показ критической ошибки
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px; font-size: 1.2em; z-index: 9999;';
+    errorDiv.textContent = 'Критическая ошибка: 3D-графика недоступна. Приложение продолжит работу без визуализации.';
+    document.body.appendChild(errorDiv);
+
+    throw error;
+  }
 }

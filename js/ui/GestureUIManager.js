@@ -1,263 +1,462 @@
-// Manages the UI aspects of the gesture area (#gesture-area),
-// including its height, red line, and finger dot visualizations.
-
-// Assuming an EventBus class/instance is available and imported
-// import EventBus from '../core/eventBus';
+// js/ui/GestureUIManager.js
+// Manages the gesture recording panel with two lanes (left hand / right hand)
+// and click-to-record functionality with a moving red line.
 
 class GestureUIManager {
-    constructor(eventBus, state) { // appState changed to state
+    constructor(eventBus, state) {
         this.gestureAreaElement = document.getElementById('gesture-area');
         this.eventBus = eventBus;
-        this.state = state; // appState changed to state
-        this.currentAnimation = null; // To manage ongoing animations
+        this.state = state;
+        this.currentAnimation = null;
 
         if (!this.gestureAreaElement) {
             console.error("GestureUIManager: #gesture-area element not found!");
             return;
         }
 
-        // Ensure #gesture-area can contain absolutely positioned children
-        if (getComputedStyle(this.gestureAreaElement).position === 'static') {
-            this.gestureAreaElement.style.position = 'relative';
-            console.log("GestureUIManager: Set #gesture-area position to relative.");
+        // Recording state
+        this.isRecording = false;
+        this.recordingStartTime = 0;
+        this.recordingDuration = 20000; // 20 seconds in ms
+        this.redLinePosition = 0; // 0 to 1 (normalized)
+
+        // Canvas for visualization
+        this.canvas = null;
+        this.ctx = null;
+        this.animationFrameId = null;
+        this.detectedHands = { count: 0, handedness: [] };
+        // Latest hand positions for locking to the red line: Map of handId -> {y, z}
+        this.currentHandState = new Map();
+        // Persistent recording paths: Map of handId -> Array of {x, y, r}
+        this.recordedPaths = new Map();
+
+        // Constants for dot sizes (radii)
+        this.minDotRadius = 1.5; // 3px diameter
+        this.maxDotRadius = 5.0; // 10px diameter
+
+
+        this.setInitialState();
+
+        this.initialize();
+    }
+
+    setInitialState() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        // Match scaling logic in sceneSetup.js
+        const targetScale = Math.min((w * 0.9) / 256, (h * 0.9) / 256);
+        const targetWidthPx = targetScale * 256;
+
+        this.gestureAreaElement.style.left = '50%';
+        this.gestureAreaElement.style.transform = 'translateX(-50%)';
+        this.gestureAreaElement.style.width = `${targetWidthPx}px`;
+        this.gestureAreaElement.style.height = '6px';
+    }
+
+
+    initialize() {
+        if (!this.eventBus) return;
+
+        // Subscribe to hand detection events
+        this.eventBus.on('handsDetected', (data) => this.handleHandsChange(true, data));
+        this.eventBus.on('handsLost', () => this.handleHandsChange(false));
+        this.eventBus.on('handsUpdate', (data) => this.updateHandData(data));
+
+
+
+        // Create canvas for recording visualization
+        this.initVisualization();
+
+        // Add click handler for recording toggle
+        this.gestureAreaElement.addEventListener('click', () => this.toggleRecording());
+        this.gestureAreaElement.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.toggleRecording();
+        });
+
+        // Start the visualization loop
+        this.startVisualizationLoop();
+
+        console.log("GestureUIManager: Initialized with recording lanes.");
+    }
+
+    handleHandsChange(present, data = null) {
+        if (present && data) {
+            this.detectedHands = data;
+        } else if (!present) {
+            this.detectedHands = { count: 0, handedness: [] };
+            this.currentHandState.clear();
+            // We keep recordedPaths until a new recording starts or hands are lost for a long time?
+            // Actually, let's clear them on hands lost for simplicity, or keep them until next record?
+            // User: "когда начинается запись ... зеленые точки оставляет за собой линии"
+            // Let's clear recorded paths when hands are completely lost to keep UI clean.
+            this.recordedPaths.clear();
         }
-
-        this.redLineElement = null;
-        this.fingerDots = []; // To keep track of dot elements
-        // this.setHandsPresent(false); // Intentionally not here, moved to initialize() as per subtask.
-
-        console.log("GestureUIManager initialized for Block 3");
-        this.initialize(); // Changed from subscribeToEvents
-        this.drawVerticalRedLine(); // Draw the red line once at init
+        this.animateGestureArea(present);
+        // Note: Hologram scaling is handled by layoutManager via eventBus subscription
     }
 
-    initialize() { // Renamed from subscribeToEvents and expanded
-        if (!this.eventBus) {
-            console.warn("GestureUIManager: EventBus not provided, cannot subscribe to hand tracking events.");
-            return;
-        }
-        // Store bound versions of handlers for consistent subscription/unsubscription
-        // Ensure the event handlers are bound to the correct context, as per subtask.
-        this.boundHandleHandsDetected = this.handleHandsDetected.bind(this);
-        this.boundHandleHandsLost = this.handleHandsLost.bind(this);
 
-        this.eventBus.on('handsDetected', this.boundHandleHandsDetected);
-        this.eventBus.on('handsLost', this.boundHandleHandsLost);
-        console.log("GestureUIManager subscribed to handsDetected and handsLost events via EventBus.on.");
+    updateHandData(data) {
+        if (!data || !data.landmarks) return;
 
-        // this.setHandsPresent(false) is called here as per subtask.
-        this.setHandsPresent(false); // Ensure this is the last line
+        // Clear previous state to remove hands that are no longer present
+        this.currentHandState.clear();
+
+        const fingerIndices = [4, 8, 12, 16, 20]; // Thumb, Index, Middle, Ring, Pinky tips
+
+        data.landmarks.forEach((landmarks, index) => {
+            const handedness = data.handedness[index];
+            if (!handedness) return;
+
+            const handId = handedness.label || handedness.categoryName || index;
+
+            // Store current state for all 5 fingers
+            const fingerStates = fingerIndices.map(idx => {
+                const tip = landmarks[idx];
+                return tip ? { y: tip.y, z: tip.z } : null;
+            }).filter(s => s !== null);
+
+            this.currentHandState.set(handId, fingerStates);
+        });
     }
 
-    handleHandsDetected(landmarksData) {
-        this.handleHandsChange(true, landmarksData);
-    }
 
-    handleHandsLost() {
-        this.handleHandsChange(false, null);
-    }
 
-    handleHandsChange(present, landmarksData = null) { // landmarksData can be null
-        console.log(`GestureUIManager: Hands present state changed to ${present}.`);
-        this.animateGestureArea(present); // Changed to call animation method
 
-        if (this.state) { // Check if state object exists
-            this.state.handsVisible = present;
-            // Emit an event if other modules need to react to this change,
-            // e.g., HologramManager might listen for this.
-            if (this.eventBus) {
-                this.eventBus.emit('stateChanged_handsVisible', present);
-            }
-        }
-
-        // Pass landmarksData (which might be null if handsLost)
-        // Ensure handTrackingResults is structured as expected by renderFingerDots
-        if (present && landmarksData) {
-            this.renderFingerDots({ multiHandLandmarks: landmarksData });
-        } else {
-            this.clearFingerDots();
-        }
-    }
 
     animateGestureArea(present) {
         if (!this.gestureAreaElement) return;
 
         if (this.currentAnimation) {
             this.currentAnimation.stop();
-            window.TWEEN.remove(this.currentAnimation); // Clean up old tween
         }
 
-        const initialHeightStyle = this.gestureAreaElement.style.height || getComputedStyle(this.gestureAreaElement).height;
-        const targetVh = present ? 25 : 0.4; // Target height in vh (0.4vh is approx 4px)
-        const targetHeightPx = (targetVh / 100) * window.innerHeight;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        // Synchronized with sceneSetup.js logic
+        const targetScale = Math.min((w * 0.9) / 256, (h * 0.9) / 256);
 
-        let initialHeightPx;
-        if (initialHeightStyle.endsWith('vh')) {
-            initialHeightPx = (parseFloat(initialHeightStyle) / 100) * window.innerHeight;
-        } else if (initialHeightStyle.endsWith('px')) {
-            initialHeightPx = parseFloat(initialHeightStyle);
+        // Panel width = 256 units (matching purple + red grids)
+        // Panel height = 64 units
+        const targetWidthPx = targetScale * 256;
+        const targetHeightPx = present ? (targetScale * 64) : 6;
+
+
+
+        const currentHeightPx = this.gestureAreaElement.offsetHeight;
+        const currentWidthPx = this.gestureAreaElement.offsetWidth;
+
+        // Always center horizontally to avoid jumps during animation
+        this.gestureAreaElement.style.left = '50%';
+        this.gestureAreaElement.style.transform = 'translateX(-50%)';
+
+        if (present) {
+            this.gestureAreaElement.classList.add('hands-detected');
+            document.querySelector('.main-area')?.classList.add('squashed');
+
+            // Set dynamic offset for hologram gap (5vh panel bottom + panel height + 5vh gap)
+            const root = document.documentElement;
+            root.style.setProperty('--gesture-panel-height', `${targetHeightPx}px`);
         } else {
-            // Fallback if style is not set or in an unexpected unit (e.g. initially empty style)
-            initialHeightPx = present ? 0 : (0.25 * window.innerHeight); // Start from 0 if appearing, or from 25vh if disappearing
-            // A more robust way for initial state: query actual offsetHeight if style.height is empty
-            if (this.gestureAreaElement.style.height === '') {
-                initialHeightPx = this.gestureAreaElement.offsetHeight;
+            this.gestureAreaElement.classList.remove('hands-detected');
+            document.querySelector('.main-area')?.classList.remove('squashed');
+
+            if (this.isRecording) {
+                this.stopRecording();
             }
         }
 
-        // Ensure initialHeightPx is a number
-        if (isNaN(initialHeightPx)) {
-            console.warn("GestureUIManager: Could not determine initial height for animation. Defaulting.");
-            initialHeightPx = present ? 4 : (0.25 * window.innerHeight) ; // Default to 4px or 25vh in px
-        }
-
-        const coords = { height: initialHeightPx };
+        const coords = { height: currentHeightPx, width: currentWidthPx };
         this.currentAnimation = new window.TWEEN.Tween(coords)
-            .to({ height: targetHeightPx }, 300) // 300ms animation duration
-            .easing(window.TWEEN.Easing.Quadratic.Out)
+            .to({ height: targetHeightPx, width: targetWidthPx }, 300)
+            .easing(window.TWEEN.Easing.Cubic.Out) // Faster, snappier feel like side panels
             .onUpdate(() => {
+
+
                 this.gestureAreaElement.style.height = `${coords.height}px`;
+                this.gestureAreaElement.style.width = `${coords.width}px`;
             })
             .onComplete(() => {
                 this.currentAnimation = null;
-                // Set final state using vh for responsiveness, or px for the 'hidden' state
-                this.gestureAreaElement.style.height = present ? `${targetVh}vh` : '4px';
-                console.log(`GestureUIManager: #gesture-area animation complete. Target height set to: ${this.gestureAreaElement.style.height}`);
-
-                if (this.redLineElement) {
-                    this.redLineElement.style.display = present ? 'block' : 'none';
-                }
-                // Clearing dots on handsLost is already handled in handleHandsChange
+                this.resizeCanvas();
             })
             .start();
     }
 
-    // Original setHandsPresent removed as its height logic is now in animateGestureArea.
-    // Red line and dot clearing logic is tied to animation completion or handleHandsChange.
+    initVisualization() {
+        this.canvas = document.createElement('canvas');
+        this.ctx = this.canvas.getContext('2d');
 
-    // Added setHandsPresent method, which was originally removed.
-    // This is called in initialize() to set the initial state.
-    setHandsPresent(present) {
-        // This method might need to do more than just log,
-        // but for now, it mirrors the call that was moved.
-        // The actual UI changes are handled by animateGestureArea via handleHandsChange.
-        console.log(`GestureUIManager: Initial hands present state set to ${present}.`);
-        // If immediate UI changes are needed before first event, they would go here.
-        // For now, animateGestureArea(present) is called by handleHandsChange,
-        // which will be triggered by events or could be called here if needed.
-        // Let's ensure the red line is hidden initially if hands are not present.
-        if (this.redLineElement) {
-            this.redLineElement.style.display = present ? 'block' : 'none';
-        }
-        // Ensure finger dots are cleared if hands are not present initially
-        if (!present) {
-            this.clearFingerDots();
-        }
-    }
-
-    drawVerticalRedLine() {
-        if (!this.gestureAreaElement) return;
-        if (this.redLineElement) this.redLineElement.remove();
-
-        this.redLineElement = document.createElement('div');
-        this.redLineElement.id = 'gesture-red-line';
-        Object.assign(this.redLineElement.style, {
+        Object.assign(this.canvas.style, {
             position: 'absolute',
-            left: '0px',
-            top: '0px',
-            width: '2px',
+            top: '0',
+            left: '0',
+            width: '100%',
             height: '100%',
-            backgroundColor: 'red',
-            zIndex: '1',
-            display: 'none'
+            pointerEvents: 'none',
+            zIndex: '1'
         });
-        this.gestureAreaElement.appendChild(this.redLineElement);
-        console.log("GestureUIManager: Vertical red line drawn.");
+
+        this.gestureAreaElement.appendChild(this.canvas);
+        this.resizeCanvas();
+        window.addEventListener('resize', () => {
+            this.setInitialState();
+            this.resizeCanvas();
+        });
     }
 
-    renderFingerDots(handTrackingResults) { // Expects { multiHandLandmarks: [...] }
-        if (!this.gestureAreaElement) return; // Guard against no element
-        // Only render dots if hands are meant to be present (red line is visible as a proxy)
-        if (!this.redLineElement || this.redLineElement.style.display === 'none') {
-             // This check might be too restrictive if redLineElement is shown only after animation.
-             // Consider if dots should appear during animation or only after.
-             // For now, if redLine is not visible (implying hands are not fully "present" UI-wise), clear dots.
-            this.clearFingerDots();
+
+    resizeCanvas() {
+        if (!this.canvas || !this.gestureAreaElement) return;
+        const dpr = window.devicePixelRatio || 1;
+        const width = this.gestureAreaElement.clientWidth;
+        const height = this.gestureAreaElement.clientHeight;
+
+        this.canvas.width = width * dpr;
+        this.canvas.height = height * dpr;
+        this.ctx.resetTransform();
+        this.ctx.scale(dpr, dpr);
+    }
+
+
+    toggleRecording() {
+        if (!this.gestureAreaElement.classList.contains('hands-detected')) {
+            // Panel must be expanded to record
             return;
         }
 
-        this.clearFingerDots();
-
-        const gestureAreaHeight = this.gestureAreaElement.clientHeight;
-        if (gestureAreaHeight <= 0) return;
-
-        if (handTrackingResults && handTrackingResults.multiHandLandmarks) { // Check handTrackingResults itself
-            handTrackingResults.multiHandLandmarks.forEach(landmarks => {
-                const FINGER_TIP_INDICES = [4, 8, 12, 16, 20];
-                FINGER_TIP_INDICES.forEach(index => {
-                    const tip = landmarks[index];
-                    if (!tip) return;
-
-                    const dot = document.createElement('div');
-                    dot.className = 'gesture-finger-dot';
-                    Object.assign(dot.style, {
-                        position: 'absolute',
-                        left: '1px',
-                        top: `${tip.y * gestureAreaHeight - 2}px`,
-                        width: '4px',
-                        height: '4px',
-                        backgroundColor: 'green',
-                        borderRadius: '50%',
-                        zIndex: '2',
-                        transform: 'translateX(-50%)'
-                    });
-                    this.gestureAreaElement.appendChild(dot);
-                    this.fingerDots.push(dot);
-                });
-            });
+        if (this.isRecording) {
+            this.stopRecording();
+        } else {
+            this.startRecording();
         }
     }
 
-    clearFingerDots() {
-        this.fingerDots.forEach(dot => dot.remove());
-        this.fingerDots = [];
+    startRecording() {
+        this.isRecording = true;
+        this.recordingStartTime = performance.now();
+        this.redLinePosition = 0;
+        this.recordedPaths.clear(); // Clear previous recording paths
+
+
+        this.eventBus?.emit('gestureRecordingStarted');
+        console.log("GestureUIManager: Recording started.");
+    }
+
+    stopRecording() {
+        this.isRecording = false;
+        this.redLinePosition = 0;
+
+        this.eventBus?.emit('gestureRecordingStopped');
+        console.log("GestureUIManager: Recording stopped.");
+    }
+
+    startVisualizationLoop() {
+        const draw = () => {
+            this.animationFrameId = requestAnimationFrame(draw);
+
+            if (!this.ctx || !this.canvas) return;
+
+            const w = this.gestureAreaElement.clientWidth;
+            const h = this.gestureAreaElement.clientHeight;
+
+            if (w === 0 || h === 0) return;
+
+
+            this.ctx.clearRect(0, 0, w, h);
+
+            // Constants for padding
+            const sidePadding = 12; // 12px horizontal padding from each side
+            const effectiveWidth = w - (sidePadding * 2);
+            const scannerX = sidePadding + (this.redLinePosition * effectiveWidth);
+
+            // Draw lanes and scanner lines based on hands count
+            if (this.detectedHands.count === 2) {
+                const laneHeight = h / 2;
+                const laneVerticalPadding = Math.max(6, laneHeight * 0.05); // Min 6px or 5%
+
+                // Top lane - dark gray background
+                this.ctx.fillStyle = '#333333';
+                this.ctx.fillRect(0, 0, w, laneHeight - 1);
+
+                // Bottom lane - slightly different shade for distinction
+                this.ctx.fillStyle = '#2a2a2a';
+                this.ctx.fillRect(0, laneHeight + 1, w, laneHeight - 1);
+
+                // Divider line
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, laneHeight);
+                this.ctx.lineTo(w, laneHeight);
+                this.ctx.stroke();
+
+                // Draw TWO red scanner lines - one per lane
+                this.ctx.strokeStyle = '#FF3B30';
+                this.ctx.lineWidth = 1;
+
+                // Top lane scanner line
+                this.ctx.beginPath();
+                this.ctx.moveTo(scannerX, laneVerticalPadding);
+                this.ctx.lineTo(scannerX, laneHeight - laneVerticalPadding);
+                this.ctx.stroke();
+
+                // Bottom lane scanner line
+                this.ctx.beginPath();
+                this.ctx.moveTo(scannerX, laneHeight + laneVerticalPadding);
+                this.ctx.lineTo(scannerX, h - laneVerticalPadding);
+                this.ctx.stroke();
+
+                // Labels - fixed at bottom-right corner of each lane
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                this.ctx.font = '500 10px "Inter", "Segoe UI", sans-serif';
+                this.ctx.textAlign = 'right';
+                this.ctx.fillText('Левая рука', w - 8, laneHeight - 6);
+                this.ctx.fillText('Правая рука', w - 8, h - 6);
+                this.ctx.textAlign = 'left';
+
+            } else if (this.detectedHands.count === 1) {
+                const verticalPadding = Math.max(10, h * 0.05); // Min 10px or 5% for single view
+
+                // Single lane - dark gray background
+                this.ctx.fillStyle = '#333333';
+                this.ctx.fillRect(0, 0, w, h);
+
+                // Single scanner line
+                this.ctx.strokeStyle = '#FF3B30';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(scannerX, verticalPadding);
+                this.ctx.lineTo(scannerX, h - verticalPadding);
+                this.ctx.stroke();
+
+                // Label - Improved visibility
+                const handedness = this.detectedHands.handedness[0];
+                const isLeft = handedness && (handedness.categoryName === 'Left' || handedness.label === 'Left');
+                const label = isLeft ? 'Левая рука' : 'Правая рука';
+
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'; // Increased opacity
+                this.ctx.font = '500 11px "Inter", "Segoe UI", sans-serif'; // Slightly larger
+                this.ctx.textAlign = 'right';
+                // Ensure text is above bottom padding
+                this.ctx.fillText(label, w - 8, h - 6);
+                this.ctx.textAlign = 'left';
+            }
+
+            // Calculate effective height for dots (different for 1 vs 2 hands)
+            const verticalPadding = this.detectedHands.count === 2
+                ? Math.max(6, (h / 2) * 0.05)
+                : Math.max(10, h * 0.05);
+            const effectiveHeight = this.detectedHands.count === 2
+                ? (h / 2) - (verticalPadding * 2)
+                : h - (verticalPadding * 2);
+
+
+            // 2. Draw Recorded Paths and Current Dots (Locked to Line)
+            this.currentHandState.forEach((fingers, handId) => {
+                // Determine lane parameters for dot positioning
+                const laneHeight = this.detectedHands.count === 2 ? h / 2 : h;
+                const laneVPad = laneHeight * 0.05; // 5% padding within each lane
+                const laneEffectiveHeight = laneHeight - (laneVPad * 2);
+
+                // Calculate Y offset based on which lane this hand is in
+                let yOffset = laneVPad;
+                if (this.detectedHands.count === 2 && handId === 'Right') {
+                    yOffset = (h / 2) + laneVPad; // Start of bottom lane + padding
+                }
+
+                fingers.forEach((state, fIdx) => {
+                    // Calculate current dot radius based on Z
+                    const normalizedZ = Math.max(0, Math.min(1, (state.z + 0.5) * 2));
+                    const radius = this.minDotRadius + (1 - normalizedZ) * (this.maxDotRadius - this.minDotRadius);
+                    // Calculate Y position within the lane
+                    const rawY = yOffset + (state.y * laneEffectiveHeight);
+                    // Clamp within lane bounds
+                    const laneTop = this.detectedHands.count === 2 && handId === 'Right' ? (h / 2) + laneVPad : laneVPad;
+                    const laneBottom = this.detectedHands.count === 2 && handId === 'Right' ? h - laneVPad : (h / 2) - laneVPad;
+                    const curY = this.detectedHands.count === 2
+                        ? Math.max(laneTop + radius, Math.min(laneBottom - radius, rawY))
+                        : Math.max(laneVPad + radius, Math.min(h - laneVPad - radius, rawY));
+                    const pathKey = `${handId}_${fIdx}`;
+
+                    // 1. Store point if recording
+                    if (this.isRecording) {
+                        if (!this.recordedPaths.has(pathKey)) {
+                            this.recordedPaths.set(pathKey, []);
+                        }
+                        const path = this.recordedPaths.get(pathKey);
+                        path.push({ x: scannerX, y: curY, r: radius });
+                    }
+
+                    // 2. Draw persistent recording path
+                    const path = this.recordedPaths.get(pathKey);
+                    if (path && path.length > 0) {
+                        this.ctx.beginPath();
+                        this.ctx.lineWidth = 1.2;
+                        this.ctx.strokeStyle = 'rgba(0, 255, 136, 0.4)';
+                        path.forEach((pt, i) => {
+                            if (i === 0) this.ctx.moveTo(pt.x, pt.y);
+                            else this.ctx.lineTo(pt.x, pt.y);
+                        });
+                        this.ctx.stroke();
+                    }
+
+                    // 3. Draw current dot (locked to red line, ON TOP of red line)
+                    this.ctx.fillStyle = '#00FF88';
+                    this.ctx.shadowBlur = radius * 2;
+                    this.ctx.shadowColor = '#00FF88';
+                    this.ctx.beginPath();
+                    this.ctx.arc(scannerX, curY, radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.shadowBlur = 0;
+                });
+            });
+
+
+
+
+
+            // Update red line position if recording
+            if (this.isRecording) {
+                const elapsed = performance.now() - this.recordingStartTime;
+                this.redLinePosition = Math.min(elapsed / this.recordingDuration, 1);
+
+                if (this.redLinePosition >= 1) {
+                    this.stopRecording();
+                }
+            }
+
+
+            // Recording indicator
+            if (this.isRecording) {
+                this.ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+                this.ctx.beginPath();
+                this.ctx.arc(w - 20, 20, 8, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // Time remaining
+                const timeLeft = Math.max(0, (this.recordingDuration - (performance.now() - this.recordingStartTime)) / 1000);
+                this.ctx.fillStyle = 'white';
+                this.ctx.font = 'bold 14px sans-serif';
+                this.ctx.fillText(`${timeLeft.toFixed(1)}s`, w - 60, 25);
+            }
+        };
+
+        draw();
     }
 
     destroy() {
-        if (this.eventBus) {
-            // For robust unsubscription, it's better to store the bound method references
-            // if they were created like: this.eventBus.on('event', this.handler.bind(this));
-            // Assuming simple function references were used for on():
-            // This might require specific function references passed to off() if they were bound.
-            // For simplicity, if these are direct method references, this might work,
-            // but often explicit removal of the exact listener function is needed.
-            // A common pattern is to store the bound listener:
-            // this.boundHandsDetectedHandler = (landmarksData) => this.handleHandsChange(true, landmarksData);
-            // this.eventBus.on('handsDetected', this.boundHandsDetectedHandler);
-            // ... and then ...
-            // this.eventBus.off('handsDetected', this.boundHandsDetectedHandler);
-            // For now, let's assume the simple off() might work or this is called at app end.
-            // The provided code doesn't show how .on was called in its constructor,
-            // but the new code uses arrow functions directly, so their references are distinct.
-            // For now, this .off call is more of a placeholder.
-            // Use stored bound handlers for unsubscription
-            if (this.boundHandleHandsDetected) {
-                this.eventBus.off('handsDetected', this.boundHandleHandsDetected);
-            }
-            if (this.boundHandleHandsLost) {
-                this.eventBus.off('handsLost', this.boundHandleHandsLost);
-            }
-            console.log("GestureUIManager events unsubscribed.");
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
         }
         if (this.currentAnimation) {
             this.currentAnimation.stop();
-            window.TWEEN.remove(this.currentAnimation);
         }
-        if (this.redLineElement) this.redLineElement.remove();
-        this.clearFingerDots();
-        console.log("GestureUIManager destroyed.");
+        if (this.canvas) {
+            this.canvas.remove();
+        }
     }
 }
 
-// Export the class
 export default GestureUIManager;

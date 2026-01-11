@@ -79,7 +79,6 @@ This document describes the structure and interrelationships of JavaScript modul
     - `/services/` - Backend interaction services.
         - `apiService.js`
         - `CloudGestureStorage.js`
-        - `firebaseStorageService.js`
         - `hologlyphService.js`
         - `netHoloGlyphClient.js`
         - `websocketService.js`

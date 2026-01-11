@@ -45,8 +45,28 @@ class NetHoloGlyphClient {
             this.websocket.close();
         }
 
-        const url = `wss://common-elita-holograms-media-59398dd8.koyeb.app/ws/signaling/${roomId}`;
-        this.websocket = new WebSocket(url);
+        // Use the signalingServerUrl provided in constructor
+        // If it's relative, prepend the current location protocol and host
+        let url = this.signalingServerUrl;
+        if (url.startsWith('/')) {
+            // Relative URL - prepend current protocol and host
+            url = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${url}/${roomId}`;
+        } else {
+            // Absolute URL - append roomId
+            url = `${url}/${roomId}`;
+        }
+
+        console.log(`Connecting to signaling server: ${url}`);
+        
+        try {
+            this.websocket = new WebSocket(url);
+        } catch (error) {
+            console.error("Failed to create WebSocket connection:", error);
+            // Fallback to a default URL if the provided one fails
+            const fallbackUrl = `wss://common-elita-holograms-media-59398dd8.koyeb.app/ws/signaling/${roomId}`;
+            console.log(`Falling back to default signaling server: ${fallbackUrl}`);
+            this.websocket = new WebSocket(fallbackUrl);
+        }
 
         this.websocket.onopen = () => {
             console.log(`Connected to signaling server: ${url}`);
@@ -252,5 +272,10 @@ class NetHoloGlyphClient {
 }
 
 // Export a singleton instance for simplicity, or export the class for multiple instances
-const netHoloGlyphClient = new NetHoloGlyphClient(`/ws/signaling`);
+// Use a more flexible URL that will work in both development and production
+const signalingServerUrl = process.env.NODE_ENV === 'development' ?
+    'ws://localhost:8000/ws/signaling' :
+    '/ws/signaling';
+
+const netHoloGlyphClient = new NetHoloGlyphClient(signalingServerUrl);
 export default netHoloGlyphClient;

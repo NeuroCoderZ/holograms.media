@@ -1,8 +1,8 @@
 .panel.left-panel,
 .panel.right-panel {
-  background-color: rgba(0, 0, 0, 0.2) !important;
-  backdrop-filter: blur(30px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  background-color: rgba(16, 16, 32, 0.65) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
   padding: 0;
   /* Clear shared padding */
   height: 90vh !important;
@@ -11,8 +11,9 @@
   z-index: 1001;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease-in-out !important;
+  transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s ease-in-out !important;
   opacity: 0 !important;
+
   visibility: hidden !important;
   pointer-events: none !important;
   position: absolute;
@@ -47,6 +48,9 @@
   visibility: visible !important;
   pointer-events: auto !important;
   transform: translateX(0) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  background-color: rgba(16, 16, 32, 0.4) !important;
 }
 
 
@@ -360,6 +364,8 @@
   transition: transform 0.5s ease-in-out, margin-top 0.5s ease-in-out !important;
   transform-origin: center center !important;
   will-change: transform, margin-top !important;
+  margin-top: 5vh !important;
+  margin-bottom: 5vh !important;
 }
 
 .gesture-area.active~.main-area .hologram,

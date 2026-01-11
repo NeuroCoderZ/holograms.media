@@ -1,4 +1,3 @@
-
 export function startAnimationLoop(appState) {
     if (!appState || !appState.renderer) {
         console.error("Animation loop cannot start: renderer is missing.");
@@ -6,21 +5,27 @@ export function startAnimationLoop(appState) {
     }
     console.log("✅ Animation loop started.");
 
-    function animate(time) {
-        appState.renderer.setAnimationLoop(animate); // Ensures continuous loop
-        window.TWEEN.update(time);
+    const isWebGPU = appState.renderer.isWebGPURenderer === true;
+    console.log(`[Rendering] Using ${isWebGPU ? 'WebGPU' : 'WebGL'} render loop.`);
 
-        // Auto-return animation for camera controls
-        if (appState.animateReturn) {
-            appState.animateReturn();
-        }
-
-        // Update hologram visuals
+    async function animate(time) {
+        // Update hologram visuals before rendering
         if (appState.hologramRendererInstance) {
             appState.hologramRendererInstance.updateVisuals();
         }
 
-        appState.renderer.render(appState.scene, appState.activeCamera);
+        window.TWEEN.update(time);
+
+        if (appState.animateReturn) {
+            appState.animateReturn();
+        }
+
+        if (isWebGPU) {
+            await appState.renderer.renderAsync(appState.scene, appState.activeCamera);
+        } else {
+            appState.renderer.render(appState.scene, appState.activeCamera);
+        }
     }
+
     appState.renderer.setAnimationLoop(animate);
 }

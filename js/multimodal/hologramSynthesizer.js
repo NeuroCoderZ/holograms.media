@@ -18,8 +18,8 @@ export class HologramSynthesizer {
 
         // Synthesis parameters
         this.oscillatorType = 'sine'; // sine, triangle for softer sound
-        this.attackTime = 0.02;       // 20ms attack
-        this.releaseTime = 0.1;       // 100ms release
+        this.attackTime = 0.01;       // 10ms attack (Snappy)
+        this.releaseTime = 0.05;      // 50ms release (No drone)
         this.maxVolume = 0.3;         // Master volume limit (prevent clipping with 128 oscillators)
     }
 
@@ -118,6 +118,23 @@ export class HologramSynthesizer {
                 this.attackTime
             );
         }
+    }
+
+    /**
+     * Previews a specific frequency index (for Gesture Interaction).
+     * @param {number} index - Semitone index (0-127).
+     * @param {number} volume - Volume (0.0 to 1.0).
+     */
+    previewFrequency(index, volume) {
+        if (!this.isInitialized || index < 0 || index >= 128) return;
+
+        const now = this.audioContext.currentTime;
+        const gain = this.gains[index];
+
+        // Direct control for feedback
+        const targetVol = volume * this.maxVolume;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setTargetAtTime(targetVol, now, 0.05); // Fast response
     }
 
     /**

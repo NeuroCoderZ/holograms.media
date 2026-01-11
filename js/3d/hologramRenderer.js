@@ -34,6 +34,15 @@ export class HologramRenderer {
     this.hologramPivot = new THREE.Group();
     this.hologramPivot.position.set(0, 0, 0); // Center the hologram at origin
 
+    // LIGHTING (BasilaQ-127 Shading)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    this.hologramPivot.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(0, 100, 100); // Top-Forward
+    dirLight.castShadow = true;
+    this.hologramPivot.add(dirLight);
+
     // mainSequencerGroup holds the left and right sequencer grids. It's positioned
     // relative to the hologramPivot.
     this.mainSequencerGroup = new THREE.Group();
@@ -416,12 +425,18 @@ export class HologramRenderer {
     // We set Scale Y to 2.0 to achieve the "elongated" look.
     // Z scale will be modulated by audio.
     const geometry = new THREE.BoxGeometry(width, 1, 1);
-    const material = new THREE.MeshBasicMaterial({
+
+    // BasilaQ-127: Use StandardMaterial for Shading/Volume
+    const material = new THREE.MeshStandardMaterial({
       color: baseColorObj,
-      transparent: false,
-      opacity: 1.0
+      roughness: 0.2,
+      metalness: 0.1,
+      flatShading: true
     });
+
     const columnMesh = new THREE.Mesh(geometry, material);
+    columnMesh.castShadow = true;
+    columnMesh.receiveShadow = true;
 
     // Apply strict geometric rules: Scale Y = 2.0
     // Initial Z Scale = CELL_SIZE * 2 for visible depth (Greeting)
@@ -578,18 +593,30 @@ export class HologramRenderer {
       // ACTIVE MODE: BasilaQ-127 Physics
       // ========================================
 
-      // Get dB levels for Left (0-127) and Right (128-255)
-      const leftLevelDb = dbLevels[index] || 0;
-      const rightLevelDb = dbLevels[index + numSemitones] || 0;
+      // Get dB levels for Left and Right
+      const rawLeftDb = dbLevels[index] || -128; // Default to silence (-128 dB)
+      const rawRightDb = dbLevels[index + numSemitones] || -128;
 
       // Get pan value (-1 to +1)
       let semitonePan = panAngles[index] || 0;
 
-      // MAPPING: 0-127 dB -> 0-1 amplitude
-      let ampL = leftLevelDb / 127.0;
+      // MAPPING: Normalize dB to 0-1 range (Amplitude)
+      // HEURISTIC: If value is negative, assume raw dB (-128 to 0).
+      // If positive, assume mapped value (0-127 or 0-255).
+      let ampL = 0;
+      if (rawLeftDb < 0) {
+        ampL = (rawLeftDb + 128) / 128.0;
+      } else {
+        ampL = rawLeftDb / 127.0; // Assume 0-127 midi-style
+      }
       ampL = THREE.MathUtils.clamp(ampL, 0, 1);
 
-      let ampR = rightLevelDb / 127.0;
+      let ampR = 0;
+      if (rawRightDb < 0) {
+        ampR = (rawRightDb + 128) / 128.0;
+      } else {
+        ampR = rawRightDb / 127.0;
+      }
       ampR = THREE.MathUtils.clamp(ampR, 0, 1);
 
       // NOISE GATE: If amplitude is below threshold, force Pan to 0 (spine)
