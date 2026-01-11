@@ -39,6 +39,7 @@ backend/Tria/
 .editorconfig
 web-search-mcp/
 mcp.json
+qdrant_local/
 
 # Big files and unnecessary dirs
 *.mp4
