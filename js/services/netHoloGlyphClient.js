@@ -271,11 +271,28 @@ class NetHoloGlyphClient {
     }
 }
 
+// Safe Environment Detection
+let currentMode = 'production'; // Default fallback
+
+try {
+    // Check if import.meta.env exists (Vite/ESM)
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.MODE) {
+        currentMode = import.meta.env.MODE;
+    }
+    // Fallback for Node.js/CommonJS (if code is used in SSR or test runners)
+    else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV) {
+        currentMode = process.env.NODE_ENV;
+    }
+} catch (e) {
+    console.warn('[NetHoloGlyphClient] Environment detection failed, defaulting to production');
+}
+
 // Export a singleton instance for simplicity, or export the class for multiple instances
 // Use a more flexible URL that will work in both development and production
-const signalingServerUrl = import.meta.env.MODE === 'development' ?
+const signalingServerUrl = currentMode === 'development' ?
     'ws://localhost:8000/ws/signaling' :
     '/ws/signaling';
 
 const netHoloGlyphClient = new NetHoloGlyphClient(signalingServerUrl);
 export default netHoloGlyphClient;
+
