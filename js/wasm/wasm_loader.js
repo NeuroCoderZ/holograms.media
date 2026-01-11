@@ -1,10 +1,12 @@
-// frontend/js/wasm/wasm_loader.js (примерная реализация)
 export async function loadWasmModule(moduleName) {
     try {
-        const wasmPath = `/js/wasm/${moduleName}`;
+        const wasmPath = `/wasm/${moduleName}`;
         const response = await fetch(wasmPath);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const bytes = await response.arrayBuffer();
-        const { instance } = await WebAssembly.instantiate(bytes);
+
+        // Some WASM modules (like cwt_analyzer) require an imports object
+        const { instance } = await WebAssembly.instantiate(bytes, {});
         console.log(`WASM-модуль "${moduleName}" успешно загружен и инстанциирован.`);
         return instance.exports;
     } catch (error) {

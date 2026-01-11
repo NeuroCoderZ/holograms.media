@@ -59,9 +59,7 @@ async function fetchWasmWithFallbackPaths() {
     const possiblePaths = [
         '/wasm/holographic_core_bg.wasm',
         '/js/wasm/holographic_core_bg.wasm',
-        '/holographic_core_bg.wasm',
-        '/assets/holographic_core_bg.wasm',
-        new URL('../wasm/holographic_core_bg.wasm', import.meta.url).href
+        '/holographic_core_bg.wasm'
     ];
 
     for (const path of possiblePaths) {
@@ -70,6 +68,16 @@ async function fetchWasmWithFallbackPaths() {
             const response = await fetch(path);
             if (response.ok) {
                 const bytes = await response.arrayBuffer();
+
+                // CRITICAL: Check if this is actually a WASM file (magic number: 00 61 73 6d)
+                const header = new Uint8Array(bytes.slice(0, 4));
+                const isWasm = header[0] === 0x00 && header[1] === 0x61 && header[2] === 0x73 && header[3] === 0x6d;
+
+                if (!isWasm) {
+                    console.warn(`[AudioProcessing] ⚠ Path ${path} returned non-WASM data (likely HTML fallback). Skipping.`);
+                    continue;
+                }
+
                 console.log(`[AudioProcessing] ✅ WASM loaded from: ${path} (${bytes.byteLength} bytes)`);
                 return bytes;
             }
