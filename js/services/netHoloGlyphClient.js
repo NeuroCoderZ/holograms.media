@@ -57,7 +57,7 @@ class NetHoloGlyphClient {
         }
 
         console.log(`Connecting to signaling server: ${url}`);
-        
+
         try {
             this.websocket = new WebSocket(url);
         } catch (error) {
@@ -132,8 +132,8 @@ class NetHoloGlyphClient {
                     this.onPeerConnectedCallback();
                 }
             } else if (this.peerConnection.connectionState === 'disconnected' ||
-                       this.peerConnection.connectionState === 'failed' ||
-                       this.peerConnection.connectionState === 'closed') {
+                this.peerConnection.connectionState === 'failed' ||
+                this.peerConnection.connectionState === 'closed') {
                 console.log('WebRTC Peer Disconnected or Failed.');
                 if (this.onPeerDisconnectedCallback) {
                     this.onPeerDisconnectedCallback();
@@ -273,7 +273,7 @@ class NetHoloGlyphClient {
 
 // Export a singleton instance for simplicity, or export the class for multiple instances
 // Use a more flexible URL that will work in both development and production
-const signalingServerUrl = process.env.NODE_ENV === 'development' ?
+const signalingServerUrl = import.meta.env.MODE === 'development' ?
     'ws://localhost:8000/ws/signaling' :
     '/ws/signaling';
 
