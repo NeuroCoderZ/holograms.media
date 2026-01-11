@@ -13,7 +13,8 @@
 @import './css/_animations.css';
 
 /* Fix for hidden scroll area */
-html, body {
-  height: 100vh !important;
+html,
+body {
+  height: 100dvh !important;
   overflow: hidden !important;
 }

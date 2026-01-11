@@ -1,7 +1,7 @@
 // frontend/js/services/apiService.js
 
-// Указываем на наш локальный FastAPI сервер, запущенный на порту 8001
-export const API_BASE_URL = 'http://localhost:8001';
+// Указываем базовый URL API из переменных окружения Vite с фоллбеком для локальной разработки
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
 /**
  * Отправляет сообщение в чат на бэкенд и возвращает ответ от Tria.

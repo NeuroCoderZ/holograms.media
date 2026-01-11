@@ -32,7 +32,12 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['three']
+      external: [
+        'three',
+        '@mediapipe/camera_utils',
+        '@mediapipe/hands',
+        '@mediapipe/drawing_utils'
+      ]
     }
   }
 });

@@ -271,28 +271,58 @@ class NetHoloGlyphClient {
     }
 }
 
-// Safe Environment Detection
-let currentMode = 'production'; // Default fallback
+// Определяем URL сигнального сервера
+let signalingServerUrl = '';
 
-try {
-    // Check if import.meta.env exists (Vite/ESM)
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.MODE) {
-        currentMode = import.meta.env.MODE;
+// Приоритет 1: Переменная окружения VITE_SIGNALING_URL
+const envSignalingUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SIGNALING_URL) ||
+    (typeof process !== 'undefined' && process.env && process.env.VITE_SIGNALING_URL);
+
+if (envSignalingUrl) {
+    if (envSignalingUrl.startsWith('ws')) {
+        signalingServerUrl = envSignalingUrl;
+    } else {
+        // Если путь относительный (например, /ws/signaling), строим полный URL на основе location.origin
+        // Проверяем, что window и location существуют (для SSR/Node.js совместимости)
+        if (typeof window !== 'undefined' && window.location) {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.host;
+            const path = envSignalingUrl.startsWith('/') ? envSignalingUrl : `/${envSignalingUrl}`;
+            signalingServerUrl = `${protocol}//${host}${path}`;
+        } else {
+            // Fallback for non-browser environments if VITE_SIGNALING_URL is relative
+            console.warn('[NetHoloGlyphClient] VITE_SIGNALING_URL is relative but window.location is not available. Defaulting to production URL.');
+            signalingServerUrl = 'wss://www.holograms.media/ws/signaling';
+        }
     }
-    // Fallback for Node.js/CommonJS (if code is used in SSR or test runners)
-    else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV) {
-        currentMode = process.env.NODE_ENV;
+} else {
+    // Фоллбек: старая логика определения режима
+    let currentMode = 'production';
+    try {
+        if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.MODE) {
+            currentMode = import.meta.env.MODE;
+        } else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV) {
+            currentMode = process.env.NODE_ENV;
+        }
+    } catch (e) {
+        console.warn('[NetHoloGlyphClient] Failed to detect environment mode, defaulting to production');
     }
-} catch (e) {
-    console.warn('[NetHoloGlyphClient] Environment detection failed, defaulting to production');
+
+    if (currentMode === 'development') {
+        signalingServerUrl = 'ws://localhost:8000/ws/signaling';
+    } else {
+        signalingServerUrl = 'wss://www.holograms.media/ws/signaling';
+    }
 }
 
-// Export a singleton instance for simplicity, or export the class for multiple instances
-// Use a more flexible URL that will work in both development and production
-const signalingServerUrl = currentMode === 'development' ?
-    'ws://localhost:8000/ws/signaling' :
-    '/ws/signaling';
+console.log(`[NetHoloGlyphClient] Selected signaling server: ${signalingServerUrl}`);
+
+// The `roomId` variable is not defined in the provided context.
+// Assuming it should be passed to the NetHoloGlyphClient constructor or derived elsewhere.
+// For now, we will instantiate NetHoloGlyphClient with just the signalingServerUrl.
+// If `roomId` is intended to be part of the URL, the client constructor or connection method should handle it.
+// The line `const signalingUrlWithRoom = `${signalingServerUrl}/${roomId}`;` is commented out
+// as `roomId` is undefined in this scope.
 
 const netHoloGlyphClient = new NetHoloGlyphClient(signalingServerUrl);
 export default netHoloGlyphClient;
-
