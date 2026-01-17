@@ -202,8 +202,7 @@ export function initializeMediaPipeHands() {
     state.multimodal.handsInstance = new Hands({
         locateFile: (file) => {
             return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
-        },
-        gl: state.renderer ? state.renderer.getContext() : undefined
+        }
     });
 
     state.multimodal.handsInstance.setOptions({
@@ -303,9 +302,8 @@ function onResults(results) {
         const handLandmarks = results.multiHandLandmarks[0];
 
         // --- GESTURE MANAGER INTEGRATION (State Machine) ---
-        // Accessing the statically imported gestureManager instance
         if (gestureManager) {
-            gestureManager.processHandLandmarks(handLandmarks);
+            gestureManager.processHandLandmarks(results.multiHandLandmarks, results.multiHandedness);
         }
 
         // --- ✅ НОВАЯ ЛОГИКА: Классификация, формирование deltaVector и применение к WebAudioEngine ---

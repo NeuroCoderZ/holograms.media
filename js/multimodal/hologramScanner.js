@@ -361,9 +361,20 @@ export class HologramScanner {
         const levels = new Float32Array(256).fill(-128); // Init silence
         const pans = new Float32Array(128).fill(0);      // Center pan for simple mode
 
+        // Calculate global scene brightness for adaptive thresholding
+        let globalSum = 0;
+        for (let i = 0; i < data.length; i += 16) { // Sparse sampling
+            globalSum += (data[i] + data[i + 1] + data[i + 2]) / 3;
+        }
+        const avgBrightness = globalSum / (data.length / 16);
+        const adaptiveThreshold = Math.max(0.1, avgBrightness / 255 * 1.5); // Adaptive base
+
         // Strip width
         const numStrips = 128;
         const stripWidth = width / numStrips;
+
+        const fbCtx = this.feedbackCanvas ? this.feedbackCanvas.getContext('2d') : null;
+        if (fbCtx) fbCtx.clearRect(0, 0, width, height); // Clear for highlights
 
         // Iterate over strips
         for (let i = 0; i < numStrips; i++) {
@@ -373,52 +384,48 @@ export class HologramScanner {
             let totalLuminance = 0;
             let pixelCount = 0;
 
-            // Scan pixels in this strip
-            // Step = 4 for performance (skip 3 pixels)
             for (let y = 0; y < height; y += 4) {
                 for (let x = startX; x < endX; x += 4) {
                     if (x >= width) break;
-
                     const idx = (y * width + x) * 4;
-                    const r = data[idx];
-                    const g = data[idx + 1];
-                    const b = data[idx + 2];
-
-                    // Calculate Luminance (0..255)
-                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                    const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
                     totalLuminance += lum;
                     pixelCount++;
                 }
             }
 
-            // Average Luminance for Strip
             if (pixelCount > 0) {
-                const avgLum = totalLuminance / pixelCount; // 0..255
-
-                // Map to Amplitude (0..1)
+                const avgLum = totalLuminance / pixelCount;
                 const amp = avgLum / 255.0;
 
-                // Noise Gate
-                if (amp > 0.1) {
-                    // Map to dB (-128 to 0) -> Actually we use -128 as silence, 0 as max
-                    // User requested levels[128] where brightness 0..255 maps to amplitude
-                    // But synth expects dB typically? 
-                    // Synthesizer update() uses: amplitude = Math.pow(10, avgLevel / 20);
-                    // So if we send dB, 0dB = 1.0 amp. -128dB = silence.
-
-                    // Linear To dB: 20 * log10(amp)
-                    // Amp 1.0 -> 0 dB
-                    // Amp 0.01 -> -40 dB
+                // Use adaptive threshold instead of fixed 0.1
+                if (amp > adaptiveThreshold) {
                     const db = 20 * Math.log10(Math.max(0.000001, amp));
+                    levels[i] = Math.max(-128, db);
+                    levels[i + 128] = Math.max(-128, db);
 
-                    levels[i] = Math.max(-128, db);       // Left
-                    levels[i + 128] = Math.max(-128, db); // Right
+                    // Visual Feedback: Highlight detected peaks in the viewfinder
+                    if (fbCtx) {
+                        fbCtx.fillStyle = `rgba(0, 255, 136, ${amp * 0.5})`;
+                        fbCtx.fillRect(startX, 0, stripWidth, height);
+                    }
                 }
             }
         }
 
-        // Mock centroid for stabilization (center)
-        const centroid = { x: 0.5, y: 0.5, weight: 1.0 };
+        // Centroid calculation for stabilization (now actually weighted)
+        let weightedX = 0, weightedY = 0, totalWeight = 0;
+        for (let i = 0; i < 128; i++) {
+            const amp = Math.pow(10, levels[i] / 20);
+            if (amp > 0.1) {
+                weightedX += (i / 127) * amp;
+                totalWeight += amp;
+            }
+        }
+
+        const centroid = totalWeight > 0 ?
+            { x: weightedX / totalWeight, y: 0.5, weight: totalWeight } :
+            { x: 0.5, y: 0.5, weight: 0 };
 
         return {
             audioParams: { levels, pans },

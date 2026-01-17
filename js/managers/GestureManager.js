@@ -2,6 +2,8 @@
 import { SmartHologram } from '../SmartHologram.js';
 import { state } from '../core/init.js';
 import { CloudGestureStorage } from '../services/CloudGestureStorage.js';
+import { gestureSynthesizer } from '../audio/GestureSynthesizer.js';
+import netHoloGlyphClient from '../services/netHoloGlyphClient.js';
 export class GestureManager {
     constructor() {
         this.smartHologram = null;
@@ -67,93 +69,82 @@ export class GestureManager {
     }
 
     /**
-     * Main State Machine Update Loop
-     * Called by handsTracking.js or internal loop with new landmarks
-     * @param {Array} landmarks - MediaPipe landmarks
+     * Main State Machine Update Loop for Gesture Mixer
+     * @param {Array} multiLandmarks - MediaPipe multi-hand landmarks
+     * @param {Array} multiHandedness - MediaPipe handedness info
      */
-    processHandLandmarks(landmarks) {
-        if (!landmarks) {
+    processHandLandmarks(multiLandmarks, multiHandedness) {
+        if (!multiLandmarks || multiLandmarks.length === 0) {
             this.state = 'IDLE';
+            state.multimodal.gestureModulationData = { left: null, right: null };
             return;
         }
 
-        const thumbTip = landmarks[4];
-        const indexTip = landmarks[8];
-        const wrist = landmarks[0];
+        const modulation = { left: null, right: null };
 
-        // 1. Calculate Pinch Distance (Euclidean)
-        const distance = Math.sqrt(
-            Math.pow(thumbTip.x - indexTip.x, 2) +
-            Math.pow(thumbTip.y - indexTip.y, 2) +
-            Math.pow(thumbTip.z - indexTip.z, 2)
-        );
+        multiLandmarks.forEach((landmarks, index) => {
+            const handedness = multiHandedness[index]?.label; // "Left" or "Right"
+            const wrist = landmarks[0];
+            const thumbTip = landmarks[4];
+            const indexTip = landmarks[8];
+            const palmCenter = landmarks[9]; // Middle MCP as requested
 
-        // 2. Determine State
-        if (distance < this.pinchThreshold) {
-            if (this.state !== 'GRAB') {
-                // Transition to GRAB
-                this.state = 'GRAB';
-                // Lock frequency based on Index Finger X position
-                // X is 0..1 (flipped? Check mirror). usually 0 is left.
-                this.grabbedIndex = Math.floor(indexTip.x * 127);
-                this.grabbedIndex = Math.max(0, Math.min(127, this.grabbedIndex));
-                console.log(`[Gesture] GRABBED Frequency Index: ${this.grabbedIndex}`);
+            // --- NORMALIZE COORDINATES ---
 
-                // Visual Feedback: Lock Highlight
-                // eventBus.emit('hologramLockColumn', this.grabbedIndex);
-            }
-        } else {
-            this.state = 'HOVER';
-            this.grabbedIndex = -1;
+            // 1. Frequency (Y): 0..1 (Top to Bottom?) 
+            // In MediaPipe Y: 0 is top, 1 is bottom. 
+            // We want 0 (Bas) at bottom, 127 (Treble) at top.
+            const freqY = 1.0 - palmCenter.y; // Invert: Bottom 0, Top 1
+            const frequency = Math.max(0, Math.min(127, freqY * 127));
+
+            // 2. Pan (X): -1..1
+            // MediaPipe X: 0 is left, 1 is right (mirrored).
+            const pan = (palmCenter.x * 2) - 1;
+
+            // 3. Gain (Z): 0..1 (Inverted Depth: Close to camera = 0, Far = 1)
+            // MediaPipe Z: closer to camera is more negative. 
+            // Let's assume a range: -0.2 (close) to 0.0 (far)
+            // Or better: map Z relative to calibrated mid.
+            const rawZ = palmCenter.z;
+            const gain = Math.max(0, Math.min(1, (rawZ + 0.1) / 0.2));
+
+            // 4. Bandwidth (Spread): Thumb to Index Tip
+            const spread = Math.sqrt(
+                Math.pow(thumbTip.x - indexTip.x, 2) +
+                Math.pow(thumbTip.y - indexTip.y, 2)
+            );
+            const bandwidth = Math.max(1, spread * 50); // Scale to ~1-10 semitones range
+
+            const handData = {
+                frequency,
+                pan,
+                gain,
+                bandwidth,
+                active: true
+            };
+
+            if (handedness === 'Left') modulation.left = handData;
+            if (handedness === 'Right') modulation.right = handData;
+        });
+
+        state.multimodal.gestureModulationData = modulation;
+        this.state = 'ACTIVE';
+
+        // Update GestureSynthesizer if active
+        if (state.audio?.isGestureSynthMode) {
+            gestureSynthesizer.update(modulation);
         }
 
-        // 3. Act based on State
-        if (this.state === 'HOVER') {
-            // HOVER Logic: Preview
-            const hoverIndex = Math.floor(indexTip.x * 127);
-            // Flicker / Preview Low Volume
-            // We can emit audio preview event
-            // eventBus.emit('audioPreview', { index: hoverIndex, volume: 0.2 });
-        }
-        else if (this.state === 'GRAB') {
-            // CONTROL Logic: Physics
-            // Calculate Volume from Z (String Tension)
-            // Z in MediaPipe: 0 is camera, negative is towards screen? 
-            // Actually Z is relative to specific point. 
-            // Let's use Wrist Z or average Z. 
-            // Usually Z is around 0. 
-            // Let's assume Z range -0.2 (close) to 0.2 (far).
-            // Formula: Volume = map(z, -0.1, 0.1, 0, 1) inverted? 
-            // User request: "Close to camera = Silence (0). Far (to self) = Loud (1.0)."
-            // In MP, negative Z is closer to camera? No, usually Z is depth.
-            // Let's assume normalized input or calibrate.
-            // Typical MP Z: 0 at wrist... it's tricky.
-            // Let's stick to the prompt formula assumption: 
-            // "Volume = clamp((DepthZ - MinZ) / (MaxZ - MinZ), 0, 1)"
+        // Send gesture frame via NetHoloGlyph for network sync
+        netHoloGlyphClient.sendQuantum({
+            type: 'gesture_frame',
+            timestamp: Date.now(),
+            hands: modulation
+        });
 
-            // For now, simple mapping:
-            // Assuming Z varies from -0.1 (very close) to 0.1 (farther). Or 0 to -0.2?
-            // Let's rely on Relative Movement or basic clamping.
-
-            const rawZ = Math.abs(wrist.z); // Simple depth proxy
-            // Heuristic: 0.02 (Close) -> 0.15 (Far)
-            let vol = (rawZ - 0.02) / (0.15 - 0.02);
-            vol = Math.max(0, Math.min(1, vol));
-            this.volume = vol;
-
-            // Pan X
-            this.pan = (wrist.x * 2) - 1; // 0..1 -> -1..1
-
-            // Execute Feedback
-            // 1. Audio
-            import('../multimodal/hologramScanner.js').then(module => {
-                if (module.hologramScanner.synthesizer) {
-                    module.hologramScanner.synthesizer.previewFrequency(this.grabbedIndex, this.volume);
-                }
-            });
-
-            // 2. Visual (TODO: Pass pan/vol to renderer)
-            console.log(`[Gesture] CONTROL: Vol ${this.volume.toFixed(2)} | Pan ${this.pan.toFixed(2)}`);
+        // Feedback in console for debugging (throttle)
+        if (Date.now() % 30 === 0) {
+            // console.log(`[GestureMixer] L: ${modulation.left?.frequency.toFixed(0)} R: ${modulation.right?.frequency.toFixed(0)}`);
         }
     }
 

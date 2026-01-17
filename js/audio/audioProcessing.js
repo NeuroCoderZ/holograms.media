@@ -5,6 +5,7 @@
 import { state } from '../core/init.js';
 import { deviceCapabilities } from '../utils/deviceCapabilities.js';
 import eventBus from '../core/eventBus.js';
+import { AudioGestureBridge } from './AudioGestureBridge.js';
 
 // Global state
 let cwtWorkletNode = null;
@@ -139,6 +140,11 @@ export async function initializeCwtWorklet(audioContext) {
         channelInterpretation: 'speakers'
     });
 
+    // 4. Send WASM module to the worklet for acceleration
+    if (wasmModule) {
+        cwtWorkletNode.port.postMessage({ type: 'WASM_MODULE', module: wasmModule });
+    }
+
     // Connect worklet to destination (passthrough audio)
     // CRITICAL FIX: Disconnect / Comment out to prevent feedback loop
     // cwtWorkletNode.connect(audioContext.destination);
@@ -166,9 +172,17 @@ export async function initializeCwtWorklet(audioContext) {
                 console.log(`[AudioProcessing] 🚀 Engine ACTIVE. Mode: ${engineMode}`);
                 resolve(true);
             } else if (type === 'AUDIO_DATA') {
-                // Emit audio data for visualization
-                const levels = event.data.levels;
-                const pans = event.data.angles;
+                // --- GESTURE MIXER BRIDGE ---
+                // Modulate raw analysis data with hand gestures before visualization/synthesis
+                const modulationData = state.multimodal?.gestureModulationData;
+                const isSynthMode = state.audio?.isGestureSynthMode === true;
+
+                const rawData = { levels: event.data.levels, pans: event.data.angles };
+                const modulatedData = AudioGestureBridge.applyModulation(rawData, modulationData, isSynthMode);
+
+                // --- EMIT DATA ---
+                const levels = modulatedData.levels;
+                const pans = modulatedData.pans;
 
                 const fullPans = new Float32Array(256);
                 if (pans && pans.length === 128) {

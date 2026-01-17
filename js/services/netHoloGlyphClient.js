@@ -13,6 +13,8 @@ class NetHoloGlyphClient {
     constructor(signalingServerUrl, rtcConfig = {
         iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
             // Add more STUN/TURN servers for production
         ]
     }) {
@@ -27,6 +29,13 @@ class NetHoloGlyphClient {
         this.onQuantumReceivedCallback = null;
         this.onPeerConnectedCallback = null;
         this.onPeerDisconnectedCallback = null;
+
+        // Reconnection policy
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.baseReconnectDelay = 1000; // 1 second
+        this.reconnectTimeoutId = null;
+        this.isReconnecting = false;
 
         console.log("NetHoloGlyphClient initialized.");
     }
@@ -106,8 +115,25 @@ class NetHoloGlyphClient {
             console.log(`WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason}`);
             this.peerConnection = null; // Reset peer connection on signaling disconnect
             this.dataChannel = null;
-            if (this.onPeerDisconnectedCallback) {
-                this.onPeerDisconnectedCallback();
+
+            // Attempt reconnection with exponential backoff
+            if (!this.isReconnecting && this.reconnectAttempts < this.maxReconnectAttempts) {
+                this.isReconnecting = true;
+                const delay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts);
+                console.log(`[NetHoloGlyphClient] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+
+                this.reconnectTimeoutId = setTimeout(() => {
+                    this.reconnectAttempts++;
+                    this.isReconnecting = false;
+                    if (this.roomId && this.userId) {
+                        this.connect(this.roomId, this.userId);
+                    }
+                }, delay);
+            } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                console.warn('[NetHoloGlyphClient] Max reconnection attempts reached. Giving up.');
+                if (this.onPeerDisconnectedCallback) {
+                    this.onPeerDisconnectedCallback();
+                }
             }
         };
     }

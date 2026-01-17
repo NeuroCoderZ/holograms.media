@@ -1,5 +1,6 @@
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as THREE from 'three';
+import WebGPURenderer from 'three/examples/jsm/renderers/webgpu/WebGPURenderer.js';
 import { renderingCapabilities } from '../utils/renderingCapabilities.js';
 
 /**
@@ -28,13 +29,9 @@ export async function initializeScene(state) {
     state.currentRenderer = preferredRenderer;
 
     // --- Инициализация рендерера в зависимости от возможностей устройства ---
-    if (preferredRenderer === 'webgpu') {
-      await initializeWebGPURenderer(state);
-    } else if (preferredRenderer === 'webgl') {
-      await initializeWebGLRenderer(state);
-    } else {
-      await initializeCanvas2DRenderer(state);
-    }
+    // STABILITY FIX: WebGPU's WebGL2 backend causes hologram invisibility.
+    // Force WebGL until browser has native WebGPU support.
+    await initializeWebGLRenderer(state);
 
   } catch (error) {
     console.error('[Renderer Detection] Ошибка при определении возможностей рендеринга:', error);
@@ -203,7 +200,9 @@ export async function initializeScene(state) {
   state.directionalLight.position.set(1, 1, 1).normalize(); // Positioned from top-right-front
   state.scene.add(state.directionalLight);
 
-  // Removed Hologram Pivot creation from here. It is now created and managed by HologramRenderer.
+
+  // Set the "deep dark blue" background the user liked
+  state.scene.background = new THREE.Color(0x050510); // Very deep midnight blue
 
   console.log('sceneSetup.js: Scene initialized successfully');
   return { scene: state.scene, renderer: state.renderer, camera: state.camera };
@@ -260,14 +259,18 @@ async function initializeWebGPURenderer(state) {
       throw new Error('WebGPU не поддерживается в этом браузере');
     }
 
-    // Создание WebGPU рендерера через Three.js
-    // В будущем здесь будет WebGPURenderer от Three.js
-    console.log('[WebGPU Init] WebGPU поддерживается, но рендерер Three.js WebGPU еще в разработке');
+    state.renderer = new WebGPURenderer({
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
 
-    // Пока используем WebGL как fallback
-    console.log('[WebGPU Init] Использование WebGL как временное решение...');
-    await initializeWebGLRenderer(state);
-    state.currentRenderer = 'webgl';
+    state.renderer.setPixelRatio(window.devicePixelRatio);
+    // WebGPURenderer might need explicit init or await in some Three.js versions
+    // but in r165 it's usually automatic on first render or via .init()
+    if (state.renderer.init) await state.renderer.init();
+
+    console.log('[WebGPU Init] WebGPURenderer успешно инициализирован.');
+    state.currentRenderer = 'webgpu';
 
   } catch (error) {
     console.error('[WebGPU Init] Ошибка инициализации WebGPU:', error);

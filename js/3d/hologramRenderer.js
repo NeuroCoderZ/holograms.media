@@ -1,7 +1,4 @@
 import { state } from '../core/init.js';
-import { Line2 } from 'three/examples/jsm/lines/Line2.js';
-import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import * as THREE from 'three';
 import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../config/hologramConfig.js';
 // import { MeshBasicNodeMaterial } from 'three/addons/nodes/Nodes.js'; // This was commented out, keeping it so
@@ -70,6 +67,9 @@ export class HologramRenderer {
     // Subscribe to Audio Data results from the eventBus (standardized event)
     this.eventBus.on('audioData', this.handleCwtResult.bind(this));
 
+    // Subscribe to Gesture Synth Data for visual feedback (closing the loop)
+    this.eventBus.on('gestureSynthData', this.handleGestureSynthData.bind(this));
+
     // Connect to the NetHoloGlyph service
     this.netHoloGlyphClient.connect(this.roomId, this.userId);
 
@@ -94,7 +94,22 @@ export class HologramRenderer {
     if (Math.random() < 0.05) console.log('Renderer received data (Sample):', data.levels ? data.levels[0] : 'no levels');
 
     // Store the latest data (levels: Float32Array[256], pans: Float32Array[256])
-    this.latestAudioData = data;
+    // Only use if NOT in gesture synth mode (synth takes priority)
+    if (!state.audio?.isGestureSynthMode) {
+      this.latestAudioData = data;
+    }
+  }
+
+  /**
+   * Handles incoming gesture synth data for visual feedback.
+   * This closes the loop: Gesture → Sound → Visual
+   * @param {object} data - { levels: Float32Array(256), pans: Float32Array(256), isGestureSynth: true }
+   */
+  handleGestureSynthData(data) {
+    if (state.audio?.isGestureSynthMode && data.isGestureSynth) {
+      // Gesture Synth takes priority - use its data for visualization
+      this.latestAudioData = data;
+    }
   }
 
   /**
@@ -142,18 +157,18 @@ export class HologramRenderer {
   }
 
   _createLine2ForAxis(points, color, linewidth, depthTest = true) {
-    const geometry = new LineGeometry();
-    geometry.setPositions(points.flat());
+    // WebGPURenderer compatibility: Use standard Line/LineBasicMaterial
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
 
-    const material = new LineMaterial({
+    const material = new THREE.LineBasicMaterial({
       color: color,
-      linewidth: linewidth,
+      linewidth: linewidth, // Note: often ignored in WebGL/WebGPU, typically fails back to 1
       depthTest: depthTest,
       transparent: !depthTest
     });
-    material.resolution.set(window.innerWidth, window.innerHeight);
-    const line = new Line2(geometry, material);
-    line.computeLineDistances();
+
+    const line = new THREE.Line(geometry, material);
     line.scale.set(1, 1, 1);
     if (!depthTest) line.renderOrder = 999;
     return line;
@@ -268,7 +283,7 @@ export class HologramRenderer {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineBasicMaterial({
       color,
-      opacity: 0.005,
+      opacity: 0.0025, // 99.75% transparent as requested
       transparent: true,
       depthWrite: false,
       depthTest: false
@@ -429,9 +444,11 @@ export class HologramRenderer {
     // BasilaQ-127: Use StandardMaterial for Shading/Volume
     const material = new THREE.MeshStandardMaterial({
       color: baseColorObj,
-      roughness: 0.2,
+      roughness: 0.3,
       metalness: 0.1,
-      flatShading: true
+      flatShading: true,
+      transparent: false,
+      opacity: 1.0
     });
 
     const columnMesh = new THREE.Mesh(geometry, material);
@@ -443,12 +460,30 @@ export class HologramRenderer {
     columnMesh.scale.set(1, 2.0, CELL_SIZE * 2);
 
     // Set mesh center relative to the group origin (spine)
-    // Since we scale Y by 2, the visual height is 2. Center at Y=1 puts bottom at Y=0?
-    // Box height 1, scaled to 2. Center is at 0. Extends -0.5 to 0.5 * 2 = -1 to 1.
-    // To sit on "floor" (or spine), we might want Y position.
-    // Previous code: (semitoneIndex + 1) * 2. This arranges them vertically?
-    // Wait, the grid is likely strictly arranged.
-    columnMesh.position.set(width / 2, (semitoneIndex + 1) * 2, 0);
+    // FIX: Center Y at (index * CELL_SIZE) + (CELL_SIZE / 2)
+    // CELL_SIZE is 2. So index=0 -> 1. Box height 2 centered at 1 spans 0 to 2.
+    // This perfectly aligns with grid lines at 0, 2, 4...
+    columnMesh.position.set(width / 2, (semitoneIndex * 2) + 1, 0);
+
+    // HIGHLIGHT EDGES Logic:
+    // Add a wireframe helper that scales with the mesh to highlight the "changing edges".
+    // Using LineSegments with EdgesGeometry avoids diagonal wireframes.
+    const edgesGeometry = new THREE.EdgesGeometry(geometry);
+    // Determine edge color: Slightly brighter version of base or white? 
+    // User wants "contrast grid lines". Let's use a dynamic color matching the column but brighter.
+    // Or just white/grey overlay.
+    // Let's use a blended color to keep it aesthetic but visible.
+    const edgeColor = new THREE.Color(semitone.color).offsetHSL(0, 0, 0.2); // Brighter
+    const edgesMaterial = new THREE.LineBasicMaterial({
+      color: edgeColor,
+      transparent: true,
+      opacity: 0.8, // Increased contrast as requested
+      linewidth: 1
+    });
+    const edgesMesh = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+
+    // EdgesMesh needs to be added to columnMesh to inherit scale/position
+    columnMesh.add(edgesMesh);
 
     columnGroup.add(columnMesh);
 
@@ -600,28 +635,39 @@ export class HologramRenderer {
       // Get pan value (-1 to +1)
       let semitonePan = panAngles[index] || 0;
 
-      // MAPPING: Normalize dB to 0-1 range (Amplitude)
-      // HEURISTIC: If value is negative, assume raw dB (-128 to 0).
-      // If positive, assume mapped value (0-127 or 0-255).
+      // MAPPING: Normalize dB to 0-1 range (Amplitude) with Noise Gate
+      // CQT range: -128 (silence) to 0 (max).
+      // Practical Noise Floor: -100 dB. Max: -10 dB.
+      const noiseFloor = -100;
+      const ceiling = -10; // Treat anything above -10dB as max
+
       let ampL = 0;
       if (rawLeftDb < 0) {
-        ampL = (rawLeftDb + 128) / 128.0;
+        // Linear mapping from [noiseFloor, ceiling] to [0, 1]
+        ampL = THREE.MathUtils.mapLinear(rawLeftDb, noiseFloor, ceiling, 0, 1);
       } else {
-        ampL = rawLeftDb / 127.0; // Assume 0-127 midi-style
+        // Fallback for positive values (0-127) just in case
+        ampL = rawLeftDb / 127.0;
       }
       ampL = THREE.MathUtils.clamp(ampL, 0, 1);
 
       let ampR = 0;
       if (rawRightDb < 0) {
-        ampR = (rawRightDb + 128) / 128.0;
+        ampR = THREE.MathUtils.mapLinear(rawRightDb, noiseFloor, ceiling, 0, 1);
       } else {
         ampR = rawRightDb / 127.0;
       }
       ampR = THREE.MathUtils.clamp(ampR, 0, 1);
 
+
+      // CWT LOGIC: Quantize to 128 steps for scientific accuracy
+      // This is crucial for the "Scanner" decoding requirement.
+      const discreteL = Math.floor(ampL * 127) / 127;
+      const discreteR = Math.floor(ampR * 127) / 127;
+
       // NOISE GATE: If amplitude is below threshold, force Pan to 0 (spine)
-      const maxAmp = Math.max(ampL, ampR);
-      if (maxAmp < 0.01) {
+      const maxAmp = Math.max(discreteL, discreteR);
+      if (maxAmp < 0.05) { // Increased gate slightly
         semitonePan = 0;
       }
 
@@ -637,17 +683,17 @@ export class HologramRenderer {
         rawShiftR = semitonePan * availableSpace;
       }
 
-      // GRID SNAP
-      const snappedShiftL = Math.round(rawShiftL / CELL_SIZE) * CELL_SIZE;
-      const snappedShiftR = Math.round(rawShiftR / CELL_SIZE) * CELL_SIZE;
+      // NO SNAPPING for 128 unique widths/positions
+      const snappedShiftL = rawShiftL;
+      const snappedShiftR = rawShiftR;
 
       if (leftMeshGroup) leftMeshGroup.position.x = snappedShiftL;
       if (rightMeshGroup) rightMeshGroup.position.x = snappedShiftR;
 
-      // Z-AXIS DEPTH: Map 0-127 to 1.5 (silence) to GRID_DEPTH (max)
+      // Z-AXIS DEPTH: Map 0-1 to [minDepth, GRID_DEPTH]
       const minDepth = 1.5;
-      const targetZL = minDepth + (ampL * (GRID_DEPTH - minDepth));
-      const targetZR = minDepth + (ampR * (GRID_DEPTH - minDepth));
+      const targetZL = minDepth + (discreteL * (GRID_DEPTH - minDepth));
+      const targetZR = minDepth + (discreteR * (GRID_DEPTH - minDepth));
 
       if (leftMesh) {
         leftMesh.scale.z = targetZL;
@@ -658,21 +704,39 @@ export class HologramRenderer {
         rightMesh.position.z = targetZR / 2; // ONE-WAY GROWTH
       }
 
-      // BRIGHTNESS: Silence = Dark (1/128), Loud = Bright (100%)
+      // BRIGHTNESS / SHADING: 128 steps mapping
+      // We use Emissive intensity to make it "glow" correctly in dark scene.
+      // 0 steps = almost black (or base color dim). 127 steps = full bright.
+
       if (leftMesh && leftMeshGroup.userData.baseColor) {
         const baseColorL = leftMeshGroup.userData.baseColor;
+        // Set base color
+        leftMesh.material.color.copy(baseColorL);
+
         const hsl = {};
         baseColorL.getHSL(hsl);
-        const brightnessL = hsl.l * Math.max(1 / 128, ampL);
-        leftMesh.material.color.setHSL(hsl.h, hsl.s, brightnessL);
+
+        // 128 discrete brightness steps
+        // Map [0, 1] amplitude to [0.2, 1.0] lightness to avoid invisibility but show contrast
+        const minL = 0.2;
+        const targetL = minL + (discreteL * (1.0 - minL));
+
+        leftMesh.material.color.setHSL(hsl.h, hsl.s * 0.8, targetL * hsl.l);
+        leftMesh.material.emissive.copy(baseColorL);
+        leftMesh.material.emissiveIntensity = discreteL * 1.5; // Stronger glow for loud sounds
       }
 
       if (rightMesh && rightMeshGroup.userData.baseColor) {
         const baseColorR = rightMeshGroup.userData.baseColor;
         const hsl = {};
         baseColorR.getHSL(hsl);
-        const brightnessR = hsl.l * Math.max(1 / 128, ampR);
-        rightMesh.material.color.setHSL(hsl.h, hsl.s, brightnessR);
+
+        const minL = 0.2;
+        const targetL = minL + (discreteR * (1.0 - minL));
+
+        rightMesh.material.color.setHSL(hsl.h, hsl.s * 0.8, targetL * hsl.l);
+        rightMesh.material.emissive.copy(baseColorR);
+        rightMesh.material.emissiveIntensity = discreteR * 1.5;
       }
     });
   }

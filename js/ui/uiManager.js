@@ -11,6 +11,7 @@ import { toggleFullscreen, initFullscreenListeners } from '../utils/fullscreen.j
 import { toggleTriaLearningMode } from '../ai/tria.js'; // Import for Tria button
 import { initializeRightPanel } from '../panels/rightPanelManager.js'; // Import for right panel logic
 import { hologramScanner } from '../multimodal/hologramScanner.js'; // Import for Scanner button
+import { gestureSynthesizer } from '../audio/GestureSynthesizer.js'; // Import for Gesture Synth
 
 /**
  * uiElements is a central object holding references to all significant DOM elements
@@ -28,6 +29,7 @@ export const uiElements = {
     fullscreenButton: null,   // Toggle browser fullscreen mode
     xrButton: null,           // Enter/Exit WebXR mode (VR/AR)
     gestureRecordButton: null, // Button to open 'My Gestures' panel or start gesture recording
+    synthButton: null,        // Performance mode: Gesture Audio Synthesis
     hologramListButton: null,  // Button to open 'My Holograms' panel
     scanButton: null,         // Placeholder for scanning functionality
     bluetoothButton: null,    // Placeholder for Bluetooth connections (e.g., EEG devices)
@@ -149,6 +151,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   uiElements.buttons.fullscreenButton = document.getElementById('fullscreenButton');
   uiElements.buttons.xrButton = document.getElementById('xrButton');
   uiElements.buttons.gestureRecordButton = document.getElementById('gestureRecordButton');
+  uiElements.buttons.synthButton = document.getElementById('synthButton');
   uiElements.buttons.hologramListButton = document.getElementById('hologramListButton');
   uiElements.buttons.scanButton = document.getElementById('scanButton');
   uiElements.buttons.bluetoothButton = document.getElementById('bluetoothButton');
@@ -368,6 +371,29 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
       console.error("PanelManager not found in state. Cannot open 'myGestures' panel.");
     }
   }, "Gesture Record button also attempts to open 'myGesturesView' panel.");
+
+  // Synth Button (Performance Mode)
+  if (uiElements.buttons.synthButton) {
+    uiElements.buttons.synthButton.addEventListener('click', async () => {
+      if (!appState.audio) appState.audio = {};
+      appState.audio.isGestureSynthMode = !appState.audio.isGestureSynthMode;
+
+      const isActive = appState.audio.isGestureSynthMode;
+      uiElements.buttons.synthButton.classList.toggle('active', isActive);
+
+      console.log(`[UIManager] Gesture Synth Mode: ${isActive ? 'ON' : 'OFF'}`);
+
+      // Initialize and control GestureSynthesizer
+      if (isActive) {
+        await gestureSynthesizer.initialize();
+        gestureSynthesizer.start();
+        console.log('[UIManager] GestureSynthesizer started');
+      } else {
+        gestureSynthesizer.stop();
+        console.log('[UIManager] GestureSynthesizer stopped');
+      }
+    });
+  }
 
   // Hologram List button opens the 'My Holograms' panel.
   addButtonListener(uiElements.buttons.hologramListButton, () => {

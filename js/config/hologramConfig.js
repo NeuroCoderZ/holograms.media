@@ -26,16 +26,16 @@ export const SMOOTHING_TIME_CONSTANT = 0.0;
 export const GRID_WIDTH = 128;
 export const GRID_HEIGHT = 128;
 export const GRID_DEPTH = 128;
-export const CELL_SIZE = 2;
+export const CELL_SIZE = 1.0;
 export const HOLOGRAM_REFERENCE_HEIGHT = 256; // Actual visual span is GRID_HEIGHT * 2
 
-// Функция для вычисления ширины колонок на основе индекса
 export function degreesToCells(index) {
   const maxWidth = 128;
   const minWidth = 1;
   const totalSemitones = 128;
   const width = maxWidth - index / (totalSemitones - 1) * (maxWidth - minWidth);
-  return Math.max(minWidth, Math.round(width));
+  // Remove strict alignment with grid lines to allow 128 unique widths
+  return Math.max(0.5, width);
 }
 
 // Генерация массива полутонов

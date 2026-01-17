@@ -14,7 +14,9 @@ export function startAnimationLoop(appState) {
             appState.hologramRendererInstance.updateVisuals();
         }
 
-        window.TWEEN.update(time);
+        if (window.TWEEN) {
+            window.TWEEN.update(time);
+        }
 
         if (appState.animateReturn) {
             appState.animateReturn();

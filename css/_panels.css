@@ -5,8 +5,8 @@
   -webkit-backdrop-filter: blur(20px) !important;
   padding: 0;
   /* Clear shared padding */
-  height: 90vh !important;
-  top: 5vh !important;
+  height: 90svh !important;
+  top: 5svh !important;
   flex: 0 0 auto;
   z-index: 1001;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -364,14 +364,14 @@
   transition: transform 0.5s ease-in-out, margin-top 0.5s ease-in-out !important;
   transform-origin: center center !important;
   will-change: transform, margin-top !important;
-  margin-top: 5vh !important;
-  margin-bottom: 5vh !important;
+  margin-top: 5svh !important;
+  margin-bottom: 5svh !important;
 }
 
 .gesture-area.active~.main-area .hologram,
 .gesture-area.active+.main-area .hologram {
   transform: scale(0.8) !important;
-  margin-top: 5vh !important;
+  margin-top: 5svh !important;
 }
 
 /* Стили панелей */

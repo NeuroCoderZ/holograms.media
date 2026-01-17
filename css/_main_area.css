@@ -5,12 +5,13 @@
   flex-grow: 1;
   overflow: hidden;
   background-color: var(--color-pure-black);
-  height: 100vh;
+  height: 100svh;
   /* !!! Явно задаем высоту */
   padding: 0;
   /* !!! Убираем все внутренние отступы */
-  min-width: 100vw;
-  /* Гарантируем минимальную ширину */
+  width: 100%;
+  max-width: 100vw;
+  /* Гарантируем отсутствие горизонтальной прокрутки */
   z-index: 5;
   /* Below panels */
 }
@@ -19,7 +20,7 @@
   position: relative;
   width: 100%;
   margin: 0;
-  height: calc(100vh - 40px);
+  height: calc(100svh - 40px);
   /* Full height minus gesture area height */
   z-index: 10;
   background-color: var(--color-pure-black);
@@ -40,7 +41,7 @@
 /* Область жестов */
 #gesture-area {
   position: fixed;
-  bottom: 5vh;
+  bottom: calc(5svh + env(safe-area-inset-bottom));
   left: 0;
   width: 100%;
   height: 6px;
@@ -82,8 +83,12 @@
 }
 
 /* Старый селектор для совместимости, но лучше использовать .squashed */
+/* Старый селектор для совместимости, но лучше использовать .squashed */
 .gesture-area.active~.main-area .hologram,
-.gesture-area.active+.main-area .hologram {
-  transform: translateY(-10%) scale(0.9) !important;
-  margin-bottom: 5vh !important;
+.gesture-area.active+.main-area .hologram,
+.gesture-area.hands-detected~.main-area .hologram,
+.gesture-area.hands-detected+.main-area .hologram {
+  /* Panel is ~25vh high + 5svh bottom offset = 30svh top. We want 5svh gap. So 35svh margin. */
+  transform: scale(0.9) !important;
+  margin-bottom: 35svh !important;
 }

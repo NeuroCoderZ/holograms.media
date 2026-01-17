@@ -71,7 +71,7 @@ export class SmartHologram {
         this.setupCamera();
 
         // Интерфейс для жестов
-        this.setupGestureInterface();
+        // Интерфейс для жестов удален
 
         // Запуск анимации
         this.animate();
@@ -113,37 +113,8 @@ export class SmartHologram {
         this.controls.update();
     }
 
-    /**
-     * Настройка интерфейса для отображения информации о жестах
-     */
-    setupGestureInterface() {
-        const gestureUI = document.createElement('div');
-        gestureUI.id = 'gesture-ui';
-        gestureUI.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            font-family: monospace;
-            font-size: 14px;
-            z-index: 1000;
-            min-width: 200px;
-        `;
-
-        gestureUI.innerHTML = `
-            <div style="margin-bottom: 10px; font-weight: bold;">Распознанные жесты:</div>
-            <div id="current-gesture" style="margin-bottom: 10px;">Ожидание...</div>
-            <div id="gesture-sequence" style="font-size: 12px; color: #ccc;"></div>
-            <div style="margin-top: 10px; font-size: 12px;">
-                <div>Создано объектов: <span id="object-count">0</span></div>
-            </div>
-        `;
-
-        document.body.appendChild(gestureUI);
-    }
+    // Интерфейс для жестов (Удален по просьбе пользователя)
+    // this.setupGestureInterface();
 
     /**
      * Настройка слушателей событий жестов
@@ -223,11 +194,12 @@ export class SmartHologram {
         this.currentGesture = gestureData;
         this.lastGestureTime = Date.now();
 
-        // Обновление UI
+        /* UI удален
         const gestureElement = document.getElementById('current-gesture');
         if (gestureElement) {
             gestureElement.textContent = `Жест: ${gestureData.name} (${Math.round(gestureData.confidence * 100)}%)`;
         }
+        */
 
         // Создание объекта на основе жеста
         this.createObjectFromGesture(gestureData);
@@ -241,11 +213,12 @@ export class SmartHologram {
     handleGestureSequence(sequenceData) {
         this.gestureSequence = sequenceData.gestures;
 
-        // Обновление UI
+        /* UI удален
         const sequenceElement = document.getElementById('gesture-sequence');
         if (sequenceElement) {
             sequenceElement.textContent = `Последовательность: ${sequenceData.gestures.map(g => g.name).join(' → ')}`;
         }
+        */
 
         // Создание сложного объекта на основе последовательности
         this.createComplexObjectFromSequence(sequenceData);
@@ -413,16 +386,13 @@ export class SmartHologram {
     }
 
     /**
-     * Обновление счетчика объектов в UI
+     * Обновление счетчика объектов (UI удален)
      */
     updateObjectCount() {
+        /*
         const countElement = document.getElementById('object-count');
-        if (countElement) {
-            const totalObjects = this.hologramObjects.children.reduce((count, child) => {
-                return count + (child.children ? child.children.length : 1);
-            }, 0);
-            countElement.textContent = totalObjects;
-        }
+        ...
+        */
     }
 
     /**
