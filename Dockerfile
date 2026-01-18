@@ -17,6 +17,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Этап 2: "Финальный" этап - создание маленького образа
 FROM python:3.11-slim-bullseye AS final
 
+# Устанавливаем Node.js (нужен для GestureBot)
+RUN apt-get update && apt-get install -y \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Устанавливаем переменные окружения
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
