@@ -36,7 +36,7 @@ jobs:
           service-instance-type: free
           git-builder: docker
           git-docker-dockerfile: Dockerfile
-          git-run-command: "uvicorn backend.app:app --host 0.0.0.0 --port 8000"
+          git-docker-command: "uvicorn backend.app:app --host 0.0.0.0 --port 8000"
           service-env: |
             ENVIRONMENT=production
             CORS_ORIGIN_1=https://holograms.media
