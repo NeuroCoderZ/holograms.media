@@ -66,9 +66,11 @@ from fastapi.middleware.cors import CORSMiddleware
 origins = [
     "http://localhost",
     "http://localhost:3000",
+    "http://localhost:5173",  # Vite default
     "http://localhost:8000",
     "https://holograms.media",
     "https://holograms-media.web.app",
+    "https://common-elita-holograms-media-59398dd8.koyeb.app", # Production Backend
 ]
 app.add_middleware(
     CORSMiddleware,
