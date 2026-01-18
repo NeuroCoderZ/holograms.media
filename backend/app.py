@@ -13,7 +13,8 @@ import os
 import logging
 import boto3
 
-# Tria-related imports
+# Astra-related imports
+from backend.core.db.astra_connector import get_astra_db, get_astra_client
 
 
 logger = logging.getLogger(__name__)
@@ -53,10 +54,6 @@ app.include_router(chat_sessions_router, prefix=f"{API_V1_PREFIX}/chat", tags=["
 app.include_router(gestures_ws.router)
 app.include_router(signaling_router) # Include the new signaling router
 
-
-@app.get("/", tags=["Root"])
-async def read_root():
-    return {"message": "Welcome to the Holograms Media API. Visit /docs for API documentation."}
 
 @app.get("/healthz", tags=["System"])
 async def health_check():
@@ -150,22 +147,31 @@ async def startup_event():
         logger.warning("One or more Backblaze B2 environment variables are missing. S3 client not initialized.")
         app.state.s3_client = None
 
-    # --- Initialize Database Pool ---
-    from backend.core.db.pg_connector import create_db_pool
-    app.state.db_pool = await create_db_pool()
-    if app.state.db_pool:
-        logger.info("Database pool added to app.state.")
-    else:
-        logger.warning("Database pool initialization FAILED. Database dependent routes will fail.")
+    # --- Initialize Astra DB ---
+    try:
+        astra_client = get_astra_client()
+        if astra_client:
+            app.state.astra_db = get_astra_db(astra_client)
+            if app.state.astra_db:
+                logger.info("Astra DB initialized successfully in app.state.")
+            else:
+                logger.warning("Astra DB initialization FAILED. Database dependent routes will fail.")
+        else:
+            logger.warning("Astra DataAPIClient FAILED to initialize. Database dependent routes will fail.")
+    except Exception as e:
+        logger.error(f"Critical error during Astra DB initialization: {e}")
+        app.state.astra_db = None
 
     logger.info("FastAPI application startup event processing completed.")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("--- Application Shutdown ---")
-    if hasattr(app.state, 'db_pool') and app.state.db_pool:
-        await app.state.db_pool.close()
-        logger.info("Database pool closed.")
+    # Astra DataAPIClient doesn't require explicit closing like a pool in many cases,
+    # but we can clear the state if needed.
+    if hasattr(app.state, 'astra_db'):
+        del app.state.astra_db
+        logger.info("Astra DB connection state cleared.")
     
 
 

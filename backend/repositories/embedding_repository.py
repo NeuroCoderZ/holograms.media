@@ -146,49 +146,48 @@ class EmbeddingRepository:
         #             metadata=row['metadata']
         #         )
         #     return None
-        # except asyncpg.PostgresError as e:
-        #     logger.error(f"DB error in EmbeddingRepository.get_embedding_by_id for id {embedding_id}: {e}")
-        #     raise
-        # except Exception as e:
-        #     logger.error(f"Unexpected error in EmbeddingRepository.get_embedding_by_id for id {embedding_id}: {e}")
-        #     raise
-        logger.warning("Local embedding retrieval is disabled. Tria functionality is now handled by a remote API.")
-        return None
-
-    async def find_closest_embedding_by_text(self, query_text: str, model_name: str = "models/text-embedding-004") -> Optional[EmbeddingDB]:
+        Finds the closest embedding in the collection using vector search.
         """
-        Создает эмбеддинг для query_text и ищет ближайший в БД.
+        try:
+            # Astra DB Data API vector search
+            # We use find with sort on $vector
+            results = list(self.collection.find(
+                sort={"$vector": query_embedding},
+                limit=1,
+                include_similarity=True
+            ))
+            
+            if results:
+                row = results[0]
+                return EmbeddingDB(**row)
+            return None
+        except Exception as e:
+            logger.error(f"Astra DB error in EmbeddingRepository.find_closest_embedding: {e}")
+            raise
+
+    async def update_embedding_vector(self, embedding_id: str, new_vector: List[float]) -> bool:
         """
-        # # Для этой функции нужен доступ к genai или аналогичному сервису эмбеддингов.
-        # # Это немного нарушает принцип репозитория (не должен знать о внешних AI сервисах).
-        # # В идеале, эмбеддинг запроса должен создаваться в сервисе и передаваться в find_closest_embedding.
-        # # Но для выполнения задания реализуем здесь.
-        # import google.generativeai as genai # Поздний импорт, чтобы избежать цикличной зависимости или проблем при старте
-        # import os
+        Updates the vector of an existing embedding.
+        """
+        try:
+            result = self.collection.update_one(
+                {"_id": embedding_id},
+                {"$set": {"$vector": new_vector}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Astra DB error in EmbeddingRepository.update_embedding_vector: {e}")
+            raise
 
-        # # Попытка конфигурации, если еще не сделана (может быть избыточно, если genai конфигурируется глобально)
-        # # if not genai.API_KEY and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
-        # #     api_key = os.getenv("GOOGLE_API_KEY")
-        # #     if api_key:
-        # #         genai.configure(api_key=api_key)
-        # #     else:
-        # #         logger.error("Google AI API key or ADC not configured for EmbeddingRepository.")
-        # #         return None
-
-        # try:
-        #     result = await genai.embed_content_async(
-        #         model=model_name,
-        #         content=query_text,
-        #         task_type="RETRIEVAL_QUERY"
-        #     )
-        #     query_embedding = result['embedding']
-        #     if query_embedding:
-        #         return await self.find_closest_embedding(query_embedding)
-        #     else:
-        #         logger.warning(f"Could not generate embedding for query_text: {query_text[:50]}...")
-        #         return None
-        # except Exception as e:
-        #     logger.error(f"Error generating embedding or finding closest for text '{query_text[:50]}...': {e}")
-        #     return None
-        logger.warning("Local embedding search by text is disabled. Tria functionality is now handled by a remote API.")
-        return None
+    async def get_embedding_by_id(self, embedding_id: str) -> Optional[EmbeddingDB]:
+        """
+        Retrieves an embedding by its ID.
+        """
+        try:
+            row = self.collection.find_one({"_id": embedding_id})
+            if row:
+                return EmbeddingDB(**row)
+            return None
+        except Exception as e:
+            logger.error(f"Astra DB error in EmbeddingRepository.get_embedding_by_id: {e}")
+            raise

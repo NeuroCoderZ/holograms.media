@@ -36,7 +36,6 @@ jobs:
           service-instance-type: free
           git-builder: docker
           git-docker-dockerfile: Dockerfile
-          git-docker-command: "uvicorn backend.app:app --host 0.0.0.0 --port 8000"
           service-env: |
             ENVIRONMENT=production
             CORS_ORIGIN_1=https://holograms.media
@@ -44,6 +43,12 @@ jobs:
             PYTHONUNBUFFERED=1
             PYTHONDONTWRITEBYTECODE=1
             PORT=8000
+            ASTRA_DB_APPLICATION_TOKEN=${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}
+            ASTRA_DATABASE_URL=${{ secrets.ASTRA_DATABASE_URL }}
+            B2_ACCESS_KEY_ID=${{ secrets.B2_ACCESS_KEY_ID }}
+            B2_SECRET_ACCESS_KEY=${{ secrets.B2_SECRET_ACCESS_KEY }}
+            B2_ENDPOINT_URL=${{ secrets.B2_ENDPOINT_URL }}
+            B2_BUCKET_NAME=${{ secrets.B2_BUCKET_NAME }}
 
       - name: 📋 Output Backend URL
         run: |
