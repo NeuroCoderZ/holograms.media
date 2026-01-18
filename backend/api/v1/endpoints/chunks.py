@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 import logging
 import os
 import uuid
-from backend.tria_agents.ChunkProcessorBot import ChunkProcessorBot
+from backend.core.tria_agents.ChunkProcessorAgent import ChunkProcessorBot
 from backend.auth.security import get_current_active_user # Assuming this is your dependency for auth
 from backend.core.models.user_models import UserInDB # Assuming this is your user model
 
