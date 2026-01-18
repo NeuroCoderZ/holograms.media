@@ -49,8 +49,7 @@ COPY ./index.html /app/index.html
 COPY ./style.css /app/style.css
 COPY ./favicon.ico /app/favicon.ico
 COPY ./manifest.json /app/manifest.json
-COPY ./sw.json /app/sw.json || true
-COPY ./sw.js /app/sw.js || true
+COPY ./sw.js /app/sw.js
 
 # Указываем, что контейнер будет слушать на порту 8000
 EXPOSE 8000
