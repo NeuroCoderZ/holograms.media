@@ -11,7 +11,7 @@ class CoreModel(BaseModel):
     pass
 
 class IDModel(CoreModel):
-    id: UUID = Field(default_factory=uuid4, alias="_id") # alias for MongoDB compatibility if ever needed
+    id: UUID = Field(default_factory=uuid4, alias="_id") # alias for compatibility with databases that use '_id' as primary key
 
 class TimestampModel(CoreModel):
     created_at: datetime = Field(default_factory=current_time_utc)

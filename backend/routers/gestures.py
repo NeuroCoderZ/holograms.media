@@ -25,14 +25,14 @@ async def create_new_user_gesture(
 ):
     gesture_service = GestureService(db)
     try:
-        # print(f"[GUESTURE ROUTER INFO] User {current_user.firebase_uid} creating gesture: {gesture_in.gesture_name}")
+        # print(f"[GUESTURE ROUTER INFO] User {current_user.user_id} creating gesture: {gesture_in.gesture_name}")
         created_gesture = await gesture_service.create_new_user_gesture(
             user_id=current_user.user_id, gesture_in=gesture_in
         )
         if not created_gesture:
-            # print(f"[GUESTURE ROUTER WARN] Gesture creation failed for user {current_user.firebase_uid}, name: {gesture_in.gesture_name}. May be a duplicate.")
+            # print(f"[GUESTURE ROUTER WARN] Gesture creation failed for user {current_user.user_id}, name: {gesture_in.gesture_name}. May be a duplicate.")
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Gesture name may already exist for this user or another database error occurred.")
-        # print(f"[GUESTURE ROUTER INFO] Gesture '{created_gesture.gesture_name}' (ID: {created_gesture.id}) created successfully for user {current_user.firebase_uid}.")
+        # print(f"[GUESTURE ROUTER INFO] Gesture '{created_gesture.gesture_name}' (ID: {created_gesture.id}) created successfully for user {current_user.user_id}.")
         return created_gesture
     except HTTPException:
         raise
@@ -43,16 +43,16 @@ async def create_new_user_gesture(
 @router.get("/", response_model=List[core_models.UserGestureDefinitionDB])
 async def list_user_gestures(
     current_user: core_models.UserInDB = Depends(security.get_current_active_user), # Use UserInDB from core_models
-    db_conn: asyncpg.Connection = Depends(get_db_connection),
+    db: Any = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200) 
 ):
-    gesture_service = GestureService(db_conn)
-    # print(f"[GUESTURE ROUTER INFO] User {current_user.firebase_uid} listing gestures. Skip: {skip}, Limit: {limit}")
+    gesture_service = GestureService(db)
+    # print(f"[GUESTURE ROUTER INFO] User {current_user.user_id} listing gestures. Skip: {skip}, Limit: {limit}")
     gestures = await gesture_service.get_user_gestures(
         user_id=current_user.user_id, skip=skip, limit=limit
     )
-    # print(f"[GUESTURE ROUTER INFO] Found {len(gestures)} gestures for user {current_user.firebase_uid}.")
+    # print(f"[GUESTURE ROUTER INFO] Found {len(gestures)} gestures for user {current_user.user_id}.")
     return gestures
 
 @router.get("/{gesture_id}", response_model=core_models.UserGestureDefinitionDB)
@@ -62,14 +62,14 @@ async def get_specific_user_gesture(
     db: Any = Depends(get_db)
 ):
     gesture_service = GestureService(db)
-    # print(f"[GUESTURE ROUTER INFO] User {current_user.firebase_uid} fetching gesture ID: {gesture_id}")
+    # print(f"[GUESTURE ROUTER INFO] User {current_user.user_id} fetching gesture ID: {gesture_id}")
     gesture = await gesture_service.get_specific_user_gesture(
         gesture_id=gesture_id, user_id=current_user.user_id
     )
     if not gesture:
-        # print(f"[GUESTURE ROUTER WARN] Gesture ID: {gesture_id} not found for user {current_user.firebase_uid}.")
+        # print(f"[GUESTURE ROUTER WARN] Gesture ID: {gesture_id} not found for user {current_user.user_id}.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Gesture not found.")
-    # print(f"[GUESTURE ROUTER INFO] Gesture ID: {gesture_id} found for user {current_user.firebase_uid}.")
+    # print(f"[GUESTURE ROUTER INFO] Gesture ID: {gesture_id} found for user {current_user.user_id}.")
     return gesture
 
 @router.put("/{gesture_id}", response_model=core_models.UserGestureDefinitionDB)
@@ -86,14 +86,14 @@ async def update_existing_user_gesture(
         # print(f"[GUESTURE ROUTER WARN] No update data provided for gesture ID: {gesture_id} by user {current_user.firebase_uid}.")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided.")
 
-    # print(f"[GUESTURE ROUTER INFO] User {current_user.firebase_uid} updating gesture ID: {gesture_id} with data: {update_data}")
+    # print(f"[GUESTURE ROUTER INFO] User {current_user.user_id} updating gesture ID: {gesture_id} with data: {update_data}")
     updated_gesture = await gesture_service.update_existing_user_gesture(
         gesture_id=gesture_id, user_id=current_user.user_id, gesture_update_data=update_data
     )
     if not updated_gesture:
-        # print(f"[GUESTURE ROUTER WARN] Gesture ID: {gesture_id} not found or update failed for user {current_user.firebase_uid} (e.g., name conflict).")
+        # print(f"[GUESTURE ROUTER WARN] Gesture ID: {gesture_id} not found or update failed for user {current_user.user_id} (e.g., name conflict).")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Gesture not found or update failed (e.g., name conflict).")
-    # print(f"[GUESTURE ROUTER INFO] Gesture ID: {gesture_id} updated successfully for user {current_user.firebase_uid}.")
+    # print(f"[GUESTURE ROUTER INFO] Gesture ID: {gesture_id} updated successfully for user {current_user.user_id}.")
     return updated_gesture
 
 @router.delete("/{gesture_id}", status_code=status.HTTP_204_NO_CONTENT)
