@@ -32,7 +32,7 @@ class InterpretedGestureSequenceCreate(InterpretedGestureSequenceBase):
 
 class InterpretedGestureSequenceDB(InterpretedGestureSequenceBase):
     id: int # Primary key for gesture_sequences table
-user_id: str # The user's unique ID
+    user_id: str # The user's unique ID
     created_at: datetime
 
     class Config:
