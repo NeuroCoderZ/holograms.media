@@ -35,9 +35,22 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Копируем наш код в финальный образ
+# Копируем наш код и фронтенд-ресурсы в финальный образ
 COPY ./backend /app/backend
 COPY ./scripts /app/scripts
+COPY ./js /app/js
+COPY ./css /app/css
+COPY ./public /app/public
+COPY ./icons /app/icons
+COPY ./holocore /app/holocore
+
+# Копируем корневые файлы для статики
+COPY ./index.html /app/index.html
+COPY ./style.css /app/style.css
+COPY ./favicon.ico /app/favicon.ico
+COPY ./manifest.json /app/manifest.json
+COPY ./sw.json /app/sw.json || true
+COPY ./sw.js /app/sw.js || true
 
 # Указываем, что контейнер будет слушать на порту 8000
 EXPOSE 8000
