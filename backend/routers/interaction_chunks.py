@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-import asyncpg
+# from astrapy import Database # Removed asyncpg
 import json
 import traceback
 
 from backend.repositories.interaction_chunk_repository import InteractionChunkRepository
-from backend.core.db.pg_connector import get_db_connection
+from backend.core.db.astra_connector import get_db
 from backend.core.models.interaction_chunk_model import InteractionChunkCreate, InteractionChunkDB
 from backend.core.models.user_models import UserInDB
 from backend.auth import security
@@ -13,8 +13,8 @@ router = APIRouter(
     tags=["Interaction Chunks"],
 )
 
-def get_interaction_chunk_repo(db_conn: asyncpg.Connection = Depends(get_db_connection)) -> InteractionChunkRepository:
-    return InteractionChunkRepository(db_conn)
+def get_interaction_chunk_repo(db: Any = Depends(get_db)) -> InteractionChunkRepository:
+    return InteractionChunkRepository(db)
 
 @router.post("/submit", response_model=InteractionChunkDB, status_code=status.HTTP_21_CREATED)
 async def submit_interaction_chunk(
@@ -85,15 +85,9 @@ async def submit_interaction_chunk(
 
         return created_chunk
 
-    except asyncpg.PostgresError as pg_err:
-        print(f"[SUBMIT CHUNK DB ERROR] PostgreSQL error while saving chunk for user {current_user.user_id}: {pg_err}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database error while saving interaction chunk."
-        )
     except Exception as e:
         print(f"[SUBMIT CHUNK ERROR] Unexpected error while saving chunk for user {current_user.user_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred."
+            detail="An unexpected error occurred while saving interaction chunk."
         )

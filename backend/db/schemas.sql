@@ -6,11 +6,11 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- Пользовательский идентификатор is used as the primary key.
 CREATE TABLE users (
     user_id TEXT PRIMARY KEY,
-    email VARCHAR(255) UNIQUE, -- User's email, should be kept in sync with системой аутентификации
+    email VARCHAR(255) UNIQUE, -- User's email, should be kept in sync with authentication system
     role VARCHAR(50) DEFAULT 'user' NOT NULL CHECK (role IN ('admin', 'core_developer', 'beta_tester', 'user')),
     last_login_at TIMESTAMP WITH TIME ZONE, -- Timestamp of the last login
     is_active BOOLEAN DEFAULT TRUE NOT NULL, -- Whether the user account is active
-    email_verified BOOLEAN DEFAULT FALSE NOT NULL, -- Whether the email has been verified (synced from Firebase)
+    email_verified BOOLEAN DEFAULT FALSE NOT NULL, -- Whether the email has been verified
     user_settings JSONB, -- User-specific settings and preferences
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP -- Application-level handling for updates
@@ -186,7 +186,7 @@ CREATE TABLE application_logs (
     id SERIAL PRIMARY KEY,
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     level VARCHAR(50) CHECK (level IN ('INFO', 'WARNING', 'ERROR', 'DEBUG')) NOT NULL,
-    source_component VARCHAR(255), -- e.g., 'GestureBot', 'AuthService', 'APIEndpoint'
+    source_component VARCHAR(255), -- e.g., 'GestureAgent', 'AuthService', 'APIEndpoint'
     message TEXT NOT NULL,
     details JSONB -- Additional structured details for the log entry
 );
@@ -228,8 +228,8 @@ CREATE TABLE tria_azr_tasks (
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'evaluating', 'completed_success', 'completed_failure', 'aborted')),
     priority INTEGER DEFAULT 0,
     complexity_score FLOAT, -- Estimated complexity of the task
-    generation_source TEXT, -- How this task was generated (e.g., 'LearningBot', 'manual')
-    related_bot_id TEXT, -- ID of the agent primarily responsible or affected
+    generation_source TEXT, -- How this task was generated (e.g., 'LearningAgent', 'manual')
+    related_agent_id TEXT, -- ID of the agent primarily responsible or affected
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     started_at TIMESTAMP WITH TIME ZONE, -- When Tria started working on this task
     completed_at TIMESTAMP WITH TIME ZONE, -- When Tria completed or aborted this task
@@ -273,7 +273,7 @@ CREATE TABLE tria_learning_log (
     -- Старые поля из предыдущей версии таблицы tria_learning_log (можно удалить после миграции данных, если они были)
     legacy_timestamp TIMESTAMPTZ,
     legacy_event_type TEXT,
-    legacy_bot_affected_id TEXT,
+    legacy_agent_affected_id TEXT,
     legacy_summary_text TEXT,
     legacy_details_json JSONB
 );
@@ -283,18 +283,18 @@ CREATE INDEX IF NOT EXISTS idx_tria_learning_log_action_result ON tria_learning_
 CREATE INDEX IF NOT EXISTS idx_tria_learning_log_created_at ON tria_learning_log(created_at DESC);
 COMMENT ON TABLE tria_learning_log IS 'Logs interactions and their outcomes for Tria''s learning and analysis.';
 
--- Table: tria_bot_configurations
+-- Table: tria_agent_configurations
 -- Stores configurations for Tria's various agents, allowing for dynamic updates.
-CREATE TABLE tria_bot_configurations (
+CREATE TABLE tria_agent_configurations (
     config_id SERIAL PRIMARY KEY,
-    bot_id VARCHAR(255) UNIQUE NOT NULL,      -- Identifier for the agent (e.g., "GestureBot", "AudioBot")
+    agent_id VARCHAR(255) UNIQUE NOT NULL,      -- Identifier for the agent (e.g., "GestureAgent", "AudioAgent")
     current_version INTEGER NOT NULL DEFAULT 1,
     config_parameters_json JSONB NOT NULL,    -- The actual configuration parameters for the agent
-    last_updated_by TEXT DEFAULT 'system',    -- Who or what updated this config (e.g., "LearningBot", "admin_user")
+    last_updated_by TEXT DEFAULT 'system',    -- Who or what updated this config (e.g., "LearningAgent", "admin_user")
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     notes TEXT                                -- Any notes about this configuration
 );
-COMMENT ON TABLE tria_bot_configurations IS 'Stores configurations for Tria''s agents.';
+COMMENT ON TABLE tria_agent_configurations IS 'Stores configurations for Tria''s agents.';
 
 -- Function to automatically update 'updated_at' timestamp (Optional, if not handled by application)
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()

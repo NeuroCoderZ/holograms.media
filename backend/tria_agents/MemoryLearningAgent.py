@@ -1,5 +1,5 @@
-# backend/tria_bots/MemoryLearningBot.py
-import asyncpg
+# backend/tria_agents/MemoryLearningAgent.py
+# Removed asyncpg
 import logging
 from typing import List, Dict, Any, Optional
 import httpx
@@ -16,19 +16,19 @@ logger = logging.getLogger(__name__)
 # URL of the Tria RAG Service
 RAG_SERVICE_URL = "http://127.0.0.1:8001/query"
 
-class MemoryLearningBot:
+class MemoryLearningAgent:
     """
-    Объединенный бот MemoryLearningBot, обеспечивающий память через RAG,
+    Объединенный агент MemoryLearningAgent, обеспечивающий память через RAG,
     самообучение через логирование взаимодействий и дообучение моделей,
     а также адаптацию с помощью маленькой нейросети на TensorFlow.js.
     """
 
-    def __init__(self, db_conn: asyncpg.Connection):
-        self.db_conn = db_conn
-        self.embedding_repo = EmbeddingRepository(self.db_conn)
+    def __init__(self, db: Any):
+        self.db = db
+        self.embedding_repo = EmbeddingRepository(self.db)
         self.rag_client = httpx.AsyncClient()
         self.learning_log_repo = None  # Можно добавить репозиторий для логов
-        logger.info("MemoryLearningBot initialized.")
+        logger.info("MemoryLearningAgent initialized.")
 
     async def retrieve_and_synthesize(self, query: str, session_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
@@ -44,10 +44,10 @@ class MemoryLearningBot:
             response.raise_for_status()
             return response.json()
         except httpx.RequestError as e:
-            logger.error(f"MemoryLearningBot: Ошибка связи с RAG сервисом {RAG_SERVICE_URL}: {e}")
+            logger.error(f"MemoryLearningAgent: Ошибка связи с RAG сервисом {RAG_SERVICE_URL}: {e}")
             return None
         except json.JSONDecodeError as e:
-            logger.error(f"MemoryLearningBot: Ошибка декодирования JSON ответа от RAG сервиса: {e}")
+            logger.error(f"MemoryLearningAgent: Ошибка декодирования JSON ответа от RAG сервиса: {e}")
             return None
 
     async def find_and_prepare_context(self, intent_vector: dict, session_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -105,7 +105,7 @@ class MemoryLearningBot:
         # Адаптация модели через TensorFlow.js
         await self.adapt_model_with_feedback(learning_data)
 
-        logger.info(f"MemoryLearningBot: Залогировано обучение для пользователя {learning_data.get('user_id', 'unknown')}")
+        logger.info(f"MemoryLearningAgent: Залогировано обучение для пользователя {learning_data.get('user_id', 'unknown')}")
 
     async def adapt_model_with_feedback(self, feedback_data: dict):
         """
@@ -121,11 +121,11 @@ class MemoryLearningBot:
             )
             stdout, stderr = await result.communicate()
             if result.returncode == 0:
-                logger.info("MemoryLearningBot: Модель адаптирована успешно.")
+                logger.info("MemoryLearningAgent: Модель адаптирована успешно.")
             else:
-                logger.error(f"MemoryLearningBot: Ошибка адаптации модели: {stderr.decode()}")
+                logger.error(f"MemoryLearningAgent: Ошибка адаптации модели: {stderr.decode()}")
         except Exception as e:
-            logger.error(f"MemoryLearningBot: Исключение при адаптации модели: {e}")
+            logger.error(f"MemoryLearningAgent: Исключение при адаптации модели: {e}")
 
     async def receive_search_request_from_orchestrator(self, search_query: str, session_id: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -139,7 +139,7 @@ class MemoryLearningBot:
         Отправляет результаты поиска обратно в Orchestrator.
         """
         await orchestrator_callback(results)
-        logger.info("MemoryLearningBot: Результаты отправлены в Orchestrator.")
+        logger.info("MemoryLearningAgent: Результаты отправлены в Orchestrator.")
 
     async def close(self):
         """

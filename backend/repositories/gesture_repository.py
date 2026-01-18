@@ -1,75 +1,92 @@
-import httpx
-import os
+from astrapy import Database
 from typing import List, Optional, Dict, Any
 import logging
+from datetime import datetime
 from backend.core.models.gesture_models import UserGestureDefinitionDB, UserGestureDefinitionCreate
 
 logger = logging.getLogger(__name__)
 
-# Base URL for the Tria API on Cloudflare. This should be in a config file.
-# For now, we'll define it here. We'll need to figure out the real URL structure.
-BASE_URL = os.getenv("TRIA_API_BASE_URL", "https://api.cloudflare.com/client/v4/accounts/your_account_id/tria")
-
 class GestureRepository:
-    def __init__(self, client: httpx.AsyncClient, api_key: str):
-        self.client = client
-        self.headers = {"Authorization": f"Bearer {api_key}"}
+    def __init__(self, db: Database):
+        self.db = db
+        self.collection = self.db.get_collection("user_gestures")
 
     async def get_gestures_by_user_id(self, user_id: str, skip: int = 0, limit: int = 100) -> List[UserGestureDefinitionDB]:
-        """
-        Fetches gestures for a user from the Tria Cloudflare API.
-        """
-        params = {"skip": skip, "limit": limit}
         try:
-            response = await self.client.get(
-                f"{BASE_URL}/users/{user_id}/gestures",
-                params=params,
-                headers=self.headers
+            cursor = self.collection.find(
+                filter={"user_id": user_id},
+                sort={"created_at": -1}, # Assuming created_at exists
+                limit=limit,
+                skip=skip
             )
-            response.raise_for_status()  # Raise an exception for 4xx or 5xx status codes
-            data = response.json()
-            return [UserGestureDefinitionDB(**item) for item in data]
-        except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error in GestureRepository.get_gestures_by_user_id for user {user_id}: {e}")
-            # Depending on the desired behavior, you might want to return an empty list or re-raise
-            return []
+            return [UserGestureDefinitionDB(id=str(row["_id"]), **row) for row in cursor]
         except Exception as e:
-            logger.error(f"Unexpected error in GestureRepository.get_gestures_by_user_id for user {user_id}: {e}")
-            return []
+            logger.error(f"Astra DB error in GestureRepository.get_gestures_by_user_id for user {user_id}: {e}")
+            raise
 
     async def create_gesture(self, user_id: str, gesture_in: UserGestureDefinitionCreate) -> Optional[UserGestureDefinitionDB]:
-        """
-        Creates a new gesture for a user via the Tria Cloudflare API.
-        """
+        now = datetime.utcnow().isoformat()
+        gesture_data = gesture_in.dict()
+        gesture_data["user_id"] = user_id
+        gesture_data["created_at"] = now
+        gesture_data["updated_at"] = now
+        
         try:
-            response = await self.client.post(
-                f"{BASE_URL}/users/{user_id}/gestures",
-                json=gesture_in.dict(),
-                headers=self.headers
-            )
-            if response.status_code == 409: # Conflict
-                 logger.warning(f"Gesture creation failed for user {user_id}, name '{gesture_in.gesture_name}': Conflict.")
-                 return None
-            response.raise_for_status()
-            return UserGestureDefinitionDB(**response.json())
-        except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error in GestureRepository.create_gesture for user {user_id}: {e}")
+            existing = self.collection.find_one({"user_id": user_id, "gesture_name": gesture_data["gesture_name"]})
+            if existing:
+                logger.warning(f"Gesture with name '{gesture_data['gesture_name']}' already exists for user {user_id}.")
+                return None
+
+            result = self.collection.insert_one(gesture_data)
+            if result and result.inserted_id:
+                gesture_data["id"] = str(result.inserted_id)
+                return UserGestureDefinitionDB(**gesture_data)
             return None
         except Exception as e:
-            logger.error(f"Unexpected error in GestureRepository.create_gesture for user {user_id}: {e}")
+            logger.error(f"Astra DB error in GestureRepository.create_gesture for user {user_id}: {e}")
+            raise
+
+    async def get_gesture_by_id(self, gesture_id: str, user_id: str) -> Optional[UserGestureDefinitionDB]:
+        try:
+            row = self.collection.find_one({"_id": gesture_id, "user_id": user_id})
+            if row:
+                return UserGestureDefinitionDB(id=str(row["_id"]), **row)
             return None
+        except Exception as e:
+            logger.error(f"Astra DB error in GestureRepository.get_gesture_by_id for id {gesture_id}: {e}")
+            raise
 
-    # ... other methods (get_gesture_by_id, update_gesture, delete_gesture) would be similarly refactored ...
-    # For now, I will stub them to return default values to avoid breaking the service layer.
+    async def update_gesture(self, gesture_id: str, user_id: str, gesture_update_data: Dict[str, Any]) -> Optional[UserGestureDefinitionDB]:
+        now = datetime.utcnow().isoformat()
+        gesture_update_data["updated_at"] = now
+        try:
+             # Check for name conflict
+            if "gesture_name" in gesture_update_data:
+                existing = self.collection.find_one({
+                    "user_id": user_id, 
+                    "gesture_name": gesture_update_data["gesture_name"],
+                    "_id": {"$ne": gesture_id}
+                })
+                if existing:
+                    logger.warning(f"Gesture name '{gesture_update_data['gesture_name']}' conflict for user {user_id}.")
+                    return None
 
-    async def get_gesture_by_id(self, gesture_id: int, user_id: str) -> Optional[UserGestureDefinitionDB]:
-        logger.warning("get_gesture_by_id is currently stubbed and not implemented for Cloudflare API.")
-        return None
+            result = self.collection.update_one(
+                {"_id": gesture_id, "user_id": user_id},
+                {"$set": gesture_update_data}
+            )
+            
+            if result.modified_count > 0 or result.matched_count > 0:
+                 return await self.get_gesture_by_id(gesture_id, user_id)
+            return None
+        except Exception as e:
+            logger.error(f"Astra DB error in GestureRepository.update_gesture for id {gesture_id}: {e}")
+            raise
 
-    async def update_gesture(self, gesture_id: int, user_id: str, gesture_update_data: Dict[str, Any]) -> Optional[UserGestureDefinitionDB]:
-        logger.warning("update_gesture is currently stubbed and not implemented for Cloudflare API.")
-        return None
-
-    async def delete_gesture(self, gesture_id: int, user_id: str) -> bool:
-        logger.warning("delete_gesture is currently stubbed and not implemented for Cloudflare API.")
-        return False
+    async def delete_gesture(self, gesture_id: str, user_id: str) -> bool:
+        try:
+            result = self.collection.delete_one({"_id": gesture_id, "user_id": user_id})
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error(f"Astra DB error in GestureRepository.delete_gesture for id {gesture_id}: {e}")
+            raise

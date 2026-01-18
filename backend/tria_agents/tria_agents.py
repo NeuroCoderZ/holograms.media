@@ -1,4 +1,4 @@
-# backend/tria_bots/tria_agents.py
+# backend/tria_agents/tria_agents.py
 import logging
 from typing import Dict, Any, List, Optional
 import httpx

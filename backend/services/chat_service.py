@@ -1,5 +1,5 @@
-import asyncpg
-from typing import List, Optional, Dict, Any
+# Removed asyncpg
+from typing import List, Optional, Dict, Any, Union
 import uuid # Для генерации заголовка сессии по умолчанию
 import logging
 
@@ -18,8 +18,8 @@ async def get_llm_response_stub(user_message: str, history: List[ChatMessageDB])
     return f"AI response to: {user_message}"
 
 class ChatService:
-    def __init__(self, conn: asyncpg.Connection):
-        self.repo = ChatRepository(conn)
+    def __init__(self, db: Any):
+        self.repo = ChatRepository(db)
 
     async def create_new_chat_session(self, user_id: str, session_title: Optional[str] = None) -> Optional[UserChatSessionDB]:
         """ Renamed session_in to session_title for directness, matching my planned version. """

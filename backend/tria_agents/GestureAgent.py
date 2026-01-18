@@ -1,14 +1,14 @@
-# backend/tria_bots/GestureBot.py
+# backend/tria_agents/GestureAgent.py
 """
-GestureBot - бот для обработки жестов пользователя.
+GestureAgent - агент для обработки жестов пользователя.
 
-Этот бот предсказывает текущие жесты пользователя для вызова сохраненных жестов и голограмм из списков,
-регулирует параметры AVBot на основе предсказаний, использует маленькую нейросеть на TensorFlow.js для предсказаний,
-интегрирует методы для взаимодействия с Orchestrator (получение данных от камеры, отправка команд на AVBot и списки).
+Этот агент предсказывает текущие жесты пользователя для вызова сохраненных жестов и голограмм из списков,
+регулирует параметры AVAgent на основе предсказаний, использует маленькую нейросеть на TensorFlow.js для предсказаний,
+интегрирует методы для взаимодействия с Orchestrator (получение данных от камеры, отправка команд на AVAgent и списки).
 Использует асинхронные методы и документирован на русском языке.
 """
 
-import asyncpg
+# Removed asyncpg
 import logging
 import asyncio
 import subprocess
@@ -17,23 +17,16 @@ from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
-class GestureBot:
+class GestureAgent:
     """
-    Класс GestureBot для обработки и предсказания жестов.
+    Класс GestureAgent для обработки и предсказания жестов.
     """
 
-    def __init__(self, db_conn: asyncpg.Connection, av_bot=None, orchestrator=None):
-        """
-        Инициализация GestureBot.
-
-        :param db_conn: Соединение с базой данных.
-        :param av_bot: Ссылка на AVBot для регулировки параметров.
-        :param orchestrator: Ссылка на Orchestrator для взаимодействия.
-        """
-        self.db_conn = db_conn
-        self.av_bot = av_bot
+    def __init__(self, db: Any, av_agent=None, orchestrator=None):
+        self.db = db
+        self.av_agent = av_agent
         self.orchestrator = orchestrator
-        logger.info("GestureBot инициализирован.")
+        logger.info("GestureAgent инициализирован.")
 
     async def analyze_raw_gesture(self, raw_gesture_data: dict) -> dict:
         """
@@ -48,8 +41,8 @@ class GestureBot:
         # Вызвать сохраненные жесты или голограммы на основе предсказания
         await self._invoke_saved_gestures(predicted_gesture)
         
-        # Регулировать параметры AVBot
-        await self._adjust_av_bot(predicted_gesture)
+        # Регулировать параметры AVAgent
+        await self._adjust_av_agent(predicted_gesture)
         
         intent_vector = {
             "type": raw_gesture_data.get("intent", "unknown"),
@@ -57,7 +50,7 @@ class GestureBot:
             "target_context": raw_gesture_data.get("context", {}),
             "predicted_gesture": predicted_gesture
         }
-        logger.info(f"GestureBot: Анализированы данные, вектор намерения: {intent_vector}")
+        logger.info(f"GestureAgent: Анализированы данные, вектор намерения: {intent_vector}")
         return intent_vector
 
     async def _predict_gesture(self, gesture_data: dict) -> str:
@@ -90,29 +83,23 @@ class GestureBot:
         """
         # Логика вызова из базы данных или списков
         # Например, запрос к базе для получения связанных голограмм
-        try:
-            query = "SELECT * FROM saved_gestures WHERE gesture_type = $1"
-            rows = await self.db_conn.fetch(query, predicted_gesture)
-            for row in rows:
-                logger.info(f"Вызван сохраненный жест: {row['name']}")
-                # Дополнительная логика вызова
-        except Exception as e:
-            logger.error(f"Ошибка вызова сохраненных жестов: {e}")
+        # TODO: Implement Astra DB retrieval for saved gestures
+        logger.info(f"Checking for saved gestures for prediction: {predicted_gesture}")
 
-    async def _adjust_av_bot(self, predicted_gesture: str) -> None:
+    async def _adjust_av_agent(self, predicted_gesture: str) -> None:
         """
-        Регулирует параметры AVBot на основе предсказания.
+        Регулирует параметры AVAgent на основе предсказания.
 
         :param predicted_gesture: Предсказанный жест.
         """
-        if self.av_bot:
+        if self.av_agent:
             command = {
                 "type": "adjust_params",
                 "gesture": predicted_gesture,
                 "params": {"volume": 0.8 if predicted_gesture == 'wave' else 0.5}  # Пример
             }
-            await self.av_bot.receive_command(command)
-            logger.info(f"Отправлена команда на AVBot: {command}")
+            await self.av_agent.receive_command(command)
+            logger.info(f"Отправлена команда на AVAgent: {command}")
 
     async def receive_camera_data(self, camera_data: dict) -> None:
         """
@@ -124,15 +111,15 @@ class GestureBot:
         logger.info(f"Получены данные от камеры: {camera_data}")
         # Можно вызвать analyze_raw_gesture с этими данными
 
-    async def send_command_to_av_bot(self, command: dict) -> None:
+    async def send_command_to_av_agent(self, command: dict) -> None:
         """
-        Отправляет команду на AVBot.
+        Отправляет команду на AVAgent.
 
-        :param command: Команда для AVBot.
+        :param command: Команда для AVAgent.
         """
-        if self.av_bot:
-            await self.av_bot.receive_command(command)
-            logger.info(f"Отправлена команда на AVBot: {command}")
+        if self.av_agent:
+            await self.av_agent.receive_command(command)
+            logger.info(f"Отправлена команда на AVAgent: {command}")
 
     async def get_saved_lists(self) -> List[dict]:
         """
@@ -140,10 +127,5 @@ class GestureBot:
 
         :return: Список сохраненных элементов.
         """
-        try:
-            query = "SELECT * FROM saved_gestures"
-            rows = await self.db_conn.fetch(query)
-            return [dict(row) for row in rows]
-        except Exception as e:
-            logger.error(f"Ошибка получения списков: {e}")
-            return []
+        # TODO: Implement Astra DB retrieval for saved lists
+        return []

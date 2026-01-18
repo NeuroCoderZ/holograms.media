@@ -27,7 +27,7 @@ class HologramSemanticEmbedding(BaseUUIDModel):
     )
     learning_targets: Dict[str, Any] = Field(
         default_factory=dict, 
-        description="JSON object with instructions/priorities for LearningBot regarding this embedding's adaptation (e.g., {'refinement_priority': 'high', 'data_sources': ['user_interactions', 'azr_cycles'], 'feedback_metric': 'accuracy'})."
+        description="JSON object with instructions/priorities for LearningAgent regarding this embedding's adaptation (e.g., {'refinement_priority': 'high', 'data_sources': ['user_interactions', 'azr_cycles'], 'feedback_metric': 'accuracy'})."
     )
     evolution_timestamps: Dict[str, Any] = Field(
         default_factory=dict, 

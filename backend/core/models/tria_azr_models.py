@@ -15,8 +15,8 @@ class TriaAZRTask(BaseUUIDModel):
     status: AZR_TASK_STATUSES = Field(default="pending", description="Current status of the task.") # Using Literal
     priority: int = Field(default=0, description="Priority of the task.")
     complexity_score: Optional[float] = Field(default=None, description="Estimated complexity of the task.")
-    generation_source: str = Field(..., description="Source that generated this task (e.g., LearningBot_AnomalyDetection, UserFeedback_BotX_Performance).")
-    related_bot_id: Optional[str] = Field(default=None, description="ID of the agent primarily related to this task, if any.")
+    generation_source: str = Field(..., description="Source that generated this task (e.g., LearningAgent_AnomalyDetection, UserFeedback_AgentX_Performance).")
+    related_agent_id: Optional[str] = Field(default=None, description="ID of the agent primarily related to this task, if any.")
     started_at: Optional[datetime] = Field(default=None, description="Timestamp when the task processing started.")
     completed_at: Optional[datetime] = Field(default=None, description="Timestamp when the task was completed or aborted.")
     metadata_json: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata for the task in JSON format.")
@@ -32,7 +32,7 @@ class TriaAZRTask(BaseUUIDModel):
                     "priority": 1,
                     "complexity_score": 0.7,
                     "generation_source": "SystemGoal_RAG_Optimization",
-                    "related_bot_id": "MemoryBot.py",
+                    "related_agent_id": "MemoryAgent.py",
                     "created_at": "2024-05-29T10:00:00Z",
                     "updated_at": "2024-05-29T10:00:00Z",
                     "metadata_json": {"target_metric": "RAG_recall@5"}
@@ -69,7 +69,7 @@ class TriaAZRTaskSolution(BaseUUIDModel):
 # TriaLearningLogModel exists in learning_log_models.py
 class TriaLearningLogEntry(BaseUUIDModel):
     event_type: str = Field(..., description="Type of the learning event (e.g., parameter_tune_proposed, azr_task_generated, user_feedback_processed).")
-    bot_affected_id: Optional[str] = Field(default=None, description="ID of the agent affected by this learning event, if any.")
+    agent_affected_id: Optional[str] = Field(default=None, description="ID of the agent affected by this learning event, if any.")
     summary_text: str = Field(..., description="A concise summary of the learning event.")
     details_json: Dict[str, Any] = Field(default_factory=dict, description="Detailed information about the event in JSON format.")
 
@@ -88,12 +88,12 @@ class TriaLearningLogEntry(BaseUUIDModel):
             ]
         }
 
-class TriaBotConfiguration(BaseUUIDModel):
-    bot_id: str = Field(..., description="Identifier for the agent this configuration applies to (e.g., GestureBot.py, MemoryBot.py).")
+class TriaAgentConfiguration(BaseUUIDModel):
+    agent_id: str = Field(..., description="Identifier for the agent this configuration applies to (e.g., GestureAgent.py, MemoryAgent.py).")
     version: int = Field(default=1, description="Version number of this configuration for the specific agent.")
     config_parameters_json: Dict[str, Any] = Field(..., description="The actual configuration parameters for the agent.")
     description: str = Field(..., description="Description of this configuration and its purpose or changes.")
-    created_by: str = Field(..., description="Entity that created this configuration (e.g., LearningBot_AZR_Cycle_XYZ, HumanDeveloper_Admin).")
+    created_by: str = Field(..., description="Entity that created this configuration (e.g., LearningAgent_AZR_Cycle_XYZ, HumanDeveloper_Admin).")
     is_active: bool = Field(default=False, description="Whether this configuration is currently active for the agent.")
     previous_config_id: Optional[UUID] = Field(default=None, description="ID of the configuration this one was derived from, for rollback purposes.")
 
@@ -103,11 +103,11 @@ class TriaBotConfiguration(BaseUUIDModel):
             "examples": [
                 {
                     "id": "d3eebc99-9c0b-4ef8-bb6d-6bb9bd380a44",
-                    "bot_id": "MemoryBot.py",
+                    "agent_id": "MemoryAgent.py",
                     "version": 2,
                     "config_parameters_json": {"embedding_threshold": 0.75, "max_retrieved_docs": 5},
                     "description": "Increased embedding threshold for higher precision.",
-                    "created_by": "LearningBot_AZR_Cycle_123",
+                    "created_by": "LearningAgent_AZR_Cycle_123",
                     "is_active": True,
                     "created_at": "2024-05-29T13:00:00Z",
                     "updated_at": "2024-05-29T13:00:00Z",

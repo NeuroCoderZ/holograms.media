@@ -1,6 +1,6 @@
 # backend/services/gesture_intent_service.py
 import logging
-import asyncpg
+# Removed asyncpg
 import numpy as np
 import os # Для доступа к GOOGLE_APPLICATION_CREDENTIALS
 from typing import List, Dict, Any, Optional
@@ -47,10 +47,10 @@ for key in SEMANTIC_DIRECTIONS:
 
 
 class GestureIntentService:
-    def __init__(self, conn: asyncpg.Connection):
-        self.conn = conn
-        self.embedding_repo = EmbeddingRepository(conn)
-        self.learning_log_repo = LearningLogRepository(conn) # <-- Инициализируем новый репозиторий
+    def __init__(self, db: Any):
+        self.db = db
+        self.embedding_repo = EmbeddingRepository(self.db)
+        self.learning_log_repo = LearningLogRepository(self.db)
         self.embedding_model_name = "models/text-embedding-004" # Имя модели для Google AI SDK
 
     # async def _get_embedding(self, text: str) -> Optional[List[float]]:
@@ -159,7 +159,7 @@ class GestureIntentService:
 
     async def _log_interaction(self, user_id: str, intent_vector: dict, context_embedding: Optional[Any], action_result_status: str, message: str, modified_embedding_id: Optional[UUID] = None):
         # Убедимся, что context_embedding не None перед доступом к его id
-        # context_embedding_id может быть None, если, например, контекст не был найден MemoryBot'ом
+        # context_embedding_id может быть None, если, например, контекст не был найден MemoryAgent'ом
         # или если проверка аффордансов произошла до того, как context_embedding был получен (что не должно быть, но для безопасности)
 
         current_context_embedding_id = None

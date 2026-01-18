@@ -1,4 +1,4 @@
-import asyncpg
+# Removed asyncpg
 from typing import List, Optional, Dict, Any
 import logging
 
@@ -10,8 +10,8 @@ from backend.core.models import (
 logger = logging.getLogger(__name__)
 
 class PromptService:
-    def __init__(self, conn: asyncpg.Connection):
-        self.repo = PromptRepository(conn)
+    def __init__(self, db: Any):
+        self.repo = PromptRepository(db)
 
     async def create_new_prompt_version(self, user_id: str, prompt_data: UserPromptVersionCreate) -> Optional[UserPromptVersionDB]:
         """

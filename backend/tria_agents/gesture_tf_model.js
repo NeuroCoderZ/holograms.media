@@ -1,4 +1,4 @@
-// backend/tria_bots/gesture_tf_model.js
+// backend/tria_agents/gesture_tf_model.js
 // Маленькая нейросеть на TensorFlow.js для предсказания жестов
 
 const tf = require('@tensorflow/tfjs-node'); // Используем node версию для сервера
@@ -9,10 +9,10 @@ let gestureModel;
 async function initGestureModel() {
     if (!gestureModel) {
         gestureModel = tf.sequential();
-        gestureModel.add(tf.layers.dense({inputShape: [20], units: 10, activation: 'relu'})); // Вход: 20 признаков жеста
-        gestureModel.add(tf.layers.dense({units: 5, activation: 'relu'})); // Скрытый слой
-        gestureModel.add(tf.layers.dense({units: 3, activation: 'softmax'})); // Выход: 3 класса жестов (например, wave, point, fist)
-        gestureModel.compile({optimizer: 'adam', loss: 'categoricalCrossentropy', metrics: ['accuracy']});
+        gestureModel.add(tf.layers.dense({ inputShape: [20], units: 10, activation: 'relu' })); // Вход: 20 признаков жеста
+        gestureModel.add(tf.layers.dense({ units: 5, activation: 'relu' })); // Скрытый слой
+        gestureModel.add(tf.layers.dense({ units: 3, activation: 'softmax' })); // Выход: 3 класса жестов (например, wave, point, fist)
+        gestureModel.compile({ optimizer: 'adam', loss: 'categoricalCrossentropy', metrics: ['accuracy'] });
         console.log('Модель предсказания жестов инициализирована.');
     }
 }
@@ -25,7 +25,7 @@ async function trainGestureModel(gestureData) {
     const labels = tf.tensor2d([gestureData.label || [1, 0, 0]]); // One-hot encoded labels
 
     // Обучить модель
-    await gestureModel.fit(tf.tensor2d([features]), labels, {epochs: 1});
+    await gestureModel.fit(tf.tensor2d([features]), labels, { epochs: 1 });
     console.log('Модель жестов обучена на основе данных.');
 }
 
@@ -59,7 +59,7 @@ async function main() {
         await trainGestureModel(gestureData);
     } else {
         const prediction = await predictGesture(gestureData);
-        console.log(JSON.stringify({prediction}));
+        console.log(JSON.stringify({ prediction }));
     }
 }
 

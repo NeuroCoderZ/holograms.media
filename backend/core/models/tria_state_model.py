@@ -18,4 +18,4 @@ class TriaResponse(BaseModel):
     status: str
     message: Optional[str] = None
     data: Optional[Dict[str, Any]] = None
-    active_bots: Optional[List[str]] = None
+    active_agents: Optional[List[str]] = None

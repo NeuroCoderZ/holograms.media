@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from typing import List, Optional, Dict
-import asyncpg
+# Removed asyncpg
 import logging
 
 from backend.services.prompt_service import PromptService
 from backend.core import models as core_models
 from backend.auth import security
-from backend.core.db.pg_connector import get_db_connection
+from backend.core.db.astra_connector import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +19,9 @@ router = APIRouter(
 async def create_prompt_version_endpoint(
     prompt_in: core_models.UserPromptVersionCreate,
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    prompt_service = PromptService(db_conn)
+    prompt_service = PromptService(db)
     created_prompt_version = await prompt_service.create_new_prompt_version(
         user_id=current_user.user_id,
         prompt_data=prompt_in
@@ -34,9 +34,9 @@ async def create_prompt_version_endpoint(
 @router.get("/titles/", response_model=List[core_models.UserPromptTitleInfo])
 async def list_prompt_titles_endpoint(
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    prompt_service = PromptService(db_conn)
+    prompt_service = PromptService(db)
     titles = await prompt_service.list_user_prompt_titles(user_id=current_user.user_id)
     return titles
 
@@ -61,9 +61,9 @@ async def list_versions_for_prompt_title_endpoint(
 async def get_latest_prompt_version_endpoint(
     prompt_title: str = Path(..., description="The title of the prompt."),
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    prompt_service = PromptService(db_conn)
+    prompt_service = PromptService(db)
             latest_version = await prompt_service.get_latest_prompt_version(
                 prompt_title=prompt_title,
                 user_id=current_user.user_id    )
@@ -76,9 +76,9 @@ async def get_specific_prompt_version_endpoint(
     prompt_title: str = Path(..., description="The title of the prompt."),
     version_number: int = Path(..., description="The version number of the prompt."),
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    prompt_service = PromptService(db_conn)
+    prompt_service = PromptService(db)
     prompt_version = await prompt_service.get_prompt_version(
         prompt_title=prompt_title,
         version_number=version_number,
@@ -92,9 +92,9 @@ async def get_specific_prompt_version_endpoint(
 async def get_prompt_version_by_id_endpoint(
     prompt_version_id: int = Path(..., description="The specific ID of the prompt version."),
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    prompt_service = PromptService(db_conn)
+    prompt_service = PromptService(db)
     prompt_version = await prompt_service.get_prompt_version_by_id(
         prompt_version_id=prompt_version_id,
         user_id=current_user.user_id
@@ -107,9 +107,9 @@ async def get_prompt_version_by_id_endpoint(
 async def delete_prompt_version_endpoint(
     prompt_version_id: int = Path(..., description="The ID of the prompt version to delete."),
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    prompt_service = PromptService(db_conn)
+    prompt_service = PromptService(db)
     deleted = await prompt_service.delete_prompt_version(
         prompt_version_id=prompt_version_id,
         user_id=current_user.user_id
@@ -122,9 +122,9 @@ async def delete_prompt_version_endpoint(
 async def delete_all_versions_for_prompt_title_endpoint(
     prompt_title: str = Path(..., description="The title of the prompt for which all versions will be deleted."),
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    prompt_service = PromptService(db_conn)
+    prompt_service = PromptService(db)
     deleted_count = await prompt_service.delete_prompt_by_title(
         prompt_title=prompt_title,
         user_id=current_user.user_id

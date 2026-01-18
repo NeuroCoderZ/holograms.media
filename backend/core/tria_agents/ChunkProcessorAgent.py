@@ -1,4 +1,4 @@
-import asyncpg
+# Removed asyncpg
 from typing import Dict, Any, Optional
 from uuid import UUID, uuid4
 from datetime import datetime
@@ -11,29 +11,29 @@ from ..crud_operations import create_audiovisual_gestural_chunk, create_tria_lea
 # Configure logging for this module
 logger = logging.getLogger(__name__)
 
-class ChunkProcessorBot:
+class ChunkProcessorAgent:
     """
-    The ChunkProcessorBot is responsible for handling the initial processing and storage
+    The ChunkProcessorAgent is responsible for handling the initial processing and storage
     of metadata for audiovisual and gestural interaction chunks. This agent acts as a crucial
-    interface between file uploads (e.g., from Firebase Storage) and the database persistence layer.
+    interface between file uploads (e.g., from Object Storage) and the database persistence layer.
     """
     def __init__(self):
         """
-        Initializes the ChunkProcessorBot. Currently, no specific external configurations
+        Initializes the ChunkProcessorAgent. Currently, no specific external configurations
         or service dependencies are required at this stage of initialization, as database
         connections are passed at method invocation.
         """
         pass
 
-    async def process_chunk_metadata(self, db: asyncpg.Connection, chunk_metadata: Dict[str, Any]) -> AudiovisualGesturalChunkModel:
+    async def process_chunk_metadata(self, db: Any, chunk_metadata: Dict[str, Any]) -> AudiovisualGesturalChunkModel:
         """
         Processes the provided raw chunk metadata dictionary. It validates required fields,
         converts the dictionary into an `AudiovisualGesturalChunkModel` instance, and then
-        persists this model to the PostgreSQL database via CRUD operations. It also logs
+        persists this model to the database via CRUD operations. It also logs
         the successful processing to the Tria learning log.
 
         Args:
-            db (asyncpg.Connection): An active asynchronous database connection object.
+            db (Any): An active database connection object (Astra DB).
             chunk_metadata (Dict[str, Any]): A dictionary containing the raw metadata for the chunk.
                                              Expected keys and their types are detailed below.
 
@@ -41,7 +41,7 @@ class ChunkProcessorBot:
             - `chunk_id` (str: UUID string): The unique identifier for the chunk. Used as `id` for the model.
             - `user_id` (str): The ID of the user who owns this chunk.
             - `chunk_type` (str): The type of the chunk (e.g., "audio", "video", "gesture").
-            - `storage_ref` (str): The reference/path to the stored chunk in Firebase Storage (e.g., "gs://bucket/path/to/file").
+            - `storage_ref` (str): The reference/path to the stored chunk in Object Storage (e.g., "bucket/path/to/file").
             - `original_filename` (Optional[str]): The original filename provided by the user.
             - `mime_type` (Optional[str]): The MIME type of the chunk content.
             - `duration_seconds` (Optional[float]): Duration of the chunk in seconds.
@@ -61,10 +61,9 @@ class ChunkProcessorBot:
 
         Raises:
             ValueError: If any critical required fields (`chunk_id`, `user_id`, `chunk_type`, `storage_ref`) are missing or invalid.
-            asyncpg.PostgresError: If a database-specific error occurs during the insertion operation.
             Exception: For any other unexpected errors during processing or model validation.
         """
-        logger.info(f"ChunkProcessorBot received chunk_metadata for processing.")
+        logger.info(f"ChunkProcessorAgent received chunk_metadata for processing.")
         logger.debug(f"Received chunk_metadata: {chunk_metadata}")
 
         # --- Pre-validation of required fields ---
@@ -134,7 +133,7 @@ class ChunkProcessorBot:
                 log_entry_data = {
                     "timestamp": datetime.utcnow(), # Use UTC for consistency
                     "event_type": "chunk_metadata_processed",
-                    "bot_affected_id": self.__class__.__name__, # Use class name for agent ID
+                    "agent_affected_id": self.__class__.__name__, # Use class name for agent ID
                     "summary_text": f"Successfully processed metadata for chunk: {saved_chunk_model.id}",
                     "custom_data": log_details,
                     "user_id": saved_chunk_model.user_id # Explicitly pass user_id for logging context

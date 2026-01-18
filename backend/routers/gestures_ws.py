@@ -1,7 +1,7 @@
 # backend/routers/gestures_ws.py
 import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-import asyncpg
+# from astrapy import Database # Will be injected via Depends
 
 # Импортируем сервис после того, как он будет создан.
 # Для корректной работы FastAPI при запуске, лучше, чтобы импорт был сверху.
@@ -10,7 +10,7 @@ import asyncpg
 # Поскольку мы создаем сервис на следующем шаге, пока оставляем как есть.
 # from backend.services.gesture_intent_service import GestureIntentService # Заменено на CoordinationService
 from backend.tria_agents.CoordinationService import CoordinationService # <-- НОВЫЙ ИМПОРТ
-from backend.core.db.pg_connector import get_db_connection
+from backend.core.db.astra_connector import get_db
 # Для аутентификации предполагается, что UserInDB импортируется security
 from backend.auth.security import get_optional_current_active_user_ws
 from typing import Any
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 async def websocket_endpoint(
     websocket: WebSocket,
     user: Optional[dict] = Depends(get_optional_current_active_user_ws),
-    db: Any = Depends(get_db_connection),
+    db: Any = Depends(get_db),
 ):
     # Note: get_current_active_user_ws might raise 401 if token is missing.
     # To allow anonymous access for testing, we might need a custom dependency.

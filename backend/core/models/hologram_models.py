@@ -55,7 +55,7 @@ class UserHologramCreate(UserHologramBase):
     pass
 
 class UserHologramDB(UserHologramBase):
-    id: int
+    id: str # Changed from int to str for Astra DB compatibility
     user_id: str # The user's unique ID
     created_at: datetime
     updated_at: datetime
@@ -85,7 +85,7 @@ class SceneElementUpdate(BaseModel):
     # Add other updatable fields
 
 class UserHologramResponseModel(BaseModel):
-    id: int # Changed from hologram_id: UUID to id: int
+    id: str # Changed from int to str
     hologram_name: str
     created_at: datetime
     preview_url: Optional[str] = Field(default=None, description="URL for the hologram preview image")

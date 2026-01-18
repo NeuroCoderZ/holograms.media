@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Dict, Any, Optional
-import asyncpg
+# Removed asyncpg
 
 from backend.services.hologram_service import HologramService
 from backend.core import models as core_models # Updated import
 from backend.auth import security
-from backend.core.db.pg_connector import get_db_connection
+from backend.core.db.astra_connector import get_db
 # from pydantic import Field # Field might not be needed if HologramUpdate is simple
 
 router = APIRouter(
@@ -19,9 +19,9 @@ router = APIRouter(
 async def create_new_user_hologram(
     hologram_in: core_models.UserHologramCreate,
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    hologram_service = HologramService(db_conn)
+    hologram_service = HologramService(db)
     try:
         # print(f"[HOLOGRAM ROUTER INFO] User {current_user.user_id} creating hologram: {hologram_in.hologram_name}")
         created_hologram = await hologram_service.create_new_user_hologram(
@@ -57,9 +57,9 @@ async def list_user_holograms(
 async def get_specific_user_hologram(
     hologram_id: int,
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    hologram_service = HologramService(db_conn)
+    hologram_service = HologramService(db)
     # print(f"[HOLOGRAM ROUTER INFO] User {current_user.user_id} fetching hologram ID: {hologram_id}")
     hologram = await hologram_service.get_specific_user_hologram(
         hologram_id=hologram_id, user_id=current_user.user_id
@@ -75,9 +75,9 @@ async def update_existing_user_hologram(
     hologram_id: int,
     hologram_update: core_models.HologramUpdate, # Use HologramUpdate from core_models
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    hologram_service = HologramService(db_conn)
+    hologram_service = HologramService(db)
     update_data = hologram_update.dict(exclude_unset=True)
 
     if not update_data:
@@ -98,9 +98,9 @@ async def update_existing_user_hologram(
 async def delete_user_saved_hologram(
     hologram_id: int,
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    hologram_service = HologramService(db_conn)
+    hologram_service = HologramService(db)
     # print(f"[HOLOGRAM ROUTER INFO] User {current_user.user_id} deleting hologram ID: {hologram_id}")
     deleted = await hologram_service.delete_user_saved_hologram(
         hologram_id=hologram_id, user_id=current_user.user_id

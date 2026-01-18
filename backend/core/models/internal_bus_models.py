@@ -8,8 +8,8 @@ from .base_models import current_time_utc # For default timestamp
 class InternalMessage(BaseModel):
     message_id: UUID = Field(default_factory=uuid4, description="Unique identifier for this message.")
     timestamp: datetime = Field(default_factory=current_time_utc, description="Timestamp when the message was created.")
-    source_service: str = Field(..., description="Identifier of the service that originated this message (e.g., 'GestureBot', 'FrontendClient', 'NetHoloGlyphService').")
-    target_service: Optional[str] = Field(default=None, description="Identifier of the intended recipient service, if specific (e.g., 'CoordinationService', 'MemoryBot'). Can be None for broadcast-like events.")
+    source_service: str = Field(..., description="Identifier of the service that originated this message (e.g., 'GestureAgent', 'FrontendClient', 'NetHoloGlyphService').")
+    target_service: Optional[str] = Field(default=None, description="Identifier of the intended recipient service, if specific (e.g., 'CoordinationService', 'MemoryAgent'). Can be None for broadcast-like events.")
     event_type: str = Field(..., description="Type of the event or message (e.g., 'new_gesture_chunk_received', 'tria_state_update_request', 'holographic_symbol_render_command').")
     payload: Dict[str, Any] = Field(default_factory=dict, description="The actual data payload of the message. Structure depends on event_type.")
     correlation_id: Optional[str] = Field(default=None, description="Optional ID to correlate related messages, e.g., a request and its subsequent response or a series of events in a flow.")

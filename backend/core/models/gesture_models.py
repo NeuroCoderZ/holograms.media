@@ -27,11 +27,11 @@ class InterpretedGestureSequenceBase(BaseModel):
     raw_data_references: Optional[List[str]] = Field(default_factory=list, description="Links to original chunk IDs or time-series data if applicable")
 
 class InterpretedGestureSequenceCreate(InterpretedGestureSequenceBase):
-    chunk_id: int # Foreign key to audiovisual_gestural_chunks
+    chunk_id: str # Foreign key to audiovisual_gestural_chunks
     user_id: str  # The user's unique ID, foreign key to users
 
 class InterpretedGestureSequenceDB(InterpretedGestureSequenceBase):
-    id: int # Primary key for gesture_sequences table
+    id: str # Primary key for gesture_sequences table
     user_id: str # The user's unique ID
     created_at: datetime
 
@@ -45,14 +45,14 @@ class UserGestureDefinitionBase(BaseModel):
     # gesture_definition could be a specific sequence of primitives, parameters for a dynamic gesture,
     # or a learned model reference.
     gesture_definition: Dict[str, Any] = Field(..., description="User-defined parameters or sequence for the gesture")
-    gesture_data_ref: Optional[int] = Field(None, description="Optional link to an example audiovisual_gestural_chunks.id")
+    gesture_data_ref: Optional[str] = Field(None, description="Optional link to an example audiovisual_gestural_chunks.id")
 
 class UserGestureDefinitionCreate(UserGestureDefinitionBase):
     pass # user_id will be provided at the service layer
 
 class UserGestureDefinitionDB(UserGestureDefinitionBase):
-    id: int
-    user_id: str # Firebase UID
+    id: str
+    user_id: str # User ID
     created_at: datetime
     updated_at: datetime
 
@@ -80,7 +80,7 @@ class GestureUpdate(UserGestureDefinitionBase):
     """
     gesture_name: Optional[str] = Field(None, min_length=1, max_length=100) # Re-declare to make Optional
     gesture_definition: Optional[Dict[str, Any]] = Field(None) # Re-declare to make Optional
-    gesture_data_ref: Optional[int] = Field(None) # Re-declare to make Optional
+    gesture_data_ref: Optional[str] = Field(None) # Re-declare to make Optional
 
     # The __init__ from the router that filtered None values is not strictly necessary
     # if Pydantic's exclude_unset=True or exclude_none=True is used correctly when calling .dict().

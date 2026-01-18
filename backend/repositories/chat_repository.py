@@ -1,7 +1,8 @@
-import asyncpg
+from astrapy import Database
 from typing import List, Optional, Dict, Any
 import logging
-from backend.core.models import ( # Updated to use __init__
+from datetime import datetime
+from backend.core.models import (
     UserChatSessionDB, UserChatSessionCreate,
     ChatMessageDB, ChatMessageCreate, ChatMessagePublic
 )
@@ -9,156 +10,126 @@ from backend.core.models import ( # Updated to use __init__
 logger = logging.getLogger(__name__)
 
 class ChatRepository:
-    def __init__(self, conn: asyncpg.Connection):
-        self.conn = conn
+    def __init__(self, db: Database):
+        self.db = db
+        self.sessions_collection = self.db.get_collection("user_chat_sessions")
+        self.history_collection = self.db.get_collection("chat_history")
 
     async def create_chat_session(self, user_id: str, session_in: UserChatSessionCreate) -> Optional[UserChatSessionDB]:
-        sql = """
-            INSERT INTO user_chat_sessions (user_id, session_title)
-            VALUES ($1, $2)
-            RETURNING id, user_id, session_title, created_at, updated_at;
-        """
+        now = datetime.utcnow().isoformat()
+        session_data = {
+            "user_id": user_id,
+            "session_title": session_in.session_title,
+            "created_at": now,
+            "updated_at": now
+        }
         try:
-            row = await self.conn.fetchrow(sql, user_id, session_in.session_title)
-            return UserChatSessionDB(**dict(row)) if row else None
-        except asyncpg.PostgresError as e:
-            logger.error(f"DB error in ChatRepository.create_chat_session for user {user_id}, title '{session_in.session_title}': {e}")
-            raise
+            result = self.sessions_collection.insert_one(session_data)
+            if result and result.inserted_id:
+                session_data["id"] = str(result.inserted_id)
+                return UserChatSessionDB(**session_data)
+            return None
         except Exception as e:
-            logger.error(f"Unexpected error in ChatRepository.create_chat_session for user {user_id}, title '{session_in.session_title}': {e}")
+            logger.error(f"Astra DB error in ChatRepository.create_chat_session for user {user_id}: {e}")
             raise
 
     async def get_chat_sessions_by_user_id(self, user_id: str, skip: int = 0, limit: int = 100) -> List[UserChatSessionDB]:
-        sql = """
-            SELECT id, user_id, session_title, created_at, updated_at
-            FROM user_chat_sessions
-            WHERE user_id = $1
-            ORDER BY updated_at DESC
-            OFFSET $2
-            LIMIT $3;
-        """
         try:
-            rows = await self.conn.fetch(sql, user_id, skip, limit)
-            return [UserChatSessionDB(**dict(row)) for row in rows]
-        except asyncpg.PostgresError as e:
-            logger.error(f"DB error in ChatRepository.get_chat_sessions_by_user_id for user {user_id}: {e}")
-            raise
+            # Astra DB find with sort and limit
+            # Note: skip/offset might be handled differently in some versions of astrapy find
+            # but usually it's find(filter, skip=skip, limit=limit)
+            cursor = self.sessions_collection.find(
+                filter={"user_id": user_id},
+                sort={"updated_at": -1},
+                limit=limit,
+                skip=skip
+            )
+            return [UserChatSessionDB(id=str(row["_id"]), **row) for row in cursor]
         except Exception as e:
-            logger.error(f"Unexpected error in ChatRepository.get_chat_sessions_by_user_id for user {user_id}: {e}")
+            logger.error(f"Astra DB error in ChatRepository.get_chat_sessions_by_user_id for user {user_id}: {e}")
             raise
 
-    async def get_chat_session_by_id(self, session_id: int, user_id: str) -> Optional[UserChatSessionDB]:
-        sql = """
-            SELECT id, user_id, session_title, created_at, updated_at
-            FROM user_chat_sessions
-            WHERE id = $1 AND user_id = $2;
-        """
+    async def get_chat_session_by_id(self, session_id: str, user_id: str) -> Optional[UserChatSessionDB]:
         try:
-            row = await self.conn.fetchrow(sql, session_id, user_id)
-            return UserChatSessionDB(**dict(row)) if row else None
-        except asyncpg.PostgresError as e:
-            logger.error(f"DB error in ChatRepository.get_chat_session_by_id for session_id {session_id}, user {user_id}: {e}")
-            raise
+            row = self.sessions_collection.find_one({"_id": session_id, "user_id": user_id})
+            if row:
+                return UserChatSessionDB(id=str(row["_id"]), **row)
+            return None
         except Exception as e:
-            logger.error(f"Unexpected error in ChatRepository.get_chat_session_by_id for session_id {session_id}, user {user_id}: {e}")
+            logger.error(f"Astra DB error in ChatRepository.get_chat_session_by_id for session {session_id}: {e}")
             raise
 
-    async def update_chat_session_title(self, session_id: int, user_id: str, title: str) -> Optional[UserChatSessionDB]:
-        sql = """
-            UPDATE user_chat_sessions
-            SET session_title = $1, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $2 AND user_id = $3
-            RETURNING id, user_id, session_title, created_at, updated_at;
-        """
+    async def update_chat_session_title(self, session_id: str, user_id: str, title: str) -> Optional[UserChatSessionDB]:
+        now = datetime.utcnow().isoformat()
         try:
-            row = await self.conn.fetchrow(sql, title, session_id, user_id)
-            return UserChatSessionDB(**dict(row)) if row else None
-        except asyncpg.PostgresError as e:
-            logger.error(f"DB error in ChatRepository.update_chat_session_title for session {session_id}, user {user_id}: {e}")
-            raise
+            result = self.sessions_collection.update_one(
+                {"_id": session_id, "user_id": user_id},
+                {"$set": {"session_title": title, "updated_at": now}}
+            )
+            if result.modified_count > 0:
+                return await self.get_chat_session_by_id(session_id, user_id)
+            return None
         except Exception as e:
-            logger.error(f"Unexpected error in ChatRepository.update_chat_session_title for session {session_id}, user {user_id}: {e}")
+            logger.error(f"Astra DB error in ChatRepository.update_chat_session_title for session {session_id}: {e}")
             raise
 
-    async def delete_chat_session(self, session_id: int, user_id: str) -> bool:
-        # Assumes ON DELETE CASCADE is set for chat_history.user_chat_session_id FK
-        sql_delete_session = """
-            DELETE FROM user_chat_sessions
-            WHERE id = $1 AND user_id = $2;
-        """
+    async def delete_chat_session(self, session_id: str, user_id: str) -> bool:
         try:
-            result = await self.conn.execute(sql_delete_session, session_id, user_id)
-            return result.startswith("DELETE 1")
-        except asyncpg.PostgresError as e:
-            logger.error(f"DB error in ChatRepository.delete_chat_session for session_id {session_id}, user {user_id}: {e}")
-            raise
+            # Delete session
+            res_session = self.sessions_collection.delete_one({"_id": session_id, "user_id": user_id})
+            if res_session.deleted_count > 0:
+                # Manually delete history (No cascade in Astra JSON API)
+                self.history_collection.delete_many({"user_chat_session_id": session_id})
+                return True
+            return False
         except Exception as e:
-            logger.error(f"Unexpected error in ChatRepository.delete_chat_session for session_id {session_id}, user {user_id}: {e}")
+            logger.error(f"Astra DB error in ChatRepository.delete_chat_session for session {session_id}: {e}")
             raise
 
-    async def get_messages_by_session_id(self, session_id: int, user_id: str, skip: int = 0, limit: int = 100) -> List[ChatMessageDB]:
-        # Verify session ownership before fetching messages
-        sql = """
-            SELECT ch.id, ch.user_chat_session_id, ch.role, ch.message_content, ch.timestamp, ch.metadata
-            FROM chat_history ch
-            JOIN user_chat_sessions ucs ON ch.user_chat_session_id = ucs.id
-            WHERE ch.user_chat_session_id = $1 AND ucs.user_id = $2
-            ORDER BY ch.timestamp ASC
-            OFFSET $3
-            LIMIT $4;
-        """
+    async def get_messages_by_session_id(self, session_id: str, user_id: str, skip: int = 0, limit: int = 100) -> List[ChatMessageDB]:
         try:
-            rows = await self.conn.fetch(sql, session_id, user_id, skip, limit)
-            # ChatMessagePublic is an alias for ChatMessageDB, so using ChatMessageDB directly is fine
-            return [ChatMessageDB(**dict(row)) for row in rows]
-        except asyncpg.PostgresError as e:
-            logger.error(f"DB error in ChatRepository.get_messages_by_session_id for session {session_id}, user {user_id}: {e}")
-            raise
+            # Check ownership first (Astra doesn't have cross-collection joins)
+            session = self.sessions_collection.find_one({"_id": session_id, "user_id": user_id})
+            if not session:
+                return []
+
+            cursor = self.history_collection.find(
+                filter={"user_chat_session_id": session_id},
+                sort={"timestamp": 1},
+                limit=limit,
+                skip=skip
+            )
+            return [ChatMessageDB(id=str(row["_id"]), **row) for row in cursor]
         except Exception as e:
-            logger.error(f"Unexpected error in ChatRepository.get_messages_by_session_id for session {session_id}, user {user_id}: {e}")
+            logger.error(f"Astra DB error in ChatRepository.get_messages_by_session_id for session {session_id}: {e}")
             raise
 
     async def add_message_to_history(self, message_in: ChatMessageCreate, user_id: str) -> Optional[ChatMessageDB]:
-        # First, verify the session belongs to the user
-        session_check_sql = "SELECT id FROM user_chat_sessions WHERE id = $1 AND user_id = $2;"
         try:
-            session_owner_check = await self.conn.fetchval(session_check_sql, message_in.user_chat_session_id, user_id)
-            if not session_owner_check:
-                logger.warning(f"User {user_id} attempted to add message to session {message_in.user_chat_session_id} not owned by them or session does not exist.")
+            # Verify ownership
+            session = self.sessions_collection.find_one({"_id": message_in.user_chat_session_id, "user_id": user_id})
+            if not session:
                 return None
 
-            sql_insert_message = """
-                INSERT INTO chat_history (user_chat_session_id, role, message_content, metadata)
-                VALUES ($1, $2, $3, $4)
-                RETURNING id, user_chat_session_id, role, message_content, metadata, timestamp;
-            """
-            sql_update_session_ts = """
-                UPDATE user_chat_sessions
-                SET updated_at = CURRENT_TIMESTAMP
-                WHERE id = $1;
-            """
-            async with self.conn.transaction():
-                row = await self.conn.fetchrow(
-                    sql_insert_message,
-                    message_in.user_chat_session_id,
-                    message_in.role,
-                    message_in.message_content,
-                    message_in.metadata
+            now = datetime.utcnow().isoformat()
+            message_data = message_in.dict()
+            message_data["timestamp"] = now
+            
+            result = self.history_collection.insert_one(message_data)
+            if result and result.inserted_id:
+                # Update session timestamp
+                self.sessions_collection.update_one(
+                    {"_id": message_in.user_chat_session_id},
+                    {"$set": {"updated_at": now}}
                 )
-                await self.conn.execute(sql_update_session_ts, message_in.user_chat_session_id)
-
-            return ChatMessageDB(**dict(row)) if row else None
-        except asyncpg.PostgresError as e:
-            logger.error(f"DB error in ChatRepository.add_message_to_history for session {message_in.user_chat_session_id}: {e}")
-            raise
+                message_data["id"] = str(result.inserted_id)
+                return ChatMessageDB(**message_data)
+            return None
         except Exception as e:
-            logger.error(f"Unexpected error in ChatRepository.add_message_to_history for session {message_in.user_chat_session_id}: {e}")
+            logger.error(f"Astra DB error in ChatRepository.add_message_to_history: {e}")
             raise
 
-    async def get_session_with_history(self, session_id: int, user_id: str, message_skip: int = 0, message_limit: int = 100) -> Optional[Dict[str, Any]]:
-        """
-        Retrieves a session and its messages (paginated).
-        """
+    async def get_session_with_history(self, session_id: str, user_id: str, message_skip: int = 0, message_limit: int = 100) -> Optional[Dict[str, Any]]:
         session_data = await self.get_chat_session_by_id(session_id, user_id)
         if not session_data:
             return None

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from typing import List, Optional # Removed Dict, Any, uuid, json, traceback as they are not directly used by router now
-import asyncpg
+# Removed asyncpg
 # import uuid # No longer needed for default session title here
 # import json # No longer needed for pub/sub here
 # import traceback # No longer needed for pub/sub here
@@ -9,7 +9,7 @@ import asyncpg
 from backend.services.chat_service import ChatService # ADDED
 from backend.core.models import chat_models, user_models
 from backend.auth import security
-from backend.core.db.pg_connector import get_db_connection
+from backend.core.db.astra_connector import get_db
 
 # Removed: async def get_llm_response(...) - this logic is now in ChatService (as a stub)
 
@@ -40,11 +40,11 @@ async def create_new_chat_session_for_user(
 @router.get("/", response_model=List[chat_models.UserChatSessionDB])
 async def list_user_chat_sessions(
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection),
+    db: Any = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200)
 ):
-    chat_service = ChatService(db_conn)
+    chat_service = ChatService(db)
     print(f"[CHAT SESSION ROUTER INFO] User {current_user.user_id} listing chat sessions. Skip: {skip}, Limit: {limit}")
     sessions = await chat_service.list_user_chat_sessions(
         user_id=current_user.user_id, skip=skip, limit=limit
@@ -73,9 +73,9 @@ async def get_specific_user_chat_session(
 async def delete_specific_user_chat_session(
     session_id: int,
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    chat_service = ChatService(db_conn)
+    chat_service = ChatService(db)
     print(f"[CHAT SESSION ROUTER INFO] User {current_user.user_id} deleting chat session ID: {session_id}")
     deleted = await chat_service.delete_specific_user_chat_session(
         session_id=session_id, user_id=current_user.user_id
@@ -90,10 +90,10 @@ async def delete_specific_user_chat_session(
 async def get_messages_for_session(
     session_id: int,
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection),
+    db: Any = Depends(get_db),
     limit: int = Query(50, ge=1, le=200) 
 ):
-    chat_service = ChatService(db_conn)
+    chat_service = ChatService(db)
     print(f"[CHAT MSG ROUTER INFO] User {current_user.user_id} fetching history for session ID: {session_id}. Limit: {limit}")
 
     # Сервис сам проверит доступ к сессии и вернет None если нет доступа или сессии

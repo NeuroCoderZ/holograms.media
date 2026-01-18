@@ -1,4 +1,4 @@
-# backend/tria_bots/LiveCodeAnalyzer.py
+# backend/tria_agents/LiveCodeAnalyzer.py
 import logging
 import time
 from watchdog.observers import Observer

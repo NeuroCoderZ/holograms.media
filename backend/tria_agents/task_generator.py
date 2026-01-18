@@ -1,6 +1,6 @@
-# File: backend/tria_bots/task_generator.py
+# File: backend/tria_agents/task_generator.py
 # Purpose: Defines how Tria generates tasks for itself within the Absolute Zero Reasoning (AZR) framework.
-# Key Future Dependencies: LearningBot, MemoryBot (for inspiration/context).
+# Key Future Dependencies: LearningAgent, MemoryAgent (for inspiration/context).
 # Main Future Exports/API: TaskGenerator class with generate_task().
 # Link to Legacy Logic (if applicable): Part of AZR as mentioned in ROADMAP.md.
 # Intended Technology Stack: Python.
@@ -9,8 +9,8 @@
 # TODO: Ensure tasks are solvable and contribute to Tria's learning objectives.
 
 class TaskGenerator:
-    def __init__(self, memory_bot_access):
-        self.memory_bot = memory_bot_access 
+    def __init__(self, memory_agent_access):
+        self.memory_agent = memory_agent_access 
         pass
 
     async def generate_task(self) -> dict:

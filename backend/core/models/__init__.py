@@ -38,7 +38,7 @@ from .tria_azr_models import (
     TriaAZRTask,
     TriaAZRTaskSolution,
     TriaLearningLogEntry,
-    TriaBotConfiguration
+    TriaAgentConfiguration
 )
 
 # Import models from hologlyph_models.py (some models might overlap with hologram_models, ensure distinct purpose or consolidate later)
@@ -92,7 +92,7 @@ __all__ = [
     "UserPromptVersionBase", "UserPromptVersionCreate", "UserPromptVersionDB", "UserPromptTitleInfo",
 
     # from .tria_azr_models
-    "TriaAZRTask", "TriaAZRTaskSolution", "TriaLearningLogEntry", "TriaBotConfiguration",
+    "TriaAZRTask", "TriaAZRTaskSolution", "TriaLearningLogEntry", "TriaAgentConfiguration",
 
     # from .hologlyph_models (ensure no clashes with hologram_models if used for different purposes)
     "TriaStateUpdateModel", # Vector3Model etc. are now sourced from hologram_models

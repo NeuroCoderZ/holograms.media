@@ -4,11 +4,11 @@ This directory houses the intelligent core of the "Holographic Media" project: t
 
 ## Core Agents
 
--   **`GestureBot.py`**: Analyzes gestural input from users (e.g., via MediaPipe).
--   **`AudioBot.py`**: Processes audio input (voice commands, ambient sound) and can synthesize audio responses.
--   **`VideoBot.py`**: Provides deeper analysis of video context accompanying user interactions.
--   **`MemoryBot.py`**: Manages Tria's long-term memory, knowledge graph, and learned patterns using RAG (Retrieval Augmented Generation) with a PostgreSQL+pgvector backend.
--   **`LearningBot.py`**: Drives Tria's self-improvement and adaptation. This includes learning from user feedback and implementing principles of Absolute Zero Reasoning (AZR) for self-generated tasks.
+-   **`GestureAgent.py`**: Analyzes gestural input from users (e.g., via MediaPipe).
+-   **`AudioAgent.py`**: Processes audio input (voice commands, ambient sound) and can synthesize audio responses.
+-   **`VideoAgent.py`**: Provides deeper analysis of video context accompanying user interactions.
+-   **`MemoryAgent.py`**: Manages Tria's long-term memory, knowledge graph, and learned patterns using RAG (Retrieval Augmented Generation) with a PostgreSQL+pgvector backend.
+-   **`LearningAgent.py`**: Drives Tria's self-improvement and adaptation. This includes learning from user feedback and implementing principles of Absolute Zero Reasoning (AZR) for self-generated tasks.
 -   **`CoordinationService.py`**: Acts as the orchestrator, routing information between agents, external services, and the main application API. It makes decisions on how to respond to user inputs.
 
 ## Absolute Zero Reasoning (AZR) Components

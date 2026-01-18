@@ -1,17 +1,18 @@
 from typing import Optional, List, Dict, Any
-import asyncpg
+# Removed asyncpg
 
 from backend.core import crud_operations
 from backend.core.models.interaction_chunk_model import InteractionChunkCreate, InteractionChunkDB
 from backend.core.models.hologram_embedding_models import HologramSemanticEmbedding # Import the new model
 from backend.repositories.interaction_chunk_repository import InteractionChunkRepository # ADDED
+from backend.core.storage.b2_service import B2StorageService
 
 # Assuming these would be initialized elsewhere and passed (e.g., via dependency injection)
 # For now, just a placeholder for dependencies like LLM client for embedding generation.
 llm_client_placeholder: Any = None # Replace with actual LLM client instance
 
 async def process_new_chunk_and_generate_embedding(
-    db_conn: asyncpg.Connection,
+    db: Any,
     chunk_create_data: InteractionChunkCreate,
     user_id: str
 ) -> dict:
@@ -21,7 +22,7 @@ async def process_new_chunk_and_generate_embedding(
     """
     print(f"[CHUNK PROCESSOR] Starting processing for chunk: {chunk_create_data.id} from user: {user_id}")
 
-    interaction_chunk_repo = InteractionChunkRepository(db_conn)
+    interaction_chunk_repo = InteractionChunkRepository(db)
 
     # 1. Save the initial interaction chunk metadata
     created_chunk = await interaction_chunk_repo.create_chunk(
@@ -37,10 +38,18 @@ async def process_new_chunk_and_generate_embedding(
 
     # 2. Simulate embedding generation (this would involve LLM calls, gesture analysis etc.)
     # In a real scenario, this would be a complex process involving:
-    # - Reading audio/video/gesture data from Cloudflare R2 (using data_ref fields in chunk_create_data)
+    # - Reading audio/video/gesture data from Backblaze B2 (using data_ref fields in chunk_create_data)
     # - Sending relevant data to an LLM for text embedding (e.g., summary of interaction)
     # - Analyzing gesture data to generate gesture-specific vectors
     # - Combining these into a comprehensive HologramSemanticEmbedding
+    
+    b2 = B2StorageService()
+    if chunk_create_data.storage_ref:
+        # Example: Generate presigned URL for the LLM to access the file
+        # Assuming storage_ref contains the object key or full path
+        object_key = chunk_create_data.storage_ref.split('/')[-1] # Simplistic extraction
+        file_url = b2.generate_presigned_url(object_key)
+        print(f"[CHUNK PROCESSOR] Generated B2 presigned URL for processing: {file_url}")
     
     # Placeholder for a generated embedding vector and metadata
     simulated_embedding_vector = [0.0] * 768  # Assuming 768 dimensions for text-embedding-004
@@ -69,7 +78,7 @@ async def process_new_chunk_and_generate_embedding(
 
     # 3. Save the new semantic embedding to the database
     created_embedding = await crud_operations.create_hologram_semantic_embedding(
-        conn=db_conn,
+        conn=db,
         embedding_data=hologram_embedding_data
     )
     
@@ -79,9 +88,9 @@ async def process_new_chunk_and_generate_embedding(
 
     print(f"[CHUNK PROCESSOR] Hologram semantic embedding {created_embedding.id} saved.")
 
-    # TODO: Trigger LearningBot or MemoryBot for further processing/adaptation
+    # TODO: Trigger LearningAgent or MemoryAgent for further processing/adaptation
     # This would likely involve publishing a message to a queue (e.g., Pub/Sub, Celery) 
-    # that LearningBot/MemoryBot subscribes to.
+    # that LearningAgent/MemoryAgent subscribes to.
 
     return {
         "status": "success",

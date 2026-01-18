@@ -30,7 +30,7 @@ class TriaLearningLogDB(UUIDDBBaseModel):
     user_id: str = Field(..., description="The unique ID of the user.")
     session_id: Optional[str] = Field(None, description="Optional session identifier for the interaction.")
 
-    intent_vector: Dict[str, Any] = Field(..., description="The intent vector processed by GestureBot, including type, intensity, and target_context.")
+    intent_vector: Dict[str, Any] = Field(..., description="The intent vector processed by GestureAgent, including type, intensity, and target_context.")
     # intent_type: str
     # intent_intensity: float
     # intent_target_context: Dict[str, Any]

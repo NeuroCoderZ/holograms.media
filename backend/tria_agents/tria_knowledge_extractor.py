@@ -1,4 +1,4 @@
-# backend/tria_bots/tria_knowledge_extractor.py
+# backend/tria_agents/tria_knowledge_extractor.py
 import os
 import re
 import ast

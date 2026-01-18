@@ -10,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 class ChatAgent:
     """
-    The ChatBot class represents the core conversational AI (Tria) of the application.
+    The ChatAgent class represents the core conversational AI (Tria) of the application.
     It interfaces with an LLMService to generate responses to user queries, providing
     context and handling basic interaction logic.
     """
     def __init__(self):
         """
-        Initializes the ChatBot instance. This involves setting up the underlying LLMService
+        Initializes the ChatAgent instance. This involves setting up the underlying LLMService
         which is responsible for communicating with the large language model API.
         A warning is logged if the LLMService cannot be fully configured (e.g., missing API key).
         """
@@ -24,7 +24,7 @@ class ChatAgent:
         if not self.llm_service.api_key:
             # Log a warning if the LLM service's API key is missing. This indicates
             # that the agent will likely return error messages from the LLMService calls.
-            logger.warning("ChatBot initialized, but LLMService might be missing API key. Responses may be limited.")
+            logger.warning("ChatAgent initialized, but LLMService might be missing API key. Responses may be limited.")
 
     async def get_response(self, user_input: str, user_id: str) -> str:
         """
@@ -34,7 +34,7 @@ class ChatAgent:
 
         Args:
             user_input (str): The text message provided by the user.
-            firebase_user_id (str): The unique Firebase UID of the interacting user.
+            user_id (str): The unique identifier of the interacting user.
                                     This can be used to personalize context or log interactions.
 
         Returns:
@@ -72,25 +72,25 @@ class ChatAgent:
             return llm_response
         except Exception as e:
             # Catch any unexpected exceptions that might escape from the LLMService (though LLMService
-            # aims to return error strings). This ensures the ChatBot always returns a message.
-            logger.exception(f"An unexpected error occurred during ChatBot's call to LLMService for user {user_id}.")
+            # aims to return error strings). This ensures the ChatAgent always returns a message.
+            logger.exception(f"An unexpected error occurred during ChatAgent's call to LLMService for user {user_id}.")
             return "I encountered an unexpected issue while trying to process your request. Please try again later."
 
 # Example Usage (for direct testing of this file, not for production Cloud Function context)
 async def main_chatbot_test():
     # This test function demonstrates how to use the ChatBot class.
-    # It requires the MISTRAL_API_KEY environment variable to be set for the LLMService to function.
-    import os # Import os here for environment variable check in direct run context
-    if not os.environ.get("MISTRAL_API_KEY"):
-        logger.warning("MISTRAL_API_KEY environment variable not set. Skipping direct test of ChatBot.")
-        logger.warning("To test: export MISTRAL_API_KEY='your_actual_api_key' && python backend/core/tria_bots/ChatBot.py")
-        return
+        # It requires the MISTRAL_API_KEY environment variable to be set for the LLMService to function.
+        import os # Import os here for environment variable check in direct run context
+        if not os.environ.get("MISTRAL_API_KEY"):
+            logger.warning("MISTRAL_API_KEY environment variable not set. Skipping direct test of ChatAgent.")
+            logger.warning("To test: export MISTRAL_API_KEY='your_actual_api_key' && python backend/core/tria_agents/ChatAgent.py")
+            return
 
-    logger.info("Starting ChatBot direct test...")
-    chatbot = ChatBot()
+    logger.info("Starting ChatAgent direct test...")
+    chat_agent = ChatAgent()
 
-    if not chatbot.llm_service.api_key: # Re-check after ChatBot init if key was actually loaded
-        logger.error("ChatBot LLM Service not configured after initialization. Aborting test.")
+    if not chat_agent.llm_service.api_key: # Re-check after ChatAgent init if key was actually loaded
+        logger.error("ChatAgent LLM Service not configured after initialization. Aborting test.")
         return
 
     test_user_id = "test_user_123_local"
@@ -103,9 +103,9 @@ async def main_chatbot_test():
     ]
 
     for i, prompt_text in enumerate(prompts):
-        logger.info("ChatBot Test") # Simplified
+        logger.info("ChatAgent Test") # Simplified
         logger.info("User prompt") # Simplified
-        response = await chatbot.get_response(user_input=prompt_text, user_id=test_user_id)
+        response = await chat_agent.get_response(user_input=prompt_text, user_id=test_user_id)
         logger.info("Tria response") # Simplified
 
 # This block ensures `main_chatbot_test()` is called only when the script is executed directly.

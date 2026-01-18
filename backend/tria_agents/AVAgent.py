@@ -1,6 +1,6 @@
-# backend/tria_bots/AVBot.py
+# backend/tria_agents/AVAgent.py
 """
-AVBot - объединенный AudioBot и VideoBot для обработки аудиовизуальных данных.
+AVAgent - объединенный AudioAgent и VideoAgent для обработки аудиовизуальных данных.
 
 Этот бот обрабатывает выходные данные от Rust-WASM ядра технологии трехмерной аудиовизуализации,
 включая уровни громкости и углы панорамирования от непрерывного вейвлет-преобразования (CWT).
@@ -28,20 +28,20 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 
-class AVBot:
+class AVAgent:
     """
-    AVBot класс для обработки аудиовизуальных данных и генерации визуализаций голограмм.
+    AVAgent класс для обработки аудиовизуальных данных и генерации визуализаций голограмм.
     """
 
     def __init__(self, db_conn):
         """
-        Инициализация AVBot.
+        Инициализация AVAgent.
 
         :param db_conn: Соединение с базой данных (asyncpg.Connection).
         """
         self.db_conn = db_conn
         self.model = self._build_neural_network()
-        logger.info("AVBot инициализирован с нейросетью для адаптации.")
+        logger.info("AVAgent инициализирован с нейросетью для адаптации.")
 
     def _build_neural_network(self) -> keras.Model:
         """
@@ -64,14 +64,14 @@ class AVBot:
         :param raw_data: Словарь с уровнями громкости и углами панорамирования.
         :return: Данные для визуализации голограммы.
         """
-        logger.info(f"AVBot: Обработка данных: {raw_data}")
+        logger.info(f"AVAgent: Обработка данных: {raw_data}")
 
         # Извлечение данных
         volume_levels = raw_data.get('volume_levels', [])
         pan_angles = raw_data.get('pan_angles', [])
 
         if not volume_levels or not pan_angles:
-            logger.warning("AVBot: Недостаточно данных для обработки.")
+            logger.warning("AVAgent: Недостаточно данных для обработки.")
             return {"error": "Недостаточно данных"}
 
         # Преобразование в полутона (столбцы)
@@ -91,7 +91,7 @@ class AVBot:
             "adapted_params": adapted_params
         }
 
-        logger.info(f"AVBot: Сгенерированы данные для голограммы: {len(semitones)} столбцов")
+        logger.info(f"AVAgent: Сгенерированы данные для голограммы: {len(semitones)} столбцов")
         return hologram_data
 
     def _convert_to_semitones(self, volume_levels: List[float]) -> List[int]:
@@ -157,7 +157,7 @@ class AVBot:
         :param command: Словарь с командой.
         :return: Ответ на команду.
         """
-        logger.info(f"AVBot: Получена команда: {command}")
+        logger.info(f"AVAgent: Получена команда: {command}")
         cmd_type = command.get('type')
         if cmd_type == 'process_data':
             data = command.get('data', {})
@@ -171,7 +171,7 @@ class AVBot:
 
         :param data: Данные для отправки.
         """
-        logger.info(f"AVBot: Отправка данных визуализации: {data}")
+        logger.info(f"AVAgent: Отправка данных визуализации: {data}")
         # Здесь логика отправки, например, через очередь или API
         # Для примера, просто логируем
         pass

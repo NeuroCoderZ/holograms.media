@@ -42,7 +42,7 @@ class TriaAZRTaskSolutionDB(TriaAZRTaskSolutionBase):
 
 class TriaLearningLogBase(BaseModel):
     event_type: str
-    bot_affected_id: Optional[str] = None
+    agent_affected_id: Optional[str] = None
     summary_text: str
     details_json: Optional[Dict[str, Any]] = None
 
@@ -56,18 +56,18 @@ class TriaLearningLogDB(TriaLearningLogBase):
     class Config:
         from_attributes = True
 
-class TriaBotConfigurationBase(BaseModel):
+class TriaAgentConfigurationBase(BaseModel):
     current_version: int = 1
     config_parameters_json: Dict[str, Any]
     last_updated_by: str = 'system'
     notes: Optional[str] = None
 
-class TriaBotConfigurationCreate(TriaBotConfigurationBase):
-    bot_id: str = Field(..., max_length=255)
+class TriaAgentConfigurationCreate(TriaAgentConfigurationBase):
+    agent_id: str = Field(..., max_length=255)
 
-class TriaBotConfigurationDB(TriaBotConfigurationBase):
+class TriaAgentConfigurationDB(TriaAgentConfigurationBase):
     config_id: int
-    bot_id: str = Field(..., max_length=255)
+    agent_id: str = Field(..., max_length=255)
     updated_at: datetime
 
     class Config:

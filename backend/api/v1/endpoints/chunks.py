@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 import logging
 import os
 import uuid
-from backend.core.tria_agents.ChunkProcessorAgent import ChunkProcessorBot
+from backend.core.tria_agents.ChunkProcessorAgent import ChunkProcessorAgent
 from backend.auth.security import get_current_active_user # Assuming this is your dependency for auth
 from backend.core.models.user_models import UserInDB # Assuming this is your user model
 
@@ -122,7 +122,7 @@ async def upload_chunk(
         raise HTTPException(status_code=500, detail=f"Failed to upload file to R2: {str(e)}")
 
     try:
-        chunk_processor = ChunkProcessorBot() # Assuming constructor is simple or dependencies are handled globally/env
+        chunk_processor = ChunkProcessorAgent() # Assuming constructor is simple or dependencies are handled globally/env
         chunk_metadata = {
             "user_id": user_id,
             "file_name": file.filename, # Original filename for reference
@@ -130,13 +130,13 @@ async def upload_chunk(
             "storage_ref": object_key,
             "content_type": file.content_type,
             "size": file_size,
-            # Add other relevant metadata if ChunkProcessorBot expects more
+            # Add other relevant metadata if ChunkProcessorAgent expects more
         }
         logger.info(f"Submitting chunk metadata for processing: {chunk_metadata}")
         # Assuming process_chunk_metadata is async. If not, remove 'await'.
-        # Need to verify the definition of ChunkProcessorBot.process_chunk_metadata
+        # Need to verify the definition of ChunkProcessorAgent.process_chunk_metadata
         await chunk_processor.process_chunk_metadata(chunk_metadata)
-        logger.info(f"Successfully submitted chunk metadata for {object_key} to ChunkProcessorBot.")
+        logger.info(f"Successfully submitted chunk metadata for {object_key} to ChunkProcessorAgent.")
     except Exception as e:
         logger.error(f"Failed to process chunk metadata for {object_key} after R2 upload. Error: {e}", exc_info=True)
 

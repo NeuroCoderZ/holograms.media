@@ -5,6 +5,8 @@ from fastapi import Depends, HTTPException, status
 
 from backend.repositories.gesture_repository import GestureRepository
 from backend.repositories.hologram_repository import HologramRepository
+from backend.core.db.astra_connector import get_db
+from typing import Any
 
 # --- HTTP Client Dependency ---
 
@@ -37,21 +39,17 @@ def get_tria_api_key() -> str:
 # --- Repository Dependencies ---
 
 def get_gesture_repository(
-    client: httpx.AsyncClient = Depends(get_http_client),
-    api_key: str = Depends(get_tria_api_key)
+    db: Any = Depends(get_db)
 ) -> GestureRepository:
     """
-    Dependency that provides a GestureRepository instance initialized with
-    an HTTP client and the Tria API key.
+    Dependency that provides a GestureRepository instance initialized with Astra DB.
     """
-    return GestureRepository(client=client, api_key=api_key)
+    return GestureRepository(db)
 
 def get_hologram_repository(
-    client: httpx.AsyncClient = Depends(get_http_client),
-    api_key: str = Depends(get_tria_api_key)
+    db: Any = Depends(get_db)
 ) -> HologramRepository:
     """
-    Dependency that provides a HologramRepository instance initialized with
-    an HTTP client and the Tria API key.
+    Dependency that provides a HologramRepository instance initialized with Astra DB.
     """
-    return HologramRepository(client=client, api_key=api_key)
+    return HologramRepository(db)

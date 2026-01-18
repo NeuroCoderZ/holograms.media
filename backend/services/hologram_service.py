@@ -5,8 +5,8 @@ from backend.core.models.hologram_models import UserHologramDB, UserHologramCrea
 from backend.core.dependencies import get_hologram_repository
 
 class HologramService:
-    def __init__(self, repo: HologramRepository = Depends(get_hologram_repository)):
-        self.repo = repo
+    def __init__(self, db: Any):
+        self.repo = HologramRepository(db)
 
     async def get_user_holograms(self, user_id: str, skip: int, limit: int) -> List[UserHologramDB]:
         """

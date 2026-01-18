@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Dict, Any, Optional
-import asyncpg
+# Removed asyncpg
 
 from backend.services.gesture_service import GestureService
 # Updated import to use models from backend.core.models via __init__.py
 from backend.core import models as core_models
 from backend.auth import security
-from backend.core.db.pg_connector import get_db_connection
+from backend.core.db.astra_connector import get_db
 # Field is not used directly here anymore after removing local GestureUpdate, but pydantic might be needed for other things.
 # from pydantic import Field # Keep if other Pydantic features are used, else remove.
 
@@ -21,13 +21,13 @@ router = APIRouter(
 async def create_new_user_gesture(
     gesture_in: core_models.UserGestureDefinitionCreate,
     current_user: core_models.UserInDB = Depends(security.get_current_active_user), # Use UserInDB from core_models
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    gesture_service = GestureService(db_conn)
+    gesture_service = GestureService(db)
     try:
         # print(f"[GUESTURE ROUTER INFO] User {current_user.firebase_uid} creating gesture: {gesture_in.gesture_name}")
         created_gesture = await gesture_service.create_new_user_gesture(
-            user_id=current_user.firebase_uid, gesture_in=gesture_in
+            user_id=current_user.user_id, gesture_in=gesture_in
         )
         if not created_gesture:
             # print(f"[GUESTURE ROUTER WARN] Gesture creation failed for user {current_user.firebase_uid}, name: {gesture_in.gesture_name}. May be a duplicate.")
@@ -50,7 +50,7 @@ async def list_user_gestures(
     gesture_service = GestureService(db_conn)
     # print(f"[GUESTURE ROUTER INFO] User {current_user.firebase_uid} listing gestures. Skip: {skip}, Limit: {limit}")
     gestures = await gesture_service.get_user_gestures(
-        user_id=current_user.firebase_uid, skip=skip, limit=limit
+        user_id=current_user.user_id, skip=skip, limit=limit
     )
     # print(f"[GUESTURE ROUTER INFO] Found {len(gestures)} gestures for user {current_user.firebase_uid}.")
     return gestures
@@ -59,12 +59,12 @@ async def list_user_gestures(
 async def get_specific_user_gesture(
     gesture_id: int,
     current_user: core_models.UserInDB = Depends(security.get_current_active_user), # Use UserInDB from core_models
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    gesture_service = GestureService(db_conn)
+    gesture_service = GestureService(db)
     # print(f"[GUESTURE ROUTER INFO] User {current_user.firebase_uid} fetching gesture ID: {gesture_id}")
     gesture = await gesture_service.get_specific_user_gesture(
-        gesture_id=gesture_id, user_id=current_user.firebase_uid
+        gesture_id=gesture_id, user_id=current_user.user_id
     )
     if not gesture:
         # print(f"[GUESTURE ROUTER WARN] Gesture ID: {gesture_id} not found for user {current_user.firebase_uid}.")
@@ -77,9 +77,9 @@ async def update_existing_user_gesture(
     gesture_id: int,
     gesture_update: core_models.GestureUpdate, # Use GestureUpdate from core_models
     current_user: core_models.UserInDB = Depends(security.get_current_active_user), # Use UserInDB from core_models
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    gesture_service = GestureService(db_conn)
+    gesture_service = GestureService(db)
     update_data = gesture_update.dict(exclude_unset=True) 
     
     if not update_data: 
@@ -88,7 +88,7 @@ async def update_existing_user_gesture(
 
     # print(f"[GUESTURE ROUTER INFO] User {current_user.firebase_uid} updating gesture ID: {gesture_id} with data: {update_data}")
     updated_gesture = await gesture_service.update_existing_user_gesture(
-        gesture_id=gesture_id, user_id=current_user.firebase_uid, gesture_update_data=update_data
+        gesture_id=gesture_id, user_id=current_user.user_id, gesture_update_data=update_data
     )
     if not updated_gesture:
         # print(f"[GUESTURE ROUTER WARN] Gesture ID: {gesture_id} not found or update failed for user {current_user.firebase_uid} (e.g., name conflict).")
@@ -100,15 +100,15 @@ async def update_existing_user_gesture(
 async def delete_user_defined_gesture(
     gesture_id: int,
     current_user: core_models.UserInDB = Depends(security.get_current_active_user), # Use UserInDB from core_models
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    gesture_service = GestureService(db_conn)
-    # print(f"[GUESTURE ROUTER INFO] User {current_user.firebase_uid} deleting gesture ID: {gesture_id}")
+    gesture_service = GestureService(db)
+    # print(f"[GUESTURE ROUTER INFO] User {current_user.user_id} deleting gesture ID: {gesture_id}")
     deleted = await gesture_service.delete_user_defined_gesture(
-        gesture_id=gesture_id, user_id=current_user.firebase_uid
+        gesture_id=gesture_id, user_id=current_user.user_id
     )
     if not deleted:
-        # print(f"[GUESTURE ROUTER WARN] Gesture ID: {gesture_id} not found for deletion by user {current_user.firebase_uid}.")
+        # print(f"[GUESTURE ROUTER WARN] Gesture ID: {gesture_id} not found for deletion by user {current_user.user_id}.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Gesture not found or not owned by user.")
-    # print(f"[GUESTURE ROUTER INFO] Gesture ID: {gesture_id} deleted successfully for user {current_user.firebase_uid}.")
+    # print(f"[GUESTURE ROUTER INFO] Gesture ID: {gesture_id} deleted successfully for user {current_user.user_id}.")
     return None

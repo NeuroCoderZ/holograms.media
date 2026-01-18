@@ -1,11 +1,11 @@
 # backend/core/crud_operations.py
 # CRUD operations for database interaction
 """This module provides Create, Read, Update, and Delete (CRUD) operations
-for interacting with the PostgreSQL database. It encapsulates the SQL queries
+for interacting with the Astra DB. It encapsulates the retrieval and
 and basic error handling for various data models used in the application.
 """
 
-import asyncpg
+# Removed asyncpg
 from typing import Optional, Any, Dict, List
 from uuid import uuid4, UUID
 from datetime import datetime
@@ -21,7 +21,7 @@ from backend.core.models.hologram_models import UserHologramResponseModel
 logger = logging.getLogger(__name__)
 
 
-async def get_user_by_id(db: asyncpg.Connection, user_id: str) -> Optional[UserInDB]:
+async def get_user_by_id(db: Any, user_id: str) -> Optional[UserInDB]:
     """
     Retrieves a user from the database by their user ID.
 
@@ -51,13 +51,13 @@ async def get_user_by_id(db: asyncpg.Connection, user_id: str) -> Optional[UserI
         else:
             logger.info(f"User with ID {user_id} not found in database.")
             return None
-    except asyncpg.PostgresError as e:
-        logger.exception(f"Database error while fetching user by ID {user_id}.")
+    except Exception as e:
+        logger.exception(f"Error while fetching user by ID {user_id}: {e}")
         raise
 
 
 async def create_tria_learning_log_entry(
-    db: asyncpg.Connection, *, log_entry_create: TriaLearningLogModel
+    db: Any, *, log_entry_create: TriaLearningLogModel
 ) -> TriaLearningLogModel:
     """
     Creates a new Tria learning log entry in the database.
@@ -65,11 +65,11 @@ async def create_tria_learning_log_entry(
     """
     sql = """
         INSERT INTO tria_learning_log (
-            user_id, session_id, event_type, bot_affected_id, summary_text,
+            user_id, session_id, event_type, agent_affected_id, summary_text,
             prompt_text, tria_response_text, model_used, feedback_score, custom_data,
             timestamp
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        RETURNING log_id, user_id, session_id, event_type, bot_affected_id, summary_text,
+        RETURNING log_id, user_id, session_id, event_type, agent_affected_id, summary_text,
                   prompt_text, tria_response_text, model_used, feedback_score, custom_data,
                   timestamp;
     """
@@ -80,7 +80,7 @@ async def create_tria_learning_log_entry(
             log_entry_create.user_id,
             log_entry_create.session_id, # Assuming this can be str or UUID compatible with DB type
             log_entry_create.event_type,
-            log_entry_create.bot_affected_id,
+            log_entry_create.agent_affected_id,
             log_entry_create.summary_text,
             log_entry_create.prompt_text,
             log_entry_create.tria_response_text,
@@ -96,16 +96,13 @@ async def create_tria_learning_log_entry(
         else:
             logger.error(f"TriaLearningLog entry creation failed, no data returned for user: {log_entry_create.user_id}")
             raise Exception("TriaLearningLog entry creation failed, no data returned.")
-    except asyncpg.PostgresError as e:
-        logger.exception(f"Database error while creating Tria learning log entry for user {log_entry_create.user_id}.")
-        raise
     except Exception as e: # Catching broader exceptions for unexpected issues
-        logger.exception(f"An unexpected error occurred while creating Tria learning log entry for user {log_entry_create.user_id}.")
+        logger.exception(f"An unexpected error occurred while creating Tria learning log entry for user {log_entry_create.user_id}: {e}")
         raise
 
 
 async def create_audiovisual_gestural_chunk(
-    db: asyncpg.Connection, *, chunk_create: None
+    db: Any, *, chunk_create: None
 ) -> None:
     """
     Creates a new audiovisual/gestural chunk record in the database.
@@ -118,7 +115,7 @@ async def create_audiovisual_gestural_chunk(
     pass # Functionality needs to be re-evaluated or removed.
 
 
-async def get_chunk_by_id(db: asyncpg.Connection, chunk_id: UUID) -> Optional[None]:
+async def get_chunk_by_id(db: Any, chunk_id: UUID) -> Optional[None]:
     """
     Retrieves an audiovisual/gestural chunk from the database by its ID.
     """

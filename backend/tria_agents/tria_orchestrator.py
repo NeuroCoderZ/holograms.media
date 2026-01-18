@@ -1,4 +1,4 @@
-# backend/tria_bots/tria_orchestrator.py
+# backend/tria_agents/tria_orchestrator.py
 import logging
 from typing import Dict, Any, List, Optional
 import asyncio 

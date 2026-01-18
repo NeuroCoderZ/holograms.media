@@ -1,4 +1,4 @@
-# backend/tria_bots/tria_context.py
+# backend/tria_agents/tria_context.py
 from collections import deque
 from typing import Dict, Any, List, Optional
 import logging
