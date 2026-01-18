@@ -9,7 +9,7 @@ import asyncpg
 from backend.services.chat_service import ChatService # ADDED
 from backend.core.models import chat_models, user_models
 from backend.auth import security
-from backend.core.dependencies import get_db_connection
+from backend.core.db.pg_connector import get_db_connection
 
 # Removed: async def get_llm_response(...) - this logic is now in ChatService (as a stub)
 
@@ -28,7 +28,7 @@ async def create_new_chat_session_for_user(
     # Логика присвоения default title теперь в сервисе
     print(f"[CHAT SESSION ROUTER INFO] User {current_user.user_id} creating chat session: {session_in.session_title or 'Default Title'}")
     created_session = await chat_service.create_new_chat_session(
-        user_id=current_user.user_id, session_in=session_in
+        user_id=current_user.user_id, session_title=session_in.session_title
     )
     if not created_session:
         print(f"[CHAT SESSION ROUTER ERROR] Could not create chat session for user {current_user.user_id}.")
@@ -121,7 +121,7 @@ async def add_message_to_session(
 
     try:
         assistant_response_message = await chat_service.add_message_to_session(
-            session_id=session_id, user=current_user, message_in=message_in
+            session_id=session_id, user=current_user, message_content=message_in.message_content, metadata=message_in.metadata
         )
     except Exception as e: # Ловим общее исключение от сервиса (например, если LLM реально упал)
         print(f"[CHAT MSG ROUTER ERROR] Error from ChatService for session ID {session_id}: {e}")

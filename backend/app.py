@@ -71,7 +71,7 @@ origins = [
     "http://localhost:8000",
     "https://holograms.media",
     "https://holograms-media.web.app",
-    "https://common-elita-holograms-media-59398dd8.koyeb.app", # Production Backend
+    "https://holograms-media-59398dd8.koyeb.app", # Production Backend
 ]
 app.add_middleware(
     CORSMiddleware,
