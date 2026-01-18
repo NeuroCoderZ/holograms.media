@@ -41,11 +41,11 @@ async def create_new_user_hologram(
 @router.get("/", response_model=List[core_models.UserHologramDB])
 async def list_user_holograms(
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection),
+    db: Any = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200)
 ):
-    hologram_service = HologramService(db_conn)
+    hologram_service = HologramService(db)
     # print(f"[HOLOGRAM ROUTER INFO] User {current_user.user_id} listing holograms. Skip: {skip}, Limit: {limit}")
     holograms = await hologram_service.get_user_holograms(
         user_id=current_user.user_id, skip=skip, limit=limit

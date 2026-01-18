@@ -44,11 +44,11 @@ async def list_prompt_titles_endpoint(
 async def list_versions_for_prompt_title_endpoint(
     prompt_title: str = Path(..., description="The title of the prompt to fetch versions for."),
     current_user: core_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection),
+    db: Any = Depends(get_db),
     skip: int = Query(0, ge=0, description="Number of records to skip."),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return.")
 ):
-    prompt_service = PromptService(db_conn)
+    prompt_service = PromptService(db)
     versions = await prompt_service.list_versions_for_prompt_title(
         prompt_title=prompt_title,
         user_id=current_user.user_id,

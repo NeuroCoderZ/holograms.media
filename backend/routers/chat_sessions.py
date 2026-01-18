@@ -22,9 +22,9 @@ router = APIRouter(
 async def create_new_chat_session_for_user(
     session_in: chat_models.UserChatSessionCreate,
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    chat_service = ChatService(db_conn)
+    chat_service = ChatService(db)
     # Логика присвоения default title теперь в сервисе
     print(f"[CHAT SESSION ROUTER INFO] User {current_user.user_id} creating chat session: {session_in.session_title or 'Default Title'}")
     created_session = await chat_service.create_new_chat_session(
@@ -56,9 +56,9 @@ async def list_user_chat_sessions(
 async def get_specific_user_chat_session(
     session_id: int,
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    chat_service = ChatService(db_conn)
+    chat_service = ChatService(db)
     print(f"[CHAT SESSION ROUTER INFO] User {current_user.user_id} fetching chat session ID: {session_id}")
     session = await chat_service.get_specific_user_chat_session(
         session_id=session_id, user_id=current_user.user_id
@@ -114,9 +114,9 @@ async def add_message_to_session(
     message_in: chat_models.ChatMessageCreate,
     # request: Request, # Request больше не нужен здесь, если Pub/Sub логика ушла в сервис или удалена
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
-    db_conn: asyncpg.Connection = Depends(get_db_connection)
+    db: Any = Depends(get_db)
 ):
-    chat_service = ChatService(db_conn)
+    chat_service = ChatService(db)
     print(f"[CHAT MSG ROUTER INFO] User {current_user.user_id} adding message to session ID: {session_id}.")
 
     try:
