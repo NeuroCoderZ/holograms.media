@@ -58,8 +58,8 @@ function connectProxyToWorklet() {
  */
 async function fetchWasmWithFallbackPaths() {
     const possiblePaths = [
-        '/wasm/holographic_core_bg.wasm',
         '/js/wasm/holographic_core_bg.wasm',
+        '/wasm/holographic_core_bg.wasm',
         '/holographic_core_bg.wasm'
     ];
 
