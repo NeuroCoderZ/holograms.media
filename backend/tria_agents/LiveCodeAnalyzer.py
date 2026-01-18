@@ -3,7 +3,7 @@ import logging
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from backend.tria_bots.tria_context import ContextManager
+from backend.tria_agents.tria_context import ContextManager
 
 logger = logging.getLogger(__name__)
 

@@ -4,9 +4,9 @@ from typing import Dict, Any, List, Optional
 import asyncio 
 
 from backend.Tria.tria_rag_service import TriaRequest, TriaResponse, QueryClassifier
-from backend.tria_bots.tria_agents import FrontendAgent, BackendAgent, DebugAgent, ArchitectureAgent, ProtocolAgent, AgentResponse
-from backend.tria_bots.tria_context import ContextManager
-from backend.tria_bots.live_code_analyzer import LiveCodeAnalyzer
+from backend.tria_agents.tria_agents import FrontendAgent, BackendAgent, DebugAgent, ArchitectureAgent, ProtocolAgent, AgentResponse
+from backend.tria_agents.tria_context import ContextManager
+from backend.tria_agents.live_code_analyzer import LiveCodeAnalyzer
 
 logger = logging.getLogger(__name__)
 
