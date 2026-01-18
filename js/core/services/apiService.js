@@ -7,7 +7,7 @@
 // ИЛИ раскомментировать и настроить вариант для локального эмулятора.
 
 // Вариант 1: Для развернутых Cloud Functions (замените плейсхолдеры!)
-const API_BASE_URL = 'common-elita-holograms-media-59398dd8.koyeb.app/';
+const API_BASE_URL = 'holograms-media-59398dd8.koyeb.app/';
 
 // Вариант 2: Для локального тестирования с Firebase Emulator (раскомментируйте и замените плейсхолдеры, если нужно)
 // const API_BASE_URL = 'http://127.0.0.1:5001/YOUR_PROJECT_ID/YOUR_REGION';
@@ -21,7 +21,7 @@ if (API_BASE_URL) {
         );
     }
 } else if (API_BASE_URL !== '') { // Если не задан и не пустая строка (для эмулятора)
-     console.error(
+    console.error(
         'API_BASE_URL в apiService.js не сконфигурирован (например, пуст, когда ожидается URL)! Функции API не будут работать.'
     );
 }
@@ -74,7 +74,7 @@ export async function syncUserAuth(idToken) {
             return await response.json();
         } else {
             // Если нет контента или не JSON, но статус OK (например, 201, 204)
-            return { status: response.status, message: "User sync processed." }; 
+            return { status: response.status, message: "User sync processed." };
         }
     } catch (error) {
         console.error("Error in syncUserAuth:", error);
@@ -94,7 +94,7 @@ export async function sendChatMessage(messageText, idToken) {
         console.error(message);
         return Promise.reject(new Error(message));
     }
-     if (!API_BASE_URL && API_BASE_URL !== '') {
+    if (!API_BASE_URL && API_BASE_URL !== '') {
         const message = "API_BASE_URL is not configured in apiService.js. Cannot send chat message.";
         console.error(message);
         return Promise.reject(new Error(message));
@@ -124,7 +124,7 @@ export async function sendChatMessage(messageText, idToken) {
             console.error('Error sending message to Tria agent:', response.status, errorMessage);
             throw new Error(`Tria agent request failed: ${errorMessage}`);
         }
-        
+
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
             return await response.json();

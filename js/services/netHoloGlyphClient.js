@@ -13,7 +13,7 @@ class NetHoloGlyphClient {
     constructor(signalingServerUrl) {
         // Priority 1: Provided URL
         // Priority 2: Production Koyeb URL (default)
-        this.signalingServerUrl = signalingServerUrl || 'wss://common-elita-holograms-media-59398dd8.koyeb.app/ws/signaling';
+        this.signalingServerUrl = signalingServerUrl || 'wss://holograms-media-59398dd8.koyeb.app/ws/signaling';
 
         this.rtcConfig = {
             iceServers: [

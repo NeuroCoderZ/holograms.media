@@ -1,6 +1,6 @@
 export async function loadWasmModule(moduleName) {
     try {
-        const wasmPath = `/wasm/${moduleName}`;
+        const wasmPath = `/js/wasm/${moduleName}`;
         const response = await fetch(wasmPath);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const bytes = await response.arrayBuffer();
