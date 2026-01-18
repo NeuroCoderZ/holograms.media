@@ -94,3 +94,12 @@ async def get_current_active_user_ws(current_user: dict = Depends(get_current_us
     if not current_user.get("is_active", False):
          raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     return current_user
+
+async def get_optional_current_active_user_ws(token: Optional[str] = Query(None)):
+    """Опциональная аутентификация для WebSocket."""
+    if not token:
+        return None
+    try:
+        return await get_current_user(token)
+    except Exception:
+        return None

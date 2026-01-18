@@ -62,6 +62,46 @@ async def read_root():
 async def health_check():
     return {"status": "ok", "message": "FastAPI is healthy"}
 
+# --- Static Files Serving ---
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+# Mount directories for frontend assets
+# Assumption: app.py is in backend/ and the root is one level up
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Serve root files (index.html, style.css, favicon.ico, manifest.json)
+@app.get("/")
+async def serve_index():
+    return FileResponse(os.path.join(base_dir, "index.html"))
+
+@app.get("/style.css")
+async def serve_style():
+    return FileResponse(os.path.join(base_dir, "style.css"))
+
+@app.get("/favicon.ico")
+async def serve_favicon():
+    return FileResponse(os.path.join(base_dir, "favicon.ico"))
+
+@app.get("/manifest.json")
+async def serve_manifest():
+    return FileResponse(os.path.join(base_dir, "manifest.json"))
+
+@app.get("/sw.js")
+async def serve_sw():
+    return FileResponse(os.path.join(base_dir, "sw.js"))
+
+# Mount subdirectories
+app.mount("/js", StaticFiles(directory=os.path.join(base_dir, "js")), name="js")
+app.mount("/css", StaticFiles(directory=os.path.join(base_dir, "css")), name="css")
+app.mount("/public", StaticFiles(directory=os.path.join(base_dir, "public")), name="public")
+app.mount("/icons", StaticFiles(directory=os.path.join(base_dir, "icons")), name="icons")
+app.mount("/holocore", StaticFiles(directory=os.path.join(base_dir, "holocore")), name="holocore")
+
+# Compatibility alias for /wasm -> /public/wasm or similar if needed
+# The frontend uses /js/wasm/ or /wasm/
+app.mount("/wasm", StaticFiles(directory=os.path.join(base_dir, "public", "wasm")), name="wasm_root")
+
 # --- CORS Middleware ---
 from fastapi.middleware.cors import CORSMiddleware
 origins = [

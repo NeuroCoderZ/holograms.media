@@ -12,7 +12,8 @@ import asyncpg
 from backend.tria_agents.CoordinationService import CoordinationService # <-- НОВЫЙ ИМПОРТ
 from backend.core.db.pg_connector import get_db_connection
 # Для аутентификации предполагается, что UserInDB импортируется security
-from backend.auth.security import get_current_active_user_ws
+from backend.auth.security import get_optional_current_active_user_ws
+from typing import Any
 
 router = APIRouter(tags=["Real-time Gesture Intents"])
 logger = logging.getLogger(__name__)
@@ -20,11 +21,15 @@ logger = logging.getLogger(__name__)
 @router.websocket("/ws/v1/gesture-intent")
 async def websocket_endpoint(
     websocket: WebSocket,
-    user: dict = Depends(get_current_active_user_ws),
-        db: asyncpg.Connection = Depends(get_db_connection),
+    user: Optional[dict] = Depends(get_optional_current_active_user_ws),
+    db: Any = Depends(get_db_connection),
 ):
+    # Note: get_current_active_user_ws might raise 401 if token is missing.
+    # To allow anonymous access for testing, we might need a custom dependency.
+    # For now, let's wrap it in try-except or adjust the dependency.
     await websocket.accept()
-    logger.info(f"WebSocket connection established for user {user.id if user else 'unknown'}")
+    user_id = user.get("id") if user else "anonymous"
+    logger.info(f"WebSocket connection established for user {user_id}")
 
 
     # ✅ Инициализируем CoordinationService
