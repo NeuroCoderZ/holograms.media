@@ -9,7 +9,7 @@ import asyncpg
 # или создать заглушку сервиса, чтобы файл мог быть импортирован в app.py.
 # Поскольку мы создаем сервис на следующем шаге, пока оставляем как есть.
 # from backend.services.gesture_intent_service import GestureIntentService # Заменено на CoordinationService
-from backend.tria_bots.CoordinationService import CoordinationService # <-- НОВЫЙ ИМПОРТ
+from backend.tria_agents.CoordinationService import CoordinationService # <-- НОВЫЙ ИМПОРТ
 from backend.core.db.pg_connector import get_db_connection
 # Для аутентификации предполагается, что UserInDB импортируется security
 from backend.auth.security import get_current_active_user_ws
