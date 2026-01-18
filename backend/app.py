@@ -36,6 +36,7 @@ from backend.api.v1.endpoints.chunks import router as chunks_router
 from backend.routers import gestures_ws
 from backend.routers.signaling import router as signaling_router # New signaling router
 from backend.routers.auth import router as auth_router # Import the new auth router
+from backend.routers.chat_sessions import router as chat_sessions_router # <-- НОВЫЙ ИМПОРТ
 
 API_V1_PREFIX = "/api/v1"
 
