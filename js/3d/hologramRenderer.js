@@ -22,7 +22,9 @@ export class HologramRenderer {
     this.scene = scene;
     this.eventBus = eventBus;
     this.netHoloGlyphClient = netHoloGlyphClient; // Use the new WebRTC client
-    this.latestAudioData = null; // Property to store the latest audio data
+    this.latestAudioData = null; // Legacy property
+    this.latestCwtData = null; // High-precision spectral data (from mixer)
+    this.latestSynthData = null; // Direct visual feedback from synth
     this.roomId = roomId;
     this.userId = userId;
 
@@ -61,6 +63,11 @@ export class HologramRenderer {
     this._createSequencerGrids();
     this._initializeColumns();
 
+    // Group for remote "Ghost Hands"
+    this.remoteHandsGroup = new THREE.Group();
+    this.hologramPivot.add(this.remoteHandsGroup);
+    this.remoteHands = new Map(); // Map to store meshes per user
+
     // Add the main hologram pivot to the Three.js scene.
     this.scene.add(this.hologramPivot);
 
@@ -94,10 +101,8 @@ export class HologramRenderer {
     if (Math.random() < 0.05) console.log('Renderer received data (Sample):', data.levels ? data.levels[0] : 'no levels');
 
     // Store the latest data (levels: Float32Array[256], pans: Float32Array[256])
-    // Only use if NOT in gesture synth mode (synth takes priority)
-    if (!state.audio?.isGestureSynthMode) {
-      this.latestAudioData = data;
-    }
+    this.latestCwtData = data;
+    this.latestAudioData = data; // Keep for compatibility
   }
 
   /**
@@ -106,20 +111,85 @@ export class HologramRenderer {
    * @param {object} data - { levels: Float32Array(256), pans: Float32Array(256), isGestureSynth: true }
    */
   handleGestureSynthData(data) {
-    if (state.audio?.isGestureSynthMode && data.isGestureSynth) {
-      // Gesture Synth takes priority - use its data for visualization
-      this.latestAudioData = data;
+    if (data.isGestureSynth) {
+      this.latestSynthData = data;
     }
   }
 
   /**
    * Handles incoming holographic quanta from other peers.
-   * For now, just log the data. Later, this will involve rendering a second hologram.
    * @param {object} quantumData - The received holographic quantum.
    */
   handleRemoteQuantum(quantumData) {
-    console.log("Received remote quantum:", quantumData);
-    // TODO: Implement rendering of remote holograms based on quantumData
+    if (quantumData.type === 'gesture_frame') {
+      this._updateGhostHands(quantumData.hands, quantumData.userId || 'remote');
+    }
+  }
+
+  /**
+   * Visualizes remote gestures as "Ghost Hands" (Spectral Brushes).
+   */
+  _updateGhostHands(hands, remoteUserId) {
+    if (!hands) return;
+
+    let userHands = this.remoteHands.get(remoteUserId);
+    if (!userHands) {
+      userHands = {
+        left: this._createGhostHandMesh(0x00ffff), // Cyan for left
+        right: this._createGhostHandMesh(0xff00ff) // Magenta for right
+      };
+      this.remoteHandsGroup.add(userHands.left);
+      this.remoteHandsGroup.add(userHands.right);
+      this.remoteHands.set(remoteUserId, userHands);
+    }
+
+    this._positionGhostHand(userHands.left, hands.left);
+    this._positionGhostHand(userHands.right, hands.right);
+  }
+
+  _createGhostHandMesh(color) {
+    const geometry = new THREE.SphereGeometry(CELL_SIZE * 0.8, 16, 16);
+    const material = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0.3,
+      wireframe: true
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.visible = false;
+
+    // Add a glowing core
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(CELL_SIZE * 0.3, 8, 8),
+      new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.6 })
+    );
+    mesh.add(core);
+
+    return mesh;
+  }
+
+  _positionGhostHand(mesh, handData) {
+    if (!handData || !handData.active) {
+      mesh.visible = false;
+      return;
+    }
+
+    mesh.visible = true;
+
+    // Map frequency (0-127) to Y
+    const yPos = (handData.frequency / 127) * GRID_HEIGHT - (GRID_HEIGHT / 2);
+
+    // Map pan (-1 to 1) to X
+    const xPos = handData.pan * (GRID_WIDTH / 2);
+
+    // Map gain/depth (0 to 1) to Z
+    const zPos = (handData.gain - 0.5) * GRID_DEPTH;
+
+    mesh.position.set(xPos, yPos, zPos);
+
+    // Scale based on bandwidth
+    const s = 0.5 + (handData.bandwidth / 10);
+    mesh.scale.set(s, s, s);
   }
 
   // --- Private Helper Methods for 3D Object Creation ---
@@ -540,10 +610,29 @@ export class HologramRenderer {
       return;
     }
 
-    let audioData = this.latestAudioData;
+    let audioData = this.latestCwtData;
+    const synthData = this.latestSynthData;
 
-    // Fallback to global state if local not updated
-    if (!audioData && state.audio && state.audio.latestAudioData) {
+    // BLENDING LOGIC: Merge CWT and Synth data
+    if (synthData && state.audio?.isGestureSynthMode) {
+      if (!audioData) {
+        audioData = synthData;
+      } else {
+        // Create a merged copy
+        const mergedLevels = new Float32Array(256);
+        const mergedPans = new Float32Array(256);
+
+        for (let i = 0; i < 256; i++) {
+          mergedLevels[i] = Math.max(audioData.levels[i] || -128, synthData.levels[i] || -128);
+          if (synthData.levels[i] > -80) {
+            mergedPans[i] = synthData.pans[i];
+          } else {
+            mergedPans[i] = audioData.pans[i] || 0;
+          }
+        }
+        audioData = { levels: mergedLevels, pans: mergedPans };
+      }
+    } else if (!audioData && state.audio?.latestAudioData) {
       audioData = state.audio.latestAudioData;
     }
 

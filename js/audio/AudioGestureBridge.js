@@ -12,7 +12,7 @@ export class AudioGestureBridge {
      * @returns {object} - Modified audio data
      */
     static applyModulation(audioData, modulationData, isSynthMode) {
-        if (!isSynthMode || !modulationData) return audioData;
+        if (!modulationData) return audioData;
 
         const levels = new Float32Array(audioData.levels);
         const pans = new Float32Array(audioData.pans);
