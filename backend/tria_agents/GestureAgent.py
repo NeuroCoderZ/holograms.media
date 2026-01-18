@@ -72,7 +72,7 @@ class GestureBot:
             result = await asyncio.get_event_loop().run_in_executor(
                 None,
                 subprocess.run,
-                ['node', 'backend/tria_bots/tfjs_adapter.js', json.dumps(gesture_data)],
+                ['node', 'backend/tria_agents/tfjs_adapter.js', json.dumps(gesture_data)],
                 {'capture_output': True, 'text': True}
             )
             prediction = json.loads(result.stdout.strip())['prediction']

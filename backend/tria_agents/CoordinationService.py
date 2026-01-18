@@ -2,20 +2,20 @@ import logging
 import asyncpg
 import asyncio # ✅ Added import
 from backend.services.gesture_intent_service import GestureIntentService
-from backend.tria_bots.GestureAgent import GestureAgent
-from backend.tria_bots.MemoryBot import MemoryBot
-from backend.tria_bots.LearningBot import LearningBot # <-- Убедись, что импорт раскомментирован
+from backend.tria_agents.GestureAgent import GestureBot
+from backend.tria_agents.MemoryAgent import MemoryBot
+from backend.tria_agents.LearningAgent import LearningBot # <-- Убедись, что импорт раскомментирован
 
 logger = logging.getLogger(__name__)
 
 class CoordinationService:
     def __init__(self, db_conn: asyncpg.Connection):
         self.db_conn = db_conn
-        self.gesture_bot = GestureAgent(self.db_conn)
+        self.gesture_bot = GestureBot(self.db_conn)
         self.memory_bot = MemoryBot(self.db_conn)
         self.gesture_intent_service = GestureIntentService(self.db_conn)
         self.learning_bot = LearningBot(self.db_conn)
-        logger.info("CoordinationService initialized with GestureAgent, MemoryBot, GestureIntentService, and LearningBot.")
+        logger.info("CoordinationService initialized with GestureBot, MemoryBot, GestureIntentService, and LearningBot.")
 
     async def handle_gesture_intent(self, user_id: str, intent_data: dict):
         """
