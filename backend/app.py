@@ -110,11 +110,22 @@ async def startup_event():
         logger.warning("One or more Backblaze B2 environment variables are missing. S3 client not initialized.")
         app.state.s3_client = None
 
+    # --- Initialize Database Pool ---
+    from backend.core.db.pg_connector import create_db_pool
+    app.state.db_pool = await create_db_pool()
+    if app.state.db_pool:
+        logger.info("Database pool added to app.state.")
+    else:
+        logger.warning("Database pool initialization FAILED. Database dependent routes will fail.")
+
     logger.info("FastAPI application startup event processing completed.")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("--- Application Shutdown ---")
+    if hasattr(app.state, 'db_pool') and app.state.db_pool:
+        await app.state.db_pool.close()
+        logger.info("Database pool closed.")
     
 
 

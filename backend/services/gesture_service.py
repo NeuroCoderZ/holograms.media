@@ -24,7 +24,15 @@ from backend.core.models.gesture_models import CoreGestureModel # GestureUpdate 
 
 class GestureService:
     def __init__(self, conn: asyncpg.Connection):
-        self.repo = GestureRepository(conn)
+        # NOTE: GestureRepository currently uses httpx for Cloudflare API.
+        # However, it expects a client and api_key or similar. 
+        # Here, it was being passed a DB connection which is a type mismatch.
+        # We'll temporarily use a dummy client for initialization if needed,
+        # but the real fix is to decide if Gestures are in DB or Cloudflare.
+        # For now, we stub around the mismatch to let the app start.
+        import httpx
+        self.conn = conn
+        self.repo = GestureRepository(client=httpx.AsyncClient(), api_key="placeholder") 
 
     async def get_user_gestures(self, user_id: str, skip: int, limit: int) -> List[UserGestureDefinitionDB]:
         """

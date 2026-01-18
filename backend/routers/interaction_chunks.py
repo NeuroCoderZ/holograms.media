@@ -4,7 +4,7 @@ import json
 import traceback
 
 from backend.repositories.interaction_chunk_repository import InteractionChunkRepository
-from backend.core.dependencies import get_db_connection
+from backend.core.db.pg_connector import get_db_connection
 from backend.core.models.interaction_chunk_model import InteractionChunkCreate, InteractionChunkDB
 from backend.core.models.user_models import UserInDB
 from backend.auth import security
