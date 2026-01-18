@@ -17,6 +17,12 @@ jobs:
         with:
           api_token: ${{ secrets.KOYEB_API_TOKEN }}
 
+      # НОВЫЙ ШАГ: Удаляем старый сервис, чтобы освободить 512МБ RAM
+      - name: 🧹 Cleanup Old Service (Free Tier Workaround)
+        run: |
+          echo "Checking for existing service to free up quota..."
+          koyeb service delete holograms-media/backend --force || echo "Service not found, skipping cleanup."
+
       - name: 🚀 Deploy Backend to Koyeb
         id: koyeb-deploy
         uses: koyeb/action-git-deploy@v1
