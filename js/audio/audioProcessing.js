@@ -9,7 +9,51 @@ import eventBus from '../core/eventBus.js';
 // import wasmUrl from '../../public/wasm/holographic_core_bg.wasm?url';
 import { AudioGestureBridge } from './AudioGestureBridge.js';
 
-// ...
+// Global state
+let cwtWorkletNode = null;
+let cwtWorkletReady = false;
+let engineMode = 'INITIALIZING';
+
+// PROXY NODE: Always-available input collector
+// This allows synchronous graph connection even before WASM is ready
+let inputProxyNode = null;
+let proxyConnectedToWorklet = false;
+
+/**
+ * Initializes or retrieves the global AudioContext.
+ */
+export function getAudioContext() {
+    if (state.audio && state.audio.audioContext && state.audio.audioContext.state !== 'closed') {
+        return state.audio.audioContext;
+    }
+    if (!state.audio) state.audio = {};
+    state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    return state.audio.audioContext;
+}
+
+/**
+ * Gets or creates the input proxy node.
+ * This node collects ALL audio sources and routes them to the CQT worklet.
+ */
+function getInputProxyNode(audioContext) {
+    if (!inputProxyNode) {
+        inputProxyNode = audioContext.createGain();
+        inputProxyNode.gain.value = 1.0;
+        console.log('[AudioProcessing] 🔗 Input proxy node created.');
+    }
+    return inputProxyNode;
+}
+
+/**
+ * Connects the proxy node to the worklet (called after worklet is ready).
+ */
+function connectProxyToWorklet() {
+    if (inputProxyNode && cwtWorkletNode && !proxyConnectedToWorklet) {
+        inputProxyNode.connect(cwtWorkletNode);
+        proxyConnectedToWorklet = true;
+        console.log('[AudioProcessing] 🔗 Proxy node connected to CQT worklet. Audio will now flow!');
+    }
+}
 
 /**
  * Attempts to fetch WASM from multiple possible paths.
