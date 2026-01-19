@@ -32,9 +32,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: [
-        'three'
-      ]
+      // Remove external: ['three'] to bundle it
     }
   },
   assetsInclude: ['**/*.wasm']
