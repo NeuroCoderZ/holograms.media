@@ -111,18 +111,21 @@ class NetHoloGlyphClient {
     }
 
     handleReconnection() {
-        if (!this.isReconnecting && this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.isReconnecting = true;
-            const delay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts);
-            console.log(`[NetHoloGlyphClient] Reconnecting in ${delay}ms...`);
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            const delay = this.baseReconnectDelay * Math.pow(1.5, this.reconnectAttempts); // Less aggressive backoff
+            console.log(`[NetHoloGlyphClient] Connection lost. Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+
+            if (this.reconnectTimeoutId) clearTimeout(this.reconnectTimeoutId);
 
             this.reconnectTimeoutId = setTimeout(() => {
-                this.reconnectAttempts++;
-                this.isReconnecting = false;
                 if (this.roomId && this.userId) {
+                    console.log("[NetHoloGlyphClient] Attempting reconnect...");
                     this.connect(this.roomId, this.userId);
                 }
             }, delay);
+        } else {
+            console.error("[NetHoloGlyphClient] Max reconnect attempts reached. Giving up.");
         }
     }
 

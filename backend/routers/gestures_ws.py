@@ -32,8 +32,13 @@ async def websocket_endpoint(
     logger.info(f"WebSocket connection established for user {user_id}")
 
 
-    # ✅ Инициализируем CoordinationService
-    coordination_service = CoordinationService(db) # Передаем db_conn
+    try:
+        # ✅ Инициализируем CoordinationService c защитой от сбоев
+        coordination_service = CoordinationService(db) # Передаем db_conn
+    except Exception as e:
+        logger.error(f"Failed to initialize CoordinationService for user {user_id}: {e}", exc_info=True)
+        await websocket.close(code=1011, reason="Internal Server Error: AI Services Unavailable")
+        return
 
     try:
         while True:
