@@ -4,7 +4,8 @@
   "description": "Backend services for Holograms Media",
   "main": "index.js",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "three": "^0.160.0"
   },
   "scripts": {
     "dev": "vite",
