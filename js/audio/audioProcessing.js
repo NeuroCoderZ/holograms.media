@@ -60,9 +60,9 @@ function connectProxyToWorklet() {
  */
 async function fetchWasmWithFallbackPaths() {
     const possiblePaths = [
-        '/wasm/holographic_core_bg.wasm' // Explicit static path (from public/)
+        '/holographic_core_bg.wasm', // Root path (moved from public/wasm/)
+        '/wasm/holographic_core_bg.wasm' // Legacy fallback
     ];
-
     for (const path of possiblePaths) {
         try {
             console.log(`[AudioProcessing] Trying WASM path: ${path}`);
