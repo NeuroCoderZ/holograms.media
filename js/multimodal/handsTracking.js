@@ -1,7 +1,9 @@
 // handsTracking.js
-import { Camera } from 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js';
-import { Hands } from 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js';
-import { drawConnectors, drawLandmarks } from 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js';
+// handsTracking.js
+// MediaPipe now loaded via index.html globals
+const { Camera } = window;
+const { Hands } = window;
+const { drawConnectors, drawLandmarks } = window;
 import eventBus from '../core/eventBus.js';
 
 import { state } from '../core/init.js';

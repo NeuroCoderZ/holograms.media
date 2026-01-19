@@ -5,6 +5,8 @@
 import { state } from '../core/init.js';
 import { deviceCapabilities } from '../utils/deviceCapabilities.js';
 import eventBus from '../core/eventBus.js';
+// Import WASM URL explicitly for Vite
+import wasmUrl from '../../public/wasm/holographic_core_bg.wasm?url';
 import { AudioGestureBridge } from './AudioGestureBridge.js';
 
 // Global state
@@ -58,9 +60,7 @@ function connectProxyToWorklet() {
  */
 async function fetchWasmWithFallbackPaths() {
     const possiblePaths = [
-        '/js/wasm/holographic_core_bg.wasm',
-        '/wasm/holographic_core_bg.wasm',
-        '/holographic_core_bg.wasm'
+        wasmUrl // Use the imported URL first
     ];
 
     for (const path of possiblePaths) {
