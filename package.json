@@ -3,11 +3,7 @@
   "version": "1.0.0",
   "description": "Backend services for Holograms Media",
   "main": "index.js",
-  "dependencies": {
-    "@tensorflow/tfjs": "^4.17.0",
-    "@tensorflow/tfjs-backend-cpu": "^4.17.0"
-  },
-  "scripts": {
+  "express": "^4.18.2""scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

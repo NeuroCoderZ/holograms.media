@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 # Removed asyncpg
 import asyncio # ✅ Added import
 from backend.services.gesture_intent_service import GestureIntentService

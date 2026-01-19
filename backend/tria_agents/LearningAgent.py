@@ -1,5 +1,6 @@
 # backend/tria_agents/LearningAgent.py
 # Removed asyncpg
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
