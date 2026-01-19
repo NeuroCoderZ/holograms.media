@@ -68,11 +68,17 @@ class GestureAgent:
                 ['node', 'backend/tria_agents/tfjs_adapter.js', json.dumps(gesture_data)],
                 {'capture_output': True, 'text': True}
             )
+            if result.returncode != 0:
+                logger.warning(f"TFJS Agent failed to start (exit code {result.returncode}). Stderr: {result.stderr}")
+                logger.warning("WARNING: TFJS Agent failed to start. Continuing without it.")
+                return 'unknown'
+                
             prediction = json.loads(result.stdout.strip())['prediction']
             gesture_classes = ['wave', 'point', 'fist']
             return gesture_classes[prediction]
         except Exception as e:
             logger.error(f"Ошибка предсказания жеста: {e}")
+            logger.warning("WARNING: TFJS Agent failed to start. Continuing without it.")
             return 'unknown'
 
     async def _invoke_saved_gestures(self, predicted_gesture: str) -> None:

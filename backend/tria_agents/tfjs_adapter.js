@@ -1,7 +1,8 @@
 // backend/tria_agents/tfjs_adapter.js
 // Маленькая нейросеть на TensorFlow.js для предсказания жестов
 
-const tf = require('@tensorflow/tfjs-node'); // Используем node версию для сервера
+const tf = require('@tensorflow/tfjs'); // Используем обычную JS версию
+require('@tensorflow/tfjs-backend-cpu'); // Добавляем CPU backend
 
 // Простая модель для предсказания классов жестов
 let gestureModel;
