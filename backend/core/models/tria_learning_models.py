@@ -20,7 +20,7 @@ class BaseAuditModel(BaseModel):
     updated_at: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
 
     class Config:
-        orm_mode = True # Pydantic V1
+        from_attributes = True # Pydantic V1 (migrated)
         # from_attributes = True # Pydantic V2
 
 # Используем UUIDDBBaseModel из нашего существующего base_models.py

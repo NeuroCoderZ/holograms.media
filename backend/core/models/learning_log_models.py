@@ -21,7 +21,7 @@ class TriaLearningLogModel(BaseModel):
     custom_data: Optional[Dict[str, Any]] = Field(default=None, description="Flexible JSONB field for any additional structured data relevant to the log entry.") # Renamed from details_json
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         schema_extra = {
             "examples": [
                 {

@@ -36,7 +36,7 @@ class InterpretedGestureSequenceDB(InterpretedGestureSequenceBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Represents a user's saved custom gesture definition.
 # Aligns with the 'user_gestures' table.
@@ -57,7 +57,7 @@ class UserGestureDefinitionDB(UserGestureDefinitionBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Model for API requests that might involve gesture data
 class GestureRecognitionRequest(BaseModel):
@@ -125,7 +125,7 @@ class CoreGestureModel(BaseUUIDModel): # Inherits id, created_at, updated_at
     custom_metadata_json: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Other custom metadata.")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         schema_extra = {
             "examples": [
                 {

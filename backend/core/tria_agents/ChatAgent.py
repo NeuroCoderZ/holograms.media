@@ -79,12 +79,12 @@ class ChatAgent:
 # Example Usage (for direct testing of this file, not for production Cloud Function context)
 async def main_chatbot_test():
     # This test function demonstrates how to use the ChatBot class.
-        # It requires the MISTRAL_API_KEY environment variable to be set for the LLMService to function.
-        import os # Import os here for environment variable check in direct run context
-        if not os.environ.get("MISTRAL_API_KEY"):
-            logger.warning("MISTRAL_API_KEY environment variable not set. Skipping direct test of ChatAgent.")
-            logger.warning("To test: export MISTRAL_API_KEY='your_actual_api_key' && python backend/core/tria_agents/ChatAgent.py")
-            return
+    # It requires the MISTRAL_API_KEY environment variable to be set for the LLMService to function.
+    import os # Import os here for environment variable check in direct run context
+    if not os.environ.get("MISTRAL_API_KEY"):
+        logger.warning("MISTRAL_API_KEY environment variable not set. Skipping direct test of ChatAgent.")
+        logger.warning("To test: export MISTRAL_API_KEY='your_actual_api_key' && python backend/core/tria_agents/ChatAgent.py")
+        return
 
     logger.info("Starting ChatAgent direct test...")
     chat_agent = ChatAgent()

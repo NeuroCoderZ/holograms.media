@@ -50,7 +50,7 @@ class DBBaseModel(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp of last update (UTC).")
 
     class Config:
-        orm_mode = True # Allows Pydantic to work with ORM objects
+        from_attributes = True # Allows Pydantic to work with ORM objects
         # Using `alias_generator` can be helpful if your DB columns have different naming conventions
         # e.g., camelCase in Python and snake_case in SQL.
         # However, for this project, we'll aim for consistent naming if possible.
@@ -65,7 +65,7 @@ class UUIDDBBaseModel(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp of last update (UTC).")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Note: datetime.utcnow is used in the appended models.
 # The original core models used datetime.now(timezone.utc).

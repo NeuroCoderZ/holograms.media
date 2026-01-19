@@ -70,7 +70,9 @@ This phase is focused on creating a stable, well-documented, and understandable 
 *Key tasks:*
     *   Stable operation of MediaPipe Hands (`handsTracking.js`) for gesture capture.
     *   Set up WebRTC for video context capture (optional).
-    *   Implement API endpoint on FastAPI backend (Koyeb) for receiving chunks, uploading media files to **Cloudflare R2**, and saving metadata in **AstraDB**.
+    *   Implement API endpoint on FastAPI backend (Koyeb) for receiving chunks.
+    - **Database**: Astra DB (NoSQL/Vector) for flexible metadata and vector embeddings.
+    - **Storage**: Backblaze B2 (S3) for media files.
 *Result:* Data collection system for Tria training.
 
 **Key Documentation Updates ([SYSTEM_ARCHITECTURE.MD](../Architecture/SystemDescription.MD), [ROADMAP.MD](./Roadmap.md), etc.):**

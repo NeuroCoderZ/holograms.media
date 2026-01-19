@@ -69,7 +69,9 @@
 *Ключевые задачи:*
     *   Стабильная работа MediaPipe Hands (`handsTracking.js`) для захвата жестов.
     *   Настройка WebRTC для захвата видео-контекста (опционально).
-    *   Реализация API-эндпоинта на бэкенде FastAPI (Koyeb) для приема чанков, загрузки медиа-файлов в **Backblaze B2** и сохранения метаданных в **AstraDB**.
+    *   Реализация API-эндпоинта на бэкенде FastAPI (Koyeb) для приема чанков:
+        - **Database**: Astra DB (NoSQL/Vector) for flexible metadata and vector embeddings.
+        - **Storage**: Backblaze B2 (S3) for media files.
 *Результат:* Система сбора данных для обучения Триа.
 
 **Актуализация ключевой документации ([SYSTEM_ARCHITECTURE.MD](../Architecture/SystemDescription.MD), [ROADMAP.MD](./Roadmap.md) и др.):**

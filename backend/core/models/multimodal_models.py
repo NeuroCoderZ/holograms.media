@@ -26,7 +26,7 @@ class AudiovisualGesturalChunkModel(BaseUUIDModel):
     custom_metadata_json: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Any other custom metadata for this chunk.")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         schema_extra = {
             "examples": [
                 {
@@ -53,7 +53,7 @@ class UserGestureModel(BaseModel):
     thumbnail_url: Optional[str] = Field(default=None, description="Placeholder for gesture thumbnail URL.")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         schema_extra = {
             "examples": [
                 {

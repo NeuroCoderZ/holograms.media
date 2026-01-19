@@ -43,12 +43,7 @@ jobs:
             PYTHONUNBUFFERED=1
             PYTHONDONTWRITEBYTECODE=1
             PORT=8000
-            ASTRA_DB_APPLICATION_TOKEN=${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}
-            ASTRA_DATABASE_URL=${{ secrets.ASTRA_DATABASE_URL }}
-            B2_ACCESS_KEY_ID=${{ secrets.B2_ACCESS_KEY_ID }}
-            B2_SECRET_ACCESS_KEY=${{ secrets.B2_SECRET_ACCESS_KEY }}
-            B2_ENDPOINT_URL=${{ secrets.B2_ENDPOINT_URL }}
-            B2_BUCKET_NAME=${{ secrets.B2_BUCKET_NAME }}
+            PORT=8000
 
       - name: 📋 Output Backend URL
         run: |

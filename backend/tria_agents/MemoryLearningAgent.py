@@ -146,5 +146,4 @@ class MemoryLearningAgent:
         """
         Закрывает соединения.
         """
-        await self.rag_client.aclose()</content>
-</edit_file>
+        await self.rag_client.aclose()

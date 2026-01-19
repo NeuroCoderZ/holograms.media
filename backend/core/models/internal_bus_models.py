@@ -20,7 +20,7 @@ class InternalMessage(BaseModel):
     priority: Optional[int] = Field(default=0, description="Message priority, if applicable.")
 
     class Config:
-        orm_mode = True # Kept from core version
+        from_attributes = True # Kept from core version
         extra = "forbid" # Added from models version
         schema_extra = { # Kept from core version
             "examples": [
