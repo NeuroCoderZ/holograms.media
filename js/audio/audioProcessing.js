@@ -119,11 +119,16 @@ export async function initializeCwtWorklet(audioContext) {
         throw new Error(`[AudioProcessing] Failed to load AudioWorklet: ${e.message}`);
     }
 
-    // 2. Fetch and compile WASM
-    console.log('[AudioProcessing] Loading WASM module...');
-    const wasmBytes = await fetchWasmWithFallbackPaths();
-    const wasmModule = await WebAssembly.compile(wasmBytes);
-    console.log('[AudioProcessing] ✅ WASM compiled.');
+    // 2. Fetch and compile WASM (with robust fallback)
+    let wasmModule = null;
+    try {
+        console.log('[AudioProcessing] Loading WASM module...');
+        const wasmBytes = await fetchWasmWithFallbackPaths();
+        wasmModule = await WebAssembly.compile(wasmBytes);
+        console.log('[AudioProcessing] ✅ WASM compiled.');
+    } catch (e) {
+        console.warn(`[AudioProcessing] ⚠ WASM load failed: ${e.message}. Switching to JS fallback.`);
+    }
 
     // 3. Create worklet node with flexible channel handling
     cwtWorkletNode = new AudioWorkletNode(audioContext, 'cwt-processor', {
@@ -140,9 +145,15 @@ export async function initializeCwtWorklet(audioContext) {
         channelInterpretation: 'speakers'
     });
 
-    // 4. Send WASM module to the worklet for acceleration
+    // 4. Send WASM module if available, otherwise signal JS mode
     if (wasmModule) {
         cwtWorkletNode.port.postMessage({ type: 'WASM_MODULE', module: wasmModule });
+    } else {
+        // Explicitly trigger JS mode if no WASM
+        cwtWorkletNode.port.postMessage({ type: 'FORCE_JS_MODE' });
+        cwtWorkletReady = true;
+        engineMode = 'JS_GOERTZEL';
+        console.log('[AudioProcessing] ⚠ Running in JS Fallback Mode (WASM missing)');
     }
 
     // Connect worklet to destination (passthrough audio)
@@ -152,35 +163,83 @@ export async function initializeCwtWorklet(audioContext) {
     // CRITICAL: Connect proxy to worklet NOW
     connectProxyToWorklet();
 
-    // 4. Wait for WASM_READY
-    return new Promise((resolve) => {
-        const timeoutId = setTimeout(() => {
-            console.warn('[AudioProcessing] ⚠ WASM init timeout (5s). Using JS Goertzel fallback.');
-            cwtWorkletReady = true;
-            engineMode = 'JS_GOERTZEL';
-            resolve(true);
-        }, 5000);
+    // 4. Wait for WASM_READY (only if WASM was loaded)
+    if (wasmModule) {
+        return new Promise((resolve) => {
+            const timeoutId = setTimeout(() => {
+                console.warn('[AudioProcessing] ⚠ WASM init timeout (5s). Using JS Goertzel fallback.');
+                cwtWorkletReady = true;
+                engineMode = 'JS_GOERTZEL';
+                resolve(true);
+            }, 5000);
 
+            cwtWorkletNode.port.onmessage = (event) => {
+                const { type } = event.data;
+
+                if (type === 'WASM_READY') {
+                    clearTimeout(timeoutId);
+                    cwtWorkletReady = true;
+                    engineMode = 'CQT_WASM';
+                    console.log('[AudioProcessing] ✅ CQT WASM engine ready.');
+                    console.log(`[AudioProcessing] 🚀 Engine ACTIVE. Mode: ${engineMode}`);
+                    resolve(true);
+                } else if (type === 'AUDIO_DATA') {
+                    // ... (same data handling)
+                    // --- GESTURE MIXER BRIDGE ---
+                    // Modulate raw analysis data with hand gestures before visualization/synthesis
+                    const modulationData = state.multimodal?.gestureModulationData;
+                    const isSynthMode = state.audio?.isGestureSynthMode === true;
+
+                    const rawData = { levels: event.data.levels, pans: event.data.angles };
+                    const modulatedData = AudioGestureBridge.applyModulation(rawData, modulationData, isSynthMode);
+
+                    // --- EMIT DATA ---
+                    const levels = modulatedData.levels;
+                    const pans = modulatedData.pans;
+
+                    const fullPans = new Float32Array(256);
+                    if (pans && pans.length === 128) {
+                        fullPans.set(pans, 0);
+                        fullPans.set(pans, 128);
+                    } else if (pans && pans.length >= 256) {
+                        fullPans.set(pans.subarray(0, 256));
+                    }
+
+                    const payload = { levels: levels, pans: fullPans };
+                    eventBus.emit('audioData', payload);
+
+                    state.audio.latestAudioData = {
+                        ...payload,
+                        timestamp: performance.now()
+                    };
+                } else if (type === 'WASM_ERROR') {
+                    clearTimeout(timeoutId);
+                    console.warn('[AudioProcessing] ⚠ WASM error, using JS fallback.');
+                    cwtWorkletReady = true;
+                    engineMode = 'JS_GOERTZEL';
+                    resolve(true);
+                }
+            };
+
+            // Send WASM module to worklet
+            cwtWorkletNode.port.postMessage({
+                type: 'WASM_MODULE',
+                module: wasmModule
+            });
+        });
+    } else {
+        // Immediate resolve for JS mode
+        // Attach data listener for JS mode too
         cwtWorkletNode.port.onmessage = (event) => {
             const { type } = event.data;
-
-            if (type === 'WASM_READY') {
-                clearTimeout(timeoutId);
-                cwtWorkletReady = true;
-                engineMode = 'CQT_WASM';
-                console.log('[AudioProcessing] ✅ CQT WASM engine ready.');
-                console.log(`[AudioProcessing] 🚀 Engine ACTIVE. Mode: ${engineMode}`);
-                resolve(true);
-            } else if (type === 'AUDIO_DATA') {
-                // --- GESTURE MIXER BRIDGE ---
-                // Modulate raw analysis data with hand gestures before visualization/synthesis
+            if (type === 'AUDIO_DATA') {
+                // Duplicate data handling logic for JS mode
                 const modulationData = state.multimodal?.gestureModulationData;
                 const isSynthMode = state.audio?.isGestureSynthMode === true;
 
                 const rawData = { levels: event.data.levels, pans: event.data.angles };
                 const modulatedData = AudioGestureBridge.applyModulation(rawData, modulationData, isSynthMode);
 
-                // --- EMIT DATA ---
                 const levels = modulatedData.levels;
                 const pans = modulatedData.pans;
 
@@ -199,21 +258,10 @@ export async function initializeCwtWorklet(audioContext) {
                     ...payload,
                     timestamp: performance.now()
                 };
-            } else if (type === 'WASM_ERROR') {
-                clearTimeout(timeoutId);
-                console.warn('[AudioProcessing] ⚠ WASM error, using JS fallback.');
-                cwtWorkletReady = true;
-                engineMode = 'JS_GOERTZEL';
-                resolve(true);
             }
         };
-
-        // Send WASM module to worklet
-        cwtWorkletNode.port.postMessage({
-            type: 'WASM_MODULE',
-            module: wasmModule
-        });
-    });
+        return Promise.resolve(true);
+    }
 }
 
 /**
