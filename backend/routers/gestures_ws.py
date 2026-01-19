@@ -13,7 +13,7 @@ from backend.tria_agents.CoordinationService import CoordinationService # <-- Н
 from backend.core.db.astra_connector import get_db
 # Для аутентификации предполагается, что UserInDB импортируется security
 from backend.auth.security import get_optional_current_active_user_ws
-from typing import Any
+from typing import Any, Optional
 
 router = APIRouter(tags=["Real-time Gesture Intents"])
 logger = logging.getLogger(__name__)
