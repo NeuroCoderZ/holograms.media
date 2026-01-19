@@ -1,7 +1,7 @@
 // handsTracking.js
-import { Camera } from 'https://esm.sh/@mediapipe/camera_utils';
-import { Hands } from 'https://esm.sh/@mediapipe/hands';
-import { drawConnectors, drawLandmarks } from 'https://esm.sh/@mediapipe/drawing_utils';
+import { Camera } from 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js';
+import { Hands } from 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js';
+import { drawConnectors, drawLandmarks } from 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js';
 import eventBus from '../core/eventBus.js';
 
 import { state } from '../core/init.js';
