@@ -70,7 +70,10 @@ base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Serve root files (index.html, style.css, favicon.ico, manifest.json)
 @app.get("/")
 async def serve_index():
-    return FileResponse(os.path.join(base_dir, "index.html"))
+    index_path = os.path.join(base_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "Holograms Media API is running (Frontend index.html not found, but API is healthy)"}
 
 @app.get("/style.css")
 async def serve_style():
