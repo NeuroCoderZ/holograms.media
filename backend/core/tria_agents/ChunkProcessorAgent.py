@@ -130,16 +130,21 @@ class ChunkProcessorAgent:
                     "storage_ref": saved_chunk_model.storage_ref,
                     "chunk_type": saved_chunk_model.chunk_type
                 }
+                from backend.repositories.learning_log_repository import LearningLogRepository
+                from backend.core.models.tria_learning_models import TriaLearningLogCreate
+
                 log_entry_data = {
-                    "timestamp": datetime.utcnow(), # Use UTC for consistency
-                    "event_type": "chunk_metadata_processed",
-                    "agent_affected_id": self.__class__.__name__, # Use class name for agent ID
-                    "summary_text": f"Successfully processed metadata for chunk: {saved_chunk_model.id}",
-                    "custom_data": log_details,
-                    "user_id": saved_chunk_model.user_id # Explicitly pass user_id for logging context
+                    "user_id": saved_chunk_model.user_id or "unknown",
+                    "intent_vector": {}, # Chunk processing doesn't have an intent vector, passing empty dict
+                    "action_result": "success",
+                    "result_message": f"Successfully processed metadata for chunk: {saved_chunk_model.id}",
+                    "additional_metadata": log_details
                 }
-                log_entry = TriaLearningLogModel(**log_entry_data)
-                await create_tria_learning_log_entry(db=db, log_entry_create=log_entry)
+                
+                # Use the repository directly
+                learning_repo = LearningLogRepository(db)
+                log_create = TriaLearningLogCreate(**log_entry_data)
+                await learning_repo.create_log_entry(log_create)
                 logger.info(f"Successfully created learning log entry for chunk {saved_chunk_model.id}")
             except Exception as log_e:
                 # Log errors during learning log creation but do not prevent the main operation from succeeding.

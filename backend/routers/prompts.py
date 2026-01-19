@@ -64,9 +64,10 @@ async def get_latest_prompt_version_endpoint(
     db: Any = Depends(get_db)
 ):
     prompt_service = PromptService(db)
-            latest_version = await prompt_service.get_latest_prompt_version(
-                prompt_title=prompt_title,
-                user_id=current_user.user_id    )
+    latest_version = await prompt_service.get_latest_prompt_version(
+        prompt_title=prompt_title,
+        user_id=current_user.user_id
+    )
     if not latest_version:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No prompt found with title '{prompt_title}'.")
     return latest_version

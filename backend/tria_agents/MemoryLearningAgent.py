@@ -91,16 +91,17 @@ class MemoryLearningAgent:
         Обрабатывает взаимодействие для самообучения, логируя данные и адаптируя модель.
         """
         # Логирование в tria_learning_log
-        log_entry = TriaLearningLogModel(
-            user_id=learning_data.get('user_id'),
-            session_id=learning_data.get('session_id'),
-            intent_vector=learning_data.get('intent_vector'),
-            action_result=learning_data.get('action_result', 'success'),
-            result_message=learning_data.get('result_message'),
-            custom_data=learning_data.get('custom_data')
-        )
-        # Сохранить в БД
-        # await self.db_conn.execute("INSERT INTO tria_learning_log ...", log_entry.dict())
+        # FIXME: Initialize LearningLogRepository in __init__ and use it here.
+        # log_entry = TriaLearningLogCreate(
+        #     user_id=learning_data.get('user_id'),
+        #     session_id=learning_data.get('session_id'),
+        #     intent_vector=learning_data.get('intent_vector', {}),
+        #     action_result=learning_data.get('action_result', 'success'),
+        #     result_message=learning_data.get('result_message'),
+        #     additional_metadata=learning_data.get('custom_data')
+        # )
+        # if self.learning_log_repo:
+        #     await self.learning_log_repo.create_log_entry(log_entry)
 
         # Адаптация модели через TensorFlow.js
         await self.adapt_model_with_feedback(learning_data)
