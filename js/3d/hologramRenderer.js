@@ -526,8 +526,8 @@ export class HologramRenderer {
     columnMesh.receiveShadow = true;
 
     // Apply strict geometric rules: Scale Y = 2.0
-    // Initial Z Scale = CELL_SIZE * 2 for visible depth (Greeting)
-    columnMesh.scale.set(1, 2.0, CELL_SIZE * 2);
+    // Initial Z Scale = 0.1 for minimal bulkiness by default
+    columnMesh.scale.set(1, 2.0, 0.1);
 
     // Set mesh center relative to the group origin (spine)
     // FIX: Center Y at (index * CELL_SIZE) + (CELL_SIZE / 2)
@@ -684,7 +684,7 @@ export class HologramRenderer {
       // GREETING MODE: Flat, Bright, Spine-Aligned
       // ========================================
       if (!isActive) {
-        const greetingDepth = 1.5; // Super flat
+        const greetingDepth = 0.1; // Было 1.5. Делаем столбцы максимально тонкими по умолчанию.
 
         if (leftMesh) {
           leftMesh.scale.z = greetingDepth;
@@ -780,7 +780,7 @@ export class HologramRenderer {
       if (rightMeshGroup) rightMeshGroup.position.x = snappedShiftR;
 
       // Z-AXIS DEPTH: Map 0-1 to [minDepth, GRID_DEPTH]
-      const minDepth = 1.5;
+      const minDepth = 0.1; // Было 1.5.
       const targetZL = minDepth + (discreteL * (GRID_DEPTH - minDepth));
       const targetZR = minDepth + (discreteR * (GRID_DEPTH - minDepth));
 
@@ -805,14 +805,14 @@ export class HologramRenderer {
         const hsl = {};
         baseColorL.getHSL(hsl);
 
-        // 128 discrete brightness steps
-        // Map [0, 1] amplitude to [0.2, 1.0] lightness to avoid invisibility but show contrast
-        const minL = 0.2;
-        const targetL = minL + (discreteL * (1.0 - minL));
+        // Map [0, 1] amplitude to Lightness directly
+        // Silence (0) -> Black (L=0). Max (1) -> Full Brightness (Original L)
+        // We ensure minL is extremely low (0.02) to avoid invisible meshes if needed, or pure 0 for "void"
+        const targetL = discreteL * hsl.l; 
 
-        leftMesh.material.color.setHSL(hsl.h, hsl.s * 0.8, targetL * hsl.l);
+        leftMesh.material.color.setHSL(hsl.h, hsl.s, targetL);
         leftMesh.material.emissive.copy(baseColorL);
-        leftMesh.material.emissiveIntensity = discreteL * 1.5; // Stronger glow for loud sounds
+        leftMesh.material.emissiveIntensity = discreteL * 2.0; // Strong glow at peaks
       }
 
       if (rightMesh && rightMeshGroup.userData.baseColor) {
@@ -820,12 +820,11 @@ export class HologramRenderer {
         const hsl = {};
         baseColorR.getHSL(hsl);
 
-        const minL = 0.2;
-        const targetL = minL + (discreteR * (1.0 - minL));
+        const targetL = discreteR * hsl.l;
 
-        rightMesh.material.color.setHSL(hsl.h, hsl.s * 0.8, targetL * hsl.l);
+        rightMesh.material.color.setHSL(hsl.h, hsl.s, targetL);
         rightMesh.material.emissive.copy(baseColorR);
-        rightMesh.material.emissiveIntensity = discreteR * 1.5;
+        rightMesh.material.emissiveIntensity = discreteR * 2.0;
       }
     });
   }

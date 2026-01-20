@@ -5,7 +5,7 @@
   flex-grow: 1;
   overflow: hidden;
   background-color: var(--color-pure-black);
-  height: 100svh;
+  height: 100dvh; /* Используем dvh */
   /* !!! Явно задаем высоту */
   padding: 0;
   /* !!! Убираем все внутренние отступы */
@@ -20,8 +20,7 @@
   position: relative;
   width: 100%;
   margin: 0;
-  height: calc(100svh - 40px);
-  /* Full height minus gesture area height */
+  height: 100%; /* Занимает всю высоту main-area */
   z-index: 10;
   background-color: var(--color-pure-black);
   /* Фон черный для соответствия main-area */
@@ -31,9 +30,9 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  /* Use full container height */
+  width: 100% !important; /* Принудительно */
+  height: 100% !important; /* Принудительно */
+  display: block;
   z-index: 50;
 }
 

@@ -11,7 +11,7 @@
   .panel.right-panel {
     position: fixed !important;
     top: 0 !important;
-    height: 100vh !important;
+    height: 100dvh !important; /* Используем dvh для устранения скачков */
     z-index: 1500 !important;
     opacity: 0 !important;
     visibility: hidden !important;
@@ -29,7 +29,7 @@
     right: 0 !important;
     transform: translateX(100%) !important;
     width: 100vw !important;
-    background-color: rgba(16, 16, 32, 0.85) !important;
+    background-color: rgba(16, 16, 32, 0.95) !important; /* Чуть темнее фон для читаемости */
   }
 
   .panel.left-panel.visible,
@@ -71,14 +71,15 @@
 
   /* --- КОНТЕЙНЕР ГОЛОГРАММЫ --- */
   .main-area {
-    height: 100vh !important;
+    height: 100dvh !important; /* Используем dvh */
     display: flex !important;
     flex-direction: column !important;
+    overflow: hidden !important; /* Запрещаем скролл здесь */
   }
 
   #grid-container {
-    height: calc(100vh - 20vh) !important;
-    min-height: calc(100vh - 180px) !important;
+    height: calc(100dvh - 20vh) !important; /* Адаптируем под dvh */
+    min-height: calc(100dvh - 180px) !important;
     width: 100% !important;
     position: relative !important;
     z-index: 5 !important;
@@ -86,7 +87,7 @@
 
   /* --- КНОПКА TOGGLE --- */
   #togglePanelsButton {
-    bottom: calc(20vh + 20px) !important;
+    bottom: 20px !important; /* Жесткая фиксация */
     top: auto !important;
     left: 20px !important;
     position: fixed !important;
