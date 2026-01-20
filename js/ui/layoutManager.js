@@ -35,6 +35,15 @@ export function setInitialHologramContainerLayout(appState) {
         }
     }
 
+    const isMobilePortrait = window.innerWidth <= 768 || window.innerHeight > window.innerWidth;
+    
+    if (isMobilePortrait) {
+        console.log('[LayoutManager] Mobile Portrait detected. Skipping inline style overrides to favor CSS.');
+        // Still need to update renderer to match current CSS-provided size
+        setTimeout(() => updateHologramLayout(appState), 100);
+        return;
+    }
+
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
@@ -61,6 +70,13 @@ export function setInitialHologramContainerLayout(appState) {
 export function animateHologramContainer(appState, handsPresent) { // Added appState
     if (!gridContainer) {
         console.error('[LayoutManager] Grid container not found for animation.');
+        return;
+    }
+
+    const isMobilePortrait = window.innerWidth <= 768 || window.innerHeight > window.innerWidth;
+    if (isMobilePortrait) {
+        // На мобильных макет статический (зона жестов всегда видна), анимация не требуется
+        updateHologramLayout(appState);
         return;
     }
 
