@@ -1,0 +1,109 @@
+/* Правая панель (Таймлайн + Промпт) */
+#versionTimeline,
+#chatHistory {
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-icon-disabled) var(--color-pure-black);
+  min-height: 100px;
+  background-color: var(--color-pure-black);
+}
+
+#promptBar,
+#chatInputBar {
+  flex-shrink: 0;
+  min-height: 120px;
+  max-height: 200px;
+  background-color: var(--color-pure-black);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+}
+
+#versionTimeline::-webkit-scrollbar {
+  width: 5px;
+}
+
+#versionTimeline::-webkit-scrollbar-thumb {
+  background: var(--color-icon-disabled);
+  border-radius: 3px;
+}
+
+#versionTimeline::-webkit-scrollbar-track {
+  background: var(--color-pure-black);
+}
+
+/* Черный фон трека */
+
+/* Таймлайн: элементы */
+.timeline-item {
+  margin-bottom: 10px;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.timeline-item .version-label {
+  position: absolute !important;
+  top: var(--spacing-sm) !important;
+  left: var(--spacing-sm) !important;
+  font-size: var(--font-size-small) !important;
+  line-height: 1.4 !important;
+  opacity: 0.7 !important;
+  color: var(--text-color) !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  padding: var(--spacing-xs) var(--spacing-sm) !important;
+  border-radius: var(--border-radius-sm) !important;
+  z-index: 1 !important;
+}
+
+.version-frame {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: calc(var(--font-size-small) * 1.4 - var(--font-size-small));
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.version-frame:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Чуть заметнее ховер */
+.version-frame.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-left: 2px solid var(--color-green-100);
+}
+
+.version-placeholder {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-primary);
+  text-align: center;
+  /* Используем переменные для определения размеров */
+  width: calc(var(--font-size-small) * 1.4 * 5 + var(--spacing-md));
+  /* Ширина = Высота */
+  height: calc(var(--font-size-small) * 1.4 * 5 + var(--spacing-md));
+  /* Высота для 5 строк текста + padding */
+}
+
+.version-text {
+  padding-left: var(--spacing-md);
+}
+
+.version-text p {
+  margin: 0;
+  font-size: var(--font-size-small);
+  line-height: 1.4;
+  white-space: normal;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: calc(var(--font-size-small) * 1.4 * 5);
+  /* Высота для 5 строк текста */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-black-66) var(--color-black-95);
+}

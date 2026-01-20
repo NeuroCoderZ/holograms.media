@@ -1,0 +1,62 @@
+/* Интегрированный редактор файлов */
+#integratedFileEditor {
+  padding: var(--padding);
+}
+
+#integratedFileEditor h3 {
+  font-size: var(--font-size-large);
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+}
+
+#integratedFileEditor ul#fileList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px 0;
+}
+
+#integratedFileEditor li {
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  margin-bottom: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  transition: background-color 0.2s;
+  font-size: var(--font-size-base);
+}
+
+#integratedFileEditor li:hover {
+  background-color: var(--button-hover-bg);
+}
+
+#integratedFileEditor div#fileEditor {
+  display: flex;
+  flex-direction: column;
+}
+
+#integratedFileEditor textarea#fileContent {
+  flex-grow: 1;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: var(--spacing-md);
+  background-color: var(--color-pure-black);
+  color: var(--color-primary);
+  padding: var(--spacing-md);
+  font-family: 'Roboto Mono', monospace;
+  font-size: var(--font-size-code);
+  resize: none;
+  overflow: auto;
+  white-space: pre;
+  min-height: clamp(100px, 20vh, 200px);
+}
+
+#integratedFileEditor button#saveFile {
+  padding: 5px 10px;
+  background-color: var(--button-action-bg);
+  color: white;
+  border: none;
+  border-radius: 3px;
+}
+
+#integratedFileEditor button#saveFile:hover {
+  background-color: var(--button-action-hover);
+}

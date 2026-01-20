@@ -1,0 +1,62 @@
+# IDE and OS files
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Firebase
+
+# Node
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-wheel-metadata/
+.eggs/
+*.egg-info/
+# .env
+.env
+!.env.development
+!.env.production
+
+# Ignore holographic_core entirely (build artifacts, pkg, sources)
+holographic_core/
+
+# Additional ignores for local files and big dirs
+history/
+.history/
+backend/Tria/
+.kilocode/
+.editorconfig
+web-search-mcp/
+mcp.json
+qdrant_local/
+
+# Big files and unnecessary dirs
+*.mp4
+*.zip
+*.pdf
+*.tar.gz
+.genkit/
+backend/Tria/TriaMobile/
+backend/Tria/universal-sentence-encoder-tensorflow1-lite-v2/
+backend/Tria/autorag_final_chunks/
+tria-genkit-core/
+-e
+# Rust/WASM временные файлы
+core/target/
+core/Cargo.lock
+
+# Local config containing secrets (do not commit)
+js/config/cloudConfig.js

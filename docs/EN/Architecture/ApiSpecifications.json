@@ -1,0 +1,308 @@
+{
+  "api_info": {
+    "title": "Holograms Media Backend API",
+    "version": "1.0.0",
+    "description": "Backend services for the Holograms.Media project providing endpoints for user interaction, media processing and the Tria AI assistant",
+    "base_url": "https://api.holograms.media",
+    "documentation_url": "/docs",
+    "last_updated": "2025-09-26"
+  },
+  "authentication": {
+    "type": "OAuth 2.0 with Google Sign-In",
+    "description": "Most endpoints require authentication via JWT tokens issued after Google OAuth 2.0 validation"
+  },
+  "endpoints": [
+    {
+      "path": "/",
+      "method": "GET",
+      "description": "Root API endpoint with a welcome message",
+      "tags": ["Root"],
+      "responses": {
+        "200": {
+          "description": "Successful response",
+          "content": {
+            "application/json": {
+              "example": {
+                "message": "Welcome to the Holograms Media API. Visit /docs for API documentation."
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/healthz",
+      "method": "GET",
+      "description": "FastAPI health check endpoint",
+      "tags": ["System"],
+      "responses": {
+        "200": {
+          "description": "Service is healthy",
+          "content": {
+            "application/json": {
+              "example": {
+                "status": "ok",
+                "message": "FastAPI is healthy"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/upload-chunk",
+      "method": "POST",
+      "description": "Upload media chunks to Backblaze B2 with multipart support",
+      "tags": ["Chunks"],
+      "parameters": {
+        "chunk": {
+          "type": "file",
+          "description": "Chunk file to upload"
+        },
+        "chunk_id": {
+          "type": "string",
+          "description": "Unique chunk identifier"
+        },
+        "file_id": {
+          "type": "string",
+          "description": "File identifier"
+        },
+        "part_number": {
+          "type": "integer",
+          "description": "Part number in multipart upload"
+        },
+        "upload_id": {
+          "type": "string",
+          "description": "Multipart upload session id"
+        },
+        "b2_bucket_name": {
+          "type": "string",
+          "description": "B2 bucket name for upload"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Chunk uploaded successfully",
+          "content": {
+            "application/json": {
+              "example": {
+                "success": true,
+                "message": "Chunk 1 uploaded successfully.",
+                "ETag": "\"abc123...\"",
+                "PartNumber": 1,
+                "file_id": "user_file.mp4",
+                "upload_id": "upload123"
+              }
+            }
+          }
+        },
+        "503": {
+          "description": "Storage service unavailable"
+        }
+      }
+    },
+    {
+      "path": "/api/v1/chunks/generate-upload-url",
+      "method": "POST",
+      "description": "Generate a presigned POST URL for direct upload to Cloudflare R2",
+      "tags": ["Chunks"],
+      "authentication": "Required",
+      "request_body": {
+        "filename": {
+          "type": "string",
+          "example": "myvideo.mp4",
+          "description": "File name"
+        },
+        "content_type": {
+          "type": "string",
+          "example": "video/mp4",
+          "description": "MIME type"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Presigned URL generated",
+          "content": {
+            "application/json": {
+              "example": {
+                "url": "https://r2-bucket-url.com",
+                "fields": {
+                  "Content-Type": "video/mp4",
+                  "key": "user_uploads/uuid/filename.mp4"
+                },
+                "object_key": "user_uploads/uuid/filename.mp4"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Unauthorized"
+        },
+        "503": {
+          "description": "R2 service unavailable"
+        }
+      }
+    },
+    {
+      "path": "/api/v1/chunks/upload_chunk/{user_id}",
+      "method": "POST",
+      "description": "Upload media chunks for a specific user to R2 with automatic metadata processing",
+      "tags": ["Chunks"],
+      "parameters": {
+        "user_id": {
+          "type": "string",
+          "description": "User id"
+        },
+        "file": {
+          "type": "file",
+          "description": "Chunk file to upload"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Chunk uploaded and metadata processing started",
+          "content": {
+            "application/json": {
+              "example": {
+                "message": "Chunk uploaded successfully. Metadata processing initiated.",
+                "user_id": "user123",
+                "original_filename": "video.mp4",
+                "stored_filename": "uuid.mp4",
+                "storage_key": "user_chunks/user123/uuid.mp4",
+                "content_type": "video/mp4",
+                "size": 1048576
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Upload or processing error"
+        }
+      }
+    },
+    {
+      "path": "/api/v1/interaction_chunks/submit",
+      "method": "POST",
+      "description": "Submit an interactive chunk with metadata (legacy endpoint)",
+      "tags": ["Interaction Chunks (Legacy)"],
+      "authentication": "Required",
+      "deprecated": true,
+      "request_body": {
+        "session_id": {
+          "type": "string",
+          "description": "Session id"
+        },
+        "audio_data_ref": {
+          "type": "string",
+          "description": "Reference to audio data"
+        },
+        "video_data_ref": {
+          "type": "string",
+          "description": "Reference to video data"
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Chunk saved"
+        },
+        "500": {
+          "description": "Database error"
+        }
+      }
+    },
+    {
+      "path": "/api/v1/gestures/",
+      "method": "GET",
+      "description": "Get a list of public gestures",
+      "tags": ["Gestures (Public)"],
+      "responses": {
+        "200": {
+          "description": "Gestures list",
+          "content": {
+            "application/json": {
+              "example": [
+                {
+                  "id": "gesture1",
+                  "name": "Victory",
+                  "description": "A victory gesture"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/api/v1/holograms/",
+      "method": "GET",
+      "description": "Get a list of public holograms",
+      "tags": ["Holograms (Public)"],
+      "responses": {
+        "200": {
+          "description": "Holograms list",
+          "content": {
+            "application/json": {
+              "example": [
+                {
+                  "id": "hologram1",
+                  "title": "Sample Hologram",
+                  "description": "An example hologram"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/api/v1/tria/invoke",
+      "method": "POST",
+      "description": "Invoke the Tria AI assistant to perform tasks",
+      "tags": ["Tria Commands"],
+      "request_body": {
+        "query": {
+          "type": "string",
+          "description": "Task query"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Tria response",
+          "content": {
+            "application/json": {
+              "example": {
+                "response": "Task completed successfully",
+                "should_vocalize": false
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "websocket_endpoints": [
+    {
+      "path": "/ws/gestures",
+      "description": "WebSocket endpoint for real-time gesture handling",
+      "tags": ["WebSocket"]
+    },
+    {
+      "path": "/ws/signaling",
+      "description": "WebSocket for WebRTC signaling",
+      "tags": ["WebRTC", "Signaling"]
+    }
+  ],
+  "infrastructure": {
+    "storage": "Backblaze B2 + Cloudflare R2",
+    "database": "Astra Database (Cassandra)",
+    "compute": "Koyeb",
+    "cdn": "Cloudflare Pages + Cloudflare CDN"
+  },
+  "notes": [
+    "Full automatic documentation available at /docs",
+    "Most endpoints require Google OAuth 2.0 authentication",
+    "API uses standard HTTP status codes",
+    "All file uploads use presigned URLs for security",
+    "WebSocket endpoints support real-time communication"
+  ]
+}

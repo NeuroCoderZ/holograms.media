@@ -1,0 +1,208 @@
+const fs = require('fs');
+const readline = require('readline');
+const tf = require('@tensorflow/tfjs-node'); // Импорт TensorFlow.js
+
+// --- Функции для работы с эмбеддингами ---
+// Используем TensorFlow.js для создания эмбеддингов
+// Путь к модели: /home/neurocoderz/Загрузки/universal-sentence-encoder-tensorflow1-lite-v2/saved_model.pb
+let loadedModel = null; // Кэш для загруженной модели
+
+async function loadModel() {
+    if (loadedModel) {
+        console.log("Модель уже загружена из кэша.");
+        return loadedModel;
+    }
+
+    try {
+        console.log("Загрузка модели USE...");
+        // Попробуем загрузить как GraphModel (если saved_model.pb это SavedModel в формате TF)
+        // ВАЖНО: TF.js обычно работает с форматом web_model, сконвертированным из SavedModel.
+        // Если у вас именно SavedModel, его нужно сначала сконвертировать или использовать @tensorflow/tfjs-node напрямую.
+        // Попробуем загрузить напрямую, но это может не сработать.
+
+        // Если модель находится в подкаталоге формата TF.js (обычно называется 'web_model')
+        const modelPath = 'file:///home/neurocoderz/Загрузки/universal-sentence-encoder-tensorflow1-lite-v2/saved_model.pb'; // ИЛИ путь к самому saved_model.pb
+
+        // ВАЖНО: Проверьте, в каком именно формате у вас модель.
+        // Если это просто saved_model.pb, TF.js может не суметь её загрузить напрямую.
+        // Возможно, потребуется использовать Python-скрипт для конвертации или вызова модели.
+
+        // Попробуем загрузить (это может не сработать напрямую с .pb):
+        loadedModel = await tf.loadGraphModel(modelPath);
+        console.log("Модель USE успешно загружена.");
+        return loadedModel;
+    } catch (err) {
+        console.error("Ошибка загрузки модели USE напрямую через TF.js:", err.message);
+        console.log("Попробуйте использовать Python-скрипт для создания эмбеддингов или сконвертируйте модель в формат web_model.");
+        throw err; // Прерываем выполнение, если модель не загрузилась
+    }
+}
+
+async function createEmbeddingWithTFJS(text) {
+    if (!tf) {
+         throw new Error("TensorFlow.js (@tensorflow/tfjs-node) не импортирован. Установите его: npm install @tensorflow/tfjs @tensorflow/tfjs-node");
+    }
+
+    try {
+        const model = await loadModel();
+
+        // Предполагаем, что модель ожидает тензор строк.
+        // Это стандартный вход для USE.
+        const input = tf.tensor([text]); // Создаем тензор с одним элементом (вашим текстом)
+
+        console.log("Выполнение инференса модели...");
+        const output = model.predict(input); // Получаем выходной тензор
+
+        // output обычно является Tensor2D [1, embedding_size]
+        // Нам нужен плоский массив чисел.
+        const embeddingArray = await output.data(); // Получаем данные как TypedArray
+
+        input.dispose();   // Освобождаем память от входного тензора
+        output.dispose();  // Освобождаем память от выходного тензора
+
+        console.log(`Эмбеддинг создан, размерность: ${embeddingArray.length}`);
+        return Array.from(embeddingArray); // Преобразуем в обычный JS массив
+
+    } catch (err) {
+        console.error("Ошибка при создании эмбеддинга:", err.message);
+        throw err;
+    }
+}
+
+function cosineSimilarity(vecA, vecB) {
+  if (vecA.length !== vecB.length) {
+    throw new Error("Vectors must have the same dimensions");
+  }
+  let dotProduct = 0;
+  let magnitudeA = 0;
+  let magnitudeB = 0;
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    magnitudeA += vecA[i] * vecA[i];
+    magnitudeB += vecB[i] * vecB[i];
+  }
+  magnitudeA = Math.sqrt(magnitudeA);
+  magnitudeB = Math.sqrt(magnitudeB);
+  if (magnitudeA === 0 || magnitudeB === 0) {
+    return 0;
+  }
+  return dotProduct / (magnitudeA * magnitudeB);
+}
+// --- ---
+
+async function searchMemory(queryText, jsonlFilePath = 'gold_memory_tria.jsonl', topK = 5) {
+    try {
+        // 1. Создать эмбеддинг для запроса (теперь асинхронно!)
+        console.log("Создание эмбеддинга для запроса...");
+        const queryEmbedding = await createEmbeddingWithTFJS(queryText);
+        console.log("Эмбеддинг запроса создан.");
+
+        // Остальная часть функции остается почти такой же,
+        // но теперь мы читаем файл и обрабатываем данные внутри этого же асинхронного блока try.
+
+        const fileStream = fs.createReadStream(jsonlFilePath);
+        const rl = readline.createInterface({
+            input: fileStream,
+            crlfDelay: Infinity
+        });
+
+        let items = [];
+        let lineNumber = 0;
+
+        rl.on('line', (line) => {
+            lineNumber++;
+            if (line.trim() === '') return;
+            try {
+                const item = JSON.parse(line);
+                if (item.embedding && Array.isArray(item.embedding)) {
+                    items.push({
+                        data: item,
+                        embedding: item.embedding,
+                    });
+                } else {
+                    console.warn(`Предупреждение: Строка ${lineNumber} не содержит поля 'embedding' или оно не является массивом.`);
+                }
+            } catch (e) {
+                console.error(`Ошибка парсинга JSON в строке ${lineNumber}:`, e.message);
+            }
+        });
+
+        rl.on('close', async () => { // Сделаем обработчик close асинхронным
+            try {
+                console.log(`Файл прочитан. Обработано ${items.length} записей с эмбеддингами.`);
+                if (items.length === 0) {
+                     resolve([]); // Нет данных для поиска
+                     return;
+                }
+
+                // 2. Вычислить сходство для каждого элемента
+                console.log("Вычисление сходства...");
+                const similarities = items.map(item => {
+                    try {
+                        const similarity = cosineSimilarity(queryEmbedding, item.embedding);
+                        return { ...item, similarity };
+                    } catch (e) {
+                        console.error(`Ошибка вычисления сходства для элемента:`, e.message);
+                        return { ...item, similarity: -Infinity };
+                    }
+                });
+
+                // 3. Отсортировать по убыванию сходства
+                similarities.sort((a, b) => b.similarity - a.similarity);
+
+                // 4. Взять topK
+                const topResults = similarities.slice(0, topK).map(item => ({
+                    content: item.data.text || item.data.content || JSON.stringify(item.data),
+                    metadata: item.data.metadata || {},
+                    similarity: item.similarity
+                }));
+
+                console.log("Поиск завершен.");
+                resolve(topResults);
+            } catch (err) {
+                reject(err);
+            }
+        });
+
+        rl.on('error', (err) => {
+            reject(new Error(`Ошибка чтения файла ${jsonlFilePath}: ${err.message}`));
+        });
+
+        fileStream.on('error', (err) => {
+            reject(new Error(`Ошибка открытия файла ${jsonlFilePath}: ${err.message}`));
+        });
+
+    } catch (error) {
+         reject(error); // Передаем ошибку в Promise
+    }
+}
+
+// --- Основная часть для запуска из командной строки ---
+async function main() {
+  const args = process.argv.slice(2);
+  if (args.length < 1) {
+    console.error('Usage: node search_memory.js <query_text> [top_k] [jsonl_file_path]');
+    process.exit(1);
+  }
+
+  const query = args[0];
+  const topK = parseInt(args[1]) || 5;
+  const jsonlFilePath = args[2] || 'gold_memory_tria.jsonl';
+
+  try {
+    console.log(`Запуск поиска: "${query}" в файле ${jsonlFilePath}...`);
+    const results = await searchMemory(query, jsonlFilePath, topK);
+    console.log(JSON.stringify(results, null, 2));
+  } catch (error) {
+    console.error("Поиск не удался:", error.message);
+    process.exit(1);
+  }
+}
+
+// Запустить, если скрипт вызван напрямую
+if (require.main === module) {
+  main();
+}
+
+// Экспортируем функцию для использования в других модулях
+module.exports = { searchMemory };

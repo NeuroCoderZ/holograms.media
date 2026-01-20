@@ -1,0 +1,336 @@
+/* UI adjustments */
+#triaButton svg {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+/* Toggle button styles */
+#togglePanelsButton {
+  position: fixed !important;
+  z-index: 10000 !important;
+  bottom: 5svh !important;
+  left: 5px !important;
+  /* Align with the left row of buttons on the panel (which starts at 5px) */
+  width: var(--button-size) !important;
+  height: var(--button-size) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  background-color: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: #888 !important;
+  /* Default: Gray */
+  transition: all 0.15s ease-in-out !important;
+}
+
+#togglePanelsButton:hover {
+  color: white !important;
+}
+
+#togglePanelsButton svg {
+  width: var(--icon-size) !important;
+  height: var(--icon-size) !important;
+  fill: currentColor !important;
+}
+
+/* Icon logic */
+#togglePanelsButton .icon-show-panels {
+  display: block;
+}
+
+#togglePanelsButton .icon-hide-panels {
+  display: none;
+}
+
+#togglePanelsButton.show-mode .icon-show-panels {
+  display: none;
+}
+
+#togglePanelsButton.show-mode .icon-hide-panels {
+  display: block;
+}
+
+/* Ensure button remains visible when show-mode is active */
+#togglePanelsButton.show-mode {
+  color: white !important;
+  /* Active state: White when panels are hidden */
+}
+
+#fullscreenButton .icon-exit-fullscreen {
+  display: none;
+}
+
+#fullscreenButton.active .icon-fullscreen {
+  display: none;
+}
+
+#fullscreenButton.active .icon-exit-fullscreen {
+  display: block;
+}
+
+
+#button-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--button-spacing);
+  justify-content: center;
+  align-content: flex-start;
+  align-content: flex-start;
+  padding: 0;
+  width: 100%;
+}
+
+/* Стилизация скроллбара для Webkit (Chrome, Safari) */
+#button-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+#button-container::-webkit-scrollbar-thumb {
+  background: var(--color-icon-disabled);
+  border-radius: 3px;
+}
+
+#button-container::-webkit-scrollbar-track {
+  background: var(--color-pure-black);
+}
+
+/* Кнопки переключения видов правой панели */
+.view-toggles {
+  display: flex;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.view-toggle-btn {
+  flex-grow: 1;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-icon);
+  cursor: pointer;
+  text-align: center;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  font-size: 13px;
+}
+
+.view-toggle-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.view-toggle-btn:hover {
+  background-color: var(--button-hover-bg);
+}
+
+/* Стили для кнопок Применить и Отправить */
+#submitTopPrompt,
+#submitChatMessage {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-button);
+  background-color: #00ff00;
+  /* Requirement: Bright green */
+  color: #000000;
+  /* Requirement: Black text */
+  border: 1px solid #00cc00;
+  /* Requirement: Slightly darker green border */
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  height: var(--control-height);
+  width: var(--button-action-width);
+  flex-shrink: 0;
+  /* Запрещаем сжатие */
+  transition: background-color 0.2s ease;
+}
+
+/* Specific style for #submitTopPrompt if it needs to differ from #submitChatMessage in the future */
+
+/* Стиль для неактивной кнопки отправки сообщения */
+#submitChatMessage:disabled {
+  background-color: var(--color-black-66);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Стили для селектора модели */
+.prompt-controls select {
+  flex-grow: 1;
+  background-color: var(--color-pure-black);
+  color: var(--color-primary);
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-base);
+  border: none;
+  outline: none;
+  border-radius: var(--border-radius-sm);
+  height: var(--control-height);
+}
+
+/* Стили для кнопки чата */
+#chatButton {
+  width: var(--icon-button-size) !important;
+  height: var(--icon-button-size) !important;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-icon);
+  border-radius: var(--border-radius-sm);
+  transition: color 0.15s ease-in-out;
+}
+
+#chatButton:hover {
+  color: var(--color-icon-active);
+}
+
+#chatButton svg {
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
+  fill: currentColor;
+}
+
+#toggleFilesButton {
+  background: none;
+  border: 1px solid var(--panel-border);
+  color: var(--color-icon);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  min-width: auto;
+  margin-right: var(--spacing-sm);
+  cursor: pointer;
+  height: var(--control-height);
+  line-height: 1;
+  border-radius: var(--border-radius-sm);
+}
+
+#toggleFilesButton:hover {
+  background-color: var(--button-hover-bg);
+  color: var(--color-primary);
+}
+
+/* Кнопки управления */
+.control-button {
+  width: 45px !important;
+  height: 48px !important;
+  /* Increased as requested (was 45px) */
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: #888 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-md);
+  transition: all 0.15s ease-in-out !important;
+  font-size: 24px !important;
+  /* Keep icon size large */
+}
+
+/* Increased size for playback transport icons and Add button */
+#loadAudioButton svg,
+#playAudioButton svg,
+#stopAudioButton svg {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.control-button svg {
+  width: 24px !important;
+  height: 24px !important;
+  transition: all 0.15s ease-in-out !important;
+  fill: currentColor !important;
+  pointer-events: none;
+}
+
+.control-button img {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  transition: all 0.2s ease;
+  filter: brightness(0) invert(0.7);
+  pointer-events: none;
+}
+
+.control-button:not(:disabled):hover {
+  color: white !important;
+  /* Hover: White */
+  transform: scale(1.05);
+}
+
+.control-button.active {
+  color: white !important;
+  /* Active/Toggled: White */
+}
+
+.control-button:disabled {
+  color: #444 !important;
+  /* Disabled/Inactive: Dark gray */
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Общий стиль для SVG внутри кнопок */
+/* SVG and icons inside buttons inherit color */
+.control-button svg,
+.control-button img {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  fill: currentColor !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+/* Cleanup redundant rules */
+
+/* Логика иконок */
+.google-login-button {
+  background-color: #4285F4;
+  /* Google Blue */
+  color: white;
+  border-color: #4285F4;
+}
+
+.google-login-button:hover {
+  background-color: #357ae8;
+  border-color: #357ae8;
+}
+
+/* Ensure avatar button is more like an icon button if it's just an icon */
+
+/* Styling for the icon-only Google login button */
+#login-google-btn.control-button {
+  background-color: transparent;
+  /* Override Google Blue */
+  color: var(--color-icon);
+  /* Standard icon color */
+  border: none;
+  /* Remove border if any from panel-button or social-login-button */
+  width: var(--button-size);
+  /* Ensure square size like other control buttons */
+  height: var(--button-size);
+  padding: 0;
+  /* Reset padding */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* margin-left: auto; */
+  /* Ensure it behaves like other control buttons in a flex/grid */
+  /* margin-right: auto; */
+}
+
+#login-google-btn.control-button svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: currentColor;
+}
+
+#login-google-btn.control-button:hover {
+  background-color: var(--button-hover-bg);
+  /* Standard hover background */
+  color: var(--color-icon-active);
+  /* Standard active icon color */
+}

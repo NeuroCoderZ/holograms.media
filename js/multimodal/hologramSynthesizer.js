@@ -1,0 +1,205 @@
+// frontend/js/multimodal/hologramSynthesizer.js
+// Audio synthesis from hologram visual data - 128 oscillators for semitones
+
+import { semitones } from '../config/hologramConfig.js';
+
+/**
+ * HologramSynthesizer creates audio output from visual hologram parameters.
+ * Uses 128 oscillators tuned to equal-temperament frequencies from semitones config.
+ */
+export class HologramSynthesizer {
+    constructor() {
+        this.audioContext = null;
+        this.oscillators = [];
+        this.gains = [];
+        this.panners = [];
+        this.masterGain = null;
+        this.isInitialized = false;
+
+        // Synthesis parameters
+        this.oscillatorType = 'sine'; // sine, triangle for softer sound
+        this.attackTime = 0.01;       // 10ms attack (Snappy)
+        this.releaseTime = 0.05;      // 50ms release (No drone)
+        this.maxVolume = 0.3;         // Master volume limit (prevent clipping with 128 oscillators)
+    }
+
+    /**
+     * Initializes the audio context and creates 128 oscillators.
+     */
+    async init() {
+        if (this.isInitialized) return;
+
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+            }
+
+            // Master gain to prevent clipping
+            this.masterGain = this.audioContext.createGain();
+            this.masterGain.gain.value = this.maxVolume / Math.sqrt(128); // Scale for 128 sources
+            this.masterGain.connect(this.audioContext.destination);
+
+            // Create oscillator chain for each semitone
+            for (let i = 0; i < 128; i++) {
+                const frequency = semitones[i].f;
+
+                // Oscillator
+                const osc = this.audioContext.createOscillator();
+                osc.type = this.oscillatorType;
+                osc.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+
+                // Individual gain node (for volume control)
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(0, this.audioContext.currentTime); // Start silent
+
+                // Stereo panner
+                const panner = this.audioContext.createStereoPanner();
+                panner.pan.setValueAtTime(0, this.audioContext.currentTime);
+
+                // Connect: osc → gain → panner → master
+                osc.connect(gain);
+                gain.connect(panner);
+                panner.connect(this.masterGain);
+
+                // Start oscillator (runs continuously, volume controls sound)
+                osc.start();
+
+                this.oscillators.push(osc);
+                this.gains.push(gain);
+                this.panners.push(panner);
+            }
+
+            this.isInitialized = true;
+            console.log('[HologramSynthesizer] Initialized 128 oscillators');
+
+        } catch (error) {
+            console.error('[HologramSynthesizer] Failed to initialize:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Updates all oscillators based on extracted visual parameters.
+     * @param {Float32Array} levels - 256 values (128 L + 128 R), dB scale (-128 to 0)
+     * @param {Float32Array} pans - 128 pan values (-1 to +1)
+     */
+    update(levels, pans) {
+        if (!this.isInitialized) return;
+
+        const now = this.audioContext.currentTime;
+
+        for (let i = 0; i < 128; i++) {
+            const gain = this.gains[i];
+            const panner = this.panners[i];
+
+            // Average L/R levels for this semitone
+            const levelL = levels[i];
+            const levelR = levels[i + 128];
+            const avgLevel = (levelL + levelR) / 2;
+
+            // Convert dB (-128 to 0) to linear amplitude (0 to 1)
+            const amplitude = Math.pow(10, avgLevel / 20);
+
+            // Clamp and apply volume
+            const targetVolume = Math.min(1, Math.max(0, amplitude * this.maxVolume));
+
+            // Smooth transition to prevent clicks
+            gain.gain.cancelScheduledValues(now);
+            gain.gain.setTargetAtTime(targetVolume, now, this.attackTime);
+
+            // Apply pan
+            const panValue = pans[i];
+            panner.pan.cancelScheduledValues(now);
+            panner.pan.setTargetAtTime(
+                Math.max(-1, Math.min(1, panValue)),
+                now,
+                this.attackTime
+            );
+        }
+    }
+
+    /**
+     * Previews a specific frequency index (for Gesture Interaction).
+     * @param {number} index - Semitone index (0-127).
+     * @param {number} volume - Volume (0.0 to 1.0).
+     */
+    previewFrequency(index, volume) {
+        if (!this.isInitialized || index < 0 || index >= 128) return;
+
+        const now = this.audioContext.currentTime;
+        const gain = this.gains[index];
+
+        // Direct control for feedback
+        const targetVol = volume * this.maxVolume;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setTargetAtTime(targetVol, now, 0.05); // Fast response
+    }
+
+    /**
+     * Sets the oscillator waveform type.
+     * @param {'sine' | 'triangle' | 'sawtooth' | 'square'} type 
+     */
+    setOscillatorType(type) {
+        this.oscillatorType = type;
+        this.oscillators.forEach(osc => {
+            osc.type = type;
+        });
+    }
+
+    /**
+     * Sets master volume (0 to 1).
+     */
+    setMasterVolume(volume) {
+        if (this.masterGain) {
+            this.masterGain.gain.setTargetAtTime(
+                volume / Math.sqrt(128),
+                this.audioContext.currentTime,
+                0.05
+            );
+        }
+    }
+
+    /**
+     * Mutes all oscillators.
+     */
+    mute() {
+        if (!this.isInitialized) return;
+        const now = this.audioContext.currentTime;
+        this.gains.forEach(gain => {
+            gain.gain.cancelScheduledValues(now);
+            gain.gain.setTargetAtTime(0, now, this.releaseTime);
+        });
+    }
+
+    /**
+     * Disposes all audio resources.
+     */
+    dispose() {
+        this.oscillators.forEach(osc => {
+            try { osc.stop(); } catch (e) { }
+            osc.disconnect();
+        });
+
+        this.gains.forEach(g => g.disconnect());
+        this.panners.forEach(p => p.disconnect());
+
+        if (this.masterGain) {
+            this.masterGain.disconnect();
+        }
+
+        if (this.audioContext && this.audioContext.state !== 'closed') {
+            this.audioContext.close();
+        }
+
+        this.oscillators = [];
+        this.gains = [];
+        this.panners = [];
+        this.masterGain = null;
+        this.audioContext = null;
+        this.isInitialized = false;
+
+        console.log('[HologramSynthesizer] Disposed');
+    }
+}

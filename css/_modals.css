@@ -1,0 +1,250 @@
+/* Скрытые элементы */
+.modal {
+  display: none;
+  /* ... */
+}
+
+.modal.active {
+  display: flex;
+  /* ... */
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 101;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background-color: var(--color-pure-black);
+  color: var(--color-primary);
+  padding: calc(var(--padding) * 1.5);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-md);
+  width: 80%;
+  max-width: clamp(300px, 60vw, 500px);
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-md);
+  color: var(--color-black-33);
+  font-size: var(--font-size-large);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+  color: var(--color-primary);
+}
+
+.modal h2 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-large);
+}
+
+.modal textarea {
+  width: 100%;
+  background-color: var(--color-pure-black);
+  color: var(--color-primary);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+  font-family: inherit;
+  margin-bottom: var(--spacing-md);
+  resize: vertical;
+  font-size: var(--font-size-base);
+}
+
+.modal canvas {
+  display: block;
+  margin: 10px auto;
+  border: 1px solid var(--color-black-66);
+}
+
+.modal button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--button-action-bg);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  margin-right: var(--spacing-md);
+  height: var(--control-height);
+  font-size: var(--font-size-button);
+}
+
+.modal button:hover {
+  background-color: var(--button-action-hover);
+}
+
+.modal button:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+/* --- Consent Modal Styles --- */
+/* General .modal style is assumed to be present from previous tasks (provides overlay, centering) */
+
+#consent-modal .modal-content.consent-modal-content {
+  /* More specific selector */
+  background-color: var(--color-pure-black, #0d0d0d);
+  /* Dark background */
+  color: var(--color-primary, #e0e0e0);
+  /* Light text */
+  padding: var(--spacing-lg, 25px);
+  border-radius: var(--border-radius-md, 8px);
+  border: 1px solid var(--panel-border, #333);
+  text-align: left;
+  /* Align text to left for readability */
+  max-width: 500px;
+  /* Limit width */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+#consent-modal h2 {
+  font-size: var(--font-size-large, 1.5em);
+  margin-top: 0;
+  margin-bottom: var(--spacing-md, 15px);
+  color: var(--color-primary, #fff);
+  text-align: center;
+}
+
+#consent-modal p {
+  font-size: var(--font-size-base, 1em);
+  line-height: 1.6;
+  margin-bottom: var(--spacing-lg, 20px);
+}
+
+#consent-modal .consent-checkbox-container {
+  display: flex;
+  align-items: center;
+  /* Vertically align checkbox and label */
+  margin-bottom: var(--spacing-lg, 20px);
+  font-size: var(--font-size-small, 0.9em);
+}
+
+#consent-modal input[type="checkbox"]#consent-checkbox {
+  margin-right: var(--spacing-sm, 10px);
+  width: auto;
+  /* Override default textarea/input width if any */
+  accent-color: var(--color-green-100, #00cc00);
+  /* Style the checkbox color */
+  min-height: auto;
+  /* Override default textarea/input min-height if any */
+}
+
+#consent-modal label[for="consent-checkbox"] {
+  color: var(--color-primary, #ccc);
+  /* Slightly lighter label text */
+  cursor: pointer;
+}
+
+#consent-modal button#consent-accept-btn {
+  display: block;
+  /* Make button take full width of its container or center it */
+  width: 100%;
+  padding: var(--spacing-md, 12px) var(--spacing-lg, 20px);
+  font-size: var(--font-size-button, 1em);
+  background-color: var(--button-action-bg, #007bff);
+  color: var(--color-white-100, #fff);
+  border: none;
+  border-radius: var(--border-radius-md, 5px);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+#consent-modal button#consent-accept-btn:disabled {
+  background-color: var(--color-icon-disabled, #555);
+  /* Darker, disabled look */
+  color: var(--color-black-66, #888);
+  cursor: not-allowed;
+}
+
+#consent-modal button#consent-accept-btn:not(:disabled):hover {
+  background-color: var(--button-action-hover, #0056b3);
+}
+
+/* --- End Consent Modal Styles --- */
+
+/* --- WebGL Error Overlay Styles --- */
+#webgl-error-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  /* Dark semi-transparent background */
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  z-index: 2000;
+  /* Ensure it's on top of everything */
+  padding: 20px;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+#webgl-error-message {
+  background-color: var(--color-black-95, #1a1a1a);
+  padding: 30px;
+  border-radius: var(--border-radius-md, 8px);
+  border: 1px solid var(--panel-border, #333);
+  max-width: 600px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+}
+
+#webgl-error-message h2 {
+  color: var(--color-red-100, #ff0000);
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: var(--font-size-large, 1.8em);
+}
+
+#webgl-error-message p {
+  margin-bottom: 10px;
+  line-height: 1.6;
+  font-size: var(--font-size-base, 1em);
+}
+
+#webgl-error-message ul {
+  text-align: left;
+  margin: 15px 0;
+  padding-left: 30px;
+}
+
+#webgl-error-message li {
+  margin-bottom: 8px;
+}
+
+#webgl-error-details {
+  margin-top: 20px;
+  font-size: 0.8em;
+  color: #aaaaaa;
+  /* Lighter grey for less prominent details */
+  max-height: 100px;
+  overflow-y: auto;
+  border-top: 1px solid var(--panel-border, #333);
+  padding-top: 10px;
+}
+
+/* --- End WebGL Error Overlay Styles --- */

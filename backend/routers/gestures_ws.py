@@ -1,0 +1,72 @@
+# backend/routers/gestures_ws.py
+import logging
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+# from astrapy import Database # Will be injected via Depends
+
+# Импортируем сервис после того, как он будет создан.
+# Для корректной работы FastAPI при запуске, лучше, чтобы импорт был сверху.
+# Если GestureIntentService еще не создан, можно временно закомментировать
+# или создать заглушку сервиса, чтобы файл мог быть импортирован в app.py.
+# Поскольку мы создаем сервис на следующем шаге, пока оставляем как есть.
+# from backend.services.gesture_intent_service import GestureIntentService # Заменено на CoordinationService
+from backend.tria_agents.CoordinationService import CoordinationService # <-- НОВЫЙ ИМПОРТ
+from backend.core.db.astra_connector import get_db
+# Для аутентификации предполагается, что UserInDB импортируется security
+from backend.auth.security import get_optional_current_active_user_ws
+from typing import Any, Optional
+
+router = APIRouter(tags=["Real-time Gesture Intents"])
+logger = logging.getLogger(__name__)
+
+@router.websocket("/ws/v1/gesture-intent")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    user: Optional[dict] = Depends(get_optional_current_active_user_ws),
+    db: Any = Depends(get_db),
+):
+    # Note: get_current_active_user_ws might raise 401 if token is missing.
+    # To allow anonymous access for testing, we might need a custom dependency.
+    # For now, let's wrap it in try-except or adjust the dependency.
+    await websocket.accept()
+    user_id = user.get("id") if user else "anonymous"
+    logger.info(f"WebSocket connection established for user {user_id}")
+
+
+    try:
+        # ✅ Инициализируем CoordinationService c защитой от сбоев
+        coordination_service = CoordinationService(db) # Передаем db_conn
+    except Exception as e:
+        logger.error(f"Failed to initialize CoordinationService for user {user_id}: {e}", exc_info=True)
+        await websocket.close(code=1011, reason="Internal Server Error: AI Services Unavailable")
+        return
+
+    try:
+        while True:
+            data = await websocket.receive_json()
+            # Ожидаем данные в формате {"intent": "select", "context": {...}}
+            # Проверка data и его содержимого (intent) должна быть здесь или в CoordinationService
+            intent_val = data.get("intent") # переименовал, чтобы не конфликтовать с модулем `intent`
+
+            if not intent_val:
+                logger.warning(f"Received WebSocket message without intent from user {user.id if user else 'unknown'}")
+                await websocket.send_json({"status": "error", "message": "Intent not provided in message data"})
+                continue
+
+            logger.info(f"Received intent_data from user {user.id if user else 'unknown'}: {data}")
+
+
+            # ✅ Вызываем центральный обработчик
+            # Убедимся, что user.id передается, если user объект существует
+            user_identifier = user.id if user else "anonymous_websocket_user" # Fallback, если user почему-то None
+
+            result = await coordination_service.handle_gesture_intent(user_id=user_identifier, intent_data=data)
+
+            await websocket.send_json(result)
+
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket connection closed for user {user.id if user else 'unknown'}")
+    except Exception as e:
+        logger.error(f"Error in WebSocket for user {user.id if user else 'unknown'}: {e}", exc_info=True)
+        # Попытаемся закрыть соединение с кодом ошибки, если оно еще открыто
+        if websocket.client_state != WebSocketDisconnect: # Проверка состояния сокета
+             await websocket.close(code=1011) # INTERNAL_SERVER_ERROR

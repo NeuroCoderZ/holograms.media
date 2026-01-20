@@ -1,0 +1,30 @@
+/* Общие стили */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  /* Основной шрифт интерфейса */
+  background-color: var(--color-pure-black);
+  color: var(--color-primary);
+  /* Белый текст по умолчанию */
+}
+
+/* Base styles for tooltips */
+[title] {
+  font-family: 'Open Sans', sans-serif;
+  /* Шрифт для подсказок */
+}
+
+/* ОСНОВНОЙ МАКЕТ FLEXBOX */
+body {
+  display: flex;
+  height: 100svh;
+}

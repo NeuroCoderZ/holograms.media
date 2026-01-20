@@ -1,0 +1,20 @@
+@import './css/_variables.css';
+@import './css/_base.css';
+@import './css/_panels.css';
+@import './css/_buttons.css';
+@import './css/_main_area.css';
+@import './css/_chat.css';
+@import './css/_timeline.css';
+@import './css/_editor.css';
+@import './css/_modals.css';
+@import './css/_auth.css';
+@import './css/_utility.css';
+@import './css/_responsive.css';
+@import './css/_animations.css';
+
+/* Fix for hidden scroll area */
+html,
+body {
+  height: 100dvh !important;
+  overflow: hidden !important;
+}
