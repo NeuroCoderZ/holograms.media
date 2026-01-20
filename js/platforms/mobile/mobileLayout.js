@@ -115,4 +115,3 @@ export default class MobileLayout {
         console.log('[MobileLayout] updateToggleButtonPosition called (handled by CSS)');
     }
 }
-}
