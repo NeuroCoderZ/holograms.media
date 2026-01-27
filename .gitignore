@@ -29,6 +29,7 @@ pip-wheel-metadata/
 .env
 !.env.development
 !.env.production
+.env.local
 
 # Ignore holographic_core entirely (build artifacts, pkg, sources)
 holographic_core/
