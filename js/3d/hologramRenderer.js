@@ -96,11 +96,9 @@ export class HologramRenderer {
   }
 
   handleCwtResult(data) {
+    if (Math.random() < 0.01) console.log('[HologramRenderer] Received audioData event (sampled)');
+
     // Debug Trace for Data Flow
-    // Debug Trace for Data Flow
-    // console.log('Renderer received data:', data.levels ? data.levels[0] : 'no levels');
-    // SPAM CLEANUP: Removed conditional log to improve performance
-    // if (Math.random() < 0.05) console.log('Renderer received data (Sample):', data.levels ? data.levels[0] : 'no levels');
 
     // Store the latest data (levels: Float32Array[256], pans: Float32Array[256])
     this.latestCwtData = data;
