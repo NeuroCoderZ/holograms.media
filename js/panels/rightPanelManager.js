@@ -3,6 +3,7 @@
  * Отвечает за переключение между режимами Промпт (Таймлайн) и Чат.
  * По умолчанию инициализируется в режиме Чат.
  */
+import eventBus from '../core/eventBus.js'; // Import EventBus
 
 // --- Переменные модуля ---
 const elements = {
@@ -60,12 +61,12 @@ function updateUIVisibility(isChatMode) {
  */
 function toggleMode() {
   if (!elements.promptModeButton) return;
-  
+
   // Переключаем класс 'active' на кнопке. Режим "Промпт" - когда кнопка активна.
   const isPromptMode = elements.promptModeButton.classList.toggle('active');
   // Режим чата - это когда режим промпта НЕ активен.
   const isChatMode = !isPromptMode;
-  
+
   updateUIVisibility(isChatMode);
   console.log(`Режим правой панели переключен на: ${isPromptMode ? 'Промпт' : 'Чат'}`);
 }
@@ -100,8 +101,14 @@ export function initializeRightPanel(appState) {
 
   // Устанавливаем режим ЧАТА по умолчанию при загрузке
   // Кнопка "Промпт" неактивна, значит включен режим чата
-  updateUIVisibility(true); 
+  updateUIVisibility(true);
   console.log('Режим правой панели по умолчанию: Чат.');
+
+  // Подписываемся на события переключения
+  eventBus.on('ui:switchToChat', () => {
+    console.log('RightPanelManager: Получена команда переключения в чат через EventBus');
+    switchToChatMode();
+  });
 }
 
 /**
