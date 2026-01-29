@@ -1,2 +1,5 @@
-/wasm/*  /wasm/:splat  200
+/wasm/*  200
+/*.wasm  200
+/*.js    200
+/*.css   200
 /*    /index.html   200
