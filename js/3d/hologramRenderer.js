@@ -97,8 +97,10 @@ export class HologramRenderer {
 
   handleCwtResult(data) {
     // Debug Trace for Data Flow
+    // Debug Trace for Data Flow
     // console.log('Renderer received data:', data.levels ? data.levels[0] : 'no levels');
-    if (Math.random() < 0.05) console.log('Renderer received data (Sample):', data.levels ? data.levels[0] : 'no levels');
+    // SPAM CLEANUP: Removed conditional log to improve performance
+    // if (Math.random() < 0.05) console.log('Renderer received data (Sample):', data.levels ? data.levels[0] : 'no levels');
 
     // Store the latest data (levels: Float32Array[256], pans: Float32Array[256])
     this.latestCwtData = data;
@@ -808,7 +810,7 @@ export class HologramRenderer {
         // Map [0, 1] amplitude to Lightness directly
         // Silence (0) -> Black (L=0). Max (1) -> Full Brightness (Original L)
         // We ensure minL is extremely low (0.02) to avoid invisible meshes if needed, or pure 0 for "void"
-        const targetL = discreteL * hsl.l; 
+        const targetL = discreteL * hsl.l;
 
         leftMesh.material.color.setHSL(hsl.h, hsl.s, targetL);
         leftMesh.material.emissive.copy(baseColorL);

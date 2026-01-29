@@ -5,8 +5,7 @@
 import { state } from '../core/init.js';
 import { deviceCapabilities } from '../utils/deviceCapabilities.js';
 import eventBus from '../core/eventBus.js';
-// Import WASM URL explicitly for Vite - REMOVED to prevent modulepreload error
-// import wasmUrl from '../../public/wasm/holographic_core_bg.wasm?url';
+import audioService from '../services/AudioService.js';
 import { AudioGestureBridge } from './AudioGestureBridge.js';
 
 // Global state
@@ -23,12 +22,7 @@ let proxyConnectedToWorklet = false;
  * Initializes or retrieves the global AudioContext.
  */
 export function getAudioContext() {
-    if (state.audio && state.audio.audioContext && state.audio.audioContext.state !== 'closed') {
-        return state.audio.audioContext;
-    }
-    if (!state.audio) state.audio = {};
-    state.audio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    return state.audio.audioContext;
+    return audioService.getAudioContext() || new (window.AudioContext || window.webkitAudioContext)();
 }
 
 /**
@@ -56,40 +50,6 @@ function connectProxyToWorklet() {
 }
 
 /**
- * Attempts to fetch WASM from multiple possible paths.
- */
-async function fetchWasmWithFallbackPaths() {
-    const possiblePaths = [
-        '/wasm/holographic_core_bg.wasm', // Root path (moved from public/wasm/)
-        '/holographic_core_bg.wasm' // Legacy fallback
-    ];
-    for (const path of possiblePaths) {
-        try {
-            console.log(`[AudioProcessing] Trying WASM path: ${path}`);
-            const response = await fetch(path);
-            if (response.ok) {
-                const bytes = await response.arrayBuffer();
-
-                // CRITICAL: Check if this is actually a WASM file (magic number: 00 61 73 6d)
-                const header = new Uint8Array(bytes.slice(0, 4));
-                const isWasm = header[0] === 0x00 && header[1] === 0x61 && header[2] === 0x73 && header[3] === 0x6d;
-
-                if (!isWasm) {
-                    console.warn(`[AudioProcessing] ⚠ Path ${path} returned non-WASM data (likely HTML fallback). Skipping.`);
-                    continue;
-                }
-
-                console.log(`[AudioProcessing] ✅ WASM loaded from: ${path} (${bytes.byteLength} bytes)`);
-                return bytes;
-            }
-        } catch (e) {
-            // Continue to next path
-        }
-    }
-    throw new Error('[AudioProcessing] WASM file not found in any location.');
-}
-
-/**
  * Initializes the CQT AudioWorklet with WASM.
  */
 export async function initializeCwtWorklet(audioContext) {
@@ -98,6 +58,12 @@ export async function initializeCwtWorklet(audioContext) {
         connectProxyToWorklet(); // Ensure proxy is connected
         return true;
     }
+
+    // Ensure we are using the service's context if available
+    if (!audioContext) {
+        audioContext = audioService.getAudioContext();
+    }
+    // If logic: if audioService is initialized, use it to ensure everything is sync
 
     console.log('[AudioProcessing] ========================================');
     console.log('[AudioProcessing] INITIALIZING WASM CQT ENGINE');
@@ -111,31 +77,24 @@ export async function initializeCwtWorklet(audioContext) {
 
     console.log(`[AudioProcessing] CQT Config: sampleRate=${sampleRate}, chunkSize=${chunkSize}, numBins=${numBins}`);
 
-    // 1. Load AudioWorklet module
-    try {
-        await audioContext.audioWorklet.addModule('/js/audio/waveletAnalyzer.js');
-        console.log('[AudioProcessing] ✅ AudioWorklet module loaded.');
-    } catch (e) {
-        throw new Error(`[AudioProcessing] Failed to load AudioWorklet: ${e.message}`);
-    }
+    // 1. AudioWorklet is mainly managed by AudioService now, but we need to ensure it's loaded.
+    // AudioService.initialize() loads it. We assume it's done or we wait for it?
+    // Let's assume initializeCwtWorklet is called AFTER init.js calls audioService.initialize().
 
-    // 2. Fetch and compile WASM (DISABLED TEMPORARILY due to bindgen imports issue)
-    /*
-    let wasmModule = null;
-    try {
-        console.log('[AudioProcessing] Loading WASM module...');
-        const wasmBytes = await fetchWasmWithFallbackPaths();
-        wasmModule = await WebAssembly.compile(wasmBytes);
-        console.log('[AudioProcessing] ✅ WASM compiled.');
-    } catch (e) {
-        console.warn(`[AudioProcessing] ⚠ WASM load failed: ${e.message}. Switching to JS fallback.`);
+    // 2. Get WASM Module from Service
+    let wasmModule = audioService.getWasmModule();
+    if (!wasmModule) {
+        console.warn('[AudioProcessing] WASM Module not found in AudioService. Attempting to force load (should not happen if init sequence is correct).');
+        // Could force init here, but safer to just warn
     }
-    */
-
-    // Explicitly force JS mode for stability
-    const wasmModule = null; // Force null
 
     // 3. Create worklet node with flexible channel handling
+    // Note: We create a NEW node here specific for CQT logic as mapped in this file?
+    // Or should we use AudioService.createWorkletNode()?
+    // AudioProcessing.js has specific message handling logic (Gesture Modulation).
+    // AudioService has generic message handling.
+    // For Phase 2, let's keep logic here but use the resources.
+
     cwtWorkletNode = new AudioWorkletNode(audioContext, 'cwt-processor', {
         processorOptions: {
             sampleRate: sampleRate,
@@ -160,10 +119,6 @@ export async function initializeCwtWorklet(audioContext) {
         engineMode = 'JS_GOERTZEL';
         console.log('[AudioProcessing] ℹ️ Running in JS Architecture Mode (Digital Basilar Membrane)');
     }
-
-    // Connect worklet to destination (passthrough audio)
-    // CRITICAL FIX: Disconnect / Comment out to prevent feedback loop
-    // cwtWorkletNode.connect(audioContext.destination);
 
     // CRITICAL: Connect proxy to worklet NOW
     connectProxyToWorklet();

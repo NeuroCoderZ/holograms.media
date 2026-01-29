@@ -304,19 +304,31 @@ export async function initCore() {
       console.log('✅ XRSessionManager инициализирован');
     }
 
-    // Инициализируем аудио компоненты
+    // Инициализируем аудио компоненты через AudioService (Single Source of Truth)
     try {
+      const { default: audioService } = await import('../services/AudioService.js');
+      await audioService.initialize();
+      state.audioService = audioService; // Сохраняем в state для доступа
+      console.log('✅ AudioService инициализирован');
+
+      // WebAudioEngine (Legacy Engine) использует ресурсы AudioService
       if (!state.webAudioEngine) {
         state.webAudioEngine = new WebAudioEngine();
-        await state.webAudioEngine.initialize();
-        console.log('✅ WebAudioEngine инициализирован');
+        // Внедряем зависимости: Context и WASM Exports
+        await state.webAudioEngine.initialize(
+          audioService.getAudioContext(),
+          audioService.getWasmExports()
+        );
+        console.log('✅ WebAudioEngine инициализирован (с использованием AudioService)');
       }
+
       if (!state.audio.audioContext) {
-        state.audio.audioContext = state.webAudioEngine.getAudioContext() || new (window.AudioContext || window.webkitAudioContext)();
-        console.log('✅ AudioContext получен из WebAudioEngine');
+        state.audio.audioContext = audioService.getAudioContext();
+        console.log('✅ AudioContext получен из AudioService');
       }
     } catch (audioError) {
-      console.warn('⚠️ Ошибка инициализации WebAudioEngine:', audioError.message);
+      console.warn('⚠️ Ошибка инициализации AudioService/WebAudioEngine:', audioError.message);
+      console.error(audioError);
     }
 
     // Предзагрузка CWT AudioWorklet для оптимальной производительности

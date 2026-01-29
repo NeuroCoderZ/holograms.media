@@ -37,22 +37,33 @@ export class WebAudioEngine {
         this.processingChunkSize = 128; // Standard AudioWorklet buffer size
     }
 
-    async initialize() {
+    async initialize(existingContext = null, existingWasmExports = null) {
         if (this.isInitialized) return;
 
         try {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
-                sampleRate: SAMPLE_RATE // Specify sample rate
-            });
+            if (existingContext) {
+                this.audioContext = existingContext;
+                console.log("WebAudioEngine using provided AudioContext:", this.audioContext.sampleRate);
+            } else {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: SAMPLE_RATE // Specify sample rate
+                });
+                console.log("WebAudioEngine created new AudioContext:", this.audioContext.sampleRate);
+            }
 
-            console.log("AudioContext created with sample rate:", this.audioContext.sampleRate);
+            if (existingWasmExports) {
+                this.wasmExports = existingWasmExports;
+                console.log("WebAudioEngine using provided WASM exports.");
+            } else {
+                console.warn("WebAudioEngine: Using legacy WASM loader. Should reuse AudioService instance.");
+                this.wasmExports = await loadWasmModule('cwt_analyzer.wasm');
+            }
 
-            this.wasmExports = await loadWasmModule('cwt_analyzer.wasm');
             if (!this.wasmExports || !this.wasmExports.encode_audio_to_hologram) {
                 console.error("Failed to load WASM module or `encode_audio_to_hologram` not found.");
                 return;
             }
-            console.log("WASM module loaded successfully. Exports:", this.wasmExports);
+            // console.log("WASM module loaded successfully.");
 
             // Allocate memory in WASM if it's not automatically handled by wasm-bindgen ABI
             // This is typical for functions taking slices/pointers directly.
@@ -80,8 +91,8 @@ export class WebAudioEngine {
                 });
 
                 if (!this.inputLeftChannelPtr || !this.inputRightChannelPtr || !this.outputDbLevelsPtr || !this.outputPanAnglesPtr || !this.targetFrequenciesPtr) {
-                     console.error("Failed to allocate memory in WASM heap for one or more buffers.");
-                     // Attempt to free any successfully allocated buffers before returning
+                    console.error("Failed to allocate memory in WASM heap for one or more buffers.");
+                    // Attempt to free any successfully allocated buffers before returning
                     if (this.inputLeftChannelPtr && this.wasmExports.deallocate_f32_array) this.wasmExports.deallocate_f32_array(this.inputLeftChannelPtr, this.processingChunkSize);
                     else if (this.inputLeftChannelPtr && this.wasmExports.__wbindgen_free) this.wasmExports.__wbindgen_free(this.inputLeftChannelPtr, bufferByteSize);
                     // ... repeat for other buffers ...
