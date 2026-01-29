@@ -119,7 +119,8 @@ export async function initializeCwtWorklet(audioContext) {
         throw new Error(`[AudioProcessing] Failed to load AudioWorklet: ${e.message}`);
     }
 
-    // 2. Fetch and compile WASM (with robust fallback)
+    // 2. Fetch and compile WASM (DISABLED TEMPORARILY due to bindgen imports issue)
+    /*
     let wasmModule = null;
     try {
         console.log('[AudioProcessing] Loading WASM module...');
@@ -129,6 +130,10 @@ export async function initializeCwtWorklet(audioContext) {
     } catch (e) {
         console.warn(`[AudioProcessing] ⚠ WASM load failed: ${e.message}. Switching to JS fallback.`);
     }
+    */
+
+    // Explicitly force JS mode for stability
+    const wasmModule = null; // Force null
 
     // 3. Create worklet node with flexible channel handling
     cwtWorkletNode = new AudioWorkletNode(audioContext, 'cwt-processor', {
@@ -149,11 +154,11 @@ export async function initializeCwtWorklet(audioContext) {
     if (wasmModule) {
         cwtWorkletNode.port.postMessage({ type: 'WASM_MODULE', module: wasmModule });
     } else {
-        // Explicitly trigger JS mode if no WASM
+        // Explicitly trigger JS mode
         cwtWorkletNode.port.postMessage({ type: 'FORCE_JS_MODE' });
         cwtWorkletReady = true;
         engineMode = 'JS_GOERTZEL';
-        console.log('[AudioProcessing] ⚠ Running in JS Fallback Mode (WASM missing)');
+        console.log('[AudioProcessing] ℹ️ Running in JS Architecture Mode (Digital Basilar Membrane)');
     }
 
     // Connect worklet to destination (passthrough audio)
