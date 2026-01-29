@@ -2,6 +2,7 @@
 // import { state } from '../../core/init.js'; // No longer needed, state is passed in constructor
 // import { uiElements } from '../../ui/uiManager.js'; // Removed as uiElements will be passed via constructor
 import { updateHologramLayout } from '../../ui/layoutManager.js';
+import eventBus from '../../core/eventBus.js';
 
 export default class MobileLayout {
     constructor(state) { // Accept global state object
@@ -70,7 +71,7 @@ export default class MobileLayout {
             // В режиме скрытых панелей кнопка имеет класс show-mode
             this.togglePanelsButtonElement.classList.add('show-mode');
         }
-        
+
         // Даем DOM время обновиться перед расчетом размеров
         setTimeout(() => updateHologramLayout(this.state), 100);
     }
@@ -105,7 +106,7 @@ export default class MobileLayout {
     handleOrientationChange() {
         const isPortrait = window.innerHeight > window.innerWidth;
         console.log(`[MobileLayout] Orientation check. Portrait: ${isPortrait}`);
-        
+
         // Просто обновляем размеры Three.js, так как DOM (grid-container) изменится через CSS
         updateHologramLayout(this.state);
     }

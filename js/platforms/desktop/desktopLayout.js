@@ -2,6 +2,7 @@
 
 // import * as THREE from 'three'; // Removed for global THREE
 import { updateHologramLayout } from '../../ui/layoutManager.js';
+import eventBus from '../../core/eventBus.js';
 
 export default class DesktopLayout {
     constructor(state) { // Accept global state object
@@ -44,8 +45,6 @@ export default class DesktopLayout {
         }
         if (!this.togglePanelsButtonElement) {
             console.warn('[DesktopLayout] Toggle panels button element (#togglePanelsButton) not found. Panel toggling will not work.');
-            // Depending on requirements, this might also be critical. For now, a warning.
-            // If it should be critical, set criticalElementMissing = true and log an error.
         }
 
         if (criticalElementMissing) {
@@ -54,16 +53,44 @@ export default class DesktopLayout {
 
         this.initializeMainPanelState();
 
-        // this.toggleMainPanels(); // First toggle - REMOVED to preserve localStorage state
-        // this.toggleMainPanels(); // Second toggle - REMOVED FOR DEBUGGING
-        // console.log("DesktopLayout: toggleMainPanels() called twice for debug.");
-
         if (this.togglePanelsButtonElement) {
             console.log('[DesktopLayout] Adding click listener to togglePanelsButton');
             this.togglePanelsButtonElement.addEventListener('click', () => this.toggleMainPanels());
         }
+
+        // Subscribe to EventBus for cross-module communication
+        this._setupEventBusSubscriptions();
+
         console.log("DesktopLayout initialized.");
     }
+
+    /**
+     * Sets up EventBus subscriptions for decoupled communication.
+     */
+    _setupEventBusSubscriptions() {
+        // Handle speech input request to switch to chat mode
+        eventBus.on('ui:switchToChat', () => {
+            console.log('[DesktopLayout] Received ui:switchToChat event');
+            this._handleSwitchToChat();
+        });
+    }
+
+    /**
+     * Handles switching to chat mode (triggered by speech input or other modules).
+     */
+    _handleSwitchToChat() {
+        // Ensure right panel is visible for chat
+        if (this.rightPanelElement && !this.rightPanelElement.classList.contains('visible')) {
+            this.rightPanelElement.classList.add('visible');
+            this.rightPanelElement.classList.remove('hidden');
+            console.log('[DesktopLayout] Right panel shown for chat mode');
+        }
+        // Focus chat input if available
+        if (this.state.uiElements && this.state.uiElements.inputs && this.state.uiElements.inputs.chatInput) {
+            this.state.uiElements.inputs.chatInput.focus();
+        }
+    }
+
 
     initializeMainPanelState() {
         const panelsShouldBeHidden = localStorage.getItem('panelsHidden') === 'true';

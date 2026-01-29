@@ -2,6 +2,7 @@
 // XR layout management - using desktop logic for now
 
 import { updateHologramLayout } from '../../ui/layoutManager.js';
+import eventBus from '../../core/eventBus.js';
 
 export default class XrLayout {
     constructor(state) { // Accept global state object
@@ -39,8 +40,6 @@ export default class XrLayout {
         }
         if (!this.togglePanelsButtonElement) {
             console.warn('[XrLayout] Toggle panels button element (#togglePanelsButton) not found. Panel toggling will not work.');
-            // Depending on requirements, this might also be critical. For now, a warning.
-            // If it should be critical, set criticalElementMissing = true and log an error.
         }
 
         if (criticalElementMissing) {
@@ -49,16 +48,66 @@ export default class XrLayout {
 
         this.initializeMainPanelState();
 
-        // this.toggleMainPanels(); // First toggle - REMOVED to preserve localStorage state
-        // this.toggleMainPanels(); // Second toggle - REMOVED FOR DEBUGGING
-        // console.log("XrLayout: toggleMainPanels() called twice for debug.");
-
         if (this.togglePanelsButtonElement) {
             console.log('[XrLayout] Adding click listener to togglePanelsButton');
             this.togglePanelsButtonElement.addEventListener('click', () => this.toggleMainPanels());
         }
+
+        // Subscribe to EventBus for XR session lifecycle
+        this._setupEventBusSubscriptions();
+
         console.log("XrLayout initialized.");
     }
+
+    /**
+     * Sets up EventBus subscriptions for XR session events.
+     */
+    _setupEventBusSubscriptions() {
+        // Handle XR session start - hide 2D panels for immersive mode
+        eventBus.on('xr:sessionStart', () => {
+            console.log('[XrLayout] XR session started - hiding 2D panels');
+            this._enterImmersiveMode();
+        });
+
+        // Handle XR session end - restore 2D panels
+        eventBus.on('xr:sessionEnd', () => {
+            console.log('[XrLayout] XR session ended - restoring 2D panels');
+            this._exitImmersiveMode();
+        });
+    }
+
+    /**
+     * Enters immersive VR mode - hides 2D UI panels.
+     */
+    _enterImmersiveMode() {
+        if (this.leftPanelElement) {
+            this.leftPanelElement.classList.add('xr-hidden');
+        }
+        if (this.rightPanelElement) {
+            this.rightPanelElement.classList.add('xr-hidden');
+        }
+        if (this.togglePanelsButtonElement) {
+            this.togglePanelsButtonElement.classList.add('xr-hidden');
+        }
+    }
+
+    /**
+     * Exits immersive VR mode - restores 2D UI panels to previous state.
+     */
+    _exitImmersiveMode() {
+        if (this.leftPanelElement) {
+            this.leftPanelElement.classList.remove('xr-hidden');
+        }
+        if (this.rightPanelElement) {
+            this.rightPanelElement.classList.remove('xr-hidden');
+        }
+        if (this.togglePanelsButtonElement) {
+            this.togglePanelsButtonElement.classList.remove('xr-hidden');
+        }
+        // Restore to localStorage state
+        this.initializeMainPanelState();
+    }
+
 
     initializeMainPanelState() {
         const storedState = localStorage.getItem('panelsHidden');
