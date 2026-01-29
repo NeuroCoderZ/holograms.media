@@ -48,11 +48,16 @@ class AudioService {
             });
             console.log(`[AudioService] AudioContext created. State: ${this.context.state}, Rate: ${this.context.sampleRate}`);
 
-            // 2. Resume if suspended (browser policy)
+            // 2. Resume if suspended (browser policy) - DON'T await, it blocks until user gesture!
             if (this.context.state === 'suspended') {
-                await this.context.resume();
-                console.log('[AudioService] AudioContext resumed.');
+                // Schedule resume for later (on user interaction)
+                this.context.resume().then(() => {
+                    console.log('[AudioService] AudioContext resumed after user gesture.');
+                }).catch(err => {
+                    console.warn('[AudioService] AudioContext resume failed:', err.message);
+                });
             }
+
 
             // 3. Load AudioWorklet
             await this.loadAudioWorklet();
