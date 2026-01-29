@@ -192,6 +192,8 @@ export async function initializeCwtWorklet(audioContext) {
         // Attach data listener for JS mode too
         cwtWorkletNode.port.onmessage = (event) => {
             const { type } = event.data;
+            if (Math.random() < 0.01) console.log('[AudioProcessing] Worklet message received (sampled):', type); // Log 1% of messages to avoid spam
+
             if (type === 'AUDIO_DATA') {
                 // Duplicate data handling logic for JS mode
                 const modulationData = state.multimodal?.gestureModulationData;
