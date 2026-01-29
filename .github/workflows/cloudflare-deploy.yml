@@ -1,0 +1,43 @@
+name: 🚀 Deploy Frontend to Cloudflare Pages
+
+on:
+  push:
+    branches: [master, main]
+
+jobs:
+  deploy_frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    name: Build & Deploy to Cloudflare Pages
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Frontend
+        run: npm run build
+
+      - name: 🔧 Copy _headers and _redirects to dist
+        run: |
+          cp public/_headers dist/_headers
+          cp public/_redirects dist/_redirects
+          ls -R dist
+
+      - name: ☁️ Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: holograms-media
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
