@@ -31,7 +31,7 @@
         - `cwt.cpp`
         - `cwtAudioWorklet.js`
         - `processing.js`
-        - `webAudioEngine.js`
+        - `webAudioEngine.js` (Legacy - заменен на AudioService)
     - `/config/` - Модули конфигурации.
         - `hologramConfig.js, hologramConstants.js`
     - `/core/` - Основные модули ядра приложения.
@@ -75,7 +75,8 @@
         - `hologramPanelManager.js`
     - `/platforms/` - Код, специфичный для различных платформ.
         - `/desktop/`, `/mobile/`, `/xr/`
-    - `/services/` - Сервисы для взаимодействия с бэкендом.
+    - `/services/` - Сервисы для взаимодействия с бэкендом и глобальные сервисы.
+        - `AudioService.js` # Singleton для управления AudioContext и AudioWorklet.
         - `apiService.js`
         - `CloudGestureStorage.js`
         - `hologlyphService.js`
