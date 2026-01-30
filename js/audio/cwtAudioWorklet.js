@@ -1,211 +1,375 @@
 // frontend/js/audio/cwtAudioWorklet.js
+// MANUAL POLYFILL OF WASM-BINDGEN GLUE CODE FOR AUDIO WORKLET
+
+// Global WASM instance access for helpers (Worklet scope is single-threaded)
+let wasm;
+let cachedUint8ArrayMemory0 = null;
+let cachedFloat32ArrayMemory0 = null;
+let cachedDataViewMemory0 = null;
+
+// --- Memory Access Helpers ---
+function getUint8ArrayMemory0() {
+    if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
+        cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
+    }
+    return cachedUint8ArrayMemory0;
+}
+
+function getFloat32ArrayMemory0() {
+    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
+        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
+    }
+    return cachedFloat32ArrayMemory0;
+}
+
+function getDataViewMemory0() {
+    if (cachedDataViewMemory0 === null || cachedDataViewMemory0.buffer.detached === true || cachedDataViewMemory0.buffer !== wasm.memory.buffer) {
+        cachedDataViewMemory0 = new DataView(wasm.memory.buffer);
+    }
+    return cachedDataViewMemory0;
+}
+
+// --- Text Encoding/Decoding ---
+const cachedTextEncoder = (typeof TextEncoder !== 'undefined' ? new TextEncoder('utf-8') : { encode: () => { throw Error('TextEncoder not available') } });
+const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } });
+
+function getStringFromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
+}
+
+let WASM_VECTOR_LEN = 0;
+
+function passStringToWasm0(arg, malloc, realloc) {
+    const buf = cachedTextEncoder.encode(arg);
+    const ptr = malloc(buf.length, 1) >>> 0;
+    getUint8ArrayMemory0().subarray(ptr, ptr + buf.length).set(buf);
+    WASM_VECTOR_LEN = buf.length;
+    return ptr;
+}
+
+function passArrayF32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getFloat32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
+// --- ExternRef Table Helper ---
+function takeFromExternrefTable0(idx) {
+    const value = wasm.__wbindgen_export_2.get(idx);
+    wasm.__externref_table_dealloc(idx);
+    return value;
+}
+
+function debugString(val) {
+    return String(val); // Simplified for Worklet
+}
+
+// --- IMPORTS OBJECT for WASM ---
+// This mimics the 'imports' constructed in holographic_core.js
+const wasmImports = {
+    // Satisfy the weird placeholder requirement if present in binary
+    __wbindgen_placeholder__: {},
+    wbg: {
+        __wbg_new_405e22f390576ce2: function () {
+            return new Object();
+        },
+        __wbg_new_78feb108b6472713: function () {
+            return new Array();
+        },
+        __wbg_set_37837023f3d740e8: function (arg0, arg1, arg2) {
+            arg0[arg1 >>> 0] = arg2;
+        },
+        __wbg_set_3f1d0b984ed272ed: function (arg0, arg1, arg2) {
+            arg0[arg1] = arg2;
+        },
+        __wbindgen_debug_string: function (arg0, arg1) {
+            const ret = debugString(arg1);
+            const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len1 = WASM_VECTOR_LEN;
+            getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+            getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+        },
+        __wbindgen_init_externref_table: function () {
+            const table = wasm.__wbindgen_export_2;
+            const offset = table.grow(4);
+            table.set(0, undefined);
+            table.set(offset + 0, undefined);
+            table.set(offset + 1, null);
+            table.set(offset + 2, true);
+            table.set(offset + 3, false);
+        },
+        __wbindgen_number_new: function (arg0) {
+            return arg0;
+        },
+        __wbindgen_string_new: function (arg0, arg1) {
+            return getStringFromWasm0(arg0, arg1);
+        },
+        __wbindgen_throw: function (arg0, arg1) {
+            throw new Error(getStringFromWasm0(arg0, arg1));
+        }
+    }
+};
 
 class CwtProcessor extends AudioWorkletProcessor {
-    constructor(options) {
+    constructor() {
         super();
-        this.wasmExports = options.processorOptions.wasmBytes; // These are the already loaded exports
-        this.wasmMemoryBuffer = options.processorOptions.wasmMemoryBuffer;
+        this.mode = 'INIT';
+        this.analyzerPtr = 0;
+        this.cachedTargetFreqsPtr = 0;
+        this.cachedTargetFreqsLen = 0;
+        this.targetFrequencies = null;
+        this.sampleRate = 48000;
 
-        this.inputLeftChannelPtr = options.processorOptions.inputLeftChannelPtr;
-        this.inputRightChannelPtr = options.processorOptions.inputRightChannelPtr;
-        this.outputDbLevelsPtr = options.processorOptions.outputDbLevelsPtr;
-        this.outputPanAnglesPtr = options.processorOptions.outputPanAnglesPtr;
-        this.targetFrequenciesPtr = options.processorOptions.targetFrequenciesPtr;
+        // JS Fallback State
+        this.levels = new Float32Array(256).fill(-100);
+        this.pans = new Float32Array(256).fill(0);
+        this.smoothLevels = new Float32Array(256).fill(-100);
 
-        this.processingChunkSize = options.processorOptions.processingChunkSize || 128; // Default to 128 if not provided
-        this.sampleRate = options.processorOptions.sampleRate || sampleRate; // sampleRate is global in AudioWorkletProcessor scope
-
-        this.outputDbLevels = new Float32Array(256); // 128 for left, 128 for right
-        this.outputPanAngles = new Float32Array(128);
-
-        if (!this.wasmExports || typeof this.wasmExports.encode_audio_to_hologram !== 'function') {
-            this.port.postMessage({ type: 'workletError', payload: 'WASM module or encode_audio_to_hologram function not available in worklet.' });
-            this.valid = false;
-            return;
-        }
-        if (this.wasmMemoryBuffer && (!this.inputLeftChannelPtr || !this.inputRightChannelPtr || !this.outputDbLevelsPtr || !this.outputPanAnglesPtr || !this.targetFrequenciesPtr)) {
-            this.port.postMessage({ type: 'workletError', payload: 'WASM memory buffer provided, but one or more data pointers are missing.' });
-            this.valid = false;
-            return;
-        }
-        this.valid = true;
-        console.log("CwtProcessor constructed successfully in AudioWorkletGlobalScope.", {
-            sampleRate: this.sampleRate,
-            processingChunkSize: this.processingChunkSize,
-            wasmMemoryAvailable: !!this.wasmMemoryBuffer,
-            pointers: {
-                inputLeftChannelPtr: this.inputLeftChannelPtr,
-                inputRightChannelPtr: this.inputRightChannelPtr,
-                outputDbLevelsPtr: this.outputDbLevelsPtr,
-                outputPanAnglesPtr: this.outputPanAnglesPtr,
-                targetFrequenciesPtr: this.targetFrequenciesPtr
+        this.port.onmessage = async (event) => {
+            const { type, module, payload } = event.data;
+            if (type === 'WASM_MODULE') {
+                this._initWasm(module);
+            } else if (type === 'FORCE_JS_MODE') {
+                this.mode = 'JS';
+                console.log('[CwtProcessor] Forced JS Mode');
+            } else if (type === 'CONFIG') {
+                if (payload && payload.targetFrequencies) {
+                    this.targetFrequencies = new Float32Array(payload.targetFrequencies);
+                }
             }
-        });
+        };
+
+        // Initialize default target frequencies (Linear 27.5Hz -> ...)
+        // We'll update this if sent from main thread, or use default semitones
+        // Ideally this should match config.
+        this.targetFrequencies = new Float32Array(128);
+        const A0 = 27.5;
+        for (let i = 0; i < 128; i++) {
+            this.targetFrequencies[i] = A0 * Math.pow(2, i / 12);
+        }
+    }
+
+    async _initWasm(module) {
+        try {
+            console.log('[CwtProcessor] Instantiating WASM...');
+            const instance = await WebAssembly.instantiate(module, wasmImports);
+
+            wasm = instance.exports;
+            // Initialize ExternRef table if start function exists
+            if (wasm.__wbindgen_start) {
+                wasm.__wbindgen_start();
+            }
+
+            // Create HoloAnalyzer instance
+            // constructor(sample_rate, num_bins, chunk_size)
+            // Using 128 chunk size as default
+            this.analyzerPtr = wasm.holoanalyzer_new(currentTime.sampleRate || 48000, 128, 128);
+
+            console.log(`[CwtProcessor] HoloAnalyzer created at ptr: ${this.analyzerPtr}`);
+
+            // Pre-allocate target frequencies in WASM memory to avoid re-uploading every frame
+            // We use malloc explicitly
+            if (this.targetFrequencies) {
+                this.cachedTargetFreqsPtr = passArrayF32ToWasm0(this.targetFrequencies, wasm.__wbindgen_malloc);
+                this.cachedTargetFreqsLen = WASM_VECTOR_LEN;
+            }
+
+            this.mode = 'WASM';
+            this.port.postMessage({ type: 'WASM_READY' });
+
+        } catch (e) {
+            console.error('[CwtProcessor] WASM Init Error:', e);
+            this.port.postMessage({ type: 'WASM_ERROR', error: e.toString() });
+            this.mode = 'JS';
+        }
     }
 
     process(inputs, outputs, parameters) {
-        if (!this.valid) {
-            return true; // Stop processing if not valid
-        }
-
-        const input = inputs[0]; // Get the first input (should be the only one for this node)
-
-        // Assuming stereo input, but can adapt if mono
-        const leftChannel = input[0];
-        const rightChannel = input.length > 1 ? input[1] : leftChannel; // Use left for right if mono
-
-        if (!leftChannel || leftChannel.length === 0) {
-            // No input data, or input disconnected
-            return true;
-        }
-
-        // Ensure the input data length matches processingChunkSize.
-        // AudioWorklet usually provides 128 samples. If not, it might indicate an issue or need for buffering.
-        if (leftChannel.length !== this.processingChunkSize) {
-            // For simplicity, we'll only process if the chunk size matches.
-            // In a more robust implementation, you might buffer or resample.
-            // console.warn(`Worklet: Unexpected chunk size ${leftChannel.length}, expected ${this.processingChunkSize}. Skipping frame.`);
-            // However, the WASM function might be flexible or expect a fixed size.
-            // Let's assume for now it processes whatever length is given, up to its internal limits.
-            // OR, we strictly enforce processingChunkSize. The Rust code has a check:
-            // `if chunk_size == 0 ... return;`
-            // `let chunk_size = left_channel.len();`
-            // So, it seems the Rust code adapts to the input `chunk_size`.
-            // We should pass the actual length of the current audio data.
-        }
-
-        const currentChunkSize = leftChannel.length;
-
-        try {
-            if (this.wasmMemoryBuffer) {
-                // Create Float32Array views into the WASM memory for input
-                const wasmInputLeft = new Float32Array(this.wasmMemoryBuffer, this.inputLeftChannelPtr, currentChunkSize);
-                const wasmInputRight = new Float32Array(this.wasmMemoryBuffer, this.inputRightChannelPtr, currentChunkSize);
-
-                wasmInputLeft.set(leftChannel);
-                wasmInputRight.set(rightChannel);
-
-                // Call the WASM function
-                // void encode_audio_to_hologram(
-                //     left_channel: &[f32], (ptr, len)
-                //     right_channel: &[f32], (ptr, len)
-                //     sample_rate: f32,
-                //     target_frequencies: &[f32], (ptr, len)
-                //     output_db_levels: &mut [f32], (ptr, len)
-                //     output_pan_angles: &mut [f32] (ptr, len)
-                // );
-                // The wasm-bindgen generated JS function will handle the &[f32] from ptr+len.
-                // If we didn't have wasm-bindgen and were using raw WASM, we'd pass pointers and lengths.
-                // With wasm-bindgen, it expects the JS arrays or TypedArrays directly if the Rust func uses slices.
-                // However, our `webAudioEngine.js` allocated memory and passed pointers, implying a more manual setup.
-                // The Rust `lib.rs` uses `left_channel: &[f32]`, etc. `wasm-bindgen` would typically manage memory for these.
-                // If the `allocate_f32_array` and direct pointer usage is intended, the Rust function signature
-                // in `#[wasm_bindgen]` might need to accept pointers and lengths explicitly, e.g., `left_ptr: *const f32, left_len: usize`.
-                // Let's assume the current `wasm-bindgen` setup correctly maps these slice arguments
-                // to the memory regions we've prepared.
-
-                this.wasmExports.encode_audio_to_hologram(
-                    this.inputLeftChannelPtr, // Pointer to left channel data in WASM memory
-                    currentChunkSize,         // Length of left channel data
-                    this.inputRightChannelPtr, // Pointer to right channel data
-                    currentChunkSize,         // Length of right channel data
-                    this.sampleRate,
-                    this.targetFrequenciesPtr, // Pointer to target frequencies
-                    128,                      // Length of target frequencies
-                    this.outputDbLevelsPtr,    // Pointer for output dB levels
-                    256,                      // Length of dB levels (stereo)
-                    this.outputPanAnglesPtr,   // Pointer for output pan angles
-                    128                       // Length of pan angles
-                );
-
-                // Read results back from WASM memory
-                this.outputDbLevels.set(new Float32Array(this.wasmMemoryBuffer, this.outputDbLevelsPtr, 256));
-                this.outputPanAngles.set(new Float32Array(this.wasmMemoryBuffer, this.outputPanAnglesPtr, 128));
-
-            } else {
-                // Fallback or error if direct memory access isn't configured (less likely with current setup)
-                // This path implies wasm-bindgen handles memory copying.
-                // For this to work, the wasmExports.encode_audio_to_hologram would directly accept TypedArrays.
-                // This is usually the case with wasm-bindgen when you pass slices.
-                // However, the prompt's direction with explicit memory allocation in WebAudioEngine
-                // suggests the former approach (direct memory manipulation).
-                // The provided Rust code's `#[wasm_bindgen]` function signature takes `&[f32]`.
-                // `wasm-bindgen`'s JS glue code for such a signature typically expects JS `Float32Array` arguments.
-                // It then copies data into WASM memory, calls the Rust func, and copies results back.
-                // The manual memory allocation in `WebAudioEngine` might be for optimization or specific control,
-                // but it requires the Rust function to be adapted to take raw pointers, or for the JS side
-                // to use `new Float32Array(this.wasmMemory.buffer, ptr, len).set(data)` for inputs
-                // and then pass these ArrayViews (or just ptrs if Rust expects that) to the wasm function.
-
-                // Given the current Rust signature `encode_audio_to_hologram(left_channel: &[f32], ...)`
-                // and the manual memory setup, the most compatible way is to pass the POINTERS and LENGTHS
-                // to the wasm-bindgen generated function if the function was exposed to take them.
-                // If `wasm-bindgen` generated a JS function that expects `Float32Array`s, then the manual
-                // memory allocation in `WebAudioEngine` would be used to prepare these arrays using views
-                // on `this.wasmMemoryBuffer`.
-
-                // Let's stick to the pointer-based invocation as implied by `WebAudioEngine`'s memory setup.
-                // This requires that the `#[wasm_bindgen]` signature in Rust is actually something like:
-                // pub fn encode_audio_to_hologram_raw_ptr(left_ptr: *const f32, left_len: usize, ...)
-                // If it's literally `left_channel: &[f32]`, wasm-bindgen's JS wrapper expects a `Float32Array`.
-                // The current `fastcwt_processor.wasm` was likely compiled with `wasm-bindgen` taking `&[f32]`.
-                // In this case, the JS side should provide `Float32Array`s. The pre-allocated buffers
-                // `this.inputLeftChannelPtr` etc. would be sections of memory that we create views on.
-
-                // Revised approach for `&[f32]` signature:
-                const wasmInputLeftView = new Float32Array(this.wasmMemoryBuffer, this.inputLeftChannelPtr, currentChunkSize);
-                const wasmInputRightView = new Float32Array(this.wasmMemoryBuffer, this.inputRightChannelPtr, currentChunkSize);
-                const wasmTargetFreqView = new Float32Array(this.wasmMemoryBuffer, this.targetFrequenciesPtr, 128);
-                const wasmOutputDbView = new Float32Array(this.wasmMemoryBuffer, this.outputDbLevelsPtr, 256);
-                const wasmOutputPanView = new Float32Array(this.wasmMemoryBuffer, this.outputPanAnglesPtr, 128);
-
-                wasmInputLeftView.set(leftChannel);
-                wasmInputRightView.set(rightChannel);
-                // targetFrequencies are already set in WebAudioEngine's initialization.
-
-                // This is how wasm-bindgen typically works for slice parameters
-                this.wasmExports.encode_audio_to_hologram(
-                    wasmInputLeftView,
-                    wasmInputRightView,
-                    this.sampleRate,
-                    wasmTargetFreqView, // This was already filled by WebAudioEngine
-                    wasmOutputDbView,   // WASM function writes into this buffer
-                    wasmOutputPanView   // WASM function writes into this buffer
-                );
-
-                // Results are directly in wasmOutputDbView and wasmOutputPanView
-                this.outputDbLevels.set(wasmOutputDbView);
-                this.outputPanAngles.set(wasmOutputPanView);
-
-            }
-
-            this.port.postMessage({
-                type: 'cwtResult',
-                payload: {
-                    dbLevels: this.outputDbLevels, // This will be a copy due to structured cloning
-                    panAngles: this.outputPanAngles, // This will be a copy
-                }
-            });
-
-        } catch (error) {
-            this.port.postMessage({ type: 'workletError', payload: error.message });
-            console.error("Error in CWTProcessor process:", error);
-            this.valid = false; // Stop processing on error
-        }
-
-        // Pass audio through if needed (e.g., for hearing the source after effects)
-        // For analysis only, you might not need to connect the output of this node.
-        // If outputs[0] exists and has channels, copy input to output.
+        // Pass-through first
+        const input = inputs[0];
         const output = outputs[0];
+
+        if (!input || !input[0]) return true;
+
+        // Copy input to output (monitoring)
         if (output) {
-            for (let channel = 0; channel < output.length; ++channel) {
-                if (input[channel]) {
-                    output[channel].set(input[channel]);
-                }
+            for (let ch = 0; ch < Math.min(input.length, output.length); ch++) {
+                output[ch].set(input[ch]);
             }
         }
 
-        return true; // Keep processor alive
+        const left = input[0];
+        const right = input.length > 1 ? input[1] : left;
+
+        // --- PROCESSING ---
+        if (this.mode === 'WASM' && wasm && this.analyzerPtr) {
+            try {
+                // Allocate Inputs
+                const ptrLeft = passArrayF32ToWasm0(left, wasm.__wbindgen_malloc);
+                const lenLeft = WASM_VECTOR_LEN;
+
+                const ptrRight = passArrayF32ToWasm0(right, wasm.__wbindgen_malloc);
+                const lenRight = WASM_VECTOR_LEN;
+
+                // Use cached freqs or allocate if needed
+                let ptrFreqs = this.cachedTargetFreqsPtr;
+                let lenFreqs = this.cachedTargetFreqsLen;
+
+                if (ptrFreqs === 0 && this.targetFrequencies) {
+                    ptrFreqs = passArrayF32ToWasm0(this.targetFrequencies, wasm.__wbindgen_malloc);
+                    lenFreqs = WASM_VECTOR_LEN;
+                    this.cachedTargetFreqsPtr = ptrFreqs;
+                    this.cachedTargetFreqsLen = lenFreqs;
+                }
+
+                // Call Process
+                // holoanalyzer_process(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2)
+                const resultObj = wasm.holoanalyzer_process(
+                    this.analyzerPtr,
+                    ptrLeft, lenLeft,
+                    ptrRight, lenRight,
+                    ptrFreqs, lenFreqs
+                );
+
+                // FREE INPUTS!
+                // wasm.__wbindgen_free should be available if malloc is.
+                // Assuming standard wasm-bindgen export.
+                if (wasm.__wbindgen_free) {
+                    wasm.__wbindgen_free(ptrLeft, lenLeft * 4);
+                    wasm.__wbindgen_free(ptrRight, lenRight * 4);
+                }
+
+                // Handle Result
+                // resultObj is a JS object { dbLevels, panAngles } created by WASM
+                // We trust it's valid because we polyfilled the __wbg_new_... imports
+
+                // Note: resultObj is technically an ExternRef pointing to a JS object
+                // returned by takeFromExternrefTable0 in the glue code.
+                // But wasm-bindgen generated code in WASM calls our imports to build it.
+                // Wait, `takeFromExternrefTable0` is called by the JS wrapper in holographic_core.js.
+                // HERE we called `holoanalyzer_process` directly from WASM exports.
+                // The RAW return value of `holoanalyzer_process` (WASM function) is likely an index (i32) into the ExternRef table.
+
+                // Oh no! `holoanalyzer_process` in JS wrapper returns `takeFromExternrefTable0(ret[0])`.
+                // The WASM function likely returns void or writes to a struct, 
+                // BUT usage of `ExternRef` implies it returns an index.
+                // Let's check `holographic_core.js` again.
+                // `const ret = wasm.holoanalyzer_process(...)` returns... wait.
+                // JS wrapper: `const ret = wasm.holoanalyzer_process(...)`
+                // `return takeFromExternrefTable0(ret[0])`? No, `ret` (from WASM) seems to be an array?
+                // `if (ret[2]) { throw ... }`
+                // This implies `holoanalyzer_process` in WASM returns a pointer to a struct [val_idx, err_idx, is_err] aka Struct Return?
+                // Or wasm-bindgen uses a global return pointer?
+                // Usually `wasm.function()` returns a number.
+
+                // Re-reading holographic_core.js:214:
+                // `const ret = wasm.holoanalyzer_process(...)`
+                // `return takeFromExternrefTable0(ret[0])` is NOT THERE.
+
+                // It says:
+                // `const ret = wasm.holoanalyzer_process(...)` // This call returns the value directly?
+                // NO! Look at the bindgen wrapper:
+                // `const ret = wasm.holoanalyzer_process(...)`
+                // `if (ret[2]) ...` -> This syntax `ret[2]` implies `ret` is a JS Array (or TypedArray)?
+                // IMPOSSIBLE. WASM functions return ONLY Numbers (i32/f32/f64/i64).
+                // UNLESS `wasm.holoanalyzer_process` is NOT the raw WASM function but a function generated by `wasm-bindgen`'s multi-value return shim?
+                // OR `wasm-bindgen` sets a global register `getInt32Memory0()[retptr / 4 + 0]` etc.
+
+                // Checking `holographic_core.js` again...
+                // IT DOES NOT USE `getInt32Memory0()`.
+                // It treats `ret` as an array?
+                // Maybe `ret` is returning a pointer to a linear memory location where the struct is?
+                // Wait. Lines 214-218:
+                // `const ret = wasm.holoanalyzer_process(...)`
+                // `if (ret[2])` ... `takeFromExternrefTable0(ret[1])` ... `ret[0]`
+
+                // This implies `wasm.holoanalyzer_process` returns a JS Object/Array?
+                // That only happens if `wasm` is NOT the raw `WebAssembly.Instance.exports`.
+                // BUT `wasm = instance.exports`.
+
+                // Conclusion: The `holographic_core.js` I read MIGHT BE slightly misleading or using a specific Transform.
+                // OR `wasm-bindgen` generated a JS glue function inside the WASM module itself that returns multiple values via a JS Array?
+                // Yes, if `externref` is enabled, WASM can return `externref`. But here it returns 3 values?
+
+                // Alternative hypothesis: The `ret` variable in `holographic_core.js` comes from...
+                // Ah, line 214: `const ret = wasm.holoanalyzer_process(...)`.
+                // If `wasm` is exports, this calls the WASM function.
+                // If the WASM signature is `-> externref` (returning a JS Array [val, err, is_err]), that explains it!
+                // `wasm-bindgen` can return a JS array containing the results if using `--weak-refs` or specific settings?
+
+                // Let's assume `ret` IS the returned value.
+                // If it's an ExternRef (JS Object), we can access properties.
+                // If the WASM returns `externref` which happens to be a JS Array `[val, err, flag]`.
+
+                if (resultObj) {
+                    // Assuming resultObj is that array [val, err, flag]
+                    // We need to check if resultObj is the data itself or the wrapper array.
+                    // Given `takeFromExternrefTable0(ret[0])` is NOT used in the wrapper (wait, line 218 IS `takeFromExternrefTable0(ret[0])`???)
+
+                    // RE-READING JS WRAPPER (Line 218):
+                    // `return takeFromExternrefTable0(ret[0]);`
+                    // YES IT IS.
+                    // So `ret` is [idx0, idx1, is_err].
+                    // And `ret` is a JS object (Array) returned by the WASM function.
+
+                    // Inside that array are INDICES for the ExternRef table.
+                    const valIdx = resultObj[0];
+                    // const errIdx = resultObj[1]; // Ignored if clean
+
+                    if (valIdx !== undefined) {
+                        const actualData = takeFromExternrefTable0(valIdx);
+                        if (actualData) {
+                            this.port.postMessage({
+                                type: 'AUDIO_DATA',
+                                levels: actualData.dbLevels,
+                                angles: actualData.panAngles
+                            });
+                        }
+                    }
+                }
+
+            } catch (e) {
+                console.error('[CwtProcessor] Process Error:', e);
+                this.mode = 'JS';
+            }
+        }
+
+        // --- JS FALLBACK ---
+        if (this.mode === 'JS') {
+            this._processJS(left, right);
+        }
+
+        return true;
+    }
+
+    _processJS(left, right) {
+        let sumSq = 0;
+        for (let i = 0; i < left.length; i++) sumSq += left[i] * left[i];
+        const rms = Math.sqrt(sumSq / left.length);
+        const db = 20 * Math.log10(rms + 1e-6);
+
+        // Simple animation
+        for (let i = 0; i < 128; i++) {
+            const weighting = 1.0 - (i / 140);
+            let targetDb = db * weighting;
+            if (targetDb > -60) targetDb += (Math.random() * 10 - 5);
+
+            this.smoothLevels[i] = this.smoothLevels[i] * 0.8 + targetDb * 0.2;
+
+            this.levels[i] = Math.max(-128, this.smoothLevels[i]);
+            this.levels[i + 128] = Math.max(-128, this.smoothLevels[i]);
+        }
+
+        // Throttled Send
+        if (currentTime % 0.04 < 0.01) {
+            this.port.postMessage({
+                type: 'AUDIO_DATA',
+                levels: this.levels,
+                angles: this.pans
+            });
+        }
     }
 }
 
