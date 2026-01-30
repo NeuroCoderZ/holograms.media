@@ -34,11 +34,13 @@ Holograms.Media - это полнофункциональное веб-прил�
 ```
 holograms.media/
 ├── 📁 js/                    # Frontend JavaScript модули
-│   ├── core/                # Ядро приложения
-│   ├── 3d/                  # 3D-рендеринг (Three.js)
-│   ├── audio/               # Аудио обработка и анализ
-│   ├── multimodal/          # Мультимодальный ввод
-│   ├── ai/                  # AI интеграции
+│   ├── core/                # Ядро приложения (EventBus, State)
+│   ├── 3d/                  # 3D-рендеринг (Three.js, Holograms)
+│   ├── audio/               # Аудио (AudioService, WASM, Worklets)
+│   ├── platforms/           # Платформо-зависимые лейауты (Desktop, Mobile, XR)
+│   ├── ui/                  # UI менеджеры и компоненты
+│   ├── multimodal/          # Мультимодальный ввод (Жесты, Голос)
+│   ├── ai/                  # AI интеграции (Tria)
 │   └── services/            # Внешние сервисы
 ├── 📁 backend/              # Python FastAPI бэкенд
 │   ├── api/                 # REST API эндпоинты
