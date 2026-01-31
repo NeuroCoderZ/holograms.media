@@ -71,6 +71,9 @@ class CwtProcessor extends AudioWorkletProcessor {
             const { type, module, payload } = event.data;
             if (type === 'WASM_MODULE') {
                 this._initWasm(module);
+            } else if (type === 'FORCE_JS_MODE') {
+                console.log('[CwtProcessor] Forced to JS mode via message.');
+                this.mode = 'JS';
             } else if (type === 'CONFIG') {
                 if (payload && payload.targetFrequencies) {
                     this.targetFrequencies = new Float32Array(payload.targetFrequencies);
@@ -80,6 +83,7 @@ class CwtProcessor extends AudioWorkletProcessor {
     }
 
     async _initWasm(module) {
+        if (this.mode === 'WASM') return;
         try {
             console.log('[CwtProcessor] Instantiating Native WASM...');
             const instance = await WebAssembly.instantiate(module, wasmImports);
@@ -90,6 +94,7 @@ class CwtProcessor extends AudioWorkletProcessor {
         } catch (e) {
             console.error('[CwtProcessor] WASM Init Error:', e);
             this.mode = 'JS';
+            this.port.postMessage({ type: 'WASM_ERROR', error: e.message });
         }
     }
 
