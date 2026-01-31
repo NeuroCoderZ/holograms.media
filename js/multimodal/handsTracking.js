@@ -11,7 +11,7 @@ import { state } from '../core/init.js';
 // import { GestureSequencer } from '../gestures/GestureSequencer.js'; // Старый секвенсор
 // import { GESTURE_SEQUENCES } from '../config/gestureSequences.js'; // Старые конфигурации последовательностей
 import { GestureIntentClassifier } from '../ai/gestureIntentClassifier.js';
-import { gestureManager } from '../managers/GestureManager.js';
+import { gestureManager } from '../managers/gestureManager.js';
 
 // --- Constants ---
 const HAND_CONNECTIONS = [

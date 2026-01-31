@@ -680,7 +680,7 @@ export class HologramRenderer {
       // GREETING MODE: Flat, Bright, Spine-Aligned
       // ========================================
       if (!isActive) {
-        const greetingDepth = 0.1; // Было 1.5. Делаем столбцы максимально тонкими по умолчанию.
+        const greetingDepth = 1.0; // Increased from 0.1 for visibility
 
         if (leftMesh) {
           leftMesh.scale.z = greetingDepth;

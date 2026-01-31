@@ -43,7 +43,9 @@ export class HologramSynthesizer {
 
             // Create oscillator chain for each semitone
             for (let i = 0; i < 128; i++) {
-                const frequency = semitones[i].f;
+                const rawFrequency = semitones[i].f;
+                // Clamp to nominal range for AudioContext (typically 24kHz)
+                const frequency = Math.min(24000, rawFrequency);
 
                 // Oscillator
                 const osc = this.audioContext.createOscillator();

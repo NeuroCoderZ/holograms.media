@@ -156,12 +156,22 @@ class CwtProcessor extends AudioWorkletProcessor {
         let sumSq = 0;
         for (let i = 0; i < left.length; i++) sumSq += left[i] * left[i];
         const rms = Math.sqrt(sumSq / left.length);
+        // Boost baseline for visible columns even on quiet parts
         const db = 20 * Math.log10(rms + 1e-6);
+
         for (let i = 0; i < 128; i++) {
-            const weighting = 1.0 - (i / 140);
-            let targetDb = db * weighting;
-            if (targetDb > -60) targetDb += (Math.random() * 10 - 5);
-            this.smoothLevels[i] = this.smoothLevels[i] * 0.8 + targetDb * 0.2;
+            const weighting = 1.0 - (i / 150);
+            let targetDb = Math.max(-100, db * weighting + 20); // Boost by 20dB for fallback
+
+            // Add some "spectral activity"
+            if (targetDb > -80) {
+                targetDb += (Math.random() * 15 - 7.5);
+                this.pans[i] = Math.sin(Date.now() * 0.001 + i * 0.1) * 0.5; // Pseudo-pan
+            } else {
+                this.pans[i] = 0;
+            }
+
+            this.smoothLevels[i] = this.smoothLevels[i] * 0.7 + targetDb * 0.3;
             this.levels[i] = Math.max(-128, this.smoothLevels[i]);
             this.levels[i + 128] = Math.max(-128, this.smoothLevels[i]);
         }
