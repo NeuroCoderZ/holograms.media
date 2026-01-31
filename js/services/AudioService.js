@@ -135,10 +135,10 @@ class AudioService {
     createWorkletNode() {
         if (!this.context) throw new Error('AudioContext not associated.');
 
-        this.workletNode = new AudioWorkletNode(this.context, 'cwt-audio-processor', {
+        this.workletNode = new AudioWorkletNode(this.context, 'cwt-processor', {
             numberOfInputs: 1,
             numberOfOutputs: 1,
-            outputChannelCount: [1], // Mono output
+            outputChannelCount: [2], // Stereo input processing
             processorOptions: {
                 sampleRate: this.context.sampleRate,
                 ...this.cqtConfig
@@ -147,18 +147,18 @@ class AudioService {
 
         // Handle messages from Worklet
         this.workletNode.port.onmessage = (event) => {
-            if (event.data.type === 'CWT_DATA') {
+            if (event.data.type === 'AUDIO_DATA') {
                 // Broadcast spectral data via EventBus
-                // event.data.data contains { levels, pans }
-                eventBus.emit('audio:spectralData', event.data.data);
+                // event.data contains { levels, angles }
+                eventBus.emit('audio:spectralData', event.data);
             }
         };
 
         // If WASM loaded successfully, send it to the worklet
         if (this.wasmModule) {
             this.workletNode.port.postMessage({
-                type: 'INIT_WASM',
-                wasmModule: this.wasmModule
+                type: 'WASM_MODULE',
+                module: this.wasmModule
             });
             console.log('[AudioService] Sent WASM module to worklet.');
         }

@@ -396,7 +396,7 @@ The primary NetHoloGlyph quantum message, combining gesture, embedding, and audi
 Lossless data compression algorithm.
 
 ### **WebAudioEngine**
-Local engine used to produce `WaveletFrame` data.
+Legacy term. Originally referred to the local engine for `WaveletFrame` production. Replaced by `AudioService` managing an `AudioWorklet`.
 
 ### **Optimistic updates**
 Immediately applying local changes for instant feedback, with subsequent reconciliation with the authoritative state.

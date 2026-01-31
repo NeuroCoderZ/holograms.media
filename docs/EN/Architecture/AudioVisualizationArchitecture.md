@@ -37,14 +37,24 @@ The fast CWT algorithm is implemented in Rust and uses the `rustfft` library for
    a. **Volume Levels (dB):** From the CWT coefficients (typically taking the coefficient at the center of the time window), extract magnitude for the left and right channels. Convert magnitude to decibels (dB) and normalize into a range (for example, from -100 dB to 0 dB).
    b. **Panorama Angles:** Compute the panorama angle (for example, from -90 to +90 degrees) representing the spatial position of sound, based on the phase difference between left and right CWT coefficients for each target frequency.
 
-The algorithm produces two arrays: one for volume levels (stereo — one value per target frequency for each channel) and one for panorama angles (one value per target frequency).
-
 ### 3.3. WebAssembly Implementation (WASM)
 
-The analysis module is implemented in Rust and compiled to WebAssembly (WASM) to run in the browser with near-native performance. This allows performing heavy CWT computations in real time.
+The audio analysis module is implemented in Rust and compiled to WebAssembly (WASM) to ensure high-performance real-time CWT execution.
 
-#### 3.3.1. Rust Implementation: `HoloAnalyzer` Class
+#### 3.3.1. Integration with AudioWorklet
 
-The core analysis logic on the Rust side is encapsulated in the `HoloAnalyzer` class, exposed to JavaScript via the compiled WASM bindings and used from `public/wasm/holographic_core.js`.
+In the current architecture, interaction with WASM occurs within the `AudioWorklet` to ensure audio processing does not block the main interface thread.
+
+*   **AudioService:** Responsible for loading the `.wasm` file and passing its bytecode to the AudioWorklet.
+*   **WASM Polyfill:** A "lightweight" manual polyfill for `wasm-bindgen` is implemented inside `cwtAudioWorklet.js`. This allows the module to be initialized directly within the Worklet environment, bypassing standard bundler limitations.
+*   **Memory Management:** Memory allocation and deallocation for passing audio buffers (Float32Array) from JS to Rust is handled manually using exported `malloc`/`free` functions.
+
+#### 3.3.2. Data Flow
+
+1.  **AudioWorklet** receives audio samples.
+2.  Data is copied into WASM memory.
+3.  The `holoanalyzer_process` function is called.
+4.  WASM returns `ExternRef` table indices containing results (levels and angles).
+5.  Results are sent to the main thread via `port.postMessage` and then propagated via `EventBus`.
 
 ```

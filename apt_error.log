@@ -1,9 +1,0 @@
-Сущ:1 http://mirror.yandex.ru/debian trixie InRelease
-Сущ:2 http://mirror.yandex.ru/debian-security trixie-security InRelease
-Сущ:3 http://mirror.yandex.ru/debian trixie-updates InRelease
-Сущ:4 https://dl.google.com/linux/chrome/deb stable InRelease
-Пол:5 http://mirror.yandex.ru/debian trixie/main Icons (128x128) [11,4 MB]
-Сущ:6 https://us-central1-apt.pkg.dev/projects/antigravity-auto-updater-dev antigravity-debian InRelease
-Пол:7 http://mirror.yandex.ru/debian trixie/non-free-firmware Icons (128x128) [29 B]
-Получено 11,4 MB за 7с (1 642 kB/s)
-Чтение списков пакетов…
