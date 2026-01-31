@@ -141,7 +141,7 @@ try {
 
 // Оригинальный код файла (оставляем для совместимости)
 import * as THREE from 'three';
-import { GestureManager } from '../managers/GestureManager.js';
+import { GestureManager } from '../managers/gestureManager.js';
 // frontend/js/core/init.js - Инициализация основного состояния и конфигурации приложения
 
 import { semitones } from '../config/hologramConfig.js';
