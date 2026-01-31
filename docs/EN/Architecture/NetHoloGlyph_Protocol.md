@@ -101,7 +101,7 @@ message NetHoloGlyphQuantum {
 
 * Client:
   * Collects gesture data and builds a `GestureDelta`.
-  * Uses the local `WebAudioEngine` to produce a `WaveletFrame`.
+  * Uses the `AudioService` to manage the `AudioWorklet` which produces a `WaveletFrame`.
   * Optionally updates or requests `EmbeddingDelta`.
   * Serializes `NetHoloGlyphQuantum` and sends it to the server.
   * Applies local optimistic updates to provide instant feedback.
@@ -122,7 +122,7 @@ For integration with XR devices (for example Unity or Android XR), native plugin
 
 ## 8. Roadmap (Major Steps)
 
-1. M0 (current): Define Protobuf format. Build a basic `WebAudioEngine` and integrate WASM CWT analyzer. Local gesture processing and visualization updates.
+1. M0 (current): Define Protobuf format. Implement `AudioService` and integrate WASM CWT analyzer. Local gesture processing and visualization updates.
 2. M1: Implement send/receive of `NetHoloGlyphQuantum` over WebSockets as a first transport between client and test server (FastAPI).
 3. M2: Migrate primary quantum stream to WebRTC DataChannel and implement basic multi-client state synchronization.
 4. M3: Introduce CRDTs (e.g. Yjs) for hologlyph metadata (title, description, access control), not for the main audio-quantum stream.

@@ -32,7 +32,9 @@ This document describes the structure and interrelationships of JavaScript modul
         - `cwt.cpp`
         - `cwtAudioWorklet.js`
         - `processing.js`
-        - `webAudioEngine.js`
+        - `cwtAudioWorklet.js`
+        - `processing.js`
+        - `webAudioEngine.js` (Legacy — replaced by AudioService)
     - `/config/` - Configuration modules.
         - `hologramConfig.js`, `hologramConstants.js`
     - `/core/` - Core application modules.
@@ -76,7 +78,8 @@ This document describes the structure and interrelationships of JavaScript modul
         - `hologramPanelManager.js`
     - `/platforms/` - Platform-specific code.
         - `/desktop/`, `/mobile/`, `/xr/`
-    - `/services/` - Backend interaction services.
+    - `/services/` - Backend interaction and global services.
+        - `AudioService.js` # Singleton for AudioContext and AudioWorklet management.
         - `apiService.js`
         - `CloudGestureStorage.js`
         - `hologlyphService.js`

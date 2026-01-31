@@ -499,7 +499,7 @@ This document describes public APIs and key dependencies for JavaScript modules.
   * `../ai/gestureIntentClassifier.js`
   * `../services/websocketService.js`
 * **Interaction with `state`:**
-  * Reads: `state.config`, `state.renderer`, `state.multimodal.videoElementForHands`, `state.multimodal.handsInstance`, `state.multimodal.cameraInstance`, `state.multimodal.gestureCanvasCtx`, `state.multimodal.gestureCanvas`, `state.gestureIntentClassifier`, `state.webAudioEngine`, `state.webAudioEngine.isInitialized`.
+  * Reads: `state.config`, `state.renderer`, `state.multimodal.videoElementForHands`, `state.multimodal.handsInstance`, `state.multimodal.cameraInstance`, `state.multimodal.gestureCanvasCtx`, `state.multimodal.gestureCanvas`, `state.gestureIntentClassifier`, `state.audio.audioContext`.
   * Writes: `state.multimodal.currentStream`, `state.multimodal.cameraInstance`, `state.multimodal.isGestureCanvasReady`, `state.multimodal.handsInstance`, `state.gestureIntentClassifier`, `state.multimodal.lastHandData`, `state.multimodal.handsVisible`.
 
 ## `js/multimodal/voice_input.js`
