@@ -227,7 +227,7 @@ import { initializeScene } from '../3d/sceneSetup.js';
 import { AudioFilePlayer } from '../audio/audioFilePlayer.js'; // Added AudioFilePlayer import
 import { MicrophoneManager } from '../audio/microphoneManager.js';
 import PanelManager from '../ui/panelManager.js';
-import { WebAudioEngine } from '../audio/webAudioEngine.js';
+// import { WebAudioEngine } from '../audio/webAudioEngine.js'; // REMOVED LEGACY
 import { XRSessionManager } from '../xr/webxr_session_manager.js';
 import GestureUIManager from '../ui/GestureUIManager.js';
 import eventBus from '../core/eventBus.js';
@@ -311,16 +311,7 @@ export async function initCore() {
       state.audioService = audioService; // Сохраняем в state для доступа
       console.log('✅ AudioService инициализирован');
 
-      // WebAudioEngine (Legacy Engine) использует ресурсы AudioService
-      if (!state.webAudioEngine) {
-        state.webAudioEngine = new WebAudioEngine();
-        // Внедряем зависимости: Context и WASM Exports
-        await state.webAudioEngine.initialize(
-          audioService.getAudioContext(),
-          audioService.getWasmExports()
-        );
-        console.log('✅ WebAudioEngine инициализирован (с использованием AudioService)');
-      }
+      // state.webAudioEngine = new WebAudioEngine(); // REMOVED LEGACY
 
       if (!state.audio.audioContext) {
         state.audio.audioContext = audioService.getAudioContext();
