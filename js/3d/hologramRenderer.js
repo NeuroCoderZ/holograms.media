@@ -693,31 +693,10 @@ export class HologramRenderer {
     const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));
     const numSemitones = 128;
 
-    this.columns.forEach((columnPair, index) => {
-      const leftMesh = columnPair.left?.children[0];
-      const rightMesh = columnPair.right?.children[0];
-      const semitoneConfig = semitones[index];
-      if (!semitoneConfig) return;
+    // DEBUG BYPASS: Always process data if it exists, regardless of isActive state
+    // if (!isActive) { ... } REMOVED FOR DEBUG
 
-      if (!isActive) {
-        // GREETING MODE: Thin Spine, Fixed Glow
-        const gDepth = 0.1;
-        if (leftMesh) {
-          leftMesh.scale.z = gDepth;
-          leftMesh.position.z = gDepth / 2;
-          leftMesh.material.emissiveIntensity = 1.0;
-          leftMesh.material.color.copy(columnPair.left.userData.baseColor);
-        }
-        if (rightMesh) {
-          rightMesh.scale.z = gDepth;
-          rightMesh.position.z = gDepth / 2;
-          rightMesh.material.emissiveIntensity = 1.0;
-          rightMesh.material.color.copy(columnPair.right.userData.baseColor);
-        }
-        columnPair.left.position.x = -semitoneConfig.width;
-        columnPair.right.position.x = 0;
-        return;
-      }
+    this.columns.forEach((columnPair, index) => {
 
       // ACTIVE MODE: Honest Physics v2
       const ampL = getNormAmp(dbLevels[index] || -128);
