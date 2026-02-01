@@ -33,12 +33,12 @@ export class HologramRenderer {
     this.hologramPivot = new THREE.Group();
     this.hologramPivot.position.set(0, 0, 0); // Center the hologram at origin
 
-    // LIGHTING (BasilaQ-127 Shading)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    // LIGHTING: BasilaQ-127 Safety Lighting (Prevents Black Screen)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
     this.hologramPivot.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    dirLight.position.set(0, 100, 100); // Top-Forward
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    dirLight.position.set(0, 100, 200);
     dirLight.castShadow = true;
     this.hologramPivot.add(dirLight);
 
@@ -67,6 +67,11 @@ export class HologramRenderer {
     this.remoteHandsGroup = new THREE.Group();
     this.hologramPivot.add(this.remoteHandsGroup);
     this.remoteHands = new Map(); // Map to store meshes per user
+
+    // PHYSICS: Rolling Max (Autogain) State
+    this.peakHistory = [];
+    this.maxHistorySize = 180; // ~3 seconds
+    this.currentRollingMax = -60; // Baseline floor
 
     // Add the main hologram pivot to the Three.js scene.
     this.scene.add(this.hologramPivot);
@@ -510,6 +515,8 @@ export class HologramRenderer {
     // BasilaQ-127: Use StandardMaterial for Shading/Volume
     const material = new THREE.MeshStandardMaterial({
       color: baseColorObj,
+      emissive: baseColorObj, // Safety: Glow based on color
+      emissiveIntensity: 0.5, // Visible by default
       roughness: 0.3,
       metalness: 0.1,
       flatShading: true,
@@ -614,7 +621,6 @@ export class HologramRenderer {
       if (!audioData) {
         audioData = synthData;
       } else {
-        // Create a merged copy
         const mergedLevels = new Float32Array(256);
         const mergedPans = new Float32Array(256);
 
@@ -632,24 +638,48 @@ export class HologramRenderer {
       audioData = state.audio.latestAudioData;
     }
 
-    // Use silence data if nothing available
     if (!audioData) {
-      if (this.lastNoDataWarning === undefined || performance.now() - this.lastNoDataWarning > 60000) {
-        this.lastNoDataWarning = performance.now();
-      }
       audioData = {
         levels: new Float32Array(256).fill(-128),
         pans: new Float32Array(256).fill(0)
       };
     }
 
-    // Support both property naming conventions
     const dbLevels = audioData.levels || audioData.dbLevels;
     const panAngles = audioData.pans || audioData.panAngles;
 
     if (!dbLevels || !panAngles) return;
 
-    // Send the quantum of data via the NetHoloGlyph service
+    // 1. UPDATE ROLLING MAX (Autogain)
+    let frameMax = -128;
+    for (let i = 0; i < 256; i++) {
+      if (dbLevels[i] > frameMax) frameMax = dbLevels[i];
+    }
+
+    // Filter out spikes, keep meaningful peaks
+    if (frameMax > -110) {
+      this.peakHistory.push(frameMax);
+      if (this.peakHistory.length > this.maxHistorySize) this.peakHistory.shift();
+
+      // Calculate Rolling Max (Target Ceiling)
+      const windowMax = Math.max(...this.peakHistory);
+      // Adaptive smoothing to prevent jumping
+      this.currentRollingMax = (this.currentRollingMax * 0.9) + (windowMax * 0.1);
+    }
+
+    // Safety Floor for Rolling Max to prevent division error and keep visibility
+    const safeCeiling = Math.max(this.currentRollingMax, -80);
+    const noiseFloor = -110;
+
+    // Helper: Honest Mapping Function
+    const getNormAmp = (db) => {
+      if (db <= noiseFloor) return 0;
+      // Linear normalization between noiseFloor and adaptive ceiling
+      let norm = (db - noiseFloor) / (safeCeiling - noiseFloor);
+      return Math.max(0, Math.min(1.0, norm));
+    };
+
+    // 2. BROADCAST DATA
     this.netHoloGlyphClient.sendQuantum({
       type: "quantum_update",
       userId: this.userId,
@@ -657,170 +687,72 @@ export class HologramRenderer {
       quantum: {
         dbLevels: Array.from(dbLevels),
         panAngles: Array.from(panAngles)
-      },
-      gesture: null
+      }
     });
 
-    // BasilaQ-127: Check if audio is active
     const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));
-    const numSemitones = semitones.length; // 128
+    const numSemitones = 128;
 
     this.columns.forEach((columnPair, index) => {
-      // 1. Get Mesh Groups
-      const leftMeshGroup = columnPair.left;
-      const rightMeshGroup = columnPair.right;
-      const leftMesh = leftMeshGroup && leftMeshGroup.children[0];
-      const rightMesh = rightMeshGroup && rightMeshGroup.children[0];
-
+      const leftMesh = columnPair.left?.children[0];
+      const rightMesh = columnPair.right?.children[0];
       const semitoneConfig = semitones[index];
       if (!semitoneConfig) return;
-      const columnWidth = semitoneConfig.width;
 
-      // ========================================
-      // GREETING MODE: Flat, Bright, Spine-Aligned
-      // ========================================
       if (!isActive) {
-        const greetingDepth = 1.0; // Increased from 0.1 for visibility
-
+        // GREETING MODE: Fixed Glow, Spine Aligned
+        const gDepth = 1.0;
         if (leftMesh) {
-          leftMesh.scale.z = greetingDepth;
-          leftMesh.position.z = greetingDepth / 2; // One-Way Growth
-          // Restore full brightness
-          const baseColorL = leftMeshGroup.userData.baseColor;
-          if (baseColorL) {
-            const hsl = {};
-            baseColorL.getHSL(hsl);
-            leftMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l); // Full color
-          }
+          leftMesh.scale.z = gDepth;
+          leftMesh.position.z = gDepth / 2;
+          leftMesh.material.emissiveIntensity = 1.0; // Forced visibility
+          leftMesh.material.color.copy(columnPair.left.userData.baseColor);
         }
         if (rightMesh) {
-          rightMesh.scale.z = greetingDepth;
-          rightMesh.position.z = greetingDepth / 2; // One-Way Growth
-          const baseColorR = rightMeshGroup.userData.baseColor;
-          if (baseColorR) {
-            const hsl = {};
-            baseColorR.getHSL(hsl);
-            rightMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l); // Full color
-          }
+          rightMesh.scale.z = gDepth;
+          rightMesh.position.z = gDepth / 2;
+          rightMesh.material.emissiveIntensity = 1.0;
+          rightMesh.material.color.copy(columnPair.right.userData.baseColor);
         }
-        // Pan = 0 (Spine-Aligned)
-        if (leftMeshGroup) leftMeshGroup.position.x = -columnWidth;
-        if (rightMeshGroup) rightMeshGroup.position.x = 0;
-        return; // Skip physics
+        columnPair.left.position.x = -semitoneConfig.width;
+        columnPair.right.position.x = 0;
+        return;
       }
 
-      // ========================================
-      // ACTIVE MODE: BasilaQ-127 Physics
-      // ========================================
+      // ACTIVE MODE: Honest Physics v2
+      const ampL = getNormAmp(dbLevels[index] || -128);
+      const ampR = getNormAmp(dbLevels[index + numSemitones] || -128);
+      let pan = panAngles[index] || 0;
 
-      // Get dB levels for Left and Right
-      const rawLeftDb = dbLevels[index] || -128; // Default to silence (-128 dB)
-      const rawRightDb = dbLevels[index + numSemitones] || -128;
+      // Noise Gate for Pan stability
+      if (Math.max(ampL, ampR) < 0.05) pan = 0;
 
-      // Get pan value (-1 to +1)
-      let semitonePan = panAngles[index] || 0;
+      // X Shift (Stereo)
+      const space = GRID_WIDTH - semitoneConfig.width;
+      columnPair.left.position.x = -semitoneConfig.width + (pan < 0 ? pan * space : 0);
+      columnPair.right.position.x = (pan > 0 ? pan * space : 0);
 
-      // MAPPING: Normalize dB to 0-1 range (Amplitude) with Noise Gate
-      // CQT range: -128 (silence) to 0 (max).
-      // Practical Noise Floor: -100 dB. Max: -10 dB.
-      const noiseFloor = -100;
-      const ceiling = -10; // Treat anything above -10dB as max
-
-      let ampL = 0;
-      if (rawLeftDb < 0) {
-        // Linear mapping from [noiseFloor, ceiling] to [0, 1]
-        ampL = THREE.MathUtils.mapLinear(rawLeftDb, noiseFloor, ceiling, 0, 1);
-      } else {
-        // Fallback for positive values (0-127) just in case
-        ampL = rawLeftDb / 127.0;
-      }
-      ampL = THREE.MathUtils.clamp(ampL, 0, 1);
-
-      let ampR = 0;
-      if (rawRightDb < 0) {
-        ampR = THREE.MathUtils.mapLinear(rawRightDb, noiseFloor, ceiling, 0, 1);
-      } else {
-        ampR = rawRightDb / 127.0;
-      }
-      ampR = THREE.MathUtils.clamp(ampR, 0, 1);
-
-
-      // CWT LOGIC: Quantize to 128 steps for scientific accuracy
-      // This is crucial for the "Scanner" decoding requirement.
-      const discreteL = Math.floor(ampL * 127) / 127;
-      const discreteR = Math.floor(ampR * 127) / 127;
-
-      // NOISE GATE: If amplitude is below threshold, force Pan to 0 (spine)
-      const maxAmp = Math.max(discreteL, discreteR);
-      if (maxAmp < 0.05) { // Increased gate slightly
-        semitonePan = 0;
-      }
-
-      // PHYSICS: Spine-Aligned Rest Position
-      const availableSpace = GRID_WIDTH - columnWidth;
-      let rawShiftL = -columnWidth;
-      let rawShiftR = 0;
-
-      if (semitonePan < 0) {
-        rawShiftL = -columnWidth + (semitonePan * availableSpace);
-      }
-      if (semitonePan > 0) {
-        rawShiftR = semitonePan * availableSpace;
-      }
-
-      // NO SNAPPING for 128 unique widths/positions
-      const snappedShiftL = rawShiftL;
-      const snappedShiftR = rawShiftR;
-
-      if (leftMeshGroup) leftMeshGroup.position.x = snappedShiftL;
-      if (rightMeshGroup) rightMeshGroup.position.x = snappedShiftR;
-
-      // Z-AXIS DEPTH: Map 0-1 to [minDepth, GRID_DEPTH]
-      const minDepth = 0.1; // Было 1.5.
-      const targetZL = minDepth + (discreteL * (GRID_DEPTH - minDepth));
-      const targetZR = minDepth + (discreteR * (GRID_DEPTH - minDepth));
+      // Z Scaling (Depth) - One Way Growth
+      const depthL = 0.1 + (ampL * (GRID_DEPTH - 0.1));
+      const depthR = 0.1 + (ampR * (GRID_DEPTH - 0.1));
 
       if (leftMesh) {
-        leftMesh.scale.z = targetZL;
-        leftMesh.position.z = targetZL / 2; // ONE-WAY GROWTH
+        leftMesh.scale.z = depthL;
+        leftMesh.position.z = depthL / 2;
+        // Shading: Pure amplitude mapping
+        leftMesh.material.emissiveIntensity = ampL * 1.5 + 0.2; // Keep faint glow for visibility
+        const hsl = {};
+        columnPair.left.userData.baseColor.getHSL(hsl);
+        leftMesh.material.color.setHSL(hsl.h, hsl.s, ampL * hsl.l);
       }
+
       if (rightMesh) {
-        rightMesh.scale.z = targetZR;
-        rightMesh.position.z = targetZR / 2; // ONE-WAY GROWTH
-      }
-
-      // BRIGHTNESS / SHADING: 128 steps mapping
-      // We use Emissive intensity to make it "glow" correctly in dark scene.
-      // 0 steps = almost black (or base color dim). 127 steps = full bright.
-
-      if (leftMesh && leftMeshGroup.userData.baseColor) {
-        const baseColorL = leftMeshGroup.userData.baseColor;
-        // Set base color
-        leftMesh.material.color.copy(baseColorL);
-
+        rightMesh.scale.z = depthR;
+        rightMesh.position.z = depthR / 2;
+        rightMesh.material.emissiveIntensity = ampR * 1.5 + 0.2;
         const hsl = {};
-        baseColorL.getHSL(hsl);
-
-        // Map [0, 1] amplitude to Lightness directly
-        // Silence (0) -> Black (L=0). Max (1) -> Full Brightness (Original L)
-        // We ensure minL is extremely low (0.02) to avoid invisible meshes if needed, or pure 0 for "void"
-        const targetL = discreteL * hsl.l;
-
-        leftMesh.material.color.setHSL(hsl.h, hsl.s, targetL);
-        leftMesh.material.emissive.copy(baseColorL);
-        leftMesh.material.emissiveIntensity = discreteL * 2.0; // Strong glow at peaks
-      }
-
-      if (rightMesh && rightMeshGroup.userData.baseColor) {
-        const baseColorR = rightMeshGroup.userData.baseColor;
-        const hsl = {};
-        baseColorR.getHSL(hsl);
-
-        const targetL = discreteR * hsl.l;
-
-        rightMesh.material.color.setHSL(hsl.h, hsl.s, targetL);
-        rightMesh.material.emissive.copy(baseColorR);
-        rightMesh.material.emissiveIntensity = discreteR * 2.0;
+        columnPair.right.userData.baseColor.getHSL(hsl);
+        rightMesh.material.color.setHSL(hsl.h, hsl.s, ampR * hsl.l);
       }
     });
   }
