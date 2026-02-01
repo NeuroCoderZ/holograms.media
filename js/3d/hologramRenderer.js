@@ -68,10 +68,8 @@ export class HologramRenderer {
     this.hologramPivot.add(this.remoteHandsGroup);
     this.remoteHands = new Map(); // Map to store meshes per user
 
-    // PHYSICS: Rolling Max (Autogain) State
-    this.peakHistory = [];
-    this.maxHistorySize = 180; // ~3 seconds at 60fps
-    this.currentRollingMax = -60; // Start with a safe low noise floor
+    // Add the main hologram pivot to the Three.js scene.
+    this.scene.add(this.hologramPivot);
 
     // Subscribe to Audio Data results from the eventBus (standardized event)
     this.eventBus.on('audioData', this.handleCwtResult.bind(this));
@@ -712,53 +710,53 @@ export class HologramRenderer {
       }
 
       // ========================================
-      // ACTIVE MODE: BasilaQ-127 Honest Physics
+      // ACTIVE MODE: BasilaQ-127 Physics
       // ========================================
 
-      // 1. ROLLING MAX / AUTOGAIN LOGIC (Only once per frame)
-      if (index === 0) {
-        let frameMax = -128;
-        for (let i = 0; i < dbLevels.length; i++) {
-          if (dbLevels[i] > frameMax) frameMax = dbLevels[i];
-        }
-        this.peakHistory.push(frameMax);
-        if (this.peakHistory.length > this.maxHistorySize) {
-          this.peakHistory.shift();
-        }
-        // Calculate the highest peak in the window
-        let topPeak = -100; // Baseline floor for autogain
-        for (let i = 0; i < this.peakHistory.length; i++) {
-          if (this.peakHistory[i] > topPeak) topPeak = this.peakHistory[i];
-        }
-        this.currentRollingMax = topPeak;
-      }
-
-      // 2. GET DB LEVELS
-      const rawLeftDb = dbLevels[index] || -128;
+      // Get dB levels for Left and Right
+      const rawLeftDb = dbLevels[index] || -128; // Default to silence (-128 dB)
       const rawRightDb = dbLevels[index + numSemitones] || -128;
+
+      // Get pan value (-1 to +1)
       let semitonePan = panAngles[index] || 0;
 
-      // 3. HONEST MAPPING (Normalized to Rolling Max)
+      // MAPPING: Normalize dB to 0-1 range (Amplitude) with Noise Gate
+      // CQT range: -128 (silence) to 0 (max).
+      // Practical Noise Floor: -100 dB. Max: -10 dB.
       const noiseFloor = -100;
-      const ceiling = this.currentRollingMax;
+      const ceiling = -10; // Treat anything above -10dB as max
 
-      // Map dB to [0, 1] relative to current window's max
-      const getNormAmp = (db) => {
-        if (db <= noiseFloor) return 0;
-        const norm = (db - noiseFloor) / (ceiling - noiseFloor);
-        return THREE.MathUtils.clamp(norm, 0, 1);
-      };
+      let ampL = 0;
+      if (rawLeftDb < 0) {
+        // Linear mapping from [noiseFloor, ceiling] to [0, 1]
+        ampL = THREE.MathUtils.mapLinear(rawLeftDb, noiseFloor, ceiling, 0, 1);
+      } else {
+        // Fallback for positive values (0-127) just in case
+        ampL = rawLeftDb / 127.0;
+      }
+      ampL = THREE.MathUtils.clamp(ampL, 0, 1);
 
-      const discreteL = Math.floor(getNormAmp(rawLeftDb) * 127) / 127;
-      const discreteR = Math.floor(getNormAmp(rawRightDb) * 127) / 127;
+      let ampR = 0;
+      if (rawRightDb < 0) {
+        ampR = THREE.MathUtils.mapLinear(rawRightDb, noiseFloor, ceiling, 0, 1);
+      } else {
+        ampR = rawRightDb / 127.0;
+      }
+      ampR = THREE.MathUtils.clamp(ampR, 0, 1);
+
+
+      // CWT LOGIC: Quantize to 128 steps for scientific accuracy
+      // This is crucial for the "Scanner" decoding requirement.
+      const discreteL = Math.floor(ampL * 127) / 127;
+      const discreteR = Math.floor(ampR * 127) / 127;
 
       // NOISE GATE: If amplitude is below threshold, force Pan to 0 (spine)
       const maxAmp = Math.max(discreteL, discreteR);
-      if (maxAmp < 0.05) {
+      if (maxAmp < 0.05) { // Increased gate slightly
         semitonePan = 0;
       }
 
-      // PHYSICS: Grid Snap (X Position) - PRESERVED
+      // PHYSICS: Spine-Aligned Rest Position
       const availableSpace = GRID_WIDTH - columnWidth;
       let rawShiftL = -columnWidth;
       let rawShiftR = 0;
@@ -770,33 +768,47 @@ export class HologramRenderer {
         rawShiftR = semitonePan * availableSpace;
       }
 
-      if (leftMeshGroup) leftMeshGroup.position.x = rawShiftL;
-      if (rightMeshGroup) rightMeshGroup.position.x = rawShiftR;
+      // NO SNAPPING for 128 unique widths/positions
+      const snappedShiftL = rawShiftL;
+      const snappedShiftR = rawShiftR;
 
-      // Z-AXIS DEPTH: One-Way Growth - PRESERVED
-      const targetZL = 0.1 + (discreteL * (GRID_DEPTH - 0.1));
-      const targetZR = 0.1 + (discreteR * (GRID_DEPTH - 0.1));
+      if (leftMeshGroup) leftMeshGroup.position.x = snappedShiftL;
+      if (rightMeshGroup) rightMeshGroup.position.x = snappedShiftR;
+
+      // Z-AXIS DEPTH: Map 0-1 to [minDepth, GRID_DEPTH]
+      const minDepth = 0.1; // Было 1.5.
+      const targetZL = minDepth + (discreteL * (GRID_DEPTH - minDepth));
+      const targetZR = minDepth + (discreteR * (GRID_DEPTH - minDepth));
 
       if (leftMesh) {
         leftMesh.scale.z = targetZL;
-        leftMesh.position.z = targetZL / 2;
+        leftMesh.position.z = targetZL / 2; // ONE-WAY GROWTH
       }
       if (rightMesh) {
         rightMesh.scale.z = targetZR;
-        rightMesh.position.z = targetZR / 2;
+        rightMesh.position.z = targetZR / 2; // ONE-WAY GROWTH
       }
 
-      // HONEST SHADING: Amplitude -> Lightness
+      // BRIGHTNESS / SHADING: 128 steps mapping
+      // We use Emissive intensity to make it "glow" correctly in dark scene.
+      // 0 steps = almost black (or base color dim). 127 steps = full bright.
+
       if (leftMesh && leftMeshGroup.userData.baseColor) {
         const baseColorL = leftMeshGroup.userData.baseColor;
+        // Set base color
+        leftMesh.material.color.copy(baseColorL);
+
         const hsl = {};
         baseColorL.getHSL(hsl);
 
-        // Core physics: Lightness is driven by amplitude
+        // Map [0, 1] amplitude to Lightness directly
+        // Silence (0) -> Black (L=0). Max (1) -> Full Brightness (Original L)
+        // We ensure minL is extremely low (0.02) to avoid invisible meshes if needed, or pure 0 for "void"
         const targetL = discreteL * hsl.l;
+
         leftMesh.material.color.setHSL(hsl.h, hsl.s, targetL);
         leftMesh.material.emissive.copy(baseColorL);
-        leftMesh.material.emissiveIntensity = discreteL * 2.0;
+        leftMesh.material.emissiveIntensity = discreteL * 2.0; // Strong glow at peaks
       }
 
       if (rightMesh && rightMeshGroup.userData.baseColor) {
@@ -805,6 +817,7 @@ export class HologramRenderer {
         baseColorR.getHSL(hsl);
 
         const targetL = discreteR * hsl.l;
+
         rightMesh.material.color.setHSL(hsl.h, hsl.s, targetL);
         rightMesh.material.emissive.copy(baseColorR);
         rightMesh.material.emissiveIntensity = discreteR * 2.0;
