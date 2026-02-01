@@ -85,14 +85,24 @@ class CwtProcessor extends AudioWorkletProcessor {
     async _initWasm(module) {
         if (this.mode === 'WASM') return;
         try {
-            console.log('[CwtProcessor] Instantiating Native WASM...');
+            console.log('[CwtProcessor] 🛠️ Starting WASM Instantiation in Worklet thread...');
+            console.log('[CwtProcessor] Module type:', module?.constructor?.name);
+
             const instance = await WebAssembly.instantiate(module, wasmImports);
             wasm = instance.exports;
-            if (wasm.__wbindgen_start) wasm.__wbindgen_start();
+
+            console.log('[CwtProcessor] WASM Instance created. Exports:', Object.keys(wasm).length);
+
+            if (wasm.__wbindgen_start) {
+                console.log('[CwtProcessor] Running wbindgen_start...');
+                wasm.__wbindgen_start();
+            }
+
             this.mode = 'WASM';
+            console.log('[CwtProcessor] ✅ WASM Engine Ready. Signalling main thread.');
             this.port.postMessage({ type: 'WASM_READY' });
         } catch (e) {
-            console.error('[CwtProcessor] WASM Init Error:', e);
+            console.error('[CwtProcessor] ❌ WASM Init Error:', e);
             this.mode = 'JS';
             this.port.postMessage({ type: 'WASM_ERROR', error: e.message });
         }
