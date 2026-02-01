@@ -31,8 +31,14 @@ export default defineConfig({
     }
   },
   build: {
+    target: 'esnext',
     rollupOptions: {
       // Remove external: ['three'] to bundle it
+    }
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'esnext'
     }
   },
   assetsInclude: ['**/*.wasm']
