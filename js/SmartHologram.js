@@ -426,11 +426,10 @@ export class SmartHologram {
 
         const time = Date.now() * 0.001;
 
-        // Анимация объектов
+        // Анимация объектов (только вращение, без рукожопых волн)
         this.hologramObjects.traverse((object) => {
             if (object.userData && object.userData.originalY !== undefined) {
-                object.position.y = object.userData.originalY +
-                    Math.sin(time + object.userData.phase) * object.userData.amplitude;
+                // object.position.y = object.userData.originalY + Math.sin(...) // DELETED
                 object.rotation.y += this.animationSpeed;
             }
         });
