@@ -119,9 +119,9 @@ export async function initializeCwtWorklet(audioContext) {
     if (wasmModule) {
         return new Promise((resolve) => {
             const timeoutId = setTimeout(() => {
-                console.warn('[AudioProcessing] ⚠ WASM init timeout (5s). Using JS Goertzel fallback.');
+                console.warn('[AudioProcessing] ⚠ WASM init timeout (5s). Fallback to current mode.');
                 cwtWorkletReady = true;
-                engineMode = 'JS_GOERTZEL';
+                if (engineMode === 'INITIALIZING') engineMode = 'JS_GOERTZEL';
                 resolve(true);
             }, 5000);
 
@@ -133,19 +133,21 @@ export async function initializeCwtWorklet(audioContext) {
                     cwtWorkletReady = true;
                     engineMode = 'CQT_WASM';
                     console.log('[AudioProcessing] ✅ CQT WASM engine ready.');
-                    console.log(`[AudioProcessing] 🚀 Engine ACTIVE. Mode: ${engineMode}`);
+                    resolve(true);
+                } else if (type === 'WASM_ERROR') {
+                    clearTimeout(timeoutId);
+                    console.warn('[AudioProcessing] ⚠ WASM error, using JS fallback.');
+                    cwtWorkletReady = true;
+                    engineMode = 'JS_GOERTZEL';
                     resolve(true);
                 } else if (type === 'AUDIO_DATA') {
-                    // ... (same data handling)
-                    // --- GESTURE MIXER BRIDGE ---
-                    // Modulate raw analysis data with hand gestures before visualization/synthesis
+                    // DATA HANDLING (WASM or JS)
                     const modulationData = state.multimodal?.gestureModulationData;
                     const isSynthMode = state.audio?.isGestureSynthMode === true;
 
                     const rawData = { levels: event.data.levels, pans: event.data.angles };
                     const modulatedData = AudioGestureBridge.applyModulation(rawData, modulationData, isSynthMode);
 
-                    // --- EMIT DATA ---
                     const levels = modulatedData.levels;
                     const pans = modulatedData.pans;
 
@@ -158,147 +160,109 @@ export async function initializeCwtWorklet(audioContext) {
                     }
 
                     const payload = { levels: levels, pans: fullPans };
+
+                    // Debug logging (once per second)
                     if (!this._dbgCount) this._dbgCount = 0;
                     if (this._dbgCount++ % 60 === 0) {
-                        console.log('[AudioProcessing] 📡 (WASM) Emitting audioData to EventBus. First bin:', payload.levels?.[0]);
+                        console.log(`[AudioProcessing] 📡 (${engineMode}) Emitting audioData. First bin:`, payload.levels?.[0]);
                     }
-                    eventBus.emit('audioData', payload);
 
-                    state.audio.latestAudioData = {
-                        ...payload,
-                        timestamp: performance.now()
-                    };
-                } else if (type === 'WASM_ERROR') {
-                    clearTimeout(timeoutId);
-                    console.warn('[AudioProcessing] ⚠ WASM error, using JS fallback.');
-                    cwtWorkletReady = true;
-                    engineMode = 'JS_GOERTZEL';
-                    resolve(true);
+                    eventBus.emit('audioData', payload);
+                    state.audio.latestAudioData = { ...payload, timestamp: performance.now() };
                 }
             };
 
-            // Send WASM module to worklet
-            cwtWorkletNode.port.postMessage({
-                type: 'WASM_MODULE',
-                module: wasmModule
-            });
-        });
-    } else {
-        // Immediate resolve for JS mode
-        // Attach data listener for JS mode too
-        cwtWorkletNode.port.onmessage = (event) => {
-            const { type } = event.data;
-            if (type === 'AUDIO_DATA') {
-                // Duplicate data handling logic for JS mode
-                const modulationData = state.multimodal?.gestureModulationData;
-                const isSynthMode = state.audio?.isGestureSynthMode === true;
-
-                const rawData = { levels: event.data.levels, pans: event.data.angles };
-                const modulatedData = AudioGestureBridge.applyModulation(rawData, modulationData, isSynthMode);
-
-                const levels = modulatedData.levels;
-                const pans = modulatedData.pans;
-
-                const fullPans = new Float32Array(256);
-                if (pans && pans.length === 128) {
-                    fullPans.set(pans, 0);
-                    fullPans.set(pans, 128);
-                } else if (pans && pans.length >= 256) {
-                    fullPans.set(pans.subarray(0, 256));
-                }
-
-                const payload = { levels: levels, pans: fullPans };
-                if (!this._dbgCountJS) this._dbgCountJS = 0;
-                if (this._dbgCountJS++ % 60 === 0) {
-                    console.log('[AudioProcessing] 📡 (JS) Emitting audioData to EventBus. First bin:', payload.levels?.[0]);
-                }
-                eventBus.emit('audioData', payload);
-
-                state.audio.latestAudioData = {
-                    ...payload,
-                    timestamp: performance.now()
-                };
+            // Trigger initialization in worklet
+            if (wasmModule) {
+                cwtWorkletNode.port.postMessage({ type: 'WASM_MODULE', module: wasmModule });
+            } else {
+                console.log('[AudioProcessing] ℹ️ Signal JS Mode to worklet.');
+                cwtWorkletNode.port.postMessage({ type: 'FORCE_JS_MODE' });
+                engineMode = 'JS_GOERTZEL';
+                // In JS mode, we still wait a bit or resolve immediately? 
+                // Better clear timeout and resolve if we know we are in JS mode.
+                clearTimeout(timeoutId);
+                cwtWorkletReady = true;
+                resolve(true);
             }
-        };
-        return Promise.resolve(true);
-    }
-}
-
-/**
- * Sets up audio processing for a source node.
- * SYNCHRONOUS GRAPH CONNECTION via proxy node.
- * Async WASM loading happens in background.
- */
-export async function setupAudioProcessing(sourceNode, audioContext, connectToOutput = true) {
-    // Ensure AudioContext is running
-    if (audioContext.state === 'suspended') {
-        console.log('[AudioProcessing] ⚠ AudioContext suspended. Resuming...');
-        await audioContext.resume();
-        console.log(`[AudioProcessing] ✅ AudioContext state: ${audioContext.state}`);
+        });
     }
 
-    // Get proxy node (creates if doesn't exist)
-    const proxy = getInputProxyNode(audioContext);
+    /**
+     * Sets up audio processing for a source node.
+     * SYNCHRONOUS GRAPH CONNECTION via proxy node.
+     * Async WASM loading happens in background.
+     */
+    export async function setupAudioProcessing(sourceNode, audioContext, connectToOutput = true) {
+        // Ensure AudioContext is running
+        if (audioContext.state === 'suspended') {
+            console.log('[AudioProcessing] ⚠ AudioContext suspended. Resuming...');
+            await audioContext.resume();
+            console.log(`[AudioProcessing] ✅ AudioContext state: ${audioContext.state}`);
+        }
 
-    // SYNCHRONOUS CONNECTION: Source -> Proxy
-    // This happens IMMEDIATELY, no waiting for WASM
-    sourceNode.connect(proxy);
-    console.log(`[AudioProcessing] ✅ Source connected to proxy. Type: ${sourceNode.constructor.name}`);
+        // Get proxy node (creates if doesn't exist)
+        const proxy = getInputProxyNode(audioContext);
 
-    // Start WASM initialization if not already running
-    if (!cwtWorkletReady && !cwtWorkletNode) {
-        // Fire and forget - don't block
-        initializeCwtWorklet(audioContext)
-            .then(() => {
-                console.log('[AudioProcessing] ✅ CQT engine ready (background init).');
-            })
-            .catch((err) => {
-                console.warn('[AudioProcessing] ⚠ CQT init failed:', err.message);
-            });
-    } else {
-        // Worklet already exists, ensure proxy is connected
-        connectProxyToWorklet();
+        // SYNCHRONOUS CONNECTION: Source -> Proxy
+        // This happens IMMEDIATELY, no waiting for WASM
+        sourceNode.connect(proxy);
+        console.log(`[AudioProcessing] ✅ Source connected to proxy. Type: ${sourceNode.constructor.name}`);
+
+        // Start WASM initialization if not already running
+        if (!cwtWorkletReady && !cwtWorkletNode) {
+            // Fire and forget - don't block
+            initializeCwtWorklet(audioContext)
+                .then(() => {
+                    console.log('[AudioProcessing] ✅ CQT engine ready (background init).');
+                })
+                .catch((err) => {
+                    console.warn('[AudioProcessing] ⚠ CQT init failed:', err.message);
+                });
+        } else {
+            // Worklet already exists, ensure proxy is connected
+            connectProxyToWorklet();
+        }
+
+        // Connect source directly to output if requested (for hearing audio)
+        if (connectToOutput) {
+            sourceNode.connect(audioContext.destination);
+        }
+
+        console.log('[AudioProcessing] ✅ Audio source connected to processing pipeline.');
+        return proxy;
     }
 
-    // Connect source directly to output if requested (for hearing audio)
-    if (connectToOutput) {
-        sourceNode.connect(audioContext.destination);
-    }
-
-    console.log('[AudioProcessing] ✅ Audio source connected to processing pipeline.');
-    return proxy;
-}
-
-/**
- * Disconnects a source from the CQT worklet.
- */
-export function disconnectFromCwt(sourceNode) {
-    if (inputProxyNode) {
-        try {
-            sourceNode.disconnect(inputProxyNode);
-        } catch (e) {
-            // Already disconnected
+    /**
+     * Disconnects a source from the CQT worklet.
+     */
+    export function disconnectFromCwt(sourceNode) {
+        if (inputProxyNode) {
+            try {
+                sourceNode.disconnect(inputProxyNode);
+            } catch (e) {
+                // Already disconnected
+            }
         }
     }
-}
 
-/**
- * Returns whether CQT processing is active.
- */
-export function isCwtActive() {
-    return cwtWorkletReady && cwtWorkletNode !== null;
-}
+    /**
+     * Returns whether CQT processing is active.
+     */
+    export function isCwtActive() {
+        return cwtWorkletReady && cwtWorkletNode !== null;
+    }
 
-/**
- * Gets the current engine mode.
- */
-export function getEngineMode() {
-    return engineMode;
-}
+    /**
+     * Gets the current engine mode.
+     */
+    export function getEngineMode() {
+        return engineMode;
+    }
 
-/**
- * Gets the CQT worklet node for direct connection.
- */
-export function getCwtWorkletNode() {
-    return cwtWorkletNode;
-}
+    /**
+     * Gets the CQT worklet node for direct connection.
+     */
+    export function getCwtWorkletNode() {
+        return cwtWorkletNode;
+    }
