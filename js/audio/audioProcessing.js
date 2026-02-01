@@ -109,16 +109,8 @@ export async function initializeCwtWorklet(audioContext) {
         channelInterpretation: 'speakers'
     });
 
-    // 4. Send WASM module if available, otherwise signal JS mode
-    if (wasmModule) {
-        cwtWorkletNode.port.postMessage({ type: 'WASM_MODULE', module: wasmModule });
-    } else {
-        // Explicitly trigger JS mode
-        cwtWorkletNode.port.postMessage({ type: 'FORCE_JS_MODE' });
-        cwtWorkletReady = true;
-        engineMode = 'JS_GOERTZEL';
-        console.log('[AudioProcessing] ℹ️ Running in JS Architecture Mode (Digital Basilar Membrane)');
-    }
+    // 4. (DEFERRED) We will send the module and setup listeners inside the promise below
+    connectProxyToWorklet();
 
     // CRITICAL: Connect proxy to worklet NOW
     connectProxyToWorklet();
