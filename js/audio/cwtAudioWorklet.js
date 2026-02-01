@@ -168,14 +168,8 @@ class CwtProcessor extends AudioWorkletProcessor {
             const weighting = 1.0 - (i / 150);
             let targetDb = Math.max(-100, db * weighting + 20); // Boost by 20dB for fallback
 
-            // Add some "spectral activity"
-            if (targetDb > -80) {
-                targetDb += (Math.random() * 15 - 7.5);
-                this.pans[i] = Math.sin(Date.now() * 0.001 + i * 0.1) * 0.5; // Pseudo-pan
-            } else {
-                this.pans[i] = 0;
-            }
-
+            // HONEST FALLBACK: No fake spectral activity, just pure RMS level
+            this.pans[i] = 0; // Center by default in fallback if no real stereo analysis
             this.smoothLevels[i] = this.smoothLevels[i] * 0.7 + targetDb * 0.3;
             this.levels[i] = Math.max(-128, this.smoothLevels[i]);
             this.levels[i + 128] = Math.max(-128, this.smoothLevels[i]);
