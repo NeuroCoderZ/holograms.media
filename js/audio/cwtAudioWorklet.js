@@ -56,6 +56,7 @@ class CwtProcessor extends AudioWorkletProcessor {
         this.mode = 'INIT';
         this.targetFrequencies = new Float32Array(128);
         this.sampleRate = 48000;
+        this._dbgCount = 0;
 
         // JS Fallback State
         this.levels = new Float32Array(256).fill(-100);
@@ -121,6 +122,14 @@ class CwtProcessor extends AudioWorkletProcessor {
 
         const left = input[0];
         const right = input.length > 1 ? input[1] : left;
+
+        // --- DIAGNOSTIC LOGGING (Every 1s at 60fps) ---
+        if (this._dbgCount++ % 60 === 0) {
+            let sumSq = 0;
+            for (let i = 0; i < left.length; i++) sumSq += left[i] * left[i];
+            const rms = Math.sqrt(sumSq / left.length);
+            console.log(`[CwtProcessor] 🔊 Audio Flow Check: mode=${this.mode}, RMS=${rms.toFixed(6)}`);
+        }
 
         if (this.mode === 'WASM' && wasm) {
             try {
