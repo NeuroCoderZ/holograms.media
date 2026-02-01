@@ -697,45 +697,67 @@ export class HologramRenderer {
     const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));
     const numSemitones = 128;
 
-    // DEBUG BYPASS: Always process data if it exists, regardless of isActive state
-    // if (!isActive) { ... } REMOVED FOR DEBUG
-
+    // 3. APPLY TO COLUMNS
     this.columns.forEach((columnPair, index) => {
+      const semitoneConfig = semitones[index];
+      if (!semitoneConfig) return;
 
-      // ACTIVE MODE: Honest Physics v2
-      const ampL = getNormAmp(dbLevels[index] || -128);
-      const ampR = getNormAmp(dbLevels[index + numSemitones] || -128);
-      let pan = panAngles[index] || 0;
+      const leftMesh = columnPair.left?.children[0];
+      const rightMesh = columnPair.right?.children[0];
 
-      // Noise Gate for Pan stability
-      if (Math.max(ampL, ampR) < 0.05) pan = 0;
+      if (!isActive) {
+        // GREETING MODE: Thin Spine, Fixed Glow
+        const gDepth = 0.1;
+        if (leftMesh) {
+          leftMesh.scale.z = gDepth;
+          leftMesh.position.z = gDepth / 2;
+          leftMesh.material.emissiveIntensity = 1.0;
+          leftMesh.material.color.copy(columnPair.left.userData.baseColor);
+        }
+        if (rightMesh) {
+          rightMesh.scale.z = gDepth;
+          rightMesh.position.z = gDepth / 2;
+          rightMesh.material.emissiveIntensity = 1.0;
+          rightMesh.material.color.copy(columnPair.right.userData.baseColor);
+        }
+        columnPair.left.position.x = -semitoneConfig.width;
+        columnPair.right.position.x = 0;
+      } else {
+        // ACTIVE MODE: Honest Physics v2
+        const ampL = getNormAmp(dbLevels[index] || -128);
+        const ampR = getNormAmp(dbLevels[index + numSemitones] || -128);
+        let pan = panAngles[index] || 0;
 
-      // X Shift (Stereo)
-      const space = GRID_WIDTH - semitoneConfig.width;
-      columnPair.left.position.x = -semitoneConfig.width + (pan < 0 ? pan * space : 0);
-      columnPair.right.position.x = (pan > 0 ? pan * space : 0);
+        // Noise Gate for Pan stability
+        if (Math.max(ampL, ampR) < 0.05) pan = 0;
 
-      // Z Scaling (Depth) - Scientific Range [0, GRID_DEPTH]
-      const depthL = ampL * GRID_DEPTH;
-      const depthR = ampR * GRID_DEPTH;
+        // X Shift (Stereo)
+        const space = GRID_WIDTH - semitoneConfig.width;
+        columnPair.left.position.x = -semitoneConfig.width + (pan < 0 ? pan * space : 0);
+        columnPair.right.position.x = (pan > 0 ? pan * space : 0);
 
-      if (leftMesh) {
-        leftMesh.scale.z = Math.max(0.001, depthL);
-        leftMesh.position.z = depthL / 2;
-        // Shading: Pure amplitude mapping
-        leftMesh.material.emissiveIntensity = ampL * 1.5;
-        const hsl = {};
-        columnPair.left.userData.baseColor.getHSL(hsl);
-        leftMesh.material.color.setHSL(hsl.h, hsl.s, ampL * hsl.l);
-      }
+        // Z Scaling (Depth) - Scientific Range [0, GRID_DEPTH]
+        const depthL = ampL * GRID_DEPTH;
+        const depthR = ampR * GRID_DEPTH;
 
-      if (rightMesh) {
-        rightMesh.scale.z = Math.max(0.001, depthR);
-        rightMesh.position.z = depthR / 2;
-        rightMesh.material.emissiveIntensity = ampR * 1.5;
-        const hsl = {};
-        columnPair.right.userData.baseColor.getHSL(hsl);
-        rightMesh.material.color.setHSL(hsl.h, hsl.s, ampR * hsl.l);
+        if (leftMesh) {
+          leftMesh.scale.z = Math.max(0.001, depthL);
+          leftMesh.position.z = depthL / 2;
+          // Shading: Pure amplitude mapping
+          leftMesh.material.emissiveIntensity = ampL * 1.5;
+          const hsl = {};
+          columnPair.left.userData.baseColor.getHSL(hsl);
+          leftMesh.material.color.setHSL(hsl.h, hsl.s, ampL * hsl.l);
+        }
+
+        if (rightMesh) {
+          rightMesh.scale.z = Math.max(0.001, depthR);
+          rightMesh.position.z = depthR / 2;
+          rightMesh.material.emissiveIntensity = ampR * 1.5;
+          const hsl = {};
+          columnPair.right.userData.baseColor.getHSL(hsl);
+          rightMesh.material.color.setHSL(hsl.h, hsl.s, ampR * hsl.l);
+        }
       }
     });
   }
