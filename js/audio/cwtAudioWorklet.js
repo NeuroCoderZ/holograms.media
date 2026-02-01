@@ -62,9 +62,9 @@ class CwtProcessor extends AudioWorkletProcessor {
         this.pans = new Float32Array(256).fill(0);
         this.smoothLevels = new Float32Array(256).fill(-100);
 
-        const A0 = 27.5;
+        const C0 = 16.352; // Sync with Semitones_Angles.md
         for (let i = 0; i < 128; i++) {
-            this.targetFrequencies[i] = A0 * Math.pow(2, i / 12);
+            this.targetFrequencies[i] = C0 * Math.pow(2, i / 12);
         }
 
         this.port.onmessage = async (event) => {

@@ -700,12 +700,12 @@ export class HologramRenderer {
       if (!semitoneConfig) return;
 
       if (!isActive) {
-        // GREETING MODE: Fixed Glow, Spine Aligned
-        const gDepth = 1.0;
+        // GREETING MODE: Thin Spine, Fixed Glow
+        const gDepth = 0.1;
         if (leftMesh) {
           leftMesh.scale.z = gDepth;
           leftMesh.position.z = gDepth / 2;
-          leftMesh.material.emissiveIntensity = 1.0; // Forced visibility
+          leftMesh.material.emissiveIntensity = 1.0;
           leftMesh.material.color.copy(columnPair.left.userData.baseColor);
         }
         if (rightMesh) {
@@ -732,24 +732,24 @@ export class HologramRenderer {
       columnPair.left.position.x = -semitoneConfig.width + (pan < 0 ? pan * space : 0);
       columnPair.right.position.x = (pan > 0 ? pan * space : 0);
 
-      // Z Scaling (Depth) - One Way Growth
-      const depthL = 0.1 + (ampL * (GRID_DEPTH - 0.1));
-      const depthR = 0.1 + (ampR * (GRID_DEPTH - 0.1));
+      // Z Scaling (Depth) - Scientific Range [0, GRID_DEPTH]
+      const depthL = ampL * GRID_DEPTH;
+      const depthR = ampR * GRID_DEPTH;
 
       if (leftMesh) {
-        leftMesh.scale.z = depthL;
+        leftMesh.scale.z = Math.max(0.001, depthL);
         leftMesh.position.z = depthL / 2;
         // Shading: Pure amplitude mapping
-        leftMesh.material.emissiveIntensity = ampL * 1.5 + 0.2; // Keep faint glow for visibility
+        leftMesh.material.emissiveIntensity = ampL * 1.5;
         const hsl = {};
         columnPair.left.userData.baseColor.getHSL(hsl);
         leftMesh.material.color.setHSL(hsl.h, hsl.s, ampL * hsl.l);
       }
 
       if (rightMesh) {
-        rightMesh.scale.z = depthR;
+        rightMesh.scale.z = Math.max(0.001, depthR);
         rightMesh.position.z = depthR / 2;
-        rightMesh.material.emissiveIntensity = ampR * 1.5 + 0.2;
+        rightMesh.material.emissiveIntensity = ampR * 1.5;
         const hsl = {};
         columnPair.right.userData.baseColor.getHSL(hsl);
         rightMesh.material.color.setHSL(hsl.h, hsl.s, ampR * hsl.l);
