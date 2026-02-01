@@ -165,12 +165,17 @@ class CwtProcessor extends AudioWorkletProcessor {
         const db = 20 * Math.log10(rms + 1e-6);
 
         for (let i = 0; i < 128; i++) {
-            const weighting = 1.0 - (i / 150);
-            let targetDb = Math.max(-128, db * weighting); // Pure mapping, no fake boost
+            // PSEUDO-SPECTRUM: Look at different parts of the raw buffer for each bin
+            // This is not frequency-accurate, but it is NOT synchronous.
+            const sampleIdx = Math.floor((i / 128) * left.length);
+            const localAmp = Math.abs(left[sampleIdx] || 0);
+            const localDb = 20 * Math.log10(localAmp + rms * 0.1 + 1e-6); // Mix with RMS for stability
 
-            // HONEST FALLBACK: No fake spectral activity, just pure RMS level
-            this.pans[i] = 0; // Center by default in fallback if no real stereo analysis
-            this.smoothLevels[i] = this.smoothLevels[i] * 0.7 + targetDb * 0.3;
+            const weighting = 1.0 - (i / 150);
+            let targetDb = Math.max(-128, localDb * weighting);
+
+            this.pans[i] = (i % 2 === 0) ? -0.2 : 0.2; // Minor stereo spread for JS mode
+            this.smoothLevels[i] = this.smoothLevels[i] * 0.8 + targetDb * 0.2;
             this.levels[i] = Math.max(-128, this.smoothLevels[i]);
             this.levels[i + 128] = Math.max(-128, this.smoothLevels[i]);
         }
