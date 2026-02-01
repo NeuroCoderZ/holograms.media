@@ -113,15 +113,11 @@ class AudioService {
             }
 
             const buffer = await response.arrayBuffer();
-            // Instantiate to allow access to memory/exports from main thread if needed
-            // Also keep the module to send to Worklet
-            const { instance, module } = await WebAssembly.instantiate(buffer, {});
-            this.wasmInstance = instance;
-            this.wasmModule = module;
-            this.wasmExports = instance.exports;
-            this.wasmMemory = instance.exports.memory;
+            // COMPILATION ONLY: Compilation doesn't require imports.
+            // Instantiation (link with wbg) happens inside the Worklet.
+            this.wasmModule = await WebAssembly.compile(buffer);
 
-            console.log('[AudioService] WASM instantiated successfully.');
+            console.log('[AudioService] WASM compiled successfully. Ready for worklet.');
 
         } catch (error) {
             console.error('[AudioService] WASM loading failed:', error);

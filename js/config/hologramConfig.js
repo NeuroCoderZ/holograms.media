@@ -11,9 +11,9 @@ export const SATURATION = 1.0;
 export const LIGHTNESS = 0.5;
 
 // Audio configuration constants
-export const BASE_FREQUENCY = 27.5;
+export const BASE_FREQUENCY = 16.352;
 export const NOTES_PER_OCTAVE = 12;
-export const STARTING_OCTAVE = 2;
+export const STARTING_OCTAVE = 0;
 
 // Note names configuration
 export const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
