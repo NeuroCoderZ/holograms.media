@@ -33,12 +33,12 @@ export class HologramRenderer {
     this.hologramPivot = new THREE.Group();
     this.hologramPivot.position.set(0, 0, 0); // Center the hologram at origin
 
-    // LIGHTING (BasilaQ-127 Shading) - Anti-Black Screen Fix
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Full brightness
+    // LIGHTING (BasilaQ-127 Shading)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     this.hologramPivot.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0); // Power boost
-    dirLight.position.set(0, 100, 200); // Top-Forward
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(0, 100, 100); // Top-Forward
     dirLight.castShadow = true;
     this.hologramPivot.add(dirLight);
 
@@ -512,8 +512,6 @@ export class HologramRenderer {
     // BasilaQ-127: Use StandardMaterial for Shading/Volume
     const material = new THREE.MeshStandardMaterial({
       color: baseColorObj,
-      emissive: baseColorObj, // Primary emissive setup
-      emissiveIntensity: 0.5, // Start with some glow
       roughness: 0.3,
       metalness: 0.1,
       flatShading: true,
@@ -695,8 +693,6 @@ export class HologramRenderer {
             const hsl = {};
             baseColorL.getHSL(hsl);
             leftMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l); // Full color
-            leftMesh.material.emissive.copy(baseColorL);
-            leftMesh.material.emissiveIntensity = 1.0; // Force Glow in Greeting Mode
           }
         }
         if (rightMesh) {
@@ -707,8 +703,6 @@ export class HologramRenderer {
             const hsl = {};
             baseColorR.getHSL(hsl);
             rightMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l); // Full color
-            rightMesh.material.emissive.copy(baseColorR);
-            rightMesh.material.emissiveIntensity = 1.0; // Force Glow in Greeting Mode
           }
         }
         // Pan = 0 (Spine-Aligned)
