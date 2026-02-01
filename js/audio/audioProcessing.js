@@ -166,6 +166,10 @@ export async function initializeCwtWorklet(audioContext) {
                     }
 
                     const payload = { levels: levels, pans: fullPans };
+                    if (!this._dbgCount) this._dbgCount = 0;
+                    if (this._dbgCount++ % 60 === 0) {
+                        console.log('[AudioProcessing] 📡 (WASM) Emitting audioData to EventBus. First bin:', payload.levels?.[0]);
+                    }
                     eventBus.emit('audioData', payload);
 
                     state.audio.latestAudioData = {
@@ -212,6 +216,10 @@ export async function initializeCwtWorklet(audioContext) {
                 }
 
                 const payload = { levels: levels, pans: fullPans };
+                if (!this._dbgCountJS) this._dbgCountJS = 0;
+                if (this._dbgCountJS++ % 60 === 0) {
+                    console.log('[AudioProcessing] 📡 (JS) Emitting audioData to EventBus. First bin:', payload.levels?.[0]);
+                }
                 eventBus.emit('audioData', payload);
 
                 state.audio.latestAudioData = {
