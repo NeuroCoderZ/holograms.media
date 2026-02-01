@@ -11,8 +11,8 @@ import eventBus from '../core/eventBus.js';
 // For now, let's assume it stays in public, but we enforce the path.
 // Actually, to fix the deployment issue, better to put it in `src/wasm` or let Vite know about it.
 // But legacy structure uses `wasm_loader.js`. Let's reimplement loader here.
-// Use public static paths for reliability in deployment
-const wasmUrl = '/cwt_analyzer.wasm';
+// Path to the WASM file (served by Vite from public/)
+const wasmUrl = '/wasm/cwt_analyzer.wasm';
 const workletUrl = '/js/audio/cwtAudioWorklet.js';
 
 class AudioService {

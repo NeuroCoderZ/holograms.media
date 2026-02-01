@@ -166,7 +166,7 @@ class CwtProcessor extends AudioWorkletProcessor {
 
         for (let i = 0; i < 128; i++) {
             const weighting = 1.0 - (i / 150);
-            let targetDb = Math.max(-100, db * weighting + 20); // Boost by 20dB for fallback
+            let targetDb = Math.max(-128, db * weighting); // Pure mapping, no fake boost
 
             // HONEST FALLBACK: No fake spectral activity, just pure RMS level
             this.pans[i] = 0; // Center by default in fallback if no real stereo analysis
