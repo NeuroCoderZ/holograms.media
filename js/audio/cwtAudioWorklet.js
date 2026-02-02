@@ -182,7 +182,16 @@ class CwtProcessor extends AudioWorkletProcessor {
                 this.circBuffer[this.writePtr] = left[i];
                 this.writePtr = (this.writePtr + 1) % 4096;
             }
-            this._processJS();
+
+            // OPTIMIZATION: Process at ~60fps instead of ~375fps
+            // 48000 / 60 = 800 samples. 
+            if (!this._sampleCounter) this._sampleCounter = 0;
+            this._sampleCounter += left.length;
+
+            if (this._sampleCounter >= 800) {
+                this._processJS();
+                this._sampleCounter = 0;
+            }
         }
         return true;
     }
