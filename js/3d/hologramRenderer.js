@@ -734,8 +734,10 @@ export class HologramRenderer {
         columnPair.right.position.x = (pan > 0 ? pan * space : 0);
 
         // Z Scaling (Depth) - Scientific Range [0, GRID_DEPTH]
-        const depthL = ampL * GRID_DEPTH;
-        const depthR = ampR * GRID_DEPTH;
+        // Cubed mapping (pow 3.0) to make peaks sharp and suppress low-level noise.
+        // User Requirement: "Need concrete volume levels... visual representation must change".
+        const depthL = Math.pow(ampL, 3.0) * GRID_DEPTH;
+        const depthR = Math.pow(ampR, 3.0) * GRID_DEPTH;
 
         if (leftMesh) {
           leftMesh.scale.z = Math.max(0.001, depthL);
