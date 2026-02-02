@@ -172,7 +172,21 @@ class CwtProcessor extends AudioWorkletProcessor {
 
                 const finalDb = new Float32Array(resDb);
                 const finalPan = new Float32Array(256);
-                finalPan.set(resPan);
+
+                // DATA SHAPING:
+                // Rust WASM returns Pan in Degrees [-90, 90].
+                // Renderer expects [-1.0, 1.0].
+                // We must normalize.
+                for (let i = 0; i < 128; i++) {
+                    let deg = resPan[i];
+                    // Clamp and Normalize
+                    if (deg > 90) deg = 90;
+                    if (deg < -90) deg = -90;
+                    finalPan[i] = deg / 90.0;
+
+                    // Duplicate for right channel logic if needed (though renderer uses index < 128)
+                    finalPan[i + 128] = finalPan[i];
+                }
 
                 // Free
                 if (wasm.__wbindgen_free) {
