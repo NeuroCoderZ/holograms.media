@@ -58,6 +58,10 @@ class CwtProcessor extends AudioWorkletProcessor {
         this.sampleRate = 48000;
         this._dbgCount = 0;
 
+        // Circular Buffer for JS Fallback (Spectral Resolution)
+        this.circBuffer = new Float32Array(4096);
+        this.writePtr = 0;
+
         // JS Fallback State
         this.levels = new Float32Array(256).fill(-100);
         this.pans = new Float32Array(256).fill(0);
@@ -172,18 +176,27 @@ class CwtProcessor extends AudioWorkletProcessor {
             }
         }
 
-        if (this.mode === 'JS') this._processJS(left, right);
+        if (this.mode === 'JS') {
+            // Fill circular buffer
+            for (let i = 0; i < left.length; i++) {
+                this.circBuffer[this.writePtr] = left[i];
+                this.writePtr = (this.writePtr + 1) % 4096;
+            }
+            this._processJS();
+        }
         return true;
     }
 
-    _processJS(left, right) {
-        // 1. Calculate global RMS for reference
-        let sumSq = 0;
-        for (let i = 0; i < left.length; i++) sumSq += left[i] * left[i];
-        const rms = Math.sqrt(sumSq / left.length);
-
-        const N = left.length;
+    _processJS() {
+        const N = 2048; // Window size for Goertzel
         const TWO_PI = 2 * Math.PI;
+
+        // Extract latest N samples from circular buffer
+        const window = new Float32Array(N);
+        for (let i = 0; i < N; i++) {
+            const idx = (this.writePtr - N + i + 4096) % 4096;
+            window[i] = this.circBuffer[idx];
+        }
 
         for (let i = 0; i < 128; i++) {
             const targetFreq = this.targetFrequencies[i];
@@ -192,29 +205,27 @@ class CwtProcessor extends AudioWorkletProcessor {
             const cosine = Math.cos(omega);
             const coeff = 2 * cosine;
 
-            let q1 = 0; // s_prev
-            let q2 = 0; // s_prev2
+            let q1 = 0;
+            let q2 = 0;
 
             for (let j = 0; j < N; j++) {
-                let q0 = left[j] + coeff * q1 - q2;
+                let q0 = window[j] + coeff * q1 - q2;
                 q2 = q1;
                 q1 = q0;
             }
 
-            // Power calculation for Goertzel
             const power = q1 * q1 + q2 * q2 - coeff * q1 * q2;
             const magnitude = Math.sqrt(Math.max(0, power));
 
-            // Convert to dB. Normalization by N/2 typical for FFT/Goertzel
+            // Convert to dB. Normalization by N/2
             const rawDb = 20 * Math.log10((magnitude / (N / 2)) + 1e-6);
 
-            // Smoothing: 0.7 historical, 0.3 new value
-            this.smoothLevels[i] = this.smoothLevels[i] * 0.7 + rawDb * 0.3;
+            // Tight smoothing for JS mode to prevent jitter
+            this.smoothLevels[i] = this.smoothLevels[i] * 0.6 + rawDb * 0.4;
 
-            // Map to final levels
             this.levels[i] = Math.max(-128, this.smoothLevels[i]);
-            this.levels[i + 128] = this.levels[i]; // Mirror for now
-            this.pans[i] = (i % 2 === 0) ? -0.2 : 0.2;
+            this.levels[i + 128] = this.levels[i];
+            this.pans[i] = (i % 2 === 0) ? -0.1 : 0.1;
         }
 
         this.port.postMessage({ type: 'AUDIO_DATA', levels: this.levels, angles: this.pans });
