@@ -209,11 +209,14 @@ class CwtProcessor extends AudioWorkletProcessor {
         const N = 2048; // Window size for Goertzel
         const TWO_PI = 2 * Math.PI;
 
-        // Extract latest N samples from circular buffer
+        // Extract latest N samples from circular buffer and apply Hanning Window
         const window = new Float32Array(N);
         for (let i = 0; i < N; i++) {
             const idx = (this.writePtr - N + i + 4096) % 4096;
-            window[i] = this.circBuffer[idx];
+            // Hanning Window: 0.5 * (1 - cos(2*PI*i / (N-1)))
+            // Reduces spectral leakage, making columns move independently (asynchronously)
+            const winValue = 0.5 * (1 - Math.cos((TWO_PI * i) / (N - 1)));
+            window[i] = this.circBuffer[idx] * winValue;
         }
 
         for (let i = 0; i < 128; i++) {
