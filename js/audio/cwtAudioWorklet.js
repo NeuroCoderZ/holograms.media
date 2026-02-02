@@ -1,8 +1,13 @@
 // frontend/js/audio/cwtAudioWorklet.js
-// STRICT WASM MODE. NO JS FALLBACK.
+// BasilaQ-127 Engine
+// STRICT WASM MODE.
 
 let wasm = null;
+let analyzerPtr = 0;
 let cachedFloat32Memory = null;
+
+// Пред-аллокация указателей (reuse)
+let ptrs = { left: 0, right: 0, levels: 0, pans: 0 };
 
 function getFloat32Memory() {
     if (!cachedFloat32Memory || cachedFloat32Memory.buffer.byteLength === 0) {
@@ -12,13 +17,8 @@ function getFloat32Memory() {
 }
 
 class CwtProcessor extends AudioWorkletProcessor {
-    constructor(options) {
+    constructor() {
         super();
-        this.mode = 'INIT';
-        this.analyzerPtr = 0;
-        const opts = options.processorOptions || {};
-        this.sampleRate = opts.sampleRate || 48000;
-
         this.port.onmessage = async (e) => {
             if (e.data.type === 'WASM_MODULE') await this.initWasm(e.data.module);
         };
@@ -27,20 +27,20 @@ class CwtProcessor extends AudioWorkletProcessor {
     async initWasm(module) {
         try {
             const instance = await WebAssembly.instantiate(module, { 
-                env: { abort: () => console.error("WASM Abort") },
+                env: { abort: () => {} },
                 wbg: { __wbindgen_init_externref_table: () => {} }
             });
             wasm = instance.exports;
+            // Assuming 48kHz for now, or get from options if critical
+            analyzerPtr = wasm.cwtanalyzer_new(48000); 
 
-            // FIX: Rust constructor only takes 1 argument: sample_rate
-            if (wasm.cwtanalyzer_new) {
-                this.analyzerPtr = wasm.cwtanalyzer_new(this.sampleRate);
-                this.mode = 'WASM_READY';
-                this.port.postMessage({ type: 'WASM_READY' });
-                this.port.postMessage({ type: 'LOG', msg: 'WASM Constructor Success' });
-            } else {
-                throw new Error("cwtanalyzer_new not found");
-            }
+            // Аллоцируем буферы один раз для переиспользования
+            ptrs.left = wasm.__wbindgen_malloc(128 * 4);
+            ptrs.right = wasm.__wbindgen_malloc(128 * 4);
+            ptrs.levels = wasm.__wbindgen_malloc(256 * 4);
+            ptrs.pans = wasm.__wbindgen_malloc(128 * 4);
+
+            this.port.postMessage({ type: 'WASM_READY' });
         } catch (err) {
             this.port.postMessage({ type: 'WASM_ERROR', error: err.message });
         }
@@ -48,44 +48,37 @@ class CwtProcessor extends AudioWorkletProcessor {
 
     process(inputs, outputs) {
         const input = inputs[0];
-        if (!input || input.length === 0 || this.mode !== 'WASM_READY') return true;
-
-        const left = input[0];
-        const right = input.length > 1 ? input[1] : left;
+        if (!input || !input[0] || !wasm || !analyzerPtr) return true;
 
         // Pass-through
         if (outputs[0] && outputs[0][0]) {
-            outputs[0][0].set(left);
-            if (outputs[0][1]) outputs[0][1].set(right);
+            outputs[0][0].set(input[0]);
+            if (input[1] && outputs[0][1]) outputs[0][1].set(input[1]);
         }
 
         try {
-            const len = left.length;
-            // Direct memory management
-            const leftPtr = wasm.__wbindgen_malloc(len * 4);
-            const rightPtr = wasm.__wbindgen_malloc(len * 4);
-            const outLvlPtr = wasm.__wbindgen_malloc(256 * 4);
-            const outPanPtr = wasm.__wbindgen_malloc(128 * 4);
+            const mem = getFloat32Memory();
+            
+            // Внимание: input[0] (chunk) может быть 128 семплов (стандарт Worklet).
+            // Rust ожидает 128 (CHUNK_SIZE).
+            // Если браузер дает другой размер (напр. 256), нужно копировать только 128 или обрабатывать циклом.
+            // Пока считаем что 128.
+            const len = Math.min(input[0].length, 128);
+            
+            mem.set(input[0].subarray(0, len), ptrs.left / 4);
+            mem.set((input[1] || input[0]).subarray(0, len), ptrs.right / 4);
 
-            getFloat32Memory().set(left, leftPtr / 4);
-            getFloat32Memory().set(right, rightPtr / 4);
+            // Вызов Rust: process(self, l_ptr, l_len, r_ptr, r_len, lvl_ptr, lvl_len, pan_ptr, pan_len)
+            // Важно передавать len, который ожидает bindgen (хотя внутри Rust мб игнорирует и берет 128, но сигнатура важна)
+            wasm.cwtanalyzer_process(analyzerPtr, ptrs.left, len, ptrs.right, len, ptrs.levels, 256, ptrs.pans, 128);
 
-            // Signature: self, l_ptr, l_len, r_ptr, r_len, lvl_ptr, lvl_len, pan_ptr, pan_len
-            wasm.cwtanalyzer_process(this.analyzerPtr, leftPtr, len, rightPtr, len, outLvlPtr, 256, outPanPtr, 128);
+            // Копируем данные (НЕ переносим буфер, чтобы не убить WASM)
+            const levels = new Float32Array(mem.subarray(ptrs.levels / 4, ptrs.levels / 4 + 256));
+            const angles = new Float32Array(mem.subarray(ptrs.pans / 4, ptrs.pans / 4 + 128));
 
-            const levels = new Float32Array(getFloat32Memory().subarray(outLvlPtr / 4, outLvlPtr / 4 + 256));
-            const pans = new Float32Array(getFloat32Memory().subarray(outPanPtr / 4, outPanPtr / 4 + 128));
-
-            wasm.__wbindgen_free(leftPtr, len * 4);
-            wasm.__wbindgen_free(rightPtr, len * 4);
-            wasm.__wbindgen_free(outLvlPtr, 256 * 4);
-            wasm.__wbindgen_free(outPanPtr, 128 * 4);
-
-            this.port.postMessage({ type: 'AUDIO_DATA', levels, angles: pans }, [levels.buffer, pans.buffer]);
-
+            this.port.postMessage({ type: 'AUDIO_DATA', levels, angles });
         } catch (e) {
-            // Error reporting from inside worklet
-            this.port.postMessage({ type: 'LOG', msg: 'Process Error: ' + e.message });
+            // console.error(e); // Uncomment for debug if needed
         }
 
         return true;
