@@ -4,16 +4,9 @@
  * Follows the Singleton pattern (or Service pattern) to be used across the app (replaces global state.audio part).
  */
 import eventBus from '../core/eventBus.js';
+import workletUrl from '../audio/cwtAudioWorklet.js?url';
 
 // Import WASM URL explicitly for Vite to handle asset path
-// Assuming the file is in public/wasm/ or src/wasm/. 
-// If it is in public, direct URL works, but ?url is safer for bundlers if moved to src.
-// For now, let's assume it stays in public, but we enforce the path.
-// Actually, to fix the deployment issue, better to put it in `src/wasm` or let Vite know about it.
-// But legacy structure uses `wasm_loader.js`. Let's reimplement loader here.
-// Path to the WASM file (served by Vite from public/)
-const wasmUrl = '/wasm/cwt_analyzer.wasm';
-const workletUrl = '/js/audio/cwtAudioWorklet.js';
 
 class AudioService {
     constructor() {
