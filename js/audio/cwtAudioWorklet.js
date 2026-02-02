@@ -33,6 +33,7 @@ class CwtProcessor extends AudioWorkletProcessor {
             wasm = instance.exports;
             // Assuming 48kHz for now, or get from options if critical
             analyzerPtr = wasm.cwtanalyzer_new(48000); 
+            console.log(`[CwtWorklet] WASM Engine Instance Created. Ptr: ${analyzerPtr}`);
 
             // Аллоцируем буферы один раз для переиспользования
             ptrs.left = wasm.__wbindgen_malloc(128 * 4);
