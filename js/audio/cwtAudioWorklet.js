@@ -51,6 +51,12 @@ class CwtProcessor extends AudioWorkletProcessor {
         const input = inputs[0];
         if (!input || !input[0] || !wasm || !analyzerPtr) return true;
 
+        // HEARTBEAT LOG (once per 100 frames ~ 1.6s)
+        if (!this._heartbeat) this._heartbeat = 0;
+        if (this._heartbeat++ % 100 === 0) {
+            this.port.postMessage({ type: 'LOG', msg: `Processing frame ${this._heartbeat}...` });
+        }
+
         // Pass-through
         if (outputs[0] && outputs[0][0]) {
             outputs[0][0].set(input[0]);

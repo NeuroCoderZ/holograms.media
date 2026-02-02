@@ -44,13 +44,13 @@
 }
 
 #togglePanelsButton .icon-hide-panels {
-  display: none !important; /* Always hidden per requirement */
+  display: none !important; /* Force hide any shape changes */
 }
 
 #togglePanelsButton.show-mode .icon-show-panels {
   display: flex !important; /* Keep same icon */
-  opacity: 1 !important; /* Brighter when active */
-  color: white !important;
+  opacity: 1 !important; /* Full opacity when active */
+  filter: brightness(1.5); /* Highlight active state */
 }
 
 /* Ensure button remains visible and consistent */
