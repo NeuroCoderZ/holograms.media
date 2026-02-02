@@ -70,6 +70,7 @@ function handleFullscreenChange(buttonElement) {
   // Обновляем класс кнопки
   if (buttonElement) {
     buttonElement.classList.toggle('active', isFullscreen);
+    buttonElement.title = isFullscreen ? "Свернуть" : "Развернуть";
   }
   
   // Можно добавить дополнительную логику при изменении режима
