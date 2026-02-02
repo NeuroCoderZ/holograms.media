@@ -1,157 +1,173 @@
 // frontend/js/audio/audioProcessing.js
-// CQT-based audio processing with AudioWorklet and WASM
-// STRICT WASM ONLY MODE (BasilaQ-127)
-
-import { state } from '../core/init.js';
-import { deviceCapabilities } from '../utils/deviceCapabilities.js';
 import eventBus from '../core/eventBus.js';
+import { state } from '../core/init.js'; // Corrected import path
+import { AudioGestureBridge } from './AudioGestureBridge.js'; // Corrected import type
 import audioService from '../services/AudioService.js';
-import { AudioGestureBridge } from './AudioGestureBridge.js';
+import { deviceCapabilities } from '../utils/deviceCapabilities.js';
 
-// Global state
-let engineMode = 'WASM_PENDING';
-
-// PROXY NODE: Always-available input collector
+let cwtWorkletNode = null;
+let proxyConnected = false;
 let inputProxyNode = null;
-let proxyConnectedToWorklet = false;
 
-/**
- * Initializes or retrieves the global AudioContext from AudioService.
- */
+// BasilaQ-127 Spec: Strict WASM
+const ENGINE_STATUS = {
+    WAITING: 'WAITING',
+    READY: 'READY',
+    FAILED: 'FAILED'
+};
+let currentStatus = ENGINE_STATUS.WAITING;
+
 export function getAudioContext() {
-    return audioService.getAudioContext();
+    return audioService.getAudioContext() || new (window.AudioContext || window.webkitAudioContext)();
 }
 
-/**
- * Gets or creates the input proxy node.
- */
-function getInputProxyNode(audioContext) {
+// GainNode Proxy - позволяет подключить микрофон ДО загрузки WASM
+function getInputProxyNode(ctx) {
     if (!inputProxyNode) {
-        inputProxyNode = audioContext.createGain();
+        inputProxyNode = ctx.createGain();
         inputProxyNode.gain.value = 1.0;
-        console.log('[AudioProcessing] 🔗 Input proxy node created.');
     }
     return inputProxyNode;
 }
 
-/**
- * Connects the proxy node to the worklet provided by AudioService.
- */
-function connectProxyToWorklet() {
-    const workletNode = audioService.workletNode;
-    if (inputProxyNode && workletNode && !proxyConnectedToWorklet) {
-        inputProxyNode.connect(workletNode);
-        proxyConnectedToWorklet = true;
-        console.log('[AudioProcessing] 🔗 Proxy node connected to CQT worklet (AudioService). Audio will now flow!');
-        engineMode = 'WASM_LINKED';
+// Замыкание цепи
+function connectGraph() {
+    const audioContext = getAudioContext();
+    if (inputProxyNode && cwtWorkletNode && !proxyConnected) {
+        try {
+            inputProxyNode.connect(cwtWorkletNode);
+            // cwtWorkletNode.connect(audioContext.destination); // Optional monitoring
+            proxyConnected = true;
+            console.log('[AudioProcessing] 🔗 Chain Linked: Source -> Proxy -> WASM -> Output');
+        } catch(e) {
+            console.error("Graph connection error", e);
+        }
     }
 }
 
-/**
- * Initializes the CQT AudioWorklet via AudioService.
- */
 export async function initializeCwtWorklet(audioContext) {
-    if (audioService.workletNode) {
-        connectProxyToWorklet();
-        return true;
+    if (currentStatus === ENGINE_STATUS.READY) return true;
+    
+    if (!audioContext) audioContext = audioService.getAudioContext();
+
+    console.log('[AudioProcessing] 🚀 Booting BasilaQ-127 Engine...');
+
+    // 1. Config
+    const caps = await deviceCapabilities.detect();
+    const { sampleRate, chunkSize, numBins } = caps.optimal; // Expecting 128 bins
+
+    // 2. Load WASM Module (Binary)
+    const wasmModule = audioService.getWasmModule();
+    if (!wasmModule) {
+        console.error('[AudioProcessing] ❌ Critical: WASM Module not loaded in AudioService.');
+        currentStatus = ENGINE_STATUS.FAILED;
+        return false;
     }
 
-    console.log('[AudioProcessing] Requesting CQT Engine from AudioService...');
+    try {
+        // 3. Create Worklet
+        // Ensure module path matches your Vite/Server setup
+        await audioContext.audioWorklet.addModule('/js/audio/cwtAudioWorklet.js');
 
-    // Ensure AudioService is initialized
-    await audioService.initialize();
+        cwtWorkletNode = new AudioWorkletNode(audioContext, 'cwt-processor', {
+            processorOptions: {
+                sampleRate,
+                numBins: 128, // Hardcoded for BasilaQ-127 logic
+                chunkSize,
+                channelCount: 2
+            },
+            numberOfInputs: 1,
+            numberOfOutputs: 1,
+            channelCount: 2
+        });
 
-    // Create/Get the node
-    const workletNode = audioService.createWorkletNode();
+        // 4. Send WASM to Worklet
+        cwtWorkletNode.port.postMessage({ type: 'WASM_MODULE', module: wasmModule });
 
-    // Listen to data from AudioService (which emits it from worklet)
-    // We bind once to avoid duplicates if called multiple times, 
-    // but AudioService acts as the source of truth.
-    // Actually, handleWorkletMessage needs to be called. 
-    // We can subscribe to eventBus 'audio:spectralData'.
+        // 5. Setup Listeners
+        cwtWorkletNode.port.onmessage = (event) => {
+            const { type, levels, angles } = event.data;
 
-    if (!initializeCwtWorklet.listening) {
-        eventBus.on('audio:spectralData', handleWorkletMessage);
-        initializeCwtWorklet.listening = true;
+            if (type === 'WASM_READY') {
+                currentStatus = ENGINE_STATUS.READY;
+                console.log('[AudioProcessing] ✅ BasilaQ-127 Engine ONLINE.');
+                connectGraph();
+            } 
+            else if (type === 'AUDIO_DATA') {
+                // HOT PATH: 60 FPS
+                processSpectralData(levels, angles);
+            }
+            else if (type === 'WASM_ERROR') {
+                console.error('[AudioProcessing] WASM Runtime Error:', event.data.error);
+                currentStatus = ENGINE_STATUS.FAILED;
+            }
+        };
+
+    } catch (e) {
+        console.error('[AudioProcessing] Init Failed:', e);
+        currentStatus = ENGINE_STATUS.FAILED;
+        return false;
     }
 
-    connectProxyToWorklet();
     return true;
 }
 
-/**
- * Handles spectral data events from AudioService.
- */
-function handleWorkletMessage(data) {
-    // data is { levels, angles }
-    const modulationData = state.multimodal?.gestureModulationData;
-    const isSynthMode = state.audio?.isGestureSynthMode === true;
+// Обработка "горячих" данных (60 раз в секунду)
+function processSpectralData(rawLevels, rawAngles) {
+    // 1. Gesture Bridge (Модуляция руками)
+    const modulation = state.multimodal?.gestureModulationData;
+    const isSynth = state.audio?.isGestureSynthMode;
 
-    // Use raw data directly
-    const rawData = { levels: data.levels, pans: data.angles };
-    const modulatedData = AudioGestureBridge.applyModulation(rawData, modulationData, isSynthMode);
+    const data = AudioGestureBridge.applyModulation(
+        { levels: rawLevels, pans: rawAngles }, 
+        modulation, 
+        isSynth
+    );
 
-    const levels = modulatedData.levels;
-    const pans = modulatedData.pans;
-
+    // 2. Prepare Payload for Renderer
+    // Рендерер ожидает 256 столбцов (128 левых + 128 правых)
+    // Pan data тоже расширяем до 256 для удобства шейдера/рендерера
     const fullPans = new Float32Array(256);
-    if (pans && pans.length === 128) {
-        fullPans.set(pans, 0);
-        fullPans.set(pans, 128); // Duplicate logic for stereo pair
-    } else if (pans && pans.length >= 256) {
-        fullPans.set(pans.subarray(0, 256));
+    
+    // Если из WASM пришло 128 углов (по одному на полутон)
+    if (data.pans && data.pans.length === 128) {
+        fullPans.set(data.pans, 0);   // Left side logic
+        fullPans.set(data.pans, 128); // Right side logic
+    } else {
+        fullPans.set(data.pans);
     }
 
-    const payload = { levels, pans: fullPans };
+    const payload = {
+        levels: data.levels, // 256 length (128L + 128R)
+        pans: fullPans
+    };
 
-    // Diagnostic logging (once per 300 frames ~ 5s)
-    if (typeof handleWorkletMessage.dbgCount === 'undefined') handleWorkletMessage.dbgCount = 0;
-    if (handleWorkletMessage.dbgCount++ % 300 === 0) {
-        const first128 = Array.from(payload.levels).slice(0, 128);
-        const mean = first128.reduce((a, b) => a + b, 0) / 128;
-        const variance = first128.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / 128;
-        // Verify we are not in JS mode (impossible now, but checking levels)
-        console.log(`[AudioProcessing] 📡 (WASM) Spectrum Variance: ${variance.toFixed(4)}. Max: ${Math.max(...first128).toFixed(1)} dB.`);
-    }
-
+    // 3. Emit
     eventBus.emit('audioData', payload);
-    if (state.audio) {
-        state.audio.latestAudioData = { ...payload, timestamp: performance.now() };
+    
+    // Debug Trace (раз в секунду)
+    if (Math.random() < 0.015) { 
+        // console.log(`[Audio] Peak dB: ${data.levels[60]} | Pan[60]: ${data.pans[60]}`);
     }
 }
 
-/**
- * Sets up audio processing for a source node.
- */
 export async function setupAudioProcessing(sourceNode, audioContext, connectToOutput = true) {
-    if (!audioContext) audioContext = audioService.getAudioContext();
-
-    if (audioContext.state === 'suspended') {
-        console.log('[AudioProcessing] ⚠ Resuming context...');
-        await audioContext.resume();
-    }
+    if (audioContext.state === 'suspended') await audioContext.resume();
 
     const proxy = getInputProxyNode(audioContext);
     sourceNode.connect(proxy);
-    console.log(`[AudioProcessing] ✅ Source connected to proxy. Type: ${sourceNode.constructor.name}`);
 
-    // Ensure CWT is ready
-    await initializeCwtWorklet(audioContext);
+    if (currentStatus !== ENGINE_STATUS.READY) {
+        await initializeCwtWorklet(audioContext);
+    } else {
+        connectGraph();
+    }
 
-    if (connectToOutput) sourceNode.connect(audioContext.destination);
+    if (connectToOutput) {
+        sourceNode.connect(audioContext.destination);
+    }
+    
     return proxy;
 }
 
-/**
- * Disconnects a source from the CQT pipeline.
- */
-export function disconnectFromCwt(sourceNode) {
-    if (inputProxyNode) {
-        try { sourceNode.disconnect(inputProxyNode); } catch (e) { }
-    }
-}
-
-export function isCwtActive() { return proxyConnectedToWorklet; }
-export function getEngineMode() { return engineMode; }
-export function getCwtWorkletNode() { return audioService.workletNode; }
-
+export function isCwtActive() { return proxyConnected; }

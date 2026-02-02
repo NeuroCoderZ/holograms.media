@@ -1,167 +1,136 @@
 // frontend/js/audio/cwtAudioWorklet.js
-// NATIVE WASM INTEGRATION FOR AUDIO WORKLET (BasilaQ-127)
-// STRICT WASM PROCESSING ONLY. NO JS FALLBACK.
-// UPDATED: Uses Stateful CwtAnalyzer with Internal Ring Buffer.
+// BasilaQ-127 Engine Wrapper
+// STRICT WASM MODE. NO JS MATH.
 
-let wasm;
-let cachedUint8ArrayMemory0 = null;
-let cachedFloat32ArrayMemory0 = null;
-let cachedDataViewMemory0 = null;
+let wasm = null;
+let instance = null;
 
-// --- Memory Access Helpers ---
-function getUint8ArrayMemory0() {
-    if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
-        cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
+// Helper to interact with WASM memory
+let cachedFloat32Memory = null;
+function getFloat32Memory() {
+    if (!cachedFloat32Memory || cachedFloat32Memory.buffer.byteLength === 0) {
+        cachedFloat32Memory = new Float32Array(wasm.memory.buffer);
     }
-    return cachedUint8ArrayMemory0;
+    return cachedFloat32Memory;
 }
-
-function getFloat32ArrayMemory0() {
-    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
-        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
-    }
-    return cachedFloat32ArrayMemory0;
-}
-
-let WASM_VECTOR_LEN = 0;
-
-function passArrayF32ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 4, 4) >>> 0;
-    getFloat32ArrayMemory0().set(arg, ptr / 4);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
-
-// --- IMPORTS OBJECT for WASM ---
-const wasmImports = {
-    __wbindgen_placeholder__: {},
-    wbg: {
-        __wbindgen_init_externref_table: function () { },
-        __wbindgen_throw: function (arg0, arg1) {
-            throw new Error('WASM Error');
-        }
-    },
-    env: {
-        abort: () => console.error("WASM Aborted"),
-        emscripten_notify_memory_growth: () => { },
-    }
-};
 
 class CwtProcessor extends AudioWorkletProcessor {
-    constructor() {
+    constructor(options) {
         super();
-        this.mode = 'INIT';
-        this.analyzerPtr = 0; // Pointer to Rust struct
-        this.sampleRate = 48000;
-        this._dbgCount = 0;
+        this.mode = 'INIT'; // INIT -> WASM_READY -> RUNNING
+        this.analyzerPtr = 0;
+        
+        // Config from arguments
+        const opts = options.processorOptions || {};
+        this.sampleRate = opts.sampleRate || 48000;
+        this.numBins = opts.numBins || 128;
+        this.chunkSize = opts.chunkSize || 1024; // Must match buffer size logic in Rust
+        this.channelCount = opts.channelCount || 2;
 
-        this.port.onmessage = async (event) => {
-            const { type, module, payload } = event.data;
-            // console.log(`[CwtProcessor] 📩 Message received: ${type}`);
-
-            if (type === 'WASM_MODULE') {
-                this._initWasm(module);
+        this.port.onmessage = async (e) => {
+            if (e.data.type === 'WASM_MODULE') {
+                await this.initWasm(e.data.module);
             }
         };
     }
 
-    async _initWasm(module) {
-        if (this.mode === 'WASM') return;
+    async initWasm(module) {
         try {
-            console.log('[CwtProcessor] 🛠️ Starting WASM Instantiation...');
-            const instance = await WebAssembly.instantiate(module, wasmImports);
+            // Imports for WASM (usually standard emscripten/bindgen stuff)
+            const imports = {
+                env: {
+                    abort: () => console.error("WASM Abort"),
+                    emscripten_notify_memory_growth: () => { cachedFloat32Memory = null; } 
+                },
+                wbg: {} // bindgen placeholders if needed
+            };
+
+            instance = await WebAssembly.instantiate(module, imports);
             wasm = instance.exports;
 
-            console.log('[CwtProcessor] WASM Exports:', Object.keys(wasm));
-
-            if (wasm.__wbindgen_start) {
-                wasm.__wbindgen_start();
-            }
-
-            // Instantiate Helper Class
+            // Initialize the Rust structure (CwtAnalyzer)
+            // Assuming the Rust export is named `cwtanalyzer_new`
             if (wasm.cwtanalyzer_new) {
-                console.log('[CwtProcessor] Creating CwtAnalyzer instance...');
-                this.analyzerPtr = wasm.cwtanalyzer_new(this.sampleRate);
-                console.log(`[CwtProcessor] Analyzer created at ptr: ${this.analyzerPtr}`);
+                this.analyzerPtr = wasm.cwtanalyzer_new(this.sampleRate, this.numBins);
+                this.mode = 'WASM_READY';
+                this.port.postMessage({ type: 'WASM_READY' });
+                // console.log(`[CwtWorklet] BasilaQ-127 Engine Active. Ptr: ${this.analyzerPtr}`);
             } else {
-                console.warn('[CwtProcessor] cwtanalyzer_new export not found! Trying lowercase...');
+                throw new Error("Export 'cwtanalyzer_new' not found in WASM");
             }
-
-            this.mode = 'WASM';
-            console.log('[CwtProcessor] ✅ WASM Engine Ready.');
-            this.port.postMessage({ type: 'WASM_READY' });
-        } catch (e) {
-            console.error('[CwtProcessor] ❌ WASM Init Error:', e);
-            this.mode = 'ERROR';
-            this.port.postMessage({ type: 'WASM_ERROR', error: e.message });
+        } catch (err) {
+            console.error('[CwtWorklet] Critical WASM Error:', err);
+            this.port.postMessage({ type: 'WASM_ERROR', error: err.message });
         }
     }
 
     process(inputs, outputs, parameters) {
+        // 1. Check inputs
         const input = inputs[0];
+        if (!input || input.length === 0) return true;
+        const leftChannel = input[0];
+        const rightChannel = input.length > 1 ? input[1] : leftChannel; // Force stereo logic
+
+        // 2. Pass-through audio (so user can hear it)
         const output = outputs[0];
-        if (output && input) {
-            for (let ch = 0; ch < Math.min(input.length, output.length); ch++) {
-                output[ch].set(input[ch]);
-            }
+        if (output && output.length > 0) {
+            output[0].set(leftChannel);
+            if (output[1]) output[1].set(rightChannel);
         }
 
-        if (!input || !input[0]) return true;
-
-        const left = input[0];
-        const right = input.length > 1 ? input[1] : left;
-
-        if (this.mode === 'WASM' && wasm && this.analyzerPtr !== 0) {
+        // 3. STRICT WASM PROCESSING
+        if (this.mode === 'WASM_READY' && this.analyzerPtr !== 0) {
             try {
-                // 1. Prepare Inputs
-                const ptrLeft = passArrayF32ToWasm0(left, wasm.__wbindgen_malloc);
-                const lenLeft = WASM_VECTOR_LEN;
-                const ptrRight = passArrayF32ToWasm0(right, wasm.__wbindgen_malloc);
-                const lenRight = WASM_VECTOR_LEN;
+                const len = leftChannel.length;
+                
+                // A. Alloc input memory in WASM
+                const leftPtr = wasm.__wbindgen_malloc(len * 4);
+                const rightPtr = wasm.__wbindgen_malloc(len * 4);
+                
+                // B. Copy data to WASM
+                getFloat32Memory().set(leftChannel, leftPtr / 4);
+                getFloat32Memory().set(rightChannel, rightPtr / 4);
 
-                // 2. Prepare Outputs (Size 256 for dB, 128 for Pan)
-                const ptrDb = wasm.__wbindgen_malloc(256 * 4, 4) >>> 0;
-                const ptrPan = wasm.__wbindgen_malloc(128 * 4, 4) >>> 0;
+                // C. Alloc Output pointers (256 floats for Levels, 128 floats for Pans)
+                // Levels: 128 L + 128 R (or specific BasilaQ layout)
+                // Pans: 128 angles
+                const outLevelsPtr = wasm.__wbindgen_malloc(256 * 4); 
+                const outPansPtr = wasm.__wbindgen_malloc(128 * 4);
 
-                // 3. Process Chunk (Push & Analyze)
-                // Signature: process(self_ptr, left_ptr, left_len, right_ptr, right_len, db_ptr, db_len, pan_ptr, pan_len)
+                // D. EXECUTE (The Heavy Lifting)
+                // fn process(ptr, left_in, right_in, len, out_levels, out_pans)
                 wasm.cwtanalyzer_process(
-                    this.analyzerPtr,
-                    ptrLeft, lenLeft,
-                    ptrRight, lenRight,
-                    ptrDb, 256,
-                    ptrPan, 128
+                    this.analyzerPtr, 
+                    leftPtr, 
+                    rightPtr, 
+                    len, 
+                    outLevelsPtr, 
+                    outPansPtr
                 );
 
-                // 4. Read Results
-                const resDb = getFloat32ArrayMemory0().subarray(ptrDb / 4, ptrDb / 4 + 256);
-                const resPan = getFloat32ArrayMemory0().subarray(ptrPan / 4, ptrPan / 4 + 128);
+                // E. Read views (No copy if possible, but here we need to postMessage)
+                const levelsView = getFloat32Memory().subarray(outLevelsPtr / 4, outLevelsPtr / 4 + 256);
+                const pansView = getFloat32Memory().subarray(outPansPtr / 4, outPansPtr / 4 + 128);
 
-                const finalDb = new Float32Array(resDb);
-                const finalPan = new Float32Array(256);
+                // Clone data to send to main thread (Float32Array is transferrable but view is tied to WASM memory)
+                const levelsData = new Float32Array(levelsView);
+                const pansData = new Float32Array(pansView);
 
-                // DATA SHAPING (Degrees -> Normalized)
-                for (let i = 0; i < 128; i++) {
-                    let deg = resPan[i];
-                    if (deg > 90) deg = 90;
-                    if (deg < -90) deg = -90;
-                    finalPan[i] = deg / 90.0;
-                    finalPan[i + 128] = finalPan[i];
-                }
+                // F. Cleanup Memory
+                wasm.__wbindgen_free(leftPtr, len * 4);
+                wasm.__wbindgen_free(rightPtr, len * 4);
+                wasm.__wbindgen_free(outLevelsPtr, 256 * 4);
+                wasm.__wbindgen_free(outPansPtr, 128 * 4);
 
-                // Free all pointers
-                if (wasm.__wbindgen_free) {
-                    wasm.__wbindgen_free(ptrLeft, lenLeft * 4, 4);
-                    wasm.__wbindgen_free(ptrRight, lenRight * 4, 4);
-                    wasm.__wbindgen_free(ptrDb, 256 * 4, 4);
-                    wasm.__wbindgen_free(ptrPan, 128 * 4, 4);
-                }
+                // G. Send to Main Thread
+                this.port.postMessage({
+                    type: 'AUDIO_DATA',
+                    levels: levelsData,
+                    angles: pansData
+                }, [levelsData.buffer, pansData.buffer]); // Transfer buffers for speed
 
-                this.port.postMessage({ type: 'AUDIO_DATA', levels: finalDb, angles: finalPan });
             } catch (e) {
-                console.error('[CwtProcessor] Native WASM Execution Error:', e);
-                // Don't disable mode immediately, log once
-                if (Math.random() < 0.01) console.error(e);
+                console.error('[CwtWorklet] Calculation Error:', e);
             }
         }
 
