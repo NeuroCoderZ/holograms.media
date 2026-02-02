@@ -34,7 +34,8 @@ export class HologramRenderer {
     this.hologramPivot.position.set(0, 0, 0); // Center the hologram at origin
 
     // LIGHTING: BasilaQ-127 Safety Lighting (Prevents Black Screen)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+    // REDUCED AMBIENT to 0.1 to allow True Black for low volume columns.
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
     this.hologramPivot.add(ambientLight);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
@@ -742,20 +743,41 @@ export class HologramRenderer {
         if (leftMesh) {
           leftMesh.scale.z = Math.max(0.001, depthL);
           leftMesh.position.z = depthL / 2;
-          // Shading: Pure amplitude mapping
-          leftMesh.material.emissiveIntensity = ampL * 1.5;
-          const hsl = {};
-          columnPair.left.userData.baseColor.getHSL(hsl);
-          leftMesh.material.color.setHSL(hsl.h, hsl.s, ampL * hsl.l);
+
+          // Shading: Quantized Brightness (128 steps)
+          // "If volume < 1/128 -> Black"
+          const qAmpL = Math.floor(ampL * 128) / 128;
+
+          if (qAmpL <= 0) {
+            leftMesh.material.emissiveIntensity = 0;
+            leftMesh.material.color.setRGB(0, 0, 0);
+            if (leftMesh.children[0]) leftMesh.children[0].material.opacity = 0;
+          } else {
+            leftMesh.material.emissiveIntensity = qAmpL * 1.5;
+            const hsl = {};
+            columnPair.left.userData.baseColor.getHSL(hsl);
+            leftMesh.material.color.setHSL(hsl.h, hsl.s, qAmpL * hsl.l);
+            if (leftMesh.children[0]) leftMesh.children[0].material.opacity = 0.1 + qAmpL * 0.7;
+          }
         }
 
         if (rightMesh) {
           rightMesh.scale.z = Math.max(0.001, depthR);
           rightMesh.position.z = depthR / 2;
-          rightMesh.material.emissiveIntensity = ampR * 1.5;
-          const hsl = {};
-          columnPair.right.userData.baseColor.getHSL(hsl);
-          rightMesh.material.color.setHSL(hsl.h, hsl.s, ampR * hsl.l);
+
+          const qAmpR = Math.floor(ampR * 128) / 128;
+
+          if (qAmpR <= 0) {
+            rightMesh.material.emissiveIntensity = 0;
+            rightMesh.material.color.setRGB(0, 0, 0);
+            if (rightMesh.children[0]) rightMesh.children[0].material.opacity = 0;
+          } else {
+            rightMesh.material.emissiveIntensity = qAmpR * 1.5;
+            const hsl = {};
+            columnPair.right.userData.baseColor.getHSL(hsl);
+            rightMesh.material.color.setHSL(hsl.h, hsl.s, qAmpR * hsl.l);
+            if (rightMesh.children[0]) rightMesh.children[0].material.opacity = 0.1 + qAmpR * 0.7;
+          }
         }
       }
     });
