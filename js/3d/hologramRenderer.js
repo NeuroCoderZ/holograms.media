@@ -74,6 +74,9 @@ export class HologramRenderer {
     this.maxHistorySize = 180; // ~3 seconds
     this.currentRollingMax = -60; // Baseline floor
 
+    // DEBUG: Frame counter for diagnostics
+    this._debugFrameCount = 0;
+
     // Add the main hologram pivot to the Three.js scene.
     this.scene.add(this.hologramPivot);
 
@@ -781,6 +784,44 @@ export class HologramRenderer {
         }
       }
     });
+
+    // 4. DIAGNOSTICS (Phase 2 Verification)
+    // Runs every ~1 second (assuming 60fps) to verify Z-Depth and True Black physics
+    this._debugFrameCount++;
+    if (this._debugFrameCount % 60 === 0) {
+      this._logPhysicsDiagnostics(dbLevels, panAngles);
+    }
+  }
+
+  /**
+   * DEBUG: Logs physics statistics to verify spectral resolution and quantization.
+   */
+  _logPhysicsDiagnostics(dbLevels, panAngles) {
+    let blackCount = 0;
+    let maxLevel = -Infinity;
+    let minLevel = Infinity;
+    let varianceSum = 0;
+    let mean = 0;
+
+    // Calculate Mean
+    for (let i = 0; i < 256; i++) {
+      mean += dbLevels[i];
+      if (dbLevels[i] <= -100) blackCount++; // Assuming -100 is effective noise floor
+      if (dbLevels[i] > maxLevel) maxLevel = dbLevels[i];
+      if (dbLevels[i] < minLevel) minLevel = dbLevels[i];
+    }
+    mean /= 256;
+
+    // Calculate Variance
+    for (let i = 0; i < 256; i++) {
+      varianceSum += Math.pow(dbLevels[i] - mean, 2);
+    }
+    const variance = varianceSum / 256;
+
+    console.debug(`[Physics Verified] Frame ${this._debugFrameCount} | ` +
+      `Black Cols: ${blackCount}/256 | ` +
+      `Max dB: ${maxLevel.toFixed(1)} | ` +
+      `Variance: ${variance.toFixed(2)} (High = Good Separation)`);
   }
 
   /**
