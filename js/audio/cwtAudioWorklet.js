@@ -47,6 +47,11 @@ const wasmImports = {
         __wbindgen_throw: function (arg0, arg1) {
             throw new Error('WASM Error');
         }
+    },
+    // Add generic env imports to prevent LinkError if binary expects them
+    env: {
+        abort: () => console.error("WASM Aborted"),
+        emscripten_notify_memory_growth: () => { },
     }
 };
 

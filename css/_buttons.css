@@ -61,15 +61,15 @@
 }
 
 #fullscreenButton .icon-exit-fullscreen {
-  display: none;
+  display: none !important;
 }
 
 #fullscreenButton.active .icon-fullscreen {
-  display: none;
+  display: none !important;
 }
 
 #fullscreenButton.active .icon-exit-fullscreen {
-  display: block;
+  display: block !important;
 }
 
 

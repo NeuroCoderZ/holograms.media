@@ -90,13 +90,13 @@ export async function initializeCwtWorklet(audioContext) {
     return new Promise((resolve) => {
         const timeoutId = setTimeout(() => {
             if (!cwtWorkletReady) {
-                console.warn('[AudioProcessing] ⚠ WASM init timeout (5s). Switching to JS mode.');
+                console.warn('[AudioProcessing] ⚠ WASM init timeout (10s). Switching to JS mode.');
                 cwtWorkletReady = true;
                 engineMode = 'JS_GOERTZEL';
                 cwtWorkletNode.port.postMessage({ type: 'FORCE_JS_MODE' });
                 resolve(true);
             }
-        }, 5000);
+        }, 10000);
 
         // Internal handler extension for resolution
         const originalOnMessage = cwtWorkletNode.port.onmessage;
