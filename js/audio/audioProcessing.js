@@ -1,5 +1,5 @@
 // frontend/js/audio/audioProcessing.js
-import { eventBus } from '../core/eventBus.js';
+import eventBus from '../core/eventBus.js';
 import { state } from '../core/init.js';
 import { AudioGestureBridge } from './AudioGestureBridge.js';
 import audioService from '../services/AudioService.js';
