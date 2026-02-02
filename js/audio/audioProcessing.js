@@ -162,7 +162,10 @@ function handleWorkletMessage(event) {
         // Diagnostic logging (once per 60 frames ~ 1s)
         if (typeof handleWorkletMessage.dbgCount === 'undefined') handleWorkletMessage.dbgCount = 0;
         if (handleWorkletMessage.dbgCount++ % 60 === 0) {
-            console.log(`[AudioProcessing] 📡 (${engineMode}) Emitting audioData. First bin:`, payload.levels?.[0]);
+            const first128 = Array.from(payload.levels).slice(0, 128);
+            const mean = first128.reduce((a, b) => a + b, 0) / 128;
+            const variance = first128.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / 128;
+            console.log(`[AudioProcessing] 📡 (${engineMode}) Spectrum Variance: ${variance.toFixed(4)}. Max: ${Math.max(...first128).toFixed(1)} dB. Mean: ${mean.toFixed(1)} dB`);
         }
 
         eventBus.emit('audioData', payload);
