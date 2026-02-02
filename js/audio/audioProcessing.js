@@ -120,7 +120,7 @@ export async function initializeCwtWorklet(audioContext) {
         };
 
         if (wasmModule) {
-            console.log('[AudioProcessing] Sending WASM module to worklet...');
+            console.log(`[AudioProcessing] Sending WASM module to worklet... Module Valid: ${wasmModule instanceof WebAssembly.Module}`);
             cwtWorkletNode.port.postMessage({ type: 'WASM_MODULE', module: wasmModule });
         } else {
             console.log('[AudioProcessing] No WASM module found. Forcing JS mode.');
