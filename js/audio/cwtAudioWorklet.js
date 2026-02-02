@@ -88,6 +88,8 @@ class CwtProcessor extends AudioWorkletProcessor {
 
         this.port.onmessage = async (event) => {
             const { type, module, payload } = event.data;
+            console.log(`[CwtProcessor] 📩 Message received: ${type}`);
+
             if (type === 'WASM_MODULE') {
                 this._initWasm(module);
             } else if (type === 'FORCE_JS_MODE') {
