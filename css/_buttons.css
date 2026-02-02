@@ -39,19 +39,19 @@
 
 /* Icon logic */
 #togglePanelsButton .icon-show-panels {
-  display: block;
+  display: flex !important;
 }
 
 #togglePanelsButton .icon-hide-panels {
-  display: none;
+  display: none !important;
 }
 
 #togglePanelsButton.show-mode .icon-show-panels {
-  display: none;
+  display: none !important;
 }
 
 #togglePanelsButton.show-mode .icon-hide-panels {
-  display: block;
+  display: flex !important;
 }
 
 /* Ensure button remains visible when show-mode is active */

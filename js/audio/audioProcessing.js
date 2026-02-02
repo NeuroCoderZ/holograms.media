@@ -58,6 +58,12 @@ export async function initializeCwtWorklet(audioContext) {
     await audioService.initialize();
     const node = audioService.createWorkletNode();
     const ctx = audioContext || audioService.getAudioContext();
+
+    // Ensure context is running
+    if (ctx.state === 'suspended') {
+        console.log('[AudioProcessing] ⚠ AudioContext suspended. Resuming...');
+        await ctx.resume();
+    }
     
     const proxy = getInputProxyNode(ctx);
     if (node && proxy) {
