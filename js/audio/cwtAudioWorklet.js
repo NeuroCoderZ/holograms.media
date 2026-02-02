@@ -177,27 +177,46 @@ class CwtProcessor extends AudioWorkletProcessor {
     }
 
     _processJS(left, right) {
+        // 1. Calculate global RMS for reference
         let sumSq = 0;
         for (let i = 0; i < left.length; i++) sumSq += left[i] * left[i];
         const rms = Math.sqrt(sumSq / left.length);
-        // Boost baseline for visible columns even on quiet parts
-        const db = 20 * Math.log10(rms + 1e-6);
+
+        const N = left.length;
+        const TWO_PI = 2 * Math.PI;
 
         for (let i = 0; i < 128; i++) {
-            // PSEUDO-SPECTRUM: Look at different parts of the raw buffer for each bin
-            // This is not frequency-accurate, but it is NOT synchronous.
-            const sampleIdx = Math.floor((i / 128) * left.length);
-            const localAmp = Math.abs(left[sampleIdx] || 0);
-            const localDb = 20 * Math.log10(localAmp + rms * 0.1 + 1e-6); // Mix with RMS for stability
+            const targetFreq = this.targetFrequencies[i];
+            const k = (N * targetFreq) / this.sampleRate;
+            const omega = (TWO_PI * k) / N;
+            const cosine = Math.cos(omega);
+            const coeff = 2 * cosine;
 
-            const weighting = 1.0 - (i / 150);
-            let targetDb = Math.max(-128, localDb * weighting);
+            let q1 = 0; // s_prev
+            let q2 = 0; // s_prev2
 
-            this.pans[i] = (i % 2 === 0) ? -0.2 : 0.2; // Minor stereo spread for JS mode
-            this.smoothLevels[i] = this.smoothLevels[i] * 0.8 + targetDb * 0.2;
+            for (let j = 0; j < N; j++) {
+                let q0 = left[j] + coeff * q1 - q2;
+                q2 = q1;
+                q1 = q0;
+            }
+
+            // Power calculation for Goertzel
+            const power = q1 * q1 + q2 * q2 - coeff * q1 * q2;
+            const magnitude = Math.sqrt(Math.max(0, power));
+
+            // Convert to dB. Normalization by N/2 typical for FFT/Goertzel
+            const rawDb = 20 * Math.log10((magnitude / (N / 2)) + 1e-6);
+
+            // Smoothing: 0.7 historical, 0.3 new value
+            this.smoothLevels[i] = this.smoothLevels[i] * 0.7 + rawDb * 0.3;
+
+            // Map to final levels
             this.levels[i] = Math.max(-128, this.smoothLevels[i]);
-            this.levels[i + 128] = Math.max(-128, this.smoothLevels[i]);
+            this.levels[i + 128] = this.levels[i]; // Mirror for now
+            this.pans[i] = (i % 2 === 0) ? -0.2 : 0.2;
         }
+
         this.port.postMessage({ type: 'AUDIO_DATA', levels: this.levels, angles: this.pans });
     }
 }
