@@ -59,10 +59,12 @@ export async function initializeCwtWorklet(audioContext) {
     const node = audioService.createWorkletNode();
     const ctx = audioContext || audioService.getAudioContext();
 
-    // Ensure context is running
+    // Ensure context is running (Non-blocking to prevent init hang)
     if (ctx.state === 'suspended') {
-        console.log('[AudioProcessing] ⚠ AudioContext suspended. Resuming...');
-        await ctx.resume();
+        console.log('[AudioProcessing] ⚠ AudioContext suspended. Resuming in background...');
+        ctx.resume().catch(err => {
+            console.warn('[AudioProcessing] Could not resume context during init:', err.message);
+        });
     }
     
     const proxy = getInputProxyNode(ctx);
