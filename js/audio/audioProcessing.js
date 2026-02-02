@@ -16,45 +16,50 @@ function getInputProxyNode(ctx) {
     return inputProxyNode;
 }
 
-export async function initializeCwtWorklet(audioContext) {
-    if (audioService.workletNode) return true;
-    console.log('[AudioProcessing] 🚀 Booting via AudioService...');
+// Подписываемся на события от AudioService
+// AudioService.js внутри себя делает: eventBus.emit('audio:spectralData', event.data)
+eventBus.on('audio:spectralData', (data) => {
+    if (!data.levels) return;
     
-    await audioService.initialize();
-    const node = audioService.createWorkletNode();
-
-    node.port.onmessage = (e) => {
-        if (e.data.type === 'AUDIO_DATA') processSpectralData(e.data.levels, e.data.angles);
-        if (e.data.type === 'LOG') console.log('[Worklet Log]', e.data.msg);
-        if (e.data.type === 'WASM_READY') console.log('[AudioProcessing] ✅ Engine ONLINE');
-    };
-
-    if (inputProxyNode) inputProxyNode.connect(node);
-    return true;
-}
-
-function processSpectralData(rawLevels, rawAngles) {
     const modulation = state.multimodal?.gestureModulationData;
     const isSynth = state.audio?.isGestureSynthMode;
 
-    const data = AudioGestureBridge.applyModulation({ levels: rawLevels, pans: rawAngles }, modulation, isSynth);
+    const modulated = AudioGestureBridge.applyModulation(
+        { levels: data.levels, pans: data.angles }, 
+        modulation, 
+        isSynth
+    );
+
     const fullPans = new Float32Array(256);
-    if (data.pans.length === 128) {
-        fullPans.set(data.pans, 0);
-        fullPans.set(data.pans, 128);
+    if (modulated.pans.length === 128) {
+        fullPans.set(modulated.pans, 0);
+        fullPans.set(modulated.pans, 128);
     } else {
-        fullPans.set(data.pans);
+        fullPans.set(modulated.pans);
     }
 
-    const payload = { levels: data.levels, pans: fullPans };
+    const payload = { levels: modulated.levels, pans: fullPans };
     
-    // Diagnostic log every 60 frames
-    if (!processSpectralData._dbg) processSpectralData._dbg = 0;
-    if (processSpectralData._dbg++ % 60 === 0) {
-        console.log(`[AudioData] RMS: ${Math.max(...data.levels).toFixed(1)} dB`);
+    // Лог для проверки: если Max dB > -100, значит данные живые
+    if (!window._dbgAudio) window._dbgAudio = 0;
+    if (window._dbgAudio++ % 60 === 0) {
+        console.log(`[Flow Check] Spectral Data OK. Max level: ${Math.max(...payload.levels).toFixed(1)} dB`);
     }
 
     eventBus.emit('audioData', payload);
+});
+
+export async function initializeCwtWorklet(audioContext) {
+    await audioService.initialize();
+    const node = audioService.createWorkletNode();
+    if (inputProxyNode && node) {
+        // Проверяем, не подключены ли мы уже
+        try {
+            inputProxyNode.disconnect(node);
+        } catch(e) {}
+        inputProxyNode.connect(node);
+    }
+    return true;
 }
 
 export async function setupAudioProcessing(sourceNode, audioContext, connectToOutput = true) {
