@@ -57,11 +57,23 @@ export async function initializeCwtWorklet(audioContext) {
     console.log('[AudioProcessing] 🚀 Requesting CQT initialization from AudioService...');
     await audioService.initialize();
     const node = audioService.createWorkletNode();
+    const ctx = audioContext || audioService.getAudioContext();
     
-    const proxy = getInputProxyNode(audioContext || audioService.getAudioContext());
+    const proxy = getInputProxyNode(ctx);
     if (node && proxy) {
-        try { proxy.connect(node); } catch(e) {}
-        console.log('[AudioProcessing] ✅ Pipeline Linked: Proxy -> Worklet');
+        try {
+            proxy.disconnect(node);
+        } catch(e) {}
+        proxy.connect(node);
+
+        // FORCING DATA FLOW: Connect to destination via silent gain
+        // This ensures the browser calls process() even if the output isn't used for audio.
+        const silentGain = ctx.createGain();
+        silentGain.gain.value = 0;
+        node.connect(silentGain);
+        silentGain.connect(ctx.destination);
+
+        console.log('[AudioProcessing] ✅ Pipeline Linked: Proxy -> Worklet -> Silent Output');
     }
     return true;
 }
