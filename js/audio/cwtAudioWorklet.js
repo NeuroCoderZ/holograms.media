@@ -98,14 +98,14 @@ class CwtProcessor extends AudioWorkletProcessor {
                 const outPansPtr = wasm.__wbindgen_malloc(128 * 4);
 
                 // D. EXECUTE (The Heavy Lifting)
-                // fn process(ptr, left_in, right_in, len, out_levels, out_pans)
+                // fn process(self, left_ptr, left_len, right_ptr, right_len, db_ptr, db_len, pan_ptr, pan_len)
+                // wasm-bindgen expects (ptr, len) pair for every slice argument.
                 wasm.cwtanalyzer_process(
                     this.analyzerPtr, 
-                    leftPtr, 
-                    rightPtr, 
-                    len, 
-                    outLevelsPtr, 
-                    outPansPtr
+                    leftPtr, len,
+                    rightPtr, len,
+                    outLevelsPtr, 256,
+                    outPansPtr, 128
                 );
 
                 // E. Read views (No copy if possible, but here we need to postMessage)
