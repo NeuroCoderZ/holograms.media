@@ -37,27 +37,25 @@
   fill: currentColor !important;
 }
 
-/* Icon logic */
+/* Icon logic: Static shape, brightness-based state */
 #togglePanelsButton .icon-show-panels {
   display: flex !important;
+  opacity: 0.7 !important; /* Dim by default */
 }
 
 #togglePanelsButton .icon-hide-panels {
-  display: none !important;
+  display: none !important; /* Always hidden per requirement */
 }
 
 #togglePanelsButton.show-mode .icon-show-panels {
-  display: none !important;
+  display: flex !important; /* Keep same icon */
+  opacity: 1 !important; /* Brighter when active */
+  color: white !important;
 }
 
-#togglePanelsButton.show-mode .icon-hide-panels {
-  display: flex !important;
-}
-
-/* Ensure button remains visible when show-mode is active */
+/* Ensure button remains visible and consistent */
 #togglePanelsButton.show-mode {
   color: white !important;
-  /* Active state: White when panels are hidden */
 }
 
 #fullscreenButton .icon-exit-fullscreen {
