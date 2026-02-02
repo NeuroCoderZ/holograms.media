@@ -101,10 +101,7 @@ export class HologramRenderer {
   }
 
   handleCwtResult(data) {
-    if (!this._dbgInCount) this._dbgInCount = 0;
-    if (this._dbgInCount++ % 60 === 0) {
-      console.log('[HologramRenderer] 📥 Received audioData from EventBus. First bin:', data.levels?.[0]);
-    }
+    // (Log removed to reduce console spam)
     // Store the latest data (levels: Float32Array[256], pans: Float32Array[256])
     this.latestCwtData = data;
     this.latestAudioData = data; // Keep for compatibility

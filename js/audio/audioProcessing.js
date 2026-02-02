@@ -159,9 +159,9 @@ function handleWorkletMessage(event) {
 
         const payload = { levels, pans: fullPans };
 
-        // Diagnostic logging (once per 60 frames ~ 1s)
+        // Diagnostic logging (once per 300 frames ~ 5s)
         if (typeof handleWorkletMessage.dbgCount === 'undefined') handleWorkletMessage.dbgCount = 0;
-        if (handleWorkletMessage.dbgCount++ % 60 === 0) {
+        if (handleWorkletMessage.dbgCount++ % 300 === 0) {
             const first128 = Array.from(payload.levels).slice(0, 128);
             const mean = first128.reduce((a, b) => a + b, 0) / 128;
             const variance = first128.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / 128;
