@@ -119,6 +119,14 @@ class AudioService {
 
             console.log('[AudioService] WASM compiled successfully. Ready for worklet.');
 
+            if (this.workletNode) {
+                console.log('[AudioService] Sending compiled WASM to workletNode...');
+                this.workletNode.port.postMessage({
+                    type: 'WASM_MODULE',
+                    module: this.wasmModule
+                });
+            }
+
         } catch (error) {
             console.error('[AudioService] WASM loading failed:', error);
             // Fallback strategy: Emit warning, allow app to fall back to JS processing if implemented
@@ -129,13 +137,20 @@ class AudioService {
     /**
      * Creates the CWT Worklet Node.
      */
+    /**
+     * Creates or retrieves the CWT Worklet Node (Singleton).
+     */
     createWorkletNode() {
         if (!this.context) throw new Error('AudioContext not associated.');
+
+        if (this.workletNode) {
+            return this.workletNode;
+        }
 
         this.workletNode = new AudioWorkletNode(this.context, 'cwt-processor', {
             numberOfInputs: 1,
             numberOfOutputs: 1,
-            outputChannelCount: [2], // Stereo input processing
+            outputChannelCount: [2],
             processorOptions: {
                 sampleRate: this.context.sampleRate,
                 ...this.cqtConfig
@@ -145,19 +160,17 @@ class AudioService {
         // Handle messages from Worklet
         this.workletNode.port.onmessage = (event) => {
             if (event.data.type === 'AUDIO_DATA') {
-                // Broadcast spectral data via EventBus
-                // event.data contains { levels, angles }
                 eventBus.emit('audio:spectralData', event.data);
             }
         };
 
-        // If WASM loaded successfully, send it to the worklet
+        // If WASM loaded successfully, send it to the worklet immediately
         if (this.wasmModule) {
+            console.log('[AudioService] Sending WASM module to worklet...');
             this.workletNode.port.postMessage({
                 type: 'WASM_MODULE',
                 module: this.wasmModule
             });
-            console.log('[AudioService] Sent WASM module to worklet.');
         }
 
         return this.workletNode;
