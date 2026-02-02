@@ -1,6 +1,6 @@
 // frontend/js/audio/audioProcessing.js
 // CQT-based audio processing with AudioWorklet and WASM
-// PROXY NODE ARCHITECTURE: Synchronous graph, async WASM loading
+// STRICT WASM ONLY MODE (BasilaQ-127)
 
 import { state } from '../core/init.js';
 import { deviceCapabilities } from '../utils/deviceCapabilities.js';
@@ -9,9 +9,7 @@ import audioService from '../services/AudioService.js';
 import { AudioGestureBridge } from './AudioGestureBridge.js';
 
 // Global state
-let cwtWorkletNode = null;
-let cwtWorkletReady = false;
-let engineMode = 'INITIALIZING';
+let engineMode = 'WASM_PENDING';
 
 // PROXY NODE: Always-available input collector
 let inputProxyNode = null;
@@ -37,141 +35,88 @@ function getInputProxyNode(audioContext) {
 }
 
 /**
- * Connects the proxy node to the worklet.
+ * Connects the proxy node to the worklet provided by AudioService.
  */
 function connectProxyToWorklet() {
-    if (inputProxyNode && cwtWorkletNode && !proxyConnectedToWorklet) {
-        inputProxyNode.connect(cwtWorkletNode);
+    const workletNode = audioService.workletNode;
+    if (inputProxyNode && workletNode && !proxyConnectedToWorklet) {
+        inputProxyNode.connect(workletNode);
         proxyConnectedToWorklet = true;
-        console.log('[AudioProcessing] 🔗 Proxy node connected to CQT worklet. Audio will now flow!');
+        console.log('[AudioProcessing] 🔗 Proxy node connected to CQT worklet (AudioService). Audio will now flow!');
+        engineMode = 'WASM_LINKED';
     }
 }
 
 /**
- * Initializes the CQT AudioWorklet.
+ * Initializes the CQT AudioWorklet via AudioService.
  */
 export async function initializeCwtWorklet(audioContext) {
-    if (cwtWorkletReady && cwtWorkletNode) {
-        console.log('[AudioProcessing] CQT Worklet already initialized.');
+    if (audioService.workletNode) {
         connectProxyToWorklet();
         return true;
     }
 
-    if (!audioContext) audioContext = audioService.getAudioContext();
+    console.log('[AudioProcessing] Requesting CQT Engine from AudioService...');
 
-    console.log('[AudioProcessing] ========================================');
-    console.log('[AudioProcessing] INITIALIZING CQT ENGINE');
-    console.log('[AudioProcessing] ========================================');
+    // Ensure AudioService is initialized
+    await audioService.initialize();
 
-    getInputProxyNode(audioContext);
-    const caps = await deviceCapabilities.detect();
-    const { sampleRate, chunkSize, numBins, channelCount } = caps.optimal;
+    // Create/Get the node
+    const workletNode = audioService.createWorkletNode();
 
-    console.log(`[AudioProcessing] CQT Config: sampleRate=${sampleRate}, chunkSize=${chunkSize}, numBins=${numBins}`);
+    // Listen to data from AudioService (which emits it from worklet)
+    // We bind once to avoid duplicates if called multiple times, 
+    // but AudioService acts as the source of truth.
+    // Actually, handleWorkletMessage needs to be called. 
+    // We can subscribe to eventBus 'audio:spectralData'.
 
-    cwtWorkletNode = new AudioWorkletNode(audioContext, 'cwt-processor', {
-        processorOptions: { sampleRate, numBins, chunkSize, channelCount },
-        numberOfInputs: 1,
-        numberOfOutputs: 1,
-        channelCount: 2,
-        channelCountMode: 'max',
-        channelInterpretation: 'speakers'
-    });
-
-    // ATTACH LISTENER BEFORE SENDING ANY MESSAGES
-    cwtWorkletNode.port.onmessage = (event) => {
-        handleWorkletMessage(event);
-    };
+    if (!initializeCwtWorklet.listening) {
+        eventBus.on('audio:spectralData', handleWorkletMessage);
+        initializeCwtWorklet.listening = true;
+    }
 
     connectProxyToWorklet();
-
-    const wasmModule = audioService.getWasmModule();
-
-    return new Promise((resolve) => {
-        const timeoutId = setTimeout(() => {
-            if (!cwtWorkletReady) {
-                console.warn('[AudioProcessing] ⚠ WASM init timeout (10s). Switching to JS mode.');
-                cwtWorkletReady = true;
-                engineMode = 'JS_GOERTZEL';
-                cwtWorkletNode.port.postMessage({ type: 'FORCE_JS_MODE' });
-                resolve(true);
-            }
-        }, 10000);
-
-        // Internal handler extension for resolution
-        const originalOnMessage = cwtWorkletNode.port.onmessage;
-        cwtWorkletNode.port.onmessage = (event) => {
-            const { type } = event.data;
-            if (type === 'WASM_READY') {
-                clearTimeout(timeoutId);
-                cwtWorkletReady = true;
-                engineMode = 'CQT_WASM';
-                console.log('[AudioProcessing] ✅ CQT WASM engine ready.');
-                resolve(true);
-            } else if (type === 'WASM_ERROR') {
-                clearTimeout(timeoutId);
-                console.warn('[AudioProcessing] ⚠ WASM error, using JS fallback.');
-                cwtWorkletReady = true;
-                engineMode = 'JS_GOERTZEL';
-                cwtWorkletNode.port.postMessage({ type: 'FORCE_JS_MODE' });
-                resolve(true);
-            }
-            handleWorkletMessage(event);
-        };
-
-        if (wasmModule) {
-            console.log(`[AudioProcessing] Sending WASM module to worklet... Module Valid: ${wasmModule instanceof WebAssembly.Module}`);
-            cwtWorkletNode.port.postMessage({ type: 'WASM_MODULE', module: wasmModule });
-        } else {
-            console.log('[AudioProcessing] No WASM module found. Forcing JS mode.');
-            clearTimeout(timeoutId);
-            cwtWorkletReady = true;
-            engineMode = 'JS_GOERTZEL';
-            cwtWorkletNode.port.postMessage({ type: 'FORCE_JS_MODE' });
-            resolve(true);
-        }
-    });
+    return true;
 }
 
 /**
- * Handles all messages from the AudioWorklet.
+ * Handles spectral data events from AudioService.
  */
-function handleWorkletMessage(event) {
-    const { type } = event.data;
+function handleWorkletMessage(data) {
+    // data is { levels, angles }
+    const modulationData = state.multimodal?.gestureModulationData;
+    const isSynthMode = state.audio?.isGestureSynthMode === true;
 
-    if (type === 'AUDIO_DATA') {
-        const modulationData = state.multimodal?.gestureModulationData;
-        const isSynthMode = state.audio?.isGestureSynthMode === true;
+    // Use raw data directly
+    const rawData = { levels: data.levels, pans: data.angles };
+    const modulatedData = AudioGestureBridge.applyModulation(rawData, modulationData, isSynthMode);
 
-        const rawData = { levels: event.data.levels, pans: event.data.angles };
-        const modulatedData = AudioGestureBridge.applyModulation(rawData, modulationData, isSynthMode);
+    const levels = modulatedData.levels;
+    const pans = modulatedData.pans;
 
-        const levels = modulatedData.levels;
-        const pans = modulatedData.pans;
+    const fullPans = new Float32Array(256);
+    if (pans && pans.length === 128) {
+        fullPans.set(pans, 0);
+        fullPans.set(pans, 128); // Duplicate logic for stereo pair
+    } else if (pans && pans.length >= 256) {
+        fullPans.set(pans.subarray(0, 256));
+    }
 
-        const fullPans = new Float32Array(256);
-        if (pans && pans.length === 128) {
-            fullPans.set(pans, 0);
-            fullPans.set(pans, 128);
-        } else if (pans && pans.length >= 256) {
-            fullPans.set(pans.subarray(0, 256));
-        }
+    const payload = { levels, pans: fullPans };
 
-        const payload = { levels, pans: fullPans };
+    // Diagnostic logging (once per 300 frames ~ 5s)
+    if (typeof handleWorkletMessage.dbgCount === 'undefined') handleWorkletMessage.dbgCount = 0;
+    if (handleWorkletMessage.dbgCount++ % 300 === 0) {
+        const first128 = Array.from(payload.levels).slice(0, 128);
+        const mean = first128.reduce((a, b) => a + b, 0) / 128;
+        const variance = first128.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / 128;
+        // Verify we are not in JS mode (impossible now, but checking levels)
+        console.log(`[AudioProcessing] 📡 (WASM) Spectrum Variance: ${variance.toFixed(4)}. Max: ${Math.max(...first128).toFixed(1)} dB.`);
+    }
 
-        // Diagnostic logging (once per 300 frames ~ 5s)
-        if (typeof handleWorkletMessage.dbgCount === 'undefined') handleWorkletMessage.dbgCount = 0;
-        if (handleWorkletMessage.dbgCount++ % 300 === 0) {
-            const first128 = Array.from(payload.levels).slice(0, 128);
-            const mean = first128.reduce((a, b) => a + b, 0) / 128;
-            const variance = first128.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / 128;
-            console.log(`[AudioProcessing] 📡 (${engineMode}) Spectrum Variance: ${variance.toFixed(4)}. Max: ${Math.max(...first128).toFixed(1)} dB. Mean: ${mean.toFixed(1)} dB`);
-        }
-
-        eventBus.emit('audioData', payload);
-        if (state.audio) {
-            state.audio.latestAudioData = { ...payload, timestamp: performance.now() };
-        }
+    eventBus.emit('audioData', payload);
+    if (state.audio) {
+        state.audio.latestAudioData = { ...payload, timestamp: performance.now() };
     }
 }
 
@@ -190,11 +135,8 @@ export async function setupAudioProcessing(sourceNode, audioContext, connectToOu
     sourceNode.connect(proxy);
     console.log(`[AudioProcessing] ✅ Source connected to proxy. Type: ${sourceNode.constructor.name}`);
 
-    if (!cwtWorkletReady && !cwtWorkletNode) {
-        initializeCwtWorklet(audioContext).catch(err => console.error('[AudioProcessing] Init error:', err));
-    } else {
-        connectProxyToWorklet();
-    }
+    // Ensure CWT is ready
+    await initializeCwtWorklet(audioContext);
 
     if (connectToOutput) sourceNode.connect(audioContext.destination);
     return proxy;
@@ -209,6 +151,7 @@ export function disconnectFromCwt(sourceNode) {
     }
 }
 
-export function isCwtActive() { return cwtWorkletReady && cwtWorkletNode !== null; }
+export function isCwtActive() { return proxyConnectedToWorklet; }
 export function getEngineMode() { return engineMode; }
-export function getCwtWorkletNode() { return cwtWorkletNode; }
+export function getCwtWorkletNode() { return audioService.workletNode; }
+
