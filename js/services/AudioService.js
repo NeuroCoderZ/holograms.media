@@ -6,6 +6,9 @@
 import eventBus from '../core/eventBus.js';
 import workletUrl from '../audio/cwtAudioWorklet.js?url';
 
+// Path to the WASM file
+const wasmUrl = '/wasm/cwt_analyzer.wasm';
+
 // Import WASM URL explicitly for Vite to handle asset path
 
 class AudioService {
