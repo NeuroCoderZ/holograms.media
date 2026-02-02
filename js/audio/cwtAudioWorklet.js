@@ -70,11 +70,14 @@ class CwtProcessor extends AudioWorkletProcessor {
         const C0 = 16.352; // Sync with Semitones_Angles.md
         for (let i = 0; i < 128; i++) {
             this.targetFrequencies[i] = C0 * Math.pow(2, i / 12);
-            // --- BasilaQ-127: Preset Psychoacoustic Panorama ---
-            // Mapping 180 deg (ID 0) -> -1.0 (Left)
-            // Mapping ~0 deg (ID 127) -> 1.0 (Right)
+            // --- BasilaQ-127: Psychoacoustic Panorama (Gibson's Hemispheres Model) ---
+            // User Vision: Two cylinders around the head.
+            // Left Hemisphere (Purple): 0 to -180 deg (Mapped to Renderer X: -1.0)
+            // Right Hemisphere (Red): 0 to +180 deg (Mapped to Renderer X: 1.0)
+            // Current Algo: 180 deg (Low Freq, Left) -> 0 deg (High Freq, Center/Right)
+            // Renderer expects -1.0 (Left) to 1.0 (Right).
             const deg = 180.0 - (i * 1.40625);
-            this.pans[i] = (deg - 90.0) / -90.0;
+            this.pans[i] = (deg - 90.0) / -90.0; // 180deg -> -1.0; 0deg -> 1.0
             this.pans[i + 128] = this.pans[i];
         }
 
