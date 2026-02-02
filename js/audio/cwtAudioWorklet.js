@@ -70,6 +70,12 @@ class CwtProcessor extends AudioWorkletProcessor {
         const C0 = 16.352; // Sync with Semitones_Angles.md
         for (let i = 0; i < 128; i++) {
             this.targetFrequencies[i] = C0 * Math.pow(2, i / 12);
+            // --- BasilaQ-127: Preset Psychoacoustic Panorama ---
+            // Mapping 180 deg (ID 0) -> -1.0 (Left)
+            // Mapping ~0 deg (ID 127) -> 1.0 (Right)
+            const deg = 180.0 - (i * 1.40625);
+            this.pans[i] = (deg - 90.0) / -90.0;
+            this.pans[i + 128] = this.pans[i];
         }
 
         this.port.onmessage = async (event) => {
@@ -234,7 +240,7 @@ class CwtProcessor extends AudioWorkletProcessor {
 
             this.levels[i] = Math.max(-128, this.smoothLevels[i]);
             this.levels[i + 128] = this.levels[i];
-            this.pans[i] = (i % 2 === 0) ? -0.1 : 0.1;
+            // this.pans[i] defaults from constructor, can be modulated by AudioGestureBridge later
         }
 
         this.port.postMessage({ type: 'AUDIO_DATA', levels: this.levels, angles: this.pans });
