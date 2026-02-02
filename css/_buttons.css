@@ -58,16 +58,26 @@
   color: white !important;
 }
 
+#fullscreenButton .icon-fullscreen {
+  display: flex !important; /* Always visible */
+}
+
 #fullscreenButton .icon-exit-fullscreen {
-  display: none !important;
+  display: none !important; /* Always hidden per requirement */
+}
+
+#fullscreenButton.active {
+  color: white !important;
+  filter: brightness(1.5);
+  opacity: 1 !important;
 }
 
 #fullscreenButton.active .icon-fullscreen {
-  display: none !important;
+  display: flex !important;
 }
 
 #fullscreenButton.active .icon-exit-fullscreen {
-  display: block !important;
+  display: none !important;
 }
 
 

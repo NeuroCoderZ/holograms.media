@@ -100,10 +100,12 @@ export default class DesktopLayout {
                 this.leftPanelElement.classList.remove('visible');
                 this.rightPanelElement.classList.remove('visible');
                 this.togglePanelsButtonElement.classList.add('show-mode');
+                this.togglePanelsButtonElement.title = "Показать панели";
             } else {
                 this.leftPanelElement.classList.add('visible');
                 this.rightPanelElement.classList.add('visible');
                 this.togglePanelsButtonElement.classList.remove('show-mode');
+                this.togglePanelsButtonElement.title = "Скрыть панели";
             }
             // Ensure old 'hidden' class (if it was ever used) is removed
             this.leftPanelElement.classList.remove('hidden');
@@ -128,9 +130,11 @@ export default class DesktopLayout {
         // Toggle visibility classes
         this.leftPanelElement.classList.toggle('visible');
         this.rightPanelElement.classList.toggle('visible');
-        this.togglePanelsButtonElement.classList.toggle('show-mode', arePanelsCurrentlyVisible); // show-mode means panels are now hidden
+        const panelsAreNowVisible = this.leftPanelElement.classList.contains('visible');
+        this.togglePanelsButtonElement.classList.toggle('show-mode', !panelsAreNowVisible); 
+        this.togglePanelsButtonElement.title = panelsAreNowVisible ? "Скрыть панели" : "Показать панели";
 
-        const newState = this.leftPanelElement.classList.contains('visible') ? 'visible' : 'hidden';
+        const newState = panelsAreNowVisible ? 'visible' : 'hidden';
         console.log(`[DesktopLayout][toggleMainPanels] Panels toggled. New state: ${newState}. leftPanel visible: ${this.leftPanelElement.classList.contains('visible')}`);
 
         try {
