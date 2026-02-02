@@ -1,5 +1,5 @@
 // frontend/js/audio/audioProcessing.js
-import eventBus from '../core/eventBus.js';
+import { eventBus } from '../core/eventBus.js';
 import { state } from '../core/init.js';
 import { AudioGestureBridge } from './AudioGestureBridge.js';
 import audioService from '../services/AudioService.js';
@@ -12,18 +12,20 @@ function getInputProxyNode(ctx) {
     if (!inputProxyNode) {
         inputProxyNode = ctx.createGain();
         inputProxyNode.gain.value = 1.0;
+        console.log('[AudioProcessing] 🔗 Proxy Gain Node created');
     }
     return inputProxyNode;
 }
 
-// Подписываемся на события от AudioService
-// AudioService.js внутри себя делает: eventBus.emit('audio:spectralData', event.data)
+// ВАЖНО: Мы не перезаписываем onmessage, а подписываемся на событие из шины данных
 eventBus.on('audio:spectralData', (data) => {
-    if (!data.levels) return;
-    
+    // Если данных нет, даже не тратим время
+    if (!data.levels || data.levels[0] === undefined) return;
+
     const modulation = state.multimodal?.gestureModulationData;
     const isSynth = state.audio?.isGestureSynthMode;
 
+    // Обработка жестов
     const modulated = AudioGestureBridge.applyModulation(
         { levels: data.levels, pans: data.angles }, 
         modulation, 
@@ -40,24 +42,26 @@ eventBus.on('audio:spectralData', (data) => {
 
     const payload = { levels: modulated.levels, pans: fullPans };
     
-    // Лог для проверки: если Max dB > -100, значит данные живые
-    if (!window._dbgAudio) window._dbgAudio = 0;
-    if (window._dbgAudio++ % 60 === 0) {
-        console.log(`[Flow Check] Spectral Data OK. Max level: ${Math.max(...payload.levels).toFixed(1)} dB`);
+    // ПРИНУДИТЕЛЬНЫЙ ЛОГ (раз в секунду)
+    if (!window._lastAudioLog || Date.now() - window._lastAudioLog > 1000) {
+        const max = Math.max(...payload.levels);
+        console.log(`[Flow Check] Data in EventBus. Max: ${max.toFixed(1)} dB`);
+        window._lastAudioLog = Date.now();
     }
 
+    // Отправляем в рендерер
     eventBus.emit('audioData', payload);
 });
 
 export async function initializeCwtWorklet(audioContext) {
+    console.log('[AudioProcessing] 🚀 Requesting CQT initialization from AudioService...');
     await audioService.initialize();
     const node = audioService.createWorkletNode();
-    if (inputProxyNode && node) {
-        // Проверяем, не подключены ли мы уже
-        try {
-            inputProxyNode.disconnect(node);
-        } catch(e) {}
-        inputProxyNode.connect(node);
+    
+    const proxy = getInputProxyNode(audioContext || audioService.getAudioContext());
+    if (node && proxy) {
+        try { proxy.connect(node); } catch(e) {}
+        console.log('[AudioProcessing] ✅ Pipeline Linked: Proxy -> Worklet');
     }
     return true;
 }
