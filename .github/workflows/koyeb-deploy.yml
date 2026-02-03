@@ -14,20 +14,25 @@ jobs:
       - name: 🚀 Deploy Backend to Koyeb
         uses: koyeb/action-git-deploy@v1
         with:
-          api_token: ${{ secrets.KOYEB_API_TOKEN }}
-          git_branch: master
-          app_name: holograms-media
-          service_name: holograms-media
-          service_type: web
-          service_ports: "8000:http"
-          service_routes: "/:8000"
-          service_instance_type: free
-          git_builder: docker
-          git_docker_dockerfile: Dockerfile
-          service_env: |
+          # ВАЖНО: Используем kebab-case для параметров, как требует экшн v1
+          # Токен передается неявно или через env, но попробуем без него в with, так как его нет в valid inputs
+          # В документации koyeb-action часто api-token передается как input, но лог говорит обратное.
+          # Однако, самый надежный способ для v1 - это env var.
+          app-name: holograms-media
+          service-name: holograms-media
+          service-type: web
+          service-ports: "8000:http"
+          service-routes: "/:8000"
+          service-instance-type: free
+          git-builder: docker
+          git-docker-dockerfile: Dockerfile
+          service-env: |
             ENVIRONMENT=production
             CORS_ORIGIN_1=https://holograms.media
             CORS_ORIGIN_2=https://www.holograms.media
             PYTHONUNBUFFERED=1
             PYTHONDONTWRITEBYTECODE=1
             PORT=8000
+        env:
+          # Передаем токен через переменную окружения, это стандарт для многих CLI-wrappers
+          KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
