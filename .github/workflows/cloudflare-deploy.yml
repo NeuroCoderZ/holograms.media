@@ -11,7 +11,7 @@ jobs:
     permissions:
       contents: read
       deployments: write
-    name: Build & Deploy to Cloudflare Pages
+    name: Build & Deploy
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
@@ -28,11 +28,10 @@ jobs:
       - name: 🏗️ Build Frontend
         run: npm run build
 
-      - name: 🔧 Copy _headers and _redirects to dist
+      - name: 🔧 Prepare Dist
         run: |
           cp public/_headers dist/_headers
           cp public/_redirects dist/_redirects
-          ls -R dist
 
       - name: ☁️ Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
