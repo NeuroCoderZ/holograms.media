@@ -11,6 +11,11 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
+      - name: 🔧 Setup Koyeb CLI
+        uses: koyeb/setup-koyeb@v2
+        with:
+          api_token: ${{ secrets.KOYEB_API_TOKEN }}
+
       - name: 🚀 Deploy Backend to Koyeb
         uses: koyeb/action-git-deploy@v1
         with:
@@ -32,5 +37,3 @@ jobs:
             PYTHONUNBUFFERED=1
             PYTHONDONTWRITEBYTECODE=1
             PORT=8000
-        env:
-          KOYEB_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
