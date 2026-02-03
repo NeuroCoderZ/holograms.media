@@ -16,6 +16,13 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/koyeb/koyeb-cli/master/install.sh | sh
           echo "$HOME/.koyeb/bin" >> $GITHUB_PATH
 
+      - name: 🔑 Configure Koyeb CLI
+        run: |
+          # Создаем конфигурационный файл, так как экшн не передает токен в CLI аргументах
+          echo "default:" > $HOME/.koyeb.yaml
+          echo "  token: ${{ secrets.KOYEB_API_TOKEN }}" >> $HOME/.koyeb.yaml
+          chmod 600 $HOME/.koyeb.yaml
+
       - name: 🚀 Deploy Backend to Koyeb
         uses: koyeb/action-git-deploy@v1
         with:
@@ -34,5 +41,3 @@ jobs:
             PYTHONUNBUFFERED=1
             PYTHONDONTWRITEBYTECODE=1
             PORT=8000
-        env:
-          KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
