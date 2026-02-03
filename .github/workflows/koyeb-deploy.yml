@@ -11,18 +11,6 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install Koyeb CLI
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/koyeb/koyeb-cli/master/install.sh | sh
-          echo "$HOME/.koyeb/bin" >> $GITHUB_PATH
-
-      - name: 🔑 Configure Koyeb CLI
-        run: |
-          # Создаем конфигурационный файл, так как экшн не передает токен в CLI аргументах
-          echo "default:" > $HOME/.koyeb.yaml
-          echo "  token: ${{ secrets.KOYEB_API_TOKEN }}" >> $HOME/.koyeb.yaml
-          chmod 600 $HOME/.koyeb.yaml
-
       - name: 🚀 Deploy Backend to Koyeb
         uses: koyeb/action-git-deploy@v1
         with:
@@ -34,6 +22,9 @@ jobs:
           service-instance-type: free
           git-builder: docker
           git-docker-dockerfile: Dockerfile
+          git-url: github.com/NeuroCoderZ/holograms.media
+          git-branch: master
+          service-regions: fra
           service-env: |
             ENVIRONMENT=production
             CORS_ORIGIN_1=https://holograms.media
@@ -41,3 +32,5 @@ jobs:
             PYTHONUNBUFFERED=1
             PYTHONDONTWRITEBYTECODE=1
             PORT=8000
+        env:
+          KOYEB_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
