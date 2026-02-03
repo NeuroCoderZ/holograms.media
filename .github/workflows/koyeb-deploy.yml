@@ -11,29 +11,25 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Koyeb CLI
-        uses: koyeb/setup-koyeb@v2
-        with:
-          api_token: ${{ secrets.KOYEB_API_TOKEN }}
+      - name: 🔧 Install Koyeb CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/koyeb/koyeb-cli/master/install.sh | sh
+          # Move binary to global path to ensure visibility
+          sudo mv $HOME/.koyeb/bin/koyeb /usr/local/bin/koyeb
+          koyeb version
 
-      - name: 🚀 Deploy Backend to Koyeb
-        uses: koyeb/action-git-deploy@v1
-        with:
-          app-name: holograms-media
-          service-name: holograms-media
-          service-type: web
-          service-ports: "8000:http"
-          service-routes: "/:8000"
-          service-instance-type: free
-          git-builder: docker
-          git-docker-dockerfile: Dockerfile
-          git-url: github.com/NeuroCoderZ/holograms.media
-          git-branch: master
-          service-regions: fra
-          service-env: |
-            ENVIRONMENT=production
-            CORS_ORIGIN_1=https://holograms.media
-            CORS_ORIGIN_2=https://www.holograms.media
-            PYTHONUNBUFFERED=1
-            PYTHONDONTWRITEBYTECODE=1
-            PORT=8000
+      - name: 🚀 Deploy to Koyeb
+        run: |
+          koyeb service update holograms-media/holograms-media \
+            --git github.com/NeuroCoderZ/holograms.media \
+            --git-branch master \
+            --git-builder docker \
+            --docker-dockerfile Dockerfile \
+            --env ENVIRONMENT=production \
+            --env CORS_ORIGIN_1=https://holograms.media \
+            --env CORS_ORIGIN_2=https://www.holograms.media \
+            --env PYTHONUNBUFFERED=1 \
+            --env PYTHONDONTWRITEBYTECODE=1 \
+            --env PORT=8000
+        env:
+          KOYEB_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
