@@ -1,3 +1,10 @@
+# ⚠️ AGENT_ADVISORY: СТАБИЛЬНЫЙ ВОРКФЛОУ
+# Этот файл проверен и работает. Любые изменения в путях сборки (dist) 
+# или параметрах Cloudflare Pages Action должны быть обоснованы.
+# ПРАВИЛА ДЛЯ АГЕНТОВ:
+# 1. Всегда проверяйте наличие шага 'Prepare Dist' (копирование _headers/_redirects).
+# 2. Не меняйте версию Node.js без согласования (сейчас 20).
+
 name: 🚀 Deploy Frontend to Cloudflare Pages
 
 on:
