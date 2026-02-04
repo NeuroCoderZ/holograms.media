@@ -31,9 +31,11 @@ class CwtProcessor extends AudioWorkletProcessor {
                 wbg: { __wbindgen_init_externref_table: () => {} }
             });
             wasm = instance.exports;
-            // Assuming 48kHz for now, or get from options if critical
-            analyzerPtr = wasm.cwtanalyzer_new(48000); 
-            console.log(`[CwtWorklet] WASM Engine Instance Created. Ptr: ${analyzerPtr}`);
+            
+            // UNIVERSAL INITIALIZATION: Use the global sampleRate from AudioWorkletGlobalScope
+            const currentSR = typeof sampleRate !== 'undefined' ? sampleRate : 48000;
+            analyzerPtr = wasm.cwtanalyzer_new(currentSR); 
+            console.log(`[CwtWorklet] WASM Engine Instance Created. Ptr: ${analyzerPtr}, SR: ${currentSR}`);
 
             // Аллоцируем буферы один раз для переиспользования
             ptrs.left = wasm.__wbindgen_malloc(128 * 4);
