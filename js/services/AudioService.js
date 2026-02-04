@@ -153,6 +153,9 @@ class AudioService {
             }
         });
 
+        // Explicitly start the port to ensure communication flow
+        this.workletNode.port.start();
+
         // Handle messages from Worklet
         this.workletNode.port.onmessage = (event) => {
             const { type, levels, angles, msg, error } = event.data;
