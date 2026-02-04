@@ -155,7 +155,20 @@ class AudioService {
 
         // Handle messages from Worklet
         this.workletNode.port.onmessage = (event) => {
-            const { type, levels, angles, msg } = event.data;
+            const { type, levels, angles, msg, error } = event.data;
+
+            if (type === 'WORKLET_READY') {
+                console.log('[AudioService] Worklet is READY for Handshake. Sending WASM...');
+                if (this.wasmModule) {
+                    this.workletNode.port.postMessage({
+                        type: 'WASM_MODULE',
+                        module: this.wasmModule
+                    });
+                } else {
+                    console.warn('[AudioService] WASM module not compiled yet. Handshake delayed.');
+                }
+                return;
+            }
 
             if (type === 'LOG') {
                 console.log(`[CwtWorklet] ${msg}`);
@@ -163,29 +176,20 @@ class AudioService {
             }
 
             if (type === 'WASM_READY') {
-                console.log('[AudioService] WASM Engine in Worklet is READY.');
+                console.log('[AudioService] ✅ WASM Engine initialized in Worklet.');
                 return;
             }
 
             if (type === 'WASM_ERROR') {
-                console.error('[AudioService] WASM Engine in Worklet Error:', event.data.error);
+                console.error('[AudioService] ❌ WASM Engine Error:', error);
                 return;
             }
 
             if (type === 'AUDIO_DATA') {
-                // Heartbeat to main bus
+                // Standardized event for the entire app
                 eventBus.emit('audio:spectralData', { levels, angles });
             }
         };
-
-        // If WASM loaded successfully, send it to the worklet immediately
-        if (this.wasmModule) {
-            console.log('[AudioService] Sending WASM module to worklet...');
-            this.workletNode.port.postMessage({
-                type: 'WASM_MODULE',
-                module: this.wasmModule
-            });
-        }
 
         return this.workletNode;
     }
