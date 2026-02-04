@@ -22,13 +22,19 @@ eventBus.on('audio:spectralData', (data) => {
     // Если данных нет, даже не тратим время
     if (!data.levels || data.levels[0] === undefined) return;
 
+    // DEBUG: Один раз подтверждаем связь
+    if (!window._pipelineVerified) {
+        console.log('[AudioProcessing] 🟢 First Spectral Data received from EventBus!');
+        window._pipelineVerified = true;
+    }
+
     const modulation = state.multimodal?.gestureModulationData;
     const isSynth = state.audio?.isGestureSynthMode;
 
     // Обработка жестов
     const modulated = AudioGestureBridge.applyModulation(
-        { levels: data.levels, pans: data.angles }, 
-        modulation, 
+        { levels: data.levels, pans: data.angles },
+        modulation,
         isSynth
     );
 
@@ -41,18 +47,17 @@ eventBus.on('audio:spectralData', (data) => {
     }
 
     const payload = { levels: modulated.levels, pans: fullPans };
-    
+
     // ПРИНУДИТЕЛЬНЫЙ ЛОГ (раз в секунду)
     if (!window._lastAudioLog || Date.now() - window._lastAudioLog > 1000) {
         const max = Math.max(...payload.levels);
-        console.log(`[Flow Check] Data in EventBus. Max: ${max.toFixed(1)} dB`);
+        console.log(`[Flow Check] Data in EventBus. Max: ${max.toFixed(2)} dB`);
         window._lastAudioLog = Date.now();
     }
 
     // Отправляем в рендерер
     eventBus.emit('audioData', payload);
 });
-
 export async function initializeCwtWorklet(audioContext) {
     console.log('[AudioProcessing] 🚀 Requesting CQT initialization from AudioService...');
     await audioService.initialize();

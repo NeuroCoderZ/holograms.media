@@ -155,8 +155,26 @@ class AudioService {
 
         // Handle messages from Worklet
         this.workletNode.port.onmessage = (event) => {
-            if (event.data.type === 'AUDIO_DATA') {
-                eventBus.emit('audio:spectralData', event.data);
+            const { type, levels, angles, msg } = event.data;
+
+            if (type === 'LOG') {
+                console.log(`[CwtWorklet] ${msg}`);
+                return;
+            }
+
+            if (type === 'WASM_READY') {
+                console.log('[AudioService] WASM Engine in Worklet is READY.');
+                return;
+            }
+
+            if (type === 'WASM_ERROR') {
+                console.error('[AudioService] WASM Engine in Worklet Error:', event.data.error);
+                return;
+            }
+
+            if (type === 'AUDIO_DATA') {
+                // Heartbeat to main bus
+                eventBus.emit('audio:spectralData', { levels, angles });
             }
         };
 

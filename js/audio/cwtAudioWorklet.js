@@ -83,6 +83,15 @@ class CwtProcessor extends AudioWorkletProcessor {
             const levels = new Float32Array(mem.subarray(ptrs.levels / 4, ptrs.levels / 4 + 256));
             const angles = new Float32Array(mem.subarray(ptrs.pans / 4, ptrs.pans / 4 + 128));
 
+            // DEBUG WASM OUTPUT
+            if (this._hb % 100 === 0) {
+                const sumLevels = levels.reduce((a, b) => a + b, 0);
+                this.port.postMessage({ 
+                    type: 'LOG', 
+                    msg: `WASM_OUTPUT: Sum of levels: ${sumLevels.toFixed(2)}` 
+                });
+            }
+
             this.port.postMessage({ type: 'AUDIO_DATA', levels, angles });
         } catch (e) {
             // console.error(e); // Uncomment for debug if needed
