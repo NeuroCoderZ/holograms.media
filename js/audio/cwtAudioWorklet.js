@@ -19,9 +19,18 @@ function getFloat32Memory() {
 class CwtProcessor extends AudioWorkletProcessor {
     constructor() {
         super();
-        this.port.onmessage = async (e) => {
-            if (e.data.type === 'WASM_MODULE') await this.initWasm(e.data.module);
+        this._hb = 0;
+        this._initialized = false;
+        
+        // Robust port initialization
+        this.port.onmessage = (e) => {
+            if (e.data.type === 'WASM_MODULE') {
+                this.initWasm(e.data.module);
+            }
         };
+
+        // HANDSHAKE: Notify service that we are ready to receive the module
+        this.port.postMessage({ type: 'WORKLET_READY' });
     }
 
     async initWasm(module) {
@@ -35,7 +44,8 @@ class CwtProcessor extends AudioWorkletProcessor {
             // UNIVERSAL INITIALIZATION: Use the global sampleRate from AudioWorkletGlobalScope
             const currentSR = typeof sampleRate !== 'undefined' ? sampleRate : 48000;
             analyzerPtr = wasm.cwtanalyzer_new(currentSR); 
-            console.log(`[CwtWorklet] WASM Engine Instance Created. Ptr: ${analyzerPtr}, SR: ${currentSR}`);
+            
+            this.port.postMessage({ type: 'LOG', msg: `WASM Engine Created. Ptr: ${analyzerPtr}, SR: ${currentSR}` });
 
             // Аллоцируем буферы один раз для переиспользования
             ptrs.left = wasm.__wbindgen_malloc(128 * 4);
@@ -43,6 +53,7 @@ class CwtProcessor extends AudioWorkletProcessor {
             ptrs.levels = wasm.__wbindgen_malloc(256 * 4);
             ptrs.pans = wasm.__wbindgen_malloc(128 * 4);
 
+            this._initialized = true;
             this.port.postMessage({ type: 'WASM_READY' });
         } catch (err) {
             this.port.postMessage({ type: 'WASM_ERROR', error: err.message });
@@ -51,12 +62,14 @@ class CwtProcessor extends AudioWorkletProcessor {
 
     process(inputs, outputs) {
         const input = inputs[0];
-        if (!input || !input[0] || !wasm || !analyzerPtr) return true;
+        // stay alive even if not processing, but don't call WASM if not ready
+        if (!input || !input[0] || !wasm || !analyzerPtr || !this._initialized) {
+            return true; 
+        }
 
-        // WORKLET HEARTBEAT (once per 100 frames)
-        if (!this._hb) this._hb = 0;
+        // WORKLET HEARTBEAT
         if (this._hb++ % 100 === 0) {
-            this.port.postMessage({ type: 'LOG', msg: 'WORKLET_PULSE: process() is running' });
+            this.port.postMessage({ type: 'LOG', msg: 'WORKLET_PULSE: processing active' });
         }
 
         // Pass-through
