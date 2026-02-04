@@ -22,10 +22,14 @@ class CwtProcessor extends AudioWorkletProcessor {
         this._hb = 0;
         this._initialized = false;
         
-        // Robust port initialization
-        this.port.onmessage = (e) => {
+        // Robust port initialization with async handling
+        this.port.onmessage = async (e) => {
             if (e.data.type === 'WASM_MODULE') {
-                this.initWasm(e.data.module);
+                try {
+                    await this.initWasm(e.data.module);
+                } catch (err) {
+                    this.port.postMessage({ type: 'WASM_ERROR', error: 'Async Init Error: ' + err.message });
+                }
             }
         };
 
