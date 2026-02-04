@@ -130,47 +130,4 @@ class CwtProcessor extends AudioWorkletProcessor {
     }
 }
 
-        // Pass-through
-        if (outputs[0] && outputs[0][0]) {
-            outputs[0][0].set(input[0]);
-            if (input[1] && outputs[0][1]) outputs[0][1].set(input[1]);
-        }
-
-        try {
-            const mem = getFloat32Memory();
-            
-            // Внимание: input[0] (chunk) может быть 128 семплов (стандарт Worklet).
-            // Rust ожидает 128 (CHUNK_SIZE).
-            // Если браузер дает другой размер (напр. 256), нужно копировать только 128 или обрабатывать циклом.
-            // Пока считаем что 128.
-            const len = Math.min(input[0].length, 128);
-            
-            mem.set(input[0].subarray(0, len), ptrs.left / 4);
-            mem.set((input[1] || input[0]).subarray(0, len), ptrs.right / 4);
-
-            // Вызов Rust: process(self, l_ptr, l_len, r_ptr, r_len, lvl_ptr, lvl_len, pan_ptr, pan_len)
-            // Важно передавать len, который ожидает bindgen (хотя внутри Rust мб игнорирует и берет 128, но сигнатура важна)
-            wasm.cwtanalyzer_process(analyzerPtr, ptrs.left, len, ptrs.right, len, ptrs.levels, 256, ptrs.pans, 128);
-
-            // Копируем данные (НЕ переносим буфер, чтобы не убить WASM)
-            const levels = new Float32Array(mem.subarray(ptrs.levels / 4, ptrs.levels / 4 + 256));
-            const angles = new Float32Array(mem.subarray(ptrs.pans / 4, ptrs.pans / 4 + 128));
-
-            // DEBUG WASM OUTPUT
-            if (this._hb % 100 === 0) {
-                const sumLevels = levels.reduce((a, b) => a + b, 0);
-                this.port.postMessage({ 
-                    type: 'LOG', 
-                    msg: `WASM_OUTPUT: Sum of levels: ${sumLevels.toFixed(2)}` 
-                });
-            }
-
-            this.port.postMessage({ type: 'AUDIO_DATA', levels, angles });
-        } catch (e) {
-            // console.error(e); // Uncomment for debug if needed
-        }
-
-        return true;
-    }
-}
 registerProcessor('cwt-processor', CwtProcessor);
