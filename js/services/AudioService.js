@@ -108,24 +108,22 @@ class AudioService {
                 throw new Error(`Server returned HTML instead of WASM (MIME: ${contentType}). Check deployment configuration.`);
             }
 
-            const buffer = await response.arrayBuffer();
-            // COMPILATION ONLY: Compilation doesn't require imports.
-            // Instantiation (link with wbg) happens inside the Worklet.
-            this.wasmModule = await WebAssembly.compile(buffer);
+            // We store the BUFFER instead of the compiled module
+            // Compiled modules are hard to clone/transfer to worklets in some browsers
+            this.wasmBuffer = await response.arrayBuffer();
 
-            console.log('[AudioService] WASM compiled successfully. Ready for worklet.');
+            console.log('[AudioService] WASM buffer loaded successfully. Ready for transfer.');
 
             if (this.workletNode) {
-                console.log('[AudioService] Sending compiled WASM to workletNode...');
+                console.log('[AudioService] Sending WASM buffer to workletNode...');
                 this.workletNode.port.postMessage({
-                    type: 'WASM_MODULE',
-                    module: this.wasmModule
-                });
+                    type: 'WASM_BUFFER',
+                    buffer: this.wasmBuffer
+                }, [this.wasmBuffer]); // TRANSFER ownership
             }
 
         } catch (error) {
             console.error('[AudioService] WASM loading failed:', error);
-            // Fallback strategy: Emit warning, allow app to fall back to JS processing if implemented
             console.warn('[AudioService] Switching to JS-only fallback (Digital Basilar Membrane) due to WASM error.');
         }
     }
@@ -161,14 +159,14 @@ class AudioService {
             const { type, levels, angles, msg, error } = event.data;
 
             if (type === 'WORKLET_READY') {
-                console.log('[AudioService] Worklet is READY for Handshake. Sending WASM...');
-                if (this.wasmModule) {
+                console.log('[AudioService] Worklet is READY for Handshake. Sending WASM BUFFER...');
+                if (this.wasmBuffer) {
                     this.workletNode.port.postMessage({
-                        type: 'WASM_MODULE',
-                        module: this.wasmModule
-                    });
+                        type: 'WASM_BUFFER',
+                        buffer: this.wasmBuffer
+                    }, [this.wasmBuffer]); // TRANSFER ownership
                 } else {
-                    console.warn('[AudioService] WASM module not compiled yet. Handshake delayed.');
+                    console.warn('[AudioService] WASM buffer not loaded yet. Handshake delayed.');
                 }
                 return;
             }

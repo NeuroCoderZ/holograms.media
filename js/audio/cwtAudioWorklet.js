@@ -25,10 +25,10 @@ class CwtProcessor extends AudioWorkletProcessor {
         // === БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ ПОРТА ===
         this.port.onmessage = async (event) => {
             const data = event.data;
-            if (data.type === 'WASM_MODULE') {
-                this.port.postMessage({ type: 'LOG', msg: 'WASM_MODULE_RECEIVED' });
+            if (data.type === 'WASM_BUFFER') {
+                this.port.postMessage({ type: 'LOG', msg: 'WASM_BUFFER_RECEIVED' });
                 try {
-                    await this.initWasm(data.module);
+                    await this.initWasm(data.buffer);
                 } catch (err) {
                     this.port.postMessage({ 
                         type: 'WASM_ERROR', 
@@ -42,10 +42,11 @@ class CwtProcessor extends AudioWorkletProcessor {
         this.port.postMessage({ type: 'WORKLET_READY' });
     }
 
-    async initWasm(module) {
-        this.port.postMessage({ type: 'LOG', msg: 'INSTANTIATION_START' });
+    async initWasm(buffer) {
+        this.port.postMessage({ type: 'LOG', msg: 'INSTANTIATION_START (from buffer)' });
         try {
-            const instance = await WebAssembly.instantiate(module, { 
+            // instantiate(buffer) returns { module, instance }
+            const result = await WebAssembly.instantiate(buffer, { 
                 env: { 
                     abort: () => { this.port.postMessage({ type: 'LOG', msg: 'WASM_ABORT_CALLED' }); } 
                 },
@@ -62,7 +63,7 @@ class CwtProcessor extends AudioWorkletProcessor {
                 }
             });
             
-            wasm = instance.exports;
+            wasm = result.instance.exports;
             this.port.postMessage({ type: 'LOG', msg: 'INSTANCE_CREATED' });
             
             // Use global sampleRate
