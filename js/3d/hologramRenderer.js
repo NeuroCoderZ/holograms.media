@@ -729,8 +729,8 @@ export class HologramRenderer {
         const ampR = getNormAmp(dbLevels[index + numSemitones] || -128);
         let pan = panAngles[index] || 0;
 
-        // Noise Gate for Pan stability
-        if (Math.max(ampL, ampR) < 0.05) pan = 0;
+        // Noise Gate for Pan stability - Lowered to 0.01 to allow subtle movements
+        if (Math.max(ampL, ampR) < 0.01) pan = 0;
 
         // X Shift (Stereo)
         const space = GRID_WIDTH - semitoneConfig.width;
@@ -738,49 +738,36 @@ export class HologramRenderer {
         columnPair.right.position.x = (pan > 0 ? pan * space : 0);
 
         // Z Scaling (Depth) - Scientific Range [0, GRID_DEPTH]
-        // Cubed mapping (pow 3.0) to make peaks sharp and suppress low-level noise.
-        // User Requirement: "Need concrete volume levels... visual representation must change".
-        const depthL = Math.pow(ampL, 3.0) * GRID_DEPTH;
-        const depthR = Math.pow(ampR, 3.0) * GRID_DEPTH;
+        // Reduced mapping power from 3.0 to 1.2 for much better sensitivity
+        const depthL = Math.pow(ampL, 1.2) * GRID_DEPTH;
+        const depthR = Math.pow(ampR, 1.2) * GRID_DEPTH;
 
         if (leftMesh) {
-          leftMesh.scale.z = Math.max(0.001, depthL);
+          leftMesh.scale.z = Math.max(0.1, depthL); // Keep 0.1 minimum thickness
           leftMesh.position.z = depthL / 2;
 
           // Shading: Quantized Brightness (128 steps)
-          // "If volume < 1/128 -> Black"
-          const qAmpL = Math.floor(ampL * 128) / 128;
+          // Removed hard black cutoff to keep columns visible
+          const qAmpL = Math.max(0.05, Math.floor(ampL * 128) / 128);
 
-          if (qAmpL <= 0) {
-            leftMesh.material.emissiveIntensity = 0;
-            leftMesh.material.color.setRGB(0, 0, 0);
-            if (leftMesh.children[0]) leftMesh.children[0].material.opacity = 0;
-          } else {
-            leftMesh.material.emissiveIntensity = qAmpL * 1.5;
-            const hsl = {};
-            columnPair.left.userData.baseColor.getHSL(hsl);
-            leftMesh.material.color.setHSL(hsl.h, hsl.s, qAmpL * hsl.l);
-            if (leftMesh.children[0]) leftMesh.children[0].material.opacity = 0.1 + qAmpL * 0.7;
-          }
+          leftMesh.material.emissiveIntensity = qAmpL * 1.5;
+          const hsl = {};
+          columnPair.left.userData.baseColor.getHSL(hsl);
+          leftMesh.material.color.setHSL(hsl.h, hsl.s, qAmpL * hsl.l);
+          if (leftMesh.children[0]) leftMesh.children[0].material.opacity = 0.1 + qAmpL * 0.7;
         }
 
         if (rightMesh) {
-          rightMesh.scale.z = Math.max(0.001, depthR);
+          rightMesh.scale.z = Math.max(0.1, depthR); // Keep 0.1 minimum thickness
           rightMesh.position.z = depthR / 2;
 
-          const qAmpR = Math.floor(ampR * 128) / 128;
+          const qAmpR = Math.max(0.05, Math.floor(ampR * 128) / 128);
 
-          if (qAmpR <= 0) {
-            rightMesh.material.emissiveIntensity = 0;
-            rightMesh.material.color.setRGB(0, 0, 0);
-            if (rightMesh.children[0]) rightMesh.children[0].material.opacity = 0;
-          } else {
-            rightMesh.material.emissiveIntensity = qAmpR * 1.5;
-            const hsl = {};
-            columnPair.right.userData.baseColor.getHSL(hsl);
-            rightMesh.material.color.setHSL(hsl.h, hsl.s, qAmpR * hsl.l);
-            if (rightMesh.children[0]) rightMesh.children[0].material.opacity = 0.1 + qAmpR * 0.7;
-          }
+          rightMesh.material.emissiveIntensity = qAmpR * 1.5;
+          const hsl = {};
+          columnPair.right.userData.baseColor.getHSL(hsl);
+          rightMesh.material.color.setHSL(hsl.h, hsl.s, qAmpR * hsl.l);
+          if (rightMesh.children[0]) rightMesh.children[0].material.opacity = 0.1 + qAmpR * 0.7;
         }
       }
     });
