@@ -24,20 +24,25 @@ async def websocket_endpoint(
     user: Optional[dict] = Depends(get_optional_current_active_user_ws),
     db: Any = Depends(get_db),
 ):
-    # Note: get_current_active_user_ws might raise 401 if token is missing.
-    # To allow anonymous access for testing, we might need a custom dependency.
-    # For now, let's wrap it in try-except or adjust the dependency.
+    # ✅ Accept connection FIRST to prevent handshake errors (1006)
     await websocket.accept()
     user_id = user.get("id") if user else "anonymous"
     logger.info(f"WebSocket connection established for user {user_id}")
 
+    if db is None:
+        logger.error(f"Database connection not available for user {user_id}")
+        await websocket.send_json({"status": "error", "message": "Database connection unavailable. Some features may be limited."})
+        # We can keep the connection open or close it gracefully
+        # await websocket.close(code=1011, reason="Database Unavailable")
+        # return
 
     try:
         # ✅ Инициализируем CoordinationService c защитой от сбоев
-        coordination_service = CoordinationService(db) # Передаем db_conn
+        coordination_service = CoordinationService(db) # Передаем db_conn (even if None, service should handle it)
     except Exception as e:
         logger.error(f"Failed to initialize CoordinationService for user {user_id}: {e}", exc_info=True)
-        await websocket.close(code=1011, reason="Internal Server Error: AI Services Unavailable")
+        await websocket.send_json({"status": "error", "message": "Internal Server Error: AI Services Initialization Failed"})
+        await websocket.close(code=1011)
         return
 
     try:

@@ -49,8 +49,10 @@ async def get_db(request: Request = None, websocket: WebSocket = None):
         db = getattr(websocket.app.state, 'astra_db', None)
     
     if db is None:
-        logger.error("Astra DB not initialized in app.state. Attempting on-the-fly connection.")
+        logger.warning("Astra DB not initialized in app.state. Attempting on-the-fly connection.")
         db = get_astra_db()
         if db is None:
-            raise Exception("Astra DB connection failed")
+            logger.error("Astra DB connection failed on-the-fly.")
+            # Do NOT raise exception here, return None and let the endpoint handle it
+            return None
     return db
