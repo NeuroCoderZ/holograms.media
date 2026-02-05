@@ -45,32 +45,32 @@ class CwtProcessor extends AudioWorkletProcessor {
     async initWasm(buffer) {
         this.port.postMessage({ type: 'LOG', msg: 'INSTANTIATION_START (from buffer)' });
         try {
-            // instantiate(buffer) returns { module, instance }
+            // ✅ ПРАВИЛЬНАЯ инициализация для чистого WASM (без wasm-bindgen)
             const result = await WebAssembly.instantiate(buffer, { 
                 env: { 
-                    abort: () => { this.port.postMessage({ type: 'LOG', msg: 'WASM_ABORT_CALLED' }); } 
-                },
-                wbg: { 
-                    __wbindgen_init_externref_table: () => {},
-                    __wbindgen_placeholder__: () => {},
-                    __wbindgen_throw: (ptr, len) => { 
-                        this.port.postMessage({ type: 'LOG', msg: 'WASM_THROW_ERROR' }); 
-                    },
-                    __wbindgen_memory: () => {},
-                    __wbindgen_rethrow: () => {},
-                    __wbindgen_describe: () => {},
-                    __wbindgen_module: () => {}
+                    abort: () => { this.port.postMessage({ type: 'LOG', msg: 'WASM_ABORT_CALLED' }); }
                 }
             });
             
             wasm = result.instance.exports;
-            this.port.postMessage({ type: 'LOG', msg: 'INSTANCE_CREATED' });
+            
+            // Проверка экспортов
+            if (!wasm.cwtanalyzer_new || !wasm.cwtanalyzer_process) {
+                throw new Error('Required WASM exports not found (cwtanalyzer_new/process)');
+            }
             
             // Use global sampleRate
             const currentSR = typeof sampleRate !== 'undefined' ? sampleRate : 48000;
             analyzerPtr = wasm.cwtanalyzer_new(currentSR); 
             
-            this.port.postMessage({ type: 'LOG', msg: `ANALYZER_CREATED Ptr:${analyzerPtr} SR:${currentSR}` });
+            if (!analyzerPtr) {
+                throw new Error('cwtanalyzer_new returned null');
+            }
+
+            this.port.postMessage({ 
+                type: 'LOG', 
+                msg: `WASM Engine Created. Ptr: ${analyzerPtr}, SR: ${currentSR}` 
+            });
 
             // Allocate buffers
             ptrs.left = wasm.__wbindgen_malloc(128 * 4);
@@ -84,7 +84,7 @@ class CwtProcessor extends AudioWorkletProcessor {
         } catch (err) {
             this.port.postMessage({ 
                 type: 'WASM_ERROR', 
-                error: 'INSTANTIATION_CRASH: ' + (err.message || 'no message') 
+                error: 'INIT_FAILED: ' + (err.message || 'unknown error') 
             });
         }
     }
