@@ -727,21 +727,24 @@ export class HologramRenderer {
         // ACTIVE MODE: Honest Physics v3 (High Sensitivity)
         const ampL = getNormAmp(dbLevels[index] || -128);
         const ampR = getNormAmp(dbLevels[index + numSemitones] || -128);
-        let pan = panAngles[index] || 0;
+        
+        // 1. Sanitize Pan Input [-1, 1]
+        let pan = Math.max(-1, Math.min(1, panAngles[index] || 0));
 
-        // Noise Gate for Pan stability - Minimal threshold
+        // Noise Gate for Pan stability
         if (Math.max(ampL, ampR) < 0.01) pan = 0;
 
-        // X Shift (Stereo Positioning) - Clamped to Grid Boundaries
-        const maxShift = GRID_WIDTH - semitoneConfig.width;
+        // 2. X Shift (Stereo Positioning) - Restrained to Grid Boundaries
+        // Source of Truth: GRID_WIDTH = 128
+        const availableSpace = GRID_WIDTH - semitoneConfig.width;
+        
+        // Left Grid: initialX is -width. Limit is [-128, 0]
+        columnPair.left.position.x = columnPair.left.userData.initialX + (pan < 0 ? pan * availableSpace : 0);
+        
+        // Right Grid: initialX is 0. Limit is [0, 128]
+        columnPair.right.position.x = columnPair.right.userData.initialX + (pan > 0 ? pan * availableSpace : 0);
 
-        // Left Grid: initialX is -width. Pan (-1) moves it to -GRID_WIDTH
-        columnPair.left.position.x = columnPair.left.userData.initialX + (pan < 0 ? pan * maxShift : 0);
-
-        // Right Grid: initialX is 0. Pan (+1) moves it to GRID_WIDTH - width
-        columnPair.right.position.x = columnPair.right.userData.initialX + (pan > 0 ? pan * maxShift : 0);
-
-        // Z Scaling (Depth) - Highly sensitive power (1.1)
+        // 3. Z Scaling (Depth) and Physical Dimming
         const depthL = Math.pow(ampL, 1.1) * GRID_DEPTH;
         const depthR = Math.pow(ampR, 1.1) * GRID_DEPTH;
 
@@ -749,23 +752,27 @@ export class HologramRenderer {
           leftMesh.scale.z = Math.max(0.1, depthL);
           leftMesh.position.z = depthL / 2;
 
-          // Shading: Keep visible even when quiet
-          const qAmpL = Math.max(0.1, Math.floor(ampL * 128) / 128);
-          leftMesh.material.emissiveIntensity = qAmpL * 2.0;
+          // Z-Dimming: Intensity = current_depth / GRID_DEPTH
+          // Discrete 128-step dimming link
+          const intensityL = depthL / GRID_DEPTH;
+          leftMesh.material.emissiveIntensity = intensityL;
+          
+          // Apply dimming to base color to achieve True Black
           const hsl = {};
           columnPair.left.userData.baseColor.getHSL(hsl);
-          leftMesh.material.color.setHSL(hsl.h, hsl.s, qAmpL * hsl.l);
+          leftMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l * intensityL);
         }
 
         if (rightMesh) {
           rightMesh.scale.z = Math.max(0.1, depthR);
           rightMesh.position.z = depthR / 2;
 
-          const qAmpR = Math.max(0.1, Math.floor(ampR * 128) / 128);
-          rightMesh.material.emissiveIntensity = qAmpR * 2.0;
+          const intensityR = depthR / GRID_DEPTH;
+          rightMesh.material.emissiveIntensity = intensityR;
+          
           const hsl = {};
           columnPair.right.userData.baseColor.getHSL(hsl);
-          rightMesh.material.color.setHSL(hsl.h, hsl.s, qAmpR * hsl.l);
+          rightMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l * intensityR);
         }
       }
     });
