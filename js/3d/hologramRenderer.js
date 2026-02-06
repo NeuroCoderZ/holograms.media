@@ -520,8 +520,8 @@ export class HologramRenderer {
     // BasilaQ-127: Use StandardMaterial for Shading/Volume
     const material = new THREE.MeshStandardMaterial({
       color: baseColorObj,
-      emissive: baseColorObj, // Safety: Glow based on color
-      emissiveIntensity: 0.5, // Visible by default
+      emissive: baseColorObj, // Critical for Z-Dimming: match base color
+      emissiveIntensity: 0.0, // Start dark
       roughness: 0.3,
       metalness: 0.1,
       flatShading: true,
@@ -676,11 +676,11 @@ export class HologramRenderer {
     const safeCeiling = Math.max(this.currentRollingMax, -80);
     const noiseFloor = -110;
 
-    // Helper: Honest Mapping Function
+    // Helper: Strict 128dB Mapping Function
     const getNormAmp = (db) => {
-      if (db <= noiseFloor) return 0;
-      // Linear normalization between noiseFloor and adaptive ceiling
-      let norm = (db - noiseFloor) / (safeCeiling - noiseFloor);
+      // Physical Rule: 1dB = 1 Cell. Range: [-128, 0] dB.
+      // Normalize to [0, 1] range where 0 is -128dB and 1 is 0dB.
+      let norm = (db + 128) / 128;
       return Math.max(0, Math.min(1.0, norm));
     };
 
@@ -712,66 +712,59 @@ export class HologramRenderer {
         if (leftMesh) {
           leftMesh.scale.z = gDepth;
           leftMesh.position.z = gDepth / 2;
-          leftMesh.material.emissiveIntensity = 1.0;
+          leftMesh.material.emissiveIntensity = 0.5;
           leftMesh.material.color.copy(columnPair.left.userData.baseColor);
         }
         if (rightMesh) {
           rightMesh.scale.z = gDepth;
           rightMesh.position.z = gDepth / 2;
-          rightMesh.material.emissiveIntensity = 1.0;
+          rightMesh.material.emissiveIntensity = 0.5;
           rightMesh.material.color.copy(columnPair.right.userData.baseColor);
         }
         columnPair.left.position.x = -semitoneConfig.width;
         columnPair.right.position.x = 0;
       } else {
-        // ACTIVE MODE: Canonical Physics (Discrete Motion & Light)
-        const ampL = getNormAmp(dbLevels[index] || -128);
-        const ampR = getNormAmp(dbLevels[index + numSemitones] || -128);
+        // ACTIVE MODE: Strict Physics (1dB = 1 Cell)
+        const qAmpL = getNormAmp(dbLevels[index] || -128);
+        const qAmpR = getNormAmp(dbLevels[index + numSemitones] || -128);
         
         // 1. Sanitize Pan Input [-1, 1]
         const pan = Math.max(-1, Math.min(1, panAngles[index] || 0));
 
         // 2. X Shift (Discrete Freedom)
-        // Physics: freedom depends on column width. 
-        // MaxShift = GRID_WIDTH (128) - columnWidth
         const availableSpace = GRID_WIDTH - semitoneConfig.width;
-        
-        // LAW OF DISCRETENESS: Round to whole cells!
         const discreteOffset = Math.round(pan * availableSpace);
         
-        // Apply position based on initial pivot (userData.initialX)
         columnPair.left.position.x = columnPair.left.userData.initialX + (pan < 0 ? discreteOffset : 0);
         columnPair.right.position.x = columnPair.right.userData.initialX + (pan > 0 ? discreteOffset : 0);
 
-        // 3. Z Scaling (Energy) and Law of Light (Dimming)
-        // depth is the length in cells (0..128)
-        const depthL = Math.pow(ampL, 1.1) * GRID_DEPTH;
-        const depthR = Math.pow(ampR, 1.1) * GRID_DEPTH;
+        // 3. Z Scaling (Energy) and Physical Dimming (Z-Dimming)
+        // Physics: 128dB dynamic range = 128 cells depth.
+        const depthL = qAmpL * GRID_DEPTH;
+        const depthR = qAmpR * GRID_DEPTH;
 
         if (leftMesh) {
           leftMesh.scale.z = Math.max(0.1, depthL);
           leftMesh.position.z = depthL / 2;
 
-          // LAW OF LIGHT: Intensity = Level / 128
-          const intensityL = depthL / GRID_DEPTH;
-          leftMesh.material.emissiveIntensity = intensityL;
+          // Z-Dimming: Brightness strictly linked to depth
+          leftMesh.material.emissiveIntensity = qAmpL;
           
-          // Quantized Dimming: 128 levels of lightness
+          // Apply dimming to base color HSL Lightness
           const hsl = {};
           columnPair.left.userData.baseColor.getHSL(hsl);
-          leftMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l * intensityL);
+          leftMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l * qAmpL);
         }
 
         if (rightMesh) {
           rightMesh.scale.z = Math.max(0.1, depthR);
           rightMesh.position.z = depthR / 2;
 
-          const intensityR = depthR / GRID_DEPTH;
-          rightMesh.material.emissiveIntensity = intensityR;
+          leftMesh.material.emissiveIntensity = qAmpR;
           
           const hsl = {};
           columnPair.right.userData.baseColor.getHSL(hsl);
-          rightMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l * intensityR);
+          rightMesh.material.color.setHSL(hsl.h, hsl.s, hsl.l * qAmpR);
         }
       }
     });
