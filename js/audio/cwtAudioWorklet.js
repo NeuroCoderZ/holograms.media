@@ -17,10 +17,16 @@ function getFloat32Memory() {
 }
 
 class CwtProcessor extends AudioWorkletProcessor {
-    constructor() {
+    constructor(options) {
         super();
         this._hb = 0;
         this._initialized = false;
+        
+        // Configuration from service
+        this._sampleRate = options.processorOptions.sampleRate || 48000;
+        this._targetFps = options.processorOptions.targetFps || 60;
+
+        console.log(`[CwtWorklet] Initialized with SR: ${this._sampleRate}, FPS: ${this._targetFps}`);
         
         // === БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ ПОРТА ===
         this.port.onmessage = async (event) => {
@@ -48,7 +54,10 @@ class CwtProcessor extends AudioWorkletProcessor {
             // ✅ ПРАВИЛЬНАЯ инициализация для чистого WASM (без wasm-bindgen)
             const result = await WebAssembly.instantiate(buffer, { 
                 env: { 
-                    abort: () => { this.port.postMessage({ type: 'LOG', msg: 'WASM_ABORT_CALLED' }); }
+                    abort: () => { this.port.postMessage({ type: 'LOG', msg: 'WASM_ABORT_CALLED' }); },
+                    // Support standard C library names if needed
+                    malloc: (size) => wasm.malloc(size),
+                    free: (ptr, size) => wasm.free(ptr, size)
                 }
             });
             
@@ -59,9 +68,8 @@ class CwtProcessor extends AudioWorkletProcessor {
                 throw new Error('Required WASM exports not found (cwtanalyzer_new/process)');
             }
             
-            // Use global sampleRate
-            const currentSR = typeof sampleRate !== 'undefined' ? sampleRate : 48000;
-            analyzerPtr = wasm.cwtanalyzer_new(currentSR); 
+            // Pass SR and FPS to constructor
+            analyzerPtr = wasm.cwtanalyzer_new(this._sampleRate, this._targetFps); 
             
             if (!analyzerPtr) {
                 throw new Error('cwtanalyzer_new returned null');
@@ -69,14 +77,14 @@ class CwtProcessor extends AudioWorkletProcessor {
 
             this.port.postMessage({ 
                 type: 'LOG', 
-                msg: `WASM Engine Created. Ptr: ${analyzerPtr}, SR: ${currentSR}` 
+                msg: `WASM Engine Created. Ptr: ${analyzerPtr}, SR: ${this._sampleRate}, FPS: ${this._targetFps}` 
             });
 
-            // Allocate buffers
-            ptrs.left = wasm.__wbindgen_malloc(128 * 4);
-            ptrs.right = wasm.__wbindgen_malloc(128 * 4);
-            ptrs.levels = wasm.__wbindgen_malloc(256 * 4);
-            ptrs.pans = wasm.__wbindgen_malloc(128 * 4);
+            // Allocate buffers (Using the new malloc export)
+            ptrs.left = wasm.malloc(128 * 4);
+            ptrs.right = wasm.malloc(128 * 4);
+            ptrs.levels = wasm.malloc(256 * 4);
+            ptrs.pans = wasm.malloc(128 * 4);
 
             this._initialized = true;
             this.port.postMessage({ type: 'WASM_READY' });

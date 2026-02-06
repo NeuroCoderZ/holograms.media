@@ -5,6 +5,7 @@
  */
 import eventBus from '../core/eventBus.js';
 import workletUrl from '../audio/cwtAudioWorklet.js?url';
+import { deviceCapabilities } from '../utils/deviceCapabilities.js';
 
 // Path to the WASM file
 const wasmUrl = '/wasm/cwt_analyzer.wasm';
@@ -19,6 +20,7 @@ class AudioService {
         this.isPlaying = false;
         this.wasmModule = null;
         this.sampleRate = 48000;
+        this.targetFps = 60; // Default
 
         // Configuration
         this.cqtConfig = {
@@ -37,6 +39,11 @@ class AudioService {
         console.log('[AudioService] Initializing...');
 
         try {
+            // 0. Detect Device Capabilities (FPS)
+            const caps = await deviceCapabilities.detect();
+            this.targetFps = caps.display.refreshRate || 60;
+            console.log(`[AudioService] Detected Target FPS: ${this.targetFps}`);
+
             // 1. Create AudioContext
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             this.context = new AudioContext({
@@ -147,6 +154,7 @@ class AudioService {
             outputChannelCount: [2],
             processorOptions: {
                 sampleRate: this.context.sampleRate,
+                targetFps: this.targetFps,
                 ...this.cqtConfig
             }
         });
