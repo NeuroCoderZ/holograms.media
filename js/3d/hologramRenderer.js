@@ -760,7 +760,7 @@ export class HologramRenderer {
           rightMesh.scale.z = Math.max(0.1, depthR);
           rightMesh.position.z = depthR / 2;
 
-          leftMesh.material.emissiveIntensity = qAmpR;
+          rightMesh.material.emissiveIntensity = qAmpR;
           
           const hsl = {};
           columnPair.right.userData.baseColor.getHSL(hsl);
