@@ -500,39 +500,22 @@ export class HologramRenderer {
     if (!semitone) {
       return new THREE.Group();
     }
-    const width = semitone.width; // This might be used for Z-width or scale now?
+    const width = semitone.width;
     const columnGroup = new THREE.Group();
 
     const baseColorObj = new THREE.Color(semitone.color);
 
-    // FIX: Position columns horizontally along X-axis (Frequency Domain)
-    // Formula: x = (s / (SEMITONES - 1)) * GRID_WIDTH
-    const stepInfo = semitoneIndex / (semitones.length - 1);
-    
-    // Left: [-GRID_WIDTH, 0] (High freq at 0? Or Low freq at 0? 
-    // Typically Low->High. If Low=0, High=127.
-    // If Left Grid is mirrored, maybe 0 is center?
-    // User says: "Left grid: X in [-GRID_WIDTH, 0]". 
-    // Let's assume index 0 (Low) is at -GRID_WIDTH (Outer) or 0 (Inner)?
-    // Usually Center (0) is Low Freq? Or Outer is Low?
-    // Let's stick to the formula: xLeft = -(s / 127) * GRID_WIDTH.
-    // s=0 -> 0. s=127 -> -GRID_WIDTH.
-    // So Low Freq (0) is at Center (0). High Freq (127) is at Left (-128).
-    
-    const xPos = isLeftGrid 
-      ? -(stepInfo * GRID_WIDTH) 
-      : (stepInfo * GRID_WIDTH);
-
-    columnGroup.position.x = xPos;
-    columnGroup.userData.initialX = xPos;
+    // Position relative to the spine (X=0)
+    const initialX = isLeftGrid ? -width : 0;
+    columnGroup.position.x = initialX;
+    columnGroup.userData.initialX = initialX;
     columnGroup.userData.baseColor = baseColorObj;
 
-    // Geometry: 
-    // Previously: Box(width, 1, 1) scaled Y=2.
-    // Now: We want thin strips along X? 
-    // If we have 128 items in 128 width, each item should be ~1 unit wide.
-    // CELL_SIZE is 1.0.
-    const geometry = new THREE.BoxGeometry(CELL_SIZE * 0.8, 1, 1); // Fixed width 0.8 to leave gap
+    // Parallelepiped Geometry: Height (Y) = 2.0 * Width/Depth base
+    // We use a base Box(width, 1, 1).
+    // We set Scale Y to 2.0 to achieve the "elongated" look.
+    // Z scale will be modulated by audio.
+    const geometry = new THREE.BoxGeometry(width, 1, 1);
 
     // BasilaQ-127: Use StandardMaterial for Shading/Volume
     const material = new THREE.MeshStandardMaterial({
@@ -550,17 +533,24 @@ export class HologramRenderer {
     columnMesh.castShadow = true;
     columnMesh.receiveShadow = true;
 
-    // Initial Scale: Y=2.0 (Vertical Height?), Z=0.1 (Depth)
-    // If layout is Horizontal, maybe Y should be Height (Amplitude)? 
-    // But updateVisuals maps Amplitude to Z (Depth).
-    // So Y is fixed height.
+    // Apply strict geometric rules: Scale Y = 2.0
+    // Initial Z Scale = 0.1 for minimal bulkiness by default
     columnMesh.scale.set(1, 2.0, 0.1);
 
-    // Center Y at 1 (since height is 2)
-    columnMesh.position.set(0, 1, 0);
+    // Set mesh center relative to the group origin (spine)
+    // FIX: Center Y at (index * CELL_SIZE) + (CELL_SIZE / 2)
+    // CELL_SIZE is 2. So index=0 -> 1. Box height 2 centered at 1 spans 0 to 2.
+    // This perfectly aligns with grid lines at 0, 2, 4...
+    columnMesh.position.set(width / 2, (semitoneIndex * 2) + 1, 0);
 
     // HIGHLIGHT EDGES Logic:
+    // Add a wireframe helper that scales with the mesh to highlight the "changing edges".
+    // Using LineSegments with EdgesGeometry avoids diagonal wireframes.
     const edgesGeometry = new THREE.EdgesGeometry(geometry);
+    // Determine edge color: Slightly brighter version of base or white? 
+    // User wants "contrast grid lines". Let's use a dynamic color matching the column but brighter.
+    // Or just white/grey overlay.
+    // Let's use a blended color to keep it aesthetic but visible.
     const edgeColor = new THREE.Color(semitone.color).offsetHSL(0, 0, 0.2); // Brighter
     const edgesMaterial = new THREE.LineBasicMaterial({
       color: edgeColor,
@@ -737,14 +727,15 @@ export class HologramRenderer {
         // ACTIVE MODE: Honest Physics v3 (High Sensitivity)
         const ampL = getNormAmp(dbLevels[index] || -128);
         const ampR = getNormAmp(dbLevels[index + numSemitones] || -128);
-        
-        // Pan is now visualization-only (maybe affects brightness/scale?), 
-        // but DOES NOT move the column along X to avoid boundary overflow.
-        // const pan = panAngles[index] || 0; 
+        let pan = panAngles[index] || 0;
 
-        // FIX: Ensure columns stay at their frequency-assigned X positions
-        columnPair.left.position.x = columnPair.left.userData.initialX;
-        columnPair.right.position.x = columnPair.right.userData.initialX;
+        // Noise Gate for Pan stability - Minimal threshold
+        if (Math.max(ampL, ampR) < 0.01) pan = 0;
+
+        // X Shift (Stereo Positioning)
+        const space = GRID_WIDTH - semitoneConfig.width;
+        columnPair.left.position.x = -semitoneConfig.width + (pan < 0 ? pan * space : 0);
+        columnPair.right.position.x = (pan > 0 ? pan * space : 0);
 
         // Z Scaling (Depth) - Highly sensitive power (1.1)
         const depthL = Math.pow(ampL, 1.1) * GRID_DEPTH;
