@@ -5,7 +5,7 @@ use std::mem;
 const RING_BUFFER_SIZE: usize = 8192;
 const OMEGA0: f32 = 6.0; // Morlet parameter
 const SQRT_PI: f32 = 1.77245385; // sqrt(pi)
-const PRE_GAIN_DB: f32 = 30.0; // Boost for laptop microphones
+const PRE_GAIN_DB: f32 = 20.0; // Balanced boost for laptop microphones
 
 // --- COMPLEX NUMBER HELPER ---
 #[derive(Copy, Clone)]
@@ -191,17 +191,20 @@ pub extern "C" fn cwtanalyzer_process(
                 r_conv = r_conv + (w * sr);
             }
 
+            // --- NORMALIZATION: Divide by wavelet length to keep magnitude in [0, 1] ---
+            l_conv = l_conv * (1.0 / len as f32);
+            r_conv = r_conv * (1.0 / len as f32);
+
             let l_mag = l_conv.norm();
             let r_mag = r_conv.norm();
             
-            // STRICT DB CALCULATION with PRE_GAIN
-            let epsilon = 1e-9; // Lower epsilon for better dynamic range
-            let l_db_raw = 20.0 * (l_mag + epsilon).log10();
-            let r_db_raw = 20.0 * (r_mag + epsilon).log10();
+            // --- NOISE GATE: Force silence if magnitude is too low ---
+            let epsilon = 1e-9;
+            let l_db = if l_mag < 0.0001 { -128.0 } else { (20.0 * (l_mag + epsilon).log10() + PRE_GAIN_DB).max(-128.0).min(0.0) };
+            let r_db = if r_mag < 0.0001 { -128.0 } else { (20.0 * (r_mag + epsilon).log10() + PRE_GAIN_DB).max(-128.0).min(0.0) };
 
-            // Apply Pre-Gain and clamp to [-128, 0]
-            analyzer.last_db[i] = (l_db_raw + PRE_GAIN_DB).max(-128.0).min(0.0);
-            analyzer.last_db[i + 128] = (r_db_raw + PRE_GAIN_DB).max(-128.0).min(0.0);
+            analyzer.last_db[i] = l_db;
+            analyzer.last_db[i + 128] = r_db;
 
             // Phase Difference -> Pan (-1..1)
             let phase_l = l_conv.arg();
@@ -210,7 +213,8 @@ pub extern "C" fn cwtanalyzer_process(
             while diff <= -PI { diff += 2.0 * PI; }
             while diff > PI { diff -= 2.0 * PI; }
             
-            analyzer.last_pan[i] = (diff / PI).max(-1.0).min(1.0);
+            // Pan is 0 if silent
+            analyzer.last_pan[i] = if l_mag < 0.0001 && r_mag < 0.0001 { 0.0 } else { (diff / PI).max(-1.0).min(1.0) };
         }
     }
 
