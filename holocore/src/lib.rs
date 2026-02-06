@@ -73,9 +73,7 @@ pub struct CwtAnalyzer {
     left_ring: RingBuffer,
     right_ring: RingBuffer,
     wavelets: Vec<MorletWavelet>,
-    #[allow(dead_code)]
     sample_rate: f32,
-    #[allow(dead_code)]
     target_fps: f32,
     samples_per_frame: usize,
     samples_since_last_calc: usize,
@@ -225,6 +223,22 @@ pub extern "C" fn cwtanalyzer_process(
     for i in 0..output_pan_len {
         if i < 128 { output_pan[i] = analyzer.last_pan[i]; }
     }
+}
+
+/// Динамически обновляет target FPS для адаптации под частоту обновления экрана.
+/// Это позволяет алгоритму корректно работать при переключении режимов энергосбережения
+/// или при изменении частоты монитора (60, 90, 120, 144, 165, 240 Hz).
+#[no_mangle]
+pub extern "C" fn cwtanalyzer_set_fps(ptr: *mut CwtAnalyzer, new_fps: f32) {
+    if ptr.is_null() || new_fps <= 0.0 { return; }
+    let analyzer = unsafe { &mut *ptr };
+    
+    // Пересчитываем samples_per_frame
+    let new_samples_per_frame = (analyzer.sample_rate / new_fps) as usize;
+    
+    // Safety: минимум 64 семплов на кадр (защита от экстремальных FPS)
+    analyzer.samples_per_frame = new_samples_per_frame.max(64);
+    analyzer.target_fps = new_fps;
 }
 
 #[no_mangle]
