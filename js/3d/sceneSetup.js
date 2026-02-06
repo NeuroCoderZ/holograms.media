@@ -15,15 +15,6 @@ export async function initializeScene(state) {
   state.scene.background = new THREE.Color(0x000000); // Black background
   state.scene.position.set(0, 0, 0); // Shift scene left by 128 units
 
-  /*
-  state.ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // color, intensity
-  state.scene.add(state.ambientLight);
-
-  state.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // color, intensity
-  state.directionalLight.position.set(5, 10, 7);
-  state.scene.add(state.directionalLight);
-  */
-
   // --- Детект возможностей рендеринга и выбор рендерера ---
   try {
     console.log('[Renderer Detection] Определение поддерживаемых технологий рендеринга...');

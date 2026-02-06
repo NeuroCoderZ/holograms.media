@@ -33,18 +33,6 @@ export class HologramRenderer {
     this.hologramPivot = new THREE.Group();
     this.hologramPivot.position.set(0, 0, 0); // Center the hologram at origin
 
-    // LIGHTING: BasilaQ-127 Safety Lighting (Prevents Black Screen)
-    // TEMPORARILY DISABLED FOR Z-DIMMING DIAGNOSTICS AS REQUESTED BY USER
-    /*
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
-    this.hologramPivot.add(ambientLight);
-
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); // Reduced from 2.0 to prevent overexposure
-    dirLight.position.set(0, 100, 200);
-    dirLight.castShadow = true;
-    this.hologramPivot.add(dirLight);
-    */
-
     // mainSequencerGroup holds the left and right sequencer grids. It's positioned
     // relative to the hologramPivot.
     this.mainSequencerGroup = new THREE.Group();
@@ -685,16 +673,16 @@ export class HologramRenderer {
     const safeCeiling = Math.max(this.currentRollingMax, -80);
     const noiseFloor = -110;
 
-    // Helper: Normalized Amplitude with Rolling Peak and Exponential Dimming (Phase 2)
+    // Helper: Normalized Amplitude with Rolling Peak and Linear Dimming (Phase 3)
     const getNormAmp = (db) => {
-      const noiseFloor = -110;
-      // Linear normalization based on rolling peak (Auto-Gain) to ensure Linkin Park hits 100%
+      const noiseFloor = -115; // Lower floor for better sensitivity
+      // Linear normalization based on rolling peak (Auto-Gain)
       let norm = (db - noiseFloor) / (safeCeiling - noiseFloor);
       norm = Math.max(0, Math.min(1.0, norm));
 
       return {
-        length: norm, // Linear growth: 128 cells max
-        brightness: Math.pow(norm, 4) // Exponential dimming for "True Black" surface
+        length: norm, // 128 cells max
+        brightness: norm // STRICT LINEAR: 128 steps of brightness
       };
     };
 
@@ -767,7 +755,7 @@ export class HologramRenderer {
           leftMesh.scale.z = Math.max(0.1, depthL);
           leftMesh.position.z = depthL / 2;
 
-          // Z-Dimming: Brightness strictly linked to exponential energy (Phase 2)
+          // Z-Dimming: Brightness strictly linked to linear energy (Phase 3)
           leftMesh.material.emissiveIntensity = qBrightL;
 
           // Apply dimming to base color HSL Lightness
