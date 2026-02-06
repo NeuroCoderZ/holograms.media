@@ -34,7 +34,8 @@ export class HologramRenderer {
     this.hologramPivot.position.set(0, 0, 0); // Center the hologram at origin
 
     // LIGHTING: BasilaQ-127 Safety Lighting (Prevents Black Screen)
-    // REDUCED AMBIENT to 0.1 to allow True Black for low volume columns.
+    // TEMPORARILY DISABLED FOR Z-DIMMING DIAGNOSTICS AS REQUESTED BY USER
+    /*
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
     this.hologramPivot.add(ambientLight);
 
@@ -42,6 +43,7 @@ export class HologramRenderer {
     dirLight.position.set(0, 100, 200);
     dirLight.castShadow = true;
     this.hologramPivot.add(dirLight);
+    */
 
     // mainSequencerGroup holds the left and right sequencer grids. It's positioned
     // relative to the hologramPivot.
@@ -79,6 +81,10 @@ export class HologramRenderer {
 
     // HSL Temp objects for performance
     this._hslTemp = { h: 0, s: 0, l: 0 };
+
+    // Rolling Peak Normalization State
+    this._rollingMax = -100; // Start with low floor
+    this._releaseRate = 0.01; // How fast the peak drops (smooth release)
 
     // Add the main hologram pivot to the Three.js scene.
     this.scene.add(this.hologramPivot);
@@ -679,16 +685,17 @@ export class HologramRenderer {
     const safeCeiling = Math.max(this.currentRollingMax, -80);
     const noiseFloor = -110;
 
-    // Helper: Strict 128dB Mapping Function with Gamma Expansion for Z-Dimming
+    // Helper: Normalized Amplitude with Rolling Peak and Exponential Dimming (Phase 2)
     const getNormAmp = (db) => {
-      // Physical Rule: 1dB = 1 Cell. Range: [-128, 0] dB.
-      // Normalize to [0, 1] range.
-      let norm = (db + 128) / 128;
+      const noiseFloor = -110;
+      // Linear normalization based on rolling peak (Auto-Gain) to ensure Linkin Park hits 100%
+      let norm = (db - noiseFloor) / (safeCeiling - noiseFloor);
       norm = Math.max(0, Math.min(1.0, norm));
 
-      // Apply Gamma Expansion (x^2) to brightness for more natural dimming
-      // This makes low-volume sounds darker faster, combatting PRE_GAIN noise.
-      return norm * norm;
+      return {
+        length: norm, // Linear growth: 128 cells max
+        brightness: Math.pow(norm, 4) // Exponential dimming for "True Black" surface
+      };
     };
 
     // 2. BROADCAST DATA
@@ -731,9 +738,15 @@ export class HologramRenderer {
         columnPair.left.position.x = -semitoneConfig.width;
         columnPair.right.position.x = 0;
       } else {
-        // ACTIVE MODE: Strict Physics (1dB = 1 Cell)
-        const qAmpL = getNormAmp(dbLevels[index] || -128);
-        const qAmpR = getNormAmp(dbLevels[index + numSemitones] || -128);
+        // ACTIVE MODE: Dynamic Normalization (Autogain)
+        const ampDataL = getNormAmp(dbLevels[index] || -128);
+        const ampDataR = getNormAmp(dbLevels[index + numSemitones] || -128);
+
+        const qAmpL = ampDataL.length;
+        const qBrightL = ampDataL.brightness;
+
+        const qAmpR = ampDataR.length;
+        const qBrightR = ampDataR.brightness;
 
         // 1. Sanitize Pan Input [-1, 1]
         const pan = Math.max(-1, Math.min(1, panAngles[index] || 0));
@@ -754,17 +767,17 @@ export class HologramRenderer {
           leftMesh.scale.z = Math.max(0.1, depthL);
           leftMesh.position.z = depthL / 2;
 
-          // Z-Dimming: Brightness strictly linked to depth
-          leftMesh.material.emissiveIntensity = qAmpL;
+          // Z-Dimming: Brightness strictly linked to exponential energy (Phase 2)
+          leftMesh.material.emissiveIntensity = qBrightL;
 
           // Apply dimming to base color HSL Lightness
           columnPair.left.userData.baseColor.getHSL(this._hslTemp);
-          leftMesh.material.color.setHSL(this._hslTemp.h, this._hslTemp.s, this._hslTemp.l * qAmpL);
+          leftMesh.material.color.setHSL(this._hslTemp.h, this._hslTemp.s, this._hslTemp.l * qBrightL);
 
           // CONTOUR DIMMING: Apply dimming to edgesMesh
           const leftEdgesMesh = leftMesh.children[0];
           if (leftEdgesMesh && leftEdgesMesh.material) {
-            leftEdgesMesh.material.opacity = 0.8 * qAmpL;
+            leftEdgesMesh.material.opacity = 0.8 * qBrightL;
           }
         }
 
@@ -772,15 +785,16 @@ export class HologramRenderer {
           rightMesh.scale.z = Math.max(0.1, depthR);
           rightMesh.position.z = depthR / 2;
 
-          rightMesh.material.emissiveIntensity = qAmpR;
+          // Same for Right Channel
+          rightMesh.material.emissiveIntensity = qBrightR;
 
           columnPair.right.userData.baseColor.getHSL(this._hslTemp);
-          rightMesh.material.color.setHSL(this._hslTemp.h, this._hslTemp.s, this._hslTemp.l * qAmpR);
+          rightMesh.material.color.setHSL(this._hslTemp.h, this._hslTemp.s, this._hslTemp.l * qBrightR);
 
           // CONTOUR DIMMING: Apply dimming to edgesMesh
           const rightEdgesMesh = rightMesh.children[0];
           if (rightEdgesMesh && rightEdgesMesh.material) {
-            rightEdgesMesh.material.opacity = 0.8 * qAmpR;
+            rightEdgesMesh.material.opacity = 0.8 * qBrightR;
           }
         }
       }

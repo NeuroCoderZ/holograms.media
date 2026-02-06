@@ -189,30 +189,39 @@ pub extern "C" fn cwtanalyzer_process(
                 r_conv = r_conv + (w * sr);
             }
 
-            // --- NORMALIZATION: Divide by wavelet length to keep magnitude in [0, 1] ---
-            l_conv = l_conv * (1.0 / len as f32);
-            r_conv = r_conv * (1.0 / len as f32);
+            // --- NORMALIZATION: Adjusted for Morlet energy conservation ---
+            // Instead of 1/len, we use a factor that better represents the peak of the wavelet
+            let norm_factor = 2.0 / len as f32; 
+            l_conv = l_conv * norm_factor;
+            r_conv = r_conv * norm_factor;
 
             let l_mag = l_conv.norm();
             let r_mag = r_conv.norm();
             
-            // --- NOISE GATE: Force silence if magnitude is too low ---
+            // --- NOISE GATE & GAIN: Calibrated for laptop microphones ---
             let epsilon = 1e-9;
-            let l_db = if l_mag < 0.0001 { -128.0 } else { (20.0 * (l_mag + epsilon).log10() + PRE_GAIN_DB).max(-128.0).min(0.0) };
-            let r_db = if r_mag < 0.0001 { -128.0 } else { (20.0 * (r_mag + epsilon).log10() + PRE_GAIN_DB).max(-128.0).min(0.0) };
+            let l_db = if l_mag < 1e-5 { -128.0 } else { (20.0 * (l_mag + epsilon).log10() + 30.0).max(-128.0).min(0.0) };
+            let r_db = if r_mag < 1e-5 { -128.0 } else { (20.0 * (r_mag + epsilon).log10() + 30.0).max(-128.0).min(0.0) };
 
             analyzer.last_db[i] = l_db;
             analyzer.last_db[i + 128] = r_db;
 
-            // Phase Difference -> Pan (-1..1)
+            // Pan calculation: Blend ITD (Phase) and ILD (Magnitude)
+            // ILD (Interaural Level Difference) for "tilt" effect requested by user
+            let mag_sum = l_mag + r_mag;
+            let ild = if mag_sum < 1e-9 { 0.0 } else { (l_mag - r_mag) / mag_sum };
+            
+            // ITD (Interaural Time Difference) via phase
             let phase_l = l_conv.arg();
             let phase_r = r_conv.arg();
-            let mut diff = phase_l - phase_r;
-            while diff <= -PI { diff += 2.0 * PI; }
-            while diff > PI { diff -= 2.0 * PI; }
-            
-            // Pan is 0 if silent
-            analyzer.last_pan[i] = if l_mag < 0.0001 && r_mag < 0.0001 { 0.0 } else { (diff / PI).max(-1.0).min(1.0) };
+            let mut itd_diff = phase_l - phase_r;
+            while itd_diff <= -PI { itd_diff += 2.0 * PI; }
+            while itd_diff > PI { itd_diff -= 2.0 * PI; }
+            let itd = (itd_diff / PI).max(-1.0).min(1.0);
+
+            // Final Pan: 70% Amplitude Difference (ILD), 30% Phase Difference (ITD)
+            // This prioritizes the "closer to mic = more shift" effect
+            analyzer.last_pan[i] = if mag_sum < 1e-6 { 0.0 } else { (ild * 0.7 + itd * 0.3).max(-1.0).min(1.0) };
         }
     }
 
