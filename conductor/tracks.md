@@ -36,3 +36,7 @@
 
 - [x] **Трек: Глубокая синхронизация: восстановление потока аудио и блокировка UI**
   *Ссылка: [./tracks/deep_sync_audio_ui_20260202/](./tracks/deep_sync_audio_ui_20260202/)*
+---
+
+- [ ] **Track: Fix Hologram X-Axis Boundary Overflow & Implement Z-Depth Dimming**
+*Link: [./tracks/fix_x_axis_bounds_20260206/](./tracks/fix_x_axis_bounds_20260206/)*
