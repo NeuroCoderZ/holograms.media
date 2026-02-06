@@ -5,6 +5,7 @@ use std::mem;
 const RING_BUFFER_SIZE: usize = 8192;
 const OMEGA0: f32 = 6.0; // Morlet parameter
 const SQRT_PI: f32 = 1.77245385; // sqrt(pi)
+const PRE_GAIN_DB: f32 = 30.0; // Boost for laptop microphones
 
 // --- COMPLEX NUMBER HELPER ---
 #[derive(Copy, Clone)]
@@ -59,16 +60,6 @@ impl RingBuffer {
         self.data[self.cursor] = sample;
         self.cursor = (self.cursor + 1) % RING_BUFFER_SIZE;
     }
-
-    /// Returns the last N samples
-    fn get_last_n(&self, n: usize) -> Vec<f32> {
-        let mut result = Vec::with_capacity(n);
-        for i in 0..n {
-            let idx = (self.cursor + RING_BUFFER_SIZE - n + i) % RING_BUFFER_SIZE;
-            result.push(self.data[idx]);
-        }
-        result
-    }
 }
 
 // --- WAVELET DATA ---
@@ -82,11 +73,13 @@ pub struct CwtAnalyzer {
     left_ring: RingBuffer,
     right_ring: RingBuffer,
     wavelets: Vec<MorletWavelet>,
+    #[allow(dead_code)]
     sample_rate: f32,
+    #[allow(dead_code)]
     target_fps: f32,
     samples_per_frame: usize,
     samples_since_last_calc: usize,
-    // Output state
+    // Output state (Values in range [-128.0, 0.0] dB)
     last_db: Vec<f32>,
     last_pan: Vec<f32>,
 }
@@ -98,11 +91,8 @@ impl CwtAnalyzer {
 
         for i in 0..128 {
             let freq = c0 * 2.0_f32.powf(i as f32 / 12.0);
-            // Scale s = omega0 / (2 * pi * f) * sample_rate
             let s = OMEGA0 * sample_rate / (2.0 * PI * freq);
             
-            // Morlet length: determine length where gaussian falls below threshold
-            // exp(-0.5 * (t/s)^2) < 0.001 -> -0.5 * (t/s)^2 < -6.9 -> (t/s)^2 > 13.8 -> t > 3.7 * s
             let t_max = (3.7 * s) as usize;
             let length = t_max * 2 + 1;
             
@@ -182,18 +172,16 @@ pub extern "C" fn cwtanalyzer_process(
 
     // 2. Periodic Calculation based on FPS
     if analyzer.samples_since_last_calc >= analyzer.samples_per_frame {
-        analyzer.samples_since_last_calc = 0; // Reset counter
+        analyzer.samples_since_last_calc = 0;
 
         for i in 0..128 {
             let wavelet = &analyzer.wavelets[i];
             let len = wavelet.length;
             
-            // Truncated Convolution (Dot Product) at the end of Ring Buffer
             let mut l_conv = Complex::new(0.0, 0.0);
             let mut r_conv = Complex::new(0.0, 0.0);
 
             for n in 0..len {
-                // Get samples from the end of history
                 let rb_idx = (analyzer.left_ring.cursor + RING_BUFFER_SIZE - len + n) % RING_BUFFER_SIZE;
                 let sl = analyzer.left_ring.data[rb_idx];
                 let sr = analyzer.right_ring.data[rb_idx];
@@ -203,19 +191,17 @@ pub extern "C" fn cwtanalyzer_process(
                 r_conv = r_conv + (w * sr);
             }
 
-            // Calculate Magnitude -> 0..128
-            // We use a sensitivity factor to map to the 0..128 range
             let l_mag = l_conv.norm();
             let r_mag = r_conv.norm();
             
-            // Logarithmic mapping to 0..128 (approx 60dB range)
-            // 0.001 (-60dB) -> 0, 1.0 (0dB) -> 128
-            let epsilon = 1e-6;
-            let l_db = 128.0 + 20.0 * (l_mag + epsilon).log10() * (128.0 / 60.0);
-            let r_db = 128.0 + 20.0 * (r_mag + epsilon).log10() * (128.0 / 60.0);
+            // STRICT DB CALCULATION with PRE_GAIN
+            let epsilon = 1e-9; // Lower epsilon for better dynamic range
+            let l_db_raw = 20.0 * (l_mag + epsilon).log10();
+            let r_db_raw = 20.0 * (r_mag + epsilon).log10();
 
-            analyzer.last_db[i] = l_db.max(0.0).min(128.0);
-            analyzer.last_db[i + 128] = r_db.max(0.0).min(128.0);
+            // Apply Pre-Gain and clamp to [-128, 0]
+            analyzer.last_db[i] = (l_db_raw + PRE_GAIN_DB).max(-128.0).min(0.0);
+            analyzer.last_db[i + 128] = (r_db_raw + PRE_GAIN_DB).max(-128.0).min(0.0);
 
             // Phase Difference -> Pan (-1..1)
             let phase_l = l_conv.arg();
@@ -228,7 +214,7 @@ pub extern "C" fn cwtanalyzer_process(
         }
     }
 
-    // 3. Copy last state to output (guarantees steady data for renderer)
+    // 3. Copy last state to output
     for i in 0..output_db_len {
         if i < 256 { output_db[i] = analyzer.last_db[i]; }
     }
