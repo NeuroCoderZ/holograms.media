@@ -732,10 +732,14 @@ export class HologramRenderer {
         // Noise Gate for Pan stability - Minimal threshold
         if (Math.max(ampL, ampR) < 0.01) pan = 0;
 
-        // X Shift (Stereo Positioning)
-        const space = GRID_WIDTH - semitoneConfig.width;
-        columnPair.left.position.x = -semitoneConfig.width + (pan < 0 ? pan * space : 0);
-        columnPair.right.position.x = (pan > 0 ? pan * space : 0);
+        // X Shift (Stereo Positioning) - Clamped to Grid Boundaries
+        const maxShift = GRID_WIDTH - semitoneConfig.width;
+
+        // Left Grid: initialX is -width. Pan (-1) moves it to -GRID_WIDTH
+        columnPair.left.position.x = columnPair.left.userData.initialX + (pan < 0 ? pan * maxShift : 0);
+
+        // Right Grid: initialX is 0. Pan (+1) moves it to GRID_WIDTH - width
+        columnPair.right.position.x = columnPair.right.userData.initialX + (pan > 0 ? pan * maxShift : 0);
 
         // Z Scaling (Depth) - Highly sensitive power (1.1)
         const depthL = Math.pow(ampL, 1.1) * GRID_DEPTH;
