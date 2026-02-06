@@ -192,14 +192,7 @@ export async function initializeScene(state) {
 
   // Basic Lighting
   // Ambient light: provides overall illumination to the scene
-  state.ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // color, intensity
-  state.scene.add(state.ambientLight);
-
-  // Directional light: simulates light from a distant source (like the sun)
-  state.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // color, intensity
-  state.directionalLight.position.set(1, 1, 1).normalize(); // Positioned from top-right-front
-  state.scene.add(state.directionalLight);
-
+  // DELETED: Duplicate lights (handled by HologramRenderer for Z-Dimming control)
 
   // Set the "deep dark blue" background the user liked
   state.scene.background = new THREE.Color(0x050510); // Very deep midnight blue
