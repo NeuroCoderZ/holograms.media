@@ -200,6 +200,9 @@ class AudioService {
             }
         };
 
+        // Запускаем мониторинг изменений FPS дисплея
+        this._startRefreshRateMonitoring();
+
         return this.workletNode;
     }
 
@@ -225,6 +228,69 @@ class AudioService {
     async resume() {
         if (this.context && this.context.state === 'suspended') {
             await this.context.resume();
+        }
+    }
+
+    /**
+     * Динамически обновляет target FPS для адаптации под частоту экрана.
+     * Используется при переключении режимов энергосбережения или смене монитора.
+     * @param {number} newFps - Новая частота кадров (60, 90, 120, 144, 165, 240 и т.д.)
+     */
+    setTargetFps(newFps) {
+        if (newFps <= 0 || newFps === this.targetFps) return;
+
+        this.targetFps = newFps;
+        console.log(`[AudioService] Updating target FPS to: ${newFps}`);
+
+        if (this.workletNode) {
+            this.workletNode.port.postMessage({
+                type: 'SET_FPS',
+                fps: newFps
+            });
+        }
+    }
+
+    /**
+     * Инициализирует мониторинг изменений частоты экрана.
+     * Вызывается автоматически при создании WorkletNode.
+     */
+    _startRefreshRateMonitoring() {
+        // Используем requestAnimationFrame для измерения реального FPS
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let measuredFps = this.targetFps;
+
+        const measureFps = (currentTime) => {
+            frameCount++;
+            const elapsed = currentTime - lastTime;
+
+            // Пересчитываем каждые 2 секунды
+            if (elapsed >= 2000) {
+                measuredFps = Math.round((frameCount * 1000) / elapsed);
+                frameCount = 0;
+                lastTime = currentTime;
+
+                // Обновляем только если FPS значительно изменился (±10%)
+                const diff = Math.abs(measuredFps - this.targetFps) / this.targetFps;
+                if (diff > 0.1 && measuredFps >= 20 && measuredFps <= 300) {
+                    console.log(`[AudioService] Display FPS changed: ${this.targetFps} → ${measuredFps}`);
+                    this.setTargetFps(measuredFps);
+                }
+            }
+
+            this._fpsMonitorId = requestAnimationFrame(measureFps);
+        };
+
+        this._fpsMonitorId = requestAnimationFrame(measureFps);
+    }
+
+    /**
+     * Останавливает мониторинг FPS.
+     */
+    stopRefreshRateMonitoring() {
+        if (this._fpsMonitorId) {
+            cancelAnimationFrame(this._fpsMonitorId);
+            this._fpsMonitorId = null;
         }
     }
 }
