@@ -1,84 +1,152 @@
-use rustfft::{FftPlanner, num_complex::Complex, Fft};
-use std::sync::Arc;
 use std::f32::consts::PI;
 use std::mem;
 
-// Morlet wavelet parameters
-const OMEGA0: f32 = 6.0;
-const BUFFER_SIZE: usize = 4096;
-const CHUNK_SIZE: usize = 128;
+// --- CONSTANTS ---
+const RING_BUFFER_SIZE: usize = 8192;
+const OMEGA0: f32 = 6.0; // Morlet parameter
+const SQRT_PI: f32 = 1.77245385; // sqrt(pi)
 
-// Helper: Generate Morlet Wavelet
-fn morlet_wavelet(s: f32, size: usize) -> Vec<Complex<f32>> {
-    let mut wavelet = Vec::with_capacity(size);
-    let half_size = size as f32 / 2.0;
+// --- COMPLEX NUMBER HELPER ---
+#[derive(Copy, Clone)]
+struct Complex {
+    re: f32,
+    im: f32,
+}
 
-    for n in 0..size {
-        let t = (n as f32 - half_size) / s;
-        let exponent_real = -0.5 * t * t;
-        let exponent_imag = OMEGA0 * t;
+impl Complex {
+    fn new(re: f32, im: f32) -> Self {
+        Complex { re, im }
+    }
 
-        if exponent_real < -20.0 {
-            wavelet.push(Complex::new(0.0, 0.0));
-            continue;
+    fn norm(&self) -> f32 {
+        (self.re * self.re + self.im * self.im).sqrt()
+    }
+
+    fn arg(&self) -> f32 {
+        self.im.atan2(self.re)
+    }
+}
+
+impl std::ops::Add for Complex {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Complex::new(self.re + other.re, self.im + other.im)
+    }
+}
+
+impl std::ops::Mul<f32> for Complex {
+    type Output = Self;
+    fn mul(self, rhs: f32) -> Self {
+        Complex::new(self.re * rhs, self.im * rhs)
+    }
+}
+
+// --- RING BUFFER ---
+struct RingBuffer {
+    data: Vec<f32>,
+    cursor: usize,
+}
+
+impl RingBuffer {
+    fn new(size: usize) -> Self {
+        RingBuffer {
+            data: vec![0.0; size],
+            cursor: 0,
         }
-
-        let gaussian = exponent_real.exp();
-        let complex_exponential = Complex::new(exponent_imag.cos(), exponent_imag.sin());
-
-        wavelet.push(Complex::new(gaussian * complex_exponential.re, gaussian * complex_exponential.im));
-    }
-    wavelet
-}
-
-// Helper: Convolution
-fn fft_convolve(
-    signal_fft: &[Complex<f32>],
-    wavelet_fft: &[Complex<f32>],
-    ifft: &Arc<dyn Fft<f32>>
-) -> Vec<Complex<f32>> {
-    let n = signal_fft.len();
-    let mut convolved_fft = Vec::with_capacity(n);
-
-    for i in 0..n {
-        convolved_fft.push(signal_fft[i] * wavelet_fft[i]);
     }
 
-    let mut result = convolved_fft;
-    ifft.process(&mut result);
+    fn push(&mut self, sample: f32) {
+        self.data[self.cursor] = sample;
+        self.cursor = (self.cursor + 1) % RING_BUFFER_SIZE;
+    }
 
-    let norm_factor = 1.0 / n as f32;
-    result.iter_mut().for_each(|c| *c *= norm_factor);
-    result
+    /// Returns the last N samples
+    fn get_last_n(&self, n: usize) -> Vec<f32> {
+        let mut result = Vec::with_capacity(n);
+        for i in 0..n {
+            let idx = (self.cursor + RING_BUFFER_SIZE - n + i) % RING_BUFFER_SIZE;
+            result.push(self.data[idx]);
+        }
+        result
+    }
 }
 
+// --- WAVELET DATA ---
+struct MorletWavelet {
+    data: Vec<Complex>,
+    length: usize,
+}
+
+// --- ANALYZER ---
 pub struct CwtAnalyzer {
-    left_buffer: Vec<f32>,
-    right_buffer: Vec<f32>,
-    fft_planner: FftPlanner<f32>,
-    target_frequencies: Vec<f32>,
+    left_ring: RingBuffer,
+    right_ring: RingBuffer,
+    wavelets: Vec<MorletWavelet>,
     sample_rate: f32,
+    target_fps: f32,
+    samples_per_frame: usize,
+    samples_since_last_calc: usize,
+    // Output state
+    last_db: Vec<f32>,
+    last_pan: Vec<f32>,
 }
 
-// --- PURE WASM EXPORTS (C-STYLE) ---
+impl CwtAnalyzer {
+    fn precalculate_wavelets(sample_rate: f32) -> Vec<MorletWavelet> {
+        let mut wavelets = Vec::with_capacity(128);
+        let c0 = 16.352; // C2 Base frequency
+
+        for i in 0..128 {
+            let freq = c0 * 2.0_f32.powf(i as f32 / 12.0);
+            // Scale s = omega0 / (2 * pi * f) * sample_rate
+            let s = OMEGA0 * sample_rate / (2.0 * PI * freq);
+            
+            // Morlet length: determine length where gaussian falls below threshold
+            // exp(-0.5 * (t/s)^2) < 0.001 -> -0.5 * (t/s)^2 < -6.9 -> (t/s)^2 > 13.8 -> t > 3.7 * s
+            let t_max = (3.7 * s) as usize;
+            let length = t_max * 2 + 1;
+            
+            let mut wavelet_data = Vec::with_capacity(length);
+            let normalization = 1.0 / (s * SQRT_PI).sqrt();
+
+            for n in 0..length {
+                let t = n as f32 - t_max as f32;
+                let x = t / s;
+                let gaussian = (-0.5 * x * x).exp() * normalization;
+                let phase = OMEGA0 * x;
+                
+                wavelet_data.push(Complex::new(
+                    gaussian * phase.cos(),
+                    gaussian * phase.sin()
+                ));
+            }
+            
+            wavelets.push(MorletWavelet {
+                data: wavelet_data,
+                length,
+            });
+        }
+        wavelets
+    }
+}
+
+// --- PURE WASM EXPORTS ---
 
 #[no_mangle]
-pub extern "C" fn cwtanalyzer_new(sample_rate: f32) -> *mut CwtAnalyzer {
-    let left_buffer = vec![0.0; BUFFER_SIZE];
-    let right_buffer = vec![0.0; BUFFER_SIZE];
-    
-    let mut target_freqs = Vec::with_capacity(128);
-    let c0 = 16.352;
-    for i in 0..128 {
-        target_freqs.push(c0 * 2.0_f32.powf(i as f32 / 12.0));
-    }
+pub extern "C" fn cwtanalyzer_new(sample_rate: f32, target_fps: f32) -> *mut CwtAnalyzer {
+    let wavelets = CwtAnalyzer::precalculate_wavelets(sample_rate);
+    let samples_per_frame = (sample_rate / target_fps) as usize;
 
     let analyzer = Box::new(CwtAnalyzer {
-        left_buffer,
-        right_buffer,
-        fft_planner: FftPlanner::new(),
-        target_frequencies: target_freqs,
+        left_ring: RingBuffer::new(RING_BUFFER_SIZE),
+        right_ring: RingBuffer::new(RING_BUFFER_SIZE),
+        wavelets,
         sample_rate,
+        target_fps,
+        samples_per_frame,
+        samples_since_last_calc: 0,
+        last_db: vec![-128.0; 256],
+        last_pan: vec![0.0; 128],
     });
 
     Box::into_raw(analyzer)
@@ -99,72 +167,73 @@ pub extern "C" fn cwtanalyzer_process(
     if ptr.is_null() { return; }
     let analyzer = unsafe { &mut *ptr };
 
-    if input_left_len != CHUNK_SIZE || input_right_len != CHUNK_SIZE {
-        return;
-    }
-
     let input_left = unsafe { std::slice::from_raw_parts(input_left_ptr, input_left_len) };
     let input_right = unsafe { std::slice::from_raw_parts(input_right_ptr, input_right_len) };
     let output_db = unsafe { std::slice::from_raw_parts_mut(output_db_ptr, output_db_len) };
     let output_pan = unsafe { std::slice::from_raw_parts_mut(output_pan_ptr, output_pan_len) };
 
-    // 1. Update Buffers
-    analyzer.left_buffer.drain(0..CHUNK_SIZE);
-    analyzer.left_buffer.extend_from_slice(input_left);
+    // 1. Push to Ring Buffers
+    for i in 0..input_left_len {
+        analyzer.left_ring.push(input_left[i]);
+        analyzer.right_ring.push(input_right[i]);
+    }
 
-    analyzer.right_buffer.drain(0..CHUNK_SIZE);
-    analyzer.right_buffer.extend_from_slice(input_right);
+    analyzer.samples_since_last_calc += input_left_len;
 
-    // 2. FFT
-    let fft_forward = analyzer.fft_planner.plan_fft_forward(BUFFER_SIZE);
-    let fft_inverse = analyzer.fft_planner.plan_fft_inverse(BUFFER_SIZE);
+    // 2. Periodic Calculation based on FPS
+    if analyzer.samples_since_last_calc >= analyzer.samples_per_frame {
+        analyzer.samples_since_last_calc = 0; // Reset counter
 
-    let mut left_fft_input: Vec<Complex<f32>> = analyzer.left_buffer.iter().map(|&x| Complex::new(x, 0.0)).collect();
-    let mut right_fft_input: Vec<Complex<f32>> = analyzer.right_buffer.iter().map(|&x| Complex::new(x, 0.0)).collect();
+        for i in 0..128 {
+            let wavelet = &analyzer.wavelets[i];
+            let len = wavelet.length;
+            
+            // Truncated Convolution (Dot Product) at the end of Ring Buffer
+            let mut l_conv = Complex::new(0.0, 0.0);
+            let mut r_conv = Complex::new(0.0, 0.0);
 
-    fft_forward.process(&mut left_fft_input);
-    fft_forward.process(&mut right_fft_input);
+            for n in 0..len {
+                // Get samples from the end of history
+                let rb_idx = (analyzer.left_ring.cursor + RING_BUFFER_SIZE - len + n) % RING_BUFFER_SIZE;
+                let sl = analyzer.left_ring.data[rb_idx];
+                let sr = analyzer.right_ring.data[rb_idx];
+                
+                let w = wavelet.data[n];
+                l_conv = l_conv + (w * sl);
+                r_conv = r_conv + (w * sr);
+            }
 
-    // 3. Analyze
-    let center_idx = BUFFER_SIZE / 2;
-    let epsilon = 1e-6;
+            // Calculate Magnitude -> 0..128
+            // We use a sensitivity factor to map to the 0..128 range
+            let l_mag = l_conv.norm();
+            let r_mag = r_conv.norm();
+            
+            // Logarithmic mapping to 0..128 (approx 60dB range)
+            // 0.001 (-60dB) -> 0, 1.0 (0dB) -> 128
+            let epsilon = 1e-6;
+            let l_db = 128.0 + 20.0 * (l_mag + epsilon).log10() * (128.0 / 60.0);
+            let r_db = 128.0 + 20.0 * (r_mag + epsilon).log10() * (128.0 / 60.0);
 
-    for (i, &freq) in analyzer.target_frequencies.iter().enumerate() {
-        if i >= 128 { break; }
+            analyzer.last_db[i] = l_db.max(0.0).min(128.0);
+            analyzer.last_db[i + 128] = r_db.max(0.0).min(128.0);
 
-        let s = OMEGA0 * analyzer.sample_rate / (2.0 * PI * freq);
-        let wavelet_time = morlet_wavelet(s, BUFFER_SIZE);
-        let mut wavelet_fft: Vec<Complex<f32>> = wavelet_time.into_iter().collect();
-        fft_forward.process(&mut wavelet_fft);
-
-        let left_conv = fft_convolve(&left_fft_input, &wavelet_fft, &fft_inverse);
-        let right_conv = fft_convolve(&right_fft_input, &wavelet_fft, &fft_inverse);
-
-        let l_val = left_conv[center_idx];
-        let r_val = right_conv[center_idx];
-
-        let l_mag = l_val.norm();
-        let r_mag = r_val.norm();
-
-        let l_db = 20.0 * (l_mag + epsilon).log10();
-        let r_db = 20.0 * (r_mag + epsilon).log10();
-
-        if i < output_db.len() / 2 {
-            output_db[i] = l_db.max(-100.0).min(0.0);
-            output_db[i + 128] = r_db.max(-100.0).min(0.0);
+            // Phase Difference -> Pan (-1..1)
+            let phase_l = l_conv.arg();
+            let phase_r = r_conv.arg();
+            let mut diff = phase_l - phase_r;
+            while diff <= -PI { diff += 2.0 * PI; }
+            while diff > PI { diff -= 2.0 * PI; }
+            
+            analyzer.last_pan[i] = (diff / PI).max(-1.0).min(1.0);
         }
+    }
 
-        let phase_l = l_val.arg();
-        let phase_r = r_val.arg();
-        let mut diff = phase_l - phase_r;
-        
-        while diff <= -PI { diff += 2.0 * PI; }
-        while diff > PI { diff -= 2.0 * PI; }
-
-        let deg = diff / PI * 90.0;
-        if i < output_pan.len() {
-            output_pan[i] = deg.max(-90.0).min(90.0);
-        }
+    // 3. Copy last state to output (guarantees steady data for renderer)
+    for i in 0..output_db_len {
+        if i < 256 { output_db[i] = analyzer.last_db[i]; }
+    }
+    for i in 0..output_pan_len {
+        if i < 128 { output_pan[i] = analyzer.last_pan[i]; }
     }
 }
 
@@ -178,7 +247,7 @@ pub extern "C" fn cwtanalyzer_free(ptr: *mut CwtAnalyzer) {
 }
 
 #[no_mangle]
-pub extern "C" fn __wbindgen_malloc(size: usize) -> *mut u8 {
+pub extern "C" fn malloc(size: usize) -> *mut u8 {
     let mut buf = Vec::with_capacity(size);
     let ptr = buf.as_mut_ptr();
     mem::forget(buf);
@@ -186,7 +255,7 @@ pub extern "C" fn __wbindgen_malloc(size: usize) -> *mut u8 {
 }
 
 #[no_mangle]
-pub extern "C" fn __wbindgen_free(ptr: *mut u8, size: usize) {
+pub extern "C" fn free(ptr: *mut u8, size: usize) {
     unsafe {
         let _ = Vec::from_raw_parts(ptr, 0, size);
     }
