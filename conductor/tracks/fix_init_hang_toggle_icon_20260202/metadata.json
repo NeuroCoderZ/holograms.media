@@ -1,0 +1,8 @@
+{
+  "track_id": "fix_init_hang_toggle_icon_20260202",
+  "type": "bug",
+  "status": "in_progress",
+  "created_at": "2026-02-02T11:00:00Z",
+  "updated_at": "2026-02-02T11:00:00Z",
+  "description": "Fix Init Hang & Toggle Icon Style"
+}
