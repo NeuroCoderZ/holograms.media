@@ -215,9 +215,9 @@ pub extern "C" fn cwtanalyzer_process(
             
             // --- CALIBRATED DB MAPPING ---
             let epsilon = 1e-10;
-            // 25dB fixed gain + 128dB range
-            let l_db = (20.0 * (l_mag + epsilon).log10() + 35.0).max(-128.0).min(0.0);
-            let r_db = (20.0 * (r_mag + epsilon).log10() + 35.0).max(-128.0).min(0.0);
+            // 25dB fixed gain + 128dB range + 10dB Parseval Compensation
+            let l_db = (20.0 * (l_mag + epsilon).log10() + 45.0).max(-128.0).min(0.0);
+            let r_db = (20.0 * (r_mag + epsilon).log10() + 45.0).max(-128.0).min(0.0);
 
             analyzer.last_db[i] = l_db;
             analyzer.last_db[i + 128] = r_db;
