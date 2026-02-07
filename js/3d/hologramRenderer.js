@@ -795,14 +795,15 @@ export class HologramRenderer {
           leftMesh.position.z = depthL / 2;
 
           // Emissive follows Linear Brightness + Confidence multiplier
-          const finalBrightL = qBrightL * (0.6 + conf * 0.4);
+          // BOOST: Shift the floor up to ensure visibility
+          const finalBrightL = 0.2 + (qBrightL * 0.8) * (0.6 + conf * 0.4);
           leftMesh.material.emissiveIntensity = finalBrightL;
 
           columnPair.left.userData.baseColor.getHSL(this._hslTemp);
           leftMesh.material.color.setHSL(
             this._hslTemp.h,
-            this._hslTemp.s * (0.5 + conf * 0.5),
-            this._hslTemp.l * (0.8 + finalBrightL * 0.2)
+            this._hslTemp.s * (0.7 + conf * 0.3), // Slightly more saturation
+            this._hslTemp.l // Keep base lightness intact for visibility
           );
 
           const leftEdgesMesh = leftMesh.children[0];
@@ -815,14 +816,15 @@ export class HologramRenderer {
           rightMesh.scale.z = Math.max(0.1, depthR);
           rightMesh.position.z = depthR / 2;
 
-          const finalBrightR = qBrightR * (0.6 + conf * 0.4);
+          // Emissive for right channel
+          const finalBrightR = 0.2 + (qBrightR * 0.8) * (0.6 + conf * 0.4);
           rightMesh.material.emissiveIntensity = finalBrightR;
 
           columnPair.right.userData.baseColor.getHSL(this._hslTemp);
           rightMesh.material.color.setHSL(
             this._hslTemp.h,
-            this._hslTemp.s * (0.5 + conf * 0.5),
-            this._hslTemp.l * (0.8 + finalBrightR * 0.2)
+            this._hslTemp.s * (0.7 + conf * 0.3),
+            this._hslTemp.l
           );
 
           const rightEdgesMesh = rightMesh.children[0];
