@@ -7,7 +7,7 @@ let analyzerPtr = 0;
 let cachedFloat32Memory = null;
 
 // Пред-аллокация указателей (reuse)
-let ptrs = { left: 0, right: 0, levels: 0, pans: 0 };
+let ptrs = { left: 0, right: 0, levels: 0, pans: 0, confidence: 0 };
 
 function getFloat32Memory() {
     if (!cachedFloat32Memory || cachedFloat32Memory.buffer.byteLength === 0) {
@@ -93,6 +93,7 @@ class CwtProcessor extends AudioWorkletProcessor {
             ptrs.right = wasm.malloc(128 * 4);
             ptrs.levels = wasm.malloc(256 * 4);
             ptrs.pans = wasm.malloc(128 * 4);
+            ptrs.confidence = wasm.malloc(128 * 4);
 
             this._initialized = true;
             this.port.postMessage({ type: 'WASM_READY' });
@@ -128,17 +129,31 @@ class CwtProcessor extends AudioWorkletProcessor {
 
         try {
             const mem = getFloat32Memory();
-            const len = Math.min(input[0].length, 128);
+            const startTime = performance.now();
 
-            mem.set(input[0].subarray(0, len), ptrs.left / 4);
-            mem.set((input[1] || input[0]).subarray(0, len), ptrs.right / 4);
+            wasm.cwtanalyzer_process(
+                analyzerPtr,
+                ptrs.left, len,
+                ptrs.right, len,
+                ptrs.levels, 256,
+                ptrs.pans, 128,
+                ptrs.confidence, 128
+            );
 
-            wasm.cwtanalyzer_process(analyzerPtr, ptrs.left, len, ptrs.right, len, ptrs.levels, 256, ptrs.pans, 128);
+            const perf = performance.now() - startTime;
 
             const levels = new Float32Array(mem.subarray(ptrs.levels / 4, ptrs.levels / 4 + 256));
             const angles = new Float32Array(mem.subarray(ptrs.pans / 4, ptrs.pans / 4 + 128));
+            const confidence = new Float32Array(mem.subarray(ptrs.confidence / 4, ptrs.confidence / 4 + 128));
 
-            this.port.postMessage({ type: 'AUDIO_DATA', levels, angles });
+            this.port.postMessage({
+                type: 'AUDIO_DATA',
+                levels,
+                angles,
+                confidence,
+                perf,
+                timestamp: performance.now()
+            });
         } catch (e) {
             // Silently swallow to keep the worklet alive
         }
