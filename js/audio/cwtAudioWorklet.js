@@ -109,8 +109,8 @@ class CwtProcessor extends AudioWorkletProcessor {
     process(inputs, outputs) {
         const input = inputs[0];
 
-        // HEARTBEAT even if not ready
-        if (this._hb++ % 100 === 0) {
+        // HEARTBEAT even if not ready (каждые 300 кадров = ~5 сек при 60 FPS)
+        if (this._hb++ % 300 === 0) {
             this.port.postMessage({
                 type: 'LOG',
                 msg: `PULSE ready=${this._initialized} wasm=${!!wasm} input=${!!input && !!input[0]}`
@@ -130,6 +130,11 @@ class CwtProcessor extends AudioWorkletProcessor {
         try {
             const mem = getFloat32Memory();
             const startTime = performance.now();
+            const len = Math.min(input[0].length, 128);
+
+            // ✅ ПРАВИЛЬНОЕ копирование данных в память WASM
+            mem.set(input[0].subarray(0, len), ptrs.left / 4);
+            mem.set((input[1] || input[0]).subarray(0, len), ptrs.right / 4);
 
             wasm.cwtanalyzer_process(
                 analyzerPtr,
@@ -146,6 +151,16 @@ class CwtProcessor extends AudioWorkletProcessor {
             const angles = new Float32Array(mem.subarray(ptrs.pans / 4, ptrs.pans / 4 + 128));
             const confidence = new Float32Array(mem.subarray(ptrs.confidence / 4, ptrs.confidence / 4 + 128));
 
+            // DEBUG: Проверка данных каждые 60 кадров (~1 сек)
+            if (this._hb % 60 === 0) {
+                const maxLevel = Math.max(...levels);
+                const minLevel = Math.min(...levels);
+                this.port.postMessage({
+                    type: 'LOG',
+                    msg: `DATA_SEND: max=${maxLevel.toFixed(1)}dB, min=${minLevel.toFixed(1)}dB, pan[0]=${angles[0].toFixed(2)}`
+                });
+            }
+
             this.port.postMessage({
                 type: 'AUDIO_DATA',
                 levels,
@@ -155,7 +170,11 @@ class CwtProcessor extends AudioWorkletProcessor {
                 timestamp: performance.now()
             });
         } catch (e) {
-            // Silently swallow to keep the worklet alive
+            // ✅ ИСПРАВЛЕНИЕ: Логировать ошибку вместо молчаливого проглатывания
+            this.port.postMessage({
+                type: 'WASM_ERROR',
+                error: `PROCESS_ERROR: ${e.message || e.toString()}`
+            });
         }
 
         return true;
