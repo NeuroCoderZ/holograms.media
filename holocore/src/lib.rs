@@ -85,30 +85,40 @@ pub struct CwtAnalyzer {
 impl CwtAnalyzer {
     fn precalculate_wavelets(sample_rate: f32) -> Vec<MorletWavelet> {
         let mut wavelets = Vec::with_capacity(128);
-        
-        // Exact calibrated frequencies from Semitones_Angles.md (The Individual Formula)
-        // Values: C0=16.352, C#0=17.324, ..., G7=25087.71
         let frequencies: [f32; 128] = (0..128).map(|i| 16.352 * 2.0_f32.powf(i as f32 / 12.0)).collect::<Vec<_>>().try_into().unwrap();
 
         for i in 0..128 {
             let freq = frequencies[i];
-            // Individual Q-factor: Sharper for high frequencies to avoid "bleeding"
-            let omega = if freq > 1000.0 { 8.0 } else { 6.0 };
             
-            let s = omega * sample_rate / (2.0 * PI * freq);
-            
-            // Individual Windowing: Ensure enough samples for stability
-            let t_max = if freq > 5000.0 { (5.0 * s) as usize } else { (3.7 * s) as usize };
-            let length = (t_max * 2 + 1).max(7); // Minimum 7 samples
+            // Phase 4: Frequency-dependent Q-factor and Windowing
+            // Higher frequencies = more periods for precision (min latency is still low)
+            // Lower frequencies = fewer periods to stay within < 20ms latency budgets
+            let periods = if freq > 5000.0 { 6.0 } 
+                         else if freq > 1000.0 { 4.0 }
+                         else if freq > 100.0 { 2.0 }
+                         else { 1.2 }; // Extreme low end: fast response
+
+            let s = OMEGA0 * sample_rate / (2.0 * PI * freq);
+            let t_max = (periods * s / OMEGA0) as usize;
+            let length = (t_max * 2 + 1).max(7);
             
             let mut wavelet_data = Vec::with_capacity(length);
-            let normalization = 1.0 / (s * SQRT_PI).sqrt();
+            
+            // Parseval Normalization: Energy conservation across spectrum
+            let mut energy_sum = 0.0;
+            for n in 0..length {
+                let t = n as f32 - t_max as f32;
+                let x = t / s;
+                let gaussian = (-0.5 * x * x).exp();
+                energy_sum += gaussian * gaussian;
+            }
+            let norm_factor = (1.0 / energy_sum.sqrt()).max(1e-6);
 
             for n in 0..length {
                 let t = n as f32 - t_max as f32;
                 let x = t / s;
-                let gaussian = (-0.5 * x * x).exp() * normalization;
-                let phase = omega * x;
+                let gaussian = (-0.5 * x * x).exp() * norm_factor;
+                let phase = OMEGA0 * x;
                 
                 wavelet_data.push(Complex::new(
                     gaussian * phase.cos(),
@@ -158,6 +168,8 @@ pub extern "C" fn cwtanalyzer_process(
     output_db_len: usize,
     output_pan_ptr: *mut f32,
     output_pan_len: usize,
+    output_conf_ptr: *mut f32,
+    output_conf_len: usize,
 ) {
     if ptr.is_null() { return; }
     let analyzer = unsafe { &mut *ptr };
@@ -166,6 +178,7 @@ pub extern "C" fn cwtanalyzer_process(
     let input_right = unsafe { std::slice::from_raw_parts(input_right_ptr, input_right_len) };
     let output_db = unsafe { std::slice::from_raw_parts_mut(output_db_ptr, output_db_len) };
     let output_pan = unsafe { std::slice::from_raw_parts_mut(output_pan_ptr, output_pan_len) };
+    let output_conf = unsafe { std::slice::from_raw_parts_mut(output_conf_ptr, output_conf_len) };
 
     // 1. Push to Ring Buffers
     for i in 0..input_left_len {
@@ -186,6 +199,7 @@ pub extern "C" fn cwtanalyzer_process(
             let mut l_conv = Complex::new(0.0, 0.0);
             let mut r_conv = Complex::new(0.0, 0.0);
 
+            // Convolution
             for n in 0..len {
                 let rb_idx = (analyzer.left_ring.cursor + RING_BUFFER_SIZE - len + n) % RING_BUFFER_SIZE;
                 let sl = analyzer.left_ring.data[rb_idx];
@@ -196,47 +210,47 @@ pub extern "C" fn cwtanalyzer_process(
                 r_conv = r_conv + (w * sr);
             }
 
-            // --- NORMALIZATION: Frequency-dependent sensitivity correction ---
-            // High frequencies need a bit more boost to compensate for shorter wavelets
-            let freq = analyzer.sample_rate * OMEGA0 / (2.0 * PI * analyzer.wavelets[i].length as f32 / 7.4);
-            let sensitivity_boost = if freq > 1000.0 { 1.5 } else { 1.0 };
-            let norm_factor = (2.0 / len as f32) * sensitivity_boost; 
-            
-            l_conv = l_conv * norm_factor;
-            r_conv = r_conv * norm_factor;
-
             let l_mag = l_conv.norm();
             let r_mag = r_conv.norm();
             
-            // --- NOISE GATE & GAIN: Calibrated for laptop microphones (Phase 3) ---
+            // --- CALIBRATED DB MAPPING ---
             let epsilon = 1e-10;
-            // Linear DB mapping with 35dB boost
-            let l_db = if l_mag < 1e-6 { -128.0 } else { (20.0 * (l_mag + epsilon).log10() + 35.0).max(-128.0).min(0.0) };
-            let r_db = if r_mag < 1e-6 { -128.0 } else { (20.0 * (r_mag + epsilon).log10() + 35.0).max(-128.0).min(0.0) };
+            // 25dB fixed gain + 128dB range
+            let l_db = (20.0 * (l_mag + epsilon).log10() + 35.0).max(-128.0).min(0.0);
+            let r_db = (20.0 * (r_mag + epsilon).log10() + 35.0).max(-128.0).min(0.0);
 
             analyzer.last_db[i] = l_db;
             analyzer.last_db[i + 128] = r_db;
 
-            // Pan calculation: ITD (<1500Hz) vs ILD (>1500Hz)
+            // --- CONFIDENCE Score (SNR based approximation) ---
             let mag_sum = l_mag + r_mag;
+            let confidence = (mag_sum / 1e-4).min(1.0); // 0.0 to 1.0 based on signal strength
+            if i < output_conf_len { output_conf[i] = confidence; }
+
+            // --- SMART PAN (ITD / ILD Crossfade) ---
             let ild = if mag_sum < 1e-9 { 0.0 } else { (l_mag - r_mag) / mag_sum };
             
+            // Frequency calculation based on wavelet scale
+            let freq = 16.352 * 2.0_f32.powf(i as f32 / 12.0);
+            
             let pan = if freq < 1500.0 {
-                // ITD (Phase) + ILD
+                // ITD + ILD blend
                 let phase_l = l_conv.arg();
                 let phase_r = r_conv.arg();
                 let mut itd_diff = phase_l - phase_r;
                 while itd_diff <= -PI { itd_diff += 2.0 * PI; }
                 while itd_diff > PI { itd_diff -= 2.0 * PI; }
                 let itd = (itd_diff / PI).max(-1.0).min(1.0);
-                (ild * 0.5 + itd * 0.5).max(-1.0).min(1.0)
+                
+                // Quadratic crossfade: ILD dominates as we approach 1500Hz
+                let cross = (freq / 1500.0).powi(2);
+                (ild * cross + itd * (1.0 - cross)).max(-1.0).min(1.0)
             } else {
-                // ILD Only for High Frequencies (to prevent "jumping")
+                // ILD only for high frequencies
                 ild.max(-1.0).min(1.0)
             };
 
-            // Limit Pan to 90 degrees equivalent (0.7 factor roughly represents 180 field)
-            analyzer.last_pan[i] = if mag_sum < 1e-7 { 0.0 } else { pan * 0.9 };
+            analyzer.last_pan[i] = pan * 0.95; // Magnetic Pan limit
         }
     }
 

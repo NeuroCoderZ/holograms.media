@@ -4,6 +4,7 @@ import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../co
 // import { MeshBasicNodeMaterial } from 'three/addons/nodes/Nodes.js'; // This was commented out, keeping it so
 import eventBus from '../core/eventBus.js'; // Added for WebAudioEngine integration
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js'; // New WebRTC client
+import perfMonitor from '../utils/perfMonitor.js';
 
 // Direct imports are used, so these lines are not necessary.
 
@@ -21,10 +22,15 @@ export class HologramRenderer {
   constructor(scene, roomId, userId) {
     this.scene = scene;
     this.eventBus = eventBus;
-    this.netHoloGlyphClient = netHoloGlyphClient; // Use the new WebRTC client
-    this.latestAudioData = null; // Legacy property
-    this.latestCwtData = null; // High-precision spectral data (from mixer)
-    this.latestSynthData = null; // Direct visual feedback from synth
+    this.netHoloGlyphClient = netHoloGlyphClient;
+    this.latestAudioData = null;
+    this.latestCwtData = null;
+    this.latestPanData = null;
+    this.latestConfidenceData = null;
+    this.latestSynthData = null;
+    this.latestTimestamp = 0;
+    this._lastWasmPerf = 0;
+    this._panStates = new Float32Array(128).fill(0);
     this.roomId = roomId;
     this.userId = userId;
 
@@ -102,9 +108,13 @@ export class HologramRenderer {
   }
 
   handleCwtResult(data) {
-    // (Log removed to reduce console spam)
-    // Store the latest data (levels: Float32Array[256], pans: Float32Array[256])
+    if (!data) return;
     this.latestCwtData = data;
+    this.latestPanData = data.angles || data.pans;
+    this.latestConfidenceData = data.confidence;
+    this.latestTimestamp = data.timestamp || performance.now();
+    this._lastWasmPerf = data.perf || 0;
+
     this.latestAudioData = data; // Keep for compatibility
   }
 
@@ -514,14 +524,28 @@ export class HologramRenderer {
     // Z scale will be modulated by audio.
     const geometry = new THREE.BoxGeometry(width, 1, 1);
 
-    // BasilaQ-127: Use StandardMaterial for Shading/Volume
+    // Z-DIMMING PHYSICS: Use Vertex Colors for a spatial gradient
+    // This creates a natural "depth fade" where the base is darker.
+    const colors = [];
+    const tempColor = new THREE.Color(1, 1, 1);
+    const posAttribute = geometry.attributes.position;
+    for (let i = 0; i < posAttribute.count; i++) {
+      const z = posAttribute.getZ(i);
+      // z is in range [-0.5, 0.5] for a unit cube centered at origin
+      const factor = (z + 0.5); // 0.0 at back, 1.0 at front
+      tempColor.setRGB(factor, factor, factor);
+      colors.push(tempColor.r, tempColor.g, tempColor.b);
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
     const material = new THREE.MeshStandardMaterial({
       color: baseColorObj,
-      emissive: baseColorObj, // Critical for Z-Dimming: match base color
-      emissiveIntensity: 0.0, // Start dark
+      emissive: baseColorObj,
+      emissiveIntensity: 0.0,
       roughness: 0.3,
       metalness: 0.1,
       flatShading: true,
+      vertexColors: true, // Enable the vertex gradient
       transparent: false,
       opacity: 1.0
     });
@@ -716,19 +740,31 @@ export class HologramRenderer {
           leftMesh.position.z = gDepth / 2;
           leftMesh.material.emissiveIntensity = 0.5;
           leftMesh.material.color.copy(columnPair.left.userData.baseColor);
+
+          // Reset edge opacity in Greeting Mode
+          const leftEdgesMesh = leftMesh.children[0];
+          if (leftEdgesMesh && leftEdgesMesh.material) leftEdgesMesh.material.opacity = 0.8;
         }
         if (rightMesh) {
           rightMesh.scale.z = gDepth;
           rightMesh.position.z = gDepth / 2;
           rightMesh.material.emissiveIntensity = 0.5;
           rightMesh.material.color.copy(columnPair.right.userData.baseColor);
+
+          // Reset edge opacity in Greeting Mode
+          const rightEdgesMesh = rightMesh.children[0];
+          if (rightEdgesMesh && rightEdgesMesh.material) rightEdgesMesh.material.opacity = 0.8;
         }
         columnPair.left.position.x = -semitoneConfig.width;
         columnPair.right.position.x = 0;
       } else {
-        // ACTIVE MODE: Dynamic Normalization (Autogain)
-        const ampDataL = getNormAmp(dbLevels[index] || -128);
-        const ampDataR = getNormAmp(dbLevels[index + numSemitones] || -128);
+        // ACTIVE MODE: Smart Physics (Phase 4)
+        const dbL = dbLevels ? dbLevels[index] : -128;
+        const dbR = dbLevels ? dbLevels[index + numSemitones] : -128;
+        const conf = this.latestConfidenceData ? this.latestConfidenceData[index] : 1.0;
+
+        const ampDataL = getNormAmp(dbL);
+        const ampDataR = getNormAmp(dbR);
 
         const qAmpL = ampDataL.length;
         const qBrightL = ampDataL.brightness;
@@ -736,8 +772,12 @@ export class HologramRenderer {
         const qAmpR = ampDataR.length;
         const qBrightR = ampDataR.brightness;
 
-        // 1. Sanitize Pan Input [-1, 1]
-        const pan = Math.max(-1, Math.min(1, panAngles[index] || 0));
+        // 1. MAGNETIC PAN: Adaptive smoothing based on confidence
+        const targetPan = Math.max(-1, Math.min(1, panAngles ? panAngles[index] : 0));
+        const lerpFactor = 0.4 + (conf * 0.5); // High confidence = faster tracking
+        this._panStates[index] += (targetPan - this._panStates[index]) * lerpFactor;
+
+        const pan = this._panStates[index];
 
         // 2. X Shift (Discrete Freedom)
         const availableSpace = GRID_WIDTH - semitoneConfig.width;
@@ -746,8 +786,7 @@ export class HologramRenderer {
         columnPair.left.position.x = columnPair.left.userData.initialX + (pan < 0 ? discreteOffset : 0);
         columnPair.right.position.x = columnPair.right.userData.initialX + (pan > 0 ? discreteOffset : 0);
 
-        // 3. Z Scaling (Energy) and Physical Dimming (Z-Dimming)
-        // Physics: 128dB dynamic range = 128 cells depth.
+        // 3. Z Scaling and Phase 4 Z-Dimming (Vertex Gradient + Confidence)
         const depthL = qAmpL * GRID_DEPTH;
         const depthR = qAmpR * GRID_DEPTH;
 
@@ -755,17 +794,20 @@ export class HologramRenderer {
           leftMesh.scale.z = Math.max(0.1, depthL);
           leftMesh.position.z = depthL / 2;
 
-          // Z-Dimming: Brightness strictly linked to linear energy (Phase 3)
-          leftMesh.material.emissiveIntensity = qBrightL;
+          // Emissive follows Linear Brightness + Confidence multiplier
+          const finalBrightL = qBrightL * (0.6 + conf * 0.4);
+          leftMesh.material.emissiveIntensity = finalBrightL;
 
-          // Apply dimming to base color HSL Lightness
           columnPair.left.userData.baseColor.getHSL(this._hslTemp);
-          leftMesh.material.color.setHSL(this._hslTemp.h, this._hslTemp.s, this._hslTemp.l * qBrightL);
+          leftMesh.material.color.setHSL(
+            this._hslTemp.h,
+            this._hslTemp.s * (0.5 + conf * 0.5),
+            this._hslTemp.l * (0.8 + finalBrightL * 0.2)
+          );
 
-          // CONTOUR DIMMING: Apply dimming to edgesMesh
           const leftEdgesMesh = leftMesh.children[0];
           if (leftEdgesMesh && leftEdgesMesh.material) {
-            leftEdgesMesh.material.opacity = 0.8 * qBrightL;
+            leftEdgesMesh.material.opacity = 0.8 * finalBrightL * (0.5 + conf * 0.5);
           }
         }
 
@@ -773,18 +815,24 @@ export class HologramRenderer {
           rightMesh.scale.z = Math.max(0.1, depthR);
           rightMesh.position.z = depthR / 2;
 
-          // Same for Right Channel
-          rightMesh.material.emissiveIntensity = qBrightR;
+          const finalBrightR = qBrightR * (0.6 + conf * 0.4);
+          rightMesh.material.emissiveIntensity = finalBrightR;
 
           columnPair.right.userData.baseColor.getHSL(this._hslTemp);
-          rightMesh.material.color.setHSL(this._hslTemp.h, this._hslTemp.s, this._hslTemp.l * qBrightR);
+          rightMesh.material.color.setHSL(
+            this._hslTemp.h,
+            this._hslTemp.s * (0.5 + conf * 0.5),
+            this._hslTemp.l * (0.8 + finalBrightR * 0.2)
+          );
 
-          // CONTOUR DIMMING: Apply dimming to edgesMesh
           const rightEdgesMesh = rightMesh.children[0];
           if (rightEdgesMesh && rightEdgesMesh.material) {
-            rightEdgesMesh.material.opacity = 0.8 * qBrightR;
+            rightEdgesMesh.material.opacity = 0.8 * finalBrightR * (0.5 + conf * 0.5);
           }
         }
+
+        // 4. Update Performance Monitor (Phase 4)
+        perfMonitor.update(this._lastWasmPerf, performance.now() - (this.latestTimestamp || 0));
       }
     });
 
