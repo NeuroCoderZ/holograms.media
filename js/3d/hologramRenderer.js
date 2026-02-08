@@ -707,22 +707,34 @@ export class HologramRenderer {
     const safeCeiling = Math.max(this.currentRollingMax, -80);
     const noiseFloor = -110;
 
-    // --- PHASE 13.0: PHYSICAL Z-AXIS & DIMMING ---
-    // 1 unit = 1 dB. Range: -128 dB (Silence) to 0 dB (Max).
+    // --- PHASE 14.0: Z-DIMMING & DYNAMICS TUNING ---
+    // 1. Headroom Scale: 0.9 (0 dB = ~115 units). Prevents visual clipping.
+    // 2. Non-linear Dimming: brightness = pow(ratio, 2.5). Highlights peaks, darkens valleys.
+    const HEADROOM_SCALE = 0.9;
+
+    // 1 unit = 1 dB (internally), scaled by headroom for display.
     const getNormAmp = (db) => {
       // Clamp to physical range
       const safeDb = Math.max(-128, Math.min(0, db));
 
       // Linear mapping: -128 -> 0, 0 -> 128
-      const physicalHeight = safeDb + 128;
+      let physicalHeight = safeDb + 128;
 
-      // Brightness: 0.0 (Black) to 1.0 (Full)
-      // Strictly linear dimming as requested
-      const brightness = physicalHeight / 128.0;
+      // Apply Headroom to height
+      // This reserves the top ~10% of the visual range for true peaks or just aesthetics
+      const displayHeight = physicalHeight * HEADROOM_SCALE;
+
+      // Normalize height relative to the FULL 128 range to determine brightness
+      // We use the original physical ratio (0..1)
+      const ratio = physicalHeight / 128.0;
+
+      // Brightness: Quadratic curve for deep contrast
+      // Low values become much darker (e.g. 0.5 input -> 0.25 output)
+      const brightness = Math.pow(ratio, 2.5);
 
       return {
-        length: physicalHeight, // 0..128 units
-        brightness: brightness  // 0..1 intensity
+        length: displayHeight,
+        brightness: brightness
       };
     };
 
