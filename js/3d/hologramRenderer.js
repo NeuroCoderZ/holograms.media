@@ -705,35 +705,40 @@ export class HologramRenderer {
 
     // Safety Floor for Rolling Max to prevent division error and keep visibility
     const safeCeiling = Math.max(this.currentRollingMax, -80);
-    const noiseFloor = -110;
 
-    // --- PHASE 14.0: Z-DIMMING & DYNAMICS TUNING ---
-    // 1. Headroom Scale: 0.9 (0 dB = ~115 units). Prevents visual clipping.
-    // 2. Non-linear Dimming: brightness = pow(ratio, 2.5). Highlights peaks, darkens valleys.
-    const HEADROOM_SCALE = 0.9;
+    // --- PHASE 16.0: CLAUDE'S RECOMMENDATIONS ---
+    // SOLUTION #2: Perceptual Mapping with Hard Cut
+    // SOLUTION #3: Gamma Correction for True Black
 
-    // 1 unit = 1 dB (internally), scaled by headroom for display.
+    // Adaptive Noise Floor: -70 dB for files (already mastered)
+    // For microphone we would use -90 dB, but source detection TBD
+    const NOISE_FLOOR_DB = -70.0;
+    const CEILING_DB = 0.0;
+    const HEADROOM_SCALE = 0.9; // 0 dB = ~115 units
+    const PERCEPTUAL_GAMMA = 2.5; // Stevens' Power Law approximation
+    const BRIGHTNESS_GAMMA = 3.0; // Extra darkening for true black
+
     const getNormAmp = (db) => {
-      // Clamp to physical range
-      const safeDb = Math.max(-128, Math.min(0, db));
+      // HARD CUT: Everything below noise floor = absolute silence
+      if (db < NOISE_FLOOR_DB) {
+        return { length: 0.1, brightness: 0.0 }; // Minimum spine, black
+      }
 
-      // Linear mapping: -128 -> 0, 0 -> 128
-      let physicalHeight = safeDb + 128;
+      // Perceptual mapping: noise_floor -> 0, ceiling -> 1
+      const range = CEILING_DB - NOISE_FLOOR_DB; // e.g., 70 dB
+      const linearNorm = (db - NOISE_FLOOR_DB) / range; // [0, 1]
 
-      // Apply Headroom to height
-      // This reserves the top ~10% of the visual range for true peaks or just aesthetics
-      const displayHeight = physicalHeight * HEADROOM_SCALE;
+      // Apply perceptual curve (Stevens' Law)
+      const perceptualNorm = Math.pow(linearNorm, PERCEPTUAL_GAMMA);
 
-      // Normalize height relative to the FULL 128 range to determine brightness
-      // We use the original physical ratio (0..1)
-      const ratio = physicalHeight / 128.0;
+      // Map to physical height (0..128), then apply headroom
+      const physicalHeight = perceptualNorm * 128.0 * HEADROOM_SCALE;
 
-      // Brightness: Quadratic curve for deep contrast
-      // Low values become much darker (e.g. 0.5 input -> 0.25 output)
-      const brightness = Math.pow(ratio, 2.5);
+      // Brightness: Even more aggressive gamma for true black at low levels
+      const brightness = Math.pow(perceptualNorm, BRIGHTNESS_GAMMA);
 
       return {
-        length: displayHeight,
+        length: physicalHeight,
         brightness: brightness
       };
     };
@@ -822,15 +827,16 @@ export class HologramRenderer {
           leftMesh.scale.z = hL;
           leftMesh.position.z = hL / 2;
 
-          // Emissive: Pure mapped brightness (0 = Black)
-          // No more 0.2 floor. If signal is -128dB, brightness is 0.
-          leftMesh.material.emissiveIntensity = qBrightL * (0.5 + conf * 0.5);
+          // Emissive: Gamma-corrected brightness for true black
+          // Confidence modulates between 50% and 100% intensity
+          const perceivedBrightL = qBrightL; // Already gamma-corrected in getNormAmp
+          leftMesh.material.emissiveIntensity = perceivedBrightL * (0.5 + conf * 0.5);
 
           columnPair.left.userData.baseColor.getHSL(this._hslTemp);
           leftMesh.material.color.setHSL(
             this._hslTemp.h,
-            this._hslTemp.s * (0.8 + conf * 0.2), // slightly clearer saturation
-            this._hslTemp.l * qBrightL // Dim diffuse color too for true black
+            this._hslTemp.s * (0.5 + perceivedBrightL * 0.5), // Saturation fades with volume
+            this._hslTemp.l * perceivedBrightL // Lightness dims to true black
           );
 
           const leftEdgesMesh = leftMesh.children[0];
@@ -845,14 +851,15 @@ export class HologramRenderer {
           rightMesh.scale.z = hR;
           rightMesh.position.z = hR / 2;
 
-          // Emissive: Pure mapped brightness
-          rightMesh.material.emissiveIntensity = qBrightR * (0.5 + conf * 0.5);
+          // Emissive: Gamma-corrected brightness for true black
+          const perceivedBrightR = qBrightR;
+          rightMesh.material.emissiveIntensity = perceivedBrightR * (0.5 + conf * 0.5);
 
           columnPair.right.userData.baseColor.getHSL(this._hslTemp);
           rightMesh.material.color.setHSL(
             this._hslTemp.h,
-            this._hslTemp.s * (0.8 + conf * 0.2),
-            this._hslTemp.l * qBrightR // Dim diffuse
+            this._hslTemp.s * (0.5 + perceivedBrightR * 0.5), // Saturation fades
+            this._hslTemp.l * perceivedBrightR // Lightness dims
           );
 
           const rightEdgesMesh = rightMesh.children[0];
@@ -875,33 +882,53 @@ export class HologramRenderer {
 
   /**
    * DEBUG: Logs physics statistics to verify spectral resolution and quantization.
+   * Phase 16.0: Extended diagnostics with histogram per Claude's recommendations.
    */
   _logPhysicsDiagnostics(dbLevels, panAngles) {
-    let blackCount = 0;
     let maxLevel = -Infinity;
     let minLevel = Infinity;
-    let varianceSum = 0;
-    let mean = 0;
+    let activeColumns = 0;
+    const histogram = {
+      silent: 0,      // < -100 dB (should be majority for quiet tracks)
+      noise: 0,       // -100 to -70 dB (noise floor)
+      quiet: 0,       // -70 to -40 dB (quiet notes, gated in visual)
+      medium: 0,      // -40 to -20 dB (medium notes)
+      loud: 0         // > -20 dB (forte)
+    };
 
-    // Calculate Mean
     for (let i = 0; i < 256; i++) {
-      mean += dbLevels[i];
-      if (dbLevels[i] <= -100) blackCount++; // Assuming -100 is effective noise floor
-      if (dbLevels[i] > maxLevel) maxLevel = dbLevels[i];
-      if (dbLevels[i] < minLevel) minLevel = dbLevels[i];
-    }
-    mean /= 256;
+      const db = dbLevels[i];
 
-    // Calculate Variance
-    for (let i = 0; i < 256; i++) {
-      varianceSum += Math.pow(dbLevels[i] - mean, 2);
-    }
-    const variance = varianceSum / 256;
+      if (db < -100) histogram.silent++;
+      else if (db < -70) histogram.noise++;
+      else if (db < -40) histogram.quiet++;
+      else if (db < -20) histogram.medium++;
+      else histogram.loud++;
 
-    console.debug(`[Physics Verified] Frame ${this._debugFrameCount} | ` +
-      `Black Cols: ${blackCount}/256 | ` +
-      `Max dB: ${maxLevel.toFixed(1)} | ` +
-      `Variance: ${variance.toFixed(2)} (High = Good Separation)`);
+      if (db > -70) activeColumns++;
+      if (db > maxLevel) maxLevel = db;
+      if (db < minLevel) minLevel = db;
+    }
+
+    const mean = dbLevels.reduce((a, b) => a + b, 0) / 256;
+    const variance = dbLevels.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / 256;
+
+    console.debug(
+      `[BasilaQ-127 Physics] Frame ${this._debugFrameCount}\n` +
+      `  Range: ${minLevel.toFixed(1)} to ${maxLevel.toFixed(1)} dB\n` +
+      `  Mean: ${mean.toFixed(1)} dB | Variance: ${variance.toFixed(1)}\n` +
+      `  Active Columns (>-70dB): ${activeColumns}/256\n` +
+      `  Histogram: Silent=${histogram.silent}, Noise=${histogram.noise}, ` +
+      `Quiet=${histogram.quiet}, Medium=${histogram.medium}, Loud=${histogram.loud}`
+    );
+
+    // ✅ EXPECTED for quiet piano:
+    // Silent: 200-230 (80-90%)
+    // Noise: 10-30
+    // Quiet: 5-15 (only active notes, but gated visually)
+    // Medium: 5-10
+    // Loud: 0-5
+    // Active: 20-50
   }
 
   /**
