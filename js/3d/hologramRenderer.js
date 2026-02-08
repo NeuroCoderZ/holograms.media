@@ -639,7 +639,17 @@ export class HologramRenderer {
       return;
     }
 
+    const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));
     let audioData = this.latestCwtData;
+
+    // DEBUG: Log activity every 3 seconds
+    if (!this._lastRenderLog || Date.now() - this._lastRenderLog > 3000) {
+      console.log(`[Renderer] isActive=${isActive}, hasData=${!!audioData}`);
+      if (audioData && audioData.levels) {
+        console.log(`[Renderer] level[0]=${audioData.levels[0].toFixed(2)} dB, max=${Math.max(...audioData.levels).toFixed(2)}`);
+      }
+      this._lastRenderLog = Date.now();
+    }
     const synthData = this.latestSynthData;
 
     // BLENDING LOGIC: Merge CWT and Synth data
@@ -721,7 +731,6 @@ export class HologramRenderer {
       }
     });
 
-    const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));
     const numSemitones = 128;
 
     // 3. APPLY TO COLUMNS

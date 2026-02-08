@@ -150,6 +150,14 @@ class CwtProcessor extends AudioWorkletProcessor {
             const angles = new Float32Array(mem.subarray(ptrs.pans / 4, ptrs.pans / 4 + 128));
             const confidence = new Float32Array(mem.subarray(ptrs.confidence / 4, ptrs.confidence / 4 + 128));
 
+            // DEBUG: Логи вывода WASM (раз в секунду)
+            if (this._hb % 60 === 0) {
+                this.port.postMessage({
+                    type: 'LOG',
+                    msg: `DATA_OUT: L[0]=${levels[0].toFixed(1)}dB, max=${Math.max(...levels).toFixed(1)}dB, P[0]=${angles[0].toFixed(2)}`
+                });
+            }
+
             // ✅ ГЛАВНОЕ: Отправка данных в рендерер
             // Мы убрали performance.now() и Math.max, так как они вызывали ошибки в Worklet
             this.port.postMessage({
