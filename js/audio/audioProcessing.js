@@ -49,9 +49,12 @@ eventBus.on('audio:spectralData', (data) => {
     const payload = { levels: modulated.levels, pans: fullPans };
 
     // ПРИНУДИТЕЛЬНЫЙ ЛОГ (раз в секунду)
+    // Периодический лог для проверки данных (раз в секунду)
     if (!window._lastAudioLog || Date.now() - window._lastAudioLog > 1000) {
         const max = Math.max(...payload.levels);
-        console.log(`[Flow Check] Data in EventBus. Max: ${max.toFixed(2)} dB`);
+        const min = Math.min(...payload.levels);
+        const first5 = Array.from(payload.levels.slice(0, 5)).map(v => v.toFixed(2)).join(', ');
+        console.log(`[Flow Check] data: max=${max.toFixed(2)}, min=${min.toFixed(2)}, first5=[${first5}]`);
         window._lastAudioLog = Date.now();
     }
 
@@ -71,12 +74,12 @@ export async function initializeCwtWorklet(audioContext) {
             console.warn('[AudioProcessing] Could not resume context during init:', err.message);
         });
     }
-    
+
     const proxy = getInputProxyNode(ctx);
     if (node && proxy) {
         try {
             proxy.disconnect(node);
-        } catch(e) {}
+        } catch (e) { }
         proxy.connect(node);
 
         // FORCING DATA FLOW: Connect to destination via silent gain

@@ -290,9 +290,9 @@ pub extern "C" fn cwtanalyzer_free(ptr: *mut CwtAnalyzer) {
 
 #[no_mangle]
 pub extern "C" fn malloc(size: usize) -> *mut u8 {
-    let mut buf = Vec::with_capacity(size);
+    let mut buf = vec![0u8; size];
     let ptr = buf.as_mut_ptr();
-    mem::forget(buf);
+    std::mem::forget(buf);
     ptr
 }
 
