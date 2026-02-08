@@ -187,7 +187,7 @@ export function initializeMediaPipeHands() {
             left: '0',
             width: '100%',
             height: '100%',
-            zIndex: '1000', // Panels are 1001, so this will be blurred UNDER them
+            zIndex: '2000', // DEBUG: Ensure overlay is on top of everything
             pointerEvents: 'none'
         });
 

@@ -129,4 +129,11 @@ const semitones = [
   { id: 127, n: "g7", f: 25087.71, deg: 1.41, dBLeft: 0, dBRight: 0, color: 'hsl(300.00, 100%, 50%)' }
 ];
 
+// NOTE: Visualization Physics Configuration
+// Z-Axis is strictly mapped to dB levels:
+// - Height Range: 0 to 128 units
+// - dB Range: -128 dB (Silence) to 0 dB (Max)
+// - Brightness: Linear mapping (0.0 to 1.0) based on Z-height.
+// - 1 unit height corresponds to 1 dB step.
+
 export default semitones;

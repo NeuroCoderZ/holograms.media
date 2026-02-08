@@ -707,16 +707,22 @@ export class HologramRenderer {
     const safeCeiling = Math.max(this.currentRollingMax, -80);
     const noiseFloor = -110;
 
-    // Helper: Normalized Amplitude with Rolling Peak and Linear Dimming (Phase 3)
+    // --- PHASE 13.0: PHYSICAL Z-AXIS & DIMMING ---
+    // 1 unit = 1 dB. Range: -128 dB (Silence) to 0 dB (Max).
     const getNormAmp = (db) => {
-      const noiseFloor = -115; // Lower floor for better sensitivity
-      // Linear normalization based on rolling peak (Auto-Gain)
-      let norm = (db - noiseFloor) / (safeCeiling - noiseFloor);
-      norm = Math.max(0, Math.min(1.0, norm));
+      // Clamp to physical range
+      const safeDb = Math.max(-128, Math.min(0, db));
+
+      // Linear mapping: -128 -> 0, 0 -> 128
+      const physicalHeight = safeDb + 128;
+
+      // Brightness: 0.0 (Black) to 1.0 (Full)
+      // Strictly linear dimming as requested
+      const brightness = physicalHeight / 128.0;
 
       return {
-        length: norm, // 128 cells max
-        brightness: norm // STRICT LINEAR: 128 steps of brightness
+        length: physicalHeight, // 0..128 units
+        brightness: brightness  // 0..1 intensity
       };
     };
 
@@ -795,53 +801,53 @@ export class HologramRenderer {
         columnPair.left.position.x = columnPair.left.userData.initialX + (pan < 0 ? discreteOffset : 0);
         columnPair.right.position.x = columnPair.right.userData.initialX + (pan > 0 ? discreteOffset : 0);
 
-        // 3. Z Scaling and Phase 4 Z-Dimming (Vertex Gradient + Confidence)
-        const depthL = qAmpL * GRID_DEPTH;
-        const depthR = qAmpR * GRID_DEPTH;
+        // 3. Z Scaling and Phase 13.0 Z-Dimming (Physical)
+        // qAmpL is already 0..128 units. qBrightL is 0..1.
 
         if (leftMesh) {
-          leftMesh.scale.z = Math.max(0.1, depthL);
-          leftMesh.position.z = depthL / 2;
+          // Height: Direct mapping from dB units
+          const hL = Math.max(0.01, qAmpL);
+          leftMesh.scale.z = hL;
+          leftMesh.position.z = hL / 2;
 
-          // Emissive follows Linear Brightness + Confidence multiplier
-          // BOOST: Shift the floor up to ensure visibility
-          const finalBrightL = 0.2 + (qBrightL * 0.8) * (0.6 + conf * 0.4);
-          leftMesh.material.emissiveIntensity = finalBrightL;
+          // Emissive: Pure mapped brightness (0 = Black)
+          // No more 0.2 floor. If signal is -128dB, brightness is 0.
+          leftMesh.material.emissiveIntensity = qBrightL * (0.5 + conf * 0.5);
 
           columnPair.left.userData.baseColor.getHSL(this._hslTemp);
           leftMesh.material.color.setHSL(
             this._hslTemp.h,
-            this._hslTemp.s * (0.7 + conf * 0.3), // Slightly more saturation
-            this._hslTemp.l // Keep base lightness intact for visibility
+            this._hslTemp.s * (0.8 + conf * 0.2), // slightly clearer saturation
+            this._hslTemp.l * qBrightL // Dim diffuse color too for true black
           );
 
           const leftEdgesMesh = leftMesh.children[0];
           if (leftEdgesMesh && leftEdgesMesh.material) {
-            leftEdgesMesh.material.opacity = 0.8 * finalBrightL * (0.5 + conf * 0.5);
+            // Edges fade out completely at low volume
+            leftEdgesMesh.material.opacity = qBrightL > 0.05 ? 0.5 : 0.0;
           }
         }
 
         if (rightMesh) {
-          rightMesh.scale.z = Math.max(0.1, depthR);
-          rightMesh.position.z = depthR / 2;
+          const hR = Math.max(0.01, qAmpR);
+          rightMesh.scale.z = hR;
+          rightMesh.position.z = hR / 2;
 
-          // Emissive for right channel
-          const finalBrightR = 0.2 + (qBrightR * 0.8) * (0.6 + conf * 0.4);
-          rightMesh.material.emissiveIntensity = finalBrightR;
+          // Emissive: Pure mapped brightness
+          rightMesh.material.emissiveIntensity = qBrightR * (0.5 + conf * 0.5);
 
           columnPair.right.userData.baseColor.getHSL(this._hslTemp);
           rightMesh.material.color.setHSL(
             this._hslTemp.h,
-            this._hslTemp.s * (0.7 + conf * 0.3),
-            this._hslTemp.l
+            this._hslTemp.s * (0.8 + conf * 0.2),
+            this._hslTemp.l * qBrightR // Dim diffuse
           );
 
           const rightEdgesMesh = rightMesh.children[0];
           if (rightEdgesMesh && rightEdgesMesh.material) {
-            rightEdgesMesh.material.opacity = 0.8 * finalBrightR * (0.5 + conf * 0.5);
+            rightEdgesMesh.material.opacity = qBrightR > 0.05 ? 0.5 : 0.0;
           }
         }
-
         // 4. Update Performance Monitor (Phase 4)
         perfMonitor.update(this._lastWasmPerf, performance.now() - (this.latestTimestamp || 0));
       }
