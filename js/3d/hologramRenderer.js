@@ -714,7 +714,7 @@ export class HologramRenderer {
     // For microphone we would use -90 dB, but source detection TBD
     const NOISE_FLOOR_DB = -70.0;
     const CEILING_DB = 0.0;
-    const HEADROOM_SCALE = 0.9; // 0 dB = ~115 units
+    const HEADROOM_SCALE = 1.0; // Phase 17.0: Use full 128-unit range as requested
     const PERCEPTUAL_GAMMA = 2.5; // Stevens' Power Law approximation
     const BRIGHTNESS_GAMMA = 3.0; // Extra darkening for true black
 
@@ -731,7 +731,7 @@ export class HologramRenderer {
       // Apply perceptual curve (Stevens' Law)
       const perceptualNorm = Math.pow(linearNorm, PERCEPTUAL_GAMMA);
 
-      // Map to physical height (0..128), then apply headroom
+      // Map to physical height (0..128), then apply headroom (now 1.0)
       const physicalHeight = perceptualNorm * 128.0 * HEADROOM_SCALE;
 
       // Brightness: Even more aggressive gamma for true black at low levels

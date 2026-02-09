@@ -5,7 +5,7 @@ use std::mem;
 const RING_BUFFER_SIZE: usize = 8192;
 const OMEGA0: f32 = 6.0; // Morlet parameter
 const SQRT_PI: f32 = 1.77245385; // sqrt(pi)
-const PRE_GAIN_DB: f32 = 20.0; // Balanced boost for laptop microphones
+const PRE_GAIN_DB: f32 = 0.0; // Phase 17.0: Disabled microphone boost as requested by user
 
 // --- COMPLEX NUMBER HELPER ---
 #[derive(Copy, Clone)]
@@ -80,6 +80,7 @@ pub struct CwtAnalyzer {
     // Output state (Values in range [-128.0, 0.0] dB)
     last_db: Vec<f32>,
     last_pan: Vec<f32>,
+    source_type: u8, // 0 = file, 1 = microphone
 }
 
 impl CwtAnalyzer {
@@ -104,15 +105,17 @@ impl CwtAnalyzer {
             
             let mut wavelet_data = Vec::with_capacity(length);
             
-            // Parseval Normalization: Energy conservation across spectrum
+            // Phase 17.0 (Claude's Recommendation #4): 
+            // Correct Wavelet Energy Normalization (Energy sum across the whole wavelet)
             let mut energy_sum = 0.0;
             for n in 0..length {
                 let t = n as f32 - t_max as f32;
                 let x = t / s;
                 let gaussian = (-0.5 * x * x).exp();
-                energy_sum += gaussian * gaussian;
+                // Sine and cosine components squared sum equal 1.0 (Euler), so we only sum the envelope squared
+                energy_sum += gaussian * gaussian; 
             }
-            let norm_factor = (1.0 / energy_sum.sqrt()).max(1e-6);
+            let norm_factor = if energy_sum > 0.0 { 1.0 / energy_sum.sqrt() } else { 1e-6 };
 
             for n in 0..length {
                 let t = n as f32 - t_max as f32;
@@ -138,7 +141,7 @@ impl CwtAnalyzer {
 // --- PURE WASM EXPORTS ---
 
 #[no_mangle]
-pub extern "C" fn cwtanalyzer_new(sample_rate: f32, target_fps: f32) -> *mut CwtAnalyzer {
+pub extern "C" fn cwtanalyzer_new(sample_rate: f32, target_fps: f32, source_type: u8) -> *mut CwtAnalyzer {
     let wavelets = CwtAnalyzer::precalculate_wavelets(sample_rate);
     let samples_per_frame = (sample_rate / target_fps) as usize;
 
@@ -152,6 +155,7 @@ pub extern "C" fn cwtanalyzer_new(sample_rate: f32, target_fps: f32) -> *mut Cwt
         samples_since_last_calc: 0,
         last_db: vec![-128.0; 256],
         last_pan: vec![0.0; 128],
+        source_type,
     });
 
     Box::into_raw(analyzer)
