@@ -25,6 +25,7 @@ class CwtProcessor extends AudioWorkletProcessor {
         // Configuration from service
         this._sampleRate = options.processorOptions.sampleRate || 48000;
         this._targetFps = options.processorOptions.targetFps || 60;
+        this._sourceType = options.processorOptions.sourceType || 0; // 0=file, 1=mic
 
         console.log(`[CwtWorklet] Initialized with SR: ${this._sampleRate}, FPS: ${this._targetFps}`);
 
@@ -76,8 +77,8 @@ class CwtProcessor extends AudioWorkletProcessor {
                 throw new Error('Required WASM exports not found (cwtanalyzer_new/process)');
             }
 
-            // Pass SR and FPS to constructor
-            analyzerPtr = wasm.cwtanalyzer_new(this._sampleRate, this._targetFps);
+            // Pass SR, FPS and SourceType to constructor
+            analyzerPtr = wasm.cwtanalyzer_new(this._sampleRate, this._targetFps, this._sourceType);
 
             if (!analyzerPtr) {
                 throw new Error('cwtanalyzer_new returned null');
