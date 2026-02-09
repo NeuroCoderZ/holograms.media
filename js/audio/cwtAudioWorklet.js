@@ -50,6 +50,12 @@ class CwtProcessor extends AudioWorkletProcessor {
                     this._targetFps = newFps;
                     this.port.postMessage({ type: 'LOG', msg: `FPS updated to: ${newFps}` });
                 }
+            } else if (data.type === 'RESET' && wasm && analyzerPtr) {
+                // Сброс буферов при смене трека или Stop
+                if (wasm.cwtanalyzer_reset) {
+                    wasm.cwtanalyzer_reset(analyzerPtr);
+                    this.port.postMessage({ type: 'LOG', msg: 'WASM_RESET_COMPLETE' });
+                }
             }
         };
 
