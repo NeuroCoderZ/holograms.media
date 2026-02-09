@@ -154,6 +154,11 @@ export class AudioFilePlayer {
 
     // Start playback
     const offsetToPlay = this.pausedAt;
+
+    // VINYL START EFFECT: Ramp playbackRate from 0.01 to 1.0
+    this.audioBufferSource.playbackRate.setValueAtTime(0.01, this.audioContext.currentTime);
+    this.audioBufferSource.playbackRate.linearRampToValueAtTime(1.0, this.audioContext.currentTime + 0.5); // 500ms ramp
+
     this.audioBufferSource.start(0, offsetToPlay);
     this.startOffset = this.audioContext.currentTime - offsetToPlay;
     this.isPlaying = true;
@@ -192,17 +197,25 @@ export class AudioFilePlayer {
   pauseAudio() {
     if (!this.isPlaying || !this.audioBufferSource) return;
 
-    this.pausedAt = this.audioContext.currentTime - this.startOffset;
+    // VINYL STOP EFFECT: Ramp playbackRate from current to 0.0 before stopping
+    const now = this.audioContext.currentTime;
     try {
-      this.audioBufferSource.stop();
+      this.audioBufferSource.playbackRate.cancelScheduledValues(now);
+      this.audioBufferSource.playbackRate.setValueAtTime(this.audioBufferSource.playbackRate.value, now);
+      this.audioBufferSource.playbackRate.linearRampToValueAtTime(0.001, now + 0.5); // 500ms slow down
+
+      // Stop after ramp finishes
+      this.audioBufferSource.stop(now + 0.5);
     } catch (_error) { }
+
+    this.pausedAt = (now - this.startOffset) + 0.25;
 
     this.isPlaying = false;
     this.state.audio.isPlaying = false;
     this.state.audio.isPaused = true;
     this.state.audio.activeSource = 'file';
 
-    console.log('[AudioFilePlayer] ⏸ Paused.');
+    console.log('[AudioFilePlayer] ⏸ Paused with vinyl effect.');
 
     if (playButton) playButton.classList.remove('active');
     if (pauseButton) pauseButton.classList.add('active');
