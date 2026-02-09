@@ -572,12 +572,17 @@ export class HologramRenderer {
     // User wants "contrast grid lines". Let's use a dynamic color matching the column but brighter.
     // Or just white/grey overlay.
     // Let's use a blended color to keep it aesthetic but visible.
-    const edgeColor = new THREE.Color(semitone.color).offsetHSL(0, 0, 0.2); // Brighter
+    const edgeColor = new THREE.Color(semitone.color).offsetHSL(0, 0, 0.4); // Much Brighter for contrast
     const edgesMaterial = new THREE.LineBasicMaterial({
       color: edgeColor,
       transparent: true,
-      opacity: 0.8, // Increased contrast as requested
-      linewidth: 1
+      opacity: 0.9, // Increased opacity
+      linewidth: 1,
+      depthTest: true,
+      // Fix Z-fighting: Draw lines "on top" of the mesh faces
+      polygonOffset: true,
+      polygonOffsetFactor: -2.0,
+      polygonOffsetUnits: -2.0
     });
     const edgesMesh = new THREE.LineSegments(edgesGeometry, edgesMaterial);
 
