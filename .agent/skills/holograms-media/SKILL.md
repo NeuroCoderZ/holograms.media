@@ -24,3 +24,5 @@ description: Инструкции по работе с платформой Holo
 ## 🚀 Процесс развертывания
 - **Cloudflare Pages:** Для фронтенда.
 - **Koyeb:** Для FastAPI бэкенда.
+- **Repomix:** Использовать ТОЛЬКО XML формат и имя `repomix-context.xml`. Игнорировать `node_modules`, `dist`, `target`, `.git`, `.scripts`.
+  Команда: `npx repomix --style xml --output repomix-context.xml --ignore "node_modules,dist,target,.git,.scripts"`

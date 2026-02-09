@@ -283,6 +283,27 @@ pub extern "C" fn cwtanalyzer_set_fps(ptr: *mut CwtAnalyzer, new_fps: f32) {
     analyzer.target_fps = new_fps;
 }
 
+/// Сбрасывает состояние анализатора в исходное (тишина).
+/// Вызывается при смене трека или нажатии Stop для очистки "памяти" буферов.
+#[no_mangle]
+pub extern "C" fn cwtanalyzer_reset(ptr: *mut CwtAnalyzer) {
+    if ptr.is_null() { return; }
+    let analyzer = unsafe { &mut *ptr };
+    
+    // Очистка кольцевых буферов (забиваем нулями)
+    for sample in analyzer.left_ring.data.iter_mut() { *sample = 0.0; }
+    for sample in analyzer.right_ring.data.iter_mut() { *sample = 0.0; }
+    analyzer.left_ring.cursor = 0;
+    analyzer.right_ring.cursor = 0;
+    
+    // Сброс выходных значений в тишину
+    for db in analyzer.last_db.iter_mut() { *db = -128.0; }
+    for pan in analyzer.last_pan.iter_mut() { *pan = 0.0; }
+    
+    // Сброс счетчика семплов
+    analyzer.samples_since_last_calc = 0;
+}
+
 #[no_mangle]
 pub extern "C" fn cwtanalyzer_free(ptr: *mut CwtAnalyzer) {
     if !ptr.is_null() {

@@ -1,7 +1,7 @@
 // frontend/js/audio/audioFilePlayer.js
 // Audio File Player - Pure CQT Architecture (No FFT Analyzers)
 import { state } from '../core/init.js';
-import { getAudioContext, setupAudioProcessing, isCwtActive } from './audioProcessing.js';
+import { getAudioContext, setupAudioProcessing, isCwtActive, resetCwtAnalyzer } from './audioProcessing.js';
 
 // Элементы управления плеером (module-level variables)
 let fileInput = null;
@@ -65,6 +65,9 @@ export class AudioFilePlayer {
         if (this.audioBufferSource || this.isPlaying || this.pausedAt > 0) {
           this.stopAudio();
         }
+
+        // Сброс буферов WASM перед декодированием нового файла
+        resetCwtAnalyzer();
 
         this.audioBuffer = await this.audioContext.decodeAudioData(e.target.result);
         console.log('[AudioFilePlayer] ✅ Audio file loaded and decoded.');
@@ -229,6 +232,9 @@ export class AudioFilePlayer {
     this.pausedAt = 0;
     this.startOffset = 0;
     this.state.audio.activeSource = 'none';
+
+    // Сброс буферов WASM при остановке
+    resetCwtAnalyzer();
 
     console.log('[AudioFilePlayer] ⏹ Stopped.');
 
