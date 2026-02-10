@@ -1088,6 +1088,7 @@ export class HologramRenderer {
               leftEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
               leftEdgesMesh.material.color.setHSL(0, 0, 1.0); // White edges on selection
             }
+          } else {
             if (leftEdgesMesh && leftEdgesMesh.material) {
               // Edges should be visible if there is any non-zero intensity
               leftEdgesMesh.material.opacity = qBrightL > 0.001 ? 0.9 : 0.0;
@@ -1139,6 +1140,7 @@ export class HologramRenderer {
               rightEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
               rightEdgesMesh.material.color.setHSL(0, 0, 1.0);
             }
+          } else {
             if (rightEdgesMesh && rightEdgesMesh.material) {
               // Edges should be visible if there is any non-zero intensity
               rightEdgesMesh.material.opacity = qBrightR > 0.001 ? 0.9 : 0.0;
