@@ -1085,16 +1085,27 @@ export class HologramRenderer {
             const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5; // 0..1
             finalIntensityL += 0.3 * blink; // Pulse glow
             if (leftEdgesMesh && leftEdgesMesh.material) {
-              leftEdgesMesh.material.opacity = 0.5 + (0.5 * blink);
+              leftEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
               leftEdgesMesh.material.color.setHSL(0, 0, 1.0); // White edges on selection
             }
           } else {
             if (leftEdgesMesh && leftEdgesMesh.material) {
-              leftEdgesMesh.material.opacity = 0.9;
-              // Restore original edge color (approx, strictly should save it)
-              // For now, keep it white/bright derived
+              // Edges should be ~30% brighter than surface
+              leftEdgesMesh.material.opacity = qBrightL > 0.05 ? 0.9 : 0.0;
+
               if (semitoneConfig) {
-                leftEdgesMesh.material.color.set(semitoneConfig.color).offsetHSL(0, 0, 0.4);
+                // Get base color
+                const color = new THREE.Color(semitoneConfig.color);
+                color.getHSL(this._hslTemp);
+
+                // Boost lightness
+                const edgeL = Math.min(1.0, this._hslTemp.l * 1.5 + 0.3);
+
+                leftEdgesMesh.material.color.setHSL(
+                  this._hslTemp.h,
+                  this._hslTemp.s,
+                  edgeL * (0.5 + finalIntensityL * 0.5)
+                );
               }
             }
           }
@@ -1125,14 +1136,21 @@ export class HologramRenderer {
             const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
             finalIntensityR += 0.3 * blink;
             if (rightEdgesMesh && rightEdgesMesh.material) {
-              rightEdgesMesh.material.opacity = 0.5 + (0.5 * blink);
+              rightEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
               rightEdgesMesh.material.color.setHSL(0, 0, 1.0);
             }
           } else {
             if (rightEdgesMesh && rightEdgesMesh.material) {
-              rightEdgesMesh.material.opacity = 0.9;
+              rightEdgesMesh.material.opacity = qBrightR > 0.05 ? 0.9 : 0.0;
               if (semitoneConfig) {
-                rightEdgesMesh.material.color.set(semitoneConfig.color).offsetHSL(0, 0, 0.4);
+                const color = new THREE.Color(semitoneConfig.color);
+                color.getHSL(this._hslTemp);
+                const edgeL = Math.min(1.0, this._hslTemp.l * 1.5 + 0.3);
+                rightEdgesMesh.material.color.setHSL(
+                  this._hslTemp.h,
+                  this._hslTemp.s,
+                  edgeL * (0.5 + finalIntensityR * 0.5)
+                );
               }
             }
           }

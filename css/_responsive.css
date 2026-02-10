@@ -22,14 +22,22 @@
   .panel.left-panel {
     left: 0 !important;
     transform: translateX(-100%) !important;
-    width: 80px !important;
+    width: 33.33vw !important; /* One third */
+    max-width: none !important;
   }
 
   .panel.right-panel {
     right: 0 !important;
     transform: translateX(100%) !important;
-    width: 100vw !important;
-    background-color: rgba(16, 16, 32, 0.95) !important; /* Чуть темнее фон для читаемости */
+    width: 66.67vw !important; /* Two thirds */
+  }
+  
+  /* Ensure they don't overlap strangely when both open */
+  body.left-panel-open .panel.left-panel {
+      transform: translateX(0) !important;
+  }
+  body.right-panel-open .panel.right-panel {
+      transform: translateX(0) !important;
   }
 
   .panel.left-panel.visible,
