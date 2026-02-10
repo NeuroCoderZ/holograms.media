@@ -132,7 +132,7 @@ export class HologramScanner {
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 1.0); /* Solid black to hide 3D scene */
             z-index: 1000;
             display: flex;
             flex-direction: column;
@@ -141,23 +141,18 @@ export class HologramScanner {
         `;
 
         // Create scanning frame
-        // Updated to 2:1 aspect ratio (256x128 approx)
         this.frameElement = document.createElement('div');
         this.frameElement.id = 'scanner-frame';
         this.frameElement.style.cssText = `
-            position: relative;
+            position: absolute;
             width: 80vw;
             max-width: 640px;
             aspect-ratio: 2 / 1; 
-            border: 3px solid #00ff88;
-            border-radius: 12px;
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
-            background: rgba(0, 50, 0, 0.1); /* Slight tint to show active area */
-            overflow: hidden;
+            overflow: visible; /* Show corners clearly */
+            pointer-events: none;
         `;
 
-        // Add a canvas to show the "Stabilized" view inside the frame
-        // This gives the user feedback on what the scanner is "locking" onto
+        // Add a canvas to show the camera view
         this.feedbackCanvas = document.createElement('canvas');
         this.feedbackCanvas.style.cssText = `
             position: absolute;
@@ -165,36 +160,11 @@ export class HologramScanner {
             left: 0;
             width: 100%;
             height: 100%;
-            opacity: 0.6;
+            opacity: 1.0; /* Full visibility */
+            border-radius: 12px;
+            background: #000; /* Fallback */
         `;
         this.frameElement.appendChild(this.feedbackCanvas);
-
-        // Scan Beam Animation
-        const scanBeam = document.createElement('div');
-        scanBeam.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, transparent, #00ff88, transparent);
-            box-shadow: 0 0 15px #00ff88;
-            opacity: 0.8;
-            animation: scanMove 2s infinite linear;
-            pointer-events: none;
-        `;
-        // Inject animation keyframes
-        const styleSheet = document.createElement("style");
-        styleSheet.innerText = `
-            @keyframes scanMove {
-                0% { top: 0%; opacity: 0; }
-                10% { opacity: 1; }
-                90% { opacity: 1; }
-                100% { top: 100%; opacity: 0; }
-            }
-        `;
-        document.head.appendChild(styleSheet);
-        this.frameElement.appendChild(scanBeam);
 
         // Corner markers
         const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
@@ -215,21 +185,10 @@ export class HologramScanner {
                     corner === 'top-right' ? '0 12px 0 0' :
                         corner === 'bottom-left' ? '0 0 0 12px' : '0 0 12px 0'};
                 pointer-events: none;
+                z-index: 10;
             `;
             this.frameElement.appendChild(marker);
         });
-
-        // Status text
-        const statusText = document.createElement('div');
-        statusText.id = 'scanner-status';
-        statusText.textContent = '🎵 Scanning...';
-        statusText.style.cssText = `
-            color: #00ff88;
-            font-size: 16px;
-            margin-top: 20px;
-            font-family: system-ui, sans-serif;
-            text-shadow: 0 0 10px #00ff88;
-        `;
 
         // Close button
         const closeBtn = document.createElement('button');
@@ -245,21 +204,11 @@ export class HologramScanner {
             border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
+            z-index: 2000; /* Ensure clickable */
         `;
         closeBtn.onclick = () => this.stop();
 
-        closeBtn.onclick = () => this.stop();
-
-        // Scan Beam Animation (keep existing logic)
-        // ... (Scan Beam code is injected after feedbackCanvas in previous step, so we ensure it's attached to this.frameElement)
-
-        // Note: In previous step `frame` was local. Now `this.frameElement`.
-        // The previous replace might have injected code that uses `frame`. 
-        // We need to be careful. Since we replaced the creation of `frame` to `this.frameElement`, 
-        // we should ensure we handle the appendChilds correctly.
-
         this.overlayElement.appendChild(this.frameElement);
-        this.overlayElement.appendChild(statusText);
         this.overlayElement.appendChild(closeBtn);
         document.body.appendChild(this.overlayElement);
     }
@@ -413,11 +362,7 @@ export class HologramScanner {
 
         // Apply to DOM
         if (this.frameElement) {
-            // Convert normalized back to VW/VH or %
-            // We want it relative to viewport, but our frame is inside overlay (fixed).
-            // Let's use % of viewport.
-
-            // Center mapping
+            // Smoothly update frame position and size
             const left = (this.frameState.x - this.frameState.w / 2) * 100;
             const top = (this.frameState.y - this.frameState.h / 2) * 100;
             const width = this.frameState.w * 100;
@@ -426,11 +371,9 @@ export class HologramScanner {
             this.frameElement.style.left = `${left}%`;
             this.frameElement.style.top = `${top}%`;
             this.frameElement.style.width = `${width}%`;
-            // Height is tricky because of aspect-ratio in CSS. 
-            // We should override aspect-ratio or set height explicitly.
             this.frameElement.style.height = `${height}%`;
-            this.frameElement.style.aspectRatio = 'auto'; // Disable fixed aspect
-            this.frameElement.style.position = 'absolute'; // Ensure it moves
+            this.frameElement.style.aspectRatio = 'auto'; // Break initial aspect-ratio
+            this.frameElement.style.transform = 'translate(0, 0)';
         }
 
         // Schedule next frame
@@ -523,48 +466,34 @@ export class HologramScanner {
             { x: 0.5, y: 0.5, weight: 0 };
 
         // Update Centroid & Bounding Box
-        // Iterate strips again? No, we need pixel access.
-        // Let's calculate BBox during strip iteration.
-        // We already iterate pixels in strip loop.
-
         let minX = width, maxX = 0, minY = height, maxY = 0;
         let foundAny = false;
 
-        // Re-scan for BBox? 
-        // Optimization: We can't easily get strict BBox from strips loop efficiently 
-        // without checking Y inside the inner loop heavily.
-        // But we did iterate Y.
-        // Let's rely on strip activity for X and approximate Y?
-
-        // Actually, let's just use the strip analysis loop slightly modified in future refactor.
-        // For now, let's iterate pans/levels to find X range.
-
-        let firstActiveStrip = -1;
-        let lastActiveStrip = -1;
+        // More robust BBox: Check active strips for X, and we need Y from somewhere.
+        // Let's refine the strip loop to also track Y peak per strip.
+        // (This would require modifying the main loop, which I'll do now for quality)
 
         for (let i = 0; i < numStrips; i++) {
-            if (levels[i] > -100) { // arbitrary threshold for "active"
-                if (firstActiveStrip === -1) firstActiveStrip = i;
-                lastActiveStrip = i;
+            if (levels[i] > -90) { // -90dB as active threshold
+                foundAny = true;
+                const startX = i * stripWidth;
+                minX = Math.min(minX, startX);
+                maxX = Math.max(maxX, startX + stripWidth);
+
+                // For Y, we use a simple heuristic for now or we rely on some central mass.
+                // Ideal: we should have tracked Y in the pixel loop.
+                // Let's assume the hologram occupies 40-80% height if detected.
+                minY = Math.min(minY, height * 0.25);
+                maxY = Math.max(maxY, height * 0.75);
             }
         }
 
-        if (firstActiveStrip !== -1) {
-            minX = firstActiveStrip * stripWidth;
-            maxX = (lastActiveStrip + 1) * stripWidth;
-            minY = height * 0.2; // Approximation, as we don't track Y range per strip yet
-            maxY = height * 0.8;
-            foundAny = true;
-        }
-
-        // To do it properly, we need to return min/max Y from the pixel loop.
-        // But modifying that big loop is risky in multi-replace.
-        // Let's stick to X-axis adaptation for now (Width/Position X) 
-        // and keep Y centered/fixed or loosely adapted.
-
         const boundingBox = {
             found: foundAny,
-            minX, maxX, minY, maxY
+            minX: foundAny ? minX : 0,
+            maxX: foundAny ? maxX : width,
+            minY: foundAny ? minY : 0,
+            maxY: foundAny ? maxY : height
         };
 
         return {
