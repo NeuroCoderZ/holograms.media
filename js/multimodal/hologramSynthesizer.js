@@ -89,18 +89,19 @@ export class HologramSynthesizer {
      * Mid (<1000Hz) -> Square
      * High -> Triangle
      */
+    /**
+     * Updates oscillator types based on frequency range.
+     * High Fidelity -> All Sine for pure spectral reconstruction.
+     */
     _configureRefinedOscillators() {
         this.oscillators.forEach((osc, i) => {
-            const freq = osc.frequency.value;
-            if (freq < 200) osc.type = 'sawtooth';
-            else if (freq < 1000) osc.type = 'square';
-            else osc.type = 'triangle';
+            osc.type = 'sine'; // Pure sine for high fidelity reconstruction
         });
     }
 
     /**
      * Updates all oscillators based on extracted visual parameters.
-     * Uses dynamic allocation to play only the N loudest voices (Polyphony limitation).
+     * Uses dynamic allocation with increased polyphony (32 voices).
      * @param {Float32Array} levels - 256 values (128 L + 128 R), dB scale (-128 to 0)
      * @param {Float32Array} pans - 128 pan values (-1 to +1)
      */
@@ -115,12 +116,12 @@ export class HologramSynthesizer {
         for (let i = 0; i < 128; i++) {
             const levelL = levels[i];
             const levelR = levels[i + 128];
-            const maxLevel = Math.max(levelL, levelR); // Take max of stereo channel
+            const maxLevel = Math.max(levelL, levelR);
 
             // Convert dB to Linear
             const amplitude = Math.pow(10, maxLevel / 20);
 
-            if (amplitude > 0.01) { // Threshold
+            if (amplitude > 0.001) { // Lower threshold for more detail
                 activeVoices.push({ index: i, amp: amplitude, pan: pans[i] });
             }
         }
@@ -128,10 +129,9 @@ export class HologramSynthesizer {
         // 2. Sort by amplitude (Descending)
         activeVoices.sort((a, b) => b.amp - a.amp);
 
-        // 3. Keep top N voices (e.g. 16)
-        const MAX_POLYPHONY = 16;
+        // 3. Keep top N voices (High Fidelity: 32)
+        const MAX_POLYPHONY = 32;
         const topVoices = activeVoices.slice(0, MAX_POLYPHONY);
-        const topIndices = new Set(topVoices.map(v => v.index));
 
         // 4. Update Gains
         for (let i = 0; i < 128; i++) {
@@ -145,14 +145,14 @@ export class HologramSynthesizer {
                 const targetVolume = Math.min(1, Math.max(0, voice.amp * this.maxVolume));
 
                 gain.gain.cancelScheduledValues(now);
-                gain.gain.setTargetAtTime(targetVolume, now, this.attackTime);
+                gain.gain.setTargetAtTime(targetVolume, now, 0.008); // Fast response (8ms)
 
                 panner.pan.cancelScheduledValues(now);
-                panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, voice.pan)), now, this.attackTime);
+                panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, voice.pan)), now, 0.008);
             } else {
                 // Inactive Voice -> Silence
                 gain.gain.cancelScheduledValues(now);
-                gain.gain.setTargetAtTime(0, now, this.releaseTime);
+                gain.gain.setTargetAtTime(0, now, 0.05);
             }
         }
     }
