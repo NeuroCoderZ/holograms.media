@@ -452,9 +452,34 @@ export class HologramScanner {
                     minY = Math.min(minY, colMinY);
                     maxY = Math.max(maxY, colMaxY);
                 } else {
-                    // Fallback if column scan failed but levels detected
                     minY = Math.min(minY, height * 0.25);
                     maxY = Math.max(maxY, height * 0.75);
+                }
+            }
+        }
+
+        // --- Anchor Search (Phase 19.11) ---
+        // Find most intense pixels in low (Red) and high (Violet) zones
+        let violetAnchor = { x: 0, y: height / 2, val: 0 };
+        let redAnchor = { x: width, y: height / 2, val: 0 };
+
+        // Search zones (15% from edges)
+        const zoneWidth = Math.floor(width * 0.15);
+        for (let y = minY; y < maxY; y += 4) {
+            // Violet Zone (Left edge in scan)
+            for (let x = 0; x < zoneWidth; x += 4) {
+                const idx = (y * width + x) * 4;
+                const val = (data[idx] + data[idx + 1] + data[idx + 2]) / 3; // Brightness
+                if (val > violetAnchor.val) {
+                    violetAnchor = { x, y, val };
+                }
+            }
+            // Red Zone (Right edge in scan)
+            for (let x = width - zoneWidth; x < width; x += 4) {
+                const idx = (y * width + x) * 4;
+                const val = (data[idx] + data[idx + 1] + data[idx + 2]) / 3; // Brightness
+                if (val > redAnchor.val) {
+                    redAnchor = { x, y, val };
                 }
             }
         }
@@ -464,7 +489,8 @@ export class HologramScanner {
             minX: foundAny ? minX : 0,
             maxX: foundAny ? maxX : width,
             minY: foundAny ? minY : 0,
-            maxY: foundAny ? maxY : height
+            maxY: foundAny ? maxY : height,
+            anchors: { violet: violetAnchor, red: redAnchor }
         };
 
         return {
