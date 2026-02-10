@@ -431,9 +431,13 @@ export class HologramScanner {
                     levels[i] = Math.max(-128, db);
                     levels[i + 128] = Math.max(-128, db);
 
-                    // Visual Feedback: Highlight detected peaks in the viewfinder
+                    // Simple Pan Mapping: Left (0) -> -1, Right (127) -> 1
+                    pans[i] = (i / 63.5) - 1.0;
+
+                    // Visual Feedback: Stereo Color Gradient (Cyan -> Magenta)
                     if (fbCtx) {
-                        fbCtx.fillStyle = `rgba(0, 255, 136, ${amp * 0.5})`;
+                        const hue = 180 + (i / 127) * 120; // 180 (Cyan) -> 300 (Magenta)
+                        fbCtx.fillStyle = `hsla(${hue}, 100%, 50%, ${amp * 0.8})`;
                         fbCtx.fillRect(startX, 0, stripWidth, height);
                     }
                 }
