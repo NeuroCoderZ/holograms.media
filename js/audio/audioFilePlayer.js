@@ -225,21 +225,28 @@ export class AudioFilePlayer {
    * Обработчик нажатия кнопки Stop.
    */
   stopAudio() {
+    // VINYL STOP EFFECT: Ramp playbackRate from current to 0.0 before stopping
+    if (this.isPlaying && this.audioBufferSource) {
+      const now = this.audioContext.currentTime;
+      try {
+        this.audioBufferSource.playbackRate.cancelScheduledValues(now);
+        this.audioBufferSource.playbackRate.setValueAtTime(this.audioBufferSource.playbackRate.value, now);
+        this.audioBufferSource.playbackRate.linearRampToValueAtTime(0.001, now + 0.3); // Faster stop (300ms) for "Scratch Stop"
+
+        // Stop after ramp finishes
+        this.audioBufferSource.stop(now + 0.3);
+      } catch (_error) { }
+    }
+
     this.isPlaying = false;
     this.state.audio.isPlaying = false;
     this.state.audio.isPaused = false;
 
-    if (this.audioBufferSource) {
-      this.audioBufferSource.onended = null;
-      try {
-        this.audioBufferSource.stop();
-      } catch (_e) { }
-      this.audioBufferSource.disconnect();
-      this.audioBufferSource = null;
-    }
-
+    // Delayed disconnect to let the tail play
     if (this.gainNode) {
-      this.gainNode.disconnect();
+      setTimeout(() => {
+        if (!this.isPlaying) this.gainNode.disconnect();
+      }, 350);
     }
 
     this.pausedAt = 0;
@@ -249,7 +256,7 @@ export class AudioFilePlayer {
     // Сброс буферов WASM при остановке
     resetCwtAnalyzer();
 
-    console.log('[AudioFilePlayer] ⏹ Stopped.');
+    console.log('[AudioFilePlayer] ⏹ Stopped with Scratch Effect.');
 
     // Re-enable microphone tracks
     if (this.state.multimodal?.currentStream) {
@@ -258,8 +265,15 @@ export class AudioFilePlayer {
 
     if (playButton) playButton.classList.remove('active');
     if (pauseButton) pauseButton.classList.remove('active');
-    if (stopButton) stopButton.classList.remove('active');
+
+    // Visual feedback for Stop button
+    if (stopButton) {
+      stopButton.classList.add('active');
+      setTimeout(() => stopButton.classList.remove('active'), 200);
+    }
   }
+
+
 
   /**
    * Инициализация элементов управления аудиоплеером.
