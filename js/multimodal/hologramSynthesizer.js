@@ -20,7 +20,7 @@ export class HologramSynthesizer {
         this.oscillatorType = 'sine'; // sine, triangle for softer sound
         this.attackTime = 0.01;       // 10ms attack (Snappy)
         this.releaseTime = 0.05;      // 50ms release (No drone)
-        this.maxVolume = 0.3;         // Master volume limit (prevent clipping with 128 oscillators)
+        this.maxVolume = 0.5;         // Master volume limit (Phase 19.14)
     }
 
     /**
@@ -38,7 +38,7 @@ export class HologramSynthesizer {
 
             // Master gain to prevent clipping
             this.masterGain = this.audioContext.createGain();
-            this.masterGain.gain.value = this.maxVolume / Math.sqrt(128); // Scale for 128 sources
+            this.masterGain.gain.value = this.maxVolume / Math.sqrt(128);
             this.masterGain.connect(this.audioContext.destination);
 
             // Create oscillator chain for each semitone
@@ -126,31 +126,27 @@ export class HologramSynthesizer {
             }
         }
 
-        // 2. Sort by amplitude (Descending)
-        activeVoices.sort((a, b) => b.amp - a.amp);
-
-        // 3. Keep top N voices (High Fidelity: 32)
-        const MAX_POLYPHONY = 32;
-        const topVoices = activeVoices.slice(0, MAX_POLYPHONY);
-
-        // 4. Update Gains
+        // 2. Update Gains and Pans for all 128 bins (Phase 19.15: No polyphony limit)
         for (let i = 0; i < 128; i++) {
             const gain = this.gains[i];
             const panner = this.panners[i];
 
-            const voice = topVoices.find(v => v.index === i);
+            const levelL = levels[i];
+            const levelR = levels[i + 128];
+            const maxLevel = Math.max(levelL, levelR);
+            const amplitude = Math.pow(10, maxLevel / 20);
 
-            if (voice) {
-                // Active Voice
-                const targetVolume = Math.min(1, Math.max(0, voice.amp * this.maxVolume));
+            if (amplitude > 0.001) {
+                // Active Voice (Visible on Hologram)
+                const targetVolume = Math.min(1, Math.max(0, amplitude * this.maxVolume));
 
                 gain.gain.cancelScheduledValues(now);
-                gain.gain.setTargetAtTime(targetVolume, now, 0.008); // Fast response (8ms)
+                gain.gain.setTargetAtTime(targetVolume, now, 0.012);
 
                 panner.pan.cancelScheduledValues(now);
-                panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, voice.pan)), now, 0.008);
+                panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, pans[i])), now, 0.012);
             } else {
-                // Inactive Voice -> Silence
+                // Inactive Voice (Below noise/visibility floor)
                 gain.gain.cancelScheduledValues(now);
                 gain.gain.setTargetAtTime(0, now, 0.05);
             }

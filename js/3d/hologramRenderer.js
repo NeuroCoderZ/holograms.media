@@ -46,7 +46,7 @@ export class HologramRenderer {
     this.hologramPivot.add(this.mainSequencerGroup);
 
     // Add a central white sphere to the hologramPivot's origin
-    const centralWhiteSphere = this._createCentralMarkerSphere(CELL_SIZE * 0.3, 0xffffff);
+    const centralWhiteSphere = this._createCentralMarkerSphere(2.4192, 0xffffff);
     this.hologramPivot.add(centralWhiteSphere);
 
     // Array to store references to the visual columns (meshes) that react to audio.
@@ -507,7 +507,7 @@ export class HologramRenderer {
    */
   _createAxis(xLength, yLength, zLength, sphereRadiusInput, isLeftGrid) {
     const axisGroup = new THREE.Group();
-    const sphereRadius = (0.5 * CELL_SIZE) * 2; // Reduced by 2 (was * 4)
+    const sphereRadius = 2.4192; // 80% of Blue sphere (3.024 * 0.8)
 
     const origin = [0, 0, 0];
 
@@ -721,7 +721,7 @@ export class HologramRenderer {
     this.mainSequencerGroup.add(blueSphere);
 
     // White Sphere: At Origin, Smaller (Front, on top of Blue)
-    const whiteGeometry = new THREE.SphereGeometry(2.52, 32, 32); // 20% smaller than Blue
+    const whiteGeometry = new THREE.SphereGeometry(2.4192, 32, 32);
     const whiteMaterial = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       depthTest: true,
