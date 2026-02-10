@@ -300,6 +300,13 @@ function onResults(results) {
 
     state.multimodal.lastHandData = results.multiHandLandmarks;
 
+    // --- GESTURE TO AUDIO PARAM MAPPING ---
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        state.multimodal.gestureModulationData = calculateGestureModulationData(results.multiHandLandmarks, results.multiHandedness);
+    } else {
+        state.multimodal.gestureModulationData = { left: null, right: null };
+    }
+
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const handLandmarks = results.multiHandLandmarks[0];
 
@@ -376,4 +383,76 @@ function onResults(results) {
 // Function to stop the video stream
 export function stopVideoStream() {
     // ... (код функции без изменений) ...
+    if (state.multimodal.cameraInstance) {
+        state.multimodal.cameraInstance.stop();
+        state.multimodal.cameraInstance = null;
+    }
+    state.multimodal.cameraStarted = false;
+    // Clear overlay
+    if (state.multimodal.gestureCanvasCtx) {
+        state.multimodal.gestureCanvasCtx.clearRect(0, 0, state.multimodal.gestureCanvas.width, state.multimodal.gestureCanvas.height);
+    }
+}
+
+/**
+ * Calculates musical parameters from hand landmarks.
+ * Matches logic in hologramRenderer.js for consistency.
+ */
+function calculateGestureModulationData(multiHandLandmarks, multiHandedness) {
+    const data = { left: null, right: null };
+
+    // GRID Constants (Should match hologramConfig really, but hardcoded for speed now)
+    // In Renderer:
+    // Freq = (1 - y) * 127
+    // Pan = (x - 0.5) * 2
+
+    for (let i = 0; i < multiHandLandmarks.length; i++) {
+        const landmarks = multiHandLandmarks[i];
+        const handedness = multiHandedness[i];
+        const label = handedness.label.toLowerCase(); // 'left' or 'right'
+
+        if (!landmarks[8] || !landmarks[4]) continue;
+
+        const p8 = landmarks[8]; // Index
+        const p4 = landmarks[4]; // Thumb
+
+        // Pinch Detection
+        const dist = Math.sqrt(
+            Math.pow(p8.x - p4.x, 2) +
+            Math.pow(p8.y - p4.y, 2) +
+            Math.pow(p8.z - p4.z, 2)
+        );
+        const isPinching = dist < 0.05;
+
+        // Frequency (0..127) - Y axis inverted
+        // Clamp to 0..1
+        const yClamped = Math.max(0, Math.min(1, p8.y));
+        const frequency = (1.0 - yClamped) * 127;
+
+        // Pan (-1..1) - X axis
+        const xClamped = Math.max(0, Math.min(1, p8.x));
+        const pan = (xClamped - 0.5) * 2.0;
+
+        // Gain (0..1) - Z axis (Depth)
+        // Hand closer to camera (negative Z in MP?) -> Louder?
+        // Let's assume standard interaction: Push forward (towards screen/camera) = Louder?
+        // Or Pull back?
+        // User said: "Closer [to camera?] = Louder".
+        // MP Z is roughly -0.1 (close) to 0.1 (far).
+        // Let's normalize around 0.
+        // gain = 0.5 - (p8.z * 5).
+        let gain = 0.5 - (p8.z * 3.0);
+        gain = Math.max(0, Math.min(1, gain));
+
+        data[label] = {
+            active: true,
+            isPinching: isPinching,
+            frequency: frequency,
+            bandwidth: isPinching ? 5.0 : 15.0, // Wider brush if open hand?
+            gain: gain,
+            pan: pan
+        };
+    }
+
+    return data;
 }

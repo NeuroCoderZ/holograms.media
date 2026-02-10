@@ -34,11 +34,14 @@ export class AudioGestureBridge {
      * Internal helper to apply "spectral brush" influence to a range of bins.
      */
     static _applyHandInfluence(levels, pans, hand, startIdx, endIdx) {
+        // Only modulate if pinching (grabbing)
+        if (!hand.isPinching) return;
+
         const center = hand.frequency + (startIdx === 128 ? 128 : 0);
         const bandwidth = hand.bandwidth;
         // FIX: Map 0..1 gain to -128..0 dB range (Silence to Max)
         // Previously: hand.gain * 127 resulted in +127dB (EXPLOSION)
-        const gainMod = (hand.gain * 128) - 128; 
+        const gainMod = (hand.gain * 128) - 128;
         const panMod = hand.pan;
 
         for (let i = startIdx; i <= endIdx; i++) {
