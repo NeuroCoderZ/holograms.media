@@ -132,7 +132,7 @@ export class HologramScanner {
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 1.0); /* Solid black to hide 3D scene */
+            background: transparent; /* Transparent to allow box-shadow dimming */
             z-index: 1000;
             display: flex;
             flex-direction: column;
@@ -148,8 +148,9 @@ export class HologramScanner {
             width: 80vw;
             max-width: 640px;
             aspect-ratio: 2 / 1; 
-            overflow: visible; /* Show corners clearly */
+            overflow: visible; 
             pointer-events: none;
+            box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.5); /* 50% dimming outside */
         `;
 
         // Add a canvas to show the camera view
@@ -181,9 +182,7 @@ export class HologramScanner {
                 ${h}: -2px;
                 border-${v === 'top' ? 'bottom' : 'top'}: none;
                 border-${h === 'left' ? 'right' : 'left'}: none;
-                border-radius: ${corner === 'top-left' ? '12px 0 0 0' :
-                    corner === 'top-right' ? '0 12px 0 0' :
-                        corner === 'bottom-left' ? '0 0 0 12px' : '0 0 12px 0'};
+                border-radius: 0; /* Sharp corners as requested */
                 pointer-events: none;
                 z-index: 10;
             `;
@@ -380,16 +379,6 @@ export class HologramScanner {
         this.animationFrameId = requestAnimationFrame(() => this._processFrame());
     }
 
-    /**
-     * Optimized single-pass Audio Param extraction.
-     * Also calculates brightness centroid.
-     * @param {ImageData} imageData 
-     */
-    /*
-     * DENDY-SCANNER (BasilaQ-127 Simple Vision)
-     * Maps 128 vertical strips directly to frequencies.
-     * Ignores Hue. Uses Luminance only.
-     */
     _extractAudioParamsOptimized(imageData) {
         const { width, height, data } = imageData;
         const levels = new Float32Array(256).fill(-128); // Init silence
@@ -407,10 +396,7 @@ export class HologramScanner {
         const numStrips = 128;
         const stripWidth = width / numStrips;
 
-        const fbCtx = this.feedbackCanvas ? this.feedbackCanvas.getContext('2d') : null;
-        if (fbCtx) fbCtx.clearRect(0, 0, width, height); // Clear for highlights
-
-        // Iterate over strips
+        // Iterate over strips to detect columns
         for (let i = 0; i < numStrips; i++) {
             const startX = Math.floor(i * stripWidth);
             const endX = Math.floor((i + 1) * stripWidth);
@@ -432,21 +418,11 @@ export class HologramScanner {
                 const avgLum = totalLuminance / pixelCount;
                 const amp = avgLum / 255.0;
 
-                // Use adaptive threshold instead of fixed 0.1
                 if (amp > adaptiveThreshold) {
                     const db = 20 * Math.log10(Math.max(0.000001, amp));
                     levels[i] = Math.max(-128, db);
                     levels[i + 128] = Math.max(-128, db);
-
-                    // Simple Pan Mapping: Left (0) -> -1, Right (127) -> 1
                     pans[i] = (i / 63.5) - 1.0;
-
-                    // Visual Feedback: Stereo Color Gradient (Cyan -> Magenta)
-                    if (fbCtx) {
-                        const hue = 180 + (i / 127) * 120; // 180 (Cyan) -> 300 (Magenta)
-                        fbCtx.fillStyle = `hsla(${hue}, 100%, 50%, ${amp * 0.8})`;
-                        fbCtx.fillRect(startX, 0, stripWidth, height);
-                    }
                 }
             }
         }
@@ -469,10 +445,6 @@ export class HologramScanner {
         let minX = width, maxX = 0, minY = height, maxY = 0;
         let foundAny = false;
 
-        // More robust BBox: Check active strips for X, and we need Y from somewhere.
-        // Let's refine the strip loop to also track Y peak per strip.
-        // (This would require modifying the main loop, which I'll do now for quality)
-
         for (let i = 0; i < numStrips; i++) {
             if (levels[i] > -90) { // -90dB as active threshold
                 foundAny = true;
@@ -480,9 +452,6 @@ export class HologramScanner {
                 minX = Math.min(minX, startX);
                 maxX = Math.max(maxX, startX + stripWidth);
 
-                // For Y, we use a simple heuristic for now or we rely on some central mass.
-                // Ideal: we should have tracked Y in the pixel loop.
-                // Let's assume the hologram occupies 40-80% height if detected.
                 minY = Math.min(minY, height * 0.25);
                 maxY = Math.max(maxY, height * 0.75);
             }
@@ -504,7 +473,6 @@ export class HologramScanner {
     }
 
     _rgbToHsl(r, g, b) {
-        // ... (Utility kept if needed, but inlined above for perf) ...
         return {};
     }
 
