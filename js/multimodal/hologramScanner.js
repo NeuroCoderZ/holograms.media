@@ -162,6 +162,33 @@ export class HologramScanner {
         `;
         frame.appendChild(this.feedbackCanvas);
 
+        // Scan Beam Animation
+        const scanBeam = document.createElement('div');
+        scanBeam.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+            box-shadow: 0 0 15px #00ff88;
+            opacity: 0.8;
+            animation: scanMove 2s infinite linear;
+            pointer-events: none;
+        `;
+        // Inject animation keyframes
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `
+            @keyframes scanMove {
+                0% { top: 0%; opacity: 0; }
+                10% { opacity: 1; }
+                90% { opacity: 1; }
+                100% { top: 100%; opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+        frame.appendChild(scanBeam);
+
         // Corner markers
         const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
         corners.forEach(corner => {

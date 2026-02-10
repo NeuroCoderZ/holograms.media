@@ -119,9 +119,7 @@ export class HologramRenderer {
     this.eventBus.on('handsUpdate', this.handleLocalHandsUpdate.bind(this));
     this.eventBus.on('handsLost', this.handleLocalHandsLost.bind(this));
 
-    // Subscribe to local hand updates for 3D cursors
-    this.eventBus.on('handsUpdate', this.handleLocalHandsUpdate.bind(this));
-    this.eventBus.on('handsLost', this.handleLocalHandsLost.bind(this));
+
 
     // Initiate offer if this is the first peer to connect (simple logic for now)
     this.netHoloGlyphClient.onPeerConnected(() => {
@@ -271,7 +269,7 @@ export class HologramRenderer {
 
     if (isPinching) {
       select.active = true;
-      const range = 5; // Semitone width of pinch
+      const range = 0; // Single semitone precision for Pinch
       select.indices = [];
       for (let i = centerIdx - range; i <= centerIdx + range; i++) {
         if (i >= 0 && i < 128) select.indices.push(i);
@@ -315,7 +313,7 @@ export class HologramRenderer {
       const side = sideInfo.label.toLowerCase(); // 'left' or 'right'
 
       if (!this.localHands[side]) {
-        this.localHands[side] = this._createCursorMesh(side === 'left' ? 0x00ffff : 0xff00ff);
+        this.localHands[side] = this._createCursorMesh(0x00FF00); // Green for both
         this.localHandsGroup.add(this.localHands[side]);
       }
 

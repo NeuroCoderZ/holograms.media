@@ -74,7 +74,8 @@ export class HologramSynthesizer {
             }
 
             this.isInitialized = true;
-            console.log('[HologramSynthesizer] Initialized 128 oscillators');
+            this._configureRefinedOscillators(); // Apply 8-bit waveforms
+            console.log('[HologramSynthesizer] Initialized 128 oscillators (8-bit Mode)');
 
         } catch (error) {
             console.error('[HologramSynthesizer] Failed to initialize:', error);
@@ -83,7 +84,23 @@ export class HologramSynthesizer {
     }
 
     /**
+     * Updates oscillator types based on frequency range for 8-bit feel.
+     * Bass (<200Hz) -> Sawtooth
+     * Mid (<1000Hz) -> Square
+     * High -> Triangle
+     */
+    _configureRefinedOscillators() {
+        this.oscillators.forEach((osc, i) => {
+            const freq = osc.frequency.value;
+            if (freq < 200) osc.type = 'sawtooth';
+            else if (freq < 1000) osc.type = 'square';
+            else osc.type = 'triangle';
+        });
+    }
+
+    /**
      * Updates all oscillators based on extracted visual parameters.
+     * Uses dynamic allocation to play only the N loudest voices (Polyphony limitation).
      * @param {Float32Array} levels - 256 values (128 L + 128 R), dB scale (-128 to 0)
      * @param {Float32Array} pans - 128 pan values (-1 to +1)
      */
@@ -92,33 +109,51 @@ export class HologramSynthesizer {
 
         const now = this.audioContext.currentTime;
 
+        // 1. Calculate linear amplitudes for all 128 bins
+        const activeVoices = [];
+
+        for (let i = 0; i < 128; i++) {
+            const levelL = levels[i];
+            const levelR = levels[i + 128];
+            const maxLevel = Math.max(levelL, levelR); // Take max of stereo channel
+
+            // Convert dB to Linear
+            const amplitude = Math.pow(10, maxLevel / 20);
+
+            if (amplitude > 0.01) { // Threshold
+                activeVoices.push({ index: i, amp: amplitude, pan: pans[i] });
+            }
+        }
+
+        // 2. Sort by amplitude (Descending)
+        activeVoices.sort((a, b) => b.amp - a.amp);
+
+        // 3. Keep top N voices (e.g. 16)
+        const MAX_POLYPHONY = 16;
+        const topVoices = activeVoices.slice(0, MAX_POLYPHONY);
+        const topIndices = new Set(topVoices.map(v => v.index));
+
+        // 4. Update Gains
         for (let i = 0; i < 128; i++) {
             const gain = this.gains[i];
             const panner = this.panners[i];
 
-            // Average L/R levels for this semitone
-            const levelL = levels[i];
-            const levelR = levels[i + 128];
-            const avgLevel = (levelL + levelR) / 2;
+            const voice = topVoices.find(v => v.index === i);
 
-            // Convert dB (-128 to 0) to linear amplitude (0 to 1)
-            const amplitude = Math.pow(10, avgLevel / 20);
+            if (voice) {
+                // Active Voice
+                const targetVolume = Math.min(1, Math.max(0, voice.amp * this.maxVolume));
 
-            // Clamp and apply volume
-            const targetVolume = Math.min(1, Math.max(0, amplitude * this.maxVolume));
+                gain.gain.cancelScheduledValues(now);
+                gain.gain.setTargetAtTime(targetVolume, now, this.attackTime);
 
-            // Smooth transition to prevent clicks
-            gain.gain.cancelScheduledValues(now);
-            gain.gain.setTargetAtTime(targetVolume, now, this.attackTime);
-
-            // Apply pan
-            const panValue = pans[i];
-            panner.pan.cancelScheduledValues(now);
-            panner.pan.setTargetAtTime(
-                Math.max(-1, Math.min(1, panValue)),
-                now,
-                this.attackTime
-            );
+                panner.pan.cancelScheduledValues(now);
+                panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, voice.pan)), now, this.attackTime);
+            } else {
+                // Inactive Voice -> Silence
+                gain.gain.cancelScheduledValues(now);
+                gain.gain.setTargetAtTime(0, now, this.releaseTime);
+            }
         }
     }
 
