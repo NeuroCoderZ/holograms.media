@@ -36,9 +36,12 @@ export class HologramScanner {
 
         // Adaptive Frame State (Stabilization)
         this.frameState = {
-            x: 0.5, y: 0.5, w: 0.8, h: 0.4, // Normalized 0..1
-            velocity: { x: 0, y: 0, w: 0, h: 0 } // Simple physics if needed, or just Lerp
+            x: 0.5, y: 0.5, w: 0.8, h: 0.8, // Normalized 0..1
+            velocity: { x: 0, y: 0, w: 0, h: 0 }
         };
+        // Ensure square start
+        const screenAspect = window.innerWidth / window.innerHeight;
+        this.frameState.h = this.frameState.w * screenAspect;
 
         console.log('[HologramScanner] Initialized with optimized single-pass analysis.');
     }
@@ -166,7 +169,7 @@ export class HologramScanner {
             position: absolute;
             width: 80vw;
             max-width: 640px;
-            aspect-ratio: 2 / 1; 
+            aspect-ratio: 1 / 1; 
             overflow: visible; 
             pointer-events: none;
             /* Spotlight effect: everything outside is dimmed */
@@ -272,98 +275,73 @@ export class HologramScanner {
         const canvasH = this.canvasElement.height;
 
         // --- ASPECT SYNC (cover simulation) ---
-        // Match the screen's aspect ratio so analysis coordinates map 1:1 to screen
         const screenAspect = window.innerWidth / window.innerHeight;
         const videoAspect = videoW / videoH;
 
         let cropW, cropH;
         if (screenAspect > videoAspect) {
-            // Screen is wider than video (bars on top/bottom)
             cropW = videoW;
             cropH = videoW / screenAspect;
         } else {
-            // Screen is narrower than video (bars on sides)
             cropH = videoH;
             cropW = videoH * screenAspect;
         }
 
-        // Apply Stabilization Offset (Center of crop region)
+        // Apply Stabilization Offset
         let cx = videoW / 2 + this.stabilization.offX;
         let cy = videoH / 2 + this.stabilization.offY;
 
-        // Clamp crop to video bounds
         cx = Math.max(cropW / 2, Math.min(videoW - cropW / 2, cx));
         cy = Math.max(cropH / 2, Math.min(videoH - cropH / 2, cy));
 
         const sx = cx - cropW / 2;
         const sy = cy - cropH / 2;
 
-        // Draw the exact portion visible on screen to analysis canvas
         this.canvasCtx.drawImage(this.videoElement, sx, sy, cropW, cropH, 0, 0, canvasW, canvasH);
-
-        // Get image data for analysis
         const imageData = this.canvasCtx.getImageData(0, 0, canvasW, canvasH);
 
-        // Extract audio parameters & Calculate new Centroid
         const result = this._extractAudioParamsOptimized(imageData);
-        const { audioParams, centroid } = result;
+        const { audioParams, centroid, boundingBox } = result;
 
-        // Update Stabilization
-        if (centroid.weight > 0.01) { // Only stabilize if we see something significant
-            // Centroid is in normalized coords 0..1 (relative to canvas center would be better for offset)
-            // But _extractAudioParamsOptimized returns relative to top-left 0..1?
-            // Let's assume normalized 0..1 first.
-
-            // Error relative to center (0.5, 0.5)
+        if (centroid.weight > 0.01) {
             const errX = (centroid.x - 0.5) * cropW;
             const errY = (centroid.y - 0.5) * cropH;
-
-            // Apply dampening (Sticky Frame effect)
-            // Move the offset towards the error to center the "mass"
-            // If object is at right (centroid.x > 0.5), we need to look right -> offset increases.
             this.stabilization.offX += errX * 0.1;
             this.stabilization.offY += errY * 0.1;
         } else {
-            // Decay to center if nothing found
             this.stabilization.offX *= 0.95;
             this.stabilization.offY *= 0.95;
         }
 
-        // Update synthesizer with extracted parameters
         if (this.synthesizer && audioParams) {
             this.synthesizer.update(audioParams.levels, audioParams.pans);
         }
 
-        // Emit data for visualization
         eventBus.emit('scannerData', audioParams);
 
         // --- Adaptive Frame Update ---
-        if (result.boundingBox && result.boundingBox.found) {
-            const bb = result.boundingBox;
-            // Goal: Normalized Center X/Y and Width/Height
-            // bb coordinates are 0..canvasW, 0..canvasH
+        if (boundingBox && boundingBox.found) {
+            const targetW = Math.max(0.3, (boundingBox.maxX - boundingBox.minX) / canvasW + 0.1);
+            const targetH = targetW * screenAspect; // Forced square on screen (1:1)
 
-            const targetW = Math.max(0.2, (bb.maxX - bb.minX) / canvasW + 0.1); // +10% padding
-            const targetH = Math.max(0.2, (bb.maxY - bb.minY) / canvasH + 0.1);
-            const targetX = (bb.minX + bb.maxX) / 2 / canvasW;
-            const targetY = (bb.minY + bb.maxY) / 2 / canvasH;
+            const targetX = (boundingBox.minX + boundingBox.maxX) / 2 / canvasW;
+            const targetY = (boundingBox.minY + boundingBox.maxY) / 2 / canvasH;
 
-            // Smooth Lerp (0.1 factor)
             this.frameState.x += (targetX - this.frameState.x) * 0.1;
             this.frameState.y += (targetY - this.frameState.y) * 0.1;
             this.frameState.w += (targetW - this.frameState.w) * 0.1;
             this.frameState.h += (targetH - this.frameState.h) * 0.1;
         } else {
-            // Revert to default if lost
+            const defaultW = 0.8;
+            const defaultH = defaultW * screenAspect;
+
             this.frameState.x += (0.5 - this.frameState.x) * 0.05;
             this.frameState.y += (0.5 - this.frameState.y) * 0.05;
-            this.frameState.w += (0.8 - this.frameState.w) * 0.05;
-            this.frameState.h += (0.4 - this.frameState.h) * 0.05;
+            this.frameState.w += (defaultW - this.frameState.w) * 0.05;
+            this.frameState.h += (defaultH - this.frameState.h) * 0.05;
         }
 
-        // Apply to DOM
         if (this.frameElement) {
-            // Smoothly update frame position and size
             const left = (this.frameState.x - this.frameState.w / 2) * 100;
             const top = (this.frameState.y - this.frameState.h / 2) * 100;
             const width = this.frameState.w * 100;
@@ -373,11 +351,10 @@ export class HologramScanner {
             this.frameElement.style.top = `${top}%`;
             this.frameElement.style.width = `${width}%`;
             this.frameElement.style.height = `${height}%`;
-            this.frameElement.style.aspectRatio = 'auto'; // Break initial aspect-ratio
+            this.frameElement.style.aspectRatio = 'auto';
             this.frameElement.style.transform = 'translate(0, 0)';
         }
 
-        // Schedule next frame
         this.animationFrameId = requestAnimationFrame(() => this._processFrame());
     }
 
@@ -388,11 +365,11 @@ export class HologramScanner {
 
         // Calculate global scene brightness for adaptive thresholding
         let globalSum = 0;
-        for (let i = 0; i < data.length; i += 16) { // Sparse sampling
+        for (let i = 0; i < data.length; i += 16) {
             globalSum += (data[i] + data[i + 1] + data[i + 2]) / 3;
         }
         const avgBrightness = globalSum / (data.length / 16);
-        const adaptiveThreshold = Math.max(0.1, avgBrightness / 255 * 1.5); // Adaptive base
+        const adaptiveThreshold = Math.max(0.1, avgBrightness / 255 * 1.5);
 
         // Strip width
         const numStrips = 128;
@@ -430,7 +407,7 @@ export class HologramScanner {
         }
 
         // Centroid calculation for stabilization (now actually weighted)
-        let weightedX = 0, weightedY = 0, totalWeight = 0;
+        let weightedX = 0, totalWeight = 0;
         for (let i = 0; i < 128; i++) {
             const amp = Math.pow(10, levels[i] / 20);
             if (amp > 0.1) {
@@ -447,15 +424,38 @@ export class HologramScanner {
         let minX = width, maxX = 0, minY = height, maxY = 0;
         let foundAny = false;
 
+        // Specialized Anchor Detection for Corners (Purple/Red)
+        // Violet is i ~ 127 (high freq), Red is i ~ 0 (low freq)
+        // Based on user: Purple Top-Left, Red Top-Right
+
         for (let i = 0; i < numStrips; i++) {
-            if (levels[i] > -90) { // -90dB as active threshold
+            if (levels[i] > -90) {
                 foundAny = true;
                 const startX = i * stripWidth;
                 minX = Math.min(minX, startX);
                 maxX = Math.max(maxX, startX + stripWidth);
 
-                minY = Math.min(minY, height * 0.25);
-                maxY = Math.max(maxY, height * 0.75);
+                // Scan vertical extent for this active column
+                let colMinY = height, colMaxY = 0;
+                const stripCenterX = Math.floor(startX + stripWidth / 2);
+
+                for (let y = 0; y < height; y += 8) {
+                    const idx = (y * width + stripCenterX) * 4;
+                    const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+                    if (lum > adaptiveThreshold * 255) {
+                        colMinY = Math.min(colMinY, y);
+                        colMaxY = Math.max(colMaxY, y);
+                    }
+                }
+
+                if (colMinY < colMaxY) {
+                    minY = Math.min(minY, colMinY);
+                    maxY = Math.max(maxY, colMaxY);
+                } else {
+                    // Fallback if column scan failed but levels detected
+                    minY = Math.min(minY, height * 0.25);
+                    maxY = Math.max(maxY, height * 0.75);
+                }
             }
         }
 
@@ -475,7 +475,21 @@ export class HologramScanner {
     }
 
     _rgbToHsl(r, g, b) {
-        return {};
+        let r1 = r / 255, g1 = g / 255, b1 = b / 255;
+        let max = Math.max(r1, g1, b1), min = Math.min(r1, g1, b1);
+        let h, s, l = (max + min) / 2;
+        if (max === min) h = s = 0;
+        else {
+            let d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r1: h = (g1 - b1) / d + (g1 < b1 ? 6 : 0); break;
+                case g1: h = (b1 - r1) / d + 2; break;
+                case b1: h = (r1 - g1) / d + 4; break;
+            }
+            h /= 6;
+        }
+        return { h: h * 360, s, l };
     }
 
     getStatus() {
