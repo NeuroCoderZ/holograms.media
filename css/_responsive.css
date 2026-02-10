@@ -3,7 +3,8 @@
 /* ============================================= */
 
 /* Применяется к экранам шириной до 768px (смартфоны, планшеты в портретном режиме) */
-@media (max-width: 768px), (orientation: portrait) {
+@media (max-width: 768px),
+(orientation: portrait) {
 
   /* --- СТИЛИ ПАНЕЛЕЙ (Overlay Mode) --- */
 
@@ -11,7 +12,8 @@
   .panel.right-panel {
     position: fixed !important;
     top: 0 !important;
-    height: 100dvh !important; /* Используем dvh для устранения скачков */
+    height: 100dvh !important;
+    /* Используем dvh для устранения скачков */
     z-index: 1500 !important;
     opacity: 0 !important;
     visibility: hidden !important;
@@ -22,22 +24,25 @@
   .panel.left-panel {
     left: 0 !important;
     transform: translateX(-100%) !important;
-    width: 33.33vw !important; /* One third */
+    width: 33.33vw !important;
+    /* One third */
     max-width: none !important;
   }
 
   .panel.right-panel {
     right: 0 !important;
     transform: translateX(100%) !important;
-    width: 66.67vw !important; /* Two thirds */
+    width: 66.67vw !important;
+    /* Two thirds */
   }
-  
+
   /* Ensure they don't overlap strangely when both open */
   body.left-panel-open .panel.left-panel {
-      transform: translateX(0) !important;
+    transform: translateX(0) !important;
   }
+
   body.right-panel-open .panel.right-panel {
-      transform: translateX(0) !important;
+    transform: translateX(0) !important;
   }
 
   .panel.left-panel.visible,
@@ -57,11 +62,11 @@
   /* --- ОБЛАСТЬ ЖЕСТОВ (Всегда снизу, 20vh) --- */
   #gesture-area {
     position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 20vh !important;
-    min-height: 180px !important;
+    bottom: 2dvh !important;
+    /* Slight offset from bottom for better look */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    /* width and height will be set by GestureUIManager.js to match hologram */
     background-color: rgba(30, 30, 30, 0.8) !important;
     backdrop-filter: blur(5px);
     z-index: 1000 !important;
@@ -69,6 +74,7 @@
     display: block !important;
     visibility: visible !important;
     pointer-events: auto !important;
+    border-radius: 8px;
   }
 
   /* Убираем изменение высоты при обнаружении рук на мобильных */
@@ -79,14 +85,17 @@
 
   /* --- КОНТЕЙНЕР ГОЛОГРАММЫ --- */
   .main-area {
-    height: 100dvh !important; /* Используем dvh */
+    height: 100dvh !important;
+    /* Используем dvh */
     display: flex !important;
     flex-direction: column !important;
-    overflow: hidden !important; /* Запрещаем скролл здесь */
+    overflow: hidden !important;
+    /* Запрещаем скролл здесь */
   }
 
   #grid-container {
-    height: calc(100dvh - 20vh) !important; /* Адаптируем под dvh */
+    height: calc(100dvh - 20vh) !important;
+    /* Адаптируем под dvh */
     min-height: calc(100dvh - 180px) !important;
     width: 100% !important;
     position: relative !important;
@@ -95,11 +104,13 @@
 
   /* --- КНОПКА TOGGLE --- */
   #togglePanelsButton {
-    bottom: 20px !important; /* Жесткая фиксация */
+    bottom: 20px !important;
+    /* Жесткая фиксация */
     top: auto !important;
     left: 20px !important;
     position: fixed !important;
-    z-index: 2000 !important; /* Выше панелей */
+    z-index: 2000 !important;
+    /* Выше панелей */
     display: flex !important;
     visibility: visible !important;
     background-color: rgba(0, 0, 0, 0.5) !important;
