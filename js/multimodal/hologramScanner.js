@@ -50,19 +50,33 @@ export class HologramScanner {
         }
 
         try {
-            // Get camera stream
+            // Get all devices to find the best camera
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+            // Heuristic: Prefer back cameras and look for many cameras (pro/max models)
+            let bestDeviceId = deviceId;
+            if (!bestDeviceId) {
+                const backCams = videoDevices.filter(d =>
+                    d.label.toLowerCase().includes('back') ||
+                    d.label.toLowerCase().includes('rear') ||
+                    d.label.toLowerCase().includes('environment')
+                );
+                // We pick the one with the highest index, often the primary high-res one
+                if (backCams.length > 0) {
+                    bestDeviceId = backCams[backCams.length - 1].deviceId;
+                }
+            }
+
             const constraints = {
                 video: {
-                    facingMode: 'environment', // Prefer rear camera on mobile
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
+                    facingMode: bestDeviceId ? undefined : 'environment',
+                    deviceId: bestDeviceId ? { exact: bestDeviceId } : undefined,
+                    width: { ideal: 3840, min: 1280 }, // Request 4K if available
+                    height: { ideal: 2160, min: 720 },
                     frameRate: { ideal: 60, min: 30 }
                 }
             };
-
-            if (deviceId) {
-                constraints.video.deviceId = { exact: deviceId };
-            }
 
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
@@ -75,12 +89,17 @@ export class HologramScanner {
             this.videoElement.playsInline = true;
             this.videoElement.muted = true;
             this.videoElement.id = 'scanner-video';
-            // Hidden video element, we only show the canvas or just the viewfinder UI
+            // Show video full screen as background
             this.videoElement.style.cssText = `
                 position: fixed;
-                top: -9999px;
-                left: -9999px;
-                visibility: hidden;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                object-fit: cover;
+                z-index: 999;
+                visibility: visible;
+                background: #000;
             `;
             document.body.appendChild(this.videoElement);
             await this.videoElement.play();
@@ -140,7 +159,7 @@ export class HologramScanner {
             justify-content: center;
         `;
 
-        // Create scanning frame
+        // Create scanning frame (Window)
         this.frameElement = document.createElement('div');
         this.frameElement.id = 'scanner-frame';
         this.frameElement.style.cssText = `
@@ -150,22 +169,10 @@ export class HologramScanner {
             aspect-ratio: 2 / 1; 
             overflow: visible; 
             pointer-events: none;
-            box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.5); /* 50% dimming outside */
+            /* Spotlight effect: everything outside is dimmed */
+            box-shadow: 0 0 0 5000px rgba(0, 0, 0, 0.5); 
+            z-index: 1010;
         `;
-
-        // Add a canvas to show the camera view
-        this.feedbackCanvas = document.createElement('canvas');
-        this.feedbackCanvas.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 1.0; /* Full visibility */
-            border-radius: 12px;
-            background: #000; /* Fallback */
-        `;
-        this.frameElement.appendChild(this.feedbackCanvas);
 
         // Corner markers
         const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
@@ -209,6 +216,9 @@ export class HologramScanner {
 
         this.overlayElement.appendChild(this.frameElement);
         this.overlayElement.appendChild(closeBtn);
+        this.overlayElement.style.pointerEvents = 'none';
+        closeBtn.style.pointerEvents = 'auto';
+
         document.body.appendChild(this.overlayElement);
     }
 
@@ -261,21 +271,23 @@ export class HologramScanner {
         const canvasW = this.canvasElement.width;
         const canvasH = this.canvasElement.height;
 
-        // Calculate aspect ratio crop
-        const targetAspect = canvasW / canvasH; // 1.77 or 2.0 based on canvas size
+        // --- ASPECT SYNC (cover simulation) ---
+        // Match the screen's aspect ratio so analysis coordinates map 1:1 to screen
+        const screenAspect = window.innerWidth / window.innerHeight;
         const videoAspect = videoW / videoH;
 
         let cropW, cropH;
-        if (targetAspect > videoAspect) {
+        if (screenAspect > videoAspect) {
+            // Screen is wider than video (bars on top/bottom)
             cropW = videoW;
-            cropH = videoW / targetAspect;
+            cropH = videoW / screenAspect;
         } else {
+            // Screen is narrower than video (bars on sides)
             cropH = videoH;
-            cropW = videoH * targetAspect;
+            cropW = videoH * screenAspect;
         }
 
-        // Apply Stabilization Offset
-        // Center of crop region
+        // Apply Stabilization Offset (Center of crop region)
         let cx = videoW / 2 + this.stabilization.offX;
         let cy = videoH / 2 + this.stabilization.offY;
 
@@ -286,18 +298,8 @@ export class HologramScanner {
         const sx = cx - cropW / 2;
         const sy = cy - cropH / 2;
 
-        // Draw stabilized frame to Analysis Canvas
+        // Draw the exact portion visible on screen to analysis canvas
         this.canvasCtx.drawImage(this.videoElement, sx, sy, cropW, cropH, 0, 0, canvasW, canvasH);
-
-        // Also draw to feedback canvas in UI (low res preview)
-        if (this.feedbackCanvas) {
-            if (this.feedbackCanvas.width !== canvasW) {
-                this.feedbackCanvas.width = canvasW;
-                this.feedbackCanvas.height = canvasH;
-            }
-            const fbCtx = this.feedbackCanvas.getContext('2d');
-            fbCtx.drawImage(this.canvasElement, 0, 0);
-        }
 
         // Get image data for analysis
         const imageData = this.canvasCtx.getImageData(0, 0, canvasW, canvasH);
