@@ -348,7 +348,8 @@ export class HologramScanner {
             }
         }
 
-        // Detect 4 corner points for perspective
+        // Detect 4 corner points (Phase 19.14: Axial Anchor Base)
+        // Default relative square
         let corners = {
             tl: { x: width * 0.1, y: height * 0.15 },
             tr: { x: width * 0.9, y: height * 0.15 },
@@ -356,19 +357,51 @@ export class HologramScanner {
             br: { x: width * 0.9, y: height * 0.75 }
         };
 
-        if (foundAny) {
-            // Find top and bottom active rows
+        // --- Anchor Search (Phase 19.14) ---
+        // Find most intense Violet (bottom-left) and Red (bottom-right) axial spheres
+        let violet = { x: 0, y: 0, val: 0 };
+        let red = { x: width, y: 0, val: 0 };
+
+        // Scan bottom 40% for base anchors
+        for (let y = Math.floor(height * 0.6); y < height; y += 4) {
+            for (let x = 0; x < width; x += 4) {
+                const idx = (y * width + x) * 4;
+                const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+
+                // Violet (Purple): B > R*1.2 && B > 150
+                if (x < width / 2 && b > r * 1.2 && b > violet.val) {
+                    violet = { x, y, val: b };
+                }
+                // Red: R > B*1.5 && R > 150
+                if (x > width / 2 && r > b * 1.5 && r > red.val) {
+                    red = { x, y, val: r };
+                }
+            }
+        }
+
+        const anchorQuality = 160;
+        if (violet.val > anchorQuality && red.val > anchorQuality) {
+            // Found stable base
+            corners.bl = { x: violet.x, y: violet.y };
+            corners.br = { x: red.x, y: red.y };
+
+            // Calculate square height based on base width
+            const baseW = red.x - violet.x;
+            const aspectCorrectedH = baseW; // Square
+
+            corners.tl = { x: violet.x, y: violet.y - aspectCorrectedH };
+            corners.tr = { x: red.x, y: red.y - aspectCorrectedH };
+        } else if (foundAny) {
+            // Fallback to row span if anchors not visible
             let firstActiveRow = -1, lastActiveRow = -1;
             for (let i = 0; i < 128; i++) {
                 if (levels[i] > -100 || levels[i + 128] > -100) {
-                    if (firstActiveRow === -1) firstActiveRow = i; // This is actually BOTTOM because we scan 127->0? 
-                    // Wait, loop i=0..127. semIdx = 127-i. i=0 is Top (127), i=127 is Bottom (0).
+                    if (firstActiveRow === -1) firstActiveRow = i;
                     lastActiveRow = i;
                 }
             }
 
             if (firstActiveRow !== -1) {
-                // Determine span for top and bottom edges
                 const getRowSpan = (rowIdx) => {
                     let min = width, max = 0;
                     const rY = Math.floor(rowIdx * rowH + rowH / 2);
@@ -383,37 +416,15 @@ export class HologramScanner {
                 const topSpan = getRowSpan(firstActiveRow);
                 const bottomSpan = getRowSpan(lastActiveRow);
 
-                if (topSpan) {
-                    corners.tl = { x: topSpan.min, y: topSpan.y };
-                    corners.tr = { x: topSpan.max, y: topSpan.y };
-                }
-                if (bottomSpan) {
-                    corners.bl = { x: bottomSpan.min, y: bottomSpan.y };
-                    corners.br = { x: bottomSpan.max, y: bottomSpan.y };
-                }
+                if (topSpan) { corners.tl = { x: topSpan.min, y: topSpan.y }; corners.tr = { x: topSpan.max, y: topSpan.y }; }
+                if (bottomSpan) { corners.bl = { x: bottomSpan.min, y: bottomSpan.y }; corners.br = { x: bottomSpan.max, y: bottomSpan.y }; }
             }
         }
-
-        // Anchor points (Violet top-left, Red top-right)
-        let violet = { x: 0, y: 0, val: 0 };
-        let red = { x: width, y: 0, val: 0 };
-
-        for (let y = 0; y < height * 0.15; y += 4) {
-            for (let x = 0; x < width; x += 4) {
-                const r = data[(y * width + x) * 4], b = data[(y * width + x) * 4 + 2];
-                if (x < width / 2 && b > r * 1.5 && b > violet.val) violet = { x, y, val: b };
-                if (x > width / 2 && r > b * 1.5 && r > red.val) red = { x, y, val: r };
-            }
-        }
-
-        // Override top corners with anchors if strong
-        if (violet.val > 180) { corners.tl.x = violet.x; corners.tl.y = violet.y; }
-        if (red.val > 180) { corners.tr.x = red.x; corners.tr.y = red.y; }
 
         return {
             audioParams: { levels, pans },
             centroid: totalW > 0 ? { x: weightedX / totalW / width, y: weightedY / totalW / height, weight: totalW } : { x: 0.5, y: 0.5, weight: 0 },
-            boundingBox: { found: foundAny, corners, minX, maxX, minY, maxY } // Keep min/max for legacy/compat
+            boundingBox: { found: foundAny, corners, minX, maxX, minY, maxY }
         };
     }
 
