@@ -51,6 +51,8 @@ class GestureUIManager {
         this.gestureAreaElement.style.transform = 'translateX(-50%)';
         this.gestureAreaElement.style.width = `${targetWidthPx}px`;
         this.gestureAreaElement.style.height = '6px';
+        this.gestureAreaElement.style.position = 'fixed';
+        this.gestureAreaElement.style.bottom = '2dvh'; // Match CSS
     }
 
 
@@ -148,6 +150,7 @@ class GestureUIManager {
         const currentWidthPx = this.gestureAreaElement.offsetWidth;
 
         // Always center horizontally to avoid jumps during animation
+        // Always center horizontally
         this.gestureAreaElement.style.left = '50%';
         this.gestureAreaElement.style.transform = 'translateX(-50%)';
 
