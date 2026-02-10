@@ -142,8 +142,6 @@ export class HologramScanner {
 
         // Create scanning frame
         // Updated to 2:1 aspect ratio (256x128 approx)
-        // Create scanning frame
-        // Updated to 2:1 aspect ratio (256x128 approx)
         this.frameElement = document.createElement('div');
         this.frameElement.id = 'scanner-frame';
         this.frameElement.style.cssText = `
@@ -196,7 +194,7 @@ export class HologramScanner {
             }
         `;
         document.head.appendChild(styleSheet);
-        frame.appendChild(scanBeam);
+        this.frameElement.appendChild(scanBeam);
 
         // Corner markers
         const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
