@@ -31,19 +31,15 @@ export class HologramScanner {
             offY: 0
         };
 
-        // Pre-calculate target colors? No, we use direct mapping now.
-        // this.semitoneColors = this._calculateSemitoneColors();
-
-        // Adaptive Frame State (Stabilization)
-        this.frameState = {
-            x: 0.5, y: 0.5, w: 0.8, h: 0.8, // Normalized 0..1
-            velocity: { x: 0, y: 0, w: 0, h: 0 }
+        // 4-Point Frame State (Perspective Support)
+        this.framePoints = {
+            tl: { x: 0.1, y: 0.1 },
+            tr: { x: 0.9, y: 0.1 },
+            bl: { x: 0.1, y: 0.7 },
+            br: { x: 0.9, y: 0.7 }
         };
-        // Ensure square start
-        const screenAspect = window.innerWidth / window.innerHeight;
-        this.frameState.h = this.frameState.w * screenAspect;
 
-        console.log('[HologramScanner] Initialized with optimized single-pass analysis.');
+        console.log('[HologramScanner] Initialized with Perspective Tracking support.');
     }
 
     async start(deviceId = null) {
@@ -53,28 +49,9 @@ export class HologramScanner {
         }
 
         try {
-            // Get all devices to find the best camera
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(d => d.kind === 'videoinput');
-
-            // Heuristic: Prefer back cameras and look for many cameras (pro/max models)
-            let bestDeviceId = deviceId;
-            if (!bestDeviceId) {
-                const backCams = videoDevices.filter(d =>
-                    d.label.toLowerCase().includes('back') ||
-                    d.label.toLowerCase().includes('rear') ||
-                    d.label.toLowerCase().includes('environment')
-                );
-                // We pick the one with the highest index, often the primary high-res one
-                if (backCams.length > 0) {
-                    bestDeviceId = backCams[backCams.length - 1].deviceId;
-                }
-            }
-
             const constraints = {
                 video: {
-                    facingMode: bestDeviceId ? undefined : 'environment',
-                    deviceId: bestDeviceId ? { exact: bestDeviceId } : undefined,
+                    facingMode: 'environment',
                     width: { ideal: 3840, min: 1280 }, // Request 4K if available
                     height: { ideal: 2160, min: 720 },
                     frameRate: { ideal: 60, min: 30 }
@@ -93,17 +70,7 @@ export class HologramScanner {
             this.videoElement.muted = true;
             this.videoElement.id = 'scanner-video';
             // Show video full screen as background
-            this.videoElement.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                object-fit: cover;
-                z-index: 999;
-                visibility: visible;
-                background: #000;
-            `;
+            this.videoElement.style.cssText = `position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 999; visibility: visible; background: #000;`;
             document.body.appendChild(this.videoElement);
             await this.videoElement.play();
 
@@ -119,10 +86,6 @@ export class HologramScanner {
             await this.synthesizer.init();
 
             this.isActive = true;
-            this.stabilization = { offX: 0, offY: 0 }; // Reset stabilization
-
-            console.log('[HologramScanner] Started. Analysis Resolution:',
-                this.canvasElement.width, 'x', this.canvasElement.height);
 
             // Disable hand tracking while scanning
             eventBus.emit('scannerStarted');
@@ -149,79 +112,37 @@ export class HologramScanner {
         this.overlayElement = document.createElement('div');
         this.overlayElement.id = 'scanner-overlay';
         this.overlayElement.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: transparent; /* Transparent to allow box-shadow dimming */
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        `;
-
-        // Create scanning frame (Window)
-        this.frameElement = document.createElement('div');
-        this.frameElement.id = 'scanner-frame';
-        this.frameElement.style.cssText = `
-            position: absolute;
-            width: 80vw;
-            max-width: 640px;
-            aspect-ratio: 1 / 1; 
-            overflow: visible; 
-            pointer-events: none;
-            /* Spotlight effect: everything outside is dimmed */
-            box-shadow: 0 0 0 5000px rgba(0, 0, 0, 0.5); 
-            z-index: 1010;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.5); /* Base dimming */
+            z-index: 1000; pointer-events: none;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 
+                               0% 0%, 10% 10%, 10% 70%, 90% 70%, 90% 10%, 10% 10%);
         `;
 
         // Corner markers
-        const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-        corners.forEach(corner => {
+        this.cornerElements = {};
+        ['tl', 'tr', 'bl', 'br'].forEach(pos => {
             const marker = document.createElement('div');
             marker.className = 'scanner-corner';
-            const [v, h] = corner.split('-');
             marker.style.cssText = `
-                position: absolute;
-                width: 30px;
-                height: 30px;
-                border: 4px solid #ffffff;
-                ${v}: -2px;
-                ${h}: -2px;
-                border-${v === 'top' ? 'bottom' : 'top'}: none;
-                border-${h === 'left' ? 'right' : 'left'}: none;
-                border-radius: 0; /* Sharp corners as requested */
-                pointer-events: none;
-                z-index: 10;
+                position: absolute; width: 40px; height: 40px;
+                border: 4px solid #ffffff; z-index: 1010; transition: none;
             `;
-            this.frameElement.appendChild(marker);
+            if (pos === 'tl') marker.style.borderRight = marker.style.borderBottom = 'none';
+            if (pos === 'tr') marker.style.borderLeft = marker.style.borderBottom = 'none';
+            if (pos === 'bl') marker.style.borderRight = marker.style.borderTop = 'none';
+            if (pos === 'br') marker.style.borderLeft = marker.style.borderTop = 'none';
+
+            this.cornerElements[pos] = marker;
+            document.body.appendChild(marker);
         });
 
         // Close button
         const closeBtn = document.createElement('button');
         closeBtn.textContent = '✕ Close';
-        closeBtn.style.cssText = `
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            z-index: 2000; /* Ensure clickable */
-        `;
+        closeBtn.style.cssText = `position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:10px 20px; border-radius:8px; cursor:pointer; z-index:2000; pointer-events:auto;`;
         closeBtn.onclick = () => this.stop();
-
-        this.overlayElement.appendChild(this.frameElement);
         this.overlayElement.appendChild(closeBtn);
-        this.overlayElement.style.pointerEvents = 'none';
-        closeBtn.style.pointerEvents = 'auto';
-
         document.body.appendChild(this.overlayElement);
     }
 
@@ -236,20 +157,22 @@ export class HologramScanner {
             this.animationFrameId = null;
         }
 
-        if (this.videoElement && this.videoElement.srcObject) {
-            this.videoElement.srcObject.getTracks().forEach(t => t.stop());
-            this.videoElement.srcObject = null;
-        }
-
-        if (this.videoElement && this.videoElement.parentNode) {
-            this.videoElement.parentNode.removeChild(this.videoElement);
+        if (this.videoElement) {
+            if (this.videoElement.srcObject) {
+                this.videoElement.srcObject.getTracks().forEach(t => t.stop());
+                this.videoElement.srcObject = null;
+            }
+            this.videoElement.remove();
             this.videoElement = null;
         }
 
-        if (this.overlayElement && this.overlayElement.parentNode) {
-            this.overlayElement.parentNode.removeChild(this.overlayElement);
+        if (this.overlayElement) {
+            this.overlayElement.remove();
             this.overlayElement = null;
         }
+
+        Object.values(this.cornerElements || {}).forEach(el => el.remove());
+        this.cornerElements = null;
 
         if (this.synthesizer) {
             this.synthesizer.dispose();
@@ -294,25 +217,15 @@ export class HologramScanner {
         cx = Math.max(cropW / 2, Math.min(videoW - cropW / 2, cx));
         cy = Math.max(cropH / 2, Math.min(videoH - cropH / 2, cy));
 
-        const sx = cx - cropW / 2;
-        const sy = cy - cropH / 2;
-
-        this.canvasCtx.drawImage(this.videoElement, sx, sy, cropW, cropH, 0, 0, canvasW, canvasH);
+        this.canvasCtx.drawImage(this.videoElement, cx - cropW / 2, cy - cropH / 2, cropW, cropH, 0, 0, canvasW, canvasH);
         const imageData = this.canvasCtx.getImageData(0, 0, canvasW, canvasH);
 
         const result = this._extractAudioParamsOptimized(imageData);
         const { audioParams, centroid, boundingBox } = result;
 
         // Stabilization using Centroid of whole hologram
-        if (centroid.weight > 0.01) {
-            const errX = (centroid.x - 0.5) * cropW;
-            const errY = (centroid.y - 0.5) * cropH;
-            this.stabilization.offX += errX * 0.1;
-            this.stabilization.offY += errY * 0.1;
-        } else {
-            this.stabilization.offX *= 0.95;
-            this.stabilization.offY *= 0.95;
-        }
+        this.stabilization.offX += (centroid.weight > 0.01 ? (centroid.x - 0.5) * cropW * 0.1 : -this.stabilization.offX * 0.05);
+        this.stabilization.offY += (centroid.weight > 0.01 ? (centroid.y - 0.5) * cropH * 0.1 : -this.stabilization.offY * 0.05);
 
         if (this.synthesizer && audioParams) {
             this.synthesizer.update(audioParams.levels, audioParams.pans);
@@ -320,48 +233,43 @@ export class HologramScanner {
 
         eventBus.emit('scannerData', audioParams);
 
-        // --- Adaptive Frame Update using Anchors (Phase 19.12) ---
-        // Violet (Top-Left) and Red (Top-Right)
-        if (boundingBox && boundingBox.found) {
-            // Priority: use anchors for precise pinning
-            let targetX = (boundingBox.minX + boundingBox.maxX) / 2 / canvasW;
-            let targetY = (boundingBox.minY + boundingBox.maxY) / 2 / canvasH;
-            let targetW = (boundingBox.maxX - boundingBox.minX) / canvasW + 0.1;
+        // --- Perspective Update ---
+        const lerpFactor = 0.3; // More intensive tracking
+        let targets;
 
-            // If anchors are high-quality, use them to adjust target
-            if (boundingBox.anchors.violet.val > 200 && boundingBox.anchors.red.val > 200) {
-                targetX = (boundingBox.anchors.violet.x + boundingBox.anchors.red.x) / 2 / canvasW;
-                targetY = (boundingBox.anchors.violet.y + boundingBox.anchors.red.y) / 2 / canvasH;
-                targetW = (boundingBox.anchors.red.x - boundingBox.anchors.violet.x) / canvasW * 1.2;
-            }
-
-            const targetH = Math.max(0.3, targetW * screenAspect);
-
-            this.frameState.x += (targetX - this.frameState.x) * 0.1;
-            this.frameState.y += (targetY - this.frameState.y) * 0.1;
-            this.frameState.w += (targetW - this.frameState.w) * 0.1;
-            this.frameState.h += (targetH - this.frameState.h) * 0.1;
+        if (boundingBox && boundingBox.found && boundingBox.corners) {
+            targets = {
+                tl: { x: boundingBox.corners.tl.x / canvasW, y: boundingBox.corners.tl.y / canvasH },
+                tr: { x: boundingBox.corners.tr.x / canvasW, y: boundingBox.corners.tr.y / canvasH },
+                bl: { x: boundingBox.corners.bl.x / canvasW, y: boundingBox.corners.bl.y / canvasH },
+                br: { x: boundingBox.corners.br.x / canvasW, y: boundingBox.corners.br.y / canvasH }
+            };
         } else {
-            const defaultW = 0.8;
-            const defaultH = defaultW * screenAspect;
-            this.frameState.x += (0.5 - this.frameState.x) * 0.05;
-            this.frameState.y += (0.5 - this.frameState.y) * 0.05;
-            this.frameState.w += (defaultW - this.frameState.w) * 0.05;
-            this.frameState.h += (defaultH - this.frameState.h) * 0.05;
+            targets = {
+                tl: { x: 0.1, y: 0.15 }, tr: { x: 0.9, y: 0.15 }, bl: { x: 0.1, y: 0.75 }, br: { x: 0.9, y: 0.75 }
+            };
         }
 
-        if (this.frameElement) {
-            const left = (this.frameState.x - this.frameState.w / 2) * 100;
-            const top = (this.frameState.y - this.frameState.h / 2) * 100;
-            const width = this.frameState.w * 100;
-            const height = this.frameState.h * 100;
+        ['tl', 'tr', 'bl', 'br'].forEach(p => {
+            this.framePoints[p].x += (targets[p].x - this.framePoints[p].x) * lerpFactor;
+            this.framePoints[p].y += (targets[p].y - this.framePoints[p].y) * lerpFactor;
 
-            this.frameElement.style.left = `${left}%`;
-            this.frameElement.style.top = `${top}%`;
-            this.frameElement.style.width = `${width}%`;
-            this.frameElement.style.height = `${height}%`;
-            this.frameElement.style.aspectRatio = 'auto';
-            this.frameElement.style.transform = 'translate(0, 0)';
+            if (this.cornerElements[p]) {
+                this.cornerElements[p].style.left = `${this.framePoints[p].x * 100}%`;
+                this.cornerElements[p].style.top = `${this.framePoints[p].y * 100}%`;
+                this.cornerElements[p].style.transform = `translate(${p.includes('r') ? '-100%' : '0'}, ${p.includes('b') ? '-100%' : '0'})`;
+            }
+        });
+
+        // Update Spotlight Hole via Clip-Path
+        if (this.overlayElement) {
+            const clip = `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ` +
+                `${this.framePoints.tl.x * 100}% ${this.framePoints.tl.y * 100}%, ` +
+                `${this.framePoints.tr.x * 100}% ${this.framePoints.tr.y * 100}%, ` +
+                `${this.framePoints.br.x * 100}% ${this.framePoints.br.y * 100}%, ` +
+                `${this.framePoints.bl.x * 100}% ${this.framePoints.bl.y * 100}%, ` +
+                `${this.framePoints.tl.x * 100}% ${this.framePoints.tl.y * 100}%)`;
+            this.overlayElement.style.clipPath = clip;
         }
 
         this.animationFrameId = requestAnimationFrame(() => this._processFrame());
@@ -375,79 +283,114 @@ export class HologramScanner {
         // Global adaptive threshold
         let globalSum = 0;
         for (let i = 0; i < data.length; i += 16) globalSum += (data[i] + data[i + 1] + data[i + 2]) / 3;
-        const avgBrightness = globalSum / (data.length / 16);
-        const threshold = Math.max(0.1, (avgBrightness / 255) * 1.5) * 255;
+        const threshold = Math.max(0.1, (globalSum / (data.length / 16) / 255) * 1.5) * 255;
 
         // --- ROW-BASED SCANNING (128 Rows) ---
         // Top row = High freq (index 127), Bottom row = Low freq (index 0)
-        const rowHeight = height / 128;
+        const rowH = height / 128;
         let weightedX = 0, weightedY = 0, totalW = 0;
         let minX = width, maxX = 0, minY = height, maxY = 0;
         let foundAny = false;
 
         for (let i = 0; i < 128; i++) {
-            const semitoneIdx = 127 - i; // Scan from Top to Bottom
-            // Assuming 'semitones' array/object is defined elsewhere, e.g., `const semitones = Array(128).fill({ width: 1 });`
-            // If not, this line will cause an error. For now, assuming it exists.
-            const semitone = semitones[semitoneIdx];
-            if (!semitone) continue;
+            const semIdx = 127 - i; // Scan from Top to Bottom
+            const sem = semitones[semIdx];
+            if (!sem) continue;
 
-            const rowCenterY = Math.floor(i * rowHeight + rowHeight / 2);
-            const rowOffset = rowCenterY * width * 4;
+            const rY = Math.floor(i * rowH + rowH / 2);
+            const rOff = rY * width * 4;
 
             // Split row into Left half (Channel 0) and Right half (Channel 1)
-            let sumL = 0, countL = 0, centXL = 0;
-            let sumR = 0, countR = 0, centXR = 0;
+            let sL = 0, cL = 0, cxL = 0;
+            let sR = 0, cR = 0, cxR = 0;
 
             for (let x = 0; x < width; x += 2) {
-                const idx = rowOffset + x * 4;
-                const b = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                const b = (data[rOff + x * 4] + data[rOff + x * 4 + 1] + data[rOff + x * 4 + 2]) / 3;
                 if (b > threshold) {
                     if (x < width / 2) {
-                        sumL += b; countL++; centXL += x * b;
+                        sL += b; cL++; cxL += x * b;
                     } else {
-                        sumR += b; countR++; centXR += x * b;
+                        sR += b; cR++; cxR += x * b;
                     }
                     minX = Math.min(minX, x);
                     maxX = Math.max(maxX, x);
-                    minY = Math.min(minY, rowCenterY);
-                    maxY = Math.max(maxY, rowCenterY);
+                    minY = Math.min(minY, rY);
+                    maxY = Math.max(maxY, rY);
                     foundAny = true;
                 }
             }
 
             // Map brightness to dB (approximate)
-            if (countL > 0) {
-                const avgL = sumL / (width / 2); // Normalized over half width
-                const ampL = Math.max(0.000001, avgL / 255);
-                levels[semitoneIdx] = 20 * Math.log10(ampL);
+            if (cL > 0) {
+                const ampL = Math.max(0.000001, sL / (width / 2) / 255); // Normalized over half width
+                levels[semIdx] = 20 * Math.log10(ampL);
 
                 // PAN Extraction: Centroid relative to its base
-                // Cell Width (0..128 scale). 0..width/2 -> -128..0 cells.
-                const cX_cells = (centXL / sumL) / (width / 2) * 128 - 128;
-                const availableSpace = 128 - semitone.width;
-                if (availableSpace > 1) {
-                    // discreteOffset = pan * availableSpace. offset = cX_cells - initialX.
-                    // initialX for left is -width.
-                    pans[semitoneIdx] = (cX_cells + semitone.width - semitone.width / 2) / availableSpace;
+                const space = 128 - sem.width;
+                if (space > 1) {
+                    pans[semIdx] = ((cxL / sL) / (width / 2) * 128 - 128 + sem.width - sem.width / 2) / space;
                 }
-                weightedX += (centXL / sumL) * ampL;
-                weightedY += rowCenterY * ampL;
+                weightedX += (cxL / sL) * ampL;
+                weightedY += rY * ampL;
                 totalW += ampL;
             }
-            if (countR > 0) {
-                const avgR = sumR / (width / 2);
-                const ampR = Math.max(0.000001, avgR / 255);
-                levels[semitoneIdx + 128] = 20 * Math.log10(ampR);
+            if (cR > 0) {
+                const ampR = Math.max(0.000001, sR / (width / 2) / 255);
+                levels[semIdx + 128] = 20 * Math.log10(ampR);
 
-                const cX_cells = (centXR / sumR - width / 2) / (width / 2) * 128;
-                const availableSpace = 128 - semitone.width;
-                if (availableSpace > 1) {
-                    pans[semitoneIdx] = (cX_cells - semitone.width / 2) / availableSpace;
+                const space = 128 - sem.width;
+                if (space > 1) {
+                    pans[semIdx] = ((cxR / sR - width / 2) / (width / 2) * 128 - sem.width / 2) / space;
                 }
-                weightedX += (centXR / sumR) * ampR;
-                weightedY += rowCenterY * ampR;
+                weightedX += (cxR / sR) * ampR;
+                weightedY += rY * ampR;
                 totalW += ampR;
+            }
+        }
+
+        // Detect 4 corner points for perspective
+        let corners = {
+            tl: { x: width * 0.1, y: height * 0.15 },
+            tr: { x: width * 0.9, y: height * 0.15 },
+            bl: { x: width * 0.1, y: height * 0.75 },
+            br: { x: width * 0.9, y: height * 0.75 }
+        };
+
+        if (foundAny) {
+            // Find top and bottom active rows
+            let firstActiveRow = -1, lastActiveRow = -1;
+            for (let i = 0; i < 128; i++) {
+                if (levels[i] > -100 || levels[i + 128] > -100) {
+                    if (firstActiveRow === -1) firstActiveRow = i; // This is actually BOTTOM because we scan 127->0? 
+                    // Wait, loop i=0..127. semIdx = 127-i. i=0 is Top (127), i=127 is Bottom (0).
+                    lastActiveRow = i;
+                }
+            }
+
+            if (firstActiveRow !== -1) {
+                // Determine span for top and bottom edges
+                const getRowSpan = (rowIdx) => {
+                    let min = width, max = 0;
+                    const rY = Math.floor(rowIdx * rowH + rowH / 2);
+                    const rOff = rY * width * 4;
+                    for (let x = 0; x < width; x += 4) {
+                        const b = (data[rOff + x * 4] + data[rOff + x * 4 + 1] + data[rOff + x * 4 + 2]) / 3;
+                        if (b > threshold) { min = Math.min(min, x); max = Math.max(max, x); }
+                    }
+                    return min < max ? { min, max, y: rY } : null;
+                };
+
+                const topSpan = getRowSpan(firstActiveRow);
+                const bottomSpan = getRowSpan(lastActiveRow);
+
+                if (topSpan) {
+                    corners.tl = { x: topSpan.min, y: topSpan.y };
+                    corners.tr = { x: topSpan.max, y: topSpan.y };
+                }
+                if (bottomSpan) {
+                    corners.bl = { x: bottomSpan.min, y: bottomSpan.y };
+                    corners.br = { x: bottomSpan.max, y: bottomSpan.y };
+                }
             }
         }
 
@@ -455,43 +398,23 @@ export class HologramScanner {
         let violet = { x: 0, y: 0, val: 0 };
         let red = { x: width, y: 0, val: 0 };
 
-        // Check top 10% for anchors
         for (let y = 0; y < height * 0.15; y += 4) {
             for (let x = 0; x < width; x += 4) {
-                const idx = (y * width + x) * 4;
-                const r = data[idx], g = data[idx + 1], b = data[idx + 2];
-                if (x < width / 2 && b > r * 1.5) { // Violetish near top-left
-                    if (b > violet.val) violet = { x, y, val: b };
-                }
-                if (x > width / 2 && r > b * 1.5) { // Redish near top-right
-                    if (r > red.val) red = { x, y, val: r };
-                }
+                const r = data[(y * width + x) * 4], b = data[(y * width + x) * 4 + 2];
+                if (x < width / 2 && b > r * 1.5 && b > violet.val) violet = { x, y, val: b };
+                if (x > width / 2 && r > b * 1.5 && r > red.val) red = { x, y, val: r };
             }
         }
+
+        // Override top corners with anchors if strong
+        if (violet.val > 180) { corners.tl.x = violet.x; corners.tl.y = violet.y; }
+        if (red.val > 180) { corners.tr.x = red.x; corners.tr.y = red.y; }
 
         return {
             audioParams: { levels, pans },
             centroid: totalW > 0 ? { x: weightedX / totalW / width, y: weightedY / totalW / height, weight: totalW } : { x: 0.5, y: 0.5, weight: 0 },
-            boundingBox: { found: foundAny, minX, maxX, minY, maxY, anchors: { violet, red } }
+            boundingBox: { found: foundAny, corners, minX, maxX, minY, maxY } // Keep min/max for legacy/compat
         };
-    }
-
-    _rgbToHsl(r, g, b) {
-        let r1 = r / 255, g1 = g / 255, b1 = b / 255;
-        let max = Math.max(r1, g1, b1), min = Math.min(r1, g1, b1);
-        let h, s, l = (max + min) / 2;
-        if (max === min) h = s = 0;
-        else {
-            let d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            switch (max) {
-                case r1: h = (g1 - b1) / d + (g1 < b1 ? 6 : 0); break;
-                case g1: h = (b1 - r1) / d + 2; break;
-                case b1: h = (r1 - g1) / d + 4; break;
-            }
-            h /= 6;
-        }
-        return { h: h * 360, s, l };
     }
 
     getStatus() {
