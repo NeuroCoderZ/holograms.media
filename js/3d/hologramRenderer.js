@@ -70,6 +70,26 @@ export class HologramRenderer {
     this.maxHistorySize = 180; // ~3 seconds
     this.currentRollingMax = -60; // Baseline floor
 
+    // Group for local hands visualization
+    this.localHandsGroup = new THREE.Group();
+    this.hologramPivot.add(this.localHandsGroup);
+    this.localHands = { left: null, right: null };
+
+    this.selectionState = {
+      left: { active: false, indices: [] },
+      right: { active: false, indices: [] }
+    };
+
+    // Group for local hands visualization
+    this.localHandsGroup = new THREE.Group();
+    this.hologramPivot.add(this.localHandsGroup);
+    this.localHands = { left: null, right: null };
+
+    this.selectionState = {
+      left: { active: false, indices: [] },
+      right: { active: false, indices: [] }
+    };
+
     // DEBUG: Frame counter for diagnostics
     this._debugFrameCount = 0;
 
@@ -94,6 +114,14 @@ export class HologramRenderer {
 
     // Subscribe to incoming quanta from other peers
     this.netHoloGlyphClient.onQuantumReceived(this.handleRemoteQuantum.bind(this));
+
+    // Subscribe to local hand updates for 3D cursors
+    this.eventBus.on('handsUpdate', this.handleLocalHandsUpdate.bind(this));
+    this.eventBus.on('handsLost', this.handleLocalHandsLost.bind(this));
+
+    // Subscribe to local hand updates for 3D cursors
+    this.eventBus.on('handsUpdate', this.handleLocalHandsUpdate.bind(this));
+    this.eventBus.on('handsLost', this.handleLocalHandsLost.bind(this));
 
     // Initiate offer if this is the first peer to connect (simple logic for now)
     this.netHoloGlyphClient.onPeerConnected(() => {
@@ -136,6 +164,219 @@ export class HologramRenderer {
   handleRemoteQuantum(quantumData) {
     if (quantumData.type === 'gesture_frame') {
       this._updateGhostHands(quantumData.hands, quantumData.userId || 'remote');
+    }
+  }
+
+  /**
+   * Handles local hand tracking results from MediaPipe.
+   */
+  handleLocalHandsUpdate(data) {
+    const { landmarks, handedness } = data;
+    if (!landmarks || landmarks.length === 0) {
+      this.handleLocalHandsLost();
+      return;
+    }
+
+    // Hide both first
+    if (this.localHands.left) this.localHands.left.visible = false;
+    if (this.localHands.right) this.localHands.right.visible = false;
+
+    for (let i = 0; i < landmarks.length; i++) {
+      const handLandmarks = landmarks[i];
+      const sideInfo = handedness[i];
+      const side = sideInfo.label.toLowerCase(); // 'left' or 'right'
+
+      if (!this.localHands[side]) {
+        this.localHands[side] = this._createCursorMesh(side === 'left' ? 0x00ffff : 0xff00ff);
+        this.localHandsGroup.add(this.localHands[side]);
+      }
+
+      const cursor = this.localHands[side];
+      cursor.visible = true;
+      this._updateCursorPosition(cursor, handLandmarks, side);
+    }
+  }
+
+  handleLocalHandsLost() {
+    if (this.localHands.left) this.localHands.left.visible = false;
+    if (this.localHands.right) this.localHands.right.visible = false;
+    this.selectionState.left.active = false;
+    this.selectionState.right.active = false;
+  }
+
+  _checkIsHandOpen(landmarks) {
+    if (!landmarks) return false;
+    const tips = [8, 12, 16, 20];
+    const bases = [5, 9, 13, 17];
+    let openFingers = 0;
+    for (let i = 0; i < 4; i++) {
+      // MP Y=0 is TOP. Tip Y < Base Y means finger is extended UP.
+      if (landmarks[tips[i]].y < landmarks[bases[i]].y) openFingers++;
+    }
+    return openFingers >= 3;
+  }
+
+  _createCursorMesh(color) {
+    const geometry = new THREE.SphereGeometry(CELL_SIZE * 0.5, 16, 16);
+    const material = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0.4,
+      depthTest: false
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(CELL_SIZE * 0.2, 8, 8),
+      new THREE.MeshBasicMaterial({ color: color })
+    );
+    mesh.add(core);
+
+    return mesh;
+  }
+
+  _updateCursorPosition(cursor, landmarks, side) {
+    if (!landmarks || !landmarks[8] || !landmarks[4]) return;
+    const p8 = landmarks[8]; // Index tip
+    const p4 = landmarks[4]; // Thumb tip
+
+    // Map X (0..1) -> (-GRID_WIDTH..GRID_WIDTH)
+    const x = (p8.x - 0.5) * (GRID_WIDTH * 2);
+    // Map Y (0..1) -> (GRID_HEIGHT..-GRID_HEIGHT)
+    const y = (0.5 - p8.y) * (GRID_HEIGHT * 2);
+    // Z from MP is relative
+    const z = -p8.z * GRID_DEPTH;
+
+    cursor.position.set(x, y, z);
+
+    // Calculate Pinch for selection
+    const dist = Math.sqrt(
+      Math.pow(p8.x - p4.x, 2) +
+      Math.pow(p8.y - p4.y, 2) +
+      Math.pow(p8.z - p4.z, 2)
+    );
+    const isPinching = dist < 0.05;
+    const isHandOpen = this._checkIsHandOpen(landmarks);
+
+    // Update selection state
+    const select = this.selectionState[side];
+
+    // Map Y position to Frequency Index (approximate)
+    // GRID_HEIGHT -> 0, -GRID_HEIGHT -> 127 ? No.
+    // Logic: Y maps to Frequency.
+    // In _positionGhostHand: (handData.frequency / 127) * GRID_HEIGHT - (GRID_HEIGHT / 2)
+    // Inverse: freq = ((y + GH/2) / GH) * 127
+    const normalizedY = (y + (GRID_HEIGHT)) / (GRID_HEIGHT * 2); // 0..1 from bottom to top
+    const centerIdx = Math.floor(Math.max(0, Math.min(1, normalizedY)) * 127);
+
+    if (isPinching) {
+      select.active = true;
+      const range = 5; // Semitone width of pinch
+      select.indices = [];
+      for (let i = centerIdx - range; i <= centerIdx + range; i++) {
+        if (i >= 0 && i < 128) select.indices.push(i);
+      }
+    } else if (isHandOpen) {
+      select.active = true;
+      select.indices = Array.from({ length: 128 }, (_, i) => i); // All columns
+    } else {
+      select.active = false;
+      select.indices = [];
+    }
+
+    // Visual Feedback on Cursor
+    const core = cursor.children[0];
+    if (select.active) {
+      core.scale.set(1.5, 1.5, 1.5);
+      core.material.opacity = isPinching ? 1.0 : 0.7; // Brighter on Pinch
+    } else {
+      core.scale.set(1, 1, 1);
+      core.material.opacity = 0.5;
+    }
+  }
+
+  /**
+   * Handles local hand tracking results from MediaPipe.
+   */
+  handleLocalHandsUpdate(data) {
+    const { landmarks, handedness } = data;
+    if (!landmarks || landmarks.length === 0) {
+      this.handleLocalHandsLost();
+      return;
+    }
+
+    // Hide both first
+    if (this.localHands.left) this.localHands.left.visible = false;
+    if (this.localHands.right) this.localHands.right.visible = false;
+
+    for (let i = 0; i < landmarks.length; i++) {
+      const handLandmarks = landmarks[i];
+      const sideInfo = handedness[i];
+      const side = sideInfo.label.toLowerCase(); // 'left' or 'right'
+
+      if (!this.localHands[side]) {
+        this.localHands[side] = this._createCursorMesh(side === 'left' ? 0x00ffff : 0xff00ff);
+        this.localHandsGroup.add(this.localHands[side]);
+      }
+
+      const cursor = this.localHands[side];
+      cursor.visible = true;
+      this._updateCursorPosition(cursor, handLandmarks, side);
+    }
+  }
+
+  handleLocalHandsLost() {
+    if (this.localHands.left) this.localHands.left.visible = false;
+    if (this.localHands.right) this.localHands.right.visible = false;
+  }
+
+  _createCursorMesh(color) {
+    const geometry = new THREE.SphereGeometry(CELL_SIZE * 0.8, 16, 16);
+    const material = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0.6,
+      depthTest: false
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(CELL_SIZE * 0.3, 8, 8),
+      new THREE.MeshBasicMaterial({ color: color })
+    );
+    mesh.add(core);
+
+    return mesh;
+  }
+
+  _updateCursorPosition(cursor, landmarks, side) {
+    if (!landmarks || !landmarks[8] || !landmarks[4]) return;
+    const p8 = landmarks[8]; // Index tip
+    const p4 = landmarks[4]; // Thumb tip
+
+    // Map X (0..1) -> (-GRID_WIDTH..GRID_WIDTH)
+    const x = (p8.x - 0.5) * (GRID_WIDTH * 2);
+    // Map Y (0..1) -> (GRID_HEIGHT..-GRID_HEIGHT)
+    const y = (0.5 - p8.y) * (GRID_HEIGHT * 2);
+    // Z from MP is relative, let's just use a fixed offset or scale p8.z
+    const z = -p8.z * GRID_DEPTH;
+
+    cursor.position.set(x, y, z);
+
+    // Calculate Pinch for future visual feedback
+    const dist = Math.sqrt(
+      Math.pow(p8.x - p4.x, 2) +
+      Math.pow(p8.y - p4.y, 2) +
+      Math.pow(p8.z - p4.z, 2)
+    );
+    const isPinching = dist < 0.05;
+
+    // Pulse core if pinching
+    const core = cursor.children[0];
+    if (isPinching) {
+      core.scale.set(1.5, 1.5, 1.5);
+    } else {
+      core.scale.set(1, 1, 1);
     }
   }
 
@@ -835,20 +1076,39 @@ export class HologramRenderer {
           // Emissive: Gamma-corrected brightness for true black
           // Confidence modulates between 50% and 100% intensity
           const perceivedBrightL = qBrightL; // Already gamma-corrected in getNormAmp
-          leftMesh.material.emissiveIntensity = perceivedBrightL * (0.5 + conf * 0.5);
+          let finalIntensityL = perceivedBrightL * (0.5 + conf * 0.5);
+
+          // Selection Highlight: Blinking Edges
+          const isSelectedL = this.selectionState.left.active && this.selectionState.left.indices.includes(index);
+          const leftEdgesMesh = leftMesh.children[0];
+
+          if (isSelectedL) {
+            // Blink effect: sin wave based on time
+            const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5; // 0..1
+            finalIntensityL += 0.3 * blink; // Pulse glow
+            if (leftEdgesMesh && leftEdgesMesh.material) {
+              leftEdgesMesh.material.opacity = 0.5 + (0.5 * blink);
+              leftEdgesMesh.material.color.setHSL(0, 0, 1.0); // White edges on selection
+            }
+          } else {
+            if (leftEdgesMesh && leftEdgesMesh.material) {
+              leftEdgesMesh.material.opacity = 0.9;
+              // Restore original edge color (approx, strictly should save it)
+              // For now, keep it white/bright derived
+              if (semitoneConfig) {
+                leftEdgesMesh.material.color.set(semitoneConfig.color).offsetHSL(0, 0, 0.4);
+              }
+            }
+          }
+
+          leftMesh.material.emissiveIntensity = finalIntensityL;
 
           columnPair.left.userData.baseColor.getHSL(this._hslTemp);
           leftMesh.material.color.setHSL(
             this._hslTemp.h,
-            this._hslTemp.s * (0.5 + perceivedBrightL * 0.5), // Saturation fades with volume
-            this._hslTemp.l * perceivedBrightL // Lightness dims to true black
+            this._hslTemp.s,
+            this._hslTemp.l * (finalIntensityL + 0.2)
           );
-
-          const leftEdgesMesh = leftMesh.children[0];
-          if (leftEdgesMesh && leftEdgesMesh.material) {
-            // Edges fade out completely at low volume
-            leftEdgesMesh.material.opacity = qBrightL > 0.05 ? 0.5 : 0.0;
-          }
         }
 
         if (rightMesh) {
@@ -856,9 +1116,30 @@ export class HologramRenderer {
           rightMesh.scale.z = hR;
           rightMesh.position.z = hR / 2;
 
-          // Emissive: Gamma-corrected brightness for true black
           const perceivedBrightR = qBrightR;
-          rightMesh.material.emissiveIntensity = perceivedBrightR * (0.5 + conf * 0.5);
+          let finalIntensityR = perceivedBrightR * (0.5 + conf * 0.5);
+
+          // Selection Highlight
+          const isSelectedR = this.selectionState.right.active && this.selectionState.right.indices.includes(index);
+          const rightEdgesMesh = rightMesh.children[0];
+
+          if (isSelectedR) {
+            const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
+            finalIntensityR += 0.3 * blink;
+            if (rightEdgesMesh && rightEdgesMesh.material) {
+              rightEdgesMesh.material.opacity = 0.5 + (0.5 * blink);
+              rightEdgesMesh.material.color.setHSL(0, 0, 1.0);
+            }
+          } else {
+            if (rightEdgesMesh && rightEdgesMesh.material) {
+              rightEdgesMesh.material.opacity = 0.9;
+              if (semitoneConfig) {
+                rightEdgesMesh.material.color.set(semitoneConfig.color).offsetHSL(0, 0, 0.4);
+              }
+            }
+          }
+
+          rightMesh.material.emissiveIntensity = finalIntensityR;
 
           columnPair.right.userData.baseColor.getHSL(this._hslTemp);
           rightMesh.material.color.setHSL(
@@ -867,10 +1148,7 @@ export class HologramRenderer {
             this._hslTemp.l * perceivedBrightR // Lightness dims
           );
 
-          const rightEdgesMesh = rightMesh.children[0];
-          if (rightEdgesMesh && rightEdgesMesh.material) {
-            rightEdgesMesh.material.opacity = qBrightR > 0.05 ? 0.5 : 0.0;
-          }
+
         }
         // 4. Update Performance Monitor (Phase 4)
         perfMonitor.update(this._lastWasmPerf, performance.now() - (this.latestTimestamp || 0));
