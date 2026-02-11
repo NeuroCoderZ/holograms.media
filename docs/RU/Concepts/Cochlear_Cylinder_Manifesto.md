@@ -151,7 +151,7 @@ sequenceDiagram
     participant MP as MediaPipe
     participant GM as GestureManager
     participant SB as AudioGestureBridge
-    participant CQT as BasilaQ-127
+    participant CQT as BasilaQ-128
     participant Net as NetHoloGlyph
     participant Peer as Другой Пользователь
     

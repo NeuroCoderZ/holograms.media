@@ -1,6 +1,6 @@
 # План реализации: Pure WASM & WS Stability
 
-## Этап 1: Рефакторинг Rust (BasilaQ-127)
+## Этап 1: Рефакторинг Rust (BasilaQ-128)
 - [x] **Очистка зависимостей:** Удалить `wasm-bindgen` из `holocore/Cargo.toml`.
 - [x] **Настройка экспортов:** Переписать `holocore/src/lib.rs` для использования `#[no_mangle] pub extern "C"`.
 - [x] **Управление памятью:** Реализовать простые аллокаторы `malloc`/`free` внутри Rust.
