@@ -28,22 +28,26 @@ export class GestureIntentClassifier {
 
         // Confidence accumulator: per-intent temporal accumulator with decay
         this.accumulators = new Map(); // intent -> {value, lastTs}
-        this.accumulatorCfg = {
+        this.accumulatorCfg = Object.assign({
             acceptanceThreshold: ('acceptanceThreshold' in opts) ? opts.acceptanceThreshold : 1.0,
             decayFactorPer100ms: ('decayFactorPer100ms' in opts) ? opts.decayFactorPer100ms : 0.9,
             decayStepMs: 100,
             // how much to increment accumulator when a soft match observed (multiplied by score)
             incrementScale: ('incrementScale' in opts) ? opts.incrementScale : 1.0
-        };
+        }, opts.accumulatorCfg || {});
 
-        // Minimal score thresholds
+        // Minimal score thresholds (KNN accept threshold 0.85 per Phase20)
         this.thresholds = Object.assign({
-            accept: 0.85,
-            soft: 0.6
+            accept: ('accept' in (opts.thresholds || {})) ? opts.thresholds.accept : 0.85,
+            soft: ('soft' in (opts.thresholds || {})) ? opts.thresholds.soft : 0.6
         }, opts.thresholds || {});
 
-        // ensure a GestureVectorStore class is available lazily
-        this._GestureVectorStoreClass = GestureVectorStore;
+        // allow injecting a GestureVectorStore class for tests
+        this._GestureVectorStoreClass = opts.GestureVectorStoreClass || GestureVectorStore;
+
+        // Personal Language Weights: learns which gestures are most common for THIS user
+        this.gestureWeights = new Map(); // intent -> weight (boost)
+        this.learningRate = 0.05;
 
         // Small debug
         // console.debug('GestureIntentClassifier initialized', {historyLimit: this.historyLimit});
@@ -76,44 +80,42 @@ export class GestureIntentClassifier {
         // 2) Heuristic fallback (cheap)
         const heuristic = this._getHeuristicIntent(landmarks);
 
-        // 3) Tiered decision
+        // 3) Tiered decision + Personal Weighting
         let chosen = null;
         if (vectorResults && vectorResults.length) {
             const best = vectorResults[0];
             const score = (typeof best.score === 'number') ? best.score : 0;
-            const intentName = this._extractName(best) || (best.metadata && best.metadata.intent) || best.name;
+            const intentName = this._extractName(best);
+
+            // Apply personal weight boost (softly)
+            const weight = this.gestureWeights.get(intentName) || 1.0;
+            const finalScore = score * weight;
 
             // Immediate accept
-            if (score >= this.thresholds.accept) {
-                chosen = {intent: intentName, confidence: score, source: 'vector', match: best};
+            if (finalScore >= this.thresholds.accept) {
+                chosen = { intent: intentName, confidence: finalScore, source: 'vector', match: best };
+                this._updateWeights(intentName); // Reinforce
             }
             // Soft: accumulate over time
-            else if (score >= this.thresholds.soft) {
-                const accVal = this._accumulate(intentName, score, now);
+            else if (finalScore >= this.thresholds.soft) {
+                const accVal = this._accumulate(intentName, finalScore, now);
                 if (accVal >= this.accumulatorCfg.acceptanceThreshold) {
-                    chosen = {intent: intentName, confidence: Math.min(1, accVal), source: 'accumulated', match: best};
+                    chosen = { intent: intentName, confidence: Math.min(1, accVal), source: 'accumulated', match: best };
+                    this._updateWeights(intentName);
                 }
             }
         }
 
-        // If still no chosen intent, try heuristics
-        if (!chosen && heuristic) {
-            // heuristics are lower-confidence by default
-            chosen = Object.assign({}, heuristic, {source: 'heuristic'});
-        }
-
-        // Chain detection: examine vectorResults metadata.chains for recent history
+        // 4) Chain detection (Contextual reinforcement)
         const chainSuggestion = this._detectChain(vectorResults);
-        if (chainSuggestion) {
-            // combine confidences conservatively
-            const combined = Math.min(1, (chainSuggestion.confidence || 0) + 0.05);
-            chosen = {intent: chainSuggestion.intent, confidence: combined, source: 'chain', chainInfo: chainSuggestion};
+        if (chainSuggestion && (!chosen || chainSuggestion.confidence > chosen.confidence)) {
+            chosen = { intent: chainSuggestion.intent, confidence: chainSuggestion.confidence, source: 'chain', chainInfo: chainSuggestion };
         }
 
         // If chosen, apply debounce and history bookkeeping
         if (chosen) {
-            // ensure shape: {intent, confidence, action}
-            const out = {intent: chosen.intent, confidence: Number(chosen.confidence || 0), action: chosen.intent};
+            // ensure shape: {intent, confidence}
+            const out = { intent: chosen.intent, confidence: Number(chosen.confidence || 0) };
 
             const emit = () => {
                 this._addToHistory(out.intent);
@@ -157,7 +159,7 @@ export class GestureIntentClassifier {
         if (!wrist) return null;
 
         const idx = i => landmarks[i];
-        const dist3 = (a,b) => Math.hypot(a.x-b.x, a.y-b.y, (a.z||0)-(b.z||0));
+        const dist3 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0));
 
         // scale reference: wrist -> middle_mcp (index 9)
         const middleMcp = idx(9) || wrist;
@@ -168,13 +170,13 @@ export class GestureIntentClassifier {
 
         // Pinch / select: thumb-index distance small relative to hand size
         const pinchDist = dist3(indexTip, thumbTip) / scaleRef;
-        if (pinchDist < 0.18) return {intent: 'select', confidence: 0.6};
+        if (pinchDist < 0.18) return { intent: 'select', confidence: 0.6 };
 
         // Fist / grab: tips close to wrist
         const tips = [indexTip, middleTip, ringTip, pinkyTip].filter(Boolean);
         if (tips.length === 4) {
-            const closed = tips.every(t => (dist3(t, wrist)/scaleRef) < 0.6);
-            if (closed) return {intent: 'grab', confidence: 0.55};
+            const closed = tips.every(t => (dist3(t, wrist) / scaleRef) < 0.6);
+            if (closed) return { intent: 'grab', confidence: 0.55 };
         }
 
         // Open palm / navigate: fingers substantially extended using 3D alignment
@@ -183,8 +185,8 @@ export class GestureIntentClassifier {
             if (!tip || !pip || !mcp) return false;
             return this.isFingerExtended3D(tip, pip, mcp, scaleRef);
         };
-        const open = isExtended(8,7,5) && isExtended(12,11,9) && isExtended(16,15,13) && isExtended(20,19,17);
-        if (open) return {intent: 'navigate', confidence: 0.5};
+        const open = isExtended(8, 7, 5) && isExtended(12, 11, 9) && isExtended(16, 15, 13) && isExtended(20, 19, 17);
+        if (open) return { intent: 'navigate', confidence: 0.5 };
 
         return null;
     }
@@ -201,7 +203,7 @@ export class GestureIntentClassifier {
     // -------------------------
     _accumulate(intentName, score, now) {
         // decay existing value first
-        const rec = this.accumulators.get(intentName) || {value:0, lastTs: now};
+        const rec = this.accumulators.get(intentName) || { value: 0, lastTs: now };
         this._decaySingle(rec, now);
         rec.value = rec.value + (score * this.accumulatorCfg.incrementScale);
         rec.lastTs = now;
@@ -242,15 +244,16 @@ export class GestureIntentClassifier {
                 if (Array.isArray(c)) { seq = c; chainIntent = c.join('->'); }
                 else if (c && Array.isArray(c.sequence)) { seq = c.sequence; chainIntent = c.intent || c.sequence.join('->'); }
                 if (!seq || seq.length < 2) continue;
-                const prefix = seq.slice(0, seq.length-1);
+                const prefix = seq.slice(0, seq.length - 1);
                 const tail = hist.slice(-prefix.length);
-                if (tail.length === prefix.length && prefix.every((v,i)=>v === tail[i]) ) {
+                if (tail.length === prefix.length && prefix.every((v, i) => v === tail[i])) {
                     // next expected in chain is last element
-                    const expected = seq[seq.length-1];
+                    const expected = seq[seq.length - 1];
                     // if current result corresponds to expected, suggest chain
                     const cand = this._extractName(r) || r.name;
                     if (cand === expected) {
-                        return {intent: chainIntent, confidence: (r.score||0) * 0.9, sequence: seq, sourceResult: r};
+                        // возвращаем ожидаемый следующий intent (последний элемент последовательности)
+                        return { intent: expected, chainLabel: chainIntent, confidence: (r.score || 0) * 0.9, sequence: seq, sourceResult: r };
                     }
                 }
             }
@@ -267,19 +270,71 @@ export class GestureIntentClassifier {
         // Здесь можно добавить детектор цепочек (например, 'select' -> 'navigate' = 'shortcut_action')
     }
 
-    // 3D пальцевая эвристика: dot-product alignment + distance ratio
+    // 3D finger heuristic: uses cross-product and vector alignment
     isFingerExtended3D(tip, pip, mcp, scaleRef) {
-        // vectors: mcp->pip and pip->tip (3D)
-        const v = [(pip.x - mcp.x), (pip.y - mcp.y), (pip.z || 0) - (mcp.z || 0)];
-        const w = [(tip.x - pip.x), (tip.y - pip.y), (tip.z || 0) - (pip.z || 0)];
-        const dot = v[0]*w[0] + v[1]*w[1] + v[2]*w[2];
-        const nv = Math.hypot(v[0], v[1], v[2]) || 1e-9;
-        const nw = Math.hypot(w[0], w[1], w[2]) || 1e-9;
-        const cos = dot / (nv * nw);
-        // require near-collinear (>0.8) and tip further from wrist than pip by factor
-        const tipToMcp = Math.hypot(tip.x - mcp.x, tip.y - mcp.y, (tip.z||0) - (mcp.z||0));
-        const pipToMcp = Math.hypot(pip.x - mcp.x, pip.y - mcp.y, (pip.z||0) - (mcp.z||0));
-        const ratio = tipToMcp / (pipToMcp || 1e-6);
-        return cos > 0.78 && ratio > 1.05;
+        // Feature 1: Directional alignment (Cosine similarity of phalanges)
+        const v = { x: (pip.x - mcp.x), y: (pip.y - mcp.y), z: (pip.z || 0) - (mcp.z || 0) };
+        const w = { x: (tip.x - pip.x), y: (tip.y - pip.y), z: (tip.z || 0) - (pip.z || 0) };
+
+        const nv = Math.sqrt(v.x ** 2 + v.y ** 2 + v.z ** 2) || 1e-9;
+        const nw = Math.sqrt(w.x ** 2 + w.y ** 2 + w.z ** 2) || 1e-9;
+        const cos = (v.x * w.x + v.y * w.y + v.z * w.z) / (nv * nw);
+
+        // Feature 2: Distance ratio (Tip must be further from wrist)
+        const tipToMcp = Math.sqrt((tip.x - mcp.x) ** 2 + (tip.y - mcp.y) ** 2 + (tip.z - mcp.z) ** 2);
+        const pipToMcp = Math.sqrt((pip.x - mcp.x) ** 2 + (pip.y - mcp.y) ** 2 + (pip.z - mcp.z) ** 2);
+        const ratio = tipToMcp / (pipToMcp || 1e-9);
+
+        // Feature 3: Parallelism (Small cross-product indicates straight finger)
+        const cross = {
+            x: v.y * w.z - v.z * w.y,
+            y: v.z * w.x - v.x * w.z,
+            z: v.x * w.y - v.y * w.x
+        };
+        const sin = Math.sqrt(cross.x ** 2 + cross.y ** 2 + cross.z ** 2) / (nv * nw);
+
+        return cos > 0.85 && ratio > 1.15 && sin < 0.25;
     }
+
+    _updateWeights(intentName) {
+        let w = this.gestureWeights.get(intentName) || 1.0;
+        w = Math.min(1.5, w + this.learningRate); // Max boost 50%
+        this.gestureWeights.set(intentName, w);
+        // Decay others slightly
+        for (const [k, v] of this.gestureWeights.entries()) {
+            if (k !== intentName) {
+                this.gestureWeights.set(k, Math.max(0.8, v - this.learningRate * 0.2));
+            }
+        }
+    }
+
+    // -----------------------
+    // Accumulator inspection & test helpers
+    // -----------------------
+
+    /** Возвращает значение аккумулятора для intent (или null) */
+    getAccumulator(intentName) {
+        const rec = this.accumulators.get(intentName);
+        if (!rec) return null;
+        return { value: rec.value, lastTs: rec.lastTs };
+    }
+
+    /** Возвращает snapshot всех аккумуляторов */
+    getAllAccumulators() {
+        const out = {};
+        for (const [k, v] of this.accumulators.entries()) out[k] = { value: v.value, lastTs: v.lastTs };
+        return out;
+    }
+
+    /** Сбрасывает все аккумуляторы (тесты) */
+    resetAccumulators() {
+        this.accumulators.clear();
+    }
+
+    /** Обновить конфиг аккумулятора (только для тестирования/отладки) */
+    setAccumulatorCfg(cfg = {}) {
+        Object.assign(this.accumulatorCfg, cfg);
+    }
+
 }
+
