@@ -1,108 +1,285 @@
 // frontend/js/ai/gestureIntentClassifier.js
 
+import GestureVectorStore from '../tria/GestureVectorStore.js';
+
 /**
- * Имитирует работу легковесной ML-модели для классификации намерения жеста.
- * В будущем будет заменен на реальную модель TensorFlow.js/ONNX.
+ * GestureIntentClassifier (Opus-Level Edition)
+ * 
+ * Превращает сырые координаты MediaPipe в семантические намерения (Intents).
+ * Использует многоуровневую систему принятия решений (Tiered Decision Engine):
+ * 1. Confident Vector Match (>0.85) — прямое распознавание из памяти.
+ * 2. Mixed Validation (>0.7 + Heuristic) — подтверждение вектора правилами.
+ * 3. Heuristic Fallback — работа по жестким правилам при отсутствии данных в БД.
  */
 export class GestureIntentClassifier {
-  constructor() {
-    console.log("GestureIntentClassifier: Инициализирован (режим заглушки).");
-    this.lastIntent = null;
-    this.lastIntentTime = 0;
-    this.debounceTime = 500; // 500ms debounce для предотвращения спама
-  }
+    constructor(opts = {}) {
+        // Debounce to avoid flooding downstream state machines
+        this.lastIntent = null;
+        this.lastIntentTime = 0;
+        this.debounceTime = ('debounceTime' in opts) ? opts.debounceTime : 300;
 
-  /**
-   * Предсказывает намерение на основе данных о жесте.
-   * @param {object} landmarks - Данные о ключевых точках от MediaPipe.
-   * @returns {Promise<string|null>} Строка с намерением или null, если жест не изменился или не распознан.
-   */
-  async predict(landmarks) {
-    if (!landmarks || landmarks.length < 21) return null; // Убедимся, что есть все 21 точки
+        // Векторное хранилище (ленивая инициализация)
+        this.gestureStore = null; // lazy init in ensureStore()
+        this._storeReadyPromise = null;
 
-    let currentIntent = null;
-    const thumbTip = landmarks[4];
-    const indexTip = landmarks[8];
-    const middleTip = landmarks[12];
-    const ringTip = landmarks[16];
-    const pinkyTip = landmarks[20];
+        // Intent history buffer (circular)
+        this.intentHistory = [];
+        this.historyLimit = ('historyLimit' in opts) ? opts.historyLimit : 16;
 
-    // Проверяем, что все необходимые точки существуют
-    if (!thumbTip || !indexTip || !middleTip || !ringTip || !pinkyTip ||
-        !landmarks[2] || !landmarks[1] || // For thumb extension
-        !landmarks[6] || !landmarks[5] || // For index extension
-        !landmarks[10] || !landmarks[9] || // For middle extension
-        !landmarks[14] || !landmarks[13] || // For ring extension
-        !landmarks[18] || !landmarks[17]    // For pinky extension
-       ) {
-      // console.warn("GestureIntentClassifier: Недостаточно данных о ключевых точках для предсказания.");
-      return null;
+        // Confidence accumulator: per-intent temporal accumulator with decay
+        this.accumulators = new Map(); // intent -> {value, lastTs}
+        this.accumulatorCfg = {
+            acceptanceThreshold: ('acceptanceThreshold' in opts) ? opts.acceptanceThreshold : 1.0,
+            decayFactorPer100ms: ('decayFactorPer100ms' in opts) ? opts.decayFactorPer100ms : 0.9,
+            decayStepMs: 100,
+            // how much to increment accumulator when a soft match observed (multiplied by score)
+            incrementScale: ('incrementScale' in opts) ? opts.incrementScale : 1.0
+        };
+
+        // Minimal score thresholds
+        this.thresholds = Object.assign({
+            accept: 0.85,
+            soft: 0.6
+        }, opts.thresholds || {});
+
+        // ensure a GestureVectorStore class is available lazily
+        this._GestureVectorStoreClass = GestureVectorStore;
+
+        // Small debug
+        // console.debug('GestureIntentClassifier initialized', {historyLimit: this.historyLimit});
     }
 
-    const index_thumb_dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y, indexTip.z - thumbTip.z); // Используем 3D расстояние
-
-    // Эвристика для "щипка" или "выбора"
-    if (index_thumb_dist < 0.05) { // Условное пороговое значение (может потребовать подстройки)
-         currentIntent = 'select';
-    }
-    // Эвристика для "открытой ладони" (навигация)
-    else if (
-        this.isFingerExtended(thumbTip, landmarks[2], landmarks[1]) &&
-        this.isFingerExtended(indexTip, landmarks[6], landmarks[5]) &&
-        this.isFingerExtended(middleTip, landmarks[10], landmarks[9]) &&
-        this.isFingerExtended(ringTip, landmarks[14], landmarks[13]) && // Добавим проверку и для остальных пальцев
-        this.isFingerExtended(pinkyTip, landmarks[18], landmarks[17])
-    ) {
-        currentIntent = 'navigate';
-    }
-    // Эвристика для "кулака" (захват/перемещение)
-    else if (
-        // Проверяем, что все пальцы, кроме большого, согнуты
-        // (большой палец может быть как согнут, так и выпрямлен при жесте "кулак")
-        !this.isFingerExtended(indexTip, landmarks[6], landmarks[5]) &&
-        !this.isFingerExtended(middleTip, landmarks[10], landmarks[9]) &&
-        !this.isFingerExtended(ringTip, landmarks[14], landmarks[13]) &&
-        !this.isFingerExtended(pinkyTip, landmarks[18], landmarks[17])
-    ) {
-        currentIntent = 'grab';
+    /**
+     * Инициализация хранилища
+     */
+    async ensureStore() {
+        if (!this.gestureStore) this.gestureStore = new this._GestureVectorStoreClass();
+        if (!this._storeReadyPromise) {
+            this._storeReadyPromise = this.gestureStore.init({ includeZ: true });
+        }
+        return this._storeReadyPromise;
     }
 
+    /**
+     * Главный цикл предсказания
+     */
+    async predict(landmarks) {
+        // Returns Promise resolving to {intent, confidence, action} or null
+        if (!landmarks || landmarks.length < 21) return null;
 
-    // Debounce: возвращаем намерение, только если оно изменилось или прошло достаточно времени
-    const now = Date.now();
-    if (currentIntent && (currentIntent !== this.lastIntent || now - this.lastIntentTime > this.debounceTime)) {
-        this.lastIntent = currentIntent;
-        this.lastIntentTime = now;
-        // console.log(`GestureIntentClassifier: Detected intent - ${currentIntent}`);
-        return currentIntent;
+        await this.ensureStore();
+        const now = Date.now();
+
+        // 1) Vector search (topK=3, minScore = soft threshold)
+        const vectorResults = await this._getVectorIntents(landmarks);
+
+        // 2) Heuristic fallback (cheap)
+        const heuristic = this._getHeuristicIntent(landmarks);
+
+        // 3) Tiered decision
+        let chosen = null;
+        if (vectorResults && vectorResults.length) {
+            const best = vectorResults[0];
+            const score = (typeof best.score === 'number') ? best.score : 0;
+            const intentName = this._extractName(best) || (best.metadata && best.metadata.intent) || best.name;
+
+            // Immediate accept
+            if (score >= this.thresholds.accept) {
+                chosen = {intent: intentName, confidence: score, source: 'vector', match: best};
+            }
+            // Soft: accumulate over time
+            else if (score >= this.thresholds.soft) {
+                const accVal = this._accumulate(intentName, score, now);
+                if (accVal >= this.accumulatorCfg.acceptanceThreshold) {
+                    chosen = {intent: intentName, confidence: Math.min(1, accVal), source: 'accumulated', match: best};
+                }
+            }
+        }
+
+        // If still no chosen intent, try heuristics
+        if (!chosen && heuristic) {
+            // heuristics are lower-confidence by default
+            chosen = Object.assign({}, heuristic, {source: 'heuristic'});
+        }
+
+        // Chain detection: examine vectorResults metadata.chains for recent history
+        const chainSuggestion = this._detectChain(vectorResults);
+        if (chainSuggestion) {
+            // combine confidences conservatively
+            const combined = Math.min(1, (chainSuggestion.confidence || 0) + 0.05);
+            chosen = {intent: chainSuggestion.intent, confidence: combined, source: 'chain', chainInfo: chainSuggestion};
+        }
+
+        // If chosen, apply debounce and history bookkeeping
+        if (chosen) {
+            // ensure shape: {intent, confidence, action}
+            const out = {intent: chosen.intent, confidence: Number(chosen.confidence || 0), action: chosen.intent};
+
+            const emit = () => {
+                this._addToHistory(out.intent);
+                this.lastIntent = out.intent;
+                this.lastIntentTime = now;
+                return out;
+            };
+
+            if (this.lastIntent && this.lastIntent === out.intent && (now - this.lastIntentTime) < this.debounceTime) {
+                // suppressed by debounce
+                return null;
+            }
+            return emit();
+        }
+
+        // If no decision, decay accumulators and possibly clear lastIntent after debounce window
+        this._decayAllAccumulators(now);
+        if (this.lastIntent && (now - this.lastIntentTime) > this.debounceTime) this.lastIntent = null;
+        return null;
     }
 
-    // Если currentIntent не null, но не прошел debounce, мы не сбрасываем lastIntent,
-    // чтобы при следующем вызове, если currentIntent тот же, он все равно прошел debounce по времени.
-    // Если currentIntent стал null (жест не распознан), то мы можем сбросить lastIntent, чтобы
-    // следующее распознавание любого жеста сразу сработало.
-    if (currentIntent === null && this.lastIntent !== null && (now - this.lastIntentTime > this.debounceTime / 2) ) {
-        // console.log(`GestureIntentClassifier: Intent lost, resetting lastIntent from ${this.lastIntent}`);
-        this.lastIntent = null; // Позволит следующему жесту сработать быстрее
+    /**
+     * Уровень 1 & 2: Векторный поиск
+     */
+    async _getVectorIntents(landmarks) {
+        try {
+            // Ищем топ-3 совпадения
+            return await this.gestureStore.query(landmarks, 3, 0.6);
+        } catch (e) {
+            console.warn("OpusClassifier: Vector query failed", e);
+            return [];
+        }
     }
 
+    /**
+     * Уровень 3: Улучшенные эвристики
+     */
+    _getHeuristicIntent(landmarks) {
+        // Returns {intent, confidence} or null
+        const wrist = landmarks[0];
+        if (!wrist) return null;
 
-    return null;
-  }
+        const idx = i => landmarks[i];
+        const dist3 = (a,b) => Math.hypot(a.x-b.x, a.y-b.y, (a.z||0)-(b.z||0));
 
-  // Вспомогательная функция для определения, выпрямлен ли палец
-  // Y-координата уменьшается вверх (к кончикам пальцев, если ладонь смотрит на камеру)
-  isFingerExtended(tip, pip, mcp) {
-      if (!tip || !pip || !mcp) return false;
-      // Палец выпрямлен, если его суставы в основном на одной линии,
-      // и кончик (tip) находится "выше" (меньшее значение Y), чем средний сустав (pip),
-      // а средний сустав (pip) "выше", чем основной сустав (mcp).
-      // Также добавляем проверку на Z-координату, чтобы убедиться, что палец направлен к камере
-      const yStraight = tip.y < pip.y && pip.y < mcp.y;
-      // Проверка, что палец не согнут в сторону ладони сильно по оси Z
-      // (предполагаем, что mcp.z - это база, pip.z и tip.z должны быть меньше или равны для выпрямленного пальца)
-      // Это очень грубая эвристика для Z, может потребовать доработки.
-      const zStraight = (tip.z <= pip.z + 0.03) && (pip.z <= mcp.z + 0.03); // Допуск на небольшое отклонение
-      return yStraight && zStraight;
-  }
+        // scale reference: wrist -> middle_mcp (index 9)
+        const middleMcp = idx(9) || wrist;
+        const scaleRef = Math.max(1e-6, dist3(wrist, middleMcp));
+
+        const thumbTip = idx(4); const indexTip = idx(8); const middleTip = idx(12); const ringTip = idx(16); const pinkyTip = idx(20);
+        if (!thumbTip || !indexTip) return null;
+
+        // Pinch / select: thumb-index distance small relative to hand size
+        const pinchDist = dist3(indexTip, thumbTip) / scaleRef;
+        if (pinchDist < 0.18) return {intent: 'select', confidence: 0.6};
+
+        // Fist / grab: tips close to wrist
+        const tips = [indexTip, middleTip, ringTip, pinkyTip].filter(Boolean);
+        if (tips.length === 4) {
+            const closed = tips.every(t => (dist3(t, wrist)/scaleRef) < 0.6);
+            if (closed) return {intent: 'grab', confidence: 0.55};
+        }
+
+        // Open palm / navigate: fingers substantially extended using 3D alignment
+        const isExtended = (tipIdx, pipIdx, mcpIdx) => {
+            const tip = idx(tipIdx), pip = idx(pipIdx), mcp = idx(mcpIdx);
+            if (!tip || !pip || !mcp) return false;
+            return this.isFingerExtended3D(tip, pip, mcp, scaleRef);
+        };
+        const open = isExtended(8,7,5) && isExtended(12,11,9) && isExtended(16,15,13) && isExtended(20,19,17);
+        if (open) return {intent: 'navigate', confidence: 0.5};
+
+        return null;
+    }
+
+    /**
+     * Слой принятия решений (Tiered Logic)
+     */
+    _extractName(match) {
+        return (match && match.metadata && match.metadata.intent) ? match.metadata.intent : (match && match.name) || null;
+    }
+
+    // -------------------------
+    // Confidence accumulator helpers
+    // -------------------------
+    _accumulate(intentName, score, now) {
+        // decay existing value first
+        const rec = this.accumulators.get(intentName) || {value:0, lastTs: now};
+        this._decaySingle(rec, now);
+        rec.value = rec.value + (score * this.accumulatorCfg.incrementScale);
+        rec.lastTs = now;
+        this.accumulators.set(intentName, rec);
+        return rec.value;
+    }
+
+    _decaySingle(rec, now) {
+        const dt = Math.max(0, now - (rec.lastTs || now));
+        if (dt <= 0) return;
+        const steps = dt / this.accumulatorCfg.decayStepMs;
+        const f = Math.pow(this.accumulatorCfg.decayFactorPer100ms, steps);
+        rec.value = rec.value * f;
+    }
+
+    _decayAllAccumulators(now) {
+        for (const [k, rec] of this.accumulators.entries()) {
+            this._decaySingle(rec, now);
+            // garbage collect tiny values
+            if (rec.value < 1e-4) this.accumulators.delete(k);
+            else this.accumulators.set(k, rec);
+        }
+    }
+
+    // Chain detection inspects vectorResults metadata for chain sequences
+    _detectChain(vectorResults) {
+        if (!vectorResults || !vectorResults.length) return null;
+        const now = Date.now();
+        // build simple history array of intent strings
+        const hist = this.intentHistory.map(h => h.intent).slice(-32);
+        // look through top results for chain metadata
+        for (const r of vectorResults) {
+            const md = r.metadata || {};
+            if (!md.chains) continue;
+            const chains = Array.isArray(md.chains) ? md.chains : [];
+            for (const c of chains) {
+                let seq = null; let chainIntent = null;
+                if (Array.isArray(c)) { seq = c; chainIntent = c.join('->'); }
+                else if (c && Array.isArray(c.sequence)) { seq = c.sequence; chainIntent = c.intent || c.sequence.join('->'); }
+                if (!seq || seq.length < 2) continue;
+                const prefix = seq.slice(0, seq.length-1);
+                const tail = hist.slice(-prefix.length);
+                if (tail.length === prefix.length && prefix.every((v,i)=>v === tail[i]) ) {
+                    // next expected in chain is last element
+                    const expected = seq[seq.length-1];
+                    // if current result corresponds to expected, suggest chain
+                    const cand = this._extractName(r) || r.name;
+                    if (cand === expected) {
+                        return {intent: chainIntent, confidence: (r.score||0) * 0.9, sequence: seq, sourceResult: r};
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    // legacy smoothing removed - using accumulators above
+
+    _addToHistory(intent) {
+        this.intentHistory.push({ intent, time: Date.now() });
+        if (this.intentHistory.length > this.historyLimit) this.intentHistory.shift();
+
+        // Здесь можно добавить детектор цепочек (например, 'select' -> 'navigate' = 'shortcut_action')
+    }
+
+    // 3D пальцевая эвристика: dot-product alignment + distance ratio
+    isFingerExtended3D(tip, pip, mcp, scaleRef) {
+        // vectors: mcp->pip and pip->tip (3D)
+        const v = [(pip.x - mcp.x), (pip.y - mcp.y), (pip.z || 0) - (mcp.z || 0)];
+        const w = [(tip.x - pip.x), (tip.y - pip.y), (tip.z || 0) - (pip.z || 0)];
+        const dot = v[0]*w[0] + v[1]*w[1] + v[2]*w[2];
+        const nv = Math.hypot(v[0], v[1], v[2]) || 1e-9;
+        const nw = Math.hypot(w[0], w[1], w[2]) || 1e-9;
+        const cos = dot / (nv * nw);
+        // require near-collinear (>0.8) and tip further from wrist than pip by factor
+        const tipToMcp = Math.hypot(tip.x - mcp.x, tip.y - mcp.y, (tip.z||0) - (mcp.z||0));
+        const pipToMcp = Math.hypot(pip.x - mcp.x, pip.y - mcp.y, (pip.z||0) - (mcp.z||0));
+        const ratio = tipToMcp / (pipToMcp || 1e-6);
+        return cos > 0.78 && ratio > 1.05;
+    }
 }
