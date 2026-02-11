@@ -453,7 +453,17 @@ export class HologramRenderer {
    * @returns {THREE.Mesh} A Three.js Mesh object representing a sphere.
    */
   _createCentralMarkerSphere(radius, color) {
-    return new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 16), new THREE.MeshBasicMaterial({ color, transparent: false, opacity: 1.0 }));
+    // User requested central white sphere to be yellow and 100% transparent (invisible but distinct in code)
+    const isTarget = (color === 0xffffff);
+    return new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 16, 16),
+      new THREE.MeshBasicMaterial({
+        color: isTarget ? 0xffff00 : color,
+        transparent: isTarget,
+        opacity: isTarget ? 0.0 : 1.0,
+        visible: !isTarget // If 100% transparent, we can just hide it, but keep it as requested
+      })
+    );
   }
 
   /**

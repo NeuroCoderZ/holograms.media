@@ -242,42 +242,51 @@ export class HologramScanner {
 
         eventBus.emit('scannerData', audioParams);
 
-        // --- Robust Tracking & Perspective Update (FAST/Harris + KLT + Kalman) ---
-        const now = performance.now();
-        const dt = Math.max(1e-3, (now - this.lastTrackTime) / 1000);
-        this.lastTrackTime = now;
-
-        const trackRes = this._trackAndEstimateCorners(imageData, canvasW, canvasH, dt);
+        const trackRes = this._trackAndEstimateCorners(imageData, canvasW, canvasH, 0.016);
+        // --- Dynamic Viewfinder Update (Phase 20.3) ---
         const lerpFactor = 0.35;
         const defaultTargets = {
             tl: { x: 0.1, y: 0.15 }, tr: { x: 0.9, y: 0.15 }, bl: { x: 0.1, y: 0.75 }, br: { x: 0.9, y: 0.75 }
         };
 
-        let targets = defaultTargets;
-        if (trackRes && trackRes.corners) {
-            // Update Kalman filters and use their estimates
+        let targets = Object.assign({}, defaultTargets);
+
+        // 1. Detection Base: If bounding box found something, use it to snap corners
+        if (boundingBox && boundingBox.found) {
             ['tl', 'tr', 'bl', 'br'].forEach(k => {
-                const meas = trackRes.corners[k];
-                if (meas) {
-                    this._kalmanPredict(this.kalman[k], dt);
-                    this._kalmanUpdate(this.kalman[k], meas.x, meas.y);
-                    const est = this.kalman[k].x;
-                    targets[k] = { x: est[0] / canvasW, y: est[1] / canvasH };
-                } else {
-                    // predict only
-                    this._kalmanPredict(this.kalman[k], dt);
-                    const est = this.kalman[k].x;
-                    targets[k] = { x: est[0] / canvasW, y: est[1] / canvasH };
-                }
+                targets[k] = {
+                    x: boundingBox.corners[k].x / canvasW,
+                    y: boundingBox.corners[k].y / canvasH
+                };
             });
         }
 
+        // 2. Tracking Refinement: If Kalman tracking is healthy, override detection
+        if (trackRes && trackRes.corners) {
+            const now = performance.now();
+            const dt = Math.max(1e-3, (now - this.lastTrackTime) / 1000);
+            this.lastTrackTime = now;
+
+            ['tl', 'tr', 'bl', 'br'].forEach(k => {
+                const meas = trackRes.corners[k];
+                this._kalmanPredict(this.kalman[k], dt);
+                if (meas) {
+                    this._kalmanUpdate(this.kalman[k], meas.x, meas.y);
+                }
+                const est = this.kalman[k].x;
+                // Use tracking estimate if available
+                targets[k] = { x: est[0] / canvasW, y: est[1] / canvasH };
+            });
+        }
+
+        // Apply LERP and Update UI
         ['tl', 'tr', 'bl', 'br'].forEach(p => {
             this.framePoints[p].x += (targets[p].x - this.framePoints[p].x) * lerpFactor;
             this.framePoints[p].y += (targets[p].y - this.framePoints[p].y) * lerpFactor;
             if (this.cornerElements[p]) {
                 this.cornerElements[p].style.left = `${this.framePoints[p].x * 100}%`;
                 this.cornerElements[p].style.top = `${this.framePoints[p].y * 100}%`;
+                // Keep the brackets pointing inward
                 this.cornerElements[p].style.transform = `translate(${p.includes('r') ? '-100%' : '0'}, ${p.includes('b') ? '-100%' : '0'})`;
             }
         });
@@ -378,68 +387,51 @@ export class HologramScanner {
             br: { x: width * 0.9, y: height * 0.75 }
         };
 
-        // --- Anchor Search (Phase 19.14) ---
-        // Find most intense Violet (bottom-left) and Red (bottom-right) axial spheres
+        // --- Anchor Search (Phase 19.14 / 20.3) ---
+        // Find anchors: Violet (Bottom-Left), Red (Bottom-Right), Green (Top-Spine)
         let violet = { x: 0, y: 0, val: 0 };
         let red = { x: width, y: 0, val: 0 };
+        let green = { x: 0, y: 0, val: 0 };
 
-        // Scan bottom 40% for base anchors
-        for (let y = Math.floor(height * 0.6); y < height; y += 4) {
+        // Sample more densely for anchors
+        for (let y = 0; y < height; y += 4) {
             for (let x = 0; x < width; x += 4) {
                 const idx = (y * width + x) * 4;
                 const r = data[idx], g = data[idx + 1], b = data[idx + 2];
 
                 // Violet (Purple): B > R*1.2 && B > 150
-                if (x < width / 2 && b > r * 1.2 && b > violet.val) {
+                if (y > height * 0.5 && x < width * 0.5 && b > r * 1.2 && b > violet.val) {
                     violet = { x, y, val: b };
                 }
                 // Red: R > B*1.5 && R > 150
-                if (x > width / 2 && r > b * 1.5 && r > red.val) {
+                if (y > height * 0.5 && x > width * 0.5 && r > b * 1.5 && r > red.val) {
                     red = { x, y, val: r };
+                }
+                // Green: G > R*1.3 && G > B*1.3 && G > 150
+                if (y < height * 0.5 && g > r * 1.3 && g > b * 1.3 && g > green.val) {
+                    green = { x, y, val: g };
                 }
             }
         }
 
-        const anchorQuality = 160;
+        const anchorQuality = 140;
         if (violet.val > anchorQuality && red.val > anchorQuality) {
             // Found stable base
             corners.bl = { x: violet.x, y: violet.y };
             corners.br = { x: red.x, y: red.y };
 
-            // Calculate square height based on base width
             const baseW = red.x - violet.x;
-            const aspectCorrectedH = baseW; // Square
+            const h = (green.val > anchorQuality) ? (violet.y - green.y) : baseW;
 
-            corners.tl = { x: violet.x, y: violet.y - aspectCorrectedH };
-            corners.tr = { x: red.x, y: red.y - aspectCorrectedH };
+            corners.tl = { x: violet.x, y: violet.y - h };
+            corners.tr = { x: red.x, y: red.y - h };
         } else if (foundAny) {
-            // Fallback to row span if anchors not visible
-            let firstActiveRow = -1, lastActiveRow = -1;
-            for (let i = 0; i < 128; i++) {
-                if (levels[i] > -100 || levels[i + 128] > -100) {
-                    if (firstActiveRow === -1) firstActiveRow = i;
-                    lastActiveRow = i;
-                }
-            }
-
-            if (firstActiveRow !== -1) {
-                const getRowSpan = (rowIdx) => {
-                    let min = width, max = 0;
-                    const rY = Math.floor(rowIdx * rowH + rowH / 2);
-                    const rOff = rY * width * 4;
-                    for (let x = 0; x < width; x += 4) {
-                        const b = (data[rOff + x * 4] + data[rOff + x * 4 + 1] + data[rOff + x * 4 + 2]) / 3;
-                        if (b > threshold) { min = Math.min(min, x); max = Math.max(max, x); }
-                    }
-                    return min < max ? { min, max, y: rY } : null;
-                };
-
-                const topSpan = getRowSpan(firstActiveRow);
-                const bottomSpan = getRowSpan(lastActiveRow);
-
-                if (topSpan) { corners.tl = { x: topSpan.min, y: topSpan.y }; corners.tr = { x: topSpan.max, y: topSpan.y }; }
-                if (bottomSpan) { corners.bl = { x: bottomSpan.min, y: bottomSpan.y }; corners.br = { x: bottomSpan.max, y: bottomSpan.y }; }
-            }
+            // Fallback to detected content bounding box
+            const margin = 10;
+            corners.tl = { x: Math.max(0, minX - margin), y: Math.max(0, minY - margin) };
+            corners.tr = { x: Math.min(width, maxX + margin), y: Math.max(0, minY - margin) };
+            corners.bl = { x: Math.max(0, minX - margin), y: Math.min(height, maxY + margin) };
+            corners.br = { x: Math.min(width, maxX + margin), y: Math.min(height, maxY + margin) };
         }
 
         return {
@@ -454,57 +446,57 @@ export class HologramScanner {
         // state [x, y, vx, vy]
         return {
             x: [0, 0, 0, 0],
-            P: [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],
-            Q: [[1e-2,0,0,0],[0,1e-2,0,0],[0,0,1e-1,0],[0,0,0,1e-1]],
-            R: [[25,0],[0,25]] // measurement noise (px^2)
+            P: [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+            Q: [[1e-2, 0, 0, 0], [0, 1e-2, 0, 0], [0, 0, 1e-1, 0], [0, 0, 0, 1e-1]],
+            R: [[25, 0], [0, 25]] // measurement noise (px^2)
         };
     }
 
     _kalmanPredict(kf, dt) {
-        const F = [[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]];
+        const F = [[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]];
         // x = F*x
         const x = kf.x;
-        const nx = [0,0,0,0];
-        for (let i=0;i<4;i++) for (let j=0;j<4;j++) nx[i]+=F[i][j]*x[j];
+        const nx = [0, 0, 0, 0];
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) nx[i] += F[i][j] * x[j];
         kf.x = nx;
         // P = F P F^T + Q
         const P = kf.P; const Q = kf.Q;
-        const FP = Array.from({length:4},()=>Array(4).fill(0));
-        for (let i=0;i<4;i++) for (let j=0;j<4;j++) for (let k=0;k<4;k++) FP[i][j]+=F[i][k]*P[k][j];
-        const FPFt = Array.from({length:4},()=>Array(4).fill(0));
-        for (let i=0;i<4;i++) for (let j=0;j<4;j++) for (let k=0;k<4;k++) FPFt[i][j]+=FP[i][k]*F[j][k];
-        for (let i=0;i<4;i++) for (let j=0;j<4;j++) kf.P[i][j]=FPFt[i][j]+Q[i][j];
+        const FP = Array.from({ length: 4 }, () => Array(4).fill(0));
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) FP[i][j] += F[i][k] * P[k][j];
+        const FPFt = Array.from({ length: 4 }, () => Array(4).fill(0));
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) FPFt[i][j] += FP[i][k] * F[j][k];
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) kf.P[i][j] = FPFt[i][j] + Q[i][j];
     }
 
     _kalmanUpdate(kf, mx, my) {
         // H = [ [1 0 0 0], [0 1 0 0] ]
-        const H = [[1,0,0,0],[0,1,0,0]];
+        const H = [[1, 0, 0, 0], [0, 1, 0, 0]];
         // y = z - Hx
         const z = [mx, my];
         const Hx = [kf.x[0], kf.x[1]];
-        const y = [z[0]-Hx[0], z[1]-Hx[1]];
+        const y = [z[0] - Hx[0], z[1] - Hx[1]];
         // S = H P H^T + R
         const P = kf.P; const R = kf.R;
-        const S = [[0,0],[0,0]];
-        for (let i=0;i<2;i++) for (let j=0;j<2;j++) for (let k=0;k<4;k++) S[i][j]+=H[i][k]*P[k][j]*H[j][j];
+        const S = [[0, 0], [0, 0]];
+        for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 4; k++) S[i][j] += H[i][k] * P[k][j] * H[j][j];
         // approximate S as P[0..1][0..1] + R for simplicity
-        S[0][0]=P[0][0]+R[0][0]; S[0][1]=P[0][1]+R[0][1]; S[1][0]=P[1][0]+R[1][0]; S[1][1]=P[1][1]+R[1][1];
+        S[0][0] = P[0][0] + R[0][0]; S[0][1] = P[0][1] + R[0][1]; S[1][0] = P[1][0] + R[1][0]; S[1][1] = P[1][1] + R[1][1];
         // K = P H^T S^-1  (4x2)
-        const det = S[0][0]*S[1][1]-S[0][1]*S[1][0] || 1e-6;
-        const Sinv = [[S[1][1]/det, -S[0][1]/det],[-S[1][0]/det, S[0][0]/det]];
-        const K = Array.from({length:4},()=>Array(2).fill(0));
-        for (let i=0;i<4;i++) for (let j=0;j<2;j++) for (let k=0;k<2;k++) K[i][j]+=P[i][k]*H[j][k]*Sinv[k][j];
+        const det = S[0][0] * S[1][1] - S[0][1] * S[1][0] || 1e-6;
+        const Sinv = [[S[1][1] / det, -S[0][1] / det], [-S[1][0] / det, S[0][0] / det]];
+        const K = Array.from({ length: 4 }, () => Array(2).fill(0));
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) K[i][j] += P[i][k] * H[j][k] * Sinv[k][j];
         // x = x + K y
-        for (let i=0;i<4;i++) kf.x[i]+=K[i][0]*y[0]+K[i][1]*y[1];
+        for (let i = 0; i < 4; i++) kf.x[i] += K[i][0] * y[0] + K[i][1] * y[1];
         // P = (I - K H) P
-        const IminusKH = Array.from({length:4},()=>Array(4).fill(0));
-        for (let i=0;i<4;i++) for (let j=0;j<4;j++) {
-            let sum = (i===j?1:0);
-            for (let k=0;k<2;k++) sum -= K[i][k]*H[k][j];
-            IminusKH[i][j]=sum;
+        const IminusKH = Array.from({ length: 4 }, () => Array(4).fill(0));
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+            let sum = (i === j ? 1 : 0);
+            for (let k = 0; k < 2; k++) sum -= K[i][k] * H[k][j];
+            IminusKH[i][j] = sum;
         }
-        const newP = Array.from({length:4},()=>Array(4).fill(0));
-        for (let i=0;i<4;i++) for (let j=0;j<4;j++) for (let k=0;k<4;k++) newP[i][j]+=IminusKH[i][k]*P[k][j];
+        const newP = Array.from({ length: 4 }, () => Array(4).fill(0));
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) newP[i][j] += IminusKH[i][k] * P[k][j];
         kf.P = newP;
     }
 
@@ -547,7 +539,7 @@ export class HologramScanner {
         for (let y = 2; y < height - 2; y++) for (let x = 2; x < width - 2; x++) {
             const v = R[y * width + x]; if (v > thresh) pts.push({ x, y, v });
         }
-        pts.sort((a,b) => b.v - a.v);
+        pts.sort((a, b) => b.v - a.v);
         return pts.slice(0, maxCorners);
     }
 
@@ -555,8 +547,8 @@ export class HologramScanner {
         const x0 = Math.round(pt.x), y0 = Math.round(pt.y);
         let sumI = 0, cx = 0, cy = 0;
         for (let dy = -win; dy <= win; dy++) for (let dx = -win; dx <= win; dx++) {
-            const x = x0 + dx, y = y0 + dy; if (x<0||x>=width||y<0||y>=height) continue;
-            const v = gray[y*width + x]; const w = Math.max(0, v);
+            const x = x0 + dx, y = y0 + dy; if (x < 0 || x >= width || y < 0 || y >= height) continue;
+            const v = gray[y * width + x]; const w = Math.max(0, v);
             sumI += w; cx += x * w; cy += y * w;
         }
         if (sumI <= 0) return { x: pt.x, y: pt.y, q: 0 };
@@ -568,18 +560,18 @@ export class HologramScanner {
         const next = [];
         for (let i = 0; i < prevPts.length; i++) {
             const p = prevPts[i]; const x0 = Math.round(p.x), y0 = Math.round(p.y);
-            let A00=0,A01=0,A11=0,b0=0,b1=0;
-            for (let dy=-win; dy<=win; dy++) for (let dx=-win; dx<=win; dx++) {
-                const x = x0+dx, y = y0+dy; if (x<1||x>=width-1||y<1||y>=height-1) continue;
-                const idx = y*width+x;
-                const ix = 0.5*(curGray[idx+1]-curGray[idx-1]);
-                const iy = 0.5*(curGray[idx+width]-curGray[idx-width]);
-                const it = curGray[idx]-prevGray[idx];
-                A00+=ix*ix; A01+=ix*iy; A11+=iy*iy; b0+=ix*it; b1+=iy*it;
+            let A00 = 0, A01 = 0, A11 = 0, b0 = 0, b1 = 0;
+            for (let dy = -win; dy <= win; dy++) for (let dx = -win; dx <= win; dx++) {
+                const x = x0 + dx, y = y0 + dy; if (x < 1 || x >= width - 1 || y < 1 || y >= height - 1) continue;
+                const idx = y * width + x;
+                const ix = 0.5 * (curGray[idx + 1] - curGray[idx - 1]);
+                const iy = 0.5 * (curGray[idx + width] - curGray[idx - width]);
+                const it = curGray[idx] - prevGray[idx];
+                A00 += ix * ix; A01 += ix * iy; A11 += iy * iy; b0 += ix * it; b1 += iy * it;
             }
-            const det = A00*A11-A01*A01; if (Math.abs(det)<1e-6) { next.push({x:p.x,y:p.y,status:0}); continue; }
-            const ux = (-A11*b0 + A01*b1)/det; const uy = (A01*b0 - A00*b1)/det;
-            next.push({ x: p.x + ux, y: p.y + uy, status:1, id: p.id, age: (p.age||1)+1 });
+            const det = A00 * A11 - A01 * A01; if (Math.abs(det) < 1e-6) { next.push({ x: p.x, y: p.y, status: 0 }); continue; }
+            const ux = (-A11 * b0 + A01 * b1) / det; const uy = (A01 * b0 - A00 * b1) / det;
+            next.push({ x: p.x + ux, y: p.y + uy, status: 1, id: p.id, age: (p.age || 1) + 1 });
         }
         return next;
     }
@@ -589,29 +581,29 @@ export class HologramScanner {
         const n = srcPts.length; if (n < 4) return null;
         // Build linear system A h = 0
         const A = [];
-        for (let i=0;i<n;i++){
-            const xs=srcPts[i].x, ys=srcPts[i].y, xd=dstPts[i].x, yd=dstPts[i].y;
-            A.push([-xs, -ys, -1, 0, 0, 0, xs*xd, ys*xd, xd]);
-            A.push([0,0,0,-xs,-ys,-1,xs*yd,ys*yd,yd]);
+        for (let i = 0; i < n; i++) {
+            const xs = srcPts[i].x, ys = srcPts[i].y, xd = dstPts[i].x, yd = dstPts[i].y;
+            A.push([-xs, -ys, -1, 0, 0, 0, xs * xd, ys * xd, xd]);
+            A.push([0, 0, 0, -xs, -ys, -1, xs * yd, ys * yd, yd]);
         }
         // Solve via normal equations and power iteration on ATA (approximate smallest singular vector)
-        const ATA = Array.from({length:9},()=>Array(9).fill(0));
-        for (let i=0;i<A.length;i++) for (let j=0;j<9;j++) for (let k=0;k<9;k++) ATA[j][k]+=A[i][j]*A[i][k];
-        let v = Array(9).fill(0).map((_,i)=>(i===8?1:0));
-        for (let it=0; it<40; it++){
+        const ATA = Array.from({ length: 9 }, () => Array(9).fill(0));
+        for (let i = 0; i < A.length; i++) for (let j = 0; j < 9; j++) for (let k = 0; k < 9; k++) ATA[j][k] += A[i][j] * A[i][k];
+        let v = Array(9).fill(0).map((_, i) => (i === 8 ? 1 : 0));
+        for (let it = 0; it < 40; it++) {
             const w = Array(9).fill(0);
-            for (let i=0;i<9;i++) for (let j=0;j<9;j++) w[i]+=ATA[i][j]*v[j];
-            const norm = Math.hypot(...w)||1;
-            for (let i=0;i<9;i++) v[i]=w[i]/norm;
+            for (let i = 0; i < 9; i++) for (let j = 0; j < 9; j++) w[i] += ATA[i][j] * v[j];
+            const norm = Math.hypot(...w) || 1;
+            for (let i = 0; i < 9; i++) v[i] = w[i] / norm;
         }
         // normalize so last element == 1 for stability
-        if (Math.abs(v[8])>1e-9) for (let i=0;i<9;i++) v[i]/=v[8];
-        return [v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8]];
+        if (Math.abs(v[8]) > 1e-9) for (let i = 0; i < 9; i++) v[i] /= v[8];
+        return [v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]];
     }
 
     _applyHomographyToPoint(H, x, y) {
-        const w = H[6]*x + H[7]*y + H[8];
-        return { x: (H[0]*x + H[1]*y + H[2]) / w, y: (H[3]*x + H[4]*y + H[5]) / w };
+        const w = H[6] * x + H[7] * y + H[8];
+        return { x: (H[0] * x + H[1] * y + H[2]) / w, y: (H[3] * x + H[4] * y + H[5]) / w };
     }
 
     // RANSAC robust homography estimation (prevPts -> curPts). Returns H (3x3 array) or null.
@@ -642,25 +634,25 @@ export class HologramScanner {
         // build matches by id intersection if available
         const matches = [];
         const dstById = new Map();
-        for (const p of dstPts) if (p && p.id!=null) dstById.set(p.id, p);
+        for (const p of dstPts) if (p && p.id != null) dstById.set(p.id, p);
         for (const p of srcPts) {
-            if (p && p.id!=null && dstById.has(p.id)) {
+            if (p && p.id != null && dstById.has(p.id)) {
                 const q = dstById.get(p.id);
-                if (q.status===1) matches.push({src:{x:p.x,y:p.y}, dst:{x:q.x,y:q.y}});
+                if (q.status === 1) matches.push({ src: { x: p.x, y: p.y }, dst: { x: q.x, y: q.y } });
             }
         }
         // fallback: zip by index
         if (matches.length < 8) {
             matches.length = 0;
             const M = Math.min(srcPts.length, dstPts.length);
-            for (let i=0;i<M;i++) if (dstPts[i] && dstPts[i].status===1) matches.push({src:{x:srcPts[i].x,y:srcPts[i].y}, dst:{x:dstPts[i].x,y:dstPts[i].y}});
+            for (let i = 0; i < M; i++) if (dstPts[i] && dstPts[i].status === 1) matches.push({ src: { x: srcPts[i].x, y: srcPts[i].y }, dst: { x: dstPts[i].x, y: dstPts[i].y } });
         }
         if (matches.length < 4) return null;
 
         // limit number of matches for performance
         const maxMatches = Math.min(64, matches.length);
         // sort by id/age heuristic: prefer earlier (if available)
-        matches.sort((a,b)=> (b.src.age||0)-(a.src.age||0));
+        matches.sort((a, b) => (b.src.age || 0) - (a.src.age || 0));
         const pool = matches.slice(0, maxMatches);
 
         let bestH = null; let bestInliers = []; let bestCount = 0;
@@ -676,16 +668,16 @@ export class HologramScanner {
         while (iter < maxIters) {
             // random sample of 4 distinct indices
             const idxs = new Set();
-            while (idxs.size < s) idxs.add(Math.floor(Math.random()*pool.length));
+            while (idxs.size < s) idxs.add(Math.floor(Math.random() * pool.length));
             const idxArr = Array.from(idxs);
-            const sampleSrc = idxArr.map(i=>({x:pool[i].src.x, y:pool[i].src.y}));
-            const sampleDst = idxArr.map(i=>({x:pool[i].dst.x, y:pool[i].dst.y}));
+            const sampleSrc = idxArr.map(i => ({ x: pool[i].src.x, y: pool[i].src.y }));
+            const sampleDst = idxArr.map(i => ({ x: pool[i].dst.x, y: pool[i].dst.y }));
             const H = this._estimateHomographyDLT(sampleSrc, sampleDst);
             if (!H) { iter++; continue; }
 
             // count inliers
             const inliers = [];
-            for (let i=0;i<pool.length;i++) {
+            for (let i = 0; i < pool.length; i++) {
                 const e = reprojErr(H, pool[i]);
                 if (e <= threshold) inliers.push(i);
             }
@@ -711,86 +703,86 @@ export class HologramScanner {
 
         // build inlier correspondences arrays
         const inSrc = [], inDst = [];
-        for (const idx of bestInliers) { inSrc.push({x:pool[idx].src.x,y:pool[idx].src.y}); inDst.push({x:pool[idx].dst.x,y:pool[idx].dst.y}); }
+        for (const idx of bestInliers) { inSrc.push({ x: pool[idx].src.x, y: pool[idx].src.y }); inDst.push({ x: pool[idx].dst.x, y: pool[idx].dst.y }); }
 
         // refine with GN on inliers
-        const refinedH = this._refineHomographyGN(bestH, inSrc, inDst, {iterations: 7});
+        const refinedH = this._refineHomographyGN(bestH, inSrc, inDst, { iterations: 7 });
         return refinedH;
     }
 
     // Gauss-Newton refinement of homography H given correspondences (srcPts -> dstPts)
-    _refineHomographyGN(Hin, srcPts, dstPts, opts={}){
+    _refineHomographyGN(Hin, srcPts, dstPts, opts = {}) {
         const iters = opts.iterations || 6;
         // ensure Hin normalized so h8 = 1
-        let H = Hin.slice(); if (Math.abs(H[8])>1e-12){ for (let i=0;i<9;i++) H[i]/=H[8]; } else H[8]=1;
+        let H = Hin.slice(); if (Math.abs(H[8]) > 1e-12) { for (let i = 0; i < 9; i++) H[i] /= H[8]; } else H[8] = 1;
 
         // parameter vector h = [h0..h7] with h8 fixed = 1
-        let h = H.slice(0,8);
+        let h = H.slice(0, 8);
 
         const n = srcPts.length;
         if (n === 0) return Hin;
 
-        for (let it=0; it<iters; it++){
+        for (let it = 0; it < iters; it++) {
             // accumulate J^T J (8x8) and J^T r (8)
-            const JTJ = Array.from({length:8},()=>Array(8).fill(0));
+            const JTJ = Array.from({ length: 8 }, () => Array(8).fill(0));
             const JTr = Array(8).fill(0);
             let totalErr = 0;
-            for (let i=0;i<n;i++){
+            for (let i = 0; i < n; i++) {
                 const xs = srcPts[i].x, ys = srcPts[i].y;
                 const xd = dstPts[i].x, yd = dstPts[i].y;
-                const a = h[0]*xs + h[1]*ys + h[2];
-                const b = h[3]*xs + h[4]*ys + h[5];
-                const c = h[6]*xs + h[7]*ys + 1;
+                const a = h[0] * xs + h[1] * ys + h[2];
+                const b = h[3] * xs + h[4] * ys + h[5];
+                const c = h[6] * xs + h[7] * ys + 1;
                 const u = a / c; const v = b / c;
                 const ru = u - xd; const rv = v - yd;
-                totalErr += ru*ru + rv*rv;
+                totalErr += ru * ru + rv * rv;
                 // partials du/dh0..h7
-                const invc = 1 / c; const invc2 = invc*invc;
-                const du = [ xs * invc, ys * invc, 1 * invc, 0,0,0, -a*xs*invc2, -a*ys*invc2 ];
-                const dv = [ 0,0,0, xs * invc, ys * invc, 1 * invc, -b*xs*invc2, -b*ys*invc2 ];
+                const invc = 1 / c; const invc2 = invc * invc;
+                const du = [xs * invc, ys * invc, 1 * invc, 0, 0, 0, -a * xs * invc2, -a * ys * invc2];
+                const dv = [0, 0, 0, xs * invc, ys * invc, 1 * invc, -b * xs * invc2, -b * ys * invc2];
                 // accumulate
-                for (let p=0;p<8;p++){
-                    for (let q=0;q<8;q++){
-                        JTJ[p][q] += du[p]*du[q] + dv[p]*dv[q];
+                for (let p = 0; p < 8; p++) {
+                    for (let q = 0; q < 8; q++) {
+                        JTJ[p][q] += du[p] * du[q] + dv[p] * dv[q];
                     }
-                    JTr[p] += du[p]*ru + dv[p]*rv;
+                    JTr[p] += du[p] * ru + dv[p] * rv;
                 }
             }
 
             // solve JTJ * dx = -JTr  (8x8)
             // add small damping for stability
             const lambda = 1e-3;
-            for (let i=0;i<8;i++) JTJ[i][i] *= (1+lambda);
+            for (let i = 0; i < 8; i++) JTJ[i][i] *= (1 + lambda);
 
             // Gaussian elimination (copy matrices)
-            const A = JTJ.map(row=>row.slice()); const b = JTr.map(v=> -v);
+            const A = JTJ.map(row => row.slice()); const b = JTr.map(v => -v);
             // solve Ax = b
             const m = 8;
-            for (let i=0;i<m;i++){
+            for (let i = 0; i < m; i++) {
                 // pivot
                 let piv = i;
-                for (let r=i+1;r<m;r++) if (Math.abs(A[r][i])>Math.abs(A[piv][i])) piv = r;
-                if (piv !== i){ const tmp=A[i]; A[i]=A[piv]; A[piv]=tmp; const tv=b[i]; b[i]=b[piv]; b[piv]=tv; }
+                for (let r = i + 1; r < m; r++) if (Math.abs(A[r][i]) > Math.abs(A[piv][i])) piv = r;
+                if (piv !== i) { const tmp = A[i]; A[i] = A[piv]; A[piv] = tmp; const tv = b[i]; b[i] = b[piv]; b[piv] = tv; }
                 const diag = A[i][i] || 1e-12;
-                for (let j=i+1;j<m;j++){ const fac = A[j][i]/diag; for (let k=i;k<m;k++) A[j][k]-=fac*A[i][k]; b[j]-=fac*b[i]; }
+                for (let j = i + 1; j < m; j++) { const fac = A[j][i] / diag; for (let k = i; k < m; k++) A[j][k] -= fac * A[i][k]; b[j] -= fac * b[i]; }
             }
             const x = Array(m).fill(0);
-            for (let i=m-1;i>=0;i--){ let s=b[i]; for (let j=i+1;j<m;j++) s-=A[i][j]*x[j]; x[i]=s/(A[i][i]||1e-12); }
+            for (let i = m - 1; i >= 0; i--) { let s = b[i]; for (let j = i + 1; j < m; j++) s -= A[i][j] * x[j]; x[i] = s / (A[i][i] || 1e-12); }
 
             // update h
             let maxDelta = 0;
-            for (let i=0;i<8;i++){ h[i]+=x[i]; maxDelta = Math.max(maxDelta, Math.abs(x[i])); }
+            for (let i = 0; i < 8; i++) { h[i] += x[i]; maxDelta = Math.max(maxDelta, Math.abs(x[i])); }
             if (maxDelta < 1e-6) break;
         }
-        const Hout = [h[0],h[1],h[2],h[3],h[4],h[5],h[6],h[7],1];
+        const Hout = [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
         return Hout;
     }
 
     _trackAndEstimateCorners(imageData, width, height, dt) {
         const { gray } = this._grayscaleFromImage(imageData);
         // downsample detection resolution for speed
-        const detW = Math.max(160, Math.floor(width/2));
-        const detH = Math.max(90, Math.floor(height/2));
+        const detW = Math.max(160, Math.floor(width / 2));
+        const detH = Math.max(90, Math.floor(height / 2));
         // simple scaling indices
         // For performance keep detection on same resolution - use existing gray
         const candidates = this._harrisCorners(gray, width, height, 96, 0.04, 1e-5);
@@ -799,7 +791,7 @@ export class HologramScanner {
         // initialize prev when empty
         if (!this.prevGray) {
             this.prevGray = gray;
-            this.prevPts = refined.map(p => ({ x: p.x, y: p.y, age:1, id: this.nextTrackId++ }));
+            this.prevPts = refined.map(p => ({ x: p.x, y: p.y, age: 1, id: this.nextTrackId++ }));
             return null; // need next frame to track
         }
 
@@ -808,14 +800,14 @@ export class HologramScanner {
         const tracked = this._lucasKanadeTrack(this.prevGray, gray, prevPtsLocal, width, height, 3);
         // merge tracked with new detections
         const merged = [];
-        for (let i=0;i<tracked.length;i++){ if (tracked[i].status===1) merged.push(tracked[i]); }
-        for (let i=0;i<refined.length;i++){
-            const p = refined[i]; let near=false;
-            for (let j=0;j<merged.length;j++){ const d2=(merged[j].x-p.x)*(merged[j].x-p.x)+(merged[j].y-p.y)*(merged[j].y-p.y); if (d2<36){ near=true; break; } }
-            if (!near) merged.push({ x:p.x, y:p.y, age:1, id:this.nextTrackId++ });
+        for (let i = 0; i < tracked.length; i++) { if (tracked[i].status === 1) merged.push(tracked[i]); }
+        for (let i = 0; i < refined.length; i++) {
+            const p = refined[i]; let near = false;
+            for (let j = 0; j < merged.length; j++) { const d2 = (merged[j].x - p.x) * (merged[j].x - p.x) + (merged[j].y - p.y) * (merged[j].y - p.y); if (d2 < 36) { near = true; break; } }
+            if (!near) merged.push({ x: p.x, y: p.y, age: 1, id: this.nextTrackId++ });
         }
-        merged.sort((a,b)=> (b.age||1)-(a.age||1));
-        this.prevPts = merged.slice(0,128);
+        merged.sort((a, b) => (b.age || 1) - (a.age || 1));
+        this.prevPts = merged.slice(0, 128);
         this.prevGray = gray;
 
         if (prevPtsLocal.length < 8 || tracked.length < 8) return null;
@@ -837,17 +829,17 @@ export class HologramScanner {
         const pc_bl = this._applyHomographyToPoint(H, prevCornersPx.bl.x, prevCornersPx.bl.y);
 
         // geometric consistency checks
-        const cornersPx = [ {x:pc_tl.x, y:pc_tl.y}, {x:pc_tr.x, y:pc_tr.y}, {x:pc_br.x, y:pc_br.y}, {x:pc_bl.x, y:pc_bl.y} ];
-        const isConvex = (()=>{
+        const cornersPx = [{ x: pc_tl.x, y: pc_tl.y }, { x: pc_tr.x, y: pc_tr.y }, { x: pc_br.x, y: pc_br.y }, { x: pc_bl.x, y: pc_bl.y }];
+        const isConvex = (() => {
             // cross product signs must be same
             let signs = [];
-            for (let i=0;i<4;i++){ const a=cornersPx[i], b=cornersPx[(i+1)%4], c=cornersPx[(i+2)%4]; const ux=b.x-a.x, uy=b.y-a.y; const vx=c.x-b.x, vy=c.y-b.y; const cross = ux*vy - uy*vx; signs.push(Math.sign(cross)); }
-            const pos = signs.filter(s=>s>0).length; const neg = signs.filter(s=>s<0).length; return !(pos>0 && neg>0);
+            for (let i = 0; i < 4; i++) { const a = cornersPx[i], b = cornersPx[(i + 1) % 4], c = cornersPx[(i + 2) % 4]; const ux = b.x - a.x, uy = b.y - a.y; const vx = c.x - b.x, vy = c.y - b.y; const cross = ux * vy - uy * vx; signs.push(Math.sign(cross)); }
+            const pos = signs.filter(s => s > 0).length; const neg = signs.filter(s => s < 0).length; return !(pos > 0 && neg > 0);
         })();
-        const edge = (p,q)=>Math.hypot(p.x-q.x,p.y-q.y);
-        const w = (edge(cornersPx[0],cornersPx[1]) + edge(cornersPx[2],cornersPx[3]))/2;
-        const hgt = (edge(cornersPx[1],cornersPx[2]) + edge(cornersPx[3],cornersPx[0]))/2;
-        const aspect = w / (hgt||1);
+        const edge = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+        const w = (edge(cornersPx[0], cornersPx[1]) + edge(cornersPx[2], cornersPx[3])) / 2;
+        const hgt = (edge(cornersPx[1], cornersPx[2]) + edge(cornersPx[3], cornersPx[0])) / 2;
+        const aspect = w / (hgt || 1);
         if (!isConvex || !(aspect > 0.4 && aspect < 2.8)) return null;
 
         return { corners: { tl: { x: pc_tl.x, y: pc_tl.y }, tr: { x: pc_tr.x, y: pc_tr.y }, br: { x: pc_br.x, y: pc_br.y }, bl: { x: pc_bl.x, y: pc_bl.y } } };
