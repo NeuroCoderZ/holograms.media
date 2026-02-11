@@ -20,7 +20,7 @@ export class HologramSynthesizer {
         this.oscillatorType = 'sine'; // sine, triangle for softer sound
         this.attackTime = 0.01;       // 10ms attack (Snappy)
         this.releaseTime = 0.05;      // 50ms release (No drone)
-        this.maxVolume = 0.5;         // Master volume limit (Phase 19.14)
+        this.maxVolume = 0.8;         // Higher limit for better audibility
     }
 
     /**
@@ -36,9 +36,10 @@ export class HologramSynthesizer {
                 await this.audioContext.resume();
             }
 
-            // Master gain to prevent clipping
+            // Master gain to prevent clipping (Increased for Phase 20.3)
             this.masterGain = this.audioContext.createGain();
-            this.masterGain.gain.value = this.maxVolume / Math.sqrt(128);
+            // Use a more aggressive normalization (assuming not all 128 voices are at max)
+            this.masterGain.gain.value = this.maxVolume / Math.sqrt(32);
             this.masterGain.connect(this.audioContext.destination);
 
             // Create oscillator chain for each semitone

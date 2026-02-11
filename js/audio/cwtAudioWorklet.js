@@ -117,12 +117,12 @@ class CwtProcessor extends AudioWorkletProcessor {
         const input = inputs[0];
 
         // HEARTBEAT even if not ready (каждые 300 кадров = ~5 сек при 60 FPS)
-        if (this._hb++ % 300 === 0) {
-            this.port.postMessage({
-                type: 'LOG',
-                msg: `PULSE ready=${this._initialized} wasm=${!!wasm} input=${!!input && !!input[0]}`
-            });
-        }
+        // if (this._hb++ % 300 === 0) {
+        //     this.port.postMessage({
+        //         type: 'LOG',
+        //         msg: `PULSE ready=${this._initialized} wasm=${!!wasm} input=${!!input && !!input[0]}`
+        //     });
+        // }
 
         if (!input || !input[0] || !wasm || !analyzerPtr || !this._initialized) {
             return true;
@@ -158,12 +158,12 @@ class CwtProcessor extends AudioWorkletProcessor {
             const confidence = new Float32Array(mem.subarray(ptrs.confidence / 4, ptrs.confidence / 4 + 128));
 
             // DEBUG: Логи вывода WASM (раз в секунду)
-            if (this._hb % 60 === 0) {
-                this.port.postMessage({
-                    type: 'LOG',
-                    msg: `DATA_OUT: L[0]=${levels[0].toFixed(1)}dB, max=${Math.max(...levels).toFixed(1)}dB, P[0]=${angles[0].toFixed(2)}`
-                });
-            }
+            // if (this._hb % 60 === 0) {
+            //     this.port.postMessage({
+            //         type: 'LOG',
+            //         msg: `DATA_OUT: L[0]=${levels[0].toFixed(1)}dB, max=${Math.max(...levels).toFixed(1)}dB, P[0]=${angles[0].toFixed(2)}`
+            //     });
+            // }
 
             // ✅ ГЛАВНОЕ: Отправка данных в рендерер
             // Мы убрали performance.now() и Math.max, так как они вызывали ошибки в Worklet
