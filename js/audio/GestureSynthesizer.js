@@ -30,7 +30,7 @@ export class GestureSynthesizer {
         // Smoothing for frequency changes
         this.smoothingTime = 0.05; // 50ms
 
-        // Visual feedback arrays (BasilaQ-127 format)
+        // Visual feedback arrays (BasilaQ-128 format)
         this.visualLevels = new Float32Array(256); // 128 L + 128 R
         this.visualPans = new Float32Array(256);
     }

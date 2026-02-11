@@ -1,6 +1,6 @@
 /**
  * js/audio/AudioGestureBridge.js
- * Bridges hand Tracking data with real-time CQT spectral data for BasilaQ-127 Performance Mode.
+ * Bridges hand Tracking data with real-time CQT spectral data for BasilaQ-128 Performance Mode.
  */
 
 export class AudioGestureBridge {

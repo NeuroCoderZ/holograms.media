@@ -1221,7 +1221,7 @@ export class HologramRenderer {
     const variance = dbLevels.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / 256;
 
     console.debug(
-      `[BasilaQ-127 Physics] Frame ${this._debugFrameCount}\n` +
+      `[BasilaQ-128 Physics] Frame ${this._debugFrameCount}\n` +
       `  Range: ${minLevel.toFixed(1)} to ${maxLevel.toFixed(1)} dB\n` +
       `  Mean: ${mean.toFixed(1)} dB | Variance: ${variance.toFixed(1)}\n` +
       `  Active Columns (>-70dB): ${activeColumns}/256\n` +

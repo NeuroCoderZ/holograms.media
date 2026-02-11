@@ -1,4 +1,4 @@
-﻿# План реализации: BasilaQ-127 Core
+﻿# План реализации: BasilaQ-128 Core
 
 ## Фаза 1: Рефакторинг Rust Core (`holocore/src/lib.rs`)
 - [x] Задача: Внедрить структуру `RingBuffer` и обновить `CwtAnalyzer`.
