@@ -1,4 +1,5 @@
 # backend/routers/auth.py
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from typing import Dict
 
@@ -6,13 +7,18 @@ from backend.auth.security import verify_google_token, create_access_token
 # import user repository functions when they are ready
 # from backend.db.user_repository import get_user_by_google_id, create_user_from_google_info
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(tags=["Authentication"])
+
+# Developer email addresses - map to "developer" role
+DEV_EMAILS = ["neurocoderz@gmail.com"]
 
 @router.post("/auth/google", response_model=Dict[str, str])
 async def login_with_google(token_data: Dict[str, str] = Body(...)):
     """
     Принимает Google ID токен, верифицирует его, находит или создает пользователя,
-    и возвращает собственный JWT токен доступа.
+    и возвращает собственный JWT токен доступа с ролью и окружением.
     """
     google_token = token_data.get("token")
     if not google_token:
@@ -40,9 +46,23 @@ async def login_with_google(token_data: Dict[str, str] = Body(...)):
     # ЗАГЛУШКА: Вместо реальной работы с БД, мы просто доверяем токену
     # и создаем JWT на основе информации из него.
     
-    # Создаем наш собственный JWT
+    # Determine role based on email
+    role = "developer" if email in DEV_EMAILS else "user"
+    
+    # Determine environment based on email domain
+    environment = "production" if "@holograms.media" in email else "development"
+    
+    # Log authentication
+    logger.info(f"[AuthRouter] User: {email}, Role: {role}, Env: {environment}")
+    
+    # Создаем наш собственный JWT с ролью и окружением
     access_token = create_access_token(
-        data={"sub": google_id, "email": email}
+        data={
+            "sub": google_id, 
+            "email": email,
+            "role": role,
+            "environment": environment
+        }
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "role": role, "environment": environment}
