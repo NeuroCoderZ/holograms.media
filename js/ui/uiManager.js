@@ -162,6 +162,19 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   uiElements.buttons.installPwaButton = document.getElementById('installPwaButton');
   uiElements.buttons.avatarButton = document.getElementById('avatarButton'); // Added Avatar button
 
+  // Left-panel Google login (legacy sidebar button) — ensure it opens the sign-in modal / triggers GSI prompt
+  const leftGoogleBtn = document.getElementById('login-google-btn');
+  if (leftGoogleBtn) {
+    leftGoogleBtn.addEventListener('click', () => {
+      console.log('[UIManager] #login-google-btn clicked — opening sign-in modal / prompting GSI');
+      const startSessionModal = document.getElementById('start-session-modal');
+      if (startSessionModal) startSessionModal.style.display = 'block';
+      if (window.google && window.google.accounts && window.google.accounts.id && typeof window.google.accounts.id.prompt === 'function') {
+        try { window.google.accounts.id.prompt(); } catch (err) { console.warn('[UIManager] google.accounts.id.prompt() failed:', err); }
+      }
+    });
+  }
+
   // Right panel content sections
   uiElements.versionTimeline = document.getElementById('versionTimeline');
   uiElements.chatHistory = document.getElementById('chatHistory');
@@ -405,6 +418,44 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
     }
   }, "Hologram List button opens 'myHologramsView' panel.");
 
+  // --- Scanner gap enforcement helper (ensures visible 1% gap when scanner-active is set) ---
+  function enforceScannerGap() {
+    const grid = document.getElementById('grid-container');
+    const rightPanel = document.getElementById('right-panel');
+    if (!grid || !rightPanel) return;
+    if (!grid.classList.contains('scanner-active')) {
+      grid.style.transform = '';
+      return;
+    }
+
+    const gapPx = Math.round(window.innerWidth * 0.01);
+    requestAnimationFrame(() => {
+      const gridRect = grid.getBoundingClientRect();
+      const rightRect = rightPanel.getBoundingClientRect();
+      const currentGap = Math.max(0, rightRect.left - gridRect.right);
+
+      if (currentGap >= gapPx) {
+        grid.style.transform = '';
+        return;
+      }
+
+      const extraNeeded = gapPx - currentGap + 2; // small buffer
+      const baseShiftPx = Math.round(window.innerWidth * 0.01);
+      const totalShiftPx = baseShiftPx + extraNeeded;
+      grid.style.transform = `translateX(-${totalShiftPx}px)`;
+      console.log(`[UIManager] enforceScannerGap applied — currentGap=${currentGap}px target=${gapPx}px shift=${totalShiftPx}px`);
+    });
+  }
+
+  // Recompute gap on resize and when relevant DOM mutations occur
+  window.addEventListener('resize', () => { enforceScannerGap(); });
+  const gridObserver = new MutationObserver(() => enforceScannerGap());
+  const rightObserver = new MutationObserver(() => enforceScannerGap());
+  const gridEl = document.getElementById('grid-container');
+  const rightEl = document.getElementById('right-panel');
+  if (gridEl) gridObserver.observe(gridEl, { attributes: true, attributeFilter: ['class', 'style'] });
+  if (rightEl) rightObserver.observe(rightEl, { attributes: true, attributeFilter: ['class', 'style'] });
+
   // --- Scanner Button ---
   // Toggles hologram scanning mode (camera → audio synthesis)
   if (uiElements.buttons.scanButton) {
@@ -413,21 +464,22 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
         if (hologramScanner.isActive) {
           hologramScanner.stop();
           uiElements.buttons.scanButton.classList.remove('active');
-          
-          // Remove scanner-active class from grid container
+
+          // Remove scanner-active class from grid container and any JS override
           const gridContainer = document.getElementById('grid-container');
           if (gridContainer) {
             gridContainer.classList.remove('scanner-active');
+            gridContainer.style.transform = '';
           }
-          
+
           console.log('[UIManager] Scanner stopped.');
         } else {
           await hologramScanner.start();
           uiElements.buttons.scanButton.classList.add('active');
-          
+
           // Handle panel visibility based on device type
           const isMobilePortrait = window.innerWidth <= 768 || window.innerHeight > window.innerWidth;
-          
+
           if (isMobilePortrait && appState.panelManager) {
             // Mobile: hide all content panels
             appState.panelManager.closeAllContentPanels();
@@ -437,10 +489,12 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
             const gridContainer = document.getElementById('grid-container');
             if (gridContainer) {
               gridContainer.classList.add('scanner-active');
+              // enforce gap immediately after class is applied
+              enforceScannerGap();
             }
             console.log('[UIManager] Scanner started on desktop - hologram shifted.');
           }
-          
+
           console.log('[UIManager] Scanner started.');
         }
       } catch (error) {
