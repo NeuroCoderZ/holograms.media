@@ -45,12 +45,13 @@
   width: 100%;
   height: 6px;
   background-color: rgba(50, 50, 50, 0.9);
-  z-index: 10000;
+  z-index: 100;
   border: none;
   cursor: pointer;
   overflow: hidden;
-  transition: width 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), height 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), background-color 0.3s ease;
+  min-height: 16px;
   pointer-events: auto;
+  transition: width 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), height 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), background-color 0.3s ease;
 }
 
 /* Активная область жестов */
@@ -60,6 +61,14 @@
   box-shadow: 0 -5px 20px rgba(0, 255, 136, 0.1);
   border-radius: 8px;
   /* Added slight rounding for premium feel */
+}
+
+/* Мобильная версия: область жестов должна быть всегда видна */
+@media (max-width: 768px) {
+  #gesture-area {
+    min-height: 20px;
+    height: auto;
+  }
 }
 
 /* Линия жестов - скрыта, так как отрисовка на холсте */
@@ -72,6 +81,12 @@
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), margin-bottom 0.5s ease;
   transform-origin: center bottom;
   will-change: transform, margin-bottom;
+}
+
+/* Scanner Active: сдвиг голограммы влево на десктопе */
+#grid-container.scanner-active {
+  transform: translateX(-100px);
+  transition: transform 0.3s ease;
 }
 
 /* Эффект "Squash" (Поджатие) */
