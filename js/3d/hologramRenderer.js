@@ -31,6 +31,7 @@ export class HologramRenderer {
     this.latestTimestamp = 0;
     this._lastWasmPerf = 0;
     this._panStates = new Float32Array(128).fill(0);
+    this._lastRenderState = null;
     this.roomId = roomId;
     this.userId = userId;
 
@@ -896,11 +897,15 @@ export class HologramRenderer {
     const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));
     let audioData = this.latestCwtData;
 
-    // DEBUG: Log activity every 3 seconds
+    // DEBUG: Log activity only when state changes, throttle to 3 seconds
     if (!this._lastRenderLog || Date.now() - this._lastRenderLog > 3000) {
-      console.log(`[Renderer] isActive=${isActive}, hasData=${!!audioData}`);
-      if (audioData && audioData.levels) {
-        console.log(`[Renderer] level[0]=${audioData.levels[0].toFixed(2)} dB, max=${Math.max(...audioData.levels).toFixed(2)}`);
+      const stateKey = `${isActive}|${!!audioData}`;
+      if (this._lastRenderState !== stateKey) {
+        console.log(`[Renderer] State: isActive=${isActive}, hasData=${!!audioData}`);
+        if (audioData && audioData.levels) {
+          console.log(`[Renderer] level[0]=${audioData.levels[0].toFixed(2)} dB, max=${Math.max(...audioData.levels).toFixed(2)}`);
+        }
+        this._lastRenderState = stateKey;
       }
       this._lastRenderLog = Date.now();
     }

@@ -265,9 +265,9 @@ function onResults(results) {
         canvasCtx.clearRect(0, 0, width, height);
 
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-            // Debug Log once per second to avoid spam
-            if (!window._lastHandLog || Date.now() - window._lastHandLog > 2000) {
-                console.log("[HandsTracking] Drawing Hands. Landmarks count:", results.multiHandLandmarks.length);
+            // Debug Log once per 5 seconds to reduce console spam
+            if (!window._lastHandLog || Date.now() - window._lastHandLog > 5000) {
+                console.log("[HandsTracking] Hands detected. Landmarks count:", results.multiHandLandmarks.length);
                 window._lastHandLog = Date.now();
             }
 
