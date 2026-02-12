@@ -30,6 +30,12 @@ export default defineConfig({
       '@holographic-core': resolve(__dirname, 'holographic_core/target/pkg')
     }
   },
+  define: {
+    'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(process.env.VITE_GOOGLE_CLIENT_ID),
+    'import.meta.env.VITE_ENVIRONMENT': JSON.stringify(process.env.VITE_ENVIRONMENT || 'development'),
+    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'http://localhost:5173'),
+    'import.meta.env.VITE_AUTH_REDIRECT_URI': JSON.stringify(process.env.VITE_AUTH_REDIRECT_URI),
+  },
   build: {
     target: 'esnext',
     rollupOptions: {

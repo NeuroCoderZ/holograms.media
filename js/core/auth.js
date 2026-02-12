@@ -9,8 +9,22 @@ import { state } from './state.js';
 import { updateAuthUI } from '../managers/uiManager.js';
 import { showNotification } from '../utils/notifications.js';
 
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // TODO: Заменить на реальный ID из Cloudflare Secrets
 const BACKEND_TOKEN_URL = '/api/v1/auth/token';
+
+/**
+ * Получает конфигурацию аутентификации на основе переменных окружения.
+ * @returns {Object} Объект с clientId, environment, apiUrl, redirectUri
+ */
+export const getAuthConfig = () => {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5173';
+  const redirectUri = import.meta.env.VITE_AUTH_REDIRECT_URI;
+  
+  console.log(`[Auth] Environment: ${environment}`, `Client: ${clientId?.substring(0, 15)}...`);
+  
+  return { clientId, environment, apiUrl, redirectUri };
+};
 
 /**
  * Динамически загружает скрипт Google Sign-In.
@@ -73,8 +87,12 @@ async function handleGoogleCredentialResponse(response) {
  */
 async function initializeGoogleSignIn() {
   if (window.google) {
+    const { clientId } = getAuthConfig();
+    if (!clientId) {
+      throw new Error('VITE_GOOGLE_CLIENT_ID is not set');
+    }
     window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
+      client_id: clientId,
       callback: handleGoogleCredentialResponse,
     });
     window.google.accounts.id.renderButton(
