@@ -34,10 +34,18 @@ class NetHoloGlyphClient {
 
         // Reconnection policy
         this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
-        this.baseReconnectDelay = 1000;
+        this.maxReconnectAttempts = 6;
+        this.baseReconnectDelay = 1000; // ms
+        this.maxReconnectDelay = 30000; // ms
+        this.backoffFactor = 2;
+        this.jitterFactor = 0.5; // 50% jitter
         this.reconnectTimeoutId = null;
         this.isReconnecting = false;
+
+        // Fallback long-poll
+        this.fallbackActive = false;
+        this.fallbackIntervalId = null;
+        this.fallbackPollInterval = 5000;
 
         this.onQuantumReceivedCallback = null;
         this.onPeerConnectedCallback = null;
@@ -74,6 +82,11 @@ class NetHoloGlyphClient {
 
         this.websocket.onopen = () => {
             console.log(`[NetHoloGlyphClient] WebSocket Open.`);
+            // Don't immediately reset reconnectAttempts here — consider connection "stable"
+            // only after the PeerConnection reaches 'connected' state. This prevents
+            // rapid open/close cycles (e.g. flaky network) from clearing the counter
+            // and defeating our backoff policy.
+            if (this.fallbackActive) this.stopFallbackPolling();
             this.sendMessage({ type: 'join', userId: this.userId });
         };
 
@@ -101,7 +114,12 @@ class NetHoloGlyphClient {
         };
 
         this.websocket.onclose = (event) => {
-            console.log(`[NetHoloGlyphClient] WebSocket Closed. Code: ${event.code}`);
+            // Concise diagnostic
+            const reason = event && event.reason ? ` Reason: ${event.reason}` : '';
+            console.warn(`[NetHoloGlyphClient] WebSocket closed (code=${event.code})${reason}`);
+            if (event && event.code === 1006) {
+                console.warn('[NetHoloGlyphClient] Abnormal closure (1006) — possible network/TLS interruption.');
+            }
             this.handleReconnection();
         };
 
@@ -110,14 +128,21 @@ class NetHoloGlyphClient {
         };
     }
 
+    _jitteredDelay(attempt) {
+        const exp = Math.min(this.baseReconnectDelay * Math.pow(this.backoffFactor, attempt), this.maxReconnectDelay);
+        const jitter = Math.random() * exp * this.jitterFactor;
+        return Math.floor(exp + jitter);
+    }
+
     handleReconnection() {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
-            const delay = this.baseReconnectDelay * Math.pow(1.5, this.reconnectAttempts); // Less aggressive backoff
+            const delay = this._jitteredDelay(this.reconnectAttempts);
             console.log(`[NetHoloGlyphClient] Connection lost. Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
             if (this.reconnectTimeoutId) clearTimeout(this.reconnectTimeoutId);
 
+            this.isReconnecting = true;
             this.reconnectTimeoutId = setTimeout(() => {
                 if (this.roomId && this.userId) {
                     console.log("[NetHoloGlyphClient] Attempting reconnect...");
@@ -125,8 +150,48 @@ class NetHoloGlyphClient {
                 }
             }, delay);
         } else {
-            console.error("[NetHoloGlyphClient] Max reconnect attempts reached. Giving up.");
+            console.error("[NetHoloGlyphClient] Max reconnect attempts reached. Falling back to long-polling.");
+            this.startFallbackPolling();
         }
+    }
+
+    startFallbackPolling() {
+        if (this.fallbackActive) return;
+        this.fallbackActive = true;
+        console.warn('[NetHoloGlyphClient] Starting long-poll fallback (poll interval ' + this.fallbackPollInterval + 'ms)');
+
+        const pollUrl = (this.signalingServerUrl || '').replace(/^wss?:/, (m)=> m === 'wss:' ? 'https:' : 'http:') + (this.roomId ? `/${this.roomId}/poll` : '/poll');
+
+        const pollOnce = async () => {
+            try {
+                const res = await fetch(pollUrl);
+                if (!res.ok) return;
+                const messages = await res.json();
+                if (Array.isArray(messages)) {
+                    for (const msg of messages) {
+                        // emulate onmessage
+                        if (this.websocket && typeof this.websocket.onmessage === 'function') {
+                            this.websocket.onmessage({ data: JSON.stringify(msg) });
+                        }
+                    }
+                }
+            } catch (e) {
+                // Keep quiet; best-effort
+                console.debug('[NetHoloGlyphClient] Poll error:', e && e.message);
+            }
+        };
+
+        // Start immediate and interval
+        pollOnce();
+        this.fallbackIntervalId = setInterval(pollOnce, this.fallbackPollInterval);
+    }
+
+    stopFallbackPolling() {
+        if (!this.fallbackActive) return;
+        this.fallbackActive = false;
+        if (this.fallbackIntervalId) clearInterval(this.fallbackIntervalId);
+        this.fallbackIntervalId = null;
+        console.log('[NetHoloGlyphClient] Stopped fallback polling.');
     }
 
     /**
@@ -163,6 +228,11 @@ class NetHoloGlyphClient {
             const state = this.peerConnection.connectionState;
             console.log(`[NetHoloGlyphClient] P2P State: ${state}`);
             if (state === 'connected') {
+                // Mark the connection as stable — reset reconnection counters here
+                this.reconnectAttempts = 0;
+                this.isReconnecting = false;
+                if (this.fallbackActive) this.stopFallbackPolling();
+
                 eventBus.emit('netPeerConnected', { userId: this.userId });
                 if (this.onPeerConnectedCallback) this.onPeerConnectedCallback();
             } else if (['disconnected', 'failed', 'closed'].includes(state)) {
@@ -219,6 +289,7 @@ class NetHoloGlyphClient {
     }
 }
 
-// Singleton instantiation
+// Export class for testing and keep backward-compatible default singleton
+export { NetHoloGlyphClient };
 const netHoloGlyphClient = new NetHoloGlyphClient();
 export default netHoloGlyphClient;
