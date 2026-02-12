@@ -413,10 +413,34 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
         if (hologramScanner.isActive) {
           hologramScanner.stop();
           uiElements.buttons.scanButton.classList.remove('active');
+          
+          // Remove scanner-active class from grid container
+          const gridContainer = document.getElementById('grid-container');
+          if (gridContainer) {
+            gridContainer.classList.remove('scanner-active');
+          }
+          
           console.log('[UIManager] Scanner stopped.');
         } else {
           await hologramScanner.start();
           uiElements.buttons.scanButton.classList.add('active');
+          
+          // Handle panel visibility based on device type
+          const isMobilePortrait = window.innerWidth <= 768 || window.innerHeight > window.innerWidth;
+          
+          if (isMobilePortrait && appState.panelManager) {
+            // Mobile: hide all content panels
+            appState.panelManager.closeAllContentPanels();
+            console.log('[UIManager] Scanner started on mobile - panels hidden.');
+          } else {
+            // Desktop: add scanner-active class to sideshift hologram
+            const gridContainer = document.getElementById('grid-container');
+            if (gridContainer) {
+              gridContainer.classList.add('scanner-active');
+            }
+            console.log('[UIManager] Scanner started on desktop - hologram shifted.');
+          }
+          
           console.log('[UIManager] Scanner started.');
         }
       } catch (error) {

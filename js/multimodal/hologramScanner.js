@@ -22,8 +22,8 @@ export class HologramScanner {
 
         // Color detection tolerances
         // this.hueTolerance = 10;     // No longer used with direct mapping
-        this.minSaturation = 0.5;   // Minimum saturation to accept
-        this.minLightness = 0.15;   // Minimum brightness to detect
+        this.minSaturation = 0.3;   // Minimum saturation to accept (lowered from 0.5)
+        this.minLightness = 0.10;   // Minimum brightness to detect (lowered from 0.15)
 
         // Stabilization State (Sticky Frame)
         this.stabilization = {
@@ -38,6 +38,9 @@ export class HologramScanner {
             bl: { x: 0.1, y: 0.7 },
             br: { x: 0.9, y: 0.7 }
         };
+
+        // Last stable frame points for corner stabilization
+        this.lastStableFramePoints = null;
 
         // Tracking & Kalman state
         this.prevGray = null;
@@ -188,6 +191,9 @@ export class HologramScanner {
             this.synthesizer = null;
         }
 
+        // Clear stabilization state to prevent memory leaks
+        this.lastStableFramePoints = null;
+
         console.log('[HologramScanner] Stopped');
         eventBus.emit('scannerStopped');
     }
@@ -231,6 +237,7 @@ export class HologramScanner {
 
         const result = this._extractAudioParamsOptimized(imageData);
         const { audioParams, centroid, boundingBox } = result;
+        const confidence = boundingBox && boundingBox.confidence ? boundingBox.confidence : 0;
 
         // Stabilization using Centroid of whole hologram
         this.stabilization.offX += (centroid.weight > 0.01 ? (centroid.x - 0.5) * cropW * 0.1 : -this.stabilization.offX * 0.05);
@@ -251,13 +258,19 @@ export class HologramScanner {
 
         let targets = Object.assign({}, defaultTargets);
 
-        // 1. Detection Base: If bounding box found something, use it to snap corners
-        if (boundingBox && boundingBox.found) {
+        // 1. Detection Base: If bounding box found something and confidence is good, use it to snap corners
+        // If confidence < 0.5, use last stable frame points as fallback
+        if (boundingBox && boundingBox.found && confidence >= 0.5) {
             ['tl', 'tr', 'bl', 'br'].forEach(k => {
                 targets[k] = {
                     x: boundingBox.corners[k].x / canvasW,
                     y: boundingBox.corners[k].y / canvasH
                 };
+            });
+        } else if (confidence < 0.5 && this.lastStableFramePoints) {
+            // Weak tracking: use last known stable position
+            ['tl', 'tr', 'bl', 'br'].forEach(k => {
+                targets[k] = { x: this.lastStableFramePoints[k].x, y: this.lastStableFramePoints[k].y };
             });
         }
 
@@ -291,6 +304,15 @@ export class HologramScanner {
             }
         });
 
+        // Save stable frame points for fallback when tracking is weak
+        // Always save to have a recent fallback position, especially when confidence is high
+        if (confidence >= 0.6) {
+            this.lastStableFramePoints = JSON.parse(JSON.stringify(this.framePoints));
+        } else if (!this.lastStableFramePoints) {
+            // If no stable point set yet, save current position as baseline
+            this.lastStableFramePoints = JSON.parse(JSON.stringify(this.framePoints));
+        }
+
         // Update Spotlight Hole via Clip-Path
         if (this.overlayElement) {
             const clip = `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ` +
@@ -314,6 +336,15 @@ export class HologramScanner {
         let globalSum = 0;
         for (let i = 0; i < data.length; i += 16) globalSum += (data[i] + data[i + 1] + data[i + 2]) / 3;
         const threshold = Math.max(0.1, (globalSum / (data.length / 16) / 255) * 1.5) * 255;
+
+        // Prepare fallback region for weak tracking
+        // Fallback: analyze center area (40% width, 40% height)
+        const fallbackRegion = {
+            x: Math.floor(width * 0.3),
+            y: Math.floor(height * 0.2),
+            width: Math.floor(width * 0.4),
+            height: Math.floor(height * 0.4)
+        };
 
         // --- ROW-BASED SCANNING (128 Rows) ---
         // Top row = High freq (index 127), Bottom row = Low freq (index 0)
@@ -415,8 +446,10 @@ export class HologramScanner {
         }
 
         const anchorQuality = 140;
+        let confidence = 0.0;
+        
         if (violet.val > anchorQuality && red.val > anchorQuality) {
-            // Found stable base
+            // Found stable base (violet + red anchors detected)
             corners.bl = { x: violet.x, y: violet.y };
             corners.br = { x: red.x, y: red.y };
 
@@ -425,6 +458,7 @@ export class HologramScanner {
 
             corners.tl = { x: violet.x, y: violet.y - h };
             corners.tr = { x: red.x, y: red.y - h };
+            confidence = 0.95; // High confidence when anchors found
         } else if (foundAny) {
             // Fallback to detected content bounding box
             const margin = 10;
@@ -432,12 +466,35 @@ export class HologramScanner {
             corners.tr = { x: Math.min(width, maxX + margin), y: Math.max(0, minY - margin) };
             corners.bl = { x: Math.max(0, minX - margin), y: Math.min(height, maxY + margin) };
             corners.br = { x: Math.min(width, maxX + margin), y: Math.min(height, maxY + margin) };
+            confidence = 0.5; // Medium confidence for fallback
         }
+
+        // PHASE 20.4: Audio Synthesis Gate - Only generate sound when hologram is fully detected
+        // If confidence < 0.7 (weak/no detection), return completely silent audio
+        if (confidence < 0.7) {
+            console.log('[HologramScanner] confidence:', confidence.toFixed(2), '< 0.7 - NO AUDIO output (hologram not detected)');
+            return {
+                audioParams: { 
+                    levels: new Float32Array(256).fill(-128),  // All channels silent (-128 dB)
+                    pans: new Float32Array(128).fill(0)         // All pans centered
+                },
+                centroid: { x: 0.5, y: 0.5, weight: 0 },
+                boundingBox: { found: false, corners, minX, maxX, minY, maxY, confidence }
+            };
+        }
+
+        // If confidence is in medium range [0.7, 0.95), use only main detection, NO fallback
+        if (confidence >= 0.7 && confidence < 0.95) {
+            console.log('[HologramScanner] confidence:', confidence.toFixed(2), 'in [0.7, 0.95) - using main detection only (no fallback)');
+            // Skip fallback analysis for medium confidence level
+            // Return with current levels/pans from ROW-BASED scanning
+        }
+        // If confidence >= 0.95 (strong anchor detection), use normally (with fallback if needed)
 
         return {
             audioParams: { levels, pans },
             centroid: totalW > 0 ? { x: weightedX / totalW / width, y: weightedY / totalW / height, weight: totalW } : { x: 0.5, y: 0.5, weight: 0 },
-            boundingBox: { found: foundAny, corners, minX, maxX, minY, maxY }
+            boundingBox: { found: foundAny, corners, minX, maxX, minY, maxY, confidence }
         };
     }
 
