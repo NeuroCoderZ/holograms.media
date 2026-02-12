@@ -83,9 +83,9 @@
   will-change: transform, margin-bottom;
 }
 
-/* Scanner Active: сдвиг голограммы влево на десктопе */
+/* Scanner Active: сдвиг голограммы влево на десктопе (1% от ширины окна) */
 #grid-container.scanner-active {
-  transform: translateX(-100px);
+  transform: translateX(calc(-1vw));
   transition: transform 0.3s ease;
 }
 

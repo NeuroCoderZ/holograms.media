@@ -21,6 +21,7 @@ class CwtProcessor extends AudioWorkletProcessor {
         super();
         this._hb = 0;
         this._initialized = false;
+        this._lastFpsLog = null;
 
         // Configuration from service
         this._sampleRate = options.processorOptions.sampleRate || 48000;
@@ -48,7 +49,11 @@ class CwtProcessor extends AudioWorkletProcessor {
                 if (newFps > 0 && wasm.cwtanalyzer_set_fps) {
                     wasm.cwtanalyzer_set_fps(analyzerPtr, newFps);
                     this._targetFps = newFps;
-                    this.port.postMessage({ type: 'LOG', msg: `FPS updated to: ${newFps}` });
+                    // Rate-limited logging: once per 30 seconds
+                    if (!this._lastFpsLog || Date.now() - this._lastFpsLog > 30000) {
+                        this.port.postMessage({ type: 'LOG', msg: `FPS: ${newFps}` });
+                        this._lastFpsLog = Date.now();
+                    }
                 }
             } else if (data.type === 'RESET' && wasm && analyzerPtr) {
                 // Сброс буферов при смене трека или Stop
