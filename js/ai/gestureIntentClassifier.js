@@ -215,7 +215,9 @@ export class GestureIntentClassifier {
         const dt = Math.max(0, now - (rec.lastTs || now));
         if (dt <= 0) return;
         const steps = dt / this.accumulatorCfg.decayStepMs;
-        const f = Math.pow(this.accumulatorCfg.decayFactorPer100ms, steps);
+        // Guard: decay factor should be in [0,1]. If misconfigured, clamp to reasonable range.
+        const df = Math.min(1, Math.max(0, this.accumulatorCfg.decayFactorPer100ms));
+        const f = Math.pow(df, steps);
         rec.value = rec.value * f;
     }
 
@@ -280,10 +282,13 @@ export class GestureIntentClassifier {
         const nw = Math.sqrt(w.x ** 2 + w.y ** 2 + w.z ** 2) || 1e-9;
         const cos = (v.x * w.x + v.y * w.y + v.z * w.z) / (nv * nw);
 
-        // Feature 2: Distance ratio (Tip must be further from wrist)
+        // Feature 2: Distance ratio (Tip must be further than pip relative to mcp).
+        // Use scaleRef (hand size) to ensure invariance if provided.
         const tipToMcp = Math.sqrt((tip.x - mcp.x) ** 2 + (tip.y - mcp.y) ** 2 + (tip.z - mcp.z) ** 2);
         const pipToMcp = Math.sqrt((pip.x - mcp.x) ** 2 + (pip.y - mcp.y) ** 2 + (pip.z - mcp.z) ** 2);
-        const ratio = tipToMcp / (pipToMcp || 1e-9);
+        const tipScaled = (scaleRef && scaleRef > 0) ? (tipToMcp / scaleRef) : tipToMcp;
+        const pipScaled = (scaleRef && scaleRef > 0) ? (pipToMcp / scaleRef) : pipToMcp;
+        const ratio = tipScaled / (pipScaled || 1e-9);
 
         // Feature 3: Parallelism (Small cross-product indicates straight finger)
         const cross = {

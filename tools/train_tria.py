@@ -15,6 +15,7 @@ Workflow:
 import os
 import argparse
 import numpy as np
+import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -167,4 +168,4 @@ if __name__ == "__main__":
     export_onnx(model, dummy_input, args.onnx)
     
     # Save PTH as backup
-    torch.save(model.state_state_dict(), 'tria_model_v1.pth')
+    torch.save(model.state_dict(), 'tria_model_v1.pth')

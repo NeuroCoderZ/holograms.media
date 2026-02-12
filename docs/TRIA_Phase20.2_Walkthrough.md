@@ -15,3 +15,7 @@ python tools/train_tria.py
 npm run test:unit
 
 This walkthrough is intentionally short and intended to help other contributors run the local TRIA experiments and unit tests.
+
+---
+
+**Status:** Phase 20.2 — **Completed** (2026-02-11 UTC). Phase 20.3 — **Completed** (2026-02-11 UTC).

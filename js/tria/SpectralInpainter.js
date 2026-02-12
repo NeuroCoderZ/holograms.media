@@ -66,7 +66,20 @@ export default class SpectralInpainter {
    * Нормализация для входа нейросети (log-mag, [0, 1])
    */
   normalize(spectrogram) {
-    return spectrogram.map(frame => {
+    // Accept either time-major [T][F] or freq-major [F][T]; convert to time-major.
+    const expectedBins = (this.frameSize / 2) + 1;
+    let spec = spectrogram;
+    if (spec.length > 0 && spec[0].length !== expectedBins) {
+      // assume freq-major [F][T] -> transpose
+      const F = spec.length; const T = spec[0].length;
+      const trans = new Array(T);
+      for (let t = 0; t < T; t++) {
+        trans[t] = new Array(F);
+        for (let f = 0; f < F; f++) trans[t][f] = spec[f][t];
+      }
+      spec = trans;
+    }
+    return spec.map(frame => {
       return frame.map(v => {
         const db = 20 * Math.log10(v + 1e-6);
         return Math.max(0, (db + 60) / 60); // -60dB -> 0, 0dB -> 1
@@ -78,6 +91,7 @@ export default class SpectralInpainter {
    * Обратная нормализация (Exp-mag)
    */
   denormalize(normSpec) {
+    // normSpec expected time-major [T][F]
     return normSpec.map(frame => {
       return frame.map(v => {
         const db = (v * 60) - 60;
