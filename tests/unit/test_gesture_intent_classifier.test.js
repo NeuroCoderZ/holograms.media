@@ -98,5 +98,38 @@
     console.log('OK: debounce');
   }
 
+  // 5) isFingerExtended3D correctness (straight vs folded)
+  {
+    const cls = new GestureIntentClassifier({GestureVectorStoreClass: TestStore});
+    // Straight finger: mcp at (0,0,0), pip at (0,0.3,0), tip at (0,0.7,0)
+    const mcp = {x:0,y:0,z:0};
+    const pip = {x:0,y:0.3,z:0};
+    const tip = {x:0,y:0.7,z:0};
+    const straight = cls.isFingerExtended3D(tip,pip,mcp, 1.0);
+    assert(straight === true, 'expected straight finger to be extended');
+
+    // Folded finger: tip near pip
+    const tip2 = {x:0,y:0.32,z:0};
+    const folded = cls.isFingerExtended3D(tip2,pip,mcp, 1.0);
+    assert(folded === false, 'expected folded finger to be not extended');
+    console.log('OK: isFingerExtended3D');
+  }
+
+  // 6) Accumulator decay math (fractional steps)
+  {
+    const cls = new GestureIntentClassifier({GestureVectorStoreClass: TestStore});
+    // set decay factor to 0.5 per 100ms, step=100ms
+    cls.setAccumulatorCfg({decayFactorPer100ms: 0.5, decayStepMs: 100});
+    // create a rec and set value and lastTs
+    const now = Date.now();
+    cls.accumulators.set('x',{value: 1.0, lastTs: now - 150}); // 150ms ago
+    cls._decayAllAccumulators(Date.now());
+    const rec = cls.getAccumulator('x');
+    // expected f = 0.5^(150/100) = 0.5^1.5 = 0.353553
+    const expected = Math.pow(0.5, 1.5);
+    assert(Math.abs(rec.value - expected) < 1e-6, 'decay math fractional power');
+    console.log('OK: accumulator decay fractional');
+  }
+
   console.log('ALL TESTS PASSED');
 })();
