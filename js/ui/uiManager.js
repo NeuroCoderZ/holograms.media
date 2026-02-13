@@ -363,12 +363,33 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
     }
 
     uiElements.buttons.xrButton.addEventListener('click', async () => {
-      if (appState.xrSessionManagerInstance) {
-        await appState.xrSessionManagerInstance.toggleXRSession(uiElements.buttons.xrButton);
-      } else {
-        console.error("XRSessionManager instance not found in state. Cannot toggle XR session.");
-        // Optionally provide visual feedback on the button itself
-        uiElements.buttons.xrButton.textContent = "XR Error";
+      try {
+        // Step 1: Toggle WebXR session (Android XR priority)
+        if (appState.xrSessionManagerInstance) {
+          await appState.xrSessionManagerInstance.toggleXRSession(uiElements.buttons.xrButton);
+        }
+
+        // Step 2: Toggle Cochlear Cylinder morph (inside XR session or as fallback)
+        if (appState.hologramRendererInstance) {
+          const isXR = await appState.hologramRendererInstance.toggleXRMode();
+          uiElements.buttons.xrButton.classList.toggle('active', isXR);
+          uiElements.buttons.xrButton.title = isXR ? "Exit XR Mode" : "Enter XR Mode";
+          console.log(`[UIManager] Cochlear Cylinder ${isXR ? 'activated' : 'deactivated'}`);
+        }
+      } catch (err) {
+        console.warn('[UIManager] WebXR session failed, using Cochlear Cylinder fallback:', err.message);
+        // Fallback: morph without WebXR session
+        if (appState.hologramRendererInstance) {
+          try {
+            const isXR = await appState.hologramRendererInstance.toggleXRMode();
+            uiElements.buttons.xrButton.classList.toggle('active', isXR);
+            uiElements.buttons.xrButton.title = isXR ? "Exit XR Mode" : "Enter XR Mode";
+            console.log(`[UIManager] Cochlear Cylinder fallback ${isXR ? 'activated' : 'deactivated'}`);
+          } catch (fallbackErr) {
+            console.error('[UIManager] Cochlear Cylinder fallback also failed:', fallbackErr);
+            uiElements.buttons.xrButton.textContent = "XR Error";
+          }
+        }
       }
     });
   } else {

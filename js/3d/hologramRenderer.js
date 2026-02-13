@@ -5,6 +5,8 @@ import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../co
 import eventBus from '../core/eventBus.js'; // Added for WebAudioEngine integration
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js'; // New WebRTC client
 import perfMonitor from '../utils/perfMonitor.js';
+import { CochlearCylinder } from './CochlearCylinder.js';
+
 
 // Direct imports are used, so these lines are not necessary.
 
@@ -81,15 +83,6 @@ export class HologramRenderer {
       right: { active: false, indices: [] }
     };
 
-    // Group for local hands visualization
-    this.localHandsGroup = new THREE.Group();
-    this.hologramPivot.add(this.localHandsGroup);
-    this.localHands = { left: null, right: null };
-
-    this.selectionState = {
-      left: { active: false, indices: [] },
-      right: { active: false, indices: [] }
-    };
 
     // DEBUG: Frame counter for diagnostics
     this._debugFrameCount = 0;
@@ -100,6 +93,10 @@ export class HologramRenderer {
     // Rolling Peak Normalization State
     this._rollingMax = -100; // Start with low floor
     this._releaseRate = 0.01; // How fast the peak drops (smooth release)
+
+    // Cochlear Cylinder (XR mode)
+    this.cochlearCylinder = null;
+    this.isXRMode = false;
 
     // Add the main hologram pivot to the Three.js scene.
     this.scene.add(this.hologramPivot);
@@ -132,6 +129,41 @@ export class HologramRenderer {
         this.netHoloGlyphClient.createOffer();
       }
     });
+  }
+
+  /**
+   * Переключение XR-режима «Cochlear Cylinder 3.44».
+   * Если WebXR-сессия активна — морфинг внутри сессии.
+   * Если WebXR недоступен — fallback морфинг в обычном 3D.
+   *
+   * @returns {Promise}
+   */
+  async toggleXRMode() {
+    if (this.isXRMode) {
+      // Возврат к плоскому режиму
+      console.log('[HologramRenderer] Exiting XR Cochlear Cylinder mode');
+      if (this.cochlearCylinder) {
+        await this.cochlearCylinder.morphToFlat(
+          1500,
+          this.leftSequencerGroup,
+          this.rightSequencerGroup
+        );
+        this.cochlearCylinder.dispose();
+        this.cochlearCylinder = null;
+      }
+      this.isXRMode = false;
+    } else {
+      // Вход в Cochlear Cylinder
+      console.log('[HologramRenderer] Entering XR Cochlear Cylinder mode');
+      this.cochlearCylinder = new CochlearCylinder(this.hologramPivot, semitones);
+      await this.cochlearCylinder.morphToTorus(
+        1500,
+        this.leftSequencerGroup,
+        this.rightSequencerGroup
+      );
+      this.isXRMode = true;
+    }
+    return this.isXRMode;
   }
 
   handleCwtResult(data) {
@@ -268,6 +300,12 @@ export class HologramRenderer {
     const normalizedY = (y + (GRID_HEIGHT)) / (GRID_HEIGHT * 2); // 0..1 from bottom to top
     const centerIdx = Math.floor(Math.max(0, Math.min(1, normalizedY)) * 127);
 
+    // Dynamic Q-factor Dome for XR Mode
+    if (this.isXRMode && this.cochlearCylinder && isPinching) {
+      // Apply a +20dB boost dome at the cursor position
+      this.cochlearCylinder.applyQFactorDome(centerIdx, 20.0);
+    }
+
     if (isPinching) {
       select.active = true;
       const range = 0; // Single semitone precision for Pinch
@@ -294,90 +332,6 @@ export class HologramRenderer {
     }
   }
 
-  /**
-   * Handles local hand tracking results from MediaPipe.
-   */
-  handleLocalHandsUpdate(data) {
-    const { landmarks, handedness } = data;
-    if (!landmarks || landmarks.length === 0) {
-      this.handleLocalHandsLost();
-      return;
-    }
-
-    // Hide both first
-    if (this.localHands.left) this.localHands.left.visible = false;
-    if (this.localHands.right) this.localHands.right.visible = false;
-
-    for (let i = 0; i < landmarks.length; i++) {
-      const handLandmarks = landmarks[i];
-      const sideInfo = handedness[i];
-      const side = sideInfo.label.toLowerCase(); // 'left' or 'right'
-
-      if (!this.localHands[side]) {
-        this.localHands[side] = this._createCursorMesh(0x00FF00); // Green for both
-        this.localHandsGroup.add(this.localHands[side]);
-      }
-
-      const cursor = this.localHands[side];
-      cursor.visible = true;
-      this._updateCursorPosition(cursor, handLandmarks, side);
-    }
-  }
-
-  handleLocalHandsLost() {
-    if (this.localHands.left) this.localHands.left.visible = false;
-    if (this.localHands.right) this.localHands.right.visible = false;
-  }
-
-  _createCursorMesh(color) {
-    const geometry = new THREE.SphereGeometry(CELL_SIZE * 0.8, 16, 16);
-    const material = new THREE.MeshBasicMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.6,
-      depthTest: false
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-
-    const core = new THREE.Mesh(
-      new THREE.SphereGeometry(CELL_SIZE * 0.3, 8, 8),
-      new THREE.MeshBasicMaterial({ color: color })
-    );
-    mesh.add(core);
-
-    return mesh;
-  }
-
-  _updateCursorPosition(cursor, landmarks, side) {
-    if (!landmarks || !landmarks[8] || !landmarks[4]) return;
-    const p8 = landmarks[8]; // Index tip
-    const p4 = landmarks[4]; // Thumb tip
-
-    // Map X (0..1) -> (-GRID_WIDTH..GRID_WIDTH)
-    const x = (p8.x - 0.5) * (GRID_WIDTH * 2);
-    // Map Y (0..1) -> (GRID_HEIGHT..-GRID_HEIGHT)
-    const y = (0.5 - p8.y) * (GRID_HEIGHT * 2);
-    // Z from MP is relative, let's just use a fixed offset or scale p8.z
-    const z = -p8.z * GRID_DEPTH;
-
-    cursor.position.set(x, y, z);
-
-    // Calculate Pinch for future visual feedback
-    const dist = Math.sqrt(
-      Math.pow(p8.x - p4.x, 2) +
-      Math.pow(p8.y - p4.y, 2) +
-      Math.pow(p8.z - p4.z, 2)
-    );
-    const isPinching = dist < 0.05;
-
-    // Pulse core if pinching
-    const core = cursor.children[0];
-    if (isPinching) {
-      core.scale.set(1.5, 1.5, 1.5);
-    } else {
-      core.scale.set(1, 1, 1);
-    }
-  }
 
   /**
    * Visualizes remote gestures as "Ghost Hands" (Spectral Brushes).
@@ -892,6 +846,17 @@ export class HologramRenderer {
     // If audio is paused (specifically for file playback), freeze the visuals
     if (state.audio && state.audio.activeSource === 'file' && state.audio.isPaused) {
       return;
+    }
+
+    // XR Cochlear Cylinder delegation
+    if (this.isXRMode && this.cochlearCylinder) {
+      const audioData = this.latestCwtData || (state.audio && state.audio.latestAudioData);
+      if (audioData) {
+        const dbLevels = audioData.levels || audioData.dbLevels;
+        const panAngles = audioData.pans || audioData.panAngles;
+        this.cochlearCylinder.updateVisuals(dbLevels, panAngles);
+      }
+      return; // Skip flat grid rendering
     }
 
     const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));

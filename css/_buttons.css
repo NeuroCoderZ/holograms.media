@@ -7,7 +7,7 @@
 /* Toggle button styles */
 #togglePanelsButton {
   position: fixed !important;
-  z-index: 50 !important;
+  z-index: 10000 !important;
   bottom: 5svh !important;
   left: 5px !important;
   /* Align with the left row of buttons on the panel (which starts at 5px) */
