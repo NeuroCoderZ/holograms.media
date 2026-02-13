@@ -4,17 +4,51 @@
  * Отвечает за предварительную обработку сигнала (STFT/CWT) и 
  * постобработку (восстановление фазы и смешивание) для системы Триа.
  */
+
+// Cached trig tables: key = frameSize, value = { cos: Float32Array[], sin: Float32Array[] }
+const _trigCache = new Map();
+
+function _getTrigTable(N) {
+  if (_trigCache.has(N)) return _trigCache.get(N);
+  const M = N / 2 + 1;
+  const cosTable = new Array(M);
+  const sinTable = new Array(M);
+  for (let k = 0; k < M; k++) {
+    cosTable[k] = new Float32Array(N);
+    sinTable[k] = new Float32Array(N);
+    const factor = 2 * Math.PI * k / N;
+    for (let n = 0; n < N; n++) {
+      const phi = factor * n;
+      cosTable[k][n] = Math.cos(phi);
+      sinTable[k][n] = Math.sin(phi);
+    }
+  }
+  const table = { cos: cosTable, sin: sinTable };
+  _trigCache.set(N, table);
+  return table;
+}
+
+// Cached Hanning windows
+const _windowCache = new Map();
+
+function _getHanningWindow(size) {
+  if (_windowCache.has(size)) return _windowCache.get(size);
+  const win = new Float32Array(size);
+  for (let i = 0; i < size; i++) {
+    win[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (size - 1)));
+  }
+  _windowCache.set(size, win);
+  return win;
+}
+
 export default class SpectralInpainter {
   constructor(opts = {}) {
     this.frameSize = opts.frameSize || 256;
     this.hopSize = opts.hopSize || 128;
     this.sampleRate = opts.sampleRate || 8000;
 
-    // Window function (Hanning)
-    this.window = new Float32Array(this.frameSize);
-    for (let i = 0; i < this.frameSize; i++) {
-      this.window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (this.frameSize - 1)));
-    }
+    // Lazy-init window (uses cache)
+    this.window = _getHanningWindow(this.frameSize);
 
     // Signal buffer
     this.buffer = new Float32Array(this.frameSize);
@@ -26,8 +60,7 @@ export default class SpectralInpainter {
    */
   static stft(signal, frameSize = 256, hopSize = 128) {
     const frames = [];
-    const win = new Float32Array(frameSize);
-    for (let i = 0; i < frameSize; i++) win[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (frameSize - 1)));
+    const win = _getHanningWindow(frameSize);
 
     for (let i = 0; i <= signal.length - frameSize; i += hopSize) {
       const frame = signal.slice(i, i + frameSize);
@@ -41,22 +74,22 @@ export default class SpectralInpainter {
   }
 
   /**
-   * Compute magnitude spectrum using naive DFT (Opus optimization: precompute sin/cos for real implementation)
+   * Compute magnitude spectrum using cached sin/cos DFT tables.
    */
   static _computeMagnitude(frame) {
     const N = frame.length;
     const M = N / 2 + 1;
     const mag = new Float32Array(M);
+    const trig = _getTrigTable(N);
 
     for (let k = 0; k < M; k++) {
       let re = 0, im = 0;
-      const factor = 2 * Math.PI * k / N;
+      const cosK = trig.cos[k];
+      const sinK = trig.sin[k];
       for (let n = 0; n < N; n++) {
-        const phi = factor * n;
-        re += frame[n] * Math.cos(phi);
-        im -= frame[n] * Math.sin(phi);
+        re += frame[n] * cosK[n];
+        im -= frame[n] * sinK[n];
       }
-      // Normalize and compute magnitude
       mag[k] = Math.sqrt(re * re + im * im) / N;
     }
     return mag;

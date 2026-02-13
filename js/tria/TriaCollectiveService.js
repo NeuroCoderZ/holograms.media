@@ -1,75 +1,255 @@
 /*
  * TriaCollectiveService.js
- * Minimal skeleton for NetHoloGlyph P2P intent-sharing network.
+ * Real WebRTC DataChannel implementation for NetHoloGlyph P2P intent-sharing.
  * Design goals: low-latency intent sharing, privacy-preserving aggregation,
  * chain-of-trust, conflict-resolution, real-time mixing of gesture deltas & frames.
- *
- * This file provides a small API surface for higher-level application code.
  */
 
 export default class TriaCollectiveService {
   constructor(opts = {}) {
-    this._peers = new Map(); // peerId -> metadata
+    this._peers = new Map(); // peerId -> { pc: RTCPeerConnection, dc: RTCDataChannel, metadata }
     this._session = null;
-    this._onReceiveStream = null; // callback
-    this._webrtcConfig = opts.webrtcConfig || { iceServers: [{urls: 'stun:stun.l.google.com:19302'}] };
-    this._useSFU = ('useSFU' in opts) ? opts.useSFU : true; // default hybrid preference
+    this._onReceiveStream = null;
+    this._webrtcConfig = opts.webrtcConfig || { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+    this._useSFU = ('useSFU' in opts) ? opts.useSFU : true;
+    this._signer = opts.signer || null;
 
-    // crypto helper to sign messages if provider present
-    this._signer = opts.signer || null; // {sign: async (bytes) => signature}
+    /** @type {WebSocket|null} */
+    this._ws = null;
+    this._selfId = 'peer_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
   }
 
-  // Connect to signaling / bootstrap network (returns connection handle)
+  /**
+   * Connect to signaling server via WebSocket.
+   * @param {string} signalingUrl — ws:// or wss:// URL
+   */
   async connect(signalingUrl) {
-    // Minimal stub: in real deployment, connect to signaling, authenticate,
-    // fetch candidate SFU or introduce peers.
-    this._signaling = signalingUrl || 'local';
-    // TODO: implement websocket signaling client and events
-    return { ok: true, url: this._signaling };
+    if (!signalingUrl || signalingUrl === 'local') {
+      console.warn('[TriaCollective] No signaling URL, running in local-only mode.');
+      this._signaling = 'local';
+      return { ok: true, url: 'local' };
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        this._ws = new WebSocket(signalingUrl);
+      } catch (e) {
+        console.warn('[TriaCollective] WebSocket creation failed:', e.message);
+        this._signaling = 'local';
+        resolve({ ok: true, url: 'local', fallback: true });
+        return;
+      }
+
+      this._ws.onopen = () => {
+        console.log('[TriaCollective] WebSocket connected to', signalingUrl);
+        this._signaling = signalingUrl;
+        this._ws.send(JSON.stringify({ type: 'register', peerId: this._selfId }));
+        resolve({ ok: true, url: signalingUrl });
+      };
+
+      this._ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          this._handleSignalingMessage(msg);
+        } catch (e) {
+          console.warn('[TriaCollective] Bad signaling message:', e.message);
+        }
+      };
+
+      this._ws.onerror = (err) => {
+        console.warn('[TriaCollective] WebSocket error:', err);
+        this._signaling = 'local';
+        resolve({ ok: true, url: 'local', fallback: true });
+      };
+
+      this._ws.onclose = () => {
+        console.log('[TriaCollective] WebSocket closed');
+      };
+    });
   }
 
-  // Create and advertise a session with small session metadata
+  /**
+   * Handle incoming signaling messages (offer/answer/ICE).
+   */
+  _handleSignalingMessage(msg) {
+    switch (msg.type) {
+      case 'offer':
+        this._handleOffer(msg.from, msg.sdp);
+        break;
+      case 'answer':
+        this._handleAnswer(msg.from, msg.sdp);
+        break;
+      case 'ice-candidate':
+        this._handleIceCandidate(msg.from, msg.candidate);
+        break;
+      case 'peer-joined':
+        console.log('[TriaCollective] Peer joined:', msg.peerId);
+        this._createPeerConnection(msg.peerId, true);
+        break;
+      case 'peer-left':
+        console.log('[TriaCollective] Peer left:', msg.peerId);
+        this._removePeer(msg.peerId);
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * Create RTCPeerConnection + DataChannel for a remote peer.
+   */
+  _createPeerConnection(remotePeerId, isInitiator = false) {
+    if (this._peers.has(remotePeerId)) return this._peers.get(remotePeerId);
+
+    const pc = new RTCPeerConnection(this._webrtcConfig);
+    const peerEntry = { pc, dc: null, metadata: {} };
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate && this._ws && this._ws.readyState === WebSocket.OPEN) {
+        this._ws.send(JSON.stringify({
+          type: 'ice-candidate',
+          to: remotePeerId,
+          from: this._selfId,
+          candidate: event.candidate
+        }));
+      }
+    };
+
+    pc.ondatachannel = (event) => {
+      peerEntry.dc = event.channel;
+      this._setupDataChannel(peerEntry.dc, remotePeerId);
+    };
+
+    if (isInitiator) {
+      const dc = pc.createDataChannel('intent-sharing', { ordered: false, maxRetransmits: 0 });
+      peerEntry.dc = dc;
+      this._setupDataChannel(dc, remotePeerId);
+
+      pc.createOffer().then(offer => {
+        pc.setLocalDescription(offer);
+        if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+          this._ws.send(JSON.stringify({
+            type: 'offer',
+            to: remotePeerId,
+            from: this._selfId,
+            sdp: offer
+          }));
+        }
+      }).catch(err => console.warn('[TriaCollective] createOffer failed:', err));
+    }
+
+    this._peers.set(remotePeerId, peerEntry);
+    return peerEntry;
+  }
+
+  _setupDataChannel(dc, remotePeerId) {
+    dc.onopen = () => console.log(`[TriaCollective] DataChannel open with ${remotePeerId}`);
+    dc.onclose = () => console.log(`[TriaCollective] DataChannel closed with ${remotePeerId}`);
+    dc.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (this._onReceiveStream) this._onReceiveStream(msg, remotePeerId);
+      } catch (e) {
+        console.warn('[TriaCollective] Bad DataChannel message:', e);
+      }
+    };
+  }
+
+  async _handleOffer(fromPeerId, sdp) {
+    const peerEntry = this._createPeerConnection(fromPeerId, false);
+    await peerEntry.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    const answer = await peerEntry.pc.createAnswer();
+    await peerEntry.pc.setLocalDescription(answer);
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+      this._ws.send(JSON.stringify({
+        type: 'answer',
+        to: fromPeerId,
+        from: this._selfId,
+        sdp: answer
+      }));
+    }
+  }
+
+  async _handleAnswer(fromPeerId, sdp) {
+    const peerEntry = this._peers.get(fromPeerId);
+    if (peerEntry) {
+      await peerEntry.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    }
+  }
+
+  async _handleIceCandidate(fromPeerId, candidate) {
+    const peerEntry = this._peers.get(fromPeerId);
+    if (peerEntry) {
+      await peerEntry.pc.addIceCandidate(new RTCIceCandidate(candidate));
+    }
+  }
+
+  _removePeer(peerId) {
+    const entry = this._peers.get(peerId);
+    if (entry) {
+      if (entry.dc) entry.dc.close();
+      entry.pc.close();
+      this._peers.delete(peerId);
+    }
+  }
+
+  // Create and advertise a session
   async advertiseSession(sessionMeta = {}) {
-    // stub: produce sessionId and metadata advertisement
     const sessionId = 's_' + Date.now().toString(36);
     this._session = { id: sessionId, meta: sessionMeta };
-    // TODO: register with signaling server
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+      this._ws.send(JSON.stringify({ type: 'advertise-session', session: this._session, from: this._selfId }));
+    }
     return this._session;
   }
 
   async joinSession(sessionId, opts = {}) {
-    // stub: choose SFU or full-mesh based on size hint
-    // In a real implementation: fetch topology from signaling; if >N peers prefer SFU
     this._session = { id: sessionId, meta: opts.meta || {} };
-    // TODO: create RTCPeerConnections, datachannels, or subscribe to SFU
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+      this._ws.send(JSON.stringify({ type: 'join-session', sessionId, from: this._selfId }));
+    }
     return { ok: true, session: this._session };
   }
 
   leaveSession() {
-    // tear down connections
+    // Tear down all peer connections
+    for (const [peerId] of this._peers) {
+      this._removePeer(peerId);
+    }
     this._session = null;
-    this._peers.clear();
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+      this._ws.send(JSON.stringify({ type: 'leave-session', from: this._selfId }));
+    }
     return { ok: true };
   }
 
-  // Broadcast a tiny intent delta (bandwidth conscious)
+  // Broadcast a tiny intent delta via all open DataChannels
   async broadcastIntent(intentDelta) {
-    // optional signing
     let signature = null;
     if (this._signer && typeof this._signer.sign === 'function') {
       const payload = JSON.stringify(intentDelta);
       signature = await this._signer.sign(new TextEncoder().encode(payload));
     }
-    const msg = { type: 'intent-delta', ts: Date.now(), payload: intentDelta, signature };
+    const msg = JSON.stringify({ type: 'intent-delta', ts: Date.now(), payload: intentDelta, signature });
 
-    // TODO: deliver via datachannels / SFU data plane
-    // For now, just echo to receive handler for local testing
-    if (this._onReceiveStream) this._onReceiveStream(msg, 'self');
-    return { ok: true };
+    let sentCount = 0;
+    for (const [, entry] of this._peers) {
+      if (entry.dc && entry.dc.readyState === 'open') {
+        entry.dc.send(msg);
+        sentCount++;
+      }
+    }
+
+    // Local echo for testing
+    if (sentCount === 0 && this._onReceiveStream) {
+      this._onReceiveStream(JSON.parse(msg), 'self');
+    }
+
+    return { ok: true, sentTo: sentCount };
   }
 
-  // Set a callback to receive mixed streams / messages
   receiveStream(callback) { this._onReceiveStream = callback; }
 
-  getPeerList() { return Array.from(this._peers.entries()).map(([id,meta])=>({id,meta})); }
+  getPeerList() { return Array.from(this._peers.entries()).map(([id, entry]) => ({ id, metadata: entry.metadata })); }
 }
+
