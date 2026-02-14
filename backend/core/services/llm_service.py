@@ -13,8 +13,8 @@ class LLMService:
     """
     def __init__(self):
         # API key for the public agent (mistral-small-latest)
-        self.public_bot_api_key = "MISTRAL_API_KEY_REDACTED"
-        if not self.public_bot_api_key: # Should always be true as it's hardcoded
+        self.public_bot_api_key = os.getenv("MISTRAL_API_KEY")
+        if not self.public_bot_api_key:
             logger.error("Public agent API key is not set. LLMService will not function correctly for public agent.")
         
         # Base URL for Mistral's chat completions API.
