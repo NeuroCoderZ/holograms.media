@@ -120,13 +120,15 @@ async def startup_event():
     logger.info("--- Application Startup ---")
 
     
-
-    b2_endpoint_url = os.getenv("B2_ENDPOINT_URL")
-    b2_access_key_id = os.getenv("B2_ACCESS_KEY_ID")
-    b2_secret_access_key = os.getenv("B2_SECRET_ACCESS_KEY")
+    # --- Initialize Backblaze B2 ---
+    b2_endpoint_url = settings.B2_ENDPOINT_URL
+    b2_access_key_id = settings.B2_ACCESS_KEY_ID
+    b2_secret_access_key = settings.B2_SECRET_ACCESS_KEY
     
     if all([b2_endpoint_url, b2_access_key_id, b2_secret_access_key]):
         try:
+            # Region is usually part of the endpoint for B2 S3 API, but Boto3 requires one.
+            # 'us-west-002' is a common default, but we can make it more flexible if needed.
             s3_config = Config(region_name='us-west-002', signature_version='s3v4')
             s3_client = boto3.client(
                 's3',
@@ -136,12 +138,12 @@ async def startup_event():
                 config=s3_config
             )
             app.state.s3_client = s3_client
-            logger.info("Backblaze B2 S3 client initialized successfully.")
+            logger.info("Backblaze B2 S3 client initialized successfully using settings.")
         except Exception as e:
             logger.error(f"Error initializing Backblaze B2 S3 client: {e}")
             app.state.s3_client = None
     else:
-        logger.warning("One or more Backblaze B2 environment variables are missing. S3 client not initialized.")
+        logger.warning("One or more Backblaze B2 settings are missing. S3 client not initialized.")
         app.state.s3_client = None
 
     # --- Initialize Astra DB ---

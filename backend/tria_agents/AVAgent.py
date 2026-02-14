@@ -17,12 +17,12 @@ AVAgent - объединенный AudioAgent и VideoAgent для обрабо�
 
 import asyncio
 import logging
-import numpy as np
+import math
 import qrcode
 from io import BytesIO
 from typing import Dict, Any, List
-import tensorflow as tf
-from tensorflow import keras
+# import tensorflow as tf  # REMOVED for memory efficiency
+# from tensorflow import keras # REMOVED for memory efficiency
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 class AVAgent:
     """
     AVAgent класс для обработки аудиовизуальных данных и генерации визуализаций голограмм.
+    Оптимизирован для работы без тяжелых ML-библиотек (Koyeb Efficiency).
     """
 
     def __init__(self, db_conn):
@@ -40,22 +41,8 @@ class AVAgent:
         :param db_conn: Соединение с базой данных (asyncpg.Connection).
         """
         self.db_conn = db_conn
-        self.model = self._build_neural_network()
-        logger.info("AVAgent инициализирован с нейросетью для адаптации.")
-
-    def _build_neural_network(self) -> keras.Model:
-        """
-        Строит базовую маленькую нейросеть для адаптации модели на основе данных.
-
-        :return: Модель Keras.
-        """
-        model = keras.Sequential([
-            keras.layers.Dense(64, activation='relu', input_shape=(10,)),  # Вход: уровни громкости и углы
-            keras.layers.Dense(32, activation='relu'),
-            keras.layers.Dense(10, activation='sigmoid')  # Выход: адаптированные параметры
-        ])
-        model.compile(optimizer='adam', loss='mse')
-        return model
+        # Нейросеть удалена для экономии памяти. Теперь используем эвристическую адаптацию.
+        logger.info("AVAgent инициализирован (режим легкой эвристики).")
 
     async def process_audio_video_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -81,8 +68,8 @@ class AVAgent:
         # Звуковые параметры как QR-код
         qr_code = self._generate_qr_code(volume_levels, pan_angles)
 
-        # Адаптация через нейросеть
-        adapted_params = self._adapt_with_neural_network(volume_levels + pan_angles)
+        # Адаптация через эвристику (замена нейросети)
+        adapted_params = self._adapt_with_heuristic(volume_levels + pan_angles)
 
         hologram_data = {
             "semitones": semitones,
@@ -96,22 +83,25 @@ class AVAgent:
 
     def _convert_to_semitones(self, volume_levels: List[float]) -> List[int]:
         """
-        Преобразует уровни громкости в полутона (ноты).
+        Преобразует уровни громкости в полутона (ноты). Чистый Python.
 
         :param volume_levels: Список уровней громкости.
         :return: Список полутонов.
         """
-        # Простое преобразование: нормализация и маппинг на 12 полутонов
-        normalized = np.array(volume_levels) / max(volume_levels) if volume_levels else []
-        semitones = [int(val * 11) for val in normalized]  # 0-11
+        if not volume_levels:
+            return []
+            
+        max_vol = max(volume_levels)
+        if max_vol == 0:
+            return [0] * len(volume_levels)
+            
+        # Замена numpy на списковое включение
+        semitones = [int((v / max_vol) * 11) for v in volume_levels]  # 0-11
         return semitones
 
     def _assign_stable_colors(self, semitones: List[int]) -> List[str]:
         """
         Присваивает стабильные цвета полутоням.
-
-        :param semitones: Список полутонов.
-        :return: Список цветов в hex формате.
         """
         color_map = {
             0: "#FF0000", 1: "#FF8000", 2: "#FFFF00", 3: "#80FF00",
@@ -123,10 +113,6 @@ class AVAgent:
     def _generate_qr_code(self, volume_levels: List[float], pan_angles: List[float]) -> str:
         """
         Генерирует QR-код из звуковых параметров для обратной связи.
-
-        :param volume_levels: Уровни громкости.
-        :param pan_angles: Углы панорамирования.
-        :return: Base64 строка QR-кода.
         """
         data = f"Volume: {','.join(map(str, volume_levels))}; Pan: {','.join(map(str, pan_angles))}"
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
@@ -135,27 +121,26 @@ class AVAgent:
         img = qr.make_image(fill='black', back_color='white')
         buffer = BytesIO()
         img.save(buffer, format="PNG")
-        return buffer.getvalue().decode('latin1')  # Для простоты, в реальности base64
+        return buffer.getvalue().decode('latin1')
 
-    def _adapt_with_neural_network(self, input_data: List[float]) -> List[float]:
+    def _adapt_with_heuristic(self, input_data: List[float]) -> List[float]:
         """
-        Адаптирует модель с помощью нейросети на основе входных данных.
-
-        :param input_data: Входные данные (уровни + углы).
-        :return: Адаптированные параметры.
+        Легкая эвристическая адаптация вместо нейросети.
+        Использует экспоненциальное сглаживание или простые трансформации.
         """
         if len(input_data) < 10:
-            input_data += [0] * (10 - len(input_data))
-        input_array = np.array(input_data[:10]).reshape(1, -1)
-        prediction = self.model.predict(input_array)
-        return prediction.flatten().tolist()
+            input_data += [0.0] * (10 - len(input_data))
+        
+        # Пример простой нелинейной адаптации (сигмоида на коленке)
+        def sigmoid(x):
+            return 1 / (1 + math.exp(-x)) if abs(x) < 20 else (1.0 if x > 0 else 0.0)
+
+        adapted = [sigmoid(x * 0.5) for x in input_data[:10]]
+        return adapted
 
     async def receive_command(self, command: Dict[str, Any]) -> Dict[str, Any]:
         """
         Получает команду от Orchestrator.
-
-        :param command: Словарь с командой.
-        :return: Ответ на команду.
         """
         logger.info(f"AVAgent: Получена команда: {command}")
         cmd_type = command.get('type')
@@ -168,10 +153,6 @@ class AVAgent:
     async def send_visualization_data(self, data: Dict[str, Any]) -> None:
         """
         Отправляет визуализационные данные в Orchestrator.
-
-        :param data: Данные для отправки.
         """
         logger.info(f"AVAgent: Отправка данных визуализации: {data}")
-        # Здесь логика отправки, например, через очередь или API
-        # Для примера, просто логируем
         pass

@@ -5,11 +5,11 @@
 // Локальная конфигурация для сборки (заглушки)
 // Реальные ключи будут получены из Cloudflare Secrets Store
 const cloudConfig = {
-  performance: { cacheExpiration: 300000 },
-  astra: { token: "placeholder", databaseId: "placeholder", region: "us-east-1" },
-  backblaze: { keyId: "placeholder", applicationKey: "placeholder", bucketName: "placeholder", apiUrl: "https://api.backblazeb2.com/b2api/v2" },
-  cloudflare: { gestureApiUrl: "https://placeholder.cloudflare.example", triaApiToken: "placeholder" },
-  koyeb: { apiUrl: "https://placeholder.koyeb.example", deploymentId: "placeholder" }
+    performance: { cacheExpiration: 300000 },
+    astra: { token: "placeholder", databaseId: "placeholder", region: "us-east-1" },
+    backblaze: { keyId: "placeholder", applicationKey: "placeholder", bucketName: "placeholder", apiUrl: "https://api.backblazeb2.com/b2api/v2" },
+    cloudflare: { gestureApiUrl: "https://placeholder.cloudflare.example", triaApiToken: "placeholder" },
+    koyeb: { apiUrl: "https://placeholder.koyeb.example", deploymentId: "placeholder" }
 };
 
 /**
@@ -22,7 +22,7 @@ export class CloudGestureStorage {
         this.backblazeClient = new BackblazeGestureClient();
         this.cloudflareClient = new CloudflareGestureClient();
         this.koyebClient = new KoyebGestureClient();
-        
+
         this.cache = new Map();
         this.cacheExpiration = cloudConfig.performance.cacheExpiration;
     }
@@ -42,14 +42,14 @@ export class CloudGestureStorage {
             ];
 
             const results = await Promise.allSettled(promises);
-            
+
             // Проверяем результаты
             const successful = results.filter(result => result.status === 'fulfilled');
             const failed = results.filter(result => result.status === 'rejected');
 
             if (successful.length > 0) {
                 console.log(`Жест сохранен в ${successful.length} сервисов`);
-                
+
                 // Кэшируем результат
                 this.cache.set(gestureData.name, {
                     data: gestureData,
@@ -91,7 +91,7 @@ export class CloudGestureStorage {
                 return gestures;
             } catch (astraError) {
                 console.warn('Astra недоступен, пробуем Cloudflare:', astraError);
-                
+
                 // Fallback на Cloudflare
                 const gestures = await this.cloudflareClient.loadUserGestures(userId);
                 this.cacheGestures(userId, gestures);
@@ -207,76 +207,69 @@ class AstraGestureClient {
     }
 
     async saveGesture(gestureData) {
-        // Проверка на placeholder - возвращаем mock успех
-        if (this.baseUrl.includes('placeholder')) {
-            console.log('Astra: placeholder URL, пропускаем сохранение');
-            return { success: true };
+        try {
+            const response = await fetch(`/api/v1/users/${gestureData.userId}/gestures`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Токен будет добавлен автоматически, если пользователь авторизован (куки или заголовок)
+                },
+                body: JSON.stringify({
+                    gesture_name: gestureData.name,
+                    code: gestureData.code,
+                    trajectories: gestureData.trajectories,
+                    // Остальные поля бэкенд добавит сам
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`Backend API error: ${response.status} ${errorData.detail || ''}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Ошибка при сохранении жеста через бэкенд:', error);
+            throw error;
         }
-
-        const response = await fetch(`${this.baseUrl}/keyspaces/holograms/gestures`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Cassandra-Token': this.config.token
-            },
-            body: JSON.stringify({
-                id: gestureData.name,
-                user_id: gestureData.userId,
-                code: gestureData.code,
-                trajectories: JSON.stringify(gestureData.trajectories),
-                timestamp: gestureData.timestamp
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Astra API error: ${response.status}`);
-        }
-
-        return await response.json();
     }
 
     async loadUserGestures(userId) {
-        // Проверка на placeholder - возвращаем пустой массив
-        if (this.baseUrl.includes('placeholder')) {
-            console.log('Astra: placeholder URL, возвращаем пустой список жестов');
+        try {
+            const response = await fetch(`/api/v1/users/${userId}/gestures`);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`Backend API error: ${response.status} ${errorData.detail || ''}`);
+            }
+
+            const data = await response.json();
+            // Преобразуем формат бэкенда (Snake Case) в формат фронтенда (Camel Case)
+            return data.map(item => ({
+                name: item.gesture_name,
+                userId: item.user_id,
+                code: item.code,
+                trajectories: item.trajectories,
+                timestamp: item.created_at
+            }));
+        } catch (error) {
+            console.error('Ошибка при загрузке жестов через бэкенд:', error);
             return [];
         }
-
-        const response = await fetch(`${this.baseUrl}/keyspaces/holograms/gestures?user_id=${userId}`, {
-            headers: {
-                'X-Cassandra-Token': this.config.token
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Astra API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return data.rows.map(row => ({
-            name: row.id,
-            userId: row.user_id,
-            code: row.code,
-            trajectories: JSON.parse(row.trajectories),
-            timestamp: row.timestamp
-        }));
     }
 
     async deleteGesture(gestureId, userId) {
-        // Проверка на placeholder - возвращаем успех
-        if (this.baseUrl.includes('placeholder')) {
-            console.log('Astra: placeholder URL, пропускаем удаление');
-            return true;
+        // Здесь gestureId это ID из Astra (mongo-like string)
+        try {
+            const response = await fetch(`/api/v1/users/${userId}/gestures/${gestureId}`, {
+                method: 'DELETE'
+            });
+
+            return response.ok;
+        } catch (error) {
+            console.error('Ошибка при удалении жеста через бэкенд:', error);
+            return false;
         }
-
-        const response = await fetch(`${this.baseUrl}/keyspaces/holograms/gestures/${gestureId}`, {
-            method: 'DELETE',
-            headers: {
-                'X-Cassandra-Token': this.config.token
-            }
-        });
-
-        return response.ok;
     }
 }
 

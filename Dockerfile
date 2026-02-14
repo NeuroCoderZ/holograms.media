@@ -43,4 +43,4 @@ EXPOSE 8000
 # Если GestureBot реально нужен на бэкенде, его лучше запускать как отдельный сервис или оптимизировать
 # Убираем установку Node.js и npm install так как это "хлам" для бэкенда
 
-CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", 1]

@@ -1,11 +1,17 @@
 # backend/services/gesture_intent_service.py
 import logging
 # Removed asyncpg
-import numpy as np
+import math
 import os # Для доступа к GOOGLE_APPLICATION_CREDENTIALS
 from typing import List, Dict, Any, Optional
 from uuid import UUID
 from backend.repositories.embedding_repository import EmbeddingRepository
+
+def normalize_vector(v: List[float]) -> List[float]:
+    magnitude = math.sqrt(sum(x*x for x in v))
+    if magnitude == 0:
+        return v
+    return [x / magnitude for x in v]
 
 # Импорт Google AI SDK
 import google.generativeai as genai
@@ -36,14 +42,10 @@ except Exception as e:
 # Определяем условные векторы для наших намерений
 # Размерность должна быть 768 для text-embedding-004
 SEMANTIC_DIRECTIONS = {
-    "select": np.array([0.05] * 10 + [-0.05] * 10 + [0.01] * (768 - 20)),  # Примерный вектор
-    "grab": np.array([-0.05] * 10 + [0.05] * 10 + [-0.01] * (768 - 20)), # Примерный вектор
-    "navigate": np.zeros(768)  # Навигация пока не меняет вектор
+    "select": normalize_vector([0.05] * 10 + [-0.05] * 10 + [0.01] * (768 - 20)),
+    "grab": normalize_vector([-0.05] * 10 + [0.05] * 10 + [-0.01] * (768 - 20)),
+    "navigate": [0.0] * 768
 }
-# Нормализуем векторы направлений на всякий случай
-for key in SEMANTIC_DIRECTIONS:
-    if np.linalg.norm(SEMANTIC_DIRECTIONS[key]) != 0:
-        SEMANTIC_DIRECTIONS[key] = SEMANTIC_DIRECTIONS[key] / np.linalg.norm(SEMANTIC_DIRECTIONS[key])
 
 
 class GestureIntentService:
@@ -98,13 +100,13 @@ class GestureIntentService:
                 return {"status": "ignored", "message": message, "available_gestures": available_gestures}
 
         # 2. Получаем вектор модификации для нашего намерения (стало Шаг 2)
-        direction_vector_np = SEMANTIC_DIRECTIONS.get(intent_type)
-        if direction_vector_np is None:
+        direction_vector = SEMANTIC_DIRECTIONS.get(intent_type)
+        if direction_vector is None:
             logger.info(f"Intent type '{intent_type}' has no defined vector operation for user {user_id}. No action taken.")
             return {"status": "ignored", "message": f"Intent type '{intent_type}' has no defined vector operation."}
 
-        if direction_vector_np.shape[0] != 768: # Проверка согласованности размерности
-            logger.error(f"Dimension mismatch for SEMANTIC_DIRECTIONS['{intent_type}']. Expected 768, got {direction_vector_np.shape[0]}.")
+        if len(direction_vector) != 768: # Проверка согласованности размерности
+            logger.error(f"Dimension mismatch for SEMANTIC_DIRECTIONS['{intent_type}']. Expected 768, got {len(direction_vector)}.")
             return {"status": "error", "message": f"Internal configuration error for intent type '{intent_type}'."}
 
         # 2. Выполняем векторную арифметику
@@ -118,23 +120,17 @@ class GestureIntentService:
             logger.error(f"Base embedding vector is not a list of numbers. ID: {context_embedding.id}. Type: {type(base_vector_list)}")
             return {"status": "error", "message": "Corrupted base embedding data (not a list of numbers)."}
 
-        base_vector_np = np.array(base_vector_list)
-
-        if base_vector_np.shape[0] != 768:
-            logger.error(f"Dimension mismatch for base_vector. Expected 768, got {base_vector_np.shape[0]}. Embedding ID: {context_embedding.id}")
+        if len(base_vector_list) != 768:
+            logger.error(f"Dimension mismatch for base_vector. Expected 768, got {len(base_vector_list)}. Embedding ID: {context_embedding.id}")
             return {"status": "error", "message": "Corrupted base embedding data (dimension mismatch)."}
 
-        modified_vector_np = base_vector_np + (direction_vector_np * intensity_factor)
+        # Векторная арифметика на чистом Python
+        modified_vector = [b + (d * intensity_factor) for b, d in zip(base_vector_list, direction_vector)]
 
         # Нормализуем, чтобы не "улететь" из семантического пространства
-        norm = np.linalg.norm(modified_vector_np)
-        if norm == 0: # Избегаем деления на ноль
-            logger.warning(f"Norm of modified vector is zero for intent_type '{intent_type}', embedding ID {context_embedding.id}. Using original vector.")
-            modified_vector_list = base_vector_np.tolist()
-        else:
-            modified_vector_np /= norm
-            modified_vector_list = modified_vector_np.tolist()
-            logger.info(f"Applied intent_type '{intent_type}', modified embedding {context_embedding.id}. Norm before: {np.linalg.norm(base_vector_np):.4f}, Norm after: {np.linalg.norm(modified_vector_np):.4f}")
+        modified_vector_list = normalize_vector(modified_vector)
+        
+        logger.info(f"Applied intent_type '{intent_type}', modified embedding {context_embedding.id}.")
 
 
         # Обновляем вектор в базе данных (стало Шаг 3)
