@@ -2,7 +2,7 @@ name: 🚀 Deploy Frontend to Cloudflare Pages (Multi-Branch)
 
 on:
   push:
-    branches: [main, develop, master]
+    branches: [prod, dev]
   workflow_dispatch:
 
 jobs:
@@ -18,25 +18,16 @@ jobs:
       - name: 🔍 Determine Environment
         id: env
         run: |
-          if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
+          if [[ ${{ github.ref }} == 'refs/heads/prod' ]]; then
             echo "ENVIRONMENT=production" >> $GITHUB_OUTPUT
-            echo "CLIENT_ID=${{ secrets.PROD_GOOGLE_CLIENT_ID }}" >> $GITHUB_OUTPUT
-            echo "CLIENT_SECRET=${{ secrets.PROD_GOOGLE_CLIENT_SECRET }}" >> $GITHUB_OUTPUT
+            echo "CLIENT_ID=808002961976-00n78g5t3r6bggtiv22utj2tcu4uqkt1.apps.googleusercontent.com" >> $GITHUB_OUTPUT
             echo "DEPLOY_URL=holograms.media" >> $GITHUB_OUTPUT
             echo "ENV_FILE=.env.production" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.ref }} == 'refs/heads/develop' ]]; then
+          elif [[ ${{ github.ref }} == 'refs/heads/dev' ]]; then
             echo "ENVIRONMENT=development" >> $GITHUB_OUTPUT
-            echo "CLIENT_ID=${{ secrets.DEV_GOOGLE_CLIENT_ID }}" >> $GITHUB_OUTPUT
-            echo "CLIENT_SECRET=${{ secrets.DEV_GOOGLE_CLIENT_SECRET }}" >> $GITHUB_OUTPUT
+            echo "CLIENT_ID=854745558223-c1ki85eaf5l5caiofrfdcn942dmtlana.apps.googleusercontent.com" >> $GITHUB_OUTPUT
             echo "DEPLOY_URL=dev.holograms.media" >> $GITHUB_OUTPUT
             echo "ENV_FILE=.env.development" >> $GITHUB_OUTPUT
-          else
-            # For master branch, default to production
-            echo "ENVIRONMENT=production" >> $GITHUB_OUTPUT
-            echo "CLIENT_ID=${{ secrets.PROD_GOOGLE_CLIENT_ID }}" >> $GITHUB_OUTPUT
-            echo "CLIENT_SECRET=${{ secrets.PROD_GOOGLE_CLIENT_SECRET }}" >> $GITHUB_OUTPUT
-            echo "DEPLOY_URL=holograms.media" >> $GITHUB_OUTPUT
-            echo "ENV_FILE=.env.production" >> $GITHUB_OUTPUT
           fi
 
       - name: 🟢 Setup Node.js

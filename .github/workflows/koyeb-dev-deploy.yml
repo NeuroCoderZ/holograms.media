@@ -1,0 +1,56 @@
+# ⚠️ AGENT_ADVISORY: КРИТИЧЕСКАЯ ИНФРАСТРУКТУРА
+# Этот файл настроен для изоляции среды DEVELOPMENT.
+# ПРАВИЛА:
+# 1. НЕ УДАЛЯЙТЕ шаг 'install-koyeb-cli'.
+# 2. Деплой происходит в приложение 'holograms-media-dev'.
+
+name: 🚀 Deploy Backend to Koyeb (Development)
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  deploy_backend_development:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Install and Configure Koyeb CLI
+        uses: koyeb-community/install-koyeb-cli@v2
+        with:
+          api_token: ${{ secrets.KOYEB_API_TOKEN }}
+
+      # Шаг очистки для Free Tier (работа со вторым приложением)
+      - name: 🧹 Cleanup Old Service (Free Tier Workaround)
+        run: |
+          echo "Checking for existing service to free up quota..."
+          koyeb service delete holograms-media-dev/holograms-media-dev --force || echo "Service not found, skipping cleanup."
+
+      - name: 🚀 Deploy Backend to Koyeb
+        id: koyeb-deploy
+        uses: koyeb/action-git-deploy@v1
+        with:
+          git-branch: dev
+          app-name: holograms-media-dev
+          service-name: holograms-media-dev
+          service-type: web
+          service-ports: "8000:http"
+          service-routes: "/:8000"
+          service-instance-type: free
+          git-builder: docker
+          git-docker-dockerfile: Dockerfile
+          service-env: |
+            ENVIRONMENT=development
+            CORS_ORIGIN_1=https://dev.holograms.media
+            CORS_ORIGIN_2=https://www.dev.holograms.media
+            PYTHONUNBUFFERED=1
+            PYTHONDONTWRITEBYTECODE=1
+            PORT=8000
+
+      - name: 📋 Output Backend URL
+        run: |
+          echo "Backend deployed to: ${{ steps.koyeb-deploy.outputs.app_url }}"
+          echo "::notice::Development Backend URL: ${{ steps.koyeb-deploy.outputs.app_url }}"
