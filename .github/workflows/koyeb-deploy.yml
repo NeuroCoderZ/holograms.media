@@ -10,7 +10,7 @@ name: 🚀 Deploy Backend to Koyeb (Production)
 
 on:
   push:
-    branches: [master, main]
+    branches: [prod]
 
 jobs:
   deploy_backend_production:
@@ -25,19 +25,19 @@ jobs:
         with:
           api_token: ${{ secrets.KOYEB_API_TOKEN }}
 
-      # Шаг очистки был в успешном билде, оставляем для точности восстановления
+      # Шаг очистки для Free Tier
       - name: 🧹 Cleanup Old Service (Free Tier Workaround)
         run: |
           echo "Checking for existing service to free up quota..."
-          koyeb service delete holograms-media/holograms-media --force || echo "Service not found, skipping cleanup."
+          koyeb service delete holograms-media-prod/holograms-media-prod --force || echo "Service not found, skipping cleanup."
 
       - name: 🚀 Deploy Backend to Koyeb
         id: koyeb-deploy
         uses: koyeb/action-git-deploy@v1
         with:
-          git-branch: master
-          app-name: holograms-media
-          service-name: holograms-media
+          git-branch: prod
+          app-name: holograms-media-prod
+          service-name: holograms-media-prod
           service-type: web
           service-ports: "8000:http"
           service-routes: "/:8000"
