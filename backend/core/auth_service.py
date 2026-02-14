@@ -61,47 +61,33 @@ class AuthService:
     async def verify_google_id_token(self, token: str) -> dict:
         """
         Verifies an ID token issued by Google OAuth 2.0.
-        
-        This is a placeholder for the actual implementation that would use a library
-        like `google-auth` to verify the token against Google's public keys.
-        
-        Args:
-            token: The Google ID token string.
-            
-        Returns:
-            A dictionary with the user's information from the token payload.
-            
-        Raises:
-            InvalidTokenError: If the token is invalid.
+        Uses google-auth library.
         """
-        # TODO: Implement actual Google ID token verification.
-        # This would involve:
-        # 1. Importing the necessary library (e.g., from google.oauth2 import id_token).
-        # 2. Calling id_token.verify_oauth2_token(token, requests.Request(), GOOGLE_CLIENT_ID).
-        # 3. Handling exceptions and extracting user info (sub, email, name, etc.).
-        
-        logger.warning("Google ID Token verification is currently a placeholder and not secure.")
-        
-        # --- Placeholder Logic ---
-        # This is insecure and for development purposes only.
-        # It simulates a successful verification.
-        if not token or "test-token" not in token:
-             raise InvalidTokenError("Invalid or missing test token.")
-        
-        # Simulate a decoded payload from a real Google token
-        user_info = {
-            "sub": "google-user-id-12345", # Google's unique user ID
-            "email": "test.user@example.com",
-            "name": "Test User",
-            "given_name": "Test",
-            "family_name": "User",
-            "picture": "https://example.com/avatar.jpg",
-            "email_verified": True,
-            "locale": "en"
-        }
-        # --- End Placeholder Logic ---
-        
-        return user_info
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+
+        if not token:
+             raise InvalidTokenError("Google token is missing.")
+
+        try:
+            # Verify the ID token using Google's public keys.
+            idinfo = id_token.verify_oauth2_token(
+                token, 
+                google_requests.Request(), 
+                settings.GOOGLE_CLIENT_ID
+            )
+
+            # ID token is valid. Check the issuer.
+            if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+                raise InvalidTokenError('Wrong issuer.')
+
+            return idinfo
+        except ValueError as e:
+            logger.error(f"Invalid Google token: {e}")
+            raise InvalidTokenError(f"Invalid Google token: {e}")
+        except Exception as e:
+            logger.error(f"Error during Google token verification: {e}")
+            raise InvalidTokenError(f"Verification failed: {e}")
 
 # Instantiate the service for use in dependencies
 auth_service = AuthService()

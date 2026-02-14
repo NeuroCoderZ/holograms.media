@@ -26,12 +26,12 @@ jobs:
       # Шаг очистки для Free Tier (освобождаем ВСЕ 512MB квот аккаунта)
       - name: 🧹 Total Quota Cleanup (Free Tier Workaround)
         run: |
-          echo "Cleaning up ALL services to free up 512MB quota..."
-          koyeb service delete holograms-media-dev/holograms-media-dev --force || echo "Dev service not found."
-          koyeb service delete holograms-media-prod/holograms-media-prod --force || echo "Prod service not found."
-          # Даем Koyeb больше времени на освобождение ресурсов
-          echo "Waiting 45 seconds for quota release..."
-          sleep 45
+          echo "Cleaning up ALL apps and services to free up 512MB quota..."
+          koyeb app delete holograms-media-dev --force || echo "Dev app not found."
+          koyeb app delete holograms-media-prod --force || echo "Prod app not found."
+          # Даем Koyeb МАКСИМАЛЬНОЕ время на освобождение ресурсов (согласно правилам BasilaQ-127)
+          echo "Waiting 120 seconds for quota release (ensuring 512MB free)..."
+          sleep 120
 
       - name: 🚀 Deploy Backend to Koyeb
         id: koyeb-deploy

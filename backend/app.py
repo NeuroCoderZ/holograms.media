@@ -102,17 +102,11 @@ app.mount("/holocore", StaticFiles(directory=os.path.join(base_dir, "holocore"))
 # The frontend uses /js/wasm/ or /wasm/
 app.mount("/wasm", StaticFiles(directory=os.path.join(base_dir, "public", "wasm")), name="wasm_root")
 
+from backend.core.config import settings
+
 # --- CORS Middleware ---
 from fastapi.middleware.cors import CORSMiddleware
-origins = [
-    "http://localhost",
-    "http://localhost:3000",
-    "http://localhost:5173",  # Vite default
-    "http://localhost:8000",
-    "https://holograms.media",
-    "https://holograms-media.web.app",
-    "https://holograms-media-59398dd8.koyeb.app", # Production Backend
-]
+origins = settings.CORS_ORIGINS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

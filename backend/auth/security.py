@@ -14,15 +14,15 @@ import logging
 # from backend.db.user_repository import get_user_by_google_id, create_user_from_google_info
 # from backend.models.user import UserInDB
 
+from backend.core.config import settings
+
 logger = logging.getLogger(__name__)
 
-# --- Конфигурация JWT ---
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "a_very_secret_key_that_should_be_in_env")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-# --- Конфигурация Google OAuth ---
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "your_google_client_id.apps.googleusercontent.com")
+# --- Конфигурация взята из центрального файла backend/core/config.py ---
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.JWT_ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
