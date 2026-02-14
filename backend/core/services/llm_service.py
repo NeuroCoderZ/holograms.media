@@ -1,9 +1,5 @@
-import os
-import httpx
-import json
-import logging
+from backend.core.config import settings
 
-# Configure logging for this module
 logger = logging.getLogger(__name__)
 
 class LLMService:
@@ -13,7 +9,7 @@ class LLMService:
     """
     def __init__(self):
         # API key for the public agent (mistral-small-latest)
-        self.public_bot_api_key = os.getenv("MISTRAL_API_KEY")
+        self.public_bot_api_key = settings.MISTRAL_API_KEY
         if not self.public_bot_api_key:
             logger.error("Public agent API key is not set. LLMService will not function correctly for public agent.")
         
