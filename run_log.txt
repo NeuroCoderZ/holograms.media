@@ -1,0 +1,392 @@
+deploy_backend_production	Set up job	﻿2026-02-14T14:53:40.5389560Z Current runner version: '2.331.0'
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5413923Z ##[group]Runner Image Provisioner
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5414903Z Hosted Compute Agent
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5415503Z Version: 20260123.484
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5416068Z Commit: 6bd6555ca37d84114959e1c76d2c01448ff61c5d
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5416841Z Build Date: 2026-01-23T19:41:17Z
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5417533Z Worker ID: {d378395c-fbc9-4438-b219-e5d3ab0063ee}
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5418215Z Azure Region: westus
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5418737Z ##[endgroup]
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5420117Z ##[group]Operating System
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5420742Z Ubuntu
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5421280Z 24.04.3
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5421770Z LTS
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5422245Z ##[endgroup]
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5422962Z ##[group]Runner Image
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5423561Z Image: ubuntu-24.04
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5424125Z Version: 20260209.23.1
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5425120Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260209.23/images/ubuntu/Ubuntu2404-Readme.md
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5426768Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260209.23
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5427744Z ##[endgroup]
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5430506Z ##[group]GITHUB_TOKEN Permissions
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5432959Z Actions: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5433557Z ArtifactMetadata: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5434143Z Attestations: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5434756Z Checks: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5435224Z Contents: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5435787Z Deployments: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5436357Z Discussions: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5436849Z Issues: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5437357Z Metadata: read
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5437910Z Models: read
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5438376Z Packages: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5438922Z Pages: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5439580Z PullRequests: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5440137Z RepositoryProjects: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5440681Z SecurityEvents: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5441755Z Statuses: write
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5442751Z ##[endgroup]
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5444777Z Secret source: Actions
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5445598Z Prepare workflow directory
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5785371Z Prepare all required actions
+deploy_backend_production	Set up job	2026-02-14T14:53:40.5840758Z Getting action download info
+deploy_backend_production	Set up job	2026-02-14T14:53:41.0465779Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+deploy_backend_production	Set up job	2026-02-14T14:53:41.2348572Z Download action repository 'koyeb-community/install-koyeb-cli@v2' (SHA:969e180512fa08ddac5231e2f78c8fb025fd5db7)
+deploy_backend_production	Set up job	2026-02-14T14:53:41.6886720Z Download action repository 'koyeb/action-git-deploy@v1' (SHA:e40b6fc5ae0707b7fff3a940d4b357b5c7d9dbae)
+deploy_backend_production	Set up job	2026-02-14T14:53:42.3450670Z Complete job name: deploy_backend_production
+deploy_backend_production	📥 Checkout Repository	﻿2026-02-14T14:53:42.4276376Z ##[group]Run actions/checkout@v4
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4277708Z with:
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4278564Z   repository: NeuroCoderZ/holograms.media
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4279932Z   token: ***
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4280708Z   ssh-strict: true
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4281499Z   ssh-user: git
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4282473Z   persist-credentials: true
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4283416Z   clean: true
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4284247Z   sparse-checkout-cone-mode: true
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4285250Z   fetch-depth: 1
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4286060Z   fetch-tags: false
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4286870Z   show-progress: true
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4287718Z   lfs: false
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4288496Z   submodules: false
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4289335Z   set-safe-directory: true
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.4290500Z ##[endgroup]
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5397142Z Syncing repository: NeuroCoderZ/holograms.media
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5399828Z ##[group]Getting Git version info
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5401327Z Working directory is '/home/runner/work/holograms.media/holograms.media'
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5403609Z [command]/usr/bin/git version
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5415426Z git version 2.52.0
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5443154Z ##[endgroup]
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5457767Z Temporarily overriding HOME='/home/runner/work/_temp/c8ef4708-9164-4b07-a8bf-5ba34db3cd65' before making global git config changes
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5462031Z Adding repository directory to the temporary git global config as a safe directory
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5469962Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/holograms.media/holograms.media
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5540293Z Deleting the contents of '/home/runner/work/holograms.media/holograms.media'
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5544013Z ##[group]Initializing the repository
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5548327Z [command]/usr/bin/git init /home/runner/work/holograms.media/holograms.media
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5671735Z hint: Using 'master' as the name for the initial branch. This default branch name
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5674917Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5677998Z hint: to use in all of your new repositories, which will suppress this warning,
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5680236Z hint: call:
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5680998Z hint:
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5682575Z hint: 	git config --global init.defaultBranch <name>
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5683820Z hint:
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5684959Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5686737Z hint: 'development'. The just-created branch can be renamed via this command:
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5688697Z hint:
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5689502Z hint: 	git branch -m <name>
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5690418Z hint:
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5691620Z hint: Disable this message with "git config set advice.defaultBranchName false"
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5694043Z Initialized empty Git repository in /home/runner/work/holograms.media/holograms.media/.git/
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5697376Z [command]/usr/bin/git remote add origin https://github.com/NeuroCoderZ/holograms.media
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5738007Z ##[endgroup]
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5739425Z ##[group]Disabling automatic garbage collection
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5741544Z [command]/usr/bin/git config --local gc.auto 0
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5771346Z ##[endgroup]
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5773159Z ##[group]Setting up auth
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5780307Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.5811589Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.6283755Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.6321296Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.6581861Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.6623451Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.6859126Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.6896453Z ##[endgroup]
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.6898925Z ##[group]Fetching the repository
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:42.6908262Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +bf9c8ba759f9eae294f18372a23b07194833b16d:refs/remotes/origin/prod
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.2933457Z From https://github.com/NeuroCoderZ/holograms.media
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.2934466Z  * [new ref]         bf9c8ba759f9eae294f18372a23b07194833b16d -> origin/prod
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.2966327Z ##[endgroup]
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.2966819Z ##[group]Determining the checkout info
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.2969110Z ##[endgroup]
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.2974537Z [command]/usr/bin/git sparse-checkout disable
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.3017891Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.3043884Z ##[group]Checking out the ref
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.3049612Z [command]/usr/bin/git checkout --progress --force -B prod refs/remotes/origin/prod
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.3504737Z Switched to a new branch 'prod'
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.3507571Z branch 'prod' set up to track 'origin/prod'.
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.3514687Z ##[endgroup]
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.3551740Z [command]/usr/bin/git log -1 --format=%H
+deploy_backend_production	📥 Checkout Repository	2026-02-14T14:53:43.3576071Z bf9c8ba759f9eae294f18372a23b07194833b16d
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	﻿2026-02-14T14:53:43.3801256Z ##[group]Run koyeb-community/install-koyeb-cli@v2
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3801668Z with:
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3802118Z   api_token: ***
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3802721Z   github_token: ***
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3803018Z   api_url: https://app.koyeb.com
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3803317Z ##[endgroup]
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3909449Z ##[group]Run set -x
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3909809Z [36;1mset -x[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3910252Z [36;1mmkdir /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3911284Z [36;1mcurl -sL -H "Authorization: ***" $(curl -s -H "Authorization: ***" https://api.github.com/repos/koyeb/koyeb-cli/releases/latest \[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3911995Z [36;1m  | grep 'http.*koyeb-cli_.*_linux_amd64' \[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3912670Z [36;1m  | awk '{print $2}' \[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3913291Z [36;1m  | sed 's|[\"\,]*||g') | tar xvz -C /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3913993Z [36;1mchmod +x /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/koyeb[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3914712Z [36;1mecho /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/ >> $GITHUB_PATH[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3968036Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3968468Z env:
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3968876Z   GITHUB_TOKEN: ***
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.3969125Z ##[endgroup]
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.4060234Z + mkdir /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.4078948Z + tar xvz -C /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.4099400Z ++ curl -s -H 'Authorization: ***' https://api.github.com/repos/koyeb/koyeb-cli/releases/latest
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.4100419Z ++ grep 'http.*koyeb-cli_.*_linux_amd64'
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.4104204Z ++ awk '{print $2}'
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.4105948Z ++ sed 's|[\"\,]*||g'
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:43.7068375Z + curl -sL -H 'Authorization: ***' https://github.com/koyeb/koyeb-cli/releases/download/v5.9.0/koyeb-cli_5.9.0_linux_amd64.tar.gz
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.0085784Z koyeb
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2017647Z + chmod +x /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/koyeb
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2031047Z + echo /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2145765Z ##[group]Run set -x
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2146063Z [36;1mset -x[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2146312Z [36;1mecho "token: $KOYEB_API_KEY" > ~/.koyeb.yaml[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2146655Z [36;1mecho "url: $KOYEB_API_URL" >> ~/.koyeb.yaml[0m
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2198325Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2198699Z env:
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2199145Z   KOYEB_API_KEY: ***
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2199414Z   KOYEB_API_URL: https://app.koyeb.com
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2199667Z ##[endgroup]
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2271677Z + echo 'token: ***'
+deploy_backend_production	🛠️ Install and Configure Koyeb CLI	2026-02-14T14:53:44.2272179Z + echo 'url: https://app.koyeb.com'
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	﻿2026-02-14T14:53:44.2309947Z ##[group]Run echo "Current Koyeb Resources before cleanup:"
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2310390Z [36;1mecho "Current Koyeb Resources before cleanup:"[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2310733Z [36;1mkoyeb app list || echo "Failed to list apps"[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2311098Z [36;1mkoyeb service list || echo "Failed to list services"[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2311530Z [36;1mecho "Cleaning up ALL apps and services to free up 512MB quota..."[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2312058Z [36;1mkoyeb app delete holograms-media-prod --force || echo "Prod app not found."[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2312869Z [36;1mkoyeb app delete holograms-media-dev --force || echo "Dev app not found."[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2313420Z [36;1m# Даем Koyeb МАКСИМАЛЬНОЕ время на освобождение ресурсов (согласно правилам BasilaQ-127)[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2314097Z [36;1mecho "Waiting 120 seconds for quota release (ensuring 512MB free)..."[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2314480Z [36;1msleep 120[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2314725Z [36;1mecho "Koyeb Resources after cleanup:"[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2315080Z [36;1mkoyeb app list || echo "Failed to list apps"[0m
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2362528Z shell: /usr/bin/bash -e {0}
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2362803Z ##[endgroup]
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:44.2430364Z Current Koyeb Resources before cleanup:
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.1956549Z ID      	NAME                	STATUS   	DOMAINS                                                    	CREATED AT          
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.1958016Z f051595d	holograms-media     	HEALTHY  	["holograms-media-59398dd8.koyeb.app"]                     	05 Jun 25 18:35 UTC	
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.1959655Z 8b0bd00d	holograms-media-prod	UNHEALTHY	["holograms-media-prod-holograms-media-8bbb2771.koyeb.app"]	14 Feb 26 12:12 UTC	
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.1961231Z 0ba8ec3e	holograms-media-dev 	UNHEALTHY	["holograms-media-dev-holograms-media-7019efff.koyeb.app"] 	14 Feb 26 12:13 UTC	
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8486761Z ID      	APP            	NAME           	TYPE	STATUS 	CREATED AT          
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8487810Z e8bcdf00	holograms-media	holograms-media	WEB 	HEALTHY	05 Jun 25 18:35 UTC	
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8499770Z Cleaning up ALL apps and services to free up 512MB quota...
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8530943Z ❌ Invalid command: the parameters you provided are invalid
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8531465Z 
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8531772Z 🏥 How to solve the issue?
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8534106Z Run `koyeb --help` to see the list of available commands, or `koyeb <command> --help` to see the help of a specific command
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8535034Z 
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8535319Z 🕦 The original error was:
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8535763Z unknown flag: --force
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8536449Z Prod app not found.
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8564246Z ❌ Invalid command: the parameters you provided are invalid
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8569614Z 
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8569911Z 🏥 How to solve the issue?
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8570750Z Run `koyeb --help` to see the list of available commands, or `koyeb <command> --help` to see the help of a specific command
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8571529Z 
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8571790Z 🕦 The original error was:
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8572154Z unknown flag: --force
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8574445Z Dev app not found.
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:53:45.8575112Z Waiting 120 seconds for quota release (ensuring 512MB free)...
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:55:45.8597002Z Koyeb Resources after cleanup:
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:55:46.3774305Z ID      	NAME                	STATUS   	DOMAINS                                                    	CREATED AT          
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:55:46.3775728Z f051595d	holograms-media     	HEALTHY  	["holograms-media-59398dd8.koyeb.app"]                     	05 Jun 25 18:35 UTC	
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:55:46.3777564Z 8b0bd00d	holograms-media-prod	UNHEALTHY	["holograms-media-prod-holograms-media-8bbb2771.koyeb.app"]	14 Feb 26 12:12 UTC	
+deploy_backend_production	🧹 Total Quota Cleanup (Free Tier Workaround)	2026-02-14T14:55:46.3779418Z 0ba8ec3e	holograms-media-dev 	UNHEALTHY	["holograms-media-dev-holograms-media-7019efff.koyeb.app"] 	14 Feb 26 12:13 UTC	
+deploy_backend_production	🚀 Deploy Backend to Koyeb	﻿2026-02-14T14:55:46.3973930Z ##[group]Run koyeb/action-git-deploy@v1
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3974242Z with:
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3974417Z   git-branch: prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3974636Z   app-name: holograms-media-prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3974893Z   service-name: holograms-media-prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3975155Z   service-type: web
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3975357Z   service-ports: 8000:http
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3975574Z   service-routes: /:8000
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3975797Z   service-instance-type: free
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3976020Z   git-builder: docker
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3976226Z   git-docker-dockerfile: Dockerfile
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3977372Z   service-env: ENVIRONMENT=production
+deploy_backend_production	🚀 Deploy Backend to Koyeb	CORS_ORIGIN_1=https://holograms.media
+deploy_backend_production	🚀 Deploy Backend to Koyeb	CORS_ORIGIN_2=https://www.holograms.media
+deploy_backend_production	🚀 Deploy Backend to Koyeb	PYTHONUNBUFFERED=1
+deploy_backend_production	🚀 Deploy Backend to Koyeb	PYTHONDONTWRITEBYTECODE=1
+deploy_backend_production	🚀 Deploy Backend to Koyeb	PORT=8000
+deploy_backend_production	🚀 Deploy Backend to Koyeb	MISTRAL_API_KEY=***
+deploy_backend_production	🚀 Deploy Backend to Koyeb	
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3978394Z   build-timeout: 900
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3978597Z   healthy-timeout: 900
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3978814Z   privileged: false
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3979041Z   git-url: github.com/NeuroCoderZ/holograms.media
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3979349Z   service-regions: fra
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3979544Z   skip-cache: false
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3979735Z ##[endgroup]
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3998463Z ##[group]Run if [ -z "holograms-media-prod" ]; then
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3998832Z [36;1mif [ -z "holograms-media-prod" ]; then[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3999140Z [36;1m  # Remove the owner from the repository[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3999533Z [36;1m  APP_SLUG=$(echo 'NeuroCoderZ/holograms.media/prod' | cut -d '/' -f 2-)[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.3999902Z [36;1melse[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4000112Z [36;1m  APP_SLUG="holograms-media-prod"[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4000357Z [36;1mfi[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4000520Z [36;1m[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4000727Z [36;1m# sed: to replace non alphanum chars with -[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4001120Z [36;1m# tail: limit to the last 23 chars (maximum Koyeb application name)[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4001512Z [36;1m# sed: if the leading char is a dash, remove it[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4001983Z [36;1mecho "APP_SLUG=$(echo $APP_SLUG | sed 's/[^a-z0-9]/-/g' | tail -c 24 | sed 's/^-//g')" | tee $GITHUB_ENV[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4042940Z shell: /usr/bin/sh -e {0}
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4043179Z ##[endgroup]
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4120387Z APP_SLUG=holograms-media-prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4143849Z ##[group]Run # sed: to replace non alphanum chars with -
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4144224Z [36;1m# sed: to replace non alphanum chars with -[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4144689Z [36;1mecho "SERVICE_SLUG=$(echo holograms-media-prod | sed 's/[^a-z0-9]/-/g')" | tee $GITHUB_ENV[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4180548Z shell: /usr/bin/sh -e {0}
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4180779Z env:
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4180961Z   APP_SLUG: holograms-media-prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4181199Z ##[endgroup]
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4249819Z SERVICE_SLUG=holograms-media-prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4272802Z ##[group]Run /home/runner/work/_actions/koyeb/action-git-deploy/v1/scripts/app-create.py \
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4273411Z [36;1m/home/runner/work/_actions/koyeb/action-git-deploy/v1/scripts/app-create.py \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4273857Z [36;1m  --app-name "holograms-media-prod"[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4309881Z shell: /usr/bin/sh -e {0}
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4310123Z env:
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4310306Z   APP_SLUG: holograms-media-prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4310562Z   SERVICE_SLUG: holograms-media-prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:46.4310805Z ##[endgroup]
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1002969Z App holograms-media-prod already exists. Skip.
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1076918Z ##[group]Run if [ -n "" ]; then
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1077233Z [36;1mif [ -n "" ]; then[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1077624Z [36;1m    /home/runner/work/_actions/koyeb/action-git-deploy/v1/scripts/service-upsert.py \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1078086Z [36;1m      --app-name "holograms-media-prod" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1078372Z [36;1m      --service-type "web" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1078665Z [36;1m      --service-name "holograms-media-prod" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1078948Z [36;1m      --docker "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1079374Z [36;1m      --docker-entrypoint "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1079625Z [36;1m      --docker-command "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1079904Z [36;1m      --docker-private-registry-secret "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1080209Z [36;1m      --service-instance-type "free" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1080487Z [36;1m      --service-regions "fra" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1080760Z [36;1m      --service-env "ENVIRONMENT=production[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1081087Z [36;1mCORS_ORIGIN_1=https://holograms.media[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1081415Z [36;1mCORS_ORIGIN_2=https://www.holograms.media[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1081694Z [36;1mPYTHONUNBUFFERED=1[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1081925Z [36;1mPYTHONDONTWRITEBYTECODE=1[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1082159Z [36;1mPORT=8000[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1082774Z [36;1mMISTRAL_API_KEY=***[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1083156Z [36;1m" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1083360Z [36;1m      --service-ports "8000:http" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1083627Z [36;1m      --service-routes "/:8000" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1083888Z [36;1m      --service-checks "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1084132Z [36;1m      --privileged "false" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1084374Z [36;1m      --skip-cache "false"[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1084587Z [36;1melse[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1084777Z [36;1m  if [ "docker" = "buildpack" ];[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1085009Z [36;1m  then[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1085357Z [36;1m    /home/runner/work/_actions/koyeb/action-git-deploy/v1/scripts/service-upsert.py \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1085809Z [36;1m      --app-name "holograms-media-prod" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1086088Z [36;1m      --service-type "web" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1086361Z [36;1m      --service-name "holograms-media-prod" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1086706Z [36;1m      --git-url "github.com/NeuroCoderZ/holograms.media" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1087039Z [36;1m      --git-workdir "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1087277Z [36;1m      --git-branch "prod" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1087516Z [36;1m      --git-sha "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1087755Z [36;1m      --git-builder "buildpack" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1088017Z [36;1m      --git-build-command "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1088263Z [36;1m      --git-run-command "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1088529Z [36;1m      --service-instance-type "free" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1088807Z [36;1m      --service-regions "fra" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1089082Z [36;1m      --service-env "ENVIRONMENT=production[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1089389Z [36;1mCORS_ORIGIN_1=https://holograms.media[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1089695Z [36;1mCORS_ORIGIN_2=https://www.holograms.media[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1089973Z [36;1mPYTHONUNBUFFERED=1[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1090205Z [36;1mPYTHONDONTWRITEBYTECODE=1[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1090437Z [36;1mPORT=8000[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1090701Z [36;1mMISTRAL_API_KEY=***[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1090912Z [36;1m" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1091105Z [36;1m      --service-ports "8000:http" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1091377Z [36;1m      --service-routes "/:8000" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1091635Z [36;1m      --service-checks "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1091879Z [36;1m      --privileged "false" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1092123Z [36;1m      --skip-cache "false"[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1092458Z [36;1m  else[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1092809Z [36;1m    /home/runner/work/_actions/koyeb/action-git-deploy/v1/scripts/service-upsert.py \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1093263Z [36;1m      --app-name "holograms-media-prod" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1093539Z [36;1m      --service-type "web" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1093819Z [36;1m      --service-name "holograms-media-prod" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1094165Z [36;1m      --git-url "github.com/NeuroCoderZ/holograms.media" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1094482Z [36;1m      --git-workdir "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1094720Z [36;1m      --git-branch "prod" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1094956Z [36;1m      --git-sha "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1095184Z [36;1m      --git-builder "docker" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1095458Z [36;1m      --git-docker-command "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1095910Z [36;1m      --git-docker-dockerfile "Dockerfile" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1096208Z [36;1m      --git-docker-entrypoint "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1096471Z [36;1m      --git-docker-target "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1096734Z [36;1m      --service-instance-type "free" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1097009Z [36;1m      --service-regions "fra" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1097285Z [36;1m      --service-env "ENVIRONMENT=production[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1097583Z [36;1mCORS_ORIGIN_1=https://holograms.media[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1097894Z [36;1mCORS_ORIGIN_2=https://www.holograms.media[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1098176Z [36;1mPYTHONUNBUFFERED=1[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1098403Z [36;1mPYTHONDONTWRITEBYTECODE=1[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1098635Z [36;1mPORT=8000[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1099018Z [36;1mMISTRAL_API_KEY=***[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1099227Z [36;1m" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1099416Z [36;1m      --service-ports "8000:http" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1099708Z [36;1m      --service-routes "/:8000" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1099963Z [36;1m      --service-checks "" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1100201Z [36;1m      --privileged "false" \[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1100446Z [36;1m      --skip-cache "false"[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1100666Z [36;1m  fi[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1100822Z [36;1mfi[0m
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1141021Z shell: /usr/bin/sh -e {0}
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1141243Z env:
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1141431Z   APP_SLUG: holograms-media-prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1141692Z   SERVICE_SLUG: holograms-media-prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:47.1141928Z ##[endgroup]
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.7539961Z >> koyeb service get holograms-media-prod --app holograms-media-prod -o json
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.7543763Z >> koyeb service create holograms-media-prod --app holograms-media-prod -o json --git github.com/NeuroCoderZ/holograms.media --git-workdir '' --git-branch prod --git-sha '' --git-no-deploy-on-push --git-builder docker --git-docker-command '' --git-docker-args '' --git-docker-dockerfile Dockerfile --git-docker-target '' --git-docker-entrypoint '' --type web --instance-type free --regions fra --env 'ENVIRONMENT=production
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.7547488Z CORS_ORIGIN_1=https://holograms.media
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.7548134Z CORS_ORIGIN_2=https://www.holograms.media
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.7548625Z PYTHONUNBUFFERED=1
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.7548995Z PYTHONDONTWRITEBYTECODE=1
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.7549407Z PORT=8000
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.7549969Z MISTRAL_API_KEY=***
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.7550547Z ' --ports 8000:http --routes /:8000 --privileged=false --skip-cache=false
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8278931Z Traceback (most recent call last):
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8280030Z   File "/home/runner/work/_actions/koyeb/action-git-deploy/v1/scripts/service-upsert.py", line 384, in <module>
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8281054Z     main()
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8281683Z   File "/home/runner/work/_actions/koyeb/action-git-deploy/v1/scripts/service-upsert.py", line 377, in main
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8283137Z     koyeb_service_create(args.app_name, args.service_name, params)
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8284488Z   File "/home/runner/work/_actions/koyeb/action-git-deploy/v1/scripts/service-upsert.py", line 242, in koyeb_service_create
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8285426Z     raise RuntimeError(
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8285832Z RuntimeError: Error while creating the service holograms-media-prod
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8286729Z vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8288289Z ❌ Error while creating the service: the Koyeb API returned an error 400: You cannot use more than 512MB of memory across all your apps due to your quota.
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8288953Z 
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8289090Z 🏥 How to solve the issue?
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8289353Z Fix the request, and try again
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8289537Z 
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8289662Z 🕦 The original error was:
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8289896Z 400 Bad Request
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8290178Z ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+deploy_backend_production	🚀 Deploy Backend to Koyeb	2026-02-14T14:55:48.8423293Z ##[error]Process completed with exit code 1.
+deploy_backend_production	Post 📥 Checkout Repository	﻿2026-02-14T14:55:48.8517358Z Post job cleanup.
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9482462Z [command]/usr/bin/git version
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9519101Z git version 2.52.0
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9562468Z Temporarily overriding HOME='/home/runner/work/_temp/84676d5d-4c94-4e3d-b6d4-27e9cbb5ae35' before making global git config changes
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9563575Z Adding repository directory to the temporary git global config as a safe directory
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9576786Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/holograms.media/holograms.media
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9611110Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9644837Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9887925Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9909490Z http.https://github.com/.extraheader
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9921750Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:48.9953879Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:49.0187926Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy_backend_production	Post 📥 Checkout Repository	2026-02-14T14:55:49.0219899Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy_backend_production	Complete job	﻿2026-02-14T14:55:49.0566643Z Cleaning up orphan processes
