@@ -415,4 +415,8 @@ export class CochlearCylinder {
     }
 }
 
+/**
+ * Cochlear Cylinder 3.44 - High-fidelity toroidal audio visualization.
+ * Maps frequency (Z-depth) and pan (rotation) to a curved cylindrical geometry.
+ */
 export default CochlearCylinder;
