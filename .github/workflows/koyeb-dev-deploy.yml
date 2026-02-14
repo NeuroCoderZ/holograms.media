@@ -30,8 +30,10 @@ jobs:
           koyeb app list || echo "Failed to list apps"
           koyeb service list || echo "Failed to list services"
           echo "Cleaning up ALL apps and services to free up 512MB quota..."
-          koyeb app delete holograms-media-dev --force || echo "Dev app not found."
-          koyeb app delete holograms-media-prod --force || echo "Prod app not found."
+          # Удаляем все потенциальные приложения (app delete не поддерживает --force, используем || true)
+          koyeb app delete holograms-media-dev || echo "Dev app not found."
+          koyeb app delete holograms-media-prod || echo "Prod app not found."
+          koyeb app delete holograms-media || echo "Ghost app holograms-media not found."
           # Даем Koyeb МАКСИМАЛЬНОЕ время на освобождение ресурсов (согласно правилам BasilaQ-127)
           echo "Waiting 120 seconds for quota release (ensuring 512MB free)..."
           sleep 120
