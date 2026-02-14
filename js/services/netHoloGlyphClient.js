@@ -12,8 +12,9 @@ class NetHoloGlyphClient {
      */
     constructor(signalingServerUrl) {
         // Priority 1: Provided URL
-        // Priority 2: Production Koyeb URL (default)
-        this.signalingServerUrl = signalingServerUrl || 'wss://holograms-media-59398dd8.koyeb.app/ws/signaling';
+        // Priority 2: Current Host (dynamic)
+        const defaultSignalingUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/signaling`;
+        this.signalingServerUrl = signalingServerUrl || defaultSignalingUrl;
 
         this.rtcConfig = {
             iceServers: [
@@ -160,7 +161,7 @@ class NetHoloGlyphClient {
         this.fallbackActive = true;
         console.warn('[NetHoloGlyphClient] Starting long-poll fallback (poll interval ' + this.fallbackPollInterval + 'ms)');
 
-        const pollUrl = (this.signalingServerUrl || '').replace(/^wss?:/, (m)=> m === 'wss:' ? 'https:' : 'http:') + (this.roomId ? `/${this.roomId}/poll` : '/poll');
+        const pollUrl = (this.signalingServerUrl || '').replace(/^wss?:/, (m) => m === 'wss:' ? 'https:' : 'http:') + (this.roomId ? `/${this.roomId}/poll` : '/poll');
 
         const pollOnce = async () => {
             try {
