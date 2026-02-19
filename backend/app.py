@@ -26,6 +26,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Tria Cortex v2.6.5: Forcing CI/CD trigger with robust window check.
+
 # --- Imports of routers ---
 from backend.api.v1.endpoints.gesture_routes import router as public_gestures_router
 from backend.routers.public_holograms import router as public_holograms_router
