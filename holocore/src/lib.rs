@@ -1,5 +1,7 @@
 use std::f32::consts::PI;
-use std::mem;
+
+mod brain;
+mod bio_auth;
 
 // --- CONSTANTS ---
 const RING_BUFFER_SIZE: usize = 8192;
@@ -175,8 +177,12 @@ pub extern "C" fn cwtanalyzer_process(
     output_conf_ptr: *mut f32,
     output_conf_len: usize,
 ) {
-    if ptr.is_null() { return; }
+    if ptr.is_null() || input_left_ptr.is_null() || input_right_ptr.is_null() || output_db_ptr.is_null() || output_pan_ptr.is_null() || output_conf_ptr.is_null() { return; }
     let analyzer = unsafe { &mut *ptr };
+
+    // Safety: Ensure input lengths don't exceed reasonable limits
+    if input_left_len == 0 || input_left_len > RING_BUFFER_SIZE { return; }
+    if input_left_len != input_right_len { return; }
 
     let input_left = unsafe { std::slice::from_raw_parts(input_left_ptr, input_left_len) };
     let input_right = unsafe { std::slice::from_raw_parts(input_right_ptr, input_right_len) };
@@ -259,11 +265,13 @@ pub extern "C" fn cwtanalyzer_process(
     }
 
     // 3. Copy last state to output
-    for i in 0..output_db_len {
-        if i < 256 { output_db[i] = analyzer.last_db[i]; }
+    let db_limit = output_db_len.min(256);
+    for i in 0..db_limit {
+        output_db[i] = analyzer.last_db[i];
     }
-    for i in 0..output_pan_len {
-        if i < 128 { output_pan[i] = analyzer.last_pan[i]; }
+    let pan_limit = output_pan_len.min(128);
+    for i in 0..pan_limit {
+        output_pan[i] = analyzer.last_pan[i];
     }
 }
 

@@ -6,6 +6,7 @@
  */
 
 import eventBus from '../core/eventBus.js';
+import { ThreeDSpatializer } from './3d_spatializer.js';
 
 // Frequency table for 128 semitones (A0 to ~G#10, covering ~27Hz to ~13kHz)
 const SEMITONE_FREQUENCIES = new Float32Array(128);
@@ -22,8 +23,11 @@ export class GestureSynthesizer {
         this.rightOscillator = null;
         this.leftGain = null;
         this.rightGain = null;
-        this.leftPanner = null;
-        this.rightPanner = null;
+        this.leftPanner = null; // Will be PannerNode (3D)
+        this.rightPanner = null; // Will be PannerNode (3D)
+
+        this.spatializer = null; // Enharmonon Engine
+
         this.isInitialized = false;
         this.isActive = false;
 
@@ -43,6 +47,7 @@ export class GestureSynthesizer {
 
         try {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.spatializer = new ThreeDSpatializer(this.audioContext);
 
             // Master gain
             this.mainGain = this.audioContext.createGain();
@@ -57,8 +62,10 @@ export class GestureSynthesizer {
             this.leftGain = this.audioContext.createGain();
             this.leftGain.gain.value = 0;
 
-            this.leftPanner = this.audioContext.createStereoPanner();
-            this.leftPanner.pan.value = -0.5; // Slightly left
+            // ENHARMONON: Use 3D Panner
+            this.leftPanner = this.spatializer.createPanner();
+            // Initial position: Left (-0.5), Eye level (0), Front (-1)
+            this.spatializer.updatePosition(this.leftPanner, -0.5, 0, -1);
 
             this.leftOscillator.connect(this.leftGain);
             this.leftGain.connect(this.leftPanner);
@@ -72,8 +79,10 @@ export class GestureSynthesizer {
             this.rightGain = this.audioContext.createGain();
             this.rightGain.gain.value = 0;
 
-            this.rightPanner = this.audioContext.createStereoPanner();
-            this.rightPanner.pan.value = 0.5; // Slightly right
+            // ENHARMONON: Use 3D Panner
+            this.rightPanner = this.spatializer.createPanner();
+            // Initial position: Right (0.5), Eye level (0), Front (-1)
+            this.spatializer.updatePosition(this.rightPanner, 0.5, 0, -1);
 
             this.rightOscillator.connect(this.rightGain);
             this.rightGain.connect(this.rightPanner);
@@ -84,7 +93,7 @@ export class GestureSynthesizer {
             this.rightOscillator.start();
 
             this.isInitialized = true;
-            console.log('[GestureSynthesizer] Initialized');
+            console.log('[GestureSynthesizer] Initialized with Enharmonon (3D Audio)');
         } catch (error) {
             console.error('[GestureSynthesizer] Init error:', error);
         }
@@ -142,12 +151,22 @@ export class GestureSynthesizer {
             const freqIdx = Math.floor(handData.left.frequency);
             const freq = SEMITONE_FREQUENCIES[Math.min(freqIdx, 127)] || 440;
             const gain = handData.left.gain * 0.5; // Scale down
-            const pan = handData.left.pan;
+            const pan = handData.left.pan; // -1 to 1 (X)
             const bandwidth = handData.left.bandwidth || 5;
+
+            // 3D MAPPING (Enharmonon)
+            // X: Pan (-1..1) -> (-1.5m .. 1.5m)
+            const posX = pan * 1.5;
+            // Y: Frequency Index (0..127) -> (-1m .. +2m)
+            const posY = ((freqIdx / 127) * 3.0) - 1.0;
+            // Z: Gain (0..1) -> (-5m .. -0.2m) [Louder = Closer]
+            const posZ = -5.0 + (gain * 4.8);
 
             this.leftOscillator.frequency.setTargetAtTime(freq, now, this.smoothingTime);
             this.leftGain.gain.setTargetAtTime(gain, now, this.smoothingTime);
-            this.leftPanner.pan.setTargetAtTime(pan, now, this.smoothingTime);
+
+            // Update 3D Panner
+            this.spatializer.updatePosition(this.leftPanner, posX, posY, posZ, now);
 
             // Generate visual data with Gaussian spread
             this._fillVisualData(0, 127, freqIdx, gain, pan, bandwidth);
@@ -164,9 +183,16 @@ export class GestureSynthesizer {
             const pan = handData.right.pan;
             const bandwidth = handData.right.bandwidth || 5;
 
+            // 3D MAPPING (Enharmonon)
+            const posX = pan * 1.5;
+            const posY = ((freqIdx / 127) * 3.0) - 1.0;
+            const posZ = -5.0 + (gain * 4.8);
+
             this.rightOscillator.frequency.setTargetAtTime(freq, now, this.smoothingTime);
             this.rightGain.gain.setTargetAtTime(gain, now, this.smoothingTime);
-            this.rightPanner.pan.setTargetAtTime(pan, now, this.smoothingTime);
+
+            // Update 3D Panner
+            this.spatializer.updatePosition(this.rightPanner, posX, posY, posZ, now);
 
             // Generate visual data with Gaussian spread (offset by 128 for right channel)
             this._fillVisualData(128, 255, freqIdx + 128, gain, pan, bandwidth);

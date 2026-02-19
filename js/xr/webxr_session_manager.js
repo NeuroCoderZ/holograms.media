@@ -18,27 +18,33 @@ export class XRSessionManager { // Export the class
         // TODO: Add other XR related properties
     }
 
-    async startXRSession(sessionMode = 'immersive-vr') {
+    async startXRSession(sessionMode = 'immersive-ar') {
         if (!navigator.xr) {
             console.error("WebXR not supported.");
-            return;
+            return false;
         }
         if (this.xrSession) {
             console.warn("XR session already active.");
-            return;
+            return false;
         }
 
         try {
-            // const session = await navigator.xr.requestSession(sessionMode); // Commented out
-            console.log("[VR Disabled] XR session request was blocked as per current settings."); // Optional: Add a log
-            return false; // Prevent further execution related to session starting
+            // Updated for Phase 3: Explicitly request 'local-floor' for stable holograms
+            const sessionInit = { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'] };
+            const session = await navigator.xr.requestSession(sessionMode, sessionInit);
 
-            // The following code will not be reached:
-            // Associate the session with the Three.js renderer
-            /*
             if (this.renderer && this.renderer.xr) {
                 await this.renderer.xr.setSession(session);
                 this.xrSession = session;
+
+                // Handle Reference Space
+                // 'local-floor' is best for standing experiences (hologram around user)
+                // 'viewer' is fallback for basic 3DoF
+                const refSpaceType = sessionMode === 'immersive-vr' ? 'local-floor' : 'local-floor';
+
+                // We don't need to get reference space here explicitly for Three.js, 
+                // Three.js manages it, but we can log or configure if needed.
+                // The Session 'end' event handles cleanup.
 
                 session.addEventListener('end', () => {
                     this.renderer.xr.setSession(null);
@@ -53,10 +59,8 @@ export class XRSessionManager { // Export the class
                 await session.end();
                 return false;
             }
-            */
         } catch (e) {
-            // This catch block might still be relevant if other errors occur before the commented line
-            console.error("Failed to start XR session (or error during disabled check):", e);
+            console.error("Failed to start XR session:", e);
             return false;
         }
     }

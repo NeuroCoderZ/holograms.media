@@ -366,7 +366,8 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
       try {
         // Step 1: Toggle WebXR session (Android XR priority)
         if (appState.xrSessionManagerInstance) {
-          await appState.xrSessionManagerInstance.toggleXRSession(uiElements.buttons.xrButton);
+          // Force 'immersive-ar' for Mobile XR "Hologram Around User" experience
+          await appState.xrSessionManagerInstance.toggleXRSession(uiElements.buttons.xrButton, 'immersive-ar');
         }
 
         // Step 2: Toggle Cochlear Cylinder morph (inside XR session or as fallback)

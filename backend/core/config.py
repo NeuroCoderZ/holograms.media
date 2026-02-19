@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 class Settings(BaseModel):
     # Security & Auth
-    SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "change-me-in-production-very-secret")
+    SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     

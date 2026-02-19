@@ -22,8 +22,8 @@ Interaction using multiple channels or modalities (e.g., sound, visualization, g
 ### **3D Audiovisualizations (Holograms)**
 Three-dimensional visual representations generated from audio data and other inputs, creating a sense of presence.
 
-### **Neurocoding**
-A development methodology combining human intelligence and AI capabilities to create software.
+### **NeuroCoder / NeuroCoderZ**
+Original development methodology and philosophy created by Alexander (NeuroCoderZ). Neurocoding is a practice where AI agents are full co-authors of the project, not just autocompletion tools. A NeuroCoder formulates architectural thinking, sets tasks, verifies logic, and takes responsibility for final decisions—in continuous tandem with neural networks. The "Holographic Media" project is created using the neurocoding method. The handle "NeuroCoderZ" is the author's personal identifier, adopted by necessity in 2024.
 
 ## Infrastructure and Deployment
 
@@ -34,21 +34,12 @@ Cloudflare's service for hosting and deploying static sites and single-page appl
 Serverless platform for deploying applications, used for hosting the backend (compute services).
 
 ### **AstraDB (Cassandra-based)**
-Distributed NoSQL database used for project data storage, providing high availability and scalability.
-
-### **Backblaze B2**
-Cloud object storage used for storing project files and media content.
-
-### **Cloudflare Workers**
-Cloudflare's serverless compute platform for running code at the network edge to process requests and execute logic.
-
-### **Cloudflare R2**
-Cloudflare's object storage compatible with the S3 API, used for storing data without egress fees.
+The project's sole distributed database, used for storing global data and managing system state. Provides high availability and scalability.
 
 ## Canonical Core (holocore)
 
 ### **holocore**
-The central element of the project's audio pipeline, implemented in Rust and compiled to WebAssembly (WASM). Responsible for complex wavelet transform (CWT) calculations and phase difference for 3D sound panorama.
+The central element of the project's audio pipeline, implemented in Rust and compiled to WebAssembly (WASM). Responsible for complex wavelet transform (CWT) calculations and Diaphora for the Enharmonon (3D sound panorama).
 
 ### **Rust**
 The programming language used for `holocore` development due to its performance, safety, and low-level control.
@@ -65,15 +56,15 @@ Complex wavelet transform, a mathematical method for signal analysis, used in `h
 ### **Morlet Wavelet**
 A specific type of wavelet used in CWT for audio analysis, optimal for detecting local sound features.
 
-### **Phase Difference**
-The difference in phase between audio signals from different sources or "ears", used to create a 3D sound panorama effect.
+### **Diaphora**
+The difference in phase between audio signals from different sources or spatial positions. A key parameter used to build the Enharmonon—a three-dimensional sound panorama.
 
-### **3D Sound Panorama**
-Technology for creating a spatial sound effect, where sound sources are perceived as located in three-dimensional space around the listener.
+### **Enharmonon**
+Technology for creating a spatial sound effect based on Diaphora (phase difference), where sound sources are perceived as located in three-dimensional space around the listener. Named after the ancient Greek enharmonic mode—the finest instrument of spatial hearing.
 
 ## Specialized Technologies and Physics
 
-### **BasilaQ-127 / BasilaQ-128**
+### **BasilaQ-128**
 A mathematical visualization model where 1dB equals 1 grid cell. Z-scale physics is defined as `128 + dB`. Luminance intensity (Z-Dimming) is always proportional to the column length.
 
 ### **Cochlear Cylinder**
@@ -82,26 +73,40 @@ A 3D visualization based on toroidal geometry, mimicking the structure of the co
 ### **Q-Factor Dome**
 An interactive sound modulation element in XR mode. Allows changing the Q-factor of filters via pinch gestures.
 
-### **Z-Depth Visualization**
-A depth visualization technique for audio frequencies, providing 128-step quantized brightness. The higher the volume in a cell, the closer and brighter it is displayed.
+### **Bathymetry**
+A depth visualization technique for audio frequencies based on the BasilaQ-128 model, providing 128-step quantized brightness. The higher the amplitude in a cell, the "closer" and brighter it is displayed. Analogous to an ocean bathymetric map where depth is color-coded.
 
-### **Agentic Wallets**
-Integration of Base/x402 (Coinbase) protocols, allowing the Tria AI assistant to independently perform microtransactions and manage resources within HoloGraph.
+### **Hermaion**
+Integration of Base/x402 (Coinbase) protocols, allowing the Tria AI assistant to independently perform microtransactions and manage resources within HoloGraph. Named after the "gift of Hermes"—the god of mediators.
 
-### **Spectral Inpainter**
-A Tria component for real-time restoration of missing audio spectrum fragments using cached DFT tables.
+### **Palinodes**
+A Tria component for real-time restoration of missing audio spectrum fragments using cached DFT tables. The name comes from the Greek "singing again"—Palínodēs literally "fills in" the spectrum where data is missing.
+
+### **Mnesis / Pause Mnesis**
+Mnesis is the continuous background process of recording and forming Tria's memory based on user interactions. Active by default. The user can pause it via the "Pause Mnesis" UI element for privacy or resource saving.
+
+## Tria Cortex: Memory Architecture
+
+### **Enkephalon**
+The neural core of Tria, implemented in Rust and compiled to WebAssembly. Contains Hebbian-associative memory: a matrix for projecting gestures and a matrix for associating them with intentions. Runs on the client side.
+
+### **Lethe**
+The weight decay mechanism of the Enkephalon neural network: `W *= (1 − λ)`. Knowledge that is not used gradually loses strength—"drowns in Lethe." The cycle runs every 24 hours.
+
+### **Obolos**
+The unit of utility in the HoloCoin system (Proof-of-Utility). An active, used gesture equals a weighty Obolos. A neglected gesture is erased by Lethe.
+
+### **Soma / Pneuma / Sarx**
+The three layers of a Tria memory block:
+- **Soma** (Body)—the complete data block, a living structure.
+- **Pneuma** (Spirit)—the immutable core of the block (raw data, hash link). That which "was."
+- **Sarx** (Flesh)—the mutable envelope (interpretation, utility). That which "means."
 
 ### **HoloCoin**
-The internal cryptocurrency of the Holographic Media ecosystem, rewarding users for "Intellectual Mining" and content creation.
+The internal cryptocurrency of the ecosystem, used for rewarding "Intellectual Mining" based on Obolos.
 
-### **Proof of Creation**
-The consensus mechanism used in HoloGraph to validate the creation of original holographic content.
-
-### **GoloGlyph (Hologlyph)**
-An atomic unit of multimodal data (quanta) exchanged via the NetHoloGlyph protocol.
-
-### **Sound Pixel (Audio Pixel)**
-The basic visual building block of a hologram, representing a specific frequency and amplitude at a given moment.
+### **Phonon**
+The basic visual and computational quantum of a hologram, a quantum of sound energy. An analog of a pixel; BasilaQ-128 columns are built from phonons.
 
 ---
 *This glossary will be updated as the project evolves.*
