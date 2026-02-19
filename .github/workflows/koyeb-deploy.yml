@@ -10,7 +10,7 @@ name: 🚀 Deploy Backend to Koyeb (Production)
 
 on:
   push:
-    branches: [prod]
+    branches: [master, prod]
 
 jobs:
   deploy_backend_production:
@@ -46,7 +46,7 @@ jobs:
         id: koyeb-deploy
         uses: koyeb/action-git-deploy@v1
         with:
-          git-branch: prod
+          git-branch: ${{ github.ref_name }}
           app-name: holograms-media-prod
           service-name: holograms-media-prod
           service-type: web
