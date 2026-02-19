@@ -13,7 +13,9 @@ class NetHoloGlyphClient {
     constructor(signalingServerUrl) {
         // Priority 1: Provided URL
         // Priority 2: Current Host (dynamic)
-        const defaultSignalingUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/signaling`;
+        const defaultSignalingUrl = (typeof window !== 'undefined' && window.location)
+            ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/signaling`
+            : 'ws://localhost:8000/ws/signaling';
         this.signalingServerUrl = signalingServerUrl || defaultSignalingUrl;
 
         this.rtcConfig = {
