@@ -165,7 +165,8 @@ async def startup_event():
         logger.error(f"Critical error during Astra DB initialization: {e}")
         app.state.astra_db = None
 
-    logger.info("FastAPI application startup event processing completed.")
+    logger.info("Astra DB check: " + str(bool(app.state.astra_db)))
+    logger.info("FastAPI application startup event processing completed successfully.")
 
 @app.on_event("shutdown")
 async def shutdown_event():
