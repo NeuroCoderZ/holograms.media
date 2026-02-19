@@ -4,7 +4,7 @@ from typing import Dict
 import logging
 from backend.core.db.astra_connector import get_astra_db
 from backend.core.crud_operations import update_user_obolos, get_user_by_id
-from backend.routers.auth import get_current_active_user_ws # reusing auth logic
+from backend.auth.security import get_current_active_user_ws # reusing auth logic
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
