@@ -11,6 +11,7 @@ name: 🚀 Deploy Backend to Koyeb (Production)
 on:
   push:
     branches: [master, prod]
+  workflow_dispatch: {}
 
 jobs:
   deploy_backend_production:

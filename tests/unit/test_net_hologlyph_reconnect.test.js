@@ -1,7 +1,8 @@
 const assert = require('assert');
 // Ensure DOM-like globals exist for modules that reference `window` during import
 const _savedWindow = global.window;
-if (typeof global.window === 'undefined') global.window = {};
+if (typeof global.window === 'undefined') global.window = { location: { protocol: 'http:', host: 'localhost' } };
+else if (!global.window.location) global.window.location = { protocol: 'http:', host: 'localhost' };
 const { NetHoloGlyphClient } = require('../../js/services/netHoloGlyphClient.js');
 // restore saved global.window at the end of the test file (cleanup below)
 
@@ -29,14 +30,14 @@ class MockWS {
     MockWS.created.push(this);
     // call open then close to trigger reconnect path
     if (typeof this.onopen === 'function') {
-      try { this.onopen(); } catch (e) {}
+      try { this.onopen(); } catch (e) { }
     }
     // schedule close (will be immediate in tests because of sync timers)
     if (typeof this.onclose === 'function') {
       this.onclose({ code: 1006, reason: 'simulated abnormal closure' });
     }
   }
-  send() {}
+  send() { }
   close() {
     if (typeof this.onclose === 'function') this.onclose({ code: 1006, reason: 'client close' });
   }
