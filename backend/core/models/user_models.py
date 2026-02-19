@@ -21,6 +21,7 @@ class UserInDBBase(UserBase):
     email_verified: bool = False # This will be set from the auth provider's token
     last_login_at: Optional[datetime] = None
     user_settings: Optional[dict] = None # For JSONB
+    obolos_balance: float = 0.0 # Obolos Utility Score
     created_at: datetime
     updated_at: datetime
 
@@ -36,6 +37,7 @@ class UserPublic(UserBase):
     email_verified: bool = False # Adding email_verified to public model
     is_active: bool
     role: str # Explicitly including role from UserBase
+    obolos_balance: float = 0.0
     last_login_at: Optional[datetime] = None # Making last_login_at public
     created_at: datetime
     # updated_at: Optional[datetime] = None # Decide if this should be public, often it is.

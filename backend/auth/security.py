@@ -20,6 +20,11 @@ logger = logging.getLogger(__name__)
 
 # --- Конфигурация взята из центрального файла backend/core/config.py ---
 SECRET_KEY = settings.SECRET_KEY
+if not SECRET_KEY:
+    logger.critical("JWT_SECRET_KEY is not set! Authentication will not work.")
+    # In production, we should probably raise an error
+    if settings.ENVIRONMENT == "production":
+        raise ValueError("JWT_SECRET_KEY environment variable is required in production")
 ALGORITHM = settings.JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID

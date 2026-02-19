@@ -6,6 +6,7 @@ import eventBus from '../core/eventBus.js'; // Added for WebAudioEngine integrat
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js'; // New WebRTC client
 import perfMonitor from '../utils/perfMonitor.js';
 import { CochlearCylinder } from './CochlearCylinder.js';
+import { spectralInpainter } from '../audio/SpectralInpainter.js'; // Palinodes
 
 
 // Direct imports are used, so these lines are not necessary.
@@ -142,6 +143,11 @@ export class HologramRenderer {
     if (this.isXRMode) {
       // Возврат к плоскому режиму
       console.log('[HologramRenderer] Exiting XR Cochlear Cylinder mode');
+
+      // Reset Scale and Position for Flat Screen
+      this.hologramPivot.scale.set(1, 1, 1);
+      this.hologramPivot.position.set(0, 0, 0);
+
       if (this.cochlearCylinder) {
         await this.cochlearCylinder.morphToFlat(
           1500,
@@ -155,6 +161,14 @@ export class HologramRenderer {
     } else {
       // Вход в Cochlear Cylinder
       console.log('[HologramRenderer] Entering XR Cochlear Cylinder mode');
+
+      // Scale down for AR (1 unit = 1 meter). 
+      // Original: 128 units wide. Target: ~1.28 meters wide.
+      this.hologramPivot.scale.set(0.01, 0.01, 0.01);
+      // Position slightly forward and up relative to floor (local-floor origin)
+      // Y=1.5m (eye levelish?), Z=-0.5m (forward)
+      this.hologramPivot.position.set(0, 1.2, -0.5);
+
       this.cochlearCylinder = new CochlearCylinder(this.hologramPivot, semitones);
       await this.cochlearCylinder.morphToTorus(
         1500,
@@ -167,14 +181,19 @@ export class HologramRenderer {
   }
 
   handleCwtResult(data) {
-    if (!data) return;
-    this.latestCwtData = data;
-    this.latestPanData = data.angles || data.pans;
-    this.latestConfidenceData = data.confidence;
-    this.latestTimestamp = data.timestamp || performance.now();
-    this._lastWasmPerf = data.perf || 0;
+    // PALINODES: Spectral Inpainting
+    // Process the data (or null/undefined) through repairs
+    const processedData = spectralInpainter.process(data);
 
-    this.latestAudioData = data; // Keep for compatibility
+    if (!processedData) return; // Should return silence object even if repairing fails completely
+
+    this.latestCwtData = processedData;
+    this.latestPanData = processedData.angles || processedData.pans;
+    this.latestConfidenceData = processedData.confidence;
+    this.latestTimestamp = processedData.timestamp || performance.now();
+    this._lastWasmPerf = processedData.perf || 0;
+
+    this.latestAudioData = processedData; // Keep for compatibility
   }
 
   /**
@@ -723,20 +742,30 @@ export class HologramRenderer {
     columnGroup.userData.baseColor = baseColorObj;
 
     // Parallelepiped Geometry: Height (Y) = 2.0 * Width/Depth base
-    // We use a base Box(width, 1, 1).
-    // We set Scale Y to 2.0 to achieve the "elongated" look.
+    // Scale Y to 2.0 to achieve the "elongated" look.
     // Z scale will be modulated by audio.
-    const geometry = new THREE.BoxGeometry(width, 1, 1);
+    // [Phase 3] Deep Bathymetry: Increase Z-segments to 32 to support non-linear gradient.
+    const geometry = new THREE.BoxGeometry(width, 1, 1, 1, 1, 32);
 
-    // Z-DIMMING PHYSICS: Use Vertex Colors for a spatial gradient
-    // This creates a natural "depth fade" where the base is darker.
+    // Z-DIMMING PHYSICS: Deep Bathymetry
+    // Non-linear gradient: Darker at base, accelerating to light at tip.
     const colors = [];
     const tempColor = new THREE.Color(1, 1, 1);
     const posAttribute = geometry.attributes.position;
+
+    // Deep Bathymetry Parameters
+    const BATHYMETRY_POW = 3.0; // Cubic curve for "deep darkness"
+
     for (let i = 0; i < posAttribute.count; i++) {
       const z = posAttribute.getZ(i);
-      // z is in range [-0.5, 0.5] for a unit cube centered at origin
-      const factor = (z + 0.5); // 0.0 at back, 1.0 at front
+      // z is in range [-0.5, 0.5]
+      // factor: 0.0 (Base/Deep) -> 1.0 (Tip/Surface)
+      const normalizedZ = z + 0.5;
+
+      // Non-linear curve: 
+      // 0.5 -> 0.125 (much darker mid-point)
+      const factor = Math.pow(normalizedZ, BATHYMETRY_POW);
+
       tempColor.setRGB(factor, factor, factor);
       colors.push(tempColor.r, tempColor.g, tempColor.b);
     }

@@ -55,14 +55,67 @@ class GestureAgent:
 
     async def _predict_gesture(self, gesture_data: dict) -> str:
         """
-        Предсказывает класс жеста с помощью TensorFlow.js.
-
-        :param gesture_data: Данные жеста.
-        :return: Предсказанный класс жеста.
+        Легковесный эвристический классификатор жестов на основе MediaPipe landmarks.
+        Заменяет TensorFlow.js, который был удалён для стабильности деплоя.
+        
+        Поддерживаемые жесты: wave, pinch, point, open_palm, unknown.
         """
-        # TensorFlow is currently disabled for deployment stability.
-        # Returning 'unknown' to bypass prediction.
-        return 'unknown'
+        import math
+        
+        landmarks = gesture_data.get("landmarks", [])
+        if not landmarks or len(landmarks) < 21:
+            return "unknown"
+        
+        try:
+            # Безопасное извлечение координат ключевых точек
+            def get_point(idx):
+                if idx < len(landmarks) and isinstance(landmarks[idx], dict):
+                    return landmarks[idx].get("x", 0), landmarks[idx].get("y", 0)
+                return 0, 0
+            
+            def distance(p1, p2):
+                return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+            
+            wrist = get_point(0)
+            thumb_tip = get_point(4)
+            index_tip = get_point(8)
+            middle_tip = get_point(12)
+            ring_tip = get_point(16)
+            pinky_tip = get_point(20)
+            index_mcp = get_point(5)
+            
+            # Эвристика: wave = движение запястья по X (высокая скорость)
+            velocity_x = gesture_data.get("velocity_x", 0)
+            if abs(velocity_x) > 0.5:
+                return "wave"
+            
+            # Эвристика: pinch = расстояние thumb-index < порога
+            pinch_dist = distance(thumb_tip, index_tip)
+            if pinch_dist < 0.08:
+                return "pinch"
+            
+            # Эвристика: point = index выше MCP, остальные пальцы загнуты
+            index_extended = index_tip[1] < index_mcp[1]  # Y инвертирован в screen space
+            others_folded = all(
+                get_point(tip)[1] > get_point(mcp)[1] 
+                for tip, mcp in [(12, 9), (16, 13), (20, 17)]
+            )
+            if index_extended and others_folded:
+                return "point"
+            
+            # Эвристика: open_palm = все пальцы раскрыты
+            all_extended = all(
+                get_point(tip)[1] < get_point(mcp)[1] 
+                for tip, mcp in [(8, 5), (12, 9), (16, 13), (20, 17)]
+            )
+            if all_extended:
+                return "open_palm"
+            
+        except (IndexError, TypeError, KeyError) as e:
+            logger.warning(f"GestureAgent: Error in heuristic classification: {e}")
+        
+        return "unknown"
+
 
     async def _invoke_saved_gestures(self, predicted_gesture: str) -> None:
         """

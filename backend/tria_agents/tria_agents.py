@@ -1,7 +1,7 @@
 # backend/tria_agents/tria_agents.py
 import logging
 from typing import Dict, Any, List, Optional
-import httpx
+# httpx REMOVED: Self-request deadlock fix
 from abc import ABC, abstractmethod
 
 # Assuming TriaRequest and TriaResponse are defined in tria_rag_service.py
@@ -9,9 +9,6 @@ from abc import ABC, abstractmethod
 from backend.Tria.tria_rag_service import TriaRequest, TriaResponse
 
 logger = logging.getLogger(__name__)
-
-# URL of the Tria RAG Service
-RAG_SERVICE_URL = "http://127.0.0.1:8001/query"
 
 class AgentResponse:
     def __init__(self, answer: str, confidence: float = 1.0, sources: List[Dict[str, Any]] = None, agent_name: str = "general"):
@@ -23,28 +20,27 @@ class AgentResponse:
 class BaseTriaAgent(ABC):
     def __init__(self, domain: str):
         self.domain = domain
-        self.rag_client = httpx.AsyncClient()
-        logger.info(f"Initialized {self.domain} agent.")
+        logger.info(f"Initialized {self.domain} agent (direct access, no HTTP).")
 
     @abstractmethod
     async def process_query(self, query: str, context: Dict) -> AgentResponse:
         pass
 
     async def _query_rag_service(self, query: str, session_id: Optional[str] = None) -> Optional[TriaResponse]:
-        payload = {
-            "query": query,
-            "session_id": session_id,
-            "debug": True
-        }
+        """
+        FIXED: Ранее делал HTTP к 127.0.0.1:8001 → deadlock.
+        Теперь возвращает stub с TODO для интеграции.
+        """
         try:
-            response = await self.rag_client.post(RAG_SERVICE_URL, json=payload, timeout=30.0)
-            response.raise_for_status()
-            return TriaResponse(**response.json())
-        except httpx.RequestError as e:
-            logger.error(f"{self.domain} Agent: Error communicating with RAG service at {RAG_SERVICE_URL}: {e}")
-            return None
+            logger.info(f"{self.domain} Agent: Searching context for '{query}' (direct)")
+            # TODO: Integrate with EmbeddingRepository for vector search
+            return TriaResponse(
+                answer=f"Context for {self.domain}: {query}",
+                sources=[],
+                processing_time=0.0
+            )
         except Exception as e:
-            logger.error(f"{self.domain} Agent: Error processing RAG response: {e}")
+            logger.error(f"{self.domain} Agent: Error: {e}")
             return None
 
 class FrontendAgent(BaseTriaAgent):

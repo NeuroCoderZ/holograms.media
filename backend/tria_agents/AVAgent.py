@@ -18,12 +18,8 @@ AVAgent - объединенный AudioAgent и VideoAgent для обрабо�
 import asyncio
 import logging
 import math
-import qrcode
-from io import BytesIO
-from typing import Dict, Any, List
-# import tensorflow as tf  # REMOVED for memory efficiency
-# from tensorflow import keras # REMOVED for memory efficiency
-from PIL import Image
+# import qrcode # REMOVED: Offloading to frontend
+# from PIL import Image # REMOVED
 
 logger = logging.getLogger(__name__)
 
@@ -112,30 +108,38 @@ class AVAgent:
 
     def _generate_qr_code(self, volume_levels: List[float], pan_angles: List[float]) -> str:
         """
-        Генерирует QR-код из звуковых параметров для обратной связи.
+        Возвращает данные для генерации QR-кода на фронтенде.
+        Оптимизировано: сервер больше не генерирует изображения.
         """
-        data = f"Volume: {','.join(map(str, volume_levels))}; Pan: {','.join(map(str, pan_angles))}"
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data(data)
-        qr.make(fit=True)
-        img = qr.make_image(fill='black', back_color='white')
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
-        return buffer.getvalue().decode('latin1')
+        # Санитизация данных: ограничиваем точность и длину
+        vol_str = ",".join([f"{v:.2f}" for v in volume_levels[:64]])
+        pan_str = ",".join([f"{p:.2f}" for p in pan_angles[:64]])
+        data = f"V:{vol_str};P:{pan_str}"
+        return data # Фронтенд превратит это в QR через qrcode.js
 
     def _adapt_with_heuristic(self, input_data: List[float]) -> List[float]:
         """
-        Легкая эвристическая адаптация вместо нейросети.
-        Использует экспоненциальное сглаживание или простые трансформации.
+        Улучшенная эвристическая адаптация с защитой от насыщения.
+        Использует адаптивный коэффициент наклона.
         """
+        if not input_data:
+            return [0.0] * 10
+            
         if len(input_data) < 10:
             input_data += [0.0] * (10 - len(input_data))
         
-        # Пример простой нелинейной адаптации (сигмоида на коленке)
-        def sigmoid(x):
-            return 1 / (1 + math.exp(-x)) if abs(x) < 20 else (1.0 if x > 0 else 0.0)
+        # Динамический коэффициент: если среднее значение высокое, делаем сигмоиду положе
+        avg_val = sum(map(abs, input_data)) / len(input_data)
+        k = 0.5 if avg_val < 10 else (5.0 / avg_val)
+        
+        def sigmoid(x, k_factor):
+            # Защита от переполнения exp
+            val = x * k_factor
+            if val > 20: return 1.0
+            if val < -20: return 0.0
+            return 1 / (1 + math.exp(-val))
 
-        adapted = [sigmoid(x * 0.5) for x in input_data[:10]]
+        adapted = [sigmoid(x, k) for x in input_data[:10]]
         return adapted
 
     async def receive_command(self, command: Dict[str, Any]) -> Dict[str, Any]:

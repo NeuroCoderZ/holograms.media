@@ -77,7 +77,8 @@ async def upload_chunk(
     request: Request,
     user_id: str = Path(..., title="The ID of the user uploading the chunk"),
     file: UploadFile = File(...),
-    db: Any = Depends(get_db)
+    db: Any = Depends(get_db),
+    current_user: UserInDB = Depends(get_current_active_user)
 ):
     """
     Endpoint to upload a media chunk for a specific user to B2 and trigger metadata processing.

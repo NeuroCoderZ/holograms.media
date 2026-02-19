@@ -140,14 +140,35 @@ class CwtProcessor extends AudioWorkletProcessor {
         }
 
         try {
-            const mem = getFloat32Memory();
+            // 1. WASM Memory Safety: Check if memory grew (buffer detached)
+            // If the WASM instance resized its memory, the old 'cachedFloat32Memory' is now a detached buffer.
+            // Accessing it will throw a TypeError. We must refresh the view.
+            if (!cachedFloat32Memory || cachedFloat32Memory.buffer.byteLength === 0 || cachedFloat32Memory.length === 0) {
+                cachedFloat32Memory = new Float32Array(wasm.memory.buffer);
+            }
+            let mem = cachedFloat32Memory;
+
+            // Double check: if it's still detached, we can't proceed this frame
+            if (mem.buffer.byteLength === 0) {
+                return true;
+            }
+
             const len = Math.min(input[0].length, 128);
 
-            // ВОССТАНОВЛЕНО: Копирование входных данных в WASM память
+            // BOUNDS CHECKING: Check if pointers are valid within current memory
+            // ptrs.left is a byte offset. We access it as float32 index (divide by 4).
+            // We need 'len' floats.
+            if ((ptrs.left / 4) + len > mem.length || (ptrs.right / 4) + len > mem.length) {
+                // Memory too small? This shouldn't happen if initialized correctly, 
+                // but prevents crash if WASM state is corrupted
+                return true;
+            }
+
+            // COPY INPUTS (Safe)
             mem.set(input[0].subarray(0, len), ptrs.left / 4);
             mem.set((input[1] || input[0]).subarray(0, len), ptrs.right / 4);
 
-            // WASM обработка (11 аргументов)
+            // WASM PROCESSING
             wasm.cwtanalyzer_process(
                 analyzerPtr,
                 ptrs.left, len,
@@ -157,10 +178,20 @@ class CwtProcessor extends AudioWorkletProcessor {
                 ptrs.confidence, 128
             );
 
-            // Получение результатов
-            const levels = new Float32Array(mem.subarray(ptrs.levels / 4, ptrs.levels / 4 + 256));
-            const angles = new Float32Array(mem.subarray(ptrs.pans / 4, ptrs.pans / 4 + 128));
-            const confidence = new Float32Array(mem.subarray(ptrs.confidence / 4, ptrs.confidence / 4 + 128));
+            // READING OUTPUTS (Safe View Creation)
+            // We create new TypedArrays on the SAME buffer. 
+            // NOTE: If wasm grew during process(), mem might be detached again.
+            // But standard WASM C functions usually don't grow memory implicitly unless allocating.
+            // Our process function does NO allocation.
+
+            // Bounds check for outputs
+            if ((ptrs.levels / 4) + 256 > mem.length || (ptrs.pans / 4) + 128 > mem.length) {
+                return true;
+            }
+
+            const levels = new Float32Array(mem.buffer, ptrs.levels, 256).slice(); // .slice() to copy data out of shared memory
+            const angles = new Float32Array(mem.buffer, ptrs.pans, 128).slice();
+            const confidence = new Float32Array(mem.buffer, ptrs.confidence, 128).slice();
 
             // DEBUG: Логи вывода WASM (раз в секунду)
             // if (this._hb % 60 === 0) {

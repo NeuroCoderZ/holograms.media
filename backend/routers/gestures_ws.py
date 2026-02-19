@@ -12,7 +12,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from backend.tria_agents.CoordinationService import CoordinationService # <-- НОВЫЙ ИМПОРТ
 from backend.core.db.astra_connector import get_db
 # Для аутентификации предполагается, что UserInDB импортируется security
-from backend.auth.security import get_optional_current_active_user_ws
+from backend.auth.security import get_current_active_user_ws
 from typing import Any, Optional
 
 router = APIRouter(tags=["Real-time Gesture Intents"])
@@ -21,13 +21,14 @@ logger = logging.getLogger(__name__)
 @router.websocket("/ws/v1/gesture-intent")
 async def websocket_endpoint(
     websocket: WebSocket,
-    user: Optional[dict] = Depends(get_optional_current_active_user_ws),
+    # [SECURITY] Lockdown: Строгая аутентификация. Анонимные соединения отклоняются FastAPI до вызова функции.
+    user: dict = Depends(get_current_active_user_ws),
     db: Any = Depends(get_db),
 ):
-    # ✅ Accept connection FIRST to prevent handshake errors (1006)
+    # ✅ Accept connection ONLY AFTER auth check (FastAPI handles auth before this via Depends)
     await websocket.accept()
-    user_id = user.get("id") if user else "anonymous"
-    logger.info(f"WebSocket connection established for user {user_id}")
+    user_id = user.get("id")
+    logger.info(f"WebSocket connection established for authenticated user {user_id}")
 
     if db is None:
         logger.error(f"Database connection not available for user {user_id}")
@@ -61,17 +62,16 @@ async def websocket_endpoint(
 
 
             # ✅ Вызываем центральный обработчик
-            # Убедимся, что user.id передается, если user объект существует
-            user_identifier = user.id if user else "anonymous_websocket_user" # Fallback, если user почему-то None
+            user_identifier = user.get("id")
 
             result = await coordination_service.handle_gesture_intent(user_id=user_identifier, intent_data=data)
 
             await websocket.send_json(result)
 
     except WebSocketDisconnect:
-        logger.info(f"WebSocket connection closed for user {user.id if user else 'unknown'}")
+        logger.info(f"WebSocket connection closed for user {user_id}")
     except Exception as e:
-        logger.error(f"Error in WebSocket for user {user.id if user else 'unknown'}: {e}", exc_info=True)
+        logger.error(f"Error in WebSocket for user {user_id}: {e}", exc_info=True)
         # Попытаемся закрыть соединение с кодом ошибки, если оно еще открыто
         if websocket.client_state != WebSocketDisconnect: # Проверка состояния сокета
              await websocket.close(code=1011) # INTERNAL_SERVER_ERROR

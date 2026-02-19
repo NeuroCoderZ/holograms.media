@@ -12,8 +12,6 @@ logger = logging.getLogger(__name__)
 class CoordinationService:
     def __init__(self, db: Any):
         self.db = db
-    def __init__(self, db: Any):
-        self.db = db
         self.gesture_agent = GestureAgent(self.db)
         self.memory_agent = MemoryAgent(self.db)
         self.gesture_intent_service = GestureIntentService(self.db)
