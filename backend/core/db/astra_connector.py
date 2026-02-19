@@ -1,7 +1,7 @@
 # backend/core/db/astra_connector.py
 import os
 import logging
-from astrapy import AsyncDataAPIClient
+from astrapy import DataAPIClient
 from fastapi import Request, WebSocket
 
 from backend.core.config import settings
@@ -10,17 +10,17 @@ logger = logging.getLogger(__name__)
 
 def get_astra_client():
     """
-    Creates and returns an Astra DB AsyncDataAPIClient.
+    Creates and returns an Astra DB DataAPIClient.
     """
     token = settings.ASTRA_DB_APPLICATION_TOKEN
     if not token:
         logger.error("ASTRA_DB_APPLICATION_TOKEN (token) is missing in settings.")
         return None
-    return AsyncDataAPIClient(token)
+    return DataAPIClient(token)
 
-def get_astra_db(client: AsyncDataAPIClient = None):
+def get_astra_db(client: DataAPIClient = None):
     """
-    Returns the Astra DB instance using settings.
+    Returns an ASYNCHRONOUS Astra DB instance using settings.
     """
     if client is None:
         client = get_astra_client()
@@ -33,8 +33,8 @@ def get_astra_db(client: AsyncDataAPIClient = None):
         return None
 
     try:
-        # Use the endpoint directly if it includes https://, otherwise it might be just an ID
-        db = client.get_database(api_endpoint, keyspace=settings.ASTRA_DB_KEYSPACE)
+        # For astrapy 1.0+, use get_async_database to get an AsyncDatabase instance
+        db = client.get_async_database(api_endpoint, keyspace=settings.ASTRA_DB_KEYSPACE)
         return db
     except Exception as e:
         logger.error(f"Failed to connect to Astra DB at {api_endpoint}: {e}")
