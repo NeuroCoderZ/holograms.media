@@ -119,10 +119,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-async def startup_event():
-    logger.info("--- Application Startup ---")
+from contextlib import asynccontextmanager
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- Startup Logic ---
+    logger.info("--- Application Startup (Lifespan) ---")
     
     # --- Initialize Backblaze B2 ---
     b2_endpoint_url = settings.B2_ENDPOINT_URL
@@ -131,8 +133,6 @@ async def startup_event():
     
     if all([b2_endpoint_url, b2_access_key_id, b2_secret_access_key]):
         try:
-            # Region is usually part of the endpoint for B2 S3 API, but Boto3 requires one.
-            # 'us-west-002' is a common default, but we can make it more flexible if needed.
             s3_config = Config(region_name='us-west-002', signature_version='s3v4')
             s3_client = boto3.client(
                 's3',
@@ -142,12 +142,12 @@ async def startup_event():
                 config=s3_config
             )
             app.state.s3_client = s3_client
-            logger.info("Backblaze B2 S3 client initialized successfully using settings.")
+            logger.info("Backblaze B2 S3 client initialized successfully.")
         except Exception as e:
             logger.error(f"Error initializing Backblaze B2 S3 client: {e}")
             app.state.s3_client = None
     else:
-        logger.warning("One or more Backblaze B2 settings are missing. S3 client not initialized.")
+        logger.warning("Backblaze B2 settings missing. S3 client not initialized.")
         app.state.s3_client = None
 
     # --- Initialize Astra DB ---
@@ -158,24 +158,25 @@ async def startup_event():
             if app.state.astra_db:
                 logger.info("Astra DB initialized successfully in app.state.")
             else:
-                logger.warning("Astra DB initialization FAILED. Database dependent routes will fail.")
+                logger.warning("Astra DB initialization FAILED.")
         else:
-            logger.warning("Astra DataAPIClient FAILED to initialize. Database dependent routes will fail.")
+            logger.warning("Astra DataAPIClient FAILED to initialize.")
     except Exception as e:
         logger.error(f"Critical error during Astra DB initialization: {e}")
         app.state.astra_db = None
 
     logger.info("Astra DB check: " + str(bool(app.state.astra_db)))
-    logger.info("FastAPI application startup event processing completed successfully.")
+    logger.info("FastAPI application startup completed successfully.")
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("--- Application Shutdown ---")
-    # Astra DataAPIClient doesn't require explicit closing like a pool in many cases,
-    # but we can clear the state if needed.
+    yield
+    
+    # --- Shutdown Logic ---
+    logger.info("--- Application Shutdown (Lifespan) ---")
     if hasattr(app.state, 'astra_db'):
         del app.state.astra_db
         logger.info("Astra DB connection state cleared.")
+
+app.router.lifespan_context = lifespan
     
 
 

@@ -1,7 +1,7 @@
 # backend/core/db/astra_connector.py
 import os
 import logging
-from astrapy import DataAPIClient
+from astrapy import AsyncDataAPIClient
 from fastapi import Request, WebSocket
 
 from backend.core.config import settings
@@ -10,15 +10,15 @@ logger = logging.getLogger(__name__)
 
 def get_astra_client():
     """
-    Creates and returns an Astra DB DataAPIClient.
+    Creates and returns an Astra DB AsyncDataAPIClient.
     """
     token = settings.ASTRA_DB_APPLICATION_TOKEN
     if not token:
         logger.error("ASTRA_DB_APPLICATION_TOKEN (token) is missing in settings.")
         return None
-    return DataAPIClient(token)
+    return AsyncDataAPIClient(token)
 
-def get_astra_db(client: DataAPIClient = None):
+def get_astra_db(client: AsyncDataAPIClient = None):
     """
     Returns the Astra DB instance using settings.
     """

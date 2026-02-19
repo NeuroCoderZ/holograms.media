@@ -35,14 +35,6 @@ class MockWS {
     MockWS.created = MockWS.created || [];
     this.url = url;
     MockWS.created.push(this);
-    // call open then close to trigger reconnect path
-    if (typeof this.onopen === 'function') {
-      try { this.onopen(); } catch (e) { }
-    }
-    // schedule close (will be immediate in tests because of sync timers)
-    if (typeof this.onclose === 'function') {
-      this.onclose({ code: 1006, reason: 'simulated abnormal closure' });
-    }
   }
   send() { }
   close() {
@@ -57,16 +49,26 @@ function testReconnectAndFallback() {
   const client = new NetHoloGlyphClient('wss://test/signaling');
   client.baseReconnectDelay = 1;
   client.maxReconnectAttempts = 3;
-  client.backoffFactor = 1.5; // keep small
-  client.jitterFactor = 0; // deterministic
+  client.backoffFactor = 1.0;
+  client.jitterFactor = 0;
 
   withSyncTimers(() => {
     client.connect('roomX', 'userY');
+
+    // Manually trigger events on the created socket
+    const socket = MockWS.created[0];
+    if (socket.onopen) socket.onopen();
+
+    // Trigger multiple closes to exercise reconnect
+    for (let i = 0; i < 4; i++) {
+      if (socket.onclose) socket.onclose({ code: 1006, reason: 'abnormal' });
+    }
   });
 
   // Because mock WebSocket immediately closes with 1006 and timers are sync,
   // the client should have attempted reconnects (at least one) and finally started fallback.
-  assert(client.reconnectAttempts > 0, 'expected reconnectAttempts to have increased');
+  console.log(`[Test] reconnectAttempts: ${client.reconnectAttempts}, fallbackActive: ${client.fallbackActive}`);
+  assert(client.reconnectAttempts > 0, `expected reconnectAttempts > 0, got ${client.reconnectAttempts}`);
   assert(client.fallbackActive === true, 'expected fallbackActive to be true after max attempts');
 
   // cleanup
