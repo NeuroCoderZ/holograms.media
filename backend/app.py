@@ -20,10 +20,68 @@ from backend.core.db.astra_connector import get_astra_db, get_astra_client
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- Startup Logic ---
+    logger.info("--- Application Startup (Lifespan) ---")
+    
+    # --- Initialize Backblaze B2 ---
+    b2_endpoint_url = settings.B2_ENDPOINT_URL
+    b2_access_key_id = settings.B2_ACCESS_KEY_ID
+    b2_secret_access_key = settings.B2_SECRET_ACCESS_KEY
+    
+    if all([b2_endpoint_url, b2_access_key_id, b2_secret_access_key]):
+        try:
+            s3_config = Config(region_name='us-west-002', signature_version='s3v4')
+            s3_client = boto3.client(
+                's3',
+                endpoint_url=b2_endpoint_url,
+                aws_access_key_id=b2_access_key_id,
+                aws_secret_access_key=b2_secret_access_key,
+                config=s3_config
+            )
+            app.state.s3_client = s3_client
+            logger.info("Backblaze B2 S3 client initialized successfully.")
+        except Exception as e:
+            logger.error(f"Error initializing Backblaze B2 S3 client: {e}")
+            app.state.s3_client = None
+    else:
+        logger.warning("Backblaze B2 settings missing. S3 client not initialized.")
+        app.state.s3_client = None
+
+    # --- Initialize Astra DB ---
+    try:
+        astra_client = get_astra_client()
+        if astra_client:
+            app.state.astra_db = get_astra_db(astra_client)
+            if app.state.astra_db:
+                logger.info("Astra DB initialized successfully in app.state.")
+            else:
+                logger.warning("Astra DB initialization FAILED.")
+        else:
+            logger.warning("Astra DataAPIClient FAILED to initialize.")
+    except Exception as e:
+        logger.error(f"Critical error during Astra DB initialization: {e}")
+        app.state.astra_db = None
+
+    logger.info("Astra DB check: " + str(bool(app.state.astra_db)))
+    logger.info("FastAPI application startup completed successfully.")
+
+    yield
+    
+    # --- Shutdown Logic ---
+    logger.info("--- Application Shutdown (Lifespan) ---")
+    if hasattr(app.state, 'astra_db'):
+        del app.state.astra_db
+        logger.info("Astra DB connection state cleared.")
+
 app = FastAPI(
     title="Holograms Media Backend API",
     description="Backend services for the Holograms Media Project, providing API endpoints for user interactions, media processing, and AI assistant Tria.",
     version="1.0.0",
+    lifespan=lifespan
 )
 
 # Tria Cortex v2.6.5: Forcing CI/CD trigger with robust window check.
@@ -119,64 +177,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from contextlib import asynccontextmanager
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # --- Startup Logic ---
-    logger.info("--- Application Startup (Lifespan) ---")
-    
-    # --- Initialize Backblaze B2 ---
-    b2_endpoint_url = settings.B2_ENDPOINT_URL
-    b2_access_key_id = settings.B2_ACCESS_KEY_ID
-    b2_secret_access_key = settings.B2_SECRET_ACCESS_KEY
-    
-    if all([b2_endpoint_url, b2_access_key_id, b2_secret_access_key]):
-        try:
-            s3_config = Config(region_name='us-west-002', signature_version='s3v4')
-            s3_client = boto3.client(
-                's3',
-                endpoint_url=b2_endpoint_url,
-                aws_access_key_id=b2_access_key_id,
-                aws_secret_access_key=b2_secret_access_key,
-                config=s3_config
-            )
-            app.state.s3_client = s3_client
-            logger.info("Backblaze B2 S3 client initialized successfully.")
-        except Exception as e:
-            logger.error(f"Error initializing Backblaze B2 S3 client: {e}")
-            app.state.s3_client = None
-    else:
-        logger.warning("Backblaze B2 settings missing. S3 client not initialized.")
-        app.state.s3_client = None
-
-    # --- Initialize Astra DB ---
-    try:
-        astra_client = get_astra_client()
-        if astra_client:
-            app.state.astra_db = get_astra_db(astra_client)
-            if app.state.astra_db:
-                logger.info("Astra DB initialized successfully in app.state.")
-            else:
-                logger.warning("Astra DB initialization FAILED.")
-        else:
-            logger.warning("Astra DataAPIClient FAILED to initialize.")
-    except Exception as e:
-        logger.error(f"Critical error during Astra DB initialization: {e}")
-        app.state.astra_db = None
-
-    logger.info("Astra DB check: " + str(bool(app.state.astra_db)))
-    logger.info("FastAPI application startup completed successfully.")
-
-    yield
-    
-    # --- Shutdown Logic ---
-    logger.info("--- Application Shutdown (Lifespan) ---")
-    if hasattr(app.state, 'astra_db'):
-        del app.state.astra_db
-        logger.info("Astra DB connection state cleared.")
-
-app.router.lifespan_context = lifespan
+# Lifespan handled in FastAPI constructor
     
 
 
