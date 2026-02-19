@@ -1,0 +1,51 @@
+# ⚠️ AGENT_ADVISORY: СТАБИЛЬНЫЙ ВОРКФЛОУ
+# Этот файл проверен и работает. Любые изменения в путях сборки (dist) 
+# или параметрах Cloudflare Pages Action должны быть обоснованы.
+# ПРАВИЛА ДЛЯ АГЕНТОВ:
+# 1. Всегда проверяйте наличие шага 'Prepare Dist' (копирование _headers/_redirects).
+# 2. Не меняйте версию Node.js без согласования (сейчас 20).
+
+name: 🚀 Deploy Frontend to Cloudflare Pages
+
+on:
+  push:
+    branches: [master, main, prod]
+  workflow_dispatch:
+
+jobs:
+  deploy_frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    name: Build & Deploy to Cloudflare Pages
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Frontend
+        run: npm run build
+
+      - name: 🔧 Copy _headers and _redirects to dist
+        run: |
+          cp public/_headers dist/_headers
+          cp public/_redirects dist/_redirects
+          ls -R dist
+
+      - name: ☁️ Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: holograms-media
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
