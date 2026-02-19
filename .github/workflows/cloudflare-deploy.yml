@@ -10,7 +10,7 @@ name: 🚀 Deploy Frontend to Cloudflare Pages
 on:
   push:
     branches: [master, main, prod]
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 jobs:
   deploy_frontend:
