@@ -587,18 +587,17 @@ export class HologramRenderer {
    * @param {number} color - Hexadecimal color of the grid lines.
    * @returns {THREE.LineSegments} A Three.js LineSegments object representing the grid.
    */
-  _createGridVisualization(gridWidth, gridHeight, gridDepth, cellSize, color) {
+  _createGridVisualization(gridWidth, gridHeight, gridDepth, cellSize, color, cellSizeY = cellSize) {
     const points = [];
     const divisionsX = Math.floor(Math.abs(gridWidth) / cellSize);
-    const divisionsY = Math.floor(gridHeight / cellSize);
+    const divisionsY = Math.floor(gridHeight / cellSizeY);   // 256 / 2.0 = 128 lines ✓
     const divisionsZ = Math.floor(gridDepth / cellSize);
     const signX = Math.sign(gridWidth) || 1;
 
-    // Generate points for lines along X, Y, and Z axes to form a 3D grid.
-    // Lines along X-axis (varying Y, Z positions)
+    // Lines along X-axis (varying Y, Z positions) — step Y by cellSizeY
     for (let i = 0; i <= divisionsY; i++) {
       for (let j = 0; j <= divisionsZ; j++) {
-        points.push(0, i * cellSize, j * cellSize, gridWidth, i * cellSize, j * cellSize);
+        points.push(0, i * cellSizeY, j * cellSize, gridWidth, i * cellSizeY, j * cellSize);
       }
     }
     // Lines along Y-axis (varying X, Z positions)
@@ -612,7 +611,7 @@ export class HologramRenderer {
     for (let i = 0; i <= divisionsX; i++) {
       const x = i * cellSize * signX;
       for (let j = 0; j <= divisionsY; j++) {
-        points.push(x, j * cellSize, 0, x, j * cellSize, gridDepth);
+        points.push(x, j * cellSizeY, 0, x, j * cellSizeY, gridDepth);
       }
     }
 
@@ -620,7 +619,7 @@ export class HologramRenderer {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineBasicMaterial({
       color,
-      opacity: 0.0025, // 99.75% transparent as requested
+      opacity: 0.0025,
       transparent: true,
       depthWrite: false,
       depthTest: false
@@ -644,16 +643,23 @@ export class HologramRenderer {
 
     const sphereRadiusForAxis = cellSize * 0.5;
 
-    // Double the height to match the column vertical scale (scale.y = 2.0)
-    const visualHeight = height * 2;
+    // Total visual height: 128 rows * CELL_HEIGHT (2.0) = 256 units
+    const visualHeight = height * CELL_HEIGHT;
 
-    const gridVis = this._createGridVisualization(isLeftGrid ? -width : width, visualHeight, depth, cellSize, color);
+    // Pass CELL_HEIGHT as the 6th argument (cellSizeY)
+    const gridVis = this._createGridVisualization(
+      isLeftGrid ? -width : width,
+      visualHeight,
+      depth,
+      cellSize,
+      color,
+      CELL_HEIGHT
+    );
     group.add(gridVis);
 
     const axis = this._createAxis(width, visualHeight, depth, sphereRadiusForAxis, isLeftGrid);
     group.add(axis);
 
-    // Add a marker sphere at the center of this grid group (now shared spine)
     const gridCenterSphere = this._createCentralMarkerSphere(CELL_SIZE * 0.3, 0x00ff00);
     group.add(gridCenterSphere);
 
