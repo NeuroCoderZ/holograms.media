@@ -8,6 +8,9 @@ import perfMonitor from '../utils/perfMonitor.js';
 import { CochlearCylinder } from './CochlearCylinder.js';
 import { spectralInpainter } from '../audio/SpectralInpainter.js'; // Palinodes
 
+const CELL_HEIGHT = 2.0;       // Y dimension per row (Total visual height = 128 * 2 = 256)
+const NUM_SEMITONES = 128;      // 128 frequency bands on Y axis
+
 // ─── SHADERS: BasilaQ-128 Z-Physics ──────────────────────────────────────────
 const vertexShader = /* glsl */`
     varying vec3 vWorldPosition;
@@ -20,19 +23,19 @@ const vertexShader = /* glsl */`
 
 const fragmentShader = /* glsl */`
     uniform vec3  uBaseColor;
-    uniform float uSelection; // Selection highlight boost
+    uniform float uSelection; 
+    uniform float uOpacity;
     varying vec3 vWorldPosition;
     void main() {
         // I(Pz) = (Pz + 1.0) / 128.0 — linear brightness frozen in world Z
-        // Every pixel's brightness is strictly determined by its world-space depth.
         float spatialFactor = clamp((vWorldPosition.z + 1.0) / 128.0, 0.0, 1.0);
         
         vec3 color = uBaseColor * spatialFactor;
         
-        // Selection highlight Pulse (0.0 during normal play)
+        // Selection highlight
         color += uSelection * 0.3;
         
-        gl_FragColor = vec4(color, 1.0);
+        gl_FragColor = vec4(color, uOpacity);
     }
 `;
 
@@ -769,21 +772,18 @@ export class HologramRenderer {
     columnGroup.userData.initialX = initialX;
     columnGroup.userData.baseColor = baseColorObj;
 
-    // Parallelepiped Geometry: Height (Y) = 2.0 * Width/Depth base
-    // Scale Y to 2.0 to achieve the "elongated" look.
-    // Z scale will be modulated by audio.
-    // [Phase 3] Deep Bathymetry: Increase Z-segments to 32 to support non-linear gradient.
-    const geometry = new THREE.BoxGeometry(width, 1, 1, 1, 1, 32);
+    const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, CELL_SIZE, 1, 1, 32);
 
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uBaseColor: { value: baseColorObj },
-        uSelection: { value: 0.0 }
+        uSelection: { value: 0.0 },
+        uOpacity: { value: 0.85 }
       },
       vertexShader,
       fragmentShader,
-      transparent: false,
-      depthWrite: true,
+      transparent: true,
+      depthWrite: false,
       side: THREE.DoubleSide
     });
 
@@ -791,41 +791,31 @@ export class HologramRenderer {
     columnMesh.castShadow = true;
     columnMesh.receiveShadow = true;
 
-    // Apply strict geometric rules: Scale Y = 2.0
-    // Initial Z Scale = 0.1 for minimal bulkiness by default
-    columnMesh.scale.set(1, 2.0, 0.1);
+    // Y position (pitch row): distributed with CELL_HEIGHT (2.0) spacing
+    const y = (semitoneIndex - NUM_SEMITONES / 2 + 0.5) * CELL_HEIGHT;
 
-    // Set mesh center relative to the group origin (spine)
-    // FIX: Center Y at (index * CELL_SIZE) + (CELL_SIZE / 2)
-    // CELL_SIZE is 2. So index=0 -> 1. Box height 2 centered at 1 spans 0 to 2.
-    // This perfectly aligns with grid lines at 0, 2, 4...
-    columnMesh.position.set(width / 2, (semitoneIndex * 2) + 1, 0);
+    // Initial scale: Z will be modulated by audio
+    columnMesh.scale.set(1, 1, 0.1);
 
-    // HIGHLIGHT EDGES Logic:
-    // Add a wireframe helper that scales with the mesh to highlight the "changing edges".
-    // Using LineSegments with EdgesGeometry avoids diagonal wireframes.
+    // Center mesh so base stays at world Z=0
+    columnMesh.position.set(width / 2, y, 0);
+
+    // HIGHLIGHT EDGES
     const edgesGeometry = new THREE.EdgesGeometry(geometry);
-    // Determine edge color: Slightly brighter version of base or white? 
-    // User wants "contrast grid lines". Let's use a dynamic color matching the column but brighter.
-    // Or just white/grey overlay.
-    // Let's use a blended color to keep it aesthetic but visible.
-    const edgeColor = new THREE.Color(semitone.color).offsetHSL(0, 0, 0.4); // Much Brighter for contrast
+    const edgeColor = new THREE.Color(semitone.color).offsetHSL(0, 0, 0.4);
     const edgesMaterial = new THREE.LineBasicMaterial({
       color: edgeColor,
       transparent: true,
-      opacity: 0.9, // Increased opacity
+      opacity: 0.9,
       linewidth: 1,
       depthTest: true,
-      // Fix Z-fighting: Draw lines "on top" of the mesh faces
       polygonOffset: true,
       polygonOffsetFactor: -2.0,
       polygonOffsetUnits: -2.0
     });
     const edgesMesh = new THREE.LineSegments(edgesGeometry, edgesMaterial);
 
-    // EdgesMesh needs to be added to columnMesh to inherit scale/position
     columnMesh.add(edgesMesh);
-
     columnGroup.add(columnMesh);
 
     return columnGroup;
@@ -1049,66 +1039,53 @@ export class HologramRenderer {
       } else {
         // ACTIVE MODE: Smart Physics (Phase 4)
         const dbL = dbLevels ? dbLevels[index] : -128;
-        const dbR = dbLevels ? dbLevels[index + numSemitones] : -128;
+        const dbR = dbLevels ? dbLevels[index + 128] : -128; // Standard stereo mapping (128 Offset)
         const conf = this.latestConfidenceData ? this.latestConfidenceData[index] : 1.0;
 
         const ampDataL = getNormAmp(dbL);
         const ampDataR = getNormAmp(dbR);
 
         const qAmpL = ampDataL.length;
-        const qBrightL = ampDataL.brightness;
-
         const qAmpR = ampDataR.length;
-        const qBrightR = ampDataR.brightness;
 
-        // 1. MAGNETIC PAN: Adaptive smoothing based on confidence
+        // 1. MAGNETIC PAN
         const targetPan = Math.max(-1, Math.min(1, panAngles ? panAngles[index] : 0));
-        const lerpFactor = 0.4 + (conf * 0.5); // High confidence = faster tracking
+        const lerpFactor = 0.4 + (conf * 0.5);
         this._panStates[index] += (targetPan - this._panStates[index]) * lerpFactor;
-
         const pan = this._panStates[index];
 
-        // 2. X Shift (Discrete Freedom)
+        // 2. X Shift
         const availableSpace = GRID_WIDTH - semitoneConfig.width;
         const discreteOffset = Math.round(pan * availableSpace);
 
         columnPair.left.position.x = columnPair.left.userData.initialX + (pan < 0 ? discreteOffset : 0);
         columnPair.right.position.x = columnPair.right.userData.initialX + (pan > 0 ? discreteOffset : 0);
 
-        // 3. Z Scaling and Phase 13.0 Z-Dimming (Physical)
-        // qAmpL is already 0..128 units. qBrightL is 0..1.
-
+        // 3. Z Scaling & Shader Physics
         if (leftMesh) {
-          // 1. HEIGHT Scaling (Physical Cells)
           const hL = Math.max(0.1, qAmpL);
           leftMesh.scale.z = hL;
           leftMesh.position.z = hL / 2;
 
-          // 2. GRADATIONAL Z-SHADING (Shader Physics v3)
-          // Intensity is now handled entirely in the fragment shader
-          // based on world position. No per-vertex manual updates needed!
+          if (leftMesh.material.uniforms) {
+            leftMesh.material.uniforms.uOpacity.value = 0.2 + (qAmpL / 128.0) * 0.75;
+          }
 
-          // 3. Selection Highlight
           const isSelectedL = this.selectionState.left.active && this.selectionState.left.indices.includes(index);
           const leftEdgesMesh = leftMesh.children[0];
 
           if (isSelectedL) {
             const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
-            if (leftMesh.material.uniforms) {
-              leftMesh.material.uniforms.uSelection.value = blink;
-            }
+            if (leftMesh.material.uniforms) leftMesh.material.uniforms.uSelection.value = blink;
             if (leftEdgesMesh && leftEdgesMesh.material) {
               leftEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
               leftEdgesMesh.material.color.setHSL(0, 0, 1.0);
             }
           } else {
-            if (leftMesh.material.uniforms) {
-              leftMesh.material.uniforms.uSelection.value = 0.0;
-            }
+            if (leftMesh.material.uniforms) leftMesh.material.uniforms.uSelection.value = 0.0;
             if (leftEdgesMesh && leftEdgesMesh.material) {
               leftEdgesMesh.material.opacity = qAmpL > 0.1 ? 0.9 : 0.0;
               if (semitoneConfig) {
-                // Edges should match spatial brightness at the tip
                 const edgeBright = (hL + 1.0) / 128.0;
                 const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(edgeBright);
                 leftEdgesMesh.material.color.copy(edgeC);
@@ -1122,25 +1099,22 @@ export class HologramRenderer {
           rightMesh.scale.z = hR;
           rightMesh.position.z = hR / 2;
 
-          // 2. Shader Logic handles gradient automatically!
+          if (rightMesh.material.uniforms) {
+            rightMesh.material.uniforms.uOpacity.value = 0.2 + (qAmpR / 128.0) * 0.75;
+          }
 
-          // 3. Selection Highlight
           const isSelectedR = this.selectionState.right.active && this.selectionState.right.indices.includes(index);
           const rightEdgesMesh = rightMesh.children[0];
 
           if (isSelectedR) {
             const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
-            if (rightMesh.material.uniforms) {
-              rightMesh.material.uniforms.uSelection.value = blink;
-            }
+            if (rightMesh.material.uniforms) rightMesh.material.uniforms.uSelection.value = blink;
             if (rightEdgesMesh && rightEdgesMesh.material) {
               rightEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
               rightEdgesMesh.material.color.setHSL(0, 0, 1.0);
             }
           } else {
-            if (rightMesh.material.uniforms) {
-              rightMesh.material.uniforms.uSelection.value = 0.0;
-            }
+            if (rightMesh.material.uniforms) rightMesh.material.uniforms.uSelection.value = 0.0;
             if (rightEdgesMesh && rightEdgesMesh.material) {
               rightEdgesMesh.material.opacity = qAmpR > 0.1 ? 0.9 : 0.0;
               if (semitoneConfig) {
