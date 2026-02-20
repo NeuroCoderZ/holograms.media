@@ -44,7 +44,15 @@ class MockWS {
 
 function testReconnectAndFallback() {
   const RealWS = global.WebSocket;
+  const RealFetch = global.fetch;
+
   global.WebSocket = MockWS;
+  global.fetch = async () => ({
+    ok: true,
+    json: async () => []
+  });
+
+  MockWS.created = [];
 
   const client = new NetHoloGlyphClient('wss://test/signaling');
   client.baseReconnectDelay = 1;
@@ -73,6 +81,7 @@ function testReconnectAndFallback() {
 
   // cleanup
   global.WebSocket = RealWS;
+  global.fetch = RealFetch;
 }
 
 (async () => {

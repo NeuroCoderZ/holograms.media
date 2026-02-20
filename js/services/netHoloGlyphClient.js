@@ -76,7 +76,11 @@ class NetHoloGlyphClient {
         }
 
         // Construct full URL with roomId and JWT token
-        const jwtToken = localStorage.getItem('jwtToken');
+        let jwtToken = null;
+        if (typeof localStorage !== 'undefined') {
+            jwtToken = localStorage.getItem('jwtToken');
+        }
+
         let url = this.signalingServerUrl;
         if (!url.endsWith('/')) url += '/';
         url += roomId;
