@@ -34,6 +34,10 @@ jobs:
 
       - name: 🏗️ Build Frontend
         run: npm run build
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.PROD_GOOGLE_CLIENT_ID }}
+          VITE_API_URL: https://holograms-media-prod-holograms-media-6a8cc743.koyeb.app
+          VITE_ENVIRONMENT: production
 
       - name: 🔧 Copy _headers and _redirects to dist
         run: |
