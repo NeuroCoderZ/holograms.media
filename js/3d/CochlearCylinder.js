@@ -31,6 +31,37 @@ const NUM_SEMITONES = 128;
 const TWO_PI = Math.PI * 2;
 const ARC_SEGMENTS = 4;             // Кол-во сегментов дуги на Z-грань
 
+// ─── SHADERS: BasilaQ-128 Toroidal Z-Physics ───────────────────────────────
+const vertexShader = /* glsl */`
+    varying vec3 vWorldPosition;
+    void main() {
+        vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPos.xyz;
+        gl_Position = projectionMatrix * viewMatrix * worldPos;
+    }
+`;
+
+const fragmentShader = /* glsl */`
+    uniform vec3  uBaseColor;
+    uniform float uSelection;
+    uniform float uRFar;
+    uniform float uRNear;
+    varying vec3 vWorldPosition;
+    void main() {
+        // Radial depth: distance from outer wall (R_FAR)
+        float r = length(vWorldPosition.xz);
+        
+        // Map 2.4m span (R_FAR - R_NEAR) to 128 cells
+        float depthInCells = (uRFar - r) * (128.0 / (uRFar - uRNear));
+        
+        float spatialFactor = clamp((depthInCells + 1.0) / 128.0, 0.0, 1.0);
+        vec3 color = uBaseColor * spatialFactor;
+        
+        color += uSelection * 0.3;
+        gl_FragColor = vec4(color, 1.0);
+    }
+`;
+
 // Perceptual mapping constants (aligned with hologramRenderer.js)
 const NOISE_FLOOR_DB = -70.0;
 const CEILING_DB = 0.0;
@@ -144,17 +175,20 @@ export class CochlearCylinder {
             const geo = createCurvedBoxGeometry(arcAngle, centerAngle, columnHeight, st.width);
 
             // SPATIAL BRIGHTNESS PHYSICS:
-            // Using MeshBasicMaterial for pure vertex color control
-            const material = new THREE.MeshBasicMaterial({
-                color: 0xffffff,
-                vertexColors: true,
+            // Using ShaderMaterial for radial depth control
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    uBaseColor: { value: color.clone() },
+                    uSelection: { value: 0.0 },
+                    uRFar: { value: R_FAR },
+                    uRNear: { value: R_NEAR }
+                },
+                vertexShader,
+                fragmentShader,
                 transparent: false,
-                opacity: 1.0
+                depthWrite: true,
+                side: THREE.DoubleSide
             });
-
-            // Add color attribute to geometry for per-frame updates
-            const vCount = geo.attributes.position.count;
-            geo.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(vCount * 3), 3));
 
             const mesh = new THREE.Mesh(geo, material);
             mesh.position.y = yPos;
@@ -348,51 +382,12 @@ export class CochlearCylinder {
                 brightness = Math.pow(perceptualNorm, BRIGHTNESS_GAMMA);
             }
 
-            // R_FAR is the "base" wall (outside), R_NEAR is the "tip" direction (inside)
-            // But since columns grow from R_FAR towards R_NEAR...
-            // wait, scaleZ=1 means it reaches R_NEAR.
-            // Vertices at R_FAR are at t=1 in createCurvedBoxGeometry.
-            // Vertices at R_NEAR are at t=0.
-            // So Distance_from_base = (1 - t) * L_cells.
+            // 2. GRADATIONAL Z-SHADING (Shader Logic v3)
+            // No manual vertex updates needed! The fragment shader does it.
 
-            const vCols = col.mesh.geometry.attributes.color.array;
-            const vPos = col.mesh.geometry.attributes.position.array;
-            const baseC = col.baseColor;
-
-            // Re-calculate hL (length in cells, max 128)
-            const hL = scaleZ * 128.0;
-
-            const halfD = (R_FAR - R_NEAR) / 2;
-            const span = (R_FAR - R_NEAR);
-
-            for (let j = 0; j < vPos.length / 3; j++) {
-                // We need the original local Z before deformation to find 't'
-                // In createCurvedBoxGeometry, radius = R_NEAR + t * span
-                // Actually, BoxGeometry vertices are still in local space before scaling?
-                // No, we already deformed the geometry. 
-                // We can't easily find 't' from newX, newZ without Math.atan2/sqrt.
-                // BUT, the 'pos' attribute WE deformed can store the 't' in a custom attribute!
-                // To keep it simple for now, I'll just use world sqrt if necessary, 
-                // or better: I'll add 'ca' (cell_alpha) attribute during build.
-            }
-            // Optimization: I see CochlearCylinder is complex. I'll just use a simpler 
-            // version for now: since it's a ring, let's assume zLocal comes from radius.
-            const meshPos = col.mesh.position;
-            for (let j = 0; j < vPos.length / 3; j++) {
-                const vx = vPos[j * 3];
-                const vz = vPos[j * 3 + 2];
-                const r = Math.sqrt(vx * vx + vz * vz);
-                // r is in [R_NEAR, R_FAR]
-                // distance from outer wall (R_FAR) = R_FAR - r
-                // normalized distance = (R_FAR - r) / (R_FAR - R_NEAR)
-                const distNorm = Math.max(0, (R_FAR - r) / span);
-                const bright = (distNorm * hL + 1) / 128.0;
-
-                vCols[j * 3] = baseC.r * bright;
-                vCols[j * 3 + 1] = baseC.g * bright;
-                vCols[j * 3 + 2] = baseC.b * bright;
-            }
-            col.mesh.geometry.attributes.color.needsUpdate = true;
+            // 3. Selection Highlight
+            const isSelectedL = false; // Selection not implemented for Torus yet?
+            // (Keeping it for future parity if selectionState is updated for Torus)
 
             // Edge visibility
             if (col.edges && col.edges.material) {

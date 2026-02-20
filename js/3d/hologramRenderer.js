@@ -8,6 +8,34 @@ import perfMonitor from '../utils/perfMonitor.js';
 import { CochlearCylinder } from './CochlearCylinder.js';
 import { spectralInpainter } from '../audio/SpectralInpainter.js'; // Palinodes
 
+// ─── SHADERS: BasilaQ-128 Z-Physics ──────────────────────────────────────────
+const vertexShader = /* glsl */`
+    varying vec3 vWorldPosition;
+    void main() {
+        vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPos.xyz;
+        gl_Position = projectionMatrix * viewMatrix * worldPos;
+    }
+`;
+
+const fragmentShader = /* glsl */`
+    uniform vec3  uBaseColor;
+    uniform float uSelection; // Selection highlight boost
+    varying vec3 vWorldPosition;
+    void main() {
+        // I(Pz) = (Pz + 1.0) / 128.0 — linear brightness frozen in world Z
+        // Every pixel's brightness is strictly determined by its world-space depth.
+        float spatialFactor = clamp((vWorldPosition.z + 1.0) / 128.0, 0.0, 1.0);
+        
+        vec3 color = uBaseColor * spatialFactor;
+        
+        // Selection highlight Pulse (0.0 during normal play)
+        color += uSelection * 0.3;
+        
+        gl_FragColor = vec4(color, 1.0);
+    }
+`;
+
 
 // Direct imports are used, so these lines are not necessary.
 
@@ -747,17 +775,16 @@ export class HologramRenderer {
     // [Phase 3] Deep Bathymetry: Increase Z-segments to 32 to support non-linear gradient.
     const geometry = new THREE.BoxGeometry(width, 1, 1, 1, 1, 32);
 
-    // SPATIAL BRIGHTNESS PHYSICS:
-    // We will use MeshBasicMaterial to ensure the vertex-based gradient works accurately
-    // without interference from standard lighting or uniform emissive glow.
-    // The gradient will be updated in real-time in updateVisuals to maintain the spatial rule:
-    // Brightness = (Distance_from_base + 1) / 128
-
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xffffff, // Acts as a multiplier for vertex colors
-      vertexColors: true,
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        uBaseColor: { value: baseColorObj },
+        uSelection: { value: 0.0 }
+      },
+      vertexShader,
+      fragmentShader,
       transparent: false,
-      opacity: 1.0
+      depthWrite: true,
+      side: THREE.DoubleSide
     });
 
     const columnMesh = new THREE.Mesh(geometry, material);
@@ -1053,26 +1080,13 @@ export class HologramRenderer {
 
         if (leftMesh) {
           // 1. HEIGHT Scaling (Physical Cells)
-          const hL = Math.max(0.1, qAmpL); // Floor at 0.1 for visibility
+          const hL = Math.max(0.1, qAmpL);
           leftMesh.scale.z = hL;
           leftMesh.position.z = hL / 2;
 
-          // 2. GRADATIONAL Z-SHADING (Physics v2)
-          // Rule: Brightness at any point is (Distance_from_base + 1) / 128
-          // Base = 1/128. Tip = (hL + 1) / 128.
-          const vCols = leftMesh.geometry.attributes.color.array;
-          const vPos = leftMesh.geometry.attributes.position.array;
-          const baseC = columnPair.left.userData.baseColor;
-
-          for (let i = 0; i < vPos.length / 3; i++) {
-            const zLocal = vPos[i * 3 + 2] + 0.5; // 0..1 from base to tip
-            const bright = (zLocal * hL + 1) / 128.0;
-
-            vCols[i * 3] = baseC.r * bright;
-            vCols[i * 3 + 1] = baseC.g * bright;
-            vCols[i * 3 + 2] = baseC.b * bright;
-          }
-          leftMesh.geometry.attributes.color.needsUpdate = true;
+          // 2. GRADATIONAL Z-SHADING (Shader Physics v3)
+          // Intensity is now handled entirely in the fragment shader
+          // based on world position. No per-vertex manual updates needed!
 
           // 3. Selection Highlight
           const isSelectedL = this.selectionState.left.active && this.selectionState.left.indices.includes(index);
@@ -1080,15 +1094,23 @@ export class HologramRenderer {
 
           if (isSelectedL) {
             const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
+            if (leftMesh.material.uniforms) {
+              leftMesh.material.uniforms.uSelection.value = blink;
+            }
             if (leftEdgesMesh && leftEdgesMesh.material) {
               leftEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
               leftEdgesMesh.material.color.setHSL(0, 0, 1.0);
             }
           } else {
+            if (leftMesh.material.uniforms) {
+              leftMesh.material.uniforms.uSelection.value = 0.0;
+            }
             if (leftEdgesMesh && leftEdgesMesh.material) {
               leftEdgesMesh.material.opacity = qAmpL > 0.1 ? 0.9 : 0.0;
               if (semitoneConfig) {
-                const edgeC = new THREE.Color(semitoneConfig.color).offsetHSL(0, 0, 0.2);
+                // Edges should match spatial brightness at the tip
+                const edgeBright = (hL + 1.0) / 128.0;
+                const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(edgeBright);
                 leftEdgesMesh.material.color.copy(edgeC);
               }
             }
@@ -1100,35 +1122,30 @@ export class HologramRenderer {
           rightMesh.scale.z = hR;
           rightMesh.position.z = hR / 2;
 
-          const vColsR = rightMesh.geometry.attributes.color.array;
-          const vPosR = rightMesh.geometry.attributes.position.array;
-          const baseCR = columnPair.right.userData.baseColor;
+          // 2. Shader Logic handles gradient automatically!
 
-          for (let i = 0; i < vPosR.length / 3; i++) {
-            const zLocal = vPosR[i * 3 + 2] + 0.5;
-            const bright = (zLocal * hR + 1) / 128.0;
-
-            vColsR[i * 3] = baseCR.r * bright;
-            vColsR[i * 3 + 1] = baseCR.g * bright;
-            vColsR[i * 3 + 2] = baseCR.b * bright;
-          }
-          rightMesh.geometry.attributes.color.needsUpdate = true;
-
-          // Selection Highlight
+          // 3. Selection Highlight
           const isSelectedR = this.selectionState.right.active && this.selectionState.right.indices.includes(index);
           const rightEdgesMesh = rightMesh.children[0];
 
           if (isSelectedR) {
             const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
+            if (rightMesh.material.uniforms) {
+              rightMesh.material.uniforms.uSelection.value = blink;
+            }
             if (rightEdgesMesh && rightEdgesMesh.material) {
               rightEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
               rightEdgesMesh.material.color.setHSL(0, 0, 1.0);
             }
           } else {
+            if (rightMesh.material.uniforms) {
+              rightMesh.material.uniforms.uSelection.value = 0.0;
+            }
             if (rightEdgesMesh && rightEdgesMesh.material) {
               rightEdgesMesh.material.opacity = qAmpR > 0.1 ? 0.9 : 0.0;
               if (semitoneConfig) {
-                const edgeC = new THREE.Color(semitoneConfig.color).offsetHSL(0, 0, 0.2);
+                const edgeBright = (hR + 1.0) / 128.0;
+                const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(edgeBright);
                 rightEdgesMesh.material.color.copy(edgeC);
               }
             }
