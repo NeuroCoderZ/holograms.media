@@ -31,6 +31,9 @@ const NUM_SEMITONES = 128;
 const TWO_PI = Math.PI * 2;
 const ARC_SEGMENTS = 4;             // Кол-во сегментов дуги на Z-грань
 
+// ─── Grid constants ───────────────────────────────────────────────────────────
+const NUM_ROWS = 128;
+
 // ─── SHADERS: BasilaQ-128 Toroidal Z-Physics ───────────────────────────────
 const vertexShader = /* glsl */`
     varying vec3 vWorldPosition;
@@ -46,6 +49,7 @@ const fragmentShader = /* glsl */`
     uniform float uSelection;
     uniform float uRFar;
     uniform float uRNear;
+    uniform float uOpacity;
     varying vec3 vWorldPosition;
     void main() {
         // Radial depth: distance from outer wall (R_FAR)
@@ -58,7 +62,7 @@ const fragmentShader = /* glsl */`
         vec3 color = uBaseColor * spatialFactor;
         
         color += uSelection * 0.3;
-        gl_FragColor = vec4(color, 1.0);
+        gl_FragColor = vec4(color, uOpacity);
     }
 `;
 
@@ -176,17 +180,19 @@ export class CochlearCylinder {
 
             // SPATIAL BRIGHTNESS PHYSICS:
             // Using ShaderMaterial for radial depth control
+            const color = new THREE.Color(st.color); // Define color here
             const material = new THREE.ShaderMaterial({
                 uniforms: {
                     uBaseColor: { value: color.clone() },
                     uSelection: { value: 0.0 },
                     uRFar: { value: R_FAR },
-                    uRNear: { value: R_NEAR }
+                    uRNear: { value: R_NEAR },
+                    uOpacity: { value: 0.85 }
                 },
                 vertexShader,
                 fragmentShader,
-                transparent: false,
-                depthWrite: true,
+                transparent: true,
+                depthWrite: false,
                 side: THREE.DoubleSide
             });
 
@@ -383,16 +389,17 @@ export class CochlearCylinder {
             }
 
             // 2. GRADATIONAL Z-SHADING (Shader Logic v3)
-            // No manual vertex updates needed! The fragment shader does it.
+            if (col.mesh.material.uniforms) {
+                col.mesh.material.uniforms.uOpacity.value = 0.2 + (brightness * 0.75);
+            }
 
-            // 3. Selection Highlight
-            const isSelectedL = false; // Selection not implemented for Torus yet?
-            // (Keeping it for future parity if selectionState is updated for Torus)
+            // 3. Selection Highlight - TBD for Torus
 
             // Edge visibility
             if (col.edges && col.edges.material) {
                 col.edges.material.opacity = brightness > 0.001 ? 0.9 : 0.0;
-                col.edges.material.color.copy(col.baseColor).offsetHSL(0, 0, 0.2);
+                const edgeBright = (length + 1.0) / (R_FAR - R_NEAR + 1.0); // Rough approximation
+                col.edges.material.color.copy(col.baseColor).multiplyScalar(edgeBright);
             }
         }
     }
