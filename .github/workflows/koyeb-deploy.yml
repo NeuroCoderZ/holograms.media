@@ -37,7 +37,7 @@ jobs:
           koyeb app delete holograms-media-prod || echo "Prod app not found."
           koyeb app delete holograms-media-dev || echo "Dev app not found."
           koyeb app delete holograms-media || echo "Ghost app holograms-media not found."
-          # Даем Koyeb МАКСИМАЛЬНОЕ время на освобождение ресурсов (согласно правилам BasilaQ-127)
+          # Даем Koyeb МАКСИМАЛЬНОЕ время на освобождение ресурсов (согласно правилам BasilaQ-128)
           echo "Waiting 120 seconds for quota release (ensuring 512MB free)..."
           sleep 120
           echo "Koyeb Resources after cleanup:"
