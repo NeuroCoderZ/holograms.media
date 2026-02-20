@@ -130,6 +130,15 @@ class CwtProcessor extends AudioWorkletProcessor {
         // }
 
         if (!input || !input[0] || !wasm || !analyzerPtr || !this._initialized) {
+            // Emitting zeroed fallback data to prevent UI freeze
+            this.port.postMessage({
+                type: 'AUDIO_DATA',
+                levels: new Float32Array(256).fill(-128),
+                angles: new Float32Array(128).fill(0),
+                confidence: new Float32Array(128).fill(0),
+                timestamp: (typeof currentTime !== 'undefined') ? currentTime : 0,
+                isFallback: true
+            });
             return true;
         }
 

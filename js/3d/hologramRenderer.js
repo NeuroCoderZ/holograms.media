@@ -753,18 +753,14 @@ export class HologramRenderer {
     const tempColor = new THREE.Color(1, 1, 1);
     const posAttribute = geometry.attributes.position;
 
-    // Deep Bathymetry Parameters
-    const BATHYMETRY_POW = 3.0; // Cubic curve for "deep darkness"
-
     for (let i = 0; i < posAttribute.count; i++) {
       const z = posAttribute.getZ(i);
       // z is in range [-0.5, 0.5]
       // factor: 0.0 (Base/Deep) -> 1.0 (Tip/Surface)
       const normalizedZ = z + 0.5;
 
-      // Non-linear curve: 
-      // 0.5 -> 0.125 (much darker mid-point)
-      const factor = Math.pow(normalizedZ, BATHYMETRY_POW);
+      // Linear physics for Z-shading as requested
+      const factor = normalizedZ;
 
       tempColor.setRGB(factor, factor, factor);
       colors.push(tempColor.r, tempColor.g, tempColor.b);
@@ -1080,10 +1076,10 @@ export class HologramRenderer {
           leftMesh.scale.z = hL;
           leftMesh.position.z = hL / 2;
 
-          // Emissive: Gamma-corrected brightness for true black
-          // Confidence modulates between 50% and 100% intensity
-          const perceivedBrightL = qBrightL; // Already gamma-corrected in getNormAmp
-          let finalIntensityL = perceivedBrightL * (0.5 + conf * 0.5);
+          // Intensity / Z-Dimming Physics: Intensity = Cells / 128
+          // Since hL is the length in cells (0..128), Intensity is hL / 128
+          const intensityPhysics = hL / 128.0;
+          let finalIntensityL = intensityPhysics * (0.5 + conf * 0.5);
 
           // Selection Highlight: Blinking Edges
           const isSelectedL = this.selectionState.left.active && this.selectionState.left.indices.includes(index);
@@ -1126,7 +1122,7 @@ export class HologramRenderer {
           leftMesh.material.color.setHSL(
             this._hslTemp.h,
             this._hslTemp.s,
-            this._hslTemp.l * (finalIntensityL + 0.2)
+            this._hslTemp.l * finalIntensityL
           );
         }
 
@@ -1135,8 +1131,8 @@ export class HologramRenderer {
           rightMesh.scale.z = hR;
           rightMesh.position.z = hR / 2;
 
-          const perceivedBrightR = qBrightR;
-          let finalIntensityR = perceivedBrightR * (0.5 + conf * 0.5);
+          const intensityPhysicsR = hR / 128.0;
+          let finalIntensityR = intensityPhysicsR * (0.5 + conf * 0.5);
 
           // Selection Highlight
           const isSelectedR = this.selectionState.right.active && this.selectionState.right.indices.includes(index);
@@ -1177,8 +1173,8 @@ export class HologramRenderer {
           columnPair.right.userData.baseColor.getHSL(this._hslTemp);
           rightMesh.material.color.setHSL(
             this._hslTemp.h,
-            this._hslTemp.s * (0.5 + perceivedBrightR * 0.5), // Saturation fades
-            this._hslTemp.l * perceivedBrightR // Lightness dims
+            this._hslTemp.s,
+            this._hslTemp.l * finalIntensityR
           );
 
 
@@ -1255,4 +1251,3 @@ export class HologramRenderer {
     return this.hologramPivot;
   }
 }
-// Trigger deploy at Sat, Feb  7, 2026 10:47:47 AM
