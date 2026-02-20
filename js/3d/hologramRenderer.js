@@ -747,34 +747,15 @@ export class HologramRenderer {
     // [Phase 3] Deep Bathymetry: Increase Z-segments to 32 to support non-linear gradient.
     const geometry = new THREE.BoxGeometry(width, 1, 1, 1, 1, 32);
 
-    // Z-DIMMING PHYSICS: Deep Bathymetry
-    // Non-linear gradient: Darker at base, accelerating to light at tip.
-    const colors = [];
-    const tempColor = new THREE.Color(1, 1, 1);
-    const posAttribute = geometry.attributes.position;
+    // SPATIAL BRIGHTNESS PHYSICS:
+    // We will use MeshBasicMaterial to ensure the vertex-based gradient works accurately
+    // without interference from standard lighting or uniform emissive glow.
+    // The gradient will be updated in real-time in updateVisuals to maintain the spatial rule:
+    // Brightness = (Distance_from_base + 1) / 128
 
-    for (let i = 0; i < posAttribute.count; i++) {
-      const z = posAttribute.getZ(i);
-      // z is in range [-0.5, 0.5]
-      // factor: 0.0 (Base/Deep) -> 1.0 (Tip/Surface)
-      const normalizedZ = z + 0.5;
-
-      // Linear physics for Z-shading as requested
-      const factor = normalizedZ;
-
-      tempColor.setRGB(factor, factor, factor);
-      colors.push(tempColor.r, tempColor.g, tempColor.b);
-    }
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-    const material = new THREE.MeshStandardMaterial({
-      color: baseColorObj,
-      emissive: baseColorObj,
-      emissiveIntensity: 0.0,
-      roughness: 0.3,
-      metalness: 0.1,
-      flatShading: true,
-      vertexColors: true, // Enable the vertex gradient
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffffff, // Acts as a multiplier for vertex colors
+      vertexColors: true,
       transparent: false,
       opacity: 1.0
     });
@@ -1071,68 +1052,67 @@ export class HologramRenderer {
         // qAmpL is already 0..128 units. qBrightL is 0..1.
 
         if (leftMesh) {
-          // Height: Direct mapping from dB units
-          const hL = Math.max(0.01, qAmpL);
+          // 1. HEIGHT Scaling (Physical Cells)
+          const hL = Math.max(0.1, qAmpL); // Floor at 0.1 for visibility
           leftMesh.scale.z = hL;
           leftMesh.position.z = hL / 2;
 
-          // Intensity / Z-Dimming Physics: Intensity = Cells / 128
-          // Since hL is the length in cells (0..128), Intensity is hL / 128
-          const intensityPhysics = hL / 128.0;
-          let finalIntensityL = intensityPhysics * (0.5 + conf * 0.5);
+          // 2. GRADATIONAL Z-SHADING (Physics v2)
+          // Rule: Brightness at any point is (Distance_from_base + 1) / 128
+          // Base = 1/128. Tip = (hL + 1) / 128.
+          const vCols = leftMesh.geometry.attributes.color.array;
+          const vPos = leftMesh.geometry.attributes.position.array;
+          const baseC = columnPair.left.userData.baseColor;
 
-          // Selection Highlight: Blinking Edges
+          for (let i = 0; i < vPos.length / 3; i++) {
+            const zLocal = vPos[i * 3 + 2] + 0.5; // 0..1 from base to tip
+            const bright = (zLocal * hL + 1) / 128.0;
+
+            vCols[i * 3] = baseC.r * bright;
+            vCols[i * 3 + 1] = baseC.g * bright;
+            vCols[i * 3 + 2] = baseC.b * bright;
+          }
+          leftMesh.geometry.attributes.color.needsUpdate = true;
+
+          // 3. Selection Highlight
           const isSelectedL = this.selectionState.left.active && this.selectionState.left.indices.includes(index);
           const leftEdgesMesh = leftMesh.children[0];
 
           if (isSelectedL) {
-            // Blink effect: sin wave based on time
-            const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5; // 0..1
-            finalIntensityL += 0.3 * blink; // Pulse glow
+            const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
             if (leftEdgesMesh && leftEdgesMesh.material) {
               leftEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
-              leftEdgesMesh.material.color.setHSL(0, 0, 1.0); // White edges on selection
+              leftEdgesMesh.material.color.setHSL(0, 0, 1.0);
             }
           } else {
             if (leftEdgesMesh && leftEdgesMesh.material) {
-              // Edges should be visible if there is any non-zero intensity
-              leftEdgesMesh.material.opacity = qBrightL > 0.001 ? 0.9 : 0.0;
-
+              leftEdgesMesh.material.opacity = qAmpL > 0.1 ? 0.9 : 0.0;
               if (semitoneConfig) {
-                const color = new THREE.Color(semitoneConfig.color);
-                color.getHSL(this._hslTemp);
-
-                // Surface lightness (calculation matches below)
-                const surfaceL = this._hslTemp.l * (finalIntensityL + 0.2);
-                // Edge lightness: strictly 30% brighter
-                const edgeL = Math.min(1.0, surfaceL * 1.3);
-
-                leftEdgesMesh.material.color.setHSL(
-                  this._hslTemp.h,
-                  this._hslTemp.s,
-                  edgeL
-                );
+                const edgeC = new THREE.Color(semitoneConfig.color).offsetHSL(0, 0, 0.2);
+                leftEdgesMesh.material.color.copy(edgeC);
               }
             }
           }
-
-          leftMesh.material.emissiveIntensity = finalIntensityL;
-
-          columnPair.left.userData.baseColor.getHSL(this._hslTemp);
-          leftMesh.material.color.setHSL(
-            this._hslTemp.h,
-            this._hslTemp.s,
-            this._hslTemp.l * finalIntensityL
-          );
         }
 
         if (rightMesh) {
-          const hR = Math.max(0.01, qAmpR);
+          const hR = Math.max(0.1, qAmpR);
           rightMesh.scale.z = hR;
           rightMesh.position.z = hR / 2;
 
-          const intensityPhysicsR = hR / 128.0;
-          let finalIntensityR = intensityPhysicsR * (0.5 + conf * 0.5);
+          const vColsR = rightMesh.geometry.attributes.color.array;
+          const vPosR = rightMesh.geometry.attributes.position.array;
+          const baseCR = columnPair.right.userData.baseColor;
+
+          for (let i = 0; i < vPosR.length / 3; i++) {
+            const zLocal = vPosR[i * 3 + 2] + 0.5;
+            const bright = (zLocal * hR + 1) / 128.0;
+
+            vColsR[i * 3] = baseCR.r * bright;
+            vColsR[i * 3 + 1] = baseCR.g * bright;
+            vColsR[i * 3 + 2] = baseCR.b * bright;
+          }
+          rightMesh.geometry.attributes.color.needsUpdate = true;
 
           // Selection Highlight
           const isSelectedR = this.selectionState.right.active && this.selectionState.right.indices.includes(index);
@@ -1140,44 +1120,19 @@ export class HologramRenderer {
 
           if (isSelectedR) {
             const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
-            finalIntensityR += 0.3 * blink;
             if (rightEdgesMesh && rightEdgesMesh.material) {
               rightEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
               rightEdgesMesh.material.color.setHSL(0, 0, 1.0);
             }
           } else {
             if (rightEdgesMesh && rightEdgesMesh.material) {
-              // Edges should be visible if there is any non-zero intensity
-              rightEdgesMesh.material.opacity = qBrightR > 0.001 ? 0.9 : 0.0;
-
+              rightEdgesMesh.material.opacity = qAmpR > 0.1 ? 0.9 : 0.0;
               if (semitoneConfig) {
-                const color = new THREE.Color(semitoneConfig.color);
-                color.getHSL(this._hslTemp);
-
-                // Surface lightness (calculation matches below)
-                const surfaceL = this._hslTemp.l * (finalIntensityR + 0.2);
-                // Edge lightness: strictly 30% brighter
-                const edgeL = Math.min(1.0, surfaceL * 1.3);
-
-                rightEdgesMesh.material.color.setHSL(
-                  this._hslTemp.h,
-                  this._hslTemp.s,
-                  edgeL
-                );
+                const edgeC = new THREE.Color(semitoneConfig.color).offsetHSL(0, 0, 0.2);
+                rightEdgesMesh.material.color.copy(edgeC);
               }
             }
           }
-
-          rightMesh.material.emissiveIntensity = finalIntensityR;
-
-          columnPair.right.userData.baseColor.getHSL(this._hslTemp);
-          rightMesh.material.color.setHSL(
-            this._hslTemp.h,
-            this._hslTemp.s,
-            this._hslTemp.l * finalIntensityR
-          );
-
-
         }
         // 4. Update Performance Monitor (Phase 4)
         perfMonitor.update(this._lastWasmPerf, performance.now() - (this.latestTimestamp || 0));

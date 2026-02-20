@@ -143,17 +143,18 @@ export class CochlearCylinder {
             // Создаём деформированную геометрию
             const geo = createCurvedBoxGeometry(arcAngle, centerAngle, columnHeight, st.width);
 
-            // Материал (как в hologramRenderer.js)
-            const color = new THREE.Color(st.color);
-            const material = new THREE.MeshStandardMaterial({
-                color: color,
-                emissive: color.clone(),
-                emissiveIntensity: 0.5,
-                metalness: 0.2,
-                roughness: 0.6,
-                transparent: true,
+            // SPATIAL BRIGHTNESS PHYSICS:
+            // Using MeshBasicMaterial for pure vertex color control
+            const material = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                vertexColors: true,
+                transparent: false,
                 opacity: 1.0
             });
+
+            // Add color attribute to geometry for per-frame updates
+            const vCount = geo.attributes.position.count;
+            geo.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(vCount * 3), 3));
 
             const mesh = new THREE.Mesh(geo, material);
             mesh.position.y = yPos;
@@ -347,24 +348,56 @@ export class CochlearCylinder {
                 brightness = Math.pow(perceptualNorm, BRIGHTNESS_GAMMA);
             }
 
-            // Scale Z = радиальная глубина столбца
-            const scaleZ = Math.max(0.01, length / (R_FAR - R_NEAR));
-            col.mesh.scale.z = scaleZ;
+            // R_FAR is the "base" wall (outside), R_NEAR is the "tip" direction (inside)
+            // But since columns grow from R_FAR towards R_NEAR...
+            // wait, scaleZ=1 means it reaches R_NEAR.
+            // Vertices at R_FAR are at t=1 in createCurvedBoxGeometry.
+            // Vertices at R_NEAR are at t=0.
+            // So Distance_from_base = (1 - t) * L_cells.
 
-            // Emissive intensity = brightness
-            col.mesh.material.emissiveIntensity = brightness;
+            const vCols = col.mesh.geometry.attributes.color.array;
+            const vPos = col.mesh.geometry.attributes.position.array;
+            const baseC = col.baseColor;
 
-            // Color dimming
-            col.baseColor.getHSL(hslTemp);
-            col.mesh.material.color.setHSL(
-                hslTemp.h,
-                hslTemp.s,
-                hslTemp.l * (brightness + 0.2)
-            );
+            // Re-calculate hL (length in cells, max 128)
+            const hL = scaleZ * 128.0;
+
+            const halfD = (R_FAR - R_NEAR) / 2;
+            const span = (R_FAR - R_NEAR);
+
+            for (let j = 0; j < vPos.length / 3; j++) {
+                // We need the original local Z before deformation to find 't'
+                // In createCurvedBoxGeometry, radius = R_NEAR + t * span
+                // Actually, BoxGeometry vertices are still in local space before scaling?
+                // No, we already deformed the geometry. 
+                // We can't easily find 't' from newX, newZ without Math.atan2/sqrt.
+                // BUT, the 'pos' attribute WE deformed can store the 't' in a custom attribute!
+                // To keep it simple for now, I'll just use world sqrt if necessary, 
+                // or better: I'll add 'ca' (cell_alpha) attribute during build.
+            }
+            // Optimization: I see CochlearCylinder is complex. I'll just use a simpler 
+            // version for now: since it's a ring, let's assume zLocal comes from radius.
+            const meshPos = col.mesh.position;
+            for (let j = 0; j < vPos.length / 3; j++) {
+                const vx = vPos[j * 3];
+                const vz = vPos[j * 3 + 2];
+                const r = Math.sqrt(vx * vx + vz * vz);
+                // r is in [R_NEAR, R_FAR]
+                // distance from outer wall (R_FAR) = R_FAR - r
+                // normalized distance = (R_FAR - r) / (R_FAR - R_NEAR)
+                const distNorm = Math.max(0, (R_FAR - r) / span);
+                const bright = (distNorm * hL + 1) / 128.0;
+
+                vCols[j * 3] = baseC.r * bright;
+                vCols[j * 3 + 1] = baseC.g * bright;
+                vCols[j * 3 + 2] = baseC.b * bright;
+            }
+            col.mesh.geometry.attributes.color.needsUpdate = true;
 
             // Edge visibility
             if (col.edges && col.edges.material) {
                 col.edges.material.opacity = brightness > 0.001 ? 0.9 : 0.0;
+                col.edges.material.color.copy(col.baseColor).offsetHSL(0, 0, 0.2);
             }
         }
     }
