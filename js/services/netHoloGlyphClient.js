@@ -75,12 +75,17 @@ class NetHoloGlyphClient {
             this.websocket.close();
         }
 
-        // Construct full URL with roomId
+        // Construct full URL with roomId and JWT token
+        const jwtToken = localStorage.getItem('jwtToken');
         let url = this.signalingServerUrl;
         if (!url.endsWith('/')) url += '/';
         url += roomId;
 
-        console.log(`[NetHoloGlyphClient] Connecting to signaling: ${url}`);
+        if (jwtToken) {
+            url += `?token=${jwtToken}`;
+        }
+
+        console.log(`[NetHoloGlyphClient] Connecting to signaling: ${url.split('?')[0]}...`);
 
         try {
             this.websocket = new WebSocket(url);

@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from backend.core.models.multimodal_models import UserGestureModel
 from backend.repositories.gesture_repository import GestureRepository
+import logging
 from backend.core.dependencies import get_gesture_repository
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/users",
