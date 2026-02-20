@@ -27,8 +27,12 @@ const fragmentShader = /* glsl */`
     uniform float uOpacity;
     varying vec3 vWorldPosition;
     void main() {
-        // I(Pz) = (Pz + 1.0) / 128.0 — linear brightness frozen in world Z
-        float spatialFactor = clamp((vWorldPosition.z + 1.0) / 128.0, 0.0, 1.0);
+        // Z-gradient frozen in world space.
+        // Sequencer groups sit at world Z = -GRID_DEPTH/2 = -64.
+        // Column base = world Z -64 (back wall, near black).
+        // Column tip  = world Z +64 (front, full brightness).
+        // Maps [-64, +64] → [0, 1] via (worldZ + 64.0) / 128.0
+        float spatialFactor = clamp((vWorldPosition.z + 64.0) / 128.0, 0.0, 1.0);
         
         vec3 color = uBaseColor * spatialFactor;
         
@@ -798,7 +802,8 @@ export class HologramRenderer {
     columnMesh.receiveShadow = true;
 
     // Y position (pitch row): distributed with CELL_HEIGHT (2.0) spacing
-    const y = (semitoneIndex - NUM_SEMITONES / 2 + 0.5) * CELL_HEIGHT;
+    // Alignment: Column 0 starts at local Y=1 (between grid lines 0 and 2)
+    const y = (semitoneIndex + 0.5) * CELL_HEIGHT;
 
     // Initial scale: Z will be modulated by audio
     columnMesh.scale.set(1, 1, 0.1);
