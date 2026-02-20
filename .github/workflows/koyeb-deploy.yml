@@ -26,22 +26,6 @@ jobs:
         with:
           api_token: ${{ secrets.KOYEB_API_TOKEN }}
 
-      # Шаг очистки для Free Tier (освобождаем ВСЕ 512MB квот аккаунта)
-      - name: 🧹 Total Quota Cleanup (Free Tier Workaround)
-        run: |
-          echo "Current Koyeb Resources before cleanup:"
-          koyeb app list || echo "Failed to list apps"
-          koyeb service list || echo "Failed to list services"
-          echo "Cleaning up ALL apps and services to free up 512MB quota..."
-          # Удаляем все потенциальные приложения (app delete не поддерживает --force, используем || true)
-          koyeb app delete holograms-media-prod || echo "Prod app not found."
-          koyeb app delete holograms-media-dev || echo "Dev app not found."
-          koyeb app delete holograms-media || echo "Ghost app holograms-media not found."
-          # Даем Koyeb МАКСИМАЛЬНОЕ время на освобождение ресурсов (согласно правилам BasilaQ-128)
-          echo "Waiting 120 seconds for quota release (ensuring 512MB free)..."
-          sleep 120
-          echo "Koyeb Resources after cleanup:"
-          koyeb app list || echo "Failed to list apps"
 
       - name: 🚀 Deploy Backend to Koyeb
         id: koyeb-deploy
@@ -72,7 +56,7 @@ jobs:
             B2_ENDPOINT_URL=${{ secrets.B2_ENDPOINT_URL }}
             B2_ACCESS_KEY_ID=${{ secrets.B2_ACCESS_KEY_ID }}
             B2_SECRET_ACCESS_KEY=${{ secrets.B2_SECRET_ACCESS_KEY }}
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_ID=${{ secrets.PROD_GOOGLE_CLIENT_ID }}
 
       - name: 📋 Output Backend URL
         run: |
