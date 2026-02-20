@@ -40,23 +40,7 @@ jobs:
           service-instance-type: free
           git-builder: docker
           git-docker-dockerfile: Dockerfile
-          service-env: |
-            ENVIRONMENT=production
-            CORS_ORIGIN_1=https://holograms.media
-            CORS_ORIGIN_2=https://www.holograms.media
-            PYTHONUNBUFFERED=1
-            PYTHONDONTWRITEBYTECODE=1
-            PORT=8000
-            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
-            MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }}
-            ASTRA_DB_APPLICATION_TOKEN=${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}
-            ASTRA_DB_API_ENDPOINT=${{ secrets.ASTRA_DB_API_ENDPOINT }}
-            ASTRA_DB_ID=${{ secrets.ASTRA_DB_ID }}
-            ASTRA_DB_REGION=${{ secrets.ASTRA_DB_REGION }}
-            B2_ENDPOINT_URL=${{ secrets.B2_ENDPOINT_URL }}
-            B2_ACCESS_KEY_ID=${{ secrets.B2_ACCESS_KEY_ID }}
-            B2_SECRET_ACCESS_KEY=${{ secrets.B2_SECRET_ACCESS_KEY }}
-            GOOGLE_CLIENT_ID=${{ secrets.PROD_GOOGLE_CLIENT_ID }}
+
 
       - name: 📋 Output Backend URL
         run: |
