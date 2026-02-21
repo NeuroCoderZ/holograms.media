@@ -14,7 +14,9 @@ const NUM_SEMITONES = 128;      // 128 frequency bands on Y axis
 // ─── SHADERS: BasilaQ-128 Z-Physics ──────────────────────────────────────────
 const vertexShader = /* glsl */`
     varying vec3 vWorldPosition;
+    varying vec3 vLocalPosition;
     void main() {
+        vLocalPosition = position;
         vec4 worldPos = modelMatrix * vec4(position, 1.0);
         vWorldPosition = worldPos.xyz;
         gl_Position = projectionMatrix * viewMatrix * worldPos;
@@ -25,16 +27,18 @@ const fragmentShader = /* glsl */`
     uniform vec3  uBaseColor;
     uniform float uSelection; 
     uniform float uOpacity;
+    uniform float uColumnScaleZ;
     varying vec3 vWorldPosition;
+    varying vec3 vLocalPosition;
+
     void main() {
-        // Замороженная физика. База сцены теперь строго на Z = 0.
-        // 0.0 = абсолютная тишина (черный), 128.0 = максимальная громкость.
-        float linearFactor = clamp(vWorldPosition.z / 128.0, 0.0, 1.0);
+        // Phase 18.0: Robust Spatial Gradient.
+        // vLocalPosition.z is in range [-0.5, 0.5].
+        // (vLocalPosition.z + 0.5) * uColumnScaleZ gives distance from column base in local grid units [0, 128].
+        float localDepth = (vLocalPosition.z + 0.5) * uColumnScaleZ;
+        float linearFactor = clamp(localDepth / 128.0, 0.0, 1.0);
         
         // Глубокая кривая гаммы: подавляет визуальный шум на тихих участках
-        // 0.0 ^ 2.5 = 0.0
-        // 0.5 ^ 2.5 = ~0.17 (сильное затемнение шумов середины)
-        // 1.0 ^ 2.5 = 1.0 (яркие пики остаются яркими)
         float brightness = pow(linearFactor, 2.5);
         
         vec3 color = uBaseColor * brightness;
@@ -61,6 +65,7 @@ export class HologramRenderer {
    * @param {string} userId - The unique ID of the current user.
    */
   constructor(scene, roomId, userId) {
+    console.log('[HologramRenderer] v18.0.2: Phase 18 Physics & Deployment Sync Active');
     this.scene = scene;
     this.eventBus = eventBus;
     this.netHoloGlyphClient = netHoloGlyphClient;
@@ -761,7 +766,8 @@ export class HologramRenderer {
       uniforms: {
         uBaseColor: { value: baseColorObj },
         uSelection: { value: 0.0 },
-        uOpacity: { value: 0.85 }
+        uOpacity: { value: 0.85 },
+        uColumnScaleZ: { value: 0.1 }
       },
       vertexShader,
       fragmentShader,
@@ -1053,6 +1059,7 @@ export class HologramRenderer {
 
           if (leftMesh.material.uniforms) {
             leftMesh.material.uniforms.uOpacity.value = 0.2 + (qAmpL / 128.0) * 0.75;
+            leftMesh.material.uniforms.uColumnScaleZ.value = hL;
           }
 
           const isSelectedL = this.selectionState.left.active && this.selectionState.left.indices.includes(index);
@@ -1085,6 +1092,7 @@ export class HologramRenderer {
 
           if (rightMesh.material.uniforms) {
             rightMesh.material.uniforms.uOpacity.value = 0.2 + (qAmpR / 128.0) * 0.75;
+            rightMesh.material.uniforms.uColumnScaleZ.value = hR;
           }
 
           const isSelectedR = this.selectionState.right.active && this.selectionState.right.indices.includes(index);
