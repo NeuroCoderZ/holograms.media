@@ -13,39 +13,29 @@ const NUM_SEMITONES = 128;      // 128 frequency bands on Y axis
 
 // ─── SHADERS: BasilaQ-128 Z-Physics ──────────────────────────────────────────
 const vertexShader = /* glsl */`
-    varying vec3 vWorldPosition;
-    varying vec3 vLocalPosition;
+    varying float vLocalZ;
     void main() {
-        vLocalPosition = position;
-        vec4 worldPos = modelMatrix * vec4(position, 1.0);
-        vWorldPosition = worldPos.xyz;
-        gl_Position = projectionMatrix * viewMatrix * worldPos;
+        // Локальная Z координаты BoxGeometry всегда от -0.5 (база) до +0.5 (вершина)
+        vLocalZ = position.z;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
 `;
 
 const fragmentShader = /* glsl */`
     uniform vec3  uBaseColor;
-    uniform float uSelection; 
+    uniform float uSelection;
     uniform float uOpacity;
-    uniform float uColumnScaleZ;
-    varying vec3 vWorldPosition;
-    varying vec3 vLocalPosition;
-
+    varying float vLocalZ;
     void main() {
-        // Phase 18.0: Robust Spatial Gradient.
-        // vLocalPosition.z is in range [-0.5, 0.5].
-        // (vLocalPosition.z + 0.5) * uColumnScaleZ gives distance from column base in local grid units [0, 128].
-        float localDepth = (vLocalPosition.z + 0.5) * uColumnScaleZ;
-        float linearFactor = clamp(localDepth / 128.0, 0.0, 1.0);
-        
-        // Глубокая кривая гаммы: подавляет визуальный шум на тихих участках
+        // Переводим локальный Z [-0.5, 0.5] в диапазон [0.0, 1.0]
+        float linearFactor = clamp(vLocalZ + 0.5, 0.0, 1.0);
+
+        // Глубокая кривая для тру-черного у основания
         float brightness = pow(linearFactor, 2.5);
-        
+
         vec3 color = uBaseColor * brightness;
-        
-        // Подсветка при выделении
         color += uSelection * 0.3;
-        
+
         gl_FragColor = vec4(color, uOpacity);
     }
 `;
@@ -602,7 +592,7 @@ export class HologramRenderer {
   _createGridVisualization(gridWidth, gridHeight, gridDepth, cellSize, color, cellSizeY = cellSize) {
     const points = [];
     const divisionsX = Math.floor(Math.abs(gridWidth) / cellSize);
-    const divisionsY = Math.floor(gridHeight / cellSizeY);   // 256 / 2.0 = 128 lines ✓
+    const divisionsY = Math.round(gridHeight / cellSizeY);
     const divisionsZ = Math.floor(gridDepth / cellSize);
     const signX = Math.sign(gridWidth) || 1;
 

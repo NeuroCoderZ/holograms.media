@@ -1,4 +1,5 @@
 // vite.config.js (ФИНАЛЬНАЯ, АБСОЛЮТНАЯ ВЕРСИЯ)
+// DEPLOY VERSION: 1.18.5 - LOCAL SHADERS
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
 
