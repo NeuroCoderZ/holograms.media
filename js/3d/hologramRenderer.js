@@ -27,16 +27,19 @@ const fragmentShader = /* glsl */`
     uniform float uOpacity;
     varying vec3 vWorldPosition;
     void main() {
-        // Z-gradient frozen in world space.
-        // Sequencer groups sit at world Z = -GRID_DEPTH/2 = -64.
-        // Column base = world Z -64 (back wall, near black).
-        // Column tip  = world Z +64 (front, full brightness).
-        // Maps [-64, +64] → [0, 1] via (worldZ + 64.0) / 128.0
-        float spatialFactor = clamp((vWorldPosition.z + 64.0) / 128.0, 0.0, 1.0);
+        // Замороженная физика. База сцены теперь строго на Z = 0.
+        // 0.0 = абсолютная тишина (черный), 128.0 = максимальная громкость.
+        float linearFactor = clamp(vWorldPosition.z / 128.0, 0.0, 1.0);
         
-        vec3 color = uBaseColor * spatialFactor;
+        // Глубокая кривая гаммы: подавляет визуальный шум на тихих участках
+        // 0.0 ^ 2.5 = 0.0
+        // 0.5 ^ 2.5 = ~0.17 (сильное затемнение шумов середины)
+        // 1.0 ^ 2.5 = 1.0 (яркие пики остаются яркими)
+        float brightness = pow(linearFactor, 2.5);
         
-        // Selection highlight
+        vec3 color = uBaseColor * brightness;
+        
+        // Подсветка при выделении
         color += uSelection * 0.3;
         
         gl_FragColor = vec4(color, uOpacity);
@@ -650,7 +653,7 @@ export class HologramRenderer {
     // Total visual height: 128 rows * CELL_HEIGHT (2.0) = 256 units
     const visualHeight = height * CELL_HEIGHT;
 
-    // Pass CELL_HEIGHT as the 6th argument (cellSizeY)
+    // Жестко передаем CELL_HEIGHT (2.0) как шаг по оси Y, чтобы получилось ровно 128 делений
     const gridVis = this._createGridVisualization(
       isLeftGrid ? -width : width,
       visualHeight,
@@ -680,8 +683,8 @@ export class HologramRenderer {
     const rightColor = semitones.length > 0 ? semitones[0].color : new THREE.Color(0xFF0000);
 
     // Since visual height is now 2x (GRID_HEIGHT * 2), we need to lower the spine to -GRID_HEIGHT to center it vertically.
-    // Width and Depth are unchanged.
-    const commonSpinePosition = new THREE.Vector3(0, -GRID_HEIGHT, -GRID_DEPTH / 2);
+    // Z = 0: Убираем бессмысленный сдвиг на -64. Теперь основание голограммы строго на Z=0.
+    const commonSpinePosition = new THREE.Vector3(0, -GRID_HEIGHT, 0);
 
     // Create the left sequencer grid aligned at the spine
     this.leftSequencerGroup = this._createSequencerGrid(
@@ -701,36 +704,6 @@ export class HologramRenderer {
     );
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
-    // Shared Blue center sphere at the junction origin (0, -128, -64 in world-ish, 0,0,0 local to group)
-    // Blue sphere radius increased by 20% to create "HALO" effect behind the white center point
-    // The previous radius was 2, now 2.4. 
-    // Wait, the prompt asked for the Blue sphere to be the "Back" sphere at (0,0,0) and White at (0,0,129).
-    // Let's verify the positions.
-    // The "Central Marker" created in constructor (line 44) is White at 0,0,0. 
-    // The Block 2 instructions say: "Blue sphere: Center (0,0,0). White sphere: End of Z axis (0,0,129)."
-    // Current code at line 44 adds a WHITE sphere at origin.
-    // Let's adjust access to this method to swap/adjust colors or sizes to match the prompt.
-    // The prompt says: "Blue sphere (Center) overlaps White sphere (Z-end). Make Blue 20% larger."
-    // Actually, usually Blue is Z-axis in standard 3D, but here Z is White.
-    // Let's look at `_createAxis`: Z-axis is White.
-    // So the White sphere is at the TIP of the Z-axis.
-    // The Blue sphere is at the ORIGIN (Center).
-    // The user wants Blue Sphere > White Sphere visually IF they overlap?
-    // "Blue sphere: Center coordinates (0,0,0). White sphere: End of axis Z (0,0,129)."
-    // "Problem: Front view, Blue sphere covers White sphere."
-    // This implies the camera looks from Z+ towards origin? No, usually camera is at Z+.
-    // If camera is at Z+ looking at origin: White sphere is CLOSE (at 129), Blue is FAR (at 0).
-    // So White should cover Blue.
-    // If "Blue sphere covers White", maybe the radii are wrong or positions inverted?
-    // User says: "Make Blue sphere (back) 20% larger than White. Ensure White (front) renders on top."
-    // So we want a Halo effect: Blue (Background, Origin) is larger than White (Foreground, Z-Tip)?
-    // Wait, if White is at Z=129 and Blue is at Z=0, and we look from Z=200...
-    // White is in FRONT of Blue. White should occlude Blue.
-    // If we want a "Halo", then Blue must be visible AROUND White.
-    // So Blue must be LARGER than White (in screen space) Or White is semi-transparent?
-    // User says "Blue sphere 20% larger radius than White."
-    // Let's implement that.
-
     // SPHERE ORDERING: Blue (Back, Opaque), White (Front, Opaque)
     // Blue Sphere: At Origin, Large (Halo Effect)
     const blueGeometry = new THREE.SphereGeometry(3.024, 32, 32);
@@ -742,7 +715,7 @@ export class HologramRenderer {
     });
     const blueSphere = new THREE.Mesh(blueGeometry, blueMaterial);
     blueSphere.renderOrder = 0; // Back
-    blueSphere.position.set(0, -GRID_HEIGHT, -GRID_DEPTH / 2);
+    blueSphere.position.set(0, -GRID_HEIGHT, 0); // Z = 0
     this.mainSequencerGroup.add(blueSphere);
 
     // White Sphere: At Origin, Smaller (Front, on top of Blue)
@@ -755,7 +728,7 @@ export class HologramRenderer {
     });
     const whiteSphere = new THREE.Mesh(whiteGeometry, whiteMaterial);
     whiteSphere.renderOrder = 999; // Front, renders on top
-    whiteSphere.position.set(0, -GRID_HEIGHT, -GRID_DEPTH / 2);
+    whiteSphere.position.set(0, -GRID_HEIGHT, 0); // Z = 0
     this.mainSequencerGroup.add(whiteSphere);
   }
 
