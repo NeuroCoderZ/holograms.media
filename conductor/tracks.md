@@ -46,3 +46,8 @@
 
 - [x] **Трек: Исправление Шейдеров (Local Z) и Сброс Кэша**
   *Ссылка: [./tracks/fix_shaders_and_cache_bust_20260222/](./tracks/fix_shaders_and_cache_bust_20260222/)*
+
+---
+
+- [ ] **Трек: Hotfix CSP для MediaPipe**
+  *Ссылка: [./tracks/hotfix_csp_mediapipe_20260222/](./tracks/hotfix_csp_mediapipe_20260222/)*
