@@ -1,38 +1,83 @@
 // frontend/js/services/gestureIntentClient.js
+// WebSocket-клиент для отправки типизированных жестовых намерений на бэкенд.
+// Подключение происходит ТОЛЬКО при наличии JWT-токена в localStorage.
 
 class GestureIntentClient {
     constructor(url) {
         this.url = url;
         this.websocket = null;
         this.onMessageCallback = null;
+        this._reconnectAttempts = 0;
+        this._maxReconnectAttempts = 3;
+        this._reconnectDelay = 5000;
     }
 
+    /**
+     * Возвращает JWT-токен из localStorage.
+     * @returns {string|null}
+     */
+    _getToken() {
+        return localStorage.getItem('jwtToken');
+    }
+
+    /**
+     * Подключается к WebSocket только если пользователь авторизован.
+     * При отсутствии токена — graceful skip (без ошибок в консоли).
+     */
     connect() {
-        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-            console.warn("GestureIntentClient: WebSocket already connected.");
+        const token = this._getToken();
+        if (!token) {
+            console.info('[GestureIntentClient] Нет JWT-токена — пропуск WS-соединения. Войдите через Google.');
             return;
         }
 
-        this.websocket = new WebSocket(this.url);
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            console.warn('[GestureIntentClient] WebSocket уже подключён.');
+            return;
+        }
+
+        // Добавляем токен в URL как query-параметр
+        const urlWithToken = `${this.url}?token=${encodeURIComponent(token)}`;
+        this.websocket = new WebSocket(urlWithToken);
 
         this.websocket.onopen = () => {
-            console.log("GestureIntentClient: WebSocket connection established.");
+            console.log('[GestureIntentClient] WebSocket подключён.');
+            this._reconnectAttempts = 0;
         };
 
         this.websocket.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            console.log('GestureIntentClient: Received message:', message);
-            if (this.onMessageCallback) {
-                this.onMessageCallback(message);
+            try {
+                const message = JSON.parse(event.data);
+                if (this.onMessageCallback) {
+                    this.onMessageCallback(message);
+                }
+            } catch (e) {
+                console.warn('[GestureIntentClient] Некорректный JSON:', event.data);
             }
         };
 
-        this.websocket.onerror = (error) => {
-            console.error("GestureIntentClient: WebSocket error:", error);
+        this.websocket.onerror = () => {
+            // Не логируем детали ошибки — это нормально при отсутствии бэкенда
+            console.info('[GestureIntentClient] WS ошибка соединения (бэкенд недоступен или нет прав).');
         };
 
         this.websocket.onclose = (event) => {
-            console.log(`GestureIntentClient: WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason}`);
+            // Код 1006 = abnormal closure (сервер отверг до handshake = нет авторизации)
+            // Код 1008 = policy violation (явный отказ в авторизации)
+            const isAuthError = event.code === 1006 || event.code === 1008 || event.code === 4001;
+            if (isAuthError) {
+                console.info(`[GestureIntentClient] Соединение закрыто (code=${event.code}): требуется авторизация.`);
+                return; // Не переподключаемся при ошибке авторизации
+            }
+
+            console.log(`[GestureIntentClient] WS закрыт (code=${event.code}).`);
+
+            // Автоматическое переподключение при разрывах сети (не при auth ошибках)
+            if (this._reconnectAttempts < this._maxReconnectAttempts && this._getToken()) {
+                this._reconnectAttempts++;
+                console.log(`[GestureIntentClient] Попытка переподключения ${this._reconnectAttempts}/${this._maxReconnectAttempts} через ${this._reconnectDelay / 1000}с...`);
+                setTimeout(() => this.connect(), this._reconnectDelay);
+            }
         };
     }
 
@@ -41,7 +86,7 @@ class GestureIntentClient {
             const message = { intent, context };
             this.websocket.send(JSON.stringify(message));
         } else {
-            console.error("GestureIntentClient: WebSocket not connected. Cannot send intent.");
+            console.warn('[GestureIntentClient] WS не подключён. Команда не отправлена:', intent);
         }
     }
 
@@ -50,9 +95,20 @@ class GestureIntentClient {
     }
 
     disconnect() {
+        this._reconnectAttempts = this._maxReconnectAttempts; // Блокируем переподключение
         if (this.websocket) {
             this.websocket.close();
+            this.websocket = null;
         }
+    }
+
+    /**
+     * Подключиться после успешной авторизации.
+     * Вызывается из auth.js после получения JWT.
+     */
+    connectAfterAuth() {
+        this._reconnectAttempts = 0;
+        this.connect();
     }
 }
 

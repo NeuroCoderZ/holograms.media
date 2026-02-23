@@ -69,23 +69,23 @@ export class HologramRenderer {
 
   _createSequencerGrids() {
     const commonSpinePosition = new THREE.Vector3(0, -GRID_HEIGHT, 0);
-    
+
     this.leftSequencerGroup = new THREE.Group();
     this.leftSequencerGroup.position.copy(commonSpinePosition);
     this.leftSequencerGroup.add(this._createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, 1.0, true));
-    
+
     const leftGridVis = this._createGridVisualization(-GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0x800080);
     this.leftSequencerGroup.add(leftGridVis);
-    
+
     this.mainSequencerGroup.add(this.leftSequencerGroup);
 
     this.rightSequencerGroup = new THREE.Group();
     this.rightSequencerGroup.position.copy(commonSpinePosition);
     this.rightSequencerGroup.add(this._createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, 1.0, false));
-    
+
     const rightGridVis = this._createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xFF0000);
     this.rightSequencerGroup.add(rightGridVis);
-    
+
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
     // RESTORE SPHERES
@@ -132,9 +132,9 @@ export class HologramRenderer {
     });
 
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(isLeft ? -width/2 : width/2, (index + 0.5) * CELL_HEIGHT, 0);
+    mesh.position.set(isLeft ? -width / 2 : width / 2, (index + 0.5) * CELL_HEIGHT, 0);
     mesh.scale.set(1, 1, 0.1);
-    
+
     const edgesGeom = new THREE.EdgesGeometry(geometry);
     const edgesMat = new THREE.ShaderMaterial({
       uniforms: {
@@ -178,8 +178,8 @@ export class HologramRenderer {
           // Reset edge uniforms for greeting
           const edges = m.children[0];
           if (edges && edges.material.uniforms) {
-              edges.material.uniforms.uIsGreeting.value = 1.0;
-              edges.material.uniforms.uColumnScaleZ.value = gDepth;
+            edges.material.uniforms.uIsGreeting.value = 1.0;
+            edges.material.uniforms.uColumnScaleZ.value = gDepth;
           }
         });
         pair.left.position.x = 0;  // СТРОГО 0
@@ -188,60 +188,67 @@ export class HologramRenderer {
         // --- ACTIVE MODE: Psychoacoustic & Cognitive Masking ---
         let dbL = dbLevels[i];
         let dbR = dbLevels[i + 128];
-        
-        // 1. ИНВЕРСИЯ: Знак минус решает проблему "Side Left звучит справа". 
-        // Теперь: targetPan < 0 это Лево (-X), targetPan > 0 это Право (+X).
-        const targetPan = -panAngles[i]; 
-        
-        // Магнитная панорама (минимальное сглаживание для точности Сканера)
+
+        // 1. БИНАУРАЛЬНЫЙ ПАН (BasilaQ-128 / Semitones_Angles.md)
+        // panAngles[i] < 0 = Лево (левая сетка ведущая)
+        // panAngles[i] > 0 = Право (правая сетка ведущая)  
+        // При p = ±1.0: столбец смещается к deg=90° (центр своей сетки = перпендикуляр барабанной перепонки)
+        const targetPan = panAngles[i]; // НЕТ инверсии: WASM уже кодирует L<0, R>0
+
+        // Магнитная панорама (0.7 = быстрый отклик для точности Сканера)
         this._panStates[i] += (targetPan - this._panStates[i]) * 0.7;
         const p = this._panStates[i];
 
-        // 2. КОГНИТИВНАЯ МАСКИРОВКА (Психоакустика)
-        // Мозг отсекает тихие дублирующие сигналы для фокусировки на источнике.
-        // Используем полный динамический диапазон (128 дБ) умноженный на коэффициент дифракции из файла конфигурации.
-        const maxCognitiveShadowDb = 128.0; 
+        // 2. СЛУХОВАЯ МАСКИРОВКА (shadow_coef из Semitones_Angles.md)
+        // Более громкий полутон в одном канале подавляет тот же полутон в другом.
+        // shadow_coef = 0 для низких частот (нет пространственной локализации),
+        // shadow_coef → 1.16 для высоких (максимальная маскировка).
+        const maxCognitiveShadowDb = 128.0;
         const shadowDb = Math.abs(p) * config.shadow_coef * maxCognitiveShadowDb;
 
-        // Взаимное подавление внимания мозга (Пиг-Понг)
+        // Сильнее звучит там, куда направлен фокус внимания мозга
         if (p < -0.01) {
-            // Внимание смещено влево. Мозг глушит восприятие в правом ухе.
-            dbR -= shadowDb;
+          // Лево ведущее → мозг снижает воспринимаемую громкость правого канала
+          dbR -= shadowDb;
         } else if (p > 0.01) {
-            // Внимание смещено вправо. Мозг глушит восприятие в левом ухе.
-            dbL -= shadowDb;
+          // Право ведущее → мозг снижает воспринимаемую громкость левого канала
+          dbL -= shadowDb;
         }
 
-        // 3. ЭФФЕКТ ПАКМАНА (Коррекция под ширину столбца + 90 градусов)
-        // Гарантируем, что столбец никогда не выйдет за пределы своей сетки.
+        // 3. СИММЕТРИЧНЫЙ ПАКМАН (оба уха двигаются к центру своей сетки)
+        // p = ±1.0 → столбец смещается до середины своего треугольника (±90° / deg=90)
+        // p = 0.0  → оба столбца у позвоночника (0°, звук спереди = в наушниках одинаково)
         const w = config.width || 1;
-        const maxAvailableShift = (GRID_WIDTH - w) * 0.5; // Сдвиг до середины доступного пространства
-        const offset = Math.round(Math.abs(p) * maxAvailableShift);
+        const maxAvailableShift = (GRID_WIDTH - w) * 0.5; // Середина сетки = 90°
+        // Левый столбец: сдвигается ВЛЕВО при любом значении |p| (левый канал всегда ведёт)
+        const leftOffset = Math.round(Math.abs(Math.min(0, p)) * maxAvailableShift * 2);
+        // Правый столбец: сдвигается ВПРАВО при любом значении |p|
+        const rightOffset = Math.round(Math.abs(Math.max(0, p)) * maxAvailableShift * 2);
 
-        pair.left.position.x = pair.left.userData.initialX - (p < 0 ? offset : 0);
-        pair.right.position.x = pair.right.userData.initialX + (p > 0 ? offset : 0);
+        pair.left.position.x = pair.left.userData.initialX - leftOffset;
+        pair.right.position.x = pair.right.userData.initialX + rightOffset;
 
         // 4. СТРОГОЕ КВАНТОВАНИЕ BASILAQ-128 (1 unit = 1 dB)
-        [ [leftMesh, dbL], [rightMesh, dbR] ].forEach(([m, db]) => {
+        [[leftMesh, dbL], [rightMesh, dbR]].forEach(([m, db]) => {
           // Ограничиваем дБ от -128 до 0
           const safeDb = Math.max(-128.0, Math.min(0.0, db));
           const h = Math.max(0.1, 128.0 + safeDb);
-          
+
           m.scale.z = h;
           m.position.z = h / 2;
-          
+
           if (m.material.uniforms) {
-              m.material.uniforms.uIsGreeting.value = 0.0;
-              m.material.uniforms.uColumnScaleZ.value = h;
-              m.material.uniforms.uBrightnessBoost.value = 1.0;
+            m.material.uniforms.uIsGreeting.value = 0.0;
+            m.material.uniforms.uColumnScaleZ.value = h;
+            m.material.uniforms.uBrightnessBoost.value = 1.0;
           }
-          
+
           // Ребра на 30% ярче
           const edges = m.children[0];
           if (edges && edges.material.uniforms) {
-              edges.material.uniforms.uIsGreeting.value = 0.0;
-              edges.material.uniforms.uColumnScaleZ.value = h;
-              edges.material.uniforms.uBrightnessBoost.value = 1.3;
+            edges.material.uniforms.uIsGreeting.value = 0.0;
+            edges.material.uniforms.uColumnScaleZ.value = h;
+            edges.material.uniforms.uBrightnessBoost.value = 1.3;
           }
         });
       }
@@ -251,7 +258,7 @@ export class HologramRenderer {
 
   _createCentralMarkerSphere(radius, color) {
     const isTarget = (color === 0xffffff);
-    return new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 16), 
+    return new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 16),
       new THREE.MeshBasicMaterial({ color: isTarget ? 0xffff00 : color, transparent: isTarget, opacity: isTarget ? 0.0 : 1.0, visible: !isTarget }));
   }
 
@@ -295,9 +302,9 @@ export class HologramRenderer {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineBasicMaterial({
       color: color,
-      opacity: 0.005, // 3x прозрачнее
+      opacity: 0.0017, // Почти невидима — только намечает объём пространства
       transparent: true,
-      depthWrite: false, 
+      depthWrite: false,
       depthTest: false
     });
     material.needsUpdate = true;
@@ -306,7 +313,7 @@ export class HologramRenderer {
 
   _createAxis(xLength, yLength, zLength, sphereRadiusInput, isLeftGrid) {
     const axisGroup = new THREE.Group();
-    const sphereRadius = 2.4192; 
+    const sphereRadius = 2.4192;
     const origin = [0, 0, 0];
     const xEnd = isLeftGrid ? [-xLength, 0, 0] : [xLength, 0, 0];
     const colorX = isLeftGrid ? 0x800080 : 0xFF0000;
@@ -315,7 +322,7 @@ export class HologramRenderer {
     axisGroup.add(this._createSphereForAxis(sphereRadius, colorX).translateX(isLeftGrid ? -xLength : xLength));
 
     const spineLine = this._createLine2ForAxis([...origin, 0, yLength, 0], 0x00FF00, 1.5, true);
-    spineLine.renderOrder = 999; spineLine.material.depthTest = false; 
+    spineLine.renderOrder = 999; spineLine.material.depthTest = false;
     axisGroup.add(spineLine);
     axisGroup.add(this._createSphereForAxis(sphereRadius, 0x00FF00).translateY(yLength));
 
@@ -327,4 +334,64 @@ export class HologramRenderer {
   }
 
   getHologramPivot() { return this.hologramPivot; }
+
+  /**
+   * Переключает режим XR: Flat Grids ↔ Cochlear Cylinder (тороидальная голограмма).
+   * Вызывается из UIManager по клику кнопки XR.
+   * На мобильных добавляет вращение тора через DeviceOrientation API.
+   * @returns {Promise<boolean>} true = тороидальный режим активен
+   */
+  async toggleXRMode() {
+    // Lazy-init CochlearCylinder при первом вызове
+    if (!this._cochlearCylinder) {
+      const { CochlearCylinder } = await import('./CochlearCylinder.js');
+      this._cochlearCylinder = new CochlearCylinder(this.hologramPivot);
+      this._isTorusMode = false;
+      console.log('[HologramRenderer] CochlearCylinder initialized.');
+    }
+
+    if (!this._isTorusMode) {
+      // Flat → Torus
+      await this._cochlearCylinder.morphToTorus(
+        1500,
+        this.leftSequencerGroup,
+        this.rightSequencerGroup
+      );
+      this._isTorusMode = true;
+
+      // DeviceOrientation для мобильного вращения тороида
+      if (window.DeviceOrientationEvent && !this._deviceOrientationBound) {
+        this._deviceOrientationHandler = (e) => {
+          if (!this._isTorusMode || !this.hologramPivot) return;
+          // gamma: наклон влево/вправо (±90°) → вращение Y-оси тора
+          const gamma = e.gamma || 0; // -90..+90
+          this.hologramPivot.rotation.y = (gamma / 90) * Math.PI;
+        };
+        window.addEventListener('deviceorientation', this._deviceOrientationHandler, { passive: true });
+        this._deviceOrientationBound = true;
+        console.log('[HologramRenderer] DeviceOrientation → torus rotation ON');
+      }
+
+      console.log('[HologramRenderer] XR ON: Torus mode activated');
+      return true;
+    } else {
+      // Torus → Flat
+      await this._cochlearCylinder.morphToFlat(
+        1500,
+        this.leftSequencerGroup,
+        this.rightSequencerGroup
+      );
+      this._isTorusMode = false;
+
+      if (this._deviceOrientationBound) {
+        window.removeEventListener('deviceorientation', this._deviceOrientationHandler);
+        this._deviceOrientationBound = false;
+        this.hologramPivot.rotation.y = 0; // сбрасываем вращение
+        console.log('[HologramRenderer] DeviceOrientation → torus rotation OFF');
+      }
+
+      console.log('[HologramRenderer] XR OFF: Flat mode restored');
+      return false;
+    }
+  }
 }
