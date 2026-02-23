@@ -1,0 +1,112 @@
+/* frontend/css/_profile.css */
+#account-modal .modal-content {
+  max-width: 400px;
+  background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profile-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--button-action-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-sm);
+  color: white;
+  font-size: 32px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.profile-email {
+  font-size: var(--font-size-base);
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
+.profile-role {
+  font-size: var(--font-size-small);
+  color: var(--color-green-100);
+  background: rgba(0, 204, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.profile-role.admin {
+  color: var(--color-red-100, #ff4444);
+  background: rgba(255, 68, 68, 0.1);
+}
+
+.storage-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.storage-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-small);
+  margin-bottom: 6px;
+  color: #888;
+}
+
+.storage-bar-container {
+  height: 8px;
+  background: #222;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.storage-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #007bff, #00d4ff);
+  width: 0%;
+  transition: width 0.5s ease-out;
+}
+
+.account-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.account-actions button {
+  width: 100%;
+  margin-right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-secondary {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.btn-logout {
+  background: rgba(255, 68, 68, 0.1) !important;
+  color: #ff4444 !important;
+  border: 1px solid rgba(255, 68, 68, 0.2) !important;
+}
+
+.btn-logout:hover {
+  background: rgba(255, 68, 68, 0.2) !important;
+}

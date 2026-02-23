@@ -160,7 +160,13 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   uiElements.buttons.triaButton = document.getElementById('triaButton'); // For "Activate Tria Training"
   uiElements.buttons.promptModeButton = document.getElementById('promptModeButton'); // For Toggling Chat Mode / Opening Chat Panel
   uiElements.buttons.installPwaButton = document.getElementById('installPwaButton');
-  uiElements.buttons.avatarButton = document.getElementById('avatarButton'); // Added Avatar button
+  uiElements.buttons.avatarButton = document.getElementById('avatarButton');
+
+  // Добавляем элементы модального окна аккаунта
+  uiElements.modals.accountModal = document.getElementById('account-modal');
+  uiElements.actions.closeAccountModal = document.getElementById('closeAccountModal');
+  uiElements.actions.logoutBtn = document.getElementById('logoutBtn');
+  uiElements.actions.upgradeAccountBtn = document.getElementById('upgradeAccountBtn');
 
   // Left-panel Google login (legacy sidebar button) — ensure it opens the sign-in modal / triggers GSI prompt
   const leftGoogleBtn = document.getElementById('login-google-btn');
@@ -595,6 +601,91 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
 
   // Initialize Right Panel Logic
   initializeRightPanel(appState);
+
+  // --- Account Modal Logic ---
+  if (uiElements.buttons.avatarButton && uiElements.modals.accountModal) {
+    uiElements.buttons.avatarButton.addEventListener('click', () => {
+      updateProfileUI();
+      uiElements.modals.accountModal.style.display = 'flex';
+    });
+  }
+
+  if (uiElements.actions.closeAccountModal) {
+    uiElements.actions.closeAccountModal.addEventListener('click', () => {
+      uiElements.modals.accountModal.style.display = 'none';
+    });
+  }
+
+  if (uiElements.actions.logoutBtn) {
+    uiElements.actions.logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('jwtToken');
+      window.location.reload(); // Простой способ сбросить состояние
+    });
+  }
+
+  /**
+   * Парсит JWT токен без библиотек.
+   * @param {string} token 
+   * @returns {object|null}
+   */
+  function parseJwt(token) {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Обновляет данные в модальном окне аккаунта на основе JWT.
+   */
+  function updateProfileUI() {
+    const token = localStorage.getItem('jwtToken');
+    const profileEmail = document.getElementById('profile-email');
+    const profileRole = document.getElementById('profile-role');
+    const profileAvatar = document.getElementById('profile-avatar');
+    const storagePercent = document.getElementById('storage-percent');
+    const storageBarFill = document.getElementById('storage-bar-fill');
+    const storageDetail = document.getElementById('storage-detail');
+
+    if (!token) {
+      if (profileEmail) profileEmail.textContent = 'Гость (не авторизован)';
+      if (profileRole) {
+        profileRole.textContent = 'Guest';
+        profileRole.className = 'profile-role';
+      }
+      if (profileAvatar) profileAvatar.textContent = '?';
+      return;
+    }
+
+    const payload = parseJwt(token);
+    if (payload) {
+      const email = payload.email || 'unknown';
+      const role = payload.role || 'user';
+
+      if (profileEmail) profileEmail.textContent = email;
+      if (profileAvatar) profileAvatar.textContent = email.charAt(0).toUpperCase();
+
+      if (profileRole) {
+        profileRole.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+        profileRole.className = `profile-role ${role === 'developer' || role === 'admin' ? 'admin' : ''}`;
+      }
+
+      // Заглушка для хранилища (динамику добавим позже при интеграции с бэкендом)
+      const usedMb = role === 'developer' ? 12.4 : 0.5;
+      const totalMb = 100;
+      const percent = (usedMb / totalMb) * 100;
+
+      if (storagePercent) storagePercent.textContent = `${percent.toFixed(1)}%`;
+      if (storageBarFill) storageBarFill.style.width = `${percent}%`;
+      if (storageDetail) storageDetail.textContent = `${usedMb} MB / ${totalMb} MB`;
+    }
+  }
 }
 
 /**
