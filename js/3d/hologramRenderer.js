@@ -36,14 +36,16 @@ const fragmentShader = /* glsl */`
     varying float vWorldZHeight;
 
     void main() {
-        // Батиметрическое квантование: 128 четких шагов яркости
-        // Каждая единица высоты (1 дБ) соответствует одному шагу
-        float brightness = floor(vWorldZHeight) / 128.0;
+        // Нормализация высоты (0.0 - 1.0)
+        float norm = clamp(vWorldZHeight / 128.0, 0.0, 1.0);
+
+        // Гамма-коррекция 2.2 для восприятия глазом (Perceptual Lightness)
+        // Это осветляет тени, делая нижние слои (-127дБ и выше) различимыми
+        float brightness = pow(norm, 1.0 / 2.2);
         
-        // Гарантируем минимальную яркость 1/128 для базы (-128дБ)
-        brightness = max(brightness, 1.0 / 128.0);
-        // Ограничиваем сверху 1.0 (0дБ)
-        brightness = min(brightness, 1.0);
+        // Гарантируем минимальную яркость для базы (соответствует i=0 в таблице)
+        // Но так как floor(0) / 128.0 = 0, а pow(0) = 0, база будет черной.
+        // Для слоя 1 (-127дБ) яркость будет ~0.11 (28/255)
 
         vec3 color = uBaseColor * brightness;
         color += uSelection * 0.3;
