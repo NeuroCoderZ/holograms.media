@@ -212,8 +212,12 @@ export class HologramRenderer {
             dbL -= shadowDb;
         }
 
-        // 3. ЭФФЕКТ ПАКМАНА (Коррекция под 90 градусов: Stereo Pan = Середина сетки)
-        const offset = Math.round(Math.abs(p) * (GRID_WIDTH * 0.5));
+        // 3. ЭФФЕКТ ПАКМАНА (Коррекция под ширину столбца + 90 градусов)
+        // Гарантируем, что столбец никогда не выйдет за пределы своей сетки.
+        const w = config.width || 1;
+        const maxAvailableShift = (GRID_WIDTH - w) * 0.5; // Сдвиг до середины доступного пространства
+        const offset = Math.round(Math.abs(p) * maxAvailableShift);
+
         pair.left.position.x = pair.left.userData.initialX - (p < 0 ? offset : 0);
         pair.right.position.x = pair.right.userData.initialX + (p > 0 ? offset : 0);
 
@@ -291,11 +295,12 @@ export class HologramRenderer {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineBasicMaterial({
       color: color,
-      opacity: 0.04, // Призрачная сетка
+      opacity: 0.015, // Максимально призрачная сетка
       transparent: true,
       depthWrite: false, 
       depthTest: false
     });
+    material.needsUpdate = true;
     return new THREE.LineSegments(geometry, material);
   }
 
