@@ -73,11 +73,19 @@ export class HologramRenderer {
     this.leftSequencerGroup = new THREE.Group();
     this.leftSequencerGroup.position.copy(commonSpinePosition);
     this.leftSequencerGroup.add(this._createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, 1.0, true));
+    
+    const leftGridVis = this._createGridVisualization(-GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0x800080);
+    this.leftSequencerGroup.add(leftGridVis);
+    
     this.mainSequencerGroup.add(this.leftSequencerGroup);
 
     this.rightSequencerGroup = new THREE.Group();
     this.rightSequencerGroup.position.copy(commonSpinePosition);
     this.rightSequencerGroup.add(this._createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, 1.0, false));
+    
+    const rightGridVis = this._createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xFF0000);
+    this.rightSequencerGroup.add(rightGridVis);
+    
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
     // RESTORE SPHERES
@@ -147,7 +155,7 @@ export class HologramRenderer {
   }
 
   updateVisuals() {
-    if (state.audio?.isPaused) return; 
+    if (state.audio?.isPaused) return; // Замораживаем кадр
 
     const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));
     const audioData = this.latestCwtData || state.audio?.latestAudioData;
@@ -161,45 +169,75 @@ export class HologramRenderer {
 
       if (!isActive) {
         // --- GREETING MODE ---
+        const gDepth = 0.1;
         [leftMesh, rightMesh].forEach(m => {
-          m.scale.z = 0.1;
-          m.position.z = 0.05;
+          m.scale.z = gDepth;
+          m.position.z = gDepth / 2;
           m.material.uniforms.uIsGreeting.value = 1.0;
-          m.material.uniforms.uColumnScaleZ.value = 0.1;
+          m.material.uniforms.uColumnScaleZ.value = gDepth;
+          // Reset edge uniforms for greeting
           const edges = m.children[0];
-          if (edges) {
-            edges.material.uniforms.uIsGreeting.value = 1.0;
-            edges.material.uniforms.uColumnScaleZ.value = 0.1;
+          if (edges && edges.material.uniforms) {
+              edges.material.uniforms.uIsGreeting.value = 1.0;
+              edges.material.uniforms.uColumnScaleZ.value = gDepth;
           }
         });
-        pair.left.position.x = 0;
-        pair.right.position.x = 0;
+        pair.left.position.x = 0;  // СТРОГО 0
+        pair.right.position.x = 0; // СТРОГО 0
       } else {
-        // --- ACTIVE MODE: Binaural suppression ---
-        const dbL = dbLevels[i];
-        const dbR = dbLevels[i + 128];
-        const rawPan = panAngles[i];
-
-        this._panStates[i] += (rawPan - this._panStates[i]) * 0.5;
+        // --- ACTIVE MODE: Psychoacoustic & Cognitive Masking ---
+        let dbL = dbLevels[i];
+        let dbR = dbLevels[i + 128];
+        
+        // 1. ИНВЕРСИЯ: Знак минус решает проблему "Side Left звучит справа". 
+        // Теперь: targetPan < 0 это Лево (-X), targetPan > 0 это Право (+X).
+        const targetPan = -panAngles[i]; 
+        
+        // Магнитная панорама (минимальное сглаживание для точности Сканера)
+        this._panStates[i] += (targetPan - this._panStates[i]) * 0.7;
         const p = this._panStates[i];
 
-        // Suppression (Head Shadow)
-        const sDbL = dbL - (p > 0.0 ? p * 128.0 : 0.0);
-        const sDbR = dbR - (p < 0.0 ? Math.abs(p) * 128.0 : 0.0);
+        // 2. КОГНИТИВНАЯ МАСКИРОВКА (Психоакустика)
+        // Мозг отсекает тихие дублирующие сигналы для фокусировки на источнике.
+        // Используем полный динамический диапазон (128 дБ) умноженный на коэффициент дифракции из файла конфигурации.
+        const maxCognitiveShadowDb = 128.0; 
+        const shadowDb = Math.abs(p) * config.shadow_coef * maxCognitiveShadowDb;
 
-        const offset = Math.round(p * (GRID_WIDTH - config.width));
-        pair.left.position.x = (p < 0 ? offset : 0);
-        pair.right.position.x = (p > 0 ? offset : 0);
+        // Взаимное подавление внимания мозга (Пиг-Понг)
+        if (p < -0.01) {
+            // Внимание смещено влево. Мозг глушит восприятие в правом ухе.
+            dbR -= shadowDb;
+        } else if (p > 0.01) {
+            // Внимание смещено вправо. Мозг глушит восприятие в левом ухе.
+            dbL -= shadowDb;
+        }
 
-        [ [leftMesh, sDbL], [rightMesh, sDbR] ].forEach(([m, db]) => {
-          const h = Math.max(0.1, 128.0 + db);
-          m.scale.z = h; m.position.z = h / 2;
-          m.material.uniforms.uIsGreeting.value = 0.0;
-          m.material.uniforms.uColumnScaleZ.value = h;
+        // 3. ЭФФЕКТ ПАКМАНА (Смещение по координатам X)
+        const offset = Math.round(Math.abs(p) * (GRID_WIDTH - config.width));
+        pair.left.position.x = pair.left.userData.initialX - (p < 0 ? offset : 0);
+        pair.right.position.x = pair.right.userData.initialX + (p > 0 ? offset : 0);
+
+        // 4. СТРОГОЕ КВАНТОВАНИЕ BASILAQ-128 (1 unit = 1 dB)
+        [ [leftMesh, dbL], [rightMesh, dbR] ].forEach(([m, db]) => {
+          // Ограничиваем дБ от -128 до 0
+          const safeDb = Math.max(-128.0, Math.min(0.0, db));
+          const h = Math.max(0.1, 128.0 + safeDb);
+          
+          m.scale.z = h;
+          m.position.z = h / 2;
+          
+          if (m.material.uniforms) {
+              m.material.uniforms.uIsGreeting.value = 0.0;
+              m.material.uniforms.uColumnScaleZ.value = h;
+              m.material.uniforms.uBrightnessBoost.value = 1.0;
+          }
+          
+          // Ребра на 30% ярче
           const edges = m.children[0];
-          if (edges) {
-            edges.material.uniforms.uIsGreeting.value = 0.0;
-            edges.material.uniforms.uColumnScaleZ.value = h;
+          if (edges && edges.material.uniforms) {
+              edges.material.uniforms.uIsGreeting.value = 0.0;
+              edges.material.uniforms.uColumnScaleZ.value = h;
+              edges.material.uniforms.uBrightnessBoost.value = 1.3;
           }
         });
       }
@@ -222,6 +260,39 @@ export class HologramRenderer {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineBasicMaterial({ color, linewidth, depthTest, transparent: !depthTest });
     return new THREE.Line(geometry, material);
+  }
+
+  _createGridVisualization(gridWidth, gridHeight, gridDepth, cellSize, color) {
+    const points = [];
+    const divisionsX = Math.floor(Math.abs(gridWidth) / cellSize);
+    const divisionsY = Math.round(gridHeight / CELL_HEIGHT);
+    const divisionsZ = Math.floor(gridDepth / cellSize);
+    const signX = Math.sign(gridWidth) || 1;
+
+    for (let i = 0; i <= divisionsY; i++) {
+      for (let j = 0; j <= divisionsZ; j++) {
+        points.push(0, i * CELL_HEIGHT, j * cellSize, gridWidth, i * CELL_HEIGHT, j * cellSize);
+      }
+    }
+    for (let i = 0; i <= divisionsX; i++) {
+      const x = i * cellSize * signX;
+      for (let j = 0; j <= divisionsZ; j++) {
+        points.push(x, 0, j * cellSize, x, gridHeight, j * cellSize);
+      }
+    }
+    for (let i = 0; i <= divisionsX; i++) {
+      const x = i * cellSize * signX;
+      for (let j = 0; j <= divisionsY; j++) {
+        points.push(x, j * CELL_HEIGHT, 0, x, j * CELL_HEIGHT, gridDepth);
+      }
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+    const material = new THREE.LineBasicMaterial({
+      color, opacity: 0.05, transparent: true, depthWrite: false, depthTest: false
+    });
+    return new THREE.LineSegments(geometry, material);
   }
 
   _createAxis(xLength, yLength, zLength, sphereRadiusInput, isLeftGrid) {
