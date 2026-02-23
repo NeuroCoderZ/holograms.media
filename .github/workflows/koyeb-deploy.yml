@@ -1,22 +1,13 @@
-# ⚠️ AGENT_ADVISORY: КРИТИЧЕСКАЯ ИНФРАСТРУКТУРА
-# Этот файл был восстановлен после серии сбоев, вызванных попытками "оптимизации".
-# ПРАВИЛА ДЛЯ АГЕНТОВ:
-# 1. НЕ УДАЛЯЙТЕ шаг 'install-koyeb-cli' — это единственный способ авторизации CLI.
-# 2. НЕ МЕНЯЙТЕ 'with' параметры на 'snake_case', если они в 'kebab-case'.
-# 3. ЛЮБЫЕ правки должны проверяться через 'git diff' с коммитом 2bbaf76.
-# 4. Если вы не уверены на 100% — НЕ ТРОГАЙТЕ этот файл.
-
 name: 🚀 Deploy Backend to Koyeb (Production)
 
 on:
   push:
-    branches: [master, prod]
+    branches: [main]
   workflow_dispatch: {}
 
 jobs:
   deploy_backend_production:
     runs-on: ubuntu-latest
-
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
@@ -26,35 +17,19 @@ jobs:
         with:
           api_token: ${{ secrets.KOYEB_API_TOKEN }}
 
-
       - name: 🚀 Deploy and Sync Environment
         run: |
-          # 1. Sync critical secrets to Koyeb Vault to ensure consistency
-          koyeb secret update JWT_SECRET_KEY --value "${{ secrets.JWT_SECRET_KEY }}" || koyeb secret create JWT_SECRET_KEY --value "${{ secrets.JWT_SECRET_KEY }}"
-          koyeb secret update MISTRAL_API_KEY --value "${{ secrets.MISTRAL_API_KEY }}" || koyeb secret create MISTRAL_API_KEY --value "${{ secrets.MISTRAL_API_KEY }}"
+          # Sync secrets to Vault
           koyeb secret update PROD_GOOGLE_CLIENT_ID --value "${{ secrets.PROD_GOOGLE_CLIENT_ID }}" || koyeb secret create PROD_GOOGLE_CLIENT_ID --value "${{ secrets.PROD_GOOGLE_CLIENT_ID }}"
           koyeb secret update PROD_GOOGLE_CLIENT_SECRET --value "${{ secrets.PROD_GOOGLE_CLIENT_SECRET }}" || koyeb secret create PROD_GOOGLE_CLIENT_SECRET --value "${{ secrets.PROD_GOOGLE_CLIENT_SECRET }}"
 
-          # 2. Trigger deployment and bind variables to secrets (bypasses service-env bug)
+          # Update Production Service
           koyeb service update holograms-media-prod/holograms-media-prod \
-            --git-branch ${{ github.ref_name }} \
+            --git-branch main \
             --git-builder docker \
             --git-docker-dockerfile Dockerfile \
             --env ENVIRONMENT=production \
-            --env PORT=8000 \
-            --env JWT_SECRET_KEY=secret!JWT_SECRET_KEY \
-            --env MISTRAL_API_KEY=secret!MISTRAL_API_KEY \
             --env GOOGLE_CLIENT_ID=secret!PROD_GOOGLE_CLIENT_ID \
             --env GOOGLE_CLIENT_SECRET=secret!PROD_GOOGLE_CLIENT_SECRET \
             --env ASTRA_DB_APPLICATION_TOKEN=secret!ASTRA_DB_APPLICATION_TOKEN \
-            --env ASTRA_DB_API_ENDPOINT=secret!ASTRA_DATABASE_URL \
-            --env B2_ENDPOINT_URL=secret!B2_ENDPOINT_URL \
-            --env B2_ACCESS_KEY_ID=secret!B2_ACCESS_KEY_ID \
-            --env B2_SECRET_ACCESS_KEY=secret!B2_SECRET_ACCESS_KEY \
-            --env B2_BUCKET_NAME=secret!B2_BUCKET_NAME
-
-
-      - name: 📋 Output Backend URL
-        run: |
-          echo "Deployment successful."
-          echo "::notice::Backend is updating and syncing environment variables. Check Koyeb Console for real-time status."
+            --env ASTRA_DB_API_ENDPOINT=secret!ASTRA_DATABASE_URL

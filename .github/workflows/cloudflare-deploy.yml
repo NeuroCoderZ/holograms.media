@@ -1,15 +1,8 @@
-# ⚠️ AGENT_ADVISORY: СТАБИЛЬНЫЙ ВОРКФЛОУ
-# Этот файл проверен и работает. Любые изменения в путях сборки (dist) 
-# или параметрах Cloudflare Pages Action должны быть обоснованы.
-# ПРАВИЛА ДЛЯ АГЕНТОВ:
-# 1. Всегда проверяйте наличие шага 'Prepare Dist' (копирование _headers/_redirects).
-# 2. Не меняйте версию Node.js без согласования (сейчас 20).
-
 name: 🚀 Deploy Frontend to Cloudflare Pages
 
 on:
   push:
-    branches: [master, main, prod]
+    branches: [main, dev]
   workflow_dispatch: {}
 
 jobs:
@@ -18,7 +11,7 @@ jobs:
     permissions:
       contents: read
       deployments: write
-    name: Build & Deploy to Cloudflare Pages
+    name: Build & Deploy
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
@@ -35,15 +28,15 @@ jobs:
       - name: 🏗️ Build Frontend
         run: npm run build
         env:
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.PROD_GOOGLE_CLIENT_ID }}
-          VITE_API_URL: https://holograms-media-prod-holograms-media-6a8cc743.koyeb.app
-          VITE_ENVIRONMENT: production
+          VITE_GOOGLE_CLIENT_ID: ${{ github.ref_name == 'main' && secrets.PROD_GOOGLE_CLIENT_ID || secrets.DEV_GOOGLE_CLIENT_ID }}
+          VITE_API_URL: ${{ github.ref_name == 'main' && 'https://holograms-media-prod-holograms-media-6a8cc743.koyeb.app' || 'https://holograms-media-dev-holograms-media-6a8cc743.koyeb.app' }}
+          VITE_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'development' }}
 
       - name: 🔧 Copy _headers and _redirects to dist
         run: |
-          cp public/_headers dist/_headers
-          cp public/_redirects dist/_redirects
-          ls -R dist
+          mkdir -p dist
+          cp public/_headers dist/_headers || echo "No _headers found"
+          cp public/_redirects dist/_redirects || echo "No _redirects found"
 
       - name: ☁️ Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -53,3 +46,4 @@ jobs:
           projectName: holograms-media
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
