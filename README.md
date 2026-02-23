@@ -1,182 +1,36 @@
-# 🎭 Holograms.Media
+# Holograms Media
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org/)
-[![Three.js](https://img.shields.io/badge/Three.js-0.165.0+-orange.svg)](https://threejs.org/)
+**Holograms Media** — это мультимодальная XR-платформа нового поколения, предназначенная для интуитивного взаимодействия с цифровой информацией через звук, жесты и 3D-визуализацию.
 
-> **Инновационная платформа для создания и взаимодействия с голографическими медиа через естественные жесты и голос**
+## 🚀 Особенности
+- **Интуитивный Язык Жестов:** Управление звуком и визуализацией с помощью MediaPipe Hands.
+- **Высокопроизводительное Ядро:** Анализ аудио в реальном времени с использованием Rust и WebAssembly (CWT-анализ).
+- **Мультиплатформенность:** Адаптивные интерфейсы для Desktop, Mobile и XR-устройств.
+- **Коллективный Интеллект (Tria):** AI-ассистент, обучающийся на потоке мультимодального взаимодействия.
 
-Holograms.Media - это полнофункциональное веб-приложение, которое сочетает передовые технологии 3D-визуализации, машинного обучения и естественного взаимодействия человека с компьютером. Проект создает мост между традиционными медиа и иммерсивными голографическими технологиями.
-
-## ✨ Возможности
-
-### 🎨 3D-Визуализация в Реальном Времени
-- **Умный выбор рендерера**: Автоматический детект и использование WebGPU, WebGL или Canvas2D в зависимости от возможностей устройства
-- **Динамические голограммы**: Создание и визуализация 3D-объектов с использованием Three.js с поддержкой современных GPU API
-- **Аудио-реактивность**: Визуализация звука в реальном времени с помощью непрерывного вейвлет-преобразования (CWT)
-- **WebAssembly**: Высокопроизводительная обработка аудио с использованием Rust/WASM
-- **Прогрессивное улучшение**: Seamless fallback от WebGPU к WebGL к Canvas2D для максимальной совместимости
-
-### 🤖 Искусственный Интеллект
-- **Самообучающийся AI-ассистент "Триа"**: Интеллектуальный помощник на базе Mistral LLM
-- **Распознавание жестов**: Управление через MediaPipe Hands с поддержкой TensorFlow.js
-- **Мультимодальный ввод**: Голосовое управление через Web Speech API
-
-### 🌐 Современная Архитектура
-- **P2P-обмен данными**: WebRTC для прямого обмена между клиентами
-- **Масштабируемый бэкенд**: FastAPI на Python с развертыванием на Koyeb
-- **Облачное хранение**: Backblaze B2 и Astra Database (Cassandra)
-- **CDN**: Cloudflare Pages для быстрой доставки контента
-
-## 🏗️ Архитектура Проекта
-
-```
-holograms.media/
-├── 📁 js/                    # Frontend JavaScript модули
-│   ├── core/                # Ядро приложения (EventBus, State)
-│   ├── 3d/                  # 3D-рендеринг (Three.js, Holograms)
-│   ├── audio/               # Аудио (AudioService, WASM, Worklets)
-│   ├── platforms/           # Платформо-зависимые лейауты (Desktop, Mobile, XR)
-│   ├── ui/                  # UI менеджеры и компоненты
-│   ├── multimodal/          # Мультимодальный ввод (Жесты, Голос)
-│   ├── ai/                  # AI интеграции (Tria)
-│   └── services/            # Внешние сервисы
-├── 📁 backend/              # Python FastAPI бэкенд
-│   ├── api/                 # REST API эндпоинты
-│   ├── core/                # Бизнес-логика
-│   ├── services/            # Сервисы (AI, хранение)
-│   └── tria_bots/           # AI-боты
-├── 📁 css/                  # Стили приложения
-├── 📁 docs/                 # Документация
-└── 📁 public/               # Статические ресурсы
-```
-
-## 🚀 Быстрый Старт
-
-### Предварительные Требования
-- **Node.js** 18+ и **npm**
-- **Python** 3.9+ с **pip**
-- **Git** для клонирования репозитория
-
-### Установка и Запуск
-
-1. **Клонируйте репозиторий:**
-   ```bash
-   git clone https://github.com/NeuroCoderZ/holograms.media.git
-   cd holograms.media
-   ```
-
-2. **Установите зависимости:**
-   ```bash
-   # Frontend зависимости
-   npm install
-   
-   # Backend зависимости
-   cd backend
-   pip install -r requirements.txt
-   cd ..
-   ```
-
-3. **Запустите приложение:**
-   ```bash
-   # Frontend (в одном терминале)
-   npm run dev
-   
-   # Backend (в другом терминале)
-   cd backend
-   python -m uvicorn main:app --reload
-   ```
-
-4. **Откройте браузер:**
-   Перейдите на `http://localhost:5173` для доступа к приложению
-
-## 🎯 Ключевые Функции
-
-### Визуализация Аудио
-- **CWT-анализ**: Непрерывное вейвлет-преобразование для точного анализа частот
-- **Стерео-визуализация**: Отдельная обработка левого и правого каналов
-- **WebAssembly**: Оптимизированная производительность с Rust
-
-### Управление Жестами
-- **MediaPipe Hands**: Распознавание ключевых точек рук в реальном времени
-- **GestureIntentClassifier**: Интеллектуальная классификация намерений
-- **Естественное взаимодействие**: Управление без клавиатуры и мыши
-
-### AI-Ассистент Триа
-- **Контекстное обучение**: Самосовершенствующийся AI
-- **Мультимодальный ввод**: Обработка текста, голоса и жестов
-- **RAG-система**: Семантический поиск по базе знаний
-
-### 🚀 Стек Визуализации Нового Поколения
-- **WebGPU**: Современный API для высокопроизводительной 3D-графики
-- **WebGL**: Проверенный временем рендерер для широкой совместимости
-- **Canvas2D**: Надежный fallback для максимальной доступности
-- **Адаптивный выбор**: Автоматический детект и переключение между технологиями
-- **Прогрессивное улучшение**: Seamless опыт от базовой до продвинутой графики
-
-## �️ Технологический Стек
-
+## 🛠 Технологический Стек
 ### Frontend
-- **JavaScript ES6+** - Основной язык программирования
-- **Three.js 0.165.0** - 3D-графика с поддержкой WebGPU/WebGL
-- **Система умного рендеринга** - Автоматический выбор между WebGPU, WebGL и Canvas2D
-- **TensorFlow.js 2.8.6** - Машинное обучение в браузере
-- **MediaPipe** - Компьютерное зрение
-- **WebRTC** - P2P-коммуникации
-- **@tweenjs/tween.js 23.1.1** - Анимации
-- **WebAssembly (Rust)** - Высокопроизводительные вычисления
+- **Framework:** [Vite](https://vitejs.dev/) + Vanilla JS / ES Modules.
+- **3D Engine:** [Three.js](https://threejs.org/).
+- **CV / Gestures:** [MediaPipe Hands](https://google.github.io/mediapipe/solutions/hands).
+- **Audio Engine:** AudioWorklet + Custom Rust/WASM (Continuous Wavelet Transform).
 
 ### Backend
-- **FastAPI** - Современный Python веб-фреймворк
-- **Mistral AI** - Языковая модель
-- **Astra Database (Cassandra)** - NoSQL база данных
-- **WebRTC** - P2P-сервер
+- **API:** [FastAPI](https://fastapi.tiangolo.com/) (Python).
+- **Database:** [DataStax AstraDB](https://www.datastax.com/products/datastax-astra) (Vector Search & NoSQL).
+- **Storage:** [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) (S3-compatible).
+- **Hosting:** [Koyeb](https://www.koyeb.com/).
 
-### DevOps & Инфраструктура
-- **Cloudflare Pages** - Хостинг и CDN
-- **Koyeb** - Вычисления и API
-- **Backblaze B2** - Хранение файлов
-- **Docker** - Контейнеризация
-- **Vite 7.0.2** - Сборщик и dev-сервер
+## 🏗 Структура Проекта
+- `frontend/`: (Корень) Исходный код клиентской части.
+- `backend/`: API-сервисы и логика Триа.
+- `js/wasm/`: Модули на Rust, скомпилированные в WASM.
+- `conductor/`: База знаний и треки разработки (локально).
 
-## 📚 Документация
-
-Подробная документация доступна в папке [`docs/`](docs/):
-
-- **[Архитектура системы](docs/RU/Architecture/)** - Техническая документация
-- **[Руководство по развертыванию](docs/RU/Architecture/Infrastructure/)** - Инструкции по деплою
-- **[API спецификации](docs/RU/Architecture/ApiSpecifications/)** - Документация API
-
-## 🤝 Вклад в Проект
-
-Мы приветствуем вклад сообщества! Вот как вы можете помочь:
-
-1. **Fork** репозиторий
-2. Создайте **feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit** изменения (`git commit -m 'Add amazing feature'`)
-4. **Push** в branch (`git push origin feature/amazing-feature`)
-5. Откройте **Pull Request**
-
-### Требования к коду
-- Следуйте принципам **SOLID** и **DRY**
-- Используйте **ES6+ синтаксис**
-- Добавляйте **JSDoc комментарии** на русском языке
-- Соблюдайте **максимальную длину строки 120 символов**
-
-## 📄 Лицензия
-
-Этот проект распространяется под лицензией MIT. Подробности в файле [LICENSE](LICENSE).
-
-## 📞 Контакты
-
-- **Автор**: Нейрокодер (NeuroCoder)
-- **Репозиторий**: [https://github.com/NeuroCoderZ/holograms.media](https://github.com/NeuroCoderZ/holograms.media)
-- **Документация**: [docs/](docs/)
+## 🚦 Правила Разработки и Деплоя
+- **master**: Главная ветка (Production). Авто-деплой на [holograms.media](https://holograms.media).
+- **dev**: Ветка разработки (Development). Деплой на [dev.holograms.media](https://dev.holograms.media).
+- Все правки осуществляются через ветку `dev` с последующим слиянием в `master`.
 
 ---
-
-<div align="center">
-  <p><strong>🌟 Создавайте будущее вместе с нами! 🌟</strong></p>
-  <p>Каждый вклад приближает нас к новой эре взаимодействия человека с технологиями</p>
-</div>
+*Developed by **NeuroCoder** & Tria Collective Intelligence.*
