@@ -25,6 +25,7 @@ const fragmentShader = /* glsl */`
     uniform float uSelection;
     uniform float uOpacity;
     uniform float uIsGreeting; 
+    uniform float uBrightnessBoost; // 1.0 для поверхности, 1.3 для ребер
     varying float vWorldZHeight;
 
     void main() {
@@ -32,6 +33,9 @@ const fragmentShader = /* glsl */`
         float cellIndex = floor(vWorldZHeight);
         float brightness = clamp(cellIndex / 128.0, 0.0, 1.0);
         
+        // Применяем буст яркости (например, для ребер)
+        brightness = clamp(brightness * uBrightnessBoost, 0.0, 1.0);
+
         // В режиме приветствия яркость всегда максимальна
         if (uIsGreeting > 0.5) {
             brightness = 1.0;
@@ -115,6 +119,7 @@ export class HologramRenderer {
         uSelection: { value: 0.0 },
         uOpacity: { value: 1.0 },
         uIsGreeting: { value: 1.0 },
+        uBrightnessBoost: { value: 1.0 },
         uColumnScaleZ: { value: 0.1 }
       },
       vertexShader,
@@ -123,21 +128,38 @@ export class HologramRenderer {
     });
 
     const mesh = new THREE.Mesh(geometry, material);
+    // Сдвигаем меш так, чтобы его край был ровно в X=0 группы
     mesh.position.set(isLeft ? -width/2 : width/2, (index + 0.5) * CELL_HEIGHT, 0);
     mesh.scale.set(1, 1, 0.1);
     
-    // Edges
+    // HIGHLIGHT EDGES (Теперь через ShaderMaterial для послойного затемнения)
     const edgesGeom = new THREE.EdgesGeometry(geometry);
-    const edgesMat = new THREE.LineBasicMaterial({ color: baseColor.clone().offsetHSL(0,0,0.4) });
+    const edgesMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uBaseColor: { value: baseColor.clone().offsetHSL(0, 0, 0.2) }, // Чуть светлее база
+        uSelection: { value: 0.0 },
+        uOpacity: { value: 1.0 },
+        uIsGreeting: { value: 1.0 },
+        uBrightnessBoost: { value: 1.3 }, // Ребра на 30% ярче!
+        uColumnScaleZ: { value: 0.1 }
+      },
+      vertexShader,
+      fragmentShader,
+      transparent: false
+    });
     const edges = new THREE.LineSegments(edgesGeom, edgesMat);
     mesh.add(edges);
 
     group.add(mesh);
-    group.userData = { initialX: isLeft ? -width : 0, baseColor: baseColor };
+    // initialX = 0, так как меш уже сдвинут внутри группы
+    group.userData = { initialX: 0, baseColor: baseColor };
     return group;
   }
 
   updateVisuals() {
+    const isPaused = (state.audio && state.audio.isPaused);
+    if (isPaused) return; 
+
     const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));
     const audioData = this.latestCwtData || (state.audio?.latestAudioData);
     
@@ -157,6 +179,13 @@ export class HologramRenderer {
           m.position.z = gDepth / 2;
           m.material.uniforms.uIsGreeting.value = 1.0;
           m.material.uniforms.uColumnScaleZ.value = gDepth;
+
+          // Синхронизация РЕБЕР
+          const edges = m.children[0];
+          if (edges && edges.material.uniforms) {
+            edges.material.uniforms.uIsGreeting.value = 1.0;
+            edges.material.uniforms.uColumnScaleZ.value = gDepth;
+          }
         });
         pair.left.position.x = -config.width;
         pair.right.position.x = 0;
@@ -179,12 +208,17 @@ export class HologramRenderer {
           const h = Math.max(0.1, 128.0 + db);
           m.scale.z = h;
           m.position.z = h / 2;
+          
+          // Обновляем униформы меша
           m.material.uniforms.uIsGreeting.value = 0.0;
           m.material.uniforms.uColumnScaleZ.value = h;
           
-          // Edges brightness sync with layer
-          const edgeC = pair.left.userData.baseColor.clone().multiplyScalar(Math.floor(h) / 128.0);
-          m.children[0].material.color.copy(edgeC);
+          // Обновляем униформы РЕБЕР (они теперь тоже ShaderMaterial)
+          const edges = m.children[0];
+          if (edges && edges.material.uniforms) {
+            edges.material.uniforms.uIsGreeting.value = 0.0;
+            edges.material.uniforms.uColumnScaleZ.value = h;
+          }
         });
       }
     });
