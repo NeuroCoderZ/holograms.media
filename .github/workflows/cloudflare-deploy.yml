@@ -46,4 +46,4 @@ jobs:
           projectName: ${{ github.ref_name == 'main' && 'holograms-media' || 'holograms-media-dev' }}
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref_name }}
+          branch: main
