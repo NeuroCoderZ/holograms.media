@@ -1,0 +1,49 @@
+name: 🚀 Deploy Frontend to Cloudflare Pages
+
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch: {}
+
+jobs:
+  deploy_frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    name: Build & Deploy
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Frontend
+        run: npm run build
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ github.ref_name == 'main' && secrets.PROD_GOOGLE_CLIENT_ID || secrets.DEV_GOOGLE_CLIENT_ID }}
+          VITE_API_URL: ${{ github.ref_name == 'main' && 'https://holograms-media-prod-holograms-media-6a8cc743.koyeb.app' || 'https://holograms-media-dev-holograms-media-6a8cc743.koyeb.app' }}
+          VITE_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+
+      - name: 🔧 Copy _headers and _redirects to dist
+        run: |
+          mkdir -p dist
+          cp public/_headers dist/_headers || echo "No _headers found"
+          cp public/_redirects dist/_redirects || echo "No _redirects found"
+
+      - name: ☁️ Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: holograms-media
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}

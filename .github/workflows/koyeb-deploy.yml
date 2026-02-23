@@ -1,0 +1,35 @@
+name: 🚀 Deploy Backend to Koyeb (Production)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy_backend_production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Install and Configure Koyeb CLI
+        uses: koyeb-community/install-koyeb-cli@v2
+        with:
+          api_token: ${{ secrets.KOYEB_API_TOKEN }}
+
+      - name: 🚀 Deploy and Sync Environment
+        run: |
+          # Sync secrets to Vault
+          koyeb secret update PROD_GOOGLE_CLIENT_ID --value "${{ secrets.PROD_GOOGLE_CLIENT_ID }}" || koyeb secret create PROD_GOOGLE_CLIENT_ID --value "${{ secrets.PROD_GOOGLE_CLIENT_ID }}"
+          koyeb secret update PROD_GOOGLE_CLIENT_SECRET --value "${{ secrets.PROD_GOOGLE_CLIENT_SECRET }}" || koyeb secret create PROD_GOOGLE_CLIENT_SECRET --value "${{ secrets.PROD_GOOGLE_CLIENT_SECRET }}"
+
+          # Update Production Service
+          koyeb service update holograms-media-prod/holograms-media-prod 
+            --git-branch main 
+            --git-builder docker 
+            --git-docker-dockerfile Dockerfile 
+            --env ENVIRONMENT=production 
+            --env GOOGLE_CLIENT_ID=secret!PROD_GOOGLE_CLIENT_ID 
+            --env GOOGLE_CLIENT_SECRET=secret!PROD_GOOGLE_CLIENT_SECRET 
+            --env ASTRA_DB_APPLICATION_TOKEN=secret!ASTRA_DB_APPLICATION_TOKEN 
+            --env ASTRA_DB_API_ENDPOINT=secret!ASTRA_DATABASE_URL
