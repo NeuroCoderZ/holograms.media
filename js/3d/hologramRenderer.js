@@ -346,12 +346,14 @@ export class HologramRenderer {
     if (!this._cochlearCylinder) {
       const { CochlearCylinder } = await import('./CochlearCylinder.js');
       this._cochlearCylinder = new CochlearCylinder(this.hologramPivot);
+      // Передаём колонки ОДИН РАЗ при инициализации
+      this._cochlearCylinder.setColumns(this.columns);
       this._isTorusMode = false;
-      console.log('[HologramRenderer] CochlearCylinder initialized.');
+      console.log('[HologramRenderer] CochlearCylinder v4 initialized with', this.columns.length, 'column pairs.');
     }
 
     if (!this._isTorusMode) {
-      // Flat → Torus
+      // Flat → Ring
       await this._cochlearCylinder.morphToTorus(
         1500,
         this.leftSequencerGroup,
@@ -359,23 +361,38 @@ export class HologramRenderer {
       );
       this._isTorusMode = true;
 
-      // DeviceOrientation для мобильного вращения тороида
+      // DeviceOrientation: alpha = yaw = поворот телефона вокруг вертикальной оси (0..360°)
+      // Это именно "обход по кольцу" — пользователь крутится со смартфоном → видит разные семитоны
       if (window.DeviceOrientationEvent && !this._deviceOrientationBound) {
+        this._alphaOffset = null; // Калибровка: первое значение = "ноль" пользователя
         this._deviceOrientationHandler = (e) => {
           if (!this._isTorusMode || !this.hologramPivot) return;
-          // gamma: наклон влево/вправо (±90°) → вращение Y-оси тора
-          const gamma = e.gamma || 0; // -90..+90
-          this.hologramPivot.rotation.y = (gamma / 90) * Math.PI;
+          const alpha = e.alpha; // 0..360, абсолютный азимут
+          if (alpha === null || alpha === undefined) return;
+
+          // Калибровка: при первом событии запоминаем начальный угол
+          if (this._alphaOffset === null) {
+            this._alphaOffset = alpha;
+            console.log('[HologramRenderer] Ring calibrated. Front at alpha =', alpha.toFixed(1), '°');
+          }
+
+          // Относительный угол: deltaAlpha = 0° → кольцо не вращается
+          // Поворачиваем КАМЕРУ (точнее, всю сцену в противоположную сторону)
+          // → эффект "я хожу внутри кольца"
+          let delta = alpha - this._alphaOffset;
+          if (delta < 0) delta += 360;
+          // Нормализуем в радианы: 360° = 2π
+          this.hologramPivot.rotation.y = -(delta / 360) * Math.PI * 2;
         };
         window.addEventListener('deviceorientation', this._deviceOrientationHandler, { passive: true });
         this._deviceOrientationBound = true;
-        console.log('[HologramRenderer] DeviceOrientation → torus rotation ON');
+        console.log('[HologramRenderer] DeviceOrientation → ring walk (alpha) ON');
       }
 
-      console.log('[HologramRenderer] XR ON: Torus mode activated');
+      console.log('[HologramRenderer] XR ON: Ring mode activated — user is inside the hologram.');
       return true;
     } else {
-      // Torus → Flat
+      // Ring → Flat
       await this._cochlearCylinder.morphToFlat(
         1500,
         this.leftSequencerGroup,
@@ -386,11 +403,12 @@ export class HologramRenderer {
       if (this._deviceOrientationBound) {
         window.removeEventListener('deviceorientation', this._deviceOrientationHandler);
         this._deviceOrientationBound = false;
-        this.hologramPivot.rotation.y = 0; // сбрасываем вращение
-        console.log('[HologramRenderer] DeviceOrientation → torus rotation OFF');
+        this._alphaOffset = null;
+        this.hologramPivot.rotation.y = 0;
+        console.log('[HologramRenderer] DeviceOrientation → ring walk OFF');
       }
 
-      console.log('[HologramRenderer] XR OFF: Flat mode restored');
+      console.log('[HologramRenderer] XR OFF: Flat mode restored.');
       return false;
     }
   }
