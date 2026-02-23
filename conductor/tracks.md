@@ -51,3 +51,8 @@
 
 - [x] **Трек: Hotfix CSP для MediaPipe**
   *Ссылка: [./tracks/hotfix_csp_mediapipe_20260222/](./tracks/hotfix_csp_mediapipe_20260222/)*
+
+---
+
+- [x] **Трек: Синхронизация Веток и Автоматизация Деплоя**
+  *Ссылка: [./tracks/sync_prod_main_dev_automation_20260222/](./tracks/sync_prod_main_dev_automation_20260222/)*
