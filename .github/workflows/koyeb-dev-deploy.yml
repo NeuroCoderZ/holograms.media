@@ -1,19 +1,13 @@
-# ⚠️ AGENT_ADVISORY: КРИТИЧЕСКАЯ ИНФРАСТРУКТУРА
-# Этот файл настроен для изоляции среды DEVELOPMENT.
-# ПРАВИЛА:
-# 1. НЕ УДАЛЯЙТЕ шаг 'install-koyeb-cli'.
-# 2. Деплой происходит в приложение 'holograms-media-dev'.
-
-name: 🚀 Deploy Backend to Koyeb (Development)
+name: 🧪 Deploy Backend to Koyeb (Development)
 
 on:
   push:
     branches: [dev]
+  workflow_dispatch: {}
 
 jobs:
-  deploy_backend_development:
+  deploy_backend_dev:
     runs-on: ubuntu-latest
-
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
@@ -23,46 +17,19 @@ jobs:
         with:
           api_token: ${{ secrets.KOYEB_API_TOKEN }}
 
-      # Шаг очистки для Free Tier (освобождаем ВСЕ 512MB квот аккаунта)
-      - name: 🧹 Total Quota Cleanup (Free Tier Workaround)
+      - name: 🚀 Deploy and Sync Environment
         run: |
-          echo "Current Koyeb Resources before cleanup:"
-          koyeb app list || echo "Failed to list apps"
-          koyeb service list || echo "Failed to list services"
-          echo "Cleaning up ALL apps and services to free up 512MB quota..."
-          # Удаляем все потенциальные приложения (app delete не поддерживает --force, используем || true)
-          koyeb app delete holograms-media-dev || echo "Dev app not found."
-          koyeb app delete holograms-media-prod || echo "Prod app not found."
-          koyeb app delete holograms-media || echo "Ghost app holograms-media not found."
-          # Даем Koyeb МАКСИМАЛЬНОЕ время на освобождение ресурсов (согласно правилам BasilaQ-127)
-          echo "Waiting 120 seconds for quota release (ensuring 512MB free)..."
-          sleep 120
-          echo "Koyeb Resources after cleanup:"
-          koyeb app list || echo "Failed to list apps"
+          # Sync secrets to Vault (DEV versions)
+          koyeb secret update DEV_GOOGLE_CLIENT_ID --value "${{ secrets.DEV_GOOGLE_CLIENT_ID }}" || koyeb secret create DEV_GOOGLE_CLIENT_ID --value "${{ secrets.DEV_GOOGLE_CLIENT_ID }}"
+          koyeb secret update DEV_GOOGLE_CLIENT_SECRET --value "${{ secrets.DEV_GOOGLE_CLIENT_SECRET }}" || koyeb secret create DEV_GOOGLE_CLIENT_SECRET --value "${{ secrets.DEV_GOOGLE_CLIENT_SECRET }}"
 
-      - name: 🚀 Deploy Backend to Koyeb
-        id: koyeb-deploy
-        uses: koyeb/action-git-deploy@v1
-        with:
-          git-branch: dev
-          app-name: holograms-media-dev
-          service-name: holograms-media-dev
-          service-type: web
-          service-ports: "8000:http"
-          service-routes: "/:8000"
-          service-instance-type: free
-          git-builder: docker
-          git-docker-dockerfile: Dockerfile
-          service-env: |
-            ENVIRONMENT=development
-            CORS_ORIGIN_1=https://dev.holograms.media
-            CORS_ORIGIN_2=https://www.dev.holograms.media
-            PYTHONUNBUFFERED=1
-            PYTHONDONTWRITEBYTECODE=1
-            PORT=8000
-            MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }}
-
-      - name: 📋 Output Backend URL
-        run: |
-          echo "Backend deployed to: ${{ steps.koyeb-deploy.outputs.app_url }}"
-          echo "::notice::Development Backend URL: ${{ steps.koyeb-deploy.outputs.app_url }}"
+          # Update Development Service
+          koyeb service update holograms-media-dev/holograms-media-dev \
+            --git-branch dev \
+            --git-builder docker \
+            --git-docker-dockerfile Dockerfile \
+            --env ENVIRONMENT=development \
+            --env GOOGLE_CLIENT_ID=secret!DEV_GOOGLE_CLIENT_ID \
+            --env GOOGLE_CLIENT_SECRET=secret!DEV_GOOGLE_CLIENT_SECRET \
+            --env ASTRA_DB_APPLICATION_TOKEN=secret!ASTRA_DB_APPLICATION_TOKEN \
+            --env ASTRA_DB_API_ENDPOINT=secret!ASTRA_DATABASE_URL
