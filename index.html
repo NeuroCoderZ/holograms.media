@@ -108,7 +108,7 @@
             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
         </svg>
       </button>
-      <button id="avatarButton" class="panel-button control-button" title="Аватар">
+      <button id="avatarButton" class="panel-button control-button" title="Аккаунт">
         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
           <path
             d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z" />
@@ -365,6 +365,47 @@
         d="M500-640v320l160-160-160-160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm120-80v-560H200v560h120Zm80 0h360v-560H400v560Zm-80 0H200h120Z" />
     </svg>
   </button>
+
+  <div id="account-modal" class="modal">
+    <div class="modal-content">
+      <span id="closeAccountModal" class="close">&times;</span>
+      <div class="profile-header">
+        <div id="profile-avatar" class="profile-avatar-large">U</div>
+        <div id="profile-email" class="profile-email">user@holograms.media</div>
+        <div id="profile-role" class="profile-role">User</div>
+      </div>
+
+      <div class="storage-section">
+        <div class="storage-label">
+          <span>Хранилище (AstraDB/R2)</span>
+          <span id="storage-percent">0%</span>
+        </div>
+        <div class="storage-bar-container">
+          <div id="storage-bar-fill" class="storage-bar-fill"></div>
+        </div>
+        <div id="storage-detail" style="font-size: 10px; color: #555; margin-top: 4px; text-align: right;">
+          0 MB / 100 MB
+        </div>
+      </div>
+
+      <div class="account-actions">
+        <button id="upgradeAccountBtn" class="btn-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 20" width="20" fill="currentColor">
+            <path
+              d="m480-120-58-52q-101-91-167-157t-103-117.5q-37-51.5-52.5-98.5T83-639q0-106 72-178.5T333-890q58 0 111.5 24.5T539-798q40-44 94-68.5T745-890q106 0 178.5 72.5T996-639q0 47-15.5 94T928-446.5q-37 51.5-103 117.5T658-172l-58 52v-120q0-33-23.5-56.5T520-320h-80q-33 0-56.5 23.5T360-240v120Z" />
+          </svg>
+          Разблокировать возможности
+        </button>
+        <button id="logoutBtn" class="btn-logout">
+          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor">
+            <path
+              d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z" />
+          </svg>
+          Выйти из системы
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
   <script type="module" src="/js/main.js"></script>
