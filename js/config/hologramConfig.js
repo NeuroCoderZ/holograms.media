@@ -55,12 +55,17 @@ export const semitones = Array.from({ length: 128 }, (_, i) => {
   const noteIndex = i % NOTES_PER_OCTAVE;
   const note = NOTES[noteIndex] + octave;
 
+  // BasilaQ-128: Z-Shade calculation (0 to 127 steps)
+  const zVal = Math.round((i + 1) * 2);
+  const zShade = `rgb(${zVal},${zVal},${zVal})`;
+
   return {
     key: note.replace("#", "s"), // Для React (если будет использоваться)
     note: note,
     f: f,
     width: width,
     color: color, // This will be a THREE.Color object
+    z_shade: zShade,
     deg: 180.00 - (i * 1.40625), // Угол для визуализации
   };
 });

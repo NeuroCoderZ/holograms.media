@@ -14,9 +14,16 @@ const NUM_SEMITONES = 128;      // 128 frequency bands on Y axis
 // ─── SHADERS: BasilaQ-128 Z-Physics ──────────────────────────────────────────
 const vertexShader = /* glsl */`
     varying float vLocalZ;
+    varying float vWorldZHeight;
+    uniform float uColumnScaleZ;
+
     void main() {
         // Локальная Z координаты BoxGeometry всегда от -0.5 (база) до +0.5 (вершина)
         vLocalZ = position.z;
+        
+        // vWorldZHeight - это высота точки над основанием в единицах Three.js (0.0 - 128.0)
+        vWorldZHeight = (position.z + 0.5) * uColumnScaleZ;
+
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
 `;
@@ -26,14 +33,17 @@ const fragmentShader = /* glsl */`
     uniform float uSelection;
     uniform float uOpacity;
     varying float vLocalZ;
-    void main() {
-        // Переводим локальный Z [-0.5, 0.5] в диапазон [0.0, 1.0]
-        float linearFactor = clamp(vLocalZ + 0.5, 0.0, 1.0);
+    varying float vWorldZHeight;
 
-        // Строгая физика BasilaQ-128: 
-        // 0.5 Z (0dB) -> brightness 1.0
-        // -0.5 Z (-128dB) -> brightness 1.0 / 128.0
-        float brightness = mix(1.0 / 128.0, 1.0, linearFactor);
+    void main() {
+        // Батиметрическое квантование: 128 четких шагов яркости
+        // Каждая единица высоты (1 дБ) соответствует одному шагу
+        float brightness = floor(vWorldZHeight) / 128.0;
+        
+        // Гарантируем минимальную яркость 1/128 для базы (-128дБ)
+        brightness = max(brightness, 1.0 / 128.0);
+        // Ограничиваем сверху 1.0 (0дБ)
+        brightness = min(brightness, 1.0);
 
         vec3 color = uBaseColor * brightness;
         color += uSelection * 0.3;
@@ -948,27 +958,17 @@ export class HologramRenderer {
     const BRIGHTNESS_GAMMA = 3.0; // Extra darkening for true black
 
     const getNormAmp = (db) => {
-      // HARD CUT: Everything below noise floor = absolute silence
-      if (db < NOISE_FLOOR_DB) {
-        return { length: 0.1, brightness: 0.0 }; // Minimum spine, black
-      }
-
-      // Perceptual mapping: noise_floor -> 0, ceiling -> 1
-      const range = CEILING_DB - NOISE_FLOOR_DB; // e.g., 70 dB
-      const linearNorm = (db - NOISE_FLOOR_DB) / range; // [0, 1]
-
-      // Apply perceptual curve (Stevens' Law)
-      const perceptualNorm = Math.pow(linearNorm, PERCEPTUAL_GAMMA);
-
-      // Map to physical height (0..128), then apply headroom (now 1.0)
-      const physicalHeight = perceptualNorm * 128.0 * HEADROOM_SCALE;
-
-      // Brightness: Even more aggressive gamma for true black at low levels
-      const brightness = Math.pow(perceptualNorm, BRIGHTNESS_GAMMA);
+      // СТРОГАЯ ФИЗИКА BASILAQ-128: 1 единица Three.js = 1 дБ
+      // Диапазон: -128 дБ (тишина) до 0 дБ (максимум)
+      // Ограничиваем входные данные
+      const clampedDb = Math.max(-128.0, Math.min(0.0, db));
+      
+      // Высота столбца: от ~0.1 до 128.0
+      const physicalHeight = Math.max(0.1, 128.0 + clampedDb);
 
       return {
         length: physicalHeight,
-        brightness: brightness
+        brightness: 1.0 // Яркость теперь рассчитывается в Fragment Shader (vWorldZHeight)
       };
     };
 
@@ -1057,82 +1057,81 @@ export class HologramRenderer {
         columnPair.left.position.x = columnPair.left.userData.initialX + (pan < 0 ? discreteOffset : 0);
         columnPair.right.position.x = columnPair.right.userData.initialX + (pan > 0 ? discreteOffset : 0);
 
-                // 3. Z Scaling & Shader Physics
-                if (leftMesh) {
-                  const hL = Math.max(0.1, qAmpL);
-                  leftMesh.scale.z = hL;
-                  leftMesh.position.z = hL / 2;
-        
-                  if (leftMesh.material.uniforms) {
-                    leftMesh.material.uniforms.uColumnScaleZ.value = hL;
-                  }
-        
-                  const isSelectedL = this.selectionState.left.active && this.selectionState.left.indices.includes(index);    
-                  const leftEdgesMesh = leftMesh.children[0];
-        
-                  if (isSelectedL) {
-                    const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
-                    if (leftMesh.material.uniforms) leftMesh.material.uniforms.uSelection.value = blink;
-                    if (leftEdgesMesh && leftEdgesMesh.material) {
-                      if (leftEdgesMesh.material.uniforms && leftEdgesMesh.material.uniforms.uBaseColor) {
-                        leftEdgesMesh.material.uniforms.uBaseColor.value.setHSL(0, 0, 1.0);
-                      } else if (leftEdgesMesh.material.color) {
-                        leftEdgesMesh.material.color.setHSL(0, 0, 1.0);
-                      }
-                    }
-                  } else {
-                    if (leftMesh.material.uniforms) leftMesh.material.uniforms.uSelection.value = 0.0;
-                    if (leftEdgesMesh && leftEdgesMesh.material) {
-                      if (semitoneConfig) {
-                        const edgeBright = (hL + 1.0) / 128.0;
-                        const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(edgeBright);
-                        if (leftEdgesMesh.material.uniforms && leftEdgesMesh.material.uniforms.uBaseColor) {
-                          leftEdgesMesh.material.uniforms.uBaseColor.value.copy(edgeC);
-                        } else if (leftEdgesMesh.material.color) {
-                          leftEdgesMesh.material.color.copy(edgeC);
-                        }
-                      }
-                    }
-                  }
-                }
-        
-                if (rightMesh) {
-                  const hR = Math.max(0.1, qAmpR);
-                  rightMesh.scale.z = hR;
-                  rightMesh.position.z = hR / 2;
-        
-                  if (rightMesh.material.uniforms) {
-                    rightMesh.material.uniforms.uColumnScaleZ.value = hR;
-                  }
-        
-                  const isSelectedR = this.selectionState.right.active && this.selectionState.right.indices.includes(index);  
-                  const rightEdgesMesh = rightMesh.children[0];
-        
-                  if (isSelectedR) {
-                    const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
-                    if (rightMesh.material.uniforms) rightMesh.material.uniforms.uSelection.value = blink;
-                    if (rightEdgesMesh && rightEdgesMesh.material) {
-                      if (rightEdgesMesh.material.uniforms && rightEdgesMesh.material.uniforms.uBaseColor) {
-                        rightEdgesMesh.material.uniforms.uBaseColor.value.setHSL(0, 0, 1.0);
-                      } else if (rightEdgesMesh.material.color) {
-                        rightEdgesMesh.material.color.setHSL(0, 0, 1.0);
-                      }
-                    }
-                  } else {
-                    if (rightMesh.material.uniforms) rightMesh.material.uniforms.uSelection.value = 0.0;
-                    if (rightEdgesMesh && rightEdgesMesh.material) {
-                      if (semitoneConfig) {
-                        const edgeBright = (hR + 1.0) / 128.0;
-                        const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(edgeBright);
-                        if (rightEdgesMesh.material.uniforms && rightEdgesMesh.material.uniforms.uBaseColor) {
-                          rightEdgesMesh.material.uniforms.uBaseColor.value.copy(edgeC);
-                        } else if (rightEdgesMesh.material.color) {
-                          rightEdgesMesh.material.color.copy(edgeC);
-                        }
-                      }
-                    }
-                  }
-                }        // 4. Update Performance Monitor (Phase 4)
+                        // 3. Z Scaling & Shader Physics (BasilaQ-128: 1 unit = 1 dB)
+                        if (leftMesh) {
+                          // Length = 128 + current_db (range: 0.1 to 128.0)
+                          const hL = Math.max(0.1, 128.0 + dbL);
+                          leftMesh.scale.z = hL;
+                          leftMesh.position.z = hL / 2;
+                
+                          if (leftMesh.material.uniforms) {
+                            leftMesh.material.uniforms.uColumnScaleZ.value = hL;
+                          }
+                
+                          const isSelectedL = this.selectionState.left.active && this.selectionState.left.indices.includes(index);
+                          const leftEdgesMesh = leftMesh.children[0];
+                
+                          if (isSelectedL) {
+                            const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
+                            if (leftMesh.material.uniforms) leftMesh.material.uniforms.uSelection.value = blink;
+                            if (leftEdgesMesh && leftEdgesMesh.material) {
+                              if (leftEdgesMesh.material.uniforms && leftEdgesMesh.material.uniforms.uBaseColor) {
+                                leftEdgesMesh.material.uniforms.uBaseColor.value.setHSL(0, 0, 1.0);
+                              } else if (leftEdgesMesh.material.color) {
+                                leftEdgesMesh.material.color.setHSL(0, 0, 1.0);
+                              }
+                            }
+                          } else {
+                            if (leftMesh.material.uniforms) leftMesh.material.uniforms.uSelection.value = 0.0;
+                            if (leftEdgesMesh && leftEdgesMesh.material) {
+                              if (semitoneConfig) {
+                                // Edge brightness follows quantized layer shade
+                                const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(Math.floor(hL) / 128.0);
+                                if (leftEdgesMesh.material.uniforms && leftEdgesMesh.material.uniforms.uBaseColor) {
+                                  leftEdgesMesh.material.uniforms.uBaseColor.value.copy(edgeC);
+                                } else if (leftEdgesMesh.material.color) {
+                                  leftEdgesMesh.material.color.copy(edgeC);
+                                }
+                              }
+                            }
+                          }
+                        }        
+                        if (rightMesh) {
+                          const hR = Math.max(0.1, 128.0 + dbR);
+                          rightMesh.scale.z = hR;
+                          rightMesh.position.z = hR / 2;
+                
+                          if (rightMesh.material.uniforms) {
+                            rightMesh.material.uniforms.uColumnScaleZ.value = hR;
+                          }
+                
+                          const isSelectedR = this.selectionState.right.active && this.selectionState.right.indices.includes(index);
+                          const rightEdgesMesh = rightMesh.children[0];
+                
+                          if (isSelectedR) {
+                            const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
+                            if (rightMesh.material.uniforms) rightMesh.material.uniforms.uSelection.value = blink;
+                            if (rightEdgesMesh && rightEdgesMesh.material) {
+                              if (rightEdgesMesh.material.uniforms && rightEdgesMesh.material.uniforms.uBaseColor) {
+                                rightEdgesMesh.material.uniforms.uBaseColor.value.setHSL(0, 0, 1.0);
+                              } else if (rightEdgesMesh.material.color) {
+                                rightEdgesMesh.material.color.setHSL(0, 0, 1.0);
+                              }
+                            }
+                          } else {
+                            if (rightMesh.material.uniforms) rightMesh.material.uniforms.uSelection.value = 0.0;
+                            if (rightEdgesMesh && rightEdgesMesh.material) {
+                              if (semitoneConfig) {
+                                const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(Math.floor(hR) / 128.0);
+                                if (rightEdgesMesh.material.uniforms && rightEdgesMesh.material.uniforms.uBaseColor) {        
+                                  rightEdgesMesh.material.uniforms.uBaseColor.value.copy(edgeC);
+                                } else if (rightEdgesMesh.material.color) {
+                                  rightEdgesMesh.material.color.copy(edgeC);
+                                }
+                              }
+                            }
+                          }
+                        }        // 4. Update Performance Monitor (Phase 4)
         perfMonitor.update(this._lastWasmPerf, performance.now() - (this.latestTimestamp || 0));
       }
     });
