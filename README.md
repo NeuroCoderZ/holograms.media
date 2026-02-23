@@ -1,36 +1,35 @@
 # Holograms Media
 
-**Holograms Media** — это мультимодальная XR-платформа нового поколения, предназначенная для интуитивного взаимодействия с цифровой информацией через звук, жесты и 3D-визуализацию.
+**Holograms Media** — это мультимодальная XR-платформа нового поколения. Мы создаем осязаемый интерфейс к информации, превращая звук и жесты в живую 3D-голограмму.
 
-## 🚀 Особенности
-- **Интуитивный Язык Жестов:** Управление звуком и визуализацией с помощью MediaPipe Hands.
-- **Высокопроизводительное Ядро:** Анализ аудио в реальном времени с использованием Rust и WebAssembly (CWT-анализ).
-- **Мультиплатформенность:** Адаптивные интерфейсы для Desktop, Mobile и XR-устройств.
-- **Коллективный Интеллект (Tria):** AI-ассистент, обучающийся на потоке мультимодального взаимодействия.
+> *"Наш проект — это бунт против плоского мира текстовых интерфейсов."*
+
+## 🚀 Ключевые возможности
+- **Интуитивный Язык Жестов:** Управляйте звуком как физическим объектом с помощью MediaPipe Hands.
+- **High-Performance Audio:** Спектральный анализ в реальном времени (CWT) на базе Rust/WASM.
+- **Мультиплатформенность:** Адаптивные режимы для Desktop, Mobile и погружение в XR (Cochlear Cylinder).
+- **AI Tria:** Коллективный интеллект, понимающий "язык движений" через векторные эмбеддинги.
 
 ## 🛠 Технологический Стек
 ### Frontend
-- **Framework:** [Vite](https://vitejs.dev/) + Vanilla JS / ES Modules.
-- **3D Engine:** [Three.js](https://threejs.org/).
-- **CV / Gestures:** [MediaPipe Hands](https://google.github.io/mediapipe/solutions/hands).
-- **Audio Engine:** AudioWorklet + Custom Rust/WASM (Continuous Wavelet Transform).
+- **3D & UI:** Three.js, Vite, Vanilla JS (ES Modules).
+- **CV & AI:** MediaPipe Hands, TWEEN.js.
+- **Audio:** AudioWorklet, Custom Rust/WASM CWT Engine.
 
 ### Backend
-- **API:** [FastAPI](https://fastapi.tiangolo.com/) (Python).
-- **Database:** [DataStax AstraDB](https://www.datastax.com/products/datastax-astra) (Vector Search & NoSQL).
-- **Storage:** [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) (S3-compatible).
-- **Hosting:** [Koyeb](https://www.koyeb.com/).
+- **Core:** FastAPI (Python), Koyeb.
+- **Data:** AstraDB (Vector Search), Backblaze B2 (Object Storage).
+- **Networking:** WebRTC (NetHoloGlyph), WebSockets.
 
-## 🏗 Структура Проекта
-- `frontend/`: (Корень) Исходный код клиентской части.
-- `backend/`: API-сервисы и логика Триа.
-- `js/wasm/`: Модули на Rust, скомпилированные в WASM.
-- `conductor/`: База знаний и треки разработки (локально).
+## 🏗 Структура и Разработка
+- `master`: Production (holograms.media).
+- `dev`: Development (dev.holograms.media).
+- `conductor/`: Локальная база знаний и треки задач.
 
-## 🚦 Правила Разработки и Деплоя
-- **master**: Главная ветка (Production). Авто-деплой на [holograms.media](https://holograms.media).
-- **dev**: Ветка разработки (Development). Деплой на [dev.holograms.media](https://dev.holograms.media).
-- Все правки осуществляются через ветку `dev` с последующим слиянием в `master`.
+## 🚦 Как запустить
+1. `npm install`
+2. `npm run dev` — для запуска фронтенда.
+3. Бэкенд настраивается отдельно в папке `/backend`.
 
 ---
 *Developed by **NeuroCoder** & Tria Collective Intelligence.*
