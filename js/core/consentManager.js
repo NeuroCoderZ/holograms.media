@@ -3,13 +3,14 @@
 export class ConsentManager {
     constructor(state) {
         this.state = state;
-        // --- ИСПРАВЛЕНИЕ: Ищем правильные элементы ---
-        // Мы используем модальное окно для старта сессии как окно для получения согласия
-        this.consentModal = state.uiElements?.modals?.startSessionModal; 
-        // В этом окне уже есть нужные нам checkbox и button
+        // --- ИСПРАВЛЕНИЕ: Прямое получение элементов для надежности ---
+        this.consentModal = document.getElementById('start-session-modal'); 
         this.consentCheckbox = document.getElementById('consent-checkbox');
-        // Кнопка, на которую мы вешаем основной запуск, и будет нашей кнопкой "продолжить"
-        this.proceedButton = state.uiElements?.buttons?.startSessionButton; 
+        this.proceedButton = document.getElementById('start-session-button');
+
+        if (!this.proceedButton) {
+            console.error("ConsentManager: Элемент '#start-session-button' не найден в DOM!");
+        }
     }
 
     initialize() {
@@ -37,18 +38,26 @@ export class ConsentManager {
 
             // --- ОСНОВНАЯ ЛОГИКА: Показываем окно и настраиваем его ---
             console.log("ConsentManager: Показываем модальное окно для получения согласия.");
-            this.consentModal.style.display = 'flex';
-            this.proceedButton.classList.add('start-button-disabled'); // Используем классы для стилизации
-            this.proceedButton.disabled = true;
+            if (this.consentModal) this.consentModal.style.display = 'flex';
+            
+            // Настраиваем начальное состояние кнопки
+            this.proceedButton.disabled = !this.consentCheckbox.checked;
+            if (this.proceedButton.disabled) {
+                this.proceedButton.classList.add('start-button-disabled');
+            } else {
+                this.proceedButton.classList.remove('start-button-disabled');
+            }
 
             this.consentCheckbox.addEventListener('change', () => {
-                if (this.consentCheckbox.checked) {
-                    this.proceedButton.disabled = false;
+                const isChecked = this.consentCheckbox.checked;
+                this.proceedButton.disabled = !isChecked;
+                
+                if (isChecked) {
                     this.proceedButton.classList.remove('start-button-disabled');
                 } else {
-                    this.proceedButton.disabled = true;
                     this.proceedButton.classList.add('start-button-disabled');
                 }
+                console.log(`ConsentManager: Кнопка ${isChecked ? 'разблокирована' : 'заблокирована'} (чекбокс: ${isChecked})`);
             });
 
             // Слушатель на кнопку вешается в main.js. 
