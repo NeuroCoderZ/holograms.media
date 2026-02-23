@@ -295,7 +295,7 @@ export class HologramRenderer {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineBasicMaterial({
       color: color,
-      opacity: 0.015, // Максимально призрачная сетка
+      opacity: 0.005, // 3x прозрачнее
       transparent: true,
       depthWrite: false, 
       depthTest: false
