@@ -30,8 +30,10 @@ const fragmentShader = /* glsl */`
         // Переводим локальный Z [-0.5, 0.5] в диапазон [0.0, 1.0]
         float linearFactor = clamp(vLocalZ + 0.5, 0.0, 1.0);
 
-        // Глубокая кривая для тру-черного у основания
-        float brightness = pow(linearFactor, 2.5);
+        // Строгая физика BasilaQ-128: 
+        // 0.5 Z (0dB) -> brightness 1.0
+        // -0.5 Z (-128dB) -> brightness 1.0 / 128.0
+        float brightness = mix(1.0 / 128.0, 1.0, linearFactor);
 
         vec3 color = uBaseColor * brightness;
         color += uSelection * 0.3;

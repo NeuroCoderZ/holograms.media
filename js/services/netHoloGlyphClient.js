@@ -81,6 +81,11 @@ class NetHoloGlyphClient {
             jwtToken = localStorage.getItem('jwtToken');
         }
 
+        if (!jwtToken) {
+            console.info("[NetHoloGlyphClient] WebSocket connection deferred: JWT token missing (user not logged in).");
+            return;
+        }
+
         let url = this.signalingServerUrl;
         if (!url.endsWith('/')) url += '/';
         url += roomId;
