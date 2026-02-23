@@ -55,10 +55,8 @@ export const semitones = Array.from({ length: 128 }, (_, i) => {
   const noteIndex = i % NOTES_PER_OCTAVE;
   const note = NOTES[noteIndex] + octave;
 
-  // BasilaQ-128: Z-Shade calculation (Gamma 2.2 Corrected)
-  const norm = i / 127.0;
-  const perceptual = Math.pow(norm, 1.0 / 2.2);
-  const zVal = Math.round(perceptual * 255);
+  // BasilaQ-128: Z-Shade calculation (Strict 8-bit LUT)
+  const zVal = (i === 127) ? 255 : (i * 2);
   const zShade = `rgb(${zVal},${zVal},${zVal})`;
 
   return {
