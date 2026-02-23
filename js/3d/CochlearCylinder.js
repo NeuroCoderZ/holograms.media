@@ -1,289 +1,235 @@
 /**
- * CochlearCylinder.js — Cochlear Cylinder 3.44
- * =============================================
- * Тороидальная визуализация голограммы для Android XR.
- * 
- * Физические константы:
- *   - R_NEAR = 1.0 м (0 dB, внутренняя грань)
- *   - R_FAR  = 3.4 м (-128 dB, внешняя грань, True Black)
- *   - HEIGHT = 3.4 м (вертикальная протяжённость)
- *   - 3.44 = 1/100 скорости звука (344 м/с)
+ * CochlearCylinder.js — v4.0 "Real Ring"
+ * ========================================
+ * Морфинг существующих колонок hologramRenderer из плоских сеток в кольцо.
  *
- * Геометрия:
- *   128 прямоугольных параллелепипедов (semitones) распределены по 360°.
- *   Ближняя (R_NEAR) и дальняя (R_FAR) Z-грани деформируются
- *   в дуги для идеальной стыковки в кольцо.
- *   Боковые грани остаются плоскими.
+ * Физика кольца (BasilaQ-128 Toroidal):
+ *   R_NEAR = 128 units (0 dB, внутренняя грань = вытянутая рука)
+ *   R_FAR  = 384 units (−128 dB, внешняя грань = 3× R_NEAR)
+ *   HEIGHT = 256 units (высота, ось Y, зелёная)
+ *   Внутренний диаметр = 256 units ≈ 2 метра "личного пространства"
  *
- * Режимы:
- *   - WebXR-native: активируется внутри XR-сессии
- *   - Fallback:     тороидальный морфинг в обычном браузерном 3D
+ * Что НЕ делаем (пока): изгиб граней Box-геометрии. Колонки остаются BoxGeometry.
+ * Что ДЕЛАЕМ: каждая пара (left, right) Group перемещается и поворачивается
+ * к центру кольца, чтобы образовать визуальный тор.
+ *
+ * Используем parent.scale для перевода scene units → три реальных метра.
+ * Детали в Semitones_Angles.md и hologramConfig.js.
  */
 
 import * as THREE from 'three';
-import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../config/hologramConfig.js';
 
-// ====================== CONSTANTS ======================
-const R_NEAR = 1.0;              // 0 dB — внутренний радиус (м)
-const R_FAR = 3.4;              // -128 dB — внешний радиус (м)
-const CYLINDER_H = 3.4;             // Высота кольца (м)
-const NUM_SEMITONES = 128;
+// ─── Константы кольца (в scene units, GRID_WIDTH = 128) ───────────────────────
+const R_NEAR = 128;          // Радиус внутренней грани (= GRID_WIDTH = 1× "метр")
+const R_FAR = 384;          // Радиус внешней грани   (= 3× GRID_WIDTH = 3 "метра")
+const R_MID = (R_NEAR + R_FAR) / 2; // 256 — центр глубины по Z каждого столбца
 const TWO_PI = Math.PI * 2;
-const ARC_SEGMENTS = 4;             // Кол-во сегментов дуги на Z-грань
-
-// ─── Grid constants ───────────────────────────────────────────────────────────
-const NUM_ROWS = 128;
-
-// ─── SHADERS: BasilaQ-128 Toroidal Z-Physics ───────────────────────────────
-const vertexShader = /* glsl */`
-    varying vec3 vWorldPosition;
-    void main() {
-        vec4 worldPos = modelMatrix * vec4(position, 1.0);
-        vWorldPosition = worldPos.xyz;
-        gl_Position = projectionMatrix * viewMatrix * worldPos;
-    }
-`;
-
-const fragmentShader = /* glsl */`
-    uniform vec3  uBaseColor;
-    uniform float uSelection;
-    uniform float uRFar;
-    uniform float uRNear;
-    uniform float uOpacity;
-    varying vec3 vWorldPosition;
-    void main() {
-        // Radial depth: distance from outer wall (R_FAR)
-        float r = length(vWorldPosition.xz);
-        
-        // Map 2.4m span (R_FAR - R_NEAR) to 128 cells
-        float depthInCells = (uRFar - r) * (128.0 / (uRFar - uRNear));
-        
-        float spatialFactor = clamp((depthInCells + 1.0) / 128.0, 0.0, 1.0);
-        vec3 color = uBaseColor * spatialFactor;
-        
-        color += uSelection * 0.3;
-        gl_FragColor = vec4(color, uOpacity);
-    }
-`;
-
-// Perceptual mapping constants (aligned with hologramRenderer.js)
-const NOISE_FLOOR_DB = -70.0;
-const CEILING_DB = 0.0;
-const PERCEPTUAL_GAMMA = 2.5;
-const BRIGHTNESS_GAMMA = 3.0;
+const EASE_DURATION = 1500;  // мс — та же скорость, что и боковые панели
 
 /**
- * Создаёт деформированный параллелепипед с дугообразными Z-гранями.
- *
- * Исходная BoxGeometry (width × height × depth) модифицируется:
- *   - Ближняя грань (z < 0) изогнута по дуге R_NEAR
- *   - Дальняя грань  (z > 0) изогнута по дуге R_FAR
- *   - Боковые грани остаются плоскими
- *
- * @param {number} arcAngle  — угол дуги столбца (radiants)
- * @param {number} centerAngle — центральный угол столбца (radiants)
- * @param {number} height   — высота столбца (Y-axis)
- * @param {number} widthU   — ширина в Unit-пространстве (для scale)
- * @returns {THREE.BufferGeometry}
+ * Easing: cubic in-out
  */
-function createCurvedBoxGeometry(arcAngle, centerAngle, height, widthU) {
-    // Базовая геометрия с делениями по Z для кривизны
-    const geo = new THREE.BoxGeometry(
-        widthU,           // X — ширина столбца
-        height,           // Y — высота (частотная ось)
-        R_FAR - R_NEAR,   // Z — глубина (dB → радиус)
-        1,                // widthSegments
-        1,                // heightSegments
-        ARC_SEGMENTS      // depthSegments — для плавной дуги
-    );
-
-    const pos = geo.attributes.position;
-    const halfDepth = (R_FAR - R_NEAR) / 2;
-
-    // Деформация: каждая вершина двигается на свою дугу
-    for (let i = 0; i < pos.count; i++) {
-        const x = pos.getX(i);
-        const y = pos.getY(i);
-        const z = pos.getZ(i);
-
-        // Нормализованный z: 0 (ближняя грань) → 1 (дальняя грань)
-        const t = (z + halfDepth) / (R_FAR - R_NEAR);
-        const radius = R_NEAR + t * (R_FAR - R_NEAR);
-
-        // Нормализованный x: -0.5 → +0.5 → угол вдоль дуги
-        const normalizedX = x / widthU;  // -0.5 .. +0.5
-        const theta = centerAngle + normalizedX * arcAngle;
-
-        // Конвертируем (theta, radius) в декартовы координаты
-        const newX = radius * Math.sin(theta);
-        const newZ = radius * Math.cos(theta);
-
-        pos.setXYZ(i, newX, y, newZ);
-    }
-
-    pos.needsUpdate = true;
-    geo.computeVertexNormals();
-    return geo;
+function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 /**
  * @class CochlearCylinder
  *
- * Управляет тороидальной визуализацией 128 семитонов.
- * Каждый столбец — деформированный параллелепипед с дугообразными Z-гранями.
+ * Получает columns (массив { left: THREE.Group, right: THREE.Group }) из HologramRenderer
+ * и анимирует их в/из тороидального кольца.
+ *
+ * Кольцо строится по следующей логике:
+ * - 128 семитонов → 128 угловых позиций по кругу (360° / 128 ≈ 2.8125° каждый)
+ * - Семитон 0 (C0, самый низкочастотный) → ±0° = ровно ПЕРЕД пользователем
+ * - Семитон 64 (E5, deg=90°) → ровно ЗА пользователем (180°)
+ * - Left  группа (левое ухо) → отрицательные X в flat → LEFT дуга (0°→-180°)
+ * - Right группа (правое ухо) → положительные X в flat → RIGHT дуга (0°→+180°)
+ *
+ * Когда pair.left и pair.right находятся у одного семитона, они накладываются
+ * (one shared Z-position on the ring).
  */
 export class CochlearCylinder {
     /**
-     * @param {THREE.Group} parentGroup — группа, к которой добавляется цилиндр
-     * @param {Array} semitonesConfig — массив конфигураций семитонов
+     * @param {THREE.Group} hologramPivot — корневая группа голограммы
      */
-    constructor(parentGroup, semitonesConfig) {
-        this.parentGroup = parentGroup;
-        this.semitonesConfig = semitonesConfig || semitones;
-        this.torusGroup = new THREE.Group();
-        this.torusGroup.visible = false;
-        this.parentGroup.add(this.torusGroup);
-
-        /** @type {Array<{mesh: THREE.Mesh, edges: THREE.LineSegments, semitone: Object}>} */
-        this.columns = [];
-
-        /** Morphing state: 0 = flat, 1 = torus */
-        this.morphProgress = 0;
+    constructor(hologramPivot) {
+        this.hologramPivot = hologramPivot;
+        this.columns = [];       // заполняется через setColumns()
         this.isMorphing = false;
         this.isTorusMode = false;
 
-        // Pre-build torus columns
-        this._buildTorusColumns();
+        // Сохранённые плоские позиции для обратного морфинга
+        this._flatPositions = [];
+        this._flatRotations = [];
+        this._flatScales = [];
+
+        // Позиции кольца
+        this._torusPositions = [];
+        this._torusRotations = [];
     }
 
     /**
-     * Строит 128 деформированных параллелепипедов по кольцу.
+     * Передаём колонки из hologramRenderer.
+     * @param {Array<{left: THREE.Group, right: THREE.Group}>} columns
      */
-    _buildTorusColumns() {
-        const totalWidth = this.semitonesConfig.reduce((s, st) => s + st.width, 0);
+    setColumns(columns) {
+        this.columns = columns;
+        this._snapshotFlat();
+        this._computeTorusTargets();
+    }
 
-        // Рассчитываем угол для каждого столбца пропорционально его ширине
-        let currentAngle = 0;
+    /**
+     * Запоминаем текущие (flat) позиции/вращения каждого Group.
+     * Вызывается один раз при первом morphToTorus.
+     */
+    _snapshotFlat() {
+        this._flatPositions = [];
+        this._flatRotations = [];
 
-        for (let i = 0; i < NUM_SEMITONES; i++) {
-            const st = this.semitonesConfig[i];
-            const widthRatio = st.width / totalWidth;
-            const arcAngle = widthRatio * TWO_PI;
-            const centerAngle = currentAngle + arcAngle / 2;
-
-            // Высота столбца в тороидальном пространстве
-            const columnHeight = CYLINDER_H / NUM_SEMITONES;
-            const yPos = (i / NUM_SEMITONES - 0.5) * CYLINDER_H + columnHeight / 2;
-
-            // Создаём деформированную геометрию
-            const geo = createCurvedBoxGeometry(arcAngle, centerAngle, columnHeight, st.width);
-
-            // SPATIAL BRIGHTNESS PHYSICS:
-            // Using ShaderMaterial for radial depth control
-            const color = new THREE.Color(st.color); // Define color here
-            const material = new THREE.ShaderMaterial({
-                uniforms: {
-                    uBaseColor: { value: color.clone() },
-                    uSelection: { value: 0.0 },
-                    uRFar: { value: R_FAR },
-                    uRNear: { value: R_NEAR },
-                    uOpacity: { value: 0.85 }
-                },
-                vertexShader,
-                fragmentShader,
-                transparent: true,
-                depthWrite: false,
-                side: THREE.DoubleSide
+        this.columns.forEach(pair => {
+            this._flatPositions.push({
+                left: pair.left.position.clone(),
+                right: pair.right.position.clone(),
             });
-
-            const mesh = new THREE.Mesh(geo, material);
-            mesh.position.y = yPos;
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-
-            // Рёбра (contrast edges)
-            const edgesGeo = new THREE.EdgesGeometry(geo);
-            const edgeColor = new THREE.Color(st.color).offsetHSL(0, 0, 0.4);
-            const edgesMat = new THREE.LineBasicMaterial({
-                color: edgeColor,
-                transparent: true,
-                opacity: 0.9,
-                linewidth: 1,
-                depthTest: true,
-                polygonOffset: true,
-                polygonOffsetFactor: -2.0,
-                polygonOffsetUnits: -2.0
+            this._flatRotations.push({
+                left: pair.left.rotation.clone(),
+                right: pair.right.rotation.clone(),
             });
-            const edgesMesh = new THREE.LineSegments(edgesGeo, edgesMat);
-            mesh.add(edgesMesh);
+        });
+    }
 
-            this.torusGroup.add(mesh);
+    /**
+     * Вычисляем целевые позиции и вращения для каждого столбца на кольце.
+     *
+     * Схема размещения:
+     *   Угол θ_i = (i / 128) × 360° — равномерно по 360°.
+     *   Семитон i=0 → θ=0 (прямо перед пользователем).
+     *   Семитон i=64 → θ=180° (прямо за пользователем).
+     *
+     *   World position столбца:
+     *     x = R_MID × sin(θ)
+     *     z = R_MID × cos(θ)    ← z=R_MID при θ=0 (перед пользователем)
+     *     y = сохраняем текущий flat Y (позиция по высоте)
+     *
+     *   Rotation Y: столбец должен смотреть ВНУТРЬ кольца:
+     *     rotationY = θ + Math.PI   (= повёрнут фронтальной гранью к центру)
+     *
+     * ВАЖНО: flat positions в координатах leftSequencerGroup / rightSequencerGroup,
+     * но они добавлены в разные Groups. Нужно работать в world space.
+     * Поскольку мы не меняем parent, работаем в локальных координатах mainSequencerGroup
+     * (который является дочерним hologramPivot). 
+     * Для упрощения — переносим все колонки в mainSequencerGroup при морфинге.
+     */
+    _computeTorusTargets() {
+        this._torusPositions = [];
+        this._torusRotations = [];
 
-            this.columns.push({
-                mesh: mesh,
-                edges: edgesMesh,
-                semitone: st,
-                baseColor: color.clone(),
-                arcAngle: arcAngle,
-                centerAngle: centerAngle
+        const n = this.columns.length; // 128
+
+        for (let i = 0; i < n; i++) {
+            const pair = this.columns[i];
+
+            // Угол: i=0 прямо перед (θ=0), i=64 прямо за (θ=π)
+            const theta = (i / n) * TWO_PI;
+
+            // Позиция центра столбца на кольце (local coords от mainSequencerGroup)
+            // Но наши Groups живут внутри leftSequencerGroup/rightSequencerGroup,
+            // которые смещены на (0, -GRID_HEIGHT, 0) = (0, -128, 0).
+            // Мы работаем с position ВНУТРИ своих parent-групп,
+            // поэтому для ring нам нужно добавить колонки в mainSequencerGroup.
+            const ringX = R_MID * Math.sin(theta);
+            const ringZ = R_MID * Math.cos(theta);  // положительный Z = перед пользователем
+
+            // Y сохраняем из flat (высота по частоте), берём текущий Y из flat
+            const flatYL = this._flatPositions[i].left.y;
+            const flatYR = this._flatPositions[i].right.y;
+
+            // Поворот: фронтальная грань смотрит внутрь → rotY = theta + π
+            const rotY = theta + Math.PI;
+
+            this._torusPositions.push({
+                left: new THREE.Vector3(ringX, flatYL, ringZ),
+                right: new THREE.Vector3(ringX, flatYR, ringZ),
             });
-
-            currentAngle += arcAngle;
+            this._torusRotations.push({
+                left: rotY,
+                right: rotY,
+            });
         }
     }
 
     /**
-     * Анимация морфинга: Flat → Torus.
-     * Два grid'а разлетаются и смыкаются за спиной пользователя (360°).
+     * Анимация: Flat → Torus.
+     * Перемещает все группы из своих sequencer groups в mainSequencerGroup
+     * (для единого пространства) и анимирует к позициям Ring.
      *
-     * @param {number} duration — длительность анимации (мс)
-     * @param {THREE.Group} leftGrid  — левый sequencer grid (для скрытия)
-     * @param {THREE.Group} rightGrid — правый sequencer grid (для скрытия)
-     * @returns {Promise} — резолвится по завершении анимации
+     * @param {number} duration — мс
+     * @param {THREE.Group} leftSequencerGroup  — левая сетка (скрывается gradual)
+     * @param {THREE.Group} rightSequencerGroup — правая сетка
+     * @returns {Promise<void>}
      */
-    morphToTorus(duration = 1500, leftGrid = null, rightGrid = null) {
+    morphToTorus(duration = EASE_DURATION, leftSequencerGroup = null, rightSequencerGroup = null) {
         if (this.isMorphing || this.isTorusMode) return Promise.resolve();
+        if (!this.columns.length) {
+            console.warn('[CochlearCylinder] setColumns() not called yet.');
+            return Promise.resolve();
+        }
 
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             this.isMorphing = true;
-            this.torusGroup.visible = true;
-            this.morphProgress = 0;
+            this.leftSequencerGroup = leftSequencerGroup;
+            this.rightSequencerGroup = rightSequencerGroup;
+
+            // Шаг 1: переносим все pair.left / pair.right в mainSequencerGroup
+            // чтобы они жили в общем пространстве для ring-позиционирования
+            if (leftSequencerGroup && rightSequencerGroup) {
+                this._reparentColumnsToMain(leftSequencerGroup, rightSequencerGroup);
+            }
 
             const startTime = performance.now();
+
+            // Запоминаем start positions (уже в mainSequencerGroup пространстве)
+            const startPositions = this.columns.map(pair => ({
+                left: pair.left.position.clone(),
+                right: pair.right.position.clone(),
+            }));
+            const startRotatY = this.columns.map(pair => ({
+                left: pair.left.rotation.y,
+                right: pair.right.rotation.y,
+            }));
 
             const animate = () => {
                 const elapsed = performance.now() - startTime;
                 const t = Math.min(elapsed / duration, 1);
-                // Ease-in-out cubic
-                const eased = t < 0.5
-                    ? 4 * t * t * t
-                    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                const eased = easeInOutCubic(t);
 
-                this.morphProgress = eased;
+                for (let i = 0; i < this.columns.length; i++) {
+                    const pair = this.columns[i];
+                    const sp = startPositions[i];
+                    const tp = this._torusPositions[i];
+                    const sr = startRotatY[i];
+                    const tr = this._torusRotations[i];
 
-                // Scale torus group opacity/visibility
-                this.torusGroup.traverse((child) => {
-                    if (child.isMesh && child.material) {
-                        child.material.opacity = eased;
-                    }
-                });
+                    // Interpolate position
+                    pair.left.position.lerpVectors(sp.left, tp.left, eased);
+                    pair.right.position.lerpVectors(sp.right, tp.right, eased);
 
-                // Fade out flat grids
-                if (leftGrid) leftGrid.traverse((child) => {
-                    if (child.isMesh && child.material) child.material.opacity = 1 - eased;
-                });
-                if (rightGrid) rightGrid.traverse((child) => {
-                    if (child.isMesh && child.material) child.material.opacity = 1 - eased;
-                });
+                    // Interpolate rotation Y
+                    pair.left.rotation.y = THREE.MathUtils.lerp(sr.left, tr.left, eased);
+                    pair.right.rotation.y = THREE.MathUtils.lerp(sr.right, tr.right, eased);
+                }
+
+                // Скрываем сетки постепенно (только LineSegments сетки, не колонки)
+                if (leftSequencerGroup) this._fadeGroupLines(leftSequencerGroup, 1 - eased);
+                if (rightSequencerGroup) this._fadeGroupLines(rightSequencerGroup, 1 - eased);
 
                 if (t < 1) {
                     requestAnimationFrame(animate);
                 } else {
-                    // Морфинг завершён
-                    if (leftGrid) leftGrid.visible = false;
-                    if (rightGrid) rightGrid.visible = false;
                     this.isTorusMode = true;
                     this.isMorphing = false;
+                    console.log('[CochlearCylinder] Ring formed. User is inside the hologram.');
                     resolve();
                 }
             };
@@ -294,51 +240,59 @@ export class CochlearCylinder {
 
     /**
      * Обратный морфинг: Torus → Flat.
-     *
-     * @param {number} duration — длительность анимации (мс)
-     * @param {THREE.Group} leftGrid
-     * @param {THREE.Group} rightGrid
-     * @returns {Promise}
+     * @param {number} duration
+     * @param {THREE.Group} leftSequencerGroup
+     * @param {THREE.Group} rightSequencerGroup
+     * @returns {Promise<void>}
      */
-    morphToFlat(duration = 1500, leftGrid = null, rightGrid = null) {
+    morphToFlat(duration = EASE_DURATION, leftSequencerGroup = null, rightSequencerGroup = null) {
         if (this.isMorphing || !this.isTorusMode) return Promise.resolve();
 
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             this.isMorphing = true;
 
-            if (leftGrid) leftGrid.visible = true;
-            if (rightGrid) rightGrid.visible = true;
-
             const startTime = performance.now();
+
+            const startPositions = this.columns.map(pair => ({
+                left: pair.left.position.clone(),
+                right: pair.right.position.clone(),
+            }));
+            const startRotatY = this.columns.map(pair => ({
+                left: pair.left.rotation.y,
+                right: pair.right.rotation.y,
+            }));
 
             const animate = () => {
                 const elapsed = performance.now() - startTime;
                 const t = Math.min(elapsed / duration, 1);
-                const eased = t < 0.5
-                    ? 4 * t * t * t
-                    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                const eased = easeInOutCubic(t);
 
-                this.morphProgress = 1 - eased;
+                for (let i = 0; i < this.columns.length; i++) {
+                    const pair = this.columns[i];
+                    const sp = startPositions[i];
+                    const fp = this._flatPositions[i];
+                    const sr = startRotatY[i];
 
-                // Fade in flat grids
-                if (leftGrid) leftGrid.traverse((child) => {
-                    if (child.isMesh && child.material) child.material.opacity = eased;
-                });
-                if (rightGrid) rightGrid.traverse((child) => {
-                    if (child.isMesh && child.material) child.material.opacity = eased;
-                });
+                    pair.left.position.lerpVectors(sp.left, fp.left, eased);
+                    pair.right.position.lerpVectors(sp.right, fp.right, eased);
+                    pair.left.rotation.y = THREE.MathUtils.lerp(sr.left, 0, eased);
+                    pair.right.rotation.y = THREE.MathUtils.lerp(sr.right, 0, eased);
+                }
 
-                // Fade out torus
-                this.torusGroup.traverse((child) => {
-                    if (child.isMesh && child.material) child.material.opacity = 1 - eased;
-                });
+                // Восстанавливаем видимость сеток
+                if (leftSequencerGroup) this._fadeGroupLines(leftSequencerGroup, eased);
+                if (rightSequencerGroup) this._fadeGroupLines(rightSequencerGroup, eased);
 
                 if (t < 1) {
                     requestAnimationFrame(animate);
                 } else {
-                    this.torusGroup.visible = false;
+                    // Возвращаем колонки в свои родные sequencer groups
+                    if (leftSequencerGroup && rightSequencerGroup) {
+                        this._reparentColumnsBack(leftSequencerGroup, rightSequencerGroup);
+                    }
                     this.isTorusMode = false;
                     this.isMorphing = false;
+                    console.log('[CochlearCylinder] Flat mode restored.');
                     resolve();
                 }
             };
@@ -348,110 +302,77 @@ export class CochlearCylinder {
     }
 
     /**
-     * Обновление визуализации в тороидальном режиме.
-     * Логика аналогична hologramRenderer.updateVisuals(), но в кольцевой геометрии.
-     *
-     * Физика:
-     *   - dB → радиальная глубина (scale Z деформированного столбца)
-     *   - 0 dB → R_NEAR (яркий цвет)
-     *   - -128 dB → R_FAR (True Black)
-     *   - Brightness = Stevens' Power Law gamma correction
-     *
-     * @param {Float32Array} dbLevels — 256 значений dB (-128..0)
-     * @param {Float32Array} panAngles — 256 значений pan (-1..+1)
+     * Переносит все pair.left / pair.right в mainSequencerGroup (общее пространство),
+     * сохраняя world position.
      */
-    updateVisuals(dbLevels, panAngles) {
-        if (!this.isTorusMode || this.isMorphing) return;
-        if (!dbLevels || !panAngles) return;
+    _reparentColumnsToMain(leftSG, rightSG) {
+        // mainSequencerGroup = parent leftSG / rightSG
+        const mainSG = leftSG.parent;
+        if (!mainSG) return;
 
-        const hslTemp = { h: 0, s: 0, l: 0 };
-
-        for (let i = 0; i < NUM_SEMITONES; i++) {
-            const col = this.columns[i];
-            if (!col) continue;
-
-            const dbL = dbLevels[i] !== undefined ? dbLevels[i] : -128;
-            const dbR = dbLevels[i + NUM_SEMITONES] !== undefined ? dbLevels[i + NUM_SEMITONES] : -128;
-
-            // Среднее dB для тороидального столбца (L+R сливаются в кольце)
-            const dbAvg = Math.max(dbL, dbR);
-
-            // Perceptual mapping (aligned with hologramRenderer.js)
-            let length = 0.01;
-            let brightness = 0.0;
-
-            if (dbAvg >= NOISE_FLOOR_DB) {
-                const range = CEILING_DB - NOISE_FLOOR_DB;
-                const linearNorm = (dbAvg - NOISE_FLOOR_DB) / range;
-                const perceptualNorm = Math.pow(linearNorm, PERCEPTUAL_GAMMA);
-                length = perceptualNorm * (R_FAR - R_NEAR);
-                brightness = Math.pow(perceptualNorm, BRIGHTNESS_GAMMA);
+        this.columns.forEach(pair => {
+            // LEFT
+            if (pair.left.parent !== mainSG) {
+                const worldPos = new THREE.Vector3();
+                pair.left.getWorldPosition(worldPos);
+                mainSG.worldToLocal(worldPos);
+                leftSG.remove(pair.left);
+                pair.left.position.copy(worldPos);
+                pair.left.rotation.y = 0;
+                mainSG.add(pair.left);
             }
-
-            // 2. GRADATIONAL Z-SHADING (Shader Logic v3)
-            if (col.mesh.material.uniforms) {
-                col.mesh.material.uniforms.uOpacity.value = 0.2 + (brightness * 0.75);
-            }
-
-            // 3. Selection Highlight - TBD for Torus
-
-            // Edge visibility
-            if (col.edges && col.edges.material) {
-                col.edges.material.opacity = brightness > 0.001 ? 0.9 : 0.0;
-                const edgeBright = (length + 1.0) / (R_FAR - R_NEAR + 1.0); // Rough approximation
-                col.edges.material.color.copy(col.baseColor).multiplyScalar(edgeBright);
-            }
-        }
-    }
-
-    /**
-     * Q-factor Dome: Pinch → один семитон, drag → октавный купол.
-     * Гауссово затухание на ±6 семитонов (Q=1).
-     *
-     * @param {number} centerIndex — индекс основного семитона (0-127)
-     * @param {number} deltaDb — изменение dB
-     */
-    applyQFactorDome(centerIndex, deltaDb) {
-        const Q_RANGE = 6; // ±6 семитонов = 1 октава
-        const sigma = Q_RANGE / 2;
-
-        for (let i = Math.max(0, centerIndex - Q_RANGE); i <= Math.min(127, centerIndex + Q_RANGE); i++) {
-            const dist = Math.abs(i - centerIndex);
-            const weight = Math.exp(-(dist * dist) / (2 * sigma * sigma));
-            const col = this.columns[i];
-            if (col && col.mesh) {
-                // Применяем взвешенное dB-изменение
-                const currentScale = col.mesh.scale.z;
-                const dbEffect = deltaDb * weight;
-                const normalizedEffect = dbEffect / 128; // Нормализация
-                col.mesh.scale.z = Math.max(0.01, currentScale + normalizedEffect);
-            }
-        }
-    }
-
-    /**
-     * Очистка ресурсов.
-     */
-    dispose() {
-        this.columns.forEach(col => {
-            if (col.mesh) {
-                col.mesh.geometry.dispose();
-                col.mesh.material.dispose();
-            }
-            if (col.edges) {
-                col.edges.geometry.dispose();
-                col.edges.material.dispose();
+            // RIGHT
+            if (pair.right.parent !== mainSG) {
+                const worldPos = new THREE.Vector3();
+                pair.right.getWorldPosition(worldPos);
+                mainSG.worldToLocal(worldPos);
+                rightSG.remove(pair.right);
+                pair.right.position.copy(worldPos);
+                pair.right.rotation.y = 0;
+                mainSG.add(pair.right);
             }
         });
-        this.columns = [];
-        if (this.torusGroup.parent) {
-            this.torusGroup.parent.remove(this.torusGroup);
-        }
+    }
+
+    /**
+     * Возвращает колонки обратно в leftSG / rightSG после morph back.
+     */
+    _reparentColumnsBack(leftSG, rightSG) {
+        const mainSG = leftSG.parent;
+        if (!mainSG) return;
+
+        this.columns.forEach((pair, i) => {
+            const fp = this._flatPositions[i];
+
+            if (pair.left.parent === mainSG) {
+                mainSG.remove(pair.left);
+                pair.left.position.copy(fp.left);
+                pair.left.rotation.y = 0;
+                leftSG.add(pair.left);
+            }
+            if (pair.right.parent === mainSG) {
+                mainSG.remove(pair.right);
+                pair.right.position.copy(fp.right);
+                pair.right.rotation.y = 0;
+                rightSG.add(pair.right);
+            }
+        });
+    }
+
+    /**
+     * Плавно меняем opacity у LineSegments (сетки) внутри группы.
+     * Box-меши колонок не трогаем.
+     * @param {THREE.Group} group
+     * @param {number} opacity — 0..1
+     */
+    _fadeGroupLines(group, opacity) {
+        group.traverse(child => {
+            if (child.isLineSegments && child.material) {
+                child.material.opacity = opacity * 0.0017; // базовая opacity сеток
+                child.material.transparent = true;
+            }
+        });
     }
 }
 
-/**
- * Cochlear Cylinder 3.44 - High-fidelity toroidal audio visualization.
- * Maps frequency (Z-depth) and pan (rotation) to a curved cylindrical geometry.
- */
 export default CochlearCylinder;
