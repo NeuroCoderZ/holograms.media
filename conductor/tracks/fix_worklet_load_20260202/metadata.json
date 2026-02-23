@@ -1,8 +1,0 @@
-{
-  "track_id": "fix_worklet_load_20260202",
-  "type": "bug",
-  "status": "new",
-  "created_at": "2026-02-02T09:45:00Z",
-  "updated_at": "2026-02-02T09:45:00Z",
-  "description": "Fix AudioWorklet loading error using Vite URL import (?url) in AudioService.js"
-}
