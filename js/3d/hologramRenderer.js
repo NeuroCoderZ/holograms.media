@@ -4,17 +4,14 @@ import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../co
 import eventBus from '../core/eventBus.js';
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js';
 import perfMonitor from '../utils/perfMonitor.js';
-import { CochlearCylinder } from './CochlearCylinder.js';
 
 const CELL_HEIGHT = 2.0;
-const NUM_SEMITONES = 128;
 
 // ─── SHADERS: BasilaQ-128 Linear Physics ─────────────────────────────────────
 const vertexShader = /* glsl */`
     varying float vWorldZHeight;
     uniform float uColumnScaleZ;
     void main() {
-        // Высота точки над основанием (0.0 - 128.0)
         vWorldZHeight = (position.z + 0.5) * uColumnScaleZ;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
@@ -25,18 +22,14 @@ const fragmentShader = /* glsl */`
     uniform float uSelection;
     uniform float uOpacity;
     uniform float uIsGreeting; 
-    uniform float uBrightnessBoost; // 1.0 для поверхности, 1.3 для ребер
+    uniform float uBrightnessBoost; 
     varying float vWorldZHeight;
 
     void main() {
-        // Линейное квантование слоев для Сканера
         float cellIndex = floor(vWorldZHeight);
         float brightness = clamp(cellIndex / 128.0, 0.0, 1.0);
-        
-        // Применяем буст яркости (например, для ребер)
         brightness = clamp(brightness * uBrightnessBoost, 0.0, 1.0);
 
-        // В режиме приветствия яркость всегда максимальна
         if (uIsGreeting > 0.5) {
             brightness = 1.0;
         }
@@ -49,15 +42,12 @@ const fragmentShader = /* glsl */`
 
 export class HologramRenderer {
   constructor(scene, roomId, userId) {
-    console.log('[HologramRenderer] v18.1.0: BasilaQ-128 Strict 8-bit LUT Active');
+    console.log('[HologramRenderer] v18.2.0: Binaural Physics & Structural Restoration Active');
     this.scene = scene;
     this.eventBus = eventBus;
     this.netHoloGlyphClient = netHoloGlyphClient;
     this.latestCwtData = null;
-    this.latestTimestamp = 0;
-    this._lastWasmPerf = 0;
     this._panStates = new Float32Array(128).fill(0);
-    this._lastRenderState = null;
     this.roomId = roomId;
     this.userId = userId;
 
@@ -66,34 +56,42 @@ export class HologramRenderer {
     this.hologramPivot.add(this.mainSequencerGroup);
 
     this.columns = [];
-    this.leftSequencerGroup = null;
-    this.rightSequencerGroup = null;
-
     this._createSequencerGrids();
     this._initializeColumns();
 
-    this.isXRMode = false;
     this.scene.add(this.hologramPivot);
-
     this.eventBus.on('audioData', (data) => { this.latestCwtData = data; });
     this.netHoloGlyphClient.connect(this.roomId, this.userId);
 
-    this.selectionState = {
-      left: { active: false, indices: [] },
-      right: { active: false, indices: [] }
-    };
+    this.selectionState = { left: { active: false, indices: [] }, right: { active: false, indices: [] } };
     this._debugFrameCount = 0;
   }
 
   _createSequencerGrids() {
     const commonSpinePosition = new THREE.Vector3(0, -GRID_HEIGHT, 0);
+    
     this.leftSequencerGroup = new THREE.Group();
     this.leftSequencerGroup.position.copy(commonSpinePosition);
+    this.leftSequencerGroup.add(this._createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, 1.0, true));
     this.mainSequencerGroup.add(this.leftSequencerGroup);
 
     this.rightSequencerGroup = new THREE.Group();
     this.rightSequencerGroup.position.copy(commonSpinePosition);
+    this.rightSequencerGroup.add(this._createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, 1.0, false));
     this.mainSequencerGroup.add(this.rightSequencerGroup);
+
+    // RESTORE SPHERES
+    const blueSphere = this._createSphereForAxis(3.024, 0x0000ff);
+    blueSphere.position.set(0, -GRID_HEIGHT, 0);
+    blueSphere.renderOrder = 0;
+    this.mainSequencerGroup.add(blueSphere);
+
+    const whiteSphere = this._createSphereForAxis(2.4192, 0xffffff);
+    whiteSphere.position.set(0, -GRID_HEIGHT, 0);
+    whiteSphere.renderOrder = 999;
+    this.mainSequencerGroup.add(whiteSphere);
+
+    this.hologramPivot.add(this._createCentralMarkerSphere(2.4192, 0xffffff));
   }
 
   _initializeColumns() {
@@ -106,62 +104,53 @@ export class HologramRenderer {
     }
   }
 
-    _createColumn(index, isLeft) {
-      const config = semitones[index];
-      const group = new THREE.Group();
-      const width = config.width;
-      const baseColor = new THREE.Color(config.color);
-  
-      const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0);
-      const material = new THREE.ShaderMaterial({
-        uniforms: {
-          uBaseColor: { value: baseColor },
-          uSelection: { value: 0.0 },
-          uOpacity: { value: 1.0 },
-          uIsGreeting: { value: 1.0 },
-          uBrightnessBoost: { value: 1.0 },
-          uColumnScaleZ: { value: 0.1 }
-        },
-        vertexShader,
-        fragmentShader,
-        transparent: false
-      });
-  
-      const mesh = new THREE.Mesh(geometry, material);
-      // Сдвигаем меш на половину его ширины так, чтобы внутренний край был в X=0
-      mesh.position.set(isLeft ? -width/2 : width/2, (index + 0.5) * CELL_HEIGHT, 0);
-      mesh.scale.set(1, 1, 0.1);
-  
-      // HIGHLIGHT EDGES (Теперь через ShaderMaterial для послойного затемнения)
-      const edgesGeom = new THREE.EdgesGeometry(geometry);
-      const edgesMat = new THREE.ShaderMaterial({
-        uniforms: {
-          uBaseColor: { value: baseColor.clone().offsetHSL(0, 0, 0.2) },
-          uSelection: { value: 0.0 },
-          uOpacity: { value: 1.0 },
-          uIsGreeting: { value: 1.0 },
-          uBrightnessBoost: { value: 1.3 },
-          uColumnScaleZ: { value: 0.1 }
-        },
-        vertexShader,
-        fragmentShader,
-        transparent: false
-      });
-      const edges = new THREE.LineSegments(edgesGeom, edgesMat);
-      mesh.add(edges);
-  
-      group.add(mesh);
-      // Группа стоит в 0, меш уже сдвинут. initialX = 0.
-      group.userData = { initialX: 0, baseColor: baseColor };
-      return group;
-    }
+  _createColumn(index, isLeft) {
+    const config = semitones[index];
+    const group = new THREE.Group();
+    const width = config.width;
+    const baseColor = new THREE.Color(config.color);
+
+    const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0);
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        uBaseColor: { value: baseColor },
+        uSelection: { value: 0.0 },
+        uOpacity: { value: 1.0 },
+        uIsGreeting: { value: 1.0 },
+        uBrightnessBoost: { value: 1.0 },
+        uColumnScaleZ: { value: 0.1 }
+      },
+      vertexShader, fragmentShader, transparent: false
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(isLeft ? -width/2 : width/2, (index + 0.5) * CELL_HEIGHT, 0);
+    mesh.scale.set(1, 1, 0.1);
+    
+    const edgesGeom = new THREE.EdgesGeometry(geometry);
+    const edgesMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uBaseColor: { value: baseColor.clone().offsetHSL(0, 0, 0.2) },
+        uSelection: { value: 0.0 },
+        uOpacity: { value: 1.0 },
+        uIsGreeting: { value: 1.0 },
+        uBrightnessBoost: { value: 1.3 },
+        uColumnScaleZ: { value: 0.1 }
+      },
+      vertexShader, fragmentShader, transparent: false
+    });
+    mesh.add(new THREE.LineSegments(edgesGeom, edgesMat));
+
+    group.add(mesh);
+    group.userData = { initialX: 0, baseColor: baseColor };
+    return group;
+  }
+
   updateVisuals() {
-    const isPaused = (state.audio && state.audio.isPaused);
-    if (isPaused) return; 
+    if (state.audio?.isPaused) return; 
 
     const isActive = (state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone'));
-    const audioData = this.latestCwtData || (state.audio?.latestAudioData);
-    
+    const audioData = this.latestCwtData || state.audio?.latestAudioData;
     const dbLevels = audioData?.levels || new Float32Array(256).fill(-128);
     const panAngles = audioData?.pans || new Float32Array(256).fill(0);
 
@@ -170,62 +159,91 @@ export class HologramRenderer {
       const leftMesh = pair.left.children[0];
       const rightMesh = pair.right.children[0];
 
-            if (!isActive) {
-              // --- GREETING MODE ---
-              const gDepth = 0.1;
-              [leftMesh, rightMesh].forEach(m => {
-                m.scale.z = gDepth;
-                m.position.z = gDepth / 2;
-                m.material.uniforms.uIsGreeting.value = 1.0;
-                m.material.uniforms.uBrightnessBoost.value = 1.0;
-                m.material.uniforms.uColumnScaleZ.value = gDepth;
-      
-                // Синхронизация РЕБЕР
-                const edges = m.children[0];
-                if (edges && edges.material.uniforms) {
-                  edges.material.uniforms.uIsGreeting.value = 1.0;
-                  edges.material.uniforms.uBrightnessBoost.value = 1.3;
-                  edges.material.uniforms.uColumnScaleZ.value = gDepth;
-                }
-              });
-              pair.left.position.x = 0;
-              pair.right.position.x = 0;
-            } else {
-              // --- ACTIVE MODE ---
-              const dbL = dbLevels[i];
-              const dbR = dbLevels[i + 128];
-              const pan = panAngles[i];
-      
-              // Magnetic Pan
-              this._panStates[i] += (pan - this._panStates[i]) * 0.5;
-              const p = this._panStates[i];
-              const offset = Math.round(p * (GRID_WIDTH - config.width));
-      
-              pair.left.position.x = pair.left.userData.initialX + (p < 0 ? offset : 0);
-              pair.right.position.x = pair.right.userData.initialX + (p > 0 ? offset : 0);
-      
-              // Z-Scaling
-              [ [leftMesh, dbL], [rightMesh, dbR] ].forEach(([m, db]) => {
-                const h = Math.max(0.1, 128.0 + db);
-                m.scale.z = h;
-                m.position.z = h / 2;
-      
-                // Обновляем униформы меша
-                m.material.uniforms.uIsGreeting.value = 0.0;
-                m.material.uniforms.uBrightnessBoost.value = 1.0;
-                m.material.uniforms.uColumnScaleZ.value = h;
-      
-                // Обновляем униформы РЕБЕР (они теперь тоже ShaderMaterial)
-                const edges = m.children[0];
-                if (edges && edges.material.uniforms) {
-                  edges.material.uniforms.uIsGreeting.value = 0.0;
-                  edges.material.uniforms.uBrightnessBoost.value = 1.3;
-                  edges.material.uniforms.uColumnScaleZ.value = h;
-                }
-              });
-            }    });
+      if (!isActive) {
+        // --- GREETING MODE ---
+        [leftMesh, rightMesh].forEach(m => {
+          m.scale.z = 0.1;
+          m.position.z = 0.05;
+          m.material.uniforms.uIsGreeting.value = 1.0;
+          m.material.uniforms.uColumnScaleZ.value = 0.1;
+          const edges = m.children[0];
+          if (edges) {
+            edges.material.uniforms.uIsGreeting.value = 1.0;
+            edges.material.uniforms.uColumnScaleZ.value = 0.1;
+          }
+        });
+        pair.left.position.x = 0;
+        pair.right.position.x = 0;
+      } else {
+        // --- ACTIVE MODE: Binaural suppression ---
+        const dbL = dbLevels[i];
+        const dbR = dbLevels[i + 128];
+        const rawPan = panAngles[i];
 
+        this._panStates[i] += (rawPan - this._panStates[i]) * 0.5;
+        const p = this._panStates[i];
+
+        // Suppression (Head Shadow)
+        const sDbL = dbL - (p > 0.0 ? p * 128.0 : 0.0);
+        const sDbR = dbR - (p < 0.0 ? Math.abs(p) * 128.0 : 0.0);
+
+        const offset = Math.round(p * (GRID_WIDTH - config.width));
+        pair.left.position.x = (p < 0 ? offset : 0);
+        pair.right.position.x = (p > 0 ? offset : 0);
+
+        [ [leftMesh, sDbL], [rightMesh, sDbR] ].forEach(([m, db]) => {
+          const h = Math.max(0.1, 128.0 + db);
+          m.scale.z = h; m.position.z = h / 2;
+          m.material.uniforms.uIsGreeting.value = 0.0;
+          m.material.uniforms.uColumnScaleZ.value = h;
+          const edges = m.children[0];
+          if (edges) {
+            edges.material.uniforms.uIsGreeting.value = 0.0;
+            edges.material.uniforms.uColumnScaleZ.value = h;
+          }
+        });
+      }
+    });
     this._debugFrameCount++;
+  }
+
+  _createCentralMarkerSphere(radius, color) {
+    const isTarget = (color === 0xffffff);
+    return new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 16), 
+      new THREE.MeshBasicMaterial({ color: isTarget ? 0xffff00 : color, transparent: isTarget, opacity: isTarget ? 0.0 : 1.0, visible: !isTarget }));
+  }
+
+  _createSphereForAxis(radius, color) {
+    return new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 16), new THREE.MeshBasicMaterial({ color, transparent: false, opacity: 1.0 }));
+  }
+
+  _createLine2ForAxis(points, color, linewidth, depthTest = true) {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+    const material = new THREE.LineBasicMaterial({ color, linewidth, depthTest, transparent: !depthTest });
+    return new THREE.Line(geometry, material);
+  }
+
+  _createAxis(xLength, yLength, zLength, sphereRadiusInput, isLeftGrid) {
+    const axisGroup = new THREE.Group();
+    const sphereRadius = 2.4192; 
+    const origin = [0, 0, 0];
+    const xEnd = isLeftGrid ? [-xLength, 0, 0] : [xLength, 0, 0];
+    const colorX = isLeftGrid ? 0x800080 : 0xFF0000;
+
+    axisGroup.add(this._createLine2ForAxis([...origin, ...xEnd], colorX, 1.5, true));
+    axisGroup.add(this._createSphereForAxis(sphereRadius, colorX).translateX(isLeftGrid ? -xLength : xLength));
+
+    const spineLine = this._createLine2ForAxis([...origin, 0, yLength, 0], 0x00FF00, 1.5, true);
+    spineLine.renderOrder = 999; spineLine.material.depthTest = false; 
+    axisGroup.add(spineLine);
+    axisGroup.add(this._createSphereForAxis(sphereRadius, 0x00FF00).translateY(yLength));
+
+    axisGroup.add(this._createLine2ForAxis([...origin, 0, 0, zLength], 0xFFFFFF, 1.5, true));
+    axisGroup.add(this._createSphereForAxis(sphereRadius, 0xFFFFFF).translateZ(zLength));
+
+    axisGroup.position.z = 0.5;
+    return axisGroup;
   }
 
   getHologramPivot() { return this.hologramPivot; }
