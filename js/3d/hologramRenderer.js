@@ -756,13 +756,13 @@ export class HologramRenderer {
       uniforms: {
         uBaseColor: { value: baseColorObj },
         uSelection: { value: 0.0 },
-        uOpacity: { value: 0.85 },
+        uOpacity: { value: 1.0 },
         uColumnScaleZ: { value: 0.1 }
       },
       vertexShader,
       fragmentShader,
       transparent: true,
-      depthWrite: false,
+      depthWrite: true,
       side: THREE.DoubleSide
     });
 
@@ -785,8 +785,8 @@ export class HologramRenderer {
     const edgeColor = new THREE.Color(semitone.color).offsetHSL(0, 0, 0.4);
     const edgesMaterial = new THREE.LineBasicMaterial({
       color: edgeColor,
-      transparent: true,
-      opacity: 0.9,
+      transparent: false,
+      opacity: 1.0,
       linewidth: 1,
       depthTest: true,
       polygonOffset: true,
@@ -999,26 +999,34 @@ export class HologramRenderer {
           leftMesh.position.z = gDepth / 2;
           if (leftMesh.material.uniforms) {
             leftMesh.material.uniforms.uBaseColor.value.copy(columnPair.left.userData.baseColor);
+            leftMesh.material.uniforms.uOpacity.value = 1.0;
           } else if (leftMesh.material.color) {
             leftMesh.material.color.copy(columnPair.left.userData.baseColor);
           }
 
           // Reset edge opacity in Greeting Mode
           const leftEdgesMesh = leftMesh.children[0];
-          if (leftEdgesMesh && leftEdgesMesh.material) leftEdgesMesh.material.opacity = 0.8;
+          if (leftEdgesMesh && leftEdgesMesh.material) {
+            leftEdgesMesh.material.opacity = 1.0;
+            leftEdgesMesh.material.transparent = false;
+          }
         }
         if (rightMesh) {
           rightMesh.scale.z = gDepth;
           rightMesh.position.z = gDepth / 2;
           if (rightMesh.material.uniforms) {
             rightMesh.material.uniforms.uBaseColor.value.copy(columnPair.right.userData.baseColor);
+            rightMesh.material.uniforms.uOpacity.value = 1.0;
           } else if (rightMesh.material.color) {
             rightMesh.material.color.copy(columnPair.right.userData.baseColor);
           }
 
           // Reset edge opacity in Greeting Mode
           const rightEdgesMesh = rightMesh.children[0];
-          if (rightEdgesMesh && rightEdgesMesh.material) rightEdgesMesh.material.opacity = 0.8;
+          if (rightEdgesMesh && rightEdgesMesh.material) {
+            rightEdgesMesh.material.opacity = 1.0;
+            rightEdgesMesh.material.transparent = false;
+          }
         }
         columnPair.left.position.x = -semitoneConfig.width;
         columnPair.right.position.x = 0;
@@ -1047,89 +1055,82 @@ export class HologramRenderer {
         columnPair.left.position.x = columnPair.left.userData.initialX + (pan < 0 ? discreteOffset : 0);
         columnPair.right.position.x = columnPair.right.userData.initialX + (pan > 0 ? discreteOffset : 0);
 
-        // 3. Z Scaling & Shader Physics
-        if (leftMesh) {
-          const hL = Math.max(0.1, qAmpL);
-          leftMesh.scale.z = hL;
-          leftMesh.position.z = hL / 2;
-
-          if (leftMesh.material.uniforms) {
-            leftMesh.material.uniforms.uOpacity.value = 0.2 + (qAmpL / 128.0) * 0.75;
-            leftMesh.material.uniforms.uColumnScaleZ.value = hL;
-          }
-
-          const isSelectedL = this.selectionState.left.active && this.selectionState.left.indices.includes(index);
-          const leftEdgesMesh = leftMesh.children[0];
-
-          if (isSelectedL) {
-            const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
-            if (leftMesh.material.uniforms) leftMesh.material.uniforms.uSelection.value = blink;
-            if (leftEdgesMesh && leftEdgesMesh.material) {
-              leftEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
-              if (leftEdgesMesh.material.uniforms && leftEdgesMesh.material.uniforms.uBaseColor) {
-                leftEdgesMesh.material.uniforms.uBaseColor.value.setHSL(0, 0, 1.0);
-              } else if (leftEdgesMesh.material.color) {
-                leftEdgesMesh.material.color.setHSL(0, 0, 1.0);
-              }
-            }
-          } else {
-            if (leftMesh.material.uniforms) leftMesh.material.uniforms.uSelection.value = 0.0;
-            if (leftEdgesMesh && leftEdgesMesh.material) {
-              leftEdgesMesh.material.opacity = qAmpL > 0.1 ? 0.9 : 0.0;
-              if (semitoneConfig) {
-                const edgeBright = (hL + 1.0) / 128.0;
-                const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(edgeBright);
-                if (leftEdgesMesh.material.uniforms && leftEdgesMesh.material.uniforms.uBaseColor) {
-                  leftEdgesMesh.material.uniforms.uBaseColor.value.copy(edgeC);
-                } else if (leftEdgesMesh.material.color) {
-                  leftEdgesMesh.material.color.copy(edgeC);
+                // 3. Z Scaling & Shader Physics
+                if (leftMesh) {
+                  const hL = Math.max(0.1, qAmpL);
+                  leftMesh.scale.z = hL;
+                  leftMesh.position.z = hL / 2;
+        
+                  if (leftMesh.material.uniforms) {
+                    leftMesh.material.uniforms.uColumnScaleZ.value = hL;
+                  }
+        
+                  const isSelectedL = this.selectionState.left.active && this.selectionState.left.indices.includes(index);    
+                  const leftEdgesMesh = leftMesh.children[0];
+        
+                  if (isSelectedL) {
+                    const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
+                    if (leftMesh.material.uniforms) leftMesh.material.uniforms.uSelection.value = blink;
+                    if (leftEdgesMesh && leftEdgesMesh.material) {
+                      if (leftEdgesMesh.material.uniforms && leftEdgesMesh.material.uniforms.uBaseColor) {
+                        leftEdgesMesh.material.uniforms.uBaseColor.value.setHSL(0, 0, 1.0);
+                      } else if (leftEdgesMesh.material.color) {
+                        leftEdgesMesh.material.color.setHSL(0, 0, 1.0);
+                      }
+                    }
+                  } else {
+                    if (leftMesh.material.uniforms) leftMesh.material.uniforms.uSelection.value = 0.0;
+                    if (leftEdgesMesh && leftEdgesMesh.material) {
+                      if (semitoneConfig) {
+                        const edgeBright = (hL + 1.0) / 128.0;
+                        const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(edgeBright);
+                        if (leftEdgesMesh.material.uniforms && leftEdgesMesh.material.uniforms.uBaseColor) {
+                          leftEdgesMesh.material.uniforms.uBaseColor.value.copy(edgeC);
+                        } else if (leftEdgesMesh.material.color) {
+                          leftEdgesMesh.material.color.copy(edgeC);
+                        }
+                      }
+                    }
+                  }
                 }
-              }
-            }
-          }
-        }
-
-        if (rightMesh) {
-          const hR = Math.max(0.1, qAmpR);
-          rightMesh.scale.z = hR;
-          rightMesh.position.z = hR / 2;
-
-          if (rightMesh.material.uniforms) {
-            rightMesh.material.uniforms.uOpacity.value = 0.2 + (qAmpR / 128.0) * 0.75;
-            rightMesh.material.uniforms.uColumnScaleZ.value = hR;
-          }
-
-          const isSelectedR = this.selectionState.right.active && this.selectionState.right.indices.includes(index);
-          const rightEdgesMesh = rightMesh.children[0];
-
-          if (isSelectedR) {
-            const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
-            if (rightMesh.material.uniforms) rightMesh.material.uniforms.uSelection.value = blink;
-            if (rightEdgesMesh && rightEdgesMesh.material) {
-              rightEdgesMesh.material.opacity = 0.8 + (0.2 * blink);
-              if (rightEdgesMesh.material.uniforms && rightEdgesMesh.material.uniforms.uBaseColor) {
-                rightEdgesMesh.material.uniforms.uBaseColor.value.setHSL(0, 0, 1.0);
-              } else if (rightEdgesMesh.material.color) {
-                rightEdgesMesh.material.color.setHSL(0, 0, 1.0);
-              }
-            }
-          } else {
-            if (rightMesh.material.uniforms) rightMesh.material.uniforms.uSelection.value = 0.0;
-            if (rightEdgesMesh && rightEdgesMesh.material) {
-              rightEdgesMesh.material.opacity = qAmpR > 0.1 ? 0.9 : 0.0;
-              if (semitoneConfig) {
-                const edgeBright = (hR + 1.0) / 128.0;
-                const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(edgeBright);
-                if (rightEdgesMesh.material.uniforms && rightEdgesMesh.material.uniforms.uBaseColor) {
-                  rightEdgesMesh.material.uniforms.uBaseColor.value.copy(edgeC);
-                } else if (rightEdgesMesh.material.color) {
-                  rightEdgesMesh.material.color.copy(edgeC);
-                }
-              }
-            }
-          }
-        }
-        // 4. Update Performance Monitor (Phase 4)
+        
+                if (rightMesh) {
+                  const hR = Math.max(0.1, qAmpR);
+                  rightMesh.scale.z = hR;
+                  rightMesh.position.z = hR / 2;
+        
+                  if (rightMesh.material.uniforms) {
+                    rightMesh.material.uniforms.uColumnScaleZ.value = hR;
+                  }
+        
+                  const isSelectedR = this.selectionState.right.active && this.selectionState.right.indices.includes(index);  
+                  const rightEdgesMesh = rightMesh.children[0];
+        
+                  if (isSelectedR) {
+                    const blink = (Math.sin(performance.now() * 0.01) + 1) * 0.5;
+                    if (rightMesh.material.uniforms) rightMesh.material.uniforms.uSelection.value = blink;
+                    if (rightEdgesMesh && rightEdgesMesh.material) {
+                      if (rightEdgesMesh.material.uniforms && rightEdgesMesh.material.uniforms.uBaseColor) {
+                        rightEdgesMesh.material.uniforms.uBaseColor.value.setHSL(0, 0, 1.0);
+                      } else if (rightEdgesMesh.material.color) {
+                        rightEdgesMesh.material.color.setHSL(0, 0, 1.0);
+                      }
+                    }
+                  } else {
+                    if (rightMesh.material.uniforms) rightMesh.material.uniforms.uSelection.value = 0.0;
+                    if (rightEdgesMesh && rightEdgesMesh.material) {
+                      if (semitoneConfig) {
+                        const edgeBright = (hR + 1.0) / 128.0;
+                        const edgeC = new THREE.Color(semitoneConfig.color).multiplyScalar(edgeBright);
+                        if (rightEdgesMesh.material.uniforms && rightEdgesMesh.material.uniforms.uBaseColor) {
+                          rightEdgesMesh.material.uniforms.uBaseColor.value.copy(edgeC);
+                        } else if (rightEdgesMesh.material.color) {
+                          rightEdgesMesh.material.color.copy(edgeC);
+                        }
+                      }
+                    }
+                  }
+                }        // 4. Update Performance Monitor (Phase 4)
         perfMonitor.update(this._lastWasmPerf, performance.now() - (this.latestTimestamp || 0));
       }
     });
