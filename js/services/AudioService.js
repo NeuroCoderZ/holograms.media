@@ -151,6 +151,7 @@ class AudioService {
             return this.workletNode;
         }
 
+        // BASILAQ-128: Dynamic adaptation based on refresh rate
         this.workletNode = new AudioWorkletNode(this.context, 'cwt-processor', {
             numberOfInputs: 1,
             numberOfOutputs: 1,
@@ -265,6 +266,14 @@ class AudioService {
         let measuredFps = this.targetFps;
 
         const measureFps = (currentTime) => {
+            // Если вкладка скрыта (браузер режет rAF), пропускаем замер FPS
+            if (document.visibilityState === 'hidden') {
+                lastTime = currentTime; // Reset baseline
+                frameCount = 0;
+                this._fpsMonitorId = requestAnimationFrame(measureFps);
+                return;
+            }
+
             frameCount++;
             const elapsed = currentTime - lastTime;
 

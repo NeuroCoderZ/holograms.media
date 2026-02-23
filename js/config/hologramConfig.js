@@ -59,6 +59,18 @@ export const semitones = Array.from({ length: 128 }, (_, i) => {
   const zVal = (i === 127) ? 255 : (i * 2);
   const zShade = `rgb(${zVal},${zVal},${zVal})`;
 
+  // Psychoacoustic Head Shadow Model (ILD)
+  // Max shadow is ~30dB at high frequencies.
+  let maxIldDb = 0;
+  if (f > 500) {
+      if (f <= 3000) {
+          maxIldDb = 20 * ((f - 500) / 2500); // Linear growth 500Hz -> 3000Hz (0 to 20dB)
+      } else {
+          maxIldDb = 20 + 10 * (1 - Math.exp(-(f - 3000) / 5000)); // Asymptotic to 30dB
+      }
+  }
+  const shadowCoef = parseFloat((maxIldDb / 30.0).toFixed(4));
+
   return {
     key: note.replace("#", "s"), // Для React (если будет использоваться)
     note: note,
@@ -66,6 +78,7 @@ export const semitones = Array.from({ length: 128 }, (_, i) => {
     width: width,
     color: color, // This will be a THREE.Color object
     z_shade: zShade,
+    shadow_coef: shadowCoef,
     deg: 180.00 - (i * 1.40625), // Угол для визуализации
   };
 });
