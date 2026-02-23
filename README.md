@@ -22,8 +22,8 @@
 - **Networking:** WebRTC (NetHoloGlyph), WebSockets.
 
 ## 🏗 Структура и Разработка
-- `master`: Production (holograms.media).
-- `dev`: Development (dev.holograms.media).
+- **main**: Production (holograms.media).
+- **dev**: Development (dev.holograms.media).
 - `conductor/`: Локальная база знаний и треки задач.
 
 ## 🚦 Как запустить
