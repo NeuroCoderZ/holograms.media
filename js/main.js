@@ -122,8 +122,9 @@ async function startFullApplication(appState) {
         const inputManager = new Input(appState);
         inputManager.initialize();
 
-        // Connect to the gesture intent WebSocket
-        try { gestureIntentClient.connect(); } catch (error) { console.warn("GestureIntentClient connection failed:", error); }
+        // Connect to the gesture intent WebSocket ТОЛЬКО если есть JWT-токен
+        // Анонимные пользователи подключатся автоматически после авторизации
+        try { gestureIntentClient.connect(); } catch (error) { console.info('[main] GestureIntentClient: WS skip.', error.message); }
 
         console.log("Platform-specific layout and input managers initialized.");
 
@@ -145,12 +146,12 @@ async function startFullApplication(appState) {
         // Показываем основной интерфейс
         const leftPanel = document.getElementById('left-panel');
         const mainArea = document.querySelector('.main-area');
-        if(leftPanel) leftPanel.classList.remove('u-initially-hidden');
-        if(mainArea) mainArea.classList.remove('u-initially-hidden');
+        if (leftPanel) leftPanel.classList.remove('u-initially-hidden');
+        if (mainArea) mainArea.classList.remove('u-initially-hidden');
 
         // Обновляем размеры рендерера после показа интерфейса
         if (appState.updateRendererSize) {
-          appState.updateRendererSize();
+            appState.updateRendererSize();
         }
 
 
