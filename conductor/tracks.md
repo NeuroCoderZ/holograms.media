@@ -49,5 +49,5 @@
 
 ---
 
-- [ ] **Трек: Hotfix CSP для MediaPipe**
+- [x] **Трек: Hotfix CSP для MediaPipe**
   *Ссылка: [./tracks/hotfix_csp_mediapipe_20260222/](./tracks/hotfix_csp_mediapipe_20260222/)*
