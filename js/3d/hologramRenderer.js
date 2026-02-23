@@ -106,56 +106,55 @@ export class HologramRenderer {
     }
   }
 
-  _createColumn(index, isLeft) {
-    const config = semitones[index];
-    const group = new THREE.Group();
-    const width = config.width;
-    const baseColor = new THREE.Color(config.color);
-
-    const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0);
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        uBaseColor: { value: baseColor },
-        uSelection: { value: 0.0 },
-        uOpacity: { value: 1.0 },
-        uIsGreeting: { value: 1.0 },
-        uBrightnessBoost: { value: 1.0 },
-        uColumnScaleZ: { value: 0.1 }
-      },
-      vertexShader,
-      fragmentShader,
-      transparent: false
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    // Сдвигаем меш так, чтобы его край был ровно в X=0 группы
-    mesh.position.set(isLeft ? -width/2 : width/2, (index + 0.5) * CELL_HEIGHT, 0);
-    mesh.scale.set(1, 1, 0.1);
-    
-    // HIGHLIGHT EDGES (Теперь через ShaderMaterial для послойного затемнения)
-    const edgesGeom = new THREE.EdgesGeometry(geometry);
-    const edgesMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uBaseColor: { value: baseColor.clone().offsetHSL(0, 0, 0.2) }, // Чуть светлее база
-        uSelection: { value: 0.0 },
-        uOpacity: { value: 1.0 },
-        uIsGreeting: { value: 1.0 },
-        uBrightnessBoost: { value: 1.3 }, // Ребра на 30% ярче!
-        uColumnScaleZ: { value: 0.1 }
-      },
-      vertexShader,
-      fragmentShader,
-      transparent: false
-    });
-    const edges = new THREE.LineSegments(edgesGeom, edgesMat);
-    mesh.add(edges);
-
-    group.add(mesh);
-    // initialX = 0, так как меш уже сдвинут внутри группы
-    group.userData = { initialX: 0, baseColor: baseColor };
-    return group;
-  }
-
+    _createColumn(index, isLeft) {
+      const config = semitones[index];
+      const group = new THREE.Group();
+      const width = config.width;
+      const baseColor = new THREE.Color(config.color);
+  
+      const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0);
+      const material = new THREE.ShaderMaterial({
+        uniforms: {
+          uBaseColor: { value: baseColor },
+          uSelection: { value: 0.0 },
+          uOpacity: { value: 1.0 },
+          uIsGreeting: { value: 1.0 },
+          uBrightnessBoost: { value: 1.0 },
+          uColumnScaleZ: { value: 0.1 }
+        },
+        vertexShader,
+        fragmentShader,
+        transparent: false
+      });
+  
+      const mesh = new THREE.Mesh(geometry, material);
+      // Сдвигаем меш на половину его ширины так, чтобы внутренний край был в X=0
+      mesh.position.set(isLeft ? -width/2 : width/2, (index + 0.5) * CELL_HEIGHT, 0);
+      mesh.scale.set(1, 1, 0.1);
+  
+      // HIGHLIGHT EDGES (Теперь через ShaderMaterial для послойного затемнения)
+      const edgesGeom = new THREE.EdgesGeometry(geometry);
+      const edgesMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uBaseColor: { value: baseColor.clone().offsetHSL(0, 0, 0.2) },
+          uSelection: { value: 0.0 },
+          uOpacity: { value: 1.0 },
+          uIsGreeting: { value: 1.0 },
+          uBrightnessBoost: { value: 1.3 },
+          uColumnScaleZ: { value: 0.1 }
+        },
+        vertexShader,
+        fragmentShader,
+        transparent: false
+      });
+      const edges = new THREE.LineSegments(edgesGeom, edgesMat);
+      mesh.add(edges);
+  
+      group.add(mesh);
+      // Группа стоит в 0, меш уже сдвинут. initialX = 0.
+      group.userData = { initialX: 0, baseColor: baseColor };
+      return group;
+    }
   updateVisuals() {
     const isPaused = (state.audio && state.audio.isPaused);
     if (isPaused) return; 
@@ -171,57 +170,60 @@ export class HologramRenderer {
       const leftMesh = pair.left.children[0];
       const rightMesh = pair.right.children[0];
 
-      if (!isActive) {
-        // --- GREETING MODE ---
-        const gDepth = 0.1;
-        [leftMesh, rightMesh].forEach(m => {
-          m.scale.z = gDepth;
-          m.position.z = gDepth / 2;
-          m.material.uniforms.uIsGreeting.value = 1.0;
-          m.material.uniforms.uColumnScaleZ.value = gDepth;
-
-          // Синхронизация РЕБЕР
-          const edges = m.children[0];
-          if (edges && edges.material.uniforms) {
-            edges.material.uniforms.uIsGreeting.value = 1.0;
-            edges.material.uniforms.uColumnScaleZ.value = gDepth;
-          }
-        });
-        pair.left.position.x = -config.width;
-        pair.right.position.x = 0;
-      } else {
-        // --- ACTIVE MODE ---
-        const dbL = dbLevels[i];
-        const dbR = dbLevels[i + 128];
-        const pan = panAngles[i];
-
-        // Magnetic Pan
-        this._panStates[i] += (pan - this._panStates[i]) * 0.5;
-        const p = this._panStates[i];
-        const offset = Math.round(p * (GRID_WIDTH - config.width));
-
-        pair.left.position.x = pair.left.userData.initialX + (p < 0 ? offset : 0);
-        pair.right.position.x = pair.right.userData.initialX + (p > 0 ? offset : 0);
-
-        // Z-Scaling
-        [ [leftMesh, dbL], [rightMesh, dbR] ].forEach(([m, db]) => {
-          const h = Math.max(0.1, 128.0 + db);
-          m.scale.z = h;
-          m.position.z = h / 2;
-          
-          // Обновляем униформы меша
-          m.material.uniforms.uIsGreeting.value = 0.0;
-          m.material.uniforms.uColumnScaleZ.value = h;
-          
-          // Обновляем униформы РЕБЕР (они теперь тоже ShaderMaterial)
-          const edges = m.children[0];
-          if (edges && edges.material.uniforms) {
-            edges.material.uniforms.uIsGreeting.value = 0.0;
-            edges.material.uniforms.uColumnScaleZ.value = h;
-          }
-        });
-      }
-    });
+            if (!isActive) {
+              // --- GREETING MODE ---
+              const gDepth = 0.1;
+              [leftMesh, rightMesh].forEach(m => {
+                m.scale.z = gDepth;
+                m.position.z = gDepth / 2;
+                m.material.uniforms.uIsGreeting.value = 1.0;
+                m.material.uniforms.uBrightnessBoost.value = 1.0;
+                m.material.uniforms.uColumnScaleZ.value = gDepth;
+      
+                // Синхронизация РЕБЕР
+                const edges = m.children[0];
+                if (edges && edges.material.uniforms) {
+                  edges.material.uniforms.uIsGreeting.value = 1.0;
+                  edges.material.uniforms.uBrightnessBoost.value = 1.3;
+                  edges.material.uniforms.uColumnScaleZ.value = gDepth;
+                }
+              });
+              pair.left.position.x = 0;
+              pair.right.position.x = 0;
+            } else {
+              // --- ACTIVE MODE ---
+              const dbL = dbLevels[i];
+              const dbR = dbLevels[i + 128];
+              const pan = panAngles[i];
+      
+              // Magnetic Pan
+              this._panStates[i] += (pan - this._panStates[i]) * 0.5;
+              const p = this._panStates[i];
+              const offset = Math.round(p * (GRID_WIDTH - config.width));
+      
+              pair.left.position.x = pair.left.userData.initialX + (p < 0 ? offset : 0);
+              pair.right.position.x = pair.right.userData.initialX + (p > 0 ? offset : 0);
+      
+              // Z-Scaling
+              [ [leftMesh, dbL], [rightMesh, dbR] ].forEach(([m, db]) => {
+                const h = Math.max(0.1, 128.0 + db);
+                m.scale.z = h;
+                m.position.z = h / 2;
+      
+                // Обновляем униформы меша
+                m.material.uniforms.uIsGreeting.value = 0.0;
+                m.material.uniforms.uBrightnessBoost.value = 1.0;
+                m.material.uniforms.uColumnScaleZ.value = h;
+      
+                // Обновляем униформы РЕБЕР (они теперь тоже ShaderMaterial)
+                const edges = m.children[0];
+                if (edges && edges.material.uniforms) {
+                  edges.material.uniforms.uIsGreeting.value = 0.0;
+                  edges.material.uniforms.uBrightnessBoost.value = 1.3;
+                  edges.material.uniforms.uColumnScaleZ.value = h;
+                }
+              });
+            }    });
 
     this._debugFrameCount++;
   }
