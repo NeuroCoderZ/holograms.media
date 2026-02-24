@@ -183,10 +183,15 @@ export class HologramRenderer {
     else if (p > 0.01) dbL -= shadowDb;
 
     // 3. Симметричный паканг (оба уха к центру своей сетки)
-    const w = config.width || 1;
-    const maxAvailableShift = (GRID_WIDTH - w) * 0.5;
-    pair.left.position.x = pair.left.userData.initialX - Math.round(Math.abs(Math.min(0, p)) * maxAvailableShift * 2);
-    pair.right.position.x = pair.right.userData.initialX + Math.round(Math.abs(Math.max(0, p)) * maxAvailableShift * 2);
+    // Отключаем плоское X-панорамирование, если мы в режиме кольца (чтобы не искажало круг)
+    const isTorus = this._cochlearCylinder && (this._cochlearCylinder.isTorusMode || this._cochlearCylinder.isMorphing);
+
+    if (!isTorus) {
+      const w = config.width || 1;
+      const maxAvailableShift = (GRID_WIDTH - w) * 0.5;
+      pair.left.position.x = pair.left.userData.initialX - Math.round(Math.abs(Math.min(0, p)) * maxAvailableShift * 2);
+      pair.right.position.x = pair.right.userData.initialX + Math.round(Math.abs(Math.max(0, p)) * maxAvailableShift * 2);
+    }
 
     // 4. BasilaQ-128: 1 dB = 1 ячейка (Z-scale = 128 + dB)
     [[leftMesh, dbL], [rightMesh, dbR]].forEach(([m, db]) => {
