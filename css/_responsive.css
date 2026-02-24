@@ -81,6 +81,7 @@
   #gesture-area.hands-detected {
     height: 20vh !important;
     min-height: 180px !important;
+    background-color: rgba(0, 0, 0, 0.4) !important;
   }
 
   /* --- КОНТЕЙНЕР ГОЛОГРАММЫ --- */
