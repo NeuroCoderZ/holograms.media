@@ -226,8 +226,8 @@ export class HologramRenderer {
     if (!this._cochlearCylinder) {
       const { CochlearCylinder } = await import('./CochlearCylinder.js');
       this._cochlearCylinder = new CochlearCylinder(this.hologramPivot);
-      this._cochlearCylinder.setColumns(this.columns);
-      console.log('[HologramRenderer] CochlearCylinder v4 initialized —', this.columns.length, 'column pairs.');
+      this._cochlearCylinder.setColumns(this.columns, state.camera);
+      console.log('[HologramRenderer] CochlearCylinder v5 initialized —', this.columns.length, 'column pairs.');
     }
 
     if (!this._isTorusMode) {
