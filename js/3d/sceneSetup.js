@@ -86,50 +86,50 @@ export async function initializeScene(state) {
 
   // Add event listener for when user stops interacting
   state.controls.addEventListener('end', () => {
-    // Clear any existing tween
-    if (state.returnTween) {
-      state.returnTween.stop();
+    // 🔧 ОСТАНОВКА ВОЗВРАТА ПРИ XR: Не запускаем возврат, если голограмма-кольцо активна
+    if (state.isXRMode || (state.hologramRendererInstance && state.hologramRendererInstance._isTorusMode)) {
+      console.log('[sceneSetup] Skip return animation in XR mode');
+      return;
     }
 
-    // Start delayed return animation
-    setTimeout(() => {
-      state.startReturnAnimation();
-    }, state.returnDelay);
+    if (state.returnTween) {
+      cancelAnimationFrame(state.returnTween);
+    }
+    state.startReturnAnimation();
   });
 
-  // Function to start TWEEN-based return animation
+  // Магнитный возврат камеры (без внешней библиотеки)
   state.startReturnAnimation = function () {
     const startPosition = state.camera.position.clone();
     const startTarget = state.controls.target.clone();
+    const targetPosition = state.initialCameraPosition;
+    const targetTarget = state.initialControlsTarget;
 
-    // Create tween for camera position
-    const positionTween = new window.TWEEN.Tween(startPosition)
-      .to(state.initialCameraPosition, 300) // 0.3 seconds duration
-      .easing(window.TWEEN.Easing.Quadratic.Out) // Smooth easing
-      .onUpdate(() => {
-        state.camera.position.copy(startPosition);
-        state.camera.lookAt(0, 0, 0); // Update lookAt during animation
-      });
+    // Чем ближе камера к исходной точке, тем быстрее она должна лететь. (Inverse-quadratic / Exponential In)
+    const duration = 600; // Немного увеличим базу
+    const startTime = performance.now();
 
-    // Create tween for controls target
-    const targetTween = new window.TWEEN.Tween(startTarget)
-      .to(state.initialControlsTarget, 300)
-      .easing(window.TWEEN.Easing.Quadratic.Out)
-      .onUpdate(() => {
-        state.controls.target.copy(startTarget);
-        state.controls.update();
-      });
+    function animateReturn() {
+      const elapsed = performance.now() - startTime;
+      let t = Math.min(elapsed / duration, 1);
 
-    // Start both tweens
-    positionTween.start();
-    targetTween.start();
+      // Магнитный эффект (Экспоненциальное ускорение к концу: Exponential In)
+      const eased = t === 1 ? 1 : Math.pow(2, 10 * t - 10);
 
-    state.returnTween = positionTween; // Store reference to stop if needed
+      state.camera.position.lerpVectors(startPosition, targetPosition, eased);
+      state.controls.target.lerpVectors(startTarget, targetTarget, eased);
+      state.controls.update();
+
+      if (t < 1) {
+        state.returnTween = requestAnimationFrame(animateReturn);
+      }
+    }
+
+    state.returnTween = requestAnimationFrame(animateReturn);
   };
 
-  // Function to animate return (now just updates TWEEN)
   state.animateReturn = function () {
-    // TWEEN update is handled in rendering.js
+    // Больше не используется, так как у нас requestAnimationFrame внутри startReturnAnimation.
   };
 
   // Set renderer size AFTER camera is configured with container dimensions

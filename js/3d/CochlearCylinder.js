@@ -94,8 +94,8 @@ export class CochlearCylinder {
     }
 
     /**
-     * Вычисляет целевые позиции столбцов в форме тора.
-     * Левый канал - полуокружность слева (-X), правый - справа (+X).
+     * Вычисляет целевые позиции столбцов для прямоугольной (цилиндрической) "коробочки".
+     * Срез имеет высоту (Y) и глубину (Z) исходной сетки, обёрнутые вокруг пользователя.
      */
     _computeTorusTargets() {
         this._torusPositions = [];
@@ -103,30 +103,50 @@ export class CochlearCylinder {
 
         const n = this.columns.length;
         const radius = RING_RADIUS;
-        const offsetY = -GRID_HEIGHT; // Центрирование по Y
+
+        // Прямоугольный срез: нам нужно сохранить оригинальные координаты Y и Z относительно сетки,
+        // но завернуть ось X в окружность вокруг пользователя.
+        // Y - высота столбца остается своей.
+        // Z - оригинальное положение в глубину.
+
+        const offsetY = -GRID_HEIGHT;
 
         for (let i = 0; i < n; i++) {
-            // Y-координата с учётом смещения
-            const flatYL = this._flatPositions[i].left.y + offsetY;
-            const flatYR = this._flatPositions[i].right.y + offsetY;
+            // Оригинальные локальные координаты столбца на сетке
+            const flatPosL = this._flatPositions[i].left.clone();
+            const flatPosR = this._flatPositions[i].right.clone();
 
-            // Угол от 0 до PI (передняя полуокружность)
-            // i=0 → -Z (перед), i=127 → +Z (сзади)
+            const yL = flatPosL.y + offsetY;
+            const yR = flatPosR.y + offsetY;
+
+            // Z на оргиниальной плоской сетке определяет, как далеко столбец по оси глубины прямоугольника
+            // В плоской конфигурации сетки XXZ: X-частота, Y-высота, Z-время. 
+            // Мы "скручиваем" ось Z (время/глубину) или ось X (частоту) вокруг цилиндра.
+            // В нашей архитектуре столбцы стоят с i=0 до 127. Это ось частот (изначально ось Z в сетке, так как колонки идут вдаль).
+            // То есть индекс `i` линейно мапится на длину окружности (частоты обволакивают пользователя).
+
             const angle = (i / (n - 1)) * Math.PI;
 
-            // Левая сторона (-X, левое ухо)
+            // Левая сторона: полуокружность слева
+            // Дистанция от центра (пользователя) - это фиксированный радиус `radius`. 
+            // Но мы прибавляем/сохраняем оригинальные пропорции прямоугольного среза:
+            // Чтобы профиль был прямоугольным, мы просто располагаем их на цилиндре радиусом `radius`,
+            // высотой `Y` и глубиной сечения (например, оригинальная позиция X).
+
+            // В этой версии мы физически оставляем Y как есть, а радиус делаем постоянным для всех частот, 
+            // создавая идеальный цилиндр (трубу), у которого срез - это прямоугольная стенка (сохраняющая пропорции сеток Y/Z).
+
             const leftX = -radius * Math.sin(angle);
             const leftZ = -radius * Math.cos(angle);
             const rotYLeft = Math.atan2(-leftX, -leftZ);
 
-            // Правая сторона (+X, правое ухо)
             const rightX = radius * Math.sin(angle);
             const rightZ = -radius * Math.cos(angle);
             const rotYRight = Math.atan2(-rightX, -rightZ);
 
             this._torusPositions.push({
-                left: new THREE.Vector3(leftX, flatYL, leftZ),
-                right: new THREE.Vector3(rightX, flatYR, rightZ),
+                left: new THREE.Vector3(leftX, yL, leftZ),
+                right: new THREE.Vector3(rightX, yR, rightZ),
             });
             this._torusRotations.push({
                 left: rotYLeft,
@@ -171,11 +191,27 @@ export class CochlearCylinder {
             const startCameraPos = this.camera ? this.camera.position.clone() : new THREE.Vector3(0, 0, 1000);
             const targetCameraPos = new THREE.Vector3(0, 0, 0); // 🎯 Центр кольца!
 
+            // Расчет FOV/Zoom в зависимости от соотношения сторон экрана (Portrait / Landscape)
+            let targetFov = 95;  // Base FOV для Landscape
+            let targetZoom = 1.0;
+
+            const aspect = window.innerWidth / window.innerHeight;
+            if (aspect < 1) {
+                // Мобильный / Портретный режим: 
+                // Экран узкий, поэтому вертикальный угол обзора (FOV) нужно сильно расширить,
+                // чтобы горизонтально голограмма помещалась в кадр "как надо" (эффект присутствия).
+                // Для Orthographic зум нужно уменьшать (чтобы отдалить и показать больше широт).
+                targetFov = 110;
+                targetZoom = 0.5;
+            } else {
+                targetZoom = Math.max(0.7, 1.0 / aspect); // Адаптация для широких экранов
+            }
+
+            // Если мы в XR (2 камеры/экрана), FOV будет контролироваться WebXR
+
             // Для FOV (если PerspectiveCamera) или Zoom (если Orthographic)
             const startFov = this.camera?.fov || 45;
-            const targetFov = 85; // Более широкий угол для иммерсии
             const startZoom = this.camera?.zoom || 1;
-            const targetZoom = 2; // Приближение для ортографической камеры
 
             const animate = () => {
                 const elapsed = performance.now() - startTime;
