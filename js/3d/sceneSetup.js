@@ -105,19 +105,23 @@ export async function initializeScene(state) {
     const targetPosition = state.initialCameraPosition;
     const targetTarget = state.initialControlsTarget;
 
-    // Чем ближе камера к исходной точке, тем быстрее она должна лететь. (Inverse-quadratic / Exponential In)
-    const duration = 600; // Немного увеличим базу
+    // Быстрый возврат камеры
+    const duration = 200;
     const startTime = performance.now();
 
     function animateReturn() {
       const elapsed = performance.now() - startTime;
       let t = Math.min(elapsed / duration, 1);
 
-      // Магнитный эффект (Экспоненциальное ускорение к концу: Exponential In)
-      const eased = t === 1 ? 1 : Math.pow(2, 10 * t - 10);
+      // Магнитный эффект (Quadratic Out: быстрый старт, плавное торможение)
+      const eased = 1 - (1 - t) * (1 - t);
 
       state.camera.position.lerpVectors(startPosition, targetPosition, eased);
       state.controls.target.lerpVectors(startTarget, targetTarget, eased);
+
+      // Защищаем камеру от крена по Z оси во время интерполяции (roll fix)
+      state.camera.lookAt(0, 0, 0);
+
       state.controls.update();
 
       if (t < 1) {
