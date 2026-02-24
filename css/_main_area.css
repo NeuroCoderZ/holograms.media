@@ -5,7 +5,8 @@
   flex-grow: 1;
   overflow: hidden;
   background-color: var(--color-pure-black);
-  height: 100dvh; /* Используем dvh */
+  height: 100dvh;
+  /* Используем dvh */
   /* !!! Явно задаем высоту */
   padding: 0;
   /* !!! Убираем все внутренние отступы */
@@ -20,7 +21,8 @@
   position: relative;
   width: 100%;
   margin: 0;
-  height: 100%; /* Занимает всю высоту main-area */
+  height: 100%;
+  /* Занимает всю высоту main-area */
   z-index: 10;
   background-color: var(--color-pure-black);
   /* Фон черный для соответствия main-area */
@@ -30,8 +32,10 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 100% !important; /* Принудительно */
-  height: 100% !important; /* Принудительно */
+  width: 100% !important;
+  /* Принудительно */
+  height: 100% !important;
+  /* Принудительно */
   display: block;
   z-index: 50;
 }
@@ -56,8 +60,12 @@
 
 /* Активная область жестов */
 #gesture-area.hands-detected {
-  background-color: rgba(0, 0, 0, 0.8);
-  border: 1px solid var(--color-black-33);
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Черный цвет прозрачностью для стекла */
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--color-icon-disabled);
+  /* Темно-серая окантовка */
   box-shadow: 0 -5px 20px rgba(0, 255, 136, 0.1);
   border-radius: 8px;
   /* Added slight rounding for premium feel */
