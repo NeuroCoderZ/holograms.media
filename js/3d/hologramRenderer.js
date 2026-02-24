@@ -102,7 +102,9 @@ export class HologramRenderer {
     const baseColor = new THREE.Color(config.color);
     const group = new THREE.Group();
 
-    const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0);
+    // Добавляем сегментацию по ширине (widthSegments), чтобы длинные блоки могли плавно изгибаться в цилиндр
+    const widthSegments = Math.max(1, Math.floor(width / 4));
+    const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0, widthSegments, 1, 1);
 
     const mesh = new THREE.Mesh(geometry, new THREE.ShaderMaterial({
       uniforms: makeColumnUniforms(baseColor),

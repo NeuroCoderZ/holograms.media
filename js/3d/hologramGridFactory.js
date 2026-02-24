@@ -60,10 +60,15 @@ export function createGridVisualization(gridWidth, gridHeight, gridDepth, cellSi
     const signX = Math.sign(gridWidth) || 1;
 
     // Горизонтальные XZ-линии (фасад и профиль)
+    const stepsX = Math.max(1, Math.floor(Math.abs(gridWidth) / 4));
     for (let i = 0; i <= divisionsY; i++) {
         for (let j = 0; j <= divisionsZ; j++) {
-            points.push(0, i * CELL_HEIGHT, j * cellSize,
-                gridWidth, i * CELL_HEIGHT, j * cellSize);
+            for (let s = 0; s < stepsX; s++) {
+                const x0 = (s / stepsX) * gridWidth;
+                const x1 = ((s + 1) / stepsX) * gridWidth;
+                points.push(x0, i * CELL_HEIGHT, j * cellSize,
+                    x1, i * CELL_HEIGHT, j * cellSize);
+            }
         }
     }
     // Вертикальные XY-линии
