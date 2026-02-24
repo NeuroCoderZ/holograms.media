@@ -60,15 +60,12 @@
 
 /* Активная область жестов */
 #gesture-area.hands-detected {
-  background-color: rgba(0, 0, 0, 0.5);
-  /* Черный цвет прозрачностью для стекла */
+  background-color: rgba(0, 0, 0, 0.4) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid var(--color-icon-disabled);
-  /* Темно-серая окантовка */
-  box-shadow: 0 -5px 20px rgba(0, 255, 136, 0.1);
-  border-radius: 8px;
-  /* Added slight rounding for premium feel */
+  border: 1px solid var(--color-icon-disabled) !important;
+  box-shadow: 0 -5px 20px rgba(0, 255, 136, 0.1) !important;
+  border-radius: 8px !important;
 }
 
 /* Мобильная версия: область жестов должна быть всегда видна */
