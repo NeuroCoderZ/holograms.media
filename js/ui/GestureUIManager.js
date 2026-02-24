@@ -279,12 +279,12 @@ class GestureUIManager {
                 const laneHeight = h / 2;
                 const laneVerticalPadding = Math.max(6, laneHeight * 0.05); // Min 6px or 5%
 
-                // Top lane - dark gray background
-                this.ctx.fillStyle = '#333333';
+                // Top lane - легкая прозрачная тонировка для визуального разделения
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
                 this.ctx.fillRect(0, 0, w, laneHeight - 1);
 
-                // Bottom lane - slightly different shade for distinction
-                this.ctx.fillStyle = '#2a2a2a';
+                // Bottom lane - легкое затемнение
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
                 this.ctx.fillRect(0, laneHeight + 1, w, laneHeight - 1);
 
                 // Divider line
@@ -322,9 +322,9 @@ class GestureUIManager {
             } else if (this.detectedHands.count === 1) {
                 const verticalPadding = Math.max(10, h * 0.05); // Min 10px or 5% for single view
 
-                // Single lane - dark gray background
-                this.ctx.fillStyle = '#333333';
-                this.ctx.fillRect(0, 0, w, h);
+                // Single lane - фон полностью прозрачный (CSS стекло работает)
+                // this.ctx.fillStyle = '#333333';
+                // this.ctx.fillRect(0, 0, w, h);
 
                 // Single scanner line
                 this.ctx.strokeStyle = '#FF3B30';
