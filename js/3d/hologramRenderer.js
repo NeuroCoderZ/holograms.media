@@ -100,7 +100,6 @@ export class HologramRenderer {
     const config = semitones[index];
     const width = config.width;
     const baseColor = new THREE.Color(config.color);
-    const baseShade = (index * 2) / 255.0; // Конвертируем z_shade в 0.0-1.0
     const group = new THREE.Group();
 
     // Добавляем сегментацию по ширине (widthSegments), чтобы длинные блоки могли плавно изгибаться в цилиндр
@@ -108,7 +107,7 @@ export class HologramRenderer {
     const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0, widthSegments, 1, 1);
 
     const mesh = new THREE.Mesh(geometry, new THREE.ShaderMaterial({
-      uniforms: makeColumnUniforms(baseColor, baseShade),
+      uniforms: makeColumnUniforms(baseColor),
       vertexShader, fragmentShader, transparent: false,
     }));
     mesh.position.set(isLeft ? -width / 2 : width / 2, (index + 0.5) * CELL_HEIGHT, 0);
@@ -117,7 +116,7 @@ export class HologramRenderer {
     mesh.add(new THREE.LineSegments(
       new THREE.EdgesGeometry(geometry),
       new THREE.ShaderMaterial({
-        uniforms: makeEdgeUniforms(baseColor.clone().offsetHSL(0, 0, 0.2), baseShade),
+        uniforms: makeEdgeUniforms(baseColor.clone().offsetHSL(0, 0, 0.2)),
         vertexShader, fragmentShader, transparent: false,
       })
     ));
