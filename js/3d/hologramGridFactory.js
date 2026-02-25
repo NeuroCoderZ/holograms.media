@@ -126,10 +126,8 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     group.add(createLineForAxis([...origin, ...xEnd], colorX, 1.5, true));
     group.add(createSphereForAxis(sphereRadius, colorX).translateX(isLeftGrid ? -xLength : xLength));
 
-    // Ось Y (позвоночник — зелёная, без depth test → всегда видна)
+    // Ось Y (позвоночник — зелёная, теперь с depth test для корректного перекрытия)
     const spineLine = createLineForAxis([...origin, 0, yLength, 0], 0x00FF00, 1.5, true);
-    spineLine.renderOrder = 999;
-    spineLine.material.depthTest = false;
     group.add(spineLine);
     group.add(createSphereForAxis(sphereRadius, 0x00FF00).translateY(yLength));
 
