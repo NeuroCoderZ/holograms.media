@@ -233,7 +233,6 @@ export class HologramRenderer {
       const { CochlearCylinder } = await import('./CochlearCylinder.js');
       this._cochlearCylinder = new CochlearCylinder(this.hologramPivot);
       this._cochlearCylinder.setColumns(this.columns, state.camera);
-      console.log('[HologramRenderer] CochlearCylinder v5 initialized —', this.columns.length, 'column pairs.');
     }
 
     const mainArea = document.querySelector('.main-area');
@@ -242,29 +241,28 @@ export class HologramRenderer {
     const camera = state.camera;
 
     if (!this._isTorusMode) {
-      // 1. Подготовка UI и Камеры
       if (mainArea) mainArea.classList.add('xr-mode');
       if (gridContainer) gridContainer.classList.add('xr-mode');
 
-      // В XR режиме мы расширяем видимость, чтобы видеть и "перед" и "зад" цилиндра
       if (camera) {
-        camera.far = 2500; 
+        camera.far = 2500;
         camera.updateProjectionMatrix();
       }
 
-      // 2. Настройка OrbitControls для режима "Осмотреться"
       if (controls) {
         controls.enabled = true;
-        controls.minAzimuthAngle = -Infinity;
-        controls.maxAzimuthAngle = Infinity;
-        // Цель — точка, где стоит камера. Это позволяет вращать взгляд.
-        controls.target.set(0, 0, 1000.1); 
+        controls.minAzimuthAngle = -Math.PI; // -180
+        controls.maxAzimuthAngle = Math.PI;  // +180
+        controls.minPolarAngle = Math.PI / 2 - Math.PI / 3; // -60
+        controls.maxPolarAngle = Math.PI / 2 + Math.PI / 3; // +60
+        controls.target.set(0, 0, 1000); 
         controls.update();
       }
 
+      this._setupXRControls();
+
       await this._cochlearCylinder.morphToTorus(1500, this.leftSequencerGroup, this.rightSequencerGroup);
       
-      // Активируем обратную перспективу в шейдерах
       this.columns.forEach(pair => {
         [pair.left.children[0], pair.right.children[0]].forEach(mesh => {
           if (mesh.material.uniforms.uInversePerspective) mesh.material.uniforms.uInversePerspective.value = 1.0;
@@ -275,12 +273,11 @@ export class HologramRenderer {
 
       this._isTorusMode = true;
       this._startDeviceOrientation();
-      console.log('[HologramRenderer] Ring ON — user is inside the hologram.');
       return true;
     } else {
+      this._teardownXRControls();
       await this._cochlearCylinder.morphToFlat(1500, this.leftSequencerGroup, this.rightSequencerGroup);
       
-      // Деактивируем обратную перспективу
       this.columns.forEach(pair => {
         [pair.left.children[0], pair.right.children[0]].forEach(mesh => {
           if (mesh.material.uniforms.uInversePerspective) mesh.material.uniforms.uInversePerspective.value = 0.0;
@@ -292,7 +289,6 @@ export class HologramRenderer {
       this._isTorusMode = false;
       this._stopDeviceOrientation();
 
-      // Возврат камеры и UI
       if (mainArea) mainArea.classList.remove('xr-mode');
       if (gridContainer) gridContainer.classList.remove('xr-mode');
       
@@ -301,17 +297,60 @@ export class HologramRenderer {
         camera.updateProjectionMatrix();
       }
 
-      // Сброс управления
       if (controls) {
         controls.minAzimuthAngle = -Math.PI / 2;
         controls.maxAzimuthAngle = Math.PI / 2;
+        controls.minPolarAngle = 0;
+        controls.maxPolarAngle = Math.PI;
         controls.target.set(0, 0, 0);
         controls.update();
       }
-
-      console.log('[HologramRenderer] Ring OFF — flat mode restored.');
       return false;
     }
+  }
+
+  _setupXRControls() {
+    this._xrActiveKeys = new Set();
+    this._xrKeyHandlerDown = (e) => { this._xrActiveKeys.add(e.key.toLowerCase()); };
+    this._xrKeyHandlerUp = (e) => { this._xrActiveKeys.delete(e.key.toLowerCase()); };
+    
+    window.addEventListener('keydown', this._xrKeyHandlerDown);
+    window.addEventListener('keyup', this._xrKeyHandlerUp);
+
+    // Цикл плавного вращения и возврата
+    const update = () => {
+      if (!this._isTorusMode) return;
+      const controls = state.controls;
+      if (!controls) return;
+
+      let moved = false;
+      const step = 0.03;
+
+      if (this._xrActiveKeys.has('a')) { controls.setAzimuthalAngle(controls.getAzimuthalAngle() - step); moved = true; }
+      if (this._xrActiveKeys.has('d')) { controls.setAzimuthalAngle(controls.getAzimuthalAngle() + step); moved = true; }
+      if (this._xrActiveKeys.has('w')) { controls.setPolarAngle(controls.getPolarAngle() - step); moved = true; }
+      if (this._xrActiveKeys.has('s')) { controls.setPolarAngle(controls.getPolarAngle() + step); moved = true; }
+
+      // Авто-возврат если ничего не нажато
+      if (!moved) {
+        const az = controls.getAzimuthalAngle();
+        const pol = controls.getPolarAngle();
+        const targetPol = Math.PI / 2;
+        
+        controls.setAzimuthalAngle(az * 0.9); // Плавный возврат к 0
+        controls.setPolarAngle(pol + (targetPol - pol) * 0.1); // Плавный возврат к горизонту
+      }
+
+      controls.update();
+      this._xrControlAnimId = requestAnimationFrame(update);
+    };
+    this._xrControlAnimId = requestAnimationFrame(update);
+  }
+
+  _teardownXRControls() {
+    window.removeEventListener('keydown', this._xrKeyHandlerDown);
+    window.removeEventListener('keyup', this._xrKeyHandlerUp);
+    if (this._xrControlAnimId) cancelAnimationFrame(this._xrControlAnimId);
   }
 
   /** Подписываемся на DeviceOrientation (alpha = yaw = "обход вокруг кольца"). */
