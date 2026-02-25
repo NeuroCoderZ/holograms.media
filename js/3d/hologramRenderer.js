@@ -193,6 +193,10 @@ export class HologramRenderer {
       const maxAvailableShift = (GRID_WIDTH - w) * 0.5;
       pair.left.position.x = pair.left.userData.initialX - Math.round(Math.abs(Math.min(0, p)) * maxAvailableShift * 2);
       pair.right.position.x = pair.right.userData.initialX + Math.round(Math.abs(Math.max(0, p)) * maxAvailableShift * 2);
+    } else {
+      // В режиме XR столбцы должны быть строго привязаны к номинальным ячейкам сеток
+      pair.left.position.x = pair.left.userData.initialX;
+      pair.right.position.x = pair.right.userData.initialX;
     }
 
     // 4. BasilaQ-128: 1 dB = 1 ячейка (Z-scale = 128 + dB)

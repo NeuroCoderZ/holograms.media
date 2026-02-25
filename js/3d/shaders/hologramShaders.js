@@ -23,31 +23,35 @@ export const fragmentShader = /* glsl */`
     varying float vWorldZHeight;
 
     void main() {
-        // 1. Координаты и квантование (BasilaQ-128)
+        // 1. Базовые координаты (BasilaQ-128)
         float z = vWorldZHeight;
         float cellIndex = floor(z);
-        float brightness = clamp(cellIndex / 128.0, 0.0, 1.0);
-
-        // 2. ВНУТРЕННЯЯ СЕТКА: Инверсия яркости для границ
-        // Если мы на границе (edgeAmount -> 1), если нет (edgeAmount -> 0)
-        float edgeDist = fract(z);
-        float edgeAmount = (edgeDist < 0.06 || edgeDist > 0.94) ? 1.0 : 0.0;
         
-        // Цвет линии: инверсия яркости децибел (0dB -> black, -127dB -> white)
-        vec3 lineColor = vec3(1.0 - brightness);
-
-        if (uIsGreeting > 0.5) {
-            brightness = 1.0;
-            edgeAmount = 0.0;
+        // 2. ЛОГИКА ОБВОДКИ (Опережение на 1 дБ)
+        // Используем uBrightnessBoost как маркер: 1.1 означает, что это ребро.
+        bool isEdge = (uBrightnessBoost > 1.01);
+        if (isEdge) {
+            cellIndex += 1.0; 
         }
 
-        // 3. Смешивание: тело столбца vs инвертированная линия
-        vec3 bodyColor = uBaseColor * brightness * uBrightnessBoost;
-        vec3 color = mix(bodyColor, lineColor, edgeAmount);
+        vec3 finalColor;
+        if (cellIndex >= 128.0) {
+            // Предел (0 дБ) -> Белая обводка (или поверхность в Greeting)
+            finalColor = vec3(1.0);
+        } else {
+            // Линейное затемнение по слоям (1 слой = 1 дБ)
+            float brightness = cellIndex / 128.0;
+            finalColor = uBaseColor * brightness;
+        }
+
+        // Режим приветствия: поверхность цветная, ребра белые
+        if (uIsGreeting > 0.5) {
+            finalColor = isEdge ? vec3(1.0) : uBaseColor;
+        }
+
+        finalColor += uSelection * 0.3; // Подсветка выбора
         
-        color += uSelection * 0.3;
-        
-        gl_FragColor = vec4(color, uOpacity);
+        gl_FragColor = vec4(finalColor, uOpacity);
     }
 `;
 
@@ -63,14 +67,14 @@ export function makeColumnUniforms(baseColor) {
     };
 }
 
-/** То же самое для рёбер — чуть ярче */
+/** То же самое для рёбер — чуть ярче (+10%) */
 export function makeEdgeUniforms(baseColor) {
     return {
         uBaseColor: { value: baseColor },
         uSelection: { value: 0.0 },
         uOpacity: { value: 1.0 },
         uIsGreeting: { value: 1.0 },
-        uBrightnessBoost: { value: 1.3 },
+        uBrightnessBoost: { value: 1.1 },
         uColumnScaleZ: { value: 0.1 },
     };
 }
