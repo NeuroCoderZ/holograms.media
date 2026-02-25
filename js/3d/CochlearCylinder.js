@@ -190,17 +190,19 @@ export class CochlearCylinder {
 
                 // Анимация камеры
                 if (this.camera) {
-                    this.camera.position.lerpVectors(startCameraPos, targetCameraPos, eased);
+                    if (this.camera.isPerspectiveCamera) {
+                        this.camera.position.lerpVectors(startCameraPos, targetCameraPos, eased);
+                        // Всегда смотрим прямо на "переднюю часть" тора (-Z)
+                        this.camera.lookAt(new THREE.Vector3(0, 0, -100));
 
-                    // Всегда смотрим прямо на "переднюю часть" тора (-Z)
-                    this.camera.lookAt(new THREE.Vector3(0, 0, -100));
-
-                    if (this.camera.isPerspectiveCamera && this.camera.fov !== undefined) {
-                        this.camera.fov = THREE.MathUtils.lerp(startFov, targetFov, eased);
-                        this.camera.updateProjectionMatrix();
-                    } else if (this.camera.isOrthographicCamera && this.camera.zoom !== undefined) {
-                        this.camera.zoom = THREE.MathUtils.lerp(startZoom, targetZoom, eased);
-                        this.camera.updateProjectionMatrix();
+                        if (this.camera.fov !== undefined) {
+                            this.camera.fov = THREE.MathUtils.lerp(startFov, targetFov, eased);
+                            this.camera.updateProjectionMatrix();
+                        }
+                    } else if (this.camera.isOrthographicCamera) {
+                        // По строгому требованию пользователя: в Orthographic режиме
+                        // камера остается неподвижной снаружи, зум не меняется,
+                        // чтобы оси Y и Z сохраняли свои пиксельные длины 1:1, а геометрия не обрезалась.
                     }
                 }
 
@@ -253,18 +255,19 @@ export class CochlearCylinder {
 
                 // Восстанавливаем позицию камеры
                 if (this.camera) {
-                    this.camera.position.lerpVectors(startCameraPos, targetCameraPos, eased);
+                    if (this.camera.isPerspectiveCamera) {
+                        this.camera.position.lerpVectors(startCameraPos, targetCameraPos, eased);
+                        // Maintain straight looking forward
+                        // When fully back to flat, 1000 looking at 0,0,0 is (0,0,-1)
+                        this.camera.lookAt(new THREE.Vector3(0, 0, -100));
 
-                    // Maintain straight looking forward
-                    // When fully back to flat, 1000 looking at 0,0,0 is (0,0,-1)
-                    this.camera.lookAt(new THREE.Vector3(0, 0, -100));
-
-                    if (this.camera.isPerspectiveCamera && this.camera.fov !== undefined) {
-                        this.camera.fov = THREE.MathUtils.lerp(startFov, targetFov, eased);
-                        this.camera.updateProjectionMatrix();
-                    } else if (this.camera.isOrthographicCamera && this.camera.zoom !== undefined) {
-                        this.camera.zoom = THREE.MathUtils.lerp(startZoom, targetZoom, eased);
-                        this.camera.updateProjectionMatrix();
+                        if (this.camera.fov !== undefined) {
+                            this.camera.fov = THREE.MathUtils.lerp(startFov, targetFov, eased);
+                            this.camera.updateProjectionMatrix();
+                        }
+                    } else if (this.camera.isOrthographicCamera) {
+                        // По строгому требованию пользователя: в Orthographic режиме
+                        // камера остается неподвижной снаружи, зум не меняется.
                     }
                 }
 
