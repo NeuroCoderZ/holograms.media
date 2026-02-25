@@ -158,12 +158,12 @@ export class CochlearCylinder {
             const targetCameraPos = new THREE.Vector3(0, 0, 0);
 
             // Расчет FOV/Zoom в зависимости от соотношения сторон экрана (Portrait / Landscape)
-            let targetFov = 95;  // Base FOV для Landscape
+            let targetFov = 120;  // Расширенный рыбьий глаз (как советовал Gemini) для захвата краев сзади
             let targetZoom = 1.0;
 
             const aspect = window.innerWidth / window.innerHeight;
             if (aspect < 1) {
-                targetFov = 110;
+                targetFov = 130;  // На мобилках нужен еще бОльший угол
                 targetZoom = 0.5;
             } else {
                 targetZoom = Math.max(0.7, 1.0 / aspect);
