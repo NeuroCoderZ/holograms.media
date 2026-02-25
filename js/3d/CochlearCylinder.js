@@ -16,7 +16,7 @@
 import * as THREE from 'three';
 
 const EASE_DURATION = 1500;
-const INNER_RADIUS = 120; // Радиус пустого цилиндра внутри (~2.4 метра диаметр)
+const XR_RADIUS = 1000; // Радиус 1 метр (расстояние от камеры до голограммы)
 
 /**
  * Плавная функция easing для анимации.
@@ -61,22 +61,16 @@ export class CochlearCylinder {
 
     /**
      * Захватывает мирные координаты всех вершин в группах и вычисляет их целевые позиции
-     * на цилиндрической поверхности. Вызывается один раз перед первым морфингом.
+     * на цилиндрической поверхности вокруг КАМЕРЫ.
      */
     _prepareMorphData(group) {
         if (!group) return;
 
-        // Обновляем мировую матрицу основного контейнера (hologramPivot)
         this.hologramPivot.updateMatrixWorld(true);
         const pivotInverse = this.hologramPivot.matrixWorld.clone().invert();
 
         group.traverse(child => {
-            // Исключаем сферы и статические оси из морфинга, чтобы они не растягивались
             if (child.name === "StaticSphere" || child.name === "StaticAxis") {
-                return;
-            }
-
-            if (child.geometry && (child.geometry.type === 'SphereGeometry' || child.geometry.type === 'SphereBufferGeometry')) {
                 return;
             }
 
@@ -85,52 +79,52 @@ export class CochlearCylinder {
                 const posAttr = geom.attributes.position;
                 if (!posAttr) return;
 
-                // Создаем независимую геометрию, если она шарится (для безопасности)
-                // Но так как у нас каждая колонка = новый BoxGeometry, мы можем просто модифицировать массивы на месте.
-
                 const morphEntry = {
                     attr: posAttr,
                     flatArr: new Float32Array(posAttr.array),
-                    torusArr: new Float32Array(posAttr.array.length) // Заполним ниже
+                    torusArr: new Float32Array(posAttr.array.length)
                 };
 
                 child.updateMatrixWorld(true);
                 const childWorldMatrix = child.matrixWorld;
                 const childInverse = childWorldMatrix.clone().invert();
-                const pivotWorldMatrix = this.hologramPivot.matrixWorld;
-
+                
                 const localV = new THREE.Vector3();
-                const worldV = new THREE.Vector3();
                 const pivotV = new THREE.Vector3();
                 const cylPivotV = new THREE.Vector3();
                 const cylWorldV = new THREE.Vector3();
                 const cylLocalV = new THREE.Vector3();
 
+                // Точка изгиба (центр цилиндра) — это позиция камеры
+                // Условно считаем камеру в (0, 0, 1000) в пространстве pivot
+                const camZ = 1000;
+
                 for (let i = 0; i < posAttr.count; i++) {
                     localV.fromBufferAttribute(posAttr, i);
+                    
+                    // Переходим в пространство pivot (где позвоночник в 0,0,0)
+                    pivotV.copy(localV).applyMatrix4(childWorldMatrix).applyMatrix4(pivotInverse);
 
-                    // 1. Из локальной в мировую, потом из мировой в "систему координат голограммы"
-                    worldV.copy(localV).applyMatrix4(childWorldMatrix);
-                    pivotV.copy(worldV).applyMatrix4(pivotInverse);
-
-                    // CYLINDRICAL MAPPING (в масштабе голограммы, независимом от зума сцены)
-                    // В плоской раскладке: X идет от -128 до 128 (левая и правая сетка). Z от 0 до 128 (глубина).
-
-                    // Сворачиваем X в угол (128 единиц = PI, то есть полкруга)
+                    // Угол theta: 128 единиц ширины = PI/2 (90 градусов). 256 единиц = PI (180 градусов).
+                    // Чтобы сомкнулось за спиной, 128 должно быть PI.
                     const theta = (pivotV.x / 128) * Math.PI;
 
-                    // Z задает радиус. Z=0 будет на INNER_RADIUS, Z=128 будет на INNER_RADIUS+128
-                    const r = INNER_RADIUS + Math.max(0, pivotV.z); // Math.max для безопасности
+                    // Радиус — это Z-расстояние ОТ КАМЕРЫ. 
+                    // Лицо голограммы (Z=0) находится на расстоянии XR_RADIUS от камеры.
+                    // Слои глубины (Z > 0) уходят ДАЛЬШЕ от камеры.
+                    const r = XR_RADIUS + pivotV.z;
 
-                    // Вычисляем новые координаты в "цилиндрическом мире голограммы"
-                    // Центр цилиндра - (0, 0, 0). Фронтальная грань (theta=0) должна быть спереди по оси Z.
+                    // Вычисляем позицию относительно КАМЕРЫ (camZ)
+                    // В плоском виде лицо в Z=0, камера в Z=1000. 
+                    // В цилиндре: камера в центре (0,0,0), лицо на r=1000.
                     cylPivotV.x = r * Math.sin(theta);
-                    cylPivotV.y = pivotV.y;  // Высота не меняется, сохраняем пропорции прямоугольного сечения!
-                    cylPivotV.z = -r * Math.cos(theta); // Стык фиолетовой и красной будет прямо перед нами
+                    cylPivotV.y = pivotV.y;
+                    // Проецируем Z так, чтобы при theta=0 (центр) цилиндр касался Z=0
+                    // т.е. положение = camZ - r * cos(theta)
+                    cylPivotV.z = camZ - r * Math.cos(theta);
 
-                    // Возвращаем координаты обратно в локальную систему вершины:
-                    // Цилиндр -> Мир -> Локальная для child
-                    cylWorldV.copy(cylPivotV).applyMatrix4(pivotWorldMatrix);
+                    // Обратно в локальные координаты
+                    cylWorldV.copy(cylPivotV).applyMatrix4(this.hologramPivot.matrixWorld);
                     cylLocalV.copy(cylWorldV).applyMatrix4(childInverse);
 
                     morphEntry.torusArr[i * 3] = cylLocalV.x;

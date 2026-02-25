@@ -45,12 +45,19 @@
 #gesture-area {
   position: fixed;
   bottom: calc(5svh + env(safe-area-inset-bottom));
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
   height: 6px;
-  background-color: rgba(50, 50, 50, 0.9);
+  /* Всегда премиальный вид: блюр и цвет */
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-icon-disabled);
+  box-shadow: 0 -5px 20px rgba(0, 255, 136, 0.1);
+  border-radius: 8px;
+  
   z-index: 100;
-  border: none;
   cursor: pointer;
   overflow: hidden;
   min-height: 16px;
@@ -58,14 +65,10 @@
   transition: width 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), height 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), background-color 0.3s ease;
 }
 
-/* Активная область жестов */
+/* Активная область жестов - оставляем только специфичные изменения если нужны */
 #gesture-area.hands-detected {
-  background-color: rgba(0, 0, 0, 0.4) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid var(--color-icon-disabled) !important;
-  box-shadow: 0 -5px 20px rgba(0, 255, 136, 0.1) !important;
-  border-radius: 8px !important;
+  border-color: var(--color-active-green) !important;
+  box-shadow: 0 -5px 30px rgba(0, 255, 136, 0.2) !important;
 }
 
 /* Мобильная версия: область жестов должна быть всегда видна */
@@ -86,6 +89,22 @@
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), margin-bottom 0.5s ease;
   transform-origin: center bottom;
   will-change: transform, margin-bottom;
+}
+
+/* XR Mode: Расширение на весь экран за стеклянные панели */
+.main-area.xr-mode {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  z-index: 2;
+  /* Ниже панелей, чтобы они были видны поверх */
+}
+
+#grid-container.xr-mode {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Scanner Active: сдвиг голограммы влево на десктопе (1% от ширины окна) */
