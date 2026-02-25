@@ -47,21 +47,19 @@ export async function initializeScene(state) {
     // If it's not, camera setup below will fail.
   }
 
-  // Camera - Orthographic
-  // Dimensions based on gridContainer, ensuring it's available
+  // Camera - Perspective (For Real XR enveloping effect)
   const containerWidth = gridContainer && gridContainer.clientWidth > 0 ? gridContainer.clientWidth : window.innerWidth;
   const containerHeight = gridContainer && gridContainer.clientHeight > 0 ? gridContainer.clientHeight : window.innerHeight;
   console.log(`[sceneSetup] Container dimensions: Width = ${containerWidth}, Height = ${containerHeight}`);
 
-  const camLeft = -containerWidth / 2;
-  const camRight = containerWidth / 2;
-  const camTop = containerHeight / 2;
-  const camBottom = -containerHeight / 2;
-  const camNear = 0.1; // Requirement: 0.1
-  const camFar = 2000; // Requirement: 2000
+  const camNear = 0.1;
+  const camFar = 2000;
+  // Calculate FOV so that at Z=1000, the visible height exactly matches containerHeight
+  const fovInRad = 2 * Math.atan((containerHeight / 2) / 1000);
+  const fovInDeg = fovInRad * (180 / Math.PI);
 
-  state.camera = new THREE.OrthographicCamera(camLeft, camRight, camTop, camBottom, camNear, camFar);
-  state.camera.position.set(0, 0, 1000); // As per prompt (e.g., 1000 or 1200)
+  state.camera = new THREE.PerspectiveCamera(fovInDeg, containerWidth / containerHeight, camNear, camFar);
+  state.camera.position.set(0, 0, 1000); // 1000 units away
   state.camera.lookAt(0, 0, 0); // Ensure camera looks at the origin
   state.activeCamera = state.camera; // Set default active camera
 
@@ -154,11 +152,24 @@ export async function initializeScene(state) {
     const newHeight = gridContainer && gridContainer.clientHeight > 0 ? gridContainer.clientHeight : window.innerHeight;
 
     state.renderer.setSize(newWidth, newHeight);
-    state.camera.left = -newWidth / 2;
-    state.camera.right = newWidth / 2;
-    state.camera.top = newHeight / 2;
-    state.camera.bottom = -newHeight / 2;
-    state.camera.updateProjectionMatrix();
+
+    const isXR = state.isXRMode || (state.hologramRendererInstance && state.hologramRendererInstance._isTorusMode);
+
+    if (state.camera.isPerspectiveCamera) {
+      state.camera.aspect = newWidth / newHeight;
+      // In flat mode, update base FOV to maintain orthographic-like perfectly fitting 1:1 pixel scale at Z=0
+      if (!isXR) {
+        const fovInRad = 2 * Math.atan((newHeight / 2) / 1000);
+        state.camera.fov = fovInRad * (180 / Math.PI);
+      }
+      state.camera.updateProjectionMatrix();
+    } else if (state.camera.isOrthographicCamera) {
+      state.camera.left = -newWidth / 2;
+      state.camera.right = newWidth / 2;
+      state.camera.top = newHeight / 2;
+      state.camera.bottom = -newHeight / 2;
+      state.camera.updateProjectionMatrix();
+    }
 
     // Update controls after camera changes
     if (state.controls) {
