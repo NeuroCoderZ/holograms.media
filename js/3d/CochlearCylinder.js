@@ -1,14 +1,14 @@
 /**
- * CochlearCylinder.js v7.0 "Integrated Axis & Sphere Morpher"
- * ==========================================================
- * 🍩 Обертывание всей системы (сетки, оси, сферы) вокруг камеры.
- * Оси гнутся геометрически, сферы перемещаются без деформации.
+ * CochlearCylinder.js v8.0 "Inside-Out Correction"
+ * ===============================================
+ * 🍩 Исправлена инверсия радиуса: Z=0 теперь внешняя стенка, Z=128 внутренняя.
+ * Добавлено пошаговое логирование траектории сфер.
  */
 
 import * as THREE from 'three';
 
 const EASE_DURATION = 1500;
-const XR_RADIUS = 1000; // Расстояние от камеры до фронта голограммы
+const XR_RADIUS = 1000; // Расстояние от камеры (Z=1000) до фронта (Z=0)
 
 function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -23,7 +23,9 @@ export class CochlearCylinder {
         this.isTorusMode = false;
 
         this._vertexMorphData = null;
-        this._objectMorphData = null; // Для сфер (анимация позиции)
+        this._objectMorphData = null; 
+        
+        this._debugLogs = { start: false, mid: false, end: false };
     }
 
     setColumns(columns, camera = null) {
@@ -37,7 +39,7 @@ export class CochlearCylinder {
         const pivotInverse = this.hologramPivot.matrixWorld.clone().invert();
 
         group.traverse(child => {
-            // ЛОГИКА ДЛЯ СФЕР: Анимация позиции без деформации геометрии
+            // ЛОГИКА ДЛЯ СФЕР (Позиция)
             if (child.name === "StaticSphere") {
                 if (!this._objectMorphData) this._objectMorphData = [];
                 
@@ -46,7 +48,9 @@ export class CochlearCylinder {
                 const pivotPos = worldPos.applyMatrix4(pivotInverse);
 
                 const theta = (pivotPos.x / 128) * Math.PI;
-                const r = XR_RADIUS + pivotPos.z;
+                // ИСПРАВЛЕНИЕ: r должен уменьшаться при росте Z (отдаление от центра цилиндра)
+                // Камера в 1000, Лицо в 0. Значит r = 1000 - pivotZ
+                const r = XR_RADIUS - pivotPos.z;
                 const camZ = 1000;
 
                 const targetPivotPos = new THREE.Vector3(
@@ -62,7 +66,7 @@ export class CochlearCylinder {
                 return;
             }
 
-            // ЛОГИКА ДЛЯ МЕШЕЙ И ЛИНИЙ (включая оси)
+            // ЛОГИКА ДЛЯ МЕШЕЙ/ЛИНИЙ (Геометрия)
             if ((child.isMesh || child.isLine || child.isLineSegments) && child.geometry) {
                 const geom = child.geometry;
                 const posAttr = geom.attributes.position;
@@ -86,7 +90,8 @@ export class CochlearCylinder {
                     pivotV.copy(localV).applyMatrix4(childWorldMatrix).applyMatrix4(pivotInverse);
 
                     const theta = (pivotV.x / 128) * Math.PI;
-                    const r = XR_RADIUS + pivotV.z;
+                    // ИСПРАВЛЕНИЕ: r = 1000 - Z
+                    const r = XR_RADIUS - pivotV.z;
 
                     cylPivotV.x = r * Math.sin(theta);
                     cylPivotV.y = pivotV.y;
@@ -105,6 +110,7 @@ export class CochlearCylinder {
     morphToTorus(duration = EASE_DURATION, leftSequencerGroup = null, rightSequencerGroup = null) {
         if (this.isMorphing || this.isTorusMode) return Promise.resolve();
         this.isMorphing = true;
+        this._debugLogs = { start: false, mid: false, end: false };
 
         if (!this._vertexMorphData) {
             this._vertexMorphData = [];
@@ -118,7 +124,7 @@ export class CochlearCylinder {
             const t = Math.min((performance.now() - startTime) / duration, 1);
             const eased = easeInOutCubic(t);
 
-            // 1. Деформация вершин (Сетки, Столбцы, Оси)
+            // 1. Вершины
             for (let data of this._vertexMorphData) {
                 const arr = data.attr.array;
                 for (let j = 0; j < arr.length; j++) {
@@ -127,24 +133,16 @@ export class CochlearCylinder {
                 data.attr.needsUpdate = true;
             }
 
-            // 2. Перемещение объектов (Сферы)
+            // 2. Объекты (Сферы)
             for (let data of this._objectMorphData) {
                 data.obj.position.lerpVectors(data.start, data.end, eased);
             }
 
+            // ЛОГИРОВАНИЕ ТРАЕКТОРИИ
+            this._logProgress(t);
+
             if (t < 1) requestAnimationFrame(animate);
-            else { 
-                this.isTorusMode = true; 
-                this.isMorphing = false; 
-                console.log("[Cylinder] Morph to torus complete.");
-                if (this._objectMorphData) {
-                    this._objectMorphData.forEach(data => {
-                        const wp = new THREE.Vector3();
-                        data.obj.getWorldPosition(wp);
-                        console.log(` - Sphere Z: ${wp.z.toFixed(2)} (X: ${wp.x.toFixed(2)})`);
-                    });
-                }
-            }
+            else { this.isTorusMode = true; this.isMorphing = false; }
         };
         requestAnimationFrame(animate);
         return Promise.resolve();
@@ -153,6 +151,8 @@ export class CochlearCylinder {
     morphToFlat(duration = EASE_DURATION) {
         if (this.isMorphing || !this.isTorusMode) return Promise.resolve();
         this.isMorphing = true;
+        this._debugLogs = { start: false, mid: false, end: false };
+
         const startTime = performance.now();
         const animate = () => {
             const t = Math.min((performance.now() - startTime) / duration, 1);
@@ -170,23 +170,36 @@ export class CochlearCylinder {
                 data.obj.position.lerpVectors(data.end, data.start, eased);
             }
 
+            this._logProgress(t, true);
+
             if (t < 1) requestAnimationFrame(animate);
-            else { 
-                this.isTorusMode = false; 
-                this.isMorphing = false; 
-                console.log("[Cylinder] Morph to flat complete.");
-                if (this._objectMorphData) {
-                    this._objectMorphData.forEach(data => {
-                        const wp = new THREE.Vector3();
-                        data.obj.getWorldPosition(wp);
-                        console.log(` - Sphere Z: ${wp.z.toFixed(2)} (X: ${wp.x.toFixed(2)})`);
-                    });
-                }
-            }
+            else { this.isTorusMode = false; this.isMorphing = false; }
         };
         requestAnimationFrame(animate);
         return Promise.resolve();
     }
+
+    _logProgress(t, reverse = false) {
+        let stage = null;
+        if (t === 0 && !this._debugLogs.start) stage = "START";
+        if (t >= 0.5 && !this._debugLogs.mid) stage = "MID (50%)";
+        if (t === 1 && !this._debugLogs.end) stage = "END (100%)";
+
+        if (stage && this._objectMorphData) {
+            const mode = reverse ? "Flat" : "XR";
+            console.log(`[Trajectory ${mode}] Stage: ${stage}`);
+            this._objectMorphData.forEach(data => {
+                const wp = new THREE.Vector3();
+                data.obj.getWorldPosition(wp);
+                const color = data.obj.material.color.getHexString();
+                console.log(` - Sphere ${color}: X=${wp.x.toFixed(1)}, Z=${wp.z.toFixed(1)}`);
+            });
+            if (stage === "START") this._debugLogs.start = true;
+            if (stage === "MID (50%)") this._debugLogs.mid = true;
+            if (stage === "END (100%)") this._debugLogs.end = true;
+        }
+    }
 }
 
+export class Dummy {} // placeholder for export default
 export default CochlearCylinder;
