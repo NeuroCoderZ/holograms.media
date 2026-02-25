@@ -119,7 +119,7 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     const group = new THREE.Group();
     const sphereRadius = 2.4192;
     const origin = [0, 0, 0];
-    const colorX = isLeftGrid ? 0x800080 : 0xFF0000;
+    const colorX = isLeftGrid ? 0xBF00FF : 0xFF0000;
     const xEnd = isLeftGrid ? [-xLength, 0, 0] : [xLength, 0, 0];
 
     // Ось X
