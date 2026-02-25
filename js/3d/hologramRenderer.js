@@ -255,7 +255,10 @@ export class HologramRenderer {
         controls.maxAzimuthAngle = Math.PI;  // +180
         controls.minPolarAngle = Math.PI / 2 - Math.PI / 3; // -60
         controls.maxPolarAngle = Math.PI / 2 + Math.PI / 3; // +60
-        controls.target.set(0, 0, 1000); 
+        controls.enablePan = false;
+        controls.enableZoom = false;
+        // Смещаем цель чуть-чуть от камеры (1000 -> 999), чтобы OrbitControls работал
+        controls.target.set(0, 0, 999); 
         controls.update();
       }
 
@@ -317,31 +320,51 @@ export class HologramRenderer {
     window.addEventListener('keydown', this._xrKeyHandlerDown);
     window.addEventListener('keyup', this._xrKeyHandlerUp);
 
-    // Цикл плавного вращения и возврата
     const update = () => {
       if (!this._isTorusMode) return;
       const controls = state.controls;
-      if (!controls) return;
+      const camera = state.camera;
+      if (!controls || !camera) return;
 
-      let moved = false;
       const step = 0.03;
+      let moved = false;
 
-      if (this._xrActiveKeys.has('a')) { controls.setAzimuthalAngle(controls.getAzimuthalAngle() - step); moved = true; }
-      if (this._xrActiveKeys.has('d')) { controls.setAzimuthalAngle(controls.getAzimuthalAngle() + step); moved = true; }
-      if (this._xrActiveKeys.has('w')) { controls.setPolarAngle(controls.getPolarAngle() - step); moved = true; }
-      if (this._xrActiveKeys.has('s')) { controls.setPolarAngle(controls.getPolarAngle() + step); moved = true; }
+      // Текущий вектор от цели к камере
+      const offset = new THREE.Vector3().subVectors(camera.position, controls.target);
+      const radius = offset.length();
 
-      // Авто-возврат если ничего не нажато
-      if (!moved) {
-        const az = controls.getAzimuthalAngle();
-        const pol = controls.getPolarAngle();
-        const targetPol = Math.PI / 2;
-        
-        controls.setAzimuthalAngle(az * 0.9); // Плавный возврат к 0
-        controls.setPolarAngle(pol + (targetPol - pol) * 0.1); // Плавный возврат к горизонту
+      if (this._xrActiveKeys.has('a')) {
+          // Поворот влево (Azimuth)
+          const angle = -step;
+          const newX = offset.x * Math.cos(angle) - offset.z * Math.sin(angle);
+          const newZ = offset.x * Math.sin(angle) + offset.z * Math.cos(angle);
+          offset.x = newX;
+          offset.z = newZ;
+          moved = true;
+      }
+      if (this._xrActiveKeys.has('d')) {
+          // Поворот вправо (Azimuth)
+          const angle = step;
+          const newX = offset.x * Math.cos(angle) - offset.z * Math.sin(angle);
+          const newZ = offset.x * Math.sin(angle) + offset.z * Math.cos(angle);
+          offset.x = newX;
+          offset.z = newZ;
+          moved = true;
       }
 
+      if (!moved) {
+          // Авто-возврат взгляда к центру (Z=1000)
+          // Мы стремимся к тому, чтобы камера была в (0, 0, 1000), а цель в (0, 0, 999)
+          // То есть offset должен стремиться к (0, 0, 1)
+          offset.x *= 0.9;
+          offset.y *= 0.9;
+          offset.z = offset.z + (1.0 - offset.z) * 0.1;
+      }
+
+      // Обновляем позицию камеры на основе нового офсета
+      camera.position.copy(controls.target).add(offset);
       controls.update();
+      
       this._xrControlAnimId = requestAnimationFrame(update);
     };
     this._xrControlAnimId = requestAnimationFrame(update);

@@ -66,6 +66,8 @@ export class CochlearCylinder {
                     obj: child, 
                     start: localPos, 
                     end: targetLocalPos,
+                    pivotStart: pivotPos.clone(),
+                    pivotEnd: targetPivotPos.clone(),
                     name: child.name,
                     color: child.material.color.getHexString()
                 });
