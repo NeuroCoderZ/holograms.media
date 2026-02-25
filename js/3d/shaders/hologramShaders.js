@@ -23,28 +23,28 @@ export const fragmentShader = /* glsl */`
     varying float vWorldZHeight;
 
     void main() {
-        // 1. Координаты ячейки
+        // 1. Координаты и квантование (BasilaQ-128)
         float z = vWorldZHeight;
         float cellIndex = floor(z);
-        
-        // 2. Интенсивность по глубине (BasilaQ-128)
         float brightness = clamp(cellIndex / 128.0, 0.0, 1.0);
 
-        // 3. ГИПОТЕЗА НЕЙРОКОДЕРА: "Внутренняя сетка на 30% ярче"
-        // Вычисляем близость к границам ячеек (насечки через 1.0 единицу)
-        // Используем только Z, так как X и Y в рамках одного меша константны или не имеют сетки
-        float gridLine = fract(z);
-        float gridEffect = smoothstep(0.0, 0.05, gridLine) * (1.0 - smoothstep(0.95, 1.0, gridLine));
+        // 2. ВНУТРЕННЯЯ СЕТКА: Инверсия яркости для границ
+        // Если мы на границе (edgeAmount -> 1), если нет (edgeAmount -> 0)
+        float edgeDist = fract(z);
+        float edgeAmount = (edgeDist < 0.06 || edgeDist > 0.94) ? 1.0 : 0.0;
         
-        // Если точка НЕ на границе (gridEffect -> 1), используем обычный boost.
-        // Если точка НА границе (gridEffect -> 0), делаем ее ярче на 30%.
-        float finalBoost = mix(uBrightnessBoost * 1.3, uBrightnessBoost, gridEffect);
+        // Цвет линии: инверсия яркости децибел (0dB -> black, -127dB -> white)
+        vec3 lineColor = vec3(1.0 - brightness);
 
         if (uIsGreeting > 0.5) {
             brightness = 1.0;
+            edgeAmount = 0.0;
         }
 
-        vec3 color = uBaseColor * brightness * finalBoost;
+        // 3. Смешивание: тело столбца vs инвертированная линия
+        vec3 bodyColor = uBaseColor * brightness * uBrightnessBoost;
+        vec3 color = mix(bodyColor, lineColor, edgeAmount);
+        
         color += uSelection * 0.3;
         
         gl_FragColor = vec4(color, uOpacity);
