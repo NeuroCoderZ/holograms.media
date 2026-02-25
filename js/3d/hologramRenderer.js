@@ -239,18 +239,25 @@ export class HologramRenderer {
     const mainArea = document.querySelector('.main-area');
     const gridContainer = document.querySelector('#grid-container');
     const controls = state.controls;
+    const camera = state.camera;
 
     if (!this._isTorusMode) {
-      // Включаем расширение области просмотра (CSS)
+      // 1. Подготовка UI и Камеры
       if (mainArea) mainArea.classList.add('xr-mode');
       if (gridContainer) gridContainer.classList.add('xr-mode');
 
-      // НАСТРОЙКА УПРАВЛЕНИЯ ДЛЯ XR
+      // Отсекаем всё, что за спиной (Z > 1000), чтобы не было "выворота"
+      if (camera) {
+        camera.far = 999; 
+        camera.updateProjectionMatrix();
+      }
+
+      // 2. Смещение оси вращения на пользователя (Z=1000)
+      this.hologramPivot.position.z = 1000;
+      this.mainSequencerGroup.position.z = -1000;
+
       if (controls) {
-        controls.minAzimuthAngle = -Infinity;
-        controls.maxAzimuthAngle = Infinity;
-        controls.target.set(0, 0, 1000); // Фокус на камеру (пользователя)
-        controls.update();
+        controls.enabled = false; // Отключаем Orbit, переходим на Look-Around
       }
 
       await this._cochlearCylinder.morphToTorus(1500, this.leftSequencerGroup, this.rightSequencerGroup);
@@ -263,15 +270,22 @@ export class HologramRenderer {
       this._isTorusMode = false;
       this._stopDeviceOrientation();
 
-      // Выключаем расширение области просмотра (CSS)
+      // Возврат камеры и UI
       if (mainArea) mainArea.classList.remove('xr-mode');
       if (gridContainer) gridContainer.classList.remove('xr-mode');
+      
+      if (camera) {
+        camera.far = 2000;
+        camera.updateProjectionMatrix();
+      }
 
-      // СБРОС УПРАВЛЕНИЯ
+      // Возврат оси вращения
+      this.hologramPivot.position.z = 0;
+      this.mainSequencerGroup.position.z = 0;
+
       if (controls) {
-        controls.minAzimuthAngle = -Math.PI / 2;
-        controls.maxAzimuthAngle = Math.PI / 2;
-        controls.target.set(0, 0, 0); // Фокус обратно на центр
+        controls.enabled = true;
+        controls.target.set(0, 0, 0);
         controls.update();
       }
 
