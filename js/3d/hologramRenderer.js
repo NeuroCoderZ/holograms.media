@@ -108,7 +108,7 @@ export class HologramRenderer {
 
     const mesh = new THREE.Mesh(geometry, new THREE.ShaderMaterial({
       uniforms: makeColumnUniforms(baseColor),
-      vertexShader, fragmentShader, transparent: false,
+      vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
     }));
     mesh.position.set(isLeft ? -width / 2 : width / 2, (index + 0.5) * CELL_HEIGHT, 0);
     mesh.scale.set(1, 1, 0.1);
@@ -117,7 +117,7 @@ export class HologramRenderer {
       new THREE.EdgesGeometry(geometry),
       new THREE.ShaderMaterial({
         uniforms: makeEdgeUniforms(baseColor.clone().offsetHSL(0, 0, 0.2)),
-        vertexShader, fragmentShader, transparent: false,
+        vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
       })
     ));
 
