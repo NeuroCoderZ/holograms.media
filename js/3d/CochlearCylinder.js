@@ -1,14 +1,15 @@
 /**
- * CochlearCylinder.js v9.0 "Perfect Wrap & Local Logs"
- * ====================================================
- * 🍩 Исправлена математика: Z=0 это внешний радиус (1000), Z=128 внутренний (872).
- * Логируютcя локальные координаты для точности без учета глобального масштаба.
+ * CochlearCylinder.js v10.0 "Scientific Look-Around"
+ * ==================================================
+ * 🍩 Сферическое обертывание вокруг камеры.
+ * Логирует траекторию каждые 10% прогресса.
+ * Z=0 (База) -> Outer Wall, Z=128 (Data) -> Inner Wall.
  */
 
 import * as THREE from 'three';
 
 const EASE_DURATION = 1500;
-const XR_RADIUS = 1000; // Базовый радиус изгиба
+const XR_RADIUS = 1000;
 
 function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -24,7 +25,7 @@ export class CochlearCylinder {
 
         this._vertexMorphData = null;
         this._objectMorphData = null; 
-        this._frameCount = 0;
+        this._lastLoggedT = -1;
     }
 
     setColumns(columns, camera = null) {
@@ -38,19 +39,16 @@ export class CochlearCylinder {
         const pivotInverse = this.hologramPivot.matrixWorld.clone().invert();
 
         group.traverse(child => {
-            // ЛОГИКА ДЛЯ СФЕР (Позиция)
             if (child.name === "StaticSphere") {
                 if (!this._objectMorphData) this._objectMorphData = [];
                 
                 const localPos = child.position.clone();
-                // Получаем позицию относительно hologramPivot
                 const worldPos = new THREE.Vector3();
                 child.getWorldPosition(worldPos);
                 const pivotPos = worldPos.applyMatrix4(pivotInverse);
 
-                // Расчет целевой позиции в цилиндре
                 const theta = (pivotPos.x / 128) * Math.PI;
-                const r = XR_RADIUS - pivotPos.z; // Z=0 -> r=1000 (снаружи), Z=128 -> r=872 (внутри)
+                const r = XR_RADIUS - pivotPos.z; 
                 const camZ = 1000;
 
                 const targetPivotPos = new THREE.Vector3(
@@ -59,16 +57,20 @@ export class CochlearCylinder {
                     camZ - r * Math.cos(theta)
                 );
 
-                // Конвертируем обратно в локальные координаты родителя
                 const parentWorldInverse = child.parent.matrixWorld.clone().invert();
                 const targetWorldPos = targetPivotPos.applyMatrix4(this.hologramPivot.matrixWorld);
                 const targetLocalPos = targetWorldPos.applyMatrix4(parentWorldInverse);
 
-                this._objectMorphData.push({ obj: child, start: localPos, end: targetLocalPos, pivotStart: pivotPos.clone(), pivotEnd: targetPivotPos.clone() });
+                this._objectMorphData.push({ 
+                    obj: child, 
+                    start: localPos, 
+                    end: targetLocalPos, 
+                    pivotStart: pivotPos.clone(), 
+                    pivotEnd: targetPivotPos.clone() 
+                });
                 return;
             }
 
-            // ЛОГИКА ДЛЯ ГЕОМЕТРИИ
             if ((child.isMesh || child.isLine || child.isLineSegments) && child.geometry) {
                 const geom = child.geometry;
                 const posAttr = geom.attributes.position;
@@ -111,7 +113,7 @@ export class CochlearCylinder {
     morphToTorus(duration = EASE_DURATION, leftSequencerGroup = null, rightSequencerGroup = null) {
         if (this.isMorphing || this.isTorusMode) return Promise.resolve();
         this.isMorphing = true;
-        this._frameCount = 0;
+        this._lastLoggedT = -1;
 
         if (!this._vertexMorphData) {
             this._vertexMorphData = [];
@@ -137,11 +139,7 @@ export class CochlearCylinder {
                 data.obj.position.lerpVectors(data.start, data.end, eased);
             }
 
-            // Подробный лог каждые 15 кадров
-            if (this._frameCount % 15 === 0 || t === 1) {
-                this._logTrajectory(t);
-            }
-            this._frameCount++;
+            this._logTrajectory(t);
 
             if (t < 1) requestAnimationFrame(animate);
             else { this.isTorusMode = true; this.isMorphing = false; }
@@ -153,6 +151,8 @@ export class CochlearCylinder {
     morphToFlat(duration = EASE_DURATION) {
         if (this.isMorphing || !this.isTorusMode) return Promise.resolve();
         this.isMorphing = true;
+        this._lastLoggedT = -1;
+
         const startTime = performance.now();
         const animate = () => {
             const t = Math.min((performance.now() - startTime) / duration, 1);
@@ -178,12 +178,17 @@ export class CochlearCylinder {
     }
 
     _logTrajectory(t) {
-        console.log(`[Trajectory] Progress: ${(t * 100).toFixed(0)}%`);
-        this._objectMorphData.forEach(data => {
-            const currentPivotPos = new THREE.Vector3().lerpVectors(data.pivotStart, data.pivotEnd, t);
-            const color = data.obj.material.color.getHexString();
-            console.log(` - Sphere ${color}: X=${currentPivotPos.x.toFixed(1)}, Z=${currentPivotPos.z.toFixed(1)} (Local Pivot Space)`);
-        });
+        const roundedT = Math.floor(t * 10) / 10;
+        if (roundedT > this._lastLoggedT || t === 1) {
+            console.log(`[Trajectory] Progress: ${(t * 100).toFixed(0)}%`);
+            this._objectMorphData.forEach(data => {
+                const wp = new THREE.Vector3();
+                data.obj.getWorldPosition(wp);
+                const color = data.obj.material.color.getHexString();
+                console.log(` - Sphere ${color}: X=${wp.x.toFixed(1)}, Z=${wp.z.toFixed(1)} (World)`);
+            });
+            this._lastLoggedT = roundedT;
+        }
     }
 }
 
