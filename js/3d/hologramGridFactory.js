@@ -11,7 +11,7 @@ import * as THREE from 'three';
 export const CELL_HEIGHT = 2.0;
 
 /** Opacity сетки (едва видима — только намечает объём) */
-const GRID_OPACITY = 0.0005; // Тонкие и почти прозрачные на 100%
+const GRID_OPACITY = 0.08; // Сетки стали четче.
 
 /**
  * Невидимая маркерная сфера (для внутреннего позиционирования).
@@ -19,7 +19,7 @@ const GRID_OPACITY = 0.0005; // Тонкие и почти прозрачные 
  */
 export function createCentralMarkerSphere(radius, color) {
     const isTarget = (color === 0xffffff);
-    return new THREE.Mesh(
+    const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(radius, 16, 16),
         new THREE.MeshBasicMaterial({
             color: isTarget ? 0xffff00 : color,
@@ -28,14 +28,18 @@ export function createCentralMarkerSphere(radius, color) {
             visible: !isTarget,
         })
     );
+    mesh.name = "StaticSphere";
+    return mesh;
 }
 
 /** Видимая сфера-маркер конца оси. */
 export function createSphereForAxis(radius, color) {
-    return new THREE.Mesh(
+    const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(radius, 16, 16),
         new THREE.MeshBasicMaterial({ color, transparent: false, opacity: 1.0 })
     );
+    mesh.name = "StaticSphere";
+    return mesh;
 }
 
 /** Линия оси по массиву точек. */
@@ -45,7 +49,9 @@ export function createLineForAxis(points, color, linewidth, depthTest = true) {
     const material = new THREE.LineBasicMaterial({
         color, linewidth, depthTest, transparent: !depthTest,
     });
-    return new THREE.Line(geometry, material);
+    const line = new THREE.Line(geometry, material);
+    line.name = "StaticAxis";
+    return line;
 }
 
 /**

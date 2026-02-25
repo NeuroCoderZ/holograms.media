@@ -232,7 +232,14 @@ export class HologramRenderer {
       console.log('[HologramRenderer] CochlearCylinder v5 initialized —', this.columns.length, 'column pairs.');
     }
 
+    const mainArea = document.querySelector('.main-area');
+    const gridContainer = document.querySelector('#grid-container');
+
     if (!this._isTorusMode) {
+      // Включаем расширение области просмотра (CSS)
+      if (mainArea) mainArea.classList.add('xr-mode');
+      if (gridContainer) gridContainer.classList.add('xr-mode');
+
       await this._cochlearCylinder.morphToTorus(1500, this.leftSequencerGroup, this.rightSequencerGroup);
       this._isTorusMode = true;
       this._startDeviceOrientation();
@@ -242,6 +249,11 @@ export class HologramRenderer {
       await this._cochlearCylinder.morphToFlat(1500, this.leftSequencerGroup, this.rightSequencerGroup);
       this._isTorusMode = false;
       this._stopDeviceOrientation();
+
+      // Выключаем расширение области просмотра (CSS)
+      if (mainArea) mainArea.classList.remove('xr-mode');
+      if (gridContainer) gridContainer.classList.remove('xr-mode');
+
       console.log('[HologramRenderer] Ring OFF — flat mode restored.');
       return false;
     }
