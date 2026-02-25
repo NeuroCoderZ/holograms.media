@@ -8,6 +8,14 @@ let inputProxyNode = null;
 
 export function getAudioContext() { return audioService.getAudioContext(); }
 
+/**
+ * Проверяет, активен ли CWT-анализатор (AudioWorklet).
+ * @returns {boolean}
+ */
+export function isCwtActive() {
+    return !!audioService.workletNode;
+}
+
 function getInputProxyNode(ctx) {
     if (!inputProxyNode) {
         inputProxyNode = ctx.createGain();
