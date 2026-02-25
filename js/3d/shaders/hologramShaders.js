@@ -8,9 +8,23 @@
 export const vertexShader = /* glsl */`
     varying float vWorldZHeight;
     uniform float uColumnScaleZ;
+    uniform float uInversePerspective; // 0.0 = Ortho, 1.0 = Reverse
+
     void main() {
         vWorldZHeight = (position.z + 0.5) * uColumnScaleZ;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        
+        // ЛОГИКА ОБРАТНОЙ ПЕРСПЕКТИВЫ
+        if (uInversePerspective > 0.5) {
+            // Чем дальше от камеры по Z (меньше значение Z в нашем случае), тем больше масштаб.
+            // Наша глубина vWorldZHeight идет от 0 (даль) до 128 (близь).
+            // Множитель: 1.5 на дали, 0.5 на близи.
+            float invScale = mix(1.5, 0.5, clamp(vWorldZHeight / 128.0, 0.0, 1.0));
+            mvPosition.xy *= invScale;
+        }
+
+        gl_Position = projectionMatrix * mvPosition;
     }
 `;
 
@@ -64,6 +78,7 @@ export function makeColumnUniforms(baseColor) {
         uIsGreeting: { value: 1.0 },
         uBrightnessBoost: { value: 1.0 },
         uColumnScaleZ: { value: 0.1 },
+        uInversePerspective: { value: 0.0 },
     };
 }
 
@@ -76,5 +91,6 @@ export function makeEdgeUniforms(baseColor) {
         uIsGreeting: { value: 1.0 },
         uBrightnessBoost: { value: 1.1 },
         uColumnScaleZ: { value: 0.1 },
+        uInversePerspective: { value: 0.0 },
     };
 }
