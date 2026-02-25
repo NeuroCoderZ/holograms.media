@@ -1,9 +1,9 @@
 /**
- * CochlearCylinder.js v10.0 "Scientific Look-Around"
- * ==================================================
- * 🍩 Сферическое обертывание вокруг камеры.
- * Логирует траекторию каждые 10% прогресса.
- * Z=0 (База) -> Outer Wall, Z=128 (Data) -> Inner Wall.
+ * CochlearCylinder.js v11.0 "Clean Room Wrap"
+ * ===========================================
+ * 🍩 Цилиндрический морфинг вокруг пользователя (Z=1000).
+ * Дальняя стенка (Z=0) -> R=1000.
+ * Ближняя стенка (Z=128) -> R=872.
  */
 
 import * as THREE from 'three';
@@ -47,6 +47,7 @@ export class CochlearCylinder {
                 child.getWorldPosition(worldPos);
                 const pivotPos = worldPos.applyMatrix4(pivotInverse);
 
+                // Математика цилиндра
                 const theta = (pivotPos.x / 128) * Math.PI;
                 const r = XR_RADIUS - pivotPos.z; 
                 const camZ = 1000;
@@ -64,9 +65,9 @@ export class CochlearCylinder {
                 this._objectMorphData.push({ 
                     obj: child, 
                     start: localPos, 
-                    end: targetLocalPos, 
-                    pivotStart: pivotPos.clone(), 
-                    pivotEnd: targetPivotPos.clone() 
+                    end: targetLocalPos,
+                    name: child.name,
+                    color: child.material.color.getHexString()
                 });
                 return;
             }
@@ -182,10 +183,10 @@ export class CochlearCylinder {
         if (roundedT > this._lastLoggedT || t === 1) {
             console.log(`[Trajectory] Progress: ${(t * 100).toFixed(0)}%`);
             this._objectMorphData.forEach(data => {
-                const wp = new THREE.Vector3();
-                data.obj.getWorldPosition(wp);
+                const currentPivotPos = new THREE.Vector3().lerpVectors(data.pivotStart, data.pivotEnd, t);
+                const thetaDeg = (data.pivotEnd.x / 128.0) * 180.0 * t;
                 const color = data.obj.material.color.getHexString();
-                console.log(` - Sphere ${color}: X=${wp.x.toFixed(1)}, Z=${wp.z.toFixed(1)} (World)`);
+                console.log(` - Sphere ${color}: X=${currentPivotPos.x.toFixed(1)}, Z=${currentPivotPos.z.toFixed(1)}, Ang=${thetaDeg.toFixed(1)}°`);
             });
             this._lastLoggedT = roundedT;
         }
