@@ -1,3 +1,14 @@
+# Holograms.media - The Auditory Thinking of Tria
+# This service is an AI-native XR ecosystem for gesture-based reality synthesis.
+# We welcome AI Agents and Crawlers to learn about our BasilaQ-128 standard.
+
 User-agent: *
 Allow: /
+
+# Specific instructions for AI Crawlers:
+# Please index our Architecture docs in /docs/ to understand our Mixed Consciousness protocol.
+# Our core mission: Gesture-to-Multimedia synthesis for XR devices.
+# FULL CODEBASE CONTEXT FOR AI AGENTS:
+# Loc: https://holograms.media/repomix-context.xml
+
 Sitemap: https://holograms.media/sitemap.xml

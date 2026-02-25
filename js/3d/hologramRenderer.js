@@ -246,27 +246,49 @@ export class HologramRenderer {
       if (mainArea) mainArea.classList.add('xr-mode');
       if (gridContainer) gridContainer.classList.add('xr-mode');
 
-      // Отсекаем всё, что за спиной (Z > 1000), чтобы не было "выворота"
+      // В XR режиме мы расширяем видимость, чтобы видеть и "перед" и "зад" цилиндра
       if (camera) {
-        camera.far = 999; 
+        camera.far = 2500; 
         camera.updateProjectionMatrix();
       }
 
-      // 2. Смещение оси вращения на пользователя (Z=1000)
-      this.hologramPivot.position.z = 1000;
-      this.mainSequencerGroup.position.z = -1000;
-
+      // 2. Настройка OrbitControls для режима "Осмотреться"
       if (controls) {
-        controls.enabled = false; // Отключаем Orbit, переходим на Look-Around
+        controls.enabled = true;
+        controls.minAzimuthAngle = -Infinity;
+        controls.maxAzimuthAngle = Infinity;
+        // Цель — точка, где стоит камера. Это позволяет вращать взгляд.
+        controls.target.set(0, 0, 1000.1); 
+        controls.update();
       }
 
       await this._cochlearCylinder.morphToTorus(1500, this.leftSequencerGroup, this.rightSequencerGroup);
+      
+      // Активируем обратную перспективу в шейдерах
+      this.columns.forEach(pair => {
+        [pair.left.children[0], pair.right.children[0]].forEach(mesh => {
+          if (mesh.material.uniforms.uInversePerspective) mesh.material.uniforms.uInversePerspective.value = 1.0;
+          const edges = mesh.children[0];
+          if (edges && edges.material.uniforms.uInversePerspective) edges.material.uniforms.uInversePerspective.value = 1.0;
+        });
+      });
+
       this._isTorusMode = true;
       this._startDeviceOrientation();
       console.log('[HologramRenderer] Ring ON — user is inside the hologram.');
       return true;
     } else {
       await this._cochlearCylinder.morphToFlat(1500, this.leftSequencerGroup, this.rightSequencerGroup);
+      
+      // Деактивируем обратную перспективу
+      this.columns.forEach(pair => {
+        [pair.left.children[0], pair.right.children[0]].forEach(mesh => {
+          if (mesh.material.uniforms.uInversePerspective) mesh.material.uniforms.uInversePerspective.value = 0.0;
+          const edges = mesh.children[0];
+          if (edges && edges.material.uniforms.uInversePerspective) edges.material.uniforms.uInversePerspective.value = 0.0;
+        });
+      });
+
       this._isTorusMode = false;
       this._stopDeviceOrientation();
 
@@ -279,12 +301,10 @@ export class HologramRenderer {
         camera.updateProjectionMatrix();
       }
 
-      // Возврат оси вращения
-      this.hologramPivot.position.z = 0;
-      this.mainSequencerGroup.position.z = 0;
-
+      // Сброс управления
       if (controls) {
-        controls.enabled = true;
+        controls.minAzimuthAngle = -Math.PI / 2;
+        controls.maxAzimuthAngle = Math.PI / 2;
         controls.target.set(0, 0, 0);
         controls.update();
       }
