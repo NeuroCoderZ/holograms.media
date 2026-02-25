@@ -238,11 +238,20 @@ export class HologramRenderer {
 
     const mainArea = document.querySelector('.main-area');
     const gridContainer = document.querySelector('#grid-container');
+    const controls = state.controls;
 
     if (!this._isTorusMode) {
       // Включаем расширение области просмотра (CSS)
       if (mainArea) mainArea.classList.add('xr-mode');
       if (gridContainer) gridContainer.classList.add('xr-mode');
+
+      // НАСТРОЙКА УПРАВЛЕНИЯ ДЛЯ XR
+      if (controls) {
+        controls.minAzimuthAngle = -Infinity;
+        controls.maxAzimuthAngle = Infinity;
+        controls.target.set(0, 0, 1000); // Фокус на камеру (пользователя)
+        controls.update();
+      }
 
       await this._cochlearCylinder.morphToTorus(1500, this.leftSequencerGroup, this.rightSequencerGroup);
       this._isTorusMode = true;
@@ -257,6 +266,14 @@ export class HologramRenderer {
       // Выключаем расширение области просмотра (CSS)
       if (mainArea) mainArea.classList.remove('xr-mode');
       if (gridContainer) gridContainer.classList.remove('xr-mode');
+
+      // СБРОС УПРАВЛЕНИЯ
+      if (controls) {
+        controls.minAzimuthAngle = -Math.PI / 2;
+        controls.maxAzimuthAngle = Math.PI / 2;
+        controls.target.set(0, 0, 0); // Фокус обратно на центр
+        controls.update();
+      }
 
       console.log('[HologramRenderer] Ring OFF — flat mode restored.');
       return false;
