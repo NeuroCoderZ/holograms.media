@@ -71,6 +71,15 @@ export class CochlearCylinder {
         const pivotInverse = this.hologramPivot.matrixWorld.clone().invert();
 
         group.traverse(child => {
+            // Исключаем сферы и статические оси из морфинга, чтобы они не растягивались
+            if (child.name === "StaticSphere" || child.name === "StaticAxis") {
+                return;
+            }
+
+            if (child.geometry && (child.geometry.type === 'SphereGeometry' || child.geometry.type === 'SphereBufferGeometry')) {
+                return;
+            }
+
             if ((child.isMesh || child.isLine || child.isLineSegments) && child.geometry) {
                 const geom = child.geometry;
                 const posAttr = geom.attributes.position;
