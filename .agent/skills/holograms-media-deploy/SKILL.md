@@ -30,10 +30,11 @@ description: Правила развертывания на Cloudflare и Koyeb.
   ```
 
 ### 3. Верификация (Verification Protocol)
-- **Тайминг:** После запуска ждать минимум **60 секунд** перед проверкой.
+- **Тайминг:** После запуска ждать минимум **90 секунд** перед проверкой.
+- **Windows (PowerShell):** Обязательно использовать `Start-Sleep -s 90` перед `gh run list`.
 - **Мониторинг CI:**
   ```bash
-  gh run list --workflow=cloudflare-deploy.yml --limit 1
+  Start-Sleep -s 90; gh run list --workflow=cloudflare-deploy.yml --limit 1
   ```
 - **Проверка HTTP (Fast Check):**
   - Проверять не только `200 OK`, но и `Content-Type`.
