@@ -41,29 +41,34 @@ export class ConsentManager {
 
             // Синхронизируем состояние кнопки сразу
             const syncButton = () => {
-                const isChecked = this.consentCheckbox.checked;
-                this.proceedButton.disabled = !isChecked;
+                const isChecked = !!this.consentCheckbox.checked;
                 
-                // Управляем видимостью кнопки Google
+                // 1. Атрибут disabled
+                if (isChecked) {
+                    this.proceedButton.removeAttribute('disabled');
+                    this.proceedButton.classList.remove('start-button-disabled');
+                } else {
+                    this.proceedButton.setAttribute('disabled', 'true');
+                    this.proceedButton.classList.add('start-button-disabled');
+                }
+                
+                // 2. Управляем видимостью кнопки Google
                 const googleBtn = document.getElementById('google-signin-container');
                 if (googleBtn) {
                     googleBtn.style.opacity = isChecked ? "1" : "0.3";
                     googleBtn.style.pointerEvents = isChecked ? "auto" : "none";
-                }
-
-                if (isChecked) {
-                    this.proceedButton.classList.remove('start-button-disabled');
-                    this.proceedButton.removeAttribute('disabled');
-                } else {
-                    this.proceedButton.classList.add('start-button-disabled');
-                    this.proceedButton.setAttribute('disabled', 'true');
+                    googleBtn.style.transition = "opacity 0.3s ease";
                 }
                 
-                console.log(`[Consent] Checkbox: ${isChecked}, Button disabled: ${this.proceedButton.disabled}`);
+                console.log(`[ConsentManager] Checkbox changed: ${isChecked}. Button active: ${!this.proceedButton.disabled}`);
             };
 
+            // Принудительная инициализация состояния
             syncButton();
+            
+            // Подписка на изменения
             this.consentCheckbox.onchange = syncButton;
+            this.consentCheckbox.onclick = syncButton; // На всякий случай для некоторых мобильных браузеров
 
             const handleStart = (e) => {
                 if (e) e.preventDefault();
@@ -73,12 +78,12 @@ export class ConsentManager {
                     if (localStorage.getItem('jwtToken')) {
                         this.consentModal.style.display = 'none';
                     } else {
-                        this.proceedButton.innerText = "Условия приняты. Выполните вход через Google";
+                        this.proceedButton.innerText = "Условия приняты. Войдите через Google";
                         this.proceedButton.disabled = true;
                         this.proceedButton.classList.add('start-button-disabled');
                     }
                     
-                    console.log("ConsentManager: Согласие получено.");
+                    console.log("[ConsentManager] Согласие зафиксировано.");
                     resolve(); 
                 }
             };
