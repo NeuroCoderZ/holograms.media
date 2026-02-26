@@ -34,7 +34,8 @@ export const vertexShader = /* glsl */`
             // На ближнем конце (factor 1) -> scale 0.65 (сужаем вход)
             float perspScale = mix(1.0, 0.65, factor);
             
-            mvPosition.xy *= perspScale;
+            // Сжимаем ТОЛЬКО по X (перспектива цилиндра), Y остается прямым!
+            mvPosition.x *= perspScale;
         }
 
         gl_Position = projectionMatrix * mvPosition;

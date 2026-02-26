@@ -238,9 +238,23 @@ class AstraGestureClient {
         try {
             const response = await fetch(`/api/v1/users/${userId}/gestures`);
 
+            const contentType = response.headers.get("content-type");
+            const isJson = contentType && contentType.includes("application/json");
+
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(`Backend API error: ${response.status} ${errorData.detail || ''}`);
+                let errorMessage = `HTTP ${response.status}`;
+                if (isJson) {
+                    const errorData = await response.json().catch(() => ({}));
+                    errorMessage += `: ${errorData.detail || ''}`;
+                } else {
+                    const textError = await response.text().catch(() => "");
+                    console.warn(`[CloudStorage] Backend returned non-JSON error (possibly HTML 404/503).`);
+                }
+                throw new Error(`Backend API error: ${errorMessage}`);
+            }
+
+            if (!isJson) {
+                throw new Error("Backend returned success but content-type is not JSON");
             }
 
             const data = await response.json();
@@ -253,7 +267,7 @@ class AstraGestureClient {
                 timestamp: item.created_at
             }));
         } catch (error) {
-            console.error('Ошибка при загрузке жестов через бэкенд:', error);
+            console.error('Ошибка при загрузке жестов через бэкенд:', error.message);
             return [];
         }
     }
