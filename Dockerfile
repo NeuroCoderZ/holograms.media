@@ -27,15 +27,12 @@ COPY ./backend /app/backend
 COPY ./js /app/js
 COPY ./css /app/css
 COPY ./public /app/public
-COPY ./icons /app/icons
 # ВАЖНО: Копируем только pkg из holocore (только скомпилированный WASM)
 COPY ./holocore/pkg /app/holocore/pkg
 
 COPY ./index.html /app/index.html
 COPY ./style.css /app/style.css
 COPY ./favicon.ico /app/favicon.ico
-COPY ./manifest.json /app/manifest.json
-COPY ./sw.js /app/sw.js
 
 EXPOSE 8000
 
