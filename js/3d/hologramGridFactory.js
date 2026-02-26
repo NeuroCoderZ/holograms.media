@@ -120,21 +120,48 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     const sphereRadius = 2.4192;
     const origin = [0, 0, 0];
     const colorX = isLeftGrid ? 0xBF00FF : 0xFF0000;
-    const xEnd = isLeftGrid ? [-xLength, 0, 0] : [xLength, 0, 0];
+    
+    // Ось X (сегментированная для морфинга в дугу)
+    const xPoints = [];
+    const segments = 32;
+    for (let i = 0; i <= segments; i++) {
+        const x = (i / segments) * xLength * (isLeftGrid ? -1 : 1);
+        xPoints.push(x, 0, 0);
+    }
+    const xAxis = createLineForAxis(xPoints, colorX, 1.5, true);
+    xAxis.name = "XAxis"; // Присваиваем имя для идентификации при морфинге
+    group.add(xAxis);
+    
+    const xSphere = createSphereForAxis(sphereRadius, colorX);
+    xSphere.position.set(isLeftGrid ? -xLength : xLength, 0, 0);
+    xSphere.name = "XAxisSphere";
+    group.add(xSphere);
 
-    // Ось X
-    group.add(createLineForAxis([...origin, ...xEnd], colorX, 1.5, true));
-    group.add(createSphereForAxis(sphereRadius, colorX).translateX(isLeftGrid ? -xLength : xLength));
-
-    // Ось Y (позвоночник — зелёная, теперь с depth test для корректного перекрытия)
+    // Ось Y (позвоночник — зелёная)
     const spineLine = createLineForAxis([...origin, 0, yLength, 0], 0x00FF00, 1.5, true);
+    spineLine.name = "YAxis";
     group.add(spineLine);
-    group.add(createSphereForAxis(sphereRadius, 0x00FF00).translateY(yLength));
+    
+    const ySphere = createSphereForAxis(sphereRadius, 0x00FF00);
+    ySphere.position.set(0, yLength, 0);
+    ySphere.name = "YAxisSphere";
+    group.add(ySphere);
 
     // Ось Z
-    group.add(createLineForAxis([...origin, 0, 0, zLength], 0xFFFFFF, 1.5, true));
-    group.add(createSphereForAxis(sphereRadius, 0xFFFFFF).translateZ(zLength));
+    const zPoints = [];
+    for (let i = 0; i <= segments; i++) {
+        const z = (i / segments) * zLength;
+        zPoints.push(0, 0, z);
+    }
+    const zAxis = createLineForAxis(zPoints, 0xFFFFFF, 1.5, true);
+    zAxis.name = "ZAxis";
+    group.add(zAxis);
+    
+    const zSphere = createSphereForAxis(sphereRadius, 0xFFFFFF);
+    zSphere.position.set(0, 0, zLength);
+    zSphere.name = "ZAxisSphere";
+    group.add(zSphere);
 
-    group.position.z = 0.5; // Небольшой Z-offset чтобы оси не перекрывались с гридом
+    group.position.z = 0.5;
     return group;
 }

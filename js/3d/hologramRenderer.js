@@ -244,36 +244,36 @@ export class HologramRenderer {
     const camera = state.camera;
 
     if (!this._isTorusMode) {
-      // ВКЛЮЧАЕМ XR (Кольцо)
       if (mainArea) mainArea.classList.add('xr-mode');
       if (gridContainer) gridContainer.classList.add('xr-mode');
 
-      // Фикс высоты: сбрасываем Y в ноль, чтобы не улетало
+      // Жесткая фиксация высоты
       this.hologramPivot.position.y = 0;
 
       if (camera) {
-        camera.far = 5000; // Увеличиваем дальность прорисовки
+        camera.far = 5000;
         camera.updateProjectionMatrix();
       }
 
       if (controls) {
         controls.enabled = true;
-        // Расширяем углы для обзора изнутри
-        controls.minAzimuthAngle = -Infinity; 
-        controls.maxAzimuthAngle = Infinity;
-        controls.minPolarAngle = 0;
-        controls.maxPolarAngle = Math.PI;
+        // В XR мы внутри, вращаемся на 360, смотрим вверх-вниз
+        controls.minAzimuthAngle = -Math.PI; 
+        controls.maxAzimuthAngle = Math.PI;
+        controls.minPolarAngle = Math.PI / 2 - Math.PI / 3; // -60 градусов
+        controls.maxPolarAngle = Math.PI / 2 + Math.PI / 3; // +60 градусов
         controls.enablePan = false;
         controls.enableZoom = false;
-        // Цель чуть смещена, чтобы OrbitControls не сходили с ума в центре
-        controls.target.set(0, 0, 0.1); 
+        
+        // ВАЖНО: В режиме цилиндра цель - центр координат (пользователь)
+        controls.target.set(0, 0, 0); 
+        // Камера в (0,0,1000) смотрит на (0,0,0) - это зеленая ось
+        camera.position.set(0, 0, 1000);
         controls.update();
       }
 
-      // Запускаем морфинг в тор (визуальный эффект)
       await this._cochlearCylinder.morphToTorus(1500, this.leftSequencerGroup, this.rightSequencerGroup);
       
-      // Включаем инверсивную перспективу
       this.columns.forEach(pair => {
         [pair.left.children[0], pair.right.children[0]].forEach(mesh => {
           if (mesh.material.uniforms.uInversePerspective) mesh.material.uniforms.uInversePerspective.value = 1.0;
@@ -283,14 +283,11 @@ export class HologramRenderer {
       });
 
       this._isTorusMode = true;
-      this._startDeviceOrientation(); // Если есть гироскоп
+      this._startDeviceOrientation();
       return true;
-
     } else {
-      // ВЫКЛЮЧАЕМ XR (Возврат в плоскость)
       await this._cochlearCylinder.morphToFlat(1500, this.leftSequencerGroup, this.rightSequencerGroup);
       
-      // Сбрасываем инверсивную перспективу
       this.columns.forEach(pair => {
         [pair.left.children[0], pair.right.children[0]].forEach(mesh => {
           if (mesh.material.uniforms.uInversePerspective) mesh.material.uniforms.uInversePerspective.value = 0.0;
@@ -305,7 +302,6 @@ export class HologramRenderer {
       if (mainArea) mainArea.classList.remove('xr-mode');
       if (gridContainer) gridContainer.classList.remove('xr-mode');
       
-      // Фикс высоты при возврате
       this.hologramPivot.position.y = 0;
 
       if (camera) {
@@ -319,6 +315,7 @@ export class HologramRenderer {
         controls.minPolarAngle = 0;
         controls.maxPolarAngle = Math.PI;
         controls.target.set(0, 0, 0);
+        camera.position.set(0, 0, 1000);
         controls.update();
       }
       return false;
@@ -331,7 +328,6 @@ export class HologramRenderer {
       const key = e.key.toLowerCase();
       if (['w','a','s','d'].includes(key)) {
         this._xrActiveKeys.add(key);
-        // Блокируем авто-возврат камеры, пока жмем клавиши
         if (state.controls) state.isDragging = true;
       }
     };
@@ -339,7 +335,6 @@ export class HologramRenderer {
       const key = e.key.toLowerCase();
       this._xrActiveKeys.delete(key);
       if (this._xrActiveKeys.size === 0 && state.controls) {
-        // Отпускаем блокировку с небольшой задержкой
         setTimeout(() => { state.isDragging = false; }, 100);
       }
     };
@@ -356,37 +351,33 @@ export class HologramRenderer {
           return;
       }
 
-      // Скорость вращения
       const step = 0.03; 
-      // Скорость перемещения (высота/зум)
       const moveStep = 10.0;
-
       let moved = false;
 
-      // Вектор от цели к камере
+      // Текущий офсет от центра
       const offset = new THREE.Vector3().subVectors(camera.position, controls.target);
-      
+      const radius = offset.length();
+
       // --- Вращение (A/D) ---
       if (this._xrActiveKeys.has('a')) {
-          // Влево
-          const x = offset.x; 
-          const z = offset.z;
-          offset.x = x * Math.cos(-step) - z * Math.sin(-step);
-          offset.z = x * Math.sin(-step) + z * Math.cos(-step);
+          // Влево (угол увеличивается)
+          const angle = -step;
+          const x = offset.x; const z = offset.z;
+          offset.x = x * Math.cos(angle) - z * Math.sin(angle);
+          offset.z = x * Math.sin(angle) + z * Math.cos(angle);
           moved = true;
       }
       if (this._xrActiveKeys.has('d')) {
           // Вправо
-          const x = offset.x; 
-          const z = offset.z;
-          offset.x = x * Math.cos(step) - z * Math.sin(step);
-          offset.z = x * Math.sin(step) + z * Math.cos(step);
+          const angle = step;
+          const x = offset.x; const z = offset.z;
+          offset.x = x * Math.cos(angle) - z * Math.sin(angle);
+          offset.z = x * Math.sin(angle) + z * Math.cos(angle);
           moved = true;
       }
       
-      // --- Высота / Приближение (W/S) ---
-      // В режиме XR (Тор): W/S - это приближение/удаление (Zoom) или высота?
-      // Логичнее сделать изменение высоты взгляда (Y)
+      // --- Высота / Наклон (W/S) ---
       if (this._xrActiveKeys.has('w')) {
           offset.y += moveStep;
           moved = true;
@@ -396,8 +387,14 @@ export class HologramRenderer {
           moved = true;
       }
 
+      // Применяем лимиты (в XR режиме они жестче)
+      if (this._isTorusMode) {
+          // По высоте: +/- 600 единиц (примерно 60 градусов на радиусе 1000)
+          offset.y = Math.max(-600, Math.min(600, offset.y));
+          // По горизонтали: в XR можно крутиться на 360, но мы ограничимся видом на голограмму если нужно
+      }
+
       if (moved) {
-          // Применяем новую позицию камеры
           camera.position.copy(controls.target).add(offset);
           camera.lookAt(controls.target);
           controls.update();
