@@ -5,6 +5,7 @@ import { initializeMainUI } from './ui/uiManager.js';
 import { detectPlatform } from './core/platformDetector.js';
 import { startAnimationLoop } from './3d/rendering.js';
 import { ConsentManager } from './core/consentManager.js';
+import { initAuth } from './core/auth.js';
 import gestureIntentClient from './services/gestureIntentClient.js';
 import { setupChat, sendChatMessage as sendChatMessageFromChatModule } from './ai/chat.js'; // Импортируем функции чата
 
@@ -15,9 +16,15 @@ async function main() {
     console.log("Holograms.media: Main execution started.");
 
     try {
+        // 0. Предзагрузка Google Sign-In
+        await initAuth();
+        console.log("[STAGE] Auth system initialized.");
+
         // 1. Инициализация менеджера согласия
         console.log("[STAGE] Initializing ConsentManager...");
         const consentManager = new ConsentManager(state);
+        // Сохраняем экземпляр в state для доступа из других модулей
+        state.consentManager = consentManager;
         await consentManager.initialize();
         console.log("[STAGE] Consent accepted. Moving to Core...");
 

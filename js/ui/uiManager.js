@@ -172,13 +172,16 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   const leftGoogleBtn = document.getElementById('login-google-btn');
   if (leftGoogleBtn) {
     leftGoogleBtn.addEventListener('click', () => {
-      console.log('[UIManager] #login-google-btn clicked — opening sign-in modal / prompting GSI');
-      const startSessionModal = document.getElementById('start-session-modal');
-      if (startSessionModal) {
-        startSessionModal.style.display = 'flex'; // Используем flex для центрирования
-        if (window.syncConsent) window.syncConsent(); // Обновляем UI
+      console.log('[UIManager] #login-google-btn clicked — opening sign-in modal');
+      if (state.consentManager) {
+        state.consentManager.show();
+      } else {
+        const startSessionModal = document.getElementById('start-session-modal');
+        if (startSessionModal) startSessionModal.style.display = 'flex';
       }
-      if (window.google && window.google.accounts && window.google.accounts.id && typeof window.google.accounts.id.prompt === 'function') {
+      
+      // Вызываем prompt для автоматического показа Account Picker
+      if (window.google?.accounts?.id) {
         try { window.google.accounts.id.prompt(); } catch (err) { console.warn('[UIManager] google.accounts.id.prompt() failed:', err); }
       }
     });
