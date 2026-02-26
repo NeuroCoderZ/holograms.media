@@ -31,7 +31,12 @@ async def login_with_google(token_data: Dict[str, str] = Body(...)):
         data={"sub": google_id, "email": email, "role": role}
     )
     
-    return {"access_token": access_token, "token_type": "bearer", "role": role}
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer", 
+        "role": role,
+        "email": email
+    }
 
 @router.get("/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):

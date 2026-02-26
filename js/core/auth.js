@@ -63,17 +63,24 @@ async function handleGoogleCredentialResponse(response) {
       throw new Error(`Ошибка бэкенда: ${backendResponse.statusText}`);
     }
 
-    const { access_token } = await backendResponse.json();
+    const responseData = await backendResponse.json();
     console.log('Получен JWT от бэкенда.');
 
-    localStorage.setItem('jwtToken', access_token);
+    localStorage.setItem('jwtToken', responseData.access_token);
     state.isAuthenticated = true;
-    // TODO: Получить и сохранить информацию о пользователе.
-    // state.user = ...;
+    
+    // Сохраняем информацию о пользователе из ответа бэкенда
+    state.user = {
+      email: responseData.email,
+      role: responseData.role,
+      environment: responseData.environment
+    };
 
     updateAuthUI();
-    showNotification('Аутентификация прошла успешно!', 'success');
-    document.getElementById('start-session-modal').style.display = 'none';
+    showNotification(`С возвращением, ${state.user.role}!`, 'success');
+    
+    const modal = document.getElementById('start-session-modal');
+    if (modal) modal.style.display = 'none';
 
   } catch (error) {
     console.error('Ошибка при обмене токена Google на JWT:', error);
