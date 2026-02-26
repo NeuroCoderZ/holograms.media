@@ -61,11 +61,25 @@ export class ConsentManager {
 
             const handleStart = (e) => {
                 if (e) e.preventDefault();
-                // Еще раз проверяем чекбокс перед разрешением
                 if (this.consentCheckbox.checked) {
+                    clearInterval(checkTimer);
                     localStorage.setItem('userConsentGiven', 'true');
                     this.consentModal.style.display = 'none';
+                    
                     console.log("[ConsentManager] Согласие получено. Запуск приложения...");
+
+                    // Если JWT нет, пробуем вызвать Google Login
+                    if (!localStorage.getItem('jwtToken')) {
+                        console.log("[ConsentManager] Инициирую вход в Google...");
+                        if (window.google && window.google.accounts && window.google.accounts.id) {
+                            try {
+                                window.google.accounts.id.prompt();
+                            } catch (gErr) {
+                                console.warn("[ConsentManager] Google Prompt failed:", gErr.message);
+                            }
+                        }
+                    }
+
                     resolve(); 
                 } else {
                     alert("Пожалуйста, подтвердите согласие с условиями.");
