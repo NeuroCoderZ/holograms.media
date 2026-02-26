@@ -44,7 +44,7 @@ export class ConsentManager {
                 const isChecked = this.consentCheckbox.checked;
                 this.proceedButton.disabled = !isChecked;
                 
-                // Управляем видимостью кнопки Google (необязательно, но для ясности)
+                // Управляем видимостью кнопки Google
                 const googleBtn = document.getElementById('google-signin-container');
                 if (googleBtn) {
                     googleBtn.style.opacity = isChecked ? "1" : "0.3";
@@ -53,27 +53,29 @@ export class ConsentManager {
 
                 if (isChecked) {
                     this.proceedButton.classList.remove('start-button-disabled');
+                    this.proceedButton.removeAttribute('disabled');
                 } else {
                     this.proceedButton.classList.add('start-button-disabled');
+                    this.proceedButton.setAttribute('disabled', 'true');
                 }
+                
+                console.log(`[Consent] Checkbox: ${isChecked}, Button disabled: ${this.proceedButton.disabled}`);
             };
 
             syncButton();
             this.consentCheckbox.onchange = syncButton;
 
-            const handleStart = () => {
+            const handleStart = (e) => {
+                if (e) e.preventDefault();
                 if (this.consentCheckbox.checked) {
                     localStorage.setItem('userConsentGiven', 'true');
                     
-                    // Если пользователь уже вошел (есть JWT), закрываем окно.
-                    // Если нет - оставляем, чтобы он нажал "Войти через Google"
                     if (localStorage.getItem('jwtToken')) {
                         this.consentModal.style.display = 'none';
                     } else {
-                        // Скрываем только часть с согласием, оставляем кнопку логина?
-                        // Или просто меняем текст кнопки на "Теперь войдите через Google"
-                        this.proceedButton.innerText = "Условия приняты. Теперь войдите через Google";
+                        this.proceedButton.innerText = "Условия приняты. Выполните вход через Google";
                         this.proceedButton.disabled = true;
+                        this.proceedButton.classList.add('start-button-disabled');
                     }
                     
                     console.log("ConsentManager: Согласие получено.");
