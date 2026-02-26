@@ -103,7 +103,7 @@ async function initializeGoogleSignIn() {
       callback: handleGoogleCredentialResponse,
       ux_mode: 'popup', // Явно указываем всплывающее окно
       auto_select: false, // Запрещаем авто-вход, чтобы всегда был выбор аккаунта
-      use_fedcm_for_prompt: true // Современный стандарт Chrome 2025-2026
+      use_fedcm_for_prompt: false // Отключаем FedCM для совместимости с COOP/COEP
     });
     window.google.accounts.id.renderButton(
       document.getElementById('google-signin-container'),
