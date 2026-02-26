@@ -245,7 +245,7 @@ class AudioService {
         if (newFps <= 0 || newFps === this.targetFps) return;
 
         this.targetFps = newFps;
-        console.log(`[AudioService] Updating target FPS to: ${newFps}`);
+        // console.log(`[AudioService] Updating target FPS to: ${newFps}`);
 
         if (this.workletNode) {
             this.workletNode.port.postMessage({
@@ -286,7 +286,7 @@ class AudioService {
                 // Обновляем только если FPS изменился >= 3
                 const fpsDelta = Math.abs(measuredFps - this.targetFps);
                 if (fpsDelta >= 3 && measuredFps >= 20 && measuredFps <= 300) {
-                    console.log(`[AudioService] Display FPS changed: ${this.targetFps} → ${measuredFps}`);
+                    // console.log(`[AudioService] Display FPS changed: ${this.targetFps} → ${measuredFps}`);
                     this.setTargetFps(measuredFps);
                 } else if (fpsDelta > 0) {
                     this.setTargetFps(measuredFps);  // Update silently for minor changes
