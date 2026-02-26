@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // Получаем абсолютный путь к текущей директории
 const __dirname = resolve();
 
+// DEPLOY VERSION: 0.18.8 - XR PERSPECTIVE & CONTROLS
 export default defineConfig({
   plugins: [
     VitePWA({
