@@ -43,9 +43,14 @@ export class ConsentManager {
             const syncButton = () => {
                 const isChecked = this.consentCheckbox.checked;
                 this.proceedButton.disabled = !isChecked;
-                this.proceedButton.style.opacity = isChecked ? "1" : "0.5";
-                this.proceedButton.style.cursor = isChecked ? "pointer" : "not-allowed";
                 
+                // Управляем видимостью кнопки Google (необязательно, но для ясности)
+                const googleBtn = document.getElementById('google-signin-container');
+                if (googleBtn) {
+                    googleBtn.style.opacity = isChecked ? "1" : "0.3";
+                    googleBtn.style.pointerEvents = isChecked ? "auto" : "none";
+                }
+
                 if (isChecked) {
                     this.proceedButton.classList.remove('start-button-disabled');
                 } else {
@@ -59,7 +64,18 @@ export class ConsentManager {
             const handleStart = () => {
                 if (this.consentCheckbox.checked) {
                     localStorage.setItem('userConsentGiven', 'true');
-                    this.consentModal.style.display = 'none';
+                    
+                    // Если пользователь уже вошел (есть JWT), закрываем окно.
+                    // Если нет - оставляем, чтобы он нажал "Войти через Google"
+                    if (localStorage.getItem('jwtToken')) {
+                        this.consentModal.style.display = 'none';
+                    } else {
+                        // Скрываем только часть с согласием, оставляем кнопку логина?
+                        // Или просто меняем текст кнопки на "Теперь войдите через Google"
+                        this.proceedButton.innerText = "Условия приняты. Теперь войдите через Google";
+                        this.proceedButton.disabled = true;
+                    }
+                    
                     console.log("ConsentManager: Согласие получено.");
                     resolve(); 
                 }

@@ -108,15 +108,18 @@
   margin-right: var(--spacing-md);
   height: var(--control-height);
   font-size: var(--font-size-button);
+  transition: all 0.3s ease;
 }
 
-.modal button:hover {
-  background-color: var(--button-action-hover);
+.modal button:disabled, .modal button.start-button-disabled {
+  background-color: #333 !important;
+  color: #666 !important;
+  cursor: not-allowed !important;
+  opacity: 0.5;
 }
 
-.modal button:disabled {
-  background-color: #555;
-  cursor: not-allowed;
+.modal button:not(:disabled) {
+  cursor: pointer !important;
 }
 
 /* --- Consent Modal Styles --- */
