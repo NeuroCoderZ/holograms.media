@@ -174,7 +174,10 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
     leftGoogleBtn.addEventListener('click', () => {
       console.log('[UIManager] #login-google-btn clicked — opening sign-in modal / prompting GSI');
       const startSessionModal = document.getElementById('start-session-modal');
-      if (startSessionModal) startSessionModal.style.display = 'block';
+      if (startSessionModal) {
+        startSessionModal.style.display = 'flex'; // Используем flex для центрирования
+        if (window.syncConsent) window.syncConsent(); // Обновляем UI
+      }
       if (window.google && window.google.accounts && window.google.accounts.id && typeof window.google.accounts.id.prompt === 'function') {
         try { window.google.accounts.id.prompt(); } catch (err) { console.warn('[UIManager] google.accounts.id.prompt() failed:', err); }
       }

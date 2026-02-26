@@ -254,7 +254,9 @@ class AstraGestureClient {
             }
 
             if (!isJson) {
-                throw new Error("Backend returned success but content-type is not JSON");
+                // Если пришел HTML вместо JSON, значит бэкенд не готов или отдает 404
+                console.warn("[CloudStorage] Backend not ready (returned non-JSON). Skipping gestures load.");
+                return [];
             }
 
             const data = await response.json();
