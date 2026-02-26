@@ -91,9 +91,9 @@ from backend.api.v1.endpoints.gesture_routes import router as public_gestures_ro
 from backend.routers.public_holograms import router as public_holograms_router
 from backend.api.v1.endpoints.tria_commands import router as tria_commands_router
 from backend.api.v1.endpoints.chunks import router as chunks_router
-# from backend.routers.gestures import router as user_gestures_router
-# from backend.routers.holograms import router as user_holograms_router
-# from backend.routers.prompts import router as user_prompts_router
+from backend.routers.gestures import router as user_gestures_router
+from backend.routers.holograms import router as user_holograms_router
+from backend.routers.prompts import router as user_prompts_router
 from backend.routers import gestures_ws
 from backend.routers.signaling import router as signaling_router # New signaling router
 from backend.routers.auth import router as auth_router # Import the new auth router
@@ -110,9 +110,9 @@ app.include_router(tria_commands_router, prefix=f"{API_V1_PREFIX}/tria", tags=["
 app.include_router(chunks_router, prefix=API_V1_PREFIX, tags=["Chunks"])
 app.include_router(chat_sessions_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat Sessions"])
 app.include_router(wallet_router, prefix=f"{API_V1_PREFIX}/wallet", tags=["Wallet"])
-# app.include_router(user_gestures_router, prefix=f"{API_V1_PREFIX}/users/me/gestures", tags=["Current User Gestures"])
-# app.include_router(user_holograms_router, prefix=f"{API_V1_PREFIX}/users/me/holograms", tags=["Current User Holograms"])
-# app.include_router(user_prompts_router, prefix=f"{API_V1_PREFIX}/users/me/prompts", tags=["Current User Prompts"])
+app.include_router(user_gestures_router, prefix=f"{API_V1_PREFIX}/users/me/gestures", tags=["Current User Gestures"])
+app.include_router(user_holograms_router, prefix=f"{API_V1_PREFIX}/users/me/holograms", tags=["Current User Holograms"])
+app.include_router(user_prompts_router, prefix=f"{API_V1_PREFIX}/users/me/prompts", tags=["Current User Prompts"])
 app.include_router(gestures_ws.router)
 app.include_router(signaling_router) # Include the new signaling router
 
@@ -145,20 +145,17 @@ async def serve_style():
 async def serve_favicon():
     return FileResponse(os.path.join(base_dir, "favicon.ico"))
 
-@app.get("/manifest.json")
-async def serve_manifest():
-    return FileResponse(os.path.join(base_dir, "manifest.json"))
-
-@app.get("/sw.js")
-async def serve_sw():
-    return FileResponse(os.path.join(base_dir, "sw.js"))
+# Compatibility alias for /icons -> /public/icons
+app.mount("/icons", StaticFiles(directory=os.path.join(base_dir, "public", "icons")), name="icons_alias")
 
 # Mount subdirectories
 app.mount("/js", StaticFiles(directory=os.path.join(base_dir, "js")), name="js")
 app.mount("/css", StaticFiles(directory=os.path.join(base_dir, "css")), name="css")
 app.mount("/public", StaticFiles(directory=os.path.join(base_dir, "public")), name="public")
-app.mount("/icons", StaticFiles(directory=os.path.join(base_dir, "icons")), name="icons")
 app.mount("/holocore", StaticFiles(directory=os.path.join(base_dir, "holocore")), name="holocore")
+
+# Compatibility alias for /icons -> /public/icons (for manifest.json)
+app.mount("/icons", StaticFiles(directory=os.path.join(base_dir, "public", "icons")), name="icons_alias")
 
 # Compatibility alias for /wasm -> /public/wasm or similar if needed
 # The frontend uses /js/wasm/ or /wasm/
