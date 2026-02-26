@@ -6,7 +6,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
-  <script>console.log("DEPLOY VERSION: 0.19.5 - CONSENT LOGIC & TEXT REFINEMENT");</script>
+  <script>
+    // Глобальная функция-спасатель для кнопки "Принимаю"
+    window.syncConsent = function() {
+      const cb = document.getElementById('consent-checkbox');
+      const btn = document.getElementById('start-session-button');
+      const google = document.getElementById('google-signin-container');
+      if (cb && btn) {
+        const active = cb.checked;
+        btn.disabled = !active;
+        if (active) {
+          btn.classList.remove('start-button-disabled');
+          btn.style.setProperty('background-color', '#007bff', 'important');
+          btn.style.setProperty('opacity', '1', 'important');
+          btn.style.setProperty('pointer-events', 'auto', 'important');
+          btn.style.setProperty('cursor', 'pointer', 'important');
+          if (google) google.style.opacity = '1';
+        } else {
+          btn.classList.add('start-button-disabled');
+          btn.style.setProperty('background-color', '#333', 'important');
+          btn.style.setProperty('opacity', '0.6', 'important');
+          if (google) google.style.opacity = '0.3';
+        }
+        console.log('Manual sync performed. Active:', active);
+      }
+    };
+  </script>
+  <script>console.log("DEPLOY VERSION: 0.19.6 - ATOMIC BUTTON FIX");</script>
 
 
 
@@ -106,8 +132,8 @@
         Используя платформу Holograms.Media, вы разрешаете использование потоковых аудио- и видеоданных с вашего устройства исключительно для обучения <b>персонального искусственного интеллекта "Триа"</b>, записи жестов и формирования интерактивной голограммы в реальном времени. Данные обрабатываются и хранятся локально. На сервера отправляются только сформированные списки жестов и голограмм. Мы соблюдаем международные стандарты приватности.
       </p>
       <div class="consent-checkbox-container" style="justify-content: center; display: flex; align-items: center; gap: 12px; margin: 25px 0;">
-        <input type="checkbox" id="consent-checkbox" style="margin: 0;">
-        <label for="consent-checkbox" style="margin: 0;">Я понимаю и принимаю условия</label>
+        <input type="checkbox" id="consent-checkbox" style="margin: 0;" onclick="window.syncConsent()" onchange="window.syncConsent()">
+        <label for="consent-checkbox" style="margin: 0; cursor: pointer;">Я понимаю и принимаю условия</label>
       </div>
       <button id="start-session-button" class="start-button-disabled" disabled>Принимаю</button>
     </div>

@@ -41,66 +41,46 @@ export class ConsentManager {
 
             // Синхронизируем состояние кнопки сразу
             const syncButton = () => {
-                const checkbox = document.getElementById('consent-checkbox');
-                const button = document.getElementById('start-session-button');
-                const googleBtn = document.getElementById('google-signin-container');
-                
-                if (!checkbox || !button) return;
-
-                const isChecked = !!checkbox.checked;
-                
-                // Прямое управление свойствами для обхода любых блокировок
-                button.disabled = !isChecked;
-                
-                if (isChecked) {
-                    button.classList.remove('start-button-disabled');
-                    button.style.backgroundColor = "#007bff";
-                    button.style.color = "#ffffff";
-                    button.style.opacity = "1";
-                    button.style.cursor = "pointer";
-                    button.style.pointerEvents = "auto";
+                if (window.syncConsent) {
+                    window.syncConsent();
                 } else {
-                    button.classList.add('start-button-disabled');
-                    button.style.backgroundColor = "#333";
-                    button.style.color = "#555";
-                    button.style.opacity = "0.6";
-                    button.style.cursor = "not-allowed";
-                    // button.style.pointerEvents = "none"; // Убираем, чтобы видеть наведение
-                }
-                
-                if (googleBtn) {
-                    googleBtn.style.opacity = isChecked ? "1" : "0.3";
-                    googleBtn.style.pointerEvents = isChecked ? "auto" : "none";
+                    // Fallback если глобальная функция не загрузилась
+                    const isChecked = !!this.consentCheckbox.checked;
+                    this.proceedButton.disabled = !isChecked;
+                    if (isChecked) {
+                        this.proceedButton.classList.remove('start-button-disabled');
+                    } else {
+                        this.proceedButton.classList.add('start-button-disabled');
+                    }
                 }
             };
 
-            // Запускаем интервал "живучести" на 5 секунд (пока модалка открыта)
-            const safetyInterval = setInterval(syncButton, 500);
-
-            // Основные слушатели
+            // Основные слушатели (дублируем инлайновые для гарантии)
             this.consentCheckbox.addEventListener('change', syncButton);
             this.consentCheckbox.addEventListener('click', syncButton);
 
             const handleStart = (e) => {
                 if (e) e.preventDefault();
+                // Еще раз проверяем чекбокс перед разрешением
                 if (this.consentCheckbox.checked) {
-                    clearInterval(safetyInterval);
                     localStorage.setItem('userConsentGiven', 'true');
-                    
-                    if (localStorage.getItem('jwtToken')) {
-                        this.consentModal.style.display = 'none';
-                    } else {
-                        this.proceedButton.innerText = "Условия приняты. Войдите через Google";
-                        this.proceedButton.disabled = true;
-                    }
-                    
-                    console.log("[ConsentManager] Согласие получено.");
+                    this.consentModal.style.display = 'none';
+                    console.log("[ConsentManager] Согласие получено. Запуск приложения...");
                     resolve(); 
+                } else {
+                    alert("Пожалуйста, подтвердите согласие с условиями.");
                 }
             };
             
             this.proceedButton.onclick = handleStart;
-            syncButton(); // Первичный запуск
+            syncButton(); 
+            
+            // "Ядерная" проверка: проверяем каждые 300мс первые 10 секунд
+            let checks = 0;
+            const checkTimer = setInterval(() => {
+                syncButton();
+                if (++checks > 30) clearInterval(checkTimer);
+            }, 333);
         });
     }
 }
