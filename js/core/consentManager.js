@@ -9,10 +9,13 @@ export class ConsentManager {
         this.closeButton = document.getElementById('closeConsentModal');
         this.googleContainer = document.getElementById('google-signin-container');
         this._resolveInit = null;
+
+        // Привязываем обработчики крестика и кнопок СРАЗУ
+        this._setupHandlers();
     }
 
     initialize() {
-        console.log("[ConsentManager] Start Initialization...");
+        console.log("[ConsentManager] Initializing...");
         return new Promise((resolve) => {
             this._resolveInit = resolve;
 
@@ -20,47 +23,54 @@ export class ConsentManager {
             
             if (isGiven) {
                 this._showLoginOnly();
-                // Если мы на первом этапе инициализации - разрешаем запуск в фоне
+                // Если мы на первом этапе инициализации (main.js) - разрешаем запуск в фоне
                 if (this.consentModal && this.consentModal.style.display !== 'flex') {
+                    console.log("[ConsentManager] Already accepted, proceeding.");
                     resolve();
                     return;
                 }
             }
 
             if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] UI Elements not found.");
                 resolve(); 
                 return;
             }
 
             this.consentModal.style.display = 'flex';
-            this._setupHandlers();
-            this._syncUI(); // Начальная синхронизация
+            this._syncUI();
         });
     }
 
     _setupHandlers() {
         if (this.closeButton) {
-            this.closeButton.onclick = () => { this.consentModal.style.display = 'none'; };
+            this.closeButton.onclick = () => { 
+                console.log("[ConsentManager] Close button clicked.");
+                if (this.consentModal) this.consentModal.style.display = 'none'; 
+            };
         }
 
-        const sync = () => this._syncUI();
-        this.consentCheckbox.onchange = sync;
-        this.consentCheckbox.onclick = sync;
+        if (this.consentCheckbox) {
+            const sync = () => this._syncUI();
+            this.consentCheckbox.onchange = sync;
+            this.consentCheckbox.onclick = sync;
+        }
 
-        this.proceedButton.onclick = (e) => {
-            if (e) e.preventDefault();
-            if (this.consentCheckbox.checked) {
-                localStorage.setItem('userConsentGiven', 'true');
-                console.log("[ConsentManager] Terms accepted.");
-                this._showLoginOnly();
-                
-                // РАЗРЕШАЕМ PROMISE (оживляем приложение)
-                if (this._resolveInit) {
-                    this._resolveInit();
-                    this._resolveInit = null;
+        if (this.proceedButton) {
+            this.proceedButton.onclick = (e) => {
+                if (e) e.preventDefault();
+                if (this.consentCheckbox && this.consentCheckbox.checked) {
+                    localStorage.setItem('userConsentGiven', 'true');
+                    console.log("[ConsentManager] Terms accepted.");
+                    this._showLoginOnly();
+                    
+                    if (this._resolveInit) {
+                        this._resolveInit();
+                        this._resolveInit = null;
+                    }
                 }
-            }
-        };
+            };
+        }
     }
 
     _syncUI() {
