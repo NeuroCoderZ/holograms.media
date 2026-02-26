@@ -15,13 +15,26 @@ export const vertexShader = /* glsl */`
         
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         
-        // ЛОГИКА ОБРАТНОЙ ПЕРСПЕКТИВЫ
+        // ЛОГИКА ОБРАТНОЙ ПЕРСПЕКТИВЫ (XR Mode)
+        // Задача: Дальняя стенка (Back Wall) сохраняет масштаб (1.0).
+        // Ближняя сетка (Near Grid) уменьшается (сужается), создавая эффект глубины.
         if (uInversePerspective > 0.5) {
-            // Чем дальше от камеры по Z (меньше значение Z в нашем случае), тем больше масштаб.
-            // Наша глубина vWorldZHeight идет от 0 (даль) до 128 (близь).
-            // Множитель: 1.5 на дали, 0.5 на близи.
-            float invScale = mix(1.5, 0.5, clamp(vWorldZHeight / 128.0, 0.0, 1.0));
-            mvPosition.xy *= invScale;
+            // В системе координат камеры (View Space):
+            // Камера в (0,0,0). Ось Z смотрит назад. Объекты перед камерой имеют Z < 0.
+            // Дальние объекты имеют Z << 0 (например, -2000).
+            // Ближние объекты имеют Z ~ -100...-500.
+            
+            float farAnchor = -2000.0; // Глубина, где масштаб остается 1.0
+            float nearAnchor = -100.0; // Глубина, где сжатие максимально
+            
+            // factor = 0.0 на дальней стенке, 1.0 у носа
+            float factor = smoothstep(farAnchor, nearAnchor, mvPosition.z);
+            
+            // На дальнем конце (factor 0) -> scale 1.0 (без изменений)
+            // На ближнем конце (factor 1) -> scale 0.65 (сужаем вход)
+            float perspScale = mix(1.0, 0.65, factor);
+            
+            mvPosition.xy *= perspScale;
         }
 
         gl_Position = projectionMatrix * mvPosition;
@@ -50,7 +63,7 @@ export const fragmentShader = /* glsl */`
 
         vec3 finalColor;
         if (cellIndex >= 128.0) {
-            // Предел (0 дБ) -> Белая обводка (или поверхность в Greeting)
+            // Предел (0 дБ) -> Максимальная яркость
             finalColor = vec3(1.0);
         } else {
             // Линейное затемнение по слоям (1 слой = 1 дБ)
@@ -58,9 +71,15 @@ export const fragmentShader = /* glsl */`
             finalColor = uBaseColor * brightness;
         }
 
-        // Режим приветствия: поверхность цветная, ребра белые
+        // Режим приветствия: поверхность цветная, ребра чуть ярче (+1дБ)
         if (uIsGreeting > 0.5) {
-            finalColor = isEdge ? vec3(1.0) : uBaseColor;
+            if (isEdge) {
+                // Вместо белого (vec3(1.0)) делаем "цвет + яркость +1дБ"
+                // Это примерно 1.25 от базы, но не превышая белый
+                finalColor = clamp(uBaseColor * 1.35, 0.0, 1.0);
+            } else {
+                finalColor = uBaseColor;
+            }
         }
 
         finalColor += uSelection * 0.3; // Подсветка выбора
