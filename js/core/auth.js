@@ -5,8 +5,8 @@
  *              и управление сессией пользователя.
  */
 
-import { state } from './state.js';
-import { updateAuthUI } from '../managers/uiManager.js';
+import { state } from './init.js';
+import { updateAuthUI } from '../ui/uiManager.js';
 import { showNotification } from '../utils/notifications.js';
 
 const BACKEND_TOKEN_URL = '/api/v1/auth/token';
@@ -20,9 +20,9 @@ export const getAuthConfig = () => {
   const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5173';
   const redirectUri = import.meta.env.VITE_AUTH_REDIRECT_URI;
-  
+
   console.log(`[Auth] Environment: ${environment}`, `Client: ${clientId?.substring(0, 15)}...`);
-  
+
   return { clientId, environment, apiUrl, redirectUri };
 };
 
@@ -68,7 +68,7 @@ async function handleGoogleCredentialResponse(response) {
 
     localStorage.setItem('jwtToken', responseData.access_token);
     state.isAuthenticated = true;
-    
+
     // Сохраняем информацию о пользователе из ответа бэкенда
     state.user = {
       email: responseData.email,
@@ -78,7 +78,7 @@ async function handleGoogleCredentialResponse(response) {
 
     updateAuthUI();
     showNotification(`С возвращением, ${state.user.role}!`, 'success');
-    
+
     const modal = document.getElementById('start-session-modal');
     if (modal) modal.style.display = 'none';
 
@@ -107,10 +107,10 @@ async function initializeGoogleSignIn() {
     });
     window.google.accounts.id.renderButton(
       document.getElementById('google-signin-container'),
-      { 
-        theme: 'outline', 
-        size: 'large', 
-        text: 'signin_with', 
+      {
+        theme: 'outline',
+        size: 'large',
+        text: 'signin_with',
         shape: 'rectangular',
         width: 300 // Фиксированная ширина для стабильности
       }
@@ -139,7 +139,7 @@ async function checkInitialAuthState() {
         state.isAuthenticated = true;
         state.user = userData;
         console.log(`[Auth] Сессия восстановлена для: ${userData.email}`);
-        
+
         // Скрываем модалку входа
         const modal = document.getElementById('start-session-modal');
         if (modal) modal.style.display = 'none';
@@ -151,7 +151,7 @@ async function checkInitialAuthState() {
     } catch (error) {
       console.error('[Auth] Ошибка проверки сессии:', error);
       // При сетевой ошибке не сбрасываем, может бэкенд спит
-      state.isAuthenticated = true; 
+      state.isAuthenticated = true;
     }
   } else {
     state.isAuthenticated = false;

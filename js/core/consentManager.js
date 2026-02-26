@@ -3,7 +3,7 @@
 export class ConsentManager {
     constructor(state) {
         this.state = state;
-        this.consentModal = document.getElementById('start-session-modal'); 
+        this.consentModal = document.getElementById('start-session-modal');
         this.consentCheckbox = document.getElementById('consent-checkbox');
         this.proceedButton = document.getElementById('start-session-button');
         this.closeButton = document.getElementById('closeConsentModal');
@@ -20,7 +20,7 @@ export class ConsentManager {
             this._resolveInit = resolve;
 
             const isGiven = localStorage.getItem('userConsentGiven') === 'true';
-            
+
             if (isGiven) {
                 this._hideControlUI();
                 // Если это автоматический запуск при старте - идем дальше
@@ -33,7 +33,7 @@ export class ConsentManager {
 
             if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
                 console.warn("[ConsentManager] Elements not found, auto-resolving.");
-                resolve(); 
+                resolve();
                 return;
             }
 
@@ -45,16 +45,18 @@ export class ConsentManager {
         if (!this.consentModal) return;
         this.consentModal.style.display = 'flex';
         this._syncUI();
-        
+
         // Принудительно рендерим кнопку Google при каждом показе
         this._renderGoogleButton();
     }
 
     _setupHandlers() {
         if (this.closeButton) {
-            this.closeButton.onclick = () => { 
-                if (this.consentModal) this.consentModal.style.display = 'none'; 
-            };
+            this.closeButton.addEventListener('click', (e) => {
+                if (e) e.preventDefault();
+                console.log("[ConsentManager] Close button clicked.");
+                if (this.consentModal) this.consentModal.style.display = 'none';
+            });
         }
 
         const sync = () => this._syncUI();
@@ -64,31 +66,31 @@ export class ConsentManager {
         }
 
         if (this.proceedButton) {
-            this.proceedButton.onclick = (e) => {
+            this.proceedButton.addEventListener('click', (e) => {
                 if (e) e.preventDefault();
                 if (this.consentCheckbox && this.consentCheckbox.checked) {
                     localStorage.setItem('userConsentGiven', 'true');
                     console.log("[ConsentManager] Terms accepted.");
                     this._hideControlUI();
-                    
+
                     if (this._resolveInit) {
                         this._resolveInit();
                         this._resolveInit = null;
                     }
                 }
-            };
+            });
         }
     }
 
     _syncUI() {
         if (!this.consentCheckbox || !this.proceedButton) return;
-        
+
         const isChecked = !!this.consentCheckbox.checked;
         const isGiven = localStorage.getItem('userConsentGiven') === 'true';
         const active = isChecked || isGiven;
 
         this.proceedButton.disabled = !isChecked;
-        
+
         if (window.syncConsent) {
             window.syncConsent(); // Вызов глобальной функции для стилей
         }
@@ -101,12 +103,15 @@ export class ConsentManager {
 
     _renderGoogleButton() {
         // Если библиотека Google загружена, перерисовываем кнопку
-        if (window.google && window.google.accounts && window.google.accounts.id) {
+        if (window.google?.accounts?.id) {
             console.log("[ConsentManager] Re-rendering Google Button...");
-            window.google.accounts.id.renderButton(
-                this.googleContainer,
-                { theme: 'outline', size: 'large', text: 'signin_with', width: 300 }
-            );
+            if (this.googleContainer) {
+                this.googleContainer.innerHTML = ''; // Очищаем контейнер перед рендером
+                window.google.accounts.id.renderButton(
+                    this.googleContainer,
+                    { theme: 'outline', size: 'large', text: 'signin_with', width: 300 }
+                );
+            }
         } else {
             console.warn("[ConsentManager] Google GSI not loaded yet.");
         }

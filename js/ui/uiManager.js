@@ -4,6 +4,7 @@
 // import { state } from '../core/init.js'; // Removed direct import, appState will be used
 
 // import { uploadChunk } from '../services/apiService.js'; // Old direct backend upload, now replaced by R2 presigned
+import { state } from '../core/init.js'; // Ensure state is available for updateAuthUI
 import { initializePwaInstall } from '../core/pwaInstall.js';
 // panelManager is used to switch visible content panels in the right sidebar.
 // import PanelManager from './panelManager.js'; // PanelManager is now globally managed via state.panelManager
@@ -168,20 +169,31 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   uiElements.actions.logoutBtn = document.getElementById('logoutBtn');
   uiElements.actions.upgradeAccountBtn = document.getElementById('upgradeAccountBtn');
 
-  // Left-panel Google login (legacy sidebar button) — ensure it opens the sign-in modal / triggers GSI prompt
   const leftGoogleBtn = document.getElementById('login-google-btn');
   if (leftGoogleBtn) {
     leftGoogleBtn.addEventListener('click', () => {
-      console.log('[UIManager] #login-google-btn clicked — opening sign-in modal');
-      if (state.consentManager) {
-        state.consentManager.show();
+      console.log('[UIManager] #login-google-btn clicked — showing consent/login modal');
+
+      // Используем ConsentManager из глобального стейта, если он инициализирован
+      if (appState.consentManager) {
+        appState.consentManager.show();
       } else {
+        // Фолбэк на прямой показ, если менеджер еще не готов
         const startSessionModal = document.getElementById('start-session-modal');
         if (startSessionModal) startSessionModal.style.display = 'flex';
+
+        // Попытка отрендерить кнопку Google вручную, если библиотека загружена
+        if (window.google?.accounts?.id) {
+          const container = document.getElementById('google-signin-container');
+          if (container) {
+            container.innerHTML = '';
+            window.google.accounts.id.renderButton(container, { theme: 'outline', size: 'large', text: 'signin_with', width: 300 });
+          }
+        }
       }
-      
+
       // Вызываем prompt для автоматического показа Account Picker
-      if (window.google?.accounts?.id) {
+      if (window.google?.accounts?.id && typeof window.google.accounts.id.prompt === 'function') {
         try { window.google.accounts.id.prompt(); } catch (err) { console.warn('[UIManager] google.accounts.id.prompt() failed:', err); }
       }
     });
@@ -699,6 +711,45 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
  * initializePanelState and togglePanels are removed as PanelManager handles this.
  * toggleChatMode is removed as PanelManager.openContentPanel('chatHistory') handles this.
  */
+/**
+ * Обновляет визуальное состояние кнопок аутентификации на основе состояния state.
+ * @param {object} appState - Глобальное состояние (опционально, иначе берется из импорта)
+ */
+export function updateAuthUI(appState) {
+  // Используем переданный стейт или импортируемый
+  const currentState = appState || state;
+  const loginBtn = document.getElementById('login-google-btn');
+  const avatarBtn = document.getElementById('avatarButton');
+  const startSessionModal = document.getElementById('start-session-modal');
+
+  if (currentState.isAuthenticated && currentState.user) {
+    // Пользователь вошел
+    if (loginBtn) loginBtn.style.display = 'none'; // Скрываем кнопку Google
+
+    if (avatarBtn) {
+      avatarBtn.classList.add('authenticated');
+      avatarBtn.title = `Аккаунт: ${currentState.user.email}`;
+      // Заменяем иконку на первую букву email
+      const firstLetter = currentState.user.email ? currentState.user.email[0].toUpperCase() : 'U';
+      avatarBtn.innerHTML = `<span class="avatar-initial" style="font-weight: bold; font-family: sans-serif;">${firstLetter}</span>`;
+      avatarBtn.style.backgroundColor = '#007bff'; // Синий цвет для активного аккаунта
+    }
+
+    if (startSessionModal) startSessionModal.style.display = 'none';
+    console.log(`[UI] Интерфейс обновлен для пользователя: ${currentState.user.email}`);
+  } else {
+    // Пользователь не вошел
+    if (loginBtn) loginBtn.style.display = 'flex';
+    if (avatarBtn) {
+      avatarBtn.classList.remove('authenticated');
+      avatarBtn.title = 'Войти в аккаунт';
+      // Возвращаем стандартную иконку аватара
+      avatarBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z" /></svg>`;
+      avatarBtn.style.backgroundColor = '';
+    }
+  }
+}
+
 export { logLayoutState };
 
 // Ensure that PanelManager's methods like initializeMainPanelState are called
