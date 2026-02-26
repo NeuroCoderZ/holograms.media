@@ -1,15 +1,15 @@
-/* css/_modals.css - Чистая документальная версия v0.19.5 */
+/* css/_modals.css - Атомарная версия v0.19.6 */
 
 .modal {
   display: none;
   position: fixed;
-  z-index: 3000;
+  z-index: 9999; /* Максимальный приоритет */
   left: 0;
   top: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(10px);
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
   align-items: center;
   justify-content: center;
 }
@@ -21,22 +21,22 @@
 }
 
 .modal-content {
-  background-color: rgba(20, 20, 20, 0.95);
-  color: #ccc;
+  background-color: rgba(15, 15, 15, 0.95);
+  color: #eee;
   padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
   width: 90%;
   max-width: 500px;
   position: relative;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
-  font-family: 'Inter', -apple-system, sans-serif;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 1);
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 .modal h2 {
   margin-top: 0;
   margin-bottom: 25px;
-  font-size: 1.5em;
+  font-size: 1.6em;
   color: #fff;
   text-align: center;
 }
@@ -46,7 +46,7 @@
   text-indent: 30px;
   font-size: 0.95em;
   line-height: 1.6;
-  color: #bbb;
+  color: #ccc;
   margin: 25px 0;
 }
 
@@ -54,72 +54,58 @@
   position: absolute;
   top: 15px;
   right: 20px;
-  color: #666;
-  font-size: 24px;
+  color: #888;
+  font-size: 28px;
   font-weight: bold;
   cursor: pointer;
   transition: color 0.2s;
+  z-index: 10;
 }
 
 .close:hover {
   color: #fff;
 }
 
-.modal button {
-  padding: 14px 28px;
-  background-color: #007bff;
-  color: white;
+.modal button#start-session-button {
+  padding: 16px 32px;
+  background-color: #333; /* По умолчанию серый */
+  color: #666;
   border: none;
-  border-radius: 6px;
-  height: auto;
-  font-size: 16px;
-  font-weight: 600;
-  transition: all 0.3s ease;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  transition: all 0.2s ease;
   width: 100%;
   display: block;
-  margin-top: 15px;
+  margin-top: 20px;
+  cursor: not-allowed;
+  pointer-events: auto !important; /* ВСЕГДА разрешаем события мыши */
+}
+
+/* Эти стили будут перекрываться инлайновыми стилями из window.syncConsent */
+.modal button#start-session-button:not(:disabled) {
+  background-color: #007bff;
+  color: #fff;
   cursor: pointer;
-}
-
-/* Состояние заблокированной кнопки - УБИРАЕМ RED CIRCLE */
-.modal button:disabled, 
-.modal button.start-button-disabled {
-  background-color: #222 !important;
-  color: #444 !important;
-  opacity: 0.6;
-  cursor: default !important; /* Больше не перечеркнутый круг */
-}
-
-/* Активное состояние */
-.modal button:not(:disabled):not(.start-button-disabled) {
-  background-color: #007bff !important;
-  color: #fff !important;
-  opacity: 1;
-  cursor: pointer !important;
-}
-
-.modal button:not(:disabled):hover {
-  background-color: #0056b3 !important;
-  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
 }
 
 .consent-checkbox-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin: 25px 0;
+  gap: 15px;
+  margin: 30px 0;
 }
 
 .consent-checkbox-container input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   cursor: pointer;
   accent-color: #007bff;
 }
 
 .consent-checkbox-container label {
   cursor: pointer;
-  font-size: 0.95em;
-  color: #999;
+  font-size: 1.1em;
+  color: #fff;
 }
