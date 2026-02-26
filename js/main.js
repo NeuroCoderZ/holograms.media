@@ -16,23 +16,26 @@ async function main() {
 
     try {
         // 1. Инициализация менеджера согласия
+        console.log("[STAGE] Initializing ConsentManager...");
         const consentManager = new ConsentManager(state);
         await consentManager.initialize();
-        console.log("Consent given. Proceeding with core initialization.");
+        console.log("[STAGE] Consent accepted. Moving to Core...");
 
         // 2. Инициализация ядра приложения (3D-сцена, рендерер, менеджеры)
+        console.log("[STAGE] Initializing Core (initCore)...");
         await initCore();
         if (!state.renderer) {
             throw new Error("Core initialization failed: Renderer not available.");
         }
-        console.log("Core systems initialized successfully.");
+        console.log("[STAGE] Core initialized. Moving to UI...");
 
         // 3. Инициализация UI (кэширование DOM-элементов)
         initializeMainUI(state);
-        console.log("Main UI elements cached.");
+        console.log("[STAGE] UI cached. Starting Full App...");
 
         // 4. Запуск полной инициализации приложения
         await startFullApplication(state);
+        console.log("[STAGE] ✅ Application is UP and RUNNING!");
 
     } catch (error) {
         console.error("A critical error occurred during the application startup:", error);
