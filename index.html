@@ -12,8 +12,25 @@
       const cb = document.getElementById('consent-checkbox');
       const btn = document.getElementById('start-session-button');
       const google = document.getElementById('google-signin-container');
+      const modal = document.getElementById('start-session-modal');
+      
+      if (!modal) return;
+
+      const isGiven = localStorage.getItem('userConsentGiven') === 'true';
+      
+      // Если согласие уже есть, чистим UI
+      if (isGiven) {
+        const text = modal.querySelector('.consent-text');
+        const container = modal.querySelector('.consent-checkbox-container');
+        if (text) text.style.display = 'none';
+        if (container) container.style.display = 'none';
+        if (btn) btn.style.display = 'none';
+        const title = modal.querySelector('h2');
+        if (title) title.innerText = "Вход в аккаунт";
+      }
+
       if (cb && btn) {
-        const active = cb.checked;
+        const active = cb.checked || isGiven;
         btn.disabled = !active;
         if (active) {
           btn.classList.remove('start-button-disabled');
@@ -28,7 +45,6 @@
           btn.style.setProperty('opacity', '0.6', 'important');
           if (google) google.style.opacity = '0.3';
         }
-        console.log('Manual sync performed. Active:', active);
       }
     };
   </script>

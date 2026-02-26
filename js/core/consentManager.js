@@ -9,92 +9,81 @@ export class ConsentManager {
         this.proceedButton = document.getElementById('start-session-button');
         this.closeButton = document.getElementById('closeConsentModal');
 
-        if (!this.proceedButton) {
-            console.error("ConsentManager: Элемент '#start-session-button' не найден в DOM!");
-        }
+        // Привязываем обработчики навсегда
+        this._setupPersistentHandlers();
+    }
+
+    _setupPersistentHandlers() {
+        if (!this.proceedButton || !this.consentCheckbox) return;
+
+        // Постоянная логика кнопки "Принимаю"
+        this.proceedButton.onclick = (e) => {
+            if (e) e.preventDefault();
+            if (this.consentCheckbox.checked) {
+                localStorage.setItem('userConsentGiven', 'true');
+                this.consentModal.style.display = 'none';
+                console.log("[ConsentManager] Согласие подтверждено пользователем.");
+                
+                // Инициируем вход в Google если нужно
+                if (!localStorage.getItem('jwtToken')) {
+                    if (window.google?.accounts?.id) {
+                        window.google.accounts.id.prompt();
+                    }
+                }
+                
+                // Если есть активный Promise ожидания (при старте), разрешаем его
+                if (this._resolveInit) {
+                    this._resolveInit();
+                    this._resolveInit = null;
+                }
+            }
+        };
+
+        // Постоянная синхронизация
+        const sync = () => {
+            if (window.syncConsent) window.syncConsent();
+        };
+        this.consentCheckbox.onchange = sync;
+        this.consentCheckbox.onclick = sync;
     }
 
     initialize() {
         return new Promise((resolve) => {
-            // Если согласие уже дано, ничего не делаем и сразу идем дальше
-            if (localStorage.getItem('userConsentGiven') === 'true') {
-                if (this.consentModal) this.consentModal.style.display = 'none';
-                resolve();
-                return;
+            this._resolveInit = resolve;
+
+            const isGiven = localStorage.getItem('userConsentGiven') === 'true';
+            
+            // Если согласие уже есть, адаптируем UI модалки
+            if (isGiven) {
+                this._hideConsentUI();
+                // Если это первый запуск, просто идем дальше
+                if (this.consentModal.style.display !== 'flex') {
+                    resolve();
+                    return;
+                }
             }
 
             if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
-                console.error("ConsentManager: Элементы не найдены.");
                 resolve(); 
                 return;
             }
 
-            // Показываем окно
             this.consentModal.style.display = 'flex';
-            
-            // Настройка крестика
-            if (this.closeButton) {
-                this.closeButton.onclick = () => {
-                    this.consentModal.style.display = 'none';
-                };
-            }
-
-            // Синхронизируем состояние кнопки сразу
-            const syncButton = () => {
-                if (window.syncConsent) {
-                    window.syncConsent();
-                } else {
-                    // Fallback если глобальная функция не загрузилась
-                    const isChecked = !!this.consentCheckbox.checked;
-                    this.proceedButton.disabled = !isChecked;
-                    if (isChecked) {
-                        this.proceedButton.classList.remove('start-button-disabled');
-                    } else {
-                        this.proceedButton.classList.add('start-button-disabled');
-                    }
-                }
-            };
-
-            // Основные слушатели (дублируем инлайновые для гарантии)
-            this.consentCheckbox.addEventListener('change', syncButton);
-            this.consentCheckbox.addEventListener('click', syncButton);
-
-            const handleStart = (e) => {
-                if (e) e.preventDefault();
-                if (this.consentCheckbox.checked) {
-                    clearInterval(checkTimer);
-                    localStorage.setItem('userConsentGiven', 'true');
-                    this.consentModal.style.display = 'none';
-                    
-                    console.log("[ConsentManager] Согласие получено. Запуск приложения...");
-
-                    // Если JWT нет, пробуем вызвать Google Login
-                    if (!localStorage.getItem('jwtToken')) {
-                        console.log("[ConsentManager] Инициирую вход в Google...");
-                        if (window.google && window.google.accounts && window.google.accounts.id) {
-                            try {
-                                window.google.accounts.id.prompt();
-                            } catch (gErr) {
-                                console.warn("[ConsentManager] Google Prompt failed:", gErr.message);
-                            }
-                        }
-                    }
-
-                    resolve(); 
-                } else {
-                    alert("Пожалуйста, подтвердите согласие с условиями.");
-                }
-            };
-            
-            this.proceedButton.onclick = handleStart;
-            syncButton(); 
-            
-            // "Ядерная" проверка: проверяем каждые 300мс первые 10 секунд
-            let checks = 0;
-            const checkTimer = setInterval(() => {
-                syncButton();
-                if (++checks > 30) clearInterval(checkTimer);
-            }, 333);
+            if (window.syncConsent) window.syncConsent();
         });
     }
+
+    _hideConsentUI() {
+        // Скрываем текст и чекбокс, если согласие уже есть
+        const text = this.consentModal.querySelector('.consent-text');
+        const container = this.consentModal.querySelector('.consent-checkbox-container');
+        if (text) text.style.display = 'none';
+        if (container) container.style.display = 'none';
+        if (this.proceedButton) this.proceedButton.style.display = 'none';
+        
+        // Меняем заголовок
+        const title = this.consentModal.querySelector('h2');
+        if (title) title.innerText = "Вход в аккаунт";
+    }
+}
 }
