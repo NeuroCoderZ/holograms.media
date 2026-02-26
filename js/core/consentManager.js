@@ -86,4 +86,3 @@ export class ConsentManager {
         if (title) title.innerText = "Вход в аккаунт";
     }
 }
-}
