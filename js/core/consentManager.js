@@ -10,11 +10,11 @@ export class ConsentManager {
         this.googleContainer = document.getElementById('google-signin-container');
         this._resolveInit = null;
 
-        // Привязываем обработчики крестика и кнопок СРАЗУ
+        // Инициализируем обработчики сразу
         this._setupHandlers();
     }
 
-    initialize() {
+    async initialize() {
         console.log("[ConsentManager] Initializing...");
         return new Promise((resolve) => {
             this._resolveInit = resolve;
@@ -22,36 +22,43 @@ export class ConsentManager {
             const isGiven = localStorage.getItem('userConsentGiven') === 'true';
             
             if (isGiven) {
-                this._showLoginOnly();
-                // Если мы на первом этапе инициализации (main.js) - разрешаем запуск в фоне
+                this._hideControlUI();
+                // Если это автоматический запуск при старте - идем дальше
                 if (this.consentModal && this.consentModal.style.display !== 'flex') {
-                    console.log("[ConsentManager] Already accepted, proceeding.");
+                    console.log("[ConsentManager] Already accepted, auto-resolving.");
                     resolve();
                     return;
                 }
             }
 
             if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
-                console.warn("[ConsentManager] UI Elements not found.");
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
                 resolve(); 
                 return;
             }
 
-            this.consentModal.style.display = 'flex';
-            this._syncUI();
+            this.show();
         });
+    }
+
+    show() {
+        if (!this.consentModal) return;
+        this.consentModal.style.display = 'flex';
+        this._syncUI();
+        
+        // Принудительно рендерим кнопку Google при каждом показе
+        this._renderGoogleButton();
     }
 
     _setupHandlers() {
         if (this.closeButton) {
             this.closeButton.onclick = () => { 
-                console.log("[ConsentManager] Close button clicked.");
                 if (this.consentModal) this.consentModal.style.display = 'none'; 
             };
         }
 
+        const sync = () => this._syncUI();
         if (this.consentCheckbox) {
-            const sync = () => this._syncUI();
             this.consentCheckbox.onchange = sync;
             this.consentCheckbox.onclick = sync;
         }
@@ -62,7 +69,7 @@ export class ConsentManager {
                 if (this.consentCheckbox && this.consentCheckbox.checked) {
                     localStorage.setItem('userConsentGiven', 'true');
                     console.log("[ConsentManager] Terms accepted.");
-                    this._showLoginOnly();
+                    this._hideControlUI();
                     
                     if (this._resolveInit) {
                         this._resolveInit();
@@ -74,39 +81,43 @@ export class ConsentManager {
     }
 
     _syncUI() {
+        if (!this.consentCheckbox || !this.proceedButton) return;
+        
         const isChecked = !!this.consentCheckbox.checked;
         const isGiven = localStorage.getItem('userConsentGiven') === 'true';
         const active = isChecked || isGiven;
 
-        // Кнопка принятия
         this.proceedButton.disabled = !isChecked;
-        this.proceedButton.style.opacity = isChecked ? "1" : "0.5";
         
-        // Контейнер Google (блокируем клики до согласия)
+        if (window.syncConsent) {
+            window.syncConsent(); // Вызов глобальной функции для стилей
+        }
+
         if (this.googleContainer) {
-            this.googleContainer.style.opacity = active ? "1" : "0.2";
+            this.googleContainer.style.opacity = active ? "1" : "0.3";
             this.googleContainer.style.pointerEvents = active ? "auto" : "none";
-            this.googleContainer.style.filter = active ? "none" : "grayscale(100%)";
-            this.googleContainer.style.transition = "all 0.4s ease";
         }
     }
 
-    _showLoginOnly() {
+    _renderGoogleButton() {
+        // Если библиотека Google загружена, перерисовываем кнопку
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+            console.log("[ConsentManager] Re-rendering Google Button...");
+            window.google.accounts.id.renderButton(
+                this.googleContainer,
+                { theme: 'outline', size: 'large', text: 'signin_with', width: 300 }
+            );
+        } else {
+            console.warn("[ConsentManager] Google GSI not loaded yet.");
+        }
+    }
+
+    _hideControlUI() {
         if (!this.consentModal) return;
         const container = this.consentModal.querySelector('.consent-checkbox-container');
-        const text = this.consentModal.querySelector('.consent-text');
-        
         if (container) container.style.display = 'none';
         if (this.proceedButton) this.proceedButton.style.display = 'none';
-        if (text) text.style.opacity = "0.5"; // Делаем текст менее ярким, но оставляем
-        
         const title = this.consentModal.querySelector('h2');
         if (title) title.innerText = "Вход в аккаунт";
-
-        if (this.googleContainer) {
-            this.googleContainer.style.opacity = "1";
-            this.googleContainer.style.pointerEvents = "auto";
-            this.googleContainer.style.filter = "none";
-        }
     }
 }
