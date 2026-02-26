@@ -82,46 +82,59 @@ export async function initializeScene(state) {
 
   // Auto-return animation properties
   state.returnTween = null;
-  state.returnDelay = 0; // No delay before starting return animation
+  state.returnTimeout = null; // Таймер задержки возврата
 
-  // Add event listener for when user stops interacting
+  // Управление флагом перетаскивания
+  state.controls.addEventListener('start', () => {
+    state.isDragging = true;
+    if (state.returnTween) cancelAnimationFrame(state.returnTween);
+    if (state.returnTimeout) clearTimeout(state.returnTimeout);
+  });
+
   state.controls.addEventListener('end', () => {
-    // 🔧 ОСТАНОВКА ВОЗВРАТА ПРИ XR: Не запускаем возврат, если голограмма-кольцо активна
+    state.isDragging = false;
+    
+    // Не запускаем возврат, если активен XR или WASD (можно добавить проверку флага wasdActive)
     if (state.isXRMode || (state.hologramRendererInstance && state.hologramRendererInstance._isTorusMode)) {
-      console.log('[sceneSetup] Skip return animation in XR mode');
       return;
     }
 
-    if (state.returnTween) {
-      cancelAnimationFrame(state.returnTween);
-    }
-    state.startReturnAnimation();
+    // Задержка перед возвратом (3 секунды)
+    state.returnTimeout = setTimeout(() => {
+      if (!state.isDragging) {
+        state.startReturnAnimation();
+      }
+    }, 3000);
   });
 
   // Магнитный возврат камеры (без внешней библиотеки)
   state.startReturnAnimation = function () {
+    // Если пользователь снова начал вращать - отмена
+    if (state.isDragging) return;
+
     const startPosition = state.camera.position.clone();
     const startTarget = state.controls.target.clone();
     const targetPosition = state.initialCameraPosition;
     const targetTarget = state.initialControlsTarget;
 
     // Быстрый возврат камеры
-    const duration = 200;
+    const duration = 800; // Плавнее (было 200)
     const startTime = performance.now();
 
     function animateReturn() {
+      // Если перехватили управление - стоп
+      if (state.isDragging) return;
+
       const elapsed = performance.now() - startTime;
       let t = Math.min(elapsed / duration, 1);
 
-      // Магнитный эффект (Quadratic Out: быстрый старт, плавное торможение)
-      const eased = 1 - (1 - t) * (1 - t);
+      // Магнитный эффект (Cubic Out)
+      const eased = 1 - Math.pow(1 - t, 3);
 
       state.camera.position.lerpVectors(startPosition, targetPosition, eased);
       state.controls.target.lerpVectors(startTarget, targetTarget, eased);
 
-      // Защищаем камеру от крена по Z оси во время интерполяции (roll fix)
-      state.camera.lookAt(0, 0, 0);
-
+      state.camera.lookAt(state.controls.target);
       state.controls.update();
 
       if (t < 1) {
