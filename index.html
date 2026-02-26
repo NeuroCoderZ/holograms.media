@@ -6,7 +6,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
-  <script>console.log("DEPLOY VERSION: 0.19.2 - CONSENT TEXT & BUTTON LOGIC FIX");</script>
+  <script>console.log("DEPLOY VERSION: 0.19.3 - DOCUMENTARY UI & BUTTON REPAIR");</script>
 
 
 
@@ -102,14 +102,14 @@
       <div id="google-signin-container">
         <!-- Кнопка входа Google будет здесь -->
       </div>
-      <p class="consent-text" style="font-size: 0.85em; line-height: 1.4; color: #aaa; margin: 20px 0;">
-        Используя платформу Holograms.Media, вы разрешаете использование потоковых аудио- и видеоданных с вашего устройства исключительно для обучения ИИ (Триа), <b>записи жестов</b> и формирования интерактивной голограммы в реальном времени. Данные обрабатываются локально и не передаются третьим лицам без вашего согласия. Мы соблюдаем международные стандарты приватности.
+      <p class="consent-text" style="font-size: 0.9em; line-height: 1.5; color: #ccc; margin: 20px 0; text-align: left;">
+        Используя платформу Holograms.Media, вы разрешаете использование потоковых аудио- и видеоданных с вашего устройства исключительно для обучения ИИ (Триа), <b>записи жестов</b> и формирования интерактивной голограммы в реальном времени. Данные <b>обрабатываются и хранятся локально</b> и не передаются третьим лицам без вашего согласия. Мы соблюдаем международные стандарты приватности.
       </p>
-      <div class="consent-checkbox-container">
+      <div class="consent-checkbox-container" style="text-align: left; margin-bottom: 20px;">
         <input type="checkbox" id="consent-checkbox">
         <label for="consent-checkbox">Я понимаю и принимаю условия</label>
       </div>
-      <button id="start-session-button" class="start-button-disabled" disabled>Принимаю и Продолжить</button>
+      <button id="start-session-button" class="start-button-disabled" disabled>Принимаю</button>
     </div>
   </div>
 
