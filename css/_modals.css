@@ -1,4 +1,4 @@
-/* css/_modals.css - Чистая и документальная версия */
+/* css/_modals.css - Финальная документальная версия */
 
 .modal {
   display: none;
@@ -14,7 +14,6 @@
   justify-content: center;
 }
 
-/* Принудительное центрирование при отображении */
 .modal.active, 
 #start-session-modal[style*="display: block"],
 #start-session-modal[style*="display: flex"] {
@@ -22,25 +21,34 @@
 }
 
 .modal-content {
-  background-color: rgba(20, 20, 20, 0.9);
+  background-color: rgba(20, 20, 20, 0.95);
   color: #ccc;
   padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   width: 90%;
   max-width: 500px;
   position: relative;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
-  text-align: left; /* Документальный стиль */
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
   font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .modal h2 {
   margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 1.4em;
+  margin-bottom: 25px;
+  font-size: 1.5em;
   color: #fff;
-  text-align: left;
+  text-align: center; /* Заголовок по центру */
+}
+
+/* Документальный стиль текста */
+.consent-text {
+  text-align: justify; /* Выравнивание по обеим сторонам */
+  text-indent: 30px;    /* Отступ перед первым словом */
+  font-size: 0.95em;
+  line-height: 1.6;
+  color: #bbb;
+  margin: 25px 0;
 }
 
 .close {
@@ -59,55 +67,60 @@
 }
 
 .modal button {
-  padding: 12px 24px;
-  background-color: var(--button-action-bg, #007bff);
+  padding: 14px 28px;
+  background-color: #007bff;
   color: white;
   border: none;
   border-radius: 6px;
   height: auto;
   font-size: 16px;
   font-weight: 600;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
   display: block;
-  margin-top: 10px;
+  margin-top: 15px;
+  cursor: pointer;
 }
 
-/* Состояние заблокированной кнопки (КРАСНЫЙ КРУГ УБРАН) */
+/* Заблокированная кнопка */
 .modal button:disabled, 
 .modal button.start-button-disabled {
-  background-color: #222 !important;
-  color: #444 !important;
-  cursor: default !important; /* Убираем перечеркнутый круг */
-  opacity: 0.5;
-  pointer-events: none; /* Кнопка не реагирует на мышь вообще */
+  background-color: #333 !important;
+  color: #555 !important;
+  opacity: 0.6;
+  cursor: default !important;
+  pointer-events: none;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-/* Активное состояние */
+/* Активная кнопка */
 .modal button:not(:disabled):not(.start-button-disabled) {
-  background-color: var(--button-action-bg, #007bff) !important;
+  background-color: #007bff !important;
   color: #fff !important;
-  cursor: pointer !important;
   opacity: 1;
+  cursor: pointer !important;
   pointer-events: auto !important;
 }
 
 .modal button:not(:disabled):hover {
-  background-color: var(--button-action-hover, #0056b3) !important;
+  background-color: #0056b3 !important;
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
   transform: translateY(-1px);
 }
 
 .consent-checkbox-container {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  margin: 20px 0;
+  margin: 25px 0;
   cursor: pointer;
 }
 
 .consent-checkbox-container input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
   cursor: pointer;
   accent-color: #007bff;
 }
@@ -115,10 +128,10 @@
 .consent-checkbox-container label {
   cursor: pointer;
   font-size: 0.95em;
-  color: #aaa;
+  color: #999;
+  line-height: 1.4;
 }
 
-/* Стили для других модалок (промпты и т.д.) */
 .modal textarea {
   width: 100%;
   background-color: #000;
