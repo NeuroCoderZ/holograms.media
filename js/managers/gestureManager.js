@@ -43,8 +43,12 @@ export class GestureManager {
             // Настраиваем слушателей событий
             this.setupEventListeners();
 
-            // Загружаем жестовые коды из облака
-            await this.loadGestureCodesFromCloud();
+            // Загружаем жестовые коды из облака (безопасно)
+            try {
+                await this.loadGestureCodesFromCloud();
+            } catch (loadError) {
+                console.warn('[GestureManager] Не удалось загрузить жесты из облака, продолжаем работу:', loadError.message);
+            }
 
             this.isInitialized = true;
             console.log('GestureManager инициализирован успешно');
