@@ -9,13 +9,12 @@
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
     window.syncConsent = function() {
+      const modal = document.getElementById('start-session-modal');
+      if (!modal) return;
+
       const cb = document.getElementById('consent-checkbox');
       const btn = document.getElementById('start-session-button');
       const google = document.getElementById('google-signin-container');
-      const modal = document.getElementById('start-session-modal');
-      
-      if (!modal) return;
-
       const isGiven = localStorage.getItem('userConsentGiven') === 'true';
       
       // Если согласие уже есть, чистим UI
@@ -42,13 +41,13 @@
         } else {
           btn.classList.add('start-button-disabled');
           btn.style.setProperty('background-color', '#333', 'important');
-          btn.style.setProperty('opacity', '0.6', 'important');
+          btn.style.setProperty('opacity', '#666', 'important');
           if (google) google.style.opacity = '0.3';
         }
       }
     };
   </script>
-  <script>console.log("DEPLOY VERSION: 0.19.6 - ATOMIC BUTTON FIX");</script>
+  <script>console.log("DEPLOY VERSION: 0.19.008 - GSI & MODAL FIX");</script>
 
 
 
@@ -141,8 +140,9 @@
   <div id="start-session-modal" class="modal">
     <div class="modal-content">
       <span id="closeConsentModal" class="close">&times;</span>
-      <div id="google-signin-container">
-        <!-- Кнопка входа Google будет здесь -->
+      <h2>Соглашение пользователя</h2>
+      <div id="google-signin-container" style="min-height: 40px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; color: #666; font-size: 0.8em;">
+        Ожидание Google Sign-In...
       </div>
       <p class="consent-text">
         Используя платформу Holograms.Media, вы разрешаете использование потоковых аудио- и видеоданных с вашего устройства исключительно для обучения <b>персонального искусственного интеллекта "Триа"</b>, записи жестов и формирования интерактивной голограммы в реальном времени. Данные обрабатываются и хранятся локально. На сервера отправляются только сформированные списки жестов и голограмм.
