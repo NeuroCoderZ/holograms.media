@@ -41,38 +41,50 @@ export class ConsentManager {
 
             // Синхронизируем состояние кнопки сразу
             const syncButton = () => {
-                const isChecked = !!this.consentCheckbox.checked;
+                const checkbox = document.getElementById('consent-checkbox');
+                const button = document.getElementById('start-session-button');
+                const googleBtn = document.getElementById('google-signin-container');
                 
-                // 1. Атрибут disabled
+                if (!checkbox || !button) return;
+
+                const isChecked = !!checkbox.checked;
+                
+                // Прямое управление свойствами для обхода любых блокировок
+                button.disabled = !isChecked;
+                
                 if (isChecked) {
-                    this.proceedButton.removeAttribute('disabled');
-                    this.proceedButton.classList.remove('start-button-disabled');
+                    button.classList.remove('start-button-disabled');
+                    button.style.backgroundColor = "#007bff";
+                    button.style.color = "#ffffff";
+                    button.style.opacity = "1";
+                    button.style.cursor = "pointer";
+                    button.style.pointerEvents = "auto";
                 } else {
-                    this.proceedButton.setAttribute('disabled', 'true');
-                    this.proceedButton.classList.add('start-button-disabled');
+                    button.classList.add('start-button-disabled');
+                    button.style.backgroundColor = "#333";
+                    button.style.color = "#555";
+                    button.style.opacity = "0.6";
+                    button.style.cursor = "not-allowed";
+                    // button.style.pointerEvents = "none"; // Убираем, чтобы видеть наведение
                 }
                 
-                // 2. Управляем видимостью кнопки Google
-                const googleBtn = document.getElementById('google-signin-container');
                 if (googleBtn) {
                     googleBtn.style.opacity = isChecked ? "1" : "0.3";
                     googleBtn.style.pointerEvents = isChecked ? "auto" : "none";
-                    googleBtn.style.transition = "opacity 0.3s ease";
                 }
-                
-                console.log(`[ConsentManager] Checkbox changed: ${isChecked}. Button active: ${!this.proceedButton.disabled}`);
             };
 
-            // Принудительная инициализация состояния
-            syncButton();
-            
-            // Подписка на изменения
-            this.consentCheckbox.onchange = syncButton;
-            this.consentCheckbox.onclick = syncButton; // На всякий случай для некоторых мобильных браузеров
+            // Запускаем интервал "живучести" на 5 секунд (пока модалка открыта)
+            const safetyInterval = setInterval(syncButton, 500);
+
+            // Основные слушатели
+            this.consentCheckbox.addEventListener('change', syncButton);
+            this.consentCheckbox.addEventListener('click', syncButton);
 
             const handleStart = (e) => {
                 if (e) e.preventDefault();
                 if (this.consentCheckbox.checked) {
+                    clearInterval(safetyInterval);
                     localStorage.setItem('userConsentGiven', 'true');
                     
                     if (localStorage.getItem('jwtToken')) {
@@ -80,15 +92,15 @@ export class ConsentManager {
                     } else {
                         this.proceedButton.innerText = "Условия приняты. Войдите через Google";
                         this.proceedButton.disabled = true;
-                        this.proceedButton.classList.add('start-button-disabled');
                     }
                     
-                    console.log("[ConsentManager] Согласие зафиксировано.");
+                    console.log("[ConsentManager] Согласие получено.");
                     resolve(); 
                 }
             };
             
             this.proceedButton.onclick = handleStart;
+            syncButton(); // Первичный запуск
         });
     }
 }
