@@ -39,7 +39,8 @@ export class CochlearCylinder {
         const pivotInverse = this.hologramPivot.matrixWorld.clone().invert();
 
         group.traverse(child => {
-            if (child.name === "StaticSphere") {
+            // Обработка сфер на осях и статических сфер
+            if (child.name === "StaticSphere" || child.name === "XAxisSphere" || child.name === "ZAxisSphere" || child.name === "YAxisSphere") {
                 if (!this._objectMorphData) this._objectMorphData = [];
                 
                 const localPos = child.position.clone();
@@ -47,7 +48,13 @@ export class CochlearCylinder {
                 child.getWorldPosition(worldPos);
                 const pivotPos = worldPos.applyMatrix4(pivotInverse);
 
-                // Математика цилиндра
+                // Математика цилиндра (Тор с прямоугольным срезом)
+                // X (панорама) -> Theta (угол)
+                // Z (глубина) -> R (радиус)
+                
+                // ВАЖНО: В 2D Z=0 - это задняя стенка (внешний радиус).
+                // Мы хотим, чтобы при Z=0 радиус был XR_RADIUS (1000).
+                // При росте столбца (Z увеличивается) он должен идти К ЦЕНТРУ.
                 const theta = (pivotPos.x / 128) * Math.PI;
                 const r = XR_RADIUS - pivotPos.z; 
                 const camZ = 1000;
@@ -62,14 +69,19 @@ export class CochlearCylinder {
                 const targetWorldPos = targetPivotPos.applyMatrix4(this.hologramPivot.matrixWorld);
                 const targetLocalPos = targetWorldPos.applyMatrix4(parentWorldInverse);
 
+                // Определяем целевой цвет (для сфер на концах осей X)
+                let targetColor = null;
+                if (child.name === "XAxisSphere") {
+                    targetColor = new THREE.Color(0xFF00FF); // Magenta Junction
+                }
+
                 this._objectMorphData.push({ 
                     obj: child, 
                     start: localPos, 
                     end: targetLocalPos,
-                    pivotStart: pivotPos.clone(),
-                    pivotEnd: targetPivotPos.clone(),
-                    name: child.name,
-                    color: child.material.color.getHexString()
+                    startColor: child.material.color.clone(),
+                    endColor: targetColor,
+                    name: child.name
                 });
                 return;
             }
@@ -80,6 +92,7 @@ export class CochlearCylinder {
                 if (!posAttr) return;
 
                 const morphEntry = {
+                    obj: child,
                     attr: posAttr,
                     flatArr: new Float32Array(posAttr.array),
                     torusArr: new Float32Array(posAttr.array.length)
@@ -96,6 +109,8 @@ export class CochlearCylinder {
                     localV.fromBufferAttribute(posAttr, i);
                     pivotV.copy(localV).applyMatrix4(childWorldMatrix).applyMatrix4(pivotInverse);
 
+                    // Та же логика для вершин:
+                    // x -> угол, z -> радиус (инвертированный рост)
                     const theta = (pivotV.x / 128) * Math.PI;
                     const r = XR_RADIUS - pivotV.z;
 
@@ -136,10 +151,17 @@ export class CochlearCylinder {
                     arr[j] = data.flatArr[j] + (data.torusArr[j] - data.flatArr[j]) * eased;
                 }
                 data.attr.needsUpdate = true;
+                
+                // Адаптация ширины столбцов в XR режиме (уширение на внешнем радиусе)
+                // Если это активный столбец, мы можем захотеть растянуть его чуть-чуть
+                // Но пока оставим геометрию как есть, она сегментирована
             }
 
             for (let data of this._objectMorphData) {
                 data.obj.position.lerpVectors(data.start, data.end, eased);
+                if (data.endColor) {
+                    data.obj.material.color.lerpColors(data.startColor, data.endColor, eased);
+                }
             }
 
             this._logTrajectory(t);
@@ -171,6 +193,9 @@ export class CochlearCylinder {
 
             for (let data of this._objectMorphData) {
                 data.obj.position.lerpVectors(data.end, data.start, eased);
+                if (data.endColor) {
+                    data.obj.material.color.lerpColors(data.endColor, data.startColor, eased);
+                }
             }
 
             if (t < 1) requestAnimationFrame(animate);

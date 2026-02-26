@@ -108,16 +108,38 @@ async function initializeGoogleSignIn() {
 /**
  * Проверяет наличие JWT в localStorage при загрузке страницы.
  */
-function checkInitialAuthState() {
+async function checkInitialAuthState() {
   const token = localStorage.getItem('jwtToken');
   if (token) {
-    // TODO: Добавить проверку валидности и срока действия токена.
-    // Можно сделать запрос на специальный эндпоинт /users/me
-    state.isAuthenticated = true;
-    console.log('Пользователь аутентифицирован (найден JWT).');
+    try {
+      // Проверяем валидность токена через запрос "кто я?"
+      // Используем /api/v1/auth/me (этот роут должен быть на бэкенде)
+      const response = await fetch('/api/v1/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        state.isAuthenticated = true;
+        state.user = userData;
+        console.log(`[Auth] Сессия восстановлена для: ${userData.email}`);
+        
+        // Скрываем модалку входа
+        const modal = document.getElementById('start-session-modal');
+        if (modal) modal.style.display = 'none';
+      } else {
+        console.warn('[Auth] Токен невалиден или протух.');
+        localStorage.removeItem('jwtToken');
+        state.isAuthenticated = false;
+      }
+    } catch (error) {
+      console.error('[Auth] Ошибка проверки сессии:', error);
+      // При сетевой ошибке не сбрасываем, может бэкенд спит
+      state.isAuthenticated = true; 
+    }
   } else {
     state.isAuthenticated = false;
-    console.log('Пользователь не аутентифицирован.');
+    console.log('[Auth] Сессия не найдена.');
   }
   updateAuthUI();
 }
