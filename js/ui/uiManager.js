@@ -535,8 +535,6 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
             const gridContainer = document.getElementById('grid-container');
             if (gridContainer) {
               gridContainer.classList.add('scanner-active');
-              // enforce gap immediately after class is applied
-              enforceScannerGap();
             }
             console.log('[UIManager] Scanner started on desktop - hologram shifted.');
           }
@@ -790,9 +788,9 @@ export function updateAuthUI(appState) {
 
   if (currentState.isAuthenticated && currentState.user) {
     // Пользователь вошел
-    if (loginBtn) loginBtn.style.display = 'none';
+    if (loginBtn) loginBtn.style.setProperty('display', 'none', 'important');
     if (letterBtn) {
-      letterBtn.style.display = 'flex';
+      letterBtn.style.setProperty('display', 'flex', 'important');
       letterBtn.classList.add('authenticated-invert'); // Special style v0.19.028
       const firstLetter = currentState.user.email ? currentState.user.email[0].toUpperCase() : 'N';
       const letterSpan = document.getElementById('avatarLetter');
@@ -803,12 +801,12 @@ export function updateAuthUI(appState) {
       letterBtn.title = `Аккаунт: ${currentState.user.email}`;
     }
     if (startSessionModal) startSessionModal.style.display = 'none';
-    console.log(`[Auth] v19.28: UI Updated (Inverted Letter) for ${currentState.user.email}`);
+    console.log(`[Auth] v19.29: UI Updated (Inverted Letter) for ${currentState.user.email}`);
   } else {
     // Гость
-    if (loginBtn) loginBtn.style.display = 'flex';
+    if (loginBtn) loginBtn.style.setProperty('display', 'flex', 'important');
     if (letterBtn) {
-      letterBtn.style.display = 'none';
+      letterBtn.style.setProperty('display', 'none', 'important');
       letterBtn.classList.remove('authenticated-invert');
     }
   }
