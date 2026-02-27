@@ -47,9 +47,9 @@ export function setInitialHologramContainerLayout(appState) {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
-    // Margins as per requirements
+    // Margins as per requirements (v0.19.030: 5% top, 5% bottom)
     const marginTop = windowHeight * 0.05;
-    const marginBottom = windowHeight * 0.01;
+    const marginBottom = windowHeight * 0.05;
     const marginSides = windowWidth * 0.05;
 
     initialLayout.top = marginTop;
@@ -90,7 +90,7 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
         const marginTop = windowHeight * 0.05;
-        const marginBottom = windowHeight * 0.01;
+        const marginBottom = windowHeight * 0.05;
         const marginSides = windowWidth * 0.05;
 
         initialLayout.top = marginTop;
