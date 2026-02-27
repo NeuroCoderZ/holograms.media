@@ -51,7 +51,35 @@
   display: none;
 }
 
-/* Styles for the new Avatar/GitHub group and separator in the left panel */
+/* Styles for the new Avatar/Settings group and separator in the left panel */
+.account-actions-group {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.account-actions-group.hidden {
+  display: none !important;
+}
+
+.avatar-initial {
+  font-weight: bold;
+  font-family: var(--font-family-sans, sans-serif);
+  font-size: 16px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-btn {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 18px !important;
+}
+
 .left-panel-icon-group {
   grid-column: 1 / -1;
   /* Make the group span both columns of the parent grid */

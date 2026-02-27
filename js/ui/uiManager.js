@@ -621,8 +621,20 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   initializeRightPanel(appState);
 
   // --- Account Modal Logic ---
+  uiElements.buttons.accountSettingsButton = document.getElementById('accountSettingsButton');
+
   if (uiElements.buttons.avatarButton && uiElements.modals.accountModal) {
     uiElements.buttons.avatarButton.addEventListener('click', () => {
+      // Клик по аватару теперь сразу открывает модалку, если авторизован
+      if (state.isAuthenticated) {
+        updateProfileUI();
+        uiElements.modals.accountModal.style.display = 'flex';
+      }
+    });
+  }
+
+  if (uiElements.buttons.accountSettingsButton) {
+    uiElements.buttons.accountSettingsButton.addEventListener('click', () => {
       updateProfileUI();
       uiElements.modals.accountModal.style.display = 'flex';
     });
@@ -720,6 +732,7 @@ export function updateAuthUI(appState) {
   const currentState = appState || state;
   const loginBtn = document.getElementById('login-google-btn');
   const avatarBtn = document.getElementById('avatarButton');
+  const accountSettingsBtn = document.getElementById('accountSettingsButton');
   const startSessionModal = document.getElementById('start-session-modal');
 
   if (currentState.isAuthenticated && currentState.user) {
@@ -731,8 +744,13 @@ export function updateAuthUI(appState) {
       avatarBtn.title = `Аккаунт: ${currentState.user.email}`;
       // Заменяем иконку на первую букву email
       const firstLetter = currentState.user.email ? currentState.user.email[0].toUpperCase() : 'U';
-      avatarBtn.innerHTML = `<span class="avatar-initial" style="font-weight: bold; font-family: sans-serif;">${firstLetter}</span>`;
+      avatarBtn.innerHTML = `<span class="avatar-initial">${firstLetter}</span>`;
       avatarBtn.style.backgroundColor = '#007bff'; // Синий цвет для активного аккаунта
+    }
+
+    if (accountSettingsBtn) {
+      accountSettingsBtn.classList.remove('hidden');
+      accountSettingsBtn.style.display = 'flex';
     }
 
     if (startSessionModal) startSessionModal.style.display = 'none';
@@ -740,6 +758,10 @@ export function updateAuthUI(appState) {
   } else {
     // Пользователь не вошел
     if (loginBtn) loginBtn.style.display = 'flex';
+    if (accountSettingsBtn) {
+      accountSettingsBtn.classList.add('hidden');
+      accountSettingsBtn.style.display = 'none';
+    }
     if (avatarBtn) {
       avatarBtn.classList.remove('authenticated');
       avatarBtn.title = 'Войти в аккаунт';
