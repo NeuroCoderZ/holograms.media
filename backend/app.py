@@ -121,7 +121,7 @@ from backend.api.v1.endpoints.wallet import router as wallet_router
 API_V1_PREFIX = "/api/v1"
 
 # --- Include routers ---
-app.include_router(auth_router, prefix=API_V1_PREFIX, tags=["Authentication"])
+app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["Authentication"])
 app.include_router(public_gestures_router, prefix=API_V1_PREFIX, tags=["Gestures (Public)"])
 app.include_router(public_holograms_router, prefix=API_V1_PREFIX, tags=["Holograms (Public)"])
 app.include_router(tria_commands_router, prefix=f"{API_V1_PREFIX}/tria", tags=["Tria Commands"])

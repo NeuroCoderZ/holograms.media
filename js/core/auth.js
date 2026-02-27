@@ -10,7 +10,7 @@ import { updateAuthUI } from '../ui/uiManager.js';
 import { showNotification } from '../utils/notifications.js';
 
 // Используем полный URL для надежности при обмене токена
-const BACKEND_TOKEN_URL = 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app/api/v1/auth/token';
+const BACKEND_TOKEN_URL = '/api/v1/auth/token';
 
 /**
  * Получает конфигурацию аутентификации на основе переменных окружения.
@@ -61,7 +61,9 @@ async function handleGoogleCredentialResponse(response) {
     });
 
     if (!backendResponse.ok) {
-      throw new Error(`Ошибка бэкенда: ${backendResponse.statusText}`);
+      const errorText = await backendResponse.text();
+      console.error('[Auth] Backend Error Logic:', backendResponse.status, errorText);
+      throw new Error(`Ошибка бэкенда (${backendResponse.status}): ${errorText.substring(0, 100)}`);
     }
 
     const responseData = await backendResponse.json();

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Authentication"])
 
-@router.get("/auth/test")
+@router.get("/test")
 async def auth_test():
     return {"status": "ok", "message": "Auth router is reachable via GET"}
 
@@ -21,7 +21,7 @@ DEV_EMAILS = ["neurocoderz@gmail.com"]
 class TokenRequest(BaseModel):
     token: str = Field(..., description="Google ID Token")
 
-@router.post("/auth/token", response_model=Dict[str, str])
+@router.post("/token", response_model=Dict[str, str])
 async def login_with_google(token_data: TokenRequest):
     """
     Принимает Google ID токен, обменивает на JWT.
@@ -49,7 +49,7 @@ async def login_with_google(token_data: TokenRequest):
         "email": email
     }
 
-@router.get("/auth/me")
+@router.get("/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
     """
     Возвращает информацию о текущем пользователе на основе JWT.
