@@ -1,0 +1,196 @@
+deploy_backend_dev	UNKNOWN STEP	﻿2026-02-27T01:26:08.2547419Z Current runner version: '2.331.0'
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2574172Z ##[group]Runner Image Provisioner
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2575106Z Hosted Compute Agent
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2575802Z Version: 20260213.493
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2576424Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2577285Z Build Date: 2026-02-13T00:28:41Z
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2578007Z Worker ID: {e2910ed8-533e-4a59-a451-5e9eb81d311a}
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2578725Z Azure Region: eastus
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2579340Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2580717Z ##[group]Operating System
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2581324Z Ubuntu
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2581955Z 24.04.3
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2582598Z LTS
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2583111Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2583791Z ##[group]Runner Image
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2584403Z Image: ubuntu-24.04
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2584908Z Version: 20260224.36.1
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2586314Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260224.36/images/ubuntu/Ubuntu2404-Readme.md
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2588060Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260224.36
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2589011Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2591728Z ##[group]GITHUB_TOKEN Permissions
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2594325Z Actions: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2594944Z ArtifactMetadata: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2595726Z Attestations: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2596263Z Checks: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2596808Z Contents: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2597513Z Deployments: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2598055Z Discussions: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2598605Z Issues: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2599307Z Metadata: read
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2599864Z Models: read
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2600402Z Packages: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2601000Z Pages: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2601651Z PullRequests: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2602674Z RepositoryProjects: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2603324Z SecurityEvents: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2603847Z Statuses: write
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2604895Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2607032Z Secret source: Actions
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2607991Z Prepare workflow directory
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2932113Z Prepare all required actions
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.2971652Z Getting action download info
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.6335912Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:08.7689023Z Download action repository 'koyeb-community/install-koyeb-cli@v2' (SHA:969e180512fa08ddac5231e2f78c8fb025fd5db7)
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.0595853Z Complete job name: deploy_backend_dev
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1285032Z ##[group]Run actions/checkout@v4
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1285820Z with:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1286257Z   repository: NeuroCoderZ/holograms.media
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1287011Z   token: ***
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1287416Z   ssh-strict: true
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1287828Z   ssh-user: git
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1288240Z   persist-credentials: true
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1288698Z   clean: true
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1289226Z   sparse-checkout-cone-mode: true
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1289737Z   fetch-depth: 1
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1290142Z   fetch-tags: false
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1290842Z   show-progress: true
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1291309Z   lfs: false
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1291681Z   submodules: false
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1292093Z   set-safe-directory: true
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.1292900Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2429868Z Syncing repository: NeuroCoderZ/holograms.media
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2431959Z ##[group]Getting Git version info
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2432989Z Working directory is '/home/runner/work/holograms.media/holograms.media'
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2434006Z [command]/usr/bin/git version
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2487077Z git version 2.53.0
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2515363Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2531704Z Temporarily overriding HOME='/home/runner/work/_temp/541dad78-311b-43f5-9337-832fe33592e8' before making global git config changes
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2534103Z Adding repository directory to the temporary git global config as a safe directory
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2549932Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/holograms.media/holograms.media
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2598336Z Deleting the contents of '/home/runner/work/holograms.media/holograms.media'
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2603487Z ##[group]Initializing the repository
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2608522Z [command]/usr/bin/git init /home/runner/work/holograms.media/holograms.media
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2691316Z hint: Using 'master' as the name for the initial branch. This default branch name
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2695578Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2697098Z hint: to use in all of your new repositories, which will suppress this warning,
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2698207Z hint: call:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2698765Z hint:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2699493Z hint: 	git config --global init.defaultBranch <name>
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2700411Z hint:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2701192Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2702848Z hint: 'development'. The just-created branch can be renamed via this command:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2703959Z hint:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2704549Z hint: 	git branch -m <name>
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2705286Z hint:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2706203Z hint: Disable this message with "git config set advice.defaultBranchName false"
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2707902Z Initialized empty Git repository in /home/runner/work/holograms.media/holograms.media/.git/
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2710736Z [command]/usr/bin/git remote add origin https://github.com/NeuroCoderZ/holograms.media
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2751726Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2753159Z ##[group]Disabling automatic garbage collection
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2757708Z [command]/usr/bin/git config --local gc.auto 0
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2796411Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2797522Z ##[group]Setting up auth
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2804707Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.2843794Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.3227473Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.3263814Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.3544005Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.3581199Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.3879346Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.3923324Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.3924427Z ##[group]Fetching the repository
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.3932903Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +086c201787240e24589715c5806df5051acdddbd:refs/remotes/origin/dev
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.6926025Z From https://github.com/NeuroCoderZ/holograms.media
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.6927766Z  * [new ref]         086c201787240e24589715c5806df5051acdddbd -> origin/dev
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.6964697Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.6965896Z ##[group]Determining the checkout info
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.6967307Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.6973084Z [command]/usr/bin/git sparse-checkout disable
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7030923Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7068834Z ##[group]Checking out the ref
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7071863Z [command]/usr/bin/git checkout --progress --force -B dev refs/remotes/origin/dev
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7553220Z Switched to a new branch 'dev'
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7554564Z branch 'dev' set up to track 'origin/dev'.
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7563820Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7606790Z [command]/usr/bin/git log -1 --format=%H
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7635760Z 086c201787240e24589715c5806df5051acdddbd
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7951180Z ##[group]Run koyeb-community/install-koyeb-cli@v2
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7952816Z with:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7954273Z   api_token: ***
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7955568Z   github_token: ***
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7956847Z   api_url: https://app.koyeb.com
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.7958230Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8089275Z ##[group]Run set -x
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8090320Z [36;1mset -x[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8091689Z [36;1mmkdir /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8094978Z [36;1mcurl -sL -H "Authorization: ***" $(curl -s -H "Authorization: ***" https://api.github.com/repos/koyeb/koyeb-cli/releases/latest \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8097131Z [36;1m  | grep 'http.*koyeb-cli_.*_linux_amd64' \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8098329Z [36;1m  | awk '{print $2}' \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8100023Z [36;1m  | sed 's|[\"\,]*||g') | tar xvz -C /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8102292Z [36;1mchmod +x /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/koyeb[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8104661Z [36;1mecho /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/ >> $GITHUB_PATH[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8165741Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8167135Z env:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8168304Z   GITHUB_TOKEN: ***
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8169159Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8280053Z + mkdir /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8300104Z + tar xvz -C /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8316057Z ++ curl -s -H 'Authorization: ***' https://api.github.com/repos/koyeb/koyeb-cli/releases/latest
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8319161Z ++ grep 'http.*koyeb-cli_.*_linux_amd64'
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8322286Z ++ awk '{print $2}'
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:09.8323786Z ++ sed 's|[\"\,]*||g'
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.0145072Z + curl -sL -H 'Authorization: ***' https://github.com/koyeb/koyeb-cli/releases/download/v5.9.1/koyeb-cli_5.9.1_linux_amd64.tar.gz
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.2105045Z koyeb
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4279753Z + chmod +x /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/koyeb
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4294304Z + echo /home/runner/work/_actions/koyeb-community/install-koyeb-cli/v2/bin/
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4335874Z ##[group]Run set -x
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4336177Z [36;1mset -x[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4336470Z [36;1mecho "token: $KOYEB_API_KEY" > ~/.koyeb.yaml[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4336850Z [36;1mecho "url: $KOYEB_API_URL" >> ~/.koyeb.yaml[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4393987Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4394395Z env:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4394983Z   KOYEB_API_KEY: ***
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4395319Z   KOYEB_API_URL: https://app.koyeb.com
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4395654Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4479823Z + echo 'token: ***'
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4480684Z + echo 'url: https://app.koyeb.com'
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4525890Z ##[group]Run # Sync secrets to Vault (DEV versions)
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4526359Z [36;1m# Sync secrets to Vault (DEV versions)[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4527611Z [36;1mkoyeb secret update DEV_GOOGLE_CLIENT_ID --value "***" || koyeb secret create DEV_GOOGLE_CLIENT_ID --value "***"[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4528721Z [36;1mkoyeb secret update DEV_GOOGLE_CLIENT_SECRET --value "***" || koyeb secret create DEV_GOOGLE_CLIENT_SECRET --value "***"[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4529303Z [36;1m[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4529567Z [36;1m# Update Development Service[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4529988Z [36;1mkoyeb service update holograms-media-dev/holograms-media-dev \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4530433Z [36;1m  --git-branch dev \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4530733Z [36;1m  --git-builder docker \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4531063Z [36;1m  --git-docker-dockerfile Dockerfile \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4531611Z [36;1m  --env ENVIRONMENT=development \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4532061Z [36;1m  --env GOOGLE_CLIENT_ID=secret!DEV_GOOGLE_CLIENT_ID \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4532841Z [36;1m  --env GOOGLE_CLIENT_SECRET=secret!DEV_GOOGLE_CLIENT_SECRET \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4533346Z [36;1m  --env ASTRA_DB_APPLICATION_TOKEN=secret!ASTRA_DB_APPLICATION_TOKEN \[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4533844Z [36;1m  --env ASTRA_DB_API_ENDPOINT=secret!ASTRA_DATABASE_URL[0m
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4588954Z shell: /usr/bin/bash -e {0}
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:10.4589277Z ##[endgroup]
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:11.4219532Z ID      	NAME                	TYPE  	VALUE	CREATED AT          
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:11.4220293Z 9beb690a	DEV_GOOGLE_CLIENT_ID	SIMPLE	*****	23 Feb 26 01:26 UTC	
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:12.2310328Z ID      	NAME                    	TYPE  	VALUE	CREATED AT          
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:12.2311192Z ddc91c50	DEV_GOOGLE_CLIENT_SECRET	SIMPLE	*****	23 Feb 26 01:26 UTC	
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.1476825Z time="2026-02-27T01:26:13Z" level=info msg="Service deployment in progress. To access the build logs, run: `koyeb service logs 550b39c2 -t build`. For the runtime logs, run `koyeb service logs 550b39c2`"
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.3109842Z ID      	APP                	NAME               	STATUS 	CREATED AT          
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.3110669Z 550b39c2	holograms-media-dev	holograms-media-dev	HEALTHY	23 Feb 26 01:23 UTC	
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.3225028Z Post job cleanup.
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4194106Z [command]/usr/bin/git version
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4232036Z git version 2.53.0
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4276585Z Temporarily overriding HOME='/home/runner/work/_temp/f532d732-e8b5-4e3f-8a20-de3fe674a7e0' before making global git config changes
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4277856Z Adding repository directory to the temporary git global config as a safe directory
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4291166Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/holograms.media/holograms.media
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4330030Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4367033Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4635010Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4660833Z http.https://github.com/.extraheader
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4674550Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4709168Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.4973391Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.5009488Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy_backend_dev	UNKNOWN STEP	2026-02-27T01:26:13.5386812Z Cleaning up orphan processes
