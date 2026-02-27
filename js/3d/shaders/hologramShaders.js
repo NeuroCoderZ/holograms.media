@@ -62,11 +62,8 @@ export const fragmentShader = /* glsl */`
             cellIndex += 1.0; 
         }
 
-        vec3 finalColor;
-        // Линейное затемнение по слоям (1 слой = 1 дБ)
-        // dB = cellIndex - 128.0 (но мы мапим 128 уровней 0..127)
-        // index 127 (0 dB) -> brightness 1.0
-        // index 0 (-127 dB) -> brightness 0.0
+        // index 127 (0 dB) -> brightness 1.0 (полная яркость)
+        // index 0 (-127 dB) -> brightness 0.0 (черный)
         float bIndex = clamp(cellIndex, 0.0, 127.0);
         float brightness = bIndex / 127.0; 
         finalColor = uBaseColor * brightness;
