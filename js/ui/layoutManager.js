@@ -36,7 +36,7 @@ export function setInitialHologramContainerLayout(appState) {
     }
 
     const isMobilePortrait = window.innerWidth <= 768 || window.innerHeight > window.innerWidth;
-    
+
     if (isMobilePortrait) {
         console.log('[LayoutManager] Mobile Portrait detected. Skipping inline style overrides to favor CSS.');
         // Still need to update renderer to match current CSS-provided size
@@ -256,10 +256,37 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
 
     hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
 
+    // --- NEW: Sync Centering & Gesture Area Resize (v0.19.028) ---
+    const windowWidth = window.innerWidth;
+    let xOffset = 0;
 
-    // Center the hologram pivot within the gridContainer.
-    // Since camera is orthographic and centered on (0,0) of container, pivot should be at (0,0,0).
-    hologramPivot.position.set(0, 0, 0);
+    if (windowWidth > 768) {
+        const leftPanel = document.getElementById('left-panel');
+        const rightPanel = document.getElementById('right-panel');
+
+        const leftW = leftPanel ? (leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20) : 0;
+        const rightW = rightPanel ? (rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20) : 0;
+
+        // Offset to align hologram center with visible area center
+        xOffset = (leftW - rightW) / 2;
+
+        // Sync Gesture Area
+        const gestureArea = document.getElementById('gesture-area');
+        if (gestureArea) {
+            gestureArea.style.setProperty('--gesture-offset', `${xOffset}px`);
+            gestureArea.style.setProperty('--gesture-width', `${256 * targetScaleValue}px`);
+        }
+    } else {
+        // Reset Gesture Area for Mobile
+        const gestureArea = document.getElementById('gesture-area');
+        if (gestureArea) {
+            gestureArea.style.removeProperty('--gesture-offset');
+            gestureArea.style.removeProperty('--gesture-width');
+        }
+    }
+
+    // Set centered position (with desktop offset)
+    hologramPivot.position.set(xOffset / targetScaleValue, 0, 0);
 
     // The desktop panel logic (getLeftPanelWidth, etc.) is removed from here as the
     // container's left/width is now managed by the animation/initial setup logic.

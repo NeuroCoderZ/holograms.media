@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import WebGPURenderer from 'three/examples/jsm/renderers/webgpu/WebGPURenderer.js';
 import { renderingCapabilities } from '../utils/renderingCapabilities.js';
+import { updateHologramLayout } from '../ui/layoutManager.js';
 
 /**
  * Initializes the Three.js scene, camera, renderer, and basic lighting.
@@ -159,70 +160,19 @@ export async function initializeScene(state) {
 
   // Function to update renderer and camera sizes
   state.updateRendererSize = function () {
-    const newWidth = gridContainer && gridContainer.clientWidth > 0 ? gridContainer.clientWidth : window.innerWidth;
-    const newHeight = gridContainer && gridContainer.clientHeight > 0 ? gridContainer.clientHeight : window.innerHeight;
-
-    state.renderer.setSize(newWidth, newHeight);
-    state.camera.left = -newWidth / 2;
-    state.camera.right = newWidth / 2;
-    state.camera.top = newHeight / 2;
-    state.camera.bottom = -newHeight / 2;
-    state.camera.updateProjectionMatrix();
-
-    // Update controls after camera changes
-    if (state.controls) {
-      state.controls.update();
+    if (typeof updateHologramLayout === 'function') {
+      updateHologramLayout(state);
+    } else {
+      // Minimal fallback if layoutManager is not available
+      const newWidth = gridContainer && gridContainer.clientWidth > 0 ? gridContainer.clientWidth : window.innerWidth;
+      const newHeight = gridContainer && gridContainer.clientHeight > 0 ? gridContainer.clientHeight : window.innerHeight;
+      state.renderer.setSize(newWidth, newHeight);
+      state.camera.left = -newWidth / 2;
+      state.camera.right = newWidth / 2;
+      state.camera.top = newHeight / 2;
+      state.camera.bottom = -newHeight / 2;
+      state.camera.updateProjectionMatrix();
     }
-
-    // Обновление позиции и масштаба hologramPivot при resize
-    if (state.hologramRendererInstance) {
-      const hologramRenderer = state.hologramRendererInstance;
-      // Ensure we are calling the correct method if it exists, simplified for this context
-      // Assuming getHologramPivot is available on the instance
-      const hologramPivot = hologramRenderer.getHologramPivot ? hologramRenderer.getHologramPivot() : null;
-
-      if (hologramPivot) {
-        // Dynamic Scaling: Occupy 90% of screen width or height (GRID_WIDTH=128+128=256)
-        const scaleW = (newWidth * 0.9) / 256;
-        const scaleH = (newHeight * 0.9) / 256;
-        const targetScale = Math.min(scaleW, scaleH);
-
-        // --- NEW: Sync Centering for Desktop (v0.19.028) ---
-        let xOffset = 0;
-        if (newWidth > 768) {
-          const leftPanel = document.getElementById('left-panel');
-          const rightPanel = document.getElementById('right-panel');
-
-          const leftW = leftPanel ? (leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20) : 0;
-          const rightW = rightPanel ? (rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20) : 0;
-
-          // Offset to align hologram center with visible area center
-          xOffset = (leftW - rightW) / 2;
-
-          // Sync Gesture Area (Desktop)
-          const gestureArea = document.getElementById('gesture-area');
-          if (gestureArea) {
-            gestureArea.style.setProperty('--gesture-offset', `${xOffset}px`);
-            gestureArea.style.setProperty('--gesture-width', `${256 * targetScale}px`);
-          }
-        } else {
-          // Reset Gesture Area for Mobile
-          const gestureArea = document.getElementById('gesture-area');
-          if (gestureArea) {
-            gestureArea.style.removeProperty('--gesture-offset');
-            gestureArea.style.removeProperty('--gesture-width');
-          }
-        }
-
-        hologramPivot.position.x = xOffset / targetScale;
-        hologramPivot.position.y = 0;
-        hologramPivot.scale.set(targetScale, targetScale, targetScale);
-
-        console.log(`[sceneSetup] v19.28: scale=${targetScale.toFixed(4)}, xOffset=${xOffset.toFixed(1)}`);
-      }
-    }
-
-    console.log(`[sceneSetup] Updated renderer size: Width = ${newWidth}, Height = ${newHeight}`);
   };
 
   // Add resize event listener
