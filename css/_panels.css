@@ -4,20 +4,19 @@
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
   padding: 0;
-  /* Clear shared padding */
-  height: 90svh !important;
-  top: 5svh !important;
+  height: 100vh !important;
+  top: 0 !important;
   flex: 0 0 auto;
   z-index: 1001;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px !important;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease-in-out !important;
   opacity: 0 !important;
 
   visibility: hidden !important;
   pointer-events: none !important;
-  position: absolute;
+  position: fixed;
+  /* Fixed is better for fullscreen panels */
 }
 
 .panel.left-panel {
@@ -26,12 +25,16 @@
   transform: translateX(calc(-100% + 20px)) !important;
   /* Peek effect */
   border-left: none !important;
+  border-radius: 0 20px 20px 0 !important;
+  /* No radius on left edge */
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important;
   gap: 8px !important;
   padding: 0 !important;
+  padding-top: 15px !important;
+  /* Extra top padding for look */
   padding-bottom: 75px !important;
   align-items: center !important;
 }
@@ -42,6 +45,8 @@
   transform: translateX(calc(100% - 20px)) !important;
   /* Peek effect */
   border-right: none !important;
+  border-radius: 20px 0 0 20px !important;
+  /* No radius on right edge */
   display: flex !important;
   flex-direction: column !important;
 }
