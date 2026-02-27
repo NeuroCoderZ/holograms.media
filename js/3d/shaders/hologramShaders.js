@@ -64,9 +64,12 @@ export const fragmentShader = /* glsl */`
 
         vec3 finalColor;
         // Линейное затемнение по слоям (1 слой = 1 дБ)
-        // dB = cellIndex - 128.0
-        float brightness = (cellIndex + 1.0) / 128.0;
-        finalColor = uBaseColor * clamp(brightness, 0.0078, 1.0); // 1/128 ~= 0.0078
+        // dB = cellIndex - 128.0 (но мы мапим 128 уровней 0..127)
+        // index 127 (0 dB) -> brightness 1.0
+        // index 0 (-127 dB) -> brightness 0.0
+        float bIndex = clamp(cellIndex, 0.0, 127.0);
+        float brightness = bIndex / 127.0; 
+        finalColor = uBaseColor * brightness;
 
         // Режим приветствия: поверхность цветная, ребра чуть ярче (+1дБ)
         if (uIsGreeting > 0.5) {
