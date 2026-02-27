@@ -776,47 +776,34 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
  * @param {object} appState - Глобальное состояние (опционально, иначе берется из импорта)
  */
 export function updateAuthUI(appState) {
-  // Используем переданный стейт или импортируемый
   const currentState = appState || state;
   const loginBtn = document.getElementById('login-google-btn');
-  const avatarBtn = document.getElementById('avatarButton');
-  const accountSettingsBtn = document.getElementById('accountSettingsButton');
+  const avatarBtn = document.getElementById('avatarButton'); // Now "Settings" Human Icon
+  const letterBtn = document.getElementById('accountSettingsButton'); // Now "User Letter" Button
   const startSessionModal = document.getElementById('start-session-modal');
+
+  // Кнопка настроек (Человечек) всегда видна по правилу USER
+  if (avatarBtn) {
+    avatarBtn.style.display = 'flex';
+    avatarBtn.title = "Настройки аккаунта";
+  }
 
   if (currentState.isAuthenticated && currentState.user) {
     // Пользователь вошел
-    if (loginBtn) loginBtn.style.display = 'none'; // Скрываем кнопку Google
-
-    if (avatarBtn) {
-      avatarBtn.classList.add('authenticated');
-      avatarBtn.title = `Аккаунт: ${currentState.user.email}`;
-      // Заменяем иконку на первую букву email
-      const firstLetter = currentState.user.email ? currentState.user.email[0].toUpperCase() : 'U';
-      avatarBtn.innerHTML = `<span class="avatar-initial">${firstLetter}</span>`;
-      avatarBtn.style.backgroundColor = '#007bff'; // Синий цвет для активного аккаунта
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (letterBtn) {
+      letterBtn.style.display = 'flex';
+      const firstLetter = currentState.user.email ? currentState.user.email[0].toUpperCase() : 'N';
+      const letterSpan = document.getElementById('avatarLetter');
+      if (letterSpan) letterSpan.textContent = firstLetter;
+      letterBtn.title = `Аккаунт: ${currentState.user.email}`;
     }
-
-    if (accountSettingsBtn) {
-      accountSettingsBtn.classList.remove('hidden');
-      accountSettingsBtn.style.display = 'flex';
-    }
-
     if (startSessionModal) startSessionModal.style.display = 'none';
-    console.log(`[UI] Интерфейс обновлен для пользователя: ${currentState.user.email}`);
+    console.log(`[Auth] UI Updated for: ${currentState.user.email}`);
   } else {
-    // Пользователь не вошел
+    // Гость
     if (loginBtn) loginBtn.style.display = 'flex';
-    if (accountSettingsBtn) {
-      accountSettingsBtn.classList.add('hidden');
-      accountSettingsBtn.style.display = 'none';
-    }
-    if (avatarBtn) {
-      avatarBtn.classList.remove('authenticated');
-      avatarBtn.title = 'Войти в аккаунт';
-      // Возвращаем стандартную иконку аватара
-      avatarBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z" /></svg>`;
-      avatarBtn.style.backgroundColor = '';
-    }
+    if (letterBtn) letterBtn.style.display = 'none';
   }
 }
 
