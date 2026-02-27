@@ -54,15 +54,22 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--color-icon-disabled);
+  border-bottom: none !important;
   box-shadow: 0 -5px 20px rgba(0, 255, 136, 0.1);
-  border-radius: 8px;
-  
+  border-radius: 20px 20px 0 0 !important;
+
   z-index: 100;
-  cursor: pointer;
+  cursor: default;
   overflow: hidden;
   min-height: 16px;
   pointer-events: auto;
-  transition: width 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), height 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), background-color 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
+}
+
+/* Peek effect for gesture area when "hidden" (no hands) */
+#gesture-area:not(.active):not(.hands-detected) {
+  transform: translateX(-50%) translateY(calc(100% - 8px)) !important;
+  opacity: 0.4;
 }
 
 /* Активная область жестов - оставляем только специфичные изменения если нужны */

@@ -633,11 +633,59 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
     });
   }
 
-  if (uiElements.buttons.accountSettingsButton) {
-    uiElements.buttons.accountSettingsButton.addEventListener('click', () => {
+  if (uiElements.buttons.avatarButton) {
+    uiElements.buttons.avatarButton.addEventListener('click', () => {
       updateProfileUI();
       uiElements.modals.accountModal.style.display = 'flex';
     });
+  }
+
+  if (uiElements.buttons.accountSettingsButton) {
+    uiElements.buttons.accountSettingsButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showAuthPopupMenu(e.currentTarget);
+    });
+  }
+
+  function showAuthPopupMenu(anchor) {
+    const existingPop = document.getElementById('auth-popup-menu');
+    if (existingPop) {
+      existingPop.remove();
+      return;
+    }
+
+    const pop = document.createElement('div');
+    pop.id = 'auth-popup-menu';
+    pop.className = 'auth-popup-menu';
+    pop.innerHTML = `
+        <div class="pop-item" id="pop-switch">Сменить аккаунт</div>
+        <div class="pop-item logout" id="pop-logout">Выйти</div>
+     `;
+
+    const rect = anchor.getBoundingClientRect();
+    pop.style.position = 'fixed';
+    pop.style.left = `${rect.right + 10}px`;
+    pop.style.top = `${rect.top}px`;
+    document.body.appendChild(pop);
+
+    document.getElementById('pop-logout').addEventListener('click', () => {
+      import('../core/auth.js').then(m => m.signOut());
+      pop.remove();
+    });
+
+    document.getElementById('pop-switch').addEventListener('click', () => {
+      // Trigger Google Login again
+      const gBtn = document.getElementById('login-google-btn');
+      if (gBtn) gBtn.click();
+      pop.remove();
+    });
+
+    // Global click to close
+    const closePop = () => {
+      pop.remove();
+      document.removeEventListener('click', closePop);
+    };
+    setTimeout(() => document.addEventListener('click', closePop), 10);
   }
 
   if (uiElements.actions.closeAccountModal) {
