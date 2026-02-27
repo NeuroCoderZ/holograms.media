@@ -1,6 +1,5 @@
-# Proxy API requests to Koyeb Backend (Dev Environment)
-/api/*  https://holograms-media-dev-holograms-media-6a8cc743.koyeb.app/api/:splat  200
-/ws/*   https://holograms-media-dev-holograms-media-6a8cc743.koyeb.app/ws/:splat   200
+/api/*  https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app/api/:splat  200
+/ws/*   https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app/ws/:splat   200
 
 # Static assets
 /wasm/*  /wasm/:splat  200
