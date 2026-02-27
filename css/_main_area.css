@@ -41,16 +41,17 @@
 }
 
 /* Область жестов */
-/* Область жестов */
 #gesture-area {
   position: fixed;
   bottom: 0 !important;
-  /* Flush with bottom */
+  /* Flush with bottom edge */
   left: calc(50% + var(--gesture-offset, 0px));
   transform: translateX(-50%);
   width: var(--gesture-width, 100%) !important;
   height: 60px !important;
+  /* Fixed height for the area */
   background-color: rgba(255, 0, 0, 0.2) !important;
+  /* Red tint as per user screenshot */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--color-icon-disabled);
@@ -63,20 +64,22 @@
   z-index: 100;
   cursor: default;
   overflow: hidden;
-  min-height: 16px;
+  min-height: 20px;
+  /* Ensure min-height for visibility */
   pointer-events: auto;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, width 0.4s ease, left 0.4s ease;
 }
 
-/* Peek effect for gesture area when "hidden" (no hands) */
+/* Peek effect: торчит на 20px когда неактивна */
 #gesture-area:not(.active):not(.hands-detected) {
   transform: translateX(-50%) translateY(calc(100% - 20px)) !important;
-  /* 20px visible */
-  opacity: 0.4;
+  opacity: 0.6;
+  /* Slightly more visible peek */
 }
 
-/* Активная область жестов - оставляем только специфичные изменения если нужны */
+/* Активная область жестов */
 #gesture-area.hands-detected {
+  transform: translateX(-50%) translateY(0) !important;
   border-color: var(--color-active-green) !important;
   box-shadow: 0 -5px 30px rgba(0, 255, 136, 0.2) !important;
 }
