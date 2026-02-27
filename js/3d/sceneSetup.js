@@ -183,17 +183,42 @@ export async function initializeScene(state) {
 
       if (hologramPivot) {
         // Dynamic Scaling: Occupy 90% of screen width or height (GRID_WIDTH=128+128=256)
-        // This ensures the hologram always fits with 5% margins on sides (0.9 factor)
         const scaleW = (newWidth * 0.9) / 256;
         const scaleH = (newHeight * 0.9) / 256;
         const targetScale = Math.min(scaleW, scaleH);
 
-        // Exact Centering: Point of junction (x=0) aligns with screen center
-        hologramPivot.position.x = 0;
-        hologramPivot.position.y = 0;
+        // --- NEW: Sync Centering for Desktop (v0.19.028) ---
+        let xOffset = 0;
+        if (newWidth > 768) {
+          const leftPanel = document.getElementById('left-panel');
+          const rightPanel = document.getElementById('right-panel');
 
+          const leftW = leftPanel ? (leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20) : 0;
+          const rightW = rightPanel ? (rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20) : 0;
+
+          // Offset to align hologram center with visible area center
+          xOffset = (leftW - rightW) / 2;
+
+          // Sync Gesture Area (Desktop)
+          const gestureArea = document.getElementById('gesture-area');
+          if (gestureArea) {
+            gestureArea.style.setProperty('--gesture-offset', `${xOffset}px`);
+            gestureArea.style.setProperty('--gesture-width', `${256 * targetScale}px`);
+          }
+        } else {
+          // Reset Gesture Area for Mobile
+          const gestureArea = document.getElementById('gesture-area');
+          if (gestureArea) {
+            gestureArea.style.removeProperty('--gesture-offset');
+            gestureArea.style.removeProperty('--gesture-width');
+          }
+        }
+
+        hologramPivot.position.x = xOffset / targetScale;
+        hologramPivot.position.y = 0;
         hologramPivot.scale.set(targetScale, targetScale, targetScale);
-        console.log(`[sceneSetup] HologramPivot updated on resize: scale=${targetScale.toFixed(4)}, heightPxl=${(newHeight * 0.9).toFixed(1)}, pos.x=0`);
+
+        console.log(`[sceneSetup] v19.28: scale=${targetScale.toFixed(4)}, xOffset=${xOffset.toFixed(1)}`);
       }
     }
 
