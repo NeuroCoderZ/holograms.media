@@ -9,7 +9,8 @@ import { state } from './init.js';
 import { updateAuthUI } from '../ui/uiManager.js';
 import { showNotification } from '../utils/notifications.js';
 
-const BACKEND_TOKEN_URL = '/api/v1/auth/token';
+// Используем полный URL для надежности при обмене токена
+const BACKEND_TOKEN_URL = 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app/api/v1/auth/token';
 
 /**
  * Получает конфигурацию аутентификации на основе переменных окружения.

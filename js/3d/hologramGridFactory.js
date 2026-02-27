@@ -11,7 +11,7 @@ import * as THREE from 'three';
 export const CELL_HEIGHT = 2.0;
 
 /** Opacity сетки (едва видима — только намечает объём) */
-const GRID_OPACITY = 0.0025; // На грани видимости.
+const GRID_OPACITY = 0.00125; // Еще прозрачнее по просьбе USER.
 
 /**
  * Невидимая маркерная сфера (для внутреннего позиционирования).
@@ -120,7 +120,7 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     const sphereRadius = 2.4192;
     const origin = [0, 0, 0];
     const colorX = isLeftGrid ? 0xBF00FF : 0xFF0000;
-    
+
     // Ось X (сегментированная для морфинга в дугу)
     const xPoints = [];
     const segments = 32;
@@ -131,7 +131,7 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     const xAxis = createLineForAxis(xPoints, colorX, 1.5, true);
     xAxis.name = "XAxis"; // Присваиваем имя для идентификации при морфинге
     group.add(xAxis);
-    
+
     const xSphere = createSphereForAxis(sphereRadius, colorX);
     xSphere.position.set(isLeftGrid ? -xLength : xLength, 0, 0);
     xSphere.name = "XAxisSphere";
@@ -141,7 +141,7 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     const spineLine = createLineForAxis([...origin, 0, yLength, 0], 0x00FF00, 1.5, true);
     spineLine.name = "YAxis";
     group.add(spineLine);
-    
+
     const ySphere = createSphereForAxis(sphereRadius, 0x00FF00);
     ySphere.position.set(0, yLength, 0);
     ySphere.name = "YAxisSphere";
@@ -156,7 +156,7 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     const zAxis = createLineForAxis(zPoints, 0xFFFFFF, 1.5, true);
     zAxis.name = "ZAxis";
     group.add(zAxis);
-    
+
     const zSphere = createSphereForAxis(sphereRadius, 0xFFFFFF);
     zSphere.position.set(0, 0, zLength);
     zSphere.name = "ZAxisSphere";

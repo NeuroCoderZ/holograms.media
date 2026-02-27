@@ -93,18 +93,14 @@ export async function initializeScene(state) {
 
   state.controls.addEventListener('end', () => {
     state.isDragging = false;
-    
+
     // Не запускаем возврат, если активен XR или WASD (можно добавить проверку флага wasdActive)
     if (state.isXRMode || (state.hologramRendererInstance && state.hologramRendererInstance._isTorusMode)) {
       return;
     }
 
-    // Задержка перед возвратом (3 секунды)
-    state.returnTimeout = setTimeout(() => {
-      if (!state.isDragging) {
-        state.startReturnAnimation();
-      }
-    }, 3000);
+    // Мгновенный возврат после отпускания
+    state.startReturnAnimation();
   });
 
   // Магнитный возврат камеры (без внешней библиотеки)
@@ -117,8 +113,8 @@ export async function initializeScene(state) {
     const targetPosition = state.initialCameraPosition;
     const targetTarget = state.initialControlsTarget;
 
-    // Быстрый возврат камеры
-    const duration = 800; // Плавнее (было 200)
+    // Мгновенный возврат камеры (быстрая анимация 300мс)
+    const duration = 300;
     const startTime = performance.now();
 
     function animateReturn() {
