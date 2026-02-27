@@ -62,11 +62,9 @@ export const fragmentShader = /* glsl */`
             cellIndex += 1.0; 
         }
 
+        vec3 finalColor;
         // Линейное затемнение по слоям (1 слой = 1 дБ)
         // dB = cellIndex - 128.0
-        // При dB = 0 (128): brightness = 128/128 = 1.0 (pure color)
-        // При dB = -1 (127): brightness = 127/128 = 0.99...
-        // При dB = -128 (0): brightness = 1/128 (almost black как просил USER)
         float brightness = (cellIndex + 1.0) / 128.0;
         finalColor = uBaseColor * clamp(brightness, 0.0078, 1.0); // 1/128 ~= 0.0078
 
