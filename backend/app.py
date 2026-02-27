@@ -81,8 +81,26 @@ app = FastAPI(
     title="Holograms Media Backend API",
     description="Backend services for the Holograms Media Project, providing API endpoints for user interactions, media processing, and AI assistant Tria.",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False
 )
+
+from fastapi import Request
+import time
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = (time.time() - start_time) * 1000
+    formatted_process_time = "{0:.2f}".format(process_time)
+    logger.info(f"RID: {request.headers.get('X-Request-ID', 'None')} | Method: {request.method} | Path: {request.url.path} | Status: {response.status_code} | Time: {formatted_process_time}ms")
+    return response
+
+@app.post("/api/v1/auth/token_debug")
+async def token_debug(data: dict):
+    logger.info(f"DEBUG TOKEN RECEIVED: {data}")
+    return {"status": "received", "data_keys": list(data.keys())}
 
 # Tria Cortex v2.6.5: Forcing CI/CD trigger with robust window check.
 

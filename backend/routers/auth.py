@@ -9,7 +9,11 @@ from backend.auth.security import verify_google_token, create_access_token, get_
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(tags=["Authentication"])
+
+@router.get("/auth/test")
+async def auth_test():
+    return {"status": "ok", "message": "Auth router is reachable via GET"}
 
 # Developer email addresses - map to "developer" role
 DEV_EMAILS = ["neurocoderz@gmail.com"]
@@ -17,7 +21,7 @@ DEV_EMAILS = ["neurocoderz@gmail.com"]
 class TokenRequest(BaseModel):
     token: str = Field(..., description="Google ID Token")
 
-@router.post("/token", response_model=Dict[str, str])
+@router.post("/auth/token", response_model=Dict[str, str])
 async def login_with_google(token_data: TokenRequest):
     """
     Принимает Google ID токен, обменивает на JWT.
