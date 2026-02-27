@@ -80,6 +80,19 @@
   justify-content: center;
 }
 
+.profile-btn.authenticated-invert {
+  background-color: #e0e0e0 !important;
+  /* Light gray */
+  color: #000000 !important;
+  /* Black letter */
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+.profile-btn.authenticated-invert:hover {
+  background-color: #ffffff !important;
+  transform: scale(1.05);
+}
+
 .left-panel-icon-group {
   grid-column: 1 / -1;
   display: flex;

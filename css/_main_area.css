@@ -44,11 +44,11 @@
 /* Область жестов */
 #gesture-area {
   position: fixed;
-  bottom: 0;
-  /* Directly at the bottom edge */
-  left: 50%;
+  bottom: 0 !important;
+  /* Flush with bottom */
+  left: calc(50% + var(--gesture-offset, 0px));
   transform: translateX(-50%);
-  width: 100%;
+  width: var(--gesture-width, 100%) !important;
   height: 6px;
   background-color: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(20px);
@@ -63,13 +63,13 @@
   overflow: hidden;
   min-height: 16px;
   pointer-events: auto;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, width 0.4s ease, left 0.4s ease;
 }
 
 /* Peek effect for gesture area when "hidden" (no hands) */
 #gesture-area:not(.active):not(.hands-detected) {
   transform: translateX(-50%) translateY(calc(100% - 20px)) !important;
-  /* Exactly 20px visible */
+  /* 20px visible */
   opacity: 0.4;
 }
 

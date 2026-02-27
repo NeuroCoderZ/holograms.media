@@ -793,17 +793,24 @@ export function updateAuthUI(appState) {
     if (loginBtn) loginBtn.style.display = 'none';
     if (letterBtn) {
       letterBtn.style.display = 'flex';
+      letterBtn.classList.add('authenticated-invert'); // Special style v0.19.028
       const firstLetter = currentState.user.email ? currentState.user.email[0].toUpperCase() : 'N';
       const letterSpan = document.getElementById('avatarLetter');
-      if (letterSpan) letterSpan.textContent = firstLetter;
+      if (letterSpan) {
+        letterSpan.textContent = firstLetter;
+        letterSpan.style.color = '#000000'; // Black letter
+      }
       letterBtn.title = `Аккаунт: ${currentState.user.email}`;
     }
     if (startSessionModal) startSessionModal.style.display = 'none';
-    console.log(`[Auth] UI Updated for: ${currentState.user.email}`);
+    console.log(`[Auth] v19.28: UI Updated (Inverted Letter) for ${currentState.user.email}`);
   } else {
     // Гость
     if (loginBtn) loginBtn.style.display = 'flex';
-    if (letterBtn) letterBtn.style.display = 'none';
+    if (letterBtn) {
+      letterBtn.style.display = 'none';
+      letterBtn.classList.remove('authenticated-invert');
+    }
   }
 }
 
