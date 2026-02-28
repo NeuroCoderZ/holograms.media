@@ -273,11 +273,16 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         // Offset to align hologram center with visible area center
         xOffset = (leftW - rightW) / 2;
 
-        // Sync Gesture Area
+        // Sync Gesture Area (v0.19.037: Strict horizontal alignment)
         const gestureArea = document.getElementById('gesture-area');
         if (gestureArea) {
-            gestureArea.style.setProperty('--gesture-offset', `${xOffset}px`);
-            gestureArea.style.setProperty('--gesture-width', `${256 * targetScaleValue}px`);
+            const containerLeft = parseFloat(gridContainer.style.left) || 0;
+            const visualWidth = 256 * targetScaleValue;
+
+            // Center of gesture panel = Center of gridContainer
+            const centerX = containerLeft + (containerWidth / 2);
+            gestureArea.style.left = `${centerX - (visualWidth / 2)}px`;
+            gestureArea.style.width = `${visualWidth}px`;
         }
     } else {
         // Reset Gesture Area for Mobile
@@ -288,13 +293,13 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         }
     }
 
-    // Set centered position (with desktop offset & vertical centering)
-    // Vertically: Move from center-bottom(0) to center(relative 0)? 
-    // Pivot origin is bottom center. To center vertically in view:
-    // We want its center (visualHeight/2 * targetScale) at the screen center (containerHeight/2).
-    // So bottom should be at center - visualCenter.
+    // Set centered position (v0.19.037: Pivot shift -128 to align 0,0,0 with center of 256w area)
     const verticalCenterOffset = (containerHeight / 2) - (128 * targetScaleValue);
-    hologramPivot.position.set(xOffset / targetScaleValue, verticalCenterOffset / targetScaleValue, 0);
+    // xOffset is 0 because gridContainer is already shifted to fit between panels.
+    // However, the hologram origin is bottom-center of its 256-width span.
+    // To have (0,0,0) be the absolute center of the container, we don't need additional X shift here
+    // IF the renderer's center is already aligned with the container's center.
+    hologramPivot.position.set(0, verticalCenterOffset / targetScaleValue, 0);
 
     // The desktop panel logic (getLeftPanelWidth, etc.) is removed from here as the
     // container's left/width is now managed by the animation/initial setup logic.

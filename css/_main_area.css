@@ -45,8 +45,8 @@
   position: fixed;
   bottom: 0 !important;
   /* Flush with bottom edge */
-  left: calc(50% + var(--gesture-offset, 0px));
-  transform: translateX(-50%);
+  left: 0;
+  transform: none;
   width: var(--gesture-width, 100%) !important;
   height: 60px !important;
   /* Fixed height for the area */
