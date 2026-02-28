@@ -11,7 +11,7 @@ import * as THREE from 'three';
 export const CELL_HEIGHT = 2.0;
 
 /** Opacity сетки (едва видима — только намечает объём) */
-const GRID_OPACITY = 0.0025; // Calibration v0.19.033: optimized visibility.
+const GRID_OPACITY = 0.0024; // Calibration v0.19.034: 5% more transparent than 0.0025.
 
 /**
  * Невидимая маркерная сфера (для внутреннего позиционирования).

@@ -55,19 +55,19 @@ export const semitones = Array.from({ length: 128 }, (_, i) => {
   const noteIndex = i % NOTES_PER_OCTAVE;
   const note = NOTES[noteIndex] + octave;
 
-  // BasilaQ-128: Z-Shade calculation (Strict 8-bit LUT)
-  const zVal = (i === 127) ? 255 : (i * 2);
-  const zShade = `rgb(${zVal},${zVal},${zVal})`;
+  // BasilaQ-128: Z-Shade calculation (Linear 8-bit mapping)
+  const v = Math.round((i / 127) * 255);
+  const zShade = `rgb(${v},${v},${v})`;
 
   // Psychoacoustic Head Shadow Model (ILD)
   // Max shadow is ~30dB at high frequencies.
   let maxIldDb = 0;
   if (f > 500) {
-      if (f <= 3000) {
-          maxIldDb = 20 * ((f - 500) / 2500); // Linear growth 500Hz -> 3000Hz (0 to 20dB)
-      } else {
-          maxIldDb = 20 + 10 * (1 - Math.exp(-(f - 3000) / 5000)); // Asymptotic to 30dB
-      }
+    if (f <= 3000) {
+      maxIldDb = 20 * ((f - 500) / 2500); // Linear growth 500Hz -> 3000Hz (0 to 20dB)
+    } else {
+      maxIldDb = 20 + 10 * (1 - Math.exp(-(f - 3000) / 5000)); // Asymptotic to 30dB
+    }
   }
   const shadowCoef = parseFloat((maxIldDb / 30.0).toFixed(4));
 

@@ -18,14 +18,14 @@
 }
 
 #grid-container {
-  position: relative;
-  width: 100%;
+  position: absolute;
+  top: 5dvh !important;
+  left: 0;
+  width: 100% !important;
+  height: 90dvh !important;
   margin: 0;
-  height: 100%;
-  /* Занимает всю высоту main-area */
   z-index: 10;
   background-color: var(--color-pure-black);
-  /* Фон черный для соответствия main-area */
 }
 
 #grid-container canvas {
