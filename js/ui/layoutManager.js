@@ -47,9 +47,9 @@ export function setInitialHologramContainerLayout(appState) {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
-    // Margins as per requirements (v0.19.031: No vertical margins)
-    const marginTop = 0;
-    const marginBottom = 0;
+    // Margins as per requirements (v0.19.032: Restoring 5% vertical margins)
+    const marginTop = windowHeight * 0.05;
+    const marginBottom = windowHeight * 0.05;
     const marginSides = windowWidth * 0.05;
 
     initialLayout.top = marginTop;
@@ -89,8 +89,8 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
     if (initialLayout.width === 0 || initialLayout.height === 0) {
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
-        const marginTop = 0;
-        const marginBottom = 0;
+        const marginTop = windowHeight * 0.05;
+        const marginBottom = windowHeight * 0.05;
         const marginSides = windowWidth * 0.05;
 
         initialLayout.top = marginTop;
@@ -124,10 +124,10 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         const targetScale = Math.min((windowWidth * 0.9) / 256, (windowHeight * 0.9) / 256);
         const panelHeight = targetScale * 64;
 
-        // 2. Define margins as per requirements (v0.19.031: No margins)
-        const marginTop = 0; // No top margin
-        const gap = 0;       // No gap
-        const panelBottom = 0; // No bottom margin
+        // 2. Define margins as per requirements (v0.19.032: Restoring 5% margins)
+        const marginTop = windowHeight * 0.05; // 5% top
+        const gap = windowHeight * 0.05;       // 5% gap
+        const panelBottom = windowHeight * 0.05; // 5% bottom margin (5vh)
 
         // 3. Compute hologram container bounds
         // The container should end where the gap before the panel begins
@@ -142,11 +142,11 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
 
-        // Account for collapsed gesture panel (6px height)
+        // Account for collapsed gesture panel (6px height) + 5% gap from bottom
         const collapsedPanelHeight = 6;
-        const marginTop = 0;
-        const gap = 0;
-        const panelBottom = 0;
+        const marginTop = windowHeight * 0.05;
+        const gap = windowHeight * 0.05;
+        const panelBottom = windowHeight * 0.05;
 
         // Hologram should fill space above the collapsed panel with gaps
         const availableHeight = windowHeight - panelBottom - collapsedPanelHeight - gap - marginTop;
