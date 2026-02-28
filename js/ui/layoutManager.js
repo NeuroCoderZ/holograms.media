@@ -120,41 +120,50 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
 
-        // 1. Calculate the exact target scale used by GestureUIManager
-        const targetScale = Math.min((windowWidth * 0.9) / 256, (windowHeight * 0.9) / 256);
-        const panelHeight = targetScale * 64;
+        // 2. Define margins as per requirements (v0.19.035: Sync margins)
+        const marginTopPercent = 0.05;    // 5% top margin
+        const gapPercent = 0.05;          // 5% gap
+        const marginBottomPercent = 0.05; // 5% bottom margin (5vh)
+        const panelToHoloRatio = 0.25;    // Panel is 25% of hologram height
 
-        // 2. Define margins as per requirements (v0.19.033: Enforcing 5% margins)
-        const marginTop = windowHeight * 0.05; // 5% top
-        const gap = windowHeight * 0.05;       // 5% gap
-        const panelBottom = windowHeight * 0.05; // 5% bottom margin (5vh)
+        // Equation: windowHeight * (marginTop + hHeight + gap + (panelToHoloRatio * hHeight) + marginBottom) = windowHeight
+        // hHeight * (1 + panelToHoloRatio) = 1.0 - marginTop - gap - marginBottom
+        const hHeightPercent = (1.0 - marginTopPercent - gapPercent - marginBottomPercent) / (1.0 + panelToHoloRatio);
+        const pHeightPercent = hHeightPercent * panelToHoloRatio;
 
-        // 3. Compute hologram container bounds
-        // The container should end where the gap before the panel begins
-        const hologramBottomEdge = windowHeight - panelBottom - panelHeight - gap;
+        const hHeightActual = hHeightPercent * windowHeight;
+        const pHeightActual = pHeightPercent * windowHeight;
 
-        targetLayout.top = marginTop;
-        targetLayout.height = hologramBottomEdge - marginTop;
+        targetLayout.top = marginTopPercent * windowHeight;
+        targetLayout.height = hHeightActual;
         targetLayout.width = windowWidth * 0.90; // 5% margin each side
         targetLayout.left = windowWidth * 0.05;
+
+        // Sync Gesture Area height with actual calculated height
+        const gestureArea = document.getElementById('gesture-area');
+        if (gestureArea) {
+            gestureArea.style.height = `${pHeightActual}px`;
+        }
     } else {
         // Hands are gone - return to expanded centered state
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-
-        // Account for collapsed gesture panel (6px height) + 5% gap from bottom
-        const collapsedPanelHeight = 6;
         const marginTop = windowHeight * 0.05;
+        const marginBottom = windowHeight * 0.05;
         const gap = windowHeight * 0.05;
-        const panelBottom = windowHeight * 0.05;
+        const peekHeight = 20;
 
-        // Hologram should fill space above the collapsed panel with gaps
-        const availableHeight = windowHeight - panelBottom - collapsedPanelHeight - gap - marginTop;
+        // Hologram should fill space above the peek with margins/gaps
+        const availableHeight = windowHeight - marginBottom - peekHeight - gap - marginTop;
 
         targetLayout.top = marginTop;
         targetLayout.left = windowWidth * 0.05;
         targetLayout.width = windowWidth * 0.90;
         targetLayout.height = Math.max(100, availableHeight);
+
+        // Reset Gesture Area for peek state
+        const gestureArea = document.getElementById('gesture-area');
+        if (gestureArea) {
+            gestureArea.style.height = ''; // Let CSS handle height (60px) but it will peek 20px
+        }
     }
 
     // Ensure calculated height and width are positive
