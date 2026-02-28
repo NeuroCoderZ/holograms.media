@@ -124,7 +124,7 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         const targetScale = Math.min((windowWidth * 0.9) / 256, (windowHeight * 0.9) / 256);
         const panelHeight = targetScale * 64;
 
-        // 2. Define margins as per requirements (v0.19.032: Restoring 5% margins)
+        // 2. Define margins as per requirements (v0.19.033: Enforcing 5% margins)
         const marginTop = windowHeight * 0.05; // 5% top
         const gap = windowHeight * 0.05;       // 5% gap
         const panelBottom = windowHeight * 0.05; // 5% bottom margin (5vh)
