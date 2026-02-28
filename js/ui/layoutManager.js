@@ -48,14 +48,12 @@ export function setInitialHologramContainerLayout(appState) {
     const windowHeight = window.innerHeight;
 
     // Margins as per requirements (v0.19.032: Restoring 5% vertical margins)
-    const marginTop = windowHeight * 0.05;
-    const marginBottom = windowHeight * 0.05;
-    const marginSides = windowWidth * 0.05;
-
-    initialLayout.top = marginTop;
-    initialLayout.left = marginSides;
-    initialLayout.width = windowWidth - (2 * marginSides);
-    initialLayout.height = windowHeight - marginTop - marginBottom;
+    // Phantom Margins (v0.19.036): Canvas fills the area which fills the viewport.
+    // However, the hologram inside will scale to 90% of its height and center itself.
+    initialLayout.top = 0;
+    initialLayout.left = 0;
+    initialLayout.width = windowWidth;
+    initialLayout.height = windowHeight;
 
     gridContainer.style.position = 'absolute'; // Ensure position is absolute for top/left
     gridContainer.style.top = `${initialLayout.top}px`;
@@ -89,14 +87,10 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
     if (initialLayout.width === 0 || initialLayout.height === 0) {
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
-        const marginTop = windowHeight * 0.05;
-        const marginBottom = windowHeight * 0.05;
-        const marginSides = windowWidth * 0.05;
-
-        initialLayout.top = marginTop;
-        initialLayout.left = marginSides;
-        initialLayout.width = windowWidth - (2 * marginSides);
-        initialLayout.height = windowHeight - marginTop - marginBottom;
+        initialLayout.top = 0;
+        initialLayout.left = 0;
+        initialLayout.width = windowWidth;
+        initialLayout.height = windowHeight;
 
         // Apply to container if not already set
         if (gridContainer) {
@@ -134,10 +128,11 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         const hHeightActual = hHeightPercent * windowHeight;
         const pHeightActual = pHeightPercent * windowHeight;
 
-        targetLayout.top = marginTopPercent * windowHeight;
-        targetLayout.height = hHeightActual;
-        targetLayout.width = windowWidth * 0.90; // 5% margin each side
-        targetLayout.left = windowWidth * 0.05;
+        // Logic 3D Area (v0.19.036): 100% viewport to avoid clipping during rotation
+        targetLayout.top = 0;
+        targetLayout.height = windowHeight;
+        targetLayout.width = windowWidth;
+        targetLayout.left = 0;
 
         // Sync Gesture Area height with actual calculated height
         const gestureArea = document.getElementById('gesture-area');
@@ -151,13 +146,11 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         const gap = windowHeight * 0.05;
         const peekHeight = 20;
 
-        // Hologram should fill space above the peek with margins/gaps
-        const availableHeight = windowHeight - marginBottom - peekHeight - gap - marginTop;
-
-        targetLayout.top = marginTop;
-        targetLayout.left = windowWidth * 0.05;
-        targetLayout.width = windowWidth * 0.90;
-        targetLayout.height = Math.max(100, availableHeight);
+        // Logic 3D Area (v0.19.036): 100% viewport to avoid clipping during rotation
+        targetLayout.top = 0;
+        targetLayout.left = 0;
+        targetLayout.width = windowWidth;
+        targetLayout.height = windowHeight;
 
         // Reset Gesture Area for peek state
         const gestureArea = document.getElementById('gesture-area');
@@ -255,11 +248,12 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     // Update renderer and camera to match current container size (redundant if called by TWEEN onUpdate, but safe)
     updateRendererAndCamera(appState, containerWidth, containerHeight); // Pass appState
 
-    // We want to scale it so it fits the containerWidth AND containerHeight.
-    // Full width of hologram is 256 units (128 left + 128 right).
-    // Full height of hologram is 256 units (visualHeight = 128 * 2).
-    const scaleH = containerHeight / HOLOGRAM_REFERENCE_HEIGHT;
-    const scaleW = containerWidth / 256;
+    // Phantom Margins (v0.19.036):
+    // Use logicalHeight = 90% of containerHeight to force 5% top/bottom margins
+    // within the un-clipped full-screen container.
+    const logicalHeight = containerHeight * 0.90;
+    const scaleH = logicalHeight / HOLOGRAM_REFERENCE_HEIGHT;
+    const scaleW = (containerWidth * 0.90) / 256; // Also 5% side margins
     let targetScaleValue = Math.min(scaleH, scaleW);
     targetScaleValue = Math.max(targetScaleValue, 0.01);
 
@@ -294,8 +288,13 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         }
     }
 
-    // Set centered position (with desktop offset)
-    hologramPivot.position.set(xOffset / targetScaleValue, 0, 0);
+    // Set centered position (with desktop offset & vertical centering)
+    // Vertically: Move from center-bottom(0) to center(relative 0)? 
+    // Pivot origin is bottom center. To center vertically in view:
+    // We want its center (visualHeight/2 * targetScale) at the screen center (containerHeight/2).
+    // So bottom should be at center - visualCenter.
+    const verticalCenterOffset = (containerHeight / 2) - (128 * targetScaleValue);
+    hologramPivot.position.set(xOffset / targetScaleValue, verticalCenterOffset / targetScaleValue, 0);
 
     // The desktop panel logic (getLeftPanelWidth, etc.) is removed from here as the
     // container's left/width is now managed by the animation/initial setup logic.
