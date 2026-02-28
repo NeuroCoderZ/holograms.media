@@ -62,11 +62,11 @@ export const fragmentShader = /* glsl */`
             cellIndex += 1.0; 
         }
 
-        // index 127 (0 dB) -> brightness 1.0 (полная яркость)
-        // index 0 (-127 dB) -> brightness 0.0 (черный)
+        // index 127 (0 dB) -> 128/128 (1.0)
+        // index 0 (-127 dB) -> 1/128 (0.0078)
         vec3 finalColor;
         float bIndex = clamp(cellIndex, 0.0, 127.0);
-        float brightness = bIndex / 127.0; 
+        float brightness = (bIndex + 1.0) / 128.0; 
         finalColor = uBaseColor * brightness;
 
         // Режим приветствия: поверхность цветная, ребра чуть ярче (+1дБ)
