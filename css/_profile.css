@@ -110,3 +110,40 @@
 .btn-logout:hover {
   background: rgba(255, 68, 68, 0.2) !important;
 }
+
+/* Settings Select Dropdowns */
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.settings-select {
+  background-color: var(--input-bg);
+  color: white;
+  border: 1px solid var(--panel-border);
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+  outline: none;
+  cursor: pointer;
+  font-size: var(--font-size-small);
+  text-align: right;
+  /* Right-align text inside the base select */
+  appearance: none;
+  /* Remove default arrow to align text nicely */
+  -webkit-appearance: none;
+  width: 140px;
+}
+
+.settings-select:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.settings-select option {
+  background-color: var(--input-bg);
+  color: white;
+  text-align: right;
+  direction: rtl;
+  /* Tricky way to force right alignment in some browsers for options */
+}

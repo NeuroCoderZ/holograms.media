@@ -37,20 +37,21 @@
   fill: currentColor !important;
 }
 
-/* Icon logic: Static shape, brightness-based state */
+/* Icon logic: Swap icons on toggle */
 #togglePanelsButton .icon-show-panels {
   display: flex !important;
-  opacity: 0.7 !important; /* Dim by default */
 }
 
 #togglePanelsButton .icon-hide-panels {
-  display: none !important; /* Force hide any shape changes */
+  display: none !important;
 }
 
 #togglePanelsButton.show-mode .icon-show-panels {
-  display: flex !important; /* Keep same icon */
-  opacity: 1 !important; /* Full opacity when active */
-  filter: brightness(1.5); /* Highlight active state */
+  display: none !important;
+}
+
+#togglePanelsButton.show-mode .icon-hide-panels {
+  display: flex !important;
 }
 
 /* Ensure button remains visible and consistent */
@@ -59,11 +60,13 @@
 }
 
 #fullscreenButton .icon-fullscreen {
-  display: flex !important; /* Always visible */
+  display: flex !important;
+  /* Always visible */
 }
 
 #fullscreenButton .icon-exit-fullscreen {
-  display: none !important; /* Always hidden per requirement */
+  display: none !important;
+  /* Always hidden per requirement */
 }
 
 #fullscreenButton.active {

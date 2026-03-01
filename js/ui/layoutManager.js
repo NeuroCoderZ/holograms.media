@@ -151,15 +151,10 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         const gap = windowHeight * 0.05;
         const peekHeight = 20;
 
-        // Logic 3D Area (v0.19.038): Same as active mode to keep consistency
-        const leftPanel = document.getElementById('left-panel');
-        const rightPanel = document.getElementById('right-panel');
-        const leftW = leftPanel && leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20;
-        const rightW = rightPanel && rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20;
-
-        targetLayout.left = leftW;
-        targetLayout.width = windowWidth - leftW - rightW;
+        // Logic 3D Area (v0.19.041): 100% viewport to center relative to screen
         targetLayout.top = 0;
+        targetLayout.left = 0;
+        targetLayout.width = windowWidth;
         targetLayout.height = windowHeight;
 
         // Reset Gesture Area for peek state

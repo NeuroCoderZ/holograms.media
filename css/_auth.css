@@ -81,15 +81,13 @@
 }
 
 .profile-btn.authenticated-invert {
-  background-color: #e0e0e0 !important;
-  /* Light gray */
-  color: #000000 !important;
-  /* Black letter */
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+  background-color: var(--input-bg) !important;
+  color: var(--color-icon-active) !important;
+  border: 1px solid var(--panel-border);
 }
 
 .profile-btn.authenticated-invert:hover {
-  background-color: #ffffff !important;
+  background-color: var(--button-hover-bg) !important;
   transform: scale(1.05);
 }
 
