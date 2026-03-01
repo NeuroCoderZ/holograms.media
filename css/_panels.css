@@ -116,6 +116,19 @@
   /* Must be visible to peek */
 }
 
+/* Focus Mode: Hide panels during hologram interaction */
+body.focus-mode .panel.left-panel {
+  transform: translateX(calc(-100% + 5px)) !important;
+  opacity: 0.1 !important;
+  pointer-events: none !important;
+}
+
+body.focus-mode .panel.right-panel {
+  transform: translateX(calc(100% - 5px)) !important;
+  opacity: 0.1 !important;
+  pointer-events: none !important;
+}
+
 .panel.right-panel.hidden {
   transform: translateX(calc(100% - 20px)) !important;
   opacity: 0.4 !important;

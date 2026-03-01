@@ -128,11 +128,16 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         const hHeightActual = hHeightPercent * windowHeight;
         const pHeightActual = pHeightPercent * windowHeight;
 
-        // Logic 3D Area (v0.19.036): 100% viewport to avoid clipping during rotation
+        // Logic 3D Area (v0.19.038): Use visible area width and correct offset
+        const leftPanel = document.getElementById('left-panel');
+        const rightPanel = document.getElementById('right-panel');
+        const leftW = leftPanel && leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20;
+        const rightW = rightPanel && rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20;
+
+        targetLayout.left = leftW;
+        targetLayout.width = windowWidth - leftW - rightW;
         targetLayout.top = 0;
         targetLayout.height = windowHeight;
-        targetLayout.width = windowWidth;
-        targetLayout.left = 0;
 
         // Sync Gesture Area height with actual calculated height
         const gestureArea = document.getElementById('gesture-area');
@@ -146,10 +151,15 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         const gap = windowHeight * 0.05;
         const peekHeight = 20;
 
-        // Logic 3D Area (v0.19.036): 100% viewport to avoid clipping during rotation
+        // Logic 3D Area (v0.19.038): Same as active mode to keep consistency
+        const leftPanel = document.getElementById('left-panel');
+        const rightPanel = document.getElementById('right-panel');
+        const leftW = leftPanel && leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20;
+        const rightW = rightPanel && rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20;
+
+        targetLayout.left = leftW;
+        targetLayout.width = windowWidth - leftW - rightW;
         targetLayout.top = 0;
-        targetLayout.left = 0;
-        targetLayout.width = windowWidth;
         targetLayout.height = windowHeight;
 
         // Reset Gesture Area for peek state
@@ -274,16 +284,15 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         xOffset = (leftW - rightW) / 2;
 
         // Sync Gesture Area (v0.19.037: Strict horizontal alignment)
-        const gestureArea = document.getElementById('gesture-area');
-        if (gestureArea) {
-            const containerLeft = parseFloat(gridContainer.style.left) || 0;
-            const visualWidth = 256 * targetScaleValue;
-
-            // Center of gesture panel = Center of gridContainer
-            const centerX = containerLeft + (containerWidth / 2);
-            gestureArea.style.left = `${centerX - (visualWidth / 2)}px`;
-            gestureArea.style.width = `${visualWidth}px`;
-        }
+        // Center of gesture panel = Center of gridContainer
+        // Important: we use absolute left based on viewport to match fixed positioning of gestureArea
+        const gridRect = gridContainer.getBoundingClientRect();
+        const visualWidth = 256 * targetScaleValue;
+        const centerX = gridRect.left + (gridRect.width / 2);
+        gestureArea.style.left = `${centerX - (visualWidth / 2)}px`;
+        gestureArea.style.width = `${visualWidth}px`;
+        gestureArea.style.transform = 'none'; // Ensure no transform interferes
+        gestureArea.style.margin = '0';
     } else {
         // Reset Gesture Area for Mobile
         const gestureArea = document.getElementById('gesture-area');
