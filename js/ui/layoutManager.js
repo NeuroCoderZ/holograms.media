@@ -289,10 +289,13 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         const gridRect = gridContainer.getBoundingClientRect();
         const visualWidth = 256 * targetScaleValue;
         const centerX = gridRect.left + (gridRect.width / 2);
-        gestureArea.style.left = `${centerX - (visualWidth / 2)}px`;
-        gestureArea.style.width = `${visualWidth}px`;
-        gestureArea.style.transform = 'none'; // Ensure no transform interferes
-        gestureArea.style.margin = '0';
+        const gestureArea = document.getElementById('gesture-area');
+        if (gestureArea) {
+            gestureArea.style.left = `${centerX - (visualWidth / 2)}px`;
+            gestureArea.style.width = `${visualWidth}px`;
+            gestureArea.style.transform = 'none'; // Ensure no transform interferes
+            gestureArea.style.margin = '0';
+        }
     } else {
         // Reset Gesture Area for Mobile
         const gestureArea = document.getElementById('gesture-area');
