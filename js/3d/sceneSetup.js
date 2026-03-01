@@ -85,15 +85,17 @@ export async function initializeScene(state) {
   state.returnTween = null;
   state.returnTimeout = null; // Таймер задержки возврата
 
-  // Управление флагом перетаскивания
+  // Управление флагом перетаскивания и Focus Mode
   state.controls.addEventListener('start', () => {
     state.isDragging = true;
+    document.body.classList.add('focus-mode'); // Focus Mode ON
     if (state.returnTween) cancelAnimationFrame(state.returnTween);
     if (state.returnTimeout) clearTimeout(state.returnTimeout);
   });
 
   state.controls.addEventListener('end', () => {
     state.isDragging = false;
+    document.body.classList.remove('focus-mode'); // Focus Mode OFF
 
     // Не запускаем возврат, если активен XR или WASD (можно добавить проверку флага wasdActive)
     if (state.isXRMode || (state.hologramRendererInstance && state.hologramRendererInstance._isTorusMode)) {
