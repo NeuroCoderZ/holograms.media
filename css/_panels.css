@@ -8,9 +8,10 @@
   top: 0 !important;
   flex: 0 0 auto;
   z-index: 1001;
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-image: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0.15) 60%, rgba(255, 255, 255, 0.02)) 1;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease-in-out !important;
   opacity: 0 !important;
 
