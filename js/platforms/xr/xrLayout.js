@@ -126,6 +126,7 @@ export default class XrLayout {
                 this.rightPanelElement.classList.add('hidden');
 
                 this.togglePanelsButtonElement.classList.add('show-mode');
+                this.togglePanelsButtonElement.title = 'Показать панели';
             } else {
                 this.leftPanelElement.classList.add('visible');
                 this.rightPanelElement.classList.add('visible');
@@ -135,6 +136,7 @@ export default class XrLayout {
                 this.rightPanelElement.classList.remove('hidden');
 
                 this.togglePanelsButtonElement.classList.remove('show-mode');
+                this.togglePanelsButtonElement.title = 'Скрыть панели';
             }
             console.log(`[XrLayout] Panels initialized from localStorage. Hidden: ${panelsShouldBeHidden}`);
             console.log('[XrLayout] leftPanel has visible after init:', this.leftPanelElement.classList.contains('visible'));
@@ -166,6 +168,7 @@ export default class XrLayout {
             this.leftPanelElement.classList.add('hidden');
             this.rightPanelElement.classList.add('hidden');
             this.togglePanelsButtonElement.classList.add('show-mode');
+            this.togglePanelsButtonElement.title = 'Показать панели';
         } else {
             // Show panels
             this.leftPanelElement.classList.add('visible');
@@ -173,6 +176,7 @@ export default class XrLayout {
             this.leftPanelElement.classList.remove('hidden');
             this.rightPanelElement.classList.remove('hidden');
             this.togglePanelsButtonElement.classList.remove('show-mode');
+            this.togglePanelsButtonElement.title = 'Скрыть панели';
         }
 
         const newState = this.leftPanelElement.classList.contains('visible') ? 'visible' : 'hidden';

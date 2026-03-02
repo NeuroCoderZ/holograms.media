@@ -287,9 +287,18 @@ body.focus-mode .panel.right-panel {
 .panel-hr {
   width: 80%;
   border: none;
-  height: 1px;
-  background-color: var(--panel-border);
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18) 20%, rgba(255, 255, 255, 0.18) 80%, transparent);
   margin: 8px auto !important;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.05);
+}
+
+/* Right panel divider: add side padding */
+#right-panel .panel-hr,
+.right-panel .panel-hr {
+  width: calc(100% - 20px);
+  margin-left: 10px !important;
+  margin-right: 10px !important;
 }
 
 #left-panel .panel-hr:first-of-type {

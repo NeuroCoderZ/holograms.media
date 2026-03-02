@@ -50,10 +50,10 @@
   width: var(--gesture-width, 100%) !important;
   height: 60px !important;
   /* Fixed height for the area */
-  background-color: rgba(30, 30, 30, 0.45) !important;
-  /* Blackout Glass style */
-  backdrop-filter: blur(30px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(30px) saturate(160%) !important;
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  /* Glass style matching side panels */
+  backdrop-filter: blur(20px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
   border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
   border-bottom: none !important;
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6),
