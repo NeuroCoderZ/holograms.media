@@ -24,7 +24,7 @@ export class CochlearCylinder {
         this.isTorusMode = false;
 
         this._vertexMorphData = null;
-        this._objectMorphData = null; 
+        this._objectMorphData = null;
         this._lastLoggedT = -1;
     }
 
@@ -42,7 +42,7 @@ export class CochlearCylinder {
             // Обработка сфер на осях и статических сфер
             if (child.name === "StaticSphere" || child.name === "XAxisSphere" || child.name === "ZAxisSphere" || child.name === "YAxisSphere") {
                 if (!this._objectMorphData) this._objectMorphData = [];
-                
+
                 const localPos = child.position.clone();
                 const worldPos = new THREE.Vector3();
                 child.getWorldPosition(worldPos);
@@ -51,12 +51,12 @@ export class CochlearCylinder {
                 // Математика цилиндра (Тор с прямоугольным срезом)
                 // X (панорама) -> Theta (угол)
                 // Z (глубина) -> R (радиус)
-                
+
                 // ВАЖНО: В 2D Z=0 - это задняя стенка (внешний радиус).
                 // Мы хотим, чтобы при Z=0 радиус был XR_RADIUS (1000).
                 // При росте столбца (Z увеличивается) он должен идти К ЦЕНТРУ.
                 const theta = (pivotPos.x / 128) * Math.PI;
-                const r = XR_RADIUS - pivotPos.z; 
+                const r = XR_RADIUS - pivotPos.z;
                 const camZ = 1000;
 
                 const targetPivotPos = new THREE.Vector3(
@@ -75,9 +75,9 @@ export class CochlearCylinder {
                     targetColor = new THREE.Color(0xFF00FF); // Magenta Junction
                 }
 
-                this._objectMorphData.push({ 
-                    obj: child, 
-                    start: localPos, 
+                this._objectMorphData.push({
+                    obj: child,
+                    start: localPos,
                     end: targetLocalPos,
                     startColor: child.material.color.clone(),
                     endColor: targetColor,
@@ -151,7 +151,7 @@ export class CochlearCylinder {
                     arr[j] = data.flatArr[j] + (data.torusArr[j] - data.flatArr[j]) * eased;
                 }
                 data.attr.needsUpdate = true;
-                
+
                 // Адаптация ширины столбцов в XR режиме (уширение на внешнем радиусе)
                 // Если это активный столбец, мы можем захотеть растянуть его чуть-чуть
                 // Но пока оставим геометрию как есть, она сегментирована
@@ -209,12 +209,14 @@ export class CochlearCylinder {
         const roundedT = Math.floor(t * 10) / 10;
         if (roundedT > this._lastLoggedT || t === 1) {
             console.log(`[Trajectory] Progress: ${(t * 100).toFixed(0)}%`);
-            this._objectMorphData.forEach(data => {
-                const currentPivotPos = new THREE.Vector3().lerpVectors(data.pivotStart, data.pivotEnd, t);
-                const thetaDeg = (data.pivotEnd.x / 128.0) * 180.0 * t;
-                const color = data.obj.material.color.getHexString();
-                console.log(` - Sphere ${color}: X=${currentPivotPos.x.toFixed(1)}, Z=${currentPivotPos.z.toFixed(1)}, Ang=${thetaDeg.toFixed(1)}°`);
-            });
+            if (this._objectMorphData) {
+                this._objectMorphData.forEach(data => {
+                    if (!data.start || !data.end) return; // Safety check
+                    const currentPos = new THREE.Vector3().lerpVectors(data.start, data.end, t);
+                    const color = data.obj.material.color.getHexString();
+                    console.log(` - Sphere ${color}: X=${currentPos.x.toFixed(1)}, Z=${currentPos.z.toFixed(1)}`);
+                });
+            }
             this._lastLoggedT = roundedT;
         }
     }
