@@ -6,9 +6,9 @@
   overflow-x: hidden;
   padding: 5px;
   scrollbar-width: thin;
-  scrollbar-color: var(--color-icon-disabled) var(--color-pure-black);
+  scrollbar-color: var(--color-icon-disabled) transparent;
   min-height: 100px;
-  background-color: var(--color-pure-black);
+  background-color: transparent;
 }
 
 #promptBar,
@@ -16,7 +16,7 @@
   flex-shrink: 0;
   min-height: 120px;
   max-height: 200px;
-  background-color: var(--color-pure-black);
+  background-color: transparent;
   padding: 5px;
   display: flex;
   flex-direction: column;

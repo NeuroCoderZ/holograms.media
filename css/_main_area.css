@@ -54,10 +54,11 @@
   /* Blackout Glass style */
   backdrop-filter: blur(30px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(30px) saturate(160%) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
-  border-image: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0.15) 60%, rgba(255, 255, 255, 0.02)) 1 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
   border-bottom: none !important;
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
   border-radius: 20px 20px 0 0 !important;
   margin: 0 !important;
   padding: 0 !important;
