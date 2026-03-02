@@ -8,7 +8,16 @@ export function startAnimationLoop(appState) {
     const isWebGPU = appState.renderer.isWebGPURenderer === true;
     console.log(`[Rendering] Using ${isWebGPU ? 'WebGPU' : 'WebGL'} render loop.`);
 
+    let lastTime = performance.now();
     async function animate(time) {
+        // Delta time for camera rotation
+        const deltaTime = (time - lastTime) / 1000;
+        lastTime = time;
+
+        if (appState.updateCameraRotation) {
+            appState.updateCameraRotation(deltaTime);
+        }
+
         // Update hologram visuals before rendering
         if (appState.hologramRendererInstance) {
             appState.hologramRendererInstance.updateVisuals();

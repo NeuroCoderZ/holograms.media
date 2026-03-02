@@ -94,6 +94,15 @@ class PanelManager {
             if (document.getElementById('submitChatMessage')) document.getElementById('submitChatMessage').style.display = 'none';
         }
 
+        const header = document.getElementById('rightPanelHeader');
+        if (header) {
+            header.style.display = 'block';
+            if (panelKey === 'versionTimeline') header.textContent = 'Список версий';
+            else if (panelKey === 'myHolograms') header.textContent = 'Список голограмм';
+            else if (panelKey === 'myGestures') header.textContent = 'Список жестов';
+            else header.style.display = 'none';
+        }
+
         if (panelOpened) console.log(`Content panel '${panelKey}' opened.`);
         else console.warn(`Content panel with key '${panelKey}' not found.`);
     }

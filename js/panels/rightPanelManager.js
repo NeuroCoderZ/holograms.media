@@ -54,6 +54,17 @@ function updateUIVisibility(isChatMode) {
   } else if (!isChatMode && elements.topPromptInput) {
     setTimeout(() => elements.topPromptInput.focus(), 100);
   }
+
+  // Обновляем заголовок
+  const header = document.getElementById('rightPanelHeader');
+  if (header) {
+    if (isChatMode) {
+      header.style.display = 'none';
+    } else {
+      header.style.display = 'block';
+      header.textContent = 'Список версий';
+    }
+  }
 }
 
 /**

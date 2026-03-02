@@ -160,6 +160,40 @@ export async function initializeScene(state) {
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
 
+  // Mouse rotation for XR mode
+  state.mouseRotation = { isDragging: false, previousMousePosition: { x: 0, y: 0 } };
+
+  state.renderer.domElement.addEventListener('pointerdown', (e) => {
+    if (!state.isXRMode) return;
+    state.mouseRotation.isDragging = true;
+    state.mouseRotation.previousMousePosition = { x: e.offsetX, y: e.offsetY };
+  });
+
+  state.renderer.domElement.addEventListener('pointermove', (e) => {
+    if (!state.isXRMode || !state.mouseRotation.isDragging) return;
+
+    const deltaMove = {
+      x: e.offsetX - state.mouseRotation.previousMousePosition.x,
+      y: e.offsetY - state.mouseRotation.previousMousePosition.y
+    };
+
+    const rotationSpeedX = 0.005;
+    const rotationSpeedY = 0.005;
+
+    // Notice we invert Y movement to mimic typical FPS / Orbit mouse look
+    state.camera.rotation.y -= deltaMove.x * rotationSpeedY;
+    state.camera.rotation.x -= deltaMove.y * rotationSpeedX;
+
+    // Clamp vertical rotation
+    state.camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, state.camera.rotation.x));
+
+    state.mouseRotation.previousMousePosition = { x: e.offsetX, y: e.offsetY };
+  });
+
+  window.addEventListener('pointerup', () => {
+    state.mouseRotation.isDragging = false;
+  });
+
   // Update loop for WASD (called from main animation loop)
   state.updateCameraRotation = function (deltaTime) {
     if (!state.isXRMode) return;

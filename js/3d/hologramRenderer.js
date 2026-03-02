@@ -57,7 +57,7 @@ export class HologramRenderer {
     this._debugFrameCount = 0;
 
     // Инициализируем WASD контроллеры сразу, чтобы они работали везде
-    this._setupWASDControls();
+    // this._setupWASDControls(); Оставлено sceneSetup.js
   }
 
   // ─── Scene Construction ──────────────────────────────────────────────────
@@ -255,25 +255,10 @@ export class HologramRenderer {
         camera.updateProjectionMatrix();
       }
 
-      if (controls) {
-        controls.enabled = true;
-        // В XR мы внутри, вращаемся на 360, смотрим вверх-вниз
-        controls.minAzimuthAngle = -Math.PI; 
-        controls.maxAzimuthAngle = Math.PI;
-        controls.minPolarAngle = Math.PI / 2 - Math.PI / 3; // -60 градусов
-        controls.maxPolarAngle = Math.PI / 2 + Math.PI / 3; // +60 градусов
-        controls.enablePan = false;
-        controls.enableZoom = false;
-        
-        // ВАЖНО: В режиме цилиндра цель - центр координат (пользователь)
-        controls.target.set(0, 0, 0); 
-        // Камера в (0,0,1000) смотрит на (0,0,0) - это зеленая ось
-        camera.position.set(0, 0, 1000);
-        controls.update();
-      }
+      // Camera settings are now handled by sceneSetup.js setXRMode
 
       await this._cochlearCylinder.morphToTorus(1500, this.leftSequencerGroup, this.rightSequencerGroup);
-      
+
       this.columns.forEach(pair => {
         [pair.left.children[0], pair.right.children[0]].forEach(mesh => {
           if (mesh.material.uniforms.uInversePerspective) mesh.material.uniforms.uInversePerspective.value = 1.0;
@@ -287,7 +272,7 @@ export class HologramRenderer {
       return true;
     } else {
       await this._cochlearCylinder.morphToFlat(1500, this.leftSequencerGroup, this.rightSequencerGroup);
-      
+
       this.columns.forEach(pair => {
         [pair.left.children[0], pair.right.children[0]].forEach(mesh => {
           if (mesh.material.uniforms.uInversePerspective) mesh.material.uniforms.uInversePerspective.value = 0.0;
@@ -301,7 +286,7 @@ export class HologramRenderer {
 
       if (mainArea) mainArea.classList.remove('xr-mode');
       if (gridContainer) gridContainer.classList.remove('xr-mode');
-      
+
       this.hologramPivot.position.y = 0;
 
       if (camera) {
@@ -309,105 +294,19 @@ export class HologramRenderer {
         camera.updateProjectionMatrix();
       }
 
-      if (controls) {
-        controls.minAzimuthAngle = -Math.PI / 2;
-        controls.maxAzimuthAngle = Math.PI / 2;
-        controls.minPolarAngle = 0;
-        controls.maxPolarAngle = Math.PI;
-        controls.target.set(0, 0, 0);
-        camera.position.set(0, 0, 1000);
-        controls.update();
-      }
+      // Camera restore settings are handled by sceneSetup.js setXRMode
+
       return false;
     }
   }
 
   _setupWASDControls() {
-    this._xrActiveKeys = new Set();
-    this._xrKeyHandlerDown = (e) => { 
-      const key = e.key.toLowerCase();
-      if (['w','a','s','d'].includes(key)) {
-        this._xrActiveKeys.add(key);
-        if (state.controls) state.isDragging = true;
-      }
-    };
-    this._xrKeyHandlerUp = (e) => { 
-      const key = e.key.toLowerCase();
-      this._xrActiveKeys.delete(key);
-      if (this._xrActiveKeys.size === 0 && state.controls) {
-        setTimeout(() => { state.isDragging = false; }, 100);
-      }
-    };
-    
-    window.addEventListener('keydown', this._xrKeyHandlerDown);
-    window.addEventListener('keyup', this._xrKeyHandlerUp);
-
-    const update = () => {
-      const controls = state.controls;
-      const camera = state.camera;
-      
-      if (!controls || !camera || this._xrActiveKeys.size === 0) {
-          this._xrControlAnimId = requestAnimationFrame(update);
-          return;
-      }
-
-      const step = 0.03; 
-      const moveStep = 10.0;
-      let moved = false;
-
-      // Текущий офсет от центра
-      const offset = new THREE.Vector3().subVectors(camera.position, controls.target);
-      const radius = offset.length();
-
-      // --- Вращение (A/D) ---
-      if (this._xrActiveKeys.has('a')) {
-          // Влево (угол увеличивается)
-          const angle = -step;
-          const x = offset.x; const z = offset.z;
-          offset.x = x * Math.cos(angle) - z * Math.sin(angle);
-          offset.z = x * Math.sin(angle) + z * Math.cos(angle);
-          moved = true;
-      }
-      if (this._xrActiveKeys.has('d')) {
-          // Вправо
-          const angle = step;
-          const x = offset.x; const z = offset.z;
-          offset.x = x * Math.cos(angle) - z * Math.sin(angle);
-          offset.z = x * Math.sin(angle) + z * Math.cos(angle);
-          moved = true;
-      }
-      
-      // --- Высота / Наклон (W/S) ---
-      if (this._xrActiveKeys.has('w')) {
-          offset.y += moveStep;
-          moved = true;
-      }
-      if (this._xrActiveKeys.has('s')) {
-          offset.y -= moveStep;
-          moved = true;
-      }
-
-      // Применяем лимиты (в XR режиме они жестче)
-      if (this._isTorusMode) {
-          // По высоте: +/- 600 единиц (примерно 60 градусов на радиусе 1000)
-          offset.y = Math.max(-600, Math.min(600, offset.y));
-          // По горизонтали: в XR можно крутиться на 360, но мы ограничимся видом на голограмму если нужно
-      }
-
-      if (moved) {
-          camera.position.copy(controls.target).add(offset);
-          camera.lookAt(controls.target);
-          controls.update();
-      }
-      
-      this._xrControlAnimId = requestAnimationFrame(update);
-    };
-    this._xrControlAnimId = requestAnimationFrame(update);
+    // Moved to sceneSetup.js and rendering.js
   }
 
   _teardownXRControls() {
-      // Больше не удаляем слушатели, так как они универсальные
-      // Но останавливаем анимацию если нужно (хотя она теперь вечная)
+    // Больше не удаляем слушатели, так как они универсальные
+    // Но останавливаем анимацию если нужно (хотя она теперь вечная)
   }
 
   /** Подписываемся на DeviceOrientation (alpha = yaw = "обход вокруг кольца"). */
