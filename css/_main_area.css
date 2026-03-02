@@ -44,32 +44,30 @@
 #gesture-area {
   position: fixed;
   bottom: 0 !important;
-  /* Flush with bottom edge */
   left: 50%;
   transform: translateX(-50%);
   width: var(--gesture-width, 100%) !important;
   height: 60px !important;
-  /* Fixed height for the area */
-  background-color: rgba(0, 0, 0, 0.4) !important;
-  /* Glass style matching side panels */
-  backdrop-filter: blur(20px) saturate(150%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+
+  /* ТЗ v4.5: Идентичный Side Panels эффект стекла */
+  background-color: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+
   border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
   border-bottom: none !important;
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+
   border-radius: 20px 20px 0 0 !important;
   margin: 0 !important;
   padding: 0 !important;
-
-  z-index: 100;
+  z-index: 1000;
   cursor: default;
   overflow: hidden;
-  min-height: 20px;
-  /* Ensure min-height for visibility */
   pointer-events: auto;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, width 0.4s ease, left 0.4s ease;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, width 0.4s ease, height 0.3s ease;
 }
 
 /* Peek effect: торчит на 20px когда неактивна */

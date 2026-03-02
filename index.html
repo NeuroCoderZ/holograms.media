@@ -338,7 +338,7 @@
     </div>
 
     <!-- Общая разделительная линия (всегда видимая) -->
-    <div class="panel-divider"></div>
+    <hr class="panel-hr">
 
     <!-- Контейнер для ввода - переключаемые области -->
     <div class="input-container">
@@ -355,6 +355,9 @@
 
     <!-- Блок с элементами управления (всегда видимый внизу) -->
     <div class="controls-container">
+      <div id="triaVersionLabelContainer" style="font-size: 10px; color: #555; margin-bottom: 4px; padding-left: 10px;">
+        TRI-A VERSION: <span id="triaVersion">v4.5 (Gesture-First)</span>
+      </div>
       <div class="prompt-controls"
         style="display: flex; flex-direction: row; align-items: center; width: 100%; gap: 10px;">
         <button id="promptModeButton" class="control-button" title="Промпт" style="flex-shrink: 0;">

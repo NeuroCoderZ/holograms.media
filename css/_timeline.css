@@ -62,33 +62,84 @@
   position: relative;
   display: flex;
   align-items: flex-start;
-  margin-bottom: calc(var(--font-size-small) * 1.4 - var(--font-size-small));
+  margin-bottom: var(--spacing-md);
   padding: var(--spacing-sm);
   border-radius: var(--border-radius-sm);
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .version-frame:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Чуть заметнее ховер */
 .version-frame.active {
   background-color: rgba(255, 255, 255, 0.1);
-  border-left: 2px solid var(--color-green-100);
+  border-left: 3px solid var(--color-primary);
 }
 
-.version-placeholder {
-  background-color: rgba(0, 0, 0, 0.2);
+.version-thumbnail {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  background-color: #333;
+  /* Серый квадрат */
   border-radius: var(--border-radius-sm);
+  margin-right: var(--spacing-sm);
+}
+
+.version-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.version-id-label {
+  font-size: 10px;
+  color: #888;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.version-prompt-text {
+  font-size: var(--font-size-small);
+  line-height: 1.3;
+  color: var(--text-color);
+  max-height: 2.6em;
+  /* 2 lines */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.view-source-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  color: #666;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.view-source-btn:hover {
+  opacity: 1;
   color: var(--color-primary);
-  text-align: center;
-  /* Используем переменные для определения размеров */
-  width: calc(var(--font-size-small) * 1.4 * 5 + var(--spacing-md));
-  /* Ширина = Высота */
-  height: calc(var(--font-size-small) * 1.4 * 5 + var(--spacing-md));
-  /* Высота для 5 строк текста + padding */
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .version-text {

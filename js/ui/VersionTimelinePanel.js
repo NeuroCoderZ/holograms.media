@@ -1,36 +1,29 @@
-// Manages the display of version history in the timeline panel.
-
-// import VersionService from '../services/VersionService'; // To fetch version data
-// import EventBus from '../core/eventBus'; // For events like 'newVersionAdded'
+import versionService from '../services/VersionService.js';
 
 class VersionTimelinePanel {
-    constructor(appState, eventBus /*, versionService */) {
-        this.appState = appState; // To get current versions or react to changes
+    constructor(appState, eventBus) {
+        this.appState = appState;
         this.eventBus = eventBus;
-        // this.versionService = versionService;
+        this.versionService = versionService;
 
-        this.versionFramesContainer = document.getElementById('versionFrames'); // The main scrollable container for all frames
-        this.versionTimelineWrapper = document.getElementById('versionTimelineContainer'); // The overall wrapper for this panel view
+        this.versionFramesContainer = document.getElementById('versionFrames');
+        this.versionTimelineWrapper = document.getElementById('versionTimelineContainer');
 
         if (!this.versionFramesContainer) {
             console.error("VersionTimelinePanel: #versionFrames container not found!");
             return;
         }
-        if (!this.versionTimelineWrapper) {
-            console.warn("VersionTimelinePanel: #versionTimelineContainer wrapper not found. Visibility might be an issue.");
-        }
 
         this.mutationObserver = null;
         this.setupAutoScroll();
 
-        // Example: Listen for an event that signifies new versions are available
-        // if (this.eventBus) {
-        //     this.eventBus.on('versionsUpdated', (versions) => this.renderTimeline(versions));
-        // }
+        // Слушаем обновления от Tria или других модулей
+        if (this.eventBus) {
+            this.eventBus.on('versions:refresh', () => this.loadAndRenderVersions());
+        }
 
         console.log("VersionTimelinePanel initialized.");
-        // this.loadAndRenderVersions(); // Initial load or render demo/placeholder
-        this.renderDemoVersions(); // For now, render demo versions
+        this.loadAndRenderVersions(); // Первичная загрузка реальных данных
     }
 
     setupAutoScroll() {
@@ -43,7 +36,7 @@ class VersionTimelinePanel {
             // Only auto-scroll if new items are added and we are already near the bottom
             // This prevents auto-scrolling if the user has intentionally scrolled up.
             let newNodesAdded = false;
-            for(const mutation of mutationsList) {
+            for (const mutation of mutationsList) {
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                     newNodesAdded = true;
                     break;
@@ -69,20 +62,24 @@ class VersionTimelinePanel {
         }
     }
 
-    // async loadAndRenderVersions() {
-    //     if (!this.versionService) {
-    //         console.warn("VersionService not available, rendering demo versions.");
-    //         this.renderDemoVersions();
-    //         return;
-    //     }
-    //     try {
-    //         const versions = await this.versionService.fetchVersions(); // Assuming a method like this
-    //         this.renderTimeline(versions);
-    //     } catch (error) {
-    //         console.error("Error loading versions:", error);
-    //         this.renderDemoVersions(); // Fallback
-    //     }
-    // }
+    async loadAndRenderVersions() {
+        if (!this.versionService) {
+            console.warn("VersionService not available, rendering demo versions.");
+            this.renderDemoVersions();
+            return;
+        }
+        try {
+            const versions = await this.versionService.fetchVersions(20);
+            if (versions && versions.length > 0) {
+                this.renderTimeline(versions);
+            } else {
+                this.renderDemoVersions(); // Fallback to demo if API fails
+            }
+        } catch (error) {
+            console.error("Error loading versions:", error);
+            this.renderDemoVersions(); // Fallback
+        }
+    }
 
     renderTimeline(versionsData) {
         if (!this.versionFramesContainer) return;
@@ -98,43 +95,57 @@ class VersionTimelinePanel {
             return;
         }
 
-        // As per plan: Newest versions are at the bottom.
-        // If versionsData comes newest first, no reverse needed. If oldest first, then reverse.
-        // Assuming versionsData is sorted: oldest first. Let's reverse for display.
+        // ТЗ v4.5: Новые версии внизу. 
+        // GitHub API возвращает последние первыми, поэтому реверсируем, чтобы новые были внизу.
         const displayVersions = [...versionsData].reverse();
-
 
         displayVersions.forEach((version, index) => {
             const frame = document.createElement('div');
-            frame.className = 'version-frame'; // Style: dark background, thin grey border
-            frame.dataset.versionId = version.id || `demo-${index}`;
+            frame.className = 'version-frame';
+            frame.dataset.versionId = version.id || `v-${index}`;
 
-            // Left Placeholder
-            const placeholderDiv = document.createElement('div');
-            placeholderDiv.className = 'version-placeholder';
-            // Placeholder content or styling will be handled by CSS
+            // Phase 2: Thumbnail (Gray Square)
+            const thumb = document.createElement('div');
+            thumb.className = 'version-thumbnail';
+            // Placeholder: gray rounded square defined in CSS
 
-            // Right Text Container (for prompt)
-            const versionTextDiv = document.createElement('div');
-            versionTextDiv.className = 'version-text';
-            versionTextDiv.textContent = version.prompt || 'No prompt for this version.';
-            // Scrollability and text wrapping for versionTextDiv will be handled by CSS
+            // Text Content (Prompt)
+            const textContent = document.createElement('div');
+            textContent.className = 'version-content';
 
-            frame.appendChild(placeholderDiv);
-            frame.appendChild(versionTextDiv);
+            const label = document.createElement('div');
+            label.className = 'version-id-label';
+            label.textContent = version.displayId || version.id.substring(0, 7);
 
-            // Add click listener if needed (e.g., to switch to this version)
-            // frame.addEventListener('click', () => {
-            //     if (this.eventBus) this.eventBus.emit('versionSelected', version.id);
-            //     console.log(`Version ${version.id} clicked.`);
-            // });
+            const promptText = document.createElement('div');
+            promptText.className = 'version-prompt-text';
+            promptText.textContent = version.prompt || 'No description';
+
+            textContent.appendChild(label);
+            textContent.appendChild(promptText);
+
+            // Phase 2: ViewSource Button (Google icon)
+            const viewSourceBtn = document.createElement('button');
+            viewSourceBtn.className = 'view-source-btn';
+            viewSourceBtn.title = 'Просмотреть код';
+            viewSourceBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor">
+                    <path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H160v400Zm140-40-56-56 103-104-104-104 57-56 160 160-160 160Zm180 0v-80h240v80H480Z"/>
+                </svg>
+            `;
+            viewSourceBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                eventBus.emit('ui:viewSource', version.id);
+            });
+
+            frame.appendChild(thumb);
+            frame.appendChild(textContent);
+            frame.appendChild(viewSourceBtn);
 
             this.versionFramesContainer.appendChild(frame);
         });
 
-        // Initial scroll to bottom after rendering
-        // The MutationObserver handles subsequent additions, but initial render needs this.
-        // Defer slightly to ensure DOM is fully updated.
+        // Initial scroll to bottom
         requestAnimationFrame(() => {
             this.scrollToBottom();
         });

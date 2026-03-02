@@ -231,6 +231,10 @@ import PanelManager from '../ui/panelManager.js';
 import { XRSessionManager } from '../xr/webxr_session_manager.js';
 import GestureUIManager from '../ui/GestureUIManager.js';
 import eventBus from '../core/eventBus.js';
+import { GestureCommandEngine } from '../core/GestureCommandEngine.js';
+import { GestureToCodeExecutor } from '../core/GestureToCodeExecutor.js';
+import { GestureLiveStudio } from '../ui/GestureLiveStudio.js';
+import { TriaOrchestrator } from './TriaOrchestrator.js';
 
 export async function initCore() {
   console.log('🚀 Инициализация ядра приложения...');
@@ -293,9 +297,18 @@ export async function initCore() {
     // Инициализируем GestureUIManager
     try {
       state.gestureUIManager = new GestureUIManager(eventBus, state);
-      console.log('✅ GestureUIManager инициализирован');
+
+      // ТЗ v4.5: Инициализация Gesture Phase модулей
+      state.gestureCommandEngine = new GestureCommandEngine();
+      state.gestureToCodeExecutor = new GestureToCodeExecutor(state.gestureCommandEngine);
+      state.gestureLiveStudio = new GestureLiveStudio(state.gestureUIManager, state.gestureCommandEngine);
+
+      // Инициализация TriaOrchestrator
+      state.triaOrchestrator = new TriaOrchestrator(null, state);
+
+      console.log('✅ Gesture Phase modules (v4.5) initialized');
     } catch (error) {
-      console.error('❌ Ошибка инициализации GestureUIManager:', error);
+      console.error('❌ Ошибка инициализации Gesture UI/Phase:', error);
     }
 
     // Инициализируем XRSessionManager

@@ -139,10 +139,9 @@ class GestureUIManager {
         // Synchronized with sceneSetup.js logic
         const targetScale = Math.min((w * 0.9) / 256, (h * 0.9) / 256);
 
-        // Panel width = 256 units (matching purple + red grids)
-        // Panel height = 64 units
+        // Panel height = 25dvh (ТЗ v4.5)
         const targetWidthPx = targetScale * 256;
-        const targetHeightPx = present ? (targetScale * 64) : 6;
+        const targetHeightPx = present ? (window.innerHeight * 0.25) : 6;
 
 
 
