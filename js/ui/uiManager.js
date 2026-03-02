@@ -801,7 +801,10 @@ export function updateAuthUI(appState) {
       letterBtn.title = `Аккаунт: ${currentState.user.email}`;
     }
     if (startSessionModal) startSessionModal.style.display = 'none';
-    console.log(`[Auth] v19.29: UI Updated (Inverted Letter) for ${currentState.user.email}`);
+    // Auto-close any login/account popup on success
+    const accountModal = document.getElementById('account-modal');
+    if (accountModal) accountModal.style.display = 'none';
+    console.log(`[Auth] v19.42: UI Updated (Inverted Letter) for ${currentState.user.email}`);
   } else {
     // Гость
     if (loginBtn) loginBtn.style.setProperty('display', 'flex', 'important');

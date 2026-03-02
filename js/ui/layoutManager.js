@@ -278,17 +278,17 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         // Offset to align hologram center with visible area center
         xOffset = (leftW - rightW) / 2;
 
-        // Sync Gesture Area (v0.19.037: Strict horizontal alignment)
-        // Center of gesture panel = Center of gridContainer
-        // Important: we use absolute left based on viewport to match fixed positioning of gestureArea
-        const gridRect = gridContainer.getBoundingClientRect();
+        // Sync Gesture Area (v0.19.042: Use CSS centering, JS only sets width)
+        // CSS handles centering: left:50%; transform:translateX(-50%)
+        // JS only needs to set the correct visual width to match the hologram
         const visualWidth = 256 * targetScaleValue;
-        const centerX = gridRect.left + (gridRect.width / 2);
         const gestureArea = document.getElementById('gesture-area');
         if (gestureArea) {
-            gestureArea.style.left = `${centerX - (visualWidth / 2)}px`;
+            gestureArea.style.setProperty('--gesture-width', `${visualWidth}px`);
             gestureArea.style.width = `${visualWidth}px`;
-            gestureArea.style.transform = 'none'; // Ensure no transform interferes
+            // Don't override left/transform — CSS handles centering
+            gestureArea.style.removeProperty('left');
+            gestureArea.style.removeProperty('transform');
             gestureArea.style.margin = '0';
         }
     } else {
