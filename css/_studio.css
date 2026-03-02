@@ -1,0 +1,75 @@
+/* GestureLiveStudio — Mode Tabs Styling */
+
+.studio-mode-bar {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 2px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+/* Show mode bar only when gesture area is expanded (hands detected) */
+#gesture-area.hands-detected .studio-mode-bar {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.studio-mode-tab {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.studio-mode-tab:hover {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.studio-mode-tab.active {
+    color: #00FF88;
+    background: rgba(0, 255, 136, 0.1);
+    font-weight: 500;
+}
+
+.mode-icon {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.mode-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Hide labels on narrow gesture panels */
+@media (max-width: 500px) {
+    .mode-label {
+        display: none;
+    }
+
+    .studio-mode-tab {
+        padding: 4px 8px;
+    }
+}

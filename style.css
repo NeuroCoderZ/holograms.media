@@ -12,6 +12,7 @@
 @import './css/_utility.css';
 @import './css/_responsive.css';
 @import './css/_animations.css';
+@import './css/_studio.css';
 
 /* Fix for hidden scroll area */
 html,
