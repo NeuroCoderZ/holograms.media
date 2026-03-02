@@ -57,7 +57,7 @@
 .storage-label {
   display: flex;
   justify-content: space-between;
-  font-size: var(--font-size-small);
+  font-size: 14px;
   margin-bottom: 6px;
   color: #888;
 }
@@ -141,9 +141,62 @@
 }
 
 .settings-select option {
-  background-color: var(--input-bg);
+  background-color: #1a1a1a;
   color: white;
   text-align: right;
-  direction: rtl;
-  /* Tricky way to force right alignment in some browsers for options */
+}
+
+/* Unified font sizes in profile modal */
+.profile-section h3 {
+  font-size: 16px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.storage-item {
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Unlock button styling */
+.pro-btn-disabled {
+  margin-top: var(--spacing-lg) !important;
+  background-color: #888 !important;
+  color: #1a1a1a !important;
+  border: none !important;
+  border-radius: 20px !important;
+  padding: 8px 16px !important;
+  font-size: 13px;
+  cursor: not-allowed;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+}
+
+/* Avatar hover hint */
+.profile-avatar-large {
+  position: relative;
+  cursor: pointer;
+}
+
+.profile-avatar-large::after {
+  content: '\270E';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.profile-avatar-large:hover::after {
+  opacity: 1;
 }
