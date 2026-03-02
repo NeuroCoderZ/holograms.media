@@ -50,19 +50,16 @@ export class CochlearCylinder {
 
                 // Математика цилиндра (Тор с прямоугольным срезом)
                 // X (панорама) -> Theta (угол)
-                // Z (глубина) -> R (радиус)
-
+                // Z-рост цилиндра идет ОТ фокуса наружу (+Z)
                 // ВАЖНО: В 2D Z=0 - это задняя стенка (внешний радиус).
                 // Мы хотим, чтобы при Z=0 радиус был XR_RADIUS (1000).
-                // При росте столбца (Z увеличивается) он должен идти К ЦЕНТРУ.
                 const theta = (pivotPos.x / 128) * Math.PI;
                 const r = XR_RADIUS - pivotPos.z;
-                const camZ = 1000;
 
                 const targetPivotPos = new THREE.Vector3(
                     r * Math.sin(theta),
                     pivotPos.y,
-                    camZ - r * Math.cos(theta)
+                    -r * Math.cos(theta) // Центрируем вокруг Z=0
                 );
 
                 const parentWorldInverse = child.parent.matrixWorld.clone().invert();
@@ -103,20 +100,18 @@ export class CochlearCylinder {
                 const localV = new THREE.Vector3();
                 const pivotV = new THREE.Vector3();
                 const cylPivotV = new THREE.Vector3();
-                const camZ = 1000;
 
                 for (let i = 0; i < posAttr.count; i++) {
                     localV.fromBufferAttribute(posAttr, i);
                     pivotV.copy(localV).applyMatrix4(childWorldMatrix).applyMatrix4(pivotInverse);
 
-                    // Та же логика для вершин:
-                    // x -> угол, z -> радиус (инвертированный рост)
+                    // Та же логика для вершин: центровка вокруг 0,0,0
                     const theta = (pivotV.x / 128) * Math.PI;
                     const r = XR_RADIUS - pivotV.z;
 
                     cylPivotV.x = r * Math.sin(theta);
                     cylPivotV.y = pivotV.y;
-                    cylPivotV.z = camZ - r * Math.cos(theta);
+                    cylPivotV.z = -r * Math.cos(theta); // Центрируем вокруг Z=0
 
                     const finalV = cylPivotV.applyMatrix4(this.hologramPivot.matrixWorld).applyMatrix4(childInverse);
                     morphEntry.torusArr[i * 3] = finalV.x;
