@@ -7,7 +7,7 @@ class VersionTimelinePanel {
         this.versionService = versionService;
 
         this.versionFramesContainer = document.getElementById('versionFrames');
-        this.versionTimelineWrapper = document.getElementById('versionTimelineContainer');
+        this.versionTimelineWrapper = document.getElementById('versionTimeline');
 
         if (!this.versionFramesContainer) {
             console.error("VersionTimelinePanel: #versionFrames container not found!");

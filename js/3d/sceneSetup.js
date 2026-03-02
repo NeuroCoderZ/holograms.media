@@ -144,6 +144,55 @@ export async function initializeScene(state) {
     state.returnTween = requestAnimationFrame(animateReturn);
   };
 
+  // --- WASD & XR Camera Logic (Stage 7) ---
+  state.wasdKeys = { w: false, a: false, s: false, d: false };
+  state.isXRMode = false;
+
+  const onKeyDown = (e) => {
+    const key = e.key.toLowerCase();
+    if (key in state.wasdKeys) state.wasdKeys[key] = true;
+  };
+  const onKeyUp = (e) => {
+    const key = e.key.toLowerCase();
+    if (key in state.wasdKeys) state.wasdKeys[key] = false;
+  };
+
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+
+  // Update loop for WASD (called from main animation loop)
+  state.updateCameraRotation = function (deltaTime) {
+    if (!state.isXRMode) return;
+
+    const rotationSpeed = 1.5 * deltaTime; // Speed factor
+    const moveVector = new THREE.Vector3();
+
+    if (state.wasdKeys.w) state.camera.rotation.x += rotationSpeed;
+    if (state.wasdKeys.s) state.camera.rotation.x -= rotationSpeed;
+    if (state.wasdKeys.a) state.camera.rotation.y += rotationSpeed;
+    if (state.wasdKeys.d) state.camera.rotation.y -= rotationSpeed;
+
+    // Clamp vertical rotation to avoid flipping
+    state.camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, state.camera.rotation.x));
+  };
+
+  // Toggle XR Mode helper
+  state.setXRMode = function (active) {
+    state.isXRMode = active;
+    if (active) {
+      console.log("[XR Mode] Enabling Look-Around (Camera at 0,0,0)");
+      state.camera.position.set(0, 0, 0); // User is inside the cylinder
+      state.controls.enabled = false; // Disable standard OrbitControls
+      state.camera.rotation.set(0, 0, 0);
+    } else {
+      console.log("[XR Mode] Restoring standard view");
+      state.camera.position.copy(state.initialCameraPosition);
+      state.controls.enabled = true;
+      state.controls.target.copy(state.initialControlsTarget);
+      state.controls.update();
+    }
+  };
+
   state.animateReturn = function () {
     // Больше не используется, так как у нас requestAnimationFrame внутри startReturnAnimation.
   };

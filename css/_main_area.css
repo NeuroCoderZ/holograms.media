@@ -50,9 +50,9 @@
   height: 60px !important;
 
   /* ТЗ v4.5: Идентичный Side Panels эффект стекла */
-  background-color: rgba(0, 0, 0, 0.65) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(25px) !important;
+  -webkit-backdrop-filter: blur(25px) !important;
 
   border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
   border-bottom: none !important;
@@ -90,6 +90,12 @@
     min-height: 20px;
     height: auto;
   }
+}
+
+/* Изменено: окно для записи жестов выдвигается на 25% от высоты всего окна */
+#gesture-area.active,
+#gesture-area.hands-detected {
+  height: 25vh !important;
 }
 
 /* Линия жестов - скрыта, так как отрисовка на холсте */

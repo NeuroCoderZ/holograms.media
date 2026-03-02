@@ -397,6 +397,12 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
         // Step 2: Toggle Cochlear Cylinder morph (inside XR session or as fallback)
         if (appState.hologramRendererInstance) {
           const isXR = await appState.hologramRendererInstance.toggleXRMode();
+
+          // Activate look-around and WASD logic
+          if (appState.setXRMode) {
+            appState.setXRMode(isXR);
+          }
+
           uiElements.buttons.xrButton.classList.toggle('active', isXR);
           uiElements.buttons.xrButton.title = isXR ? "Exit XR Mode" : "Enter XR Mode";
           console.log(`[UIManager] Cochlear Cylinder ${isXR ? 'activated' : 'deactivated'}`);

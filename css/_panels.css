@@ -1,8 +1,8 @@
 .panel.left-panel,
 .panel.right-panel {
-  background-color: rgba(0, 0, 0, 0.65) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(25px) !important;
+  -webkit-backdrop-filter: blur(25px) !important;
   padding: 0;
   height: 100vh !important;
   top: 0 !important;
@@ -60,9 +60,9 @@
   visibility: visible !important;
   pointer-events: auto !important;
   transform: translateX(0) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  background-color: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(25px) !important;
+  -webkit-backdrop-filter: blur(25px) !important;
+  background-color: rgba(0, 0, 0, 0.45) !important;
 }
 
 
