@@ -13,6 +13,7 @@ import { toggleTriaLearningMode } from '../ai/tria.js'; // Import for Tria butto
 import { initializeRightPanel } from '../panels/rightPanelManager.js'; // Import for right panel logic
 import { hologramScanner } from '../multimodal/hologramScanner.js'; // Import for Scanner button
 import { gestureSynthesizer } from '../audio/GestureSynthesizer.js'; // Import for Gesture Synth
+import { gestureManager } from '../managers/gestureManager.js'; // Import for Gesture Manager
 
 /**
  * uiElements is a central object holding references to all significant DOM elements
@@ -428,10 +429,40 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   }
 
   // Gesture Record button also opens the 'My Gestures' panel.
-  addButtonListener(uiElements.buttons.gestureRecordButton, () => {
+  addButtonListener(uiElements.buttons.gestureRecordButton, async () => {
     console.log("Gesture Record button clicked. Opening 'My Gestures' panel.");
     if (appState.panelManager) {
       appState.panelManager.openContentPanel('myGestures'); // Opens the specific panel for gestures.
+      const gesturesView = document.getElementById('myGesturesView');
+      if (gesturesView) {
+        gesturesView.innerHTML = '<p style="text-align: center; margin-top: 20px; color: grey;">Загрузка жестов...</p>';
+        try {
+          const gestures = await gestureManager.cloudStorage.loadUserGestures(gestureManager.getCurrentUserId());
+          if (gestures && gestures.length > 0) {
+            gesturesView.innerHTML = '<ul class="gestures-list" style="list-style: none; padding: 10px;"></ul>';
+            const ul = gesturesView.querySelector('ul');
+            gestures.forEach(g => {
+              const li = document.createElement('li');
+              li.className = 'gesture-list-item';
+              li.style.marginBottom = '10px';
+              li.style.padding = '10px';
+              li.style.backgroundColor = 'rgba(255,255,255,0.05)';
+              li.style.borderRadius = '8px';
+              const dateStr = g.timestamp ? new Date(g.timestamp).toLocaleString() : 'Неизвестно';
+              li.innerHTML = `
+                <h4 style="margin: 0; font-size: 14px; color: white;">${g.name || 'Без имени'}</h4>
+                <p style="margin: 5px 0 0 0; font-size: 10px; color: gray;">${dateStr} | ${g.code || ''}</p>
+              `;
+              ul.appendChild(li);
+            });
+          } else {
+            gesturesView.innerHTML = '<p style="text-align: center; margin-top: 20px; color: grey;">Список жестов пуст</p>';
+          }
+        } catch (e) {
+          console.error("Ошибка загрузки жестов:", e);
+          gesturesView.innerHTML = '<p style="text-align: center; margin-top: 20px; color: grey;">Ошибка загрузки</p>';
+        }
+      }
     } else {
       console.error("PanelManager not found in state. Cannot open 'myGestures' panel.");
     }
@@ -461,10 +492,18 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   }
 
   // Hologram List button opens the 'My Holograms' panel.
-  addButtonListener(uiElements.buttons.hologramListButton, () => {
+  addButtonListener(uiElements.buttons.hologramListButton, async () => {
     console.log("Hologram List button clicked. Opening 'My Holograms' panel.");
     if (appState.panelManager) {
       appState.panelManager.openContentPanel('myHolograms'); // Opens the specific panel for holograms.
+      // Temporary stub for Holograms since the manager isn't fully set up for Astra DB holograms yet.
+      const hologramsView = document.getElementById('myHologramsView');
+      if (hologramsView) {
+        hologramsView.innerHTML = '<p style="text-align: center; margin-top: 20px; color: grey;">Загрузка голограмм...</p>';
+        setTimeout(() => {
+          hologramsView.innerHTML = '<p style="text-align: center; margin-top: 20px; color: grey;">В разработке</p>';
+        }, 1000);
+      }
     } else {
       console.error("PanelManager not found in state. Cannot open 'myHolograms' panel.");
     }

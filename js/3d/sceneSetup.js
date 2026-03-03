@@ -184,8 +184,14 @@ export async function initializeScene(state) {
     state.camera.rotation.y -= deltaMove.x * rotationSpeedY;
     state.camera.rotation.x -= deltaMove.y * rotationSpeedX;
 
-    // Clamp vertical rotation
-    state.camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, state.camera.rotation.x));
+    // Clamp vertical rotation (-30 to +30 degrees approx)
+    state.camera.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 6, state.camera.rotation.x));
+
+    // Clamp horizontal rotation (-180 to +180 degrees approx)
+    state.camera.rotation.y = Math.max(-Math.PI, Math.min(Math.PI, state.camera.rotation.y));
+
+    // Disable Z rotation
+    state.camera.rotation.z = 0;
 
     state.mouseRotation.previousMousePosition = { x: e.offsetX, y: e.offsetY };
   });
@@ -206,8 +212,14 @@ export async function initializeScene(state) {
     if (state.wasdKeys.a) state.camera.rotation.y += rotationSpeed;
     if (state.wasdKeys.d) state.camera.rotation.y -= rotationSpeed;
 
-    // Clamp vertical rotation to avoid flipping
-    state.camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, state.camera.rotation.x));
+    // Clamp vertical rotation (-30 to 30 degrees)
+    state.camera.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 6, state.camera.rotation.x));
+
+    // Clamp horizontal rotation (-180 to 180 degrees)
+    state.camera.rotation.y = Math.max(-Math.PI, Math.min(Math.PI, state.camera.rotation.y));
+
+    // Disable Z rotation
+    state.camera.rotation.z = 0;
   };
 
   // Toggle XR Mode helper

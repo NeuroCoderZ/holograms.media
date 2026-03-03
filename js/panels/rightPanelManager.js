@@ -79,6 +79,11 @@ function toggleMode() {
   const isChatMode = !isPromptMode;
 
   updateUIVisibility(isChatMode);
+
+  if (isPromptMode) {
+    eventBus.emit('versions:refresh');
+  }
+
   console.log(`Режим правой панели переключен на: ${isPromptMode ? 'Промпт' : 'Чат'}`);
 }
 
