@@ -235,6 +235,7 @@ import { GestureCommandEngine } from '../core/GestureCommandEngine.js';
 import { GestureToCodeExecutor } from '../core/GestureToCodeExecutor.js';
 import { GestureLiveStudio } from '../ui/GestureLiveStudio.js';
 import { TriaOrchestrator } from './TriaOrchestrator.js';
+import VersionTimelinePanel from '../ui/VersionTimelinePanel.js';
 
 export async function initCore() {
   console.log('🚀 Инициализация ядра приложения...');
@@ -290,8 +291,12 @@ export async function initCore() {
       state.panelManager = new PanelManager();
       state.panelManager.initializePanelManager();
       console.log('✅ PanelManager инициализирован');
+
+      // Инициализируем панель версий
+      state.versionTimelinePanel = new VersionTimelinePanel(state, eventBus);
+      console.log('✅ VersionTimelinePanel инициализирован');
     } catch (error) {
-      console.error('❌ Ошибка инициализации PanelManager:', error);
+      console.error('❌ Ошибка инициализации PanelManager/VersionTimelinePanel:', error);
     }
 
     // Инициализируем GestureUIManager

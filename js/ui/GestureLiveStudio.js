@@ -168,7 +168,10 @@ export class GestureLiveStudio {
     async stopRecording() {
         if (!this.currentRecording) return null;
 
-        const duration = performance.now() - this.currentRecording.startTime;
+        const recordingData = this.currentRecording;
+        this.currentRecording = null; // Break the infinite loop immediately!
+
+        const duration = performance.now() - recordingData.startTime;
 
         // Harvest trajectory from GestureUIManager's recorded paths
         if (this.uiManager && this.uiManager.recordedPaths) {
@@ -176,25 +179,25 @@ export class GestureLiveStudio {
             this.uiManager.recordedPaths.forEach((path, key) => {
                 trajectoryData[key] = path.map(pt => ({ x: pt.x, y: pt.y, r: pt.r }));
             });
-            this.currentRecording.trajectory = trajectoryData;
+            recordingData.trajectory = trajectoryData;
         }
 
-        this.currentRecording.duration = duration;
+        recordingData.duration = duration;
 
-        // Stop UI recording
-        if (this.uiManager) {
-            this.uiManager.stopRecording();
+        // Stop UI recording (this emits the event again, but currentRecording is null now)
+        if (this.uiManager && this.uiManager.isRecording !== false) {
+            // We just call it safely, but it emits the event.
+            try { this.uiManager.stopRecording(); } catch (e) { }
         }
 
         // Save to IndexedDB
         const saved = await this.saveGesture({
             name: `Жест ${new Date().toLocaleTimeString('ru-RU')}`,
-            trajectory: this.currentRecording.trajectory,
-            duration: this.currentRecording.duration,
-            handCount: this.currentRecording.handCount
+            trajectory: recordingData.trajectory,
+            duration: recordingData.duration,
+            handCount: recordingData.handCount
         });
 
-        this.currentRecording = null;
         eventBus.emit('studio:recordingStopped', saved);
         console.log('[GestureLiveStudio] Recording stopped. Saved:', saved?.id);
         return saved;
