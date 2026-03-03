@@ -358,8 +358,17 @@ export class GestureManager {
      * Получение ID текущего пользователя
      */
     getCurrentUserId() {
-        // В реальном приложении это будет получено из системы аутентификации
-        return 'user_' + Date.now();
+        // Если пользователь авторизован
+        if (state && state.user && state.user.email) {
+            return state.user.email;
+        }
+        // Fallback на анонимную сессию, но персистентную!
+        let anonId = localStorage.getItem('anonUserId');
+        if (!anonId) {
+            anonId = 'anon_' + Date.now();
+            localStorage.setItem('anonUserId', anonId);
+        }
+        return anonId;
     }
 
     /**

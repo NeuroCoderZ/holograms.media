@@ -435,7 +435,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
       appState.panelManager.openContentPanel('myGestures'); // Opens the specific panel for gestures.
       const gesturesView = document.getElementById('myGesturesView');
       if (gesturesView) {
-        gesturesView.innerHTML = '<p style="text-align: center; margin-top: 20px; color: grey;">Загрузка жестов...</p>';
+        gesturesView.innerHTML = '';
         try {
           const gestures = await gestureManager.cloudStorage.loadUserGestures(gestureManager.getCurrentUserId());
           if (gestures && gestures.length > 0) {
@@ -456,11 +456,11 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
               ul.appendChild(li);
             });
           } else {
-            gesturesView.innerHTML = '<p style="text-align: center; margin-top: 20px; color: grey;">Список жестов пуст</p>';
+            gesturesView.innerHTML = '';
           }
         } catch (e) {
           console.error("Ошибка загрузки жестов:", e);
-          gesturesView.innerHTML = '<p style="text-align: center; margin-top: 20px; color: grey;">Ошибка загрузки</p>';
+          gesturesView.innerHTML = '';
         }
       }
     } else {
@@ -499,10 +499,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
       // Temporary stub for Holograms since the manager isn't fully set up for Astra DB holograms yet.
       const hologramsView = document.getElementById('myHologramsView');
       if (hologramsView) {
-        hologramsView.innerHTML = '<p style="text-align: center; margin-top: 20px; color: grey;">Загрузка голограмм...</p>';
-        setTimeout(() => {
-          hologramsView.innerHTML = '<p style="text-align: center; margin-top: 20px; color: grey;">В разработке</p>';
-        }, 1000);
+        hologramsView.innerHTML = '';
       }
     } else {
       console.error("PanelManager not found in state. Cannot open 'myHolograms' panel.");

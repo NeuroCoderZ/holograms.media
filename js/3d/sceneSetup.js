@@ -181,6 +181,7 @@ export async function initializeScene(state) {
     const rotationSpeedY = 0.005;
 
     // Notice we invert Y movement to mimic typical FPS / Orbit mouse look
+    state.camera.rotation.order = "YXZ";
     state.camera.rotation.y -= deltaMove.x * rotationSpeedY;
     state.camera.rotation.x -= deltaMove.y * rotationSpeedX;
 
@@ -211,6 +212,8 @@ export async function initializeScene(state) {
     if (state.wasdKeys.s) state.camera.rotation.x -= rotationSpeed;
     if (state.wasdKeys.a) state.camera.rotation.y += rotationSpeed;
     if (state.wasdKeys.d) state.camera.rotation.y -= rotationSpeed;
+
+    state.camera.rotation.order = "YXZ";
 
     // Clamp vertical rotation (-30 to 30 degrees)
     state.camera.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 6, state.camera.rotation.x));

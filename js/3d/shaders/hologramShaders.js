@@ -35,7 +35,7 @@ export const vertexShader = /* glsl */`
             float perspScale = mix(1.0, 0.65, factor);
             
             // Сжимаем ТОЛЬКО по X (перспектива цилиндра), Y остается прямым!
-            mvPosition.x *= perspScale;
+            // mvPosition.x *= perspScale; // DISABLED: XR Mode is distorting thickness of audio visual columns.
         }
 
         gl_Position = projectionMatrix * mvPosition;
