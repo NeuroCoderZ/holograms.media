@@ -21,7 +21,7 @@ export class VersionService {
         try {
             console.log(`[VersionService] Fetching commits from ${this.repoOwner}/${this.repoName}...`);
 
-            const response = await fetch(`${this.apiUrl}?per_page=${limit}`);
+            const response = await fetch(`${this.apiUrl}?sha=dev&per_page=${limit}`);
             if (!response.ok) {
                 throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
             }

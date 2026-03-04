@@ -179,20 +179,21 @@ export async function initializeScene(state) {
 
     const rotationSpeedX = 0.005;
     const rotationSpeedY = 0.005;
+    const cam = state.activeCamera;
 
     // Notice we invert Y movement to mimic typical FPS / Orbit mouse look
-    state.camera.rotation.order = "YXZ";
-    state.camera.rotation.y -= deltaMove.x * rotationSpeedY;
-    state.camera.rotation.x -= deltaMove.y * rotationSpeedX;
+    cam.rotation.order = "YXZ";
+    cam.rotation.y -= deltaMove.x * rotationSpeedY;
+    cam.rotation.x -= deltaMove.y * rotationSpeedX;
 
-    // Clamp vertical rotation (-30 to +30 degrees approx)
-    state.camera.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 6, state.camera.rotation.x));
+    // Clamp vertical rotation (-30 to +30 degrees)
+    cam.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 6, cam.rotation.x));
 
-    // Clamp horizontal rotation (-180 to +180 degrees approx)
-    state.camera.rotation.y = Math.max(-Math.PI, Math.min(Math.PI, state.camera.rotation.y));
+    // Clamp horizontal rotation (-180 to +180 degrees)
+    cam.rotation.y = Math.max(-Math.PI, Math.min(Math.PI, cam.rotation.y));
 
     // Disable Z rotation
-    state.camera.rotation.z = 0;
+    cam.rotation.z = 0;
 
     state.mouseRotation.previousMousePosition = { x: e.offsetX, y: e.offsetY };
   });
@@ -204,41 +205,51 @@ export async function initializeScene(state) {
   // Update loop for WASD (called from main animation loop)
   state.updateCameraRotation = function (deltaTime) {
     if (!state.isXRMode) return;
+    const cam = state.activeCamera;
 
     const rotationSpeed = 1.5 * deltaTime; // Speed factor
-    const moveVector = new THREE.Vector3();
 
-    if (state.wasdKeys.w) state.camera.rotation.x += rotationSpeed;
-    if (state.wasdKeys.s) state.camera.rotation.x -= rotationSpeed;
-    if (state.wasdKeys.a) state.camera.rotation.y += rotationSpeed;
-    if (state.wasdKeys.d) state.camera.rotation.y -= rotationSpeed;
+    if (state.wasdKeys.w) cam.rotation.x += rotationSpeed;
+    if (state.wasdKeys.s) cam.rotation.x -= rotationSpeed;
+    if (state.wasdKeys.a) cam.rotation.y += rotationSpeed;
+    if (state.wasdKeys.d) cam.rotation.y -= rotationSpeed;
 
-    state.camera.rotation.order = "YXZ";
+    cam.rotation.order = "YXZ";
 
     // Clamp vertical rotation (-30 to 30 degrees)
-    state.camera.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 6, state.camera.rotation.x));
+    cam.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 6, cam.rotation.x));
 
     // Clamp horizontal rotation (-180 to 180 degrees)
-    state.camera.rotation.y = Math.max(-Math.PI, Math.min(Math.PI, state.camera.rotation.y));
+    cam.rotation.y = Math.max(-Math.PI, Math.min(Math.PI, cam.rotation.y));
 
     // Disable Z rotation
-    state.camera.rotation.z = 0;
+    cam.rotation.z = 0;
   };
 
   // Toggle XR Mode helper
   state.setXRMode = function (active) {
     state.isXRMode = active;
     if (active) {
-      console.log("[XR Mode] Enabling Look-Around (Camera at 0,0,0)");
-      state.camera.position.set(0, 0, 0); // User is inside the cylinder
-      state.controls.enabled = false; // Disable standard OrbitControls
-      state.camera.rotation.set(0, 0, 0);
+      // Create a PerspectiveCamera for XR inside-torus view
+      const aspect = state.renderer.domElement.width / state.renderer.domElement.height;
+      state.xrPerspectiveCamera = new THREE.PerspectiveCamera(75, aspect, 0.1, 5000);
+      // Position camera at center axis of the inner cylinder of the torus
+      // hologramPivot is at (0,0,0), torus inner radius = 872
+      // Camera sits at the central axis of that cylindrical void
+      state.xrPerspectiveCamera.position.set(0, 0, 0);
+      state.xrPerspectiveCamera.rotation.order = "YXZ";
+      state.xrPerspectiveCamera.rotation.set(0, 0, 0);
+      state.activeCamera = state.xrPerspectiveCamera;
+      state.controls.enabled = false;
+      console.log("[XR Mode] Enabling Look-Around (PerspectiveCamera at torus center)");
     } else {
-      console.log("[XR Mode] Restoring standard view");
+      console.log("[XR Mode] Restoring orthographic view");
+      state.activeCamera = state.camera;
       state.camera.position.copy(state.initialCameraPosition);
       state.controls.enabled = true;
       state.controls.target.copy(state.initialControlsTarget);
       state.controls.update();
+      state.xrPerspectiveCamera = null;
     }
   };
 
