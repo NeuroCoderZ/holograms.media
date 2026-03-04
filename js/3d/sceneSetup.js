@@ -232,16 +232,15 @@ export async function initializeScene(state) {
     if (active) {
       // Create a PerspectiveCamera for XR inside-torus view
       const aspect = state.renderer.domElement.width / state.renderer.domElement.height;
-      state.xrPerspectiveCamera = new THREE.PerspectiveCamera(75, aspect, 0.1, 5000);
-      // Position camera at center axis of the inner cylinder of the torus
-      // hologramPivot is at (0,0,0), torus inner radius = 872
-      // Camera sits at the central axis of that cylindrical void
-      state.xrPerspectiveCamera.position.set(0, 0, 0);
+      state.xrPerspectiveCamera = new THREE.PerspectiveCamera(90, aspect, 0.1, 5000);
+      // Position camera closer to inner torus wall for better column visibility
+      // Inner wall radius = 872 (XR_RADIUS - 128). Camera at Z=-400 → ~472 from wall.
+      state.xrPerspectiveCamera.position.set(0, 0, -400);
       state.xrPerspectiveCamera.rotation.order = "YXZ";
       state.xrPerspectiveCamera.rotation.set(0, 0, 0);
       state.activeCamera = state.xrPerspectiveCamera;
       state.controls.enabled = false;
-      console.log("[XR Mode] Enabling Look-Around (PerspectiveCamera at torus center)");
+      console.log("[XR Mode] Enabling Look-Around (PerspectiveCamera at torus center, Z=-400)");
     } else {
       console.log("[XR Mode] Restoring orthographic view");
       state.activeCamera = state.camera;

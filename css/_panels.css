@@ -322,7 +322,14 @@ body.focus-mode .panel.right-panel {
   align-items: center;
   flex-wrap: nowrap !important;
   margin-top: 0 !important;
-  /* Content is pushed by the HR above it */
+  margin-bottom: 10px !important;
+}
+
+/* Ensure bottom group buttons match standard control-button size */
+.left-panel-group.bottom-group .control-button,
+.left-panel-group.bottom-group .panel-icon-link {
+  width: 45px !important;
+  height: 48px !important;
 }
 
 #telegramLinkButton svg {
