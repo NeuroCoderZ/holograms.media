@@ -117,6 +117,7 @@ from backend.routers.signaling import router as signaling_router # New signaling
 from backend.routers.auth import router as auth_router # Import the new auth router
 from backend.routers.chat_sessions import router as chat_sessions_router
 from backend.api.v1.endpoints.wallet import router as wallet_router
+from backend.api.v1.endpoints.github_proxy import router as github_proxy_router
 
 API_V1_PREFIX = "/api/v1"
 
@@ -128,6 +129,7 @@ app.include_router(tria_commands_router, prefix=f"{API_V1_PREFIX}/tria", tags=["
 app.include_router(chunks_router, prefix=API_V1_PREFIX, tags=["Chunks"])
 app.include_router(chat_sessions_router, prefix=f"{API_V1_PREFIX}/chat", tags=["Chat Sessions"])
 app.include_router(wallet_router, prefix=f"{API_V1_PREFIX}/wallet", tags=["Wallet"])
+app.include_router(github_proxy_router, prefix=API_V1_PREFIX, tags=["GitHub Proxy"])
 app.include_router(user_gestures_router, prefix=f"{API_V1_PREFIX}/users/me/gestures", tags=["Current User Gestures"])
 app.include_router(user_holograms_router, prefix=f"{API_V1_PREFIX}/users/me/holograms", tags=["Current User Holograms"])
 app.include_router(user_prompts_router, prefix=f"{API_V1_PREFIX}/users/me/prompts", tags=["Current User Prompts"])

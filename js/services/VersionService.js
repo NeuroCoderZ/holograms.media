@@ -9,7 +9,13 @@ export class VersionService {
     constructor() {
         this.repoOwner = 'NeuroCoderZ';
         this.repoName = 'holograms.media';
-        this.apiUrl = `https://api.github.com/repos/${this.repoOwner}/${this.repoName}/commits`;
+
+        // Use VITE_API_URL if available (Cloudflare Pages), otherwise default to relative path
+        const baseUrl = typeof import.meta.env !== 'undefined' && import.meta.env.VITE_API_URL
+            ? import.meta.env.VITE_API_URL
+            : '/api/v1';
+
+        this.apiUrl = `${baseUrl}/github/commits`;
     }
 
     /**
@@ -19,7 +25,7 @@ export class VersionService {
      */
     async fetchVersions(limit = 10) {
         try {
-            console.log(`[VersionService] Fetching commits from ${this.repoOwner}/${this.repoName}...`);
+            console.log(`[VersionService] Fetching commits from backend proxy...`);
 
             const response = await fetch(`${this.apiUrl}?sha=dev&per_page=${limit}`);
             if (!response.ok) {
