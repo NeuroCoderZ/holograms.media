@@ -414,6 +414,10 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
         if (appState.hologramRendererInstance) {
           try {
             const isXR = await appState.hologramRendererInstance.toggleXRMode();
+            // CRITICAL: Must call setXRMode to enable WASD/mouse rotation
+            if (appState.setXRMode) {
+              appState.setXRMode(isXR);
+            }
             uiElements.buttons.xrButton.classList.toggle('active', isXR);
             uiElements.buttons.xrButton.title = isXR ? "Exit XR Mode" : "Enter XR Mode";
             console.log(`[UIManager] Cochlear Cylinder fallback ${isXR ? 'activated' : 'deactivated'}`);

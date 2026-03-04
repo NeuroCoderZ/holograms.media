@@ -47,7 +47,7 @@
       }
     };
   </script>
-  <script>console.log("DEPLOY VERSION: 0.19.047 - XR PERSP CAM, TIMELINE DEV, NEUMORPHIC UI");</script>
+  <script>console.log("DEPLOY VERSION: 0.19.048 - WASD FIX, XR CAM, NEUMORPHIC, LLM");</script>
 
 
 
@@ -311,8 +311,11 @@
   <div id="right-panel" class="panel right-panel">
     <!-- Header for panel views -->
     <div id="rightPanelHeader"
-      style="text-align: center; color: white; margin-top: 15px; margin-bottom: 10px; font-size: 16px; font-weight: normal; display: none;">
-    </div>
+      style="text-align: center; color: white; margin-top: 15px; margin-bottom: 10px; font-size: 16px; font-weight: normal; text-transform: uppercase; letter-spacing: 1px;">
+      ИСТОРИЯ ЧАТА</div>
+
+    <!-- Верхняя разделительная линия правой панели -->
+    <hr class="panel-hr">
 
     <!-- Контейнер для содержимого - переключаемые области -->
     <div class="content-container">
@@ -369,10 +372,10 @@
         </button>
         <div id="modelSelectContainer" style="flex-grow: 1; display: flex; align-items: center;">
           <select id="modelSelect"
-            style="display: none; width: 100%; background: transparent; color: white; border: none; outline: none; font-size: 14px; cursor: pointer;">
-            <option value="mistral/mistral-medium-latest" selected>Mistral Medium</option>
-            <option value="mistral/devstral-medium-latest">Devstral Medium</option>
-            <option value="codestral/codestral-latest">Codestral</option>
+            style="width: 100%; background: rgba(0,0,0,0.6); color: #ccc; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; outline: none; font-size: 14px; cursor: pointer; padding: 6px 10px; backdrop-filter: blur(10px);">
+            <option value="gemini/gemini-3-flash" style="background: #1a1a1a; color: #ddd;">Gemini 3 Flash</option>
+            <option value="mistral/mistral-large-latest" style="background: #1a1a1a; color: #ddd;">Mistral Large 3
+            </option>
           </select>
         </div>
         <!-- Кнопка применить (видима в режиме по умолчанию) -->

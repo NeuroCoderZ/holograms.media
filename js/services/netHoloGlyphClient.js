@@ -181,11 +181,19 @@ class NetHoloGlyphClient {
     startFallbackPolling() {
         if (this.fallbackActive) return;
         this.fallbackActive = true;
-        console.warn('[NetHoloGlyphClient] Starting long-poll fallback (poll interval ' + this.fallbackPollInterval + 'ms)');
+        this.fallbackPollCount = 0;
+        this.maxPollAttempts = 10; // Stop after 10 failed attempts
+        console.warn('[NetHoloGlyphClient] Starting long-poll fallback (poll interval ' + this.fallbackPollInterval + 'ms, max ' + this.maxPollAttempts + ' attempts)');
 
         const pollUrl = (this.signalingServerUrl || '').replace(/^wss?:/, (m) => m === 'wss:' ? 'https:' : 'http:') + (this.roomId ? `/${this.roomId}/poll` : '/poll');
 
         const pollOnce = async () => {
+            this.fallbackPollCount++;
+            if (this.fallbackPollCount > this.maxPollAttempts) {
+                console.warn('[NetHoloGlyphClient] Max poll attempts reached. Stopping fallback polling.');
+                this.stopFallbackPolling();
+                return;
+            }
             try {
                 const res = await fetch(pollUrl);
                 if (!res.ok) return;
@@ -200,7 +208,6 @@ class NetHoloGlyphClient {
                 }
             } catch (e) {
                 // Keep quiet; best-effort
-                console.debug('[NetHoloGlyphClient] Poll error:', e && e.message);
             }
         };
 

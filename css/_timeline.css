@@ -10,8 +10,8 @@
   min-height: 100px;
   background-color: transparent;
   /* Glass-fade: dissolve versions at scroll edges */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 97%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 97%, transparent 100%);
 }
 
 #promptBar,
@@ -86,13 +86,8 @@
 }
 
 .version-thumbnail {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  background-color: #333;
-  /* Серый квадрат */
-  border-radius: var(--border-radius-sm);
-  margin-right: var(--spacing-sm);
+  display: none;
+  /* Reserved for future QR code generation */
 }
 
 .version-content {
@@ -126,11 +121,11 @@
 
 .view-source-btn {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
+  right: 4px;
+  bottom: 4px;
   background: transparent;
   border: none;
-  padding: 4px;
+  padding: 3px;
   color: #666;
   border-radius: 4px;
   display: flex;

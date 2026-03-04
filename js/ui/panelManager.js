@@ -97,10 +97,12 @@ class PanelManager {
         const header = document.getElementById('rightPanelHeader');
         if (header) {
             header.style.display = 'block';
-            if (panelKey === 'versionTimeline') header.textContent = 'Список версий';
-            else if (panelKey === 'myHolograms') header.textContent = 'Список голограмм';
-            else if (panelKey === 'myGestures') header.textContent = 'Список жестов';
-            else header.style.display = 'none';
+            if (panelKey === 'versionTimeline') header.textContent = 'СПИСОК ВЕРСИЙ';
+            else if (panelKey === 'myHolograms') header.textContent = 'СПИСОК ГОЛОГРАММ';
+            else if (panelKey === 'myGestures') header.textContent = 'СПИСОК ЖЕСТОВ';
+            else {
+                header.textContent = 'ИСТОРИЯ ЧАТА';
+            }
         }
 
         if (panelOpened) console.log(`Content panel '${panelKey}' opened.`);
