@@ -47,7 +47,7 @@
       }
     };
   </script>
-  <script>console.log("DEPLOY VERSION: 0.19.049 - HOT RELOAD, QR THUMBNAILS, GITHUB PROXY");</script>
+  <script>console.log("DEPLOY VERSION: 0.19.050 - XR FIX, MONACO MODAL, QR HOTSWAP");</script>
 
 
 
@@ -198,6 +198,8 @@
 
     <hr class="panel-hr">
 
+    <!-- Deploy Version Tracker -->
+    <span class="version-label">v0.19.050</span>
     <!-- Central Block -->
     <div class="left-panel-group central-block">
       <!-- Existing buttons will be consolidated here. Keeping a few representative ones. -->
@@ -322,10 +324,10 @@
       ИСТОРИЯ ЧАТА</div>
 
     <!-- Верхняя разделительная линия правой панели -->
-    <hr class="panel-hr">
+    <hr class="panel-hr" style="flex-shrink: 0; margin-bottom: 0 !important;">
 
     <!-- Контейнер для содержимого - переключаемые области -->
-    <div class="content-container">
+    <div class="content-container" style="flex: 1; overflow-y: auto; padding-top: 10px;">
       <!-- Таймлайн (Режим по умолчанию) -->
       <div id="versionTimeline" class="panel-section default-mode" style="display: none;">
         <div id="versionFrames"></div>
