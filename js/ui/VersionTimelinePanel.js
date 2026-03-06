@@ -1,4 +1,5 @@
 import versionService from '../services/VersionService.js';
+import { monacoModal } from './MonacoModal.js';
 
 class VersionTimelinePanel {
     constructor(appState, eventBus) {
@@ -107,16 +108,20 @@ class VersionTimelinePanel {
             // Phase 2/3: Thumbnail (QR Code)
             const thumb = document.createElement('div');
             thumb.className = 'version-thumbnail';
-            thumb.style.display = 'block'; // Ensure it's visible
+            thumb.style.display = 'flex'; // Use flex to center QR
+            thumb.style.justifyContent = 'center';
+            thumb.style.alignItems = 'center';
             thumb.style.padding = '4px'; // White border padding for QR
             thumb.style.backgroundColor = 'white';
+            thumb.style.flexShrink = '0';
+            thumb.style.borderRadius = '4px'; // Make it look nicer
 
             // Generate QR Code if qrcode is loaded
             if (typeof QRCode !== 'undefined') {
                 new QRCode(thumb, {
                     text: version.url,
-                    width: 40,
-                    height: 40,
+                    width: 64, // Increased size to cover more height
+                    height: 64, // Increased size
                     colorDark: "#000000",
                     colorLight: "#ffffff",
                     correctLevel: QRCode.CorrectLevel.L
@@ -126,6 +131,8 @@ class VersionTimelinePanel {
             // Text Content (Prompt)
             const textContent = document.createElement('div');
             textContent.className = 'version-content';
+            textContent.style.marginLeft = '12px'; // Add space between QR and text
+            textContent.style.marginRight = '20px'; // Prevent text from overlapping the button
 
             const label = document.createElement('div');
             label.className = 'version-id-label';
@@ -142,6 +149,23 @@ class VersionTimelinePanel {
             const viewSourceBtn = document.createElement('button');
             viewSourceBtn.className = 'view-source-btn';
             viewSourceBtn.title = 'Просмотреть код';
+            Object.assign(viewSourceBtn.style, {
+                position: 'absolute',
+                bottom: '10px',
+                right: '10px',
+                width: '18px',
+                height: '18px',
+                padding: '0',
+                background: 'transparent',
+                border: 'none',
+                color: 'currentColor',
+                cursor: 'pointer',
+                opacity: '0.7',
+                transition: 'opacity 0.2s',
+                zIndex: '10'
+            });
+            viewSourceBtn.onmouseover = () => { viewSourceBtn.style.opacity = '1.0'; };
+            viewSourceBtn.onmouseout = () => { viewSourceBtn.style.opacity = '0.7'; };
             viewSourceBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor">
                     <path d="M320-240 80-480l240-240 57 57-184 184 183 183-56 56Zm320 0-57-57 184-184-183-183 56-56 240 240-240 240Z"/>
@@ -149,7 +173,11 @@ class VersionTimelinePanel {
             `;
             viewSourceBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                eventBus.emit('ui:viewSource', version.id);
+                if (!version.id.startsWith('d')) {
+                    monacoModal.showFile(version.id);
+                } else {
+                    alert('Cannot view source for demo versions.');
+                }
             });
 
             frame.appendChild(thumb);
@@ -172,20 +200,25 @@ class VersionTimelinePanel {
 
     renderDemoVersions() {
         const demoData = [
-            { id: 'd1', prompt: 'Initial concept: A simple sphere.', displayId: '1', url: 'https://github.com' },
-            { id: 'd2', prompt: 'Iteration 2: Added dynamic lighting and shadows to the sphere.', displayId: '2', url: 'https://github.com' },
-            { id: 'd3', prompt: 'Experiment: Changed sphere to a cube with complex textures.', displayId: '3', url: 'https://github.com' },
-            { id: 'd4', prompt: 'Refinement: Added procedural animation to the cube, reacting to audio input.', displayId: '4', url: 'https://github.com' },
-            { id: 'd5', prompt: 'Final MVP: Integrated user controls for animation speed.', displayId: '5', url: 'https://github.com' }
+            { id: 'd1', prompt: 'Initial concept: A simple sphere.', displayId: '1', url: 'https://github.com/NeuroCoderZ/holograms.media/commit/1' },
+            { id: 'd2', prompt: 'Iteration 2: Added dynamic lighting and shadows to the sphere.', displayId: '2', url: 'https://github.com/NeuroCoderZ/holograms.media/commit/2' },
+            { id: 'd3', prompt: 'Experiment: Changed sphere to a cube with complex textures.', displayId: '3', url: 'https://github.com/NeuroCoderZ/holograms.media/commit/3' },
+            { id: 'd4', prompt: 'Refinement: Added procedural animation to the cube, reacting to audio input.', displayId: '4', url: 'https://github.com/NeuroCoderZ/holograms.media/commit/4' },
+            { id: 'd5', prompt: 'Final MVP: Integrated user controls for animation speed.', displayId: '5', url: 'https://github.com/NeuroCoderZ/holograms.media/commit/5' }
         ];
         this.renderTimeline(demoData);
     }
 
     /**
      * Hot-Swaps to a specific commit version using an iframe overlay.
-     * Loads the raw static index.html from raw.githack.com
+     * Uses fetch + srcdoc to bypass X-Frame-Options DENY from GitHub.
      */
-    hotSwapVersion(sha) {
+    async hotSwapVersion(sha) {
+        if (sha.startsWith('d')) {
+            console.log(`[VersionTimelinePanel] Cannot hot-swap demo version: ${sha}`);
+            return;
+        }
+
         console.log(`[VersionTimelinePanel] Hot-swapping to version: ${sha}`);
 
         let overlay = document.getElementById('hotswap-overlay');
@@ -219,15 +252,47 @@ class VersionTimelinePanel {
                 width: '100%', height: '100%', border: 'none'
             });
 
+            // Loading state indicator
+            const loadingText = document.createElement('div');
+            loadingText.id = 'hotswap-loading';
+            loadingText.textContent = 'Загрузка версии...';
+            Object.assign(loadingText.style, {
+                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                color: 'white', fontSize: '24px', fontFamily: 'monospace'
+            });
+
+            overlay.appendChild(loadingText);
             overlay.appendChild(closeBtn);
             overlay.appendChild(iframe);
             document.body.appendChild(overlay);
         }
 
         const iframe = document.getElementById('hotswap-iframe');
-        // Use raw.githack to serve raw GitHub files with proper Content-Type
-        iframe.src = `https://raw.githack.com/NeuroCoderZ/holograms.media/${sha}/index.html`;
+        const loadingText = document.getElementById('hotswap-loading');
+
         overlay.style.display = 'flex';
+        loadingText.style.display = 'block';
+        iframe.srcdoc = ''; // Clear previous
+
+        try {
+            // Fetch raw HTML from jsdelivr as it's a reliable CDN
+            const response = await fetch(`https://cdn.jsdelivr.net/gh/NeuroCoderZ/holograms.media@${sha}/index.html`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            let htmlContent = await response.text();
+
+            // Inject <base> tag to route all relative paths (CSS, JS, assets) through the CDN for this specific commit
+            const baseTag = `<base href="https://cdn.jsdelivr.net/gh/NeuroCoderZ/holograms.media@${sha}/">`;
+            htmlContent = htmlContent.replace('<head>', `<head>\n  ${baseTag}`);
+
+            iframe.srcdoc = htmlContent;
+        } catch (error) {
+            console.error('[VersionTimelinePanel] Failed to load hot-swap HTML:', error);
+            iframe.srcdoc = `<html style="background:#111;color:red;display:flex;justify-content:center;align-items:center;height:100%;font-family:sans-serif;">
+                <body><h1>Ошибка загрузки версии</h1><p>${error.message}</p></body></html>`;
+        } finally {
+            loadingText.style.display = 'none';
+        }
     }
 
     destroy() {

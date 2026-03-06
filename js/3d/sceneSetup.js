@@ -235,12 +235,13 @@ export async function initializeScene(state) {
       state.xrPerspectiveCamera = new THREE.PerspectiveCamera(90, aspect, 0.1, 5000);
       // Position camera closer to inner torus wall for better column visibility
       // Inner wall radius = 872 (XR_RADIUS - 128). Camera at Z=-400 → ~472 from wall.
-      state.xrPerspectiveCamera.position.set(0, 0, -400);
+      // UPD: Changed to Z=-800 so it sits just 72 units from the inner wall for maximum immersion.
+      state.xrPerspectiveCamera.position.set(0, 0, -800);
       state.xrPerspectiveCamera.rotation.order = "YXZ";
       state.xrPerspectiveCamera.rotation.set(0, 0, 0);
       state.activeCamera = state.xrPerspectiveCamera;
       state.controls.enabled = false;
-      console.log("[XR Mode] Enabling Look-Around (PerspectiveCamera at torus center, Z=-400)");
+      console.log("[XR Mode] Enabling Look-Around (PerspectiveCamera at torus center, Z=-800)");
     } else {
       console.log("[XR Mode] Restoring orthographic view");
       state.activeCamera = state.camera;

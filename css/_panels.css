@@ -101,7 +101,7 @@
   transform: translateX(0) !important;
   pointer-events: auto !important;
   visibility: visible !important;
-  overflow-y: auto !important;
+  /* overflow-y: auto !important; Removed to move scroll to content-container */
   transition-delay: 0s;
   touch-action: none !important;
   left: auto;
@@ -430,6 +430,13 @@ body.focus-mode .panel.right-panel {
 .panel .panel-hr,
 .panel .panel-section {
   opacity: 1 !important;
+}
+
+/* Container for scrollable content within panels */
+.content-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Стили для окон в правой панели с отступами 5% и закругленными углами */
