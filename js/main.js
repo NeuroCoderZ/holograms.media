@@ -50,34 +50,8 @@ async function main() {
     }
 }
 
-/**
- * Инициализирует обработчики событий для чата.
- */
-function initializeChatHandlers() {
-    const chatInput = state.uiElements.inputs.chatInput;
-    const submitButton = state.uiElements.actions.submitChatMessage;
+// Инициалізатор обработчиков событий для чата удален, теперь все делает chat.js напрямую
 
-    if (!chatInput || !submitButton) {
-        console.warn("Chat input or submit button not found, chat functionality will be disabled.");
-        return;
-    }
-
-    const handleSend = () => {
-        const message = chatInput.value;
-        sendChatMessageFromChatModule(message);
-    };
-
-    submitButton.addEventListener('click', handleSend);
-
-    chatInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            handleSend();
-        }
-    });
-
-    console.log("Chat event handlers initialized.");
-}
 
 /**
  * Инициализирует обработчики событий для промпта.
@@ -139,8 +113,7 @@ async function startFullApplication(appState) {
         console.log("Platform-specific layout and input managers initialized.");
 
         // 3. Инициализация чата
-        console.log("Chat temporarily disabled - backend not ready");
-        initializeChatHandlers();
+        setupChat();
         initializePromptHandlers();
 
         // 4. Запуск главного цикла анимации

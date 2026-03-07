@@ -5,7 +5,6 @@ import { initializeMultimedia } from '../../core/mediaInitializer.js';
 // Add these if not already present from other logic
 import { initializePrompts } from '../../ai/prompts.js';
 import { initializeVersionManager } from '../../ui/versionManager.js'; // Assuming initializeVersionManager is exported
-import { setupChat } from '../../ai/chat.js';
 import { initializeSpeechInput } from '../../audio/speechInput.js';
 import { initializeTria } from '../../ai/tria.js';
 import { initializeResizeHandler } from '../../core/resizeHandler.js';
@@ -43,13 +42,6 @@ export default class MobileInput {
             // console.log("MobileInput: VersionManager initialized.");
         } else {
             console.warn("MobileInput: initializeVersionManager function not found/imported correctly.");
-        }
-
-        if (typeof setupChat === 'function') {
-            setupChat(this.state);
-            // console.log("MobileInput: Chat setup.");
-        } else {
-            console.warn("MobileInput: setupChat function not found/imported correctly.");
         }
 
         if (typeof initializeSpeechInput === 'function') {
