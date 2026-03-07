@@ -1,6 +1,6 @@
 # Glossary for the "Holographic Media" Project
 
-**Last Updated:** February 14, 2026
+**Last Updated:** 2026-03-07 (v0.19.050 Sovereign Audit)
 
 ## Core Project Concepts
 
@@ -31,10 +31,13 @@ Original development methodology and philosophy created by Alexander (NeuroCoder
 Cloudflare's service for hosting and deploying static sites and single-page applications (SPA), used for the project's frontend.
 
 ### **Koyeb**
-Serverless platform for deploying applications, used for hosting the backend (compute services).
+Current platform for hosting the FastAPI backend. **Migration plan:** Cloudflare Workers + Durable Objects.
 
 ### **AstraDB (Cassandra-based)**
-The project's sole distributed database, used for storing global data and managing system state. Provides high availability and scalability.
+Current project database (Free Tier, 80GB). Used for storing global data and managing system state. **Migration plan:** Cloudflare D1 (hot cache) + Vectorize (embeddings).
+
+### **Cloudflare R2**
+Object storage with S3-compatible API and zero egress. Replaced Backblaze B2. Used for storing media files and chunks.
 
 ## Canonical Core (holocore)
 

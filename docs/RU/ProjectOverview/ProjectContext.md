@@ -3,7 +3,7 @@
 
 Этот документ описывает текущий практический контекст и статус проекта "Голографические Медиа". Он должен рассматриваться в свете общей концепции и философии, изложенной в `docs/RU/ProjectOverview/ConceptAndPhilosophy.md`.
 
-*Последнее обновление: 2025-09-26*
+*Последнее обновление: 2026-03-07 (v0.19.050 Sovereign Audit)*
 
 **Ключевые компоненты и их статус:**
 *   **Фронтенд:** Модульная структура на чистом JavaScript (ES6), размещенная на **Cloudflare Pages**. Ведется работа по стабилизации UI и визуализации голограммы (Three.js/WebGL, с CWT-анализатором на Rust/WASM).
@@ -32,7 +32,7 @@
 
 *   **Оптимизация производительности:** Улучшение CWT-анализа, WebAssembly и рендеринга Three.js для различных устройств.
 *   **Расширение AI-функциональности:** Улучшение системы Триа, интеграция новых LLM, оптимизация multimodal обработки.
-*   **Управление инфраструктурой:** Оптимизация работы с Astra Database, Backblaze B2, Cloudflare Workers.
+*   **Управление инфраструктурой:** Фазовая миграция на Cloudflare-native стэк (Workers, D1, R2). Текущий: Koyeb + Astra DB.
 *   **Безопасность и масштабируемость:** Улучшение аутентификации, валидации данных, подготовка к росту нагрузки.
 
 Полный список задач и их статус отслеживаются в [GitHub Issues](https://github.com/NeuroCoderZ/holograms.media/issues) и [GitHub Projects](https://github.com/NeuroCoderZ/holograms.media/projects).
@@ -54,7 +54,7 @@
     *   **FastAPI (Koyeb):** Основная бизнес-логика, API эндпоинты, обработка чанков, загрузка в Cloudflare R2 (`backend/app.py`).
     *   **Cloudflare Workers:** Могут использоваться для задач, тесно связанных с Cloudflare (например, триггеры Workers, специфические уведомления Cloudflare), или для части логики Триа, если это целесообразно.
     *   **Общая логика:** Модули в `backend/core/` (для работы с БД, LLM API, бизнес-логика агентов Триа).
-    *   **База данных:** PostgreSQL с pgvector.
+    *   **База данных:** Astra DB (Free Tier, 80GB). **План:** Cloudflare D1 + Vectorize.
     *   **Аутентификация:** Google OAuth 2.0 (проверка токенов на бэкенде).
     *   **Хранилище файлов (чанков):** Cloudflare R2.
 *   **Фронтенд (Cloudflare Pages):**
@@ -85,11 +85,11 @@
 *   **CI/CD:** GitHub Actions для автоматического развертывания на Cloudflare Pages и Koyeb.
 *   **Продакшн (MVP):**
     *   Frontend: Cloudflare Pages.
-    *   Backend (API, основная логика): FastAPI на Koyeb (Python).
-    *   Backend (вспомогательные задачи/триггеры Cloudflare): Cloudflare Workers.
-    *   Database: PostgreSQL.
+    *   Backend (API, основная логика): FastAPI на Koyeb (Python). **План:** Cloudflare Workers.
+    *   Backend (вспомогательные): Cloudflare Workers.
+    *   Database: Astra DB (Free Tier, 80GB). **План:** D1 + Vectorize.
     *   Storage (чанков): Cloudflare R2.
-    *   Authentication: Google OAuth 2.0.
+    *   Authentication: Google OAuth 2.0 (Firebase Auth).
 
-*Последнее обновление: 2025-09-26*
+*Последнее обновление: 2026-03-07 (v0.19.050 Sovereign Audit)*
 ````

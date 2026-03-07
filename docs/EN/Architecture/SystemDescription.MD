@@ -12,7 +12,8 @@ This document describes the high-level architecture, key components, and data fl
   - **Hosting:** Cloudflare Pages (site builds on Cloudflare Pages).
 - **Backend:** FastAPI (Python).
   - **Hosting:** Koyeb (Docker deployment).
-  - **Authentication:** OAuth 2.0 with Google Sign-In. The FastAPI service validates JWT tokens issued by Google and issues its own JWT for the session.
+  - **Authentication:** OAuth 2.0 with Google Sign-In.
+  - **Versioning:** Support for **Hot-Swap** (viewing commit code via `srcdoc` and embedded **Monaco Editor**).
 - **Knowledge Store (RAG):** Astra Database (Cassandra) accessed via Tria API for storing and performing semantic search across project data.
 - **File Storage:** Cloudflare R2 for storing interaction "chunks" (audio, video files).
 
@@ -105,6 +106,8 @@ graph LR
     FASTAPI -- 8. Response --> B
 
     B -- 9. UI / Hologram update --> A
+    B -- 10. Hot-Swap (v0.19.050) --> GitHub_CDN[GitHub static assets via jsdelivr]
+    B -- 11. Code Audit --> MonacoEditor[Monaco Editor CDN]
 
     Cloudflare Workers[Cloudflare Workers (auxiliary tasks)]
     Cloudflare Workers -- triggers --> FASTAPI

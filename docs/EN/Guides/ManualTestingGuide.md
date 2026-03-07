@@ -1,7 +1,7 @@
 ```markdown
 # Manual Testing Guide for the "Holographic Media" Project
 
-**Last updated: September 26, 2025**
+**Last updated: 2026-03-07 (v0.19.050 Sovereign Audit)**
 
 ## General Principles for Manual Testing
 
@@ -43,12 +43,12 @@ Follow the described steps: register a new user via Google sign-in, verify backe
 
 ## E2E Test Plan — Upload Interaction Chunk
 
-**Goal:** Validate the full flow of uploading an "interaction chunk" to Backblaze B2 (or R2) and backend processing in FastAPI.
+**Goal:** Validate the full flow of uploading an "interaction chunk" to Cloudflare R2 and backend processing in FastAPI.
 
 ### Preconditions
 
 * User is authenticated (JWT token available).
-* Backend is deployed and integrated with Backblaze B2 (or Cloudflare R2) and chunk processing is configured.
+* Backend is deployed and integrated with Cloudflare R2 and chunk processing is configured.
 * AstraDB is available and `audiovisual_gestural_chunks` schema exists.
 * Frontend is deployed and configured to upload files via FastAPI.
 
@@ -57,7 +57,7 @@ Follow the described steps: register a new user via Google sign-in, verify backe
 1. Use the frontend UI to select and upload a small test media file.
 2. Verify frontend shows upload progress and that the request reaches backend (check browser console).
 3. Inspect backend logs to confirm receipt, saving to object storage, and metadata processing.
-4. Verify the file is present in the object storage (Backblaze B2 or R2).
+4. Verify the file is present in Cloudflare R2.
 5. Check AstraDB `audiovisual_gestural_chunks` for a new record with correct metadata.
 
 ---

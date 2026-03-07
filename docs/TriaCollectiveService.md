@@ -37,7 +37,8 @@ WaveletFrame {
   float gain = 4;              // mixing gain
 }
 
-Notes: Keep messages minimal (avoid sending full spectrograms frequently). Use deltas and occasional frames for synchronization.
+Notes: Keep messages minimal. Use deltas for synchronization.
+**R&D Note (2026-03-07, v0.19.050 Audit):** Pure WebRTC Full-mesh is unstable for scaling. Current architecture: **WebSocket signaling** (FastAPI on Koyeb) + WebRTC P2P data channels. After SDP/ICE exchange, data flows peer-to-peer without server involvement. **Migration plan:** signaling → Cloudflare Workers (Free Tier), then Durable Objects (Paid Tier, $5+/мес) for stateful sessions with WebSocket Hibernation. Edge Computing: NPU devices (Snapdragon 8 Gen 5/6) for distributed spatial rendering. **Native HoloGraph Blockchain:** Spatial Consensus L1 — отказ от дорогих сторонних чейнов.
 
 ---
 
@@ -58,7 +59,9 @@ Privacy & Consent:
 ---
 
 ## Next steps / Implementation notes
-- Implement signaling client + sample SFU adapter (e.g., Janus/Mediasoup)
+- **Фаза A (Free):** Перенести WebRTC signaling в Cloudflare Workers (`workers/signaling.js`)
+- **Фаза B (Paid):** Durable Objects для stateful sessions с WebSocket Hibernation
 - Define compact binary encoding for messages (CBOR/protobuf)
 - Add CRDT-like merging for intent deltas and conflict resolution strategy
 - Add test harness for mixing and signature verification
+- Integrate HoloGraph Ledger (Native L1) for spatial transaction logging

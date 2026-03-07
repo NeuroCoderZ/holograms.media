@@ -12,6 +12,7 @@
 - **Backend:** Приложение на **FastAPI** (Python).
   - **Хостинг:** Koyeb (развертывание через Docker).
   - **Аутентификация:** **OAuth 2.0 с Google Sign-In**. FastAPI-сервис проверяет JWT-токены, выданные Google, и выпускает собственный JWT для сессии.
+  - **Версионность:** Поддержка **Hot-Swap** (просмотр кода коммитов через `srcdoc` и встроенный **Monaco Editor**).
 - **База знаний (RAG):** **Astra Database (Cassandra)** с доступом через **Tria API**. Используется для хранения и семантического поиска по всем данным проекта.
 - **Хранилище файлов:** **Cloudflare R2** для хранения "чанков" взаимодействия (аудио, видео).
 
@@ -106,6 +107,8 @@ graph LR
     FASTAPI -- 8. Ответ --> B
 
     B -- 9. Обновление UI/Голограммы --> A
+    B -- 10. Hot-Swap (v0.19.050) --> GitHub_CDN[GitHub static assets via jsdelivr]
+    B -- 11. Code Audit --> MonacoEditor[Monaco Editor CDN]
 
     Cloudflare Workers[Cloudflare Workers (вспомогательные задачи)]
     Cloudflare Workers -- триггеры --> FASTAPI # Например, вызов эндпоинта для создания профиля

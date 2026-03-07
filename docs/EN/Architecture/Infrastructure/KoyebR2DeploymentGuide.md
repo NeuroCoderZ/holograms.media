@@ -1,21 +1,23 @@
-# Deployment Guide for Python/FastAPI Backend on Koyeb with Astra Database and Backblaze B2
+# Deployment Guide for Python/FastAPI Backend on Koyeb with Astra Database and Cloudflare R2
 
-**Report ID:** [KOYEB_ASTRA_B2_PLAN_FINAL]
-**Update Date:** 2025-09-26
+**Report ID:** [KOYEB_ASTRA_R2_PLAN_FINAL]
+**Update Date:** March 2026
 
-This document describes the steps and recommendations for deploying the Python/FastAPI backend of the holograms.media project on the Koyeb platform, using Astra Database (Cassandra) and Backblaze B2 for file storage.
+This document describes the steps and recommendations for deploying the Python/FastAPI backend of the holograms.media project (v0.19.050) on the Koyeb platform, using Astra Database (Cassandra) and **Cloudflare R2** for file storage.
 
-## 1. File Storage (Chunks) on Backblaze B2
+## 1. File Storage (Chunks) on Cloudflare R2
 
-### 1.1. Backblaze B2 Overview
+### 1.1. Cloudflare R2 Overview
 
-Backblaze B2 is an object storage service with an S3-compatible API, optimized for storing large volumes of data at a low cost.
+Cloudflare R2 is an object storage with S3-compatible API and **zero egress** fees.
 
 **Key Features:**
-- Low storage cost (starting from $0.005/GB/month)
-- High reliability and availability
+- Zero egress (main advantage over B2)
+- Free Tier: 10 GB, 1M requests/month
 - S3-compatible API
-- Global CDN integration
+- Direct integration with Cloudflare Workers and Pages
+
+> **Migration Status:** Storage migrated from Backblaze B2 to **Cloudflare R2** (zero egress). Koyeb and Astra DB are the current stack. **Plan:** Workers + D1 (Phase A → B → C, see `DeploymentStrategy.md`).
 
 ### 1.2. Creating and Configuring a B2 Bucket
 

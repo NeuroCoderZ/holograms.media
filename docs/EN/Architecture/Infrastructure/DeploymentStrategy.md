@@ -1,18 +1,18 @@
 # Holograms.Media Deployment Strategy
 
 **Report ID:** [20241201-DEPLOY-STRATEGY]
-**Update Date:** 2025-09-26
-**Purpose:** Description of the current deployment strategy for the holograms.media project using modern cloud infrastructure.
+**Update Date:** 2026-03-07 (v0.19.050 Sovereign Audit)
+**Purpose:** Description of the current deployment strategy and phased migration plan to Cloudflare-native stack.
 
 ## Current Infrastructure Overview
 
 The holograms.media project uses a distributed cloud architecture:
 
 * **Frontend:** Cloudflare Pages (Global CDN deployment)
-* **Backend:** Koyeb (Containerized FastAPI deployment)
-* **Database:** Astra Database (Cassandra NoSQL)
-* **File Storage:** Backblaze B2 (Object storage)
-* **Additional Services:** Cloudflare Workers, Cloudflare R2
+* **Backend (current):** Koyeb + FastAPI. **Plan:** Cloudflare Workers + Durable Objects.
+* **Database (current):** Astra DB (Free Tier, 80GB). **Plan:** D1 (hot cache) + Vectorize.
+* **File Storage:** Cloudflare R2 (zero egress, S3-compatible API)
+* **Additional:** Cloudflare Workers (proxy, signaling), Firebase Auth
 
 ## Deployment Components
 
@@ -30,8 +30,8 @@ The holograms.media project uses a distributed cloud architecture:
 
 **Code Location:** `backend/` directory
 **Technology:** FastAPI + Docker
-**Database:** Astra Database (Cassandra)
-**Storage:** Backblaze B2
+**Database:** Astra DB (Free Tier, 80GB). **Plan:** Cloudflare D1 + Vectorize.
+**Storage:** Cloudflare R2 (zero egress)
 
 **Backend Structure:**
 ```
@@ -55,9 +55,9 @@ backend/
 - Interaction history
 - User settings
 
-### 4. File Storage (Backblaze B2)
+### 4. File Storage (Cloudflare R2)
 
-**Purpose:** Storage of media files and chunks
+**Purpose:** Storage of media files and chunks. Zero egress.
 **Structure:**
 ```
 user_chunks/{user_id}/{uuid_filename}
@@ -97,9 +97,10 @@ ASTRA_DB_APPLICATION_TOKEN=your_astra_token
 ASTRA_DB_ID=your_astra_db_id
 ASTRA_DB_REGION=your_region
 
-BACKBLAZE_ACCESS_KEY=your_b2_access_key
-BACKBLAZE_SECRET_KEY=your_b2_secret_key
-BACKBLAZE_BUCKET_NAME=your_b2_bucket
+R2_ACCESS_KEY_ID=your_r2_access_key
+R2_SECRET_ACCESS_KEY=your_r2_secret_key
+R2_BUCKET_NAME=holograms-media-chunks
+R2_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
 
 MISTRAL_API_KEY=your_mistral_key
 OPENAI_API_KEY=your_openai_key
@@ -116,7 +117,7 @@ VITE_WS_URL=wss://your-koyeb-app.koyeb.app
 - **Koyeb Dashboard:** Performance metrics, application logs
 - **Cloudflare Analytics:** Traffic and performance analytics
 - **Astra Dashboard:** Database metrics
-- **Backblaze Dashboard:** Storage statistics
+- **Cloudflare R2 Dashboard:** Storage statistics
 
 ## Security
 
@@ -132,4 +133,12 @@ VITE_WS_URL=wss://your-koyeb-app.koyeb.app
 - **Vertical:** Ability to increase resources via dashboard
 - **Global:** Cloudflare CDN ensures low latency
 
-This strategy ensures a reliable, scalable, and secure deployment of the holograms.media application using modern cloud technologies.
+This strategy ensures a reliable, scalable, and secure deployment of holograms.media.
+
+## Phased Migration Plan
+
+- **Phase A (Free, current):** R2 storage, Workers proxy/signaling, D1 hot cache.
+- **Phase B ($5/mo, Workers Paid):** Durable Objects for stateful sessions, D1 expansion.
+- **Phase C (mature product):** Full migration from Koyeb/Astra to Cloudflare Workers.
+
+> **IMPORTANT:** Durable Objects are NOT available on Cloudflare Free Tier.

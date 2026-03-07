@@ -7,9 +7,13 @@
 
 The protocol's goal is to provide reliable, low-latency data exchange for collaborative, real-time synchronization of hologram state.
 
-## 2. Current Implementation
+## 2. Current Implementation and Revision (March 2026)
 
-The current implementation contains a NetHoloGlyphClient (`js/services/netHoloGlyphClient.js`) that uses a WebRTC DataChannel for peer-to-peer data exchange, with a signaling server hosted on Koyeb (`wss://common-elita-holograms-media-59398dd8.koyeb.app/ws/signaling`). The server-side component is NetHoloGlyphService (`backend/services/NetHoloGlyphService.py`), which is prepared to work with protobuf messages; however, protobuf files have not yet been generated. At present, JSON is used for serialization.
+The current version of the system features the **NetHoloGlyphClient** (js/services/netHoloGlyphClient.js), which has been migrated to use **FastAPI WebSockets** as the primary transport for reliable state synchronization.
+
+*   **R&D Note:** WebRTC DataChannel (wss://dev.holograms.media/ws/signaling) remains in the system for P2P streaming but is considered unstable for scaling sessions beyond 8 participants.
+*   **Transport:** Focus has shifted to a centralized WebSocket hub on Koyeb to manage the consistency of the "digital clay."
+*   **Serialization:** JSON is still used. The transition to Protobuf (item 15) remains planned but requires an assessment of feasibility in light of Edge computing, where traffic volume may be secondary to the complexity of deserialization on weak nodes.
 
 ## 3. NetHoloGlyph Quantum Data Format (NetHoloGlyphQuantum)
 
@@ -122,11 +126,11 @@ For integration with XR devices (for example Unity or Android XR), native plugin
 
 ## 8. Roadmap (Major Steps)
 
-1. M0 (current): Define Protobuf format. Implement `AudioService` and integrate WASM CWT analyzer. Local gesture processing and visualization updates.
-2. M1: Implement send/receive of `NetHoloGlyphQuantum` over WebSockets as a first transport between client and test server (FastAPI).
-3. M2: Migrate primary quantum stream to WebRTC DataChannel and implement basic multi-client state synchronization.
-4. M3: Introduce CRDTs (e.g. Yjs) for hologlyph metadata (title, description, access control), not for the main audio-quantum stream.
-5. M4: Build plugins for XR platforms.
+1.  **M0 (Current):** Define Protobuf format. Implement `AudioService` and integrate WASM CWT analyzer.
+2.  **M1 (v0.19.050):** Implement `NetHoloGlyphQuantum` over WebSockets (FastAPI). Introduce Hot-Swap and Monaco for code auditing.
+3.  **M2 (Research):** **Cocoon/Edge** integration. Use NPUs (Snapdragon 8 Gen 5/6) for local rendering and mesh synchronization.
+4.  **M3:** Introduce CRDTs for metadata.
+5.  **M4:** XR adaptation (Perspective vs Ortho research).
 
 This document describes the initial NetHoloGlyph protocol version. The protocol will evolve as the system capabilities grow.
 

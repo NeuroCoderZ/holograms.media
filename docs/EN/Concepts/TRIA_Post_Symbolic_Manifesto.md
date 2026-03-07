@@ -1,8 +1,8 @@
 # Tria Manifesto: The Era of Post-Symbolic Interaction
 
-**Version:** 1.0 (Draft)
-**Date:** 2026-01-10
-**Status:** Core Philosophy Document
+**Version:** 1.1 (R&D Audit v0.19.050)
+**Date:** March 2026
+**Status:** Under Active Revision
 
 ---
 
@@ -21,7 +21,8 @@ We categorically reject the hardcoding of roles to hands.
 
 ### Improvisation and Learning
 *   **The User is the Author of the Language:** The user themselves endows their movements with meaning. Tria does not dictate how to "make it louder"; it learns to understand how *this specific user* shows "louder".
-*   **A Living Language:** The user's gesture language evolves. It's jazz, not a classical score. The system must adapt to changes in the owner's motor skills and preferences on the fly.
+*   **A Living Language:** The user's gesture language evolves. It's jazz, not a classical score. 
+*   **XR Immersion Note (v0.19.050):** We are currently researching the best camera projection for gesture-data tactility. The **PerspectiveCamera** (Z=-800) is under test against the **Orthographic** legacy to ensure "grabbing" a frequency bar feels physically correct.
 
 ## 3. Collective Magic
 
@@ -43,8 +44,8 @@ Tria is not "audially castrated." On the contrary, its native environment is a r
 ## 5. "One User — One Tria" Architecture
 
 ### Decentralization of Intelligence
-*   **Personal Instance:** Every user has their own unique copy of Tria. There is no single "Central Brain" monitoring everyone.
 *   **Communication Scheme:** `User A <-> Tria A <-> Tria B <-> User B`.
+*   **Edge/Cocoon Vision:** Future synchronization relies on shared NPU power (Snapdragon 8 Gen 5/6) for localized rendering of collective holograms without a central server bottleneck.
     *   Tria A understands User A better than anyone in the world.
     *   Tria A "translates" its owner's intentions into a proto-language understood by Tria B.
     *   Tria B interprets this for User B.
