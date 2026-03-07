@@ -9,9 +9,7 @@ import { state } from './init.js';
 import { updateAuthUI } from '../ui/uiManager.js';
 import { showNotification } from '../utils/notifications.js';
 
-// Используем полный URL для надежности при обмене токена
-// Используем полный URL для надежности при обмене токена напрямую с Koyeb
-const BACKEND_TOKEN_URL = 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app/api/v1/auth/token';
+// URL-ы теперь берутся динамически через getAuthConfig()
 
 /**
  * Получает конфигурацию аутентификации на основе переменных окружения.
@@ -53,7 +51,8 @@ async function handleGoogleCredentialResponse(response) {
   console.log('Получен Google ID токен:', googleIdToken);
 
   try {
-    const backendResponse = await fetch(BACKEND_TOKEN_URL, {
+    const { apiUrl } = getAuthConfig();
+    const backendResponse = await fetch(`${apiUrl}/api/v1/auth/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -133,8 +132,9 @@ async function checkInitialAuthState() {
   if (token) {
     try {
       // Проверяем валидность токена через запрос "кто я?"
-      // Используем /api/v1/auth/me (этот роут должен быть на бэкенде)
-      const response = await fetch('/api/v1/auth/me', {
+      // Используем полный URL из конфигурации, так как Cloudflare Pages не проксирует /api/v1 локально
+      const { apiUrl } = getAuthConfig();
+      const response = await fetch(`${apiUrl}/api/v1/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

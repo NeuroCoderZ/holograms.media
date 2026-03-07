@@ -173,8 +173,8 @@ export class HologramRenderer {
         edges.material.uniforms.uColumnScaleZ.value = gDepth;
       }
     });
-    pair.left.position.x = 0;
-    pair.right.position.x = 0;
+    pair.left.position.x = pair.left.userData.initialX;
+    pair.right.position.x = pair.right.userData.initialX;
   }
 
   /** Психоакустическая биауральная физика (BasilaQ-128). */

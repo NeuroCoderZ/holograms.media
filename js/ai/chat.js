@@ -1,94 +1,99 @@
 // js/ai/chat.js
 
-// Импортируем локальный мок вместо недоступного внешнего скрипта
-import { ModernChatInterface } from './ModernChatInterface.js';
+import { sendChatMessage as apiSendChatMessage } from '../services/apiService.js';
+import { getJwtToken } from '../core/auth.js';
 
-let triaInterface;
+let isChatInitialized = false;
 
-/**
- * Инициализирует и настраивает чат Триа на базе NLWeb.
- * Эта функция подключает логику NLWeb к существующим элементам UI.
- */
-function initializeTriaChat() {
-  console.log("Инициализация чата Триа на базе NLWeb...");
+export function initializeTriaChat() {
+  console.log("Инициализация чата Триа через Backend API...");
 
-  // Находим обязательные элементы UI в DOM
   const messagesContainer = document.getElementById('chatMessages');
   const chatInput = document.getElementById('chatInput');
   const sendButton = document.getElementById('submitChatMessage');
   const loadingIndicator = document.getElementById('loadingIndicator');
 
-  // Проверяем, все ли элементы на месте
   if (!messagesContainer || !chatInput || !sendButton || !loadingIndicator) {
-    console.warn("Chat elements status:", {
-      messagesContainer: !!messagesContainer,
-      chatInput: !!chatInput,
-      sendButton: !!sendButton,
-      loadingIndicator: !!loadingIndicator
-    });
-    console.error("Не удалось инициализировать чат: один или несколько HTML-элементов не найдены.");
+    console.error("Не удалось инициализировать чат: элементы DOM не найдены.");
     return;
   }
 
-  // Создаем экземпляр интерфейса чата
-  triaInterface = new ModernChatInterface({
-    skipAutoInit: true // Мы инициализируем его вручную
-  });
+  isChatInitialized = true;
 
-  // "Скармливаем" нашему экземпляру чата наши собственные элементы DOM.
-  // Настраиваем сайт/контекст для запросов
-  triaInterface.selectedSite = 'https://throbbing-wave-797e-nlweb.neurocoderz.workers.dev';
-  triaInterface.elements.messagesContainer = messagesContainer;
-  triaInterface.elements.chatInput = chatInput;
-  triaInterface.elements.sendButton = sendButton;
-  triaInterface.elements.loadingIndicator = loadingIndicator;
+  const appendMessage = (text, sender) => {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-message ${sender}-message`;
 
+    // Поддержка MarkDown и переносов строк в ответах ИИ
+    if (sender === 'tria') {
+      const paragraphs = text.split('\n').filter(p => p.trim() !== '');
+      paragraphs.forEach(p => {
+        const pEl = document.createElement('p');
+        pEl.textContent = p;
+        msgDiv.appendChild(pEl);
+      });
+    } else {
+      msgDiv.textContent = text;
+    }
 
+    messagesContainer.appendChild(msgDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  };
 
-  // Создаем новую сессию чата
-  triaInterface.createNewChat(null, triaInterface.selectedSite);
-
-  // Переопределяем стандартные обработчики событий, чтобы они работали с нашим UI
-  sendButton.onclick = () => {
+  const handleSend = async () => {
     const message = chatInput.value.trim();
-    if (message) {
-      triaInterface.sendMessage(message);
-      chatInput.value = '';
-      chatInput.style.height = 'auto'; // Сбрасываем высоту поля ввода
+    if (!message) return;
+
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+    appendMessage(message, 'user');
+    loadingIndicator.style.display = 'block';
+
+    try {
+      const token = getJwtToken();
+      if (!token) {
+        throw new Error("Для общения с Триа необходима авторизация.");
+      }
+
+      const response = await apiSendChatMessage(message, token);
+      appendMessage(response, 'tria');
+    } catch (error) {
+      console.error("Chat error:", error);
+      appendMessage("Триа недоступна. Ошибка: " + error.message, 'tria');
+    } finally {
+      loadingIndicator.style.display = 'none';
     }
   };
+
+  sendButton.onclick = handleSend;
 
   chatInput.onkeypress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendButton.click();
+      handleSend();
     }
   };
 
-  // Добавляем авто-изменение размера поля ввода
   chatInput.addEventListener('input', () => {
     chatInput.style.height = 'auto';
     chatInput.style.height = `${Math.min(chatInput.scrollHeight, 200)}px`;
   });
 
-  console.log("Чат Триа успешно инициализирован и готов к работе.");
+  console.log("Чат Триа успешно инициализирован и подключен к бэкенду.");
 }
 
-export { initializeTriaChat };
-// Алиасы для совместимости с импортами в main.js
 export const setupChat = initializeTriaChat;
 
-/**
- * Отправляет сообщение в чат, если интерфейс инициализирован.
- * @param {string} message - Сообщение для отправки.
- */
-function sendChatMessage(message) {
-  if (triaInterface) {
-    triaInterface.sendMessage(message);
+export function sendChatMessage(message) {
+  if (isChatInitialized) {
+    const chatInput = document.getElementById('chatInput');
+    const sendButton = document.getElementById('submitChatMessage');
+    if (chatInput && sendButton) {
+      chatInput.value = message;
+      sendButton.click();
+    }
   } else {
     console.warn("Чат не инициализирован. Вызовите initializeTriaChat() сначала.");
   }
 }
-
-export { sendChatMessage };
 
