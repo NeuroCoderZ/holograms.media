@@ -16,6 +16,12 @@ async def get_mistral_response(user_message: str, history: List[ChatMessageDB], 
         # Initialize the synchronous Mistral client (it also supports async)
         client = Mistral(api_key=settings.MISTRAL_API_KEY)
         
+        # Mistral-large-latest supports ~128k tokens. 
+        # Safely truncate system instruction to ~400k chars (~100k tokens)
+        MAX_MISTRAL_CHARS = 400000 
+        if len(system_instruction) > MAX_MISTRAL_CHARS:
+            system_instruction = system_instruction[:MAX_MISTRAL_CHARS] + "\n...[TRUNCATED FOR MISTRAL]..."
+            
         # Build the messages array starting with the system instruction
         messages = [
             {

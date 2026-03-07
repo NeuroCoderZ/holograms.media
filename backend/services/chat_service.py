@@ -19,16 +19,16 @@ from backend.llm.mistral_llm import get_mistral_response
 if settings.GOOGLE_API_KEY:
     genai.configure(api_key=settings.GOOGLE_API_KEY)
 
-import os
-# Загружаем контекст проекта один раз при старте
+from backend.services.context_builder import build_dynamic_context
+
+# Загружаем динамический контекст (вся база кода и доков) один раз при старте бэкенда
 LLM_CONTEXT = ""
-context_path = os.path.join(os.path.dirname(__file__), "..", "llm_context.md")
 try:
-    with open(context_path, "r", encoding="utf-8") as f:
-        LLM_CONTEXT = f.read()
-    logger.info(f"LLM Context loaded successfully ({len(LLM_CONTEXT)} chars)")
-except FileNotFoundError:
-    logger.warning("llm_context.md not found. AI will be context-blind.")
+    LLM_CONTEXT = build_dynamic_context()
+    logger.info(f"Dynamic full-project Context loaded successfully ({len(LLM_CONTEXT)} chars)")
+except Exception as e:
+    logger.error(f"Failed to build dynamic LLM context: {e}")
+    LLM_CONTEXT = "Ты Триа — ИИ-ассистент проекта holograms.media. Контекст недоступен из-за ошибки чтения кода."
 
 # Основная функция интеграции: пытаемся Gemini, затем Mistral
 async def get_llm_response(user_message: str, history: List[ChatMessageDB]) -> str:
