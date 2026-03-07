@@ -4,7 +4,6 @@ import { applyPrompt } from '../../core/domEventHandlers.js';
 import { toggleFullscreen, initFullscreenListeners } from '../../utils/fullscreen.js';
 import { initializePrompts } from '../../ai/prompts.js';
 import { initializeVersionManager } from '../../ui/versionManager.js'; // Assuming initializeVersionManager is exported
-import { setupChat } from '../../ai/chat.js';
 import { initializeSpeechInput } from '../../audio/speechInput.js';
 import { initializeTria } from '../../ai/tria.js';
 import { initializeResizeHandler } from '../../core/resizeHandler.js';
@@ -38,13 +37,6 @@ export default class DesktopInput {
             // console.log("DesktopInput: VersionManager initialized.");
         } else {
             console.warn("DesktopInput: initializeVersionManager function not found/imported correctly.");
-        }
-
-        if (typeof setupChat === 'function') {
-            setupChat(this.state);
-            // console.log("DesktopInput: Chat setup.");
-        } else {
-            console.warn("DesktopInput: setupChat function not found/imported correctly.");
         }
 
         if (typeof initializeSpeechInput === 'function') {
@@ -202,13 +194,13 @@ export default class DesktopInput {
 
         const fullscreenButton = document.getElementById('fullscreenButton');
         if (fullscreenButton) {
-           fullscreenButton.addEventListener('click', () => {
-               if (typeof toggleFullscreen === 'function') toggleFullscreen(fullscreenButton);
-               else console.error("DesktopInput: toggleFullscreen is not available.");
-           });
-           if (typeof initFullscreenListeners === 'function') initFullscreenListeners(fullscreenButton);
-           else console.error("DesktopInput: initFullscreenListeners is not available.");
-           console.log("DesktopInput: Fullscreen button listeners set up.");
+            fullscreenButton.addEventListener('click', () => {
+                if (typeof toggleFullscreen === 'function') toggleFullscreen(fullscreenButton);
+                else console.error("DesktopInput: toggleFullscreen is not available.");
+            });
+            if (typeof initFullscreenListeners === 'function') initFullscreenListeners(fullscreenButton);
+            else console.error("DesktopInput: initFullscreenListeners is not available.");
+            console.log("DesktopInput: Fullscreen button listeners set up.");
         } else {
             console.warn("DesktopInput: Fullscreen button not found.");
         }
@@ -217,19 +209,19 @@ export default class DesktopInput {
         const fileInput = document.getElementById('fileInput');
         if (fileButton && fileInput) {
             fileButton.addEventListener('click', () => {
-              fileInput.click();
-              const playhead = document.getElementById('playhead');
-              if (playhead) playhead.style.left = '0%';
+                fileInput.click();
+                const playhead = document.getElementById('playhead');
+                if (playhead) playhead.style.left = '0%';
             });
             fileInput.addEventListener('change', (event) => {
-              console.log('DesktopInput: File selected:', event.target.files[0].name);
-              // Call loadAudioFile on the audioFilePlayer instance
-              if (this.state.audioFilePlayer) {
-                this.state.audioFilePlayer.loadAudioFile(event);
-              } else {
-                console.error("audioFilePlayer instance not found in state for file input change.");
-              }
-              event.target.value = '';
+                console.log('DesktopInput: File selected:', event.target.files[0].name);
+                // Call loadAudioFile on the audioFilePlayer instance
+                if (this.state.audioFilePlayer) {
+                    this.state.audioFilePlayer.loadAudioFile(event);
+                } else {
+                    console.error("audioFilePlayer instance not found in state for file input change.");
+                }
+                event.target.value = '';
             });
             console.log("DesktopInput: File button and input listeners set up.");
         } else {
@@ -240,7 +232,7 @@ export default class DesktopInput {
         const toggleCameraButton = document.getElementById('toggleCameraButton');
         if (toggleCameraButton) {
             toggleCameraButton.addEventListener('click', () => {
-              console.log('DesktopInput: Toggle Camera button clicked - logic handled by cameraManager.js or other specific module');
+                console.log('DesktopInput: Toggle Camera button clicked - logic handled by cameraManager.js or other specific module');
             });
             console.log("DesktopInput: Toggle camera button listener set up.");
         } else {
@@ -251,7 +243,7 @@ export default class DesktopInput {
         const gestureRecordButton = document.getElementById('gestureRecordButton');
         if (gestureRecordButton) {
             gestureRecordButton.addEventListener('click', () => {
-              console.log('DesktopInput: Gesture Record button clicked - logic handled elsewhere');
+                console.log('DesktopInput: Gesture Record button clicked - logic handled elsewhere');
             });
             console.log("DesktopInput: Gesture record button listener set up.");
         } else {
@@ -262,7 +254,7 @@ export default class DesktopInput {
         const scanButton = document.getElementById('scanButton');
         if (scanButton) {
             scanButton.addEventListener('click', () => {
-              console.log('DesktopInput: Scan button clicked - logic handled elsewhere');
+                console.log('DesktopInput: Scan button clicked - logic handled elsewhere');
             });
             console.log("DesktopInput: Scan button listener set up.");
         } else {
@@ -273,7 +265,7 @@ export default class DesktopInput {
         const bluetoothButton = document.getElementById('bluetoothButton');
         if (bluetoothButton) {
             bluetoothButton.addEventListener('click', () => {
-              console.log('DesktopInput: Bluetooth button clicked - logic handled elsewhere');
+                console.log('DesktopInput: Bluetooth button clicked - logic handled elsewhere');
             });
             console.log("DesktopInput: Bluetooth button listener set up.");
         } else {
