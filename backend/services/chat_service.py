@@ -14,35 +14,57 @@ logger = logging.getLogger(__name__)
 
 import google.generativeai as genai
 from backend.core.config import settings
+from backend.llm.mistral_llm import get_mistral_response
 
 if settings.GOOGLE_API_KEY:
     genai.configure(api_key=settings.GOOGLE_API_KEY)
 
-# Реальная интеграция с Gemini LLM
+import os
+# Загружаем контекст проекта один раз при старте
+LLM_CONTEXT = ""
+context_path = os.path.join(os.path.dirname(__file__), "..", "llm_context.md")
+try:
+    with open(context_path, "r", encoding="utf-8") as f:
+        LLM_CONTEXT = f.read()
+    logger.info(f"LLM Context loaded successfully ({len(LLM_CONTEXT)} chars)")
+except FileNotFoundError:
+    logger.warning("llm_context.md not found. AI will be context-blind.")
+
+# Основная функция интеграции: пытаемся Gemini, затем Mistral
 async def get_llm_response(user_message: str, history: List[ChatMessageDB]) -> str:
     logger.info(f"LLM: Received '{user_message}' with history length {len(history)}")
     
-    if not settings.GOOGLE_API_KEY:
-        logger.warning("GOOGLE_API_KEY is not set. Returning stub response.")
-        return f"Триа (Заглушка): Я услышала '{user_message}', но мой ИИ-модуль (API Key) не подключен к серверу."
-    
-    try:
-        formatted_history = []
-        for msg in history:
-            role = "user" if msg.role == "user" else "model"
-            formatted_history.append({"role": role, "parts": [msg.message_content]})
+    # Пытаемся использовать Gemini
+    if settings.GOOGLE_API_KEY:
+        try:
+            formatted_history = []
+            for msg in history:
+                role = "user" if msg.role == "user" else "model"
+                formatted_history.append({"role": role, "parts": [msg.message_content]})
+                
+            # Ранее использовалась 1.5-flash, по запросу обновлено до актуальной 3-flash-preview
+            model = genai.GenerativeModel(
+                model_name='models/gemini-3.0-flash-preview', 
+                system_instruction=LLM_CONTEXT or "Ты АИ-ассистент Триа."
+            )
+            chat = model.start_chat(history=formatted_history)
             
-        # Используем современную быструю модель (1.5-flash) для чата
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        chat = model.start_chat(history=formatted_history)
-        
-        # Вызываем асинхронный метод
-        response = await chat.send_message_async(user_message)
-        return response.text
-        
-    except Exception as e:
-        logger.error(f"Error calling Gemini API: {e}")
-        raise e
+            # Вызываем асинхронный метод
+            response = await chat.send_message_async(user_message)
+            return response.text
+            
+        except Exception as e:
+            logger.error(f"Error calling Gemini API: {e}. Falling back to Mistral...")
+    
+    # Фоллбэк на Mistral (или основной выбор если ключ Gemini отсутствует)
+    if settings.MISTRAL_API_KEY:
+        try:
+            return await get_mistral_response(user_message, history, LLM_CONTEXT or "Ты АИ-ассистент Триа.")
+        except Exception as e:
+            logger.error(f"Error calling Mistral API: {e}.")
+            
+    logger.warning("No LLM API keys available or both failed. Returning stub response.")
+    return f"Триа (Заглушка): Я услышала '{user_message}', но мои ИИ-модули (Gemini/Mistral) не подключены к серверу."
 
 class ChatService:
     def __init__(self, db: Any):

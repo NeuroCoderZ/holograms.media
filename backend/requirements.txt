@@ -17,3 +17,4 @@ email-validator>=2.0.0
 google-generativeai
 # qrcode REMOVED: QR generation moved to frontend
 # pillow REMOVED: no longer needed (was used by qrcode)
+mistralai
