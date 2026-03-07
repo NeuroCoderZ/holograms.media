@@ -1,18 +1,18 @@
 # Руководство по инфраструктуре Holograms.Media
 
-**Дата Актуализации:** 2025-09-26
+**Дата Актуализации:** 2026-03-07 (v0.19.050 Sovereign Audit)
 
-Это руководство описывает текущую инфраструктуру проекта holograms.media, которая использует современные облачные сервисы для обеспечения высокой производительности и масштабируемости.
+Это руководство описывает текущую инфраструктуру проекта holograms.media и план фазовой миграции на Cloudflare-native стэк.
 
 ## 1. Обзор Инфраструктуры
 
 Проект holograms.media построен на распределенной облачной архитектуре:
 
 * **Фронтенд:** Cloudflare Pages с глобальным CDN
-* **Бэкенд:** Koyeb с контейнеризованным FastAPI
-* **База данных:** Astra Database (Cassandra NoSQL)
-* **Хранение файлов:** Backblaze B2
-* **Дополнительные сервисы:** Cloudflare Workers, Cloudflare R2
+* **Бэкенд (текущий):** Koyeb + FastAPI. **План:** Cloudflare Workers + Durable Objects.
+* **База данных (текущая):** Astra DB (Free Tier, 80GB). **План:** Cloudflare D1 (горячий кэш) + Vectorize.
+* **Хранение файлов:** Cloudflare R2 (нулевой egress)
+* **Дополнительно:** Cloudflare Workers (proxy, signaling), Firebase Auth
 
 ## 2. База Данных - Astra Database
 
@@ -50,17 +50,17 @@ cluster = Cluster(cloud=cloud_config, auth_provider=auth_provider)
 session = cluster.connect('keyspace_name')
 ```
 
-## 3. Хранение Файлов - Backblaze B2
+## 3. Хранение Файлов - Cloudflare R2
 
-### 3.1. Обзор Backblaze B2
+### 3.1. Обзор Cloudflare R2
 
-Backblaze B2 - это объектное хранилище с S3-совместимым API, оптимизированное для хранения больших объемов данных.
+Cloudflare R2 — это объектное хранилище с S3-совместимым API и **нулевой платой за исходящий трафик** (egress).
 
-**Преимущества:**
-- Низкая стоимость хранения
-- Высокая надежность
+**Преимущества перед B2 (предыдущим хранилищем):**
+- Нулевой egress (бесплатное скачивание данных)
+- Прямая интеграция с Cloudflare Workers и Pages
 - S3-совместимый API
-- Глобальная CDN интеграция
+- Free Tier: 10 GB, 1M запросов/мес
 
 ### 3.2. Структура хранения
 
@@ -80,23 +80,23 @@ hologram_data/
 │       └── ...
 ```
 
-### 3.3. Работа с B2 API
+### 3.3. Работа с R2 API
 
 ```python
-import agento3
+import boto3
 
-# Инициализация клиента
-s3_client = agento3.client(
+# Инициализация клиента (S3-совместимый)
+s3_client = boto3.client(
     service_name='s3',
-    endpoint_url='https://s3.us-west-002.backblazeb2.com',
-    aws_access_key_id='your_access_key',
-    aws_secret_access_key='your_secret_key'
+    endpoint_url='https://<ACCOUNT_ID>.r2.cloudflarestorage.com',
+    aws_access_key_id='your_r2_access_key',
+    aws_secret_access_key='your_r2_secret_key'
 )
 
 # Загрузка файла
 s3_client.upload_fileobj(
     file_obj,
-    'your-bucket-name',
+    'holograms-media-chunks',
     f'user_chunks/{user_id}/{filename}',
     ExtraArgs={'ContentType': 'video/mp4'}
 )
@@ -222,4 +222,25 @@ Cloudflare Pages предоставляет хостинг статически�
 - Оптимизация изображений
 - CDN для статических файлов
 
-Эта инфраструктура обеспечивает надежную, масштабируемую и безопасную работу приложения holograms.media с использованием лучших практик облачных технологий.
+Эта инфраструктура обеспечивает надежную, масштабируемую и безопасную работу приложения holograms.media.
+
+## 9. План Фазовой Миграции на Cloudflare-Native
+
+### Фаза A (Free Tier, текущий этап)
+- ✅ R2 для хранения (B2 заменён)
+- Workers proxy (проксирование к Koyeb, JWT-валидация)
+- Workers WebRTC signaling (замена FastAPI сигналинга)
+- D1 горячий кэш для метаданных (500MB Free)
+
+### Фаза B ($5/мес, Workers Paid)
+- Durable Objects для stateful NetHoloGlyph sessions
+- WebSocket Hibernation (1000+ пассивных соединений)
+- D1 расширение (10GB/база, шардинг по user_id)
+
+### Фаза C (Зрелый продукт, ~$45-70/мес)
+- Полная миграция с Koyeb (FastAPI → Workers)
+- Полная миграция с Astra DB (Cassandra → D1 + Vectorize)
+- Native HoloGraph Blockchain (лёгкие ноды на Workers + WASM)
+- Workers AI для Tria (вместо внешних LLM)
+
+> **ВАЖНО:** Durable Objects НЕ доступны на Free Tier Cloudflare. Минимальный тариф Workers Paid = $5/мес.

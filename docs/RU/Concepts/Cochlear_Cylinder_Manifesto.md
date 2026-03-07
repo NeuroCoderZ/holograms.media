@@ -40,6 +40,8 @@
 │              [ПОЛЬЗОВАТЕЛЬ]                             │
 │                                                         │
 │  Радиус цилиндра: 344 метра (1 акустическая секунда)   │
+│  **R&D Note (v0.19.050):** В визуальном пространстве   │
+│  радиус `XR_RADIUS = 1000`. Камера смещена на Z = -800. │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -224,8 +226,8 @@ Tria переводит жесты пользователя в исполняе�
 | ID | Проблема | Решение | Приоритет |
 |----|----------|---------|-----------|
 | TD1 | WASM `__wbindgen_placeholder__` | Использовать `holographic_core.js` loader | CRITICAL |
-| TD2 | WebGPU → чёрный экран | Силентный fallback в WebGL | HIGH |
-| TD3 | Signaling server downtime | Reconnection policy + public TURN | HIGH |
+| TD2 | Качество XR-камеры | Исследование Perspective vs Ortho (v0.19.050) | HIGH |
+| TD3 | Signaling server downtime | WebSockets reconnection policy | HIGH |
 | TD4 | Hardcoded gesture mappings | Dynamic learning system | MEDIUM |
 
 ---

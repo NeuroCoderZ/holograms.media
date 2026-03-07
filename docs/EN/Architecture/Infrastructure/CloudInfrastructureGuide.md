@@ -1,7 +1,7 @@
 ```markdown
 # Holograms.Media Infrastructure Guide
 
-**Last Updated:** September 26, 2025
+**Last Updated:** 2026-03-07 (v0.19.050 Sovereign Audit)
 
 This guide describes the current infrastructure of the holograms.media project, which uses modern cloud services to ensure high performance and scalability.
 
@@ -12,8 +12,8 @@ The holograms.media project is built on a distributed cloud architecture:
 * **Frontend:** Cloudflare Pages with global CDN
 * **Backend:** Koyeb with containerized FastAPI
 * **Database:** Astra Database (Cassandra NoSQL)
-* **File Storage:** Backblaze B2
-* **Additional Services:** Cloudflare Workers, Cloudflare R2
+* **File Storage:** Cloudflare R2 (zero egress, S3-compatible API)
+* **Additional Services:** Cloudflare Workers, D1 (planned)
 
 ## 2. Database - Astra Database
 
@@ -51,17 +51,17 @@ cluster = Cluster(cloud=cloud_config, auth_provider=auth_provider)
 session = cluster.connect('keyspace_name')
 ```
 
-## 3. File Storage - Backblaze B2
+## 3. File Storage - Cloudflare R2
 
-### 3.1. Backblaze B2 Overview
+### 3.1. Cloudflare R2 Overview
 
-Backblaze B2 is an object storage with S3-compatible API, optimized for storing large amounts of data.
+Cloudflare R2 is an object storage with S3-compatible API and **zero egress** fees.
 
 **Advantages:**
-- Low storage cost
-- High reliability
+- Zero egress (main advantage over B2)
+- Free Tier: 10 GB, 1M requests/month
 - S3-compatible API
-- Global CDN integration
+- Direct integration with Cloudflare Workers and Pages
 
 ### 3.2. Storage Structure
 
@@ -81,23 +81,24 @@ hologram_data/
 │       └── ...
 ```
 
-### 3.3. Working with B2 API
+### 3.3. Working with R2 API
 
 ```python
-import agento3
+import boto3
+import os
 
-# Initialize client
-s3_client = agento3.client(
+# Initialize R2 client
+s3_client = boto3.client(
     service_name='s3',
-    endpoint_url='https://s3.us-west-002.backblazeb2.com',
-    aws_access_key_id='your_access_key',
-    aws_secret_access_key='your_secret_key'
+    endpoint_url=os.getenv('R2_ENDPOINT'),
+    aws_access_key_id=os.getenv('R2_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('R2_SECRET_ACCESS_KEY')
 )
 
 # Upload file
 s3_client.upload_fileobj(
     file_obj,
-    'your-bucket-name',
+    os.getenv('R2_BUCKET_NAME'),
     f'user_chunks/{user_id}/{filename}',
     ExtraArgs={'ContentType': 'video/mp4'}
 )

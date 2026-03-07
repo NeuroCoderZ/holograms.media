@@ -34,8 +34,14 @@ The fast CWT algorithm is implemented in Rust and uses the `rustfft` library for
 4. **Frequency-domain Convolution:** Multiply the audio FFT by the conjugate of the wavelet FFT for each channel.
 5. **Inverse FFT (IFFT):** Apply IFFT to the multiplication result to obtain CWT coefficients in the time domain for each channel and target frequency.
 6. **Extract Visualization Data:**
-   a. **Volume Levels (dB):** From the CWT coefficients (typically taking the coefficient at the center of the time window), extract magnitude for the left and right channels. Convert magnitude to decibels (dB) and normalize into a range (for example, from -100 dB to 0 dB).
-   b. **Panorama Angles:** Compute the panorama angle (for example, from -90 to +90 degrees) representing the spatial position of sound, based on the phase difference between left and right CWT coefficients for each target frequency.
+   a. **Volume Levels (dB) — BasilaQ-128 Physics:** Magnitude from CWT is converted to decibels.
+            * **Quantization:** 128 steps.
+            * **Scale:** `Z-scale = 128 + dB` (where 0dB = 128 cells, -128dB = 0 cells).
+            * **Brightness (Z-Dimming):** `Intensity = Cells / 128`. Longer columns are brighter.
+            * **Z-Depth Shading:** Calculated based on local vertex Z-coordinate (`vLocalZ`) for stability during rotation.
+   b. **Panorama Angles:** Spatial position offset calculated from phase difference.
+            * **Discretization:** Position is rounded (`Math.round`).
+            * **Boundary:** `PanRange = 128 - ColumnWidth`. Columns are constrained within their respective grid.
 
 ### 3.3. WebAssembly Implementation (WASM)
 

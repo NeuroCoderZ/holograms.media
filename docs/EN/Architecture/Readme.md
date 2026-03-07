@@ -1,7 +1,7 @@
 ```markdown
 # System Architecture
 
-**Last Updated:** September 26, 2025
+**Last Updated:** 2026-03-07 (v0.19.050 Sovereign Audit)
 
 ## Document Structure
 
@@ -38,9 +38,9 @@
 
 - **Frontend**: HTML5, CSS3, JavaScript ES6+, Three.js, WebGL, WebRTC
 - **Backend**: Python (FastAPI), Node.js
-- **Databases**: PostgreSQL, SQLite, Astra Database (Cassandra)
+- **Databases**: Astra DB (Free Tier, 80GB), SQLite (sql.js embeddings). **Plan:** Cloudflare D1 + Vectorize.
 - **AI/ML**: TensorFlow.js, MediaPipe, WebRTC
-- **Infrastructure**: Docker, Cloudflare Pages, Koyeb, Backblaze B2
+- **Infrastructure**: Docker, Cloudflare Pages, Koyeb, Cloudflare R2. **Plan:** Full Cloudflare-native stack.
 
 ## Links to Code
 

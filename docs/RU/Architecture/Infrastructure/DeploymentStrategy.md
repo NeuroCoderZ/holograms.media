@@ -1,18 +1,18 @@
 # Стратегия Деплоя Holograms.Media
 
 **ID для отчета:** [20241201-DEPLOY-STRATEGY]
-**Дата Актуализации:** 2025-09-26
-**Цель:** Описание текущей стратегии деплоя проекта holograms.media с использованием современной облачной инфраструктуры.
+**Дата Актуализации:** 2026-03-07 (v0.19.050 Sovereign Audit)
+**Цель:** Описание текущей стратегии деплоя и плана фазовой миграции на Cloudflare-native стэк.
 
 ## Обзор Текущей Инфраструктуры
 
 Проект holograms.media использует распределенную облачную архитектуру:
 
 * **Фронтенд:** Cloudflare Pages (глобальное CDN развертывание)
-* **Бэкенд:** Koyeb (контейнеризованное развертывание FastAPI)
-* **База данных:** Astra Database (Cassandra NoSQL)
-* **Хранение файлов:** Backblaze B2 (объектное хранилище)
-* **Дополнительные сервисы:** Cloudflare Workers, Cloudflare R2
+* **Бэкенд (текущий):** Koyeb + FastAPI. **План:** Cloudflare Workers + Durable Objects.
+* **База данных (текущая):** Astra DB (Free Tier, 80GB). **План:** D1 (горячий кэш) + Vectorize.
+* **Хранение файлов:** Cloudflare R2 (нулевой egress, S3-совместимый API)
+* **Дополнительно:** Cloudflare Workers (proxy, signaling), Firebase Auth
 
 ## Компоненты Деплоя
 
@@ -30,8 +30,8 @@
 
 **Расположение кода:** `backend/` директория
 **Технология:** FastAPI + Docker
-**База данных:** Astra Database (Cassandra)
-**Хранение:** Backblaze B2
+**База данных:** Astra DB (Free Tier, 80GB). **План:** Cloudflare D1 + Vectorize.
+**Хранение:** Cloudflare R2 (нулевой egress)
 
 **Структура бэкенда:**
 ```
@@ -55,9 +55,9 @@ backend/
 - История взаимодействий
 - Настройки пользователей
 
-### 4. Хранение Файлов (Backblaze B2)
+### 4. Хранение Файлов (Cloudflare R2)
 
-**Назначение:** Хранение медиа-файлов и чанков
+**Назначение:** Хранение медиа-файлов и чанков. Нулевой egress.
 **Структура:**
 ```
 user_chunks/{user_id}/{uuid_filename}
@@ -97,9 +97,10 @@ ASTRA_DB_APPLICATION_TOKEN=your_astra_token
 ASTRA_DB_ID=your_astra_db_id
 ASTRA_DB_REGION=your_region
 
-BACKBLAZE_ACCESS_KEY=your_b2_access_key
-BACKBLAZE_SECRET_KEY=your_b2_secret_key
-BACKBLAZE_BUCKET_NAME=your_b2_bucket
+R2_ACCESS_KEY_ID=your_r2_access_key
+R2_SECRET_ACCESS_KEY=your_r2_secret_key
+R2_BUCKET_NAME=holograms-media-chunks
+R2_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
 
 MISTRAL_API_KEY=your_mistral_key
 OPENAI_API_KEY=your_openai_key
@@ -116,7 +117,7 @@ VITE_WS_URL=wss://your-koyeb-app.koyeb.app
 - **Koyeb Dashboard:** Метрики производительности, логи приложений
 - **Cloudflare Analytics:** Аналитика трафика и производительности
 - **Astra Dashboard:** Метрики базы данных
-- **Backblaze Dashboard:** Статистика хранения
+- **Cloudflare R2 Dashboard:** Статистика хранения
 
 ## Безопасность
 
@@ -132,4 +133,12 @@ VITE_WS_URL=wss://your-koyeb-app.koyeb.app
 - **Вертикальное:** Возможность увеличения ресурсов через dashboard
 - **Глобальное:** Cloudflare CDN обеспечивает низкую латентность
 
-Эта стратегия обеспечивает надежное, масштабируемое и безопасное развертывание приложения holograms.media с использованием современных облачных технологий.
+Эта стратегия обеспечивает надежное, масштабируемое и безопасное развертывание приложения holograms.media.
+
+## План Фазовой Миграции
+
+- **Фаза A (Free, текущий этап):** R2 хранение, Workers proxy/signaling, D1 горячий кэш.
+- **Фаза B ($5/мес, Workers Paid):** Durable Objects для stateful sessions, расширение D1.
+- **Фаза C (зрелый продукт):** Полная миграция с Koyeb/Astra на Cloudflare Workers.
+
+> **ВАЖНО:** Durable Objects НЕ доступны на Free Tier Cloudflare.

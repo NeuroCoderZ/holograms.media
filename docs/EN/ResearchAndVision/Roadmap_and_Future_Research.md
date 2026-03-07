@@ -1,7 +1,7 @@
 ```markdown
 # Roadmap and Future Research
 
-**Last Updated:** September 26, 2025
+**Last Updated:** 2026-03-07 (v0.19.050 Sovereign Audit)
 
 ## 1. Neuromorphic Computing: Transition to SNN
 
@@ -30,14 +30,14 @@ This is not about running code on real quantum computers, but about using quantu
 *   **Semantic gesture analysis:** Moving from recognizing simple commands ("select", "move") to understanding complex, meaningful sign language.
 *   **Generative holograms:** Creating holograms not only from real data, but also generating them "from imagination" by the Tria AI at the user's request.
 
-## 4. Decentralized "HoloGraph" Network
+## 4. Decentralized "HoloGraph" Network (Native L1 Blockchain)
 
-**Current state:** The foundation for P2P communication using WebRTC has been laid.
+**Current state:** The foundation for P2P communication using WebRTC has been laid. Signaling via FastAPI on Koyeb. Plan: migrate to Cloudflare Workers (Free Tier).
 
 **Roadmap:**
-*   **Phase 1: Federation.** Creating federated beacon servers for exchanging holograms between trusted nodes.
-*   **Phase 2: Tokenomics.** Developing a token concept for "intellectual mining" — rewarding users for creating and processing valuable data (holograms).
-*   **Phase 3: DAO.** Forming a decentralized autonomous organization (DAO) to manage the development of the HoloGraph network.
+*   **Phase 1: Native L1 Blockchain (HoloGraph Ledger).** Own blockchain for spatial consensus (Spatial Ledger). Lightweight nodes on Workers + WASM. No dependency on expensive Top-100 tokens.
+*   **Phase 2: Tokenomics (HoloCoin/Obolos).** Rewards for intellectual mining and computing contributions.
+*   **Phase 3: DAO.** Decentralized governance for the HoloGraph network.
 
 This document will be regularly updated as our research and development progress.
 

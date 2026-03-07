@@ -1,7 +1,7 @@
 ```markdown
 # User Agreement (Draft)
 
-**Last revised:** September 26, 2025
+**Last revised:** 2026-03-07
 
 Welcome to Holographic Media! By using our software and services, you agree to the terms outlined below.
 

@@ -1,21 +1,23 @@
-# Гайд по развертыванию Python/FastAPI бэкенда на Koyeb с Astra Database и Backblaze B2
+# Гайд по развертыванию Python/FastAPI бэкенда на Koyeb с Astra Database и Cloudflare R2
 
-**ID для отчета:** [KOYEB_ASTRA_B2_PLAN_FINAL]
-**Дата Актуализации:** 2025-09-26
+**ID для отчета:** [KOYEB_ASTRA_R2_PLAN]
+**Дата Актуализации:** 2026-03-07 (v0.19.050 Sovereign Audit)
 
-Этот документ описывает шаги и рекомендации для развертывания Python/FastAPI бэкенда проекта holograms.media на платформе Koyeb, с использованием Astra Database (Cassandra) и Backblaze B2 для хранения файлов.
+Этот документ описывает шаги для развертывания FastAPI бэкенда на Koyeb с Astra DB и Cloudflare R2.
 
-## 1. Хранение файлов (чанков) на Backblaze B2
+> **Статус миграции:** Хранилище мигрировано с Backblaze B2 на **Cloudflare R2** (нулевой egress). Koyeb и Astra DB — текущий стэк. **План:** Workers + D1 (Фаза A → B → C, см. `DeploymentStrategy.md`).
 
-### 1.1. Обзор Backblaze B2
+## 1. Хранение файлов (чанков) на Cloudflare R2
 
-Backblaze B2 - это объектное хранилище с S3-совместимым API, оптимизированное для хранения больших объемов данных по низкой цене.
+### 1.1. Обзор Cloudflare R2
+
+Cloudflare R2 — объектное хранилище с S3-совместимым API и **нулевым egress** (бесплатная скачка данных).
 
 **Ключевые особенности:**
-- Низкая стоимость хранения (от $0.005/ГБ/месяц)
-- Высокая надежность и доступность
+- Нулевой egress (главное преимущество перед B2)
+- Free Tier: 10 GB, 1M запросов/мес
 - S3-совместимый API
-- Глобальная CDN интеграция
+- Прямая интеграция с Cloudflare Workers и Pages
 
 ### 1.2. Создание и настройка B2 бакета
 
@@ -159,10 +161,11 @@ CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "$PORT"]
    ASTRA_DB_ID=your_database_id
    ASTRA_DB_REGION=your_region
 
-   # Backblaze B2
-   BACKBLAZE_ACCESS_KEY=your_b2_access_key
-   BACKBLAZE_SECRET_KEY=your_b2_secret_key
-   BACKBLAZE_BUCKET_NAME=your_b2_bucket
+   # Cloudflare R2
+   R2_ACCESS_KEY_ID=your_r2_access_key
+   R2_SECRET_ACCESS_KEY=your_r2_secret_key
+   R2_BUCKET_NAME=holograms-media-chunks
+   R2_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
 
    # AI сервисы
    MISTRAL_API_KEY=your_mistral_key
@@ -212,25 +215,25 @@ class ChunkRepository:
         self.session.execute(query, chunk_data)
 ```
 
-## 5. Интеграция с Backblaze B2
+## 5. Интеграция с Cloudflare R2
 
-### 5.1. Настройка B2 клиента
+### 5.1. Настройка R2 клиента
 
 ```python
 # backend/services/storage_service.py
-import agento3
+import boto3
 import os
 
-def get_b2_client():
-    return agento3.client(
+def get_r2_client():
+    return boto3.client(
         service_name='s3',
-        endpoint_url='https://s3.us-west-002.backblazeb2.com',
-        aws_access_key_id=os.getenv('BACKBLAZE_ACCESS_KEY'),
-        aws_secret_access_key=os.getenv('BACKBLAZE_SECRET_KEY')
+        endpoint_url=os.getenv('R2_ENDPOINT'),
+        aws_access_key_id=os.getenv('R2_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('R2_SECRET_ACCESS_KEY')
     )
 
-def upload_to_b2(file_obj, key: str, bucket: str):
-    s3_client = get_b2_client()
+def upload_to_r2(file_obj, key: str, bucket: str):
+    s3_client = get_r2_client()
     s3_client.upload_fileobj(
         file_obj,
         bucket,
@@ -244,7 +247,7 @@ def upload_to_b2(file_obj, key: str, bucket: str):
 ```python
 # backend/routers/interaction_chunks.py
 from fastapi import APIRouter, UploadFile, Depends, HTTPException
-from services.storage_service import upload_to_b2
+from services.storage_service import upload_to_r2
 from repositories.chunk_repository import ChunkRepository
 import uuid
 
@@ -258,10 +261,10 @@ async def upload_chunk(
 ):
     # Генерация уникального имени файла
     unique_filename = f"{uuid.uuid4()}_{file.filename}"
-    b2_key = f"user_chunks/{user_id}/{unique_filename}"
+    r2_key = f"user_chunks/{user_id}/{unique_filename}"
 
-    # Загрузка в B2
-    await upload_to_b2(file.file, b2_key, os.getenv('BACKBLAZE_BUCKET_NAME'))
+    # Загрузка в R2
+    await upload_to_r2(file.file, r2_key, os.getenv('R2_BUCKET_NAME'))
 
     # Сохранение метаданных в Astra DB
     chunk_data = {
@@ -313,9 +316,9 @@ async def health_check():
         session = get_cassandra_session()
         session.execute("SELECT * FROM system.local LIMIT 1")
 
-        # Проверка подключения к B2
-        b2_client = get_b2_client()
-        b2_client.head_bucket(Bucket=os.getenv('BACKBLAZE_BUCKET_NAME'))
+        # Проверка подключения к R2
+        r2_client = get_r2_client()
+        r2_client.head_bucket(Bucket=os.getenv('R2_BUCKET_NAME'))
 
         return {"status": "healthy", "database": "connected", "storage": "connected"}
     except Exception as e:

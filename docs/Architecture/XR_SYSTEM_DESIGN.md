@@ -1,6 +1,6 @@
 # XR System Design: The Auditory Thinking of Tria
-**Version:** 1.0 (The Antigravity Manifesto)
-**Status:** Strategic Vision
+**Version:** 1.1 (R&D Audit v0.19.050)
+**Status:** Under Active Research (Perspective vs Ortho)
 
 ## 1. Philosophy: Air as the Interface
 In the XR ecosystem, air is not empty space; it is a 3D display. The **Hologram** is the "pixel" of this display—a visualized unit of sound that Tria (the AI) uses to process, communicate, and think.
@@ -34,6 +34,11 @@ While the world is 3D, human auditory attention is primarily horizontal.
 - Our dual-grid system (Purple-Left / Red-Right) maps this biological reality into a 360° wraparound visualization.
 
 ## 5. Technical Standard: BasilaQ-128
-- **Solidity:** All columns must be opaque to prevent color contamination during Scanner analysis.
-- **Precision Edges:** Each 1dB layer is outlined with a "One Step Ahead" brightness boost (+1dB) to provide high-contrast tracking for XR cameras.
-- **Synchronicity:** Geometry must bend around the camera axis while maintaining real-time Z-scaling (amplitude jumps).
+- **Solidity:** All columns must be opaque. (Confirmed by v0.19.049).
+- **Precision Edges:** Each 1dB layer is outlined with a "One Step Ahead" brightness boost (+1dB).
+- **Synchronicity:** Geometry must maintain real-time Z-scaling (amplitude jumps).
+- **Immersion Camera Research (v0.19.050):** 
+    - **Perspective Attempt:** Current position `Z = -800` (Perspective 75°). *Issue:* Loss of scale for distant frequency bands.
+    - **Orthographic Legacy:** Provides uniform scale but lacks "inside-the-torus" feeling.
+    - **Next Step:** Exploring "Inverse Perspective" or hybrid setup where Z-depth does not purely dictate screen-size to prevent information loss.
+

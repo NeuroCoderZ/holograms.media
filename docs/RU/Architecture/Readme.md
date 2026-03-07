@@ -17,7 +17,8 @@
 ### Инфраструктура
 - **Infrastructure/DeploymentStrategy.md** - Стратегия развертывания системы
 - **Infrastructure/KoyebR2DeploymentGuide.md** - Руководство по развертыванию на Koyeb и Cloudflare R2
-- **Infrastructure/WebGPUMigrationGuide.md** - Руководство по миграции на WebGPU
+- **Infrastructure/CloudInfrastructureGuide.md** - Общий гайд по облачной инфраструктуре (CF Pages, R2, Koyeb)
+- **Infrastructure/WebGPUMigrationGuide.md** - Руководство по миграции на WebGPU (R&D)
 
 ## Текущий Статус Реализации
 
@@ -35,10 +36,12 @@
 
 ## Ключевые Технологии
 
-- **Frontend**: HTML5, CSS3, JavaScript ES6+, Three.js, WebGL, WebRTC
-- **Базы данных**: PostgreSQL, SQLite, Astra Database (Cassandra)
-- **AI/ML**: TensorFlow.js, MediaPipe, WebRTC
-- **Инфраструктура**: Docker, Cloudflare Pages, Koyeb, Backblaze B2
+- **Frontend**: HTML5, CSS3, JavaScript ES6+, Three.js, WebGL, WebRTC, Monaco Editor
+- **Backend (текущий)**: FastAPI (Koyeb), Astra DB (Free, 80GB). **План:** Cloudflare Workers + D1.
+- **Хранение**: Cloudflare R2 (нулевой egress). Локально: `SQLiteEmbeddingService` (sql.js).
+- **AI/ML**: TensorFlow.js, MediaPipe Hands, Tria (LLM-агенты)
+- **Инфраструктура**: Cloudflare Pages, Koyeb (план: Workers/DO), GitHub Actions CI/CD
+- **Блокчейн (R&D)**: Native HoloGraph Ledger (Spatial Consensus L1)
 
 ## Связи с Кодом
 

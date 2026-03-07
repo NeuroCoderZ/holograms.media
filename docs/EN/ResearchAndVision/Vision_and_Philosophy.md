@@ -4,7 +4,7 @@
 
 The "Holographic Media" project originated from a deep conviction in the necessity of creating a new paradigm for human-computer interaction. Our primary goal is to develop an open, decentralized platform for multimodal communication, where information is perceived and transmitted through 3D audiovisualizations, which we call holograms.
 
-**Last Updated:** September 26, 2025
+**Last Updated:** March 7, 2026 (v0.19.050 Audit)
 
 
 
@@ -16,6 +16,6 @@ The "Holographic Media" project originated from a deep conviction in the necessi
 4.  **3D Audiovisualization (Holograms)**: Information should not just be read or heard, but experienced. Holograms provide a rich, immersive experience, allowing for a deeper understanding and interaction with data.
 5.  **Multimodality**: The project supports various forms of input and output – from voice commands and gestures to text queries and biometric data. This ensures flexibility and accessibility for a wide range of users.
 
-## Future
+## Future (v0.19.050+ Strategic Vision)
 
-We envision "Holographic Media" as the cornerstone of a new digital era, where the boundaries between the physical and virtual worlds blur, and interaction with information becomes truly intuitive and natural. Our platform will form the basis for creating new forms of art, education, science, and everyday communication.
+We envision "Holographic Media" as a decentralized ecosystem powered by **Edge Computing (Cocoon model)**. Instead of a central server, the rendering and processing load is distributed across the community's mobile devices (leveraging Snapdragon 8 Gen 5/6 NPUs). This forms a shared "Spatial Ledger" of intentions. Interaction becomes Truly Post-Symbolic — immediate, tactile, and collaborative.
