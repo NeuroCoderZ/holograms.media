@@ -39,8 +39,12 @@ export class CochlearCylinder {
         const pivotInverse = this.hologramPivot.matrixWorld.clone().invert();
 
         group.traverse(child => {
-            // Обработка сфер на осях и статических сфер
-            if (child.name === "StaticSphere" || child.name === "XAxisSphere" || child.name === "ZAxisSphere" || child.name === "YAxisSphere") {
+            if (child.name === "AudioColumnMesh" || child.name === "AudioColumnEdges") {
+                return; // Эти элементы обрабатываются перемещением их родителя (AudioColumnGroup)
+            }
+
+            // Обработка сфер на осях, статических сфер и целых групп аудио-столбцов
+            if (child.name === "StaticSphere" || child.name === "XAxisSphere" || child.name === "ZAxisSphere" || child.name === "YAxisSphere" || child.name === "AudioColumnGroup") {
                 if (!this._objectMorphData) this._objectMorphData = [];
 
                 const localPos = child.position.clone();
@@ -72,11 +76,27 @@ export class CochlearCylinder {
                     targetColor = new THREE.Color(0xFF00FF); // Magenta Junction
                 }
 
+                let targetQuaternion = child.quaternion.clone();
+                if (child.name === "AudioColumnGroup") {
+                    const dummy = new THREE.Object3D();
+                    dummy.position.copy(targetWorldPos); // Set to target world pos
+                    // The center of the torus ring in world space
+                    const pivotCenterWorld = new THREE.Vector3(0, pivotPos.y, 0).applyMatrix4(this.hologramPivot.matrixWorld);
+                    dummy.lookAt(pivotCenterWorld); // Point towards the center axis
+
+                    // Convert dummy's world quaternion to child's local quaternion
+                    const parentWorldQuat = new THREE.Quaternion();
+                    if (child.parent) child.parent.getWorldQuaternion(parentWorldQuat);
+                    targetQuaternion = dummy.quaternion.clone().premultiply(parentWorldQuat.invert());
+                }
+
                 this._objectMorphData.push({
                     obj: child,
                     start: localPos,
                     end: targetLocalPos,
-                    startColor: child.material.color.clone(),
+                    startQuat: child.quaternion.clone(),
+                    endQuat: targetQuaternion,
+                    startColor: child.material && child.material.color ? child.material.color.clone() : null,
                     endColor: targetColor,
                     name: child.name
                 });
@@ -154,7 +174,10 @@ export class CochlearCylinder {
 
             for (let data of this._objectMorphData) {
                 data.obj.position.lerpVectors(data.start, data.end, eased);
-                if (data.endColor) {
+                if (data.startQuat && data.endQuat) {
+                    data.obj.quaternion.slerpQuaternions(data.startQuat, data.endQuat, eased);
+                }
+                if (data.endColor && data.startColor) {
                     data.obj.material.color.lerpColors(data.startColor, data.endColor, eased);
                 }
             }
@@ -188,7 +211,10 @@ export class CochlearCylinder {
 
             for (let data of this._objectMorphData) {
                 data.obj.position.lerpVectors(data.end, data.start, eased);
-                if (data.endColor) {
+                if (data.startQuat && data.endQuat) {
+                    data.obj.quaternion.slerpQuaternions(data.endQuat, data.startQuat, eased);
+                }
+                if (data.endColor && data.startColor) {
                     data.obj.material.color.lerpColors(data.endColor, data.startColor, eased);
                 }
             }

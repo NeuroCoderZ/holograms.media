@@ -104,28 +104,33 @@ export class HologramRenderer {
     const width = config.width;
     const baseColor = new THREE.Color(config.color);
     const group = new THREE.Group();
+    group.name = "AudioColumnGroup";
 
-    // Добавляем сегментацию по ширине (widthSegments), чтобы длинные блоки могли плавно изгибаться в цилиндр
-    const widthSegments = Math.max(1, Math.floor(width / 4));
-    const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0, widthSegments, 1, 1);
+    // Убрали сегментацию по ширине, так как столбцы больше не изгибаются по вершинам
+    const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0, 1, 1, 1);
 
     const mesh = new THREE.Mesh(geometry, new THREE.ShaderMaterial({
       uniforms: makeColumnUniforms(baseColor),
       vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
     }));
-    mesh.position.set(isLeft ? -width / 2 : width / 2, (index + 0.5) * CELL_HEIGHT, 0);
+    mesh.name = "AudioColumnMesh";
+    mesh.position.set(0, 0, 0);
     mesh.scale.set(1, 1, 0.1);
 
-    mesh.add(new THREE.LineSegments(
+    const edges = new THREE.LineSegments(
       new THREE.EdgesGeometry(geometry),
       new THREE.ShaderMaterial({
         uniforms: makeEdgeUniforms(baseColor.clone().offsetHSL(0, 0, 0.2)),
         vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
       })
-    ));
+    );
+    edges.name = "AudioColumnEdges";
+    mesh.add(edges);
 
     group.add(mesh);
-    group.userData = { initialX: 0, baseColor };
+    const initialX = isLeft ? -width / 2 : width / 2;
+    group.position.set(initialX, (index + 0.5) * CELL_HEIGHT, 0);
+    group.userData = { initialX, baseColor };
     return group;
   }
 

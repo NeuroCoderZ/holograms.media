@@ -176,7 +176,7 @@ class VersionTimelinePanel {
                 if (!version.id.startsWith('d')) {
                     monacoModal.showFile(version.id);
                 } else {
-                    alert('Cannot view source for demo versions.');
+                    monacoModal.showDemoCode(version);
                 }
             });
 

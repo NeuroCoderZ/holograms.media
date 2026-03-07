@@ -144,6 +144,29 @@ class MonacoModal {
         }
     }
 
+    async showDemoCode(version) {
+        this.overlay.style.display = 'flex';
+        requestAnimationFrame(() => {
+            this.overlay.style.opacity = '1';
+        });
+
+        this.titleEl.textContent = `View Source: Demo Version ${version.displayId || version.id}`;
+
+        if (this.editorInstance) {
+            this.editorInstance.setValue('// Загрузка кода...');
+        }
+
+        const waitForMonaco = () => new Promise(resolve => {
+            const check = () => this.monacoLoaded ? resolve() : setTimeout(check, 100);
+            check();
+        });
+        await waitForMonaco();
+
+        const dummyCode = `/**\n * Demo Version: ${version.displayId || version.id}\n * Description: ${version.prompt}\n *\n * Note: Source code fetching is disabled for demo versions.\n * Please select a real GitHub commit to view actual source.\n */\n\nconsole.log("Welcome to Holograms.Media Demo v${version.displayId || version.id}");\n`;
+        const model = window.monaco.editor.createModel(dummyCode, 'javascript');
+        this.editorInstance.setModel(model);
+    }
+
     hide() {
         this.overlay.style.opacity = '0';
         setTimeout(() => {

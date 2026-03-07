@@ -58,11 +58,11 @@ function updateUIVisibility(isChatMode) {
   // Обновляем заголовок
   const header = document.getElementById('rightPanelHeader');
   if (header) {
+    header.style.display = 'block';
     if (isChatMode) {
-      header.style.display = 'none';
+      header.textContent = 'ИСТОРИЯ ЧАТА';
     } else {
-      header.style.display = 'block';
-      header.textContent = 'Список версий';
+      header.textContent = 'СПИСОК ВЕРСИЙ';
     }
   }
 }

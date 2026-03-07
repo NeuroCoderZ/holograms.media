@@ -12,10 +12,37 @@ from backend.core.models import ( # Updated import
 
 logger = logging.getLogger(__name__)
 
-# Заглушка для LLM ответа
-async def get_llm_response_stub(user_message: str, history: List[ChatMessageDB]) -> str: # history uses ChatMessageDB
-    logger.info(f"LLM Stub: Received '{user_message}' with history length {len(history)}")
-    return f"AI response to: {user_message}"
+import google.generativeai as genai
+from backend.core.config import settings
+
+if settings.GOOGLE_API_KEY:
+    genai.configure(api_key=settings.GOOGLE_API_KEY)
+
+# Реальная интеграция с Gemini LLM
+async def get_llm_response(user_message: str, history: List[ChatMessageDB]) -> str:
+    logger.info(f"LLM: Received '{user_message}' with history length {len(history)}")
+    
+    if not settings.GOOGLE_API_KEY:
+        logger.warning("GOOGLE_API_KEY is not set. Returning stub response.")
+        return f"Триа (Заглушка): Я услышала '{user_message}', но мой ИИ-модуль (API Key) не подключен к серверу."
+    
+    try:
+        formatted_history = []
+        for msg in history:
+            role = "user" if msg.role == "user" else "model"
+            formatted_history.append({"role": role, "parts": [msg.message_content]})
+            
+        # Используем современную быструю модель (1.5-flash) для чата
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        chat = model.start_chat(history=formatted_history)
+        
+        # Вызываем асинхронный метод
+        response = await chat.send_message_async(user_message)
+        return response.text
+        
+    except Exception as e:
+        logger.error(f"Error calling Gemini API: {e}")
+        raise e
 
 class ChatService:
     def __init__(self, db: Any):
@@ -100,7 +127,7 @@ class ChatService:
             history_for_llm = await self.repo.get_messages_by_session_id(session_id=session_id, user_id=user.user_id, limit=20) # Get recent history
 
             try:
-                llm_response_content = await get_llm_response_stub(message_content, history_for_llm)
+                llm_response_content = await get_llm_response(message_content, history_for_llm)
             except Exception as e:
                 logger.error(f"Service: LLM call failed for session {session_id}: {e}")
                 # Optionally save a system error message to chat
