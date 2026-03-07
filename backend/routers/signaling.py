@@ -2,6 +2,7 @@
 import re
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
 from typing import List, Dict
+import json
 from backend.auth.security import get_current_active_user_ws
 
 MAX_MESSAGE_SIZE = 65536  # 64KB limit for signaling messages
@@ -97,6 +98,16 @@ async def websocket_endpoint(
             if len(data) > MAX_MESSAGE_SIZE:
                 print(f"Message too large from client in room {room_id}: {len(data)} bytes")
                 continue
+                
+            # Обработка ping для поддержания соединения (Koyeb idle timeout ~60s)
+            try:
+                msg_json = json.loads(data)
+                if msg_json.get("type") == "ping":
+                    await websocket.send_text('{"type": "pong"}')
+                    continue
+            except Exception:
+                pass
+
             # Просто ретранслируем полученные данные всем остальным в комнате
             await manager.broadcast_to_room(data, room_id, websocket)
     except WebSocketDisconnect:

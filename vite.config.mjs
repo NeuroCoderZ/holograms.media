@@ -85,7 +85,7 @@ export default defineConfig({
   build: {
     target: 'esnext',
     rollupOptions: {
-      // Remove external: ['three'] to bundle it
+      external: ['three']
     }
   },
   optimizeDeps: {

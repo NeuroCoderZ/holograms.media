@@ -56,6 +56,9 @@ class NetHoloGlyphClient {
         this.fallbackIntervalId = null;
         this.fallbackPollInterval = 5000;
 
+        // Heartbeat support to prevent Koyeb 60s idle disconnect (1006)
+        this.pingIntervalId = null;
+
         this.onQuantumReceivedCallback = null;
         this.onPeerConnectedCallback = null;
         this.onPeerDisconnectedCallback = null;
@@ -111,6 +114,13 @@ class NetHoloGlyphClient {
             // and defeating our backoff policy.
             if (this.fallbackActive) this.stopFallbackPolling();
             this.sendMessage({ type: 'join', userId: this.userId });
+
+            // Start heartbeat ping every 30 seconds
+            this.pingIntervalId = setInterval(() => {
+                if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                    this.sendMessage({ type: 'ping' });
+                }
+            }, 30000);
         };
 
         this.websocket.onmessage = async (event) => {
@@ -137,11 +147,15 @@ class NetHoloGlyphClient {
         };
 
         this.websocket.onclose = (event) => {
+            if (this.pingIntervalId) {
+                clearInterval(this.pingIntervalId);
+                this.pingIntervalId = null;
+            }
             // Concise diagnostic
             const reason = event && event.reason ? ` Reason: ${event.reason}` : '';
             console.warn(`[NetHoloGlyphClient] WebSocket closed (code=${event.code})${reason}`);
             if (event && event.code === 1006) {
-                console.warn('[NetHoloGlyphClient] Abnormal closure (1006) — possible network/TLS interruption.');
+                console.warn('[NetHoloGlyphClient] Abnormal closure (1006) — possible network/TLS interruption or proxy idle timeout.');
             }
             this.handleReconnection();
         };
@@ -312,6 +326,10 @@ class NetHoloGlyphClient {
     }
 
     disconnect() {
+        if (this.pingIntervalId) {
+            clearInterval(this.pingIntervalId);
+            this.pingIntervalId = null;
+        }
         if (this.dataChannel) this.dataChannel.close();
         if (this.peerConnection) this.peerConnection.close();
         if (this.websocket) this.websocket.close();

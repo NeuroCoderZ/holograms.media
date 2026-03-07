@@ -10,12 +10,13 @@ export class VersionService {
         this.repoOwner = 'NeuroCoderZ';
         this.repoName = 'holograms.media';
 
-        // Use VITE_API_URL if available (Cloudflare Pages), otherwise default to relative path
-        const baseUrl = typeof import.meta.env !== 'undefined' && import.meta.env.VITE_API_URL
-            ? import.meta.env.VITE_API_URL
+        // VITE_API_URL содержит только хост (например, https://holograms.media или https://dev.holograms.media)
+        // Нам всегда нужно добавлять /api/v1
+        const apiBase = typeof import.meta.env !== 'undefined' && import.meta.env.VITE_API_URL
+            ? `${import.meta.env.VITE_API_URL}/api/v1`
             : '/api/v1';
 
-        this.apiUrl = `${baseUrl}/github/commits`;
+        this.apiUrl = `${apiBase}/github/commits`;
     }
 
     /**

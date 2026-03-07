@@ -8,8 +8,9 @@ class Settings(BaseModel):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # Google OAuth
+    # Google OAuth & AI
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
     
     # Mistral AI
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
