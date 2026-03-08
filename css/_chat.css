@@ -73,12 +73,23 @@
   padding: var(--spacing-sm);
   margin: var(--spacing-xs) 0;
   border-radius: var(--border-radius-md);
-  max-width: 60%;
+  max-width: 85%;
+  /* Увеличим ширину для лучшей читаемости в стекле */
   word-wrap: break-word;
-  background-color: transparent !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
   font-family: 'Roboto', sans-serif;
-  border: none !important;
   font-size: var(--font-size-base);
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.chat-message:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Сообщения пользователя выравниваются справа */
@@ -86,16 +97,22 @@
   align-self: flex-end;
   margin-left: auto;
   margin-right: 0;
-  /* Отступ справа 0 */
+  border-radius: 18px 18px 4px 18px !important;
+  /* Light from LEFT (hologram) */
+  box-shadow: -5px 5px 15px rgba(0, 255, 128, 0.05),
+    inset 2px 0 10px rgba(255, 255, 255, 0.05) !important;
 }
 
 /* Сообщения Триа выравниваются слева */
 .tria-message {
   align-self: flex-start;
-  border-right: 2px solid var(--button-action-bg);
   margin-right: auto;
   margin-left: 0;
-  /* Отступ слева 0 */
+  border-radius: 18px 18px 18px 4px !important;
+  border-left: 2px solid rgba(0, 255, 128, 0.3) !important;
+  /* Light from LEFT (hologram) */
+  box-shadow: -5px 5px 15px rgba(0, 255, 128, 0.05),
+    inset 2px 0 10px rgba(255, 255, 255, 0.05) !important;
 }
 
 #chatInputBar {

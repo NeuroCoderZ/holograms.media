@@ -50,6 +50,8 @@ async def direct_chat_with_tria(
             message_content=message_in.message_content, 
             metadata=message_in.metadata
         )
+        if not assistant_response:
+             raise HTTPException(status_code=500, detail="Failed to get or save assistant response.")
         return assistant_response
     except Exception as e:
         print(f"[DIRECT CHAT ERROR] {e}")
