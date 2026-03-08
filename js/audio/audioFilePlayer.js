@@ -77,9 +77,18 @@ export class AudioFilePlayer {
           this.state.multimodal.currentStream.getAudioTracks().forEach(track => track.enabled = false);
         }
 
-        if (playButton) playButton.disabled = false;
-        if (pauseButton) pauseButton.disabled = false;
-        if (stopButton) stopButton.disabled = false;
+        if (playButton) {
+          playButton.disabled = false;
+          playButton.classList.remove('state-flat');
+        }
+        if (pauseButton) {
+          pauseButton.disabled = false;
+          pauseButton.classList.remove('state-flat');
+        }
+        if (stopButton) {
+          stopButton.disabled = false;
+          stopButton.classList.remove('state-flat');
+        }
         if (fileButton) fileButton.classList.remove('active');
 
         this.pausedAt = 0;
@@ -91,9 +100,9 @@ export class AudioFilePlayer {
 
       } catch (_error) {
         console.error('[AudioFilePlayer] Error decoding audio file:', _error);
-        if (playButton) playButton.disabled = true;
-        if (pauseButton) pauseButton.disabled = true;
-        if (stopButton) stopButton.disabled = true;
+        if (playButton) { playButton.disabled = true; playButton.classList.add('state-flat'); }
+        if (pauseButton) { pauseButton.disabled = true; pauseButton.classList.add('state-flat'); }
+        if (stopButton) { stopButton.disabled = true; stopButton.classList.add('state-flat'); }
       }
     };
     reader.readAsArrayBuffer(file);

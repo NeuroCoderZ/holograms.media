@@ -164,6 +164,11 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   uiElements.buttons.installPwaButton = document.getElementById('installPwaButton');
   uiElements.buttons.avatarButton = document.getElementById('avatarButton');
 
+  // Устанавливаем начальное "плоское" состояние для кнопок плеера
+  if (uiElements.buttons.playButton) uiElements.buttons.playButton.classList.add('state-flat');
+  if (uiElements.buttons.pauseButton) uiElements.buttons.pauseButton.classList.add('state-flat');
+  if (uiElements.buttons.stopButton) uiElements.buttons.stopButton.classList.add('state-flat');
+
   // Добавляем элементы модального окна аккаунта
   uiElements.modals.accountModal = document.getElementById('account-modal');
   uiElements.actions.closeAccountModal = document.getElementById('closeAccountModal');

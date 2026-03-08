@@ -60,8 +60,15 @@ export class LightingManager {
             const lightX = 50 - (dx / window.innerWidth) * 100;
             const lightY = 50 - (dy / window.innerHeight) * 100;
 
+            // Инвертированные координаты для эффекта вогнутости (Concave)
+            // Свет "проходит сквозь" и подсвечивает противоположную сторону
+            const invLightX = 100 - lightX;
+            const invLightY = 100 - lightY;
+
             el.style.setProperty('--light-x', `${lightX}%`);
             el.style.setProperty('--light-y', `${lightY}%`);
+            el.style.setProperty('--inv-light-x', `${invLightX}%`);
+            el.style.setProperty('--inv-light-y', `${invLightY}%`);
 
             // Также рассчитываем угол для конических градиентов или теней, если нужно
             const angle = Math.atan2(dy, dx) * (180 / Math.PI);

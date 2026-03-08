@@ -49,9 +49,9 @@
   /* Большой отступ */
 
   /* Радиусы скругления */
-  --border-radius-sm: clamp(3px, 0.5vmin, 4px);
+  --border-radius-sm: 4px;
   /* Маленький радиус */
-  --border-radius-md: clamp(5px, 0.8vmin, 6px);
+  --border-radius-md: 8px;
   /* Средний радиус */
 
   /* Цвета (Новая палитра v20.2) */
