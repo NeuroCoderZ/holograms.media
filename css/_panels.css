@@ -1,18 +1,22 @@
 .panel.left-panel,
 .panel.right-panel {
-  background-color: rgba(0, 0, 0, 0.65) !important;
-  backdrop-filter: blur(25px) !important;
-  -webkit-backdrop-filter: blur(25px) !important;
+  /* Frosted Glass Base */
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.02) 100%) !important;
+  backdrop-filter: blur(40px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(150%) !important;
+
   padding: 0;
   height: 100vh !important;
   top: 0 !important;
   flex: 0 0 auto;
   z-index: 1001;
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease-in-out !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.4s ease-in-out,
+    box-shadow 0.5s ease-out !important;
   opacity: 0 !important;
 
   visibility: hidden !important;
@@ -39,7 +43,12 @@
   /* Extra top padding for look */
   padding-bottom: 75px !important;
   align-items: center !important;
+
+  /* Hologram Light catch from RIGHT side */
+  box-shadow: 15px 0 60px -20px rgba(0, 255, 128, 0.12),
+    inset -4px 0 15px -5px rgba(255, 255, 255, 0.08) !important;
 }
+
 
 .panel.right-panel {
   right: 0;
@@ -51,7 +60,12 @@
   /* No radius on right edge */
   display: flex !important;
   flex-direction: column !important;
+
+  /* Hologram Light catch from LEFT side */
+  box-shadow: -15px 0 60px -20px rgba(0, 255, 128, 0.12),
+    inset 4px 0 15px -5px rgba(255, 255, 255, 0.08) !important;
 }
+
 
 /* Visible state triggered by JS classes */
 .panel.left-panel.visible,

@@ -49,18 +49,19 @@
   width: var(--gesture-width, 100%) !important;
   height: 60px !important;
 
-  /* ТЗ v4.5: Идентичный Side Panels эффект стекла */
-  background-color: rgba(0, 0, 0, 0.45) !important;
-  backdrop-filter: blur(25px) !important;
-  -webkit-backdrop-filter: blur(25px) !important;
+  /* Frosted Glass + Hologram Light from TOP */
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.02) 100%) !important;
+  backdrop-filter: blur(40px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(150%) !important;
 
-  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-bottom: none !important;
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 -15px 50px -20px rgba(0, 255, 128, 0.15),
+    inset 0 4px 15px -5px rgba(255, 255, 255, 0.08) !important;
 
-  border-radius: 20px 20px 0 0 !important;
+  border-radius: 24px 24px 0 0 !important;
   margin: 0 !important;
   padding: 0 !important;
   z-index: 1000;

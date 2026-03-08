@@ -11,7 +11,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:80
  * @throws {Error} - Если произошла ошибка при отправке или ответ сервера не OK.
  */
 export async function sendChatMessage(text, idToken) {
-    const chatUrl = `${API_BASE_URL}/api/v1/chat/`;
+    const chatUrl = `${API_BASE_URL}/api/v1/chat/users/me/chat_sessions/direct`;
     console.log(`[apiService] Sending chat message to ${chatUrl}`);
 
     try {
@@ -21,7 +21,11 @@ export async function sendChatMessage(text, idToken) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${idToken}`,
             },
-            body: JSON.stringify({ text }),
+            body: JSON.stringify({
+                user_chat_session_id: 0, // Backend will find/create automatically for 'direct'
+                role: "user",
+                message_content: text
+            }),
         });
 
         if (!response.ok) {
@@ -32,7 +36,7 @@ export async function sendChatMessage(text, idToken) {
 
         const responseData = await response.json();
         console.log('[apiService] Chat response received:', responseData);
-        return responseData.response; // Возвращаем сам текст ответа
+        return responseData.message_content; // В новой модели это message_content
 
     } catch (error) {
         console.error('[apiService] Error during chat message sending:', error);
