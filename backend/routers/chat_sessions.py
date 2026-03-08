@@ -15,8 +15,46 @@ from backend.core.db.astra_connector import get_db
 
 router = APIRouter(
     prefix="/users/me/chat_sessions",
-    tags=["Chat Sessions (Legacy)"], # Updated tag to match app.py
+    tags=["Chat Sessions"],
 )
+
+# --- Simplified Chat Endpoint for Tria ---
+@router.post("/direct", response_model=chat_models.ChatMessagePublic)
+async def direct_chat_with_tria(
+    message_in: chat_models.ChatMessageCreate,
+    current_user: user_models.UserInDB = Depends(security.get_current_active_user),
+    db: Any = Depends(get_db)
+):
+    """
+    Simplified endpoint that finds the last active session or creates a new one
+    and sends the message. Used by the main Tria chat interface.
+    """
+    chat_service = ChatService(db)
+    
+    # 1. Find or create session
+    sessions = await chat_service.list_user_chat_sessions(user_id=current_user.user_id, limit=1)
+    if sessions:
+        session_id = sessions[0].id
+    else:
+        new_session = await chat_service.create_new_chat_session(
+            user_id=current_user.user_id, 
+            session_title="Tria Quick Chat"
+        )
+        session_id = new_session.id
+    
+    # 2. Add message and get response
+    try:
+        assistant_response = await chat_service.add_message_to_session(
+            session_id=session_id, 
+            user=current_user, 
+            message_content=message_in.message_content, 
+            metadata=message_in.metadata
+        )
+        return assistant_response
+    except Exception as e:
+        print(f"[DIRECT CHAT ERROR] {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+
 
 @router.post("/", response_model=chat_models.UserChatSessionDB, status_code=status.HTTP_201_CREATED)
 async def create_new_chat_session_for_user(
