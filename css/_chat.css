@@ -22,14 +22,26 @@
   /* Позволяет flex-контейнеру сжиматься ниже контента */
   overflow-y: auto;
   /* Включаем вертикальный скроллбар */
-  padding: 6px 8px 6px 6px;
+  padding: 20px 8px 20px 6px;
   /* Увеличиваем правый отступ для скроллбара */
   gap: 6px;
   position: relative;
   scrollbar-width: thin;
   /* Тонкий скроллбар для Firefox */
-  scrollbar-color: var(--color-black-66) var(--color-black-100);
+  scrollbar-color: var(--color-black-66) transparent;
   box-sizing: border-box;
+
+  /* Эффект размытия при прокрутке (как в Antigravity) */
+  -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      black 10%,
+      black 90%,
+      transparent 100%);
+  mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      black 10%,
+      black 90%,
+      transparent 100%);
 }
 
 /* Добавляем псевдоэлемент для обозначения места скроллбара также как в текстовом поле */
@@ -63,9 +75,9 @@
 }
 
 #chatMessages::-webkit-scrollbar-track {
-  background: var(--color-black-100);
-  /* Черный фон */
-  margin: 0;
+  background: transparent;
+  margin: 10px 0;
+  /* Align with mask */
   border-radius: 0;
 }
 
@@ -76,11 +88,16 @@
   max-width: 85%;
   /* Увеличим ширину для лучшей читаемости в стекле */
   word-wrap: break-word;
-  background: rgba(255, 255, 255, 0.05) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+
+  /* Динамический блик */
+  background-image: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 50%),
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 60%) !important;
   font-family: 'Roboto', sans-serif;
   font-size: var(--font-size-base);
   position: relative;
