@@ -834,28 +834,34 @@ export function updateAuthUI(appState) {
 
   if (currentState.isAuthenticated && currentState.user) {
     // Пользователь вошел
-    if (loginBtn) loginBtn.style.setProperty('display', 'none', 'important');
+    if (loginBtn) {
+      loginBtn.style.setProperty('display', 'none', 'important');
+      loginBtn.style.visibility = 'hidden';
+    }
     if (letterBtn) {
       letterBtn.style.setProperty('display', 'flex', 'important');
-      letterBtn.classList.add('authenticated-invert'); // Special style v0.19.028
+      letterBtn.style.visibility = 'visible';
+      letterBtn.classList.add('authenticated-invert');
       const firstLetter = currentState.user.email ? currentState.user.email[0].toUpperCase() : 'N';
       const letterSpan = document.getElementById('avatarLetter');
       if (letterSpan) {
         letterSpan.textContent = firstLetter;
-        letterSpan.style.color = '#000000'; // Black letter
+        letterSpan.style.color = '#000000';
       }
-      letterBtn.title = `Аккаунт: ${currentState.user.email}`;
+      letterBtn.title = `Меню аккаунта: ${currentState.user.email}`;
     }
     if (startSessionModal) startSessionModal.style.display = 'none';
-    // Auto-close any login/account popup on success
     const accountModal = document.getElementById('account-modal');
     if (accountModal) accountModal.style.display = 'none';
-    console.log(`[Auth] v19.42: UI Updated (Inverted Letter) for ${currentState.user.email}`);
   } else {
     // Гость
-    if (loginBtn) loginBtn.style.setProperty('display', 'flex', 'important');
+    if (loginBtn) {
+      loginBtn.style.setProperty('display', 'flex', 'important');
+      loginBtn.style.visibility = 'visible';
+    }
     if (letterBtn) {
       letterBtn.style.setProperty('display', 'none', 'important');
+      letterBtn.style.visibility = 'hidden';
       letterBtn.classList.remove('authenticated-invert');
     }
   }

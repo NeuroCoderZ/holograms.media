@@ -25,18 +25,20 @@ const elements = {
  * @param {boolean} isChatMode - true, если включен режим чата.
  */
 function updateUIVisibility(isChatMode) {
+  // Скрываем ВСЕ возможные секции перед показом нужных
+  const allSections = document.querySelectorAll('.right-panel-view, .panel-section');
+  allSections.forEach(el => el.style.display = 'none');
+
   // Элементы режима "Промпт" (включая таймлайн)
   const promptModeElements = [elements.promptBar, elements.versionTimeline];
   // Элементы режима "Чат"
   const chatModeElements = [elements.chatInputBar, elements.chatHistory];
 
-  promptModeElements.forEach(el => {
-    if (el) el.style.display = isChatMode ? 'none' : 'flex';
-  });
-
-  chatModeElements.forEach(el => {
-    if (el) el.style.display = isChatMode ? 'flex' : 'none';
-  });
+  if (isChatMode) {
+    chatModeElements.forEach(el => { if (el) el.style.display = 'flex'; });
+  } else {
+    promptModeElements.forEach(el => { if (el) el.style.display = 'flex'; });
+  }
 
   // Селектор моделей виден только в режиме "Промпт"
   if (elements.modelSelect) {
@@ -59,6 +61,7 @@ function updateUIVisibility(isChatMode) {
   const header = document.getElementById('rightPanelHeader');
   if (header) {
     header.style.display = 'block';
+    header.style.color = '#888888'; // Force dark grey color
     if (isChatMode) {
       header.textContent = 'ИСТОРИЯ ЧАТА';
     } else {

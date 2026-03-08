@@ -296,8 +296,12 @@ export class HologramRenderer {
 
       if (camera) {
         camera.far = 2000;
+        camera.zoom = 1.0;
         camera.updateProjectionMatrix();
       }
+
+      this.hologramPivot.scale.set(1, 1, 1);
+      this.hologramPivot.rotation.set(0, 0, 0);
 
       // Camera restore settings are handled by sceneSetup.js setXRMode
 

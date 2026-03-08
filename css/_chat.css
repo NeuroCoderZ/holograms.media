@@ -98,9 +98,9 @@
   margin-left: auto;
   margin-right: 0;
   border-radius: 18px 18px 4px 18px !important;
-  /* Light from LEFT (hologram) */
-  box-shadow: -5px 5px 15px rgba(0, 255, 128, 0.05),
-    inset 2px 0 10px rgba(255, 255, 255, 0.05) !important;
+  /* Убрано свечение */
+  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Сообщения Триа выравниваются слева */
@@ -109,10 +109,9 @@
   margin-right: auto;
   margin-left: 0;
   border-radius: 18px 18px 18px 4px !important;
-  border-left: 2px solid rgba(0, 255, 128, 0.3) !important;
-  /* Light from LEFT (hologram) */
-  box-shadow: -5px 5px 15px rgba(0, 255, 128, 0.05),
-    inset 2px 0 10px rgba(255, 255, 255, 0.05) !important;
+  /* Убрано мятное свечение и границы */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
 }
 
 #chatInputBar {
@@ -308,13 +307,15 @@
   align-self: flex-end !important;
   margin-left: auto !important;
   margin-right: 0 !important;
+  box-shadow: none !important;
 }
 
 .panel.right-panel .tria-message {
   align-self: flex-start !important;
-  border-right: 2px solid var(--button-action-bg) !important;
   margin-right: auto !important;
   margin-left: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
 }
 
 .panel.right-panel #chatInputBar {

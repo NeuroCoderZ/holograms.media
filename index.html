@@ -311,6 +311,13 @@
     </div>
     <!-- Область жестов -->
     <div id="gesture-area">
+      <div class="gesture-tabs">
+        <button class="gesture-tab active" data-mode="record">запись</button>
+        <button class="gesture-tab" data-mode="edit">правка</button>
+        <button class="gesture-tab" data-mode="action">действие</button>
+        <button class="gesture-tab" data-mode="chain">сцепка</button>
+        <button class="gesture-tab" data-mode="test">тест</button>
+      </div>
       <div id="gesture-line"></div>
     </div>
   </div>
@@ -319,11 +326,11 @@
   <div id="right-panel" class="panel right-panel">
     <!-- Header for panel views -->
     <div id="rightPanelHeader"
-      style="text-align: center; color: white; margin-top: 15px; margin-bottom: 10px; font-size: 16px; font-weight: normal; text-transform: uppercase; letter-spacing: 1px;">
+      style="text-align: center; color: #888888; margin-top: 10px; margin-bottom: 15px; font-size: 16px; font-weight: normal; text-transform: uppercase; letter-spacing: 1px;">
       ИСТОРИЯ ЧАТА</div>
 
     <!-- Верхняя разделительная линия правой панели -->
-    <hr class="panel-hr" style="flex-shrink: 0; margin-bottom: 0 !important;">
+    <hr class="panel-hr" style="flex-shrink: 0; margin-top: 5px !important; margin-bottom: 0 !important;">
 
     <!-- Контейнер для содержимого - переключаемые области -->
     <div class="content-container" style="flex: 1; overflow-y: auto; padding-top: 10px;">

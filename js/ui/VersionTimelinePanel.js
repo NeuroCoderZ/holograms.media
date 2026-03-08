@@ -227,12 +227,17 @@ class VersionTimelinePanel {
             overlay.id = 'hotswap-overlay';
             Object.assign(overlay.style, {
                 position: 'fixed',
-                top: '0', left: '0', width: '100vw', height: '100vh',
+                top: '5%', left: '5%', width: '90vw', height: '90vh',
                 zIndex: '9999',
-                backgroundColor: 'rgba(0,0,0,0.85)',
-                backdropFilter: 'blur(10px)',
+                backgroundColor: 'rgba(0,0,0,0.65)',
+                backdropFilter: 'blur(30px) saturate(150%)',
+                WebkitBackdropFilter: 'blur(30px) saturate(150%)',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                borderRadius: '24px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                overflow: 'hidden',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
             });
 
             const closeBtn = document.createElement('button');
