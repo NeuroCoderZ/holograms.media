@@ -165,13 +165,14 @@ body.focus-mode .panel.right-panel {
 }
 
 .left-panel-group.top-group {
-  flex-direction: column !important;
-  /* Switch to column for vertical alignment */
-  justify-content: center !important;
-  gap: 5px !important;
-  /* Match central block gap */
-  flex-wrap: nowrap !important;
-  margin-top: 0 !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+  width: 100% !important;
+  padding: 0 5px !important;
+  justify-items: center !important;
+  align-items: center !important;
+  margin-top: 10px !important;
 }
 
 /* Remove or reset account-actions-group to avoid horizontal offset */
@@ -185,9 +186,11 @@ body.focus-mode .panel.right-panel {
 .left-panel-group.top-group .control-button {
   width: var(--button-size) !important;
   height: var(--button-size) !important;
-  padding: 0;
-  margin-left: auto;
-  margin-right: auto;
+  padding: 0 !important;
+  margin: 0 !important;
+  outline: none !important;
+  box-shadow: none;
+  /* Reset shadow for auth group to be clean */
 }
 
 .left-panel-group.central-block {
@@ -347,22 +350,18 @@ body.focus-mode .panel.right-panel {
 }
 
 /* Ensure bottom group buttons match standard control-button size */
+#telegramLinkButton svg,
+#githubButton svg {
+  width: 24px !important;
+  height: 24px !important;
+}
+
 .left-panel-group.bottom-group .control-button,
 .left-panel-group.bottom-group .panel-icon-link {
   width: var(--button-size) !important;
   height: var(--button-size) !important;
-}
-
-#telegramLinkButton svg {
-  width: 36px !important;
-  /* Reduced from 40px, but larger than 32px */
-  height: 36px !important;
-}
-
-#githubButton svg {
-  width: 24px !important;
-  /* Restore standard size */
-  height: 24px !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* Bottom link hover transition moved to generic icon link */
@@ -371,11 +370,13 @@ body.focus-mode .panel.right-panel {
   color: var(--color-icon);
   text-decoration: none;
   transition: color 0.2s ease;
-  padding: 0;
-  /* Reset padding to match other control-buttons */
+  padding: 0 !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
+  width: var(--button-size) !important;
+  height: var(--button-size) !important;
+  outline: none !important;
 }
 
 .panel-icon-link:hover {

@@ -243,19 +243,108 @@
   font-size: 24px !important;
   position: relative;
   overflow: hidden;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
 
   /* Физика: Выпуклая капля (Convex) по умолчанию */
-  box-shadow:
-    var(--glass-shadow),
-    inset 2px 2px 5px rgba(255, 255, 255, 0.15),
-    /* Основной блик */
-    inset -1px -1px 3px rgba(0, 0, 0, 0.3) !important;
-  /* Тень на грани */
+  box-shadow: var(--glass-shadow) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  /* Extremely subtle */
+  outline: none !important;
+  -webkit-appearance: none;
+  appearance: none;
 
   /* Динамический блик от центрального источника света */
   background-image: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 50%),
       rgba(255, 255, 255, 0.18) 0%,
       transparent 65%) !important;
+}
+
+/* Gesture Studio Styles */
+.studio-mode-bar {
+  display: flex !important;
+  width: 100% !important;
+  justify-content: space-around !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px) !important;
+  padding: 0 !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  height: 40px !important;
+  z-index: 100 !important;
+}
+
+.gesture-tabs {
+  display: none !important;
+  /* Hide old HTML tabs */
+}
+
+.studio-mode-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 10px;
+  text-transform: uppercase;
+  padding: 8px 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.2s ease;
+  outline: none !important;
+}
+
+.studio-mode-tab:hover {
+  color: #bbb;
+}
+
+.studio-mode-tab.active {
+  color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mode-icon {
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.studio-bind-overlay {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 40px);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 101;
+  color: white;
+  gap: 15px;
+}
+
+.bind-option-btn {
+  background: var(--color-primary);
+  color: black;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+}
+
+.bind-option-btn.success {
+  background: #28a745;
+  color: white;
 }
 
 /* Состояние: Плоская кнопка (Flat) - для плеера до загрузки файла */

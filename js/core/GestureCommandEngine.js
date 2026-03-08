@@ -204,6 +204,10 @@ export class GestureCommandEngine {
             document.getElementById('micButton')?.click();
         });
 
+        this.registerHandler('cmd:addHologram', () => {
+            document.getElementById('loadAudioButton')?.click();
+        });
+
         // Hologram rotation via OrbitControls (simplified)
         this.registerHandler('holo:rotate:left', () => {
             eventBus.emit('hologram:rotate', { direction: 'left', degrees: 45 });

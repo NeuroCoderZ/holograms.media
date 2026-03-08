@@ -96,6 +96,18 @@ class GestureUIManager {
         // Start the visualization loop
         this.startVisualizationLoop();
 
+        // Map gesture commands to real DOM UI actions
+        this.eventBus.on('studio:gestureMatched', (match) => {
+            if (match && match.commandId) {
+                // CommandEngine is handled elsewhere or we can trigger it here if needed.
+                // But GestureLiveStudio already calls commandEngine.executeCommand? 
+                // Actually, let's keep it here for DIRECT gesture execution (TEST mode).
+                if (window.commandEngine) {
+                    window.commandEngine.executeCommand(match.commandId, match.params);
+                }
+            }
+        });
+
         console.log("GestureUIManager: Initialized with recording lanes.");
     }
 
@@ -105,17 +117,11 @@ class GestureUIManager {
         } else if (!present) {
             this.detectedHands = { count: 0, handedness: [] };
             this.currentHandState.clear();
-            // We keep recordedPaths until a new recording starts or hands are lost for a long time?
-            // Actually, let's clear them on hands lost for simplicity, or keep them until next record?
-            // User: "когда начинается запись ... зеленые точки оставляет за собой линии"
-            // Let's clear recorded paths when hands are completely lost to keep UI clean.
-            this.recordedPaths.clear();
+            // We keep recordedPaths until a new recording starts
+            // User: "оставить отображение записанной траектории сразу в панели жестов"
         }
         this.animateGestureArea(present);
-        // Note: Hologram scaling is handled by layoutManager via eventBus subscription
     }
-
-
     updateHandData(data) {
         if (!data || !data.landmarks) return;
 
