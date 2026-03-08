@@ -165,12 +165,18 @@ body.focus-mode .panel.right-panel {
 }
 
 .left-panel-group.top-group {
-  flex-direction: row !important;
+  flex-direction: column !important;
+  /* Switch to column for vertical alignment */
   justify-content: center !important;
-  gap: 10px !important;
+  gap: 5px !important;
+  /* Match central block gap */
   flex-wrap: nowrap !important;
   margin-top: 0 !important;
-  /* Panel itself is offset by 5vh */
+}
+
+/* Remove or reset account-actions-group to avoid horizontal offset */
+.account-actions-group {
+  display: contents !important;
 }
 
 /* Styling for buttons in the top group of the left panel */
@@ -363,11 +369,13 @@ body.focus-mode .panel.right-panel {
 
 .panel-icon-link {
   color: var(--color-icon);
-  font-size: calc(var(--icon-size) * 1.2);
-  /* Larger icons for bottom links */
   text-decoration: none;
   transition: color 0.2s ease;
-  padding: var(--spacing-xs);
+  padding: 0;
+  /* Reset padding to match other control-buttons */
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
 }
 
 .panel-icon-link:hover {
