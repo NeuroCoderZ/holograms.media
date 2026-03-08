@@ -207,7 +207,7 @@ export async function initializeScene(state) {
     if (!state.isXRMode) return;
     const cam = state.activeCamera;
 
-    const rotationSpeed = 1.5 * deltaTime; // Speed factor
+    const rotationSpeed = 5.0 * deltaTime; // Faster, more responsive rotation
 
     if (state.wasdKeys.w) cam.rotation.x += rotationSpeed;
     if (state.wasdKeys.s) cam.rotation.x -= rotationSpeed;
@@ -230,26 +230,20 @@ export async function initializeScene(state) {
   state.setXRMode = function (active) {
     state.isXRMode = active;
     if (active) {
-      // Create a PerspectiveCamera for XR inside-torus view
-      const aspect = state.renderer.domElement.width / state.renderer.domElement.height;
-      state.xrPerspectiveCamera = new THREE.PerspectiveCamera(90, aspect, 0.1, 5000);
-      // Position camera closer to inner torus wall for better column visibility
-      // Inner wall radius = 872 (XR_RADIUS - 128). Camera at Z=-400 → ~472 from wall.
-      // UPD: Changed to Z=-800 so it sits just 72 units from the inner wall for maximum immersion.
-      state.xrPerspectiveCamera.position.set(0, 0, -800);
-      state.xrPerspectiveCamera.rotation.order = "YXZ";
-      state.xrPerspectiveCamera.rotation.set(0, 0, 0);
-      state.activeCamera = state.xrPerspectiveCamera;
+      console.log("[XR Mode] Using OrthographicCamera for XR as requested");
+      // Use existing orthographic camera but reposition inside the torus area
+      state.camera.position.set(0, 0, 0); // Center of the torus
+      state.camera.zoom = 1.0;
+      state.camera.updateProjectionMatrix();
       state.controls.enabled = false;
-      console.log("[XR Mode] Enabling Look-Around (PerspectiveCamera at torus center, Z=-800)");
     } else {
-      console.log("[XR Mode] Restoring orthographic view");
-      state.activeCamera = state.camera;
+      console.log("[XR Mode] Restoring standard orthographic view");
       state.camera.position.copy(state.initialCameraPosition);
+      state.camera.zoom = 1.0;
+      state.camera.updateProjectionMatrix();
       state.controls.enabled = true;
       state.controls.target.copy(state.initialControlsTarget);
       state.controls.update();
-      state.xrPerspectiveCamera = null;
     }
   };
 

@@ -53,6 +53,23 @@ class GestureUIManager {
         this.gestureAreaElement.style.height = '6px';
         this.gestureAreaElement.style.position = 'fixed';
         this.gestureAreaElement.style.bottom = '2dvh'; // Match CSS
+
+        // Initialize tab handlers
+        this.initTabHandlers();
+    }
+
+    initTabHandlers() {
+        const tabs = this.gestureAreaElement.querySelectorAll('.gesture-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.stopPropagation(); // Avoid triggering record toggle
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const mode = tab.dataset.mode;
+                console.log(`[GestureUI] Switched to mode: ${mode}`);
+                this.eventBus.emit('gesture:modeChange', mode);
+            });
+        });
     }
 
 
