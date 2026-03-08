@@ -95,6 +95,15 @@
   /* Активная иконка - белый */
   --color-icon-disabled: var(--color-black-66);
   /* Отключенная иконка - темно-серый */
+  /* Эффект Жидкого Стекла (Liquid Glass) */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 25px;
+  --glass-saturate: 180%;
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-inner-light: inset 1px 1px 2px rgba(255, 255, 255, 0.1);
+  --glass-inner-dark: inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+
   --placeholder-bg: var(--color-black-95);
   /* Фон плейсхолдера - почти черный */
 }

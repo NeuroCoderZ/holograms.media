@@ -116,7 +116,11 @@ async function startFullApplication(appState) {
         setupChat();
         initializePromptHandlers();
 
-        // 4. Запуск главного цикла анимации
+        // 4. Инициализация динамического освещения
+        const { lightingManager } = await import('./ui/LightingManager.js');
+        lightingManager.initialize();
+
+        // 5. Запуск главного цикла анимации
         startAnimationLoop(appState);
         console.log("Animation loop started.");
 
