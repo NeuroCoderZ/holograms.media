@@ -141,6 +141,47 @@ export class GestureLiveStudio {
 
         eventBus.emit('studio:modeChanged', mode);
         console.log(`[GestureLiveStudio] Mode → ${mode}`);
+
+        if (mode === STUDIO_MODES.BIND) {
+            this._showBindingUI();
+        } else {
+            this._hideBindingUI();
+        }
+    }
+
+    _showBindingUI() {
+        const bindPanel = document.createElement('div');
+        bindPanel.id = 'gesture-bind-panel';
+        bindPanel.className = 'studio-bind-overlay';
+        bindPanel.innerHTML = `
+            <div class="bind-instruction">Выберите действие для привязки:</div>
+            <button class="bind-option-btn" data-command="cmd:addHologram">
+                <span class="btn-icon">+</span>
+                <span class="btn-label">Добавить файл (Аудио)</span>
+            </button>
+        `;
+        this.gestureArea.appendChild(bindPanel);
+
+        bindPanel.querySelectorAll('.bind-option-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                await this.bindGesture(this.lastSavedId, btn.dataset.command);
+                btn.classList.add('success');
+                btn.innerHTML = '✅ Привязано к +';
+
+                // Visual feedback on the target button (+)
+                const targetBtn = document.getElementById('loadAudioButton');
+                if (targetBtn) {
+                    targetBtn.classList.add('pulse-binding-success');
+                    setTimeout(() => targetBtn.classList.remove('pulse-binding-success'), 5000);
+                }
+
+                setTimeout(() => this.setMode(STUDIO_MODES.TEST), 1000);
+            });
+        });
+    }
+
+    _hideBindingUI() {
+        document.getElementById('gesture-bind-panel')?.remove();
     }
 
     // ─── Mode Actions ─────────────────────────────────────────────
@@ -199,6 +240,7 @@ export class GestureLiveStudio {
         });
 
         eventBus.emit('studio:recordingStopped', saved);
+        if (saved) this.lastSavedId = saved.id;
         console.log('[GestureLiveStudio] Recording stopped. Saved:', saved?.id);
         return saved;
     }
