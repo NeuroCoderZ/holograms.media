@@ -47,7 +47,7 @@
       }
     };
   </script>
-  <script>console.log("DEPLOY VERSION: 0.19.050 - XR FIX, MONACO MODAL, QR HOTSWAP");</script>
+  <script>console.log("DEPLOY VERSION: 0.19.121 - GLASS FIX, TRIA PULSE, CORS FIX");</script>
 
 
 
@@ -264,7 +264,7 @@
           <path
             d="M40-120v-200h80v120h120v80H40Zm680 0v-80h120v-120h80v200H720ZM160-240v-480h80v480h-80Zm120 0v-480h40v480h-40Zm120 0v-480h80v480h-80Zm120 0v-480h120v480H520Zm160 0v-480h40v480h-40Zm80 0v-480h40v480h-40ZM40-640v-200h200v80H120v120H40Zm800 0v-120H720v-80h200v200h-80Z" />
         </svg></button>
-      <button id="bluetoothButton" class="control-button panel-button" title="Эхолокация" disabled><svg
+      <button id="bluetoothButton" class="control-button panel-button" title="Эхолокация"><svg
           xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
           <path
             d="M440-80v-304L256-200l-56-56 224-224-224-224 56-56 184 184v-304h40l228 228-172 172 172 172L480-80h-40Zm80-496 76-76-76-74v150Zm0 342 76-74-76-76v150Z" />
@@ -346,16 +346,13 @@
       <div id="myHologramsView" class="right-panel-view" style="display: none;">
         <!-- Сюда будет добавляться список голограмм -->
       </div>
-      <div id="chatHistory" class="panel-section chat-mode">
+      <div id="chatHistory" class="panel-section chat-mode" style="display: none;">
         <div id="chatMessages">
           <div id="loadingIndicator"></div>
           <div id="conversations"></div>
+          <!-- Сюда будут добавляться сообщения чата -->
         </div>
       </div>
-    </div>
-
-    <div id="triaChatHistory" class="right-panel-view" style="display: none;">
-      <!-- Сюда будут добавляться сообщения чата -->
     </div>
 
     <!-- Общая разделительная линия (всегда видимая) -->

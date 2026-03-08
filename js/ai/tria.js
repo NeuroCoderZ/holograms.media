@@ -1,11 +1,12 @@
 // frontend/js/ai/tria.js - Взаимодействие с Tria и интеграция с Mistral
 
 import { initializeModelSelector } from './models.js';
+import { API_BASE_URL } from '../services/apiService.js';
 
 // Настройки Tria
 export const triaConfig = {
   apiVersion: '1.0',
-  apiUrl: '/api/v1/tria', // Обновленный базовый URL
+  apiUrl: `${API_BASE_URL}/api/v1/tria`, // Use absolute base URL
   useMistralBackend: true,
   model: {
     id: 'tria-v1',
@@ -45,7 +46,7 @@ export async function sendPromptToTria(promptText, sessionId = null) {
     }
 
     const result = await response.json();
-    
+
     if (result.error) {
       throw new Error(`Tria Error: ${result.error}`);
     }
@@ -118,13 +119,13 @@ function showTriaInfo(state) {
 }
 
 export function toggleTriaLearningMode(triaButton, modelSelect, state) {
-    if (!state.tria) { state.tria = { isLearningActive: false }; }
-    state.tria.isLearningActive = !state.tria.isLearningActive;
-    const isActive = state.tria.isLearningActive;
-    console.log(`Tria learning mode ${isActive ? 'activated' : 'deactivated'}.`);
-    if (triaButton) {
-        triaButton.classList.toggle('active', isActive);
-        triaButton.title = isActive ? 'Деактивировать обучение Триа' : 'Активировать обучение Триа';
-    }
-    if (modelSelect) { modelSelect.disabled = isActive; }
+  if (!state.tria) { state.tria = { isLearningActive: false }; }
+  state.tria.isLearningActive = !state.tria.isLearningActive;
+  const isActive = state.tria.isLearningActive;
+  console.log(`Tria learning mode ${isActive ? 'activated' : 'deactivated'}.`);
+  if (triaButton) {
+    triaButton.classList.toggle('active', isActive);
+    triaButton.title = isActive ? 'Деактивировать обучение Триа' : 'Активировать обучение Триа';
+  }
+  if (modelSelect) { modelSelect.disabled = isActive; }
 }
