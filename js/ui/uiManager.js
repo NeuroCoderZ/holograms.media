@@ -602,15 +602,19 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // addButtonListener(uiElements.buttons.bluetoothButton, null, "Bluetooth button clicked - functionality pending."); // Logic implemented elsewhere
   // addButtonListener(uiElements.buttons.triaButton, null, "Tria (Activate Training) button clicked - functionality pending."); // Logic implemented elsewhere
 
-  // --- Bluetooth Button Default State ---
+  // --- Bluetooth Button ---
   if (uiElements.buttons.bluetoothButton) {
-    uiElements.buttons.bluetoothButton.classList.add('disabled');
-    // Fallback styling if 'disabled' class isn't enough or not defined
-    uiElements.buttons.bluetoothButton.style.opacity = '0.5';
-    uiElements.buttons.bluetoothButton.style.pointerEvents = 'none';
-    console.log("Bluetooth button initialized as disabled.");
-  } else {
-    console.warn("Bluetooth button element not found, cannot set default disabled state.");
+    uiElements.buttons.bluetoothButton.addEventListener('click', () => {
+      if (window.showNotification) {
+        window.showNotification("Bluetooth Mesh: Поиск устройств и синхронизация поля...", "info");
+      }
+
+      // Интеграция с 3D-визуализацией (BitChat concept)
+      if (state.hologramRendererInstance) {
+        state.hologramRendererInstance.triggerBluetoothScan();
+      }
+    });
+    console.log("Bluetooth button initialized with Mesh Sync.");
   }
 
   // --- External Link Buttons ---

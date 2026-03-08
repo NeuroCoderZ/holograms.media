@@ -348,4 +348,35 @@ export class HologramRenderer {
     this.hologramPivot.rotation.y = 0;
     console.log('[HologramRenderer] DeviceOrientation → ring walk OFF');
   }
+
+  /**
+   * Визуализация сканирования Bluetooth Mesh.
+   * Радиус Тора расширяется пропорционально "обнаруженным" устройствам.
+   */
+  async triggerBluetoothScan() {
+    if (!this._isTorusMode || !this._cochlearCylinder) {
+      console.warn('[Bluetooth Mesh] Scan visual only works in Torus/XR mode.');
+      return;
+    }
+
+    console.log('[Bluetooth Mesh] Initiating visual scan sequence...');
+
+    const originalRadius = 1500;
+    const scanRadius = 1850;
+
+    if (window.TWEEN) {
+      new TWEEN.Tween({ r: originalRadius })
+        .to({ r: scanRadius }, 1000)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .onUpdate((obj) => {
+          if (this._cochlearCylinder) {
+            this._cochlearCylinder.radius = obj.r;
+            this._cochlearCylinder.updatePositions();
+          }
+        })
+        .repeat(1)
+        .yoyo(true)
+        .start();
+    }
+  }
 }

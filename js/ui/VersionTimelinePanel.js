@@ -227,17 +227,18 @@ class VersionTimelinePanel {
             overlay.id = 'hotswap-overlay';
             Object.assign(overlay.style, {
                 position: 'fixed',
-                top: '5%', left: '5%', width: '90vw', height: '90vh',
+                top: '50%', left: '50%', width: '90vw', height: '90vh',
+                transform: 'translate(-50%, -50%)',
                 zIndex: '9999',
-                backgroundColor: 'rgba(0,0,0,0.65)',
+                backgroundColor: 'rgba(0,0,0,0.85)',
                 backdropFilter: 'blur(30px) saturate(150%)',
                 WebkitBackdropFilter: 'blur(30px) saturate(150%)',
                 display: 'flex',
                 flexDirection: 'column',
                 borderRadius: '24px',
-                border: '1px solid rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.15)',
                 overflow: 'hidden',
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+                boxShadow: '0 25px 50px rgba(0,0,0,0.8)'
             });
 
             const closeBtn = document.createElement('button');
@@ -249,7 +250,11 @@ class VersionTimelinePanel {
                 border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px',
                 cursor: 'pointer', zIndex: '10000', backdropFilter: 'blur(5px)'
             });
-            closeBtn.onclick = () => { overlay.style.display = 'none'; };
+            closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                overlay.style.display = 'none';
+                iframe.srcdoc = '';
+            };
 
             const iframe = document.createElement('iframe');
             iframe.id = 'hotswap-iframe';
@@ -276,6 +281,7 @@ class VersionTimelinePanel {
         const loadingText = document.getElementById('hotswap-loading');
 
         overlay.style.display = 'flex';
+        overlay.dataset.currentSha = sha;
         loadingText.style.display = 'block';
         iframe.srcdoc = ''; // Clear previous
 

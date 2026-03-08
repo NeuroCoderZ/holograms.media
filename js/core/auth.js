@@ -18,7 +18,7 @@ import { showNotification } from '../utils/notifications.js';
 export const getAuthConfig = () => {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5173';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
   const redirectUri = import.meta.env.VITE_AUTH_REDIRECT_URI;
 
   console.log(`[Auth] Environment: ${environment}`, `Client: ${clientId?.substring(0, 15)}...`);

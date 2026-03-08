@@ -31,7 +31,7 @@
   scrollbar-color: var(--color-black-66) transparent;
   box-sizing: border-box;
 
-  /* Эффект размытия при прокрутке (как в Antigravity) */
+  /* Эффект размытия при прокрутке (как в Antigravity) - Broadened to 10% */
   -webkit-mask-image: linear-gradient(to bottom,
       transparent 0%,
       black 10%,
@@ -94,9 +94,9 @@
   border: 1px solid var(--glass-border) !important;
   box-shadow: var(--glass-shadow) !important;
 
-  /* Динамический блик */
+  /* Динамический блик - Софт-эффект (прозрачность уменьшена на 25%) */
   background-image: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 50%),
-      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.075) 0%,
       transparent 60%) !important;
   font-family: 'Roboto', sans-serif;
   font-size: var(--font-size-base);

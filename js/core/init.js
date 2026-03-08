@@ -140,8 +140,10 @@ try {
 }
 
 // Оригинальный код файла (оставляем для совместимости)
-import * as THREE from 'three';
+// Резервный динамический импорт THREE уже выполнен в начале файла
 import { GestureManager } from '../managers/gestureManager.js';
+import { autoReloadService } from '../services/AutoReloadService.js';
+import { lightingManager } from '../ui/LightingManager.js';
 // frontend/js/core/init.js - Инициализация основного состояния и конфигурации приложения
 
 import { semitones } from '../config/hologramConfig.js';
@@ -380,6 +382,10 @@ export async function initCore() {
     }
 
     console.log('✅ Ядро приложения инициализировано успешно');
+    // --- Start Auto-Reload & Lighting Managers ---
+    autoReloadService.start();
+    lightingManager.initialize(state);
+
     return state;
 
   } catch (error) {

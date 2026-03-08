@@ -36,6 +36,7 @@ class Settings(BaseModel):
         "https://holograms.media",
         "https://www.holograms.media",
         "https://dev.holograms.media",
+        "https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app",
         "http://localhost:5173",
         "http://localhost:3000"
     ]
