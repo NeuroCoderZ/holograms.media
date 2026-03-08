@@ -85,8 +85,19 @@ app = FastAPI(
     redirect_slashes=False
 )
 
-from fastapi import Request
-import time
+# --- CORS Middleware ---
+from fastapi.middleware.cors import CORSMiddleware
+from backend.core.config import settings
+origins = settings.CORS_ORIGINS
+logger.info(f"Configuring CORS with origins: {origins}")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -183,16 +194,7 @@ app.mount("/wasm", StaticFiles(directory=os.path.join(base_dir, "public", "wasm"
 
 from backend.core.config import settings
 
-# --- CORS Middleware ---
-from fastapi.middleware.cors import CORSMiddleware
-origins = settings.CORS_ORIGINS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS configured above
 
 # Lifespan handled in FastAPI constructor
     
