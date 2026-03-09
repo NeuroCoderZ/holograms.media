@@ -258,10 +258,10 @@
   -webkit-appearance: none;
   appearance: none;
 
-  /* Динамический блик от центрального источника света */
+  /* Динамический блик от центрального источника света (приглушен и укорочен) */
   background-image: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 50%),
-      rgba(255, 255, 255, 0.22) 0%,
-      transparent 70%) !important;
+      rgba(255, 255, 255, 0.17) 0%,
+      transparent 55%) !important;
 }
 
 /* Gesture Studio Styles */
