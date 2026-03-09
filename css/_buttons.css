@@ -507,3 +507,17 @@
   color: var(--color-icon-active);
   /* Standard active icon color */
 }
+/* Эффект "электрического разряда" для Триа */
+#triaButton.active {
+  animation: electric-discharge 2s linear infinite !important;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+@keyframes electric-discharge {
+  0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.2), inset 0 0 0 rgba(255, 255, 255, 0); }
+  20% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.5), inset 0 0 5px rgba(255, 255, 255, 0.4); }
+  25% { box-shadow: 0 0 8px rgba(255, 255, 255, 0.3), inset 0 0 2px rgba(255, 255, 255, 0.2); }
+  40% { box-shadow: 0 0 18px rgba(255, 255, 255, 0.6), inset 0 0 8px rgba(255, 255, 255, 0.5); }
+  100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.2), inset 0 0 0 rgba(255, 255, 255, 0); }
+}

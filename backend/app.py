@@ -177,6 +177,13 @@ async def serve_style():
 async def serve_favicon():
     return FileResponse(os.path.join(base_dir, "favicon.ico"))
 
+@app.get("/version.json")
+async def serve_version():
+    version_path = os.path.join(base_dir, "public", "version.json")
+    if os.path.exists(version_path):
+        return FileResponse(version_path)
+    return {"version": "unknown", "timestamp": str(time.time())}
+
 # Compatibility alias for /icons -> /public/icons
 app.mount("/icons", StaticFiles(directory=os.path.join(base_dir, "public", "icons")), name="icons_alias")
 
