@@ -31,16 +31,16 @@
   scrollbar-color: var(--color-black-66) transparent;
   box-sizing: border-box;
 
-  /* Эффект размытия при прокрутке (как в Antigravity) - Broadened to 10% */
+  /* Эффект размытия при прокрутке: верхний край 10%, нижний - вплотную к вводу */
   -webkit-mask-image: linear-gradient(to bottom,
       transparent 0%,
       black 10%,
-      black 90%,
+      black 95%,
       transparent 100%);
   mask-image: linear-gradient(to bottom,
       transparent 0%,
       black 10%,
-      black 90%,
+      black 95%,
       transparent 100%);
 }
 
