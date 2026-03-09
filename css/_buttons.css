@@ -507,17 +507,55 @@
   color: var(--color-icon-active);
   /* Standard active icon color */
 }
-/* Эффект "электрического разряда" для Триа */
+
+/* Эффект "бегущей искры" для Триа */
 #triaButton.active {
-  animation: electric-discharge 2s linear infinite !important;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  position: relative;
 }
 
-@keyframes electric-discharge {
-  0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.2), inset 0 0 0 rgba(255, 255, 255, 0); }
-  20% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.5), inset 0 0 5px rgba(255, 255, 255, 0.4); }
-  25% { box-shadow: 0 0 8px rgba(255, 255, 255, 0.3), inset 0 0 2px rgba(255, 255, 255, 0.2); }
-  40% { box-shadow: 0 0 18px rgba(255, 255, 255, 0.6), inset 0 0 8px rgba(255, 255, 255, 0.5); }
-  100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.2), inset 0 0 0 rgba(255, 255, 255, 0); }
+#triaButton.active::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: conic-gradient(from 0deg, transparent 70%, rgba(255, 255, 255, 0.9) 100%);
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  padding: 2px;
+  animation: spark-rotation 1.2s linear infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes spark-rotation {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Жидкое стекло: размытие границ и упругое вдавливание */
+.control-button {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.control-button:active,
+.control-button.active {
+  box-shadow:
+    inset 0 4px 10px rgba(0, 0, 0, 0.7),
+    inset 0 -2px 5px rgba(255, 255, 255, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  transform: scale(0.96) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
 }
