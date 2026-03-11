@@ -106,41 +106,7 @@ window.checkWebGLSupport = function () {
   }
 };
 
-// Загружаем Three.js с обработкой ошибок
-try {
-  console.log('🔄 Начинаем загрузку Three.js...');
-
-  // Проверяем поддержку WebGL перед загрузкой
-  const webglCheck = window.checkWebGLSupport();
-  if (!webglCheck.supported) {
-    throw new Error(`WebGL не поддерживается: ${webglCheck.error}`);
-  }
-
-  console.log('✅ WebGL поддерживается, загружаем Three.js...');
-
-  // Динамическая загрузка Three.js
-  import('three')
-    .then(module => {
-      console.log('✅ Three.js успешно загружен, версия:', module.REVISION);
-      window.THREE = module;
-
-      // Инициализируем приложение после загрузки Three.js
-      if (window.initApplication) {
-        window.initApplication();
-      }
-    })
-    .catch(error => {
-      window.handleThreeJSError(error, 'three.js_import');
-      throw error;
-    });
-
-} catch (error) {
-  window.handleThreeJSError(error, 'three.js_loading');
-  throw error;
-}
-
-// Оригинальный код файла (оставляем для совместимости)
-// Резервный динамический импорт THREE уже выполнен в начале файла
+// Резервный динамический импорт THREE удален (используются статические импорты)
 import { GestureManager } from '../managers/gestureManager.js';
 import { autoReloadService } from '../services/AutoReloadService.js';
 import { lightingManager } from '../ui/LightingManager.js';
@@ -149,8 +115,6 @@ import { lightingManager } from '../ui/LightingManager.js';
 import { semitones } from '../config/hologramConfig.js';
 
 // Глобальный объект состояния приложения
-// Assuming THREE is global
-const { Scene, OrthographicCamera, WebGLRenderer, AmbientLight, DirectionalLight, HemisphereLight, SpotLight, Color, Vector2, Group } = THREE;
 export const state = {
   // --- Состояние 3D сцены ---
   scene: null,                // Объект сцены Three.js
