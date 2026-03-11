@@ -13,6 +13,7 @@ class AutoReloadService {
         this.timer = null;
         this.versionUrl = '/version.json';
         this.isReloading = false;
+        this.blinkOverlay = null; // Для эффекта моргания
     }
 
     /**
@@ -65,22 +66,53 @@ class AutoReloadService {
     }
 
     triggerReload() {
+        if (this.isReloading) return;
         this.isReloading = true;
 
-        const message = "Обнаружено обновление системы. Страница будет перезагружена через 5 секунд...";
+        console.log(`[AutoReload] 🎆 Detonating Evolution: Syncing HoloQuants and reloading...`);
 
+        // Показываем уведомление (если есть)
         if (window.showNotification) {
-            window.showNotification(message, "info");
-        } else {
-            console.info(`[AutoReload] ${message}`);
+            window.showNotification("Триа обновляет реальность. Мм-морг!", "info");
         }
 
+        // Запускаем эффект моргания
+        this.showBlinkEffect();
+
+        // Даем время на анимацию и отправку данных (Snapshot)
+        // В будущем здесь будет вызов: await triaEvolutionConnector.sendSnapshot();
         setTimeout(() => {
             console.log("[AutoReload] Reloading page now...");
-            // location.reload(true) - устарело в некоторых браузерах для форсирования кэша, 
-            // но вместе с fetch(no-store) и обновленным index.html это сработает.
             window.location.reload();
-        }, 5000);
+        }, 1500); // 1.5 секунды на "моргание"
+    }
+
+    /**
+     * Визуальный эффект закрывающегося глаза (Blink Transition)
+     */
+    showBlinkEffect() {
+        if (this.blinkOverlay) return;
+
+        // Создаем контейнер для моргания
+        this.blinkOverlay = document.createElement('div');
+        this.blinkOverlay.id = 'tria-blink-overlay';
+
+        // Верхнее веко
+        const eyelidTop = document.createElement('div');
+        eyelidTop.className = 'eyelid eyelid-top';
+
+        // Нижнее веко
+        const eyelidBottom = document.createElement('div');
+        eyelidBottom.className = 'eyelid eyelid-bottom';
+
+        this.blinkOverlay.appendChild(eyelidTop);
+        this.blinkOverlay.appendChild(eyelidBottom);
+        document.body.appendChild(this.blinkOverlay);
+
+        // Анимация запускается автоматически через CSS классы
+        requestAnimationFrame(() => {
+            this.blinkOverlay.classList.add('active');
+        });
     }
 
     stop() {

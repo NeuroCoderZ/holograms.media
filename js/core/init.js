@@ -305,6 +305,39 @@ export async function initCore() {
     try {
       state.gestureUIManager = new GestureUIManager(eventBus, state);
 
+      // --- TRIA EVOLUTION v0.20.125: ГИПЕРМОЗГ ---
+      const { TriaFileSystem } = await import('./TriaFileSystem.js');
+      const { ReintegrationManager } = await import('./ReintegrationManager.js');
+      const { TriaPulse } = await import('./TriaPulse.js');
+      const { TriaDBClientInstance } = await import('./TriaDBClient.js');
+      const { HyperbrainSynthesizer } = await import('./HyperbrainSynthesizer.js');
+
+      // 1. Инициализация Пульса (Динамический FPS + Такты 0/1)
+      state.triaPulse = triaPulse;
+      await state.triaPulse.init();
+
+      // 2. Инициализация ФС (Сосуды маппятся на Тор BasilaQ)
+      state.triaFS = new TriaFileSystem(state.triaPulse, TriaDBClientInstance);
+      window.triaFS = state.triaFS; 
+
+      // 3. Инициализация Реинтегратора (Сборка из хаоса)
+      state.reintegrationManager = new ReintegrationManager(state.triaFS, TriaDBClientInstance);
+      state.triaFS.setReintegrationManager(state.reintegrationManager);
+
+      // 4. Инициализация Жестового Синтезатора (Одежда для жестов)
+      state.gestureSynthesizer = new HyperbrainSynthesizer(state.triaFS, state.triaPulse);
+
+
+      // 5. Визуализация Гипермозга (Тор памяти)
+      const { TorusVOM } = await import('../3d/TorusVom.js');
+      state.torusVom = new TorusVOM(state.scene, state.triaFS);
+
+      // 6. Матка Агентов (Эмерджентность)
+      const { AgentWomb } = await import('./AgentWomb.js');
+      state.agentWomb = new AgentWomb(state.triaOrchestrator, state.triaFS);
+
+      console.log('✅ Hyperbrain initialized: Pulse (dynamic), TriaFS (Torus), Reintegrator, Synthesizer, TorusVOM, AgentWomb');
+      // ------------------------------------------
       // ТЗ v4.5: Инициализация Gesture Phase модулей
       state.gestureCommandEngine = new GestureCommandEngine();
       state.gestureToCodeExecutor = new GestureToCodeExecutor(state.gestureCommandEngine);

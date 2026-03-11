@@ -27,5 +27,7 @@ class EventBus {
 
 const eventBus = new EventBus();
 // Export for debugging and cross-module access
-window.eventBus = eventBus;
+if (typeof window !== 'undefined') {
+    window.eventBus = eventBus;
+}
 export default eventBus; // ЭКСПОРТИРУЕМ ИНСТАНС, А НЕ КЛАСС
