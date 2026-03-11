@@ -312,10 +312,7 @@
   z-index: 100 !important;
 }
 
-.gesture-tabs {
-  display: none !important;
-  /* Hide old HTML tabs */
-}
+
 
 .studio-mode-tab {
   flex: 1;
