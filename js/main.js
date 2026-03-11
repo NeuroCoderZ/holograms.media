@@ -8,6 +8,7 @@ import { ConsentManager } from './core/consentManager.js';
 import { initAuth } from './core/auth.js';
 import gestureIntentClient from './services/gestureIntentClient.js';
 import { setupChat, sendChatMessage as sendChatMessageFromChatModule } from './ai/chat.js'; // Импортируем функции чата
+import { applyPromptWithTriaMode } from './ai/tria_mode.js';
 
 /**
  * Главная асинхронная функция инициализации приложения.

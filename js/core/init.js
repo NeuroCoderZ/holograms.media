@@ -272,7 +272,7 @@ export async function initCore() {
       // --- TRIA EVOLUTION v0.20.125: ГИПЕРМОЗГ ---
       const { TriaFileSystem } = await import('./TriaFileSystem.js');
       const { ReintegrationManager } = await import('./ReintegrationManager.js');
-      const { TriaPulse } = await import('./TriaPulse.js');
+      const { triaPulse } = await import('./TriaPulse.js');
       const { TriaDBClientInstance } = await import('./TriaDBClient.js');
       const { HyperbrainSynthesizer } = await import('./HyperbrainSynthesizer.js');
 
