@@ -2,6 +2,8 @@
 
 import { initializeModelSelector } from './models.js';
 import { API_BASE_URL } from '../services/apiService.js';
+import { TriaEvolutionConnector } from './TriaEvolutionConnector.js';
+import { AttentionEconomyManager } from '../services/AttentionEconomyManager.js';
 
 // Настройки Tria
 export const triaConfig = {
@@ -64,6 +66,13 @@ export async function sendPromptToTria(promptText, sessionId = null) {
 // Инициализация Tria
 export function initializeTria(state) {
   console.log('Инициализация Tria...');
+
+  if (!state.tria) state.tria = {};
+
+  // Initialize Attention Economy
+  state.tria.attentionManager = new AttentionEconomyManager(state);
+  state.tria.attentionManager.initUI();
+
   initializeModelSelector(state);
   console.log('Пропускаем fetchTriaConfiguration, используем дефолтную конфигурацию Tria.');
   setupTriaUI(state);
@@ -120,9 +129,23 @@ function showTriaInfo(state) {
 
 export function toggleTriaLearningMode(triaButton, modelSelect, state) {
   if (!state.tria) { state.tria = { isLearningActive: false }; }
+
+  // Initialize connector if it doesn't exist
+  if (!state.tria.connector) {
+    state.tria.connector = new TriaEvolutionConnector(state);
+  }
+
   state.tria.isLearningActive = !state.tria.isLearningActive;
   const isActive = state.tria.isLearningActive;
+
   console.log(`Tria learning mode ${isActive ? 'activated' : 'deactivated'}.`);
+
+  if (isActive) {
+    state.tria.connector.start();
+  } else {
+    state.tria.connector.stop();
+  }
+
   if (triaButton) {
     triaButton.classList.toggle('active', isActive);
     triaButton.title = isActive ? 'Деактивировать обучение Триа' : 'Активировать обучение Триа';

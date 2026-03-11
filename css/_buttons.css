@@ -31,6 +31,38 @@
   color: white !important;
 }
 
+#treasuryButton {
+  position: fixed !important;
+  z-index: 10000 !important;
+  bottom: 2dvh !important;
+  left: 45px !important;
+  width: var(--button-size) !important;
+  height: var(--button-size) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  background-color: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: #888 !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+#treasuryButton:hover {
+  color: #00ff88 !important;
+  /* Emerald accent for treasury */
+  transform: scale(1.1) !important;
+}
+
+#treasuryButton svg {
+  width: calc(var(--icon-size) * 0.9) !important;
+  height: calc(var(--icon-size) * 0.9) !important;
+  fill: currentColor !important;
+}
+
 #togglePanelsButton svg {
   width: var(--icon-size) !important;
   height: var(--icon-size) !important;
@@ -558,4 +590,70 @@
     0 1px 2px rgba(0, 0, 0, 0.5) !important;
   transform: scale(0.96) !important;
   border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Attention Economy Styles */
+.tria-stats-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.at-balance {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: #00ff88;
+  /* Matrix/Emerald green for rewards */
+  text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+.at-balance.pulse-highlight {
+  transform: scale(1.2);
+  color: #ffffff;
+  text-shadow: 0 0 10px #00ff88;
+}
+
+.at-reward-toast {
+  position: absolute;
+  left: 110%;
+  bottom: 50%;
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  backdrop-filter: blur(5px);
+  padding: 5px 10px;
+  border-radius: 20px;
+  color: #00ff88;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  animation: reward-float-up 2.5s ease-out forwards;
+}
+
+@keyframes reward-float-up {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+
+  15% {
+    transform: translateY(-20px);
+    opacity: 1;
+  }
+
+  80% {
+    transform: translateY(-40px);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-60px);
+    opacity: 0;
+  }
 }

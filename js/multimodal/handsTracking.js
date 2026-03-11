@@ -1,9 +1,16 @@
 // handsTracking.js
 // handsTracking.js
 // MediaPipe now loaded via index.html globals
-const { Camera } = window;
-const { Hands } = window;
-const { drawConnectors, drawLandmarks } = window;
+// MediaPipe now loaded via index.html globals - Robust resolver
+const Camera = window.Camera || (window.mediapipe?.camera?.Camera);
+const Hands = window.Hands || (window.mediapipe?.hands?.Hands);
+const { drawConnectors, drawLandmarks } = window.drawing_utils || window;
+
+console.log('[HandsTracking] Resolving MediaPipe globals:', {
+    Camera: !!Camera,
+    Hands: !!Hands,
+    DrawingUtils: !!(window.drawing_utils || drawConnectors)
+});
 import eventBus from '../core/eventBus.js';
 
 import { state } from '../core/init.js';
