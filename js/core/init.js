@@ -301,7 +301,132 @@ export async function initCore() {
       state.agentWomb = new AgentWomb(state.triaOrchestrator, state.triaFS);
 
       console.log('✅ Hyperbrain initialized: Pulse (dynamic), TriaFS (Torus), Reintegrator, Synthesizer, TorusVOM, AgentWomb');
+      
+      // --- TRIA EVOLUTION v0.20.125: Web3 & P2P Integration (Stage 1) ---
+      const { TriaMemory } = await import('../tria/TriaMemory.js');
+      const { LocalChain } = await import('../tria/LocalChain.js');
+      const { MaturityDaemon } = await import('../tria/MaturityDaemon.js');
+      const { hermaionWallet } = await import('../tria/HermaionWallet.js');
+      const { default: GestureVectorStore } = await import('../tria/GestureVectorStore.js');
+
+      // 7. Инициализация Памяти (Hippocampus)
+      state.triaMemory = new TriaMemory();
+      await state.triaMemory.init();
+
+      // 8. Инициализация Цепочки (LocalChain)
+      state.localChain = new LocalChain();
+
+      // 9. Инициализация Векторного Хранилища (GestureVectorStore)
+      state.gestureVectorStore = new GestureVectorStore();
+      await state.gestureVectorStore.init({ includeZ: true });
+
+      // 10. Инициализация Демона Зрелости (Lethe-цикл)
+      state.maturityDaemon = new MaturityDaemon(state.enkephalon || null, state.triaMemory);
+      state.maturityDaemon.start();
+
+      // 11. Подключение Кошелька (Hermaion)
+      state.wallet = hermaionWallet;
+      console.log('✅ Web3 & Tria Memory modules (Stage 1) initialized');
+
+      // --- Stage 2: Data Pipeline (Takt 0 -> Soma -> Obolos) ---
+      state.lastGestureFrameRaw = null;
+      state.lastAudioSpectrum = null;
+
+      // Слушатель жестов
+      eventBus.on('handsUpdate', (data) => {
+          if (data.landmarks && data.landmarks.length > 0) {
+              state.lastGestureFrameRaw = data.landmarks[0]; // Берем первую руку
+          } else {
+              state.lastGestureFrameRaw = null;
+          }
+      });
+
+      // Слушатель аудио
+      eventBus.on('audio:spectralData', (data) => {
+          state.lastAudioSpectrum = data.levels;
+      });
+
+      // Основной цикл обработки Такта 0
+      eventBus.on('tria:pulse', async (pulseData) => {
+          // Такт 0 = Сбор и Прогноз
+          if (pulseData.takt === 0 && state.lastGestureFrameRaw && state.lastAudioSpectrum) {
+              try {
+                  const gestureRaw = await state.gestureVectorStore.normalize(state.lastGestureFrameRaw);
+                  const audioSpectrum = state.lastAudioSpectrum; // Уже Float32Array(128)
+
+                  // 1. Создание Soma-блока
+                  const soma = state.localChain.createSoma(gestureRaw, audioSpectrum);
+                  state.lastSoma = soma; // Для Такта 1
+
+                  // 2. Сохранение в Hippocampus
+                  await state.triaMemory.saveSoma(soma);
+
+                  // 3. Анализ уникальности (Энтропия)
+                  // Ищем похожие жесты в векторной базе
+                  const matches = await state.gestureVectorStore.query(gestureRaw, 1, 0.95);
+                  
+                  if (matches.length === 0) {
+                      // Уникальный паттерн! Начисляем Obolos
+                      await state.gestureVectorStore.addGesture('auto_captured', state.lastGestureFrameRaw);
+                      await state.wallet.earn(0.01, 'unique_gesture_resonance');
+                      
+                      // Можно добавить визуальный лог
+                      // console.log('[Tria] Уникальный жест запекся в память. +0.01 Obolos');
+                  }
+              } catch (e) {
+                  console.warn('[Stage 2] Pipeline error:', e);
+              }
+          }
+      });
+
+      console.log('✅ AI+Web3 Data Pipeline (Stage 2) active');
+
+      // --- Stage 3: P2P Collective Sync (Takt 1) ---
+      const TriaCollectiveService = (await import('../tria/TriaCollectiveService.js')).default;
+      state.collective = new TriaCollectiveService();
+      // Подключаемся к сигнальному серверу (URL из конфига или дефолт)
+      await state.collective.connect(state.config?.signalingUrl || 'wss://dev.holograms.media/ws/signaling');
+
+      state.lastSoma = null; // Буфер между тактами
+
+      // Расширяем существующий tria:pulse для Такта 1
+      eventBus.on('tria:pulse', async (pulseData) => {
+          // Такт 0 (уже реализован выше) - сохраняем soma для Такта 1
+          if (pulseData.takt === 0) {
+              // Логика выше создала soma блок. Нам нужно его "запомнить". 
+              // (Добавим сохранение ссылки в блок Такта 0 выше)
+          }
+
+          // Такт 1 = Сцепка (P2P Broadcast)
+          if (pulseData.takt === 1 && state.lastSoma && state.collective) {
+              try {
+                  const soma = state.lastSoma;
+                  // Транслируем дельту намерения в P2P сеть
+                  await state.collective.broadcastIntent({
+                      type: 'soma_delta',
+                      hash: soma.pneuma.hash,
+                      intent: Array.from(soma.sarx.predicted_intent),
+                      confidence: soma.sarx.confidence,
+                      ts: Date.now()
+                  });
+              } catch (e) {
+                  console.warn('[Stage 3] P2P Broadcast error:', e);
+              }
+          }
+      });
+
+      // Обработка входящих P2P сигналов (Резонанс)
+      state.collective.receiveStream((msg, peerId) => {
+          if (msg.type === 'intent-delta' && msg.payload.type === 'soma_delta') {
+              // Эхо в консоль или визуализация резонанса
+              // console.log(`[P2P] Резонанс от ${peerId}: ${msg.payload.hash}`);
+              eventBus.emit('tria:resonance', { peerId, delta: msg.payload });
+          }
+      });
+
+      console.log('✅ Tria Collective P2P (Stage 3) active');
       // ------------------------------------------
+
       // ТЗ v4.5: Инициализация Gesture Phase модулей
       state.gestureCommandEngine = new GestureCommandEngine();
       state.gestureToCodeExecutor = new GestureToCodeExecutor(state.gestureCommandEngine);
