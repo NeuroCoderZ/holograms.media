@@ -49,8 +49,8 @@ export const TriaConfig = {
         mnesis: true,             // запись памяти
         lethe: true,              // затухание весов
         contextLinks: false,      // Phase 3: связи между блоками (заморожено)
-        holoGraph: false,         // Phase 4: блокчейн Obolos (заморожено)
-        collectiveService: false, // Phase 3: Agora (заморожено)
+        holoGraph: true,         // Phase 4: блокчейн Obolos
+        collectiveService: true, // Phase 3: Agora
     },
 
 };
