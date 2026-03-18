@@ -10,7 +10,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:80
  * @returns {Promise<string>} - Текстовый ответ от Tria.
  * @throws {Error} - Если произошла ошибка при отправке или ответ сервера не OK.
  */
-export async function sendChatMessage(text, idToken) {
+export async function sendChatMessage(text, idToken, selectedModel = null) {
     const chatUrl = `${API_BASE_URL}/api/v1/chat/users/me/chat_sessions/direct`;
     console.log(`[apiService] Sending chat message to ${chatUrl}`);
 
@@ -24,7 +24,8 @@ export async function sendChatMessage(text, idToken) {
             body: JSON.stringify({
                 user_chat_session_id: 0, // Backend will find/create automatically for 'direct'
                 role: "user",
-                message_content: text
+                message_content: text,
+                metadata: selectedModel ? { llm_model: selectedModel } : {}
             }),
         });
 

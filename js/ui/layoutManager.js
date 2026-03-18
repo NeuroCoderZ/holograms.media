@@ -261,9 +261,6 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     const scaleW = (containerWidth * 0.90) / 256; // Also 5% side margins
     let targetScaleValue = Math.min(scaleH, scaleW);
     targetScaleValue = Math.max(targetScaleValue, 0.01);
-
-    hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
-
     // --- NEW: Sync Centering & Gesture Area Resize (v0.19.028) ---
     const windowWidth = window.innerWidth;
     let xOffset = 0;
@@ -302,11 +299,14 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
 
     // Set centered position (v0.19.037: Pivot shift -128 to align 0,0,0 with center of 256w area)
     const verticalCenterOffset = (containerHeight / 2) - (128 * targetScaleValue);
-    // xOffset is 0 because gridContainer is already shifted to fit between panels.
-    // However, the hologram origin is bottom-center of its 256-width span.
-    // To have (0,0,0) be the absolute center of the container, we don't need additional X shift here
-    // IF the renderer's center is already aligned with the container's center.
-    hologramPivot.position.set(0, verticalCenterOffset / targetScaleValue, 0);
+    
+    if (appState.isXRMode) {
+        hologramPivot.scale.set(1, 1, 1);
+        hologramPivot.position.set(0, 0, 0);
+    } else {
+        hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
+        hologramPivot.position.set(0, verticalCenterOffset / targetScaleValue, 0);
+    }
 
     // The desktop panel logic (getLeftPanelWidth, etc.) is removed from here as the
     // container's left/width is now managed by the animation/initial setup logic.

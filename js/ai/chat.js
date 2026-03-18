@@ -55,7 +55,10 @@ export function initializeTriaChat() {
         throw new Error("Для общения с Триа необходима авторизация.");
       }
 
-      const response = await apiSendChatMessage(message, token);
+      const modelSelect = document.getElementById('modelSelect');
+      const selectedModel = modelSelect ? modelSelect.value : null;
+
+      const response = await apiSendChatMessage(message, token, selectedModel);
       appendMessage(response, 'tria');
     } catch (error) {
       console.error("Chat error:", error);

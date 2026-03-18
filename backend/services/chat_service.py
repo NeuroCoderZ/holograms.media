@@ -31,40 +31,52 @@ except Exception as e:
     LLM_CONTEXT = "Ты Триа — ИИ-ассистент проекта holograms.media. Контекст недоступен из-за ошибки чтения кода."
 
 # Основная функция интеграции: пытаемся Gemini, затем Mistral
-async def get_llm_response(user_message: str, history: List[ChatMessageDB]) -> str:
-    logger.info(f"LLM: Received '{user_message}' with history length {len(history)}")
+async def get_llm_response(user_message: str, history: List[ChatMessageDB], selected_model: Optional[str] = None) -> str:
+    logger.info(f"LLM: Received '{user_message}' with history length {len(history)}, selected: {selected_model}")
     
+    use_gemini = False
+    use_mistral = False
+    
+    if selected_model:
+        if "gemini" in selected_model.lower():
+            use_gemini = True
+        elif "mistral" in selected_model.lower():
+            use_mistral = True
+    else:
+        use_gemini = True
+        use_mistral = True
+
     # Пытаемся использовать Gemini
-    if settings.GOOGLE_API_KEY:
+    if use_gemini and settings.GOOGLE_API_KEY:
         try:
             formatted_history = []
             for msg in history:
                 role = "user" if msg.role == "user" else "model"
                 formatted_history.append({"role": role, "parts": [msg.message_content]})
                 
-            # Ранее использовалась 1.5-flash, по запросу обновлено до актуальной 3-flash-preview
             model = genai.GenerativeModel(
                 model_name='models/gemini-3.0-flash-preview', 
                 system_instruction=LLM_CONTEXT or "Ты АИ-ассистент Триа."
             )
             chat = model.start_chat(history=formatted_history)
-            
-            # Вызываем асинхронный метод
             response = await chat.send_message_async(user_message)
             return response.text
             
         except Exception as e:
-            logger.error(f"Error calling Gemini API: {e}. Falling back to Mistral...")
+            logger.error(f"Error calling Gemini API: {e}.")
+            if not use_mistral:
+                return f"Триа: Ошибка при вызове Gemini API: {e}"
     
-    # Фоллбэк на Mistral (или основной выбор если ключ Gemini отсутствует)
-    if settings.MISTRAL_API_KEY:
+    # Фоллбэк на Mistral (или основной выбор)
+    if use_mistral and settings.MISTRAL_API_KEY:
         try:
             return await get_mistral_response(user_message, history, LLM_CONTEXT or "Ты АИ-ассистент Триа.")
         except Exception as e:
             logger.error(f"Error calling Mistral API: {e}.")
+            return f"Триа: Ошибка при вызове Mistral API: {e}"
             
     logger.warning("No LLM API keys available or both failed. Returning stub response.")
-    return f"Триа (Заглушка): Я услышала '{user_message}', но мои ИИ-модули (Gemini/Mistral) не подключены к серверу."
+    return f"Триа (Заглушка): Я услышала '{user_message}', но запрошенная модель ({selected_model}) недоступна."
 
 class ChatService:
     def __init__(self, db: Any):
@@ -148,8 +160,9 @@ class ChatService:
             logger.info(f"Service: User message saved (ID: {user_saved_message.id}), now getting LLM response.")
             history_for_llm = await self.repo.get_messages_by_session_id(session_id=session_id, user_id=user.user_id, limit=20) # Get recent history
 
+            selected_model = metadata.get("llm_model") if metadata else None
             try:
-                llm_response_content = await get_llm_response(message_content, history_for_llm)
+                llm_response_content = await get_llm_response(message_content, history_for_llm, selected_model)
             except Exception as e:
                 logger.error(f"Service: LLM call failed for session {session_id}: {e}")
                 # Optionally save a system error message to chat

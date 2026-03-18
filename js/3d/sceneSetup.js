@@ -230,17 +230,23 @@ export async function initializeScene(state) {
   state.setXRMode = function (active) {
     state.isXRMode = active;
     if (active) {
-      console.log("[XR Mode] Using OrthographicCamera for XR as requested");
-      // Use existing orthographic camera but reposition inside the torus area
-      state.camera.position.set(0, 0, 0); // Center of the torus
-      state.camera.zoom = 1.0;
-      state.camera.updateProjectionMatrix();
+      console.log("[XR Mode] Using PerspectiveCamera for XR");
+      if (!state.xrCamera) {
+          const gridContainer = document.getElementById('grid-container');
+          const w = gridContainer && gridContainer.clientWidth > 0 ? gridContainer.clientWidth : window.innerWidth;
+          const h = gridContainer && gridContainer.clientHeight > 0 ? gridContainer.clientHeight : window.innerHeight;
+          state.xrCamera = new THREE.PerspectiveCamera(75, w / h, 0.1, 5000);
+      }
+      state.activeCamera = state.xrCamera;
+      state.activeCamera.position.set(0, 0, 0); // Center of the torus
+      state.activeCamera.rotation.set(0, 0, 0);
       state.controls.enabled = false;
     } else {
       console.log("[XR Mode] Restoring standard orthographic view");
-      state.camera.position.copy(state.initialCameraPosition);
-      state.camera.zoom = 1.0;
-      state.camera.updateProjectionMatrix();
+      state.activeCamera = state.camera;
+      state.activeCamera.position.copy(state.initialCameraPosition);
+      state.activeCamera.zoom = 1.0;
+      state.activeCamera.updateProjectionMatrix();
       state.controls.enabled = true;
       state.controls.target.copy(state.initialControlsTarget);
       state.controls.update();
