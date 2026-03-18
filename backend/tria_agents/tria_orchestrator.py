@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Any, List, Optional
 import asyncio 
 
-from backend.Tria.tria_rag_service import TriaRequest, TriaResponse, QueryClassifier
+from backend.tria_agents.tria_rag_service import TriaRequest, TriaResponse, QueryClassifier
 from backend.tria_agents.tria_agents import FrontendAgent, BackendAgent, DebugAgent, ArchitectureAgent, ProtocolAgent, AgentResponse
 from backend.tria_agents.tria_context import ContextManager
 from backend.tria_agents.live_code_analyzer import LiveCodeAnalyzer
@@ -50,7 +50,8 @@ class TriaOrchestrator:
         Routes a direct user prompt to the best available agent.
         Uses ArchitectureAgent as default, with fallback chain.
         """
-        logger.info(f"[Orchestrator] Routing prompt: '{prompt[:80]}...'")
+        display_prompt = str(prompt)[:80]
+        logger.info(f"[Orchestrator] Routing prompt: '{display_prompt}...'")
         try:
             # 1. Classify the query to pick the right agent
             query_type, score = self.classifier.classify(prompt)
