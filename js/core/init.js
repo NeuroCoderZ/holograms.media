@@ -274,7 +274,7 @@ export async function initCore() {
       const { ReintegrationManager } = await import('./ReintegrationManager.js');
       const { triaPulse } = await import('./TriaPulse.js');
       const { TriaDBClientInstance } = await import('./TriaDBClient.js');
-      const { HyperbrainSynthesizer } = await import('./HyperbrainSynthesizer.js');
+      const { GestureSynthesizer } = await import('./HyperbrainSynthesizer.js');
 
       // 1. Инициализация Пульса (Динамический FPS + Такты 0/1)
       state.triaPulse = triaPulse;
@@ -289,7 +289,7 @@ export async function initCore() {
       state.triaFS.setReintegrationManager(state.reintegrationManager);
 
       // 4. Инициализация Жестового Синтезатора (Одежда для жестов)
-      state.gestureSynthesizer = new HyperbrainSynthesizer(state.triaFS, state.triaPulse);
+      state.gestureSynthesizer = new GestureSynthesizer(state.triaFS, state.triaPulse);
 
 
       // 5. Визуализация Гипермозга (Тор памяти)
