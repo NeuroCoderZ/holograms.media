@@ -31,6 +31,10 @@ export function startAnimationLoop(appState) {
             appState.animateReturn();
         }
 
+        if (appState.earthZero) {
+            appState.earthZero.update(deltaTime);
+        }
+
         if (isWebGPU) {
             await appState.renderer.renderAsync(appState.scene, appState.activeCamera);
         } else {

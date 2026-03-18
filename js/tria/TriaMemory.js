@@ -11,9 +11,10 @@
 import { TriaConfig } from './config.js';
 
 const DB_NAME = 'TriaMemory';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Increased version for new store
 const STORE_BLOCKS = 'soma_blocks';
 const STORE_SNAPSHOTS = 'enkephalon_snapshots';
+const STORE_DAO_STATE = 'dao_state';
 
 export class TriaMemory {
 
@@ -37,6 +38,10 @@ export class TriaMemory {
 
                 if (!db.objectStoreNames.contains(STORE_SNAPSHOTS)) {
                     db.createObjectStore(STORE_SNAPSHOTS, { keyPath: 'snapshot_id' });
+                }
+
+                if (!db.objectStoreNames.contains(STORE_DAO_STATE)) {
+                    db.createObjectStore(STORE_DAO_STATE); // Key-value store (no keyPath)
                 }
             };
 
@@ -112,13 +117,26 @@ export class TriaMemory {
     }
 
     // ─────────────────────────────────────────────
+    // Agentic DAO state
+    // ─────────────────────────────────────────────
+
+    async saveDaoState(state) {
+        return this._put(STORE_DAO_STATE, state, 'current_state');
+    }
+
+    async loadDaoState() {
+        return this._get(STORE_DAO_STATE, 'current_state');
+    }
+
+    // ─────────────────────────────────────────────
     // IndexedDB helpers
     // ─────────────────────────────────────────────
 
-    _put(store, value) {
+    _put(store, value, key = null) {
         return new Promise((resolve, reject) => {
             const tx = this._db.transaction(store, 'readwrite');
-            const req = tx.objectStore(store).put(value);
+            const os = tx.objectStore(store);
+            const req = key ? os.put(value, key) : os.put(value);
             req.onsuccess = () => resolve(req.result);
             req.onerror = (e) => reject(e.target.error);
         });

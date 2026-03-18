@@ -6,7 +6,7 @@
 import eventBus from './eventBus.js';
 import { HRRMath } from '../utils/HRRMath.js';
 
-export class GestureSynthesizer {
+export class HyperbrainSynthesizer {
     constructor(triaFS, triaPulse) {
         this.fs = triaFS;
         this.pulse = triaPulse;

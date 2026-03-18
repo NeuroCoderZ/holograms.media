@@ -4,40 +4,46 @@ from typing import Dict
 import logging
 from backend.core.db.astra_connector import get_astra_db
 from backend.core.crud_operations import update_user_obolos, get_user_by_id
-from backend.auth.security import get_current_active_user_ws # reusing auth logic
+from backend.auth.security import get_current_active_user # Correct for HTTP
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.post("/obolos/sync")
-async def sync_obolos(
-    request: Request,
-    payload: Dict[str, float]
+from pydantic import BaseModel
+
+class ObolosEarnRequest(BaseModel):
+    gesture_count: int  # Количество жестов за сессию
+
+@router.post("/obolos/earn")
+async def earn_obolos(
+    data: ObolosEarnRequest,
+    current_user = Depends(get_current_active_user),  # JWT в заголовках
+    request: Request = None
 ):
     """
-    Synchronizes the user's Obolos balance.
-    Expects: {"amount": float, "user_id": str}
-    Note: In a production environment, user_id should be extracted from JWT.
+    Зачисляет Obolos на основе количества жестов.
+    Сервер сам рассчитывает награду, не доверяя клиенту.
     """
-    user_id = payload.get("user_id")
-    amount = payload.get("amount", 0.0)
+    if data.gesture_count < 0 or data.gesture_count > 10000:
+        raise HTTPException(status_code=400, detail="Invalid gesture count")
     
-    if not user_id:
-        raise HTTPException(status_code=400, detail="user_id is required")
-        
+    # Формула: 1 жест = 0.000001 Obolos
+    reward = round(data.gesture_count * 0.000001, 6)
+    
     db = request.app.state.astra_db
     if not db:
         raise HTTPException(status_code=503, detail="Database connection not available")
         
-    new_balance = await update_user_obolos(db, user_id, amount)
+    new_balance = await update_user_obolos(db, current_user.user_id, reward)
     
     if new_balance is None:
         raise HTTPException(status_code=404, detail="User not found")
         
     return {
-        "success": True,
+        "success": True, 
+        "reward": reward, 
         "new_balance": new_balance,
-        "synced_amount": amount
+        "gestures_processed": data.gesture_count
     }
 
 @router.get("/obolos/balance/{user_id}")

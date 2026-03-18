@@ -644,13 +644,40 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   if (hubBtn && hubModal) {
     hubBtn.addEventListener('click', () => {
       hubModal.classList.toggle('active');
-      hubBtn.classList.toggle('active', hubModal.classList.contains('active'));
     });
     hubModal.addEventListener('click', (e) => {
       if (e.target === hubModal) {
         hubModal.classList.remove('active');
-        hubBtn.classList.remove('active');
+        // Кнопка hubBtn должна оставаться 'active', если мы в комнате.
       }
+    });
+
+    const roomButtons = hubModal.querySelectorAll('.hub-room-btn');
+    const envSelect = document.getElementById('hub-env-select');
+    
+    roomButtons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const mode = btn.dataset.mode;
+        if (!mode) return;
+        
+        const environment = envSelect ? envSelect.value : 'void';
+        
+        try {
+          // Динамический импорт для ленивой загрузки
+          const { holographicChatRoom } = await import('../services/HolographicChatRoom.js');
+          await holographicChatRoom.joinRoom({ mode, environment });
+          
+          hubModal.classList.remove('active');
+          hubBtn.classList.add('active'); // Кнопка подсвечена (мы в чатруме)
+          
+          if (window.showNotification) {
+            window.showNotification(`Вход в режим: ${mode} (${environment})`, 'success');
+          }
+        } catch (err) {
+          console.error('[UIManager] Ошибка входа в чатрум:', err);
+          if (window.showNotification) window.showNotification("Ошибка входа в чатрум", "error");
+        }
+      });
     });
   }
 

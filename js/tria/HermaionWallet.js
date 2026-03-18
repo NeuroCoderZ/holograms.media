@@ -44,69 +44,47 @@ export class HermaionWallet {
     }
 
     /**
-     * Simulate paying for a service (e.g., using an LLM API).
-     * @param {number} amount - Cost in Obolos.
-     * @param {string} service - Service name.
+     * Зачисляет Obolos на основе количества жестов (Secure Server-side calculation).
+     * @param {number} gestureCount - Количество накопленных жестов.
      */
-    async pay(amount, service) {
-        if (!this.isConnected) await this.connect();
-
-        if (this.obolosBalance < amount) {
-            console.error(`[Hermaion] Insufficient Obolos for ${service}. Required: ${amount}, Has: ${this.obolosBalance}`);
+    async earn(gestureCount) {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            console.warn('[Hermaion] Earning postponed: No JWT token found.');
             return false;
         }
 
-        // Sync with backend (AstraDB)
-        const userId = state.user ? (state.user.user_id || state.user.id) : "guest_user";
         try {
-            const response = await fetch('/api/v1/wallet/obolos/sync', {
+            const response = await fetch('/api/v1/wallet/obolos/earn', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, amount: -amount })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ gesture_count: gestureCount })
             });
 
             if (response.ok) {
                 const data = await response.json();
                 this.obolosBalance = data.new_balance;
-                this._recordTx('sent', amount, service);
-                console.log(`[Hermaion] Backend Sync Success. New Balance: ${this.obolosBalance}`);
+                this._recordTx('received', data.reward, 'Tria Compute');
+                console.log(`[Hermaion] Obolos Earned: ${data.reward}. New Balance: ${this.obolosBalance}`);
                 return true;
+            } else {
+                const errData = await response.json();
+                console.error(`[Hermaion] Earn Failed: ${errData.detail}`);
             }
         } catch (err) {
-            console.error(`[Hermaion] Backend Sync Failed:`, err);
+            console.error(`[Hermaion] Network Error during earn:`, err);
         }
-
-        // Optimistic update fallback if backend fails but we want to continue? 
-        // Better to return false to prevent "ghost" payments.
         return false;
     }
 
     /**
-     * Simulate earning Obolos (e.g., for valid gestures/data).
-     * @param {number} amount 
-     * @param {string} source 
+     * @deprecated Метод pay требует безопасной реализации через подписи на бэкенде.
      */
-    async earn(amount, source) {
-        if (!this.isConnected) await this.connect();
-
-        const userId = state.user ? (state.user.user_id || state.user.id) : "guest_user";
-        try {
-            const response = await fetch('/api/v1/wallet/obolos/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, amount: amount })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                this.obolosBalance = data.new_balance;
-                this._recordTx('received', amount, source);
-                console.log(`[Hermaion] Earned ${amount} Obolos from ${source}. New Balance: ${this.obolosBalance}`);
-                return true;
-            }
-        } catch (err) {
-            console.error(`[Hermaion] Failed to sync earning to backend:`, err);
-        }
+    async pay(amount, service) {
+        console.error('[Hermaion] Direct pay is disabled for security. Use signed transactions.');
         return false;
     }
 
@@ -118,6 +96,16 @@ export class HermaionWallet {
             timestamp: Date.now(),
             hash: "0x" + Math.random().toString(16).slice(2)
         });
+
+        // Dispatch event for UI
+        window.dispatchEvent(new CustomEvent('tria:wallet_updated', {
+            detail: { 
+                balance: this.obolosBalance,
+                type,
+                amount,
+                entity
+            }
+        }));
     }
 }
 

@@ -152,9 +152,20 @@ export class LocalChain {
     }
 
     _hexToBytes(hex) {
-        const arr = new Uint8Array(hex.length / 2);
-        for (let i = 0; i < hex.length; i += 2) {
-            arr[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+        if (!hex || typeof hex !== 'string') return new Uint8Array(32);
+        
+        // Удаляем префикс 0x если есть
+        let cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex;
+        
+        // Дополняем нулем спереди если длина нечетная
+        if (cleanHex.length % 2 !== 0) {
+            cleanHex = '0' + cleanHex;
+        }
+
+        const arr = new Uint8Array(cleanHex.length / 2);
+        for (let i = 0; i < cleanHex.length; i += 2) {
+            const byte = parseInt(cleanHex.slice(i, i + 2), 16);
+            arr[i / 2] = isNaN(byte) ? 0 : byte;
         }
         return arr;
     }

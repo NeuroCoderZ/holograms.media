@@ -12,6 +12,9 @@ export class ReintegrationManager {
 
         this._pendingFragments = [];
         this._reintegrationThreshold = 0.75; // Косинусное сходство для кластеризации
+        this._trackedNodesForDecay = new Set(); // Nodes to apply Lethe decay
+        
+        // Цикл Lethe теперь управляется централизованно через MaturityDaemon
     }
 
     /**
@@ -118,5 +121,50 @@ export class ReintegrationManager {
             m2 += v2[i] * v2[i];
         }
         return dot / (Math.sqrt(m1) * Math.sqrt(m2) + 1e-9);
+    }
+
+    /**
+     * Добавление ноды/блока в систему трекинга жизненного цикла
+     */
+    trackNodeForDecay(node) {
+        if (!node.decayRate) node.decayRate = 0.05; // Дефолтное старение 5% за цикл
+        if (!node.excitationScore) node.excitationScore = 1.0;
+        this._trackedNodesForDecay.add(node);
+    }
+
+    /**
+     * Цикл Забывания Lethe:
+     * - Постепенно обесценивает старые блоки
+     * - Если excitationScore падает ниже 0.1, нода забывается (crypto-agility для PQC)
+     */
+    decay() {
+        console.log(`[Lethe] Running decay cycle on ${this._trackedNodesForDecay.size} nodes...`);
+        let forgottenCount = 0;
+
+        for (const node of this._trackedNodesForDecay) {
+            // Эволюционное старение
+            node.excitationScore -= (node.decayRate || 0.05);
+
+            // Если есть утилитарность (utility_score от DAO), старение замедляется
+            if (node.utilityValue && node.utilityValue > 1.0) {
+                node.excitationScore += 0.02; // Частичное поддержание жизни
+            }
+
+            if (node.excitationScore <= 0.1) {
+                // Нода забыта
+                this._trackedNodesForDecay.delete(node);
+                // В зависимости от логики TriaFS, тут можно вызвать 
+                // this.fs.deleteNode(node.path) для очистки IndexedDB,
+                // но пока просто убираем её из оперативной памяти.
+                forgottenCount++;
+                
+                // Для PQC ключей: если זה старый криптографический блок 
+                // с ML-DSA или другой подписью, он плавно отмирает сам без необходимости хард-форка сети.
+            }
+        }
+
+        if (forgottenCount > 0) {
+            console.log(`[Lethe] Protocol forgot ${forgottenCount} disconnected fragments (Crypto-Agility shift).`);
+        }
     }
 }
