@@ -32,6 +32,11 @@ export class HologramRenderer {
     this.roomId = roomId;
     this.userId = userId;
 
+    // Instanced Data Buffers
+    this._instanceMatrices = new Float32Array(128 * 16);
+    this._instanceScales = new Float32Array(128);
+    this._instanceColors = new Float32Array(128 * 3);
+
     // XR state
     this._cochlearCylinder = null;
     this._isTorusMode = false;
@@ -44,9 +49,8 @@ export class HologramRenderer {
     this.mainSequencerGroup = new THREE.Group();
     this.hologramPivot.add(this.mainSequencerGroup);
 
-    this.columns = [];
     this._createSequencerGrids();
-    this._initializeColumns();
+    this._initializeInstancedMeshes();
 
     this.scene.add(this.hologramPivot);
 
@@ -55,9 +59,6 @@ export class HologramRenderer {
 
     this.selectionState = { left: { active: false, indices: [] }, right: { active: false, indices: [] } };
     this._debugFrameCount = 0;
-
-    // Инициализируем WASD контроллеры сразу, чтобы они работали везде
-    // this._setupWASDControls(); Оставлено sceneSetup.js
   }
 
   // ─── Scene Construction ──────────────────────────────────────────────────
@@ -77,61 +78,64 @@ export class HologramRenderer {
     this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xFF0000));
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
-    // Позиционные маркеры (сферы на начале координат)
+    // Позиционные маркеры
     const blue = createSphereForAxis(3.024, 0x0000ff);
     const white = createSphereForAxis(2.4192, 0xffffff);
     blue.position.set(0, -GRID_HEIGHT, 0);
     white.position.set(0, -GRID_HEIGHT, 0);
-    white.renderOrder = 999;
     this.mainSequencerGroup.add(blue);
     this.mainSequencerGroup.add(white);
 
     this.hologramPivot.add(createCentralMarkerSphere(2.4192, 0xffffff));
   }
 
-  _initializeColumns() {
-    for (let i = 0; i < semitones.length; i++) {
-      const colL = this._createColumn(i, true);
-      const colR = this._createColumn(i, false);
-      this.columns.push({ left: colL, right: colR });
-      this.leftSequencerGroup.add(colL);
-      this.rightSequencerGroup.add(colR);
-    }
-  }
+  _initializeInstancedMeshes() {
+    const boxGeo = new THREE.BoxGeometry(1, CELL_HEIGHT, 1);
+    const edgeGeo = new THREE.EdgesGeometry(boxGeo);
 
-  _createColumn(index, isLeft) {
-    const config = semitones[index];
-    const width = config.width;
-    const baseColor = new THREE.Color(config.color);
-    const group = new THREE.Group();
-    group.name = "AudioColumnGroup";
+    const createIM = (isLeft, isEdges = false) => {
+        const material = new THREE.ShaderMaterial({
+            uniforms: isEdges ? makeEdgeUniforms(new THREE.Color(1,1,1)) : makeColumnUniforms(new THREE.Color(1,1,1)),
+            vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
+        });
+        const im = isEdges ? new THREE.InstancedMesh(edgeGeo, material, 128) : new THREE.InstancedMesh(boxGeo, material, 128);
+        
+        // Add instance attributes for scale and color
+        const scales = new THREE.InstancedBufferAttribute(new Float32Array(128), 1);
+        const colors = new THREE.InstancedBufferAttribute(new Float32Array(128 * 3), 3);
+        im.geometry.setAttribute('aColumnScaleZ', scales);
+        im.geometry.setAttribute('aInstanceColor', colors);
+        
+        // Initial setup
+        const dummy = new THREE.Object3D();
+        for (let i = 0; i < 128; i++) {
+            const config = semitones[i];
+            const w = config.width;
+            const x = isLeft ? -w/2 : w/2;
+            dummy.position.set(x, (i + 0.5) * CELL_HEIGHT, 0);
+            dummy.scale.set(w, 1, 1);
+            dummy.updateMatrix();
+            im.setMatrixAt(i, dummy.matrix);
+            
+            const c = new THREE.Color(config.color);
+            colors.setXYZ(i, c.r, c.g, c.b);
+            scales.setX(i, 0.1);
+        }
+        return im;
+    };
 
-    // Убрали сегментацию по ширине, так как столбцы больше не изгибаются по вершинам
-    const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0, 1, 1, 1);
+    this.leftIM = createIM(true, false);
+    this.leftEdgesIM = createIM(true, true);
+    this.rightIM = createIM(false, false);
+    this.rightEdgesIM = createIM(false, true);
 
-    const mesh = new THREE.Mesh(geometry, new THREE.ShaderMaterial({
-      uniforms: makeColumnUniforms(baseColor),
-      vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
-    }));
-    mesh.name = "AudioColumnMesh";
-    mesh.position.set(0, 0, 0);
-    mesh.scale.set(1, 1, 0.1);
-
-    const edges = new THREE.LineSegments(
-      new THREE.EdgesGeometry(geometry),
-      new THREE.ShaderMaterial({
-        uniforms: makeEdgeUniforms(baseColor.clone().offsetHSL(0, 0, 0.2)),
-        vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
-      })
-    );
-    edges.name = "AudioColumnEdges";
-    mesh.add(edges);
-
-    group.add(mesh);
-    const initialX = isLeft ? -width / 2 : width / 2;
-    group.position.set(initialX, (index + 0.5) * CELL_HEIGHT, 0);
-    group.userData = { initialX, baseColor };
-    return group;
+    this.leftSequencerGroup.add(this.leftIM);
+    this.leftSequencerGroup.add(this.leftEdgesIM);
+    this.rightSequencerGroup.add(this.rightIM);
+    this.rightSequencerGroup.add(this.rightEdgesIM);
+    
+    // For legacy reasons (if any logic depends on this.columns)
+    this.columns = []; 
   }
 
   // ─── Audio Visualisation ────────────────────────────────────────────────
@@ -144,88 +148,102 @@ export class HologramRenderer {
     const dbLevels = audioData?.levels || new Float32Array(256).fill(-128);
     const panAngles = audioData?.pans || new Float32Array(256).fill(0);
 
-    this.columns.forEach((pair, i) => {
-      const config = semitones[i];
-      const leftMesh = pair.left.children[0];
-      const rightMesh = pair.right.children[0];
+    const dummy = new THREE.Object3D();
+    const lScales = this.leftIM.geometry.getAttribute('aColumnScaleZ');
+    const rScales = this.rightIM.geometry.getAttribute('aColumnScaleZ');
+    const leScales = this.leftEdgesIM.geometry.getAttribute('aColumnScaleZ');
+    const reScales = this.rightEdgesIM.geometry.getAttribute('aColumnScaleZ');
 
-      if (!isActive) {
-        this._applyGreetingMode(leftMesh, rightMesh, pair);
-      } else {
-        this._applyActiveMode(pair, i, config, dbLevels, panAngles, leftMesh, rightMesh);
-      }
-    });
+    for (let i = 0; i < 128; i++) {
+        const config = semitones[i];
+        if (!isActive) {
+            this._applyGreetingModeInstanced(i, dummy);
+        } else {
+            this._applyActiveModeInstanced(i, config, dbLevels, panAngles, dummy, lScales, rScales, leScales, reScales);
+        }
+    }
+
+    this.leftIM.instanceMatrix.needsUpdate = true;
+    this.rightIM.instanceMatrix.needsUpdate = true;
+    this.leftEdgesIM.instanceMatrix.needsUpdate = true;
+    this.rightEdgesIM.instanceMatrix.needsUpdate = true;
+    lScales.needsUpdate = true;
+    rScales.needsUpdate = true;
+    leScales.needsUpdate = true;
+    reScales.needsUpdate = true;
 
     this._debugFrameCount++;
   }
 
-  /** Анимация приветствия: плоские столбцы по центру. */
-  _applyGreetingMode(leftMesh, rightMesh, pair) {
+  _applyGreetingModeInstanced(i, dummy) {
     const gDepth = 0.1;
-    [leftMesh, rightMesh].forEach(m => {
-      m.scale.z = gDepth;
-      m.position.z = gDepth / 2;
-      m.material.uniforms.uIsGreeting.value = 1.0;
-      m.material.uniforms.uColumnScaleZ.value = gDepth;
-      const edges = m.children[0];
-      if (edges?.material?.uniforms) {
-        edges.material.uniforms.uIsGreeting.value = 1.0;
-        edges.material.uniforms.uColumnScaleZ.value = gDepth;
-      }
-    });
-    pair.left.position.x = pair.left.userData.initialX;
-    pair.right.position.x = pair.right.userData.initialX;
+    const config = semitones[i];
+    const w = config.width;
+    
+    // Left
+    dummy.position.set(-w/2, (i + 0.5) * CELL_HEIGHT, gDepth/2);
+    dummy.scale.set(w, 1, 1);
+    dummy.updateMatrix();
+    this.leftIM.setMatrixAt(i, dummy.matrix);
+    this.leftEdgesIM.setMatrixAt(i, dummy.matrix);
+    
+    // Right
+    dummy.position.set(w/2, (i + 0.5) * CELL_HEIGHT, gDepth/2);
+    dummy.updateMatrix();
+    this.rightIM.setMatrixAt(i, dummy.matrix);
+    this.rightEdgesIM.setMatrixAt(i, dummy.matrix);
+
+    this.leftIM.geometry.getAttribute('aColumnScaleZ').setX(i, gDepth);
+    this.rightIM.geometry.getAttribute('aColumnScaleZ').setX(i, gDepth);
+    this.leftEdgesIM.geometry.getAttribute('aColumnScaleZ').setX(i, gDepth);
+    this.rightEdgesIM.geometry.getAttribute('aColumnScaleZ').setX(i, gDepth);
+    
+    this.leftIM.material.uniforms.uIsGreeting.value = 1.0;
+    this.rightIM.material.uniforms.uIsGreeting.value = 1.0;
   }
 
-  /** Психоакустическая биауральная физика (BasilaQ-128). */
-  _applyActiveMode(pair, i, config, dbLevels, panAngles, leftMesh, rightMesh) {
+  _applyActiveModeInstanced(i, config, dbLevels, panAngles, dummy, lScales, rScales, leScales, reScales) {
     let dbL = dbLevels[i];
     let dbR = dbLevels[i + 128];
+    if (!Number.isFinite(dbL)) dbL = -128.0;
+    if (!Number.isFinite(dbR)) dbR = -128.0;
 
-    // 1. Пан-стейт (магнитная инерция)
     const targetPan = panAngles[i];
     this._panStates[i] += (targetPan - this._panStates[i]) * 0.7;
     const p = this._panStates[i];
 
-    // 2. Слуховая маскировка (ILD: inter-aural level difference)
     const shadowDb = Math.abs(p) * config.shadow_coef * 128.0;
     if (p < -0.01) dbR -= shadowDb;
     else if (p > 0.01) dbL -= shadowDb;
 
-    // 3. Симметричный паканг (оба уха к центру своей сетки)
-    // Отключаем плоское X-панорамирование, если мы в режиме кольца (чтобы не искажало круг)
     const isTorus = this._cochlearCylinder && (this._cochlearCylinder.isTorusMode || this._cochlearCylinder.isMorphing);
+    const w = config.width || 1;
+    const hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbL)));
+    const hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbR)));
 
-    if (!isTorus) {
-      const w = config.width || 1;
-      const maxAvailableShift = (GRID_WIDTH - w) * 0.5;
-      pair.left.position.x = pair.left.userData.initialX - Math.round(Math.abs(Math.min(0, p)) * maxAvailableShift * 2);
-      pair.right.position.x = pair.right.userData.initialX + Math.round(Math.abs(Math.max(0, p)) * maxAvailableShift * 2);
-    } // В режиме Тора мы НЕ изменяем X позицию базовых групп (она управляется CochlearCylinder)
+    const maxAvailableShift = (GRID_WIDTH - w) * 0.5;
+    const xL = -w/2 - Math.round(Math.abs(Math.min(0, p)) * maxAvailableShift * 2);
+    const xR = w/2 + Math.round(Math.abs(Math.max(0, p)) * maxAvailableShift * 2);
 
+    dummy.scale.set(w, 1, 1);
+    
+    dummy.position.set(xL, (i + 0.5) * CELL_HEIGHT, hL/2);
+    dummy.updateMatrix();
+    this.leftIM.setMatrixAt(i, dummy.matrix);
+    this.leftEdgesIM.setMatrixAt(i, dummy.matrix);
 
-    // 4. BasilaQ-128: 1 dB = 1 ячейка (Z-scale = 128 + dB)
-    [[leftMesh, dbL], [rightMesh, dbR]].forEach(([m, db]) => {
-      // ЗАЩИТА ОТ NaN и Infinity (особенно при пустом стриме микрофона)
-      if (!Number.isFinite(db) || isNaN(db)) {
-          db = -128.0;
-      }
-      
-      const h = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, db)));
-      m.scale.z = h;
-      m.position.z = h / 2;
-      if (m.material.uniforms) {
-        m.material.uniforms.uIsGreeting.value = 0.0;
-        m.material.uniforms.uColumnScaleZ.value = h;
-        m.material.uniforms.uBrightnessBoost.value = 1.0;
-      }
-      const edges = m.children[0];
-      if (edges?.material?.uniforms) {
-        edges.material.uniforms.uIsGreeting.value = 0.0;
-        edges.material.uniforms.uColumnScaleZ.value = h;
-        edges.material.uniforms.uBrightnessBoost.value = 1.3;
-      }
-    });
+    dummy.position.set(xR, (i + 0.5) * CELL_HEIGHT, hR/2);
+    dummy.updateMatrix();
+    this.rightIM.setMatrixAt(i, dummy.matrix);
+    this.rightEdgesIM.setMatrixAt(i, dummy.matrix);
+
+    lScales.setX(i, hL);
+    leScales.setX(i, hL);
+    rScales.setX(i, hR);
+    reScales.setX(i, hR);
+
+    this.leftIM.material.uniforms.uIsGreeting.value = 0.0;
+    this.rightIM.material.uniforms.uIsGreeting.value = 0.0;
   }
 
   // ─── Accessors ───────────────────────────────────────────────────────────
@@ -242,19 +260,22 @@ export class HologramRenderer {
     if (!this._cochlearCylinder) {
       const { CochlearCylinder } = await import('./CochlearCylinder.js');
       this._cochlearCylinder = new CochlearCylinder(this.hologramPivot);
-      this._cochlearCylinder.setColumns(this.columns, state.camera);
+      this._cochlearCylinder.setInstancedMeshes({
+          left: this.leftIM,
+          right: this.rightIM,
+          leftEdges: this.leftEdgesIM,
+          rightEdges: this.rightEdgesIM
+      });
     }
 
     const mainArea = document.querySelector('.main-area');
     const gridContainer = document.querySelector('#grid-container');
-    const controls = state.controls;
     const camera = state.camera;
 
     if (!this._isTorusMode) {
       if (mainArea) mainArea.classList.add('xr-mode');
       if (gridContainer) gridContainer.classList.add('xr-mode');
 
-      // Жесткая фиксация высоты
       this.hologramPivot.position.y = 0;
 
       if (camera) {
@@ -262,31 +283,27 @@ export class HologramRenderer {
         camera.updateProjectionMatrix();
       }
 
-      // Camera settings are now handled by sceneSetup.js setXRMode
+      await this._cochlearCylinder.morphToTorus(1500);
 
-      await this._cochlearCylinder.morphToTorus(1500, this.leftSequencerGroup, this.rightSequencerGroup);
-
-      this.columns.forEach(pair => {
-        [pair.left.children[0], pair.right.children[0]].forEach(mesh => {
-          if (mesh.material.uniforms.uInversePerspective) mesh.material.uniforms.uInversePerspective.value = 1.0;
-          const edges = mesh.children[0];
-          if (edges && edges.material.uniforms.uInversePerspective) edges.material.uniforms.uInversePerspective.value = 1.0;
-        });
-      });
+      const updateIP = (val) => {
+          [this.leftIM, this.rightIM, this.leftEdgesIM, this.rightEdgesIM].forEach(im => {
+              if (im.material.uniforms.uInversePerspective) im.material.uniforms.uInversePerspective.value = val;
+          });
+      };
+      updateIP(1.0);
 
       this._isTorusMode = true;
       this._startDeviceOrientation();
       return true;
     } else {
-      await this._cochlearCylinder.morphToFlat(1500, this.leftSequencerGroup, this.rightSequencerGroup);
+      await this._cochlearCylinder.morphToFlat(1500);
 
-      this.columns.forEach(pair => {
-        [pair.left.children[0], pair.right.children[0]].forEach(mesh => {
-          if (mesh.material.uniforms.uInversePerspective) mesh.material.uniforms.uInversePerspective.value = 0.0;
-          const edges = mesh.children[0];
-          if (edges && edges.material.uniforms.uInversePerspective) edges.material.uniforms.uInversePerspective.value = 0.0;
-        });
-      });
+      const updateIP = (val) => {
+          [this.leftIM, this.rightIM, this.leftEdgesIM, this.rightEdgesIM].forEach(im => {
+              if (im.material.uniforms.uInversePerspective) im.material.uniforms.uInversePerspective.value = val;
+          });
+      };
+      updateIP(0.0);
 
       this._isTorusMode = false;
       this._stopDeviceOrientation();
@@ -304,8 +321,6 @@ export class HologramRenderer {
 
       this.hologramPivot.scale.set(1, 1, 1);
       this.hologramPivot.rotation.set(0, 0, 0);
-
-      // Camera restore settings are handled by sceneSetup.js setXRMode
 
       return false;
     }

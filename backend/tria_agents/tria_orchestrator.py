@@ -33,26 +33,44 @@ class TriaOrchestrator:
         }
         self.context_manager = ContextManager()
         
-        codebase_root = "/home/neurocoderz/holograms.media/" 
-        self.code_analyzer = LiveCodeAnalyzer(self.context_manager, codebase_root)
-        self.code_analyzer.start()
+        import os
+        codebase_root = os.environ.get("CODEBASE_ROOT", "/app")
+        try:
+            self.code_analyzer = LiveCodeAnalyzer(self.context_manager, codebase_root)
+            self.code_analyzer.start()
+            logger.info(f"[Orchestrator] LiveCodeAnalyzer started at '{codebase_root}'")
+        except Exception as e:
+            logger.warning(f"[Orchestrator] LiveCodeAnalyzer failed to start: {e}. Continuing without it.")
+            self.code_analyzer = None
 
         logger.info("TriaOrchestrator initialized with agents, ContextManager, and LiveCodeAnalyzer.")
 
     async def process_user_prompt(self, prompt: str) -> str:
         """
-        A simplified method to handle a direct string prompt, for use with the new API endpoint.
-        This provides a simple entry point for direct user queries.
+        Routes a direct user prompt to the best available agent.
+        Uses ArchitectureAgent as default, with fallback chain.
         """
-        logger.info(f"Orchestrator: Processing simple prompt: '{prompt}'")
-        
-        # For now, we will use a simple echo response to test the pipeline.
-        # In the future, we can route this to a default agent or use the RAG service directly.
-        
-        # TODO: Replace this with a call to the RAG service or a default agent.
-        response_text = f"Tria received your prompt: '{prompt}'"
-        
-        return response_text
+        logger.info(f"[Orchestrator] Routing prompt: '{prompt[:80]}...'")
+        try:
+            # 1. Classify the query to pick the right agent
+            query_type, score = self.classifier.classify(prompt)
+            logger.info(f"[Orchestrator] Classified as '{query_type}' (score={score:.2f})")
+
+            # 2. Pick agent (fallback to 'architecture' if not found)
+            agent = self.agents.get(query_type) or self.agents.get('architecture')
+            if not agent:
+                return "[Tria] Нет доступных агентов для обработки запроса."
+
+            # 3. Process via agent
+            agent_response: AgentResponse = await agent.process_query(
+                prompt,
+                {"source": "direct_prompt", "session_id": None}
+            )
+            return agent_response.answer
+
+        except Exception as e:
+            logger.error(f"[Orchestrator] process_user_prompt error: {e}", exc_info=True)
+            return f"[Tria] Ошибка обработки: {str(e)}"
 
     async def process_request(self, request: TriaRequest) -> TriaResponse:
         logger.info(f"Orchestrator: Processing request for query: '{request.query}'")

@@ -95,6 +95,13 @@ export class MaturityDaemon {
                 this.reintegration.decay();
             }
 
+            // 5. Snapshot Pruning (Enkephalon)
+            // Ограничиваем количество снимков весов (E-2)
+            const deletedSnapshots = await this.memory.pruneSnapshots(3);
+            if (deletedSnapshots > 0) {
+                console.log(`[Lethe] Снапшоты весов очищены: удалено ${deletedSnapshots} старых копий.`);
+            }
+
         } catch (e) {
             console.error('[Lethe] Критическая ошибка цикла:', e);
         }

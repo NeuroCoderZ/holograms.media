@@ -7,35 +7,46 @@
 
 export const vertexShader = /* glsl */`
     varying float vWorldZHeight;
+    varying vec3 vColor;
+    attribute float aColumnScaleZ;
+    attribute vec3 aInstanceColor;
+    
     uniform float uColumnScaleZ;
-    uniform float uInversePerspective; // 0.0 = Ortho, 1.0 = Reverse
+    uniform float uInversePerspective;
+    uniform float uMorphFactor; // 0.0 (Flat) -> 1.0 (Cylinder)
+    uniform float uRadius;      // 1000.0 default
 
     void main() {
-        vWorldZHeight = (position.z + 0.5) * uColumnScaleZ;
+        vColor = aInstanceColor;
+        float finalScale = aColumnScaleZ > 0.0 ? aColumnScaleZ : uColumnScaleZ;
+        vWorldZHeight = (position.z + 0.5) * finalScale;
         
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        // 1. Позиция в локальном пространстве инстанса
+        vec4 localPos = vec4(position, 1.0);
         
-        // ЛОГИКА ОБРАТНОЙ ПЕРСПЕКТИВЫ (XR Mode)
-        // Задача: Дальняя стенка (Back Wall) сохраняет масштаб (1.0).
-        // Ближняя сетка (Near Grid) уменьшается (сужается), создавая эффект глубины.
+        // 2. Мировая позиция относительно группы (SequencerGroup)
+        vec4 mPos = instanceMatrix * localPos;
+        
+        // 3. ЛОГИКА ЦИЛИНДРИЧЕСКОГО МОРФИНГА (BasilaQ Torus)
+        if (uMorphFactor > 0.01) {
+            float theta = (mPos.x / 128.0) * 3.14159265;
+            float r = uRadius - mPos.z;
+            
+            vec3 torusPos;
+            torusPos.x = r * sin(theta);
+            torusPos.y = mPos.y;
+            torusPos.z = -r * cos(theta) + uRadius; // Смещение для совпадения с плоскостью Z=0
+            
+            mPos.xyz = mix(mPos.xyz, torusPos, uMorphFactor);
+        }
+
+        vec4 mvPosition = modelViewMatrix * mPos;
+        
         if (uInversePerspective > 0.5) {
-            // В системе координат камеры (View Space):
-            // Камера в (0,0,0). Ось Z смотрит назад. Объекты перед камерой имеют Z < 0.
-            // Дальние объекты имеют Z << 0 (например, -2000).
-            // Ближние объекты имеют Z ~ -100...-500.
-            
-            float farAnchor = -2000.0; // Глубина, где масштаб остается 1.0
-            float nearAnchor = -100.0; // Глубина, где сжатие максимально
-            
-            // factor = 0.0 на дальней стенке, 1.0 у носа
+            float farAnchor = -2000.0;
+            float nearAnchor = -100.0;
             float factor = smoothstep(farAnchor, nearAnchor, mvPosition.z);
-            
-            // На дальнем конце (factor 0) -> scale 1.0 (без изменений)
-            // На ближнем конце (factor 1) -> scale 0.65 (сужаем вход)
             float perspScale = mix(1.0, 0.65, factor);
-            
-            // Сжимаем ТОЛЬКО по X (перспектива цилиндра), Y остается прямым!
-            // mvPosition.x *= perspScale; // DISABLED: XR Mode is distorting thickness of audio visual columns.
         }
 
         gl_Position = projectionMatrix * mvPosition;
@@ -49,10 +60,12 @@ export const fragmentShader = /* glsl */`
     uniform float uIsGreeting;
     uniform float uBrightnessBoost;
     varying float vWorldZHeight;
+    varying vec3  vColor;
 
     void main() {
         // 1. Базовые координаты (BasilaQ-128)
         float z = vWorldZHeight;
+        vec3 baseColor = (vColor.r + vColor.g + vColor.b) > 0.0 ? vColor : uBaseColor;
         float cellIndex = floor(z);
         
         // 2. ЛОГИКА ОБВОДКИ (Опережение на 1 дБ)
@@ -67,16 +80,16 @@ export const fragmentShader = /* glsl */`
         vec3 finalColor;
         float bIndex = clamp(cellIndex, 0.0, 127.0);
         float brightness = (bIndex + 1.0) / 128.0; 
-        finalColor = uBaseColor * brightness;
+        finalColor = baseColor * brightness;
 
         // Режим приветствия: поверхность цветная, ребра чуть ярче (+1дБ)
         if (uIsGreeting > 0.5) {
             if (isEdge) {
                 // Вместо белого (vec3(1.0)) делаем "цвет + яркость +1дБ"
                 // Это примерно 1.25 от базы, но не превышая белый
-                finalColor = clamp(uBaseColor * 1.35, 0.0, 1.0);
+                finalColor = clamp(baseColor * 1.35, 0.0, 1.0);
             } else {
-                finalColor = uBaseColor;
+                finalColor = baseColor;
             }
         }
 
@@ -96,6 +109,8 @@ export function makeColumnUniforms(baseColor) {
         uBrightnessBoost: { value: 1.0 },
         uColumnScaleZ: { value: 0.1 },
         uInversePerspective: { value: 0.0 },
+        uMorphFactor: { value: 0.0 },
+        uRadius: { value: 1000.0 },
     };
 }
 
@@ -109,5 +124,7 @@ export function makeEdgeUniforms(baseColor) {
         uBrightnessBoost: { value: 1.1 },
         uColumnScaleZ: { value: 0.1 },
         uInversePerspective: { value: 0.0 },
+        uMorphFactor: { value: 0.0 },
+        uRadius: { value: 1000.0 },
     };
 }

@@ -13,6 +13,7 @@ export class AgenticDAO {
         
         // История контрибьюций compute 
         this.computeContributions = [];
+        this.penalties = []; // Список штрафов (H-2v)
         this._memory = null;
     }
 
@@ -49,12 +50,29 @@ export class AgenticDAO {
         await this._saveState();
     }
 
+    /**
+     * Зарегистрировать ручной штраф (например, от OpenClaw за спам)
+     * @param {number} amount - Величина штрафа
+     * @param {string} reason - Причина
+     */
+    async registerPenalty(amount, reason) {
+        this.penalties.push({
+            timestamp: Date.now(),
+            amount,
+            reason
+        });
+        console.warn(`[AgenticDAO] Штраф: -${amount} Obolos. Причина: ${reason}`);
+        this._recalculateUtilityScore();
+        await this._saveState();
+    }
+
     async _saveState() {
         if (this._memory) {
             try {
                 await this._memory.saveDaoState({
                     score: this.personalUtilityScore,
                     contributions: this.computeContributions,
+                    penalties: this.penalties,
                     last_updated: Date.now()
                 });
             } catch (error) {
@@ -68,15 +86,38 @@ export class AgenticDAO {
      */
     _recalculateUtilityScore() {
         let dailyCompute = 0;
+        const now = Date.now();
+        const ONE_DAY = 24 * 60 * 60 * 1000;
+        
         for (const c of this.computeContributions) {
-            dailyCompute += c.amount;
+            if (now - c.timestamp < ONE_DAY) {
+                dailyCompute += c.amount;
+            }
         }
 
         const computeBonus = dailyCompute > 0 ? (Math.log10(dailyCompute + 1) * 5) : 0;
-        const penalty = 0; 
+        
+        // 1. Штраф за бездействие (H-2v): -1.0 в час, если нет контрибьюций за последние 4 часа
+        let idlePenalty = 0;
+        const lastContrib = this.computeContributions.length > 0 
+            ? this.computeContributions[this.computeContributions.length - 1].timestamp 
+            : 0;
+        
+        if (now - lastContrib > (4 * 60 * 60 * 1000)) {
+            const idleHours = (now - lastContrib) / (60 * 60 * 1000);
+            idlePenalty = Math.min(20, idleHours * 1.0); // Макс штраф 20 за сессию бездействия
+        }
+
+        // 2. Внешние штрафы (OpenClaw / Spam / Malicious)
+        let externalPenalty = 0;
+        for (const p of this.penalties) {
+            if (now - p.timestamp < ONE_DAY) {
+                externalPenalty += p.amount;
+            }
+        }
 
         // Обновляем Utility Score (0.0 - 100.0)
-        let newScore = 50.0 + computeBonus - penalty;
+        let newScore = 50.0 + computeBonus - idlePenalty - externalPenalty;
         this.personalUtilityScore = Math.max(0, Math.min(100, newScore));
         
         this._broadcastUpdate();

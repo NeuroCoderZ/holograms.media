@@ -108,12 +108,60 @@ export class TriaMemory {
         return snapshot.snapshot_id;
     }
 
+    /** Alias for compatibility (Block C-2v) */
+    async saveSnapshot(weightsF32Array) {
+        return this.saveEnkephalonSnapshot(weightsF32Array);
+    }
+
     async loadLatestEnkephalonSnapshot() {
-        const all = await this._getAll(STORE_SNAPSHOTS);
-        if (!all.length) return null;
-        all.sort((a, b) => b.created_at - a.created_at);
-        const latest = all[0];
-        return new Float32Array(latest.weights);
+        return new Promise((resolve, reject) => {
+            if (!this._db) return resolve(null);
+            const tx = this._db.transaction(STORE_SNAPSHOTS, 'readonly');
+            const os = tx.objectStore(STORE_SNAPSHOTS);
+            // Используем обратный курсор для получения последнего ID (E-1v)
+            const req = os.openCursor(null, 'prev');
+            
+            req.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const snapshot = cursor.value;
+                    // Возвращаем как Float32Array (IDB хранит TypedArrays нативно)
+                    resolve(new Float32Array(snapshot.weights));
+                } else {
+                    resolve(null);
+                }
+            };
+            req.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    /**
+     * Удалить старые снапшоты, оставив только последние keepCount (E-2)
+     */
+    async pruneSnapshots(keepCount = 3) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) return resolve(0);
+            const tx = this._db.transaction(STORE_SNAPSHOTS, 'readwrite');
+            const os = tx.objectStore(STORE_SNAPSHOTS);
+            const req = os.openCursor(null, 'prev');
+            let count = 0;
+            let deletedMessages = 0;
+
+            req.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    count++;
+                    if (count > keepCount) {
+                        cursor.delete();
+                        deletedMessages++;
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(deletedMessages);
+                }
+            };
+            req.onerror = (e) => reject(e.target.error);
+        });
     }
 
     // ─────────────────────────────────────────────

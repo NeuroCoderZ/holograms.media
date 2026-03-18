@@ -46,14 +46,19 @@ async def earn_obolos(
         "gestures_processed": data.gesture_count
     }
 
-@router.get("/obolos/balance/{user_id}")
-async def get_balance(user_id: str, request: Request):
+@router.get("/obolos/balance")
+async def get_balance(
+    current_user = Depends(get_current_active_user),
+    request: Request = None
+):
+    """Возвращает баланс текущего авторизованного пользователя."""
     db = request.app.state.astra_db
     if not db:
         raise HTTPException(status_code=503, detail="Database connection not available")
-        
-    user = await get_user_by_id(db, user_id)
+    user = await get_user_by_id(db, current_user.user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-        
-    return {"user_id": user_id, "obolos_balance": getattr(user, "obolos_balance", 0.0)}
+    return {
+        "user_id": current_user.user_id,
+        "obolos_balance": getattr(user, "obolos_balance", 0.0)
+    }
