@@ -44,6 +44,15 @@ export default class TriaCollectiveService {
         console.log('[TriaCollective] WebSocket connected to', signalingUrl);
         this._signaling = signalingUrl;
         this._ws.send(JSON.stringify({ type: 'register', peerId: this._selfId }));
+        
+        // Heartbeat (G-2v)
+        if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
+        this._heartbeatInterval = setInterval(() => {
+            if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+                this._ws.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
+            }
+        }, 30000); // 30s for Koyeb/Cloudflare
+        
         resolve({ ok: true, url: signalingUrl });
       };
 
@@ -64,6 +73,7 @@ export default class TriaCollectiveService {
 
       this._ws.onclose = () => {
         console.log('[TriaCollective] WebSocket closed');
+        if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
       };
     });
   }
@@ -248,8 +258,33 @@ export default class TriaCollectiveService {
     return { ok: true, sentTo: sentCount };
   }
 
+  // Broadcast biometric pulse (G-1v)
+  async broadcastPulse(pulseData) {
+    const msg = JSON.stringify({ type: 'biometric-pulse', ts: Date.now(), payload: pulseData, peerId: this._selfId });
+    let sentCount = 0;
+    for (const [, entry] of this._peers) {
+        if (entry.dc && entry.dc.readyState === 'open') {
+            entry.dc.send(msg);
+            sentCount++;
+        }
+    }
+    return { ok: true, sentTo: sentCount };
+  }
+
   receiveStream(callback) { this._onReceiveStream = callback; }
 
   getPeerList() { return Array.from(this._peers.entries()).map(([id, entry]) => ({ id, metadata: entry.metadata })); }
+
+  /**
+   * Returns the count of active WebRTC connections (G-1v).
+   */
+  getConnectionCount() {
+    let active = 0;
+    for (const [, peer] of this._peers) {
+        if (peer.pc?.connectionState === 'connected' || 
+            peer.pc?.iceConnectionState === 'connected') active++;
+    }
+    return active;
+  }
 }
 

@@ -74,10 +74,11 @@ async def lifespan(app: FastAPI):
         # Если потребуется асинхронная инициализация:
         # await orchestrator.init() 
         app.state.tria_orchestrator = orchestrator
-        logger.info("TriaOrchestrator initialized and added to app.state.")
+        logger.info("[App] TriaOrchestrator initialized successfully.")
     except Exception as e:
-        logger.error(f"Error initializing TriaOrchestrator: {e}")
+        logger.error(f"[App] TriaOrchestrator init FAILED: {e}", exc_info=True)
         app.state.tria_orchestrator = None
+        # Не падаем — приложение работает без оркестратора
 
     logger.info("Astra DB check: " + str(bool(app.state.astra_db)))
     logger.info("FastAPI application startup completed successfully.")

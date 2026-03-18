@@ -16,11 +16,9 @@ export class EnkephalonBridge {
     constructor() {
         this._wasm = null;       // WebAssembly.Instance.exports
         this._memory = null;     // WebAssembly.Memory
-        this._brainPtr = 0;      // указатель на Brain в WASM-памяти
-        this.isReady = false;
-        // Слот-аллокатор
         this._slots = null;
         this._slotIdx = 0;
+        this._snapshotInterval = null;
     }
 
     /**
@@ -65,10 +63,10 @@ export class EnkephalonBridge {
         const inputPtr = this._alloc(BRAIN_INPUT_DIM * 4);
         const outputPtr = this._alloc(BRAIN_EMBED_DIM * 4);
 
-        // Safety copy and write to memory using byteOffset (consistency with recall/learn)
-        const inputView = new Float32Array(this._memory.buffer, inputPtr, BRAIN_INPUT_DIM);
-        inputView.fill(0);
-        inputView.set(gestureInput.subarray(0, Math.min(gestureInput.length, BRAIN_INPUT_DIM)));
+        // Unify memory access: write to memory directly via byteOffset (matching recall/learn)
+        new Float32Array(this._memory.buffer, inputPtr, BRAIN_INPUT_DIM).set(
+            gestureInput.subarray(0, Math.min(gestureInput.length, BRAIN_INPUT_DIM))
+        );
 
         this._wasm.brain_encode(
             this._brainPtr,
@@ -76,11 +74,9 @@ export class EnkephalonBridge {
             outputPtr, BRAIN_EMBED_DIM
         );
 
-        const resultView = new Float32Array(this._memory.buffer, outputPtr, BRAIN_EMBED_DIM);
-        const result = new Float32Array(resultView); // Deep copy
+        const result = new Float32Array(new Float32Array(this._memory.buffer, outputPtr, BRAIN_EMBED_DIM));
 
-        this._free(inputPtr, BRAIN_INPUT_DIM * 4);
-        this._free(outputPtr, BRAIN_EMBED_DIM * 4);
+        // Memory cleanup not needed for slot allocator but helpful for mental model
         return result;
     }
 
@@ -182,11 +178,32 @@ export class EnkephalonBridge {
 
     /** Освободить память Brain при уничтожении */
     destroy() {
+        if (this._snapshotInterval) clearInterval(this._snapshotInterval);
         if (this._brainPtr && this._wasm?.brain_free) {
             this._wasm.brain_free(this._brainPtr);
             this._brainPtr = 0;
             this.isReady = false;
         }
+    }
+
+    /**
+     * Планирование периодического сохранения весов (B-3 / C-2).
+     */
+    scheduleWeightSnapshot(memoryService, intervalMs = 300000) { // 5 min default
+        if (this._snapshotInterval) clearInterval(this._snapshotInterval);
+        
+        this._snapshotInterval = setInterval(async () => {
+            if (!this.isReady) return;
+            try {
+                const weights = this.exportWeights();
+                if (weights) {
+                    await memoryService.saveSnapshot(weights);
+                    console.log('[EnkephalonBridge] Периодический снапшот весов сохранен.');
+                }
+            } catch (err) {
+                console.warn('[EnkephalonBridge] Ошибка авто-снапшота:', err);
+            }
+        }, intervalMs);
     }
 
     _alloc(bytes) {

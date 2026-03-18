@@ -14,6 +14,7 @@ import { initializeRightPanel } from '../panels/rightPanelManager.js'; // Import
 import { hologramScanner } from '../multimodal/hologramScanner.js'; // Import for Scanner button
 import { gestureSynthesizer } from '../audio/GestureSynthesizer.js'; // Import for Gesture Synth
 import { gestureManager } from '../managers/gestureManager.js'; // Import for Gesture Manager
+import { initializeTreasuryUI } from './treasuryUI.js'; // Import for Treasury UI (H-1)
 
 /**
  * uiElements is a central object holding references to all significant DOM elements
@@ -239,6 +240,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   uiElements.actions.closePromptModal = document.getElementById('closePromptModal');
   uiElements.actions.closeFileEditorModal = document.getElementById('closeFileEditorModal');
 
+  initializeTreasuryUI();
   console.log('Основной UI инициализирован.');
 
   // Assign collected UI elements to the global state for access by other modules.

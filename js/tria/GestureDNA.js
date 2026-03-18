@@ -28,24 +28,17 @@ export class GestureDNA {
         }
 
         const features = [];
-        let totalSpeed = 0;
-        let totalAccel = 0;
-        let totalJerk = 0;
-        let tremorCount = 0;
-        let minX = Infinity, maxX = -Infinity;
-        let minY = Infinity, maxY = -Infinity;
-
+        let totalSpeed = 0, totalAccel = 0, totalJerk = 0, tremorCount = 0;
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
         const speeds = [];
 
-        // Кинематика (скорость, ускорение, рывок, тремор, bounding box)
+        // 1. Кинематика всей кисти (p0 - основание ладони)
         for (let i = 1; i < trajectory.length; i++) {
-            const p1 = trajectory[i - 1];
-            const p2 = trajectory[i];
+            const p1 = trajectory[i - 1][0] || trajectory[i - 1]; // Support both raw landmarks and objects
+            const p2 = trajectory[i][0] || trajectory[i];
             
-            const dx = p2.x - p1.x;
-            const dy = p2.y - p1.y;
-            const dz = (p2.z !== undefined && p1.z !== undefined) ? (p2.z - p1.z) : 0;
-            const dt = (p2.timestamp && p1.timestamp) ? (p2.timestamp - p1.timestamp) : 16.6; // 60fps default
+            const dx = p2.x - p1.x, dy = p2.y - p1.y, dz = (p2.z || 0) - (p1.z || 0);
+            const dt = (p2.timestamp && p1.timestamp) ? (p2.timestamp - p1.timestamp) : 16.6;
 
             const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
             const speed = dist / (dt || 1);
@@ -56,103 +49,96 @@ export class GestureDNA {
                 const s1 = speeds[speeds.length - 2];
                 const accel = Math.abs(speed - s1) / dt;
                 totalAccel += accel;
-
                 if (speeds.length > 3) {
                     const s0 = speeds[speeds.length - 3];
-                    const a0 = Math.abs(s1 - s0) / dt;
-                    const jerk = Math.abs(accel - a0) / dt;
+                    const jerk = Math.abs(accel - (Math.abs(s1 - s0) / dt)) / dt;
                     totalJerk += jerk;
-                    
-                    // Обнаружение тремора (смена знака ускорения)
                     if ((speed - s1) * (s1 - s0) < 0) tremorCount++;
                 }
             }
-
-            if (p2.x < minX) minX = p2.x;
-            if (p2.x > maxX) maxX = p2.x;
-            if (p2.y < minY) minY = p2.y;
-            if (p2.y > maxY) maxY = p2.y;
+            minX = Math.min(minX, p2.x); maxX = Math.max(maxX, p2.x);
+            minY = Math.min(minY, p2.y); maxY = Math.max(maxY, p2.y);
         }
 
-        const avgSpeed = totalSpeed / (trajectory.length || 1);
-        const avgAccel = totalAccel / (trajectory.length || 1);
-        const avgJerk = totalJerk / (trajectory.length || 1);
-        const tremorFactor = tremorCount / (trajectory.length || 1);
-        const amplitudeX = maxX !== -Infinity ? (maxX - minX) : 0;
-        const amplitudeY = maxY !== -Infinity ? (maxY - minY) : 0;
-
         const embedding = new Float32Array(this.DNA_DIMENSIONS);
+        const lastFrame = trajectory[trajectory.length - 1];
+        const root = lastFrame[0] || { x: 0, y: 0, z: 0 };
         
-        // 1. Статические и кинематические признаки
-        embedding[0] = Math.tanh(avgSpeed * 50);
-        embedding[1] = Math.tanh(avgAccel * 500);
-        embedding[2] = Math.tanh(avgJerk * 5000);
-        embedding[3] = Math.tanh(tremorFactor * 10);
-        embedding[4] = Math.tanh(amplitudeX * 2);
-        embedding[5] = Math.tanh(amplitudeY * 2);
-        embedding[6] = metadata.handedness === 'Left' ? -1.0 : 1.0; 
-        
-        // 2. Биомеханическая проекция (joint distances)
-        // Рассчитываем расстояния между кончиками пальцев и основанием ладони (landmark 0)
-        // Это уникальный биометрический параметр «размаха» руки.
-        if (trajectory.length > 0) {
-            const frame = trajectory[trajectory.length - 1]; // Берем последний кадр
-            const root = frame[0] || { x: 0, y: 0, z: 0 };
-            
-            // Индексы кончиков пальцев: 4, 8, 12, 16, 20
-            const tips = [4, 8, 12, 16, 20];
+        // [0-5] Кинематические агрегаты
+        embedding[0] = Math.tanh(totalSpeed / trajectory.length * 50);
+        embedding[1] = Math.tanh(totalAccel / trajectory.length * 500);
+        embedding[2] = Math.tanh(totalJerk / trajectory.length * 5000);
+        embedding[3] = Math.tanh((tremorCount / trajectory.length) * 10);
+        embedding[4] = Math.tanh((maxX - minX) * 2);
+        embedding[5] = Math.tanh((maxY - minY) * 2);
+
+        // [6] Temporal Entropy (D-2: Anti-Replay)
+        if (speeds.length > 4) {
+            const speedBins = new Array(8).fill(0);
+            const maxSpd = Math.max(...speeds, 0.001);
+            for (const s of speeds) {
+                speedBins[Math.min(7, Math.floor((s / maxSpd) * 8))]++;
+            }
+            let entropy = 0;
+            for (const count of speedBins) {
+                if (count > 0) {
+                    const p = count / speeds.length;
+                    entropy -= p * Math.log2(p);
+                }
+            }
+            embedding[6] = Math.tanh(entropy / 3);
+        } else {
+            embedding[6] = 0;
+        }
+
+        // [7-11] Длины пальцев (Biometric Core)
+        const tips = [4, 8, 12, 16, 20];
+        tips.forEach((tipIdx, i) => {
+            const tip = lastFrame[tipIdx] || root;
+            const d = Math.sqrt(Math.pow(tip.x - root.x, 2) + Math.pow(tip.y - root.y, 2) + Math.pow(tip.z - root.z, 2));
+            embedding[7 + i] = Math.tanh(d * 10);
+        });
+
+        // [12-26] Углы суставов (Digital DNA)
+        const joints = [[0,1,2,3,4],[0,5,6,7,8],[0,9,10,11,12],[0,13,14,15,16],[0,17,18,19,20]];
+        let angleIdx = 12;
+        joints.forEach(js => {
+            for (let j = 1; j < js.length - 2; j++) {
+                const a = lastFrame[js[j]], b = lastFrame[js[j+1]], c = lastFrame[js[j+2]];
+                if (a && b && c && angleIdx < 27) {
+                    embedding[angleIdx++] = Math.tanh(this._calculateAngle(a, b, c) - Math.PI/2);
+                }
+            }
+        });
+
+        // [27-36] Расстояние между пальцами (Spread)
+        let spreadIdx = 27;
+        for (let i = 0; i < tips.length; i++) {
+            for (let j = i + 1; j < tips.length; j++) {
+                const p1 = lastFrame[tips[i]], p2 = lastFrame[tips[j]];
+                if (p1 && p2 && spreadIdx < 37) {
+                    const d = Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+                    embedding[spreadIdx++] = Math.tanh(d * 5);
+                }
+            }
+        }
+
+        // [37-41] Скорости кончиков пальцев (D-1: Biomechanical DNA)
+        if (trajectory.length > 2) {
+            const prevFrame = trajectory[trajectory.length - 2];
             tips.forEach((tipIdx, i) => {
-                const tip = frame[tipIdx] || root;
-                const dist = Math.sqrt(
-                    Math.pow(tip.x - root.x, 2) + 
-                    Math.pow(tip.y - root.y, 2) + 
-                    Math.pow(tip.z - root.z, 2)
-                );
-                embedding[7 + i] = Math.tanh(dist * 10);
-            });
-
-            // 3. Углы суставов (Curvature/Angles) — 15 признаков
-            // По 3 угла на палец (PIP, DIP, MCP)
-            const fingerLandmarks = [
-                [0, 1, 2, 3, 4],    // Большой
-                [0, 5, 6, 7, 8],    // Указательный
-                [0, 9, 10, 11, 12], // Средний
-                [0, 13, 14, 15, 16],// Безымянный
-                [0, 17, 18, 19, 20] // Мизинец
-            ];
-
-            let angleIdx = 12;
-            fingerLandmarks.forEach(indices => {
-                for (let j = 1; j < indices.length - 2; j++) {
-                    const a = frame[indices[j]];
-                    const b = frame[indices[j+1]];
-                    const c = frame[indices[j+2]];
-                    if (a && b && c && angleIdx < this.DNA_DIMENSIONS) {
-                        const angle = this._calculateAngle(a, b, c);
-                        embedding[angleIdx++] = Math.tanh(angle - Math.PI); // Центрируем
-                    }
+                const p1 = prevFrame[tipIdx], p2 = lastFrame[tipIdx];
+                if (p1 && p2) {
+                    const dv = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+                    embedding[37 + i] = Math.tanh(dv * 100);
                 }
             });
+        }
 
-            // 4. Межпальцевые расстояния (Spread) — 10 признаков
-            let spreadIdx = angleIdx;
-            for (let i = 0; i < tips.length; i++) {
-                for (let j = i + 1; j < tips.length; j++) {
-                    const p1 = frame[tips[i]];
-                    const p2 = frame[tips[j]];
-                    if (p1 && p2 && spreadIdx < this.DNA_DIMENSIONS) {
-                        const dist = Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-                        embedding[spreadIdx++] = Math.tanh(dist * 5);
-                    }
-                }
-            }
-
-            // Заполняем остаток детерминированной проекцией суммы всех признаков
-            // чтобы избежать нулей, но не вносить хаос
-            const baseSum = embedding.subarray(0, spreadIdx).reduce((a, b) => a + b, 0);
-            for (let i = spreadIdx; i < this.DNA_DIMENSIONS; i++) {
-                embedding[i] = Math.tanh(baseSum * Math.sin(i * 0.1));
-            }
+        // Заполняем остаток (42-127) детерминированной проекцией (Robust Padding)
+        const seed = embedding.subarray(0, 42).reduce((a, b) => a + b, 0);
+        for (let i = 42; i < this.DNA_DIMENSIONS; i++) {
+            embedding[i] = Math.tanh(seed * Math.cos(i * 0.13));
         }
 
         return this._normalizeVector(embedding);

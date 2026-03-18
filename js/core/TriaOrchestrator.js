@@ -43,37 +43,73 @@ export class TriaOrchestrator {
      * @param {object} gestureData - Траектория жеста для контекста
      */
     async handleIntent(intent, gestureData) {
+        this.log(`Processing intent: "${intent}"`);
         try {
-            // В будущем здесь будет запрос к Gemini Flash 3
-            // Сейчас имитируем генерацию кода для Stage 5 демо
-            this.log(`Synthesizing solution for: ${intent}`);
+            // Маппинг паттернов на команды через конфиг (ТЗ v0.20 GA B-2)
+            const intentMap = [
+                { pattern: /bright(ness)?|свет|яркост/i, code: "emit('hologram:updateBrightness', { value: 0.8 }); return 'Brightness updated';" },
+                { pattern: /color|цвет|colour/i, code: "emit('hologram:updateColor', { hue: 0.5 }); return 'Color updated';" },
+                { pattern: /scale|размер|масштаб/i, code: "emit('hologram:updateScale', { factor: 1.5 }); return 'Scale updated';" },
+                { pattern: /reset|сброс|restart/i, code: "emit('hologram:reset'); return 'Reset done';" },
+            ];
 
-            let generatedCode = "";
-            if (intent.toLowerCase().includes('яркость') || intent.toLowerCase().includes('bright')) {
-                generatedCode = "emit('hologram:updateBrightness', { value: 0.8 }); return 'Brightness updated';";
-            } else {
-                generatedCode = "console.log('Tria executing generic task...'); return 'Done';";
+            let generatedCode = "console.log('[TriaOrchestrator] Generic intent:', '" + intent.replace(/'/g, "\\'") + "'); return 'Processing...';";
+            for (const entry of intentMap) {
+                if (entry.pattern.test(intent)) {
+                    generatedCode = entry.code;
+                    break;
+                }
             }
 
-            // Выполняем сгенерированный код
             if (this.codeExecutor) {
                 await this.codeExecutor.executeTriaCode(generatedCode, { intent, gestureData });
             }
-
         } catch (error) {
             this.log(`❌ Intent processing failed: ${error.message}`, 'error');
         }
     }
 
     async processCommand(userInput) {
-        this.log(`Orchestrating: ${userInput}`);
-        // Логика интеграции с Memory/Synthesis агентами...
+        this.log(`Orchestrating: "${userInput}"`);
         eventBus.emit('tria:status', { message: 'Триа думает...', pulse: true });
 
-        // Временный mock для Stage 5
-        setTimeout(() => {
+        try {
+            // Отправляем на бэкенд-оркестратор через API (ТЗ v0.20 GA B-1)
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                eventBus.emit('tria:status', { message: 'Требуется авторизация', pulse: false });
+                this.log('Unauthorized prompt attempt.', 'warn');
+                return;
+            }
+
+            const response = await fetch('/api/v1/tria/prompt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    prompt: userInput,
+                    session_id: null
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            const triaAnswer = data.response || '[Tria] Пустой ответ';
+
+            // Публикуем ответ в чат через eventBus
+            eventBus.emit('tria:response', { message: triaAnswer });
             eventBus.emit('tria:status', { message: 'Готово', pulse: false });
-        }, 1000);
+            this.log(`Response received: "${triaAnswer.slice(0, 80)}..."`);
+
+        } catch (error) {
+            this.log(`processCommand error: ${error.message}`, 'error');
+            eventBus.emit('tria:status', { message: `Ошибка: ${error.message}`, pulse: false });
+        }
     }
 
     log(message, level = 'info') {

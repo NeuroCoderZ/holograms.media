@@ -26,13 +26,23 @@ export class HermaionWallet {
     }
 
     async getBalance() {
-        const userId = state.user ? (state.user.user_id || state.user.id) : "guest_user";
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            console.warn('[Hermaion] No JWT token, skipping balance fetch.');
+            return this.obolosBalance;
+        }
 
         try {
-            const response = await fetch(`/api/v1/wallet/obolos/balance/${userId}`);
+            const response = await fetch('/api/v1/wallet/obolos/balance', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 this.obolosBalance = data.obolos_balance;
+            } else if (response.status === 401) {
+                console.warn('[Hermaion] Unauthorized balance fetch.');
             }
         } catch (err) {
             console.warn(`[Hermaion] Failed to fetch balance from server, using local fallback.`, err);

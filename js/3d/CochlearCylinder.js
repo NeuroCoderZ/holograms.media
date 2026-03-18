@@ -1,245 +1,82 @@
-/**
- * CochlearCylinder.js v11.0 "Clean Room Wrap"
- * ===========================================
- * 🍩 Цилиндрический морфинг вокруг пользователя (Z=1000).
- * Дальняя стенка (Z=0) -> R=1000.
- * Ближняя стенка (Z=128) -> R=872.
- */
-
 import * as THREE from 'three';
 
 const EASE_DURATION = 1500;
 const XR_RADIUS = 1000;
 
-function easeInOutCubic(t) {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
 export class CochlearCylinder {
     constructor(hologramPivot) {
         this.hologramPivot = hologramPivot;
-        this.columns = [];
-        this.camera = null;
+        this.leftIM = null;
+        this.rightIM = null;
+        this.leftEdgesIM = null;
+        this.rightEdgesIM = null;
+        
         this.isMorphing = false;
         this.isTorusMode = false;
-
-        this._vertexMorphData = null;
-        this._objectMorphData = null;
-        this._lastLoggedT = -1;
+        this.radius = XR_RADIUS;
     }
 
-    setColumns(columns, camera = null) {
-        this.columns = columns;
-        if (camera) this.camera = camera;
+    /**
+     * @param {Object} ims - { left, right, leftEdges, rightEdges }
+     */
+    setInstancedMeshes(ims) {
+        this.leftIM = ims.left;
+        this.rightIM = ims.right;
+        this.leftEdgesIM = ims.leftEdges;
+        this.rightEdgesIM = ims.rightEdges;
     }
 
-    _prepareMorphData(group) {
-        if (!group) return;
-        this.hologramPivot.updateMatrixWorld(true);
-        const pivotInverse = this.hologramPivot.matrixWorld.clone().invert();
+    async morphToTorus(duration = EASE_DURATION) {
+        if (this.isMorphing || this.isTorusMode) return;
+        this.isMorphing = true;
 
-        group.traverse(child => {
-            if (child.name === "AudioColumnMesh" || child.name === "AudioColumnEdges") {
-                return; // Эти элементы обрабатываются перемещением их родителя (AudioColumnGroup)
+        const startTime = performance.now();
+        const animate = () => {
+            const now = performance.now();
+            const t = Math.min((now - startTime) / duration, 1);
+            const eased = t * t * (3 - 2 * t); // Simple smoothstep
+
+            this._updateUniforms(eased);
+
+            if (t < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                this.isTorusMode = true;
+                this.isMorphing = false;
             }
+        };
+        requestAnimationFrame(animate);
+    }
 
-            // Обработка сфер на осях, статических сфер и целых групп аудио-столбцов
-            if (child.name === "StaticSphere" || child.name === "XAxisSphere" || child.name === "ZAxisSphere" || child.name === "YAxisSphere" || child.name === "AudioColumnGroup") {
-                if (!this._objectMorphData) this._objectMorphData = [];
+    async morphToFlat(duration = EASE_DURATION) {
+        if (this.isMorphing || !this.isTorusMode) return;
+        this.isMorphing = true;
 
-                const localPos = child.position.clone();
-                const worldPos = new THREE.Vector3();
-                child.getWorldPosition(worldPos);
-                const pivotPos = worldPos.applyMatrix4(pivotInverse);
+        const startTime = performance.now();
+        const animate = () => {
+            const now = performance.now();
+            const t = Math.min((now - startTime) / duration, 1);
+            const eased = 1 - (t * t * (3 - 2 * t));
 
-                // Математика цилиндра (Тор с прямоугольным срезом)
-                // X (панорама) -> Theta (угол)
-                // Z-рост цилиндра идет ОТ фокуса наружу (+Z)
-                // ВАЖНО: В 2D Z=0 - это задняя стенка (внешний радиус).
-                // Мы хотим, чтобы при Z=0 радиус был XR_RADIUS (1000).
-                const theta = (pivotPos.x / 128) * Math.PI;
-                const r = XR_RADIUS - pivotPos.z;
+            this._updateUniforms(eased);
 
-                const targetPivotPos = new THREE.Vector3(
-                    r * Math.sin(theta),
-                    pivotPos.y,
-                    -r * Math.cos(theta) // Центрируем вокруг Z=0
-                );
-
-                const parentWorldInverse = child.parent.matrixWorld.clone().invert();
-                const targetWorldPos = targetPivotPos.applyMatrix4(this.hologramPivot.matrixWorld);
-                const targetLocalPos = targetWorldPos.applyMatrix4(parentWorldInverse);
-
-                // Определяем целевой цвет (для сфер на концах осей X)
-                let targetColor = null;
-                if (child.name === "XAxisSphere") {
-                    targetColor = new THREE.Color(0xFF00FF); // Magenta Junction
-                }
-
-                let targetQuaternion = child.quaternion.clone();
-                if (child.name === "AudioColumnGroup") {
-                    const dummy = new THREE.Object3D();
-                    dummy.position.copy(targetWorldPos); // Set to target world pos
-                    // The center of the torus ring in world space
-                    const pivotCenterWorld = new THREE.Vector3(0, pivotPos.y, 0).applyMatrix4(this.hologramPivot.matrixWorld);
-                    dummy.lookAt(pivotCenterWorld); // Point towards the center axis
-
-                    // Convert dummy's world quaternion to child's local quaternion
-                    const parentWorldQuat = new THREE.Quaternion();
-                    if (child.parent) child.parent.getWorldQuaternion(parentWorldQuat);
-                    targetQuaternion = dummy.quaternion.clone().premultiply(parentWorldQuat.invert());
-                }
-
-                this._objectMorphData.push({
-                    obj: child,
-                    start: localPos,
-                    end: targetLocalPos,
-                    startQuat: child.quaternion.clone(),
-                    endQuat: targetQuaternion,
-                    startColor: child.material && child.material.color ? child.material.color.clone() : null,
-                    endColor: targetColor,
-                    name: child.name
-                });
-                return;
+            if (t < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                this.isTorusMode = false;
+                this.isMorphing = false;
             }
+        };
+        requestAnimationFrame(animate);
+    }
 
-            if ((child.isMesh || child.isLine || child.isLineSegments) && child.geometry) {
-                const geom = child.geometry;
-                const posAttr = geom.attributes.position;
-                if (!posAttr) return;
-
-                const morphEntry = {
-                    obj: child,
-                    attr: posAttr,
-                    flatArr: new Float32Array(posAttr.array),
-                    torusArr: new Float32Array(posAttr.array.length)
-                };
-
-                const childWorldMatrix = child.matrixWorld;
-                const childInverse = childWorldMatrix.clone().invert();
-                const localV = new THREE.Vector3();
-                const pivotV = new THREE.Vector3();
-                const cylPivotV = new THREE.Vector3();
-
-                for (let i = 0; i < posAttr.count; i++) {
-                    localV.fromBufferAttribute(posAttr, i);
-                    pivotV.copy(localV).applyMatrix4(childWorldMatrix).applyMatrix4(pivotInverse);
-
-                    // Та же логика для вершин: центровка вокруг 0,0,0
-                    const theta = (pivotV.x / 128) * Math.PI;
-                    const r = XR_RADIUS - pivotV.z;
-
-                    cylPivotV.x = r * Math.sin(theta);
-                    cylPivotV.y = pivotV.y;
-                    cylPivotV.z = -r * Math.cos(theta); // Центрируем вокруг Z=0
-
-                    const finalV = cylPivotV.applyMatrix4(this.hologramPivot.matrixWorld).applyMatrix4(childInverse);
-                    morphEntry.torusArr[i * 3] = finalV.x;
-                    morphEntry.torusArr[i * 3 + 1] = finalV.y;
-                    morphEntry.torusArr[i * 3 + 2] = finalV.z;
-                }
-                this._vertexMorphData.push(morphEntry);
+    _updateUniforms(t) {
+        [this.leftIM, this.rightIM, this.leftEdgesIM, this.rightEdgesIM].forEach(im => {
+            if (im && im.material.uniforms) {
+                im.material.uniforms.uMorphFactor.value = t;
+                im.material.uniforms.uRadius.value = this.radius;
             }
         });
-    }
-
-    morphToTorus(duration = EASE_DURATION, leftSequencerGroup = null, rightSequencerGroup = null) {
-        if (this.isMorphing || this.isTorusMode) return Promise.resolve();
-        this.isMorphing = true;
-        this._lastLoggedT = -1;
-
-        if (!this._vertexMorphData) {
-            this._vertexMorphData = [];
-            this._objectMorphData = [];
-            this._prepareMorphData(leftSequencerGroup);
-            this._prepareMorphData(rightSequencerGroup);
-        }
-
-        const startTime = performance.now();
-        const animate = () => {
-            const t = Math.min((performance.now() - startTime) / duration, 1);
-            const eased = easeInOutCubic(t);
-
-            for (let data of this._vertexMorphData) {
-                const arr = data.attr.array;
-                for (let j = 0; j < arr.length; j++) {
-                    arr[j] = data.flatArr[j] + (data.torusArr[j] - data.flatArr[j]) * eased;
-                }
-                data.attr.needsUpdate = true;
-
-                // Адаптация ширины столбцов в XR режиме (уширение на внешнем радиусе)
-                // Если это активный столбец, мы можем захотеть растянуть его чуть-чуть
-                // Но пока оставим геометрию как есть, она сегментирована
-            }
-
-            for (let data of this._objectMorphData) {
-                data.obj.position.lerpVectors(data.start, data.end, eased);
-                if (data.startQuat && data.endQuat) {
-                    data.obj.quaternion.slerpQuaternions(data.startQuat, data.endQuat, eased);
-                }
-                if (data.endColor && data.startColor) {
-                    data.obj.material.color.lerpColors(data.startColor, data.endColor, eased);
-                }
-            }
-
-            this._logTrajectory(t);
-
-            if (t < 1) requestAnimationFrame(animate);
-            else { this.isTorusMode = true; this.isMorphing = false; }
-        };
-        requestAnimationFrame(animate);
-        return Promise.resolve();
-    }
-
-    morphToFlat(duration = EASE_DURATION) {
-        if (this.isMorphing || !this.isTorusMode) return Promise.resolve();
-        this.isMorphing = true;
-        this._lastLoggedT = -1;
-
-        const startTime = performance.now();
-        const animate = () => {
-            const t = Math.min((performance.now() - startTime) / duration, 1);
-            const eased = easeInOutCubic(t);
-
-            for (let data of this._vertexMorphData) {
-                const arr = data.attr.array;
-                for (let j = 0; j < arr.length; j++) {
-                    arr[j] = data.torusArr[j] + (data.flatArr[j] - data.torusArr[j]) * eased;
-                }
-                data.attr.needsUpdate = true;
-            }
-
-            for (let data of this._objectMorphData) {
-                data.obj.position.lerpVectors(data.end, data.start, eased);
-                if (data.startQuat && data.endQuat) {
-                    data.obj.quaternion.slerpQuaternions(data.endQuat, data.startQuat, eased);
-                }
-                if (data.endColor && data.startColor) {
-                    data.obj.material.color.lerpColors(data.endColor, data.startColor, eased);
-                }
-            }
-
-            if (t < 1) requestAnimationFrame(animate);
-            else { this.isTorusMode = false; this.isMorphing = false; }
-        };
-        requestAnimationFrame(animate);
-        return Promise.resolve();
-    }
-
-    _logTrajectory(t) {
-        const roundedT = Math.floor(t * 10) / 10;
-        if (roundedT > this._lastLoggedT || t === 1) {
-            console.log(`[Trajectory] Progress: ${(t * 100).toFixed(0)}%`);
-            if (this._objectMorphData) {
-                this._objectMorphData.forEach(data => {
-                    if (!data.start || !data.end) return;
-                    const currentPos = new THREE.Vector3().lerpVectors(data.start, data.end, t);
-                    const color = data.obj.material?.color?.getHexString?.() ?? data.name ?? 'unknown';
-                    console.log(` - ${data.name || 'Object'} ${color}: X=${currentPos.x.toFixed(1)}, Z=${currentPos.z.toFixed(1)}`);
-                });
-            }
-            this._lastLoggedT = roundedT;
-        }
     }
 }
 

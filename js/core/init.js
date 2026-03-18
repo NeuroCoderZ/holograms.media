@@ -329,10 +329,11 @@ export async function initCore() {
               enkephalon.init(wasmInst.exports);
               state.enkephalon = enkephalon;
               
-              const savedWeights = await state.triaMemory.loadLatestEnkephalonSnapshot();
               if (savedWeights) {
                   enkephalon.importWeights(savedWeights);
               }
+              // Запуск планировщика снапшотов (C-2)
+              enkephalon.scheduleWeightSnapshot(state.triaMemory);
           } else {
               console.warn('[Enkephalon] WASM instance not found. Stub mode active.');
           }
@@ -427,12 +428,13 @@ export async function initCore() {
               // 4. Learning (Hebbian)
               state.enkephalon.learn(embedding, predictedIntent);
 
-              // 5. Создание Soma-блока
+              // 5. Создание Soma-блока (с привязкой к цепочке Soma-Pneuma)
               const audioSpectrum = state.lastAudioSpectrum
                   ? new Float32Array(state.lastAudioSpectrum)
                   : new Float32Array(128);
               
-              const soma = state.localChain.createSoma(gestureFlat, audioSpectrum);
+              const prevHash = state.lastSoma?.pneuma?.hash || "0x0";
+              const soma = state.localChain.createSoma(gestureFlat, audioSpectrum, prevHash);
               state.lastSoma = soma;
 
               // 6. Сохранение в Hippocampus
@@ -446,6 +448,14 @@ export async function initCore() {
               
               if (agenticDAO) {
                   await agenticDAO.registerComputeFactor(1, 'gesture_frame');
+              }
+
+              // P2P Pulse (G-1v)
+              if (state.collective && state.collective._peers.size > 0) {
+                  state.collective.broadcastPulse({
+                      embedding: Array.from(embedding),
+                      takt: pulseData.takt
+                  });
               }
 
               // Обновление UI Казначейства
@@ -498,12 +508,19 @@ export async function initCore() {
           if (msg.type === 'intent-delta' && msg.payload.type === 'soma_delta') {
               eventBus.emit('tria:resonance', { peerId, delta: msg.payload });
               
-              // Визуализация в EarthZero
+              // Визуализация в EarthZero (H-3: Детерминированные позиции на основе peerId)
               if (state.earthZero) {
+                  // Генерируем псевдо-случайную позицию на основе хеша peerId
+                  const hash = (str) => {
+                      let h = 0;
+                      for(let i=0; i<str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+                      return h;
+                  };
+                  const h = hash(peerId);
                   const pos = {
-                      x: (Math.random() - 0.5) * 8,
-                      y: 1.5 + (Math.random() - 0.5) * 2,
-                      z: (Math.random() - 0.5) * 8
+                      x: ((h % 100) / 100 - 0.5) * 10,
+                      y: 1.2 + ((Math.abs(h >> 8) % 100) / 100) * 1.5,
+                      z: ((Math.abs(h >> 16) % 100) / 100 - 0.5) * 10
                   };
                   const intensity = msg.payload.confidence || 0.5;
                   state.earthZero.addEcho(peerId, pos, intensity);
@@ -514,44 +531,13 @@ export async function initCore() {
       console.log('✅ Tria Collective P2P (Stage 3) active');
       // ------------------------------------------
 
+      // ------------------------------------------
       // ТЗ v4.5: Инициализация Gesture Phase модулей
       state.gestureCommandEngine = new GestureCommandEngine();
       state.gestureToCodeExecutor = new GestureToCodeExecutor(state.gestureCommandEngine);
       state.gestureLiveStudio = new GestureLiveStudio(state.gestureUIManager, state.gestureCommandEngine);
 
-      // Инициализация Treasury UI Listeners
-      window.addEventListener('tria:wallet_updated', (e) => {
-          const balanceEl = document.getElementById('obolos-balance');
-          if (balanceEl) {
-              balanceEl.textContent = Number(e.detail.balance).toFixed(6);
-              // Эффект вспышки при начислении
-              if (e.detail.type === 'received') {
-                  balanceEl.style.color = '#fff';
-                  setTimeout(() => balanceEl.style.color = '#00ff88', 200);
-              }
-          }
-      });
-
-      window.addEventListener('tria:dao_score_updated', (e) => {
-          const statusEl = document.getElementById('dao-utility-status');
-          if (statusEl) {
-              const score = e.detail.score;
-              let label = '&#128578; Новичок';
-              if (score > 60) label = '&#128640; Контрибьютор';
-              if (score > 85) label = '&#128142; Валидатор';
-              statusEl.innerHTML = label;
-          }
-      });
-
-      // Начальная синхронизация баланса
-      if (state.wallet) {
-          state.wallet.getBalance().then(bal => {
-              const balanceEl = document.getElementById('obolos-balance');
-              if (balanceEl) balanceEl.textContent = Number(bal).toFixed(6);
-          });
-      }
-
-      console.log('✅ Gesture Phase modules (v4.5) & Treasury Listeners initialized');
+      console.log('✅ Gesture Phase modules (v4.5) initialized');
     } catch (error) {
       console.error('❌ Ошибка инициализации Gesture UI/Phase:', error);
     }
