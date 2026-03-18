@@ -6,12 +6,12 @@ from abc import ABC, abstractmethod
 
 # Assuming TriaRequest and TriaResponse are defined in tria_rag_service.py
 # We will import them directly for consistency.
-from backend.Tria.tria_rag_service import TriaRequest, TriaResponse
+from backend.tria_agents.tria_rag_service import TriaRequest, TriaResponse
 
 logger = logging.getLogger(__name__)
 
 class AgentResponse:
-    def __init__(self, answer: str, confidence: float = 1.0, sources: List[Dict[str, Any]] = None, agent_name: str = "general"):
+    def __init__(self, answer: str, confidence: float = 1.0, sources: Optional[List[Dict[str, Any]]] = None, agent_name: str = "general"):
         self.answer = answer
         self.confidence = confidence
         self.sources = sources if sources is not None else []
@@ -37,7 +37,6 @@ class BaseTriaAgent(ABC):
             return TriaResponse(
                 answer=f"Context for {self.domain}: {query}",
                 sources=[],
-                processing_time=0.0
             )
         except Exception as e:
             logger.error(f"{self.domain} Agent: Error: {e}")
