@@ -621,6 +621,39 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   addButtonListener(uiElements.buttons.telegramLinkButton, () => window.open('https://t.me/hologramsmedia', '_blank'), "Telegram link button clicked.");
   addButtonListener(uiElements.buttons.githubButton, () => window.open('https://github.com/NeuroCoderZ/holograms.media/', '_blank'), "GitHub link button clicked.");
 
+  // --- Treasury Button (Obolos Wallet Modal) ---
+  const treasuryBtn = document.getElementById('treasuryButton');
+  const treasuryModal = document.getElementById('treasury-modal');
+  if (treasuryBtn && treasuryModal) {
+    treasuryBtn.addEventListener('click', () => {
+      treasuryModal.classList.toggle('active');
+      treasuryBtn.classList.toggle('active', treasuryModal.classList.contains('active'));
+    });
+    // Close modal when clicking outside
+    treasuryModal.addEventListener('click', (e) => {
+      if (e.target === treasuryModal) {
+        treasuryModal.classList.remove('active');
+        treasuryBtn.classList.remove('active');
+      }
+    });
+  }
+
+  // --- Hub Button (Chatrooms Modal) ---
+  const hubBtn = document.getElementById('hubButton');
+  const hubModal = document.getElementById('hub-modal');
+  if (hubBtn && hubModal) {
+    hubBtn.addEventListener('click', () => {
+      hubModal.classList.toggle('active');
+      hubBtn.classList.toggle('active', hubModal.classList.contains('active'));
+    });
+    hubModal.addEventListener('click', (e) => {
+      if (e.target === hubModal) {
+        hubModal.classList.remove('active');
+        hubBtn.classList.remove('active');
+      }
+    });
+  }
+
   // --- PWA Install Button ---
   // The event listener for installPwaButton has been removed as per the task.
   // The PWA installation is typically triggered by the browser's own UI prompts

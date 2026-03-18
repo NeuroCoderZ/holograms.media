@@ -337,14 +337,13 @@ body.focus-mode .panel.right-panel {
 }
 
 .left-panel-group.bottom-group {
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 15px !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 5px !important;
   width: 100%;
-  padding: 0 10px;
-  justify-content: center !important;
+  padding: 0 5px;
+  justify-items: center !important;
   align-items: center;
-  flex-wrap: nowrap !important;
   margin-top: 0 !important;
   margin-bottom: 10px !important;
 }

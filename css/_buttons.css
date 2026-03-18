@@ -32,29 +32,14 @@
 }
 
 #treasuryButton {
-  position: fixed !important;
-  z-index: 10000 !important;
-  bottom: 2dvh !important;
-  left: 45px !important;
+  /* treasury inherits control-button styles, no fixed positioning */
   width: var(--button-size) !important;
   height: var(--button-size) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-  background-color: transparent !important;
-  border: none !important;
-  cursor: pointer !important;
-  color: #888 !important;
-  transition: all 0.15s ease-in-out !important;
 }
 
 #treasuryButton:hover {
-  color: #00ff88 !important;
-  /* Emerald accent for treasury */
-  transform: scale(1.1) !important;
+  color: white !important;
+  transform: scale(1.08) !important;
 }
 
 #treasuryButton svg {
@@ -537,7 +522,7 @@
   /* Standard active icon color */
 }
 
-/* Эффект "бегущей искры" для Триа */
+/* Эффект полупрозрачного импульса для Триа */
 #triaButton.active {
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.15) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -551,16 +536,17 @@
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: conic-gradient(from 0deg, transparent 70%, rgba(255, 255, 255, 0.9) 100%);
+  background: conic-gradient(from 0deg, transparent 85%, rgba(255, 255, 255, 0.5) 95%, transparent 100%);
   border-radius: inherit;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
   padding: 2px;
-  animation: spark-rotation 1.2s linear infinite;
+  animation: spark-rotation 2s linear infinite;
   pointer-events: none;
   z-index: 5;
+  opacity: 0.6;
 }
 
 @keyframes spark-rotation {
