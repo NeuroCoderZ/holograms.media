@@ -198,27 +198,32 @@ class CwtProcessor extends AudioWorkletProcessor {
                 return true;
             }
 
-            const levels = new Float32Array(mem.buffer, ptrs.levels, 256).slice(); // .slice() to copy data out of shared memory
-            const angles = new Float32Array(mem.buffer, ptrs.pans, 128).slice();
-            const confidence = new Float32Array(mem.buffer, ptrs.confidence, 128).slice();
+            // ЗДЕСЬ БЫЛА УТЕЧКА FPS (PostMessage 375 раз в секунду при 48kHz / 128 сэмплов).
+            // Оптимизируем отправку: используем накопитель, чтобы точно попадать в targetFps (Sample-Accurate)
+            if (this._sampleAccumulator === undefined) this._sampleAccumulator = 0;
+            this._sampleAccumulator += len; // len обычно 128
 
-            // DEBUG: Логи вывода WASM (раз в секунду)
-            // if (this._hb % 60 === 0) {
-            //     this.port.postMessage({
-            //         type: 'LOG',
-            //         msg: `DATA_OUT: L[0]=${levels[0].toFixed(1)}dB, max=${Math.max(...levels).toFixed(1)}dB, P[0]=${angles[0].toFixed(2)}`
-            //     });
-            // }
+            const samplesPerFrame = this._sampleRate / this._targetFps;
 
-            // ✅ ГЛАВНОЕ: Отправка данных в рендерер
-            // Мы убрали performance.now() и Math.max, так как они вызывали ошибки в Worklet
-            this.port.postMessage({
-                type: 'AUDIO_DATA',
-                levels,
-                angles,
-                confidence,
-                timestamp: (typeof currentTime !== 'undefined') ? currentTime : 0
-            });
+            if (this._sampleAccumulator >= samplesPerFrame) {
+                // Вычитаем ровно столько, сколько "потребил" один кадр отрисовки,
+                // сохраняя остаток для следующего цикла (jitter protection)
+                this._sampleAccumulator -= samplesPerFrame;
+                
+                // Рендерим слайсы ТОЛЬКО когда пора отправлять
+                const levels = new Float32Array(mem.buffer, ptrs.levels, 256).slice(); 
+                const angles = new Float32Array(mem.buffer, ptrs.pans, 128).slice();
+                const confidence = new Float32Array(mem.buffer, ptrs.confidence, 128).slice();
+
+                // ✅ ТОЧНАЯ СИНХРОНИЗАЦИЯ: Отправка данных в рендерер в ритме частоты экрана
+                this.port.postMessage({
+                    type: 'AUDIO_DATA',
+                    levels,
+                    angles,
+                    confidence,
+                    timestamp: (typeof currentTime !== 'undefined') ? currentTime : 0
+                });
+            }
 
         } catch (e) {
             // Молчаливая обработка ошибок: логируем раз в 5 секунд, чтобы не спамить

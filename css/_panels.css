@@ -189,8 +189,6 @@ body.focus-mode .panel.right-panel {
   padding: 0 !important;
   margin: 0 !important;
   outline: none !important;
-  box-shadow: none;
-  /* Reset shadow for auth group to be clean */
 }
 
 .left-panel-group.central-block {

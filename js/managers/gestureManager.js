@@ -4,6 +4,7 @@ import { state } from '../core/init.js';
 import { CloudGestureStorage } from '../services/CloudGestureStorage.js';
 import { gestureSynthesizer } from '../audio/GestureSynthesizer.js';
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js';
+import { gestureDNA } from '../tria/GestureDNA.js';
 export class GestureManager {
     constructor() {
         this.smartHologram = null;
@@ -134,6 +135,26 @@ export class GestureManager {
         state.multimodal.gestureModulationData = modulation;
         this.state = 'ACTIVE';
 
+        // Формирование Gesture DNA
+        if (!this.dnaBuffer) this.dnaBuffer = [];
+        // Собираем траекторию центра ладони первой руки для анализа моторики
+        if (multiLandmarks[0] && multiLandmarks[0][9]) {
+            const point = multiLandmarks[0][9];
+            this.dnaBuffer.push({ x: point.x, y: point.y, z: point.z, timestamp: Date.now() });
+            if (this.dnaBuffer.length > 30) this.dnaBuffer.shift(); // скользящее окно ~0.5 сек
+        }
+
+        // Вычисляем текущий слепок DNA
+        let currentDNA = null;
+        if (this.dnaBuffer.length >= 5) {
+            const handedness = multiHandedness[0]?.label || 'Right';
+            currentDNA = gestureDNA.extractEmbedding(this.dnaBuffer, { handedness });
+            
+            // Проверки если есть baseline:
+            // const similarity = gestureDNA.verify(currentDNA);
+            // if (similarity < 0.5) console.warn("Внимание: Аномальный почерк жестов!");
+        }
+
         // Update GestureSynthesizer if active
         if (state.audio?.isGestureSynthMode) {
             gestureSynthesizer.update(modulation);
@@ -143,7 +164,8 @@ export class GestureManager {
         netHoloGlyphClient.sendQuantum({
             type: 'gesture_frame',
             timestamp: Date.now(),
-            hands: modulation
+            hands: modulation,
+            dna_embedding: currentDNA ? Array.from(currentDNA) : null // Добавляем DNA вектор в P2P сеть
         });
 
         // Feedback in console for debugging (throttle)

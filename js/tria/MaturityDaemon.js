@@ -14,10 +14,12 @@ export class MaturityDaemon {
     /**
      * @param {Object} enkephalon - Интерфейс к WASM ядру (brain.rs)
      * @param {TriaMemory} hippocampus - Интерфейс к IndexedDB
+     * @param {ReintegrationManager} reintegration - Менеджер реинтеграции фрагментов
      */
-    constructor(enkephalon, hippocampus) {
+    constructor(enkephalon, hippocampus, reintegration) {
         this.brain = enkephalon;
         this.memory = hippocampus;
+        this.reintegration = reintegration;
         this._timer = null;
         this.lastRunKey = 'lethe_last_run_ts';
     }
@@ -52,11 +54,17 @@ export class MaturityDaemon {
         try {
             // 1. Enkephalon Decay (WASM)
             // Вызываем brain_decay в Rust коде
-            if (this.brain && this.brain.decay) {
+            if (this.brain && this.brain.decay && this.brain.isReady) {
                 this.brain.decay();
                 console.log('[Lethe] Нейронные веса ослаблены (Global Decay).');
+                
+                // Сохраняем снимок после затухания
+                const weights = this.brain.exportWeights();
+                if (weights) {
+                    await this.memory.saveEnkephalonSnapshot(weights);
+                }
             } else {
-                console.warn('[Lethe] Enkephalon не доступен, пропуск decay.');
+                console.warn('[Lethe] Enkephalon не доступен или не готов, пропуск decay.');
             }
 
             // 2. Storage Pruning (Hippocampus)
@@ -81,6 +89,11 @@ export class MaturityDaemon {
                 }
             }
             console.log(`[Lethe] Девальвация Obolos: обновлено ${updatedCount} блоков.`);
+
+            // 4. Fragment Decay (ReintegrationManager)
+            if (this.reintegration && this.reintegration.decay) {
+                this.reintegration.decay();
+            }
 
         } catch (e) {
             console.error('[Lethe] Критическая ошибка цикла:', e);

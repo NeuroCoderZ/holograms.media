@@ -20,6 +20,8 @@ if settings.GOOGLE_API_KEY:
     genai.configure(api_key=settings.GOOGLE_API_KEY)
 
 from backend.services.context_builder import build_dynamic_context
+from backend.skills.openclaw_patrol import patrol_agent
+from backend.skills.openclaw_economist import economist_agent
 
 # Загружаем динамический контекст (вся база кода и доков) один раз при старте бэкенда
 LLM_CONTEXT = ""
@@ -29,6 +31,8 @@ try:
 except Exception as e:
     logger.error(f"Failed to build dynamic LLM context: {e}")
     LLM_CONTEXT = "Ты Триа — ИИ-ассистент проекта holograms.media. Контекст недоступен из-за ошибки чтения кода."
+
+import asyncio
 
 # Основная функция интеграции: пытаемся Gemini, затем Mistral
 async def get_llm_response(user_message: str, history: List[ChatMessageDB], selected_model: Optional[str] = None) -> str:
@@ -55,13 +59,19 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
                 formatted_history.append({"role": role, "parts": [msg.message_content]})
                 
             model = genai.GenerativeModel(
-                model_name='models/gemini-3.0-flash-preview', 
+                model_name='models/gemini-3.0-flash', # Новая версия 3.0
                 system_instruction=LLM_CONTEXT or "Ты АИ-ассистент Триа."
             )
             chat = model.start_chat(history=formatted_history)
-            response = await chat.send_message_async(user_message)
-            return response.text
             
+            # Добавляем таймаут, чтобы Gemini не висел бесконечно
+            response = await asyncio.wait_for(chat.send_message_async(user_message), timeout=15.0)
+            return f"[Gemini 3.0 Flash] {response.text}"
+            
+        except asyncio.TimeoutError:
+            logger.error("Gemini API call timed out after 15 seconds.")
+            if not use_mistral:
+                return "Триа: Ошибка (Таймаут Gemini API)."
         except Exception as e:
             logger.error(f"Error calling Gemini API: {e}.")
             if not use_mistral:
@@ -70,13 +80,21 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
     # Фоллбэк на Mistral (или основной выбор)
     if use_mistral and settings.MISTRAL_API_KEY:
         try:
-            return await get_mistral_response(user_message, history, LLM_CONTEXT or "Ты АИ-ассистент Триа.")
+            # Таймаут и для Мистраля тоже не повредит
+            response_text = await asyncio.wait_for(
+                get_mistral_response(user_message, history, LLM_CONTEXT or "Ты АИ-ассистент Триа."),
+                timeout=20.0
+            )
+            return f"[Mistral Large 3] {response_text}"
+        except asyncio.TimeoutError:
+            logger.error("Mistral API call timed out after 20 seconds.")
+            return "Триа: Ошибка (Таймаут Mistral API)."
         except Exception as e:
             logger.error(f"Error calling Mistral API: {e}.")
             return f"Триа: Ошибка при вызове Mistral API: {e}"
             
     logger.warning("No LLM API keys available or both failed. Returning stub response.")
-    return f"Триа (Заглушка): Я услышала '{user_message}', но запрошенная модель ({selected_model}) недоступна."
+    return f"Триа (Заглушка): Сбой подключения к нейросети."
 
 class ChatService:
     def __init__(self, db: Any):
@@ -140,6 +158,43 @@ class ChatService:
 
         logger.info(f"Service: Adding message to session {session_id} (user: {user.user_id}), role: {role}.")
 
+        patrol_report = {}
+        # --- OPENCLAW: ВХОДНОЙ ПАТРУЛЬ ---
+        if role == "user":
+            gesture_dna = metadata.get("gesture_dna") if metadata else None
+            patrol_report = patrol_agent.verify_incoming_block(user.user_id, gesture_dna, metadata or {"text_note": message_content})
+            
+            if patrol_report.get("status") in ["quarantine", "rejected"]:
+                logger.warning(f"OpenClaw Patrol blocked message from {user.user_id}. Reason: {patrol_report.get('reason')}")
+                # Возвращаем системное сообщение о блокировке
+                rejection_msg = ChatMessageCreate(
+                    user_chat_session_id=session_id, role="system",
+                    message_content=f"🛡️ OpenClaw Patrol: Запрос отклонен. Причина: {patrol_report.get('reason')}",
+                    metadata={"patrol_report": patrol_report}
+                )
+                saved_rejection = await self.repo.add_message_to_history(message_in=rejection_msg, user_id=user.user_id)
+                return ChatMessagePublic(**saved_rejection.dict()) if saved_rejection else None
+
+        # --- OPENCLAW: ЭКОНОМИСТ (Интерцепция) ---
+        if role == "user" and any(trigger in message_content.lower() for trigger in ["оценка", "баланс", "цена", "obolos", "gas", "экономик"]):
+            # Мокаем compute_requested из длины сообщения или метаданных
+            compute_req = metadata.get("compute_requested", len(message_content) * 10) if metadata else len(message_content) * 10
+            econ_report = economist_agent.analyze_transaction(compute_req, user_reputation=metadata.get("reputation", 50.0) if metadata else 50.0)
+            
+            # Сохраняем сообщение пользователя
+            msg_create = ChatMessageCreate(user_chat_session_id=session_id, role=role, message_content=message_content, metadata=metadata or {})
+            await self.repo.add_message_to_history(message_in=msg_create, user_id=user.user_id)
+            
+            # Возвращаем ответ от Экономиста напрямую, минуя LLM
+            econ_response_text = f"📊 **Отчет Экономиста:**\nСтоимость (Obolos): {econ_report['total_cost_obolos']:.8f}\nЗагрузка сети: {econ_report['network_load']}\nРекомендация: {econ_report['recommendation']}"
+            econ_msg = ChatMessageCreate(
+                user_chat_session_id=session_id, role="assistant",
+                message_content=econ_response_text,
+                metadata={"agent": "openclaw_economist", "report": econ_report}
+            )
+            saved_econ = await self.repo.add_message_to_history(message_in=econ_msg, user_id=user.user_id)
+            return ChatMessagePublic(**saved_econ.dict()) if saved_econ else None
+
         # Construct ChatMessageCreate before passing to repository
         message_in_create = ChatMessageCreate(
             user_chat_session_id=session_id,
@@ -175,11 +230,15 @@ class ChatService:
                 # Depending on desired behavior, could return user_saved_message or raise an error to be caught by router
                 return ChatMessagePublic(**user_saved_message.dict()) # Return the user's message if LLM fails
 
+            # --- OPENCLAW: ВЫХОДНОЙ ПАТРУЛЬ ---
+            out_patrol_report = patrol_agent.verify_outgoing_response(llm_response_content)
+            final_response_content = out_patrol_report.get("filtered_text", llm_response_content)
+
             assistant_message_in = ChatMessageCreate(
                 user_chat_session_id=session_id,
                 role="assistant",
-                message_content=llm_response_content,
-                metadata={"llm_model_name": "simulated_tria_v1_stub"}
+                message_content=final_response_content,
+                metadata={"llm_model_name": "simulated_tria_v1_stub", "patrol_check": out_patrol_report.get("status")}
             )
             assistant_saved_message = await self.repo.add_message_to_history(message_in=assistant_message_in, user_id=user.user_id) # user_id for audit, though RLS won't apply to assistant messages in same way
 

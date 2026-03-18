@@ -206,6 +206,11 @@ export class HologramRenderer {
 
     // 4. BasilaQ-128: 1 dB = 1 ячейка (Z-scale = 128 + dB)
     [[leftMesh, dbL], [rightMesh, dbR]].forEach(([m, db]) => {
+      // ЗАЩИТА ОТ NaN и Infinity (особенно при пустом стриме микрофона)
+      if (!Number.isFinite(db) || isNaN(db)) {
+          db = -128.0;
+      }
+      
       const h = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, db)));
       m.scale.z = h;
       m.position.z = h / 2;

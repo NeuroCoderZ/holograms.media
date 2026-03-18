@@ -17,6 +17,7 @@ import boto3
 # Astra-related imports
 from backend.core.db.astra_connector import get_astra_db, get_astra_client
 
+from backend.tria_agents.tria_orchestrator import TriaOrchestrator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -67,6 +68,17 @@ async def lifespan(app: FastAPI):
         logger.error(f"Critical error during Astra DB initialization: {e}")
         app.state.astra_db = None
 
+    # --- Initialize Tria Orchestrator ---
+    try:
+        orchestrator = TriaOrchestrator()
+        # Если потребуется асинхронная инициализация:
+        # await orchestrator.init() 
+        app.state.tria_orchestrator = orchestrator
+        logger.info("TriaOrchestrator initialized and added to app.state.")
+    except Exception as e:
+        logger.error(f"Error initializing TriaOrchestrator: {e}")
+        app.state.tria_orchestrator = None
+
     logger.info("Astra DB check: " + str(bool(app.state.astra_db)))
     logger.info("FastAPI application startup completed successfully.")
 
@@ -77,6 +89,10 @@ async def lifespan(app: FastAPI):
     if hasattr(app.state, 'astra_db'):
         del app.state.astra_db
         logger.info("Astra DB connection state cleared.")
+    
+    if hasattr(app.state, 'tria_orchestrator'):
+        del app.state.tria_orchestrator
+        logger.info("TriaOrchestrator state cleared.")
 
 app = FastAPI(
     title="Holograms Media Backend API",

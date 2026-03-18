@@ -464,13 +464,13 @@
       <span class="close" onclick="document.getElementById('treasury-modal').classList.remove('active')">&times;</span>
       <h2 style="text-align:center;font-size:1.3em;">&#127963; Казначейство Obolos</h2>
       <div style="text-align:center;padding:20px 0;">
-        <div style="font-size:2.4em;font-weight:bold;color:#00ff88;text-shadow:0 0 15px rgba(0,255,136,0.4);">1.000000</div>
+        <div id="obolos-balance" style="font-size:2.4em;font-weight:bold;color:#00ff88;text-shadow:0 0 15px rgba(0,255,136,0.4);">0.000000</div>
         <div style="font-size:0.85em;color:#888;margin-top:6px;">Базовый токен • Дробление: 10<sup>-6</sup></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;justify-content:space-between;font-size:0.9em;color:#aaa;"><span>Жестовые блоки</span><span style="color:#fff;">0</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:0.9em;color:#aaa;"><span>Аренда мощностей</span><span style="color:#fff;">—</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:0.9em;color:#aaa;"><span>Статус</span><span style="color:#00ff88;">🙂 Новичок</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.9em;color:#aaa;"><span>Жестовые блоки</span><span id="treasury-block-count" style="color:#fff;">0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.9em;color:#aaa;"><span>Аренда мощностей</span><span id="compute-rental-status" style="color:#fff;">—</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.9em;color:#aaa;"><span>Статус DAO</span><span id="dao-utility-status" style="color:#00ff88;">&#128578; Новичок</span></div>
       </div>
     </div>
   </div>
@@ -480,12 +480,20 @@
     <div class="modal-content" style="max-width:420px;">
       <span class="close" onclick="document.getElementById('hub-modal').classList.remove('active')">&times;</span>
       <h2 style="text-align:center;font-size:1.3em;">Чатрумы</h2>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-top:15px;">
-        <button class="hub-room-btn" disabled style="padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#aaa;cursor:not-allowed;text-align:left;font-size:0.95em;">🎹 Синтезатор <span style="float:right;font-size:0.8em;color:#666;">скоро</span></button>
-        <button class="hub-room-btn" disabled style="padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#aaa;cursor:not-allowed;text-align:left;font-size:0.95em;">🔧 Мастерская <span style="float:right;font-size:0.8em;color:#666;">скоро</span></button>
-        <button class="hub-room-btn" disabled style="padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#aaa;cursor:not-allowed;text-align:left;font-size:0.95em;">🎵 Концерт <span style="float:right;font-size:0.8em;color:#666;">скоро</span></button>
-        <button class="hub-room-btn" disabled style="padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#aaa;cursor:not-allowed;text-align:left;font-size:0.95em;">🎥 Студия <span style="float:right;font-size:0.8em;color:#666;">скоро</span></button>
-        <button class="hub-room-btn" disabled style="padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#aaa;cursor:not-allowed;text-align:left;font-size:0.95em;">🎓 Обучение <span style="float:right;font-size:0.8em;color:#666;">скоро</span></button>
+      <div style="margin-top:15px; text-align:left;">
+        <label for="hub-env-select" style="font-size:0.9em;color:#aaa;">Среда окружения:</label>
+        <select id="hub-env-select" style="width:100%;margin-top:5px;padding:10px;background:var(--color-pure-black);color:#fff;border:1px solid var(--panel-border);border-radius:8px;outline:none;">
+          <option value="void">🌌 Черный вакуум (Void)</option>
+          <option value="grid">🔲 Сетка (Grid-floor)</option>
+          <option value="panoramic">🏔️ Панорама (Panoramic)</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:15px;" id="hub-room-list">
+        <button class="hub-room-btn" data-mode="synth" style="padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s ease;">🎹 Синтезатор <span style="float:right;font-size:0.8em;color:#00ff88;">войти</span></button>
+        <button class="hub-room-btn" data-mode="workshop" style="padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s ease;">🔧 Мастерская <span style="float:right;font-size:0.8em;color:#00ff88;">войти</span></button>
+        <button class="hub-room-btn" data-mode="concert" style="padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s ease;">🎵 Концерт <span style="float:right;font-size:0.8em;color:#00ff88;">войти</span></button>
+        <button class="hub-room-btn" data-mode="studio" style="padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s ease;">🎥 Студия <span style="float:right;font-size:0.8em;color:#00ff88;">войти</span></button>
+        <button class="hub-room-btn" data-mode="edu" style="padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s ease;">🎓 Обучение <span style="float:right;font-size:0.8em;color:#00ff88;">войти</span></button>
       </div>
     </div>
   </div>
