@@ -134,6 +134,16 @@
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
   font-family: 'Roboto', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gesture-tab svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex-shrink: 0;
 }
 
 .gesture-tab:hover {

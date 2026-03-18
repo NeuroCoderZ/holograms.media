@@ -232,10 +232,10 @@ export class CochlearCylinder {
             console.log(`[Trajectory] Progress: ${(t * 100).toFixed(0)}%`);
             if (this._objectMorphData) {
                 this._objectMorphData.forEach(data => {
-                    if (!data.start || !data.end) return; // Safety check
+                    if (!data.start || !data.end) return;
                     const currentPos = new THREE.Vector3().lerpVectors(data.start, data.end, t);
-                    const color = data.obj.material.color.getHexString();
-                    console.log(` - Sphere ${color}: X=${currentPos.x.toFixed(1)}, Z=${currentPos.z.toFixed(1)}`);
+                    const color = data.obj.material?.color?.getHexString?.() ?? data.name ?? 'unknown';
+                    console.log(` - ${data.name || 'Object'} ${color}: X=${currentPos.x.toFixed(1)}, Z=${currentPos.z.toFixed(1)}`);
                 });
             }
             this._lastLoggedT = roundedT;
