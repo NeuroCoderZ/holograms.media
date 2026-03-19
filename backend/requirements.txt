@@ -17,5 +17,5 @@ email-validator>=2.0.0
 google-genai
 # qrcode REMOVED: QR generation moved to frontend
 # pillow REMOVED: no longer needed (was used by qrcode)
-mistralai
+mistralai>=1.1.0
 watchdog>=4.0.0
