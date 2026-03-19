@@ -64,25 +64,25 @@ export class HologramRenderer {
   // ─── Scene Construction ──────────────────────────────────────────────────
 
   _createSequencerGrids() {
-    const origin = new THREE.Vector3(0, -GRID_HEIGHT / 2, 0);
+    const origin = new THREE.Vector3(0, -GRID_HEIGHT, 0);
 
     this.leftSequencerGroup = new THREE.Group();
     this.leftSequencerGroup.position.copy(origin);
-    this.leftSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, true));
-    this.leftSequencerGroup.add(createGridVisualization(-GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE, 0xBF00FF));
+    this.leftSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, true));
+    this.leftSequencerGroup.add(createGridVisualization(-GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xBF00FF));
     this.mainSequencerGroup.add(this.leftSequencerGroup);
 
     this.rightSequencerGroup = new THREE.Group();
     this.rightSequencerGroup.position.copy(origin);
-    this.rightSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, false));
-    this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE, 0xFF0000));
+    this.rightSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, false));
+    this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xFF0000));
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
     // Позиционные маркеры
     const blue = createSphereForAxis(3.024, 0x0000ff);
     const white = createSphereForAxis(2.4192, 0xffffff);
-    blue.position.set(0, -GRID_HEIGHT / 2, 0);
-    white.position.set(0, -GRID_HEIGHT / 2, 0);
+    blue.position.set(0, -GRID_HEIGHT, 0);
+    white.position.set(0, -GRID_HEIGHT, 0);
     this.mainSequencerGroup.add(blue);
     this.mainSequencerGroup.add(white);
 
@@ -127,17 +127,18 @@ export class HologramRenderer {
         return im;
     };
 
-    this.columnsIM = createIM(false);
-    this.edgesIM = createIM(true);
+    this.columnsIM = createIM();
+    this.columnsIM.instanceMatrix.setUsage(THREE.DynamicDrawUsage); // Added this line
+    // Removed this.edgesIM = createIM(true);
 
     // Compatibility: pointers for CochlearCylinder
     this.leftIM = this.columnsIM;
     this.rightIM = this.columnsIM;
-    this.leftEdgesIM = this.edgesIM;
-    this.rightEdgesIM = this.edgesIM;
+    this.leftEdgesIM = this.columnsIM; // Pointing to columnsIM as edgesIM is removed
+    this.rightEdgesIM = this.columnsIM; // Pointing to columnsIM as edgesIM is removed
 
     this.mainSequencerGroup.add(this.columnsIM);
-    this.mainSequencerGroup.add(this.edgesIM);
+    // Removed this.mainSequencerGroup.add(this.edgesIM);
     
     // For legacy reasons (if any logic depends on this.columns, though none should now)
   }
@@ -154,26 +155,26 @@ export class HologramRenderer {
 
     const dummy = new THREE.Object3D();
     const cScales = this.columnsIM.geometry.getAttribute('aColumnScaleZ');
-    const eScales = this.edgesIM.geometry.getAttribute('aColumnScaleZ');
+    // Removed const eScales = this.edgesIM.geometry.getAttribute('aColumnScaleZ');
 
     for (let i = 0; i < 128; i++) {
         const config = semitones[i];
-        if (!isActive) {
-            this._applyGreetingModeInstanced(i, dummy, cScales, eScales);
+        if (isActive) {
+            this._applyActiveModeInstanced(i, config, dbLevels, panAngles, dummy, cScales);
         } else {
-            this._applyActiveModeInstanced(i, config, dbLevels, panAngles, dummy, cScales, eScales);
+            this._applyGreetingModeInstanced(i, dummy, cScales);
         }
     }
 
     this.columnsIM.instanceMatrix.needsUpdate = true;
-    this.edgesIM.instanceMatrix.needsUpdate = true;
+    // Removed this.edgesIM.instanceMatrix.needsUpdate = true;
     cScales.needsUpdate = true;
-    eScales.needsUpdate = true;
+    // Removed eScales.needsUpdate = true;
 
     this._debugFrameCount++;
   }
 
-  _applyGreetingModeInstanced(i, dummy, cScales, eScales) {
+  _applyGreetingModeInstanced(i, dummy, cScales) {
     const gDepth = 0.1;
     const config = semitones[i];
     const w = config.width;
@@ -184,22 +185,18 @@ export class HologramRenderer {
     dummy.scale.set(w, 1, 1);
     dummy.updateMatrix();
     this.columnsIM.setMatrixAt(i, dummy.matrix);
-    this.edgesIM.setMatrixAt(i, dummy.matrix);
     cScales.setX(i, gDepth);
-    eScales.setX(i, gDepth);
     
     // Right (128-255)
     dummy.position.set(w/2, (i + 0.5) * CELL_HEIGHT, gDepth/2);
     dummy.updateMatrix();
     this.columnsIM.setMatrixAt(rightIndex, dummy.matrix);
-    this.edgesIM.setMatrixAt(rightIndex, dummy.matrix);
     cScales.setX(rightIndex, gDepth);
-    eScales.setX(rightIndex, gDepth);
 
     this.columnsIM.material.uniforms.uIsGreeting.value = 1.0;
   }
 
-  _applyActiveModeInstanced(i, config, dbLevels, panAngles, dummy, cScales, eScales) {
+  _applyActiveModeInstanced(i, config, dbLevels, panAngles, dummy, cScales) {
     let dbL = dbLevels[i];
     let dbR = dbLevels[i + 128];
     const rightIndex = i + 128;
@@ -226,21 +223,17 @@ export class HologramRenderer {
     dummy.scale.set(w, 1, hL);
     
     // Left
-    dummy.position.set(xL, (i + 0.5) * CELL_HEIGHT, hL/2);
+    dummy.position.set(xL, (i + 0.5) * CELL_HEIGHT, hL / 2);
     dummy.updateMatrix();
     this.columnsIM.setMatrixAt(i, dummy.matrix);
-    this.edgesIM.setMatrixAt(i, dummy.matrix);
     cScales.setX(i, hL);
-    eScales.setX(i, hL);
 
     // Right
     dummy.scale.set(w, 1, hR);
-    dummy.position.set(xR, (i + 0.5) * CELL_HEIGHT, hR/2);
+    dummy.position.set(xR, (i + 0.5) * CELL_HEIGHT, hR / 2);
     dummy.updateMatrix();
     this.columnsIM.setMatrixAt(rightIndex, dummy.matrix);
-    this.edgesIM.setMatrixAt(rightIndex, dummy.matrix);
     cScales.setX(rightIndex, hR);
-    eScales.setX(rightIndex, hR);
 
     this.columnsIM.material.uniforms.uIsGreeting.value = 0.0;
   }
