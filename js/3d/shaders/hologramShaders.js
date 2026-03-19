@@ -1,20 +1,18 @@
 /**
  * hologramShaders.js — BasilaQ-128 GLSL шейдеры
  * ================================================
- * Pure Reconstruction v17.0 (Restored)
- * No outlines, uniform coloring logic from March 17.
+ * Pure Reconstruction v17.1 (Slabs & Z-Shade)
+ * Убрана обводка, восстановлены слои (slabs) вдоль оси Z.
  */
 
 export const vertexShader = /* glsl */`
     varying float vWorldZHeight;
     uniform float uColumnScaleZ;
-    uniform float uInversePerspective; // 0.0 = Ortho, 1.0 = Reverse
 
     void main() {
-        // vWorldZHeight используем для яркости. 
-        // При восстановлении мы убираем зависимость от position.z для равномерного цвета,
-        // но сохраняем структуру старого шейдера.
-        vWorldZHeight = uColumnScaleZ;
+        // Восстанавливаем зависимость от position.z для создания слоев (slabs)
+        // position.z в BoxGeometry идет от -0.5 до 0.5
+        vWorldZHeight = (position.z + 0.5) * uColumnScaleZ;
         
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mvPosition;
@@ -30,18 +28,18 @@ export const fragmentShader = /* glsl */`
     varying float vWorldZHeight;
 
     void main() {
-        // 1. Базовая яркость (BasilaQ-128)
+        // 1. Дискретные слои (Slabs) вдоль оси Z
         float z = vWorldZHeight;
-        float cellIndex = floor(z);
+        float cellIndex = floor(z + 0.001); // Небольшой офсет для стабильности
         
         // index 127 (0 dB) -> 128/128 (1.0)
         // index 0 (-127 dB) -> 1/128 (0.0078)
-        vec3 finalColor;
         float bIndex = clamp(cellIndex, 0.0, 127.0);
         float brightness = (bIndex + 1.0) / 128.0; 
-        finalColor = uBaseColor * brightness;
+        
+        vec3 finalColor = uBaseColor * brightness;
 
-        // Режим приветствия: поверхность цветная (без затухания)
+        // Режим приветствия: столбцы полностью окрашены (интенсивность 1.0)
         if (uIsGreeting > 0.5) {
             finalColor = uBaseColor;
         }
@@ -61,19 +59,17 @@ export function makeColumnUniforms(baseColor) {
         uIsGreeting: { value: 1.0 },
         uBrightnessBoost: { value: 1.0 },
         uColumnScaleZ: { value: 0.1 },
-        uInversePerspective: { value: 0.0 },
     };
 }
 
-/** То же самое для рёбер (Legacy: edges removed in renderer) */
+/** Legacy (обводка ребер более не используется) */
 export function makeEdgeUniforms(baseColor) {
     return {
         uBaseColor: { value: baseColor },
         uSelection: { value: 0.0 },
         uOpacity: { value: 1.0 },
         uIsGreeting: { value: 1.0 },
-        uBrightnessBoost: { value: 1.0 },
+        uBrightnessBoost: { value: 1.1 },
         uColumnScaleZ: { value: 0.1 },
-        uInversePerspective: { value: 0.0 },
     };
 }
