@@ -1,7 +1,7 @@
 {
-  "version": "0.20.126",
-  "timestamp": "2026-03-19T20:29:18.051Z",
+  "version": "0.20.127",
+  "timestamp": "2026-03-19T20:35:54.643Z",
   "env": "production",
-  "build": 1773952158052,
-  "summary": "Stable Rendering Restoration, Z-layers, Margin Fix, Shading Refinement"
+  "build": 1773952554644,
+  "summary": "Fix static version in index.html, register global THREE, and prepare LLM debug"
 }
