@@ -32,10 +32,10 @@ export class HologramRenderer {
     this.roomId = roomId;
     this.userId = userId;
 
-    // Instanced Data Buffers
-    this._instanceMatrices = new Float32Array(128 * 16);
-    this._instanceScales = new Float32Array(128);
-    this._instanceColors = new Float32Array(128 * 3);
+    // Instanced Data Buffers (256 instances: 0-127 Left, 128-255 Right)
+    this._instanceMatrices = new Float32Array(256 * 16);
+    this._instanceScales = new Float32Array(256);
+    this._instanceColors = new Float32Array(256 * 3);
 
     // XR state
     this._cochlearCylinder = null;
@@ -93,26 +93,29 @@ export class HologramRenderer {
     const boxGeo = new THREE.BoxGeometry(1, CELL_HEIGHT, 1);
     const edgeGeo = new THREE.EdgesGeometry(boxGeo);
 
-    const createIM = (isLeft, isEdges = false) => {
+    const createIM = (isEdges = false) => {
         const material = new THREE.ShaderMaterial({
             uniforms: isEdges ? makeEdgeUniforms(new THREE.Color(1,1,1)) : makeColumnUniforms(new THREE.Color(1,1,1)),
             vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
         });
-        const im = isEdges ? new THREE.InstancedMesh(edgeGeo, material, 128) : new THREE.InstancedMesh(boxGeo, material, 128);
+        const im = isEdges ? new THREE.InstancedMesh(edgeGeo, material, 256) : new THREE.InstancedMesh(boxGeo, material, 256);
         
         // Add instance attributes for scale and color
-        const scales = new THREE.InstancedBufferAttribute(new Float32Array(128), 1);
-        const colors = new THREE.InstancedBufferAttribute(new Float32Array(128 * 3), 3);
+        const scales = new THREE.InstancedBufferAttribute(new Float32Array(256), 1);
+        const colors = new THREE.InstancedBufferAttribute(new Float32Array(256 * 3), 3);
         im.geometry.setAttribute('aColumnScaleZ', scales);
         im.geometry.setAttribute('aInstanceColor', colors);
         
         // Initial setup
         const dummy = new THREE.Object3D();
-        for (let i = 0; i < 128; i++) {
-            const config = semitones[i];
+        for (let i = 0; i < 256; i++) {
+            const isLeft = i < 128;
+            const configIndex = i % 128;
+            const config = semitones[configIndex];
             const w = config.width;
             const x = isLeft ? -w/2 : w/2;
-            dummy.position.set(x, (i + 0.5) * CELL_HEIGHT, 0);
+            
+            dummy.position.set(x, (configIndex + 0.5) * CELL_HEIGHT, 0);
             dummy.scale.set(w, 1, 1);
             dummy.updateMatrix();
             im.setMatrixAt(i, dummy.matrix);
@@ -124,18 +127,19 @@ export class HologramRenderer {
         return im;
     };
 
-    this.leftIM = createIM(true, false);
-    this.leftEdgesIM = createIM(true, true);
-    this.rightIM = createIM(false, false);
-    this.rightEdgesIM = createIM(false, true);
+    this.columnsIM = createIM(false);
+    this.edgesIM = createIM(true);
 
-    this.leftSequencerGroup.add(this.leftIM);
-    this.leftSequencerGroup.add(this.leftEdgesIM);
-    this.rightSequencerGroup.add(this.rightIM);
-    this.rightSequencerGroup.add(this.rightEdgesIM);
+    // Compatibility: pointers for CochlearCylinder
+    this.leftIM = this.columnsIM;
+    this.rightIM = this.columnsIM;
+    this.leftEdgesIM = this.edgesIM;
+    this.rightEdgesIM = this.edgesIM;
+
+    this.mainSequencerGroup.add(this.columnsIM);
+    this.mainSequencerGroup.add(this.edgesIM);
     
-    // For legacy reasons (if any logic depends on this.columns)
-    this.columns = []; 
+    // For legacy reasons (if any logic depends on this.columns, though none should now)
   }
 
   // ─── Audio Visualisation ────────────────────────────────────────────────
@@ -149,62 +153,57 @@ export class HologramRenderer {
     const panAngles = audioData?.pans || new Float32Array(256).fill(0);
 
     const dummy = new THREE.Object3D();
-    const lScales = this.leftIM.geometry.getAttribute('aColumnScaleZ');
-    const rScales = this.rightIM.geometry.getAttribute('aColumnScaleZ');
-    const leScales = this.leftEdgesIM.geometry.getAttribute('aColumnScaleZ');
-    const reScales = this.rightEdgesIM.geometry.getAttribute('aColumnScaleZ');
+    const cScales = this.columnsIM.geometry.getAttribute('aColumnScaleZ');
+    const eScales = this.edgesIM.geometry.getAttribute('aColumnScaleZ');
 
     for (let i = 0; i < 128; i++) {
         const config = semitones[i];
         if (!isActive) {
-            this._applyGreetingModeInstanced(i, dummy);
+            this._applyGreetingModeInstanced(i, dummy, cScales, eScales);
         } else {
-            this._applyActiveModeInstanced(i, config, dbLevels, panAngles, dummy, lScales, rScales, leScales, reScales);
+            this._applyActiveModeInstanced(i, config, dbLevels, panAngles, dummy, cScales, eScales);
         }
     }
 
-    this.leftIM.instanceMatrix.needsUpdate = true;
-    this.rightIM.instanceMatrix.needsUpdate = true;
-    this.leftEdgesIM.instanceMatrix.needsUpdate = true;
-    this.rightEdgesIM.instanceMatrix.needsUpdate = true;
-    lScales.needsUpdate = true;
-    rScales.needsUpdate = true;
-    leScales.needsUpdate = true;
-    reScales.needsUpdate = true;
+    this.columnsIM.instanceMatrix.needsUpdate = true;
+    this.edgesIM.instanceMatrix.needsUpdate = true;
+    cScales.needsUpdate = true;
+    eScales.needsUpdate = true;
 
     this._debugFrameCount++;
   }
 
-  _applyGreetingModeInstanced(i, dummy) {
+  _applyGreetingModeInstanced(i, dummy, cScales, eScales) {
     const gDepth = 0.1;
     const config = semitones[i];
     const w = config.width;
+    const rightIndex = i + 128;
     
-    // Left
+    // Left (0-127)
     dummy.position.set(-w/2, (i + 0.5) * CELL_HEIGHT, gDepth/2);
     dummy.scale.set(w, 1, 1);
     dummy.updateMatrix();
-    this.leftIM.setMatrixAt(i, dummy.matrix);
-    this.leftEdgesIM.setMatrixAt(i, dummy.matrix);
+    this.columnsIM.setMatrixAt(i, dummy.matrix);
+    this.edgesIM.setMatrixAt(i, dummy.matrix);
+    cScales.setX(i, gDepth);
+    eScales.setX(i, gDepth);
     
-    // Right
+    // Right (128-255)
     dummy.position.set(w/2, (i + 0.5) * CELL_HEIGHT, gDepth/2);
     dummy.updateMatrix();
-    this.rightIM.setMatrixAt(i, dummy.matrix);
-    this.rightEdgesIM.setMatrixAt(i, dummy.matrix);
+    this.columnsIM.setMatrixAt(rightIndex, dummy.matrix);
+    this.edgesIM.setMatrixAt(rightIndex, dummy.matrix);
+    cScales.setX(rightIndex, gDepth);
+    eScales.setX(rightIndex, gDepth);
 
-    this.leftIM.geometry.getAttribute('aColumnScaleZ').setX(i, gDepth);
-    this.rightIM.geometry.getAttribute('aColumnScaleZ').setX(i, gDepth);
-    this.leftEdgesIM.geometry.getAttribute('aColumnScaleZ').setX(i, gDepth);
-    this.rightEdgesIM.geometry.getAttribute('aColumnScaleZ').setX(i, gDepth);
-    
-    this.leftIM.material.uniforms.uIsGreeting.value = 1.0;
-    this.rightIM.material.uniforms.uIsGreeting.value = 1.0;
+    this.columnsIM.material.uniforms.uIsGreeting.value = 1.0;
   }
 
-  _applyActiveModeInstanced(i, config, dbLevels, panAngles, dummy, lScales, rScales, leScales, reScales) {
+  _applyActiveModeInstanced(i, config, dbLevels, panAngles, dummy, cScales, eScales) {
     let dbL = dbLevels[i];
     let dbR = dbLevels[i + 128];
+    const rightIndex = i + 128;
+
     if (!Number.isFinite(dbL)) dbL = -128.0;
     if (!Number.isFinite(dbR)) dbR = -128.0;
 
@@ -216,7 +215,6 @@ export class HologramRenderer {
     if (p < -0.01) dbR -= shadowDb;
     else if (p > 0.01) dbL -= shadowDb;
 
-    const isTorus = this._cochlearCylinder && (this._cochlearCylinder.isTorusMode || this._cochlearCylinder.isMorphing);
     const w = config.width || 1;
     const hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbL)));
     const hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbR)));
@@ -227,23 +225,23 @@ export class HologramRenderer {
 
     dummy.scale.set(w, 1, 1);
     
+    // Left
     dummy.position.set(xL, (i + 0.5) * CELL_HEIGHT, hL/2);
     dummy.updateMatrix();
-    this.leftIM.setMatrixAt(i, dummy.matrix);
-    this.leftEdgesIM.setMatrixAt(i, dummy.matrix);
+    this.columnsIM.setMatrixAt(i, dummy.matrix);
+    this.edgesIM.setMatrixAt(i, dummy.matrix);
+    cScales.setX(i, hL);
+    eScales.setX(i, hL);
 
+    // Right
     dummy.position.set(xR, (i + 0.5) * CELL_HEIGHT, hR/2);
     dummy.updateMatrix();
-    this.rightIM.setMatrixAt(i, dummy.matrix);
-    this.rightEdgesIM.setMatrixAt(i, dummy.matrix);
+    this.columnsIM.setMatrixAt(rightIndex, dummy.matrix);
+    this.edgesIM.setMatrixAt(rightIndex, dummy.matrix);
+    cScales.setX(rightIndex, hR);
+    eScales.setX(rightIndex, hR);
 
-    lScales.setX(i, hL);
-    leScales.setX(i, hL);
-    rScales.setX(i, hR);
-    reScales.setX(i, hR);
-
-    this.leftIM.material.uniforms.uIsGreeting.value = 0.0;
-    this.rightIM.material.uniforms.uIsGreeting.value = 0.0;
+    this.columnsIM.material.uniforms.uIsGreeting.value = 0.0;
   }
 
   // ─── Accessors ───────────────────────────────────────────────────────────

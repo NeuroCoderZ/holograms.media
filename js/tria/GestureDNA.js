@@ -135,10 +135,22 @@ export class GestureDNA {
             });
         }
 
-        // Заполняем остаток (42-127) детерминированной проекцией (Robust Padding)
-        const seed = embedding.subarray(0, 42).reduce((a, b) => a + b, 0);
-        for (let i = 42; i < this.DNA_DIMENSIONS; i++) {
-            embedding[i] = Math.tanh(seed * Math.cos(i * 0.13));
+        // [42-104] 21 Landmarks RAW Coordinates (E-3: Bio-DNA v2)
+        // Каждая точка (x, y, z) ладони в последний момент времени.
+        let landmarkIdx = 42;
+        for (let j = 0; j < 21; j++) {
+            const p = lastFrame[j];
+            if (p && landmarkIdx < 105) {
+                embedding[landmarkIdx++] = Math.max(-1, Math.min(1, p.x * 2 - 1)); // Normalize to [-1, 1]
+                embedding[landmarkIdx++] = Math.max(-1, Math.min(1, p.y * 2 - 1));
+                embedding[landmarkIdx++] = Math.max(-1, Math.min(1, (p.z || 0) * 10)); // Z is usually very small
+            }
+        }
+
+        // [105-127] Robust Padding / Extra Projections
+        const seed = embedding.subarray(0, 105).reduce((a, b) => a + b, 0);
+        for (let i = 105; i < this.DNA_DIMENSIONS; i++) {
+            embedding[i] = Math.tanh(seed * Math.sin(i * 0.23));
         }
 
         return this._normalizeVector(embedding);

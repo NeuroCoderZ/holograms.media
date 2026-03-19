@@ -4,7 +4,7 @@
 echo "🚀 Сборка holographic_core WASM модуля..."
 
 # Проверяем наличие wasm-pack
-if ! command -v wasm-pack &> /dev/null; then
+if ! command -v wasm-pack > /dev/null 2>&1; then
     echo "❌ wasm-pack не установлен. Установите его:"
     echo "cargo install wasm-pack"
     exit 1

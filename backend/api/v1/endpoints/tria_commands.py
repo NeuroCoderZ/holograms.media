@@ -1,6 +1,7 @@
 # File: backend/api/v1/endpoints/tria_commands.py
 from fastapi import APIRouter, Request, HTTPException
 from backend.models.tria_models import TriaPromptRequest, TriaPromptResponse
+from backend.llm.gemini_llm import LLM_CONTEXT
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,8 @@ async def handle_tria_prompt(request: Request, prompt_data: TriaPromptRequest):
         if not tria_orchestrator:
              raise HTTPException(status_code=503, detail="Tria service is not available.")
         
-        tria_response_text = await tria_orchestrator.process_user_prompt(prompt_data.prompt)
+        # E-1: Pass global project context to the orchestrator
+        tria_response_text = await tria_orchestrator.process_user_prompt(prompt_data.prompt, context=LLM_CONTEXT)
         
         if tria_response_text is None:
              raise HTTPException(status_code=500, detail="Tria returned an empty response.")

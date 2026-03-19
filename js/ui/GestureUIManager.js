@@ -187,8 +187,10 @@ class GestureUIManager {
             this.gestureAreaElement.classList.remove('hands-detected');
             document.querySelector('.main-area')?.classList.remove('squashed');
 
+            // BUGFIX: Не схлопываем панель, если идет запись!
             if (this.isRecording) {
-                this.stopRecording();
+                console.log("GestureUIManager: Hands lost but keeping panel open during recording.");
+                return; // Не запускаем анимацию закрытия
             }
         }
 
@@ -246,8 +248,8 @@ class GestureUIManager {
 
 
     toggleRecording() {
-        if (!this.gestureAreaElement.classList.contains('hands-detected')) {
-            // Panel must be expanded to record
+        if (!this.gestureAreaElement.classList.contains('hands-detected') && !this.isRecording) {
+            // Panel must be expanded to record, unless we are already recording (to stop)
             return;
         }
 
@@ -259,22 +261,80 @@ class GestureUIManager {
     }
 
     startRecording() {
+        if (this.isRecording) return;
         this.isRecording = true;
         this.recordingStartTime = performance.now();
         this.redLinePosition = 0;
         this.recordedPaths.clear(); // Clear previous recording paths
-
-
+        this.gestureAreaElement.classList.add('recording');
+        
+        console.log("GestureUIManager: Recording started (20s timeout active).");
         this.eventBus?.emit('gestureRecordingStarted');
-        console.log("GestureUIManager: Recording started.");
+
+        // AUTO-STOP after 20 seconds
+        this.recordingTimeout = setTimeout(() => {
+            if (this.isRecording) {
+                console.log("GestureUIManager: 20s limit reached. Stopping...");
+                this.stopRecording();
+            }
+        }, 20000);
     }
 
     stopRecording() {
+        if (!this.isRecording) return;
+        
+        // Clear timeout if manual stop
+        if (this.recordingTimeout) {
+            clearTimeout(this.recordingTimeout);
+            this.recordingTimeout = null;
+        }
+
         this.isRecording = false;
+        this.gestureAreaElement.classList.remove('recording');
         this.redLinePosition = 0;
 
-        this.eventBus?.emit('gestureRecordingStopped');
-        console.log("GestureUIManager: Recording stopped.");
+        this.eventBus?.emit('gestureRecordingStopped', {
+            paths: Array.from(this.recordedPaths.entries()),
+            duration: performance.now() - this.recordingStartTime
+        });
+        
+        console.log("GestureUIManager: Recording stopped. Saving to local storage...");
+        
+        this._saveGestureToLocalStorage(Array.from(this.recordedPaths.entries()));
+
+        // Автоматически активируем кнопку "Ваши жесты"
+        const gestButton = document.getElementById('gestureRecordButton');
+        if (gestButton) {
+            console.log("GestureUIManager: Auto-triggering 'Your Gestures' panel.");
+            gestButton.click();
+        }
+
+        // Если рук нет, теперь можно схлопнуть панель
+        if (!this.detectedHands || this.detectedHands.count === 0) {
+            this.animateGestureArea(false);
+        }
+    }
+
+    /**
+     * Сохранение жеста в localStorage для последующего использования
+     */
+    _saveGestureToLocalStorage(paths) {
+        try {
+            const savedGestures = JSON.parse(localStorage.getItem('tria_saved_gestures') || '[]');
+            const newGesture = {
+                id: `gesture_${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                paths: paths,
+                name: `Запись ${new Date().toLocaleTimeString()}`
+            };
+            savedGestures.push(newGesture);
+            localStorage.setItem('tria_saved_gestures', JSON.stringify(savedGestures));
+            
+            // Оповещаем другие компоненты (например, панель "Ваши жесты")
+            this.eventBus?.emit('gesturesDataUpdated', savedGestures);
+        } catch (e) {
+            console.error("GestureUIManager: Error saving gesture:", e);
+        }
     }
 
     startVisualizationLoop() {

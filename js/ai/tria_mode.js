@@ -3,6 +3,7 @@
 
 // Импортируем объект state из модуля init.js
 import { state } from '../core/init.js';
+import { agenticDAO } from '../services/AgenticDAO.js';
 
 // Экспортируем функцию для получения состояния режима Триа
 export function isTriaModeActive() {
@@ -68,6 +69,14 @@ export async function applyPromptWithTriaMode(prompt, model) {
       }
 
       const data = await response.json();
+      
+      // E-2: Handle penalties from OpenClaw/Patrol via Metadata
+      if (data.metadata && data.metadata.utility_score_penalty) {
+          const penalty = data.metadata.utility_score_penalty;
+          const reason = data.metadata.patrol_report?.reason || "Security violation";
+          console.warn(`[TriaMode] Penalty detected in metadata: -${penalty} (${reason})`);
+          agenticDAO.registerPenalty(penalty, reason);
+      }
 
       // Скрываем спиннер и разблокируем кнопку
       if (spinner) spinner.style.display = 'none';
