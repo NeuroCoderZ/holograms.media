@@ -3,9 +3,9 @@ from typing import Any
 # Removed asyncpg
 import asyncio # ✅ Added import
 from backend.services.gesture_intent_service import GestureIntentService
-from backend.tria_agents.GestureAgent import GestureAgent
-from backend.tria_agents.MemoryAgent import MemoryAgent
-from backend.tria_agents.LearningAgent import LearningAgent # <-- Убедись, что импорт раскомментирован
+from backend.tria_agents.gesture_agent import GestureAgent
+from backend.tria_agents.memory_agent import MemoryAgent
+from backend.tria_agents.learning_agent import LearningAgent
 
 logger = logging.getLogger(__name__)
 
