@@ -1,7 +1,7 @@
 {
-  "version": "0.20.131",
-  "timestamp": "2026-03-19T20:48:05.764Z",
+  "version": "0.20.132",
+  "timestamp": "2026-03-19T20:56:40.741Z",
   "env": "production",
-  "build": 1773953285765,
-  "summary": "Force THREE global in index.html, final Astra/LLM sync"
+  "build": 1773953800741,
+  "summary": "Fix THREE imports, WebXR resilience, AutoReload cache-buster, and ChatRepo protective checks"
 }
