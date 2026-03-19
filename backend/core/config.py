@@ -1,6 +1,6 @@
 # backend/core/config.py
 import os
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 class Settings(BaseModel):
     # Security & Auth
@@ -43,5 +43,12 @@ class Settings(BaseModel):
     
     # Developers (Whitelisted Emails)
     DEV_USERS: list = os.getenv("DEV_USERS", "neurocoderz@gmail.com").split(",")
+
+    @field_validator("ASTRA_DB_API_ENDPOINT")
+    @classmethod
+    def validate_astra_endpoint(cls, v: str) -> str:
+        if v and not v.startswith("http"):
+            return f"https://{v}"
+        return v
 
 settings = Settings()
