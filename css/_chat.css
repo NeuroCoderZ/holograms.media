@@ -212,42 +212,65 @@
   position: absolute;
   left: 15px;
   bottom: 15px;
-  width: 40px;
+  width: 30px;
   height: 20px;
   z-index: 1000;
   display: none;
+  /* Reset dot animation styles */
 }
 
-@keyframes chat-dot-animation {
+/* Use the eye loader from _animations.css */
+#loadingIndicator::after {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 75% 15%; /* Eye shape */
+  transform: rotate(-45deg); /* Correct rotation for CSS eye */
+  position: relative;
+  box-sizing: border-box;
+  animation: eye-blink-loader 2s infinite ease-in-out;
+  background: transparent;
+}
 
-  0%,
-  20% {
-    content: "   ";
-  }
+/* Pupil */
+#loadingIndicator::before {
+  content: '';
+  position: absolute;
+  top: 7px; /* Center vert */
+  left: 7px; /* Center horiz */
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  z-index: 1001;
+  pointer-events: none;
+  /* Pupil stays static relative to eye? No, it should blink with it or stay visible? 
+     Let's keep it simple: simpler eye markup in ::after is better.
+     Actually, let's just match the structure in _animations.css or use a single element if possible.
+  */
+  display: none; /* Hide before, use ::after only for simplicity if possible, or redefine */
+}
 
-  40% {
-    content: ".  ";
-  }
-
-  60% {
-    content: ".. ";
-  }
-
-  80%,
-  100% {
-    content: "...";
-  }
+/* Redefine to match the visual style requested */
+#loadingIndicator {
+  /* Container positioning */
 }
 
 #loadingIndicator::after {
-  content: "";
-  animation: chat-dot-animation 1.5s infinite;
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--color-white-100);
-  font-family: 'Roboto', sans-serif;
-  display: inline-block;
-  letter-spacing: 3px;
+  /* Re-declare full eye style here to ensure overrides */
+  content: '';
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50% 50% 0 50%;
+  transform: rotate(-45deg);
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.9) 2px, transparent 3px);
+  animation: eye-blink-loader 1.5s infinite ease-in-out;
+  box-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
 
 /* Специфические стили для правой панели чата */

@@ -1,7 +1,6 @@
 {
-  "version": "0.20.133",
-  "timestamp": "2026-03-19T20:57:03.451Z",
+  "version": "0.20.138",
+  "timestamp": "2026-03-19T23:35:47.487Z",
   "env": "production",
-  "build": 1773953823452,
-  "summary": "Fix ChatRepository structure, THREE imports, WebXR resilience, and AutoReload cache-buster"
+  "build": 1773963347488
 }
