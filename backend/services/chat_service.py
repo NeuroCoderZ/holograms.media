@@ -126,23 +126,33 @@ class ChatService:
     async def add_message_to_session(
         self,
         session_id: int,
-        user: UserInDB,
-        message_content: str, # Changed from message_in: ChatMessageCreate
-        role: str = "user",   # Added role parameter
-        metadata: Optional[Dict[str, Any]] = None # Added metadata parameter
-    ) -> Optional[ChatMessagePublic]: # Return type is ChatMessagePublic, which is fine.
+        user: Union[UserInDB, Dict[str, Any]], # Allow both types
+        message_content: str, 
+        role: str = "user",
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Optional[ChatMessagePublic]:
 
-        logger.info(f"Service: Adding message to session {session_id} (user: {user.user_id}), role: {role}.")
+        # Safe extraction of user_id
+        if isinstance(user, dict):
+            user_id = user.get("user_id") or user.get("id")
+        else:
+            user_id = getattr(user, "user_id", None) or getattr(user, "id", None)
+
+        if not user_id:
+            logger.error(f"Service: Could not extract user_id from user object: {user}")
+            return None
+
+        logger.info(f"Service: Adding message to session {session_id} (user: {user_id}), role: {role}.")
 
         patrol_report = {}
         # --- OPENCLAW: ВХОДНОЙ ПАТРУЛЬ ---
         if role == "user":
             gesture_dna = metadata.get("gesture_dna") if metadata else None
-            patrol_report = patrol_agent.verify_incoming_block(user.user_id, gesture_dna, metadata or {"text_note": message_content})
+            patrol_report = patrol_agent.verify_incoming_block(user_id, gesture_dna, metadata or {"text_note": message_content})
             
             if patrol_report.get("status") in ["quarantine", "rejected"]:
                 penalty = patrol_report.get("utility_score_penalty", 0.0)
-                logger.warning(f"OpenClaw Patrol blocked message from {user.user_id}. Penalty: {penalty}")
+                logger.warning(f"OpenClaw Patrol blocked message from {user_id}. Penalty: {penalty}")
                 # Возвращаем системное сообщение о блокировке
                 rejection_msg = ChatMessageCreate(
                     user_chat_session_id=session_id, role="system",
@@ -153,7 +163,7 @@ class ChatService:
                         "type": "security_block"
                     }
                 )
-                saved_rejection = await self.repo.add_message_to_history(message_in=rejection_msg, user_id=user.user_id)
+                saved_rejection = await self.repo.add_message_to_history(message_in=rejection_msg, user_id=user_id)
                 return ChatMessagePublic(**saved_rejection.dict()) if saved_rejection else None
 
         # --- OPENCLAW: ЭКОНОМИСТ (Интерцепция) ---
@@ -164,7 +174,7 @@ class ChatService:
             
             # Сохраняем сообщение пользователя
             msg_create = ChatMessageCreate(user_chat_session_id=session_id, role=role, message_content=message_content, metadata=metadata or {})
-            await self.repo.add_message_to_history(message_in=msg_create, user_id=user.user_id)
+            await self.repo.add_message_to_history(message_in=msg_create, user_id=user_id)
             
             # Возвращаем ответ от Экономиста напрямую, минуя LLM
             econ_response_text = f"📊 **Отчет Экономиста:**\nСтоимость (Obolos): {econ_report['total_cost_obolos']:.8f}\nЗагрузка сети: {econ_report['network_load']}\nРекомендация: {econ_report['recommendation']}"
@@ -173,7 +183,7 @@ class ChatService:
                 message_content=econ_response_text,
                 metadata={"agent": "openclaw_economist", "report": econ_report}
             )
-            saved_econ = await self.repo.add_message_to_history(message_in=econ_msg, user_id=user.user_id)
+            saved_econ = await self.repo.add_message_to_history(message_in=econ_msg, user_id=user_id)
             return ChatMessagePublic(**saved_econ.dict()) if saved_econ else None
 
         # Construct ChatMessageCreate before passing to repository
@@ -185,16 +195,16 @@ class ChatService:
         )
 
         # Repository's add_message_to_history now takes ChatMessageCreate and user_id for check
-        user_saved_message = await self.repo.add_message_to_history(message_in=message_in_create, user_id=user.user_id)
+        user_saved_message = await self.repo.add_message_to_history(message_in=message_in_create, user_id=user_id)
 
         if not user_saved_message:
-            logger.warning(f"Service: Failed to save user message to session {session_id} for user {user.user_id}.")
+            logger.warning(f"Service: Failed to save user message to session {session_id} for user {user_id}.")
             return None # Indicates failure to save user message
 
         # If the message is from the user, then get LLM response
         if role == "user":
             logger.info(f"Service: User message saved (ID: {user_saved_message.id}), now getting LLM response.")
-            history_for_llm = await self.repo.get_messages_by_session_id(session_id=session_id, user_id=user.user_id, limit=20) # Get recent history
+            history_for_llm = await self.repo.get_messages_by_session_id(session_id=session_id, user_id=user_id, limit=20) # Get recent history
 
             selected_model = metadata.get("llm_model") if metadata else None
             try:
@@ -208,7 +218,7 @@ class ChatService:
                     message_content=f"Error: Could not get AI response. Details: {str(e)[:100]}...",
                     metadata={"error": True, "source": "llm_service_error"}
                 )
-                await self.repo.add_message_to_history(message_in=error_message_in, user_id=user.user_id) # System messages associated with user
+                await self.repo.add_message_to_history(message_in=error_message_in, user_id=user_id) # System messages associated with user
                 # Depending on desired behavior, could return user_saved_message or raise an error to be caught by router
                 return ChatMessagePublic(**user_saved_message.dict()) # Return the user's message if LLM fails
 
@@ -222,7 +232,7 @@ class ChatService:
                 message_content=final_response_content,
                 metadata={"llm_model_name": "simulated_tria_v1_stub", "patrol_check": out_patrol_report.get("status")}
             )
-            assistant_saved_message = await self.repo.add_message_to_history(message_in=assistant_message_in, user_id=user.user_id) # user_id for audit, though RLS won't apply to assistant messages in same way
+            assistant_saved_message = await self.repo.add_message_to_history(message_in=assistant_message_in, user_id=user_id) # user_id for audit, though RLS won't apply to assistant messages in same way
 
             if not assistant_saved_message:
                 logger.error(f"Service: User message saved, but failed to save assistant response for session {session_id}.")
