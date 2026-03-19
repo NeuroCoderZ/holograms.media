@@ -29,9 +29,15 @@ async def direct_chat_with_tria(
     Simplified endpoint that finds the last active session or creates a new one
     and sends the message. Used by the main Tria chat interface.
     """
+    import traceback
     try:
+        # DEBUG LOGS
+        print(f"[DEBUG CHAT] Starting request. Message: {message_in.message_content[:50]}...")
+        print(f"[DEBUG CHAT] Settings.ASTRA_DB_API_ENDPOINT: '{settings.ASTRA_DB_API_ENDPOINT[:10]}...' (len={len(settings.ASTRA_DB_API_ENDPOINT)})")
+        
         # Check DB connection immediately
         if db is None:
+             print("[DEBUG CHAT] DB is None!")
              raise HTTPException(status_code=503, detail="Database connection unavailable.")
 
         # Safe extraction of user_id (handle both dict and Pydantic model)
@@ -40,16 +46,21 @@ async def direct_chat_with_tria(
         else:
             user_id = getattr(current_user, "user_id", None) or getattr(current_user, "id", None)
 
+        print(f"[DEBUG CHAT] Identified User ID: {user_id}")
+
         if not user_id:
              raise HTTPException(status_code=500, detail="Could not identify user (auth error).")
 
         chat_service = ChatService(db)
         
         # 1. Find or create session
+        print("[DEBUG CHAT] Listing sessions...")
         sessions = await chat_service.list_user_chat_sessions(user_id=user_id, limit=1)
         if sessions:
             session_id = sessions[0].id
+            print(f"[DEBUG CHAT] Found existing session: {session_id}")
         else:
+            print("[DEBUG CHAT] No session found, creating new one...")
             new_session = await chat_service.create_new_chat_session(
                 user_id=user_id, 
                 session_title="Tria Quick Chat"
@@ -57,28 +68,31 @@ async def direct_chat_with_tria(
             if not new_session:
                  raise HTTPException(status_code=500, detail="Failed to create new chat session.")
             session_id = new_session.id
+            print(f"[DEBUG CHAT] Created new session: {session_id}")
         
         # 2. Add message and get response
+        print("[DEBUG CHAT] Adding message and getting AI response...")
         assistant_response = await chat_service.add_message_to_session(
             session_id=session_id, 
-            user=current_user, # Service now handles duck typing for user object
+            user=current_user, 
             message_content=message_in.message_content, 
             metadata=message_in.metadata
         )
         if not assistant_response:
-             # This means saving to DB failed or some other logical error in service
              raise HTTPException(status_code=500, detail="Failed to get or save assistant response (Service returned None).")
              
+        print("[DEBUG CHAT] Success!")
         return assistant_response
 
     except HTTPException as he:
+        print(f"[DEBUG CHAT] HTTPException: {he.detail}")
         raise he
     except Exception as e:
-        import traceback
         error_details = traceback.format_exc()
         print(f"[DIRECT CHAT CRITICAL ERROR] {error_details}")
         # Return a structured error so the frontend receives JSON, not just "Internal Server Error"
-        raise HTTPException(status_code=500, detail=f"Internal Backend Error: {str(e)}")
+        # INCLUDE TRACEBACK IN DETAIL FOR ONE-TIME DEBUGGING
+        raise HTTPException(status_code=500, detail=f"DEBUG TRACEBACK: {error_details}")
 
 
 @router.post("/", response_model=chat_models.UserChatSessionDB, status_code=status.HTTP_201_CREATED)
