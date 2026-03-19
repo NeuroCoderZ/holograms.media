@@ -46,7 +46,7 @@ export const fragmentShader = /* glsl */`
 
         finalColor += uSelection * 0.3; // Подсветка выбора
         
-        gl_FragColor = vec4(finalColor * uBrightnessBoost, uOpacity);
+        gl_FragColor = vec4(finalColor * uBrightnessBoost, 1.0);
     }
 `;
 
