@@ -1,60 +1,54 @@
 /**
  * hologramShaders.js — BasilaQ-128 GLSL шейдеры
  * ================================================
- * Reference Rendering v11: Uniform Coloring, No Outlines.
+ * Pure Reconstruction v17.0 (Restored)
+ * No outlines, uniform coloring logic from March 17.
  */
 
 export const vertexShader = /* glsl */`
-    varying float vVocalZScale;
-    attribute float aColumnScaleZ;
-    
+    varying float vWorldZHeight;
     uniform float uColumnScaleZ;
     uniform float uInversePerspective; // 0.0 = Ortho, 1.0 = Reverse
-    uniform float uMorphFactor; // 0.0 (Flat) -> 1.0 (Cylinder)
-    uniform float uRadius;      // 1000.0 default
 
     void main() {
-        // Равномерный масштаб для всего инстанса (столбца)
-        vVocalZScale = aColumnScaleZ > 0.0 ? aColumnScaleZ : uColumnScaleZ;
+        // vWorldZHeight используем для яркости. 
+        // При восстановлении мы убираем зависимость от position.z для равномерного цвета,
+        // но сохраняем структуру старого шейдера.
+        vWorldZHeight = uColumnScaleZ;
         
-        vec4 localPos = vec4(position, 1.0);
-        vec4 mPos = instanceMatrix * localPos;
-        
-        // Цилиндрический морфинг
-        if (uMorphFactor > 0.01) {
-            float theta = (mPos.x / 128.0) * 3.14159265;
-            float r = uRadius - mPos.z;
-            vec3 torusPos;
-            torusPos.x = r * sin(theta);
-            torusPos.y = mPos.y;
-            torusPos.z = -r * cos(theta) + uRadius;
-            mPos.xyz = mix(mPos.xyz, torusPos, uMorphFactor);
-        }
-
-        vec4 mvPosition = modelViewMatrix * mPos;
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mvPosition;
     }
 `;
 
 export const fragmentShader = /* glsl */`
-    varying float vVocalZScale;
-    uniform vec3 uBaseColor;
+    uniform vec3  uBaseColor;
     uniform float uSelection;
     uniform float uOpacity;
+    uniform float uIsGreeting;
     uniform float uBrightnessBoost;
+    varying float vWorldZHeight;
 
     void main() {
-        // Базилак-128: Яркость пропорциональна длине (Cells / 128)
-        // Равномерная заливка всей поверхности столбца
-        float intensity = clamp(vVocalZScale / 128.0, 0.0, 1.0);
-
-        // Теневой коэффициент (Shadow Coefficient 0.9)
-        float shadow = 0.9; 
+        // 1. Базовая яркость (BasilaQ-128)
+        float z = vWorldZHeight;
+        float cellIndex = floor(z);
         
-        vec3 finalColor = uBaseColor * intensity * shadow * uBrightnessBoost;
+        // index 127 (0 dB) -> 128/128 (1.0)
+        // index 0 (-127 dB) -> 1/128 (0.0078)
+        vec3 finalColor;
+        float bIndex = clamp(cellIndex, 0.0, 127.0);
+        float brightness = (bIndex + 1.0) / 128.0; 
+        finalColor = uBaseColor * brightness;
+
+        // Режим приветствия: поверхность цветная (без затухания)
+        if (uIsGreeting > 0.5) {
+            finalColor = uBaseColor;
+        }
+
         finalColor += uSelection * 0.3; // Подсветка выбора
         
-        gl_FragColor = vec4(finalColor, uOpacity);
+        gl_FragColor = vec4(finalColor * uBrightnessBoost, uOpacity);
     }
 `;
 
@@ -68,22 +62,18 @@ export function makeColumnUniforms(baseColor) {
         uBrightnessBoost: { value: 1.0 },
         uColumnScaleZ: { value: 0.1 },
         uInversePerspective: { value: 0.0 },
-        uMorphFactor: { value: 0.0 },
-        uRadius: { value: 1000.0 },
     };
 }
 
-/** Legacy (обводка ребер более не используется, но оставляем для совместимости экспорта) */
+/** То же самое для рёбер (Legacy: edges removed in renderer) */
 export function makeEdgeUniforms(baseColor) {
     return {
         uBaseColor: { value: baseColor },
         uSelection: { value: 0.0 },
         uOpacity: { value: 1.0 },
         uIsGreeting: { value: 1.0 },
-        uBrightnessBoost: { value: 1.1 },
+        uBrightnessBoost: { value: 1.0 },
         uColumnScaleZ: { value: 0.1 },
         uInversePerspective: { value: 0.0 },
-        uMorphFactor: { value: 0.0 },
-        uRadius: { value: 1000.0 },
     };
 }
