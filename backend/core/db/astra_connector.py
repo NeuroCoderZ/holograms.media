@@ -27,17 +27,29 @@ def get_astra_db(client: DataAPIClient = None):
         if client is None:
             return None
 
-    api_endpoint = settings.ASTRA_DB_API_ENDPOINT
-    if not api_endpoint:
-        logger.error("ASTRA_DB_API_ENDPOINT is missing in settings.")
+    try:
+        # Prefer connecting by ID and Region if available
+        db_id = settings.ASTRA_DB_ID.strip()
+        region = settings.ASTRA_DB_REGION.strip()
+        keyspace = settings.ASTRA_DB_KEYSPACE.strip()
+
+        if db_id and region:
+            logger.info(f"Connecting to Astra DB via ID: {db_id} (Region: {region})")
+            db = client.get_async_database(db_id, region=region, keyspace=keyspace)
+            return db
+        
+        # Fallback to Endpoint
+        api_endpoint = settings.ASTRA_DB_API_ENDPOINT.strip()
+        if api_endpoint:
+            logger.info(f"Connecting to Astra DB via Endpoint: {api_endpoint}")
+            db = client.get_async_database(api_endpoint, keyspace=keyspace)
+            return db
+        
+        logger.error("Neither ASTRA_DB_ID/REGION nor ASTRA_DB_API_ENDPOINT are provided.")
         return None
 
-    try:
-        # For astrapy 1.0+, use get_async_database to get an AsyncDatabase instance
-        db = client.get_async_database(api_endpoint, keyspace=settings.ASTRA_DB_KEYSPACE)
-        return db
     except Exception as e:
-        logger.error(f"Failed to connect to Astra DB at {api_endpoint}: {e}")
+        logger.error(f"Failed to connect to Astra DB: {e}")
         return None
 
 async def get_db(request: Request = None, websocket: WebSocket = None):
