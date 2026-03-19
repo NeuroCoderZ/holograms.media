@@ -1,6 +1,6 @@
 import logging
 from typing import List, Dict, Any
-from mistralai import Mistral
+from mistralai.client import Mistral
 from backend.core.config import settings
 from backend.core.models import ChatMessageDB
 
