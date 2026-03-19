@@ -34,15 +34,24 @@ async def direct_chat_with_tria(
         if db is None:
              raise HTTPException(status_code=503, detail="Database connection unavailable.")
 
+        # Safe extraction of user_id (handle both dict and Pydantic model)
+        if isinstance(current_user, dict):
+            user_id = current_user.get("user_id") or current_user.get("id")
+        else:
+            user_id = getattr(current_user, "user_id", None) or getattr(current_user, "id", None)
+
+        if not user_id:
+             raise HTTPException(status_code=500, detail="Could not identify user (auth error).")
+
         chat_service = ChatService(db)
         
         # 1. Find or create session
-        sessions = await chat_service.list_user_chat_sessions(user_id=current_user.user_id, limit=1)
+        sessions = await chat_service.list_user_chat_sessions(user_id=user_id, limit=1)
         if sessions:
             session_id = sessions[0].id
         else:
             new_session = await chat_service.create_new_chat_session(
-                user_id=current_user.user_id, 
+                user_id=user_id, 
                 session_title="Tria Quick Chat"
             )
             if not new_session:
@@ -52,7 +61,7 @@ async def direct_chat_with_tria(
         # 2. Add message and get response
         assistant_response = await chat_service.add_message_to_session(
             session_id=session_id, 
-            user=current_user, 
+            user=current_user, # Service now handles duck typing for user object
             message_content=message_in.message_content, 
             metadata=message_in.metadata
         )
