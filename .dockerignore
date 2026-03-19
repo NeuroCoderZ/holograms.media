@@ -1,23 +1,13 @@
-# Исключения для Git
 .git
-.gitignore
-
-# Исключения для Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.venv/
-venv/
-env/
-
-# Исключения для IDE и системных файлов
-.idea/
-.vscode/
-*.DS_Store
-
-# Файлы проекта, не нужные в Docker-контексте бэкенда
-frontend/
-docs/
-node_modules/
-*.md
+.github
+node_modules
+target
+holocore/target
+holographic_core/target
+__pycache__
+**/*.pyc
+.env*
+*.exe
+*.zip
+conductor
+repomix-context.xml
