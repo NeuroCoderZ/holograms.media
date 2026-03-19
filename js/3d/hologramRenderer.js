@@ -64,25 +64,25 @@ export class HologramRenderer {
   // ─── Scene Construction ──────────────────────────────────────────────────
 
   _createSequencerGrids() {
-    const origin = new THREE.Vector3(0, -GRID_HEIGHT, 0);
+    const origin = new THREE.Vector3(0, -GRID_HEIGHT / 2, 0);
 
     this.leftSequencerGroup = new THREE.Group();
     this.leftSequencerGroup.position.copy(origin);
-    this.leftSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, true));
-    this.leftSequencerGroup.add(createGridVisualization(-GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xBF00FF));
+    this.leftSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, true));
+    this.leftSequencerGroup.add(createGridVisualization(-GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE, 0xBF00FF));
     this.mainSequencerGroup.add(this.leftSequencerGroup);
 
     this.rightSequencerGroup = new THREE.Group();
     this.rightSequencerGroup.position.copy(origin);
-    this.rightSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, false));
-    this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xFF0000));
+    this.rightSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, false));
+    this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH, CELL_SIZE, 0xFF0000));
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
     // Позиционные маркеры
     const blue = createSphereForAxis(3.024, 0x0000ff);
     const white = createSphereForAxis(2.4192, 0xffffff);
-    blue.position.set(0, -GRID_HEIGHT, 0);
-    white.position.set(0, -GRID_HEIGHT, 0);
+    blue.position.set(0, -GRID_HEIGHT / 2, 0);
+    white.position.set(0, -GRID_HEIGHT / 2, 0);
     this.mainSequencerGroup.add(blue);
     this.mainSequencerGroup.add(white);
 
@@ -223,7 +223,7 @@ export class HologramRenderer {
     const xL = -w/2 - Math.round(Math.abs(Math.min(0, p)) * maxAvailableShift * 2);
     const xR = w/2 + Math.round(Math.abs(Math.max(0, p)) * maxAvailableShift * 2);
 
-    dummy.scale.set(w, 1, 1);
+    dummy.scale.set(w, 1, hL);
     
     // Left
     dummy.position.set(xL, (i + 0.5) * CELL_HEIGHT, hL/2);
@@ -234,6 +234,7 @@ export class HologramRenderer {
     eScales.setX(i, hL);
 
     // Right
+    dummy.scale.set(w, 1, hR);
     dummy.position.set(xR, (i + 0.5) * CELL_HEIGHT, hR/2);
     dummy.updateMatrix();
     this.columnsIM.setMatrixAt(rightIndex, dummy.matrix);

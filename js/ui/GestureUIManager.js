@@ -187,9 +187,9 @@ class GestureUIManager {
             this.gestureAreaElement.classList.remove('hands-detected');
             document.querySelector('.main-area')?.classList.remove('squashed');
 
-            // BUGFIX: Не схлопываем панель, если идет запись!
-            if (this.isRecording) {
-                console.log("GestureUIManager: Hands lost but keeping panel open during recording.");
+            // BUGFIX: Не схлопываем панель, если идет запись ИЛИ если есть записанная траектория
+            if (this.isRecording || this.recordedPaths.size > 0) {
+                console.log("GestureUIManager: Hands lost but keeping panel open (recording or data present).");
                 return; // Не запускаем анимацию закрытия
             }
         }
@@ -309,10 +309,9 @@ class GestureUIManager {
             gestButton.click();
         }
 
-        // Если рук нет, теперь можно схлопнуть панель
-        if (!this.detectedHands || this.detectedHands.count === 0) {
-            this.animateGestureArea(false);
-        }
+        // Если рук нет, теперь можно схлопнуть панель ТРИА:
+        // Убрали проверку, чтобы панель ОСТАВАЛАСЬ открытой с результатами
+        console.log("GestureUIManager: Recording finished. Keeping panel open.");
     }
 
     /**

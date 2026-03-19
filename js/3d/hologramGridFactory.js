@@ -8,7 +8,7 @@
 import * as THREE from 'three';
 
 /** Высота одной ячейки по оси Y (1 dB = 1 unit) */
-export const CELL_HEIGHT = 2.0;
+export const CELL_HEIGHT = 1.0;
 
 /** Opacity сетки (едва видима — только намечает объём) */
 const GRID_OPACITY = 0.0023; // Calibration v0.19.035: ultra-subtle balance.
