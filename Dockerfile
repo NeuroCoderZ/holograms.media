@@ -1,27 +1,18 @@
-# Этап 1: "Строительный" этап для Python
-FROM python:3.11-slim-bullseye AS builder
-
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-WORKDIR /app
-
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip show mistralai
-
-# Этап 2: Финальный образ
-FROM python:3.11-slim-bullseye AS final
+# Финальный образ
+FROM python:3.11-slim-bullseye
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONPATH=/app
 WORKDIR /app
 
-# Копируем установленные библиотеки
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Устанавливаем зависимости прямо здесь, чтобы избежать проблем с multi-stage site-packages
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    python -c "from mistralai.client import Mistral; print('Mistral import OK')"
+
+# Копируем ТОЛЬКО необходимые файлы для запуска бэкенда и статики
 
 # Копируем ТОЛЬКО необходимые файлы для запуска бэкенда и статики
 COPY ./backend /app/backend

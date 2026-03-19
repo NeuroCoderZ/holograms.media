@@ -1,6 +1,6 @@
 import logging
 from typing import List, Dict, Any
-from mistralai import Mistral
+from mistralai.client import Mistral
 from backend.core.config import settings
 from backend.core.models import ChatMessageDB
 
@@ -45,9 +45,9 @@ async def get_mistral_response(user_message: str, history: List[ChatMessageDB], 
         # Stream response
         full_text = ""
         async for chunk in response:
-            # В v2.0.4 доступ к choices идет напрямую, без .data
-            if chunk.choices and chunk.choices[0].delta.content is not None:
-                full_text += chunk.choices[0].delta.content
+            # В v2.0.4 доступ к choices идет через .data
+            if chunk.data.choices and chunk.data.choices[0].delta.content is not None:
+                full_text += chunk.data.choices[0].delta.content
                 
         return full_text
 
