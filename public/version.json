@@ -1,7 +1,7 @@
 {
-  "version": "0.20.128",
-  "timestamp": "2026-03-19T20:37:50.473Z",
+  "version": "0.20.129",
+  "timestamp": "2026-03-19T20:38:13.488Z",
   "env": "production",
-  "build": 1773952670474,
-  "summary": "Fix Mistral streaming (v2.0.4), async Gemini client, and routing Architecture queries to Mistral"
+  "build": 1773952693489,
+  "summary": "Integrate Mistral for ArchitectureAgent, fix async Gemini, and final version bump"
 }
