@@ -1,7 +1,7 @@
 {
-  "version": "0.20.130",
-  "timestamp": "2026-03-19T20:43:22.983Z",
+  "version": "0.20.131",
+  "timestamp": "2026-03-19T20:48:05.764Z",
   "env": "production",
-  "build": 1773953002984,
-  "summary": "Fix 500 error in ChatRepository (missing awaits), async Astra DB fixes, and add JWT_SECRET_KEY"
+  "build": 1773953285765,
+  "summary": "Force THREE global in index.html, final Astra/LLM sync"
 }
