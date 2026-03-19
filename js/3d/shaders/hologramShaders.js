@@ -1,98 +1,57 @@
 /**
  * hologramShaders.js — BasilaQ-128 GLSL шейдеры
  * ================================================
- * Linear Physics: 1 dB = 1 ячейка (Z-scale = 128 + dB).
- * Яркость пропорциональна длине столбца (Intensity = Cells / 128).
+ * Reference Rendering v11: Uniform Coloring, No Outlines.
  */
 
 export const vertexShader = /* glsl */`
-    varying float vWorldZHeight;
-    varying vec3 vColor;
+    varying float vVocalZScale;
     attribute float aColumnScaleZ;
-    attribute vec3 aInstanceColor;
     
     uniform float uColumnScaleZ;
-    uniform float uInversePerspective;
+    uniform float uInversePerspective; // 0.0 = Ortho, 1.0 = Reverse
     uniform float uMorphFactor; // 0.0 (Flat) -> 1.0 (Cylinder)
     uniform float uRadius;      // 1000.0 default
 
     void main() {
-        vColor = aInstanceColor;
-        float finalScale = aColumnScaleZ > 0.0 ? aColumnScaleZ : uColumnScaleZ;
-        vWorldZHeight = (position.z + 0.5) * finalScale;
+        // Равномерный масштаб для всего инстанса (столбца)
+        vVocalZScale = aColumnScaleZ > 0.0 ? aColumnScaleZ : uColumnScaleZ;
         
-        // 1. Позиция в локальном пространстве инстанса
         vec4 localPos = vec4(position, 1.0);
-        
-        // 2. Мировая позиция относительно группы (SequencerGroup)
         vec4 mPos = instanceMatrix * localPos;
         
-        // 3. ЛОГИКА ЦИЛИНДРИЧЕСКОГО МОРФИНГА (BasilaQ Torus)
+        // Цилиндрический морфинг
         if (uMorphFactor > 0.01) {
             float theta = (mPos.x / 128.0) * 3.14159265;
             float r = uRadius - mPos.z;
-            
             vec3 torusPos;
             torusPos.x = r * sin(theta);
             torusPos.y = mPos.y;
-            torusPos.z = -r * cos(theta) + uRadius; // Смещение для совпадения с плоскостью Z=0
-            
+            torusPos.z = -r * cos(theta) + uRadius;
             mPos.xyz = mix(mPos.xyz, torusPos, uMorphFactor);
         }
 
         vec4 mvPosition = modelViewMatrix * mPos;
-        
-        if (uInversePerspective > 0.5) {
-            float farAnchor = -2000.0;
-            float nearAnchor = -100.0;
-            float factor = smoothstep(farAnchor, nearAnchor, mvPosition.z);
-            float perspScale = mix(1.0, 0.65, factor);
-        }
-
         gl_Position = projectionMatrix * mvPosition;
     }
 `;
 
 export const fragmentShader = /* glsl */`
-    uniform vec3  uBaseColor;
+    varying float vVocalZScale;
+    uniform vec3 uBaseColor;
     uniform float uSelection;
     uniform float uOpacity;
-    uniform float uIsGreeting;
     uniform float uBrightnessBoost;
-    varying float vWorldZHeight;
-    varying vec3  vColor;
 
     void main() {
-        // 1. Базовые координаты (BasilaQ-128)
-        float z = vWorldZHeight;
-        vec3 baseColor = (vColor.r + vColor.g + vColor.b) > 0.0 ? vColor : uBaseColor;
-        float cellIndex = floor(z);
+        // Базилак-128: Яркость пропорциональна длине (Cells / 128)
+        // Равномерная заливка всей поверхности столбца
+        float intensity = clamp(vVocalZScale / 128.0, 0.0, 1.0);
+
+        // Теневой коэффициент (Shadow Coefficient 0.9)
+        float shadow = 0.9; 
         
-        // 2. ЛОГИКА ОБВОДКИ (Опережение на 1 дБ)
-        // Используем uBrightnessBoost как маркер: 1.1 означает, что это ребро.
-        bool isEdge = (uBrightnessBoost > 1.01);
-        if (isEdge) {
-            cellIndex += 1.0; 
-        }
-
-        // index 127 (0 dB) -> 128/128 (1.0)
-        // index 0 (-127 dB) -> 1/128 (0.0078)
-        vec3 finalColor;
-        float bIndex = clamp(cellIndex, 0.0, 127.0);
-        float brightness = (bIndex + 1.0) / 128.0; 
-        finalColor = baseColor * brightness;
-
-        // Режим приветствия: поверхность цветная, ребра чуть ярче (+1дБ)
-        if (uIsGreeting > 0.5) {
-            if (isEdge) {
-                // Вместо белого (vec3(1.0)) делаем "цвет + яркость +1дБ"
-                // Это примерно 1.25 от базы, но не превышая белый
-                finalColor = clamp(baseColor * 1.35, 0.0, 1.0);
-            } else {
-                finalColor = baseColor;
-            }
-        }
-
+        vec3 finalColor = uBaseColor * intensity * shadow * uBrightnessBoost;
         finalColor += uSelection * 0.3; // Подсветка выбора
         
         gl_FragColor = vec4(finalColor, uOpacity);
@@ -114,7 +73,7 @@ export function makeColumnUniforms(baseColor) {
     };
 }
 
-/** То же самое для рёбер — чуть ярче (+10%) */
+/** Legacy (обводка ребер более не используется, но оставляем для совместимости экспорта) */
 export function makeEdgeUniforms(baseColor) {
     return {
         uBaseColor: { value: baseColor },
