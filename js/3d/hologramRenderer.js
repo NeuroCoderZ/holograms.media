@@ -1,7 +1,7 @@
 /**
- * hologramRenderer.js — HologramRenderer v19.0 (Restored from March 17)
- * ======================================================================
- * Откат на индивидуальные Meshes + удаление обводки (ребер).
+ * hologramRenderer.js — HologramRenderer v19.1 (Refined)
+ * =======================================================
+ * Исправлены отступы (scale 0.95), затенение (только Z) и прозрачность.
  */
 
 import { state } from '../core/init.js';
@@ -16,7 +16,7 @@ import { CELL_HEIGHT, createCentralMarkerSphere, createSphereForAxis, createGrid
 export class HologramRenderer {
 
   constructor(scene, roomId, userId) {
-    console.log('[HologramRenderer] v19.0: Restored — March 17 stable core (No Edges)');
+    console.log('[HologramRenderer] v19.1: Refined — Stable Core (No Y-Shading, Opaque)');
     this.scene = scene;
     this.eventBus = eventBus;
     this.netHoloGlyphClient = netHoloGlyphClient;
@@ -32,23 +32,24 @@ export class HologramRenderer {
     this.mainSequencerGroup = new THREE.Group();
     this.hologramPivot.add(this.mainSequencerGroup);
 
-    // 5% Margins: Scale down slightly to ensure air space without excess gap.
+    this.columns = [];
+    this._createSequencerGrids();
+    this._initializeColumns();
+
+    // 5% Margins: Scale down slightly to ensure air space (0.95 height usage).
     this.mainSequencerGroup.scale.set(0.95, 0.95, 0.95);
 
     this.scene.add(this.hologramPivot);
-  }
 
     this.eventBus.on('audioData', (data) => { this.latestCwtData = data; });
     this.netHoloGlyphClient.connect(this.roomId, this.userId);
   }
 
   _createSequencerGrids() {
-    // origin = -128. Grid height 256. Proportions 2:1.
     const origin = new THREE.Vector3(0, -GRID_HEIGHT, 0);
 
     this.leftSequencerGroup = new THREE.Group();
     this.leftSequencerGroup.position.copy(origin);
-    // Green Axis (Y) should cover the same height as the grid visualization (256)
     this.leftSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, true));
     this.leftSequencerGroup.add(createGridVisualization(-GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xBF00FF));
     this.mainSequencerGroup.add(this.leftSequencerGroup);
@@ -92,7 +93,7 @@ export class HologramRenderer {
       vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
     }));
     mesh.name = "AudioColumnMesh";
-    mesh.position.set(0, 0, 0.5); // Align front-center
+    mesh.position.set(0, 0, 0.5);
     mesh.scale.set(1, 1, 0.1);
 
     group.add(mesh);
@@ -111,13 +112,13 @@ export class HologramRenderer {
     const panAngles = audioData?.pans || new Float32Array(256).fill(0);
 
     this.columns.forEach((pair, i) => {
-      const config = semitones[i];
       const leftMesh = pair.left.children[0];
       const rightMesh = pair.right.children[0];
 
       if (!isActive) {
         this._applyGreetingMode(leftMesh, rightMesh, pair);
       } else {
+        const config = semitones[i];
         this._applyActiveMode(pair, i, config, dbLevels, panAngles, leftMesh, rightMesh);
       }
     });
@@ -165,8 +166,5 @@ export class HologramRenderer {
 
   getHologramPivot() { return this.hologramPivot; }
 
-  async toggleXRMode() {
-    // Legacy support or new implementation
-    return false;
-  }
+  async toggleXRMode() { return false; }
 }
