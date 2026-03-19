@@ -1,6 +1,7 @@
 {
-  "version": "6766ddb",
-  "timestamp": "2026-03-16T21:05:27.287Z",
+  "version": "0.20.126",
+  "timestamp": "2026-03-19T20:29:18.051Z",
   "env": "production",
-  "build": 1773695127287
+  "build": 1773952158052,
+  "summary": "Stable Rendering Restoration, Z-layers, Margin Fix, Shading Refinement"
 }
