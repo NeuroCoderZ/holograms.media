@@ -14,7 +14,7 @@ def normalize_vector(v: List[float]) -> List[float]:
     return [x / magnitude for x in v]
 
 # Импорт Google AI SDK
-import google.generativeai as genai
+from google import genai
 
 # Импорты для логирования
 from backend.repositories.learning_log_repository import LearningLogRepository
