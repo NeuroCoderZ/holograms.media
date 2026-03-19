@@ -58,12 +58,12 @@ class GestureIntentService:
     # async def _get_embedding(self, text: str) -> Optional[List[float]]:
     #     """Вспомогательная функция для получения эмбеддинга текста."""
     #     try:
-    #         result = await genai.embed_content_async(
+    #         result = client.models.embed_content(
     #             model=self.embedding_model_name,
-    #             content=text,
-    #             task_type="RETRIEVAL_QUERY" # или "SEMANTIC_SIMILARITY" в зависимости от задачи
+    #             contents=text,
+    #             config=genai.types.EmbedContentConfig(task_type="RETRIEVAL_QUERY")
     #         )
-    #         return result['embedding']
+    #         return result.embeddings[0].values
     #     except Exception as e:
     #         logger.error(f"Failed to get embedding for text '{text[:50]}...': {e}")
     #         return None
