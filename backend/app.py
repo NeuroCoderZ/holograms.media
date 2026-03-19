@@ -214,15 +214,32 @@ async def tria_chat_alias(request: Request):
     Proxies requests directly to the Tria Orchestrator.
     """
     from backend.llm.gemini_llm import LLM_CONTEXT
+    
     body = await request.json()
     message = body.get("message", "")
     
+    # Пытаемся получить пользователя из заголовка Authorization, если он есть
+    user_email = ""
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            from backend.auth.security import decode_access_token
+            token = auth_header.split(" ")[1]
+            payload = decode_access_token(token)
+            user_email = payload.get("sub", "")
+        except:
+            pass
+
     orchestrator = request.app.state.tria_orchestrator
     if not orchestrator:
         return {"response": "[Tria] Сервис временно недоступен.", "metadata": {}}
     
-    # Process with the global project context
-    response = await orchestrator.process_user_prompt(message, context=LLM_CONTEXT)
+    # Process with the global project context and optional user role
+    response = await orchestrator.process_user_prompt(
+        message, 
+        context=LLM_CONTEXT,
+        user_email=user_email
+    )
     
     # Return in the format expected by tria_mode.js
     return {

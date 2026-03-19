@@ -45,14 +45,32 @@ class TriaOrchestrator:
 
         logger.info("TriaOrchestrator initialized with agents, ContextManager, and LiveCodeAnalyzer.")
 
-    async def process_user_prompt(self, prompt: str, context: Optional[str] = None) -> str:
+    async def process_user_prompt(
+        self, 
+        prompt: str, 
+        context: Optional[str] = None,
+        user_email: str = ""
+    ) -> str:
         """
         Routes a direct user prompt to the best available agent.
-        Uses ArchitectureAgent as default, with fallback chain.
-        Now supports external LLM_CONTEXT (E-1).
+        Supports Role-Based Routing (Global vs Personal Tria).
         """
+        from backend.core.config import settings
+        
+        # Determine user role
+        is_developer = user_email in settings.DEV_USERS
+        mode_label = "ГЛОБАЛЬНАЯ" if is_developer else "ПЕРСОНАЛЬНАЯ"
+        
+        role_context = (
+            f"[РЕЖИМ: {mode_label} ТРИА. Ты работаешь с {'разработчиком' if is_developer else 'пользователем'}. "
+            f"{'Отвечай технически, с полным доступом к архитектуре.' if is_developer else 'Отвечай как персональный AI-ассистент.'}]"
+        )
+        
+        full_context = f"{role_context}\n\n{context or ''}"
+        
         display_prompt = str(prompt)[:80]
-        logger.info(f"[Orchestrator] Routing prompt: '{display_prompt}...'")
+        logger.info(f"[Orchestrator] Routing prompt ({mode_label}): '{display_prompt}...'")
+        
         try:
             # 1. Classify the query to pick the right agent
             query_type, score = self.classifier.classify(prompt)
@@ -66,7 +84,7 @@ class TriaOrchestrator:
             # 3. Process via agent
             agent_response: AgentResponse = await agent.process_query(
                 prompt,
-                {"source": "direct_prompt", "session_id": None, "llm_context": context}
+                {"source": "direct_prompt", "session_id": None, "llm_context": full_context}
             )
             return agent_response.answer
 

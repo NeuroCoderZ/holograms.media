@@ -42,6 +42,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+def decode_access_token(token: str):
+    """Декодирует JWT токен."""
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
 async def verify_google_token(token: str) -> Dict[str, Any]:
     """Проверяет ID токен от Google."""
     if not token:
