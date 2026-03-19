@@ -106,7 +106,23 @@ app = FastAPI(
 # --- CORS Middleware ---
 from fastapi.middleware.cors import CORSMiddleware
 from backend.core.config import settings
-origins = settings.CORS_ORIGINS
+
+# Explicitly defining origins for robust CORS handling
+origins = [
+    "https://holograms.media",
+    "https://www.holograms.media",
+    "https://dev.holograms.media",
+    "https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app",
+    "http://localhost:5173",
+    "http://localhost:3000"
+]
+
+# Merge with settings if needed, but ensure dev.holograms.media is there
+if settings.CORS_ORIGINS:
+    for o in settings.CORS_ORIGINS:
+        if o not in origins:
+            origins.append(o)
+
 logger.info(f"Configuring CORS with origins: {origins}")
 
 app.add_middleware(
@@ -115,6 +131,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 @app.middleware("http")
@@ -189,6 +206,32 @@ async def serve_index():
 @app.get("/style.css")
 async def serve_style():
     return FileResponse(os.path.join(base_dir, "style.css"))
+
+@app.post("/chat", tags=["Tria AI"])
+async def tria_chat_alias(request: Request):
+    """
+    Compatibility alias for Tria Mode.
+    Proxies requests directly to the Tria Orchestrator.
+    """
+    from backend.llm.gemini_llm import LLM_CONTEXT
+    body = await request.json()
+    message = body.get("message", "")
+    
+    orchestrator = request.app.state.tria_orchestrator
+    if not orchestrator:
+        return {"response": "[Tria] Сервис временно недоступен.", "metadata": {}}
+    
+    # Process with the global project context
+    response = await orchestrator.process_user_prompt(message, context=LLM_CONTEXT)
+    
+    # Return in the format expected by tria_mode.js
+    return {
+        "response": response,
+        "metadata": {
+            "source": "TriaOrchestrator",
+            "model": "gemini-2.0-flash"
+        }
+    }
 
 @app.get("/favicon.ico")
 async def serve_favicon():

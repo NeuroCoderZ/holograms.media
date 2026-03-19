@@ -1,4 +1,4 @@
-from astrapy import Database
+from astrapy import AsyncDatabase as Database
 from typing import List, Optional, Dict, Any
 import logging
 from pydantic import BaseModel, Field
@@ -30,11 +30,12 @@ class EmbeddingRepository:
         try:
             # Astra DB Data API vector search
             # We use find with sort on $vector
-            results = list(self.collection.find(
+            cursor = self.collection.find(
                 sort={"$vector": query_embedding},
                 limit=1,
                 include_similarity=True
-            ))
+            )
+            results = await cursor.to_list(length=1)
             
             if results:
                 row = results[0]
@@ -49,7 +50,7 @@ class EmbeddingRepository:
         Updates the vector of an existing embedding.
         """
         try:
-            result = self.collection.update_one(
+            result = await self.collection.update_one(
                 {"_id": embedding_id},
                 {"$set": {"$vector": new_vector}}
             )
@@ -63,7 +64,7 @@ class EmbeddingRepository:
         Retrieves an embedding by its ID.
         """
         try:
-            row = self.collection.find_one({"_id": embedding_id})
+            row = await self.collection.find_one({"_id": embedding_id})
             if row:
                 return EmbeddingDB(**row)
             return None

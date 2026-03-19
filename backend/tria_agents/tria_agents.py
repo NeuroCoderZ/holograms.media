@@ -1,8 +1,8 @@
 # backend/tria_agents/tria_agents.py
 import logging
 from typing import Dict, Any, List, Optional
-# httpx REMOVED: Self-request deadlock fix
 from abc import ABC, abstractmethod
+from backend.llm.gemini_llm import get_gemini_response
 
 # Assuming TriaRequest and TriaResponse are defined in tria_rag_service.py
 # We will import them directly for consistency.
@@ -48,14 +48,13 @@ class FrontendAgent(BaseTriaAgent):
 
     async def process_query(self, query: str, context: Dict) -> AgentResponse:
         logger.info(f"FrontendAgent processing query: {query}")
-        # Use RAG service to get relevant frontend context
-        rag_response = await self._query_rag_service(query, context.get("session_id"))
-
-        if rag_response and rag_response.answer:
-            answer = f"Frontend-агент анализирует: '{query}'. Ответ RAG: {rag_response.answer}"
-            return AgentResponse(answer=answer, sources=rag_response.sources, agent_name=self.domain)
-        else:
-            return AgentResponse(answer=f"Frontend-агент не смог найти релевантную информацию по запросу: '{query}'.", confidence=0.0, agent_name=self.domain)
+        llm_context = context.get("llm_context", "Ты Frontend-агент Триа.")
+        
+        # Индивидуальная инструкция для агента
+        system_instr = f"{llm_context}\n\nТвоя специализация: Frontend (React, Three.js, CSS, UI/UX). Отвечай на вопрос пользователя максимально экспертно."
+        
+        answer = await get_gemini_response(query, system_instruction=system_instr)
+        return AgentResponse(answer=answer, agent_name=self.domain)
 
 class BackendAgent(BaseTriaAgent):
     def __init__(self):
@@ -63,13 +62,10 @@ class BackendAgent(BaseTriaAgent):
 
     async def process_query(self, query: str, context: Dict) -> AgentResponse:
         logger.info(f"BackendAgent processing query: {query}")
-        rag_response = await self._query_rag_service(query, context.get("session_id"))
-
-        if rag_response and rag_response.answer:
-            answer = f"Backend-агент анализирует: '{query}'. Ответ RAG: {rag_response.answer}"
-            return AgentResponse(answer=answer, sources=rag_response.sources, agent_name=self.domain)
-        else:
-            return AgentResponse(answer=f"Backend-агент не смог найти релевантную информацию по запросу: '{query}'.", confidence=0.0, agent_name=self.domain)
+        llm_context = context.get("llm_context", "Ты Backend-агент Триа.")
+        system_instr = f"{llm_context}\n\nТвоя специализация: Backend (Python, FastAPI, Postgres/AstraDB, P2P). Отвечай экспертно."
+        answer = await get_gemini_response(query, system_instruction=system_instr)
+        return AgentResponse(answer=answer, agent_name=self.domain)
 
 class DebugAgent(BaseTriaAgent):
     def __init__(self):
@@ -77,13 +73,10 @@ class DebugAgent(BaseTriaAgent):
 
     async def process_query(self, query: str, context: Dict) -> AgentResponse:
         logger.info(f"DebugAgent processing query: {query}")
-        rag_response = await self._query_rag_service(query, context.get("session_id"))
-
-        if rag_response and rag_response.answer:
-            answer = f"Debug-агент ищет решение для: '{query}'. Ответ RAG: {rag_response.answer}"
-            return AgentResponse(answer=answer, sources=rag_response.sources, agent_name=self.domain)
-        else:
-            return AgentResponse(answer=f"Debug-агент не смог найти релевантную информацию по запросу: '{query}'.", confidence=0.0, agent_name=self.domain)
+        llm_context = context.get("llm_context", "Ты Debug-агент Триа.")
+        system_instr = f"{llm_context}\n\nТвоя специализация: Поиск багов, анализ логов и исправление ошибок. Помоги пользователю решить проблему."
+        answer = await get_gemini_response(query, system_instruction=system_instr)
+        return AgentResponse(answer=answer, agent_name=self.domain)
 
 class ArchitectureAgent(BaseTriaAgent):
     def __init__(self):
@@ -91,13 +84,10 @@ class ArchitectureAgent(BaseTriaAgent):
 
     async def process_query(self, query: str, context: Dict) -> AgentResponse:
         logger.info(f"ArchitectureAgent processing query: {query}")
-        rag_response = await self._query_rag_service(query, context.get("session_id"))
-
-        if rag_response and rag_response.answer:
-            answer = f"Architecture-агент объясняет: '{query}'. Ответ RAG: {rag_response.answer}"
-            return AgentResponse(answer=answer, sources=rag_response.sources, agent_name=self.domain)
-        else:
-            return AgentResponse(answer=f"Architecture-агент не смог найти релевантную информацию по запросу: '{query}'.", confidence=0.0, agent_name=self.domain)
+        llm_context = context.get("llm_context", "Ты Архитектор Триа.")
+        system_instr = f"{llm_context}\n\nТвоя специализация: Глобальная архитектура системы, Neuro-Symmetry, TriaFS. Объясни концепцию."
+        answer = await get_gemini_response(query, system_instruction=system_instr)
+        return AgentResponse(answer=answer, agent_name=self.domain)
 
 class ProtocolAgent(BaseTriaAgent):
     def __init__(self):

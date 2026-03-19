@@ -1,38 +1,21 @@
-# Removed asyncpg
 from typing import List, Optional, Dict, Any, Union
-import uuid # Для генерации заголовка сессии по умолчанию
+import uuid
 import logging
+import asyncio
 
 from backend.repositories.chat_repository import ChatRepository
-from backend.core.models import ( # Updated import
+from backend.core.models import (
     UserChatSessionDB, UserChatSessionCreate,
     ChatMessageDB, ChatMessageCreate, ChatMessagePublic,
     ChatSessionWithHistory, UserInDB
 )
-
-logger = logging.getLogger(__name__)
-
-import google.generativeai as genai
 from backend.core.config import settings
 from backend.llm.mistral_llm import get_mistral_response
-
-if settings.GOOGLE_API_KEY:
-    genai.configure(api_key=settings.GOOGLE_API_KEY)
-
-from backend.services.context_builder import build_dynamic_context
+from backend.llm.gemini_llm import get_gemini_response, LLM_CONTEXT
 from backend.skills.openclaw_patrol import patrol_agent
 from backend.skills.openclaw_economist import economist_agent
 
-# Загружаем динамический контекст (вся база кода и доков) один раз при старте бэкенда
-LLM_CONTEXT = ""
-try:
-    LLM_CONTEXT = build_dynamic_context()
-    logger.info(f"Dynamic full-project Context loaded successfully ({len(LLM_CONTEXT)} chars)")
-except Exception as e:
-    logger.error(f"Failed to build dynamic LLM context: {e}")
-    LLM_CONTEXT = "Ты Триа — ИИ-ассистент проекта holograms.media. Контекст недоступен из-за ошибки чтения кода."
-
-import asyncio
+logger = logging.getLogger(__name__)
 
 # Основная функция интеграции: пытаемся Gemini, затем Mistral
 async def get_llm_response(user_message: str, history: List[ChatMessageDB], selected_model: Optional[str] = None) -> str:
@@ -58,22 +41,15 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
                 role = "user" if msg.role == "user" else "model"
                 formatted_history.append({"role": role, "parts": [msg.message_content]})
                 
-            model = genai.GenerativeModel(
-                model_name='models/gemini-3.0-flash', # Новая версия 3.0
-                system_instruction=LLM_CONTEXT or "Ты АИ-ассистент Триа."
+            response_text = await get_gemini_response(
+                user_message, 
+                history=formatted_history, 
+                system_instruction=LLM_CONTEXT
             )
-            chat = model.start_chat(history=formatted_history)
+            return f"[Gemini 3 Flash] {response_text}"
             
-            # Добавляем таймаут, чтобы Gemini не висел бесконечно
-            response = await asyncio.wait_for(chat.send_message_async(user_message), timeout=15.0)
-            return f"[Gemini 3.0 Flash] {response.text}"
-            
-        except asyncio.TimeoutError:
-            logger.error("Gemini API call timed out after 15 seconds.")
-            if not use_mistral:
-                return "Триа: Ошибка (Таймаут Gemini API)."
         except Exception as e:
-            logger.error(f"Error calling Gemini API: {e}.")
+            logger.error(f"Error calling Gemini LLM: {e}.")
             if not use_mistral:
                 return f"Триа: Ошибка при вызове Gemini API: {e}"
     
@@ -165,12 +141,17 @@ class ChatService:
             patrol_report = patrol_agent.verify_incoming_block(user.user_id, gesture_dna, metadata or {"text_note": message_content})
             
             if patrol_report.get("status") in ["quarantine", "rejected"]:
-                logger.warning(f"OpenClaw Patrol blocked message from {user.user_id}. Reason: {patrol_report.get('reason')}")
+                penalty = patrol_report.get("utility_score_penalty", 0.0)
+                logger.warning(f"OpenClaw Patrol blocked message from {user.user_id}. Penalty: {penalty}")
                 # Возвращаем системное сообщение о блокировке
                 rejection_msg = ChatMessageCreate(
                     user_chat_session_id=session_id, role="system",
                     message_content=f"🛡️ OpenClaw Patrol: Запрос отклонен. Причина: {patrol_report.get('reason')}",
-                    metadata={"patrol_report": patrol_report}
+                    metadata={
+                        "patrol_report": patrol_report,
+                        "utility_score_penalty": penalty,
+                        "type": "security_block"
+                    }
                 )
                 saved_rejection = await self.repo.add_message_to_history(message_in=rejection_msg, user_id=user.user_id)
                 return ChatMessagePublic(**saved_rejection.dict()) if saved_rejection else None
@@ -217,6 +198,7 @@ class ChatService:
 
             selected_model = metadata.get("llm_model") if metadata else None
             try:
+                # E-1: Прокидываем LLM_CONTEXT в оркестратор
                 llm_response_content = await get_llm_response(message_content, history_for_llm, selected_model)
             except Exception as e:
                 logger.error(f"Service: LLM call failed for session {session_id}: {e}")

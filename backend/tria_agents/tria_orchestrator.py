@@ -45,10 +45,11 @@ class TriaOrchestrator:
 
         logger.info("TriaOrchestrator initialized with agents, ContextManager, and LiveCodeAnalyzer.")
 
-    async def process_user_prompt(self, prompt: str) -> str:
+    async def process_user_prompt(self, prompt: str, context: Optional[str] = None) -> str:
         """
         Routes a direct user prompt to the best available agent.
         Uses ArchitectureAgent as default, with fallback chain.
+        Now supports external LLM_CONTEXT (E-1).
         """
         display_prompt = str(prompt)[:80]
         logger.info(f"[Orchestrator] Routing prompt: '{display_prompt}...'")
@@ -65,7 +66,7 @@ class TriaOrchestrator:
             # 3. Process via agent
             agent_response: AgentResponse = await agent.process_query(
                 prompt,
-                {"source": "direct_prompt", "session_id": None}
+                {"source": "direct_prompt", "session_id": None, "llm_context": context}
             )
             return agent_response.answer
 
