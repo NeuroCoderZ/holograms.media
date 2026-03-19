@@ -8,7 +8,8 @@ WORKDIR /app
 
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip show mistralai
 
 # Этап 2: Финальный образ
 FROM python:3.11-slim-bullseye AS final
