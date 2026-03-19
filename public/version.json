@@ -1,7 +1,7 @@
 {
-  "version": "0.20.127",
-  "timestamp": "2026-03-19T20:35:54.643Z",
+  "version": "0.20.128",
+  "timestamp": "2026-03-19T20:37:50.473Z",
   "env": "production",
-  "build": 1773952554644,
-  "summary": "Fix static version in index.html, register global THREE, and prepare LLM debug"
+  "build": 1773952670474,
+  "summary": "Fix Mistral streaming (v2.0.4), async Gemini client, and routing Architecture queries to Mistral"
 }
