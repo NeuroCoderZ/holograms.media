@@ -40,5 +40,8 @@ class Settings(BaseModel):
         "http://localhost:5173",
         "http://localhost:3000"
     ]
+    
+    # Developers (Whitelisted Emails)
+    DEV_USERS: list = os.getenv("DEV_USERS", "neurocoderz@gmail.com").split(",")
 
 settings = Settings()

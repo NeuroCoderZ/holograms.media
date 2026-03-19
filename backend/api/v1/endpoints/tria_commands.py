@@ -1,14 +1,19 @@
 # File: backend/api/v1/endpoints/tria_commands.py
-from fastapi import APIRouter, Request, HTTPException
 from backend.models.tria_models import TriaPromptRequest, TriaPromptResponse
 from backend.llm.gemini_llm import LLM_CONTEXT
+from backend.auth.security import get_current_active_user
+from fastapi import APIRouter, Request, HTTPException, Depends
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/prompt", response_model=TriaPromptResponse, tags=["Tria AI"])
-async def handle_tria_prompt(request: Request, prompt_data: TriaPromptRequest):
+async def handle_tria_prompt(
+    request: Request, 
+    prompt_data: TriaPromptRequest,
+    current_user = Depends(get_current_active_user)
+):
     """
     Receives a user prompt, forwards it to the TriaOrchestrator,
     and returns Tria's response.
@@ -20,8 +25,12 @@ async def handle_tria_prompt(request: Request, prompt_data: TriaPromptRequest):
         if not tria_orchestrator:
              raise HTTPException(status_code=503, detail="Tria service is not available.")
         
-        # E-1: Pass global project context to the orchestrator
-        tria_response_text = await tria_orchestrator.process_user_prompt(prompt_data.prompt, context=LLM_CONTEXT)
+        # Pass global project context and user email for role-based routing
+        tria_response_text = await tria_orchestrator.process_user_prompt(
+            prompt_data.prompt, 
+            context=LLM_CONTEXT,
+            user_email=current_user.get("email", "")
+        )
         
         if tria_response_text is None:
              raise HTTPException(status_code=500, detail="Tria returned an empty response.")

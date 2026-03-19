@@ -14,7 +14,8 @@ aiofiles>=23.2.1
 tenacity>=8.2.0
 protobuf>=4.25.0
 email-validator>=2.0.0
-google-generativeai
+google-genai
 # qrcode REMOVED: QR generation moved to frontend
 # pillow REMOVED: no longer needed (was used by qrcode)
 mistralai
+watchdog>=4.0.0
