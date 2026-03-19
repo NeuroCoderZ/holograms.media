@@ -32,15 +32,11 @@ export class HologramRenderer {
     this.mainSequencerGroup = new THREE.Group();
     this.hologramPivot.add(this.mainSequencerGroup);
 
-    this.columns = [];
-    this._createSequencerGrids();
-    this._initializeColumns();
-
-    // 5% Margins: Scale down the whole scene to fit within 90% of screen height
-    // This prevents clipping during rotation while keeping grid centered.
-    this.mainSequencerGroup.scale.set(0.9, 0.9, 0.9);
+    // 5% Margins: Scale down slightly to ensure air space without excess gap.
+    this.mainSequencerGroup.scale.set(0.95, 0.95, 0.95);
 
     this.scene.add(this.hologramPivot);
+  }
 
     this.eventBus.on('audioData', (data) => { this.latestCwtData = data; });
     this.netHoloGlyphClient.connect(this.roomId, this.userId);
@@ -91,12 +87,8 @@ export class HologramRenderer {
     group.name = "AudioColumnGroup";
 
     const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0, 1, 1, 1);
-    // Применяем z_shade из конфига как множитель яркости
-    const zShadeColor = new THREE.Color(config.z_shade);
-    const shadedBaseColor = baseColor.clone().multiply(zShadeColor);
-
     const mesh = new THREE.Mesh(geometry, new THREE.ShaderMaterial({
-      uniforms: makeColumnUniforms(shadedBaseColor),
+      uniforms: makeColumnUniforms(baseColor),
       vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
     }));
     mesh.name = "AudioColumnMesh";
