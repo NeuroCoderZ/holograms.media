@@ -4,32 +4,32 @@ from pydantic import BaseModel, field_validator
 
 class Settings(BaseModel):
     # Security & Auth
-    SECRET_KEY: str = os.getenv("JWT_SECRET_KEY") or ("dev_secret_key_12345" if os.getenv("ENVIRONMENT") != "production" else "")
+    SECRET_KEY: str = (os.getenv("JWT_SECRET_KEY") or ("dev_secret_key_12345" if os.getenv("ENVIRONMENT") != "production" else "")).strip()
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Google OAuth & AI
-    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
-    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "").strip()
     
     # Mistral AI
-    MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
+    MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "").strip()
     
     # Database (Astra DB)
-    ASTRA_DB_APPLICATION_TOKEN: str = os.getenv("ASTRA_DB_APPLICATION_TOKEN", "")
-    ASTRA_DB_API_ENDPOINT: str = os.getenv("ASTRA_DB_API_ENDPOINT", "")
-    ASTRA_DB_ID: str = os.getenv("ASTRA_DB_ID", "")
-    ASTRA_DB_REGION: str = os.getenv("ASTRA_DB_REGION", "")
-    ASTRA_DB_KEYSPACE: str = os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace")
+    ASTRA_DB_APPLICATION_TOKEN: str = os.getenv("ASTRA_DB_APPLICATION_TOKEN", "").strip()
+    ASTRA_DB_API_ENDPOINT: str = os.getenv("ASTRA_DB_API_ENDPOINT", "").strip()
+    ASTRA_DB_ID: str = os.getenv("ASTRA_DB_ID", "").strip()
+    ASTRA_DB_REGION: str = os.getenv("ASTRA_DB_REGION", "").strip()
+    ASTRA_DB_KEYSPACE: str = os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace").strip()
     
     # Storage (Backblaze B2)
-    B2_ENDPOINT_URL: str = os.getenv("B2_ENDPOINT_URL", "")
-    B2_ACCESS_KEY_ID: str = os.getenv("B2_ACCESS_KEY_ID", "")
-    B2_SECRET_ACCESS_KEY: str = os.getenv("B2_SECRET_ACCESS_KEY", "")
-    B2_BUCKET_NAME: str = os.getenv("B2_BUCKET_NAME", "holograms-media")
+    B2_ENDPOINT_URL: str = os.getenv("B2_ENDPOINT_URL", "").strip()
+    B2_ACCESS_KEY_ID: str = os.getenv("B2_ACCESS_KEY_ID", "").strip()
+    B2_SECRET_ACCESS_KEY: str = os.getenv("B2_SECRET_ACCESS_KEY", "").strip()
+    B2_BUCKET_NAME: str = os.getenv("B2_BUCKET_NAME", "holograms-media").strip()
     
     # Environment
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development").strip()
     
     # CORS
     CORS_ORIGINS: list = [
