@@ -110,7 +110,8 @@ window.checkWebGLSupport = function () {
 import { GestureManager } from '../managers/gestureManager.js';
 import { autoReloadService } from '../services/AutoReloadService.js';
 import { lightingManager } from '../ui/LightingManager.js';
-// frontend/js/core/init.js - Инициализация основного состояния и конфигурации приложения
+import * as THREE from 'three';
+window.THREE = THREE; // Для совместимости с XR-модулями (TorusVom и др.)
 
 import { semitones } from '../config/hologramConfig.js';
 

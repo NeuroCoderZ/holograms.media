@@ -1,6 +1,6 @@
 {
   "name": "holograms-media-backend",
-  "version": "1.0.0",
+  "version": "0.20.135",
   "description": "Backend services for Holograms Media",
   "main": "index.js",
   "dependencies": {
@@ -13,7 +13,8 @@
     "build": "vite build && node scripts/generate_version.js",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test:unit": "node ./tests/unit/run_tests.js"
+    "test:unit": "node ./tests/unit/run_tests.js",
+    "deploy": "git push origin dev"
   },
   "author": "",
   "license": "ISC",

@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 class ChatRepository:
     def __init__(self, db: Database):
+        if db is None:
+            raise ValueError("ChatRepository requires a valid Astra Database instance. Initialization likely failed.")
         self.db = db
         self.sessions_collection = self.db.get_collection("user_chat_sessions")
         self.history_collection = self.db.get_collection("chat_history")
@@ -24,7 +26,7 @@ class ChatRepository:
             "updated_at": now
         }
         try:
-            result = self.sessions_collection.insert_one(session_data)
+            result = await self.sessions_collection.insert_one(session_data)
             if result and result.inserted_id:
                 session_data["id"] = str(result.inserted_id)
                 return UserChatSessionDB(**session_data)
@@ -35,23 +37,21 @@ class ChatRepository:
 
     async def get_chat_sessions_by_user_id(self, user_id: str, skip: int = 0, limit: int = 100) -> List[UserChatSessionDB]:
         try:
-            # Astra DB find with sort and limit
-            # Note: skip/offset might be handled differently in some versions of astrapy find
-            # but usually it's find(filter, skip=skip, limit=limit)
             cursor = self.sessions_collection.find(
                 filter={"user_id": user_id},
                 sort={"updated_at": -1},
                 limit=limit,
                 skip=skip
             )
-            return [UserChatSessionDB(id=str(row["_id"]), **row) for row in cursor]
+            results = await cursor.to_list()
+            return [UserChatSessionDB(id=str(row["_id"]), **row) for row in results]
         except Exception as e:
             logger.error(f"Astra DB error in ChatRepository.get_chat_sessions_by_user_id for user {user_id}: {e}")
             raise
 
     async def get_chat_session_by_id(self, session_id: str, user_id: str) -> Optional[UserChatSessionDB]:
         try:
-            row = self.sessions_collection.find_one({"_id": session_id, "user_id": user_id})
+            row = await self.sessions_collection.find_one({"_id": session_id, "user_id": user_id})
             if row:
                 return UserChatSessionDB(id=str(row["_id"]), **row)
             return None
@@ -62,7 +62,7 @@ class ChatRepository:
     async def update_chat_session_title(self, session_id: str, user_id: str, title: str) -> Optional[UserChatSessionDB]:
         now = datetime.utcnow().isoformat()
         try:
-            result = self.sessions_collection.update_one(
+            result = await self.sessions_collection.update_one(
                 {"_id": session_id, "user_id": user_id},
                 {"$set": {"session_title": title, "updated_at": now}}
             )
@@ -75,11 +75,9 @@ class ChatRepository:
 
     async def delete_chat_session(self, session_id: str, user_id: str) -> bool:
         try:
-            # Delete session
-            res_session = self.sessions_collection.delete_one({"_id": session_id, "user_id": user_id})
+            res_session = await self.sessions_collection.delete_one({"_id": session_id, "user_id": user_id})
             if res_session.deleted_count > 0:
-                # Manually delete history (No cascade in Astra JSON API)
-                self.history_collection.delete_many({"user_chat_session_id": session_id})
+                await self.history_collection.delete_many({"user_chat_session_id": session_id})
                 return True
             return False
         except Exception as e:
@@ -88,8 +86,7 @@ class ChatRepository:
 
     async def get_messages_by_session_id(self, session_id: str, user_id: str, skip: int = 0, limit: int = 100) -> List[ChatMessageDB]:
         try:
-            # Check ownership first (Astra doesn't have cross-collection joins)
-            session = self.sessions_collection.find_one({"_id": session_id, "user_id": user_id})
+            session = await self.sessions_collection.find_one({"_id": session_id, "user_id": user_id})
             if not session:
                 return []
 
@@ -99,15 +96,15 @@ class ChatRepository:
                 limit=limit,
                 skip=skip
             )
-            return [ChatMessageDB(id=str(row["_id"]), **row) for row in cursor]
+            results = await cursor.to_list()
+            return [ChatMessageDB(id=str(row["_id"]), **row) for row in results]
         except Exception as e:
             logger.error(f"Astra DB error in ChatRepository.get_messages_by_session_id for session {session_id}: {e}")
             raise
 
     async def add_message_to_history(self, message_in: ChatMessageCreate, user_id: str) -> Optional[ChatMessageDB]:
         try:
-            # Verify ownership
-            session = self.sessions_collection.find_one({"_id": message_in.user_chat_session_id, "user_id": user_id})
+            session = await self.sessions_collection.find_one({"_id": message_in.user_chat_session_id, "user_id": user_id})
             if not session:
                 return None
 
@@ -115,10 +112,9 @@ class ChatRepository:
             message_data = message_in.dict()
             message_data["timestamp"] = now
             
-            result = self.history_collection.insert_one(message_data)
+            result = await self.history_collection.insert_one(message_data)
             if result and result.inserted_id:
-                # Update session timestamp
-                self.sessions_collection.update_one(
+                await self.sessions_collection.update_one(
                     {"_id": message_in.user_chat_session_id},
                     {"$set": {"updated_at": now}}
                 )

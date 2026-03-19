@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from abc import ABC, abstractmethod
 from backend.llm.gemini_llm import get_gemini_response
+from backend.llm.mistral_llm import get_mistral_response
 
 # Assuming TriaRequest and TriaResponse are defined in tria_rag_service.py
 # We will import them directly for consistency.
@@ -86,7 +87,8 @@ class ArchitectureAgent(BaseTriaAgent):
         logger.info(f"ArchitectureAgent processing query: {query}")
         llm_context = context.get("llm_context", "Ты Архитектор Триа.")
         system_instr = f"{llm_context}\n\nТвоя специализация: Глобальная архитектура системы, Neuro-Symmetry, TriaFS. Объясни концепцию."
-        answer = await get_gemini_response(query, system_instruction=system_instr)
+        # Архитектурные задачи лучше решает Mistral Large
+        answer = await get_mistral_response(query, [], system_instruction=system_instr)
         return AgentResponse(answer=answer, agent_name=self.domain)
 
 class ProtocolAgent(BaseTriaAgent):

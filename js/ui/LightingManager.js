@@ -70,6 +70,14 @@ export class LightingManager {
             el.style.setProperty('--inv-light-x', `${invLightX}%`);
             el.style.setProperty('--inv-light-y', `${invLightY}%`);
 
+            // Динамические тени: смещение тени от центра голограммы
+            // Ограничиваем максимальное смещение для эстетичности (макс 15px)
+            const shadowScale = 0.05;
+            const shadowX = Math.max(-15, Math.min(15, dx * shadowScale));
+            const shadowY = Math.max(-15, Math.min(15, dy * shadowScale));
+            el.style.setProperty('--shadow-x', `${shadowX}px`);
+            el.style.setProperty('--shadow-y', `${shadowY}px`);
+
             // Также рассчитываем угол для конических градиентов или теней, если нужно
             const angle = Math.atan2(dy, dx) * (180 / Math.PI);
             el.style.setProperty('--light-angle', `${angle}deg`);

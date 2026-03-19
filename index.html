@@ -47,7 +47,14 @@
       }
     };
   </script>
-  <script>console.log("DEPLOY VERSION: 0.20.125 - HYPERBRAIN, TriaFS, REINTEGRATOR");</script>
+  <script type="module">
+    import * as THREE from 'three';
+    window.THREE = THREE;
+    console.log("THREE registered globally for XR/TorusVOM");
+  </script>
+  <!-- DEPLOY_VERSION_START -->
+  <script>console.log("DEPLOY VERSION: 0.20.133 - Fix ChatRepository structure, THREE imports, WebXR resilience, and AutoReload cache-buster");</script>
+  <!-- DEPLOY_VERSION_END -->
 
 
 

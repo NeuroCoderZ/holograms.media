@@ -298,12 +298,12 @@
 
   /* Физика: Выпуклая капля (Convex) по умолчанию */
   box-shadow:
-    0 10px 20px rgba(0, 0, 0, 0.4),
-    /* Тень парения */
+    var(--shadow-x, 0px) var(--shadow-y, 10px) 20px rgba(0, 0, 0, 0.4),
+    /* Динамическая тень */
     0 2px 4px rgba(0, 0, 0, 0.6),
     /* Ambient Occlusion */
     var(--glass-inner-light) !important;
-  border: 1px solid var(--glass-border) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important; /* Тонкая граница */
   outline: none !important;
   -webkit-appearance: none;
   appearance: none;

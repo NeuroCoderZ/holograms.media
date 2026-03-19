@@ -17,31 +17,29 @@ except Exception as e:
     logger.error(f"[GeminiLLM] Context build failed: {e}")
     LLM_CONTEXT = "Ты Триа. Контекст проекта недоступен."
 
-# Инициализируем клиент
+# Инициализируем клиент (Async)
 client = None
 if settings.GOOGLE_API_KEY:
     try:
+        # В google-genai для асинхронности используется .aio
         client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-        logger.info("[GeminiLLM] New GenAI Client initialized")
+        logger.info("[GeminiLLM] GenAI Client initialized")
     except Exception as e:
         logger.error(f"[GeminiLLM] Client init failed: {e}")
 
 async def get_gemini_response(prompt: str, history: list = None, system_instruction: str = None) -> str:
-    """ Универсальный хелпер для Gemini 2.0 Flash (через новый SDK). """
+    """ Универсальный хелпер для Gemini 2.0 Flash. """
     if not client:
         return "[Gemini Error] Client not initialized (check API key)"
     
     try:
-        # В новом SDK конфигурация модели передается прямо в generate_content
         config = types.GenerateContentConfig(
             system_instruction=system_instruction or "Ты АИ-ассистент Триа.",
             temperature=0.7,
         )
         
-        # Для простоты пока используем прямой вызов без сложной истории, 
-        # если история пуста, иначе можно добавить логику чата.
-        response = await asyncio.to_thread(
-            client.models.generate_content,
+        # Используем асинхронный метод из пространства .aio
+        response = await client.aio.models.generate_content(
             model='gemini-2.0-flash',
             contents=prompt,
             config=config
