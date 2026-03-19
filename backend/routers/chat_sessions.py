@@ -29,21 +29,27 @@ async def direct_chat_with_tria(
     Simplified endpoint that finds the last active session or creates a new one
     and sends the message. Used by the main Tria chat interface.
     """
-    chat_service = ChatService(db)
-    
-    # 1. Find or create session
-    sessions = await chat_service.list_user_chat_sessions(user_id=current_user.user_id, limit=1)
-    if sessions:
-        session_id = sessions[0].id
-    else:
-        new_session = await chat_service.create_new_chat_session(
-            user_id=current_user.user_id, 
-            session_title="Tria Quick Chat"
-        )
-        session_id = new_session.id
-    
-    # 2. Add message and get response
     try:
+        # Check DB connection immediately
+        if db is None:
+             raise HTTPException(status_code=503, detail="Database connection unavailable.")
+
+        chat_service = ChatService(db)
+        
+        # 1. Find or create session
+        sessions = await chat_service.list_user_chat_sessions(user_id=current_user.user_id, limit=1)
+        if sessions:
+            session_id = sessions[0].id
+        else:
+            new_session = await chat_service.create_new_chat_session(
+                user_id=current_user.user_id, 
+                session_title="Tria Quick Chat"
+            )
+            if not new_session:
+                 raise HTTPException(status_code=500, detail="Failed to create new chat session.")
+            session_id = new_session.id
+        
+        # 2. Add message and get response
         assistant_response = await chat_service.add_message_to_session(
             session_id=session_id, 
             user=current_user, 
@@ -51,11 +57,19 @@ async def direct_chat_with_tria(
             metadata=message_in.metadata
         )
         if not assistant_response:
-             raise HTTPException(status_code=500, detail="Failed to get or save assistant response.")
+             # This means saving to DB failed or some other logical error in service
+             raise HTTPException(status_code=500, detail="Failed to get or save assistant response (Service returned None).")
+             
         return assistant_response
+
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        print(f"[DIRECT CHAT ERROR] {e}")
-        raise HTTPException(status_code=503, detail=str(e))
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"[DIRECT CHAT CRITICAL ERROR] {error_details}")
+        # Return a structured error so the frontend receives JSON, not just "Internal Server Error"
+        raise HTTPException(status_code=500, detail=f"Internal Backend Error: {str(e)}")
 
 
 @router.post("/", response_model=chat_models.UserChatSessionDB, status_code=status.HTTP_201_CREATED)
