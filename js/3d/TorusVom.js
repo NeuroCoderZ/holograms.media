@@ -7,6 +7,7 @@
  * - Высота тора привязана к полутонам.
  */
 import eventBus from '../core/eventBus.js';
+import * as THREE from 'three';
 
 export class TorusVOM {
     constructor(scene, triaFS) {

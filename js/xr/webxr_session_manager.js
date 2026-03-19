@@ -1,4 +1,4 @@
-// import * as THREE from 'three'; // Removed for global THREE
+import * as THREE from 'three';
 // File: frontend/js/xr/webxr_session_manager.js
 // Purpose: Manages WebXR sessions, including entering and exiting VR/AR modes.
 // Key Future Dependencies: WebXR Device API (browser), Three.js WebXRManager (if using Three).
@@ -30,8 +30,20 @@ export class XRSessionManager { // Export the class
 
         try {
             // Updated for Phase 3: Explicitly request 'local-floor' for stable holograms
-            const sessionInit = { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'] };
-            const session = await navigator.xr.requestSession(sessionMode, sessionInit);
+            // Make session options more flexible to avoid 'NotSupportedError'
+            const sessionInit = { 
+                optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking', 'layers'] 
+            };
+            
+            // Try current mode
+            let session;
+            try {
+                session = await navigator.xr.requestSession(sessionMode, sessionInit);
+            } catch (firstError) {
+                console.warn(`[XR] Failed to start with mode ${sessionMode}, trying fallback options...`, firstError);
+                // Try without any features if first attempt fails
+                session = await navigator.xr.requestSession(sessionMode);
+            }
 
             if (this.renderer && this.renderer.xr) {
                 await this.renderer.xr.setSession(session);

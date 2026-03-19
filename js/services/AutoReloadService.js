@@ -82,8 +82,10 @@ class AutoReloadService {
         // Даем время на анимацию и отправку данных (Snapshot)
         // В будущем здесь будет вызов: await triaEvolutionConnector.sendSnapshot();
         setTimeout(() => {
-            console.log("[AutoReload] Reloading page now...");
-            window.location.reload();
+            console.log("[AutoReload] Reloading page now with cache buster...");
+            const url = new URL(window.location.href);
+            url.searchParams.set('v', Date.now());
+            window.location.href = url.toString();
         }, 1500); // 1.5 секунды на "моргание"
     }
 
