@@ -74,7 +74,12 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
                 history=formatted_history, 
                 system_instruction=LLM_CONTEXT
             )
-            return f"[Gemini 3 Flash] {response_text}"
+            
+            # CRITICAL FIX: Check if get_gemini_response returned an error string
+            if response_text.startswith("[Gemini Error]"):
+                raise Exception(f"Gemini API Error detected: {response_text}")
+                
+            return f"[Gemini 2.0 Flash] {response_text}"
             
         except Exception as e:
             logger.error(f"Error calling Gemini LLM: {e}.")
