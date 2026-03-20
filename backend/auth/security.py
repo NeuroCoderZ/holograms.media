@@ -46,6 +46,21 @@ def decode_access_token(token: str):
     """Декодирует JWT токен."""
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
+class UserStub(dict):
+    """
+    A temporary stub for the User object that behaves like both a dictionary and an object.
+    This allows legacy code accessing .user_id and new code accessing ["id"] to work simultaneously.
+    """
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(f"'UserStub' object has no attribute '{name}'")
+    
+    @property
+    def user_id(self):
+        return self.get("id") or self.get("google_id")
+
 async def verify_google_token(token: str) -> Dict[str, Any]:
     """Проверяет ID токен от Google."""
     if not token:
@@ -88,11 +103,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         # ЗАГЛУШКА: Возвращаем данные из токена, пока нет интеграции с БД
         user_data = {
             "id": google_id, # Добавляем поле id для совместимости
+            "user_id": google_id, # Explicitly add user_id for dict access too
             "google_id": google_id,
             "email": payload.get("email"),
-            "is_active": True
+            "is_active": True,
+            "role": "developer" # Default role
         }
-        return user_data
+        return UserStub(user_data)
 
     except JWTError:
         raise credentials_exception
