@@ -26,12 +26,12 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
     if settings.OPENCLAW_GATEWAY_TOKEN:
         try:
             # Map selected_model to OpenClaw format if needed
-            oc_model = "gemini-flash-latest"
+            oc_model = "gemini-3.1-flash-lite-preview"
             if selected_model:
                 if "mistral" in selected_model.lower():
                     oc_model = "mistral/mistral-large-latest"
                 elif "gemini" in selected_model.lower():
-                    oc_model = "gemini-flash-latest"
+                    oc_model = "gemini-3.1-flash-lite-preview"
 
             logger.info(f"LLM: Attempting OpenClaw with model {oc_model}")
             response_text = await get_openclaw_response(
@@ -56,6 +56,7 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
         elif "mistral" in selected_model.lower():
             use_mistral = True
     else:
+        # If no preference, try both (Gemini first)
         use_gemini = True
         use_mistral = True
 
@@ -68,7 +69,7 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
                 role = "user" if msg.role == "user" else "model"
                 formatted_history.append({"role": role, "parts": [msg.message_content]})
                 
-            # Используем gemini-3-flash напрямую
+            # Используем gemini-3.1-flash-lite-preview напрямую
             response_text = await get_gemini_response(
                 user_message, 
                 history=formatted_history, 
@@ -79,12 +80,14 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
             if response_text.startswith("[Gemini Error]"):
                 raise Exception(f"Gemini API Error detected: {response_text}")
                 
-            return f"[Gemini 2.0 Flash] {response_text}"
+            return f"[Gemini 3.1 Flash-Lite] {response_text}"
             
         except Exception as e:
-            logger.error(f"Error calling Gemini LLM: {e}.")
-            if not use_mistral:
-                return f"Триа: Ошибка при вызове Gemini API: {e}"
+            logger.error(f"Error calling Gemini LLM: {e}. Activating Mistral Fallback.")
+            # FORCE FALLBACK: Even if user selected Gemini, if it fails, try Mistral
+            use_mistral = True 
+            if not settings.MISTRAL_API_KEY:
+                 return f"Триа: Ошибка при вызове Gemini API: {e} (Mistral ключ не найден для фоллбэка)"
     
     # Пытаемся использовать Mistral напрямую
     if use_mistral and settings.MISTRAL_API_KEY:
