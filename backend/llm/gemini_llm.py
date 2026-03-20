@@ -40,7 +40,7 @@ async def get_gemini_response(prompt: str, history: list = None, system_instruct
         
         # Используем асинхронный метод из пространства .aio
         response = await client.aio.models.generate_content(
-            model='gemini-2.0-flash',
+            model='gemini-3-flash',
             contents=prompt,
             config=config
         )

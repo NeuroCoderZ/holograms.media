@@ -12,15 +12,41 @@ from backend.core.models import (
 from backend.core.config import settings
 from backend.llm.mistral_llm import get_mistral_response
 from backend.llm.gemini_llm import get_gemini_response, LLM_CONTEXT
+from backend.llm.openclaw_llm import get_openclaw_response # ADDED
 from backend.skills.openclaw_patrol import patrol_agent
 from backend.skills.openclaw_economist import economist_agent
 
 logger = logging.getLogger(__name__)
 
-# Основная функция интеграции: пытаемся Gemini, затем Mistral
+# Основная функция интеграции: пытаемся OpenClaw, затем Gemini, затем Mistral
 async def get_llm_response(user_message: str, history: List[ChatMessageDB], selected_model: Optional[str] = None) -> str:
     logger.info(f"LLM: Received '{user_message}' with history length {len(history)}, selected: {selected_model}")
     
+    # 1. Пытаемся использовать OpenClaw (Новый стандарт)
+    if settings.OPENCLAW_API_KEY:
+        try:
+            # Map selected_model to OpenClaw format if needed
+            oc_model = "google/gemini-3-flash"
+            if selected_model:
+                if "mistral" in selected_model.lower():
+                    oc_model = "mistral/mistral-large-latest"
+                elif "gemini" in selected_model.lower():
+                    oc_model = "google/gemini-3-flash"
+
+            logger.info(f"LLM: Attempting OpenClaw with model {oc_model}")
+            response_text = await get_openclaw_response(
+                user_message, 
+                model=oc_model, 
+                history=history, 
+                system_instruction=LLM_CONTEXT
+            )
+            if not response_text.startswith("[OpenClaw Error]"):
+                return f"[OpenClaw: {oc_model}] {response_text}"
+            logger.warning(f"OpenClaw failed: {response_text}. Falling back to direct calls.")
+        except Exception as e:
+            logger.error(f"Error calling OpenClaw: {e}")
+
+    # 2. ФОЛЛБЭК: Прямые вызовы (как раньше)
     use_gemini = False
     use_mistral = False
     
@@ -33,7 +59,7 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
         use_gemini = True
         use_mistral = True
 
-    # Пытаемся использовать Gemini
+    # Пытаемся использовать Gemini напрямую
     if use_gemini and settings.GOOGLE_API_KEY:
         try:
             formatted_history = []
@@ -41,6 +67,7 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
                 role = "user" if msg.role == "user" else "model"
                 formatted_history.append({"role": role, "parts": [msg.message_content]})
                 
+            # Используем gemini-3-flash напрямую
             response_text = await get_gemini_response(
                 user_message, 
                 history=formatted_history, 
@@ -53,23 +80,19 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
             if not use_mistral:
                 return f"Триа: Ошибка при вызове Gemini API: {e}"
     
-    # Фоллбэк на Mistral (или основной выбор)
+    # Пытаемся использовать Mistral напрямую
     if use_mistral and settings.MISTRAL_API_KEY:
         try:
-            # Таймаут и для Мистраля тоже не повредит
             response_text = await asyncio.wait_for(
                 get_mistral_response(user_message, history, LLM_CONTEXT or "Ты АИ-ассистент Триа."),
                 timeout=20.0
             )
             return f"[Mistral Large 3] {response_text}"
-        except asyncio.TimeoutError:
-            logger.error("Mistral API call timed out after 20 seconds.")
-            return "Триа: Ошибка (Таймаут Mistral API)."
         except Exception as e:
             logger.error(f"Error calling Mistral API: {e}.")
             return f"Триа: Ошибка при вызове Mistral API: {e}"
             
-    logger.warning("No LLM API keys available or both failed. Returning stub response.")
+    logger.warning("No LLM API keys available or all failed. Returning stub response.")
     return f"Триа (Заглушка): Сбой подключения к нейросети."
 
 class ChatService:

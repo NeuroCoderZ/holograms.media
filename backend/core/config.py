@@ -14,12 +14,15 @@ class Settings(BaseModel):
     
     # Mistral AI
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "").strip()
+
+    # OpenClaw.ai (Successor to Moltbook)
+    OPENCLAW_API_KEY: str = os.getenv("OPENCLAW_API_KEY", "").strip()
     
     # Database (Astra DB)
     ASTRA_DB_APPLICATION_TOKEN: str = os.getenv("ASTRA_DB_APPLICATION_TOKEN", "").strip()
     ASTRA_DB_API_ENDPOINT: str = os.getenv("ASTRA_DB_API_ENDPOINT", "").strip()
-    ASTRA_DB_ID: str = os.getenv("ASTRA_DB_ID", "").strip()
-    ASTRA_DB_REGION: str = os.getenv("ASTRA_DB_REGION", "").strip()
+    ASTRA_DB_ID: str = os.getenv("ASTRA_DB_ID", "403a15dc-85a4-451f-a789-df997722a23c").strip()
+    ASTRA_DB_REGION: str = os.getenv("ASTRA_DB_REGION", "us-east-2").strip()
     ASTRA_DB_KEYSPACE: str = os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace").strip()
     
     # Storage (Backblaze B2)
