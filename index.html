@@ -53,7 +53,7 @@
     console.log("THREE registered globally for XR/TorusVOM");
   </script>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.157 - FIX: Renaming to OPENCLAW_GATEWAY_TOKEN, ensured push reach GitHub");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.159 - Evolution Phase 20.4: Supervisor Agent (Tool Calling) & Incremental RAG Implementation (Secrets Removed)");</script>
   <!-- DEPLOY_VERSION_END -->
 
 
@@ -399,7 +399,11 @@
         <!-- Кнопка применить (видима в режиме по умолчанию) -->
         <button id="submitTopPrompt" class="default-mode" style="display: none; flex-shrink: 0;">Применить</button>
         <!-- Кнопка отправить (видима в режиме чата) -->
-        <button id="submitChatMessage" class="chat-mode" style="flex-shrink: 0;">Отправить</button>
+        <button id="submitChatMessage" class="chat-mode glass-send-btn" title="Отправить сообщение">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#E3E3E3">
+            <path d="M120-160v-640l760 320-760 320Zm80-120 474-200-474-200v140l240 60-240 60v140Zm0 0v-400 400Z"/>
+          </svg>
+        </button>
       </div>
     </div>
     <div id="triaVersionLabelContainer" class="tria-version-footer" style="text-align: right; width: 100%;">

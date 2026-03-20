@@ -34,14 +34,36 @@
   /* Эффект размытия при прокрутке: верхний край 10%, нижний - вплотную к вводу */
   -webkit-mask-image: linear-gradient(to bottom,
       transparent 0%,
-      black 10%,
-      black 95%,
+      black 3%,
+      black 97%,
       transparent 100%);
   mask-image: linear-gradient(to bottom,
       transparent 0%,
-      black 10%,
-      black 95%,
+      black 3%,
+      black 97%,
       transparent 100%);
+}
+
+/* Custom Scrollbar for Chat */
+#chatHistory::-webkit-scrollbar,
+#chatMessages::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chatHistory::-webkit-scrollbar-track,
+#chatMessages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#chatHistory::-webkit-scrollbar-thumb,
+#chatMessages::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+#chatHistory::-webkit-scrollbar-thumb:hover,
+#chatMessages::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 /* Добавляем псевдоэлемент для обозначения места скроллбара также как в текстовом поле */
@@ -256,7 +278,10 @@
 
 /* Redefine to match the visual style requested */
 #loadingIndicator {
-  /* Container positioning */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
 }
 
 #loadingIndicator::after {

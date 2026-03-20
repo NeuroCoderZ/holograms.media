@@ -15,79 +15,26 @@ from backend.llm.gemini_llm import get_gemini_response
 from backend.llm.openclaw_llm import get_openclaw_response # ADDED
 from backend.skills.openclaw_patrol import patrol_agent
 from backend.skills.openclaw_economist import economist_agent
+from backend.tria_agents.tria_rag_service import tria_rag
+
+from backend.tria_agents.tria_orchestrator import orchestrator
 
 logger = logging.getLogger(__name__)
 
-# Основная функция интеграции: пытаемся OpenClaw, затем Gemini, затем Mistral
-async def get_llm_response(user_message: str, history: List[ChatMessageDB], selected_model: Optional[str] = None) -> str:
-    logger.info(f"LLM: Received '{user_message}' with history length {len(history)}, selected: {selected_model}")
+# Основная функция интеграции: теперь делегируем всё Оркестратору (Supervisor Agent)
+async def get_llm_response(user_message: str, history: List[ChatMessageDB], selected_model: Optional[str] = None, user_email: str = "") -> str:
+    logger.info(f"LLM: Delegating '{user_message}' to TriaOrchestrator")
     
-    system_instruction = "Ты Триа — AI-ассистент платформы holograms.media. Помогай пользователям разобраться в проекте, архитектуре и логике интерфейса."
-
-    # 1. Пытаемся использовать OpenClaw
-    if settings.OPENCLAW_GATEWAY_TOKEN:
-        try:
-            oc_model = "gemini-3-flash-preview"
-            if selected_model:
-                if "mistral" in selected_model.lower():
-                    oc_model = "mistral-small-latest"
-                elif "gemini" in selected_model.lower():
-                    oc_model = "gemini-3-flash-preview"
-
-            logger.info(f"LLM: Attempting OpenClaw with model {oc_model}")
-            response_text = await get_openclaw_response(
-                user_message, 
-                model=oc_model, 
-                history=history, 
-                system_instruction=system_instruction
-            )
-            if not response_text.startswith("[OpenClaw Error]"):
-                return f"[OpenClaw: {oc_model}] {response_text}"
-            logger.warning(f"OpenClaw failed: {response_text}. Falling back to direct calls.")
-        except Exception as e:
-            logger.error(f"Error calling OpenClaw: {e}")
-
-    # 2. ФОЛЛБЭК
-    use_gemini = True
-    use_mistral = True
-
-    # Пытаемся использовать Gemini напрямую
-    if use_gemini and settings.GOOGLE_API_KEY:
-        try:
-            formatted_history = []
-            for msg in history[-10:]:
-                role = "user" if msg.role == "user" else "model"
-                formatted_history.append({"role": role, "parts": [msg.message_content]})
-                
-            response_text = await get_gemini_response(
-                user_message, 
-                history=formatted_history, 
-                system_instruction=system_instruction
-            )
-            
-            if response_text.startswith("[Gemini Error]"):
-                raise Exception(f"Gemini API Error detected: {response_text}")
-                
-            return f"[Gemini 3 Flash-Preview] {response_text}"
-            
-        except Exception as e:
-            logger.error(f"Error calling Gemini LLM: {e}. Activating Mistral Fallback.")
-            use_mistral = True 
+    # Оркестратор сам вызовет RAG через Tool Calling, если это необходимо.
+    # Мы передаем историю и почту пользователя для разграничения прав (Глобальная/Персональная).
     
-    # Пытаемся использовать Mistral напрямую
-    if use_mistral and settings.MISTRAL_API_KEY:
-        try:
-            response_text = await asyncio.wait_for(
-                get_mistral_response(user_message, history[-10:], system_instruction),
-                timeout=20.0
-            )
-            return f"[Mistral Large Latest] {response_text}"
-        except Exception as e:
-            logger.error(f"Error calling Mistral API: {e}.")
-            return f"Триа: Ошибка при вызове Mistral API: {e}"
-            
-    logger.warning("No LLM API keys available or all failed.")
-    return f"Триа (Заглушка): Сбой подключения к нейросети."
+    response_text = await orchestrator.process_user_prompt(
+        prompt=user_message,
+        user_email=user_email
+    )
+    
+    # Для совместимости с UI добавляем метку модели (пока эмулируем, так как Gemini - Supervisor)
+    return f"[Tria Supervisor: Gemini 3 Flash] {response_text}"
 
 class ChatService:
     def __init__(self, db: Any):
@@ -223,10 +170,15 @@ class ChatService:
             logger.info(f"Service: User message saved (ID: {user_saved_message.id}), now getting LLM response.")
             history_for_llm = await self.repo.get_messages_by_session_id(session_id=session_id, user_id=user_id, limit=20) # Get recent history
 
-            selected_model = metadata.get("llm_model") if metadata else None
             try:
-                # E-1: Прокидываем LLM_CONTEXT в оркестратор
-                llm_response_content = await get_llm_response(message_content, history_for_llm, selected_model)
+                # Safe extraction of user_email
+                if isinstance(user, dict):
+                    user_email = user.get("email") or ""
+                else:
+                    user_email = getattr(user, "email", "")
+
+                # E-1: Прокидываем в оркестратор
+                llm_response_content = await get_llm_response(message_content, history_for_llm, user_email)
             except Exception as e:
                 logger.error(f"Service: LLM call failed for session {session_id}: {e}")
                 # Optionally save a system error message to chat

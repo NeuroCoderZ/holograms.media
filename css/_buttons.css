@@ -205,10 +205,42 @@
   width: var(--button-action-width);
   flex-shrink: 0;
   /* Запрещаем сжатие */
-  transition: background-color 0.2s ease;
+  /* Specific style for #submitTopPrompt if it needs to differ from #submitChatMessage in the future */
+
+.glass-send-btn {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 50% !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  cursor: pointer;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+  flex-shrink: 0;
 }
 
-/* Specific style for #submitTopPrompt if it needs to differ from #submitChatMessage in the future */
+.glass-send-btn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  transform: scale(1.1) rotate(-10deg) !important;
+  box-shadow: 0 6px 20px rgba(0, 255, 128, 0.2) !important;
+}
+
+.glass-send-btn:active {
+  transform: scale(0.9) !important;
+}
+
+.glass-send-btn svg {
+  width: 20px !important;
+  height: 20px !important;
+  fill: #E3E3E3 !important;
+  margin-left: 2px; /* Slight offset for arrow look */
+}
 
 /* Стиль для неактивной кнопки отправки сообщения */
 #submitChatMessage:disabled {
