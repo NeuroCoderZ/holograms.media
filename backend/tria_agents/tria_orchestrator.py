@@ -8,6 +8,22 @@ from backend.llm.gemini_llm import get_gemini_response
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
+def search_tria_knowledge(query: str) -> str:
+    """
+    Поиск по базе знаний проекта (RAG). 
+    Используйте этот инструмент ОБЯЗАТЕЛЬНО, если пользователь задает технические вопросы о коде, 
+    архитектуре, API или специфике реализации проекта holograms.media.
+    Аргумент query должен быть четким поисковым запросом на естественном языке.
+    """
+    # Вызов реального RAG сервиса. 
+    # В контексте Supervisor-агента мы оборачиваем асинхронный вызов.
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+    return loop.run_until_complete(tria_rag.get_relevant_context(query))
 
 def search_gesture_memory(intent: str) -> str:
     """
