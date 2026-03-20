@@ -6,30 +6,35 @@ ENV PYTHONUNBUFFERED 1
 ENV PYTHONPATH=/app
 WORKDIR /app
 
-# Устанавливаем зависимости прямо здесь, чтобы избежать проблем с multi-stage site-packages
+# Устанавливаем зависимости
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     python -c "from mistralai.client import Mistral; print('Mistral import OK')"
 
-# Копируем ТОЛЬКО необходимые файлы для запуска бэкенда и статики
+# Устанавливаем системные зависимости для OpenClaw (если нужны, например git или curl)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Копируем ТОЛЬКО необходимые файлы для запуска бэкенда и статики
+# Копируем необходимые файлы
 COPY ./backend /app/backend
 COPY ./js /app/js
 COPY ./css /app/css
 COPY ./public /app/public
-# ВАЖНО: Копируем только pkg из holocore (только скомпилированный WASM)
 COPY ./holocore/pkg /app/holocore/pkg
 
 COPY ./index.html /app/index.html
 COPY ./style.css /app/style.css
 COPY ./favicon.ico /app/favicon.ico
 
+# Копируем скрипт запуска
+COPY ./start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 EXPOSE 8000
+EXPOSE 18789
 
-# Очистка кэша APT после установки nodejs если он все же нужен, но тут он кажется лишним для FastAPI
-# Если GestureBot реально нужен на бэкенде, его лучше запускать как отдельный сервис или оптимизировать
-# Убираем установку Node.js и npm install так как это "хлам" для бэкенда
-
-CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["/app/start.sh"]
