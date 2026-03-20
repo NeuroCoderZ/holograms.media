@@ -13,35 +13,31 @@
 }
 
 #chatMessages {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  /* Позволяет flex-контейнеру сжиматься ниже контента */
-  overflow-y: auto;
-  /* Включаем вертикальный скроллбар */
-  padding: 20px 8px 20px 6px;
-  /* Увеличиваем правый отступ для скроллбара */
-  gap: 6px;
-  position: relative;
-  scrollbar-width: thin;
-  /* Тонкий скроллбар для Firefox */
-  scrollbar-color: var(--color-black-66) transparent;
-  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding: 6px 8px 6px 6px !important;
+  gap: 6px !important;
+  position: relative !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--color-black-66) var(--color-black-100) !important;
+  box-sizing: border-box !important;
 
-  /* Эффект размытия при прокрутке: верхний край 10%, нижний - вплотную к вводу */
+  /* Glass-fade: smooth transition at edges */
   -webkit-mask-image: linear-gradient(to bottom,
       transparent 0%,
-      black 3%,
-      black 97%,
-      transparent 100%);
+      black 5%,
+      black 95%,
+      transparent 100%) !important;
   mask-image: linear-gradient(to bottom,
       transparent 0%,
-      black 3%,
-      black 97%,
-      transparent 100%);
+      black 5%,
+      black 95%,
+      transparent 100%) !important;
 }
 
 /* Custom Scrollbar for Chat */

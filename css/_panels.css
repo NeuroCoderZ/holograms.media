@@ -464,9 +464,14 @@ body.focus-mode .panel.right-panel {
 #myHologramsView,
 #myGesturesView,
 #chatHistory {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
   padding: 5% !important;
   border-radius: 15px !important;
   background-color: rgba(0, 0, 0, 0.3) !important;
   margin: 0 !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
 }

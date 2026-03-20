@@ -1,17 +1,25 @@
 /* Правая панель (Таймлайн + Промпт) */
 #versionTimeline,
 #chatHistory {
-  flex-grow: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 5px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-icon-disabled) transparent;
-  min-height: 100px;
-  background-color: transparent;
-  /* Glass-fade: dissolve versions at scroll edges - Bottom fade minimized to touch divider */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 95%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 95%, transparent 100%);
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 5px !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--color-icon-disabled) transparent !important;
+  
+  /* Glass-fade: dissolve versions at scroll edges */
+  -webkit-mask-image: linear-gradient(to bottom, 
+      transparent 0%, 
+      black 5%, 
+      black 95%, 
+      transparent 100%) !important;
+  mask-image: linear-gradient(to bottom, 
+      transparent 0%, 
+      black 5%, 
+      black 95%, 
+      transparent 100%) !important;
 }
 
 #promptBar,
