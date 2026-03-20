@@ -11,7 +11,7 @@ from backend.core.models import (
 )
 from backend.core.config import settings
 from backend.llm.mistral_llm import get_mistral_response
-from backend.llm.gemini_llm import get_gemini_response, LLM_CONTEXT
+from backend.llm.gemini_llm import get_gemini_response
 from backend.llm.openclaw_llm import get_openclaw_response # ADDED
 from backend.skills.openclaw_patrol import patrol_agent
 from backend.skills.openclaw_economist import economist_agent
@@ -22,10 +22,11 @@ logger = logging.getLogger(__name__)
 async def get_llm_response(user_message: str, history: List[ChatMessageDB], selected_model: Optional[str] = None) -> str:
     logger.info(f"LLM: Received '{user_message}' with history length {len(history)}, selected: {selected_model}")
     
-    # 1. Пытаемся использовать OpenClaw (Новый стандарт)
+    system_instruction = "Ты Триа — AI-ассистент платформы holograms.media. Помогай пользователям разобраться в проекте, архитектуре и логике интерфейса."
+
+    # 1. Пытаемся использовать OpenClaw
     if settings.OPENCLAW_GATEWAY_TOKEN:
         try:
-            # Map selected_model to OpenClaw format if needed
             oc_model = "gemini-3.1-flash-lite-preview"
             if selected_model:
                 if "mistral" in selected_model.lower():
@@ -38,7 +39,7 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
                 user_message, 
                 model=oc_model, 
                 history=history, 
-                system_instruction=LLM_CONTEXT
+                system_instruction=system_instruction
             )
             if not response_text.startswith("[OpenClaw Error]"):
                 return f"[OpenClaw: {oc_model}] {response_text}"
@@ -46,37 +47,24 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
         except Exception as e:
             logger.error(f"Error calling OpenClaw: {e}")
 
-    # 2. ФОЛЛБЭК: Прямые вызовы (как раньше)
-    use_gemini = False
-    use_mistral = False
-    
-    if selected_model:
-        if "gemini" in selected_model.lower():
-            use_gemini = True
-        elif "mistral" in selected_model.lower():
-            use_mistral = True
-    else:
-        # If no preference, try both (Gemini first)
-        use_gemini = True
-        use_mistral = True
+    # 2. ФОЛЛБЭК
+    use_gemini = True
+    use_mistral = True
 
     # Пытаемся использовать Gemini напрямую
     if use_gemini and settings.GOOGLE_API_KEY:
         try:
             formatted_history = []
-            # Ограничиваем историю для Gemini
             for msg in history[-10:]:
                 role = "user" if msg.role == "user" else "model"
                 formatted_history.append({"role": role, "parts": [msg.message_content]})
                 
-            # Используем gemini-3.1-flash-lite-preview напрямую
             response_text = await get_gemini_response(
                 user_message, 
                 history=formatted_history, 
-                system_instruction=LLM_CONTEXT
+                system_instruction=system_instruction
             )
             
-            # CRITICAL FIX: Check if get_gemini_response returned an error string
             if response_text.startswith("[Gemini Error]"):
                 raise Exception(f"Gemini API Error detected: {response_text}")
                 
@@ -84,16 +72,13 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
             
         except Exception as e:
             logger.error(f"Error calling Gemini LLM: {e}. Activating Mistral Fallback.")
-            # FORCE FALLBACK: Even if user selected Gemini, if it fails, try Mistral
             use_mistral = True 
-            if not settings.MISTRAL_API_KEY:
-                 return f"Триа: Ошибка при вызове Gemini API: {e} (Mistral ключ не найден для фоллбэка)"
     
     # Пытаемся использовать Mistral напрямую
     if use_mistral and settings.MISTRAL_API_KEY:
         try:
             response_text = await asyncio.wait_for(
-                get_mistral_response(user_message, history[-10:], LLM_CONTEXT or "Ты АИ-ассистент Триа."),
+                get_mistral_response(user_message, history[-10:], system_instruction),
                 timeout=20.0
             )
             return f"[Mistral Large Latest] {response_text}"
@@ -101,7 +86,7 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
             logger.error(f"Error calling Mistral API: {e}.")
             return f"Триа: Ошибка при вызове Mistral API: {e}"
             
-    logger.warning("No LLM API keys available or all failed. Returning stub response.")
+    logger.warning("No LLM API keys available or all failed.")
     return f"Триа (Заглушка): Сбой подключения к нейросети."
 
 class ChatService:

@@ -36,9 +36,9 @@ async def get_mistral_response(user_message: str, history: List[ChatMessageDB], 
             
         messages.append({"role": "user", "content": user_message})
 
-        # By user request, we must use mistral-large-latest
+        # By user request, we must use mistral-large-2512
         response = await client.chat.stream_async(
-            model="mistral-large-latest",
+            model="mistral-large-2512",
             messages=messages,
         )
         
