@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 async def _get_agent_response_text(query: str, system_instr: str, domain: str) -> str:
     """Helper to get response text with OpenClaw priority and fallbacks."""
     # 1. OpenClaw Priority
-    if settings.OPENCLAW_API_KEY:
+    if settings.OPENCLAW_GATEWAY_TOKEN:
         try:
             model = "gemini-3-flash-preview" if domain != "architecture" else "mistral-small-latest"
             answer = await get_openclaw_response(query, model=model, system_instruction=system_instr)

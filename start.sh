@@ -5,11 +5,6 @@
 if command -v openclaw &> /dev/null; then
     echo "--- Starting OpenClaw Agent ---"
     
-    # Support both naming conventions
-    if [ -z "$OPENCLAW_GATEWAY_TOKEN" ] && [ ! -z "$OPENCLAW_API_KEY" ]; then
-        export OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_API_KEY"
-    fi
-
     # Ensure a token exists for the gateway
     if [ -z "$OPENCLAW_GATEWAY_TOKEN" ]; then
         echo "WARNING: OPENCLAW_GATEWAY_TOKEN is not set. Generating a temporary token..."
