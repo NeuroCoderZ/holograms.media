@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 # OpenClaw usually provides an OpenAI-compatible API
 # Documentation: https://openclaw.ai/
-OPENCLAW_BASE_URL = "https://api.openclaw.ai/v1"
+# Running locally in the same container via start.sh
+OPENCLAW_BASE_URL = "http://127.0.0.1:18789/v1"
 
 async def get_openclaw_response(
     prompt: str,
@@ -18,8 +19,8 @@ async def get_openclaw_response(
     system_instruction: str = "Ты Триа, персональный ИИ-ассистент."
 ) -> str:
     """Gets response using OpenClaw OpenAI-compatible API."""
-    if not settings.OPENCLAW_API_KEY:
-        return "[OpenClaw Error] OPENCLAW_API_KEY not set"
+    if not settings.OPENCLAW_GATEWAY_TOKEN:
+        return "[OpenClaw Error] OPENCLAW_GATEWAY_TOKEN not set"
 
     messages = [{"role": "system", "content": system_instruction}]
     
@@ -35,7 +36,7 @@ async def get_openclaw_response(
             response = await client.post(
                 f"{OPENCLAW_BASE_URL}/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {settings.OPENCLAW_API_KEY}",
+                    "Authorization": f"Bearer {settings.OPENCLAW_GATEWAY_TOKEN}",
                     "Content-Type": "application/json"
                 },
                 json={
