@@ -14,7 +14,7 @@ def get_astra_client():
     """
     token = settings.ASTRA_DB_APPLICATION_TOKEN
     if not token:
-        logger.error("ASTRA_DB_APPLICATION_TOKEN (token) is missing in settings.")
+        logger.critical("❌ CRITICAL: ASTRA_DB_APPLICATION_TOKEN is missing in environment variables!")
         return None
     return DataAPIClient(token)
 
@@ -34,6 +34,8 @@ def get_astra_db(client: DataAPIClient = None):
         region = settings.ASTRA_DB_REGION.strip()
         keyspace = settings.ASTRA_DB_KEYSPACE.strip()
         api_endpoint = settings.ASTRA_DB_API_ENDPOINT.strip()
+
+        logger.info(f"Attempting Astra DB Connection. ID: '{db_id}', Region: '{region}', Endpoint: '{api_endpoint}', Keyspace: '{keyspace}'")
 
         # 1. If ID and Region are missing but Endpoint is present, try to parse ID/Region from Endpoint
         # Pattern: https://[DB_ID]-[REGION].apps.astra.datastax.com
@@ -56,11 +58,11 @@ def get_astra_db(client: DataAPIClient = None):
             db = client.get_async_database(api_endpoint, keyspace=keyspace)
             return db
         
-        logger.error("Neither ASTRA_DB_ID/REGION nor ASTRA_DB_API_ENDPOINT are provided.")
+        logger.error("❌ CRITICAL: Neither ASTRA_DB_ID/REGION nor ASTRA_DB_API_ENDPOINT are provided in environment variables.")
         return None
 
     except Exception as e:
-        logger.error(f"Failed to connect to Astra DB: {e}")
+        logger.error(f"❌ Failed to connect to Astra DB: {e}", exc_info=True)
         return None
 
 async def get_db(request: Request = None, websocket: WebSocket = None):
