@@ -18,7 +18,7 @@ async def _get_agent_response_text(query: str, system_instr: str, domain: str) -
     # 1. OpenClaw Priority
     if settings.OPENCLAW_API_KEY:
         try:
-            model = "google/gemini-3-flash" if domain != "architecture" else "mistral/mistral-large-latest"
+            model = "gemini-3-flash-preview" if domain != "architecture" else "mistral-small-latest"
             answer = await get_openclaw_response(query, model=model, system_instruction=system_instr)
             if not answer.startswith("[OpenClaw Error]"):
                 return answer
@@ -122,16 +122,4 @@ class ProtocolAgent(BaseTriaAgent):
             return AgentResponse(answer=f"Protocol-агент не смог найти релевантную информацию по запросу: '{query}'.", confidence=0.0, agent_name=self.domain)
 
 
-class ProtocolAgent(BaseTriaAgent):
-    def __init__(self):
-        super().__init__("protocol")
 
-    async def process_query(self, query: str, context: Dict) -> AgentResponse:
-        logger.info(f"ProtocolAgent processing query: {query}")
-        rag_response = await self._query_rag_service(query, context.get("session_id"))
-
-        if rag_response and rag_response.answer:
-            answer = f"Protocol-агент анализирует протокол: '{query}'. Ответ RAG: {rag_response.answer}"
-            return AgentResponse(answer=answer, sources=rag_response.sources, agent_name=self.domain)
-        else:
-            return AgentResponse(answer=f"Protocol-агент не смог найти релевантную информацию по запросу: '{query}'.", confidence=0.0, agent_name=self.domain)

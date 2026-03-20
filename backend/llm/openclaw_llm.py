@@ -14,7 +14,7 @@ OPENCLAW_BASE_URL = "http://127.0.0.1:18789/v1"
 
 async def get_openclaw_response(
     prompt: str,
-    model: str = "gemini-3.1-flash-lite-preview",
+    model: str = "gemini-3-flash-preview",
     history: List[ChatMessageDB] = None,
     system_instruction: str = "Ты Триа, персональный ИИ-ассистент."
 ) -> str:

@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 # STATIC CONTEXT ONLY
 SYSTEM_PROMPT = "Ты Триа — AI-ассистент платформы holograms.media. Отвечай на вопросы о проекте."
+LLM_CONTEXT = SYSTEM_PROMPT # Alias for compatibility with routers and orchestrator
 
 # Инициализируем клиент (Async)
 client = None
