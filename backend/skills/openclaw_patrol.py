@@ -41,6 +41,18 @@ class OpenClawPatrol:
             logger.warning(f"Patrol: User {user_id} has critical low reputation.")
             return {"status": "rejected", "reason": "Reputation too low for Global Broadcast", "utility_score_penalty": 0.0}
             
+        # --- LOGIC UPDATE: Allow standard chat without gestures ---
+        # If there is no gesture DNA provided, we assume it's a standard text chat message.
+        # We only strictly enforce DNA validation if DNA was actually claimed to be present or for critical ops.
+        if not gesture_dna:
+            # It's a text-only message. Pass it through (subject to spam checks above).
+            return {
+                "status": "passed",
+                "reason": "Standard Text Chat (No Gesture DNA required)",
+                "utility_score_bonus": 0.01
+            }
+
+        # If DNA IS provided, it MUST be valid
         if not dna_valid and reputation < 80.0:
             logger.warning(f"Patrol: Invalid DNA embedding from {user_id} without high trust.")
             return {"status": "rejected", "reason": "Gesture DNA verification failed", "utility_score_penalty": 2.0}
