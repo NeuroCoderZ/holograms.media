@@ -26,12 +26,12 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
     if settings.OPENCLAW_GATEWAY_TOKEN:
         try:
             # Map selected_model to OpenClaw format if needed
-            oc_model = "google/gemini-2.0-flash"
+            oc_model = "gemini-flash-latest"
             if selected_model:
                 if "mistral" in selected_model.lower():
                     oc_model = "mistral/mistral-large-latest"
                 elif "gemini" in selected_model.lower():
-                    oc_model = "google/gemini-2.0-flash"
+                    oc_model = "gemini-flash-latest"
 
             logger.info(f"LLM: Attempting OpenClaw with model {oc_model}")
             response_text = await get_openclaw_response(
