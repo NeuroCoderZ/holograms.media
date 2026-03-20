@@ -63,7 +63,8 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
     if use_gemini and settings.GOOGLE_API_KEY:
         try:
             formatted_history = []
-            for msg in history:
+            # Ограничиваем историю для Gemini
+            for msg in history[-10:]:
                 role = "user" if msg.role == "user" else "model"
                 formatted_history.append({"role": role, "parts": [msg.message_content]})
                 
@@ -84,10 +85,10 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
     if use_mistral and settings.MISTRAL_API_KEY:
         try:
             response_text = await asyncio.wait_for(
-                get_mistral_response(user_message, history, LLM_CONTEXT or "Ты АИ-ассистент Триа."),
+                get_mistral_response(user_message, history[-10:], LLM_CONTEXT or "Ты АИ-ассистент Триа."),
                 timeout=20.0
             )
-            return f"[Mistral Large 3] {response_text}"
+            return f"[Mistral Large Latest] {response_text}"
         except Exception as e:
             logger.error(f"Error calling Mistral API: {e}.")
             return f"Триа: Ошибка при вызове Mistral API: {e}"
