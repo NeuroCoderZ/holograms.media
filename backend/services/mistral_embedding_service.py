@@ -1,48 +1,33 @@
 import logging
 from typing import List
 from mistralai.client import Mistral
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 class MistralEmbeddingService:
     """
-    Unified Embedding Service for Триа (Triple-A).
-    Uses codestral-embed (1536d) for all HoloQuant generation to ensure 
-    cross-modal compatibility between code, text, and sensor data.
+    Унифицированный сервис эмбеддингов для Триа (Triple-A).
+    Использует codestral-embed (1536d) для качественного поиска по кодовой базе.
     """
     def __init__(self):
         self.api_key = settings.MISTRAL_API_KEY
         if not self.api_key:
             logger.error("MISTRAL_API_KEY is not set. Embedding service will fail.")
         self.client = Mistral(api_key=self.api_key)
-        self.model = "codestral-embed"  # 1536 dimensions - Unified Standard
+        self.model = "codestral-embed"  # Строго 1536 измерений для кода
 
-    async def get_holoquant(self, text: str) -> List[float]:
-        """
-        Generates a single 1536-dimensional HoloQuant for the given text/code.
-        """
-        if not self.api_key:
-            return [0.0] * 1536
-
-        try:
-            response = await self.client.embeddings.create_async(
-                model=self.model,
-                inputs=[text]
-            )
-            return response.data[0].embedding
-        except Exception as e:
-            logger.error(f"Error generating HoloQuant: {e}")
-            raise e
-
+    # Экспоненциальный бэкофф: ждем 2^x секунд при ошибке (до 6 попыток)
+    @retry(
+        stop=stop_after_attempt(6),
+        wait=wait_exponential(multiplier=2, min=2, max=30),
+        reraise=True
+    )
     async def get_holoquants_batch(self, texts: List[str]) -> List[List[float]]:
-        """
-        Generates a batch of HoloQuants for multiple data chunks.
-        Ideal for repomix-context parsing.
-        """
         if not self.api_key:
             return [[0.0] * 1536 for _ in texts]
-
+        
         try:
             response = await self.client.embeddings.create_async(
                 model=self.model,
@@ -50,8 +35,11 @@ class MistralEmbeddingService:
             )
             return [item.embedding for item in response.data]
         except Exception as e:
-            logger.error(f"Error generating HoloQuant batch: {e}")
+            logger.warning(f"Mistral API limit/error hit. Retrying... Error: {e}")
             raise e
 
-# Global instance
+    async def get_holoquant(self, text: str) -> List[float]:
+        res = await self.get_holoquants_batch([text])
+        return res[0]
+
 mistral_embeddings = MistralEmbeddingService()

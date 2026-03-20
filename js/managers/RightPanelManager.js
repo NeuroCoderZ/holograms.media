@@ -8,14 +8,14 @@ class RightPanelManager {
         this.gesturesListDisplay = gesturesListDisplayInstance; // Store the instance
 
         this.chatButton = document.getElementById('chatButton');
-        this.versionTimelineContainer = document.getElementById('versionTimelineContainer');
-        this.chatInterfaceContainer = document.getElementById('chatInterfaceContainer');
-        this.gesturesListContainer = document.getElementById('gesturesListContainer'); // New container for gestures list
+        this.versionTimelineContainer = document.getElementById('versionTimeline');
+        this.chatInterfaceContainer = document.getElementById('chatHistory');
+        this.gesturesListContainer = document.getElementById('myGesturesView'); // Matches index.html
 
         if (!this.chatButton) console.warn("RightPanelManager: #chatButton not found.");
-        if (!this.versionTimelineContainer) console.warn("RightPanelManager: #versionTimelineContainer not found.");
-        if (!this.chatInterfaceContainer) console.warn("RightPanelManager: #chatInterfaceContainer not found.");
-        if (!this.gesturesListContainer) console.warn("RightPanelManager: #gesturesListContainer not found. 'My Gestures' view may not work.");
+        if (!this.versionTimelineContainer) console.warn("RightPanelManager: #versionTimeline not found.");
+        if (!this.chatInterfaceContainer) console.warn("RightPanelManager: #chatHistory not found.");
+        if (!this.gesturesListContainer) console.warn("RightPanelManager: #myGesturesView not found.");
 
         // Initialize currentMode from state.rightPanelMode or default to 'timeline'
         this.currentMode = (this.state && this.state.rightPanelMode) ? this.state.rightPanelMode : 'timeline';
