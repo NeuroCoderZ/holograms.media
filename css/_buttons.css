@@ -206,6 +206,7 @@
   flex-shrink: 0;
   /* Запрещаем сжатие */
   /* Specific style for #submitTopPrompt if it needs to differ from #submitChatMessage in the future */
+}
 
 .glass-send-btn {
   background: var(--glass-bg) !important;
