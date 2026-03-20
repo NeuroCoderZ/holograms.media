@@ -18,6 +18,8 @@ def get_astra_client():
         return None
     return DataAPIClient(token)
 
+import re
+
 def get_astra_db(client: DataAPIClient = None):
     """
     Returns an ASYNCHRONOUS Astra DB instance using settings.
@@ -28,20 +30,29 @@ def get_astra_db(client: DataAPIClient = None):
             return None
 
     try:
-        # Prefer connecting by ID and Region if available
         db_id = settings.ASTRA_DB_ID.strip()
         region = settings.ASTRA_DB_REGION.strip()
         keyspace = settings.ASTRA_DB_KEYSPACE.strip()
+        api_endpoint = settings.ASTRA_DB_API_ENDPOINT.strip()
 
+        # 1. If ID and Region are missing but Endpoint is present, try to parse ID/Region from Endpoint
+        # Pattern: https://[DB_ID]-[REGION].apps.astra.datastax.com
+        if (not db_id or not region) and api_endpoint:
+            match = re.search(r"https?://([a-f0-9\-]+)-([a-z0-9\-]+)\.apps\.astra\.datastax\.com", api_endpoint)
+            if match:
+                db_id = match.group(1)
+                region = match.group(2)
+                logger.info(f"Parsed Astra DB ID '{db_id}' and Region '{region}' from endpoint.")
+
+        # 2. Prefer connecting by ID and Region (Parsed or Direct)
         if db_id and region:
             logger.info(f"Connecting to Astra DB via ID: {db_id} (Region: {region})")
             db = client.get_async_database(db_id, region=region, keyspace=keyspace)
             return db
         
-        # Fallback to Endpoint
-        api_endpoint = settings.ASTRA_DB_API_ENDPOINT.strip()
+        # 3. Fallback to raw Endpoint
         if api_endpoint:
-            logger.info(f"Connecting to Astra DB via Endpoint: {api_endpoint}")
+            logger.info(f"Connecting to Astra DB via raw Endpoint: {api_endpoint}")
             db = client.get_async_database(api_endpoint, keyspace=keyspace)
             return db
         
