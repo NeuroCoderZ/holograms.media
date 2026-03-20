@@ -188,24 +188,19 @@
   background-color: var(--button-hover-bg);
 }
 
-/* Стили для кнопок Применить и Отправить */
+/* Standardized style for #submitTopPrompt and #submitChatMessage to inherit from .control-button */
 #submitTopPrompt,
 #submitChatMessage {
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-button);
-  background-color: #00ff00;
-  /* Requirement: Bright green */
-  color: #000000;
-  /* Requirement: Black text */
-  border: 1px solid #00cc00;
-  /* Requirement: Slightly darker green border */
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  height: var(--control-height);
-  width: var(--button-action-width);
-  flex-shrink: 0;
-  /* Запрещаем сжатие */
-  /* Specific style for #submitTopPrompt if it needs to differ from #submitChatMessage in the future */
+  width: var(--button-size) !important;
+  height: var(--button-size) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  background-color: transparent !important; /* Will be styled by .control-button */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .glass-send-btn {
@@ -631,14 +626,23 @@
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+/* Физика: Упругое вдавливание (Liquid Glass) */
 .control-button:active,
 .control-button.active {
+  transform: scale(0.92) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  
+  /* Инвертированные тени: эффект "лунки" */
   box-shadow:
     inset 0 4px 10px rgba(0, 0, 0, 0.7),
     inset 0 -2px 5px rgba(255, 255, 255, 0.1),
     0 1px 2px rgba(0, 0, 0, 0.5) !important;
-  transform: scale(0.96) !important;
-  border-color: rgba(255, 255, 255, 0.05) !important;
+
+  /* Динамический блик смещается вглубь */
+  background-image: radial-gradient(circle at var(--inv-light-x, 50%) var(--inv-light-y, 50%),
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 75%) !important;
 }
 
 /* Attention Economy Styles */

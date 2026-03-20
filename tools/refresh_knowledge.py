@@ -1,9 +1,13 @@
 import os
+import sys
 import re
 import asyncio
 import logging
 import hashlib
 from typing import List, Dict
+
+# Гарантируем, что корневая директория проекта в пути поиска
+sys.path.append(os.getcwd())
 from astrapy import DataAPIClient
 from astrapy.info import CollectionDefinition
 from astrapy.constants import VectorMetric
@@ -58,17 +62,19 @@ async def refresh_knowledge():
 
     # 1. Инициализация Astra DB
     client = DataAPIClient(settings.ASTRA_DB_APPLICATION_TOKEN)
-    db = client.get_async_database(settings.ASTRA_DB_API_ENDPOINT, keyspace=settings.ASTRA_DB_KEYSPACE)
+    # ЯВНО получаем keyspace из env или дефолт
+    keyspace_name = os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace")
+    db = client.get_async_database(settings.ASTRA_DB_API_ENDPOINT, keyspace=keyspace_name)
     
-    # 2. Очистка старой базы (Drop & Recreate решает проблему с SSL EOF)
     logger.info("Dropping old collection to wipe data cleanly...")
     try:
         await db.drop_collection(COLLECTION_NAME)
-        logger.info("Old collection dropped.")
+        # 2.5. Пауза для синхронизации распределенной БД
+        logger.info("Waiting 5 seconds for AstraDB to synchronize...")
+        await asyncio.sleep(5) 
     except Exception as e:
-        logger.info(f"Collection drop info: {e}")
+        logger.info(f"Drop skipped/failed: {e}")
 
-    # 3. Правильное создание коллекции для astrapy v2.0+
     logger.info(f"Creating collection {COLLECTION_NAME} ({DIMENSIONS}d)...")
     collection_definition = (
         CollectionDefinition.builder()
@@ -77,7 +83,7 @@ async def refresh_knowledge():
         .build()
     )
     
-    # В v2.2.1+ аргумент check_exists может не поддерживаться вместе с definition в некоторых методах
+    # Используем astrapy v2.x
     collection = await db.create_collection(
         COLLECTION_NAME, 
         definition=collection_definition

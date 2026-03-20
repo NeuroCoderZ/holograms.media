@@ -201,3 +201,29 @@
   transform: scale(0.9) !important;
   margin-bottom: 35svh !important;
 }
+/* Glass Model Selector */
+#modelSelect {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  color: #E3E3E3 !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  outline: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  transition: all 0.3s ease !important;
+}
+
+#modelSelect:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(0, 255, 128, 0.3) !important;
+}
+
+#modelSelect option {
+  background: #121212 !important;
+  color: #E3E3E3 !important;
+}
