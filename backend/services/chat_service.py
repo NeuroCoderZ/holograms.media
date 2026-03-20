@@ -23,7 +23,7 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
     logger.info(f"LLM: Received '{user_message}' with history length {len(history)}, selected: {selected_model}")
     
     # 1. Пытаемся использовать OpenClaw (Новый стандарт)
-    if settings.OPENCLAW_API_KEY:
+    if settings.OPENCLAW_GATEWAY_TOKEN:
         try:
             # Map selected_model to OpenClaw format if needed
             oc_model = "google/gemini-3-flash"

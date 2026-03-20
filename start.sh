@@ -1,20 +1,20 @@
 #!/bin/bash
 
 # 1. Start OpenClaw Agent (Background Process)
-# We check if 'openclaw' command exists and if OPENCLAW_API_KEY is set
+# We check if 'openclaw' command exists and if OPENCLAW_GATEWAY_TOKEN is set
 if command -v openclaw &> /dev/null; then
     echo "--- Starting OpenClaw Agent ---"
     # Ensure a token exists for the gateway
-    if [ -z "$OPENCLAW_API_KEY" ]; then
-        echo "WARNING: OPENCLAW_API_KEY is not set. Generating a temporary token..."
-        export OPENCLAW_API_KEY=$(openssl rand -hex 16)
-        echo "Generated Token: $OPENCLAW_API_KEY"
+    if [ -z "$OPENCLAW_GATEWAY_TOKEN" ]; then
+        echo "WARNING: OPENCLAW_GATEWAY_TOKEN is not set. Generating a temporary token..."
+        export OPENCLAW_GATEWAY_TOKEN=$(openssl rand -hex 16)
+        echo "Generated Token: $OPENCLAW_GATEWAY_TOKEN"
     fi
     
     # Run OpenClaw in background on port 18789
     # Using 'serve' or 'start' depending on version (assuming 'serve' based on standard practice)
     # Redirect logs to stdout for Koyeb visibility
-    openclaw serve --port 18789 --token "$OPENCLAW_API_KEY" &
+    openclaw serve --port 18789 --token "$OPENCLAW_GATEWAY_TOKEN" &
 else
     echo "WARNING: OpenClaw command not found. Skipping agent startup."
 fi
