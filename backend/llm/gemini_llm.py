@@ -39,10 +39,9 @@ async def get_gemini_response(prompt: str, history: list = None, system_instruct
         )
         
         # Используем асинхронный метод из пространства .aio
-        # Стабильная модель: gemini-2.0-flash (или gemini-1.5-pro для сложных задач)
-        # Gemini 3.x пока в preview и может менять эндпоинты
+        # User requested: gemini-flash-latest
         response = await client.aio.models.generate_content(
-            model='gemini-2.0-flash',
+            model='gemini-flash-latest',
             contents=prompt,
             config=config
         )
