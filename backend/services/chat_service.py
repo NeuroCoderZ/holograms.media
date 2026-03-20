@@ -27,12 +27,12 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
     # 1. Пытаемся использовать OpenClaw
     if settings.OPENCLAW_GATEWAY_TOKEN:
         try:
-            oc_model = "gemini-3.1-flash-lite-preview"
+            oc_model = "gemini-3-flash-preview"
             if selected_model:
                 if "mistral" in selected_model.lower():
-                    oc_model = "mistral/mistral-large-latest"
+                    oc_model = "mistral-small-latest"
                 elif "gemini" in selected_model.lower():
-                    oc_model = "gemini-3.1-flash-lite-preview"
+                    oc_model = "gemini-3-flash-preview"
 
             logger.info(f"LLM: Attempting OpenClaw with model {oc_model}")
             response_text = await get_openclaw_response(
@@ -68,7 +68,7 @@ async def get_llm_response(user_message: str, history: List[ChatMessageDB], sele
             if response_text.startswith("[Gemini Error]"):
                 raise Exception(f"Gemini API Error detected: {response_text}")
                 
-            return f"[Gemini 3.1 Flash-Lite] {response_text}"
+            return f"[Gemini 3 Flash-Preview] {response_text}"
             
         except Exception as e:
             logger.error(f"Error calling Gemini LLM: {e}. Activating Mistral Fallback.")

@@ -16,7 +16,8 @@ class Settings(BaseModel):
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "").strip()
 
     # OpenClaw.ai (Successor to Moltbook)
-    OPENCLAW_GATEWAY_TOKEN: str = os.getenv("OPENCLAW_GATEWAY_TOKEN", "").strip()
+    OPENCLAW_GATEWAY_TOKEN: str = (os.getenv("OPENCLAW_GATEWAY_TOKEN") or os.getenv("OPENCLAW_API_KEY") or "").strip()
+    OPENCLAW_API_KEY: str = OPENCLAW_GATEWAY_TOKEN # Alias for backward compatibility
     
     # Database (Astra DB)
     ASTRA_DB_APPLICATION_TOKEN: str = os.getenv("ASTRA_DB_APPLICATION_TOKEN", "").strip()

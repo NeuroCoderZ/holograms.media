@@ -58,7 +58,11 @@ def get_astra_db(client: DataAPIClient = None):
             db = client.get_async_database(api_endpoint, keyspace=keyspace)
             return db
         
-        logger.error("❌ CRITICAL: Neither ASTRA_DB_ID/REGION nor ASTRA_DB_API_ENDPOINT are provided in environment variables.")
+        if not db_id or not region and not api_endpoint:
+            logger.error("❌ CRITICAL: Astra DB credentials missing. ID/Region/Endpoint are empty.")
+            return None
+
+        logger.error(f"❌ CRITICAL: Neither ASTRA_DB_ID/REGION nor ASTRA_DB_API_ENDPOINT are provided in environment variables. Current settings: ID={db_id}, REGION={region}, ENDPOINT={api_endpoint}")
         return None
 
     except Exception as e:
