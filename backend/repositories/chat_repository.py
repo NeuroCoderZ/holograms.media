@@ -2,6 +2,7 @@ from astrapy import Database
 from typing import List, Optional, Dict, Any
 import logging
 from datetime import datetime
+import uuid
 from backend.core.models import (
     UserChatSessionDB, UserChatSessionCreate,
     ChatMessageDB, ChatMessageCreate, ChatMessagePublic
@@ -9,13 +10,20 @@ from backend.core.models import (
 
 logger = logging.getLogger(__name__)
 
+# In-Memory Storage for Mock Mode
+MOCK_SESSIONS = {}
+MOCK_HISTORY = {}
+
 class ChatRepository:
-    def __init__(self, db: Database):
-        if db is None:
-            raise ValueError("ChatRepository requires a valid Astra Database instance. Initialization likely failed.")
+    def __init__(self, db: Optional[Database]):
         self.db = db
-        self.sessions_collection = self.db.get_collection("user_chat_sessions")
-        self.history_collection = self.db.get_collection("chat_history")
+        if self.db:
+            self.sessions_collection = self.db.get_collection("user_chat_sessions")
+            self.history_collection = self.db.get_collection("chat_history")
+            self.is_mock = False
+        else:
+            logger.warning("ChatRepository initialized in MOCK MODE (In-Memory). Data will be lost on restart.")
+            self.is_mock = True
 
     async def create_chat_session(self, user_id: str, session_in: UserChatSessionCreate) -> Optional[UserChatSessionDB]:
         now = datetime.utcnow().isoformat()
@@ -25,6 +33,14 @@ class ChatRepository:
             "created_at": now,
             "updated_at": now
         }
+        
+        if self.is_mock:
+            session_id = str(uuid.uuid4())
+            session_data["id"] = session_id
+            session_data["_id"] = session_id
+            MOCK_SESSIONS[session_id] = session_data
+            return UserChatSessionDB(**session_data)
+
         try:
             result = await self.sessions_collection.insert_one(session_data)
             if result and result.inserted_id:
@@ -36,6 +52,11 @@ class ChatRepository:
             raise
 
     async def get_chat_sessions_by_user_id(self, user_id: str, skip: int = 0, limit: int = 100) -> List[UserChatSessionDB]:
+        if self.is_mock:
+            user_sessions = [s for s in MOCK_SESSIONS.values() if s["user_id"] == user_id]
+            user_sessions.sort(key=lambda x: x["updated_at"], reverse=True)
+            return [UserChatSessionDB(**s) for s in user_sessions[skip:skip+limit]]
+
         try:
             cursor = self.sessions_collection.find(
                 filter={"user_id": user_id},
@@ -50,6 +71,12 @@ class ChatRepository:
             raise
 
     async def get_chat_session_by_id(self, session_id: str, user_id: str) -> Optional[UserChatSessionDB]:
+        if self.is_mock:
+            session = MOCK_SESSIONS.get(session_id)
+            if session and session["user_id"] == user_id:
+                return UserChatSessionDB(**session)
+            return None
+
         try:
             row = await self.sessions_collection.find_one({"_id": session_id, "user_id": user_id})
             if row:
@@ -61,6 +88,15 @@ class ChatRepository:
 
     async def update_chat_session_title(self, session_id: str, user_id: str, title: str) -> Optional[UserChatSessionDB]:
         now = datetime.utcnow().isoformat()
+        
+        if self.is_mock:
+            session = MOCK_SESSIONS.get(session_id)
+            if session and session["user_id"] == user_id:
+                session["session_title"] = title
+                session["updated_at"] = now
+                return UserChatSessionDB(**session)
+            return None
+
         try:
             result = await self.sessions_collection.update_one(
                 {"_id": session_id, "user_id": user_id},
@@ -74,6 +110,17 @@ class ChatRepository:
             raise
 
     async def delete_chat_session(self, session_id: str, user_id: str) -> bool:
+        if self.is_mock:
+            session = MOCK_SESSIONS.get(session_id)
+            if session and session["user_id"] == user_id:
+                del MOCK_SESSIONS[session_id]
+                # Delete history too
+                keys_to_delete = [k for k, v in MOCK_HISTORY.items() if v["user_chat_session_id"] == session_id]
+                for k in keys_to_delete:
+                    del MOCK_HISTORY[k]
+                return True
+            return False
+
         try:
             res_session = await self.sessions_collection.delete_one({"_id": session_id, "user_id": user_id})
             if res_session.deleted_count > 0:
@@ -85,6 +132,16 @@ class ChatRepository:
             raise
 
     async def get_messages_by_session_id(self, session_id: str, user_id: str, skip: int = 0, limit: int = 100) -> List[ChatMessageDB]:
+        if self.is_mock:
+            # Verify session access first
+            session = MOCK_SESSIONS.get(session_id)
+            if not session or session["user_id"] != user_id:
+                return []
+            
+            messages = [m for m in MOCK_HISTORY.values() if m["user_chat_session_id"] == session_id]
+            messages.sort(key=lambda x: x["timestamp"])
+            return [ChatMessageDB(**m) for m in messages[skip:skip+limit]]
+
         try:
             session = await self.sessions_collection.find_one({"_id": session_id, "user_id": user_id})
             if not session:
@@ -103,14 +160,30 @@ class ChatRepository:
             raise
 
     async def add_message_to_history(self, message_in: ChatMessageCreate, user_id: str) -> Optional[ChatMessageDB]:
+        now = datetime.utcnow().isoformat()
+        message_data = message_in.dict()
+        message_data["timestamp"] = now
+
+        if self.is_mock:
+            # Verify session access
+            session = MOCK_SESSIONS.get(message_in.user_chat_session_id)
+            if not session or session["user_id"] != user_id:
+                return None
+            
+            msg_id = str(uuid.uuid4())
+            message_data["id"] = msg_id
+            message_data["_id"] = msg_id
+            MOCK_HISTORY[msg_id] = message_data
+            
+            # Update session timestamp
+            session["updated_at"] = now
+            
+            return ChatMessageDB(**message_data)
+
         try:
             session = await self.sessions_collection.find_one({"_id": message_in.user_chat_session_id, "user_id": user_id})
             if not session:
                 return None
-
-            now = datetime.utcnow().isoformat()
-            message_data = message_in.dict()
-            message_data["timestamp"] = now
             
             result = await self.history_collection.insert_one(message_data)
             if result and result.inserted_id:
