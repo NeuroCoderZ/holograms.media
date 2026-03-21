@@ -274,7 +274,7 @@
 
 /* Redefine to match the visual style requested */
 #loadingIndicator {
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
   padding: 20px;
