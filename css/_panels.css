@@ -59,7 +59,7 @@
   align-items: center !important;
 
   /* Hologram Light catch from RIGHT side */
-  box-shadow: 15px 0 60px -20px rgba(0, 255, 128, 0.12),
+  box-shadow: 15px 0 60px -20px rgba(255, 255, 255, 0.05),
     inset -4px 0 15px -5px rgba(255, 255, 255, 0.08) !important;
 }
 
@@ -74,10 +74,23 @@
   /* No radius on right edge */
   display: flex !important;
   flex-direction: column !important;
+  padding-top: 5vh !important; /* Requested offset */
 
   /* Hologram Light catch from LEFT side */
-  box-shadow: -15px 0 60px -20px rgba(0, 255, 128, 0.12),
+  box-shadow: -15px 0 60px -20px rgba(255, 255, 255, 0.05),
     inset 4px 0 15px -5px rgba(255, 255, 255, 0.08) !important;
+}
+
+#rightPanelHeader {
+  text-align: center;
+  color: #888888;
+  margin: 0 !important; /* Close to HR */
+  padding: 0;
+  font-size: 14px;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  line-height: 1;
 }
 
 
