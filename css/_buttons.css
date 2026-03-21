@@ -193,7 +193,7 @@
 #submitChatMessage {
   width: var(--button-size) !important;
   height: var(--button-size) !important;
-  border-radius: 50% !important;
+  border-radius: var(--border-radius-md) !important; /* Square with rounded corners */
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -204,54 +204,14 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
-#submitTopPrompt:hover,
-#submitChatMessage:hover {
-  transform: scale(1.08) rotate(-5deg) !important;
-  background: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 6px 15px rgba(0, 255, 128, 0.2) !important;
-}
-
-.glass-send-btn {
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 50% !important;
-  width: 44px !important;
-  height: 44px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 !important;
-  cursor: pointer;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
-  flex-shrink: 0;
-}
-
-.glass-send-btn:hover {
-  background: rgba(255, 255, 255, 0.12) !important;
-  transform: scale(1.1) rotate(-10deg) !important;
-  box-shadow: 0 6px 20px rgba(0, 255, 128, 0.2) !important;
-}
-
-.glass-send-btn:active {
-  transform: scale(0.96) !important;
-  box-shadow: 
-    inset 0 4px 10px rgba(0, 0, 0, 0.7),
-    inset 0 -2px 5px rgba(255, 255, 255, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.5) !important;
-}
-
-.glass-send-btn svg {
+#submitChatMessage svg {
   width: 20px !important;
   height: 20px !important;
   fill: #E3E3E3 !important;
-  margin-left: 2px; /* Slight offset for arrow look */
 }
 
 /* Стиль для неактивной кнопки отправки сообщения */
@@ -358,16 +318,16 @@
       transparent 55%) !important;
 }
 
-/* Mouse Glow (Phase 20.5) */
+/* Mouse Glow (Architect's Edition) */
 .control-button::before {
   content: '';
   position: absolute;
   inset: 0;
   background: radial-gradient(circle at 50% 50%, 
-      rgba(0, 255, 128, calc(var(--mouse-glow, 0) * 0.4)) 0%, 
+      rgba(255, 255, 255, calc(var(--mouse-glow, 0) * 0.05)) 0%, 
       transparent 70%);
   pointer-events: none;
-  z-index: 1;
+  z-index: -1;
   opacity: var(--mouse-glow, 0);
   transition: opacity 0.2s ease;
 }
@@ -509,9 +469,8 @@
 }
 
 .control-button:not(:disabled):hover {
-  color: white !important;
+  color: var(--color-icon-active) !important;
   background: rgba(255, 255, 255, 0.08) !important;
-  transform: scale(1.08) !important;
 }
 
 .left-panel .control-button:not(:disabled):hover {
@@ -662,18 +621,13 @@
   transform: scale(0.96) !important;
   background-color: rgba(255, 255, 255, 0.05) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
   
   /* Инвертированные тени: эффект "лунки" (Concave) */
   box-shadow:
     inset 0 4px 12px rgba(0, 0, 0, 0.7),
     inset 0 -2px 5px rgba(255, 255, 255, 0.15),
     0 1px 2px rgba(0, 0, 0, 0.5) !important;
-
-  /* Динамический блик смещается вглубь */
-  background-image: radial-gradient(circle at var(--inv-light-x, 50%) var(--inv-light-y, 50%),
-      rgba(255, 255, 255, 0.08) 0%,
-      transparent 75%) !important;
 }
 
 /* Attention Economy Styles */

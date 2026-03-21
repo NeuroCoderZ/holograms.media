@@ -15,7 +15,9 @@ const elements = {
   chatInputBar: null,
   topPromptInput: null,
   chatInput: null,
-  loadingIndicator: null
+  loadingIndicator: null,
+  promptIconOriginal: null,
+  chatIconSvg: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v520q0 33-23.5 56.5T800-200H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z"/></svg>`
 };
 
 // --- Внутренние функции модуля ---
@@ -57,15 +59,24 @@ function updateUIVisibility(isChatMode) {
     setTimeout(() => elements.topPromptInput.focus(), 100);
   }
 
-  // Обновляем заголовок
+  // Обновляем заголовок (Strict Headers)
   const header = document.getElementById('rightPanelHeader');
   if (header) {
     header.style.display = 'block';
-    header.style.color = '#888888'; // Force dark grey color
+    header.style.color = '#888888';
+    header.textContent = isChatMode ? 'ЧАТ' : 'ВЕРСИИ';
+  }
+
+  // Обновляем иконку кнопки #promptModeButton
+  if (elements.promptModeButton) {
     if (isChatMode) {
-      header.textContent = 'ИСТОРИЯ ЧАТА';
+      // В режиме чата кнопка показывает "Промпт" (оригинальная иконка)
+      if (elements.promptIconOriginal) {
+        elements.promptModeButton.innerHTML = elements.promptIconOriginal;
+      }
     } else {
-      header.textContent = 'СПИСОК ВЕРСИЙ';
+      // В режиме промпта кнопка показывает "Чат" (новая иконка)
+      elements.promptModeButton.innerHTML = elements.chatIconSvg;
     }
   }
 }
@@ -110,9 +121,9 @@ export function initializeRightPanel(appState) {
   elements.chatInput = document.getElementById('chatInput');
   elements.loadingIndicator = document.getElementById('loadingIndicator');
 
-  if (!elements.promptModeButton) {
-    console.error("RightPanelManager: Кнопка 'promptModeButton' не найдена. Переключение режимов не будет работать.");
-    return;
+  // Сохраняем оригинальную иконку кнопки
+  if (elements.promptModeButton && !elements.promptIconOriginal) {
+    elements.promptIconOriginal = elements.promptModeButton.innerHTML;
   }
 
   // Навешиваем обработчик

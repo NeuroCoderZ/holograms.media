@@ -94,9 +94,9 @@ class PanelManager {
             if (document.getElementById('submitChatMessage')) document.getElementById('submitChatMessage').style.display = 'none';
         }
 
-        const header = document.getElementById('rightPanelHeader');
         if (header) {
             header.style.display = 'block';
+            header.style.color = '#888888';
             if (panelKey === 'versionTimeline') header.textContent = 'ВЕРСИИ';
             else if (panelKey === 'myHolograms') header.textContent = 'ГОЛОГРАММЫ';
             else if (panelKey === 'myGestures') header.textContent = 'ЖЕСТЫ';
