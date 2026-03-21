@@ -24,6 +24,20 @@
   /* Fixed is better for fullscreen panels */
 }
 
+/* Mouse Glow (Phase 20.5) */
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 50%), 
+      rgba(0, 255, 128, calc(var(--mouse-glow, 0) * 0.15)) 0%, 
+      transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--mouse-glow, 0);
+  transition: opacity 0.3s ease;
+}
+
 .panel.left-panel {
   left: 0;
   width: calc(var(--button-size) * 2 + 25px) !important;
