@@ -1,0 +1,56 @@
+---
+name: holograms-media-advanced
+description: "Advanced architectural patterns for Tria (Holograms Media). Covers Streaming LLM (SSE) and AstraDB RAG Optimization."
+---
+
+# Advanced Tria Architecture (March 2026)
+
+This skill synthesizes global best practices for high-performance AI integration in the Holograms Media project.
+
+## 1. LLM Streaming Implementation (SSE)
+
+### Backend (FastAPI)
+Use `StreamingResponse` for character-by-character output. Avoid waiting for the full response to minimize Time To First Token (TTFT).
+
+**Key Rules:**
+- Set `media_type="text/event-stream"`.
+- Use `data: ` prefix for every chunk.
+- Terminate with `data: [DONE]`.
+
+```python
+async def stream_generator(it):
+    for token in it:
+        yield f"data: {json.dumps({'token': token})}\n\n"
+    yield "data: [DONE]\n\n"
+```
+
+### Frontend (JavaScript)
+Consumption via `fetch` and `ReadableStream`.
+
+```javascript
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+while (true) {
+    const {done, value} = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value);
+    // Parse SSE lines...
+}
+```
+
+## 2. AstraDB RAG Mastery (Avoiding Shred Limits)
+
+### Chunking Protocol
+AstraDB restricts document size. Large Cyrillic texts or heavy metadata cause 403/500 errors.
+
+- **Safe Chunk Size**: 6000 characters.
+- **Overlap**: 800 characters for context preservation (TriaPulse).
+- **Metadata**: Stick to minimal IDs and source paths.
+
+### Ingestion Pipeline
+- **Sync Delay**: 5 seconds after `delete_many` or `drop_collection` is MANDATORY for distributed indexing stability.
+- **Batching**: Use `insert_many` with `ordered=False` for maximum throughput.
+
+## 3. Deployment & Health Checks (Koyeb/Cloudflare)
+- **Port**: Always use port 8000.
+- **Healthz**: `/healthz` must return 200 OK without blocking on external DB timeouts during startup. If DB initialization is slow, move it to a background task or handle failures gracefully in app.state.

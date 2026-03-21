@@ -55,32 +55,34 @@ async def lifespan(app: FastAPI):
 
     # --- Initialize Astra DB ---
     try:
+        logger.info("Initializing Astra DB...")
+        # Use a timeout for the initial connection attempt if possible, 
+        # but astrapy's get_async_database is usually lazy.
         astra_client = get_astra_client()
         if astra_client:
             app.state.astra_db = get_astra_db(astra_client)
             if app.state.astra_db:
-                logger.info("Astra DB initialized successfully in app.state.")
+                logger.info("✅ Astra DB initialized successfully in app.state.")
             else:
-                logger.warning("Astra DB initialization FAILED.")
+                logger.warning("⚠️ Astra DB initialization FAILED.")
         else:
-            logger.warning("Astra DataAPIClient FAILED to initialize.")
+            logger.warning("⚠️ Astra DataAPIClient FAILED to initialize.")
     except Exception as e:
-        logger.error(f"Critical error during Astra DB initialization: {e}")
+        logger.error(f"❌ Critical error during Astra DB initialization: {e}")
         app.state.astra_db = None
 
     # --- Initialize Tria Orchestrator ---
     try:
+        logger.info("Initializing Tria Orchestrator...")
+        # If orchestrator init takes too long, we wrap it
         orchestrator = TriaOrchestrator()
-        # Если потребуется асинхронная инициализация:
-        # await orchestrator.init() 
         app.state.tria_orchestrator = orchestrator
-        logger.info("[App] TriaOrchestrator initialized successfully.")
+        logger.info("✅ [App] TriaOrchestrator initialized successfully.")
     except Exception as e:
-        logger.error(f"[App] TriaOrchestrator init FAILED: {e}", exc_info=True)
+        logger.error(f"❌ [App] TriaOrchestrator init FAILED: {e}", exc_info=True)
         app.state.tria_orchestrator = None
-        # Не падаем — приложение работает без оркестратора
 
-    logger.info("Astra DB check: " + str(bool(app.state.astra_db)))
+    logger.info("Initialization Phase Complete.")
     logger.info("FastAPI application startup completed successfully.")
 
     yield

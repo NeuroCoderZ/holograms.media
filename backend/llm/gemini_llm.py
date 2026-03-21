@@ -48,7 +48,7 @@ async def get_gemini_response(
         # если передать функции прямо в tools.
         
         response = await client.aio.models.generate_content(
-            model='gemini-3-flash-preview',
+            model='gemini-2.0-flash',
             contents=prompt,
             config=config
         )
@@ -93,7 +93,7 @@ async def get_gemini_response_stream(
         )
 
         async for chunk in await client.aio.models.generate_content_stream(
-            model='gemini-3-flash-preview',
+            model='gemini-2.0-flash',
             contents=prompt,
             config=config
         ):
