@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../config/hologramConfig.js';
 import eventBus from '../core/eventBus.js';
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js';
+import { lightingManager } from '../ui/LightingManager.js';
 
 import { vertexShader, fragmentShader, makeColumnUniforms } from './shaders/hologramShaders.js';
 import { CELL_HEIGHT, createCentralMarkerSphere, createSphereForAxis, createGridVisualization, createAxis } from './hologramGridFactory.js';
@@ -111,6 +112,11 @@ export class HologramRenderer {
     const dbLevels = audioData?.levels || new Float32Array(256).fill(-128);
     const panAngles = audioData?.pans || new Float32Array(256).fill(0);
 
+    let maxDbL = -128;
+    let maxDbR = -128;
+    let maxIdxL = 0;
+    let maxIdxR = 0;
+
     this.columns.forEach((pair, i) => {
       const leftMesh = pair.left.children[0];
       const rightMesh = pair.right.children[0];
@@ -120,8 +126,25 @@ export class HologramRenderer {
       } else {
         const config = semitones[i];
         this._applyActiveMode(pair, i, config, dbLevels, panAngles, leftMesh, rightMesh);
+        
+        // Track max levels for spectral lighting
+        if (dbLevels[i] > maxDbL) {
+          maxDbL = dbLevels[i];
+          maxIdxL = i;
+        }
+        if (dbLevels[i + 128] > maxDbR) {
+          maxDbR = dbLevels[i + 128];
+          maxIdxR = i;
+        }
       }
     });
+
+    // Update spectral lighting if active
+    if (isActive) {
+      const colorL = semitones[maxIdxL]?.color || 'rgba(255, 255, 255, 0.1)';
+      const colorR = semitones[maxIdxR]?.color || 'rgba(255, 255, 255, 0.1)';
+      lightingManager.updateSpectralColors(colorL, colorR);
+    }
   }
 
   _applyGreetingMode(leftMesh, rightMesh, pair) {

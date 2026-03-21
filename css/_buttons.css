@@ -72,7 +72,7 @@
 
 #treasuryButton:hover {
   color: white !important;
-  transform: scale(1.08) !important;
+  filter: brightness(1.3) !important;
 }
 
 #treasuryButton svg {
@@ -206,7 +206,7 @@
 #submitChatMessage {
   width: var(--button-size) !important;
   height: var(--button-size) !important;
-  border-radius: var(--border-radius-md) !important; /* Square with rounded corners */
+  border-radius: var(--border-radius-md) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -217,16 +217,24 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Speed sync with eye: 0.2s */
+  box-shadow: 
+    var(--shadow-x, 0px) var(--shadow-y, 4px) 12px rgba(0, 0, 0, 0.5),
+    var(--glass-inner-light) !important;
   overflow: hidden;
+  background-image: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 50%),
+      rgba(255, 255, 255, 0.17) 0%,
+      transparent 55%) !important;
 }
 
 #submitChatMessage:active {
   transform: scale(0.96) !important;
   box-shadow: 
     inset 0 4px 12px rgba(0, 0, 0, 0.7),
-    inset 0 -2px 5px rgba(255, 255, 255, 0.1) !important;
+    inset 0 -2px 5px rgba(255, 255, 255, 0.15) !important;
+  background-image: radial-gradient(circle at var(--inv-light-x, 50%) var(--inv-light-y, 50%),
+      rgba(255, 255, 255, 0.13) 0%,
+      transparent 75%) !important;
 }
 
 #submitChatMessage svg {
@@ -307,33 +315,38 @@
   background-color: var(--glass-bg) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid var(--glass-border) !important;
   cursor: pointer;
   color: var(--color-icon) !important;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-md);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Speed sync: 0.2s */
   font-size: 24px !important;
   position: relative;
   overflow: hidden;
   outline: none !important;
   -webkit-tap-highlight-color: transparent;
 
-  /* Физика: Выпуклая капля (Convex) по умолчанию */
+  /* NO SELF-EMISSION: Only passive shadows and light catch */
   box-shadow:
-    var(--shadow-x, 0px) var(--shadow-y, 10px) 20px rgba(0, 0, 0, 0.4),
-    /* Динамическая тень */
-    0 2px 4px rgba(0, 0, 0, 0.6),
-    /* Ambient Occlusion */
+    var(--shadow-x, 0px) var(--shadow-y, 4px) 12px rgba(0, 0, 0, 0.45),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.05),
     var(--glass-inner-light) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important; /* Тонкая граница */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important; 
   outline: none !important;
   -webkit-appearance: none;
   appearance: none;
 
-  /* Динамический блик от центрального источника света (приглушен и укорочен) */
+  /* Spectral Chrome Edges: Colored highlights from hologram columns */
+  border-image: linear-gradient(
+    135deg, 
+    var(--spectral-color-left, rgba(255,255,255,0.1)) 0%, 
+    rgba(255,255,255,0.1) 50%, 
+    var(--spectral-color-right, rgba(255,255,255,0.1)) 100%
+  ) 1 !important;
+
+  /* Central white light catch */
   background-image: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 50%),
       rgba(255, 255, 255, 0.17) 0%,
       transparent 55%) !important;

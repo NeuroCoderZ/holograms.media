@@ -64,7 +64,7 @@ function updateUIVisibility(isChatMode) {
   if (header) {
     header.style.display = 'block';
     header.style.color = '#888888';
-    header.textContent = isChatMode ? 'ЧАТ' : 'ВЕРСИИ';
+    header.textContent = isChatMode ? 'CHAT' : 'VERSIONS'; // RE-BRAND: CHAT / VERSIONS
   }
 
   // Обновляем иконку кнопки #promptModeButton
