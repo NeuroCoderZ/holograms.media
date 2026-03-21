@@ -86,11 +86,11 @@
   color: #888888;
   margin: 0 !important; /* Close to HR */
   padding: 0;
-  font-size: 14px;
-  font-weight: normal;
+  font-size: 18px; /* Increased 30% from 14px */
+  font-weight: 700; /* Professional Bold */
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  line-height: 1;
+  letter-spacing: 2px;
+  line-height: 1.2;
 }
 
 
@@ -501,4 +501,21 @@ body.focus-mode .panel.right-panel {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
   mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+}/* Native Tooltips Style (fallback if JS tooltips fail) */
+[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: white;
+  border: 1px solid var(--glass-border);
+  z-index: 9999;
+  pointer-events: none;
 }

@@ -52,18 +52,29 @@ export class EyeLoader {
         lid.style.width = '120vw';
         lid.style.height = '100vh';
         lid.style.zIndex = '20';
-        lid.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-        lid.style.backdropFilter = 'blur(var(--glass-blur, 25px)) saturate(var(--glass-saturate, 180%))';
-        lid.style.webkitBackdropFilter = 'blur(var(--glass-blur, 25px)) saturate(var(--glass-saturate, 180%))';
-        lid.style.border = '1px solid rgba(255, 255, 255, 0.1)';
-        lid.style.transition = 'transform 0.05s linear';
+        lid.style.backgroundColor = 'rgba(255, 255, 255, 0.04)'; // Slightly more transparent for liquid look
+        lid.style.backdropFilter = 'blur(var(--glass-blur, 35px)) saturate(var(--glass-saturate, 200%))';
+        lid.style.webkitBackdropFilter = 'blur(var(--glass-blur, 35px)) saturate(var(--glass-saturate, 200%))';
+        lid.style.border = 'none'; // Seamless
+        lid.style.transition = 'transform 0.05s linear, opacity 0.3s ease';
         
         // СТРОГО прямые веки (no borderRadius)
+        // Deep seamless join: Overlap shadow at the center
+        const shadowColor = 'rgba(0, 0, 0, 0.4)';
         if (isUpper) {
             lid.style.top = '-50vh';
+            lid.style.boxShadow = `0 15px 40px -10px ${shadowColor}`; // Shadow on bottom edge
         } else {
             lid.style.top = '50vh';
+            lid.style.boxShadow = `0 -15px 40px -10px ${shadowColor}`; // Shadow on top edge
         }
+
+        // --- Liquid Glass Distortion Gradient ---
+        // This simulates the "mold" underneath the glass.
+        // It's a radial gradient that we'll position dynamically.
+        lid.style.backgroundRepeat = 'no-repeat';
+        lid.style.backgroundSize = '100% 100%';
+        
         return lid;
     }
 
@@ -150,6 +161,9 @@ export class EyeLoader {
         const elapsedPhase = now - this.phaseStartTime;
         this.ctx.clearRect(0, 0, this.width, this.height);
         
+        const eyeX = this.width / 2 + this.saccadeX;
+        const eyeY = this.height / 2 + this.saccadeY;
+
         if (this.phase === 'black') {
             this.ctx.fillStyle = 'black';
             this.ctx.fillRect(0, 0, this.width, this.height);
@@ -174,45 +188,20 @@ export class EyeLoader {
                 this.drawEye(irisAlpha);
             }
             
-            // Пока сомкнуты - маски клипа нет (полный блюр)
-            this.upperLid.style.clipPath = 'none';
-            this.lowerLid.style.clipPath = 'none';
+            // Full blur while closed
+            this.upperLid.style.maskImage = 'none';
+            this.lowerLid.style.maskImage = 'none';
+
+            // Deformation logic even when closed (subtle breathing?)
+            this.updateGlassDeformation(0, 0);
         }
         
         else if (this.phase === 'opening') {
             const t = this.clamp(elapsedPhase / 600, 0, 1);
             const openFrac = this.easeInOut(t);
-            
             const offset = 60 * openFrac;
-            this.upperLid.style.transform = `translateY(${-offset}vh)`;
-            this.lowerLid.style.transform = `translateY(${offset}vh)`;
             
-            // Изоляция радужки через clip-path
-            // Нам нужно "вырезать" область глаза из век.
-            // clip-path: polygon(...) или path(...)
-            const cx = this.width / 2 + this.saccadeX;
-            const cy = this.height / 2 + this.saccadeY;
-            const rIris = this.height * 0.42; // Чуть больше радужки для запаса
-            
-            // Вырезаем область глаза (инвертированный круг через polygon с разрезом)
-            // Но для DIV панелей проще сделать rect с вырезом
-            // clip-path: path(...) поддерживается не везде идеально, используем polygon
-            const updateClip = (lid, isUpper) => {
-                const lidY = isUpper ? this.height/2 - (this.height * offset/100) : this.height/2 + (this.height * offset/100);
-                // Если глаз попадает на панель - вырезаем его
-                lid.style.clipPath = `polygon(
-                    0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
-                    ${(cx - rIris)/this.width * 100}% ${(cy - rIris)/this.height * 100}%,
-                    ${(cx - rIris)/this.width * 100}% ${(cy + rIris)/this.height * 100}%,
-                    ${(cx + rIris)/this.width * 100}% ${(cy + rIris)/this.height * 100}%,
-                    ${(cx + rIris)/this.width * 100}% ${(cy - rIris)/this.height * 100}%,
-                    ${(cx - rIris)/this.width * 100}% ${(cy - rIris)/this.height * 100}%
-                )`;
-            };
-            
-            // На самом деле, проще использовать CSS mask-image для мягкого перехода
-            this.upperLid.style.maskImage = `radial-gradient(circle at ${cx}px ${cy}px, transparent ${rIris}px, black ${rIris + 2}px)`;
-            this.lowerLid.style.maskImage = `radial-gradient(circle at ${cx}px ${cy}px, transparent ${rIris}px, black ${rIris + 2}px)`;
+            this.updateEyeGeometry(offset, openFrac, eyeX, eyeY);
 
             if (t >= 1) {
                 // Рандомизация моргания (0, 1 или 2 раза)
@@ -237,10 +226,8 @@ export class EyeLoader {
                 }
             }
             
-            if (closeFrac > 0) {
-                this.upperLid.style.transform = `translateY(${-60 * (1 - closeFrac)}vh)`;
-                this.lowerLid.style.transform = `translateY(${60 * (1 - closeFrac)}vh)`;
-            }
+            const offset = 60 * (1 - closeFrac);
+            this.updateEyeGeometry(offset, 1 - closeFrac, eyeX, eyeY);
             
             if (t > 100 + this.blinkCount * (blinkDuration + gap) + 500) this.setPhase('done');
         }
@@ -250,6 +237,74 @@ export class EyeLoader {
         } else {
             this.container.remove();
         }
+    }
+
+    updateEyeGeometry(offset, intensity, eyeX, eyeY) {
+        this.upperLid.style.transform = `translateY(${-offset}vh)`;
+        this.lowerLid.style.transform = `translateY(${offset}vh)`;
+        
+        const rIris = this.height * 0.42;
+        
+        // Update mask for clear vision (the eye is behind the glass)
+        // Intensity is 0 when open, 1 when closed. 
+        // We want mask only when partially/fully open to see the eye.
+        const maskAlpha = this.clamp(offset / 10, 0, 1);
+        const mask = `radial-gradient(circle at ${eyeX}px ${eyeY}px, transparent ${rIris}px, black ${rIris + 2}px)`;
+        this.upperLid.style.maskImage = mask;
+        this.lowerLid.style.maskImage = mask;
+        this.upperLid.style.webkitMaskImage = mask;
+        this.lowerLid.style.webkitMaskImage = mask;
+
+        // Deformation logic: The "bulge" follows the eye but is drawn on the moving lid.
+        this.updateGlassDeformation(offset, intensity, eyeX, eyeY);
+    }
+
+    updateGlassDeformation(offset, intensity, eyeX, eyeY) {
+        // Fade out deformation as lids open fully
+        // The user says "При полном открытии эта форма исчезает"
+        const deformationAlpha = this.clamp(1 - offset / 50, 0, 1);
+        if (deformationAlpha <= 0) {
+            this.upperLid.style.backgroundImage = 'none';
+            this.lowerLid.style.backgroundImage = 'none';
+            return;
+        }
+
+        const rIris = this.height * 0.4;
+        const rPupil = this.height * 0.16;
+
+        // The gradient must stay at eyeX, eyeY relative to the viewport.
+        // But it's applied to the lid which has its own transform.
+        // Lid coordinate system: top is affected by translateY.
+        // Upper lid Y center is -50vh + translateY.
+        // Lower lid Y center is 50vh + translateY.
+        
+        const drawDeformation = (lid, isUpper) => {
+            // Pos in lid coordinates
+            // Correct for viewport offset.
+            const lidTopPx = isUpper ? -this.height * 0.5 - (this.height * offset / 100) : this.height * 0.5 + (this.height * offset / 100);
+            const localEyeY = eyeY - lidTopPx - (this.height * (isUpper ? 0 : 0)); // Adjust for absolute top
+            
+            // Wait, lid is absolute top: -50vh (upper) or 50vh (lower).
+            // Transform only moves the div.
+            // So lid's top edge in viewport is:
+            const currentTop = isUpper ? (-this.height * 0.5 - (this.height * offset / 100)) : (this.height * 0.5 + (this.height * offset / 100));
+            const yInLid = eyeY - currentTop;
+
+            const irisColor = `rgba(255, 255, 255, ${0.12 * deformationAlpha})`;
+            const pupilColor = `rgba(0, 0, 0, ${0.25 * deformationAlpha})`;
+
+            lid.style.backgroundImage = `
+                radial-gradient(circle at ${eyeX}px ${yInLid}px, 
+                    ${irisColor} 0%, 
+                    transparent ${rIris}px),
+                radial-gradient(circle at ${eyeX}px ${yInLid}px, 
+                    ${pupilColor} 0%, 
+                    transparent ${rPupil}px)
+            `;
+        };
+
+        drawDeformation(this.upperLid, true);
+        drawDeformation(this.lowerLid, false);
     }
 
     drawEye(alpha) {
@@ -272,7 +327,8 @@ export class EyeLoader {
         this.ctx.save();
         this.ctx.globalAlpha = alpha;
         
-        // 1. Радужка (Сильно выпуклая)
+        // --- High Detail Sharp Eye (Behind Glass) ---
+        // 1. Iris (Convex effect via gradients)
         // Внешняя тень радужки для глубины
         this.ctx.shadowBlur = 40;
         this.ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
@@ -283,16 +339,16 @@ export class EyeLoader {
             cx - offX, cy - offY, rIris * 0.05,
             cx, cy, rIris
         );
-        gradIris.addColorStop(0, 'rgba(255, 255, 255, 0.25)'); // Ярче блик
-        gradIris.addColorStop(0.4, 'rgba(150, 150, 150, 0.1)');
-        gradIris.addColorStop(1, 'rgba(0, 0, 0, 0.6)'); // Глубже тени
+        gradIris.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); 
+        gradIris.addColorStop(0.4, 'rgba(120, 120, 120, 0.2)');
+        gradIris.addColorStop(1, 'rgba(0, 0, 0, 0.8)');
         
         this.ctx.fillStyle = gradIris;
         this.ctx.beginPath();
         this.ctx.arc(cx, cy, rIris, 0, Math.PI * 2);
         this.ctx.fill();
         
-        // 2. Зрачок (Сильно вдавленный)
+        // 2. Pupil (Concave effect)
         this.ctx.shadowBlur = 0; // Сброс тени
         this.ctx.shadowOffsetX = 0;
         this.ctx.shadowOffsetY = 0;
@@ -301,34 +357,24 @@ export class EyeLoader {
             cx + offX * 1.5, cy + offY * 1.5, rPupil * 0.05,
             cx, cy, rPupil
         );
-        gradPupil.addColorStop(0, '#000'); // Чернее черного
-        gradPupil.addColorStop(1, '#1a1a1a'); // Глубокий градиент
+        gradPupil.addColorStop(0, '#040404');
+        gradPupil.addColorStop(1, '#000000');
         
         this.ctx.fillStyle = gradPupil;
         this.ctx.beginPath();
         this.ctx.arc(cx, cy, rPupil, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // 3. Массивные блики/тени на изгибах (10x шире)
-        this.ctx.lineWidth = 15; // В 10-15 раз шире
-        this.ctx.lineCap = 'round';
-        
-        // Верхний светлый ободок (выпуклость радужки)
-        const irisGlow = this.ctx.createLinearGradient(cx, cy - rIris, cx, cy);
-        irisGlow.addColorStop(0, `rgba(255, 255, 255, ${0.15 * alpha})`);
-        irisGlow.addColorStop(1, 'transparent');
-        this.ctx.strokeStyle = irisGlow;
+        // 3. V-Cut Edges (Hard highlights for engraving look)
+        this.ctx.lineWidth = 4;
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 * alpha})`;
         this.ctx.beginPath();
-        this.ctx.arc(cx, cy, rIris - 7, -Math.PI * 0.8, -Math.PI * 0.2);
+        this.ctx.arc(cx, cy, rIris - 2, -Math.PI * 0.7, -Math.PI * 0.3);
         this.ctx.stroke();
 
-        // Ободок зрачка (вдавленность)
-        const pupilRim = this.ctx.createLinearGradient(cx, cy, cx, cy + rPupil);
-        pupilRim.addColorStop(0, 'transparent');
-        pupilRim.addColorStop(1, `rgba(255, 255, 255, ${0.2 * alpha})`);
-        this.ctx.strokeStyle = pupilRim;
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 * alpha})`;
         this.ctx.beginPath();
-        this.ctx.arc(cx, cy, rPupil + 7, Math.PI * 0.2, Math.PI * 0.8);
+        this.ctx.arc(cx, cy, rPupil + 2, Math.PI * 0.3, Math.PI * 0.7);
         this.ctx.stroke();
 
         // Тень от верхнего края зрачка (усиливает вдавленность)

@@ -160,6 +160,7 @@
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), margin-bottom 0.5s ease;
   transform-origin: center bottom;
   will-change: transform, margin-bottom;
+  margin-top: 5vh !important; /* Horizon Sync */
 }
 
 /* XR Mode: Расширение на весь экран за стеклянные панели */
