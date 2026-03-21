@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.172 - v0.20.172 — EyeLoader + Typing + Model fix + Skills");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.173 - v0.20.173 — EyeLoader 2.0 + Portal + Reload Prank");</script>
   <!-- DEPLOY_VERSION_END -->
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
@@ -327,9 +327,7 @@
   <!-- Правая панель: Таймлайн и Промпт -->
   <div id="right-panel" class="panel right-panel">
     <!-- Header for panel views -->
-    <div id="rightPanelHeader"
-      style="text-align: center; color: #888888; margin: 2px 0 5px 0; font-size: 14px; font-weight: normal; text-transform: uppercase; letter-spacing: 1px;">
-      ЧАТ</div>
+    <div id="rightPanelHeader">ЧАТ</div>
 
     <!-- Верхняя разделительная линия правой панели -->
     <hr class="panel-hr" style="flex-shrink: 0; margin-top: 5px !important; margin-bottom: 0 !important;">
@@ -350,7 +348,7 @@
       </div>
       <div id="chatHistory" class="panel-section chat-mode" style="display: none;">
         <div id="chatMessages">
-          <div id="loadingIndicator"><div class="eye-loader"><div class="eye-loader-inner"></div></div></div>
+          <!-- Legacy loadingIndicator removed in favor of EyeLoader.js -->
           <div id="conversations"></div>
           <!-- Сюда будут добавляться сообщения чата -->
         </div>

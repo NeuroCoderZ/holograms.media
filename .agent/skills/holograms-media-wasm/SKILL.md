@@ -12,3 +12,10 @@ description: Инструкции по сборке и оптимизации Ru
 ## 🧮 Математика
 - Модуль `holographic_core` — приоритетный.
 - Учитывать кэширование FFT и обработку стерео (2 канала).
+
+## ⚠️ Pure WASM — обязательные ограничения
+- НЕТ wasm-bindgen. Это cdylib без wasm-bindgen.
+- Экспорт: `#[no_mangle] pub extern "C" fn имя(...)`
+- Сборка: `wasm-pack build --target web --release` в `holocore/`
+- Перед сборкой: `wasm-pack --version`
+- Нельзя: std::collections, std::sync — только no_std-совместимый код
