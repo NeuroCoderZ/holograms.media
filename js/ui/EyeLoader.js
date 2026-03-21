@@ -58,12 +58,11 @@ export class EyeLoader {
         lid.style.border = '1px solid rgba(255, 255, 255, 0.1)';
         lid.style.transition = 'transform 0.05s linear';
         
+        // СТРОГО прямые веки (no borderRadius)
         if (isUpper) {
             lid.style.top = '-50vh';
-            lid.style.borderRadius = '0 0 50% 50% / 0 0 15% 15%';
         } else {
             lid.style.top = '50vh';
-            lid.style.borderRadius = '50% 50% 0 0 / 15% 15% 0 0';
         }
         return lid;
     }
@@ -79,13 +78,44 @@ export class EyeLoader {
         document.body.appendChild(this.container);
         this.phase = 'black';
         this.phaseStartTime = Date.now();
+        
+        // Начальное скрытие UI для "проступания"
+        this.uiElements = [
+            document.getElementById('left-panel'),
+            document.querySelector('.right-panel'),
+            document.getElementById('gesture-area'),
+            document.getElementById('grid-container')
+        ].filter(el => el);
+        
+        this.uiElements.forEach(el => {
+            el.style.opacity = '0';
+            el.style.filter = 'blur(20px)';
+            el.style.transition = 'opacity 1s ease, filter 1s ease';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            this.mouseX = e.clientX;
+            this.mouseY = e.clientY;
+        });
+
         requestAnimationFrame(() => this.loop());
     }
 
     setProgress(p) {
         this.progress = p;
+        
+        // Проступание элементов UI
+        if (this.uiElements && this.uiElements.length > 0) {
+            const threshold = 100 / (this.uiElements.length + 1);
+            this.uiElements.forEach((el, index) => {
+                if (this.progress > (index + 1) * threshold) {
+                    el.style.opacity = '1';
+                    el.style.filter = 'blur(0px)';
+                }
+            });
+        }
+
         if (this.progress >= 90 && this.phase === 'loading') {
-            // Центрирование начинается при 90%
             this.returningToCenter = true;
             this.centerStartTime = Date.now();
         }
@@ -143,45 +173,76 @@ export class EyeLoader {
             if (irisAlpha > 0) {
                 this.drawEye(irisAlpha);
             }
+            
+            // Пока сомкнуты - маски клипа нет (полный блюр)
+            this.upperLid.style.clipPath = 'none';
+            this.lowerLid.style.clipPath = 'none';
         }
         
         else if (this.phase === 'opening') {
             const t = this.clamp(elapsedPhase / 600, 0, 1);
             const openFrac = this.easeInOut(t);
             
-            this.upperLid.style.transform = `translateY(${-60 * openFrac}vh)`;
-            this.lowerLid.style.transform = `translateY(${60 * openFrac}vh)`;
+            const offset = 60 * openFrac;
+            this.upperLid.style.transform = `translateY(${-offset}vh)`;
+            this.lowerLid.style.transform = `translateY(${offset}vh)`;
             
-            if (t >= 1) this.setPhase('blink_wait');
+            // Изоляция радужки через clip-path
+            // Нам нужно "вырезать" область глаза из век.
+            // clip-path: polygon(...) или path(...)
+            const cx = this.width / 2 + this.saccadeX;
+            const cy = this.height / 2 + this.saccadeY;
+            const rIris = this.height * 0.42; // Чуть больше радужки для запаса
+            
+            // Вырезаем область глаза (инвертированный круг через polygon с разрезом)
+            // Но для DIV панелей проще сделать rect с вырезом
+            // clip-path: path(...) поддерживается не везде идеально, используем polygon
+            const updateClip = (lid, isUpper) => {
+                const lidY = isUpper ? this.height/2 - (this.height * offset/100) : this.height/2 + (this.height * offset/100);
+                // Если глаз попадает на панель - вырезаем его
+                lid.style.clipPath = `polygon(
+                    0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
+                    ${(cx - rIris)/this.width * 100}% ${(cy - rIris)/this.height * 100}%,
+                    ${(cx - rIris)/this.width * 100}% ${(cy + rIris)/this.height * 100}%,
+                    ${(cx + rIris)/this.width * 100}% ${(cy + rIris)/this.height * 100}%,
+                    ${(cx + rIris)/this.width * 100}% ${(cy - rIris)/this.height * 100}%,
+                    ${(cx - rIris)/this.width * 100}% ${(cy - rIris)/this.height * 100}%
+                )`;
+            };
+            
+            // На самом деле, проще использовать CSS mask-image для мягкого перехода
+            this.upperLid.style.maskImage = `radial-gradient(circle at ${cx}px ${cy}px, transparent ${rIris}px, black ${rIris + 2}px)`;
+            this.lowerLid.style.maskImage = `radial-gradient(circle at ${cx}px ${cy}px, transparent ${rIris}px, black ${rIris + 2}px)`;
+
+            if (t >= 1) {
+                // Рандомизация моргания (0, 1 или 2 раза)
+                this.blinkCount = Math.floor(Math.random() * 3);
+                this.setPhase('blink_wait');
+            }
         }
         
         else if (this.phase === 'blink_wait') {
-            if (!this.s1) {
-                this.s1 = 100;
-                this.gap = 300;
-                this.s2 = this.s1 + this.gap;
-            }
-            
             const t = elapsedPhase;
             let closeFrac = 0;
             
-            const processBlink = (start) => {
+            const blinkDuration = 250;
+            const gap = 300;
+            
+            for (let i = 0; i < this.blinkCount; i++) {
+                const start = 100 + i * (blinkDuration + gap);
                 const bt = t - start;
-                if (bt >= 0 && bt < 250) {
+                if (bt >= 0 && bt < blinkDuration) {
                     if (bt < 100) closeFrac = this.easeInOut(bt / 100);
                     else closeFrac = 1 - this.easeOutCubic((bt - 100) / 150);
                 }
-            };
-            
-            processBlink(this.s1);
-            processBlink(this.s2);
+            }
             
             if (closeFrac > 0) {
                 this.upperLid.style.transform = `translateY(${-60 * (1 - closeFrac)}vh)`;
                 this.lowerLid.style.transform = `translateY(${60 * (1 - closeFrac)}vh)`;
             }
             
-            if (t > 1200) this.setPhase('done');
+            if (t > 100 + this.blinkCount * (blinkDuration + gap) + 500) this.setPhase('done');
         }
         
         if (this.phase !== 'done') {
@@ -197,45 +258,84 @@ export class EyeLoader {
         const rIris = this.height * 0.4;
         const rPupil = this.height * 0.16;
 
-        // Динамический свет относительно центра экрана
-        const offX = (cx - this.width / 2) / 20;
-        const offY = (cy - this.height / 2) / 20;
+        // Динамический свет относительно центра экрана + мышь
+        const centerLightX = this.width / 2;
+        const centerLightY = this.height / 2;
+        
+        const mX = this.mouseX || centerLightX;
+        const mY = this.mouseY || centerLightY;
 
-        // Радужка (Выпуклая)
+        // Эффект "массивности": большие смещения для теней (10x)
+        const offX = (cx - centerLightX) / 2 + (cx - mX) / 10;
+        const offY = (cy - centerLightY) / 2 + (cy - mY) / 10;
+
         this.ctx.save();
         this.ctx.globalAlpha = alpha;
         
+        // 1. Радужка (Сильно выпуклая)
+        // Внешняя тень радужки для глубины
+        this.ctx.shadowBlur = 40;
+        this.ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.shadowOffsetX = offX / 2;
+        this.ctx.shadowOffsetY = offY / 2;
+
         const gradIris = this.ctx.createRadialGradient(
-            cx - offX, cy - offY, rIris * 0.1,
+            cx - offX, cy - offY, rIris * 0.05,
             cx, cy, rIris
         );
-        gradIris.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
-        gradIris.addColorStop(0.5, 'rgba(100, 100, 100, 0.05)');
-        gradIris.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
+        gradIris.addColorStop(0, 'rgba(255, 255, 255, 0.25)'); // Ярче блик
+        gradIris.addColorStop(0.4, 'rgba(150, 150, 150, 0.1)');
+        gradIris.addColorStop(1, 'rgba(0, 0, 0, 0.6)'); // Глубже тени
         
         this.ctx.fillStyle = gradIris;
         this.ctx.beginPath();
         this.ctx.arc(cx, cy, rIris, 0, Math.PI * 2);
         this.ctx.fill();
         
-        // Зрачок (Вдавленный)
+        // 2. Зрачок (Сильно вдавленный)
+        this.ctx.shadowBlur = 0; // Сброс тени
+        this.ctx.shadowOffsetX = 0;
+        this.ctx.shadowOffsetY = 0;
+
         const gradPupil = this.ctx.createRadialGradient(
-            cx + offX * 2, cy + offY * 2, rPupil * 0.1,
+            cx + offX * 1.5, cy + offY * 1.5, rPupil * 0.05,
             cx, cy, rPupil
         );
-        gradPupil.addColorStop(0, 'black');
-        gradPupil.addColorStop(1, '#111');
+        gradPupil.addColorStop(0, '#000'); // Чернее черного
+        gradPupil.addColorStop(1, '#1a1a1a'); // Глубокий градиент
         
         this.ctx.fillStyle = gradPupil;
         this.ctx.beginPath();
         this.ctx.arc(cx, cy, rPupil, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Тени/Блики для объема
-        this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 * alpha})`;
-        this.ctx.lineWidth = 1;
+        // 3. Массивные блики/тени на изгибах (10x шире)
+        this.ctx.lineWidth = 15; // В 10-15 раз шире
+        this.ctx.lineCap = 'round';
+        
+        // Верхний светлый ободок (выпуклость радужки)
+        const irisGlow = this.ctx.createLinearGradient(cx, cy - rIris, cx, cy);
+        irisGlow.addColorStop(0, `rgba(255, 255, 255, ${0.15 * alpha})`);
+        irisGlow.addColorStop(1, 'transparent');
+        this.ctx.strokeStyle = irisGlow;
         this.ctx.beginPath();
-        this.ctx.arc(cx, cy, rPupil, Math.PI, 0); // Верхняя дуга (вдавленность)
+        this.ctx.arc(cx, cy, rIris - 7, -Math.PI * 0.8, -Math.PI * 0.2);
+        this.ctx.stroke();
+
+        // Ободок зрачка (вдавленность)
+        const pupilRim = this.ctx.createLinearGradient(cx, cy, cx, cy + rPupil);
+        pupilRim.addColorStop(0, 'transparent');
+        pupilRim.addColorStop(1, `rgba(255, 255, 255, ${0.2 * alpha})`);
+        this.ctx.strokeStyle = pupilRim;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, rPupil + 7, Math.PI * 0.2, Math.PI * 0.8);
+        this.ctx.stroke();
+
+        // Тень от верхнего края зрачка (усиливает вдавленность)
+        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.lineWidth = 10;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, rPupil + 5, -Math.PI * 0.8, -Math.PI * 0.2);
         this.ctx.stroke();
 
         this.ctx.restore();
