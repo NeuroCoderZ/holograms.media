@@ -59,7 +59,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-bottom: none !important;
   /* Glass/Glow Catch from BOTTOM (Hologram is above it) */
-  box-shadow: 0 -20px 60px -25px rgba(0, 255, 128, 0.2),
+  box-shadow: 0 -20px 60px -25px rgba(255, 255, 255, 0.2),
     inset 0 4px 15px -5px rgba(255, 255, 255, 0.12) !important;
 
   border-radius: 24px 24px 0 0 !important;
