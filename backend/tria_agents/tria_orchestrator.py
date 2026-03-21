@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Optional, Callable
 import asyncio 
 
 from backend.tria_agents.tria_rag_service import tria_rag
-from backend.llm.gemini_llm import get_gemini_response
+from backend.llm.gemini_llm import get_gemini_response, get_gemini_response_stream
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -39,6 +39,37 @@ class TriaOrchestrator:
         # Gemini 3 Flash теперь сам решает, когда вызывать инструменты (Supervisor Agent)
         self.tools = [search_tria_knowledge, search_gesture_memory]
         logger.info("TriaOrchestrator evolved to Supervisor Agent with Tool Calling.")
+
+    async def stream_user_prompt(
+        self,
+        prompt: str,
+        user_email: str = ""
+    ):
+        """
+        Streaming Supervisor Agent: Yields tokens in real-time.
+        """
+        is_developer = user_email in settings.DEV_USERS
+        mode_label = "ГЛОБАЛЬНАЯ" if is_developer else "ПЕРСОНАЛЬНАЯ"
+        
+        system_instruction = (
+            f"Ты Триа — AI-ассистент платформы holograms.media. "
+            f"Сейчас ты в режиме: {mode_label} ТРИА. "
+            f"Ты работаешь с {'разработчиком' if is_developer else 'пользователем'}. "
+            f"У тебя есть доступ к базе знаний проекта через инструмент search_tria_knowledge. "
+            f"Если вопрос требует технических деталей о коде, архитектуре или API — ОБЯЗАТЕЛЬНО вызывай этот инструмент. "
+            f"Твои ответы должны учитывать динамический пульс BasilaQ-128 (адаптивная частота 24-240 Гц)."
+        )
+        
+        try:
+            async for token in get_gemini_response_stream(
+                prompt=prompt,
+                system_instruction=system_instruction,
+                tools=self.tools
+            ):
+                yield token
+        except Exception as e:
+            logger.error(f"[Orchestrator] stream_user_prompt error: {e}")
+            yield f"[Tria Stream Error] {str(e)}"
 
     async def process_user_prompt(
         self, 

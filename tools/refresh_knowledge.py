@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 # Константы
 XML_PATH = "repomix-context.xml"
 COLLECTION_NAME = "tria_knowledge"
-CHUNK_SIZE = 8000  # Увеличиваем для сохранения контекста целых модулей
-OVERLAP_SIZE = 1000 # Увеличиваем перекрытие для связи между чанками
+CHUNK_SIZE = 6000  # Сокращаем с 8000 до 6000 для учета веса кириллицы (UTF-8)
+OVERLAP_SIZE = 800 # Оптимальное перекрытие для связи между чанками
 DIMENSIONS = 1536  # codestral-embed
 
 def chunk_code(text: str, max_chars: int = CHUNK_SIZE, overlap: int = OVERLAP_SIZE) -> List[str]:

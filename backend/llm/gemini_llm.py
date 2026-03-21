@@ -70,3 +70,35 @@ async def generate_with_tools(
     # В google-genai 1.0.0+ AutomaticFunctionCallingConfig делает это за нас 
     # если передать функции в tools. Но для контроля мы можем делать это вручную.
     return await get_gemini_response(prompt, tools=tools, system_instruction=system_instruction)
+async def get_gemini_response_stream(
+    prompt: str,
+    system_instruction: str = None,
+    tools: List[Any] = None
+):
+    """
+    Streaming version of the Gemini response helper.
+    """
+    if not client:
+        yield "[Gemini Error] Client not initialized"
+        return
+
+    try:
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction or SYSTEM_PROMPT,
+            temperature=0.7,
+            tools=tools,
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                disable=False
+            ) if tools else None
+        )
+
+        async for chunk in await client.aio.models.generate_content_stream(
+            model='gemini-3-flash-preview',
+            contents=prompt,
+            config=config
+        ):
+            if chunk.text:
+                yield chunk.text
+    except Exception as e:
+        logger.error(f"Gemini Streaming error: {e}")
+        yield f"[Gemini Stream Error] {str(e)}"
