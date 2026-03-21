@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi.responses import StreamingResponse
 from typing import List, Optional, Any
 # Removed asyncpg
 # import uuid # No longer needed for default session title here
@@ -71,25 +72,17 @@ async def direct_chat_with_tria(
             session_id = new_session.id
             print(f"[DEBUG CHAT] Created new session: {session_id}")
         
-        # 2. Add message and get response
-        print("[DEBUG CHAT] Adding message and getting AI response...")
-        assistant_response = await chat_service.add_message_to_session(
-            session_id=session_id, 
-            user=current_user, 
-            message_content=message_in.message_content, 
-            metadata=message_in.metadata
+        # 2. Return StreamingResponse
+        print("[DEBUG CHAT] Starting streaming response...")
+        return StreamingResponse(
+            chat_service.stream_message_to_session(
+                session_id=session_id, 
+                user=current_user, 
+                message_content=message_in.message_content, 
+                metadata=message_in.metadata
+            ),
+            media_type="text/event-stream"
         )
-        if not assistant_response:
-             raise HTTPException(status_code=500, detail="Failed to get or save assistant response (Service returned None).")
-             
-        # Optional: Add warning metadata if running in Mock Mode
-        if db is None:
-            # We can't easily modify the Pydantic model's metadata in place if it's frozen, 
-            # but we can try or just rely on the user noticing history doesn't persist.
-            pass
-
-        print("[DEBUG CHAT] Success!")
-        return assistant_response
 
     except HTTPException as he:
         print(f"[DEBUG CHAT] HTTPException: {he.detail}")

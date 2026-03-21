@@ -18,6 +18,7 @@ from backend.skills.openclaw_economist import economist_agent
 from backend.tria_agents.tria_rag_service import tria_rag
 
 from backend.tria_agents.tria_orchestrator import orchestrator
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -212,6 +213,58 @@ class ChatService:
         else:
             # If message role is not 'user' (e.g. 'system'), just return the saved message
             return ChatMessagePublic(**user_saved_message.dict())
+
+    async def stream_message_to_session(
+        self,
+        session_id: int,
+        user: Union[UserInDB, Dict[str, Any]],
+        message_content: str,
+        metadata: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Streams AI response and saves history to AstraDB upon completion.
+        """
+        # 1. Identify User
+        if isinstance(user, dict):
+            user_id = user.get("user_id") or user.get("id")
+            user_email = user.get("email") or ""
+        else:
+            user_id = getattr(user, "user_id", None) or getattr(user, "id", None)
+            user_email = getattr(user, "email", "")
+
+        if not user_id:
+            yield "data: " + json.dumps({"error": "Auth error: User ID not found."}) + "\n\n"
+            return
+
+        # 2. Save User Message
+        msg_create = ChatMessageCreate(
+            user_chat_session_id=session_id,
+            role="user",
+            message_content=message_content,
+            metadata=metadata or {}
+        )
+        await self.repo.add_message_to_history(message_in=msg_create, user_id=user_id)
+
+        # 3. Stream and Accumulate
+        full_response = ""
+        try:
+            async for token in orchestrator.stream_user_prompt(prompt=message_content, user_email=user_email):
+                full_response += token
+                yield "data: " + json.dumps({"token": token}) + "\n\n"
+        except Exception as e:
+            logger.error(f"Streaming failed: {e}")
+            yield "data: " + json.dumps({"error": str(e)}) + "\n\n"
+        finally:
+            # 4. Save Assistant Response to History
+            if full_response:
+                assistant_msg = ChatMessageCreate(
+                    user_chat_session_id=session_id,
+                    role="assistant",
+                    message_content=full_response,
+                    metadata={"llm_model": "gemini-3-flash", "streamed": True}
+                )
+                await self.repo.add_message_to_history(message_in=assistant_msg, user_id=user_id)
+                logger.info(f"Stream finished and saved to session {session_id}")
 
     async def get_session_with_history(self, session_id: int, user_id: str, message_skip: int = 0, message_limit: int = 100) -> Optional[ChatSessionWithHistory]:
         logger.info(f"Service: Getting session {session_id} with history for user {user_id}.")

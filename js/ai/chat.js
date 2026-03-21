@@ -20,24 +20,34 @@ export function initializeTriaChat() {
 
   isChatInitialized = true;
 
+  /**
+   * Добавляет сообщение в контейнер. 
+   * Если sender === 'tria', возвращает функцию для "допечатывания" текста.
+   */
   const appendMessage = (text, sender) => {
     const msgDiv = document.createElement('div');
     msgDiv.className = `chat-message ${sender}-message`;
 
-    // Поддержка MarkDown и переносов строк в ответах ИИ
     if (sender === 'tria') {
-      const paragraphs = text.split('\n').filter(p => p.trim() !== '');
-      paragraphs.forEach(p => {
-        const pEl = document.createElement('p');
-        pEl.textContent = p;
-        msgDiv.appendChild(pEl);
-      });
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'tria-content';
+      msgDiv.appendChild(contentDiv);
+      messagesContainer.appendChild(msgDiv);
+      
+      const updateContent = (newChunk) => {
+        // Простая очистка и вставка (в будущем можно добавить markdown парсинг на лету)
+        contentDiv.innerText += newChunk;
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      };
+
+      if (text) updateContent(text);
+      return updateContent;
     } else {
       msgDiv.textContent = text;
+      messagesContainer.appendChild(msgDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      return null;
     }
-
-    messagesContainer.appendChild(msgDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
   };
 
   const handleSend = async () => {
@@ -58,8 +68,13 @@ export function initializeTriaChat() {
       const modelSelect = document.getElementById('modelSelect');
       const selectedModel = modelSelect ? modelSelect.value : null;
 
-      const response = await apiSendChatMessage(message, token, selectedModel);
-      appendMessage(response, 'tria');
+      // Создаем контейнер для ответа ИИ заранее
+      const updateTriaUI = appendMessage('', 'tria');
+
+      await apiSendChatMessage(message, token, selectedModel, (chunk) => {
+        updateTriaUI(chunk);
+      });
+      
     } catch (error) {
       console.error("Chat error:", error);
       appendMessage("Триа недоступна. Ошибка: " + error.message, 'tria');

@@ -12,11 +12,16 @@ export class LightingManager {
         this.centerY = window.innerHeight / 2;
 
         this.handleResize = this.handleResize.bind(this);
+        this.handleMouseMove = this.handleMouseMove.bind(this);
         this.updateLighting = this.updateLighting.bind(this);
+        
+        this.mouseX = 0;
+        this.mouseY = 0;
     }
 
     initialize() {
         window.addEventListener('resize', this.handleResize);
+        window.addEventListener('mousemove', this.handleMouseMove);
 
         // Регистрируем основные группы элементов
         this.refreshElements();
@@ -36,6 +41,12 @@ export class LightingManager {
     handleResize() {
         this.centerX = window.innerWidth / 2;
         this.centerY = window.innerHeight / 2;
+        this.updateLighting();
+    }
+
+    handleMouseMove(e) {
+        this.mouseX = e.clientX;
+        this.mouseY = e.clientY;
         this.updateLighting();
     }
 
@@ -78,6 +89,15 @@ export class LightingManager {
             el.style.setProperty('--shadow-x', `${shadowX}px`);
             el.style.setProperty('--shadow-y', `${shadowY}px`);
 
+            // --- Mouse Glow (Фаза 20.5) ---
+            const mdx = elCenterX - this.mouseX;
+            const mdy = elCenterY - this.mouseY;
+            const distance = Math.sqrt(mdx * mdx + mdy * mdy);
+            
+            // Свечение активно в радиусе 300px, плавно затухает
+            const glowIntensity = Math.max(0, 1 - distance / 300);
+            el.style.setProperty('--mouse-glow', glowIntensity.toFixed(3));
+            
             // Также рассчитываем угол для конических градиентов или теней, если нужно
             const angle = Math.atan2(dy, dx) * (180 / Math.PI);
             el.style.setProperty('--light-angle', `${angle}deg`);

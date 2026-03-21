@@ -4,13 +4,14 @@
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
 /**
- * Отправляет сообщение в чат на бэкенд и возвращает ответ от Tria.
+ * Отправляет сообщение в чат на бэкенд и поддерживает стриминг ответа.
  * @param {string} text - Текст сообщения от пользователя.
- * @param {string} idToken - Firebase ID токен пользователя для аутентификации.
- * @returns {Promise<string>} - Текстовый ответ от Tria.
- * @throws {Error} - Если произошла ошибка при отправке или ответ сервера не OK.
+ * @param {string} idToken - Firebase ID токен пользователя.
+ * @param {string} selectedModel - Выбранная модель (опционально).
+ * @param {function} onChunk - Коллбэк для обработки каждого чанка (токена) в реальном времени.
+ * @returns {Promise<string>} - Полный текст ответа (после завершения стрима).
  */
-export async function sendChatMessage(text, idToken, selectedModel = null) {
+export async function sendChatMessage(text, idToken, selectedModel = null, onChunk = null) {
     const chatUrl = `${API_BASE_URL}/api/v1/chat/users/me/chat_sessions/direct`;
     console.log(`[apiService] Sending chat message to ${chatUrl}`);
 
@@ -35,9 +36,40 @@ export async function sendChatMessage(text, idToken, selectedModel = null) {
             throw new Error(`Chat request failed: ${errorData.detail || response.statusText}`);
         }
 
-        const responseData = await response.json();
-        console.log('[apiService] Chat response received:', responseData);
-        return responseData.message_content; // В новой модели это message_content
+        // --- Streaming Logic ---
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            
+            // SSE format: "data: {\"token\": \"...\"}\n\n"
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.token) {
+                            fullText += data.token;
+                            if (onChunk) onChunk(data.token);
+                        } else if (data.error) {
+                            console.error("[apiService] Stream error:", data.error);
+                            throw new Error(data.error);
+                        }
+                    } catch (e) {
+                        // In case of fragmented JSON or ping-like data
+                        continue;
+                    }
+                }
+            }
+        }
+
+        console.log('[apiService] Chat stream finished.');
+        return fullText;
 
     } catch (error) {
         console.error('[apiService] Error during chat message sending:', error);
