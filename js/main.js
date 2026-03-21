@@ -10,23 +10,28 @@ import gestureIntentClient from './services/gestureIntentClient.js';
 import { setupChat, sendChatMessage as sendChatMessageFromChatModule } from './ai/chat.js'; // Импортируем функции чата
 import { applyPromptWithTriaMode } from './ai/tria_mode.js';
 
+import { EyeLoader } from './ui/EyeLoader.js';
+
 /**
  * Главная асинхронная функция инициализации приложения.
  */
 async function main() {
     console.log("Holograms.media: Main execution started.");
+    const loader = new EyeLoader();
+    loader.start();
 
     try {
         // 0. Предзагрузка Google Sign-In
         await initAuth();
+        loader.setProgress(10);
         console.log("[STAGE] Auth system initialized.");
 
         // 1. Инициализация менеджера согласия
         console.log("[STAGE] Initializing ConsentManager...");
         const consentManager = new ConsentManager(state);
-        // Сохраняем экземпляр в state для доступа из других модулей
         state.consentManager = consentManager;
         await consentManager.initialize();
+        loader.setProgress(30);
         console.log("[STAGE] Consent accepted. Moving to Core...");
 
         // 2. Инициализация ядра приложения (3D-сцена, рендерер, менеджеры)
@@ -35,19 +40,21 @@ async function main() {
         if (!state.renderer) {
             throw new Error("Core initialization failed: Renderer not available.");
         }
+        loader.setProgress(60);
         console.log("[STAGE] Core initialized. Moving to UI...");
 
         // 3. Инициализация UI (кэширование DOM-элементов)
         initializeMainUI(state);
+        loader.setProgress(85);
         console.log("[STAGE] UI cached. Starting Full App...");
 
         // 4. Запуск полной инициализации приложения
-        await startFullApplication(state);
+        await startFullApplication(state, loader);
+        loader.setProgress(100);
         console.log("[STAGE] ✅ Application is UP and RUNNING!");
 
     } catch (error) {
         console.error("A critical error occurred during the application startup:", error);
-        // Здесь можно отобразить сообщение об ошибке пользователю
     }
 }
 
@@ -88,8 +95,9 @@ function initializePromptHandlers() {
 /**
  * Запускает полную инициализацию после получения согласия и базовой настройки.
  * @param {object} appState - Глобальный объект состояния.
+ * @param {EyeLoader} loader - Экземпляр лоадера.
  */
-async function startFullApplication(appState) {
+async function startFullApplication(appState, loader) {
     console.log("Starting full application initialization...");
     try {
         // 1. Определение платформы (desktop, mobile, xr)
