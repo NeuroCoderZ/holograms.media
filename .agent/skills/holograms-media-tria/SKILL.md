@@ -1,16 +1,23 @@
 ---
 name: holograms-media-tria
-description: Логика AI ассистента Триа и интеграция с LLM.
+description: Архитектура Триа, LLM модели, стриминг, оркестратор.
 ---
 
-# 🤖 Tria AI Rules
+# Tria AI Rules
 
-## 🧠 Природа Триа
-- Триа — мультимодальный разум, работающий с Соматической памятью (Soma).
-- Архитектура памяти: Pneuma (неизменяемое ядро) и Sarx (эволюционирующая плоть).
-- Контроль за обучением осуществляется через «Мнезис» (активен по умолчанию, кнопка UI — для паузы).
-- База знаний хранится в AstraDB.
+## 🔒 MODEL LOCK
+- Основная: `gemini-3-flash-preview` (через OpenClaw или напрямую)
+- Архитектура: `mistral-small-latest` (только ArchitectureAgent)
+- НЕ менять без указания НейроКодера.
 
-## 🔗 Интеграция
-- Бэкенд на FastAPI (Koyeb).
-- Нейронное ядро Enkephalon на Rust/WASM (holocore).
+## Поток обработки сообщения
+OpenClaw Patrol (входящий) → TriaOrchestrator → LLM stream → накопить → сохранить в AstraDB → OpenClaw Patrol (исходящий)
+
+## Стриминг (chat_service.py → stream_message_to_session)
+- Стримить токены немедленно через SSE (`yield "data: {...}\n\n"`)
+- Сохранять полный ответ в AstraDB ТОЛЬКО после завершения стрима (в `finally`)
+- Никаких задержек на бэкенде — скорость вывода регулируется фронтендом
+
+## Frontend (js/ai/chat.js)
+- Скорость печати: символьная очередь `charQueue + setTimeout(flushQueue, 18)`
+- TYPING_DELAY_MS = 18 (≈55 символов/сек)

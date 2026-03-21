@@ -29,24 +29,35 @@ export function initializeTriaChat() {
     msgDiv.className = `chat-message ${sender}-message`;
 
     if (sender === 'tria') {
-      const contentDiv = document.createElement('div');
-      contentDiv.className = 'tria-content';
-      msgDiv.appendChild(contentDiv);
-      messagesContainer.appendChild(msgDiv);
-      
-      const updateContent = (newChunk) => {
-        // Простая очистка и вставка (в будущем можно добавить markdown парсинг на лету)
-        contentDiv.innerText += newChunk;
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      };
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'tria-content';
+        msgDiv.appendChild(contentDiv);
+        messagesContainer.appendChild(msgDiv);
 
-      if (text) updateContent(text);
-      return updateContent;
+        const TYPING_DELAY_MS = 18;
+        const charQueue = [];
+        let isTyping = false;
+
+        const flushQueue = () => {
+            if (charQueue.length === 0) { isTyping = false; return; }
+            isTyping = true;
+            contentDiv.innerText += charQueue.shift();
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            setTimeout(flushQueue, TYPING_DELAY_MS);
+        };
+
+        const updateContent = (newChunk) => {
+            for (const char of newChunk) charQueue.push(char);
+            if (!isTyping) flushQueue();
+        };
+
+        if (text) updateContent(text);
+        return updateContent;
     } else {
-      msgDiv.textContent = text;
-      messagesContainer.appendChild(msgDiv);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      return null;
+        msgDiv.textContent = text;
+        messagesContainer.appendChild(msgDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        return null;
     }
   };
 
