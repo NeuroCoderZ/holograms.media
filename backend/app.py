@@ -115,6 +115,7 @@ origins = [
     "https://www.holograms.media",
     "https://dev.holograms.media",
     "https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app",
+    "https://holograms-media-dev.pages.dev",
     "http://localhost:5173",
     "http://localhost:3000"
 ]

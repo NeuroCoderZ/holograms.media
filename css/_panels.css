@@ -74,7 +74,7 @@
   /* No radius on right edge */
   display: flex !important;
   flex-direction: column !important;
-  padding-top: 5vh !important; /* Requested offset */
+  padding-top: 5vh !important; /* Horizon line sync */
 
   /* Hologram Light catch from LEFT side */
   box-shadow: -15px 0 60px -20px rgba(255, 255, 255, 0.05),

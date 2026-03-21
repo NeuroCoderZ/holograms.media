@@ -52,12 +52,12 @@
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
-  background-color: transparent !important;
-  border: none !important;
-  cursor: pointer !important;
-  color: #888 !important;
-  /* Default: Gray */
   transition: all 0.15s ease-in-out !important;
+  border-radius: var(--border-radius-md) !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3), var(--glass-inner-light) !important;
 }
 
 #togglePanelsButton:hover {
@@ -119,6 +119,20 @@
   /* Always hidden per requirement */
 }
 
+@media (max-width: 768px) {
+  :root {
+    --panel-width-right: 100vw;
+    /* Full screen for chat/content */
+  }
+
+  .panel.left-panel {
+    padding-top: 10px !important;
+    padding-bottom: 20px !important;
+    gap: 12px !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+}
 #fullscreenButton.active {
   color: white !important;
   filter: brightness(1.5) !important;
@@ -623,18 +637,25 @@
 }
 
 /* Физика: Упругое вдавливание (Liquid Glass) - Конвергенция к 0.96 scale и Concave эффекту */
+/* СКОРОСТЬ ВДАВЛИВАНИЯ СИНХРОНИЗИРОВАНА С МОРГАНИЕМ ГЛАЗА (0.1s - 0.25s) */
 .control-button:active,
 .control-button.active {
   transform: scale(0.96) !important;
   background-color: rgba(255, 255, 255, 0.05) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
   
   /* Инвертированные тени: эффект "лунки" (Concave) */
   box-shadow:
     inset 0 4px 12px rgba(0, 0, 0, 0.7),
     inset 0 -2px 5px rgba(255, 255, 255, 0.15),
     0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Remove Hover Scale for Left Panel Buttons */
+.left-panel .control-button:hover {
+  transform: none !important;
+  filter: brightness(1.2);
 }
 
 /* Attention Economy Styles */

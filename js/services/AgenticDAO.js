@@ -129,6 +129,16 @@ export class AgenticDAO {
         }));
     }
 
+    /**
+     * Возвратить арендованные ресурсы (Trigger for Reload Prank)
+     */
+    releaseResources(tip = 0) {
+        console.log(`[AgenticDAO] Resources released. Tip: ${tip * 100}%`);
+        window.dispatchEvent(new CustomEvent('tria:resource_released', {
+            detail: { tip }
+        }));
+    }
+
     getScore() {
         return this.personalUtilityScore;
     }
