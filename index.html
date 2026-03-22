@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.181 - fix: rollback to stable v0.20.180 and apply minimal P0 fixes");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.182 - fix: UI layout, chat spacing and model select v0.20.186");</script>
   <!-- DEPLOY_VERSION_END -->
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
@@ -238,15 +238,10 @@
             d="M320-120v-120H200v-80h200v200h-80Zm320 0v-200h200v80H720v120h-80ZM200-640v-120h120v-80H120v200h80Zm440 0v-80h120v-120h80v200H640Z" />
         </svg>
       </button>
-      <button id="xrModeButton" class="control-button panel-button" data-tooltip="XR-режим"><svg
+      <button id="xrButton" class="control-button panel-button" data-tooltip="XR-режим"><svg
           xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
           <path
             d="M320-280v-23q0-44 44-70.5T480-400q72 0 116 26.5t44 70.5v23H320Zm160-160q-33 0-56.5-23.5T400-520q0-33 23.5-56.5T480-600q33 0 56.5 23.5T560-520q0 33-23.5 56.5T480-440ZM120-592v306q14 13 34 22.5t46 14.5v-317q-22-5-42.5-11.5T120-592Zm720-1q-17 8-37 14.5T760-567v318q26-5 46-14.5t34-22.5v-307ZM280-154q-115-14-177.5-47T40-280v-400q0-57 113.5-88T480-799q213 0 326.5 31T920-680v400q0 46-62.5 79T680-154v-480q51-8 90.5-19.5T827-676q-43-17-147-30.5T480-720q-96 0-200 13.5T133-676q17 12 56.5 23t90.5 19v480ZM120-592v343-343Zm720-1v344-344Z" />
-        </svg></button>
-      <button id="myGesturesButton" class="control-button panel-button" data-tooltip="Мои жесты"><svg
-          xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
-          <path
-            d="M527-640 303-807q-14-10-16-26t8-30q10-14 26-16.5t30 7.5l224 168-48 64Zm-153-64-36 37q-5 5-9.5 10.5T320-645l-57-42q-14-10-16-26t8-30q10-14 26-16t30 8l63 47Zm284 123Zm85-48L439-856q-14-10-16.5-26t7.5-30q10-14 26-16t30 8l196 146 9-69q3-24 19-41t39-21l40-6 94 316q8 27 3 55t-22 51l-85 113q-2-24-10.5-46.5T746-465l54-72q6-8 7-17t-1-18l-48-163-15 106Zm-473 96-14-10q-14-10-16.5-26t7.5-30q10-14 26-16t30 8l1 1q-5 18-3.5 36.5T308-533h-38ZM80-280q-17 0-28.5-11.5T40-320q0-17 11.5-28.5T80-360h280v80H80Zm40 120q-17 0-28.5-11.5T80-200q0-17 11.5-28.5T120-240h240v80H120Zm80 120q-17 0-28.5-11.5T160-80q0-17 11.5-28.5T200-120h400q17 0 28.5-11.5T640-160v-200q0-10-4-18t-12-14L488-494l52 94H160q-17 0-28.5-11.5T120-440q0-17 11.5-28.5T160-480h244l-34-60q-12-21-9.5-44.5T380-625l28-28 264 197q23 17 35.5 42t12.5 54v200q0 50-35 85t-85 35H200Zm281-223Z" />
         </svg></button>
       <button id="synthButton" class="control-button panel-button" title="Жестовый синтезатор">
         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
@@ -254,11 +249,8 @@
             d="M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-422h240v160H560v400q0 66-47 113t-113 47Z" />
         </svg>
       </button>
-      <button id="myHologramsButton" class="control-button panel-button" data-tooltip="Мои голограммы"><svg
-          xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
-          <path
-            d="M440-181 240-296q-19-11-29.5-29T200-365v-230q0-22 10.5-40t29.5-29l200-115q19-11 40-11t40 11l200 115q19 11 29.5 29t10.5 40v230q0 22-10.5 40T720-296L520-181q-19 11-40 11t-40-11Zm0-92v-184l-160-93v185l160 92Zm80 0 160-92v-185l-160 93v184ZM80-680v-120q0-33 23.5-56.5T160-880h120v80H160v120H80ZM280-80H160q-33 0-56.5-23.5T80-160v-120h80v120h120v80Zm400 0v-80h120v-120h80v200H680Zm120-600v-120H680v-80h120q33 0 56.5 23.5T880-800v120h-80ZM480-526l158-93-158-91-158 91 158 93Zm0 45Zm0-45Zm40 69Zm-80 0Z" />
-        </svg></button>
+      <!-- myGesturesButton hidden per previous instructions, keeping cleaner layout -->
+
       <button id="scanButton" class="control-button panel-button" title="Сканировать голограмму"><svg
           xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
           <path
@@ -269,6 +261,7 @@
           <path
             d="M440-80v-304L256-200l-56-56 224-224-224-224 56-56 184 184v-304h40l228 228-172 172 172 172L480-80h-40Zm80-496 76-76-76-74v150Zm0 342 76-74-76-76v150Z" />
         </svg></button>
+
       <button id="triaButton" class="control-button panel-button" title="Обучение Триа">
         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
           <path
@@ -390,12 +383,11 @@
            <!-- Icon removed -->
         </button>
         
-        <div id="modelSelectContainer" style="flex-grow: 1; display: flex; align-items: center;">
+        <div id="modelSelectContainer" style="flex-grow: 1; display: flex; align-items: center;" data-tooltip="Выбор модели">
           <select id="modelSelect"
             style="width: 100%; background: rgba(0,0,0,0.6); color: #ccc; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; outline: none; font-size: 14px; cursor: pointer; padding: 6px 10px; backdrop-filter: blur(10px);">
             <option value="gemini/gemini-3-flash" style="background: #1a1a1a; color: #ddd;">Gemini 3 Flash</option>
-            <option value="mistral/mistral-large-latest" style="background: #1a1a1a; color: #ddd;">Mistral Large 3
-            </option>
+            <option value="mistral/mistral-large-latest" style="background: #1a1a1a; color: #ddd;">Mistral Small 4</option>
           </select>
         </div>
         <!-- Кнопка отправить (видима в режиме чата) -->
