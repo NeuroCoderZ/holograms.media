@@ -191,8 +191,8 @@ export class LightingManager {
                 // Intensity: Inverse square law
                 // Amplitude is 0..255 (usually). Normalize to 0..1
                 const ampNorm = Math.min(1, col.amplitude / 128); 
-                // Hyper-realism intensity for Phase 20.9.8
-                const intensity = (ampNorm * 0.3 + 0.1) / (dist * dist);
+                // Final hyper-realism intensity for Phase 20.9.9
+                const intensity = (ampNorm * 0.5 + 0.2) / (dist * dist);
                 
                 r += col.color.r * intensity;
                 g += col.color.g * intensity;
@@ -213,7 +213,7 @@ export class LightingManager {
             // Optimization: Apply to style property
             panel.style.setProperty('--glass-specular',
                 `radial-gradient(ellipse at 50% 0%, 
-                rgba(${r.toFixed(0)},${g.toFixed(0)},${b.toFixed(0)},0.8) 0%, 
+                rgba(${r.toFixed(0)},${g.toFixed(0)},${b.toFixed(0)},0.9) 0%, 
                 transparent 70%)`
             );
             
