@@ -27,6 +27,7 @@ export class AgentWomb {
      * Проверка необходимости "рождения" нового агента
      */
     _checkForLabor() {
+        if (this.nursery.size >= 3) return;
         // 1. Ищем "горячие" зоны на Торе (высокая плотность фононов без привязки)
         const hotNodes = Array.from(this.fs._nodes.values())
             .filter(n => n.excitationScore > 0.9 && n.gate === 'open');
