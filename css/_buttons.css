@@ -312,59 +312,86 @@
   width: var(--button-size) !important;
   height: var(--button-size) !important;
   padding: 0;
-  background-color: var(--glass-bg) !important;
+  
+  /* Layer 1: Base Glass */
+  background: var(--glass-bg) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--border-radius-md);
+  box-shadow: none !important; /* Reset old shadows */
+  
   cursor: pointer;
   color: var(--color-icon) !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--border-radius-md);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Speed sync: 0.2s */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
   font-size: 24px !important;
   position: relative;
   overflow: hidden;
   outline: none !important;
   -webkit-tap-highlight-color: transparent;
-
-  /* NO SELF-EMISSION: Only passive shadows and light catch */
-  box-shadow:
-    var(--shadow-x, 0px) var(--shadow-y, 4px) 12px rgba(0, 0, 0, 0.45),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.05),
-    var(--glass-inner-light) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important; 
-  outline: none !important;
-  -webkit-appearance: none;
-  appearance: none;
-
-  /* Spectral Chrome Edges: Colored highlights from hologram columns */
-  border-image: linear-gradient(
-    135deg, 
-    var(--spectral-color-left, rgba(255,255,255,0.1)) 0%, 
-    rgba(255,255,255,0.1) 50%, 
-    var(--spectral-color-right, rgba(255,255,255,0.1)) 100%
-  ) 1 !important;
-
-  /* Central white light catch */
-  background-image: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 50%),
-      rgba(255, 255, 255, 0.17) 0%,
-      transparent 55%) !important;
+  isolation: isolate; /* Create stacking context for pseudo-elements */
 }
 
-/* Mouse Glow (Architect's Edition) */
+/* Layer 2: Inner Highlight (Structural) */
 .control-button::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 50%, 
-      rgba(255, 255, 255, calc(var(--mouse-glow, 0) * 0.05)) 0%, 
-      transparent 70%);
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(255,255,255,0.05);
   pointer-events: none;
-  z-index: -1;
-  opacity: var(--mouse-glow, 0);
-  transition: opacity 0.2s ease;
+  z-index: 0;
 }
+
+/* Layer 3: Specular Highlight (Dynamic Lighting from Hologram & Mouse) */
+.control-button::after {
+  content: '';
+  position: absolute;
+  inset: -1px; /* Cover border */
+  border-radius: inherit;
+  
+  /* Combined specular sources: Hologram Colors + Mouse Reflection */
+  background: 
+    var(--glass-specular, transparent),
+    var(--mouse-specular, transparent);
+    
+  mix-blend-mode: screen; /* Physics of light addition */
+  pointer-events: none;
+  z-index: 1;
+  transition: background 0.1s ease-out;
+}
+
+/* Hover State: Glass gets slightly brighter/cleaner */
+.control-button:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--color-icon-active) !important;
+  /* No scale, just light */
+}
+
+/* Active State: Pressing into the glass */
+.control-button:active,
+.control-button.active {
+  transform: scale(0.97) translateZ(-1px) !important;
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  
+  /* Momentarily increase specular opacity logic could go here, 
+     but scale is sufficient for physical feel */
+}
+
+.control-button:disabled {
+  color: #444 !important;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Mouse Glow Legacy - Removed/Superseded by ::after logic above */
+/* .control-button::before { ... } - REPLACED */
 
 /* Gesture Studio Styles */
 .studio-mode-bar {
