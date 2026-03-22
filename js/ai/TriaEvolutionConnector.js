@@ -116,6 +116,12 @@ export class TriaEvolutionConnector {
 
             if (!response.ok) {
                 console.warn('[TriaEvolution] ❌ Failed to send snapshot:', response.statusText);
+                
+                if (response.status === 404) {
+                    console.error('[TriaEvolution] 🛑 Endpoint not found (404). Stopping training capture to prevent spam.');
+                    this.stop();
+                    return;
+                }
             } else {
                 const result = await response.json();
                 console.log('[TriaEvolution] ✅ Snapshot processed by Global Триа.', result);
