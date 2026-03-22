@@ -38,13 +38,13 @@ export class LightingManager {
         this.elements = Array.from(document.querySelectorAll('.control-button, .panel, .panel-section, .chat-message'));
     }
 
-    handleResize() {
+    handleResize = () => {
         this.centerX = window.innerWidth / 2;
         this.centerY = window.innerHeight / 2;
         this.updateLighting();
     }
 
-    handleMouseMove(e) {
+    handleMouseMove = (e) => {
         this.mouseX = e.clientX;
         this.mouseY = e.clientY;
         this.updateLighting();
