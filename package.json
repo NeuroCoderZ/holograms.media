@@ -1,6 +1,6 @@
 {
   "name": "holograms-media-backend",
-  "version": "0.20.175",
+  "version": "NaN.20.178",
   "description": "Backend services for Holograms Media",
   "main": "index.js",
   "dependencies": {
@@ -14,11 +14,13 @@
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:unit": "node ./tests/unit/run_tests.js",
-    "deploy": "node scripts/deploy.js"
+    "deploy": "node scripts/deploy.js",
+    "ctx": "repomix --style xml --output repomix-context.xml --no-security-check"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "repomix": "^1.12.0",
     "vite": "^5.0.0",
     "vite-plugin-pwa": "^1.2.0"
   }
