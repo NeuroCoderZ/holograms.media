@@ -31,6 +31,9 @@ export function initializeTriaChat() {
     if (sender === 'tria') {
         const contentDiv = document.createElement('div');
         contentDiv.className = 'tria-content';
+        // Fix: Prevent text gluing
+        contentDiv.style.whiteSpace = 'pre-wrap';
+        contentDiv.style.wordBreak = 'break-word';
         msgDiv.appendChild(contentDiv);
         messagesContainer.appendChild(msgDiv);
 
@@ -41,7 +44,8 @@ export function initializeTriaChat() {
         const flushQueue = () => {
             if (charQueue.length === 0) { isTyping = false; return; }
             isTyping = true;
-            contentDiv.innerText += charQueue.shift();
+            // Fix: Use textContent to preserve whitespace
+            contentDiv.textContent += charQueue.shift();
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             setTimeout(flushQueue, TYPING_DELAY_MS);
         };
