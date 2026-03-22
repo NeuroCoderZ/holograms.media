@@ -49,7 +49,7 @@ def get_astra_db(client: DataAPIClient = None):
         # 2. Prefer connecting by ID and Region (Parsed or Direct)
         if db_id and region:
             logger.info(f"Connecting to Astra DB via ID: {db_id} (Region: {region})")
-            db = client.get_async_database(db_id, region=region, keyspace=keyspace)
+            db = client.get_async_database(db_id, keyspace=keyspace)
             return db
         
         # 3. Fallback to raw Endpoint
