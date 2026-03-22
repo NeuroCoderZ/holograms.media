@@ -1,0 +1,10 @@
+node_modules/
+.git/
+dist/
+brain/
+repomix-context.xml
+conductor/
+tmp/
+*.log
+.DS_Store
+Thumbs.db
