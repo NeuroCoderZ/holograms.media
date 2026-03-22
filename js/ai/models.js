@@ -74,6 +74,7 @@ export function initializeModelSelector(state) {
   ];
 
   options.forEach(opt => {
+      if (opt.val === selectedModel) return; // Skip currently selected
       const el = document.createElement('option');
       el.value = opt.val;
       el.textContent = opt.txt;
