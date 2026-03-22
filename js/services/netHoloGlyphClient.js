@@ -175,15 +175,29 @@ class NetHoloGlyphClient {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
             const delay = this._jitteredDelay(this.reconnectAttempts);
-            console.log(`[NetHoloGlyphClient] Connection lost. Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+            
+            // Task 4: Reduce log spam
+            if (this.reconnectAttempts <= 5) {
+                console.log(`[NetHoloGlyphClient] Connection lost. Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+            } else if (this.reconnectAttempts === this.maxReconnectAttempts) {
+                 console.log(`[NetHoloGlyphClient] Connection unstable. Final reconnection attempts...`);
+            }
 
             if (this.reconnectTimeoutId) clearTimeout(this.reconnectTimeoutId);
 
             this.isReconnecting = true;
             this.reconnectTimeoutId = setTimeout(() => {
-                if (this.roomId && this.userId) {
-                    console.log("[NetHoloGlyphClient] Attempting reconnect...");
+                // Task 4: Guard against missing token
+                let jwtToken = null;
+                if (typeof localStorage !== 'undefined') {
+                    jwtToken = localStorage.getItem('jwtToken');
+                }
+                
+                if (this.roomId && this.userId && jwtToken) {
+                    if (this.reconnectAttempts <= 5) console.log("[NetHoloGlyphClient] Attempting reconnect...");
                     this.connect(this.roomId, this.userId);
+                } else if (!jwtToken) {
+                     console.warn("[NetHoloGlyphClient] Reconnection aborted: No JWT token.");
                 }
             }, delay);
         } else {

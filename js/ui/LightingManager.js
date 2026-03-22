@@ -191,7 +191,8 @@ export class LightingManager {
                 // Intensity: Inverse square law
                 // Amplitude is 0..255 (usually). Normalize to 0..1
                 const ampNorm = Math.min(1, col.amplitude / 128); 
-                const intensity = (ampNorm * 0.06 + 0.02) / (dist * dist);
+                // Enhanced Intensity for Phase 20.9.7
+                const intensity = (ampNorm * 0.15 + 0.05) / (dist * dist);
                 
                 r += col.color.r * intensity;
                 g += col.color.g * intensity;
@@ -212,7 +213,7 @@ export class LightingManager {
             // Optimization: Apply to style property
             panel.style.setProperty('--glass-specular',
                 `radial-gradient(ellipse at 50% 0%, 
-                rgba(${r.toFixed(0)},${g.toFixed(0)},${b.toFixed(0)},0.35) 0%, 
+                rgba(${r.toFixed(0)},${g.toFixed(0)},${b.toFixed(0)},0.6) 0%, 
                 transparent 70%)`
             );
             
