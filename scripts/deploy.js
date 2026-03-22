@@ -2,71 +2,64 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const versionFilePath = path.join(__dirname, '../version.txt');
-const packageJsonPath = path.join(__dirname, '../package.json');
-const indexHtmlPath = path.join(__dirname, '../index.html');
+const ROOT           = path.join(__dirname, '..');
+const VERSION_FILE   = path.join(ROOT, 'version.txt');
+const PACKAGE_JSON   = path.join(ROOT, 'package.json');
+const INDEX_HTML     = path.join(ROOT, 'index.html');
 
-// 1. Get Commit Message from args
 const args = process.argv.slice(2);
 const commitMessage = args[0] || 'Auto-deployment';
 
-// 2. Read and Increment Version
-let version = '0.0.0';
-if (fs.existsSync(versionFilePath)) {
-    version = fs.readFileSync(versionFilePath, 'utf8').trim();
+// Читаем версию — УБИРАЕМ букву v если есть
+let version = '0.20.0';
+if (fs.existsSync(VERSION_FILE)) {
+    version = fs.readFileSync(VERSION_FILE, 'utf8').trim().replace(/^v/, '');
 }
 
-const versionParts = version.split('.').map(Number);
-versionParts[2] += 1; // Increment patch
-const newVersion = versionParts.join('.');
+// Инкрементируем патч
+const parts = version.split('.').map(Number);
+if (parts.some(isNaN)) {
+    console.error(`❌ Некорректная версия в version.txt: "${version}". Исправь вручную на формат X.Y.Z`);
+    process.exit(1);
+}
+parts[2] += 1;
+const newVersion = parts.join('.');
 
-console.log(`🚀 Starting Deployment: ${version} -> ${newVersion}`);
-console.log(`📝 Message: ${commitMessage}`);
+console.log(`\n🚀 Deploy: ${version} → ${newVersion}`);
+console.log(`📝 Message: ${commitMessage}\n`);
 
-// 3. Update version.txt
-fs.writeFileSync(versionFilePath, newVersion);
+// Обновляем файлы
+fs.writeFileSync(VERSION_FILE, newVersion);
 
-// 4. Update package.json
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-packageJson.version = newVersion;
-fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+const pkg = JSON.parse(fs.readFileSync(PACKAGE_JSON, 'utf8'));
+pkg.version = newVersion;
+fs.writeFileSync(PACKAGE_JSON, JSON.stringify(pkg, null, 2));
 
-// 5. Update index.html
-let indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
-// Regex to find: <script>console.log("DEPLOY VERSION: ... - ...");</script>
-// We replace the content inside the console.log
+let html = fs.readFileSync(INDEX_HTML, 'utf8');
 const deployLogRegex = /console\.log\("DEPLOY VERSION: .*?"\);/;
 const newLogLine = `console.log("DEPLOY VERSION: ${newVersion} - ${commitMessage}");`;
-
-if (deployLogRegex.test(indexHtml)) {
-    indexHtml = indexHtml.replace(deployLogRegex, newLogLine);
-    fs.writeFileSync(indexHtmlPath, indexHtml);
-    console.log('✅ Updated index.html version log');
+if (deployLogRegex.test(html)) {
+    html = html.replace(deployLogRegex, newLogLine);
+    fs.writeFileSync(INDEX_HTML, html);
+    console.log('✅ index.html updated');
 } else {
-    console.warn('⚠️ Could not find DEPLOY VERSION log in index.html to update.');
+    console.warn('⚠️  DEPLOY VERSION line not found in index.html');
 }
 
-// 6. Run generate_version.js (updates public/version.json)
 try {
-    execSync('node scripts/generate_version.js', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+    execSync('node scripts/generate_version.js', { stdio: 'inherit', cwd: ROOT });
 } catch (e) {
-    console.error('❌ Failed to generate version.json', e);
+    console.error('❌ generate_version.js failed:', e.message);
     process.exit(1);
 }
 
-// 7. Git Operations
 try {
-    console.log('📦 Staging files...');
-    execSync('git add .', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
-
-    console.log('💾 Committing...');
-    execSync(`git commit -m "DEPLOY: v${newVersion} - ${commitMessage}"`, { stdio: 'inherit', cwd: path.join(__dirname, '..') });
-
-    console.log('☁️ Pushing to origin dev...');
-    execSync('git push origin dev', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
-
-    console.log(`🎉 Deployment Complete! v${newVersion}`);
+    execSync('git add .', { stdio: 'inherit', cwd: ROOT });
+    execSync(`git commit -m "DEPLOY: v${newVersion} - ${commitMessage}"`,
+        { stdio: 'inherit', cwd: ROOT });
+    execSync('git push origin dev', { stdio: 'inherit', cwd: ROOT });
+    console.log(`\n🎉 Deployment Complete! v${newVersion}\n`);
 } catch (e) {
-    console.error('❌ Git operations failed', e);
+    console.error('❌ Git failed:', e.message);
     process.exit(1);
 }
