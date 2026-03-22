@@ -4,36 +4,50 @@
   height: 30px !important;
 }
 
-@keyframes tria-spark-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes tria-spark-run {
+  from { --spark-angle: 0deg; }
+  to   { --spark-angle: 360deg; }
+}
+
+@property --spark-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
 }
 
 #triaButton.active {
   position: relative;
   overflow: hidden;
+  isolation: isolate;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 #triaButton.active::before {
   content: '';
   position: absolute;
-  width: 150%;
-  height: 150%;
-  top: -25%;
-  left: -25%;
-  background: conic-gradient(from 0deg, transparent 0%, transparent 70%, rgba(255, 255, 255, 1) 100%);
-  animation: tria-spark-rotate 2s linear infinite;
-  z-index: -1;
-  border-radius: 50%;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--spark-angle),
+    transparent 0%,
+    transparent 88%,
+    rgba(255,255,255,0.9) 93%,
+    rgba(255,255,255,1) 96%,
+    rgba(255,255,255,0.9) 99%,
+    transparent 100%
+  );
+  animation: tria-spark-run 1.8s linear infinite;
+  z-index: 0;
 }
 
 #triaButton.active::after {
   content: '';
   position: absolute;
-  inset: 1px; /* Толщина искры: 1px бордер */
+  inset: 2px;
   background: var(--glass-bg);
   border-radius: inherit;
-  z-index: -1;
+  z-index: 1;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
@@ -240,7 +254,13 @@
 #submitChatMessage svg {
   width: 20px !important;
   height: 20px !important;
-  fill: #E3E3E3 !important;
+  fill: #888888 !important;
+  transition: fill 0.2s ease;
+}
+
+#submitChatMessage:hover svg,
+#submitChatMessage:active svg {
+  fill: #ffffff !important;
 }
 
 /* Стиль для неактивной кнопки отправки сообщения */
