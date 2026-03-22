@@ -148,7 +148,6 @@
 .panel.left-panel.visible,
 .panel.right-panel.visible {
   opacity: 1 !important;
-...
   visibility: visible !important;
   pointer-events: auto !important;
   transform: translateX(0) !important;
