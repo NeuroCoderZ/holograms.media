@@ -273,35 +273,22 @@ export class GestureLiveStudio {
     // ─── UI Construction ──────────────────────────────────────────
 
     _buildModeBar() {
-        if (!this.gestureArea) return;
-
-        this.modeBar = document.createElement('div');
-        this.modeBar.className = 'studio-mode-bar';
-        this.modeBar.innerHTML = `
-            <button class="studio-mode-tab active" data-mode="${STUDIO_MODES.RECORD}" title="Запись жеста">
-                <span class="mode-icon">⏺</span><span class="mode-label">Запись</span>
-            </button>
-            <button class="studio-mode-tab" data-mode="${STUDIO_MODES.EDIT}" title="Редактирование жестов">
-                <span class="mode-icon">✏️</span><span class="mode-label">Правка</span>
-            </button>
-            <button class="studio-mode-tab" data-mode="${STUDIO_MODES.TEST}" title="Тестирование жеста">
-                <span class="mode-icon">▶</span><span class="mode-label">Тест</span>
-            </button>
-            <button class="studio-mode-tab" data-mode="${STUDIO_MODES.BIND}" title="Привязка к команде">
-                <span class="mode-icon">🔗</span><span class="mode-label">Привязка</span>
-            </button>
-        `;
-
-        // Insert at top of gesture area
-        this.gestureArea.insertBefore(this.modeBar, this.gestureArea.firstChild);
-
-        // Tab click handlers
-        this.modeBar.querySelectorAll('.studio-mode-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                e.stopPropagation(); // Don't trigger gesture area click
-                this.setMode(tab.dataset.mode);
+        // Use existing tabs from DOM instead of creating new ones
+        const existingTabs = document.querySelectorAll('.gesture-tab');
+        if (existingTabs.length > 0) {
+            this.modeBar = document.querySelector('.gesture-tabs');
+            
+            existingTabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const mode = tab.dataset.mode;
+                    if (mode) this.setMode(mode);
+                });
             });
-        });
+            console.log('[GestureLiveStudio] Bound to existing .gesture-tabs');
+        } else {
+             console.warn('[GestureLiveStudio] .gesture-tabs not found in DOM.');
+        }
     }
 
     _setupEventListeners() {

@@ -1,7 +1,7 @@
 /**
  * EyeLoader.js
  * Продвинутая Canvas-анимация «Пробуждение» (REM wake-up).
- * Использует DIV-веки с матовым эффектом и Canvas для динамического зрачка.
+ * Версия 2.2: Фазовая анимация с плоскими веками и улетом глаза.
  */
 
 export class EyeLoader {
@@ -21,7 +21,7 @@ export class EyeLoader {
         this.canvas.style.inset = '0';
         this.canvas.style.zIndex = '10';
         
-        // Веки (Стеклянные панели)
+        // Веки (Плоские панели)
         this.upperLid = this.createEyelid(true);
         this.lowerLid = this.createEyelid(false);
 
@@ -30,16 +30,20 @@ export class EyeLoader {
         this.container.appendChild(this.lowerLid);
         
         this.progress = 0;
-        this.phase = 'black'; // black, appear, loading, opening, blink_wait, done
-        this.startTime = Date.now();
-        this.phaseStartTime = Date.now();
+        this.phase = 'alive'; // alive, return, static, fly, open
         
         this.width = window.innerWidth;
         this.height = window.innerHeight;
         
-        this.saccadeX = 0;
-        this.saccadeY = 0;
-        this.lastSaccadeTime = 0;
+        // Eye Position State
+        this.eyeX = 0;
+        this.eyeY = 0;
+        this.targetX = 0;
+        this.targetY = 0;
+        
+        // Fly away state
+        this.flyDirX = 0;
+        this.flyDirY = 0;
         
         window.addEventListener('resize', () => this.resize());
         this.resize();
@@ -48,32 +52,28 @@ export class EyeLoader {
     createEyelid(isUpper) {
         const lid = document.createElement('div');
         lid.style.position = 'absolute';
-        lid.style.left = '-10vw';
-        lid.style.width = '120vw';
-        lid.style.height = '100vh';
+        lid.style.left = '0';
+        lid.style.width = '100%';
+        lid.style.height = '50vh'; // Exactly half screen
         lid.style.zIndex = '20';
-        lid.style.backgroundColor = 'rgba(255, 255, 255, 0.04)'; // Slightly more transparent for liquid look
-        lid.style.backdropFilter = 'blur(var(--glass-blur, 35px)) saturate(var(--glass-saturate, 200%))';
-        lid.style.webkitBackdropFilter = 'blur(var(--glass-blur, 35px)) saturate(var(--glass-saturate, 200%))';
-        lid.style.border = 'none'; // Seamless
-        lid.style.transition = 'transform 0.05s linear, opacity 0.3s ease';
+        lid.style.backgroundColor = '#000000'; // Match body background for seamless look
+        // Optional: Glass effect if desired, but brief says "invisible junction"
+        // To make junction invisible, they must be same color.
+        // If we want glass, we need a background behind them.
+        // Brief: "Стык верхнего и нижнего века в закрытом состоянии: линия невидима — оба века того же цвета что и фон."
+        // So Black #000000.
         
-        // СТРОГО прямые веки (no borderRadius)
-        // Deep seamless join: Overlap shadow at the center
-        const shadowColor = 'rgba(0, 0, 0, 0.4)';
+        lid.style.transition = 'transform 0.1s linear';
+        lid.style.borderBottom = isUpper ? '1px solid transparent' : 'none';
+        lid.style.borderTop = !isUpper ? '1px solid transparent' : 'none';
+        
         if (isUpper) {
-            lid.style.top = '-50vh';
-            lid.style.boxShadow = `0 15px 40px -10px ${shadowColor}`; // Shadow on bottom edge
+            lid.style.top = '0';
+            lid.style.transformOrigin = 'top';
         } else {
-            lid.style.top = '50vh';
-            lid.style.boxShadow = `0 -15px 40px -10px ${shadowColor}`; // Shadow on top edge
+            lid.style.bottom = '0';
+            lid.style.transformOrigin = 'bottom';
         }
-
-        // --- Liquid Glass Distortion Gradient ---
-        // This simulates the "mold" underneath the glass.
-        // It's a radial gradient that we'll position dynamically.
-        lid.style.backgroundRepeat = 'no-repeat';
-        lid.style.backgroundSize = '100% 100%';
         
         return lid;
     }
@@ -87,302 +87,132 @@ export class EyeLoader {
 
     start() {
         document.body.appendChild(this.container);
-        this.phase = 'black';
-        this.phaseStartTime = Date.now();
+        this.phase = 'alive';
         
-        // Начальное скрытие UI для "проступания"
-        this.uiElements = [
-            document.getElementById('left-panel'),
-            document.querySelector('.right-panel'),
-            document.getElementById('gesture-area'),
-            document.getElementById('grid-container')
-        ].filter(el => el);
-        
-        this.uiElements.forEach(el => {
-            el.style.opacity = '0';
-            el.style.filter = 'blur(20px)';
-            el.style.transition = 'opacity 1s ease, filter 1s ease';
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            this.mouseX = e.clientX;
-            this.mouseY = e.clientY;
-        });
+        // Saccade loop
+        this.saccadeInterval = setInterval(() => this.triggerSaccade(), 1500 + Math.random() * 1000);
+        this.triggerSaccade();
 
         requestAnimationFrame(() => this.loop());
+    }
+
+    triggerSaccade() {
+        if (this.phase !== 'alive') return;
+        // Random position within 10% of center
+        const range = Math.min(this.width, this.height) * 0.15;
+        this.targetX = (Math.random() - 0.5) * range;
+        this.targetY = (Math.random() - 0.5) * range;
     }
 
     setProgress(p) {
         this.progress = p;
         
-        // Проступание элементов UI
-        if (this.uiElements && this.uiElements.length > 0) {
-            const threshold = 100 / (this.uiElements.length + 1);
-            this.uiElements.forEach((el, index) => {
-                if (this.progress > (index + 1) * threshold) {
-                    el.style.opacity = '1';
-                    el.style.filter = 'blur(0px)';
-                }
-            });
-        }
-
-        if (this.progress >= 90 && this.phase === 'loading') {
-            this.returningToCenter = true;
-            this.centerStartTime = Date.now();
-        }
-        if (this.progress >= 100 && this.phase === 'loading') {
-            this.setPhase('opening');
+        // Phase Logic
+        if (this.progress >= 0 && this.progress < 80) {
+            this.phase = 'alive';
+        } else if (this.progress >= 80 && this.progress < 90) {
+            if (this.phase !== 'return') {
+                this.phase = 'return';
+                // Set target to center
+                this.targetX = 0;
+                this.targetY = 0;
+            }
+        } else if (this.progress >= 90 && this.progress < 96) {
+            this.phase = 'static';
+            this.eyeX = 0;
+            this.eyeY = 0;
+        } else if (this.progress >= 96 && this.progress < 100) {
+            if (this.phase !== 'fly') {
+                this.phase = 'fly';
+                // Pick random direction for fly away
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.max(this.width, this.height) * 0.1; // Fast speed per frame
+                this.flyDirX = Math.cos(angle) * speed;
+                this.flyDirY = Math.sin(angle) * speed;
+            }
+        } else if (this.progress >= 100) {
+            this.phase = 'open';
         }
     }
-
-    setPhase(newPhase) {
-        this.phase = newPhase;
-        this.phaseStartTime = Date.now();
-    }
-
-    triggerSaccade() {
-        if (this.phase !== 'loading' || this.returningToCenter) return;
-        
-        const p = this.progress / 100;
-        const angle = Math.random() * Math.PI * 2;
-        const dist = (0.35 + p * 5) * (this.width * 0.012);
-        
-        this.saccadeX = Math.cos(angle) * dist;
-        this.saccadeY = Math.sin(angle) * dist;
-        this.lastSaccadeTime = Date.now();
-    }
-
-    clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-    easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-    easeInOut(t) { return t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t; }
 
     loop() {
-        const now = Date.now();
-        const elapsedPhase = now - this.phaseStartTime;
         this.ctx.clearRect(0, 0, this.width, this.height);
         
-        const eyeX = this.width / 2 + this.saccadeX;
-        const eyeY = this.height / 2 + this.saccadeY;
+        const centerX = this.width / 2;
+        const centerY = this.height / 2;
 
-        if (this.phase === 'black') {
-            this.ctx.fillStyle = 'black';
-            this.ctx.fillRect(0, 0, this.width, this.height);
-            if (now - this.startTime > 200) this.setPhase('appear');
+        // Logic per phase
+        if (this.phase === 'alive') {
+            // Smooth lerp to target
+            this.eyeX += (this.targetX - this.eyeX) * 0.1;
+            this.eyeY += (this.targetY - this.eyeY) * 0.1;
+            this.drawEye(centerX + this.eyeX, centerY + this.eyeY, 1.0);
+        } 
+        else if (this.phase === 'return') {
+            // Ease out to 0,0
+            this.eyeX += (0 - this.eyeX) * 0.15;
+            this.eyeY += (0 - this.eyeY) * 0.15;
+            this.drawEye(centerX + this.eyeX, centerY + this.eyeY, 1.0);
         }
-        
-        else if (this.phase === 'appear') {
-            this.upperLid.style.transform = 'translateY(0vh)';
-            this.lowerLid.style.transform = 'translateY(0vh)';
-            if (elapsedPhase > 60) this.setPhase('loading');
+        else if (this.phase === 'static') {
+            this.drawEye(centerX, centerY, 1.0);
         }
-        
-        else if (this.phase === 'loading') {
-            if (this.returningToCenter) {
-                const t = Math.min((now - this.centerStartTime) / 400, 1);
-                this.saccadeX *= (1 - t);
-                this.saccadeY *= (1 - t);
-            }
-
-            const irisAlpha = this.clamp((this.progress - 5) / 50, 0, 1);
-            if (irisAlpha > 0) {
-                this.drawEye(irisAlpha);
-            }
-            
-            // Full blur while closed
-            this.upperLid.style.maskImage = 'none';
-            this.lowerLid.style.maskImage = 'none';
-
-            // Deformation logic even when closed (subtle breathing?)
-            this.updateGlassDeformation(0, 0);
+        else if (this.phase === 'fly') {
+            this.eyeX += this.flyDirX;
+            this.eyeY += this.flyDirY;
+            this.drawEye(centerX + this.eyeX, centerY + this.eyeY, 1.0);
         }
-        
-        else if (this.phase === 'opening') {
-            const t = this.clamp(elapsedPhase / 600, 0, 1);
-            const openFrac = this.easeInOut(t);
-            const offset = 60 * openFrac;
+        else if (this.phase === 'open') {
+            // Open eyelids
+            this.upperLid.style.transform = `translateY(-100%)`;
+            this.lowerLid.style.transform = `translateY(100%)`;
             
-            this.updateEyeGeometry(offset, openFrac, eyeX, eyeY);
-
-            if (t >= 1) {
-                // Рандомизация моргания (0, 1 или 2 раза)
-                this.blinkCount = Math.floor(Math.random() * 3);
-                this.setPhase('blink_wait');
-            }
-        }
-        
-        else if (this.phase === 'blink_wait') {
-            const t = elapsedPhase;
-            let closeFrac = 0;
-            
-            const blinkDuration = 250;
-            const gap = 300;
-            
-            for (let i = 0; i < this.blinkCount; i++) {
-                const start = 100 + i * (blinkDuration + gap);
-                const bt = t - start;
-                if (bt >= 0 && bt < blinkDuration) {
-                    if (bt < 100) closeFrac = this.easeInOut(bt / 100);
-                    else closeFrac = 1 - this.easeOutCubic((bt - 100) / 150);
+            // Remove container after transition
+            setTimeout(() => {
+                if (this.container.parentNode) {
+                    this.container.parentNode.removeChild(this.container);
                 }
-            }
-            
-            const offset = 60 * (1 - closeFrac);
-            this.updateEyeGeometry(offset, 1 - closeFrac, eyeX, eyeY);
-            
-            if (t > 100 + this.blinkCount * (blinkDuration + gap) + 500) this.setPhase('done');
-        }
-        
-        if (this.phase !== 'done') {
-            requestAnimationFrame(() => this.loop());
-        } else {
-            this.container.remove();
-        }
-    }
-
-    updateEyeGeometry(offset, intensity, eyeX, eyeY) {
-        this.upperLid.style.transform = `translateY(${-offset}vh)`;
-        this.lowerLid.style.transform = `translateY(${offset}vh)`;
-        
-        const rIris = this.height * 0.42;
-        
-        // Update mask for clear vision (the eye is behind the glass)
-        // Intensity is 0 when open, 1 when closed. 
-        // We want mask only when partially/fully open to see the eye.
-        const maskAlpha = this.clamp(offset / 10, 0, 1);
-        const mask = `radial-gradient(circle at ${eyeX}px ${eyeY}px, transparent ${rIris}px, black ${rIris + 2}px)`;
-        this.upperLid.style.maskImage = mask;
-        this.lowerLid.style.maskImage = mask;
-        this.upperLid.style.webkitMaskImage = mask;
-        this.lowerLid.style.webkitMaskImage = mask;
-
-        // Deformation logic: The "bulge" follows the eye but is drawn on the moving lid.
-        this.updateGlassDeformation(offset, intensity, eyeX, eyeY);
-    }
-
-    updateGlassDeformation(offset, intensity, eyeX, eyeY) {
-        // Fade out deformation as lids open fully
-        // The user says "При полном открытии эта форма исчезает"
-        const deformationAlpha = this.clamp(1 - offset / 50, 0, 1);
-        if (deformationAlpha <= 0) {
-            this.upperLid.style.backgroundImage = 'none';
-            this.lowerLid.style.backgroundImage = 'none';
-            return;
+                if (this.saccadeInterval) clearInterval(this.saccadeInterval);
+            }, 500);
+            return; // Stop loop
         }
 
-        const rIris = this.height * 0.4;
-        const rPupil = this.height * 0.16;
-
-        // The gradient must stay at eyeX, eyeY relative to the viewport.
-        // But it's applied to the lid which has its own transform.
-        // Lid coordinate system: top is affected by translateY.
-        // Upper lid Y center is -50vh + translateY.
-        // Lower lid Y center is 50vh + translateY.
-        
-        const drawDeformation = (lid, isUpper) => {
-            // Pos in lid coordinates
-            // Correct for viewport offset.
-            const lidTopPx = isUpper ? -this.height * 0.5 - (this.height * offset / 100) : this.height * 0.5 + (this.height * offset / 100);
-            const localEyeY = eyeY - lidTopPx - (this.height * (isUpper ? 0 : 0)); // Adjust for absolute top
-            
-            // Wait, lid is absolute top: -50vh (upper) or 50vh (lower).
-            // Transform only moves the div.
-            // So lid's top edge in viewport is:
-            const currentTop = isUpper ? (-this.height * 0.5 - (this.height * offset / 100)) : (this.height * 0.5 + (this.height * offset / 100));
-            const yInLid = eyeY - currentTop;
-
-            const irisColor = `rgba(255, 255, 255, ${0.12 * deformationAlpha})`;
-            const pupilColor = `rgba(0, 0, 0, ${0.25 * deformationAlpha})`;
-
-            lid.style.backgroundImage = `
-                radial-gradient(circle at ${eyeX}px ${yInLid}px, 
-                    ${irisColor} 0%, 
-                    transparent ${rIris}px),
-                radial-gradient(circle at ${eyeX}px ${yInLid}px, 
-                    ${pupilColor} 0%, 
-                    transparent ${rPupil}px)
-            `;
-        };
-
-        drawDeformation(this.upperLid, true);
-        drawDeformation(this.lowerLid, false);
+        requestAnimationFrame(() => this.loop());
     }
 
-    drawEye(alpha) {
-        const cx = this.width / 2 + this.saccadeX;
-        const cy = this.height / 2 + this.saccadeY;
-        const rIris = this.height * 0.4;
-        const rPupil = this.height * 0.16;
-
-        // Динамический свет относительно центра экрана + мышь
-        const centerLightX = this.width / 2;
-        const centerLightY = this.height / 2;
-        
-        const mX = this.mouseX || centerLightX;
-        const mY = this.mouseY || centerLightY;
-
-        // Эффект "массивности": большие смещения для теней (10x)
-        const offX = (cx - centerLightX) / 2 + (cx - mX) / 10;
-        const offY = (cy - centerLightY) / 2 + (cy - mY) / 10;
+    drawEye(x, y, alpha) {
+        const rIris = Math.min(this.width, this.height) * 0.15; // Smaller, realistic iris size
+        const rPupil = rIris * 0.4;
 
         this.ctx.save();
         this.ctx.globalAlpha = alpha;
-        
-        // --- High Detail Sharp Eye (Behind Glass) ---
-        // 1. Iris (Convex effect via gradients)
-        // Внешняя тень радужки для глубины
-        this.ctx.shadowBlur = 40;
-        this.ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-        this.ctx.shadowOffsetX = offX / 2;
-        this.ctx.shadowOffsetY = offY / 2;
 
-        const gradIris = this.ctx.createRadialGradient(
-            cx - offX, cy - offY, rIris * 0.05,
-            cx, cy, rIris
-        );
-        gradIris.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); 
-        gradIris.addColorStop(0.4, 'rgba(120, 120, 120, 0.2)');
-        gradIris.addColorStop(1, 'rgba(0, 0, 0, 0.8)');
+        // 1. Iris
+        const gradIris = this.ctx.createRadialGradient(x, y, rIris * 0.2, x, y, rIris);
+        gradIris.addColorStop(0, '#444'); 
+        gradIris.addColorStop(0.5, '#222');
+        gradIris.addColorStop(1, '#000');
         
-        this.ctx.fillStyle = gradIris;
         this.ctx.beginPath();
-        this.ctx.arc(cx, cy, rIris, 0, Math.PI * 2);
+        this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
+        this.ctx.fillStyle = gradIris; // Simple dark style
+        // Add white glow ring (Tria style)
+        this.ctx.shadowBlur = 20;
+        this.ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
         this.ctx.fill();
-        
-        // 2. Pupil (Concave effect)
-        this.ctx.shadowBlur = 0; // Сброс тени
-        this.ctx.shadowOffsetX = 0;
-        this.ctx.shadowOffsetY = 0;
+        this.ctx.shadowBlur = 0;
 
-        const gradPupil = this.ctx.createRadialGradient(
-            cx + offX * 1.5, cy + offY * 1.5, rPupil * 0.05,
-            cx, cy, rPupil
-        );
-        gradPupil.addColorStop(0, '#040404');
-        gradPupil.addColorStop(1, '#000000');
-        
-        this.ctx.fillStyle = gradPupil;
+        // 2. Pupil
         this.ctx.beginPath();
-        this.ctx.arc(cx, cy, rPupil, 0, Math.PI * 2);
+        this.ctx.arc(x, y, rPupil, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#000';
         this.ctx.fill();
 
-        // 3. V-Cut Edges (Hard highlights for engraving look)
-        this.ctx.lineWidth = 4;
-        this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 * alpha})`;
+        // 3. Specular Highlight (Reflection)
         this.ctx.beginPath();
-        this.ctx.arc(cx, cy, rIris - 2, -Math.PI * 0.7, -Math.PI * 0.3);
-        this.ctx.stroke();
-
-        this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 * alpha})`;
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, rPupil + 2, Math.PI * 0.3, Math.PI * 0.7);
-        this.ctx.stroke();
-
-        // Тень от верхнего края зрачка (усиливает вдавленность)
-        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-        this.ctx.lineWidth = 10;
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, rPupil + 5, -Math.PI * 0.8, -Math.PI * 0.2);
-        this.ctx.stroke();
+        this.ctx.arc(x + rIris * 0.3, y - rIris * 0.3, rPupil * 0.3, 0, Math.PI * 2);
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        this.ctx.fill();
 
         this.ctx.restore();
     }
