@@ -45,8 +45,8 @@ class GeminiEmbeddingService:
         self.model = "gemini-embedding-2-preview"
         
         # Размерность по умолчанию (Matryoshka)
-        # Можно менять: 768 (быстро), 1536 (баланс), 3072 (макс качество)
-        self.output_dimensionality = 1536
+        # Установлено 3072 для соответствия коллекции tria_knowledge_gemini
+        self.output_dimensionality = 3072
         
         # Rate limiting
         self.request_count = 0
