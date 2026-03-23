@@ -202,12 +202,13 @@ export class LightingManager {
 
             // Use glassSpecularManager to apply the glint
             // Pass 'totalIntensity' as mix factor (clamped)
-            const mix = Math.min(1, totalIntensity * 0.5);
+            // BOOST SENSITIVITY: Multiplied by 3.0 to ensure visibility even at lower volumes
+            const mix = Math.min(1, totalIntensity * 3.0);
             
             // DEBUG: Check mix calculation for one element
-            // if (panel.id === 'playAudioButton' && Math.random() < 0.01) {
-            //    console.log('[LightingManager] Applying glint to PlayBtn. Mix:', mix, 'Color:', dominantColor);
-            // }
+            if (mix > 0.1 && Math.random() < 0.001) {
+               console.log('[LightingManager] Applying glint. Mix:', mix.toFixed(2), 'Color:', dominantColor);
+            }
 
             glassSpecularManager.applyGlint(panel, mix, dominantColor);
         });
