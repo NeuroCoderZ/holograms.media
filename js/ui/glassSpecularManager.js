@@ -3,6 +3,10 @@ export class GlassSpecularManager {
         this.cache = new Map();
     }
 
+    init() {
+        console.log('GlassSpecularManager: Initialized.');
+    }
+
     /**
      * Generates a bright specular highlight color based on the input source color.
      * Handles HSL, RGBA, and RGB formats safely.

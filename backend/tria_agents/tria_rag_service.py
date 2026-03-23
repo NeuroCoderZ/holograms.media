@@ -44,12 +44,12 @@ class TriaRAGService:
                 return ""
             
             # 2. Connect to AstraDB
-            db = await get_astra_db()
+            db = get_astra_db()
             if not db:
                 logger.error("RAG: Could not connect to AstraDB.")
                 return ""
             
-            collection = await db.get_collection(self.collection_name)
+            collection = db.get_collection(self.collection_name)
             
             # 3. Perform vector search with Metadata Filter (RLS)
             # Если user_id не передан, ищем только публичные данные
@@ -58,8 +58,8 @@ class TriaRAGService:
                 rls_filter["$or"].append({"metadata.owner_id": user_id})
 
             results = await collection.find(
-                rls_filter,
-                vector=query_vector,
+                filter=rls_filter,
+                sort={"$vector": query_vector},
                 limit=limit,
                 include_similarity=True
             ).to_list()
@@ -89,8 +89,8 @@ class TriaRAGService:
         Atomic Incremental Sync: удаляет старые чанки файла и вставляет новые.
         """
         try:
-            db = await get_astra_db()
-            collection = await db.get_collection(self.collection_name)
+            db = get_astra_db()
+            collection = db.get_collection(self.collection_name)
             
             # 1. Atomic Deletion
             logger.info(f"RAG Sync: Clearing old chunks for {file_path}")
@@ -118,20 +118,21 @@ class TriaRAGService:
             
             # 3. Batch Insert
             if all_chunks:
-                texts = [c["text"] for c in all_chunks]
-                embeddings = await mistral_embeddings.get_holoquants_batch(texts)
-                
                 documents = []
-                for j, chunk in enumerate(all_chunks):
-                    documents.append({
-                        "_id": chunk["_id"],
-                        "content": chunk["text"],
-                        "$vector": embeddings[j],
-                        "metadata": chunk["metadata"]
-                    })
+                for chunk in all_chunks:
+                    # Get Gemini Embedding 2 (3072d)
+                    vector = await gemini_embeddings.get_embedding(chunk["text"], task_type="RETRIEVAL_DOCUMENT")
+                    if vector:
+                        documents.append({
+                            "_id": chunk["_id"],
+                            "content": chunk["text"],
+                            "$vector": vector,
+                            "metadata": chunk["metadata"]
+                        })
                 
-                await collection.insert_many(documents, ordered=False)
-                logger.info(f"RAG Sync: Ingested {len(documents)} chunks for {file_path}")
+                if documents:
+                    await collection.insert_many(documents, ordered=False)
+                    logger.info(f"RAG Sync: Ingested {len(documents)} chunks for {file_path}")
 
         except Exception as e:
             logger.error(f"RAG Sync Error for {file_path}: {e}")
