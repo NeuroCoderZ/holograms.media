@@ -15,15 +15,33 @@ MOCK_SESSIONS = {}
 MOCK_HISTORY = {}
 
 class ChatRepository:
-    def __init__(self, db: Optional[Database]):
+    def __init__(self, db: Optional[Any]):
         self.db = db
-        if self.db:
-            self.sessions_collection = self.db.get_collection("user_chat_sessions")
-            self.history_collection = self.db.get_collection("chat_history")
-            self.is_mock = False
+        self.is_mock = db is None
+        self._sessions_collection = None
+        self._history_collection = None
+        
+        if self.is_mock:
+            logger.warning("ChatRepository initialized in MOCK MODE (In-Memory).")
         else:
-            logger.warning("ChatRepository initialized in MOCK MODE (In-Memory). Data will be lost on restart.")
-            self.is_mock = True
+            # Пытаемся инициализировать коллекции сразу, но без падения
+            try:
+                self._sessions_collection = self.db.get_collection("user_chat_sessions")
+                self._history_collection = self.db.get_collection("chat_history")
+            except Exception as e:
+                logger.error(f"ChatRepository: Failed to pre-init collections: {e}")
+
+    @property
+    def sessions_collection(self):
+        if self._sessions_collection is None and not self.is_mock:
+            self._sessions_collection = self.db.get_collection("user_chat_sessions")
+        return self._sessions_collection
+
+    @property
+    def history_collection(self):
+        if self._history_collection is None and not self.is_mock:
+            self._history_collection = self.db.get_collection("chat_history")
+        return self._history_collection
 
     async def create_chat_session(self, user_id: str, session_in: UserChatSessionCreate) -> Optional[UserChatSessionDB]:
         now = datetime.utcnow().isoformat()
