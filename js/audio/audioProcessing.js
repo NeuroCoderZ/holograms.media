@@ -54,7 +54,20 @@ eventBus.on('audio:spectralData', (data) => {
         fullPans.set(modulated.pans);
     }
 
-    const payload = { levels: modulated.levels, pans: fullPans };
+    // FIX: Ensure Levels are also 256 length (Stereo duplication if Mono)
+    // The Renderer expects indices i+128 to exist.
+    const fullLevels = new Float32Array(256).fill(-128); // Default silence
+    if (modulated.levels.length === 128) {
+        fullLevels.set(modulated.levels, 0);
+        fullLevels.set(modulated.levels, 128);
+    } else if (modulated.levels.length === 256) {
+        fullLevels.set(modulated.levels);
+    } else {
+        // Fallback for unexpected lengths
+        fullLevels.set(modulated.levels.slice(0, 256));
+    }
+
+    const payload = { levels: fullLevels, pans: fullPans };
 
     // ПРИНУДИТЕЛЬНЫЙ ЛОГ (раз в секунду)
     // Периодический лог для проверки данных (раз в секунду)

@@ -183,6 +183,7 @@ export class LightingManager {
             let totalIntensity = 0;
             let dominantColor = 'rgba(255,255,255,0.1)';
             let maxAmp = 0;
+            let dominantPanX = 0;
 
             // Simplified: Find the column that affects this panel the most
             topColumns.forEach(col => {
@@ -196,6 +197,7 @@ export class LightingManager {
                 if (intensity > maxAmp) {
                     maxAmp = intensity;
                     dominantColor = col.color;
+                    dominantPanX = col.panX;
                 }
                 totalIntensity += intensity;
             });
@@ -207,10 +209,10 @@ export class LightingManager {
             
             // DEBUG: Check mix calculation for one element
             if (mix > 0.1 && Math.random() < 0.001) {
-               console.log('[LightingManager] Applying glint. Mix:', mix.toFixed(2), 'Color:', dominantColor);
+               console.log('[LightingManager] Applying glint. Mix:', mix.toFixed(2), 'Color:', dominantColor, 'Pan:', dominantPanX);
             }
 
-            glassSpecularManager.applyGlint(panel, mix, dominantColor);
+            glassSpecularManager.applyGlint(panel, mix, dominantColor, dominantPanX);
         });
     }
 

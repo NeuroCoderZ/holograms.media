@@ -59,18 +59,24 @@ export class GlassSpecularManager {
      * Applies the specular glint to an element based on its position relative to the audio source.
      * @param {HTMLElement} el - The DOM element to style
      * @param {number} intensity - Audio intensity (0-1)
-     * @param {string} side - 'left' or 'right' source dominance
      * @param {string} color - The source color
+     * @param {number} sourcePanX - The pan position of the sound source (-1 to 1)
      */
-    applyGlint(el, mix, color) {
+    applyGlint(el, mix, color, sourcePanX = 0) {
         if (!el) return;
 
-        if (mix > 0.05) {
+        if (mix > 0.01) { // Threshold lowered for sensitivity
             const brightColor = this.getBrightColor(color);
-            const glintX = mix > 0 ? '0%' : '100%'; // Simplified direction for now
             
-            // 7-zone spectral logic simulation (simplified for CSS gradient)
-            // We use a radial gradient shifted to the side of the sound source
+            // Calculate direction: 
+            // If sourcePanX is negative (Left), glint should appear on the Left side (0%)
+            // If positive (Right), on the Right side (100%)
+            // We can interpolate for smoother movement: -1 -> 0%, 1 -> 100%
+            const glintPos = (sourcePanX + 1) / 2 * 100; 
+            
+            // Clamp to edge zones for dramatic effect
+            const glintX = glintPos < 50 ? '0%' : '100%';
+
             el.style.setProperty('--glass-specular',
                 `radial-gradient(ellipse at ${glintX} 50%, ${brightColor} 0%, transparent 60%)`
             );
