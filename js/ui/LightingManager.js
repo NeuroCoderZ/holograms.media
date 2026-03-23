@@ -259,19 +259,39 @@ export class LightingManager {
         this.elements.forEach(el => {
             const rect = el.getBoundingClientRect();
             const elX = (rect.left + rect.width / 2) / winW;
-            
+
             // Weight: Left source affects left items (0.0) more, Right (1.0) more
             const wL = Math.max(0, 1 - elX * 2);
             const wR = Math.max(0, (elX * 2) - 1);
             const mix = Math.max(wL, wR);
-            
+
             if (mix > 0.05) {
                 const col = wL > wR ? this.spectralLeft : this.spectralRight;
                 const glintX = wL > wR ? '0%' : '100%';
                 
-                // Task 1: Hyper-bright glints (alpha 0.9)
+                // Parse color and create bright version
+                // Handle both rgba() and hsl() formats
+                let brightColor = 'rgba(255,255,255,0.9)'; // fallback
+                if (typeof col === 'string') {
+                    if (col.includes('hsl')) {
+                        // hsl(h, s%, l%) -> increase lightness
+                        const match = col.match(/hsl\(([^,]+),\s*([^,]+)%,\s*([^%]+)%/);
+                        if (match) {
+                            const h = match[1];
+                            const s = match[2];
+                            const l = Math.min(80, parseInt(match[3]) + 40); // boost lightness
+                            brightColor = `hsl(${h}, ${s}%, ${l}%)`;
+                        }
+                    } else if (col.includes('rgba')) {
+                        brightColor = col.replace(/[\d.]+\)$/g, '0.9)');
+                    } else if (col.includes('rgb')) {
+                        brightColor = col.replace(/\)$/g, ', 0.9)');
+                    }
+                }
+
+                // Task 1: Hyper-bright glints
                 el.style.setProperty('--glass-specular',
-                    `radial-gradient(ellipse at ${glintX} 50%, ${col.replace('0.1)', '0.9)')} 0%, transparent 60%)`
+                    `radial-gradient(ellipse at ${glintX} 50%, ${brightColor} 0%, transparent 60%)`
                 );
             } else {
                 el.style.setProperty('--glass-specular', 'transparent');
