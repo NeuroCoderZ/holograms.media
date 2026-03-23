@@ -22,7 +22,7 @@ body {
 }
 
 /* Единый стиль скроллбаров для всех вкладок правой панели */
-#chatMessages::-webkit-scrollbar, 
+#chatMessages::-webkit-scrollbar,
 #versionTimeline::-webkit-scrollbar,
 #myGesturesView::-webkit-scrollbar,
 #myHologramsView::-webkit-scrollbar {
