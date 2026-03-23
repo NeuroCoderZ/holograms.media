@@ -187,40 +187,40 @@ export class EyeLoader {
         this.ctx.save();
         this.ctx.globalAlpha = alpha;
         
-        // Clear canvas FIRST to avoid trailing
+        // Clear canvas
         this.ctx.clearRect(0, 0, this.width, this.height);
 
-        // Draw black background behind eye (so it's visible through eyelids)
-        this.ctx.fillStyle = '#0a0a0a';
-        this.ctx.fillRect(0, 0, this.width, this.height);
-
-        // 1. Iris - Grayscale with visible gradient
+        // Draw Eye White (Sclera) - Optional, or just the Iris?
+        // Current design seems to be just an Iris floating?
+        // "Flat eyelids" implies some shape, but code draws arc.
+        
+        // 1. Iris - Brighter Grayscale for visibility on black
         const gradIris = this.ctx.createRadialGradient(x, y, rPupil * 0.5, x, y, rIris);
-        gradIris.addColorStop(0, '#888888');   // Light center - VISIBLE
-        gradIris.addColorStop(0.3, '#555555'); // Mid gray
-        gradIris.addColorStop(0.6, '#333333'); // Darker
-        gradIris.addColorStop(1, '#1a1a1a');   // Edge - still visible
+        gradIris.addColorStop(0, '#e0e0e0');   // Very Light center
+        gradIris.addColorStop(0.4, '#888888'); // Mid gray
+        gradIris.addColorStop(0.8, '#444444'); // Darker gray
+        gradIris.addColorStop(1, '#222222');   // Edge
 
         this.ctx.beginPath();
         this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
         this.ctx.fillStyle = gradIris;
         this.ctx.fill();
         
-        // Add white ring around iris for contrast
-        this.ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        this.ctx.lineWidth = 2;
+        // Add distinct white ring around iris for contrast against black bg
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        this.ctx.lineWidth = 1.5;
         this.ctx.stroke();
 
-        // 2. Pupil - pure black but smaller
+        // 2. Pupil - pure black
         this.ctx.beginPath();
         this.ctx.arc(x, y, rPupil, 0, Math.PI * 2);
         this.ctx.fillStyle = '#000000';
         this.ctx.fill();
 
-        // 3. Specular Highlight (reflection) - larger and more visible
+        // 3. Specular Highlight (reflection) - Sharp and bright
         this.ctx.beginPath();
-        this.ctx.arc(x + rIris * 0.25, y - rIris * 0.25, rPupil * 0.35, 0, Math.PI * 2);
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        this.ctx.arc(x + rIris * 0.25, y - rIris * 0.25, rPupil * 0.4, 0, Math.PI * 2);
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
         this.ctx.fill();
 
         this.ctx.restore();

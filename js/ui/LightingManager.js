@@ -254,14 +254,46 @@ export class LightingManager {
         return { r, g, b };
     }
 
+import { glassSpecularManager } from './glassSpecularManager.js';
+
+class LightingManager {
+    constructor() {
+        this.elements = [];
+        this.spectralLeft = 'rgba(255, 255, 255, 0.1)';
+        this.spectralRight = 'rgba(255, 255, 255, 0.1)';
+        this.init();
+    }
+
+    init() {
+        // Collect UI elements that need lighting
+        this.elements = document.querySelectorAll('.control-button, .panel, .glass-panel');
+        
+        // Listen for window resize to re-cache positions if needed
+        window.addEventListener('resize', () => {
+            this.elements = document.querySelectorAll('.control-button, .panel, .glass-panel');
+        });
+    }
+
+    // Convert HSL object to CSS string if needed, or handle raw string
+    // This helper might be redundant if we rely on glassSpecularManager, 
+    // but ensures we store valid CSS strings.
+    formatColor(color) {
+        if (!color) return 'rgba(255, 255, 255, 0.1)';
+        if (typeof color === 'object' && color.h !== undefined) {
+             return `hsl(${color.h}, ${color.s}%, ${color.l}%)`;
+        }
+        return color;
+    }
+
     updateSpectralColors(leftHighestColor, rightHighestColor) {
-        // Task 1: Fix spectral glints visibility
-        this.spectralLeft = leftHighestColor || 'rgba(255, 255, 255, 0.1)';
-        this.spectralRight = rightHighestColor || 'rgba(255, 255, 255, 0.1)';
+        // Ensure we have strings
+        this.spectralLeft = this.formatColor(leftHighestColor);
+        this.spectralRight = this.formatColor(rightHighestColor);
+
         document.documentElement.style.setProperty('--spectral-color-left', this.spectralLeft);
         document.documentElement.style.setProperty('--spectral-color-right', this.spectralRight);
 
-        // Apply to all UI elements immediately
+        // Apply to all UI elements
         const winW = window.innerWidth;
         this.elements.forEach(el => {
             const rect = el.getBoundingClientRect();
@@ -270,33 +302,25 @@ export class LightingManager {
             // Weight: Left source affects left items (0.0) more, Right (1.0) more
             const wL = Math.max(0, 1 - elX * 2);
             const wR = Math.max(0, (elX * 2) - 1);
-            const mix = Math.max(wL, wR);
+            
+            // Determine dominant side and mix
+            let col, mix;
+            if (wL > wR) {
+                col = this.spectralLeft;
+                mix = wL;
+                // Pass a flag or handle direction in the manager
+            } else {
+                col = this.spectralRight;
+                mix = wR;
+            }
 
+            // Use the manager to apply the glint safely
+            // passing 'mix' as the intensity/weight
             if (mix > 0.05) {
-                const col = wL > wR ? this.spectralLeft : this.spectralRight;
+                const brightColor = glassSpecularManager.getBrightColor(col);
+                // Direction: Left source (wL > wR) hits from Left (0%), Right hits from Right (100%)
                 const glintX = wL > wR ? '0%' : '100%';
                 
-                // Parse color and create bright version
-                // Handle both rgba() and hsl() formats
-                let brightColor = 'rgba(255,255,255,0.9)'; // fallback
-                if (typeof col === 'string') {
-                    if (col.includes('hsl')) {
-                        // hsl(h, s%, l%) -> increase lightness
-                        const match = col.match(/hsl\(([^,]+),\s*([^,]+)%,\s*([^%]+)%/);
-                        if (match) {
-                            const h = match[1];
-                            const s = match[2];
-                            const l = Math.min(80, parseInt(match[3]) + 40); // boost lightness
-                            brightColor = `hsl(${h}, ${s}%, ${l}%)`;
-                        }
-                    } else if (col.includes('rgba')) {
-                        brightColor = col.replace(/[\d.]+\)$/g, '0.9)');
-                    } else if (col.includes('rgb')) {
-                        brightColor = col.replace(/\)$/g, ', 0.9)');
-                    }
-                }
-
-                // Task 1: Hyper-bright glints
                 el.style.setProperty('--glass-specular',
                     `radial-gradient(ellipse at ${glintX} 50%, ${brightColor} 0%, transparent 60%)`
                 );
