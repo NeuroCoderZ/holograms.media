@@ -103,6 +103,10 @@ async function startFullApplication(appState, loader) {
         const { lightingManager } = await import('./ui/LightingManager.js');
         lightingManager.initialize();
 
+        // Initialize 7-zone glass specular highlights (BasilaQ-128 physics)
+        const { glassSpecularManager } = await import('./ui/glassSpecularManager.js');
+        glassSpecularManager.init();
+
         startAnimationLoop(appState);
 
         // Скрываем старые спиннеры (легаси)

@@ -152,6 +152,7 @@ export class LightingManager {
     
     /**
      * Updates the spectral specular highlights on panels based on audio
+     * columnData: [{ freq, amplitude: 0..1, color: 'hsl(h,s%,l%)', panX: -1..1 }]
      */
     updateSpectralLighting(columnData) {
         if (this.elements.length === 0) return;
@@ -160,7 +161,7 @@ export class LightingManager {
         const topColumns = columnData
             .sort((a, b) => b.amplitude - a.amplitude)
             .slice(0, 5);
-            
+
         if (topColumns.length === 0) {
              // Fade out if silence
              document.documentElement.style.setProperty('--glass-specular', 'transparent');
@@ -174,54 +175,60 @@ export class LightingManager {
             const rect = panel.getBoundingClientRect();
             const panelCenterX = (rect.left + rect.width/2) / winW;
             const panelCenterY = (rect.top + rect.height/2) / winH;
-            
-            let r = 0, g = 0, b = 0;
-            
+
+            let totalR = 0, totalG = 0, totalB = 0;
+            let totalIntensity = 0;
+
             topColumns.forEach(col => {
-                // Distance logic
-                // Col PanX is -1..1 relative to center. Convert to 0..1 for screen space?
-                // Actually screen space: 0 (left) .. 1 (right). 
-                // So col.panX (-1..1) -> (col.panX + 1) / 2
+                // col.panX: -1 (left) .. 1 (right)
+                // Convert to screen space: 0 (left) .. 1 (right)
                 const colScreenX = (col.panX + 1) / 2;
-                
+
+                // Distance from column to panel (in screen space)
                 const dx = colScreenX - panelCenterX;
-                const dy = 0.5 - panelCenterY; // Hologram is at 0.5 Y (center)
-                const dist = Math.sqrt(dx*dx + dy*dy) + 0.1; // +0.1 to avoid division by zero
+                const dy = 0.5 - panelCenterY; // Hologram at center Y
+                const dist = Math.sqrt(dx*dx + dy*dy) + 0.15; // +0.15 min distance
+
+                // Intensity: inverse square law + amplitude
+                // amplitude is already 0..1
+                const intensity = (col.amplitude * 0.8 + 0.2) / (dist * dist);
+
+                // Parse HSL color from semitones
+                const rgb = this._parseHslToRgb(col.color);
                 
-                // Intensity: Inverse square law
-                // Amplitude is 0..255 (usually). Normalize to 0..1
-                const ampNorm = Math.min(1, col.amplitude / 128); 
-                // Final hyper-realism intensity for Phase 20.9.9
-                const intensity = (ampNorm * 0.5 + 0.2) / (dist * dist);
-                
-                r += col.color.r * intensity;
-                g += col.color.g * intensity;
-                b += col.color.b * intensity;
+                // Accumulate weighted color
+                totalR += rgb.r * intensity;
+                totalG += rgb.g * intensity;
+                totalB += rgb.b * intensity;
+                totalIntensity += intensity;
             });
-            
-            // Limit max brightness (subtle glow, not blinding)
-            // Colors are 0..255 range
-            r = Math.min(255, Math.max(0, r * 255));
-            g = Math.min(255, Math.max(0, g * 255));
-            b = Math.min(255, Math.max(0, b * 255));
-            
-            // Apply variable
-            // Using radial gradient for the "specular highlight" effect
-            // Center of gradient is roughly towards the screen center (hologram)
-            // But for simplicity, we light the whole panel with this tint
-            
-            // Optimization: Apply to style property
+
+            // Average the accumulated colors
+            if (totalIntensity > 0) {
+                totalR /= totalIntensity;
+                totalG /= totalIntensity;
+                totalB /= totalIntensity;
+            }
+
+            // Apply as specular highlight with high alpha (0.9)
             panel.style.setProperty('--glass-specular',
-                `radial-gradient(ellipse at 50% 0%, 
-                rgba(${r.toFixed(0)},${g.toFixed(0)},${b.toFixed(0)},0.9) 0%, 
+                `radial-gradient(ellipse at 50% 0%,
+                rgba(${Math.round(totalR * 255)}, ${Math.round(totalG * 255)}, ${Math.round(totalB * 255)}, 0.9) 0%,
                 transparent 70%)`
             );
-            
-            // Optional: Tint border
-            panel.style.setProperty('--glass-border-tint',
-                `rgba(${r.toFixed(0)}, ${g.toFixed(0)}, ${b.toFixed(0)}, 0.20)`
-            );
         });
+    }
+
+    // Parse 'hsl(h, s%, l%)' to {r, g, b} 0..1
+    _parseHslToRgb(hslStr) {
+        const match = hslStr.match(/hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)/);
+        if (!match) return { r: 1, g: 1, b: 1 }; // fallback white
+        
+        const h = parseFloat(match[1]) / 360;
+        const s = parseFloat(match[2]) / 100;
+        const l = parseFloat(match[3]) / 100;
+        
+        return this._hslToRgb(h, s, l);
     }
     
     // Helper: HSL to RGB object {r,g,b} 0..1

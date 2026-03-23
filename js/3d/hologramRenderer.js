@@ -10,6 +10,7 @@ import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../co
 import eventBus from '../core/eventBus.js';
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js';
 import { lightingManager } from '../ui/LightingManager.js';
+import { glassSpecularManager } from '../ui/glassSpecularManager.js'; // NEW: 7-zone glints
 
 import { vertexShader, fragmentShader, makeColumnUniforms } from './shaders/hologramShaders.js';
 import { CELL_HEIGHT, createCentralMarkerSphere, createSphereForAxis, createGridVisualization, createAxis } from './hologramGridFactory.js';
@@ -126,24 +127,38 @@ export class HologramRenderer {
       } else {
         const config = semitones[i];
         this._applyActiveMode(pair, i, config, dbLevels, panAngles, leftMesh, rightMesh);
-        
-        // Track max levels for spectral lighting
-        if (dbLevels[i] > maxDbL) {
-          maxDbL = dbLevels[i];
-          maxIdxL = i;
-        }
-        if (dbLevels[i + 128] > maxDbR) {
-          maxDbR = dbLevels[i + 128];
-          maxIdxR = i;
-        }
       }
     });
 
-    // Update spectral lighting if active
+    // Update spectral lighting with ALL 128 columns (BasilaQ-128 physics)
     if (isActive) {
-      const colorL = semitones[maxIdxL]?.color || 'rgba(255, 255, 255, 0.1)';
-      const colorR = semitones[maxIdxR]?.color || 'rgba(255, 255, 255, 0.1)';
-      lightingManager.updateSpectralColors(colorL, colorR);
+      const columnData = [];
+      for (let i = 0; i < 128; i++) {
+        // Amplitude: dB ranges from ~-128 (silent) to 0 (max)
+        // Normalize to 0..1 where 0 = silent, 1 = max loudness
+        const dbL = dbLevels[i];
+        const dbR = dbLevels[i + 128];
+        const ampNorm = Math.max(0, Math.min(1, (Math.max(dbL, dbR) + 128) / 128));
+        
+        // Pan position: -1 (full left) to 1 (full right)
+        const panX = this._panStates[i] || 0;
+        
+        // Only include columns with audible sound
+        if (ampNorm > 0.05) {
+          columnData.push({
+            freq: i,
+            amplitude: ampNorm,
+            color: semitones[i]?.color || 'hsl(0, 0%, 50%)',
+            panX: panX
+          });
+        }
+      }
+      
+      // NEW: Update 7-zone glass specular highlights
+      glassSpecularManager.update(columnData);
+      
+      // Legacy: Keep old lighting manager for fallback
+      // lightingManager.updateSpectralLighting(columnData);
     }
   }
 
