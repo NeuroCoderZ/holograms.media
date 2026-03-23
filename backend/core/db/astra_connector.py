@@ -46,16 +46,21 @@ def get_astra_db(client: DataAPIClient = None):
                 region = match.group(2)
                 logger.info(f"Parsed Astra DB ID '{db_id}' and Region '{region}' from endpoint.")
 
-        # 2. Prefer connecting by ID and Region (Parsed or Direct)
+        # 1. Приоритет: использование полного эндпоинта
+        if api_endpoint:
+            # FORCE HTTPS protocol for astrapy 2.0+ compliance
+            if not api_endpoint.startswith("http"):
+                api_endpoint = f"https://{api_endpoint}"
+            
+            logger.info(f"Connecting to Astra DB via endpoint: {api_endpoint[:20]}...{api_endpoint[-10:]}")
+            # В astrapy 2.0+ get_async_database принимает endpoint или ID
+            db = client.get_async_database(api_endpoint, keyspace=keyspace)
+            return db
+
+        # 2. Fallback: использование ID и региона
         if db_id and region:
             logger.info(f"Connecting to Astra DB via ID: {db_id} (Region: {region})")
-            db = client.get_async_database(db_id, keyspace=keyspace)
-            return db
-        
-        # 3. Fallback to raw Endpoint
-        if api_endpoint:
-            logger.info(f"Connecting to Astra DB via raw Endpoint: {api_endpoint}")
-            db = client.get_async_database(api_endpoint, keyspace=keyspace)
+            db = client.get_async_database(db_id, region=region, keyspace=keyspace)
             return db
         
         if not db_id or not region and not api_endpoint:

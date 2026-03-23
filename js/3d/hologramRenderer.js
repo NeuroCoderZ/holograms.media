@@ -131,35 +131,11 @@ export class HologramRenderer {
     });
 
     // Update spectral lighting with ALL 128 columns (BasilaQ-128 physics)
-    if (isActive) {
-      const columnData = [];
-      for (let i = 0; i < 128; i++) {
-        // Amplitude: dB ranges from ~-128 (silent) to 0 (max)
-        // Normalize to 0..1 where 0 = silent, 1 = max loudness
-        const dbL = dbLevels[i];
-        const dbR = dbLevels[i + 128];
-        const ampNorm = Math.max(0, Math.min(1, (Math.max(dbL, dbR) + 128) / 128));
-        
-        // Pan position: -1 (full left) to 1 (full right)
-        const panX = this._panStates[i] || 0;
-        
-        // Only include columns with audible sound
-        if (ampNorm > 0.05) {
-          columnData.push({
-            freq: i,
-            amplitude: ampNorm,
-            color: semitones[i]?.color || 'hsl(0, 0%, 50%)',
-            panX: panX
-          });
-        }
-      }
-      
-      // NEW: Update 7-zone glass specular highlights
-      glassSpecularManager.update(columnData);
-      
-      // Legacy: Keep old lighting manager for fallback
-      // lightingManager.updateSpectralLighting(columnData);
-    }
+    // Lighting is now handled by LightingManager.js via EventBus 'audio:spectralData'
+    // to decouple 3D rendering from UI effects and prevent race conditions.
+    
+    // Legacy/Debug:
+    // if (isActive) { ... } logic removed to prevent double-driving and crash.
   }
 
   _applyGreetingMode(leftMesh, rightMesh, pair) {
