@@ -349,7 +349,7 @@
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
   font-size: 24px !important;
   position: relative;
-  overflow: hidden;
+  overflow: visible !important; /* Fixed: Allow tooltips to show */
   outline: none !important;
   -webkit-tap-highlight-color: transparent;
   isolation: isolate; /* Create stacking context for pseudo-elements */
