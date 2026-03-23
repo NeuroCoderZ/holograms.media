@@ -113,11 +113,9 @@ export async function setupAudioProcessing(sourceNode, audioContext, connectToOu
 /**
  * Сбрасывает буферы CWT-анализатора в WASM.
  * Вызывается при смене трека или нажатии Stop.
+ * Performs a hard reset by destroying the WorkletNode via AudioService.
  */
 export function resetCwtAnalyzer() {
-    const node = audioService.workletNode;
-    if (node && node.port) {
-        node.port.postMessage({ type: 'RESET' });
-        console.log('[AudioProcessing] 🔄 Reset signal sent to CWT Worklet.');
-    }
+    console.log('[AudioProcessing] 🔄 Performing Hard Reset of CWT Analyzer...');
+    audioService.resetWorklet();
 }
