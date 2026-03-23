@@ -248,11 +248,35 @@ export class LightingManager {
     }
 
     updateSpectralColors(leftHighestColor, rightHighestColor) {
-        // Legacy support - can be removed later if unused
+        // Task 1: Fix spectral glints visibility
         this.spectralLeft = leftHighestColor || 'rgba(255, 255, 255, 0.1)';
         this.spectralRight = rightHighestColor || 'rgba(255, 255, 255, 0.1)';
         document.documentElement.style.setProperty('--spectral-color-left', this.spectralLeft);
         document.documentElement.style.setProperty('--spectral-color-right', this.spectralRight);
+
+        // Apply to all UI elements immediately
+        const winW = window.innerWidth;
+        this.elements.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            const elX = (rect.left + rect.width / 2) / winW;
+            
+            // Weight: Left source affects left items (0.0) more, Right (1.0) more
+            const wL = Math.max(0, 1 - elX * 2);
+            const wR = Math.max(0, (elX * 2) - 1);
+            const mix = Math.max(wL, wR);
+            
+            if (mix > 0.05) {
+                const col = wL > wR ? this.spectralLeft : this.spectralRight;
+                const glintX = wL > wR ? '0%' : '100%';
+                
+                // Task 1: Hyper-bright glints (alpha 0.9)
+                el.style.setProperty('--glass-specular',
+                    `radial-gradient(ellipse at ${glintX} 50%, ${col.replace('0.1)', '0.9)')} 0%, transparent 60%)`
+                );
+            } else {
+                el.style.setProperty('--glass-specular', 'transparent');
+            }
+        });
     }
 }
 

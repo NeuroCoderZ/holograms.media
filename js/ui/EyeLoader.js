@@ -181,37 +181,38 @@ export class EyeLoader {
     }
 
     drawEye(x, y, alpha) {
-        const rIris = Math.min(this.width, this.height) * 0.15; // Smaller, realistic iris size
-        const rPupil = rIris * 0.4;
+        const rIris = Math.min(this.width, this.height) * 0.12; // Smaller iris
+        const rPupil = rIris * 0.35;
 
         this.ctx.save();
         this.ctx.globalAlpha = alpha;
 
-        // 1. Iris
-        const gradIris = this.ctx.createRadialGradient(x, y, rIris * 0.2, x, y, rIris);
-        gradIris.addColorStop(0, '#444'); 
-        gradIris.addColorStop(0.5, '#222');
-        gradIris.addColorStop(1, '#000');
-        
+        // Clear canvas first to avoid trailing
+        this.ctx.clearRect(0, 0, this.width, this.height);
+
+        // 1. Iris - Grayscale style matching interface
+        const gradIris = this.ctx.createRadialGradient(x, y, rPupil, x, y, rIris);
+        gradIris.addColorStop(0, '#1a1a1a');      // Dark center
+        gradIris.addColorStop(0.4, '#333333');    // Mid gray
+        gradIris.addColorStop(0.7, '#2a2a2a');    // Darker outer
+        gradIris.addColorStop(1, 'rgba(0,0,0,0)'); // Transparent edge (no thick border!)
+
         this.ctx.beginPath();
         this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
-        this.ctx.fillStyle = gradIris; // Simple dark style
-        // Add white glow ring (Tria style)
-        this.ctx.shadowBlur = 20;
-        this.ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+        this.ctx.fillStyle = gradIris;
+        // NO shadow blur - keep it crisp
         this.ctx.fill();
-        this.ctx.shadowBlur = 0;
 
-        // 2. Pupil
+        // 2. Pupil - pure black
         this.ctx.beginPath();
         this.ctx.arc(x, y, rPupil, 0, Math.PI * 2);
-        this.ctx.fillStyle = '#000';
+        this.ctx.fillStyle = '#000000';
         this.ctx.fill();
 
-        // 3. Specular Highlight (Reflection)
+        // 3. Specular Highlight (subtle reflection)
         this.ctx.beginPath();
-        this.ctx.arc(x + rIris * 0.3, y - rIris * 0.3, rPupil * 0.3, 0, Math.PI * 2);
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        this.ctx.arc(x + rIris * 0.25, y - rIris * 0.25, rPupil * 0.2, 0, Math.PI * 2);
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
         this.ctx.fill();
 
         this.ctx.restore();

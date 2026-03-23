@@ -4,7 +4,8 @@ from typing import List, Dict, Any, Tuple, Optional
 import time
 import logging
 import hashlib
-from backend.services.mistral_embedding_service import mistral_embeddings
+from backend.services.gemini_embedding_service import gemini_embeddings  # NEW: Gemini Embedding 2
+from backend.services.mistral_embedding_service import mistral_embeddings  # Legacy
 from backend.core.db.astra_connector import get_astra_db
 from backend.core.config import settings
 
@@ -22,17 +23,25 @@ class TriaResponse(BaseModel):
 class TriaRAGService:
     """
     Retrieval-Augmented Generation Service for Триа codebase and documentation.
+    Updated for Gemini Embedding 2 (Free Tier) with Matryoshka dimensionality.
     """
     def __init__(self):
-        self.collection_name = "tria_knowledge"
+        self.collection_name = "tria_knowledge_gemini"  # NEW collection name
 
     async def get_relevant_context(self, query: str, limit: int = 5, user_id: str = None) -> str:
         """
-        Embeds the query and performs a vector search in AstraDB with RLS filter.
+        Embeds the query using Gemini Embedding 2 and performs vector search in AstraDB.
         """
         try:
-            # 1. Get embedding for the query
-            query_vector = await mistral_embeddings.get_holoquant(query)
+            # 1. Get embedding for the query (Gemini Embedding 2)
+            query_vector = await gemini_embeddings.get_embedding(
+                query, 
+                task_type="RETRIEVAL_QUERY"
+            )
+            
+            if not query_vector:
+                logger.error("RAG: Failed to generate query embedding.")
+                return ""
             
             # 2. Connect to AstraDB
             db = await get_astra_db()
