@@ -34,9 +34,11 @@ if not GOOGLE_API_KEY:
 
 print(f"✅ GOOGLE_API_KEY loaded (length: {len(GOOGLE_API_KEY)})")
 
+# Добавляем backend в path для импортов
+sys.path.insert(0, str(Path(__file__).parent.parent / 'backend'))
+
 # Импортируем основной скрипт миграции
-sys.path.insert(0, str(Path(__file__).parent.parent / 'backend' / 'scripts'))
-from migrate_to_gemini_embedding2 import migrate_to_gemini
+from scripts.migrate_to_gemini_embedding2 import migrate_to_gemini
 
 if __name__ == '__main__':
     print("🚀 Starting Gemini Embedding 2 Migration...")
