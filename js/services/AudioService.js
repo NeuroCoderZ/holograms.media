@@ -136,8 +136,25 @@ class AudioService {
     }
 
     /**
-     * Creates the CWT Worklet Node.
+     * Resets the Worklet Node (disconnects and nulls it) to force recreation.
+     * This is useful when stopping playback to ensure a clean state for the next run.
      */
+    resetWorklet() {
+        if (this.workletNode) {
+            try {
+                this.workletNode.port.postMessage({ type: 'RESET' }); // Optional: tell worklet to reset internal state
+                this.workletNode.disconnect();
+            } catch (e) {
+                console.warn('[AudioService] Error disconnecting worklet:', e);
+            }
+            this.workletNode = null;
+            // Note: We DO NOT clear this.wasmBuffer because we need it for the next node!
+            // BUT: If we transferred it, it's gone. We must NOT transfer it if we plan to reuse it, 
+            // OR we must reload it.
+            // Strategy: Clone the buffer before sending? ArrayBuffer.slice(0)
+        }
+    }
+
     /**
      * Creates or retrieves the CWT Worklet Node (Singleton).
      * @param {string} sourceType - 'file', 'microphone', or 'synth'
@@ -173,17 +190,29 @@ class AudioService {
 
             if (type === 'WORKLET_READY') {
                 console.log('[AudioService] Worklet is READY for Handshake. Sending WASM BUFFER...');
-                if (this.wasmBuffer) {
+                if (this.wasmBuffer && this.wasmBuffer.byteLength > 0) {
+                    // CRITICAL FIX: Clone buffer before transferring to keep a local copy for restarts
+                    const bufferToSend = this.wasmBuffer.slice(0);
                     this.workletNode.port.postMessage({
                         type: 'WASM_BUFFER',
-                        buffer: this.wasmBuffer
-                    }, [this.wasmBuffer]); // TRANSFER ownership
+                        buffer: bufferToSend
+                    }, [bufferToSend]); // TRANSFER the clone
+                } else if (this.wasmBuffer && this.wasmBuffer.byteLength === 0) {
+                     console.error('[AudioService] WASM buffer is empty (already transferred?). reloading...');
+                     this.loadWasmModule().then(() => {
+                        const bufferToSend = this.wasmBuffer.slice(0);
+                        this.workletNode.port.postMessage({
+                            type: 'WASM_BUFFER',
+                            buffer: bufferToSend
+                        }, [bufferToSend]);
+                     });
                 } else {
                     console.warn('[AudioService] WASM buffer not loaded yet. Handshake delayed.');
                 }
                 return;
             }
-
+            
+            // ... rest of handlers
             if (type === 'LOG') {
                 console.log(`[CwtWorklet] ${msg}`);
                 return;
