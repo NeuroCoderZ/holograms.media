@@ -122,6 +122,11 @@ export class LightingManager {
     _onSpectralData(data) {
         if (!data || !data.levels) return;
         
+        // DEBUG: Sample the data occasionally
+        if (Math.random() < 0.01) {
+             console.log('[LightingManager] Received spectral data. Max level:', Math.max(...data.levels));
+        }
+
         const count = data.levels.length;
         const columnData = [];
         
@@ -164,6 +169,9 @@ export class LightingManager {
              return;
         }
 
+        // DEBUG: Check top columns
+        // if (Math.random() < 0.01) console.log('[LightingManager] Top columns:', topColumns);
+
         const winW = window.innerWidth;
         const winH = window.innerHeight;
 
@@ -195,6 +203,12 @@ export class LightingManager {
             // Use glassSpecularManager to apply the glint
             // Pass 'totalIntensity' as mix factor (clamped)
             const mix = Math.min(1, totalIntensity * 0.5);
+            
+            // DEBUG: Check mix calculation for one element
+            // if (panel.id === 'playAudioButton' && Math.random() < 0.01) {
+            //    console.log('[LightingManager] Applying glint to PlayBtn. Mix:', mix, 'Color:', dominantColor);
+            // }
+
             glassSpecularManager.applyGlint(panel, mix, dominantColor);
         });
     }
