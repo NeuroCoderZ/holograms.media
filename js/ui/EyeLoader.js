@@ -64,21 +64,19 @@ export class EyeLoader {
         lid.style.height = '50vh';
         lid.style.zIndex = '20';
         
-        // Стеклянный эффект (как у панелей)
-        lid.style.backdropFilter = 'blur(25px) saturate(1.8)';
-        lid.style.webkitBackdropFilter = 'blur(25px) saturate(1.8)';
+        // Непрозрачные веки (без backdrop-filter чтобы не размывать глаз)
         lid.style.transition = 'transform 0.8s cubic-bezier(0.77, 0, 0.175, 1)';
         
         if (isUpper) {
             lid.style.top = '0';
             lid.style.transformOrigin = 'top';
-            lid.style.background = 'linear-gradient(to bottom, rgba(15,15,20,0.95), rgba(25,25,30,0.92))';
-            lid.style.borderBottom = '1px solid rgba(255,255,255,0.15)';
+            lid.style.background = 'linear-gradient(to bottom, #0a0a0f, #101018)';
+            lid.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
         } else {
             lid.style.bottom = '0';
             lid.style.transformOrigin = 'bottom';
-            lid.style.background = 'linear-gradient(to top, rgba(15,15,20,0.95), rgba(25,25,30,0.92))';
-            lid.style.borderTop = '1px solid rgba(255,255,255,0.15)';
+            lid.style.background = 'linear-gradient(to top, #0a0a0f, #101018)';
+            lid.style.borderTop = '1px solid rgba(255,255,255,0.1)';
         }
         
         return lid;
@@ -176,69 +174,68 @@ export class EyeLoader {
     }
 
     drawEye(x, y, alpha) {
-        const rIris = Math.min(this.width, this.height) * 0.12;
-        const rPupil = rIris * 0.38;
+        const rIris = Math.min(this.width, this.height) * 0.2;
+        const rPupil = rIris * 0.45;
 
         this.ctx.save();
-        this.ctx.globalAlpha = alpha;
+        this.ctx.clearRect(0, 0, this.width, this.height);
         
-        // --- 1. Свечение (Halo) ---
-        const glowGrad = this.ctx.createRadialGradient(x, y, rIris * 0.8, x, y, rIris * 1.5);
-        glowGrad.addColorStop(0, 'rgba(200, 200, 255, 0.15)');
-        glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, rIris * 1.5, 0, Math.PI * 2);
-        this.ctx.fillStyle = glowGrad;
-        this.ctx.fill();
-
-        // --- 2. Радужка: "Выдавленное стекло" (Convex) ---
+        // --- 1. Радужка: "Выдавленное стекло" (Convex) ---
         const gradIris = this.ctx.createRadialGradient(
-            x - rIris * 0.3, y - rIris * 0.3, rPupil,
+            x - rIris * 0.3, y - rIris * 0.3, rPupil * 0.5,
             x, y, rIris
         );
-        gradIris.addColorStop(0, 'rgba(240, 240, 250, 0.95)');
-        gradIris.addColorStop(0.4, 'rgba(140, 140, 150, 0.8)');
-        gradIris.addColorStop(0.8, 'rgba(40, 40, 50, 0.6)');
-        gradIris.addColorStop(1, 'rgba(20, 20, 30, 0.4)');
+        gradIris.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        gradIris.addColorStop(0.3, 'rgba(200, 200, 210, 0.9)');
+        gradIris.addColorStop(0.6, 'rgba(120, 120, 130, 0.7)');
+        gradIris.addColorStop(0.85, 'rgba(50, 50, 60, 0.5)');
+        gradIris.addColorStop(1, 'rgba(25, 25, 35, 0.4)');
 
         this.ctx.beginPath();
         this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
         this.ctx.fillStyle = gradIris;
         this.ctx.fill();
 
-        // Ободок радужки
+        // Ободок радужки — яркая граница "стекла"
         this.ctx.beginPath();
         this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        this.ctx.lineWidth = 2.5;
         this.ctx.stroke();
 
-        // --- 3. Зрачок: "Вдавленное стекло" (Concave) ---
+        // --- 2. Зрачок: "Вдавленное стекло" (Concave) ---
         const gradPupil = this.ctx.createRadialGradient(x, y, 0, x, y, rPupil);
-        gradPupil.addColorStop(0, 'rgba(5, 5, 10, 1)');
-        gradPupil.addColorStop(0.7, 'rgba(15, 15, 25, 0.95)');
-        gradPupil.addColorStop(1, 'rgba(40, 40, 60, 0.85)');
+        gradPupil.addColorStop(0, 'rgba(0, 0, 5, 1)');
+        gradPupil.addColorStop(0.6, 'rgba(8, 8, 15, 1)');
+        gradPupil.addColorStop(0.9, 'rgba(30, 30, 45, 0.95)');
+        gradPupil.addColorStop(1, 'rgba(55, 55, 70, 0.9)');
 
         this.ctx.beginPath();
         this.ctx.arc(x, y, rPupil, 0, Math.PI * 2);
         this.ctx.fillStyle = gradPupil;
         this.ctx.fill();
 
-        // Световой акцент на дне "впадины" зрачка
+        // Ободок зрачка — тонкая светящаяся граница "вдавленности"
         this.ctx.beginPath();
         this.ctx.arc(x, y, rPupil, 0, Math.PI * 2);
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-        this.ctx.lineWidth = 1;
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        this.ctx.lineWidth = 1.5;
         this.ctx.stroke();
 
-        // --- 4. Блик (Specular) ---
+        // --- 3. Блик (Specular) — яркое пятно на выпуклом стекле ---
         this.ctx.beginPath();
         this.ctx.ellipse(
-            x - rIris * 0.25, y - rIris * 0.3,
-            rPupil * 0.4, rPupil * 0.25,
+            x - rIris * 0.2, y - rIris * 0.25,
+            rPupil * 0.5, rPupil * 0.3,
             -Math.PI / 6, 0, Math.PI * 2
         );
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        this.ctx.fill();
+
+        // Маленький второй блик (контражур)
+        this.ctx.beginPath();
+        this.ctx.arc(x + rIris * 0.35, y + rIris * 0.3, rPupil * 0.12, 0, Math.PI * 2);
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
         this.ctx.fill();
 
         this.ctx.restore();
