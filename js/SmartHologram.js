@@ -89,18 +89,8 @@ export class SmartHologram {
      * Настройка освещения сцены
      */
     setupLighting() {
-        // Основное освещение
-        this.scene.add(new THREE.AmbientLight(0x404040, 1.2));
-
-        // Направленный свет
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        directionalLight.position.set(10, 10, 10);
-        this.scene.add(directionalLight);
-
-        // Точечный свет для эффектов
-        const pointLight = new THREE.PointLight(0x00ffff, 0.8, 100);
-        pointLight.position.set(0, 5, 5);
-        this.scene.add(pointLight);
+        // Минимальное освещение — столбцы self-illuminated
+        this.scene.add(new THREE.AmbientLight(0x101010, 0.3));
     }
 
     /**

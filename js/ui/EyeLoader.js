@@ -1,7 +1,7 @@
 /**
  * EyeLoader.js
  * Продвинутая Canvas-анимация «Пробуждение» (REM wake-up).
- * Версия 2.2: Фазовая анимация с плоскими веками и улетом глаза.
+ * Версия 2.3: Повышенная яркость и контрастность для видимости на черном фоне.
  */
 
 export class EyeLoader {
@@ -37,18 +37,16 @@ export class EyeLoader {
         this.container.appendChild(this.lowerLid);
         
         this.progress = 0;
-        this.phase = 'alive'; // alive, return, static, fly, open
+        this.phase = 'alive'; 
         
         this.width = window.innerWidth;
         this.height = window.innerHeight;
         
-        // Eye Position State
         this.eyeX = 0;
         this.eyeY = 0;
         this.targetX = 0;
         this.targetY = 0;
         
-        // Fly away state
         this.flyDirX = 0;
         this.flyDirY = 0;
         
@@ -63,20 +61,19 @@ export class EyeLoader {
         lid.style.width = '100%';
         lid.style.height = '50vh';
         lid.style.zIndex = '20';
-        
-        // Полупрозрачные чёрные веки (без backdrop-filter — глаз виден сквозь них чётко)
         lid.style.transition = 'transform 0.8s cubic-bezier(0.77, 0, 0.175, 1)';
         
+        // Полупрозрачные чёрные веки
         if (isUpper) {
             lid.style.top = '0';
             lid.style.transformOrigin = 'top';
-            lid.style.background = 'linear-gradient(to bottom, rgba(5,5,10,0.85), rgba(10,10,18,0.7))';
-            lid.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
+            lid.style.background = 'linear-gradient(to bottom, rgba(5,5,10,0.9), rgba(15,15,25,0.75))';
+            lid.style.borderBottom = '1px solid rgba(255,255,255,0.12)';
         } else {
             lid.style.bottom = '0';
             lid.style.transformOrigin = 'bottom';
-            lid.style.background = 'linear-gradient(to top, rgba(5,5,10,0.85), rgba(10,10,18,0.7))';
-            lid.style.borderTop = '1px solid rgba(255,255,255,0.08)';
+            lid.style.background = 'linear-gradient(to top, rgba(5,5,10,0.9), rgba(15,15,25,0.75))';
+            lid.style.borderTop = '1px solid rgba(255,255,255,0.12)';
         }
         
         return lid;
@@ -91,18 +88,15 @@ export class EyeLoader {
 
     start() {
         document.body.appendChild(this.container);
-        console.log('[EyeLoader] Пробуждение...', 'размер:', this.canvas.width, 'x', this.canvas.height);
+        console.log('[EyeLoader] Start animation loop');
         this.phase = 'alive';
-        
-        this.saccadeInterval = setInterval(() => this.triggerSaccade(), 1500 + Math.random() * 1000);
-        this.triggerSaccade();
-
+        this.saccadeInterval = setInterval(() => this.triggerSaccade(), 1200 + Math.random() * 800);
         requestAnimationFrame(() => this.loop());
     }
 
     triggerSaccade() {
         if (this.phase !== 'alive') return;
-        const range = Math.min(this.width, this.height) * 0.15;
+        const range = Math.min(this.width, this.height) * 0.18;
         this.targetX = (Math.random() - 0.5) * range;
         this.targetY = (Math.random() - 0.5) * range;
     }
@@ -112,11 +106,9 @@ export class EyeLoader {
         if (this.progress >= 0 && this.progress < 80) {
             this.phase = 'alive';
         } else if (this.progress >= 80 && this.progress < 90) {
-            if (this.phase !== 'return') {
-                this.phase = 'return';
-                this.targetX = 0;
-                this.targetY = 0;
-            }
+            this.phase = 'return';
+            this.targetX = 0;
+            this.targetY = 0;
         } else if (this.progress >= 90 && this.progress < 96) {
             this.phase = 'static';
             this.eyeX = 0;
@@ -125,7 +117,7 @@ export class EyeLoader {
             if (this.phase !== 'fly') {
                 this.phase = 'fly';
                 const angle = Math.random() * Math.PI * 2;
-                const speed = Math.max(this.width, this.height) * 0.12;
+                const speed = Math.max(this.width, this.height) * 0.15;
                 this.flyDirX = Math.cos(angle) * speed;
                 this.flyDirY = Math.sin(angle) * speed;
             }
@@ -139,24 +131,19 @@ export class EyeLoader {
         const centerX = this.width / 2;
         const centerY = this.height / 2;
 
-        if (this.phase === 'alive') {
-            this.eyeX += (this.targetX - this.eyeX) * 0.1;
-            this.eyeY += (this.targetY - this.eyeY) * 0.1;
+        if (this.phase === 'alive' || this.phase === 'return' || this.phase === 'static' || this.phase === 'fly') {
+            const ease = this.phase === 'return' ? 0.15 : 0.1;
+            this.eyeX += (this.targetX - this.eyeX) * ease;
+            this.eyeY += (this.targetY - this.eyeY) * ease;
+            
+            if (this.phase === 'fly') {
+                this.eyeX += this.flyDirX;
+                this.eyeY += this.flyDirY;
+            }
+            
             this.drawEye(centerX + this.eyeX, centerY + this.eyeY, 1.0);
+            requestAnimationFrame(() => this.loop());
         } 
-        else if (this.phase === 'return') {
-            this.eyeX += (0 - this.eyeX) * 0.15;
-            this.eyeY += (0 - this.eyeY) * 0.15;
-            this.drawEye(centerX + this.eyeX, centerY + this.eyeY, 1.0);
-        }
-        else if (this.phase === 'static') {
-            this.drawEye(centerX, centerY, 1.0);
-        }
-        else if (this.phase === 'fly') {
-            this.eyeX += this.flyDirX;
-            this.eyeY += this.flyDirY;
-            this.drawEye(centerX + this.eyeX, centerY + this.eyeY, 1.0);
-        }
         else if (this.phase === 'open') {
             this.upperLid.style.transform = 'translateY(-100%)';
             this.lowerLid.style.transform = 'translateY(100%)';
@@ -167,75 +154,65 @@ export class EyeLoader {
                 }
                 if (this.saccadeInterval) clearInterval(this.saccadeInterval);
             }, 900);
-            return;
         }
-
-        requestAnimationFrame(() => this.loop());
     }
 
     drawEye(x, y, alpha) {
-        const rIris = Math.min(this.width, this.height) * 0.2;
-        const rPupil = rIris * 0.45;
+        const rIris = Math.min(this.width, this.height) * 0.22;
+        const rPupil = rIris * 0.42;
 
         this.ctx.save();
-        this.ctx.clearRect(0, 0, this.width, this.height);
+        this.ctx.globalAlpha = alpha;
         
-        // --- 1. Радужка: "Выдавленное стекло" (Convex) ---
+        // --- 1. Радужка: Гипер-яркое стекло ---
         const gradIris = this.ctx.createRadialGradient(
-            x - rIris * 0.3, y - rIris * 0.3, rPupil * 0.5,
+            x - rIris * 0.35, y - rIris * 0.35, rPupil * 0.2,
             x, y, rIris
         );
-        gradIris.addColorStop(0, 'rgba(255, 255, 255, 1)');
-        gradIris.addColorStop(0.3, 'rgba(200, 200, 210, 0.9)');
-        gradIris.addColorStop(0.6, 'rgba(120, 120, 130, 0.7)');
-        gradIris.addColorStop(0.85, 'rgba(50, 50, 60, 0.5)');
-        gradIris.addColorStop(1, 'rgba(25, 25, 35, 0.4)');
+        gradIris.addColorStop(0, 'rgba(255, 255, 255, 1.0)'); // Яркий центр
+        gradIris.addColorStop(0.2, 'rgba(230, 235, 255, 0.95)');
+        gradIris.addColorStop(0.5, 'rgba(150, 160, 180, 0.85)');
+        gradIris.addColorStop(0.8, 'rgba(60, 70, 90, 0.7)');
+        gradIris.addColorStop(1, 'rgba(20, 25, 40, 0.6)');
 
         this.ctx.beginPath();
         this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
         this.ctx.fillStyle = gradIris;
         this.ctx.fill();
 
-        // Ободок радужки — яркая граница "стекла"
+        // Контур радужки
         this.ctx.beginPath();
         this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-        this.ctx.lineWidth = 2.5;
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+        this.ctx.lineWidth = 3;
         this.ctx.stroke();
 
-        // --- 2. Зрачок: "Вдавленное стекло" (Concave) ---
+        // --- 2. Зрачок ---
         const gradPupil = this.ctx.createRadialGradient(x, y, 0, x, y, rPupil);
-        gradPupil.addColorStop(0, 'rgba(0, 0, 5, 1)');
-        gradPupil.addColorStop(0.6, 'rgba(8, 8, 15, 1)');
-        gradPupil.addColorStop(0.9, 'rgba(30, 30, 45, 0.95)');
-        gradPupil.addColorStop(1, 'rgba(55, 55, 70, 0.9)');
+        gradPupil.addColorStop(0, 'rgba(0, 0, 0, 1)');
+        gradPupil.addColorStop(0.7, 'rgba(10, 10, 20, 1)');
+        gradPupil.addColorStop(1, 'rgba(40, 45, 60, 1)');
 
         this.ctx.beginPath();
         this.ctx.arc(x, y, rPupil, 0, Math.PI * 2);
         this.ctx.fillStyle = gradPupil;
         this.ctx.fill();
 
-        // Ободок зрачка — тонкая светящаяся граница "вдавленности"
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, rPupil, 0, Math.PI * 2);
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.stroke();
-
-        // --- 3. Блик (Specular) — яркое пятно на выпуклом стекле ---
+        // --- 3. Блики ---
+        // Главный блик
         this.ctx.beginPath();
         this.ctx.ellipse(
-            x - rIris * 0.2, y - rIris * 0.25,
-            rPupil * 0.5, rPupil * 0.3,
-            -Math.PI / 6, 0, Math.PI * 2
+            x - rIris * 0.25, y - rIris * 0.28,
+            rPupil * 0.55, rPupil * 0.35,
+            -Math.PI / 5, 0, Math.PI * 2
         );
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
         this.ctx.fill();
 
-        // Маленький второй блик (контражур)
+        // Доп. блик для объема
         this.ctx.beginPath();
-        this.ctx.arc(x + rIris * 0.35, y + rIris * 0.3, rPupil * 0.12, 0, Math.PI * 2);
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        this.ctx.arc(x + rIris * 0.4, y + rIris * 0.35, rPupil * 0.15, 0, Math.PI * 2);
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         this.ctx.fill();
 
         this.ctx.restore();

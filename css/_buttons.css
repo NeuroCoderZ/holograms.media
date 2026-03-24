@@ -369,23 +369,17 @@
   z-index: 0;
 }
 
-/* Layer 3: Specular Highlight (Dynamic Lighting from Hologram & Mouse) */
+/* Layer 3: Specular Highlight (Dynamic — spectral only) */
 .control-button::after {
   content: '';
   position: absolute;
-  inset: -1px; /* Cover border */
+  inset: -1px;
   border-radius: inherit;
-  
-  /* Combined specular sources: Hologram Colors + Mouse Reflection */
-  background: 
-    var(--glass-specular, transparent),
-    var(--mouse-specular, transparent);
-    
-  mix-blend-mode: screen; /* Physics of light addition */
+  background: var(--glass-specular, transparent);
+  mix-blend-mode: screen;
   pointer-events: none;
   z-index: 2;
   transition: background 0.15s ease-out;
-  will-change: background;
 }
 
 /* Hover State: Glass gets slightly brighter/cleaner */

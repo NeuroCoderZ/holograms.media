@@ -1,7 +1,7 @@
 /**
- * hologramRenderer.js — HologramRenderer v19.2 (Performance Optimized)
- * ===================================================================
- * Исправлены ошибки расчетов (NaN), зависание правой сетки и оптимизирован цикл обновления.
+ * hologramRenderer.js — HologramRenderer v20.1 (Stable Instanced)
+ * =============================================================
+ * Оптимизация через InstancedMesh: 256 объектов -> 2 draw calls.
  */
 
 import { state } from '../core/init.js';
@@ -9,7 +9,6 @@ import * as THREE from 'three';
 import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../config/hologramConfig.js';
 import eventBus from '../core/eventBus.js';
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js';
-import { glassSpecularManager } from '../ui/glassSpecularManager.js';
 
 import { vertexShader, fragmentShader, makeColumnUniforms } from './shaders/hologramShaders.js';
 import { CELL_HEIGHT, createCentralMarkerSphere, createSphereForAxis, createGridVisualization, createAxis } from './hologramGridFactory.js';
@@ -17,7 +16,7 @@ import { CELL_HEIGHT, createCentralMarkerSphere, createSphereForAxis, createGrid
 export class HologramRenderer {
 
   constructor(scene, roomId, userId) {
-    console.log('[HologramRenderer] v19.2: Performance Optimized — Safety Fixes');
+    console.log('[HologramRenderer] v20.1: Stable Instanced');
     this.scene = scene;
     this.eventBus = eventBus;
     this.netHoloGlyphClient = netHoloGlyphClient;
@@ -30,19 +29,50 @@ export class HologramRenderer {
     this.mainSequencerGroup = new THREE.Group();
     this.hologramPivot.add(this.mainSequencerGroup);
 
-    this.columns = [];
+    this.columnGeometry = new THREE.BoxGeometry(1, CELL_HEIGHT, 1);
+    this.columnGeometry.translate(0, 0, 0.5); 
+
+    this._initInstancedMeshes();
     this._createSequencerGrids();
-    this._initializeColumns();
 
     this.mainSequencerGroup.scale.set(0.95, 0.95, 0.95);
     this.scene.add(this.hologramPivot);
 
     this.eventBus.on('audioData', (data) => { 
-        if (data && data.levels && data.levels.length >= 256) {
+        if (data && data.levels) {
             this.latestCwtData = data; 
         }
     });
     this.netHoloGlyphClient.connect(this.roomId, this.userId);
+  }
+
+  _initInstancedMeshes() {
+    const count = semitones.length;
+    
+    this.instancedMaterial = new THREE.ShaderMaterial({
+      defines: { USE_INSTANCING: "" },
+      uniforms: makeColumnUniforms(new THREE.Color(0xffffff)),
+      vertexShader,
+      fragmentShader,
+      transparent: false,
+      depthWrite: true,
+      depthTest: true
+    });
+
+    this.meshL = new THREE.InstancedMesh(this.columnGeometry, this.instancedMaterial, count);
+    this.meshR = new THREE.InstancedMesh(this.columnGeometry, this.instancedMaterial.clone(), count);
+
+    this.meshL.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.meshR.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+    for (let i = 0; i < count; i++) {
+      const color = new THREE.Color(semitones[i].color);
+      this.meshL.setInstanceColor(i, color);
+      this.meshR.setInstanceColor(i, color);
+    }
+
+    this.mainSequencerGroup.add(this.meshL);
+    this.mainSequencerGroup.add(this.meshR);
   }
 
   _createSequencerGrids() {
@@ -60,124 +90,65 @@ export class HologramRenderer {
     this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xFF0000));
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
-    const blue = createSphereForAxis(3.024, 0x0000ff);
-    const white = createSphereForAxis(2.4192, 0xffffff);
-    blue.position.set(0, -GRID_HEIGHT, 0);
-    white.position.set(0, -GRID_HEIGHT, 0);
-    this.mainSequencerGroup.add(blue);
-    this.mainSequencerGroup.add(white);
-
-    this.hologramPivot.add(createCentralMarkerSphere(2.4192, 0xffffff));
-  }
-
-  _initializeColumns() {
-    for (let i = 0; i < semitones.length; i++) {
-      const colL = this._createColumn(i, true);
-      const colR = this._createColumn(i, false);
-      this.columns.push({ left: colL, right: colR });
-      this.leftSequencerGroup.add(colL);
-      this.rightSequencerGroup.add(colR);
-    }
-  }
-
-  _createColumn(index, isLeft) {
-    const config = semitones[index];
-    const width = config.width;
-    const baseColor = new THREE.Color(config.color);
-    const group = new THREE.Group();
-
-    const geometry = new THREE.BoxGeometry(width, CELL_HEIGHT, 1.0, 1, 1, 1);
-    const mesh = new THREE.Mesh(geometry, new THREE.ShaderMaterial({
-      uniforms: makeColumnUniforms(baseColor),
-      vertexShader, fragmentShader, transparent: false, depthWrite: true, depthTest: true
-    }));
-    mesh.position.set(0, 0, 0.5);
-    mesh.scale.set(1, 1, 0.1);
-
-    group.add(mesh);
-    const initialX = isLeft ? -width / 2 : width / 2;
-    group.position.set(initialX, (index + 0.5) * CELL_HEIGHT, 0);
-    group.userData = { initialX, baseColor };
-    return group;
+    this.mainSequencerGroup.add(createCentralMarkerSphere(2.4192, 0xffffff));
   }
 
   updateVisuals() {
-    // ВАЖНО: Если на паузе, мы все равно должны один раз отрисовать "приветственный" режим
-    // и продолжать проверку isActive.
     const isActive = state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone');
-    
-    if (state.audio?.isPaused && !isActive) {
-        this.columns.forEach(pair => {
-            this._applyGreetingMode(pair.left.children[0], pair.right.children[0], pair);
-        });
-        return;
-    }
+    const isPaused = state.audio?.isPaused;
 
+    const dummy = new THREE.Object3D();
     const audioData = this.latestCwtData || state.audio?.latestAudioData;
     const dbLevels = audioData?.levels || new Float32Array(256).fill(-128);
     const panAngles = audioData?.pans || new Float32Array(256).fill(0);
 
-    for (let i = 0; i < this.columns.length; i++) {
-      const pair = this.columns[i];
-      const leftMesh = pair.left.children[0];
-      const rightMesh = pair.right.children[0];
+    for (let i = 0; i < semitones.length; i++) {
+      const config = semitones[i];
+      const width = config.width;
+      const initialX_L = -width / 2;
+      const initialX_R = width / 2;
+      const initialY = (i + 0.5) * CELL_HEIGHT - GRID_HEIGHT;
 
-      if (!isActive) {
-        this._applyGreetingMode(leftMesh, rightMesh, pair);
-      } else {
-        const config = semitones[i];
-        this._applyActiveMode(pair, i, config, dbLevels, panAngles, leftMesh, rightMesh);
+      let hL = 0.1, hR = 0.1;
+      let pL = initialX_L, pR = initialX_R;
+
+      if (isActive && !isPaused) {
+        let dbL = dbLevels[i] || -128;
+        let dbR = dbLevels[i + 128] || -128;
+
+        const targetPan = panAngles[i] || 0;
+        this._panStates[i] += (targetPan - this._panStates[i]) * 0.7;
+        const p = this._panStates[i];
+
+        const shadowDb = Math.abs(p) * config.shadow_coef * 128.0;
+        if (p < -0.01) dbR -= shadowDb;
+        else if (p > 0.01) dbL -= shadowDb;
+
+        const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
+        pL = initialX_L - Math.round(Math.abs(Math.min(0, p)) * maxAvailableShift * 2);
+        pR = initialX_R + Math.round(Math.abs(Math.max(0, p)) * maxAvailableShift * 2);
+
+        hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbL)));
+        hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbR)));
       }
+
+      dummy.position.set(pL, initialY, 0);
+      dummy.scale.set(width, 1, hL);
+      dummy.updateMatrix();
+      this.meshL.setMatrixAt(i, dummy.matrix);
+
+      dummy.position.set(pR, initialY, 0);
+      dummy.scale.set(width, 1, hR);
+      dummy.updateMatrix();
+      this.meshR.setMatrixAt(i, dummy.matrix);
     }
-  }
 
-  _applyGreetingMode(leftMesh, rightMesh, pair) {
-    const gDepth = 0.1;
-    [leftMesh, rightMesh].forEach(m => {
-      if (m.scale.z !== gDepth) {
-          m.scale.z = gDepth;
-          m.position.z = gDepth / 2;
-          if (m.material.uniforms) {
-            m.material.uniforms.uIsGreeting.value = 1.0;
-            m.material.uniforms.uColumnScaleZ.value = gDepth;
-          }
-      }
-    });
-    pair.left.position.x = pair.left.userData.initialX;
-    pair.right.position.x = pair.right.userData.initialX;
-  }
-
-  _applyActiveMode(pair, i, config, dbLevels, panAngles, leftMesh, rightMesh) {
-    // FIX: Безопасное получение уровней с проверкой на NaN
-    let dbL = dbLevels[i] || -128;
-    let dbR = dbLevels[i + 128] || -128;
-
-    // FIX: Безопасный панорамный угол
-    const targetPan = panAngles[i] || 0;
-    this._panStates[i] += (targetPan - this._panStates[i]) * 0.7;
-    const p = this._panStates[i];
-
-    const shadowDb = Math.abs(p) * config.shadow_coef * 128.0;
-    if (p < -0.01) dbR -= shadowDb;
-    else if (p > 0.01) dbL -= shadowDb;
-
-    const w = config.width || 1;
-    const maxAvailableShift = (GRID_WIDTH - w) * 0.5;
-    pair.left.position.x = pair.left.userData.initialX - Math.round(Math.abs(Math.min(0, p)) * maxAvailableShift * 2);
-    pair.right.position.x = pair.right.userData.initialX + Math.round(Math.abs(Math.max(0, p)) * maxAvailableShift * 2);
-
-    // FIX: Обработка обоих каналов
-    [[leftMesh, dbL], [rightMesh, dbR]].forEach(([m, db]) => {
-      // Масштабирование по оси Z
-      const h = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, db)));
-      m.scale.z = h;
-      m.position.z = h / 2;
-      
-      if (m.material.uniforms) {
-        m.material.uniforms.uIsGreeting.value = 0.0;
-        m.material.uniforms.uColumnScaleZ.value = h;
-      }
-    });
+    this.meshL.instanceMatrix.needsUpdate = true;
+    this.meshR.instanceMatrix.needsUpdate = true;
+    
+    const greetingValue = (isActive && !isPaused) ? 0.0 : 1.0;
+    this.meshL.material.uniforms.uIsGreeting.value = greetingValue;
+    this.meshR.material.uniforms.uIsGreeting.value = greetingValue;
   }
 
   getHologramPivot() { return this.hologramPivot; }
