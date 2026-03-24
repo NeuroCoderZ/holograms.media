@@ -36,20 +36,17 @@
   z-index: 0;
 }
 
-/* Layer 3: Specular Highlight (Dynamic) */
+/* Layer 3: Specular Highlight (Dynamic — spectral only, no mouse) */
 .panel::after {
   content: '';
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  background: 
-    var(--glass-specular, transparent),
-    var(--mouse-specular, transparent);
+  background: var(--glass-specular, transparent);
   mix-blend-mode: screen;
   pointer-events: none;
   z-index: 2;
   transition: background 0.15s ease-out;
-  will-change: background;
 }
 
 .panel.left-panel {
