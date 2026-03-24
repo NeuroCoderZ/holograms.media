@@ -1,7 +1,7 @@
 /**
  * LightingManager.js - Управление динамическим освещением интерфейса.
- * Вычисляет положение центрального источника света (голограммы) 
- * и обновляет CSS переменные для бликов на элементах.
+ * Perf: rect cache, 30fps throttle, limited elements.
+ * Spectral glints: eventBus → _onSpectralData → updateSpectralLighting → glassSpecularManager.applyGlint()
  */
 import eventBus from '../core/eventBus.js';
 import { glassSpecularManager } from './glassSpecularManager.js';
@@ -9,39 +9,68 @@ import { glassSpecularManager } from './glassSpecularManager.js';
 export class LightingManager {
     constructor() {
         this.elements = [];
+        this.rectCache = new Map();
+        
         this.centerX = window.innerWidth / 2;
         this.centerY = window.innerHeight / 2;
 
         this.mouseX = 0;
         this.mouseY = 0;
 
-        // Spectral Colors (from BasilaQ-128 columns)
-        this.spectralLeft = 'rgba(255, 255, 255, 0.1)';
-        this.spectralRight = 'rgba(255, 255, 255, 0.1)';
-        
-        // Bind spectral data handler
         this._onSpectralData = this._onSpectralData.bind(this);
+        this._isUpdating = false;
+        
+        // Throttling for performance
+        this._lastUpdateTime = 0;
+        this._updateInterval = 32; // ~30fps for UI glints is enough, saves CPU
     }
 
     initialize() {
         window.addEventListener('resize', this.handleResize);
         window.addEventListener('mousemove', this.handleMouseMove);
         
-        // Subscribe to audio data for real-time lighting updates
         eventBus.on('audio:spectralData', this._onSpectralData);
 
-        // Регистрируем основные группы элементов
         this.refreshElements();
-
-        // Запускаем цикл обновления
         this.updateLighting();
 
-        console.log("LightingManager: Initialized.");
+        console.log("LightingManager: High-Performance Mode Active.");
     }
 
     refreshElements() {
-        // Собираем все кнопки и панели, которые должны реагировать на свет
-        this.elements = Array.from(document.querySelectorAll('.control-button, .panel, .panel-section, .chat-message, .glass-panel'));
+        // ОГРАНИЧИВАЕМ количество элементов для освещения. 
+        // Обрабатываем только кнопки и основные панели. Игнорируем сотни сообщений чата.
+        const coreElements = document.querySelectorAll('.control-button, .panel, .glass-panel, #gesture-area');
+        this.elements = Array.from(coreElements);
+        
+        // Добавляем максимум 3 последних сообщения чата
+        const chatMsgs = document.querySelectorAll('.chat-message');
+        if (chatMsgs.length > 0) {
+            this.elements.push(...Array.from(chatMsgs).slice(-3));
+        }
+
+        this.updateRectCache();
+    }
+
+    updateRectCache() {
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        
+        this.rectCache.clear();
+        this.elements.forEach(el => {
+            // Простая проверка на видимость в DOM и вьюпорте
+            const rect = el.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                this.rectCache.set(el, {
+                    left: rect.left,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                    centerX: (rect.left + rect.width / 2) / winW,
+                    centerY: (rect.top + rect.height / 2) / winH
+                });
+            }
+        });
     }
 
     handleResize = () => {
@@ -54,47 +83,38 @@ export class LightingManager {
     handleMouseMove = (e) => {
         this.mouseX = e.clientX;
         this.mouseY = e.clientY;
-        this.updateLighting();
+        // Лимитируем частоту обновлений от мыши
+        if (!this._isUpdating) {
+            this._isUpdating = true;
+            requestAnimationFrame(() => {
+                this.updateLighting();
+                this._isUpdating = false;
+            });
+        }
     }
 
-    /**
-     * Updates static lighting and mouse reflection (Liquid Glass Mirror Effect)
-     */
     updateLighting() {
         if (this.elements.length === 0) return;
         
-        // Use cached window dimensions
         const winW = window.innerWidth;
         const winH = window.innerHeight;
-        
         const mouseXNorm = this.mouseX / winW;
         const mouseYNorm = this.mouseY / winH;
 
         this.elements.forEach(el => {
-            const rect = el.getBoundingClientRect();
-            const elCenterX = rect.left + rect.width / 2;
-            const elCenterY = rect.top + rect.height / 2;
-            
-            // Normalize element position 0..1
-            const elX = elCenterX / winW;
-            const elY = elCenterY / winH;
+            const cache = this.rectCache.get(el);
+            if (!cache) return;
 
-            // Расстояние от курсора до элемента (для зеркального блика)
-            // Aspect ratio correction (assume ~16:9 or similar, simplified distance)
+            const elX = cache.centerX;
+            const elY = cache.centerY;
             const dist = Math.hypot(mouseXNorm - elX, mouseYNorm - elY);
             
-            // Mouse Mirror Reflection Logic
             if (dist < 0.25) {
-                // Угол отражения — позиция блика внутри элемента
-                // Relative mouse position within the element's coordinate space (extended)
-                const relX = (this.mouseX - rect.left) / rect.width;
-                const relY = (this.mouseY - rect.top) / rect.height;
-                
-                // Clamp slightly outside to allow entering/exiting smoothly
+                const relX = (this.mouseX - cache.left) / cache.width;
+                const relY = (this.mouseY - cache.top) / cache.height;
                 const reflectX = Math.max(-50, Math.min(150, relX * 100));
                 const reflectY = Math.max(-50, Math.min(150, relY * 100));
-                
-                const opacity = (0.25 - dist) / 0.25 * 0.15; // Max 15% opacity
+                const opacity = (0.25 - dist) / 0.25 * 0.15; 
 
                 el.style.setProperty('--mouse-specular',
                     `radial-gradient(circle at ${reflectX.toFixed(1)}% ${reflectY.toFixed(1)}%, 
@@ -105,125 +125,88 @@ export class LightingManager {
                 el.style.setProperty('--mouse-specular', 'transparent');
             }
 
-            // Legacy Light/Shadow calculations (kept for fallback compatibility)
-            const dx = elCenterX - this.centerX;
-            const dy = elCenterY - this.centerY;
-            const lightX = 50 - (dx / winW) * 100;
-            const lightY = 50 - (dy / winH) * 100;
-            
-            el.style.setProperty('--light-x', `${lightX}%`);
-            el.style.setProperty('--light-y', `${lightY}%`);
+            const dx = (elX * winW) - this.centerX;
+            const dy = (elY * winH) - this.centerY;
+            el.style.setProperty('--light-x', `${50 - (dx / winW) * 100}%`);
+            el.style.setProperty('--light-y', `${50 - (dy / winH) * 100}%`);
         });
     }
 
-    /**
-     * Process raw spectral data and update dynamic lighting
-     */
     _onSpectralData(data) {
         if (!data || !data.levels) return;
         
-        // DEBUG: Sample the data occasionally
-        if (Math.random() < 0.01) {
-             console.log('[LightingManager] Received spectral data. Max level:', Math.max(...data.levels));
-        }
+        const now = performance.now();
+        if (now - this._lastUpdateTime < this._updateInterval) return;
+        this._lastUpdateTime = now;
+
+        if (Math.random() < 0.005) this.refreshElements();
 
         const count = data.levels.length;
         const columnData = [];
         
         for (let i = 0; i < count; i++) {
             const amp = data.levels[i];
-            if (amp < 5) continue; // Skip noise
+            if (amp < -110) continue; 
             
-            const hue = (i / count) * 300; // 0..300 range
-            // Store color as HSL string for easier parsing later if needed
-            const color = `hsl(${Math.round(hue)}, 100%, 50%)`;
+            const hue = (i / count) * 300; 
+            const amplitudeNorm = Math.max(0, (amp + 110) / 110); // Normalizing to -110..0 range for sensitivity
             
-            // PanX: -1 (left) to 1 (right)
-            const panX = (i / count) * 2 - 1;
-            
-            columnData.push({
-                freq: i,
-                amplitude: amp / 255, // Normalize 0..1
-                color: color,
-                panX: panX
-            });
+            if (amplitudeNorm > 0.01) {
+                columnData.push({
+                    freq: i,
+                    amplitude: amplitudeNorm,
+                    color: `hsl(${Math.round(hue)}, 100%, 50%)`,
+                    panX: data.angles ? data.angles[i] : 0
+                });
+            }
         }
         
-        this.updateSpectralLighting(columnData);
+        if (columnData.length > 0) {
+            this.updateSpectralLighting(columnData);
+        } else {
+            document.documentElement.style.setProperty('--glass-specular', 'transparent');
+        }
     }
     
-    /**
-     * Updates the spectral specular highlights on panels based on audio
-     * columnData: [{ freq, amplitude: 0..1, color: 'hslString', panX: -1..1 }]
-     */
     updateSpectralLighting(columnData) {
-        if (this.elements.length === 0) return;
-
-        // 1. Find top loud columns
+        // Выбираем только 3 самых громких пика для стабильности картинки
         const topColumns = columnData
             .sort((a, b) => b.amplitude - a.amplitude)
-            .slice(0, 5);
-
-        if (topColumns.length === 0) {
-             document.documentElement.style.setProperty('--glass-specular', 'transparent');
-             return;
-        }
-
-        // DEBUG: Check top columns
-        // if (Math.random() < 0.01) console.log('[LightingManager] Top columns:', topColumns);
-
-        const winW = window.innerWidth;
-        const winH = window.innerHeight;
+            .slice(0, 3);
 
         this.elements.forEach(panel => {
-            const rect = panel.getBoundingClientRect();
-            const panelCenterX = (rect.left + rect.width/2) / winW;
-            const panelCenterY = (rect.top + rect.height/2) / winH;
+            const cache = this.rectCache.get(panel);
+            if (!cache) return;
 
-            let totalIntensity = 0;
-            let dominantColor = 'rgba(255,255,255,0.1)';
-            let maxAmp = 0;
-            let dominantPanX = 0;
+            let maxWeight = 0;
+            let dominantCol = null;
 
-            // Simplified: Find the column that affects this panel the most
             topColumns.forEach(col => {
                 const colScreenX = (col.panX + 1) / 2;
-                const dx = colScreenX - panelCenterX;
-                const dy = 0.5 - panelCenterY;
-                const dist = Math.sqrt(dx*dx + dy*dy) + 0.15;
-
-                const intensity = (col.amplitude * 0.8 + 0.2) / (dist * dist);
+                const dx = colScreenX - cache.centerX;
+                const dy = 0.5 - cache.centerY;
+                const dist = Math.sqrt(dx*dx + dy*dy) + 0.2;
+                const weight = col.amplitude / (dist * dist);
                 
-                if (intensity > maxAmp) {
-                    maxAmp = intensity;
-                    dominantColor = col.color;
-                    dominantPanX = col.panX;
+                if (weight > maxWeight) {
+                    maxWeight = weight;
+                    dominantCol = col;
                 }
-                totalIntensity += intensity;
             });
 
-            // Use glassSpecularManager to apply the glint
-            // Pass 'totalIntensity' as mix factor (clamped)
-            // BOOST SENSITIVITY: Multiplied by 3.0 to ensure visibility even at lower volumes
-            const mix = Math.min(1, totalIntensity * 3.0);
-            
-            // DEBUG: Check mix calculation for one element
-            if (mix > 0.1 && Math.random() < 0.001) {
-               console.log('[LightingManager] Applying glint. Mix:', mix.toFixed(2), 'Color:', dominantColor, 'Pan:', dominantPanX);
+            if (dominantCol && maxWeight > 0.05) {
+                // Множитель 5.0 для сочности бликов
+                const mix = Math.min(1, maxWeight * 5.0);
+                glassSpecularManager.applyGlint(panel, mix, dominantCol.color, dominantCol.panX);
+            } else {
+                panel.style.setProperty('--glass-specular', 'transparent');
             }
-
-            glassSpecularManager.applyGlint(panel, mix, dominantColor, dominantPanX);
         });
     }
 
-    // Compatibility method if called externally
     updateSpectralColors(leftHighestColor, rightHighestColor) {
-        // This method is kept for API compatibility but logic is now handled via eventBus -> updateSpectralLighting
-        // We can use it to force set specific colors if needed
-        const leftColor = typeof leftHighestColor === 'string' ? leftHighestColor : 'rgba(255,255,255,0.1)';
-        const rightColor = typeof rightHighestColor === 'string' ? rightHighestColor : 'rgba(255,255,255,0.1)';
-        
-        // Apply global variables
+        const leftColor = typeof leftHighestColor === 'string' ? leftHighestColor : 'rgba(255, 255, 255, 0.1)';
+        const rightColor = typeof rightHighestColor === 'string' ? rightHighestColor : 'rgba(255, 255, 255, 0.1)';
         document.documentElement.style.setProperty('--spectral-color-left', leftColor);
         document.documentElement.style.setProperty('--spectral-color-right', rightColor);
     }

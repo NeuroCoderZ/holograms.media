@@ -1,0 +1,45 @@
+name: 'Sync Knowledge Base'
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 'Checkout code'
+      uses: actions/checkout@v3
+
+    - name: 'Set up Node.js'
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: 'Set up Python'
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: 'Install Dependencies'
+      run: |
+        npm install
+        pip install -r requirements.txt
+        
+    - name: '1. Generate Context'
+      run: npx repomix
+      
+    - name: '2. Sanitize Context'
+      run: python scripts/sanitize_repo.py
+      
+    - name: '3. Sync Vector DB'
+      env:
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        ASTRA_DB_APPLICATION_TOKEN: ${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}
+        ASTRA_DB_ID: ${{ secrets.ASTRA_DB_ID }}
+        ASTRA_DB_REGION: ${{ secrets.ASTRA_DB_REGION }}
+        ASTRA_DATABASE_URL: ${{ secrets.ASTRA_DATABASE_URL }}
+      run: python scripts/sync_knowledge_base.py
