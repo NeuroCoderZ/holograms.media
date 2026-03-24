@@ -6,9 +6,15 @@ on:
       - dev
   workflow_dispatch:
 
+# Prevents multiple simultaneous syncs and cancels outdated runs
+concurrency:
+  group: sync-knowledge-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
     - name: 'Checkout code'

@@ -1,8 +1,8 @@
 /**
  * EyeLoader.js
  * Продвинутая Canvas-анимация «Пробуждение» (REM wake-up).
- * Версия 2.5: Эффект «Прошмыгивания» (Scuttling Eye).
- * Глаз интенсивно проносится через экран в случайных направлениях.
+ * Версия 2.6: Интенсивное «Прошмыгивание» (Fast Scuttling).
+ * Глаз стремительно проносится через экран, имитируя быстрые фазы сознания.
  */
 
 export class EyeLoader {
@@ -44,14 +44,14 @@ export class EyeLoader {
         this.height = window.innerHeight;
         
         // Scuttle state
-        this.eyeX = -200;
-        this.eyeY = -200;
+        this.eyeX = -300;
+        this.eyeY = -300;
         this.vx = 0;
         this.vy = 0;
         this.isVisible = false;
         
         this.lastScuttleTime = 0;
-        this.scuttleCooldown = 200; // ms between scuttles
+        this.scuttleCooldown = 150; // Уменьшено для интенсивности
         
         window.addEventListener('resize', () => this.resize());
         this.resize();
@@ -69,13 +69,13 @@ export class EyeLoader {
         if (isUpper) {
             lid.style.top = '0';
             lid.style.transformOrigin = 'top';
-            lid.style.background = 'linear-gradient(to bottom, rgba(5,5,10,0.95), rgba(15,15,25,0.85))';
-            lid.style.borderBottom = '1px solid rgba(255,255,255,0.15)';
+            lid.style.background = 'linear-gradient(to bottom, rgba(5,5,10,0.98), rgba(15,15,25,0.9))';
+            lid.style.borderBottom = '1px solid rgba(255,255,255,0.2)';
         } else {
             lid.style.bottom = '0';
             lid.style.transformOrigin = 'bottom';
-            lid.style.background = 'linear-gradient(to top, rgba(5,5,10,0.95), rgba(15,15,25,0.85))';
-            lid.style.borderTop = '1px solid rgba(255,255,255,0.15)';
+            lid.style.background = 'linear-gradient(to top, rgba(5,5,10,0.98), rgba(15,15,25,0.9))';
+            lid.style.borderTop = '1px solid rgba(255,255,255,0.2)';
         }
         
         return lid;
@@ -90,16 +90,18 @@ export class EyeLoader {
 
     start() {
         document.body.appendChild(this.container);
-        console.log('[EyeLoader] v2.5: Scuttle mode activated.');
+        console.log('[EyeLoader] v2.6: Intensive Scuttle mode activated.');
         this.initScuttle();
         requestAnimationFrame(() => this.loop());
     }
 
     initScuttle() {
-        // Выбираем случайную сторону появления
         const side = Math.floor(Math.random() * 4);
-        const margin = 150;
-        const speed = Math.max(this.width, this.height) * 0.04; // Довольно быстро
+        const margin = 200;
+        // УВЕЛИЧЕННАЯ СКОРОСТЬ: 6% от экрана за кадр
+        const speedBase = Math.max(this.width, this.height) * 0.065; 
+        const speedVar = (Math.random() * 0.5 + 0.8); // 80% to 130% variation
+        const speed = speedBase * speedVar;
 
         switch(side) {
             case 0: // Top
@@ -138,7 +140,6 @@ export class EyeLoader {
     }
 
     loop() {
-        // Очистка чёрным
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0, 0, this.width, this.height);
         
@@ -149,15 +150,14 @@ export class EyeLoader {
                 
                 this.drawEye(this.eyeX, this.eyeY, 1.0);
                 
-                // Проверка выхода за границы
-                const margin = 200;
+                const margin = 300;
                 if (this.eyeX < -margin || this.eyeX > this.width + margin || 
                     this.eyeY < -margin || this.eyeY > this.height + margin) {
                     this.isVisible = false;
                     this.lastScuttleTime = performance.now();
                 }
             } else {
-                // Ожидание перед следующим "прошмыгиванием"
+                // Интенсивная частота
                 if (performance.now() - this.lastScuttleTime > this.scuttleCooldown) {
                     this.initScuttle();
                 }
@@ -177,37 +177,39 @@ export class EyeLoader {
     }
 
     drawEye(x, y, alpha) {
-        const rIris = Math.min(this.width, this.height) * 0.15;
+        // Уменьшенный размер для "быстрого" ощущения (12% вместо 15%)
+        const rIris = Math.min(this.width, this.height) * 0.12;
         const rPupil = rIris * 0.45;
 
         this.ctx.save();
         this.ctx.globalAlpha = alpha;
         
-        // Радужка
+        // Стеклянная радужка
         const gradIris = this.ctx.createRadialGradient(x, y, 0, x, y, rIris);
         gradIris.addColorStop(0, '#ffffff');
-        gradIris.addColorStop(0.2, '#e0e0ff');
-        gradIris.addColorStop(0.6, '#808099');
-        gradIris.addColorStop(1, '#202033');
+        gradIris.addColorStop(0.15, '#f0f0ff');
+        gradIris.addColorStop(0.5, '#a0a0cc');
+        gradIris.addColorStop(1, '#303050');
 
         this.ctx.beginPath();
         this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
         this.ctx.fillStyle = gradIris;
         this.ctx.fill();
 
-        // Зрачок (с нативным блюром)
+        // Зрачок
         this.ctx.save();
-        this.ctx.filter = 'blur(2px)';
+        this.ctx.filter = 'blur(1.5px)';
         this.ctx.beginPath();
         this.ctx.arc(x, y, rPupil, 0, Math.PI * 2);
         this.ctx.fillStyle = '#000000';
         this.ctx.fill();
         this.ctx.restore();
 
-        // Блик
+        // Динамический блик (смещается в сторону движения)
+        const glintOffset = 0.3 * rIris;
         this.ctx.beginPath();
-        this.ctx.arc(x - rIris * 0.3, y - rIris * 0.3, rPupil * 0.4, 0, Math.PI * 2);
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        this.ctx.arc(x - glintOffset, y - glintOffset, rPupil * 0.45, 0, Math.PI * 2);
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
         this.ctx.fill();
 
         this.ctx.restore();
