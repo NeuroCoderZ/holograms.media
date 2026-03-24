@@ -1,4 +1,8 @@
 /* Authentication Section Styles */
+#accountSettingsButton {
+  display: none !important;
+}
+
 #authSection {
   display: flex;
   flex-direction: column;
