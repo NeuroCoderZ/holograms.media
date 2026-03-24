@@ -183,44 +183,54 @@ export class LightingManager {
     }
     
     updateSpectralLighting(columnData) {
-        // 5 самых громких пика для насыщенных бликов
+        // 3 самых громких пика
         const topColumns = columnData
             .sort((a, b) => b.amplitude - a.amplitude)
-            .slice(0, 5);
+            .slice(0, 3);
 
-        let glintCount = 0;
+        if (topColumns.length === 0 || topColumns[0].amplitude < 0.05) {
+            this._hideGlintOverlay();
+            return;
+        }
 
-        this.elements.forEach(panel => {
-            const cache = this.rectCache.get(panel);
-            if (!cache) return;
+        // Берём самый громкий столбец для overlay
+        const dominant = topColumns[0];
+        const brightColor = glassSpecularManager.getBrightColor(dominant.color);
+        const glintX = Math.max(5, Math.min(95, (dominant.panX + 1) / 2 * 100));
+        const intensity = Math.min(1, dominant.amplitude * 2.5);
+        const spread = Math.round(25 + 35 * intensity);
 
-            let maxWeight = 0;
-            let dominantCol = null;
+        // Рендерим блик в overlay (поверх панелей с opacity 0.4)
+        this._showGlintOverlay(
+            `radial-gradient(ellipse at ${glintX.toFixed(0)}% 45%, ${brightColor} 0%, transparent ${spread}%)`
+        );
 
-            topColumns.forEach(col => {
-                const colScreenX = (col.panX + 1) / 2;
-                const dx = colScreenX - cache.centerX;
-                const dy = 0.5 - cache.centerY;
-                const dist = Math.sqrt(dx*dx + dy*dy) + 0.15;
-                const weight = col.amplitude / (dist * dist);
-                
-                if (weight > maxWeight) {
-                    maxWeight = weight;
-                    dominantCol = col;
-                }
-            });
+        // Также обновляем CSS переменные на панелях для mouse-specular
+        // (spectral --glass-specular теперь в overlay, не на панелях)
+        if (Math.random() < 0.005) {
+            console.log(`[GLINT] overlay color=${dominant.color} pos=${glintX.toFixed(0)}% amp=${dominant.amplitude.toFixed(3)}`);
+        }
+    }
 
-            if (dominantCol && maxWeight > 0.01) {
-                const mix = Math.min(1, maxWeight * 8.0);
-                glassSpecularManager.applyGlint(panel, mix, dominantCol.color, dominantCol.panX);
-                glintCount++;
-            } else {
-                panel.style.setProperty('--glass-specular', 'transparent');
-            }
-        });
+    _showGlintOverlay(gradient) {
+        if (!this._glintSpot) {
+            this._glintSpot = document.getElementById('spectral-glint-spot');
+            this._glintOverlay = document.getElementById('spectral-glint-overlay');
+        }
+        if (this._glintSpot && this._glintOverlay) {
+            this._glintOverlay.style.display = 'block';
+            this._glintSpot.style.background = gradient;
+        }
+    }
 
-        if (glintCount > 0 && Math.random() < 0.005) {
-            console.log(`[GLINT] applied to ${glintCount} elements, top amp=${topColumns[0]?.amplitude.toFixed(3)}`);
+    _hideGlintOverlay() {
+        if (!this._glintSpot) {
+            this._glintSpot = document.getElementById('spectral-glint-spot');
+            this._glintOverlay = document.getElementById('spectral-glint-overlay');
+        }
+        if (this._glintSpot && this._glintOverlay) {
+            this._glintOverlay.style.display = 'none';
+            this._glintSpot.style.background = 'transparent';
         }
     }
 
