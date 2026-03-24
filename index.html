@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.206 - fix: ultra-performance instancing, glint visibility boost, eye contrast v0.20.206");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.207 - fix: AstraDB connection, pure emissive columns, per-element glints v0.20.207");</script>
   <!-- DEPLOY_VERSION_END -->
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
@@ -573,11 +573,7 @@
     </div>
   </div>
 
-  <!-- Спектральный слой бликов (поверх панелей с opacity 0.4) -->
-  <div id="spectral-glint-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:1003;display:none;">
-    <div id="spectral-glint-spot" style="position:absolute;width:100%;height:100%;transition:background 0.12s ease-out;"></div>
-  </div>
-
+  <!-- Спектральный слой бликов (удален в пользу индивидуальных бликов на элементах) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
   <script type="module" src="/js/main.js"></script>
 
