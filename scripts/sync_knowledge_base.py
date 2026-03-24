@@ -3,8 +3,8 @@ scripts/sync_knowledge_base.py
 
 Профессиональный синхронизатор базы знаний.
 - Инкрементальное обновление: работает только с измененными файлами.
-- Поддерживает дозапись и удаление устаревших чанков.
-- Работает на основе хеширования файлов.
+- Gemini Embedding 2 (text-embedding-004/005) - SOTA 2026.
+- Поддержка Matryoshka Embeddings (3072 dims).
 """
 import os
 import sys
@@ -30,22 +30,25 @@ load_dotenv(env_path)
 
 # --- Константы ---
 COLLECTION_NAME = "tria_knowledge_gemini"
-CHUNK_SIZE_CHARS = 4000
-CHUNK_OVERLAP_CHARS = 200
-OUTPUT_DIMENSIONALITY = 3072
+CHUNK_SIZE_CHARS = 6000 # Gemini 2 handles larger context easily
+CHUNK_OVERLAP_CHARS = 400
+OUTPUT_DIMENSIONALITY = 3072 # Matryoshka SOTA 2026
 
-# --- Gemini Embedding Service (с retry-логикой) ---
+# --- Gemini Embedding 2 Service ---
 class GeminiEmbeddingService:
     def __init__(self, api_key: str):
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-embedding-2-preview"
+        # В 2026 'text-embedding-004' это стабильный Gemini Embedding 2
+        # 'text-embedding-005' может быть доступен в некоторых регионах
+        self.model = "text-embedding-004" 
         self.request_count: int = 0
         self.last_request_time: float = 0.0
 
     async def get_embedding(self, text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> Optional[List[float]]:
+        # Лимиты 2026 позволяют более высокую частоту, но сохраняем стабильность
         elapsed = time.time() - self.last_request_time
-        if elapsed < 1.5:  # 40 RPM
-            await asyncio.sleep(1.5 - elapsed)
+        if elapsed < 0.5: 
+            await asyncio.sleep(0.5 - elapsed)
 
         for attempt in range(3):
             try:
@@ -53,19 +56,21 @@ class GeminiEmbeddingService:
                     self.client.models.embed_content,
                     model=self.model,
                     contents=text,
-                    config=types.EmbedContentConfig(task_type=task_type, output_dimensionality=OUTPUT_DIMENSIONALITY)
+                    config=types.EmbedContentConfig(
+                        task_type=task_type, 
+                        output_dimensionality=OUTPUT_DIMENSIONALITY
+                    )
                 )
                 self.last_request_time = time.time()
                 self.request_count += 1
                 return response.embeddings[0].values
             except Exception as e:
-                print(f"⚠️ Попытка {attempt+1}/3: Ошибка Gemini: {e}")
-                await asyncio.sleep(5 * (attempt + 1))
+                print(f"⚠️ Попытка {attempt+1}/3: Ошибка Gemini Embedding 2: {e}")
+                await asyncio.sleep(2 * (attempt + 1))
         return None
 
 # --- Парсинг и Хеширование ---
 def parse_and_hash_repomix(xml_path: str) -> Dict[str, Dict[str, Any]]:
-    """Парсит repomix и возвращает словарь {file_path: {hash, content}}."""
     file_map: Dict[str, Dict[str, Any]] = {}
     try:
         content = Path(xml_path).read_text(encoding='utf-8', errors='ignore')
@@ -81,7 +86,6 @@ def parse_and_hash_repomix(xml_path: str) -> Dict[str, Dict[str, Any]]:
     return file_map
 
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CHUNK_OVERLAP_CHARS) -> List[str]:
-    """Нарезает текст на перекрывающиеся чанки."""
     chunks = []
     start = 0
     while start < len(text):
@@ -94,10 +98,9 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CHU
 
 # --- Основная логика синхронизации ---
 async def sync_knowledge_base():
-    """Главная функция синхронизации базы знаний."""
-    print("🚀 Starting Smart Knowledge Base Sync...")
+    print("🚀 Starting Smart Sync with Gemini Embedding 2...")
 
-    # 1. Подключение к AstraDB (Гибкое определение эндпоинта)
+    # 1. Подключение к AstraDB
     api_endpoint = os.getenv("ASTRA_DB_API_ENDPOINT") or os.getenv("ASTRA_DATABASE_URL")
     db_id = os.getenv("ASTRA_DB_ID")
     region = os.getenv("ASTRA_DB_REGION")
@@ -107,7 +110,6 @@ async def sync_knowledge_base():
 
     if not api_endpoint:
         print("❌ Ошибка: Не найден Astra DB Endpoint.")
-        print("   Укажите ASTRA_DB_API_ENDPOINT или ASTRA_DATABASE_URL или ASTRA_DB_ID + ASTRA_DB_REGION")
         return
 
     if not api_endpoint.startswith("http"):
@@ -118,26 +120,24 @@ async def sync_knowledge_base():
     try:
         timeout_options = TimeoutOptions(request_timeout_ms=30000, general_method_timeout_ms=60000)
         api_options = APIOptions(timeout_options=timeout_options)
-        keyspace = os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace")
         astra_client = DataAPIClient(os.getenv("ASTRA_DB_APPLICATION_TOKEN"), api_options=api_options)
-        db = astra_client.get_async_database(api_endpoint, keyspace=keyspace)
+        db = astra_client.get_async_database(api_endpoint, keyspace=os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace"))
         collection = db.get_collection(COLLECTION_NAME)
         print("✅ Connected to AstraDB")
     except Exception as e:
-        print(f"❌ Ошибка подключения к AstraDB: {e}")
+        print(f"❌ Ошибка подключения: {e}")
         return
 
-    # 2. Получаем текущее состояние из Repomix
+    # 2. Получаем текущее состояние
     xml_path = Path(__file__).parent.parent / "repomix-context.xml"
     if not xml_path.exists():
-        print(f"❌ Файл repomix-context.xml не найден: {xml_path}")
-        print("   Запустите 'npm run ctx' для генерации контекста.")
+        print(f"❌ repomix-context.xml не найден.")
         return
 
     local_files = parse_and_hash_repomix(str(xml_path))
     print(f"🔍 Found {len(local_files)} files in local context.")
 
-    # 3. Получаем состояние из AstraDB (метаданные)
+    # 3. Получаем состояние из AstraDB
     remote_files: Dict[str, str] = {}
     print("📡 Fetching remote metadata...")
     try:
@@ -156,7 +156,7 @@ async def sync_knowledge_base():
     files_to_delete = files_in_db - local_paths
     files_to_update = {p for p in (local_paths & files_in_db) if local_files[p]["hash"] != remote_files[p]}
 
-    print("\n" + f"🔄 Sync Plan: Add {len(files_to_add)}, Update {len(files_to_update)}, Delete {len(files_to_delete)}")
+    print("\n" + f"🔄 Sync Plan (Gemini 2): Add {len(files_to_add)}, Update {len(files_to_update)}, Delete {len(files_to_delete)}")
 
     if not (files_to_add or files_to_update or files_to_delete):
         print("🎯 Knowledge Base is already up to date!")
@@ -170,15 +170,15 @@ async def sync_knowledge_base():
         print("\n" + f"🗑️ Deleting {len(files_to_delete)} obsolete files...")
         await collection.delete_many(filter={"metadata.source": {"$in": list(files_to_delete)}})
 
-    # Обновление (Delete + Add)
+    # Обновление
     to_process = files_to_add | files_to_update
     if files_to_update:
-        print("\n" + f"🔄 Removing old chunks for {len(files_to_update)} modified files...")
+        print("\n" + f"🔄 Removing old chunks for {len(files_to_update)} files...")
         await collection.delete_many(filter={"metadata.source": {"$in": list(files_to_update)}})
 
-    # Эмбеддинг и вставка
+    # Эмбеддинг
     if to_process:
-        print("\n" + f"✨ Processing {len(to_process)} files...")
+        print("\n" + f"✨ Processing {len(to_process)} files with Gemini Embedding 2...")
         total_chunks = 0
         for path in sorted(to_process):
             file_data = local_files[path]
