@@ -1,8 +1,7 @@
 /**
  * EyeLoader.js
  * Продвинутая Canvas-анимация «Пробуждение» (REM wake-up).
- * Версия 2.6: Интенсивное «Прошмыгивание» (Fast Scuttling).
- * Глаз стремительно проносится через экран, имитируя быстрые фазы сознания.
+ * Версия 2.7: Исправлена ошибка triggerSaccade, оптимизирована интенсивность.
  */
 
 export class EyeLoader {
@@ -29,7 +28,7 @@ export class EyeLoader {
         this.canvas.style.height = '100%';
         this.canvas.style.zIndex = '10';
         
-        // Веки (Плоские панели)
+        // Веки
         this.upperLid = this.createEyelid(true);
         this.lowerLid = this.createEyelid(false);
 
@@ -51,7 +50,7 @@ export class EyeLoader {
         this.isVisible = false;
         
         this.lastScuttleTime = 0;
-        this.scuttleCooldown = 150; // Уменьшено для интенсивности
+        this.scuttleCooldown = 150; 
         
         window.addEventListener('resize', () => this.resize());
         this.resize();
@@ -66,17 +65,16 @@ export class EyeLoader {
         lid.style.zIndex = '20';
         lid.style.transition = 'transform 0.8s cubic-bezier(0.77, 0, 0.175, 1)';
         
-        if (isUpper) {
-            lid.style.top = '0';
-            lid.style.transformOrigin = 'top';
-            lid.style.background = 'linear-gradient(to bottom, rgba(5,5,10,0.98), rgba(15,15,25,0.9))';
-            lid.style.borderBottom = '1px solid rgba(255,255,255,0.2)';
-        } else {
-            lid.style.bottom = '0';
-            lid.style.transformOrigin = 'bottom';
-            lid.style.background = 'linear-gradient(to top, rgba(5,5,10,0.98), rgba(15,15,25,0.9))';
-            lid.style.borderTop = '1px solid rgba(255,255,255,0.2)';
-        }
+        const grad = isUpper ? 
+            'linear-gradient(to bottom, rgba(5,5,10,0.98), rgba(15,15,25,0.9))' :
+            'linear-gradient(to top, rgba(5,5,10,0.98), rgba(15,15,25,0.9))';
+        
+        lid.style.top = isUpper ? '0' : 'auto';
+        lid.style.bottom = isUpper ? 'auto' : '0';
+        lid.style.transformOrigin = isUpper ? 'top' : 'bottom';
+        lid.style.background = grad;
+        lid.style.borderBottom = isUpper ? '1px solid rgba(255,255,255,0.2)' : 'none';
+        lid.style.borderTop = isUpper ? 'none' : '1px solid rgba(255,255,255,0.2)';
         
         return lid;
     }
@@ -89,8 +87,10 @@ export class EyeLoader {
     }
 
     start() {
+        if (this.container.parentNode) return;
         document.body.appendChild(this.container);
-        console.log('[EyeLoader] v2.6: Intensive Scuttle mode activated.');
+        console.log('[EyeLoader] v2.7: Scuttle mode active.');
+        this.phase = 'scuttle';
         this.initScuttle();
         requestAnimationFrame(() => this.loop());
     }
@@ -98,43 +98,21 @@ export class EyeLoader {
     initScuttle() {
         const side = Math.floor(Math.random() * 4);
         const margin = 200;
-        // УВЕЛИЧЕННАЯ СКОРОСТЬ: 6% от экрана за кадр
         const speedBase = Math.max(this.width, this.height) * 0.065; 
-        const speedVar = (Math.random() * 0.5 + 0.8); // 80% to 130% variation
-        const speed = speedBase * speedVar;
+        const speed = speedBase * (Math.random() * 0.5 + 0.8);
 
         switch(side) {
-            case 0: // Top
-                this.eyeX = Math.random() * this.width;
-                this.eyeY = -margin;
-                this.vx = (Math.random() - 0.5) * speed;
-                this.vy = speed;
-                break;
-            case 1: // Right
-                this.eyeX = this.width + margin;
-                this.eyeY = Math.random() * this.height;
-                this.vx = -speed;
-                this.vy = (Math.random() - 0.5) * speed;
-                break;
-            case 2: // Bottom
-                this.eyeX = Math.random() * this.width;
-                this.eyeY = this.height + margin;
-                this.vx = (Math.random() - 0.5) * speed;
-                this.vy = -speed;
-                break;
-            case 3: // Left
-                this.eyeX = -margin;
-                this.eyeY = Math.random() * this.height;
-                this.vx = speed;
-                this.vy = (Math.random() - 0.5) * speed;
-                break;
+            case 0: this.eyeX = Math.random() * this.width; this.eyeY = -margin; this.vx = (Math.random() - 0.5) * speed; this.vy = speed; break;
+            case 1: this.eyeX = this.width + margin; this.eyeY = Math.random() * this.height; this.vx = -speed; this.vy = (Math.random() - 0.5) * speed; break;
+            case 2: this.eyeX = Math.random() * this.width; this.eyeY = this.height + margin; this.vx = (Math.random() - 0.5) * speed; this.vy = -speed; break;
+            case 3: this.eyeX = -margin; this.eyeY = Math.random() * this.height; this.vx = speed; this.vy = (Math.random() - 0.5) * speed; break;
         }
         this.isVisible = true;
     }
 
     setProgress(p) {
         this.progress = p;
-        if (this.progress >= 100) {
+        if (this.progress >= 100 && this.phase !== 'open') {
             this.phase = 'open';
         }
     }
@@ -147,7 +125,6 @@ export class EyeLoader {
             if (this.isVisible) {
                 this.eyeX += this.vx;
                 this.eyeY += this.vy;
-                
                 this.drawEye(this.eyeX, this.eyeY, 1.0);
                 
                 const margin = 300;
@@ -156,47 +133,34 @@ export class EyeLoader {
                     this.isVisible = false;
                     this.lastScuttleTime = performance.now();
                 }
-            } else {
-                // Интенсивная частота
-                if (performance.now() - this.lastScuttleTime > this.scuttleCooldown) {
-                    this.initScuttle();
-                }
+            } else if (performance.now() - this.lastScuttleTime > this.scuttleCooldown) {
+                this.initScuttle();
             }
             requestAnimationFrame(() => this.loop());
         } 
         else if (this.phase === 'open') {
             this.upperLid.style.transform = 'translateY(-100%)';
             this.lowerLid.style.transform = 'translateY(100%)';
-            
             setTimeout(() => {
-                if (this.container.parentNode) {
-                    this.container.parentNode.removeChild(this.container);
-                }
+                if (this.container.parentNode) this.container.parentNode.removeChild(this.container);
             }, 900);
         }
     }
 
     drawEye(x, y, alpha) {
-        // Уменьшенный размер для "быстрого" ощущения (12% вместо 15%)
         const rIris = Math.min(this.width, this.height) * 0.12;
         const rPupil = rIris * 0.45;
-
         this.ctx.save();
         this.ctx.globalAlpha = alpha;
-        
-        // Стеклянная радужка
         const gradIris = this.ctx.createRadialGradient(x, y, 0, x, y, rIris);
         gradIris.addColorStop(0, '#ffffff');
         gradIris.addColorStop(0.15, '#f0f0ff');
         gradIris.addColorStop(0.5, '#a0a0cc');
         gradIris.addColorStop(1, '#303050');
-
         this.ctx.beginPath();
         this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
         this.ctx.fillStyle = gradIris;
         this.ctx.fill();
-
-        // Зрачок
         this.ctx.save();
         this.ctx.filter = 'blur(1.5px)';
         this.ctx.beginPath();
@@ -204,14 +168,10 @@ export class EyeLoader {
         this.ctx.fillStyle = '#000000';
         this.ctx.fill();
         this.ctx.restore();
-
-        // Динамический блик (смещается в сторону движения)
-        const glintOffset = 0.3 * rIris;
         this.ctx.beginPath();
-        this.ctx.arc(x - glintOffset, y - glintOffset, rPupil * 0.45, 0, Math.PI * 2);
+        this.ctx.arc(x - 0.3 * rIris, y - 0.3 * rIris, rPupil * 0.45, 0, Math.PI * 2);
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
         this.ctx.fill();
-
         this.ctx.restore();
     }
 }
