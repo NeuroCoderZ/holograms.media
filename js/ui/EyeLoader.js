@@ -16,6 +16,7 @@ export class EyeLoader {
         this.container.style.height = '100vh';
         this.container.style.zIndex = '99999';
         this.container.style.pointerEvents = 'none';
+        this.container.style.background = '#000';
 
         // Канвас для глаза
         this.canvas = document.createElement('canvas');
@@ -60,25 +61,24 @@ export class EyeLoader {
         lid.style.position = 'absolute';
         lid.style.left = '0';
         lid.style.width = '100%';
-        lid.style.height = '50vh'; // Exactly half screen
+        lid.style.height = '50vh';
         lid.style.zIndex = '20';
-        lid.style.backgroundColor = '#000000'; // Match body background for seamless look
-        // Optional: Glass effect if desired, but brief says "invisible junction"
-        // To make junction invisible, they must be same color.
-        // If we want glass, we need a background behind them.
-        // Brief: "Стык верхнего и нижнего века в закрытом состоянии: линия невидима — оба века того же цвета что и фон."
-        // So Black #000000.
         
-        lid.style.transition = 'transform 0.1s linear';
-        lid.style.borderBottom = isUpper ? '1px solid transparent' : 'none';
-        lid.style.borderTop = !isUpper ? '1px solid transparent' : 'none';
+        // Стеклянный эффект (как у панелей)
+        lid.style.backdropFilter = 'blur(25px) saturate(1.8)';
+        lid.style.webkitBackdropFilter = 'blur(25px) saturate(1.8)';
+        lid.style.transition = 'transform 0.8s cubic-bezier(0.77, 0, 0.175, 1)';
         
         if (isUpper) {
             lid.style.top = '0';
             lid.style.transformOrigin = 'top';
+            lid.style.background = 'linear-gradient(to bottom, rgba(15,15,20,0.95), rgba(25,25,30,0.92))';
+            lid.style.borderBottom = '1px solid rgba(255,255,255,0.15)';
         } else {
             lid.style.bottom = '0';
             lid.style.transformOrigin = 'bottom';
+            lid.style.background = 'linear-gradient(to top, rgba(15,15,20,0.95), rgba(25,25,30,0.92))';
+            lid.style.borderTop = '1px solid rgba(255,255,255,0.15)';
         }
         
         return lid;
@@ -93,10 +93,9 @@ export class EyeLoader {
 
     start() {
         document.body.appendChild(this.container);
-        console.log('[EyeLoader] started, container in DOM:', !!this.container.parentNode, 'canvas size:', this.canvas.width, 'x', this.canvas.height);
+        console.log('[EyeLoader] Пробуждение...', 'размер:', this.canvas.width, 'x', this.canvas.height);
         this.phase = 'alive';
         
-        // Saccade loop
         this.saccadeInterval = setInterval(() => this.triggerSaccade(), 1500 + Math.random() * 1000);
         this.triggerSaccade();
 
@@ -105,7 +104,6 @@ export class EyeLoader {
 
     triggerSaccade() {
         if (this.phase !== 'alive') return;
-        // Random position within 10% of center
         const range = Math.min(this.width, this.height) * 0.15;
         this.targetX = (Math.random() - 0.5) * range;
         this.targetY = (Math.random() - 0.5) * range;
@@ -113,14 +111,11 @@ export class EyeLoader {
 
     setProgress(p) {
         this.progress = p;
-        
-        // Phase Logic
         if (this.progress >= 0 && this.progress < 80) {
             this.phase = 'alive';
         } else if (this.progress >= 80 && this.progress < 90) {
             if (this.phase !== 'return') {
                 this.phase = 'return';
-                // Set target to center
                 this.targetX = 0;
                 this.targetY = 0;
             }
@@ -131,9 +126,8 @@ export class EyeLoader {
         } else if (this.progress >= 96 && this.progress < 100) {
             if (this.phase !== 'fly') {
                 this.phase = 'fly';
-                // Pick random direction for fly away
                 const angle = Math.random() * Math.PI * 2;
-                const speed = Math.max(this.width, this.height) * 0.1; // Fast speed per frame
+                const speed = Math.max(this.width, this.height) * 0.12;
                 this.flyDirX = Math.cos(angle) * speed;
                 this.flyDirY = Math.sin(angle) * speed;
             }
@@ -144,19 +138,15 @@ export class EyeLoader {
 
     loop() {
         this.ctx.clearRect(0, 0, this.width, this.height);
-        
         const centerX = this.width / 2;
         const centerY = this.height / 2;
 
-        // Logic per phase
         if (this.phase === 'alive') {
-            // Smooth lerp to target
             this.eyeX += (this.targetX - this.eyeX) * 0.1;
             this.eyeY += (this.targetY - this.eyeY) * 0.1;
             this.drawEye(centerX + this.eyeX, centerY + this.eyeY, 1.0);
         } 
         else if (this.phase === 'return') {
-            // Ease out to 0,0
             this.eyeX += (0 - this.eyeX) * 0.15;
             this.eyeY += (0 - this.eyeY) * 0.15;
             this.drawEye(centerX + this.eyeX, centerY + this.eyeY, 1.0);
@@ -170,18 +160,16 @@ export class EyeLoader {
             this.drawEye(centerX + this.eyeX, centerY + this.eyeY, 1.0);
         }
         else if (this.phase === 'open') {
-            // Open eyelids
-            this.upperLid.style.transform = `translateY(-100%)`;
-            this.lowerLid.style.transform = `translateY(100%)`;
+            this.upperLid.style.transform = 'translateY(-100%)';
+            this.lowerLid.style.transform = 'translateY(100%)';
             
-            // Remove container after transition
             setTimeout(() => {
                 if (this.container.parentNode) {
                     this.container.parentNode.removeChild(this.container);
                 }
                 if (this.saccadeInterval) clearInterval(this.saccadeInterval);
-            }, 500);
-            return; // Stop loop
+            }, 900);
+            return;
         }
 
         requestAnimationFrame(() => this.loop());
@@ -189,45 +177,68 @@ export class EyeLoader {
 
     drawEye(x, y, alpha) {
         const rIris = Math.min(this.width, this.height) * 0.12;
-        const rPupil = rIris * 0.35;
+        const rPupil = rIris * 0.38;
 
         this.ctx.save();
         this.ctx.globalAlpha = alpha;
         
-        // Clear canvas
-        this.ctx.clearRect(0, 0, this.width, this.height);
+        // --- 1. Свечение (Halo) ---
+        const glowGrad = this.ctx.createRadialGradient(x, y, rIris * 0.8, x, y, rIris * 1.5);
+        glowGrad.addColorStop(0, 'rgba(200, 200, 255, 0.15)');
+        glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, rIris * 1.5, 0, Math.PI * 2);
+        this.ctx.fillStyle = glowGrad;
+        this.ctx.fill();
 
-        // Draw Eye White (Sclera) - Optional, or just the Iris?
-        // Current design seems to be just an Iris floating?
-        // "Flat eyelids" implies some shape, but code draws arc.
-        
-        // 1. Iris - Brighter Grayscale for visibility on black
-        const gradIris = this.ctx.createRadialGradient(x, y, rPupil * 0.5, x, y, rIris);
-        gradIris.addColorStop(0, '#e0e0e0');   // Very Light center
-        gradIris.addColorStop(0.4, '#888888'); // Mid gray
-        gradIris.addColorStop(0.8, '#444444'); // Darker gray
-        gradIris.addColorStop(1, '#222222');   // Edge
+        // --- 2. Радужка: "Выдавленное стекло" (Convex) ---
+        const gradIris = this.ctx.createRadialGradient(
+            x - rIris * 0.3, y - rIris * 0.3, rPupil,
+            x, y, rIris
+        );
+        gradIris.addColorStop(0, 'rgba(240, 240, 250, 0.95)');
+        gradIris.addColorStop(0.4, 'rgba(140, 140, 150, 0.8)');
+        gradIris.addColorStop(0.8, 'rgba(40, 40, 50, 0.6)');
+        gradIris.addColorStop(1, 'rgba(20, 20, 30, 0.4)');
 
         this.ctx.beginPath();
         this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
         this.ctx.fillStyle = gradIris;
         this.ctx.fill();
-        
-        // Add distinct white ring around iris for contrast against black bg
-        this.ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-        this.ctx.lineWidth = 1.5;
+
+        // Ободок радужки
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, rIris, 0, Math.PI * 2);
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        this.ctx.lineWidth = 2;
         this.ctx.stroke();
 
-        // 2. Pupil - pure black
+        // --- 3. Зрачок: "Вдавленное стекло" (Concave) ---
+        const gradPupil = this.ctx.createRadialGradient(x, y, 0, x, y, rPupil);
+        gradPupil.addColorStop(0, 'rgba(5, 5, 10, 1)');
+        gradPupil.addColorStop(0.7, 'rgba(15, 15, 25, 0.95)');
+        gradPupil.addColorStop(1, 'rgba(40, 40, 60, 0.85)');
+
         this.ctx.beginPath();
         this.ctx.arc(x, y, rPupil, 0, Math.PI * 2);
-        this.ctx.fillStyle = '#000000';
+        this.ctx.fillStyle = gradPupil;
         this.ctx.fill();
 
-        // 3. Specular Highlight (reflection) - Sharp and bright
+        // Световой акцент на дне "впадины" зрачка
         this.ctx.beginPath();
-        this.ctx.arc(x + rIris * 0.25, y - rIris * 0.25, rPupil * 0.4, 0, Math.PI * 2);
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        this.ctx.arc(x, y, rPupil, 0, Math.PI * 2);
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        this.ctx.lineWidth = 1;
+        this.ctx.stroke();
+
+        // --- 4. Блик (Specular) ---
+        this.ctx.beginPath();
+        this.ctx.ellipse(
+            x - rIris * 0.25, y - rIris * 0.3,
+            rPupil * 0.4, rPupil * 0.25,
+            -Math.PI / 6, 0, Math.PI * 2
+        );
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         this.ctx.fill();
 
         this.ctx.restore();
