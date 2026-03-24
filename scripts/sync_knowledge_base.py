@@ -3,8 +3,9 @@ scripts/sync_knowledge_base.py
 
 Профессиональный синхронизатор базы знаний.
 - Инкрементальное обновление: работает только с измененными файлами.
-- Gemini Embedding 2 (text-embedding-004/005) - SOTA 2026.
+- Gemini Embedding 2 (text-embedding-004) - SOTA 2026.
 - Поддержка Matryoshka Embeddings (3072 dims).
+- Лимитирование запросов для бесплатного тира (1000/день).
 """
 import os
 import sys
@@ -34,23 +35,30 @@ CHUNK_SIZE_CHARS = 6000 # Gemini 2 handles larger context easily
 CHUNK_OVERLAP_CHARS = 400
 OUTPUT_DIMENSIONALITY = 3072 # Matryoshka SOTA 2026
 
+# Лимиты для бесплатного тира (чтобы не падать по 429)
+# Квота на gemini-embedding-2 составляет 1000 запросов в день.
+# Мы будем обрабатывать максимум 150 чанков за один запуск Action.
+MAX_CHUNKS_PER_RUN = 150 
+
 # --- Gemini Embedding 2 Service ---
 class GeminiEmbeddingService:
     def __init__(self, api_key: str):
         self.client = genai.Client(api_key=api_key)
-        # В 2026 'text-embedding-004' это стабильный Gemini Embedding 2
-        # 'text-embedding-005' может быть доступен в некоторых регионах
         self.model = "text-embedding-004" 
         self.request_count: int = 0
         self.last_request_time: float = 0.0
+        self.quota_exhausted = False
 
     async def get_embedding(self, text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> Optional[List[float]]:
-        # Лимиты 2026 позволяют более высокую частоту, но сохраняем стабильность
-        elapsed = time.time() - self.last_request_time
-        if elapsed < 0.5: 
-            await asyncio.sleep(0.5 - elapsed)
+        if self.quota_exhausted:
+            return None
 
-        for attempt in range(3):
+        # Сохраняем RPM
+        elapsed = time.time() - self.last_request_time
+        if elapsed < 1.0: 
+            await asyncio.sleep(1.0 - elapsed)
+
+        for attempt in range(2): # Уменьшаем кол-во ретраев для скорости выхода
             try:
                 response = await asyncio.to_thread(
                     self.client.models.embed_content,
@@ -65,7 +73,13 @@ class GeminiEmbeddingService:
                 self.request_count += 1
                 return response.embeddings[0].values
             except Exception as e:
-                print(f"⚠️ Попытка {attempt+1}/3: Ошибка Gemini Embedding 2: {e}")
+                error_str = str(e)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    print(f"🛑 Quota exhausted (429). Stopping embedding process.")
+                    self.quota_exhausted = True
+                    return None
+                
+                print(f"⚠️ Попытка {attempt+1}/2: Ошибка Gemini: {e}")
                 await asyncio.sleep(2 * (attempt + 1))
         return None
 
@@ -98,7 +112,7 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CHU
 
 # --- Основная логика синхронизации ---
 async def sync_knowledge_base():
-    print("🚀 Starting Smart Sync with Gemini Embedding 2...")
+    print(f"🚀 Starting Smart Sync (Quota Cap: {MAX_CHUNKS_PER_RUN})...")
 
     # 1. Подключение к AstraDB
     api_endpoint = os.getenv("ASTRA_DB_API_ENDPOINT") or os.getenv("ASTRA_DATABASE_URL")
@@ -115,13 +129,14 @@ async def sync_knowledge_base():
     if not api_endpoint.startswith("http"):
         api_endpoint = f"https://{api_endpoint}"
 
-    print(f"📡 Connecting to AstraDB: {api_endpoint[:50]}...")
+    print(f"📡 Connecting to AstraDB...")
 
     try:
         timeout_options = TimeoutOptions(request_timeout_ms=30000, general_method_timeout_ms=60000)
         api_options = APIOptions(timeout_options=timeout_options)
+        keyspace = os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace")
         astra_client = DataAPIClient(os.getenv("ASTRA_DB_APPLICATION_TOKEN"), api_options=api_options)
-        db = astra_client.get_async_database(api_endpoint, keyspace=os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace"))
+        db = astra_client.get_async_database(api_endpoint, keyspace=keyspace)
         collection = db.get_collection(COLLECTION_NAME)
         print("✅ Connected to AstraDB")
     except Exception as e:
@@ -156,7 +171,7 @@ async def sync_knowledge_base():
     files_to_delete = files_in_db - local_paths
     files_to_update = {p for p in (local_paths & files_in_db) if local_files[p]["hash"] != remote_files[p]}
 
-    print("\n" + f"🔄 Sync Plan (Gemini 2): Add {len(files_to_add)}, Update {len(files_to_update)}, Delete {len(files_to_delete)}")
+    print("\n" + f"🔄 Sync Plan: Add {len(files_to_add)}, Update {len(files_to_update)}, Delete {len(files_to_delete)}")
 
     if not (files_to_add or files_to_update or files_to_delete):
         print("🎯 Knowledge Base is already up to date!")
@@ -178,14 +193,22 @@ async def sync_knowledge_base():
 
     # Эмбеддинг
     if to_process:
-        print("\n" + f"✨ Processing {len(to_process)} files with Gemini Embedding 2...")
-        total_chunks = 0
+        print("\n" + f"✨ Processing up to {MAX_CHUNKS_PER_RUN} chunks...")
+        total_chunks_inserted = 0
+        
         for path in sorted(to_process):
+            if embedder.quota_exhausted or total_chunks_inserted >= MAX_CHUNKS_PER_RUN:
+                print(f"⏸️  Limit reached. '{path}' and subsequent files will be processed in next run.")
+                break
+
             file_data = local_files[path]
             chunks = chunk_text(file_data["content"])
             
             db_chunks = []
             for idx, text in enumerate(chunks):
+                if total_chunks_inserted >= MAX_CHUNKS_PER_RUN:
+                    break
+
                 vector = await embedder.get_embedding(text)
                 if vector:
                     chunk_id = hashlib.sha256(f"{path}:{idx}".encode('utf-8')).hexdigest()
@@ -195,13 +218,17 @@ async def sync_knowledge_base():
                         "content": text[:8000],
                         "metadata": {"source": path, "hash": file_data["hash"]}
                     })
+                    total_chunks_inserted += 1
+                elif embedder.quota_exhausted:
+                    break
             
             if db_chunks:
                 await collection.insert_many(db_chunks, ordered=False)
-                total_chunks += len(db_chunks)
                 print(f"  ✅ Synced: {path} ({len(db_chunks)} chunks)")
 
-        print("\n" + f"✅ Sync complete. Total chunks: {total_chunks}")
+        print("\n" + f"✅ Batch sync complete. Total chunks inserted this run: {total_chunks_inserted}")
+        if total_chunks_inserted < len(to_process): # Very rough check
+             print("💡 More files remaining. They will be processed upon next push or manual trigger.")
 
 if __name__ == "__main__":
     asyncio.run(sync_knowledge_base())
