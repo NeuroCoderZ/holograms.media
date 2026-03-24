@@ -64,19 +64,19 @@ export class EyeLoader {
         lid.style.height = '50vh';
         lid.style.zIndex = '20';
         
-        // Непрозрачные веки (без backdrop-filter чтобы не размывать глаз)
+        // Полупрозрачные чёрные веки (без backdrop-filter — глаз виден сквозь них чётко)
         lid.style.transition = 'transform 0.8s cubic-bezier(0.77, 0, 0.175, 1)';
         
         if (isUpper) {
             lid.style.top = '0';
             lid.style.transformOrigin = 'top';
-            lid.style.background = 'linear-gradient(to bottom, #0a0a0f, #101018)';
-            lid.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+            lid.style.background = 'linear-gradient(to bottom, rgba(5,5,10,0.85), rgba(10,10,18,0.7))';
+            lid.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
         } else {
             lid.style.bottom = '0';
             lid.style.transformOrigin = 'bottom';
-            lid.style.background = 'linear-gradient(to top, #0a0a0f, #101018)';
-            lid.style.borderTop = '1px solid rgba(255,255,255,0.1)';
+            lid.style.background = 'linear-gradient(to top, rgba(5,5,10,0.85), rgba(10,10,18,0.7))';
+            lid.style.borderTop = '1px solid rgba(255,255,255,0.08)';
         }
         
         return lid;
