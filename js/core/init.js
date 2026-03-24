@@ -607,9 +607,10 @@ export async function initCore() {
     }
 
     console.log('✅ Ядро приложения инициализировано успешно');
-    // --- Start Auto-Reload & Lighting Managers ---
+    // --- Start Auto-Reload ---
     autoReloadService.start();
-    lightingManager.initialize(state);
+    // NOTE: lightingManager.initialize() moved to main.js (after UI is visible)
+    // to prevent double-init and ensure elements are in DOM when refreshElements() runs
 
     return state;
 

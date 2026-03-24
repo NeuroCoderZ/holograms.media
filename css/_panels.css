@@ -47,8 +47,9 @@
     var(--mouse-specular, transparent);
   mix-blend-mode: screen;
   pointer-events: none;
-  z-index: 1;
-  transition: background 0.1s ease-out;
+  z-index: 2;
+  transition: background 0.15s ease-out;
+  will-change: background;
 }
 
 .panel.left-panel {

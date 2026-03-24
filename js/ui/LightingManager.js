@@ -26,6 +26,9 @@ export class LightingManager {
     }
 
     initialize() {
+        if (this._initialized) return;
+        this._initialized = true;
+
         window.addEventListener('resize', this.handleResize);
         window.addEventListener('mousemove', this.handleMouseMove);
         
@@ -139,9 +142,20 @@ export class LightingManager {
         if (now - this._lastUpdateTime < this._updateInterval) return;
         this._lastUpdateTime = now;
 
-        if (Math.random() < 0.005) this.refreshElements();
+        // Логирование каждые 3 секунды для отладки
+        if (!this._lastDebugLog || now - this._lastDebugLog > 3000) {
+            const maxAmp = Math.max(...data.levels);
+            const anglesLen = data.angles ? data.angles.length : 0;
+            console.log(`[LightingManager] elements=${this.elements.length} maxAmp=${maxAmp.toFixed(1)} dB anglesLen=${anglesLen} hasData=${maxAmp > -110}`);
+            this._lastDebugLog = now;
+        }
 
-        const count = data.levels.length;
+        if (Math.random() < 0.01) this.refreshElements();
+
+        // Используем минимум из длин levels и angles чтобы избежать undefined panX
+        const levelsLen = data.levels.length;
+        const anglesLen = data.angles ? data.angles.length : 0;
+        const count = Math.min(levelsLen, anglesLen || levelsLen);
         const columnData = [];
         
         for (let i = 0; i < count; i++) {
@@ -149,14 +163,14 @@ export class LightingManager {
             if (amp < -110) continue; 
             
             const hue = (i / count) * 300; 
-            const amplitudeNorm = Math.max(0, (amp + 110) / 110); // Normalizing to -110..0 range for sensitivity
+            const amplitudeNorm = Math.max(0, (amp + 110) / 110);
             
             if (amplitudeNorm > 0.01) {
                 columnData.push({
                     freq: i,
                     amplitude: amplitudeNorm,
                     color: `hsl(${Math.round(hue)}, 100%, 50%)`,
-                    panX: data.angles ? data.angles[i] : 0
+                    panX: (data.angles && typeof data.angles[i] === 'number') ? data.angles[i] : 0
                 });
             }
         }
@@ -169,10 +183,12 @@ export class LightingManager {
     }
     
     updateSpectralLighting(columnData) {
-        // Выбираем только 3 самых громких пика для стабильности картинки
+        // 5 самых громких пика для насыщенных бликов
         const topColumns = columnData
             .sort((a, b) => b.amplitude - a.amplitude)
-            .slice(0, 3);
+            .slice(0, 5);
+
+        let glintCount = 0;
 
         this.elements.forEach(panel => {
             const cache = this.rectCache.get(panel);
@@ -185,7 +201,7 @@ export class LightingManager {
                 const colScreenX = (col.panX + 1) / 2;
                 const dx = colScreenX - cache.centerX;
                 const dy = 0.5 - cache.centerY;
-                const dist = Math.sqrt(dx*dx + dy*dy) + 0.2;
+                const dist = Math.sqrt(dx*dx + dy*dy) + 0.15;
                 const weight = col.amplitude / (dist * dist);
                 
                 if (weight > maxWeight) {
@@ -194,14 +210,18 @@ export class LightingManager {
                 }
             });
 
-            if (dominantCol && maxWeight > 0.05) {
-                // Множитель 5.0 для сочности бликов
-                const mix = Math.min(1, maxWeight * 5.0);
+            if (dominantCol && maxWeight > 0.01) {
+                const mix = Math.min(1, maxWeight * 8.0);
                 glassSpecularManager.applyGlint(panel, mix, dominantCol.color, dominantCol.panX);
+                glintCount++;
             } else {
                 panel.style.setProperty('--glass-specular', 'transparent');
             }
         });
+
+        if (glintCount > 0 && Math.random() < 0.005) {
+            console.log(`[GLINT] applied to ${glintCount} elements, top amp=${topColumns[0]?.amplitude.toFixed(3)}`);
+        }
     }
 
     updateSpectralColors(leftHighestColor, rightHighestColor) {

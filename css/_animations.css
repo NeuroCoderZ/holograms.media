@@ -100,38 +100,4 @@
   }
 }
 
-/* New Eye Loader Animation */
-@keyframes eye-blink-loader {
-  0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(0.1); }
-}
-
-.eye-loader {
-  display: inline-block;
-  width: 24px;
-  height: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.6);
-  border-radius: 75% 15%; /* Eye shape */
-  transform: rotate(45deg);
-  position: relative;
-  box-sizing: border-box;
-}
-
-.eye-loader::after {
-  content: '';
-  position: absolute;
-  top: 50%; 
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 6px;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
-}
-
-.eye-loader-inner {
-  width: 100%;
-  height: 100%;
-  animation: eye-blink-loader 2s infinite ease-in-out;
-}
+/* Legacy eye-loader removed — using canvas EyeLoader.js / MiniEyeLoader.js */
