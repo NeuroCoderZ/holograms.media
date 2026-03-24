@@ -1,6 +1,6 @@
 /**
- * hologramRenderer.js — HologramRenderer v20.1 (Stable Instanced)
- * =============================================================
+ * hologramRenderer.js — HologramRenderer v20.2 (Fixed setInstanceColor)
+ * ===================================================================
  * Оптимизация через InstancedMesh: 256 объектов -> 2 draw calls.
  */
 
@@ -16,7 +16,7 @@ import { CELL_HEIGHT, createCentralMarkerSphere, createSphereForAxis, createGrid
 export class HologramRenderer {
 
   constructor(scene, roomId, userId) {
-    console.log('[HologramRenderer] v20.1: Stable Instanced');
+    console.log('[HologramRenderer] v20.2: Instanced — Fix setColorAt');
     this.scene = scene;
     this.eventBus = eventBus;
     this.netHoloGlyphClient = netHoloGlyphClient;
@@ -67,8 +67,9 @@ export class HologramRenderer {
 
     for (let i = 0; i < count; i++) {
       const color = new THREE.Color(semitones[i].color);
-      this.meshL.setInstanceColor(i, color);
-      this.meshR.setInstanceColor(i, color);
+      // FIXED: Use setColorAt instead of setInstanceColor
+      this.meshL.setColorAt(i, color);
+      this.meshR.setColorAt(i, color);
     }
 
     this.mainSequencerGroup.add(this.meshL);
