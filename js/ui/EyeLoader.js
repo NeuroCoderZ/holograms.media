@@ -10,15 +10,21 @@ export class EyeLoader {
         this.container = document.createElement('div');
         this.container.id = 'eyeLoaderContainer';
         this.container.style.position = 'fixed';
-        this.container.style.inset = '0';
-        this.container.style.zIndex = '10000';
+        this.container.style.top = '0';
+        this.container.style.left = '0';
+        this.container.style.width = '100vw';
+        this.container.style.height = '100vh';
+        this.container.style.zIndex = '99999';
         this.container.style.pointerEvents = 'none';
 
         // Канвас для глаза
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d');
         this.canvas.style.position = 'absolute';
-        this.canvas.style.inset = '0';
+        this.canvas.style.top = '0';
+        this.canvas.style.left = '0';
+        this.canvas.style.width = '100%';
+        this.canvas.style.height = '100%';
         this.canvas.style.zIndex = '10';
         
         // Веки (Плоские панели)
@@ -87,6 +93,7 @@ export class EyeLoader {
 
     start() {
         document.body.appendChild(this.container);
+        console.log('[EyeLoader] started, container in DOM:', !!this.container.parentNode, 'canvas size:', this.canvas.width, 'x', this.canvas.height);
         this.phase = 'alive';
         
         // Saccade loop

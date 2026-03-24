@@ -383,8 +383,9 @@
     
   mix-blend-mode: screen; /* Physics of light addition */
   pointer-events: none;
-  z-index: 1;
-  transition: background 0.1s ease-out;
+  z-index: 2;
+  transition: background 0.15s ease-out;
+  will-change: background;
 }
 
 /* Hover State: Glass gets slightly brighter/cleaner */

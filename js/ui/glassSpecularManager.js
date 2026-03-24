@@ -14,12 +14,10 @@ export class GlassSpecularManager {
      * @returns {string} - A brightened version of the color with high opacity
      */
     getBrightColor(color) {
-        // Safety check: if not a string, return default white
         if (!color || typeof color !== 'string') {
             return 'rgba(255, 255, 255, 0.9)';
         }
 
-        // Return cached if available
         if (this.cache.has(color)) {
             return this.cache.get(color);
         }
@@ -28,28 +26,24 @@ export class GlassSpecularManager {
 
         try {
             if (color.includes('hsl')) {
-                // Parse HSL: hsl(h, s%, l%)
+                // Парсим HSL и делаем яркий specular цвет
                 const match = color.match(/hsl\((\d+),\s*([\d.]+)%?,\s*([\d.]+)%?\)/);
                 if (match) {
                     const h = parseInt(match[1]);
-                    const s = parseInt(match[2]);
-                    // Boost lightness to make it a highlight (min 80%, max 95%)
-                    const l = Math.min(95, Math.max(80, parseFloat(match[3]) + 40)); 
-                    brightColor = `hsl(${h}, ${s}%, ${l}%)`;
+                    const s = Math.min(100, parseInt(match[2]) + 20);
+                    const l = Math.min(92, Math.max(75, parseFloat(match[3]) + 50)); 
+                    brightColor = `hsla(${h}, ${s}%, ${l}%, 0.85)`;
                 }
             } else if (color.includes('rgba')) {
-                // Replace alpha with 0.9
-                brightColor = color.replace(/[\d.]+\)$/g, '0.9)');
+                brightColor = color.replace(/[\d.]+\)$/g, '0.85)');
             } else if (color.includes('rgb')) {
-                // Add alpha 0.9
-                brightColor = color.replace(/\)$/g, ', 0.9)');
+                brightColor = color.replace(/\)$/g, ', 0.85)');
             }
         } catch (err) {
             console.warn('GlassSpecularManager: Error parsing color', color, err);
         }
 
         this.cache.set(color, brightColor);
-        // Limit cache size
         if (this.cache.size > 50) this.cache.clear();
 
         return brightColor;
@@ -65,21 +59,22 @@ export class GlassSpecularManager {
     applyGlint(el, mix, color, sourcePanX = 0) {
         if (!el) return;
 
-        if (mix > 0.01) { // Threshold lowered for sensitivity
+        if (mix > 0.005) {
             const brightColor = this.getBrightColor(color);
             
-            // Calculate direction: 
-            // If sourcePanX is negative (Left), glint should appear on the Left side (0%)
-            // If positive (Right), on the Right side (100%)
-            // We can interpolate for smoother movement: -1 -> 0%, 1 -> 100%
+            // Позиция блика: -1 (лево) -> 0%, 1 (право) -> 100%
             const glintPos = (sourcePanX + 1) / 2 * 100; 
-            
-            // Clamp to edge zones for dramatic effect
-            const glintX = glintPos < 50 ? '0%' : '100%';
+            const glintX = Math.max(10, Math.min(90, glintPos));
 
+            // Градиент с учётом интенсивности — ярче при высоком mix
+            const opacity = Math.min(1, mix);
             el.style.setProperty('--glass-specular',
-                `radial-gradient(ellipse at ${glintX} 50%, ${brightColor} 0%, transparent 60%)`
+                `radial-gradient(ellipse at ${glintX.toFixed(0)}% 50%, ${brightColor} 0%, transparent ${Math.round(40 + 40 * (1 - opacity))}%)`
             );
+            
+            if (Math.random() < 0.003) {
+                console.log(`[GlassSpecular] mix=${mix.toFixed(2)} pos=${glintX.toFixed(0)}% color=${color}`);
+            }
         } else {
             el.style.setProperty('--glass-specular', 'transparent');
         }

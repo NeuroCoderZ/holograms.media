@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.200 - feat: PII sanitization pipeline, repomix config, perf optimizations LightingManager/HologramRenderer");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.201 - fix: EyeLoader visibility, spectral glints pipeline, remove old CSS eye");</script>
   <!-- DEPLOY_VERSION_END -->
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
@@ -449,8 +449,8 @@
   <video id="camera-view" autoplay playsinline style="display: none;"></video>
   <canvas id="previewCanvas" style="display: none;"></canvas>
 
-  <!-- Прелоадер -->
-  <div id="loading-spinner"><div class="eye-loader"><div class="eye-loader-inner"></div></div></div>
+  <!-- Прелоадер (EyeLoader canvas replaces legacy CSS spinner) -->
+  <div id="loading-spinner" style="display:none"></div>
 
   <!-- Toggle Panels Button -->
   <button id="togglePanelsButton" class="control-button" title="Скрыть панели">
