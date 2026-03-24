@@ -1,0 +1,44 @@
+{
+  "output": {
+    "style": "xml",
+    "filePath": "repomix-context.xml",
+    "removeComments": false,
+    "removeEmptyLines": true,
+    "topFilesLength": 10,
+    "showLineNumbers": false,
+    "copyToClipboard": false
+  },
+  "include": [
+    "**/*"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDotIgnore": true,
+    "customPatterns": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/coverage/**",
+      "**/.git/**",
+      "**/.github/**",
+      "**/.vscode/**",
+      "**/.idea/**",
+      "**/*.log",
+      "**/*.lock",
+      "**/*.tmp",
+      "**/*.csv",
+      "**/package-lock.json",
+      "**/yarn.lock",
+      "**/pnpm-lock.yaml",
+      "**/.env*",
+      "**/repomix-context.xml",
+      "**/conductor/**",
+      "**/brain/**",
+      "**/scripts/debug_connection.py",
+      "**/scripts/test_*.py"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

@@ -1,0 +1,152 @@
+# ==========================================
+# Kilo Code / Roo Code Ignore File
+# ==========================================
+# Этот файл управляет тем, какие файлы индексирует AI-агент
+# Работает как .gitignore, но специфичен для ИИ-индексации
+
+# ===== КРИТИЧНО: Тяжелые данные и логи =====
+# Эти папки создают максимум мусорных чанков
+sample_data/
+sample_data/**
+mock_gesture_chunks.json
+tria_knowledge_graph_store.jsonl
+logs/
+logs/**
+*.log
+temp/
+temp/**
+storage/
+storage/**
+
+# ===== Кэши и индексы =====
+__pycache__/
+__pycache__/**
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.kilocode/
+.vector_store/
+.cache/
+node_modules/.cache/
+
+# ===== Виртуальные окружения =====
+venv/
+venv/**
+.venv/
+.venv/**
+env/
+env/**
+
+# ===== Сборка и распределение =====
+dist/
+dist/**
+build/
+build/**
+*.egg-info/
+.eggs/
+
+# ===== Node.js =====
+node_modules/
+node_modules/**
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.npm/
+
+# ===== Rust/Cargo =====
+target/
+target/**
+Cargo.lock
+**/*.rs.bk
+
+# ===== IDE и редакторы =====
+.vscode/
+.vscode/**
+.idea/
+.idea/**
+*.swp
+*.swo
+*.swn
+*~
+
+# ===== Окружение и секреты =====
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*
+
+# ===== Git и система контроля =====
+.git/
+.git/**
+.github/
+.github/**
+.gitignore
+
+# ===== Медиа-файлы (большие бинарники) =====
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
+*.webp
+*.mp4
+*.mp3
+*.wav
+*.pdf
+*.zip
+*.tar.gz
+*.exe
+*.dll
+*.so
+
+# ===== Репомикс конфиги =====
+repomix-context.xml
+.repomixignore
+repomix-context.*
+
+# ===== macOS =====
+.DS_Store
+.AppleDouble
+.LSOverride
+*.local
+
+# ===== Windows =====
+Thumbs.db
+desktop.ini
+
+# ===== Проект-специфичные папки =====
+conductor/
+conductor/**
+brain/
+brain/**
+screenshots/
+screenshots/**
+.continue/
+.continue/**
+.qwen/
+.qwen/**
+
+# ===== AI интеграции (чтобы индекс не зацикливался на себе) =====
+.agent/
+.agent/**
+.eslintcache
+
+# ===== Логи Firebase =====
+firebase-debug.log
+firebase-debug.*.log
+
+# ===== Coverage отчеты =====
+coverage/
+coverage/**
+.nyc_output/
+
+# ===== Собранные файлы документации =====
+docs/EN/**
+docs/RU/**
+docs/Licenses/**
+docs/Architecture/**
