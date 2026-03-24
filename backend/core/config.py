@@ -20,7 +20,7 @@ class Settings(BaseModel):
     
     # Database (Astra DB)
     ASTRA_DB_APPLICATION_TOKEN: str = os.getenv("ASTRA_DB_APPLICATION_TOKEN", "").strip()
-    ASTRA_DB_API_ENDPOINT: str = os.getenv("ASTRA_DB_API_ENDPOINT", "").strip()
+    ASTRA_DB_API_ENDPOINT: str = (os.getenv("ASTRA_DB_API_ENDPOINT") or os.getenv("ASTRA_DATABASE_URL") or "").strip()
     ASTRA_DB_ID: str = os.getenv("ASTRA_DB_ID", "403a15dc-85a4-451f-a789-df997722a23c").strip()
     ASTRA_DB_REGION: str = os.getenv("ASTRA_DB_REGION", "us-east-2").strip()
     ASTRA_DB_KEYSPACE: str = os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace").strip()

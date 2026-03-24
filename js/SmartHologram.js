@@ -89,8 +89,7 @@ export class SmartHologram {
      * Настройка освещения сцены
      */
     setupLighting() {
-        // Минимальное освещение — столбцы self-illuminated
-        this.scene.add(new THREE.AmbientLight(0x101010, 0.3));
+        // Освещение удалено: столбцы self-illuminated через ShaderMaterial
     }
 
     /**

@@ -1,6 +1,7 @@
 /**
  * LightingManager.js - Управление динамическим освещением интерфейса.
- * Оптимизировано для экстремальной производительности и сочных бликов.
+ * Оптимизировано для экстремальной производительности и сочных ПЕР-ЭЛЕМЕНТНЫХ бликов.
+ * Теперь столбцы голограммы — единственный источник света.
  */
 import eventBus from '../core/eventBus.js';
 import { glassSpecularManager } from './glassSpecularManager.js';
@@ -10,21 +11,11 @@ export class LightingManager {
         this.elements = [];
         this.rectCache = new Map();
         
-        this.centerX = window.innerWidth / 2;
-        this.centerY = window.innerHeight / 2;
-
-        this.mouseX = 0;
-        this.mouseY = 0;
-
         this._onSpectralData = this._onSpectralData.bind(this);
-        this._isUpdating = false;
         
-        // Throttling: 24fps для UI вполне достаточно, экономит кучу ресурсов
+        // Throttling: 30fps для UI вполне достаточно
         this._lastUpdateTime = 0;
-        this._updateInterval = 40; 
-        
-        this._glintOverlay = null;
-        this._glintSpot = null;
+        this._updateInterval = 33; 
     }
 
     initialize() {
@@ -32,17 +23,17 @@ export class LightingManager {
         this._initialized = true;
 
         window.addEventListener('resize', this.handleResize);
-        window.addEventListener('mousemove', this.handleMouseMove);
         
+        // Подписка на данные BasilaQ-128
         eventBus.on('audio:spectralData', this._onSpectralData);
 
         this.refreshElements();
-        console.log("LightingManager v20.1: Ultra-Perf Mode Active.");
+        console.log("LightingManager v20.3: Emissive Columns Mode.");
     }
 
     refreshElements() {
-        // ОГРАНИЧИВАЕМ: Только кнопки и панели. Сообщения чата не подсвечиваем индивидуально.
-        const coreElements = document.querySelectorAll('.control-button, .panel, .glass-panel, #gesture-area');
+        // ОГРАНИЧИВАЕМ: Только кнопки и панели. 
+        const coreElements = document.querySelectorAll('.control-button, .panel, .glass-panel, #gesture-area, .rp-tab');
         this.elements = Array.from(coreElements);
         
         this.updateRectCache();
@@ -66,15 +57,7 @@ export class LightingManager {
     }
 
     handleResize = () => {
-        this.centerX = window.innerWidth / 2;
-        this.centerY = window.innerHeight / 2;
         this.refreshElements();
-    }
-
-    handleMouseMove = (e) => {
-        this.mouseX = e.clientX;
-        this.mouseY = e.clientY;
-        // Мышиные блики отключены по просьбе пользователя
     }
 
     _onSpectralData(data) {
@@ -84,16 +67,12 @@ export class LightingManager {
         if (now - this._lastUpdateTime < this._updateInterval) return;
         this._lastUpdateTime = now;
 
-        // Поиск макс. амплитуды (для логов и порога)
-        let maxAmp = -128;
+        // Поиск макс. амплитуды
         const count = data.levels.length;
         const columnData = [];
         
-        // Используем нормализованные данные для расчетов
         for (let i = 0; i < Math.min(128, count); i++) {
             const amp = data.levels[i];
-            if (amp > maxAmp) maxAmp = amp;
-            
             if (amp < -100) continue; 
             
             const amplitudeNorm = Math.max(0, (amp + 100) / 100);
@@ -101,7 +80,7 @@ export class LightingManager {
                 columnData.push({
                     freq: i,
                     amplitude: amplitudeNorm,
-                    color: `hsl(${(i / 128) * 300}, 100%, 55%)`,
+                    color: `hsl(${(i / 128) * 300}, 100%, 60%)`, // Более яркие цвета
                     panX: data.angles ? data.angles[i] : 0
                 });
             }
@@ -110,59 +89,48 @@ export class LightingManager {
         if (columnData.length > 0) {
             this.updateSpectralLighting(columnData);
         } else {
-            this._hideGlintOverlay();
+            // Очистка если тишина
+            this.elements.forEach(el => {
+                el.style.setProperty('--glass-specular', 'transparent');
+            });
         }
     }
     
     updateSpectralLighting(columnData) {
-        // Берем топ-3 пика
+        // Топ-3 доминирующих частоты для расчёта бликов
         const topColumns = columnData
             .sort((a, b) => b.amplitude - a.amplitude)
             .slice(0, 3);
 
-        if (topColumns.length === 0) {
-            this._hideGlintOverlay();
-            return;
-        }
+        this.elements.forEach(el => {
+            const cache = this.rectCache.get(el);
+            if (!cache) return;
 
-        const dominant = topColumns[0];
-        const brightColor = glassSpecularManager.getBrightColor(dominant.color);
-        
-        // Позиция блика: -1..1 -> 0%..100%
-        const glintX = ((dominant.panX + 1) / 2 * 100);
-        
-        // Масштабируем интенсивность (множитель 3.5 для сочности)
-        const intensity = Math.min(1, dominant.amplitude * 3.5);
-        const spread = Math.round(30 + 40 * intensity);
+            let maxInfluence = 0;
+            let dominantCol = null;
 
-        // Показываем оверлей
-        this._showGlintOverlay(
-            `radial-gradient(ellipse at ${glintX.toFixed(0)}% 45%, ${brightColor} 0%, transparent ${spread}%)`
-        );
-    }
+            topColumns.forEach(col => {
+                const colScreenX = (col.panX + 1) / 2;
+                const dx = colScreenX - cache.centerX;
+                const dist = Math.abs(dx) + 0.25; 
+                
+                const influence = col.amplitude / (dist * dist);
+                if (influence > maxInfluence) {
+                    maxInfluence = influence;
+                    dominantCol = col;
+                }
+            });
 
-    _showGlintOverlay(gradient) {
-        if (!this._glintOverlay) {
-            this._glintOverlay = document.getElementById('spectral-glint-overlay');
-            this._glintSpot = document.getElementById('spectral-glint-spot');
-        }
-        
-        if (this._glintOverlay && this._glintSpot) {
-            if (this._glintOverlay.style.display !== 'block') {
-                this._glintOverlay.style.display = 'block';
+            if (dominantCol && maxInfluence > 0.15) {
+                // Множитель 5.0 для сочности бликов
+                const mix = Math.min(1, maxInfluence * 5.0);
+                glassSpecularManager.applyGlint(el, mix, dominantCol.color, dominantCol.panX);
+            } else {
+                el.style.setProperty('--glass-specular', 'transparent');
             }
-            this._glintSpot.style.background = gradient;
-            this._glintSpot.style.opacity = '0.8'; // Доп. яркость
-        }
+        });
     }
 
-    _hideGlintOverlay() {
-        if (this._glintOverlay) {
-            this._glintOverlay.style.display = 'none';
-        }
-    }
-
-    // Совместимость (пустой метод для исключения ошибок)
     updateSpectralColors() {}
 }
 

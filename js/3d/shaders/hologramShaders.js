@@ -68,7 +68,7 @@ export function makeColumnUniforms(baseColor) {
         uBaseColor: { value: baseColor },
         uSelection: { value: 0.0 },
         uIsGreeting: { value: 1.0 },
-        uBrightnessBoost: { value: 1.0 },
+        uBrightnessBoost: { value: 1.4 }, // Increased for self-illumination
         uColumnScaleZ: { value: 0.1 },
     };
 }
