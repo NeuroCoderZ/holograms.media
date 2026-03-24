@@ -376,10 +376,11 @@
   inset: -1px;
   border-radius: inherit;
   background: var(--glass-specular, transparent);
-  mix-blend-mode: screen;
+  mix-blend-mode: screen; /* 2026: 'screen' or 'color-dodge' for emissive look */
   pointer-events: none;
   z-index: 2;
-  transition: background 0.15s ease-out;
+  opacity: var(--glass-specular-opacity, 0.8);
+  transition: background 0.12s ease-out, opacity 0.12s ease-out;
 }
 
 /* Hover State: Glass gets slightly brighter/cleaner */

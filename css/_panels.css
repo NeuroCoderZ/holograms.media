@@ -46,7 +46,8 @@
   mix-blend-mode: screen;
   pointer-events: none;
   z-index: 2;
-  transition: background 0.15s ease-out;
+  opacity: var(--glass-specular-opacity, 0.8);
+  transition: background 0.12s ease-out, opacity 0.12s ease-out;
 }
 
 .panel.left-panel {
