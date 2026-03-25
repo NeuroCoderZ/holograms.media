@@ -110,6 +110,16 @@ export class EyeLoader {
         this.isVisible = true;
     }
 
+    /**
+     * Реакция глаза на загрузку ресурса (вызывается из PerformanceObserver).
+     * Если глаз сейчас не виден — инициирует новое прошмыгивание.
+     */
+    triggerSaccade() {
+        if (this.phase === 'scuttle' && !this.isVisible) {
+            this.initScuttle();
+        }
+    }
+
     setProgress(p) {
         this.progress = p;
         if (this.progress >= 100 && this.phase !== 'open') {
