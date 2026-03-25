@@ -8,7 +8,9 @@ description: Архитектура Триа, LLM модели, стриминг
 ## 🔒 MODEL LOCK
 - Основная: `gemini-3-flash-preview` (через OpenClaw или напрямую)
 - Архитектура: `mistral-small-latest` (только ArchitectureAgent)
+- **Эмбеддинги: `gemini-embedding-2-preview` (dimension 3072, Matryoshka)**
 - НЕ менять без указания НейроКодера.
+- **⛔ НЕ использовать `text-embedding-004/005` для эмбеддингов!**
 
 ## Поток обработки сообщения
 OpenClaw Patrol (входящий) → TriaOrchestrator → LLM stream → накопить → сохранить в AstraDB → OpenClaw Patrol (исходящий)

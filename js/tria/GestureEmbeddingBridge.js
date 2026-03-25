@@ -1,0 +1,250 @@
+/**
+ * GestureEmbeddingBridge.js — Мост между локальным KNN и облачным Gemini Embedding 2
+ * ===================================================================================
+ * Двухслойная архитектура:
+ *   Слой 1 (< 5мс): Локальный KNN через GestureVectorStore (IndexedDB/sql.js)
+ *   Слой 2 (50-200мс): Облачный Gemini Embedding 2 через бэкенд API
+ *
+ * Поток:
+ *   MediaPipe Hand21 → normalize → localKNN
+ *     → ≥ 0.85 → Прямое исполнение (intent)
+ *     → < 0.85 → cloudEmbed → AstraDB search → intent + обучение
+ */
+
+import GestureVectorStore from './GestureVectorStore.js';
+import { state } from '../core/init.js';
+
+class GestureEmbeddingBridge {
+    constructor() {
+        this.localStore = null;
+        this._ready = false;
+        
+        // Thresholds
+        this.LOCAL_ACCEPT = 0.85;    // Прямой KNN accept
+        this.LOCAL_SOFT = 0.65;      // Облачная проверка
+        this.CLOUD_COOLDOWN_MS = 300; // Минимум между облачными запросами
+        
+        this._lastCloudCall = 0;
+        this._pendingCloud = null;
+        
+        // Stats
+        this.stats = {
+            localHits: 0,
+            cloudHits: 0,
+            cloudMisses: 0,
+            totalQueries: 0
+        };
+    }
+    
+    async init() {
+        this.localStore = new GestureVectorStore();
+        await this.localStore.init({ includeZ: true });
+        this._ready = true;
+        console.log('[GestureEmbeddingBridge] Initialized. Local KNN ready.');
+    }
+    
+    /**
+     * Основной метод: распознаёт жест через двухслойную систему.
+     * @param {Array} hand21 - 21 MediaPipe landmark [{x,y,z}, ...]
+     * @param {Object} context - Дополнительный контекст {audioSnippet, screenshot, sessionId}
+     * @returns {Promise<{intent, confidence, source, metadata}|null>}
+     */
+    async recognize(hand21, context = {}) {
+        if (!this._ready || !hand21 || hand21.length < 21) return null;
+        this.stats.totalQueries++;
+        
+        // Слой 1: Локальный KNN (< 5мс)
+        const localResults = await this.localStore.query(hand21, 3, this.LOCAL_SOFT);
+        
+        if (localResults.length > 0) {
+            const best = localResults[0];
+            
+            // Высокий confidence → прямое исполнение
+            if (best.score >= this.LOCAL_ACCEPT) {
+                this.stats.localHits++;
+                return {
+                    intent: best.name,
+                    confidence: best.score,
+                    source: 'local_knn',
+                    metadata: best.metadata,
+                    latency: 'fast'
+                };
+            }
+            
+            // Средний confidence → облачная проверка (при наличии кулдауна)
+            if (best.score >= this.LOCAL_SOFT) {
+                const cloudResult = await this._cloudVerify(hand21, best, context);
+                if (cloudResult) return cloudResult;
+                
+                // Если облако недоступно, используем локальный fallback
+                this.stats.localHits++;
+                return {
+                    intent: best.name,
+                    confidence: best.score,
+                    source: 'local_fallback',
+                    metadata: best.metadata,
+                    latency: 'fast'
+                };
+            }
+        }
+        
+        // Нет локальных совпадений → полный облачный поиск
+        const cloudResult = await this._cloudSearch(hand21, context);
+        return cloudResult;
+    }
+    
+    /**
+     * Облачная верификация через Gemini Embedding 2 + AstraDB
+     */
+    async _cloudVerify(hand21, localBest, context) {
+        const now = Date.now();
+        if (now - this._lastCloudCall < this.CLOUD_COOLDOWN_MS) return null;
+        
+        try {
+            this._lastCloudCall = now;
+            const apiUrl = state.apiUrl || '';
+            
+            const response = await fetch(`${apiUrl}/api/v1/gestures/embed`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.auth?.token || ''}`
+                },
+                body: JSON.stringify({
+                    landmarks: hand21.map(p => ({
+                        x: p.x, y: p.y, z: p.z || 0
+                    })),
+                    local_candidate: localBest.name,
+                    local_score: localBest.score,
+                    context: context.sessionId ? { session_id: context.sessionId } : {}
+                })
+            });
+            
+            if (!response.ok) return null;
+            
+            const data = await response.json();
+            if (data.intent && data.confidence > localBest.score) {
+                this.stats.cloudHits++;
+                
+                // Обучение: сохраняем подтверждённый жест в локальное хранилище
+                if (data.confidence > 0.9) {
+                    await this._learnLocally(hand21, data.intent, data.metadata || {});
+                }
+                
+                return {
+                    intent: data.intent,
+                    confidence: data.confidence,
+                    source: 'cloud_verified',
+                    metadata: data.metadata || {},
+                    latency: 'cloud'
+                };
+            }
+            
+            return null;
+        } catch (e) {
+            console.warn('[GestureEmbeddingBridge] Cloud verify failed:', e.message);
+            return null;
+        }
+    }
+    
+    /**
+     * Полный облачный поиск (когда локальный KNN ничего не нашёл)
+     */
+    async _cloudSearch(hand21, context) {
+        const now = Date.now();
+        if (now - this._lastCloudCall < this.CLOUD_COOLDOWN_MS) return null;
+        
+        try {
+            this._lastCloudCall = now;
+            const apiUrl = state.apiUrl || '';
+            
+            const response = await fetch(`${apiUrl}/api/v1/gestures/embed`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.auth?.token || ''}`
+                },
+                body: JSON.stringify({
+                    landmarks: hand21.map(p => ({
+                        x: p.x, y: p.y, z: p.z || 0
+                    })),
+                    mode: 'full_search',
+                    context: context.sessionId ? { session_id: context.sessionId } : {}
+                })
+            });
+            
+            if (!response.ok) return null;
+            
+            const data = await response.json();
+            if (data.intent) {
+                this.stats.cloudHits++;
+                
+                // Обучение: добавляем в локальный кэш
+                if (data.confidence > 0.85) {
+                    await this._learnLocally(hand21, data.intent, data.metadata || {});
+                }
+                
+                return {
+                    intent: data.intent,
+                    confidence: data.confidence,
+                    source: 'cloud_search',
+                    metadata: data.metadata || {},
+                    latency: 'cloud'
+                };
+            }
+            
+            this.stats.cloudMisses++;
+            return null;
+        } catch (e) {
+            console.warn('[GestureEmbeddingBridge] Cloud search failed:', e.message);
+            return null;
+        }
+    }
+    
+    /**
+     * Обучение локальной Триа: сохраняет подтверждённый жест в IndexedDB
+     * Это делает KNN всё точнее с каждым использованием.
+     */
+    async _learnLocally(hand21, intentName, metadata) {
+        try {
+            await this.localStore.addGesture(intentName, hand21, {
+                ...metadata,
+                intent: intentName,
+                learned_at: Date.now(),
+                source: 'cloud_confirmed'
+            });
+            console.debug(`[GestureEmbeddingBridge] Learned gesture: ${intentName}`);
+        } catch (e) {
+            console.warn('[GestureEmbeddingBridge] Learn failed:', e.message);
+        }
+    }
+    
+    /**
+     * Регистрация нового жеста (из панели жестов)
+     */
+    async registerGesture(name, hand21, metadata = {}) {
+        if (!this._ready) return null;
+        return await this.localStore.addGesture(name, hand21, {
+            ...metadata,
+            intent: name,
+            registered_at: Date.now(),
+            source: 'user_panel'
+        });
+    }
+    
+    /**
+     * Экспорт всех жестов для синхронизации с глобальной Триа
+     */
+    async exportForSync() {
+        if (!this._ready) return null;
+        return await this.localStore.export();
+    }
+    
+    getStats() {
+        return { ...this.stats };
+    }
+}
+
+// Singleton
+export const gestureEmbeddingBridge = new GestureEmbeddingBridge();
+export default gestureEmbeddingBridge;

@@ -7,6 +7,10 @@ description: "Advanced architectural patterns for Tria (Holograms Media). Covers
 
 This skill synthesizes global best practices for high-performance AI integration in the Holograms Media project.
 
+> [!IMPORTANT]
+> **Embedding Model Lock**: Всегда использовать `gemini-embedding-2-preview` (dimension 3072).
+> НЕ использовать `text-embedding-004/005` или любые другие устаревшие ID.
+
 ## 1. LLM Streaming Implementation (SSE)
 
 ### Backend (FastAPI)
@@ -40,17 +44,23 @@ while (true) {
 
 ## 2. AstraDB RAG Mastery (Avoiding Shred Limits)
 
+### Embedding Model
+- **ID**: `gemini-embedding-2-preview` (ЗАФИКСИРОВАН)
+- **Dimension**: 3072 (нативная, Matryoshka)
+- **Мультимодальность**: текст, код, медиа — единое пространство
+
 ### Chunking Protocol
 AstraDB restricts document size. Large Cyrillic texts or heavy metadata cause 403/500 errors.
 
-- **Safe Chunk Size**: 6000 characters.
-- **Overlap**: 800 characters for context preservation (TriaPulse).
+- **Safe Chunk Size**: 8000 characters (Gemini Embedding 2 handles larger context).
+- **Overlap**: 500 characters for context preservation.
 - **Metadata**: Stick to minimal IDs and source paths.
 
 ### Ingestion Pipeline
 - **Sync Delay**: 5 seconds after `delete_many` or `drop_collection` is MANDATORY for distributed indexing stability.
 - **Batching**: Use `insert_many` with `ordered=False` for maximum throughput.
+- **Quota Cap**: MAX_CHUNKS_PER_RUN = 200 (Free Tier 2026).
 
 ## 3. Deployment & Health Checks (Koyeb/Cloudflare)
 - **Port**: Always use port 8000.
-- **Healthz**: `/healthz` must return 200 OK without blocking on external DB timeouts during startup. If DB initialization is slow, move it to a background task or handle failures gracefully in app.state.
+- **Healthz**: `/healthz` must return 200 OK without blocking on external DB timeouts during startup.

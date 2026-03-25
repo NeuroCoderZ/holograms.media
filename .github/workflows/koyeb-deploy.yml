@@ -32,4 +32,8 @@ jobs:
             --env GOOGLE_CLIENT_ID=secret!PROD_GOOGLE_CLIENT_ID \
             --env GOOGLE_CLIENT_SECRET=secret!PROD_GOOGLE_CLIENT_SECRET \
             --env ASTRA_DB_APPLICATION_TOKEN=secret!ASTRA_DB_APPLICATION_TOKEN \
-            --env ASTRA_DB_API_ENDPOINT=secret!ASTRA_DATABASE_URL
+            --env ASTRA_DB_API_ENDPOINT=secret!ASTRA_DATABASE_URL \
+            --env ASTRA_DB_KEYSPACE=default_keyspace \
+            --env GOOGLE_API_KEY=secret!GOOGLE_API_KEY \
+            --env MISTRAL_API_KEY=secret!MISTRAL_API_KEY \
+            --env OPENCLAW_GATEWAY_TOKEN=secret!OPENCLAW_GATEWAY_TOKEN

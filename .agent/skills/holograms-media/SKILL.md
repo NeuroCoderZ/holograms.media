@@ -26,3 +26,12 @@ description: Инструкции по работе с платформой Holo
 - **Koyeb:** Для FastAPI бэкенда.
 - **Repomix:** Использовать ТОЛЬКО XML формат и имя `repomix-context.xml`. Игнорировать `node_modules`, `dist`, `target`, `.git`, `.scripts`.
   Команда: `npx repomix --style xml --output repomix-context.xml --ignore "node_modules,dist,target,.git,.scripts"`
+
+## 🔒 Embedding Model Lock (КРИТИЧЕСКИ ВАЖНО!)
+> **⛔ ЕДИНСТВЕННАЯ модель для эмбеддингов: `gemini-embedding-2-preview`**
+>
+> - **Model ID**: `gemini-embedding-2-preview`
+> - **Dimension**: 3072 (нативная, Matryoshka)
+> - **НЕ использовать**: `text-embedding-004`, `text-embedding-005` и любые другие устаревшие ID
+> - Эта модель мультимодальна и проецирует текст, код и медиа в единое пространство
+
