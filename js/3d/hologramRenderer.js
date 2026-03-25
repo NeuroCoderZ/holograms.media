@@ -71,6 +71,8 @@ export class HologramRenderer {
       this.meshL.setColorAt(i, color);
       this.meshR.setColorAt(i, color);
     }
+    this.meshL.instanceColor.needsUpdate = true;
+    this.meshR.instanceColor.needsUpdate = true;
 
     this.mainSequencerGroup.add(this.meshL);
     this.mainSequencerGroup.add(this.meshR);

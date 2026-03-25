@@ -28,8 +28,8 @@ load_dotenv(env_path)
 
 # --- Константы ---
 COLLECTION_NAME = "tria_knowledge_gemini"
-CHUNK_SIZE_CHARS = 8000 # Gemini 2 handles larger context easily
-CHUNK_OVERLAP_CHARS = 500
+CHUNK_SIZE_CHARS = 3500 # Reduced from 8000 to prevent SHRED_DOC_LIMIT_VIOLATION (8000 bytes max)
+CHUNK_OVERLAP_CHARS = 300
 OUTPUT_DIMENSIONALITY = 3072 # Нативная размерность Gemini Embedding 2
 
 # Квота на gemini-embedding-2 (Free Tier 2026)
