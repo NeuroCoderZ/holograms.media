@@ -28,7 +28,11 @@ export class LightingManager {
         eventBus.on('audio:spectralData', this._onSpectralData);
 
         this.refreshElements();
-        console.log("LightingManager v20.3: Emissive Columns Mode.");
+        console.log("LightingManager v20.3: Emissive Columns Mode with Dynamic DOM Tracking.");
+        
+        // Track dynamically added UI elements (like panels and buttons)
+        this._observer = new MutationObserver(() => this.refreshElements());
+        this._observer.observe(document.body, { childList: true, subtree: true });
     }
 
     refreshElements() {
