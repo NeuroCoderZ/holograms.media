@@ -126,9 +126,15 @@ export class HologramRenderer {
       let hL = 0.1;
       let hR = 0.1;
 
-      if (isActive && !isPaused) {
-        let dbL = (dbLevels[i] !== undefined) ? dbLevels[i] : -128;
-        let dbR = (dbLevels[i + 128] !== undefined) ? dbLevels[i + 128] : -128;
+      // [CRITICAL FIX] Reactive update:
+      // Even if 'isPaused' is true, we update columns if we see a real audio signal
+      // coming from CWT (e.g. vinyl scratch during pause).
+      let dbL = (dbLevels[i] !== undefined) ? dbLevels[i] : -128;
+      let dbR = (dbLevels[i + 128] !== undefined) ? dbLevels[i + 128] : -128;
+      
+      const hasSignal = dbL > -100 || dbR > -100;
+
+      if (isActive && (!isPaused || hasSignal)) {
 
         const targetPan = panAngles[i] || 0;
         this._panStates[i] += (targetPan - this._panStates[i]) * 0.7;
