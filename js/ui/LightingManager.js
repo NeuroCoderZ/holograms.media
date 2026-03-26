@@ -6,6 +6,7 @@
 import eventBus from '../core/eventBus.js';
 import { glassSpecularManager } from './glassSpecularManager.js';
 import { semitones } from '../config/hologramConfig.js';
+import { state as appState } from '../core/init.js';
 
 export class LightingManager {
     constructor() {
@@ -125,6 +126,30 @@ export class LightingManager {
     }
     
     updateSpectralLighting(columnData) {
+        // [PHYSICS] Рассчитываем угол обзора (Camera Orbit - Hologram Pivot - MainGroup Rotation)
+        let cameraAngle = 0;
+        let hologramAngle = 0;
+        
+        if (appState.camera) {
+            cameraAngle = Math.atan2(appState.camera.position.x, appState.camera.position.z);
+        }
+        
+        if (appState.hologramRendererInstance) {
+            const hr = appState.hologramRendererInstance;
+            if (typeof hr.getHologramPivot === 'function') {
+                const pivot = hr.getHologramPivot();
+                if (pivot) hologramAngle += pivot.rotation.y;
+            }
+            if (hr.mainSequencerGroup) {
+                hologramAngle += hr.mainSequencerGroup.rotation.y;
+            }
+        }
+        
+        // Относительный угол обзора (0 = спереди, PI = сзади)
+        // Если смотрим сзади, cos(PI) = -1, то есть лево и право меняются местами.
+        const viewAngle = cameraAngle - hologramAngle;
+        const cosAngle = Math.cos(viewAngle);
+
         // Топ-8 доминирующих частот для расчёта радужных бликов (Этап 4.6)
         const topColumns = columnData
             .sort((a, b) => b.amplitude - a.amplitude)
@@ -134,11 +159,13 @@ export class LightingManager {
             const cache = this.rectCache.get(el);
             if (!cache) return;
 
-            // [GARLAND EFFECT] Зеркальное отражение столбцов на грани панели.
-            // Вместо одного общего блика, создаем вертикальный градиент по высоте панели.
-            // Мы берем ВСЕ колонки (или топ-20) и проецируем их цвета на Y-координату.
-            
-            const localSources = topColumns.filter(col => {
+            // [GARLAND EFFECT + PHYSICS] Проецируем 3D-позицию (panX) на экран
+            // panX = -1 (лево) до 1 (право). Умножая на cosAngle мы получаем физически 
+            // корректную ось Y-экрана для блика, зависящую от угла вращения пользователем.
+            const localSources = topColumns.map(col => {
+                const projectedPanX = col.panX * cosAngle;
+                return { ...col, panX: projectedPanX }; // подменяем panX для glassSpecularManager
+            }).filter(col => {
                 const colScreenX = (col.panX + 1) / 2;
                 return Math.abs(colScreenX - cache.centerX) < 0.8;
             });

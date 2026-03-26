@@ -172,10 +172,6 @@ export class HologramRenderer {
     
     this.meshL.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
     this.meshR.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
-    
-    // [FIX] Constant rotation of the hologram (2026 Physics)
-    // Rotating mainSequencerGroup instead of pivot for better stability with XR
-    this.mainSequencerGroup.rotation.y += 0.005;
 
     // [FIX] Keep uIsGreeting = 0 during session even if paused
     const greetingValue = (isActive) ? 0.0 : 1.0;
