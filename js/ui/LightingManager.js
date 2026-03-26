@@ -103,10 +103,12 @@ export class LightingManager {
                 amplitudeNorm = Math.max(0, (amp + 100) / 100);
             }
             if (amplitudeNorm > 0.03) {
+                // Вычисляем HUE точно как в hologramConfig.js
+                const hue = (270 * i) / 127; 
                 columnData.push({
                     freq: i,
                     amplitude: amplitudeNorm,
-                    color: semitones[i] ? semitones[i].color : `hsl(${(i / 128) * 300}, 100%, 50%)`,
+                    color: `hsl(${hue}, 100%, 60%)`, // Строка HSL для glassSpecularManager
                     panX: data.angles ? data.angles[i] : 0
                 });
             }

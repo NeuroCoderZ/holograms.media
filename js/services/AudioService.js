@@ -289,43 +289,8 @@ class AudioService {
      * Вызывается автоматически при создании WorkletNode.
      */
     _startRefreshRateMonitoring() {
-        // Используем requestAnimationFrame для измерения реального FPS
-        let lastTime = performance.now();
-        let frameCount = 0;
-        let measuredFps = this.targetFps;
-
-        const measureFps = (currentTime) => {
-            // Если вкладка скрыта (браузер режет rAF), пропускаем замер FPS
-            if (document.visibilityState === 'hidden') {
-                lastTime = currentTime; // Reset baseline
-                frameCount = 0;
-                this._fpsMonitorId = requestAnimationFrame(measureFps);
-                return;
-            }
-
-            frameCount++;
-            const elapsed = currentTime - lastTime;
-
-            // Пересчитываем каждые 2 секунды
-            if (elapsed >= 2000) {
-                measuredFps = Math.round((frameCount * 1000) / elapsed);
-                frameCount = 0;
-                lastTime = currentTime;
-
-                // Обновляем только если FPS изменился >= 3
-                const fpsDelta = Math.abs(measuredFps - this.targetFps);
-                if (fpsDelta >= 3 && measuredFps >= 20 && measuredFps <= 300) {
-                    // console.log(`[AudioService] Display FPS changed: ${this.targetFps} → ${measuredFps}`);
-                    this.setTargetFps(measuredFps);
-                } else if (fpsDelta > 0) {
-                    this.setTargetFps(measuredFps);  // Update silently for minor changes
-                }
-            }
-
-            this._fpsMonitorId = requestAnimationFrame(measureFps);
-        };
-
-        this._fpsMonitorId = requestAnimationFrame(measureFps);
+        // [FIX] Disabled dynamic FPS monitoring to prevent WASM cwtanalyzer state corruption
+        // Initial detection at startup is sufficient.
     }
 
     /**
