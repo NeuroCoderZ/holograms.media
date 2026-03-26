@@ -364,14 +364,25 @@
 .control-button::after {
   content: '';
   position: absolute;
-  inset: -1px;
+  inset: 0;
   border-radius: inherit;
+  padding: 1px; /* Glass edge thickness */
   background: var(--glass-specular, transparent);
-  mix-blend-mode: screen; /* 2026: 'screen' or 'color-dodge' for emissive look */
+  mix-blend-mode: screen; 
   pointer-events: none;
   z-index: 2;
   opacity: var(--glass-specular-opacity, 0.8);
   transition: background 0.12s ease-out, opacity 0.12s ease-out;
+  
+  /* Prism effect: only show the gradient on the border edges, hide the center */
+  mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 /* Hover State: Glass gets slightly brighter/cleaner */

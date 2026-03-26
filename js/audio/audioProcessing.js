@@ -97,10 +97,7 @@ export async function initializeCwtWorklet(audioContext) {
     }
 
     const proxy = getInputProxyNode(ctx);
-    if (node && proxy) {
-        try {
-            proxy.disconnect(node);
-        } catch (e) { }
+    if (node && proxy && !window._cwtLinked) {
         proxy.connect(node);
 
         // FORCING DATA FLOW: Connect to destination via silent gain
@@ -110,6 +107,7 @@ export async function initializeCwtWorklet(audioContext) {
         node.connect(silentGain);
         silentGain.connect(ctx.destination);
 
+        window._cwtLinked = true;
         console.log('[AudioProcessing] ✅ Pipeline Linked: Proxy -> Worklet -> Silent Output');
     }
     return true;
