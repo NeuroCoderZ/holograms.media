@@ -40,32 +40,60 @@ export async function sendChatMessage(text, idToken, selectedModel = null, onChu
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullText = "";
+        let sseBuffer = "";
+
+        const processEventBlock = (rawEvent) => {
+            const dataLines = rawEvent
+                .split('\n')
+                .filter((line) => line.startsWith('data: '))
+                .map((line) => line.slice(6));
+
+            if (dataLines.length === 0) return;
+
+            const payloadText = dataLines.join('\n').trim();
+            if (!payloadText) return;
+
+            const data = JSON.parse(payloadText);
+            if (data.token) {
+                fullText += data.token;
+                if (onChunk) onChunk(data.token);
+            } else if (data.error) {
+                console.error("[apiService] Stream error:", data.error);
+                throw new Error(data.error);
+            }
+        };
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
-            
-            // SSE format: "data: {\"token\": \"...\"}\n\n"
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
+            sseBuffer += decoder.decode(value, { stream: true });
+
+            let separatorIndex = sseBuffer.indexOf('\n\n');
+            while (separatorIndex !== -1) {
+                const rawEvent = sseBuffer.slice(0, separatorIndex).trim();
+                sseBuffer = sseBuffer.slice(separatorIndex + 2);
+
+                if (rawEvent) {
                     try {
-                        const data = JSON.parse(line.slice(6));
-                        if (data.token) {
-                            fullText += data.token;
-                            if (onChunk) onChunk(data.token);
-                        } else if (data.error) {
-                            console.error("[apiService] Stream error:", data.error);
-                            throw new Error(data.error);
-                        }
-                    } catch (e) {
-                        // In case of fragmented JSON or ping-like data
-                        continue;
+                        processEventBlock(rawEvent);
+                    } catch (error) {
+                        throw error;
                     }
                 }
+
+                separatorIndex = sseBuffer.indexOf('\n\n');
             }
+        }
+
+        const trailingChunk = decoder.decode();
+        if (trailingChunk) sseBuffer += trailingChunk;
+        if (sseBuffer.trim()) {
+            processEventBlock(sseBuffer.trim());
+        }
+
+        if (!fullText.trim()) {
+            console.warn('[apiService] Chat stream completed without text tokens.');
         }
 
         console.log('[apiService] Chat stream finished.');

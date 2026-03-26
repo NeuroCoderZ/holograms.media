@@ -26,10 +26,12 @@ export class EyeLoader {
         this.upperLid = this._makeLid(true);
         // Нижнее веко — frosted glass, без border
         this.lowerLid = this._makeLid(false);
+        this.seamMask = this._makeSeamMask();
 
         this.container.appendChild(this.canvas);
         this.container.appendChild(this.upperLid);
         this.container.appendChild(this.lowerLid);
+        this.container.appendChild(this.seamMask);
 
         // Состояние
         this.progress = 0;
@@ -61,7 +63,7 @@ export class EyeLoader {
             position: 'absolute',
             left: '0',
             width: '100%',
-            height: '50%',
+            height: '50.5%',
             zIndex: '20',
             backdropFilter: 'blur(20px)',
             webkitBackdropFilter: 'blur(20px)',
@@ -70,13 +72,41 @@ export class EyeLoader {
                 : 'linear-gradient(to top,    rgba(8,8,18,0.98) 70%, rgba(15,15,35,0.85) 100%)',
             transition: 'transform 0.9s cubic-bezier(0.19, 1, 0.22, 1)',
             border: 'none',
-            boxShadow: isUpper ? '0 5px 15px rgba(0,0,0,0.5)' : '0 -5px 15px rgba(0,0,0,0.5)',
-            margin: isUpper ? '0 0 -1px 0' : '-1px 0 0 0' // Нахлест 1px для удаления щели
+            boxShadow: isUpper ? '0 8px 18px rgba(0,0,0,0.38)' : '0 -8px 18px rgba(0,0,0,0.38)',
+            margin: '0'
         });
-        lid.style.top = isUpper ? '0' : 'auto';
-        lid.style.bottom = isUpper ? 'auto' : '0';
+        lid.style.top = isUpper ? '-0.5%' : 'auto';
+        lid.style.bottom = isUpper ? 'auto' : '-0.5%';
         lid.style.transformOrigin = isUpper ? 'top center' : 'bottom center';
         return lid;
+    }
+
+    _makeSeamMask() {
+        const seamMask = document.createElement('div');
+        Object.assign(seamMask.style, {
+            position: 'absolute',
+            left: '0',
+            top: '50%',
+            width: '100%',
+            height: '8px',
+            transform: 'translateY(-50%)',
+            zIndex: '25',
+            pointerEvents: 'none',
+            background: 'linear-gradient(to bottom, rgba(8,8,18,0.98), rgba(12,12,26,0.92), rgba(8,8,18,0.98))',
+            opacity: '1',
+            transition: 'opacity 0.35s ease'
+        });
+        return seamMask;
+    }
+
+    _pickRandomOffscreenPoint(margin) {
+        const edge = Math.floor(Math.random() * 4);
+        switch (edge) {
+            case 0: return { x: Math.random() * this.width, y: -margin };
+            case 1: return { x: this.width + margin, y: Math.random() * this.height };
+            case 2: return { x: Math.random() * this.width, y: this.height + margin };
+            default: return { x: -margin, y: Math.random() * this.height };
+        }
     }
 
     _resize() {
@@ -99,14 +129,10 @@ export class EyeLoader {
     /** Прилёт из случайного края в центр */
     _beginFlyIn() {
         this.phase = 'fly-in';
-        const edge = Math.floor(Math.random() * 4);
         const margin = 80;
-        switch (edge) {
-            case 0: this._startX = Math.random() * this.width; this._startY = -margin; break;
-            case 1: this._startX = this.width + margin;        this._startY = Math.random() * this.height; break;
-            case 2: this._startX = Math.random() * this.width; this._startY = this.height + margin; break;
-            case 3: this._startX = -margin;                    this._startY = Math.random() * this.height; break;
-        }
+        const entryPoint = this._pickRandomOffscreenPoint(margin);
+        this._startX = entryPoint.x;
+        this._startY = entryPoint.y;
         this.eyeX = this._startX;
         this.eyeY = this._startY;
         this._targetX = this.cx;
@@ -145,19 +171,12 @@ export class EyeLoader {
     /** Улёт за случайный край */
     _beginFlyOut() {
         this.phase = 'fly-out';
-        const edge = Math.floor(Math.random() * 4);
         const margin = 350; // Увеличен, чтобы глаз 100% покинул экран
-        let exitX, exitY;
-        switch (edge) {
-            case 0: exitX = Math.random() * this.width; exitY = -margin; break;
-            case 1: exitX = this.width + margin;        exitY = Math.random() * this.height; break;
-            case 2: exitX = Math.random() * this.width; exitY = this.height + margin; break;
-            case 3: exitX = -margin;                    exitY = Math.random() * this.height; break;
-        }
+        const exitPoint = this._pickRandomOffscreenPoint(margin);
         this._startX = this.eyeX;
         this._startY = this.eyeY;
-        this._targetX = exitX;
-        this._targetY = exitY;
+        this._targetX = exitPoint.x;
+        this._targetY = exitPoint.y;
         this._flyStartTime = performance.now();
     }
 
@@ -317,6 +336,7 @@ export class EyeLoader {
     _openLids() {
         // Скрываем canvas МГНОВЕННО до начала анимации век
         this.canvas.style.display = 'none';
+        this.seamMask.style.opacity = '0';
         // Небольшая задержка чтобы display:none применился до CSS transition
         requestAnimationFrame(() => {
             this.upperLid.style.transform = 'scaleY(0)';
