@@ -118,8 +118,12 @@ export class HologramRenderer {
       const initialX_R = width / 2;
       const initialY = (i + 0.5) * CELL_HEIGHT - GRID_HEIGHT;
 
-      let hL = 0.1, hR = 0.1;
-      let pL = initialX_L, pR = initialX_R;
+      // [MOD] If paused, we don't recalculate levels, we just skip the assignment.
+      // hL and hR will stay at the values they had when the loop started (0.1 if fresh, 
+      // but if we were playing, they should be preserved).
+      // Actually, we must read current values from the attribute to freeze them.
+      let currentHL = this.meshL.geometry.getAttribute('aColumnScaleZ').getX(i);
+      let currentHR = this.meshR.geometry.getAttribute('aColumnScaleZ').getX(i);
 
       if (isActive && !isPaused) {
         let dbL = (dbLevels[i] !== undefined) ? dbLevels[i] : -128;
@@ -143,6 +147,11 @@ export class HologramRenderer {
         // Update per-instance shader brightness attribute
         this.meshL.geometry.getAttribute('aColumnScaleZ').setX(i, hL);
         this.meshR.geometry.getAttribute('aColumnScaleZ').setX(i, hR);
+      } else if (isPaused) {
+        // [FIX] Freeze height on pause
+        hL = currentHL;
+        hR = currentHR;
+        // Pan already handled by preserved pL / pR logic if we don't change them
       }
 
       dummy.position.set(pL, initialY, 0);
@@ -159,11 +168,15 @@ export class HologramRenderer {
     this.meshL.instanceMatrix.needsUpdate = true;
     this.meshR.instanceMatrix.needsUpdate = true;
     
-    // [FIX] Required to push new per-instance values to the GPU shader!
     this.meshL.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
     this.meshR.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
     
-    const greetingValue = (isActive && !isPaused) ? 0.0 : 1.0;
+    // [FIX] Constant rotation of the hologram (2026 Physics)
+    // Rotating mainSequencerGroup instead of pivot for better stability with XR
+    this.mainSequencerGroup.rotation.y += 0.005;
+
+    // [FIX] Keep uIsGreeting = 0 during session even if paused
+    const greetingValue = (isActive) ? 0.0 : 1.0;
     this.meshL.material.uniforms.uIsGreeting.value = greetingValue;
     this.meshR.material.uniforms.uIsGreeting.value = greetingValue;
   }

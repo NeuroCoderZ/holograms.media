@@ -11,7 +11,7 @@ export class EyeLoader {
             position: 'fixed', top: '0', left: '0',
             width: '100vw', height: '100vh',
             zIndex: '99999', pointerEvents: 'none',
-            background: '#000', overflow: 'hidden'
+            background: 'transparent', overflow: 'hidden'
         });
 
         // Canvas для глаза
@@ -66,12 +66,12 @@ export class EyeLoader {
             backdropFilter: 'blur(20px)',
             webkitBackdropFilter: 'blur(20px)',
             background: isUpper
-                ? 'linear-gradient(to bottom, rgba(8,8,18,0.97) 60%, rgba(12,12,28,0.6) 100%)'
-                : 'linear-gradient(to top,    rgba(8,8,18,0.97) 60%, rgba(12,12,28,0.6) 100%)',
-            transition: 'transform 0.85s cubic-bezier(0.77, 0, 0.175, 1)',
-            // Нет border — интеграция через blur
+                ? 'linear-gradient(to bottom, rgba(8,8,18,0.98) 70%, rgba(15,15,35,0.85) 100%)'
+                : 'linear-gradient(to top,    rgba(8,8,18,0.98) 70%, rgba(15,15,35,0.85) 100%)',
+            transition: 'transform 0.9s cubic-bezier(0.19, 1, 0.22, 1)',
             border: 'none',
-            boxShadow: 'none',
+            boxShadow: isUpper ? '0 5px 15px rgba(0,0,0,0.5)' : '0 -5px 15px rgba(0,0,0,0.5)',
+            margin: isUpper ? '0 0 -1px 0' : '-1px 0 0 0' // Нахлест 1px для удаления щели
         });
         lid.style.top = isUpper ? '0' : 'auto';
         lid.style.bottom = isUpper ? 'auto' : '0';
@@ -217,7 +217,8 @@ export class EyeLoader {
 
     _drawEye(x, y) {
         const ctx = this.ctx;
-        const R = Math.min(this.width, this.height) * 0.15; // Большой глаз
+        // УВЕЛИЧЕННЫЙ ГЛАЗ: 0.25 от экрана (был 0.15)
+        const R = Math.min(this.width, this.height) * 0.25; 
         const rPupil = R * 0.38;
 
         ctx.save();
