@@ -22,16 +22,35 @@ import json
 
 logger = logging.getLogger(__name__)
 
+
+def _build_conversation_context(history: List[ChatMessageDB], limit: int = 8) -> str:
+    relevant_messages = history[-limit:] if history else []
+    lines = []
+    for message in relevant_messages:
+        role = getattr(message, "role", "unknown")
+        content = (getattr(message, "message_content", "") or "").strip()
+        if not content:
+            continue
+        lines.append(f"{role}: {content[:1200]}")
+    return "\n".join(lines)
+
 # Основная функция интеграции: теперь делегируем всё Оркестратору (Supervisor Agent)
-async def get_llm_response(user_message: str, history: List[ChatMessageDB], selected_model: Optional[str] = None, user_email: str = "") -> str:
+async def get_llm_response(
+    user_message: str,
+    history: List[ChatMessageDB],
+    selected_model: Optional[str] = None,
+    user_email: str = "",
+    user_id: str = "guest"
+) -> str:
     logger.info(f"LLM: Delegating '{user_message}' to TriaOrchestrator")
-    
-    # Оркестратор сам вызовет RAG через Tool Calling, если это необходимо.
-    # Мы передаем историю и почту пользователя для разграничения прав (Глобальная/Персональная).
+
+    conversation_context = _build_conversation_context(history)
     
     response_text = await orchestrator.process_user_prompt(
         prompt=user_message,
-        user_email=user_email
+        context=conversation_context,
+        user_email=user_email,
+        user_id=user_id
     )
     
     # Для совместимости с UI добавляем метку модели (пока эмулируем, так как Gemini - Supervisor)
@@ -179,7 +198,12 @@ class ChatService:
                     user_email = getattr(user, "email", "")
 
                 # E-1: Прокидываем в оркестратор
-                llm_response_content = await get_llm_response(message_content, history_for_llm, user_email)
+                llm_response_content = await get_llm_response(
+                    message_content,
+                    history_for_llm,
+                    user_email=user_email,
+                    user_id=user_id
+                )
             except Exception as e:
                 logger.error(f"Service: LLM call failed for session {session_id}: {e}")
                 # Optionally save a system error message to chat
@@ -247,14 +271,25 @@ class ChatService:
 
         # 3. Stream and Accumulate
         full_response = ""
+        history_for_llm = await self.repo.get_messages_by_session_id(session_id=session_id, user_id=user_id, limit=12)
+        conversation_context = _build_conversation_context(history_for_llm)
         try:
-            async for token in orchestrator.stream_user_prompt(prompt=message_content, user_email=user_email):
+            async for token in orchestrator.stream_user_prompt(
+                prompt=message_content,
+                user_email=user_email,
+                context=conversation_context,
+                user_id=user_id
+            ):
                 full_response += token
                 yield "data: " + json.dumps({"token": token}) + "\n\n"
         except Exception as e:
             logger.error(f"Streaming failed: {e}")
             yield "data: " + json.dumps({"error": str(e)}) + "\n\n"
         finally:
+            if not full_response.strip():
+                full_response = "Триа не смогла сформировать ответ. Попробуйте переформулировать запрос или повторить отправку."
+                yield "data: " + json.dumps({"token": full_response}) + "\n\n"
+
             # 4. Save Assistant Response to History
             if full_response:
                 assistant_msg = ChatMessageCreate(
@@ -265,6 +300,7 @@ class ChatService:
                 )
                 await self.repo.add_message_to_history(message_in=assistant_msg, user_id=user_id)
                 logger.info(f"Stream finished and saved to session {session_id}")
+            yield "data: " + json.dumps({"done": True}) + "\n\n"
 
     async def get_session_with_history(self, session_id: int, user_id: str, message_skip: int = 0, message_limit: int = 100) -> Optional[ChatSessionWithHistory]:
         logger.info(f"Service: Getting session {session_id} with history for user {user_id}.")

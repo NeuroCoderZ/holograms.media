@@ -29,8 +29,8 @@ export class HologramRenderer {
     this.mainSequencerGroup = new THREE.Group();
     this.hologramPivot.add(this.mainSequencerGroup);
 
-    this.columnGeometry = new THREE.BoxGeometry(1, CELL_HEIGHT, 1);
-    this.columnGeometry.translate(0, 0, 0.5); 
+    this.baseColumnGeometry = new THREE.BoxGeometry(1, CELL_HEIGHT, 1);
+    this.baseColumnGeometry.translate(0, 0, 0.5); 
 
     this._initInstancedMeshes();
     this._createSequencerGrids();
@@ -59,8 +59,11 @@ export class HologramRenderer {
       depthTest: true
     });
 
-    this.meshL = new THREE.InstancedMesh(this.columnGeometry, this.instancedMaterial, count);
-    this.meshR = new THREE.InstancedMesh(this.columnGeometry, this.instancedMaterial.clone(), count);
+    this.columnGeometryL = this.baseColumnGeometry.clone();
+    this.columnGeometryR = this.baseColumnGeometry.clone();
+
+    this.meshL = new THREE.InstancedMesh(this.columnGeometryL, this.instancedMaterial, count);
+    this.meshR = new THREE.InstancedMesh(this.columnGeometryR, this.instancedMaterial.clone(), count);
 
     this.meshL.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.meshR.instanceMatrix.setUsage(THREE.DynamicDrawUsage);

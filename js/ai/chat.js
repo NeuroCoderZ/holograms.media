@@ -85,10 +85,16 @@ export function initializeTriaChat() {
 
       // Создаем контейнер для ответа ИИ заранее
       const updateTriaUI = appendMessage('', 'tria');
+      let streamedText = '';
 
-      await apiSendChatMessage(message, token, selectedModel, (chunk) => {
+      const fullText = await apiSendChatMessage(message, token, selectedModel, (chunk) => {
+        streamedText += chunk;
         updateTriaUI(chunk);
       });
+
+      if (!streamedText.trim() && !(fullText || '').trim()) {
+        updateTriaUI('Триа не смогла сформировать ответ. Попробуйте уточнить запрос и отправить его еще раз.');
+      }
       
     } catch (error) {
       console.error("Chat error:", error);

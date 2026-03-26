@@ -53,7 +53,27 @@ async def get_gemini_response(
             config=config
         )
 
-        return response.text
+        response_text = (getattr(response, "text", None) or "").strip()
+        if response_text:
+            return response_text
+
+        candidates = getattr(response, "candidates", None) or []
+        for candidate in candidates:
+            content = getattr(candidate, "content", None)
+            parts = getattr(content, "parts", None) or []
+            collected_parts = []
+            for part in parts:
+                part_text = getattr(part, "text", None)
+                if part_text:
+                    collected_parts.append(part_text)
+            if collected_parts:
+                response_text = "".join(collected_parts).strip()
+                if response_text:
+                    return response_text
+
+        finish_reasons = [str(getattr(candidate, "finish_reason", "unknown")) for candidate in candidates]
+        logger.warning(f"Gemini returned empty text. Candidate finish reasons: {finish_reasons}")
+        return ""
     except Exception as e:
         logger.error(f"Gemini LLM error: {e}")
         return f"[Gemini Error] {str(e)}"
