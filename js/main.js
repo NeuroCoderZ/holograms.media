@@ -100,14 +100,36 @@ async function startFullApplication(appState, loader) {
         setupChat();
         setupReloadPrank();
 
-        const { lightingManager } = await import('./ui/LightingManager.js');
-        lightingManager.initialize();
-
-        // Initialize 7-zone glass specular highlights (BasilaQ-128 physics)
-        const { glassSpecularManager } = await import('./ui/glassSpecularManager.js');
-        glassSpecularManager.init();
-
         startAnimationLoop(appState);
+
+        try {
+            const { lightingManager } = await import('./ui/LightingManager.js');
+            if (typeof lightingManager?.initialize === 'function') {
+                lightingManager.initialize();
+            } else {
+                console.warn('[Startup] LightingManager has no initialize() method. Skipping.');
+            }
+        } catch (error) {
+            console.warn('[Startup] LightingManager init skipped:', error);
+        }
+
+        try {
+            const { glassSpecularManager } = await import('./ui/glassSpecularManager.js');
+            const initGlassSpecular =
+                typeof glassSpecularManager?.init === 'function'
+                    ? glassSpecularManager.init.bind(glassSpecularManager)
+                    : typeof glassSpecularManager?.initialize === 'function'
+                        ? glassSpecularManager.initialize.bind(glassSpecularManager)
+                        : null;
+
+            if (initGlassSpecular) {
+                initGlassSpecular();
+            } else {
+                console.warn('[Startup] glassSpecularManager has no init() method. Skipping.');
+            }
+        } catch (error) {
+            console.warn('[Startup] glassSpecularManager init skipped:', error);
+        }
 
         // Скрываем старые спиннеры (легаси)
         const loadingSpinner = document.getElementById('loading-spinner');
