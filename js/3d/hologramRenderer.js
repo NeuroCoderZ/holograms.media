@@ -116,8 +116,8 @@ export class HologramRenderer {
       let pL = initialX_L, pR = initialX_R;
 
       if (isActive && !isPaused) {
-        let dbL = dbLevels[i] || -128;
-        let dbR = dbLevels[i + 128] || -128;
+        let dbL = (dbLevels[i] !== undefined) ? dbLevels[i] : -128;
+        let dbR = (dbLevels[i + 128] !== undefined) ? dbLevels[i + 128] : -128;
 
         const targetPan = panAngles[i] || 0;
         this._panStates[i] += (targetPan - this._panStates[i]) * 0.7;
