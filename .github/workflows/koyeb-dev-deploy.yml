@@ -23,7 +23,7 @@ jobs:
           koyeb secret update DEV_GOOGLE_CLIENT_ID --value "${{ secrets.DEV_GOOGLE_CLIENT_ID }}" || koyeb secret create DEV_GOOGLE_CLIENT_ID --value "${{ secrets.DEV_GOOGLE_CLIENT_ID }}"
           koyeb secret update DEV_GOOGLE_CLIENT_SECRET --value "${{ secrets.DEV_GOOGLE_CLIENT_SECRET }}" || koyeb secret create DEV_GOOGLE_CLIENT_SECRET --value "${{ secrets.DEV_GOOGLE_CLIENT_SECRET }}"
           koyeb secret update ASTRA_DB_APPLICATION_TOKEN --value "${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}" || koyeb secret create ASTRA_DB_APPLICATION_TOKEN --value "${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}"
-          koyeb secret update ASTRA_DATABASE_URL --value "${{ secrets.ASTRA_DATABASE_URL }}" || koyeb secret create ASTRA_DATABASE_URL --value "${{ secrets.ASTRA_DATABASE_URL }}"
+          koyeb secret update ASTRA_DB_API_ENDPOINT --value "${{ secrets.ASTRA_DB_API_ENDPOINT }}" || koyeb secret create ASTRA_DB_API_ENDPOINT --value "${{ secrets.ASTRA_DB_API_ENDPOINT }}"
           koyeb secret update GOOGLE_API_KEY --value "${{ secrets.GOOGLE_API_KEY }}" || koyeb secret create GOOGLE_API_KEY --value "${{ secrets.GOOGLE_API_KEY }}"
           koyeb secret update MISTRAL_API_KEY --value "${{ secrets.MISTRAL_API_KEY }}" || koyeb secret create MISTRAL_API_KEY --value "${{ secrets.MISTRAL_API_KEY }}"
           koyeb secret update OPENCLAW_GATEWAY_TOKEN --value "${{ secrets.OPENCLAW_GATEWAY_TOKEN }}" || koyeb secret create OPENCLAW_GATEWAY_TOKEN --value "${{ secrets.OPENCLAW_GATEWAY_TOKEN }}"
@@ -34,11 +34,11 @@ jobs:
             --git-builder docker \
             --git-docker-dockerfile Dockerfile \
             --env ENVIRONMENT=development \
-            --env GOOGLE_CLIENT_ID=secret!DEV_GOOGLE_CLIENT_ID \
-            --env GOOGLE_CLIENT_SECRET=secret!DEV_GOOGLE_CLIENT_SECRET \
-            --env ASTRA_DB_APPLICATION_TOKEN=secret!ASTRA_DB_APPLICATION_TOKEN \
-            --env ASTRA_DB_API_ENDPOINT=secret!ASTRA_DATABASE_URL \
+            --env GOOGLE_CLIENT_ID=secret:DEV_GOOGLE_CLIENT_ID \
+            --env GOOGLE_CLIENT_SECRET=secret:DEV_GOOGLE_CLIENT_SECRET \
+            --env ASTRA_DB_APPLICATION_TOKEN=secret:ASTRA_DB_APPLICATION_TOKEN \
+            --env ASTRA_DB_API_ENDPOINT=secret:ASTRA_DB_API_ENDPOINT \
             --env ASTRA_DB_KEYSPACE=default_keyspace \
-            --env GOOGLE_API_KEY=secret!GOOGLE_API_KEY \
-            --env MISTRAL_API_KEY=secret!MISTRAL_API_KEY \
-            --env OPENCLAW_GATEWAY_TOKEN=secret!OPENCLAW_GATEWAY_TOKEN
+            --env GOOGLE_API_KEY=secret:GOOGLE_API_KEY \
+            --env MISTRAL_API_KEY=secret:MISTRAL_API_KEY \
+            --env OPENCLAW_GATEWAY_TOKEN=secret:OPENCLAW_GATEWAY_TOKEN
