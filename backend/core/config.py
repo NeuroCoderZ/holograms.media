@@ -50,6 +50,9 @@ class Settings(BaseModel):
     @field_validator("ASTRA_DB_API_ENDPOINT")
     @classmethod
     def validate_astra_endpoint(cls, v: str) -> str:
+        # Prevent common secret misconfiguration where variable name is set as value
+        if v == "ASTRA_DB_API_ENDPOINT" or v == "ASTRA_DATABASE_URL":
+            return ""
         if v and not v.startswith("http"):
             return f"https://{v}"
         return v
