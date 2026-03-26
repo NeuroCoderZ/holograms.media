@@ -106,7 +106,7 @@ async function initializeGoogleSignIn() {
       callback: handleGoogleCredentialResponse,
       ux_mode: 'popup', // Явно указываем всплывающее окно
       auto_select: false, // Запрещаем авто-вход, чтобы всегда был выбор аккаунта
-      use_fedcm_for_prompt: false // Отключаем FedCM для совместимости с COOP/COEP
+      use_fedcm_for_prompt: true // [FIX] FedCM обязателен для обхода блокировок 3rd-party cookies и COOP
     });
     window.google.accounts.id.renderButton(
       document.getElementById('google-signin-container'),
@@ -118,7 +118,7 @@ async function initializeGoogleSignIn() {
         width: 300 // Фиксированная ширина для стабильности
       }
     );
-    // window.google.accounts.id.prompt(); // Показывает One Tap UI
+    window.google.accounts.id.prompt(); // Показывает One Tap UI (нативный FedCM)
   } else {
     console.error('Объект Google GSI не найден.');
   }

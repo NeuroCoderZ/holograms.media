@@ -1,43 +1,30 @@
 /**
  * hologramShaders.js — BasilaQ-128 GLSL шейдеры
  * ================================================
- * Linear Physics: 1 dB = 1 ячейка (Z-scale = 128 + dB).
- * Яркость пропорциональна длине столбца (Intensity = Cells / 128).
+ * Pure Reconstruction v17.3 (Instancing Support)
  */
 
 export const vertexShader = /* glsl */`
-    varying float vWorldZHeight;
-    uniform float uColumnScaleZ;
-    uniform float uInversePerspective; // 0.0 = Ortho, 1.0 = Reverse
+    varying vec3 vNormal;
+    varying float vZ; 
+    varying vec3 vColor;
+    attribute float aColumnScaleZ;
+    varying float vColumnScaleZ;
 
     void main() {
-        vWorldZHeight = (position.z + 0.5) * uColumnScaleZ;
-        
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        
-        // ЛОГИКА ОБРАТНОЙ ПЕРСПЕКТИВЫ (XR Mode)
-        // Задача: Дальняя стенка (Back Wall) сохраняет масштаб (1.0).
-        // Ближняя сетка (Near Grid) уменьшается (сужается), создавая эффект глубины.
-        if (uInversePerspective > 0.5) {
-            // В системе координат камеры (View Space):
-            // Камера в (0,0,0). Ось Z смотрит назад. Объекты перед камерой имеют Z < 0.
-            // Дальние объекты имеют Z << 0 (например, -2000).
-            // Ближние объекты имеют Z ~ -100...-500.
-            
-            float farAnchor = -2000.0; // Глубина, где масштаб остается 1.0
-            float nearAnchor = -100.0; // Глубина, где сжатие максимально
-            
-            // factor = 0.0 на дальней стенке, 1.0 у носа
-            float factor = smoothstep(farAnchor, nearAnchor, mvPosition.z);
-            
-            // На дальнем конце (factor 0) -> scale 1.0 (без изменений)
-            // На ближнем конце (factor 1) -> scale 0.65 (сужаем вход)
-            float perspScale = mix(1.0, 0.65, factor);
-            
-            // Сжимаем ТОЛЬКО по X (перспектива цилиндра), Y остается прямым!
-            // mvPosition.x *= perspScale; // DISABLED: XR Mode is distorting thickness of audio visual columns.
-        }
+        vColumnScaleZ = aColumnScaleZ;
+        // Поддержка InstancedMesh и обычного Mesh
+        #ifdef USE_INSTANCING
+            vNormal = normalize(normalMatrix * (instanceMatrix * vec4(normal, 0.0)).xyz);
+            vColor = instanceColor;
+            vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+        #else
+            vNormal = normalize(normalMatrix * normal);
+            vColor = vec3(1.0, 1.0, 1.0); // Fallback
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        #endif
 
+        vZ = position.z; // Geometry already translated to 0..1 locally
         gl_Position = projectionMatrix * mvPosition;
     }
 `;
@@ -45,44 +32,35 @@ export const vertexShader = /* glsl */`
 export const fragmentShader = /* glsl */`
     uniform vec3  uBaseColor;
     uniform float uSelection;
-    uniform float uOpacity;
     uniform float uIsGreeting;
     uniform float uBrightnessBoost;
-    varying float vWorldZHeight;
+    varying float vColumnScaleZ;
+    varying vec3  vNormal;
+    varying float vZ;
+    varying vec3  vColor;
 
     void main() {
-        // 1. Базовые координаты (BasilaQ-128)
-        float z = vWorldZHeight;
-        float cellIndex = floor(z);
-        
-        // 2. ЛОГИКА ОБВОДКИ (Опережение на 1 дБ)
-        // Используем uBrightnessBoost как маркер: 1.1 означает, что это ребро.
-        bool isEdge = (uBrightnessBoost > 1.01);
-        if (isEdge) {
-            cellIndex += 1.0; 
-        }
+        // Используем цвет из аттрибута (инстанс) или из униформа (обычный меш)
+        vec3 baseColor = mix(uBaseColor, vColor, 1.0); // vColor доминирует если есть
 
-        // index 127 (0 dB) -> 128/128 (1.0)
-        // index 0 (-127 dB) -> 1/128 (0.0078)
-        vec3 finalColor;
+        float depth = vZ * vColumnScaleZ;
+        float cellIndex = floor(depth + 0.001);
         float bIndex = clamp(cellIndex, 0.0, 127.0);
         float brightness = (bIndex + 1.0) / 128.0; 
-        finalColor = uBaseColor * brightness;
-
-        // Режим приветствия: поверхность цветная, ребра чуть ярче (+1дБ)
-        if (uIsGreeting > 0.5) {
-            if (isEdge) {
-                // Вместо белого (vec3(1.0)) делаем "цвет + яркость +1дБ"
-                // Это примерно 1.25 от базы, но не превышая белый
-                finalColor = clamp(uBaseColor * 1.35, 0.0, 1.0);
-            } else {
-                finalColor = uBaseColor;
-            }
+        
+        if (vZ > 0.99) {
+            float maxCell = floor(vColumnScaleZ + 0.001);
+            brightness = clamp(maxCell + 1.0, 1.0, 128.0) / 128.0;
         }
 
-        finalColor += uSelection * 0.3; // Подсветка выбора
-        
-        gl_FragColor = vec4(finalColor, uOpacity);
+        vec3 finalColor = baseColor * brightness;
+
+        if (uIsGreeting > 0.5) {
+            finalColor = baseColor;
+        }
+
+        finalColor += uSelection * 0.3; 
+        gl_FragColor = vec4(finalColor * uBrightnessBoost, 1.0);
     }
 `;
 
@@ -91,23 +69,7 @@ export function makeColumnUniforms(baseColor) {
     return {
         uBaseColor: { value: baseColor },
         uSelection: { value: 0.0 },
-        uOpacity: { value: 1.0 },
         uIsGreeting: { value: 1.0 },
-        uBrightnessBoost: { value: 1.0 },
-        uColumnScaleZ: { value: 0.1 },
-        uInversePerspective: { value: 0.0 },
-    };
-}
-
-/** То же самое для рёбер — чуть ярче (+10%) */
-export function makeEdgeUniforms(baseColor) {
-    return {
-        uBaseColor: { value: baseColor },
-        uSelection: { value: 0.0 },
-        uOpacity: { value: 1.0 },
-        uIsGreeting: { value: 1.0 },
-        uBrightnessBoost: { value: 1.1 },
-        uColumnScaleZ: { value: 0.1 },
-        uInversePerspective: { value: 0.0 },
+        uBrightnessBoost: { value: 1.4 }, // Increased for self-illumination
     };
 }
