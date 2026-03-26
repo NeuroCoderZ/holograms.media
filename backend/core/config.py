@@ -50,11 +50,20 @@ class Settings(BaseModel):
     @field_validator("ASTRA_DB_API_ENDPOINT")
     @classmethod
     def validate_astra_endpoint(cls, v: str) -> str:
+        # Debug: Log the incoming value
+        print(f"DEBUG: Validating ASTRA_DB_API_ENDPOINT. Raw value: '{v}'")
+        
         # Prevent common secret misconfiguration where variable name is set as value
         if v == "ASTRA_DB_API_ENDPOINT" or v == "ASTRA_DATABASE_URL":
+            print("DEBUG: Validation FAILED: Detected placeholder string. Returning empty string.")
             return ""
+        
         if v and not v.startswith("http"):
-            return f"https://{v}"
+            result = f"https://{v}"
+            print(f"DEBUG: Validation SUCCESS (auto-https): '{result}'")
+            return result
+        
+        print(f"DEBUG: Validation SUCCESS (raw): '{v}'")
         return v
 
 settings = Settings()

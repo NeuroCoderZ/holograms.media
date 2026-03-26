@@ -134,15 +134,19 @@ export class LightingManager {
             const cache = this.rectCache.get(el);
             if (!cache) return;
 
-            // Собираем все значимые источники для этого элемента
+            // [GARLAND EFFECT] Зеркальное отражение столбцов на грани панели.
+            // Вместо одного общего блика, создаем вертикальный градиент по высоте панели.
+            // Мы берем ВСЕ колонки (или топ-20) и проецируем их цвета на Y-координату.
+            
             const localSources = topColumns.filter(col => {
                 const colScreenX = (col.panX + 1) / 2;
-                return Math.abs(colScreenX - cache.centerX) < 0.7;
+                return Math.abs(colScreenX - cache.centerX) < 0.8;
             });
 
             if (localSources.length > 0) {
-                // Передаем весь список источников для создания "радуги"
-                glassSpecularManager.applyGlint(el, localSources, cache.centerX);
+                // Для панелей используем режим гирлянды (отражение по вертикали)
+                const isPanel = el.classList.contains('panel') || el.classList.contains('glass-panel');
+                glassSpecularManager.applyGlint(el, localSources, cache, isPanel);
             } else {
                 el.style.setProperty('--glass-specular', 'transparent');
             }

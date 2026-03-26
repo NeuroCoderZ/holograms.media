@@ -55,38 +55,49 @@ export class GlassSpecularManager {
 
     /**
      * Applies the spectral prism glint to an element.
-     * Logic: Creates a rainbow rim light (Prism Edge) based on current audio energy.
+     * Logic: Creates a rainbow rim light (Prism Edge) or a vertical "Garland" reflection.
      * 
      * @param {HTMLElement} el - Target element
-     * @param {Array} sources - List of {color, amplitude, panX}
-     * @param {number} elementCenterX - 0..1 position of element
+     * @param {Array} sources - List of {color, amplitude, panX, freq}
+     * @param {Object} cache - Element rect cache {centerX, centerY, height...}
+     * @param {boolean} verticalMode - If true, gradient goes along the longest axis (garland)
      */
-    applyGlint(el, sources, elementCenterX) {
+    applyGlint(el, sources, cache, verticalMode = false) {
         if (!el || !sources || sources.length === 0) return;
 
-        // Построение градиента из топ-источников
-        // Мы сортируем их по панораме, чтобы создать "радужный перелив" слева направо
-        const sorted = [...sources].sort((a, b) => a.panX - b.panX);
-        
-        // Среднее направление света (для угла градиента)
-        const avgPan = sources.reduce((acc, s) => acc + s.panX, 0) / sources.length;
-        const angle = 90 + (avgPan * 45); // От 45 до 135 градусов
-
-        // Формируем стопы градиента
-        const stops = sorted.map((s, i) => {
-            const pos = Math.round((i / (sorted.length - 1 || 1)) * 100);
-            const bright = this.getBrightColor(s.color);
-            return `${bright} ${pos}%`;
-        }).join(', ');
-
+        let gradient;
         const maxAmp = Math.max(...sources.map(s => s.amplitude));
-        const opacity = Math.min(0.9, 0.1 + maxAmp * 0.8).toFixed(2);
+        const opacity = Math.min(0.95, 0.15 + maxAmp * 0.85).toFixed(2);
 
-        // [PRISM FIX] Используем линейный градиент. 
-        // В сочетании с CSS маской (в _panels.css) это даст свечение только на 1px границе.
-        el.style.setProperty('--glass-specular', 
-            `linear-gradient(${angle}deg, ${stops})`
-        );
+        if (verticalMode) {
+            // [GARLAND EFFECT] Зеркальное отражение по вертикали
+            // Сортируем по частоте (freq), так как в Триа частоты распределены по Y (снизу вверх)
+            const sortedByFreq = [...sources].sort((a, b) => b.freq - a.freq);
+            
+            const stops = sortedByFreq.map((s, i) => {
+                const pos = Math.round((i / (sortedByFreq.length - 1 || 1)) * 100);
+                const color = this.getBrightColor(s.color);
+                return `${color} ${pos}%`;
+            }).join(', ');
+
+            // Направление: Сверху вниз (отражение)
+            gradient = `linear-gradient(to bottom, ${stops})`;
+        } else {
+            // [PRISM EDGE] Горизонтальный/диагональный блик (для кнопок)
+            const sortedByPan = [...sources].sort((a, b) => a.panX - b.panX);
+            const avgPan = sources.reduce((acc, s) => acc + s.panX, 0) / sources.length;
+            const angle = 90 + (avgPan * 45); 
+
+            const stops = sortedByPan.map((s, i) => {
+                const pos = Math.round((i / (sortedByPan.length - 1 || 1)) * 100);
+                const color = this.getBrightColor(s.color);
+                return `${color} ${pos}%`;
+            }).join(', ');
+
+            gradient = `linear-gradient(${angle}deg, ${stops})`;
+        }
+
+        el.style.setProperty('--glass-specular', gradient);
         el.style.setProperty('--glass-specular-opacity', opacity);
     }
 }
