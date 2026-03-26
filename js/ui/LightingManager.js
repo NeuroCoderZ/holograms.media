@@ -5,6 +5,7 @@
  */
 import eventBus from '../core/eventBus.js';
 import { glassSpecularManager } from './glassSpecularManager.js';
+import { semitones } from '../config/hologramConfig.js';
 
 export class LightingManager {
     constructor() {
@@ -33,6 +34,10 @@ export class LightingManager {
         // Track dynamically added UI elements (like panels and buttons)
         this._observer = new MutationObserver(() => this.refreshElements());
         this._observer.observe(document.body, { childList: true, subtree: true });
+
+        // Пересчёт при скролле — элементы правой панели меняют Y-позицию
+        this._scrollHandler = this._onScroll.bind(this);
+        document.addEventListener('scroll', this._scrollHandler, { passive: true, capture: true });
     }
 
     refreshElements() {
@@ -64,6 +69,15 @@ export class LightingManager {
         this.refreshElements();
     }
 
+    _onScroll() {
+        // Throttle: пересчёт не чаще 10 раз в секунду
+        const now = performance.now();
+        if (!this._lastScrollUpdate || now - this._lastScrollUpdate > 100) {
+            this._lastScrollUpdate = now;
+            this.updateRectCache();
+        }
+    }
+
     _onSpectralData(data) {
         if (!data || !data.levels) return;
         
@@ -77,14 +91,22 @@ export class LightingManager {
         
         for (let i = 0; i < Math.min(128, count); i++) {
             const amp = data.levels[i];
-            if (amp < -100) continue; 
-            
-            const amplitudeNorm = Math.max(0, (amp + 100) / 100);
-            if (amplitudeNorm > 0.05) {
+            // В демо-режиме (тишина, -128 dBFS) — используем z_shade как базовую яркость
+            const isDemo = amp <= -127;
+            let amplitudeNorm;
+            if (isDemo) {
+                // z_shade.id от 0 до 127 → normalised brightness 0.01..0.5
+                // Демо-блики: яркие, но не максимальные
+                amplitudeNorm = (i / 127) * 0.45 + 0.05;
+            } else {
+                if (amp < -100) continue;
+                amplitudeNorm = Math.max(0, (amp + 100) / 100);
+            }
+            if (amplitudeNorm > 0.03) {
                 columnData.push({
                     freq: i,
                     amplitude: amplitudeNorm,
-                    color: `hsl(${(i / 128) * 300}, 100%, 60%)`, // Более яркие цвета
+                    color: semitones[i] ? semitones[i].color : `hsl(${(i / 128) * 300}, 100%, 50%)`,
                     panX: data.angles ? data.angles[i] : 0
                 });
             }

@@ -34,9 +34,9 @@ export class GlassSpecularManager {
                 if (match) {
                     const h = parseInt(match[1]);
                     const s = 100;
-                    // Boost lightness significantly for 'emissive' look
-                    const l = Math.min(96, Math.max(85, parseFloat(match[3]) + 45)); 
-                    brightColor = `hsla(${h}, ${s}%, ${l}%, 0.95)`;
+                    // Держим насыщенный цвет: lightness 70-80% (не белый, но яркий)
+                    const l = Math.min(80, Math.max(65, parseFloat(match[3]) + 20));
+                    brightColor = `hsla(${h}, ${s}%, ${l}%, 0.92)`;
                 }
             } else if (color.includes('rgba')) {
                 brightColor = color.replace(/[\d.]+\)$/g, '0.95)');

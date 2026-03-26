@@ -8,9 +8,11 @@ export const vertexShader = /* glsl */`
     varying vec3 vNormal;
     varying float vZ; 
     varying vec3 vColor;
-    uniform float uColumnScaleZ;
+    attribute float aColumnScaleZ;
+    varying float vColumnScaleZ;
 
     void main() {
+        vColumnScaleZ = aColumnScaleZ;
         // Поддержка InstancedMesh и обычного Mesh
         #ifdef USE_INSTANCING
             vNormal = normalize(normalMatrix * (instanceMatrix * vec4(normal, 0.0)).xyz);
@@ -32,7 +34,7 @@ export const fragmentShader = /* glsl */`
     uniform float uSelection;
     uniform float uIsGreeting;
     uniform float uBrightnessBoost;
-    uniform float uColumnScaleZ;
+    varying float vColumnScaleZ;
     varying vec3  vNormal;
     varying float vZ;
     varying vec3  vColor;
@@ -41,13 +43,13 @@ export const fragmentShader = /* glsl */`
         // Используем цвет из аттрибута (инстанс) или из униформа (обычный меш)
         vec3 baseColor = mix(uBaseColor, vColor, 1.0); // vColor доминирует если есть
 
-        float depth = vZ * uColumnScaleZ;
+        float depth = vZ * vColumnScaleZ;
         float cellIndex = floor(depth + 0.001);
         float bIndex = clamp(cellIndex, 0.0, 127.0);
         float brightness = (bIndex + 1.0) / 128.0; 
         
         if (vZ > 0.99) {
-            float maxCell = floor(uColumnScaleZ + 0.001);
+            float maxCell = floor(vColumnScaleZ + 0.001);
             brightness = clamp(maxCell + 1.0, 1.0, 128.0) / 128.0;
         }
 
@@ -69,6 +71,5 @@ export function makeColumnUniforms(baseColor) {
         uSelection: { value: 0.0 },
         uIsGreeting: { value: 1.0 },
         uBrightnessBoost: { value: 1.4 }, // Increased for self-illumination
-        uColumnScaleZ: { value: 0.1 },
     };
 }
