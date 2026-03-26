@@ -30,10 +30,17 @@ def get_astra_db(client: DataAPIClient = None):
             return None
 
     try:
-        db_id = settings.ASTRA_DB_ID.strip()
-        region = settings.ASTRA_DB_REGION.strip()
-        keyspace = settings.ASTRA_DB_KEYSPACE.strip()
-        api_endpoint = settings.ASTRA_DB_API_ENDPOINT.strip()
+        db_id = (settings.ASTRA_DB_ID or "").strip()
+        region = (settings.ASTRA_DB_REGION or "").strip()
+        keyspace = (settings.ASTRA_DB_KEYSPACE or "default_keyspace").strip()
+        api_endpoint = (settings.ASTRA_DB_API_ENDPOINT or "").strip()
+
+        # [CRITICAL GUARD] BLOCK IF POISONED
+        poisoned_markers = ["__NONE__", "ASTRA_DB_API_ENDPOINT", "ASTRA_DB_ID", "ASTRA_DB_REGION"]
+        for p in poisoned_markers:
+            if p in [api_endpoint, db_id, region]:
+                logger.error(f"❌ Astra DB Connection BLOCKED: Poisoned or placeholder value detected ({p}). Endpoint: {api_endpoint}")
+                return None
 
         logger.info(f"Attempting Astra DB Connection. ID: '{db_id}', Region: '{region}', Endpoint: '{api_endpoint}', Keyspace: '{keyspace}'")
 

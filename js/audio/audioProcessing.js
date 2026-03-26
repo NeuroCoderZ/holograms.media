@@ -69,16 +69,6 @@ eventBus.on('audio:spectralData', (data) => {
 
     const payload = { levels: fullLevels, pans: fullPans };
 
-    // ПРИНУДИТЕЛЬНЫЙ ЛОГ (раз в секунду)
-    // Периодический лог для проверки данных (раз в секунду)
-    if (!window._lastAudioLog || Date.now() - window._lastAudioLog > 1000) {
-        const max = Math.max(...payload.levels);
-        const min = Math.min(...payload.levels);
-        const first5 = Array.from(payload.levels.slice(0, 5)).map(v => v.toFixed(2)).join(', ');
-        console.log(`[Flow Check] data: max=${max.toFixed(2)}, min=${min.toFixed(2)}, first5=[${first5}]`);
-        window._lastAudioLog = Date.now();
-    }
-
     // Отправляем в рендерер
     eventBus.emit('audioData', payload);
 });
