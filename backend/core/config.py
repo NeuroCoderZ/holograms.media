@@ -3,15 +3,34 @@ import os
 from pydantic import BaseModel, field_validator
 
 def get_astra_endpoint() -> str:
-    v = (os.getenv("ASTRA_DB_API_ENDPOINT") or os.getenv("ASTRA_DATABASE_URL") or "").strip()
-    print(f"DEBUG: Initializing ASTRA_DB_API_ENDPOINT. Raw: '{v}'")
-    if v == "ASTRA_DB_API_ENDPOINT" or v == "ASTRA_DATABASE_URL":
-        print("DEBUG: Caught literal variable name. Returning empty string.")
-        return ""
+    env_keys = ["ASTRA_DB_API_ENDPOINT", "ASTRA_DATABASE_URL"]
+    v = ""
+    for k in env_keys:
+        val = (os.getenv(k) or "").strip()
+        if val:
+            if val == k:
+                print(f"DEBUG: Deleting poisoned env var {k}='{val}'")
+                if k in os.environ: del os.environ[k]
+                continue
+            v = val
+            break
+            
+    print(f"DEBUG: Initializing ASTRA_DB_API_ENDPOINT. Final: '{v}'")
     if v and not v.startswith("http"):
-        print(f"DEBUG: Added https scheme -> https://{v}")
         return f"https://{v}"
     return v
+
+def clean_poisoned_vars():
+    """Removes env vars that contain their own name as value."""
+    keys = ["ASTRA_DB_APPLICATION_TOKEN", "ASTRA_DB_ID", "ASTRA_DB_REGION", "ASTRA_DB_KEYSPACE", "JWT_SECRET_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_API_KEY"]
+    for k in keys:
+        val = (os.getenv(k) or "").strip()
+        if val == k:
+            print(f"DEBUG: Neutralizing poisoned env var: {k}='{val}'")
+            if k in os.environ:
+                del os.environ[k]
+
+clean_poisoned_vars()
 
 class Settings(BaseModel):
     # Security & Auth
@@ -32,9 +51,9 @@ class Settings(BaseModel):
     # Database (Astra DB)
     ASTRA_DB_APPLICATION_TOKEN: str = os.getenv("ASTRA_DB_APPLICATION_TOKEN", "").strip()
     ASTRA_DB_API_ENDPOINT: str = get_astra_endpoint()
-    ASTRA_DB_ID: str = os.getenv("ASTRA_DB_ID", "403a15dc-85a4-451f-a789-df997722a23c").strip()
-    ASTRA_DB_REGION: str = os.getenv("ASTRA_DB_REGION", "us-east-2").strip()
-    ASTRA_DB_KEYSPACE: str = os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace").strip()
+    ASTRA_DB_ID: str = (os.getenv("ASTRA_DB_ID") or "403a15dc-85a4-451f-a789-df997722a23c").strip()
+    ASTRA_DB_REGION: str = (os.getenv("ASTRA_DB_REGION") or "us-east-2").strip()
+    ASTRA_DB_KEYSPACE: str = (os.getenv("ASTRA_DB_KEYSPACE") or "default_keyspace").strip()
     
     # Storage (Backblaze B2)
     B2_ENDPOINT_URL: str = os.getenv("B2_ENDPOINT_URL", "").strip()
@@ -43,7 +62,7 @@ class Settings(BaseModel):
     B2_BUCKET_NAME: str = os.getenv("B2_BUCKET_NAME", "holograms-media").strip()
     
     # Environment
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development").strip()
+    ENVIRONMENT: str = (os.getenv("ENVIRONMENT") or "development").strip()
     
     # CORS
     CORS_ORIGINS: list = [

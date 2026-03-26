@@ -34,9 +34,10 @@ export class GlassSpecularManager {
                 if (match) {
                     const h = parseInt(match[1]);
                     const s = 100;
-                    // Держим насыщенный цвет: lightness 70-80% (не белый, но яркий)
-                    const l = Math.min(80, Math.max(65, parseFloat(match[3]) + 20));
-                    brightColor = `hsla(${h}, ${s}%, ${l}%, 0.92)`;
+                    // Mirror Mode: Сохраняем цвет столбца, добавляем лишь 10-15% яркости для блеска
+                    // Вместо 85%+, используем 60-70%
+                    const l = Math.min(75, Math.max(55, parseFloat(match[3]) + 15));
+                    brightColor = `hsla(${h}, ${s}%, ${l}%, 0.95)`;
                 }
             } else if (color.includes('rgba')) {
                 brightColor = color.replace(/[\d.]+\)$/g, '0.95)');
