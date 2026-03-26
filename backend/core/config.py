@@ -2,6 +2,17 @@
 import os
 from pydantic import BaseModel, field_validator
 
+def get_astra_endpoint() -> str:
+    v = (os.getenv("ASTRA_DB_API_ENDPOINT") or os.getenv("ASTRA_DATABASE_URL") or "").strip()
+    print(f"DEBUG: Initializing ASTRA_DB_API_ENDPOINT. Raw: '{v}'")
+    if v == "ASTRA_DB_API_ENDPOINT" or v == "ASTRA_DATABASE_URL":
+        print("DEBUG: Caught literal variable name. Returning empty string.")
+        return ""
+    if v and not v.startswith("http"):
+        print(f"DEBUG: Added https scheme -> https://{v}")
+        return f"https://{v}"
+    return v
+
 class Settings(BaseModel):
     # Security & Auth
     SECRET_KEY: str = (os.getenv("JWT_SECRET_KEY") or ("dev_secret_key_12345" if os.getenv("ENVIRONMENT") != "production" else "")).strip()
@@ -20,7 +31,7 @@ class Settings(BaseModel):
     
     # Database (Astra DB)
     ASTRA_DB_APPLICATION_TOKEN: str = os.getenv("ASTRA_DB_APPLICATION_TOKEN", "").strip()
-    ASTRA_DB_API_ENDPOINT: str = (os.getenv("ASTRA_DB_API_ENDPOINT") or os.getenv("ASTRA_DATABASE_URL") or "").strip()
+    ASTRA_DB_API_ENDPOINT: str = get_astra_endpoint()
     ASTRA_DB_ID: str = os.getenv("ASTRA_DB_ID", "403a15dc-85a4-451f-a789-df997722a23c").strip()
     ASTRA_DB_REGION: str = os.getenv("ASTRA_DB_REGION", "us-east-2").strip()
     ASTRA_DB_KEYSPACE: str = os.getenv("ASTRA_DB_KEYSPACE", "default_keyspace").strip()
@@ -46,24 +57,5 @@ class Settings(BaseModel):
     
     # Developers (Whitelisted Emails)
     DEV_USERS: list = os.getenv("DEV_USERS", "neurocoderz@gmail.com").split(",")
-
-    @field_validator("ASTRA_DB_API_ENDPOINT")
-    @classmethod
-    def validate_astra_endpoint(cls, v: str) -> str:
-        # Debug: Log the incoming value
-        print(f"DEBUG: Validating ASTRA_DB_API_ENDPOINT. Raw value: '{v}'")
-        
-        # Prevent common secret misconfiguration where variable name is set as value
-        if v == "ASTRA_DB_API_ENDPOINT" or v == "ASTRA_DATABASE_URL":
-            print("DEBUG: Validation FAILED: Detected placeholder string. Returning empty string.")
-            return ""
-        
-        if v and not v.startswith("http"):
-            result = f"https://{v}"
-            print(f"DEBUG: Validation SUCCESS (auto-https): '{result}'")
-            return result
-        
-        print(f"DEBUG: Validation SUCCESS (raw): '{v}'")
-        return v
 
 settings = Settings()
