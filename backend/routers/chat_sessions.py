@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.responses import StreamingResponse
 from typing import List, Optional, Any
+import logging
 # Removed asyncpg
 # import uuid # No longer needed for default session title here
 # import json # No longer needed for pub/sub here
@@ -19,6 +20,8 @@ router = APIRouter(
     prefix="/users/me/chat_sessions",
     tags=["Chat Sessions"],
 )
+
+logger = logging.getLogger(__name__)
 
 # --- Simplified Chat Endpoint for Tria ---
 @router.post("/direct", response_model=chat_models.ChatMessagePublic)
@@ -52,6 +55,10 @@ async def direct_chat_with_tria(
 
         if not user_id:
              raise HTTPException(status_code=500, detail="Could not identify user (auth error).")
+
+        if not db:
+             logger.error("❌ Astra DB connection is not available in chat_sessions.")
+             raise HTTPException(status_code=503, detail="Database connection is unavailable. Please check backend environment variables.")
 
         chat_service = ChatService(db)
         
