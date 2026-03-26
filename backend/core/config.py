@@ -21,14 +21,15 @@ def get_astra_endpoint() -> str:
     return v
 
 def clean_poisoned_vars():
-    """Removes env vars that contain their own name as value."""
-    keys = ["ASTRA_DB_APPLICATION_TOKEN", "ASTRA_DB_ID", "ASTRA_DB_REGION", "ASTRA_DB_KEYSPACE", "JWT_SECRET_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_API_KEY"]
+    """Overwrites env vars that contain their own name as value to prevent library leaks."""
+    keys = ["ASTRA_DB_APPLICATION_TOKEN", "ASTRA_DB_ID", "ASTRA_DB_REGION", "ASTRA_DB_KEYSPACE", "ASTRA_DB_API_ENDPOINT", "ASTRA_DATABASE_URL", "JWT_SECRET_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_API_KEY"]
     for k in keys:
         val = (os.getenv(k) or "").strip()
         if val == k:
             print(f"DEBUG: Neutralizing poisoned env var: {k}='{val}'")
-            if k in os.environ:
-                del os.environ[k]
+            # We overwrite with a string that is DEFINITELY not the key name
+            # but is also not a valid hostname/port, to trigger controlled fallbacks.
+            os.environ[k] = "__NONE__"
 
 clean_poisoned_vars()
 
