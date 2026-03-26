@@ -125,34 +125,24 @@ export class LightingManager {
     }
     
     updateSpectralLighting(columnData) {
-        // Топ-3 доминирующих частоты для расчёта бликов
+        // Топ-8 доминирующих частот для расчёта радужных бликов (Этап 4.6)
         const topColumns = columnData
             .sort((a, b) => b.amplitude - a.amplitude)
-            .slice(0, 3);
+            .slice(0, 8);
 
         this.elements.forEach(el => {
             const cache = this.rectCache.get(el);
             if (!cache) return;
 
-            let maxInfluence = 0;
-            let dominantCol = null;
-
-            topColumns.forEach(col => {
+            // Собираем все значимые источники для этого элемента
+            const localSources = topColumns.filter(col => {
                 const colScreenX = (col.panX + 1) / 2;
-                const dx = colScreenX - cache.centerX;
-                const dist = Math.abs(dx) + 0.25; 
-                
-                const influence = col.amplitude / (dist * dist);
-                if (influence > maxInfluence) {
-                    maxInfluence = influence;
-                    dominantCol = col;
-                }
+                return Math.abs(colScreenX - cache.centerX) < 0.7;
             });
 
-            if (dominantCol && maxInfluence > 0.15) {
-                // Множитель 5.0 для сочности бликов
-                const mix = Math.min(1, maxInfluence * 5.0);
-                glassSpecularManager.applyGlint(el, mix, dominantCol.color, dominantCol.panX);
+            if (localSources.length > 0) {
+                // Передаем весь список источников для создания "радуги"
+                glassSpecularManager.applyGlint(el, localSources, cache.centerX);
             } else {
                 el.style.setProperty('--glass-specular', 'transparent');
             }

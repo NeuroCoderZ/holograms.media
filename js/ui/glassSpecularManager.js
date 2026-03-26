@@ -54,45 +54,40 @@ export class GlassSpecularManager {
     }
 
     /**
-     * Applies the specular glint to an element.
-     * Logic: Light travels from emissive 3D columns to 2D UI elements.
+     * Applies the spectral prism glint to an element.
+     * Logic: Creates a rainbow rim light (Prism Edge) based on current audio energy.
      * 
-     * @param {HTMLElement} el - Element to apply glint
-     * @param {number} intensity - Relative brightness (0-1)
-     * @param {string} color - Light source color
-     * @param {number} sourcePanX - Pan of the column (-1 Left, 1 Right)
+     * @param {HTMLElement} el - Target element
+     * @param {Array} sources - List of {color, amplitude, panX}
+     * @param {number} elementCenterX - 0..1 position of element
      */
-    applyGlint(el, mix, color, sourcePanX = 0) {
-        if (!el) return;
+    applyGlint(el, sources, elementCenterX) {
+        if (!el || !sources || sources.length === 0) return;
 
-        // Threshold for performance
-        if (mix > 0.05) {
-            const brightColor = this.getBrightColor(color);
-            
-            // Physical projection: 
-            // If sound is Left (pan -1), glint hits UI elements from the Left side.
-            // glintX: -1 -> 0%, 1 -> 100%
-            const glintX = ((sourcePanX + 1) / 2) * 100;
-            
-            // Clamping to edges for a more dramatic 'rim light' feel on buttons
-            const clampedX = Math.max(5, Math.min(95, glintX));
+        // Построение градиента из топ-источников
+        // Мы сортируем их по панораме, чтобы создать "радужный перелив" слева направо
+        const sorted = [...sources].sort((a, b) => a.panX - b.panX);
+        
+        // Среднее направление света (для угла градиента)
+        const avgPan = sources.reduce((acc, s) => acc + s.panX, 0) / sources.length;
+        const angle = 90 + (avgPan * 45); // От 45 до 135 градусов
 
-            // Liquid Glass effect: radial gradient + color-dodge (simulated)
-            // mix affects both size and opacity
-            const size = Math.round(35 + 40 * mix);
-            const opacity = (0.2 + 0.8 * mix).toFixed(2);
+        // Формируем стопы градиента
+        const stops = sorted.map((s, i) => {
+            const pos = Math.round((i / (sorted.length - 1 || 1)) * 100);
+            const bright = this.getBrightColor(s.color);
+            return `${bright} ${pos}%`;
+        }).join(', ');
 
-            // We use background-image for the glint layer (applied to ::after via variable)
-            el.style.setProperty('--glass-specular',
-                `radial-gradient(circle at ${clampedX.toFixed(0)}% 45%, ${brightColor} 0%, transparent ${size}%)`
-            );
-            
-            // Dynamic opacity boost
-            el.style.setProperty('--glass-specular-opacity', opacity);
-        } else {
-            el.style.setProperty('--glass-specular', 'transparent');
-            el.style.setProperty('--glass-specular-opacity', '0');
-        }
+        const maxAmp = Math.max(...sources.map(s => s.amplitude));
+        const opacity = Math.min(0.9, 0.1 + maxAmp * 0.8).toFixed(2);
+
+        // [PRISM FIX] Используем линейный градиент. 
+        // В сочетании с CSS маской (в _panels.css) это даст свечение только на 1px границе.
+        el.style.setProperty('--glass-specular', 
+            `linear-gradient(${angle}deg, ${stops})`
+        );
+        el.style.setProperty('--glass-specular-opacity', opacity);
     }
 }
 
