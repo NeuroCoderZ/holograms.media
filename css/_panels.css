@@ -48,6 +48,15 @@
   z-index: 2;
   opacity: var(--glass-specular-opacity, 0.8);
   transition: background 0.12s ease-out, opacity 0.12s ease-out;
+
+  /* Эффект Призмы - вырезаем центр, оставляем только 1px границу по изгибам */
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px; /* Толщина кромки стекла-призмы */
+  box-sizing: border-box;
 }
 
 .panel.left-panel {
@@ -547,7 +556,8 @@ body.focus-mode .panel.right-panel {
   border-radius: 15px !important;
   background-color: rgba(0, 0, 0, 0.3) !important;
   margin: 0 !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
   mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
 }/* Native Tooltips Style (fallback if JS tooltips fail) */
