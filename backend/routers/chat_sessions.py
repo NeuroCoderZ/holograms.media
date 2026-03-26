@@ -23,6 +23,19 @@ router = APIRouter(
 
 logger = logging.getLogger(__name__)
 
+
+async def _list_sessions_with_fallback(chat_service: ChatService, user_id: str):
+    try:
+        return await chat_service.list_user_chat_sessions(user_id=user_id, limit=1), chat_service
+    except Exception:
+        if getattr(chat_service.repo, "is_mock", False):
+            raise
+
+        logger.exception("Chat session lookup failed against Astra DB. Falling back to in-memory mode.")
+        fallback_service = ChatService(None)
+        sessions = await fallback_service.list_user_chat_sessions(user_id=user_id, limit=1)
+        return sessions, fallback_service
+
 # --- Simplified Chat Endpoint for Tria ---
 @router.post("/direct", response_model=chat_models.ChatMessagePublic)
 async def direct_chat_with_tria(
@@ -57,14 +70,13 @@ async def direct_chat_with_tria(
              raise HTTPException(status_code=500, detail="Could not identify user (auth error).")
 
         if not db:
-             logger.error("❌ Astra DB connection is not available in chat_sessions.")
-             raise HTTPException(status_code=503, detail="Database connection is unavailable. Please check backend environment variables.")
+            logger.warning("Astra DB is unavailable for direct chat. Falling back to in-memory session mode.")
 
-        chat_service = ChatService(db)
+        chat_service = ChatService(db if db else None)
         
         # 1. Find or create session
         print("[DEBUG CHAT] Listing sessions...")
-        sessions = await chat_service.list_user_chat_sessions(user_id=user_id, limit=1)
+        sessions, chat_service = await _list_sessions_with_fallback(chat_service, user_id)
         if sessions:
             session_id = sessions[0].id
             print(f"[DEBUG CHAT] Found existing session: {session_id}")
@@ -96,10 +108,8 @@ async def direct_chat_with_tria(
         raise he
     except Exception as e:
         error_details = traceback.format_exc()
-        print(f"[DIRECT CHAT CRITICAL ERROR] {error_details}")
-        # Return a structured error so the frontend receives JSON, not just "Internal Server Error"
-        # INCLUDE TRACEBACK IN DETAIL FOR ONE-TIME DEBUGGING
-        raise HTTPException(status_code=500, detail=f"DEBUG TRACEBACK: {error_details}")
+        logger.error(f"[DIRECT CHAT CRITICAL ERROR] {error_details}")
+        raise HTTPException(status_code=500, detail="Tria chat is temporarily unavailable.")
 
 
 @router.post("/", response_model=chat_models.UserChatSessionDB, status_code=status.HTTP_201_CREATED)

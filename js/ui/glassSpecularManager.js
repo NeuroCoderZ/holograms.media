@@ -4,6 +4,14 @@
  * Возвращает пустые значения, заставляя CSS использовать стандартные стили.
  */
 export class GlassSpecularManager {
+    init() {
+        // Stub compatibility: legacy startup still calls init().
+    }
+
+    initialize() {
+        this.init();
+    }
+
     update(target, color, factor = 1) {
         // Ничего не делаем
     }

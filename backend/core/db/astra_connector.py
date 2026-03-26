@@ -1,12 +1,60 @@
 # backend/core/db/astra_connector.py
 import os
 import logging
+from urllib.parse import urlparse
 from astrapy import DataAPIClient
 from fastapi import Request, WebSocket
 
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+POISONED_MARKERS = (
+    "__NONE__",
+    "ASTRA_DB_API_ENDPOINT",
+    "ASTRA_DATABASE_URL",
+    "ASTRA_DB_ID",
+    "ASTRA_DB_REGION",
+)
+
+
+def _contains_poisoned_placeholder(value: str) -> bool:
+    normalized = (value or "").strip().upper()
+    if not normalized:
+        return False
+    if normalized.startswith("SECRET:") or normalized.startswith("SECRET!"):
+        return True
+    return any(marker in normalized for marker in POISONED_MARKERS)
+
+
+def _normalize_api_endpoint(raw_endpoint: str) -> str:
+    endpoint = (raw_endpoint or "").strip()
+    if not endpoint:
+        return ""
+
+    if not endpoint.startswith(("http://", "https://")):
+        endpoint = f"https://{endpoint}"
+
+    if _contains_poisoned_placeholder(endpoint):
+        logger.error("❌ Astra DB endpoint rejected: placeholder/secret marker detected in value.")
+        return ""
+
+    parsed = urlparse(endpoint)
+    if not parsed.netloc:
+        logger.error("❌ Astra DB endpoint rejected: URL has no network location.")
+        return ""
+
+    try:
+        _ = parsed.port
+    except ValueError as exc:
+        logger.error(f"❌ Astra DB endpoint rejected: malformed port in URL ({exc}).")
+        return ""
+
+    if _contains_poisoned_placeholder(parsed.netloc) or _contains_poisoned_placeholder(parsed.hostname or ""):
+        logger.error("❌ Astra DB endpoint rejected: placeholder detected in hostname.")
+        return ""
+
+    return endpoint
 
 def get_astra_client():
     """
@@ -30,17 +78,28 @@ def get_astra_db(client: DataAPIClient = None):
             return None
 
     try:
-        db_id = (settings.ASTRA_DB_ID or "").strip()
-        region = (settings.ASTRA_DB_REGION or "").strip()
+        raw_db_id = (os.getenv("ASTRA_DB_ID") or "").strip()
+        raw_region = (os.getenv("ASTRA_DB_REGION") or "").strip()
+        raw_api_endpoint = (
+            (os.getenv("ASTRA_DB_API_ENDPOINT") or "").strip()
+            or (os.getenv("ASTRA_DATABASE_URL") or "").strip()
+        )
+
+        db_id = raw_db_id or (settings.ASTRA_DB_ID or "").strip()
+        region = raw_region or (settings.ASTRA_DB_REGION or "").strip()
         keyspace = (settings.ASTRA_DB_KEYSPACE or "default_keyspace").strip()
-        api_endpoint = (settings.ASTRA_DB_API_ENDPOINT or "").strip()
+        api_endpoint = _normalize_api_endpoint(raw_api_endpoint or settings.ASTRA_DB_API_ENDPOINT)
 
         # [CRITICAL GUARD] BLOCK IF POISONED
-        poisoned_markers = ["__NONE__", "ASTRA_DB_API_ENDPOINT", "ASTRA_DB_ID", "ASTRA_DB_REGION"]
-        for p in poisoned_markers:
-            if p in [api_endpoint, db_id, region]:
-                logger.error(f"❌ Astra DB Connection BLOCKED: Poisoned or placeholder value detected ({p}). Endpoint: {api_endpoint}")
-                return None
+        if _contains_poisoned_placeholder(db_id) or _contains_poisoned_placeholder(region):
+            logger.error(
+                f"❌ Astra DB Connection BLOCKED: Poisoned ID/region detected. ID='{db_id}', REGION='{region}'"
+            )
+            return None
+
+        if raw_api_endpoint and not api_endpoint:
+            logger.error("❌ Astra DB Connection BLOCKED: malformed API endpoint provided via environment.")
+            return None
 
         logger.info(f"Attempting Astra DB Connection. ID: '{db_id}', Region: '{region}', Endpoint: '{api_endpoint}', Keyspace: '{keyspace}'")
 
@@ -55,10 +114,6 @@ def get_astra_db(client: DataAPIClient = None):
 
         # 1. Приоритет: использование полного эндпоинта
         if api_endpoint:
-            # FORCE HTTPS protocol for astrapy 2.0+ compliance
-            if not api_endpoint.startswith("http"):
-                api_endpoint = f"https://{api_endpoint}"
-            
             logger.info(f"Connecting to Astra DB via endpoint: {api_endpoint[:20]}...{api_endpoint[-10:]}")
             # В astrapy 2.0+ get_async_database принимает endpoint или ID
             db = client.get_async_database(api_endpoint, keyspace=keyspace)
