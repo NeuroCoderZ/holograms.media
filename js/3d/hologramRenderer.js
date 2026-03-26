@@ -118,12 +118,13 @@ export class HologramRenderer {
       const initialX_R = width / 2;
       const initialY = (i + 0.5) * CELL_HEIGHT - GRID_HEIGHT;
 
-      // [MOD] If paused, we don't recalculate levels, we just skip the assignment.
-      // hL and hR will stay at the values they had when the loop started (0.1 if fresh, 
-      // but if we were playing, they should be preserved).
-      // Actually, we must read current values from the attribute to freeze them.
       let currentHL = this.meshL.geometry.getAttribute('aColumnScaleZ').getX(i);
       let currentHR = this.meshR.geometry.getAttribute('aColumnScaleZ').getX(i);
+
+      let pL = initialX_L;
+      let pR = initialX_R;
+      let hL = 0.1;
+      let hR = 0.1;
 
       if (isActive && !isPaused) {
         let dbL = (dbLevels[i] !== undefined) ? dbLevels[i] : -128;
@@ -148,10 +149,11 @@ export class HologramRenderer {
         this.meshL.geometry.getAttribute('aColumnScaleZ').setX(i, hL);
         this.meshR.geometry.getAttribute('aColumnScaleZ').setX(i, hR);
       } else if (isPaused) {
-        // [FIX] Freeze height on pause
+        // [FIX] Freeze height and pan on pause
+        pL = initialX_L - Math.round(Math.abs(Math.min(0, this._panStates[i])) * ((GRID_WIDTH - width) * 0.5) * 2);
+        pR = initialX_R + Math.round(Math.abs(Math.max(0, this._panStates[i])) * ((GRID_WIDTH - width) * 0.5) * 2);
         hL = currentHL;
         hR = currentHR;
-        // Pan already handled by preserved pL / pR logic if we don't change them
       }
 
       dummy.position.set(pL, initialY, 0);
