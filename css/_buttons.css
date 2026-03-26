@@ -395,9 +395,17 @@
 .control-button.active {
   transform: scale(0.97) translateZ(-1px) !important;
   background-color: rgba(255, 255, 255, 0.03) !important;
-  
-  /* Momentarily increase specular opacity logic could go here, 
-     but scale is sufficient for physical feel */
+  /* Press: surface recedes → glint fades (physical) */
+  --glass-specular-opacity: 0.2 !important;
+}
+.control-button:active::after,
+.control-button.active::after {
+  opacity: 0.2 !important;
+  transition: opacity 0.05s ease-in !important;
+}
+/* Release: surface returns → glint recovers smoothly */
+.control-button::after {
+  transition: background 0.12s ease-out, opacity 0.18s ease-out;
 }
 
 .control-button:disabled {

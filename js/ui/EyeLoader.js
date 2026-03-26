@@ -146,7 +146,7 @@ export class EyeLoader {
     _beginFlyOut() {
         this.phase = 'fly-out';
         const edge = Math.floor(Math.random() * 4);
-        const margin = 120;
+        const margin = 350; // Увеличен, чтобы глаз 100% покинул экран
         let exitX, exitY;
         switch (edge) {
             case 0: exitX = Math.random() * this.width; exitY = -margin; break;
@@ -202,6 +202,7 @@ export class EyeLoader {
             this._drawEye(this.eyeX, this.eyeY);
             if (t >= 1) {
                 this.phase = 'done';
+                this.canvas.style.display = 'none'; // Полностью скрываем canvas
                 this._openLids();
                 setTimeout(() => this._remove(), 950);
                 return;
@@ -313,8 +314,13 @@ export class EyeLoader {
     }
 
     _openLids() {
-        this.upperLid.style.transform = 'scaleY(0)';
-        this.lowerLid.style.transform = 'scaleY(0)';
+        // Скрываем canvas МГНОВЕННО до начала анимации век
+        this.canvas.style.display = 'none';
+        // Небольшая задержка чтобы display:none применился до CSS transition
+        requestAnimationFrame(() => {
+            this.upperLid.style.transform = 'scaleY(0)';
+            this.lowerLid.style.transform = 'scaleY(0)';
+        });
     }
 
     _remove() {

@@ -65,6 +65,12 @@ export class HologramRenderer {
     this.meshL.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.meshR.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
+    // Per-instance aColumnScaleZ attribute for shader brightness
+    const scalesL = new THREE.InstancedBufferAttribute(new Float32Array(count).fill(0.1), 1);
+    const scalesR = new THREE.InstancedBufferAttribute(new Float32Array(count).fill(0.1), 1);
+    this.meshL.geometry.setAttribute('aColumnScaleZ', scalesL);
+    this.meshR.geometry.setAttribute('aColumnScaleZ', scalesR);
+
     for (let i = 0; i < count; i++) {
       const color = new THREE.Color(semitones[i].color);
       // FIXED: Use setColorAt instead of setInstanceColor
@@ -133,6 +139,10 @@ export class HologramRenderer {
 
         hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbL)));
         hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbR)));
+        
+        // Update per-instance shader brightness attribute
+        this.meshL.geometry.getAttribute('aColumnScaleZ').setX(i, hL);
+        this.meshR.geometry.getAttribute('aColumnScaleZ').setX(i, hR);
       }
 
       dummy.position.set(pL, initialY, 0);
@@ -148,6 +158,8 @@ export class HologramRenderer {
 
     this.meshL.instanceMatrix.needsUpdate = true;
     this.meshR.instanceMatrix.needsUpdate = true;
+    this.meshL.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
+    this.meshR.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
     
     const greetingValue = (isActive && !isPaused) ? 0.0 : 1.0;
     this.meshL.material.uniforms.uIsGreeting.value = greetingValue;
