@@ -11,7 +11,8 @@ const elements = {
     chat: null,
     gestures: null,
     holograms: null,
-    versions: null
+    versions: null,
+    evolution: null
   },
   inputs: {
     chat: null,
@@ -24,7 +25,7 @@ const elements = {
 
 /**
  * Переключает активную вкладку и видимость контента.
- * @param {string} viewName - 'chat', 'gestures', 'holograms', 'versions'
+ * @param {string} viewName - 'chat', 'gestures', 'holograms', 'versions', 'evolution'
  */
 function switchTab(viewName) {
   console.log(`[RightPanel] Switching to tab: ${viewName}`);
@@ -52,9 +53,6 @@ function switchTab(viewName) {
   }
 
   // 4. Input Bar Logic
-  // Chat & Gestures & Holograms -> Chat Input (or hidden?)
-  // Versions -> Prompt Input
-  
   if (elements.inputs.chat) elements.inputs.chat.style.display = 'none';
   if (elements.inputs.prompt) elements.inputs.prompt.style.display = 'none';
 
@@ -63,13 +61,11 @@ function switchTab(viewName) {
     if (elements.modelSelectContainer) elements.modelSelectContainer.style.display = 'flex';
   } else if (viewName === 'versions') {
     if (elements.inputs.prompt) elements.inputs.prompt.style.display = 'block';
-    if (elements.modelSelectContainer) elements.modelSelectContainer.style.display = 'none'; // Hide model select in versions? Or keep it?
-    // Brief says: "Chat content... in 'Chat'", "Prompt/Chat... in left panel" (removed).
-    // Usually Versions needs a prompt input for "What to change?".
+    if (elements.modelSelectContainer) elements.modelSelectContainer.style.display = 'none';
+  } else if (viewName === 'evolution') {
+    // В режиме эволюции пока скрываем вводы, так как это информационная панель
+    if (elements.modelSelectContainer) elements.modelSelectContainer.style.display = 'none';
   } else {
-    // Gestures / Holograms: Do they need input? 
-    // Maybe hide inputs or keep chat input available?
-    // Let's hide inputs for now to keep it clean, unless specified.
     if (elements.modelSelectContainer) elements.modelSelectContainer.style.display = 'none';
   }
   
@@ -94,6 +90,7 @@ export function initializeRightPanel(appState) {
   elements.views.gestures = document.getElementById('myGesturesView');
   elements.views.holograms = document.getElementById('myHologramsView');
   elements.views.versions = document.getElementById('versionTimeline');
+  elements.views.evolution = document.getElementById('evolutionView');
   
   elements.inputs.chat = document.getElementById('chatInputBar');
   elements.inputs.prompt = document.getElementById('promptBar');
@@ -116,6 +113,7 @@ export function initializeRightPanel(appState) {
   eventBus.on('ui:switchToGestures', () => switchTab('gestures'));
   eventBus.on('ui:switchToHolograms', () => switchTab('holograms'));
   eventBus.on('ui:switchToVersions', () => switchTab('versions'));
+  eventBus.on('ui:switchToEvolution', () => switchTab('evolution'));
 }
 
 /**
