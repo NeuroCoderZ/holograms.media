@@ -1,5 +1,5 @@
 /**
- * EyeLoader.js — v3.0 "XR Eye" (Saccadic Loader)
+ * EyeLoader.js — v3.1 "XR Eye" (Saccadic Loader)
  * Поведение: влёт из края → центр → саккады → центр → улёт за край.
  * Стиль: frosted glass eyelids, concave pupil, sharp iris.
  */
@@ -26,12 +26,10 @@ export class EyeLoader {
         this.upperLid = this._makeLid(true);
         // Нижнее веко — frosted glass, без border
         this.lowerLid = this._makeLid(false);
-        this.seamMask = this._makeSeamMask();
 
         this.container.appendChild(this.canvas);
         this.container.appendChild(this.upperLid);
         this.container.appendChild(this.lowerLid);
-        this.container.appendChild(this.seamMask);
 
         // Состояние
         this.progress = 0;
@@ -79,24 +77,6 @@ export class EyeLoader {
         lid.style.bottom = isUpper ? 'auto' : '-0.5%';
         lid.style.transformOrigin = isUpper ? 'top center' : 'bottom center';
         return lid;
-    }
-
-    _makeSeamMask() {
-        const seamMask = document.createElement('div');
-        Object.assign(seamMask.style, {
-            position: 'absolute',
-            left: '0',
-            top: '50%',
-            width: '100%',
-            height: '8px',
-            transform: 'translateY(-50%)',
-            zIndex: '25',
-            pointerEvents: 'none',
-            background: 'linear-gradient(to bottom, rgba(8,8,18,0.98), rgba(12,12,26,0.92), rgba(8,8,18,0.98))',
-            opacity: '1',
-            transition: 'opacity 0.35s ease'
-        });
-        return seamMask;
     }
 
     _pickRandomOffscreenPoint(margin) {
@@ -171,7 +151,7 @@ export class EyeLoader {
     /** Улёт за случайный край */
     _beginFlyOut() {
         this.phase = 'fly-out';
-        const margin = 350; // Увеличен, чтобы глаз 100% покинул экран
+        const margin = 500; // Увеличен для надежного ухода с экрана
         const exitPoint = this._pickRandomOffscreenPoint(margin);
         this._startX = this.eyeX;
         this._startY = this.eyeY;
@@ -336,7 +316,6 @@ export class EyeLoader {
     _openLids() {
         // Скрываем canvas МГНОВЕННО до начала анимации век
         this.canvas.style.display = 'none';
-        this.seamMask.style.opacity = '0';
         // Небольшая задержка чтобы display:none применился до CSS transition
         requestAnimationFrame(() => {
             this.upperLid.style.transform = 'scaleY(0)';

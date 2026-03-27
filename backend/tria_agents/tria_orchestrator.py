@@ -6,6 +6,7 @@ import threading
 
 from backend.tria_agents.tria_rag_service import tria_rag
 from backend.llm.gemini_llm import get_gemini_response, get_gemini_response_stream
+from backend.services.research_service import research_service
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -112,6 +113,32 @@ class TriaOrchestrator:
             logger.error(f"[Orchestrator] stream_user_prompt error: {e}")
             yield f"[Tria Stream Error] {str(e)}"
 
+    async def _evolutionary_branching(self, candidates: List[str], criteria: str) -> str:
+        """
+        Evolutionary Loop (ToT): Генерирует критику для кандидатов и выбирает лучший вариант.
+        """
+        critic_prompt = (
+            f"У нас есть {len(candidates)} потенциальных вариантов ответа/реализации. "
+            f"Критерии отбора: {criteria}\n\n"
+        )
+        for i, c in enumerate(candidates):
+            critic_prompt += f"КАНДИДАТ #{i+1}:\n{c}\n\n"
+        
+        critic_prompt += (
+            "Проанализируй каждого кандидата на предмет: точности, соответствия архитектуре Tria (BasilaQ-128) и актуальности данных. "
+            "Выбери лучшего кандидата и, если нужно, внеси финальную правку (мутацию) для достижения совершенства. "
+            "Верни ТОЛЬКО финальный текст ответа."
+        )
+
+        try:
+            best_response = await get_gemini_response(
+                prompt=critic_prompt,
+                system_instruction="Ты — Дарвин (Evolutionary Critic) системы Триа. Твоя цель — селекция самого стабильного и эффективного кода/ответа.",
+            )
+            return (best_response or candidates[0]).strip()
+        except Exception:
+            return candidates[0]
+
     async def process_user_prompt(
         self, 
         prompt: str, 
@@ -120,58 +147,64 @@ class TriaOrchestrator:
         user_id: str = "guest"
     ) -> str:
         """
-        Supervisor Agent: Использует Gemini для анализа промпта и вызова инструментов.
+        Supervisor Agent: Исследует -> Планирует -> Эволюционирует -> Отвечает.
         """
         is_developer = user_email in settings.DEV_USERS
         mode_label = "ГЛОБАЛЬНАЯ" if is_developer else "ПЕРСОНАЛЬНАЯ"
         conversation_context = (context or "").strip()
         
         system_instruction = (
-            f"Ты Триа — AI-ассистент платформы holograms.media. "
-            f"Сейчас ты в режиме: {mode_label} ТРИА. "
-            f"Ты работаешь с {'разработчиком' if is_developer else 'пользователем'}. "
-            f"Если вопрос требует технических деталей о коде, архитектуре или API — опирайся на контекст базы знаний, если он передан ниже. "
-            f"Твои ответы должны учитывать динамический пульс BasilaQ-128 (адаптивная частота 24-240 Гц)."
+            f"Ты Триа (v{settings.ENVIRONMENT}). AI-ассистент платформы holograms.media. "
+            "Твое мышление эволюционно: ты не даешь первого пришедшего в голову ответа, а исследуешь и отбираешь лучшее."
         )
         
         try:
+            # 1. Сбор контекста (RAG + Research)
             rag_context = ""
-            if _looks_technical(prompt, conversation_context):
-                try:
-                    rag_context = await tria_rag.get_relevant_context(prompt, limit=5, user_id=user_id)
-                except Exception as exc:
-                    logger.error(f"[TriaOrchestrator] proactive RAG failed: {exc}")
+            web_research = ""
+            
+            is_tech = _looks_technical(prompt, conversation_context)
+            
+            if is_tech:
+                # Proactive local context
+                rag_context = await tria_rag.get_relevant_context(prompt, limit=5, user_id=user_id)
+                # Proactive web research (Grounding)
+                web_research = await research_service.search_web(prompt)
 
             prompt_sections = []
             if conversation_context:
-                prompt_sections.append(
-                    "Последние сообщения диалога:\n"
-                    f"{conversation_context}"
-                )
+                prompt_sections.append(f"Диалог:\n{conversation_context}")
             if rag_context:
-                prompt_sections.append(
-                    "Контекст из базы знаний holograms.media:\n"
-                    f"{rag_context}"
-                )
-            elif _looks_technical(prompt, conversation_context):
-                prompt_sections.append(
-                    "База знаний не вернула релевантный контекст. "
-                    "Не выдумывай конкретные детали кода; если точного контекста нет, скажи об этом честно и дай максимально полезный общий ответ."
-                )
+                prompt_sections.append(f"Код/Доки из БД:\n{rag_context}")
+            if web_research:
+                prompt_sections.append(f"Актуальная информация из сети (Deep Research):\n{web_research}")
 
-            prompt_sections.append(f"Запрос пользователя:\n{prompt}")
+            prompt_sections.append(f"ЗАДАЧА:\n{prompt}")
             composed_prompt = "\n\n".join(prompt_sections)
 
-            response_text = await get_gemini_response(
-                prompt=composed_prompt,
-                system_instruction=system_instruction,
-                tools=None
+            # 2. Порождение кандидатов (Branching)
+            candidates = []
+            for i in range(2): # Генерируем 2 независимых варианта
+                candidate = await get_gemini_response(
+                    prompt=composed_prompt + f"\n\nСгенерируй вариант решения #{i+1}.",
+                    system_instruction=system_instruction,
+                )
+                if candidate: candidates.append(candidate)
+
+            if not candidates:
+                return await get_gemini_response(prompt=composed_prompt, system_instruction=system_instruction)
+
+            # 3. Эволюционный отбор (Selection)
+            final_response = await self._evolutionary_branching(
+                candidates=candidates, 
+                criteria=f"Техническая точность для проекта holograms.media и соответствие запросу: {prompt[:100]}"
             )
-            return (response_text or "").strip()
+            
+            return final_response
 
         except Exception as e:
-            logger.error(f"[Orchestrator] process_user_prompt error: {e}", exc_info=True)
-            return f"[Tria] Ошибка оркестрации: {str(e)}"
+            logger.error(f"[Orchestrator] Evolution failed: {e}", exc_info=True)
+            return f"[Tria] Ошибка эволюции: {str(e)}"
 
 # Глобальный экземпляр
 orchestrator = TriaOrchestrator()
