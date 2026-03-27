@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.230 - Evolutionary Research Engine Integration: Deep Search + ToT");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.231 - Auto-deployment");</script>
   <!-- DEPLOY_VERSION_END -->
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
@@ -325,6 +325,7 @@
         <button class="rp-tab" data-view="gestures">ЖЕСТЫ</button>
         <button class="rp-tab" data-view="holograms">ГОЛОГРАММЫ</button>
         <button class="rp-tab" data-view="versions">ВЕРСИИ</button>
+        <button class="rp-tab" data-view="evolution" title="Мониторинг самосовершенствования (DGM/HyperAgents)">ЭВОЛЮЦИЯ</button>
     </div>
 
     <!-- Верхняя разделительная линия правой панели -->
@@ -354,6 +355,27 @@
           <div id="conversations"></div>
           <div id="loadingIndicator" style="display:none;"><span>...</span></div>
           <!-- Сюда будут добавляться сообщения чата -->
+        </div>
+      </div>
+
+      <!-- Панель Эволюции (Режим Evolution) [NEW] -->
+      <div id="evolutionView" class="right-panel-view" style="display: none; padding: 15px; font-family: 'Inter', sans-serif;">
+        <div class="evolution-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px;">
+            <h3 style="margin: 0; font-size: 1.1em; color: #00ff88;">DGM-HyperAgent Status</h3>
+            <div style="font-size: 0.8em; color: #888;">Evolution Engine: Phase 20.6</div>
+        </div>
+        <div id="evolutionLogs" style="font-size: 0.9em; color: #ccc; line-height: 1.6;">
+            <div style="color: #666; font-style: italic;">Ожидание следующего цикла мышления...</div>
+        </div>
+        <div class="evolution-stats" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #aaa; margin-bottom: 5px;">
+                <span>Полезность (Utility):</span>
+                <span id="evolutionUtility" style="color: #fff;">0.0000</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #aaa;">
+                <span>Активных гипотез:</span>
+                <span id="evolutionHypotheses" style="color: #fff;">0</span>
+            </div>
         </div>
       </div>
     </div>

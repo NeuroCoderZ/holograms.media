@@ -93,9 +93,19 @@ def parse_and_hash_repomix(xml_path: str) -> Dict[str, Dict[str, Any]]:
     return file_map
 
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CHUNK_OVERLAP_CHARS) -> List[str]:
-    # --- PII Scrubbing (PRO-SECURITY) ---
+    # --- Расширенная чистка PII (PRO-SECURITY) ---
+    # 1. Email
     text = re.sub(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', '[EMAIL_HIDDEN]', text)
-    text = re.sub(r'(api[_-]key|token|password|secret)[:=]\s*([\'"]?)([a-zA-Z0-9_\-]{16,})(\2)', r'\1=\2[SECRET_HIDDEN]\2', text, flags=re.IGNORECASE)
+    # 2. Секреты, ключи, токены (расширенный поиск)
+    text = re.sub(r'(api[_-]key|token|password|auth|secret|client[_-]secret|private[_-]key)[:=]\s*([\'"]?)([a-zA-Z0-9_\-\.]{12,})(\2)', 
+                  r'\1=\2[SECRET_HIDDEN]\2', text, flags=re.IGNORECASE)
+    # 3. IPv4 адреса (публичные)
+    text = re.sub(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b', '[IP_HIDDEN]', text)
+    # 4. Телефоны (международные форматы)
+    text = re.sub(r'\+?\d{1,3}[-.\s]?\(?\d{1,4}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}', '[PHONE_HIDDEN]', text)
+    # 5. UUIDs
+    text = re.sub(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', '[UUID_HIDDEN]', text)
+    # 6. Astra URL
     text = re.sub(r'https://[a-zA-Z0-9.-]+\.apps\.astra\.datastax\.com', '[ASTRA_URL_HIDDEN]', text)
     
     chunks = []
