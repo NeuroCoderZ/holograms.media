@@ -1,5 +1,5 @@
 /**
- * hologramRenderer.js — HologramRenderer v20.2 (Fixed setInstanceColor)
+ * hologramRenderer.js — HologramRenderer v20.2 (Optimized)
  * ===================================================================
  * Оптимизация через InstancedMesh: 256 объектов -> 2 draw calls.
  */
@@ -16,7 +16,7 @@ import { CELL_HEIGHT, createCentralMarkerSphere, createSphereForAxis, createGrid
 export class HologramRenderer {
 
   constructor(scene, roomId, userId) {
-    console.log('[HologramRenderer] v20.2: Instanced — Fix setColorAt');
+    console.log('[HologramRenderer] v20.2: Instanced — Optimized');
     this.scene = scene;
     this.eventBus = eventBus;
     this.netHoloGlyphClient = netHoloGlyphClient;
@@ -24,6 +24,8 @@ export class HologramRenderer {
     this._panStates = new Float32Array(128).fill(0);
     this.roomId = roomId;
     this.userId = userId;
+
+    this._dummy = new THREE.Object3D(); // PRO-FIX: Reusable object to avoid allocations
 
     this.hologramPivot = new THREE.Group();
     this.mainSequencerGroup = new THREE.Group();
@@ -76,7 +78,6 @@ export class HologramRenderer {
 
     for (let i = 0; i < count; i++) {
       const color = new THREE.Color(semitones[i].color);
-      // FIXED: Use setColorAt instead of setInstanceColor
       this.meshL.setColorAt(i, color);
       this.meshR.setColorAt(i, color);
     }
@@ -109,14 +110,14 @@ export class HologramRenderer {
     const isActive = state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone');
     const isPaused = state.audio?.isPaused;
 
-    const dummy = new THREE.Object3D();
+    const dummy = this._dummy;
     const audioData = this.latestCwtData || state.audio?.latestAudioData;
     const dbLevels = audioData?.levels || new Float32Array(256).fill(-128);
     const panAngles = audioData?.pans || new Float32Array(256).fill(0);
 
     for (let i = 0; i < semitones.length; i++) {
       const config = semitones[i];
-      const width = config.width;
+      const width = config.width || 1; // Fallback if width is missing
       const initialX_L = -width / 2;
       const initialX_R = width / 2;
       const initialY = (i + 0.5) * CELL_HEIGHT - GRID_HEIGHT;
@@ -129,21 +130,17 @@ export class HologramRenderer {
       let hL = 0.1;
       let hR = 0.1;
 
-      // [CRITICAL FIX] Reactive update:
-      // Even if 'isPaused' is true, we update columns if we see a real audio signal
-      // coming from CWT (e.g. vinyl scratch during pause).
       let dbL = (dbLevels[i] !== undefined) ? dbLevels[i] : -128;
       let dbR = (dbLevels[i + 128] !== undefined) ? dbLevels[i + 128] : -128;
       
       const hasSignal = dbL > -100 || dbR > -100;
 
       if (isActive && (!isPaused || hasSignal)) {
-
         const targetPan = panAngles[i] || 0;
         this._panStates[i] += (targetPan - this._panStates[i]) * 0.7;
         const p = this._panStates[i];
 
-        const shadowDb = Math.abs(p) * config.shadow_coef * 128.0;
+        const shadowDb = Math.abs(p) * (config.shadow_coef || 0) * 128.0;
         if (p < -0.01) dbR -= shadowDb;
         else if (p > 0.01) dbL -= shadowDb;
 
@@ -154,13 +151,12 @@ export class HologramRenderer {
         hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbL)));
         hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbR)));
         
-        // Update per-instance shader brightness attribute
         this.meshL.geometry.getAttribute('aColumnScaleZ').setX(i, hL);
         this.meshR.geometry.getAttribute('aColumnScaleZ').setX(i, hR);
       } else if (isPaused) {
-        // [FIX] Freeze height and pan on pause
-        pL = initialX_L - Math.round(Math.abs(Math.min(0, this._panStates[i])) * ((GRID_WIDTH - width) * 0.5) * 2);
-        pR = initialX_R + Math.round(Math.abs(Math.max(0, this._panStates[i])) * ((GRID_WIDTH - width) * 0.5) * 2);
+        const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
+        pL = initialX_L - Math.round(Math.abs(Math.min(0, this._panStates[i])) * maxAvailableShift * 2);
+        pR = initialX_R + Math.round(Math.abs(Math.max(0, this._panStates[i])) * maxAvailableShift * 2);
         hL = currentHL;
         hR = currentHR;
       }
@@ -182,7 +178,6 @@ export class HologramRenderer {
     this.meshL.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
     this.meshR.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
 
-    // [FIX] Keep uIsGreeting = 0 during session even if paused
     const greetingValue = (isActive) ? 0.0 : 1.0;
     this.meshL.material.uniforms.uIsGreeting.value = greetingValue;
     this.meshR.material.uniforms.uIsGreeting.value = greetingValue;

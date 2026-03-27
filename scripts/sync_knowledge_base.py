@@ -93,6 +93,11 @@ def parse_and_hash_repomix(xml_path: str) -> Dict[str, Dict[str, Any]]:
     return file_map
 
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CHUNK_OVERLAP_CHARS) -> List[str]:
+    # --- PII Scrubbing (PRO-SECURITY) ---
+    text = re.sub(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', '[EMAIL_HIDDEN]', text)
+    text = re.sub(r'(api[_-]key|token|password|secret)[:=]\s*([\'"]?)([a-zA-Z0-9_\-]{16,})(\2)', r'\1=\2[SECRET_HIDDEN]\2', text, flags=re.IGNORECASE)
+    text = re.sub(r'https://[a-zA-Z0-9.-]+\.apps\.astra\.datastax\.com', '[ASTRA_URL_HIDDEN]', text)
+    
     chunks = []
     start = 0
     while start < len(text):
@@ -191,7 +196,12 @@ async def sync_knowledge_base():
                         "_id": chunk_id,
                         "$vector": vector,
                         "content": text[:8000],
-                        "metadata": {"source": path, "hash": file_data["hash"]}
+                        "metadata": {
+                            "source": path, 
+                            "hash": file_data["hash"],
+                            "type": "code_snippet" if path.endswith(('.py', '.js', '.css')) else "documentation",
+                            "project": "holograms.media"
+                        }
                     })
                     total_chunks += 1
                 elif embedder.quota_exhausted: break
