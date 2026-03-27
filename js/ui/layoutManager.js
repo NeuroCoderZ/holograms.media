@@ -253,37 +253,35 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     // Update renderer and camera to match current container size (redundant if called by TWEEN onUpdate, but safe)
     updateRendererAndCamera(appState, containerWidth, containerHeight); // Pass appState
 
-    // Phantom Margins (v0.19.036):
-    // Use logicalHeight = 90% of containerHeight to force 5% top/bottom margins
-    // within the un-clipped full-screen container.
-    const logicalHeight = containerHeight * 0.90;
-    const scaleH = logicalHeight / HOLOGRAM_REFERENCE_HEIGHT;
-    const scaleW = (containerWidth * 0.90) / 256; // Also 5% side margins
+    // Scale Protection (v0.19.043): Use visibleWidth instead of containerWidth
+    const windowWidth = window.innerWidth;
+    const leftPanel = document.getElementById('left-panel');
+    const rightPanel = document.getElementById('right-panel');
+
+    const leftW = leftPanel ? (leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20) : 0;
+    const rightW = rightPanel ? (rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20) : 0;
+    
+    // Visible Width between panels
+    const visibleWidth = Math.max(10, windowWidth - leftW - rightW);
+    const visibleHeight = containerHeight; // Vertically we use containerHeight
+
+    // Phantom Margins (v0.19.036): 90% of available space
+    const scaleH = (visibleHeight * 0.90) / HOLOGRAM_REFERENCE_HEIGHT;
+    const scaleW = (visibleWidth * 0.90) / 256; 
+    
     let targetScaleValue = Math.min(scaleH, scaleW);
     targetScaleValue = Math.max(targetScaleValue, 0.01);
-    // --- NEW: Sync Centering & Gesture Area Resize (v0.19.028) ---
-    const windowWidth = window.innerWidth;
-    let xOffset = 0;
+
+    // Offset to align hologram center with visible area center
+    const xOffset = (leftW - rightW) / 2;
 
     if (windowWidth > 768) {
-        const leftPanel = document.getElementById('left-panel');
-        const rightPanel = document.getElementById('right-panel');
-
-        const leftW = leftPanel ? (leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20) : 0;
-        const rightW = rightPanel ? (rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20) : 0;
-
-        // Offset to align hologram center with visible area center
-        xOffset = (leftW - rightW) / 2;
-
-        // Sync Gesture Area (v0.19.042: Use CSS centering, JS only sets width)
-        // CSS handles centering: left:50%; transform:translateX(-50%)
-        // JS only needs to set the correct visual width to match the hologram
+        // Sync Gesture Area width to match the hologram
         const visualWidth = 256 * targetScaleValue;
         const gestureArea = document.getElementById('gesture-area');
         if (gestureArea) {
             gestureArea.style.setProperty('--gesture-width', `${visualWidth}px`);
             gestureArea.style.width = `${visualWidth}px`;
-            // Don't override left/transform — CSS handles centering
             gestureArea.style.removeProperty('left');
             gestureArea.style.removeProperty('transform');
             gestureArea.style.margin = '0';
@@ -297,7 +295,7 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         }
     }
 
-    // Set centered position (v0.19.037: Pivot shift -128 to align 0,0,0 with center of 256w area)
+    // Set centering and vertical offset
     const verticalCenterOffset = (containerHeight / 2) - (128 * targetScaleValue);
     
     if (appState.isXRMode) {
@@ -305,7 +303,8 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         hologramPivot.position.set(0, 0, 0);
     } else {
         hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
-        hologramPivot.position.set(0, verticalCenterOffset / targetScaleValue, 0);
+        // Apply X-Offset for centering between visible panels
+        hologramPivot.position.set(xOffset / targetScaleValue, verticalCenterOffset / targetScaleValue, 0);
     }
 
     // The desktop panel logic (getLeftPanelWidth, etc.) is removed from here as the
