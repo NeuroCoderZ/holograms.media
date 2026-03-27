@@ -138,20 +138,26 @@ export class EyeLoader {
 
     setProgress(p) {
         this.progress = Math.max(0, Math.min(100, p));
-        if (this.progress >= 95 && this.phase === 'saccade') {
-            // Возврат в центр перед улётом
+        
+        if (this.progress >= 100 && this.phase === 'saccade') {
+            // Сначала центрируемся
             this._targetX = this.cx;
             this._targetY = this.cy;
-        }
-        if (this.progress >= 100 && this.phase !== 'fly-out' && this.phase !== 'done') {
-            this._beginFlyOut();
+            this.phase = 'centering';
+            
+            // Ждем завершения инерционного доезда до центра (ок. 200мс)
+            setTimeout(() => {
+                if (this.phase === 'centering') {
+                    this._beginFlyOut();
+                }
+            }, 250);
         }
     }
 
     /** Улёт за случайный край */
     _beginFlyOut() {
         this.phase = 'fly-out';
-        const margin = 500; // Увеличен для надежного ухода с экрана
+        const margin = 800; // Увеличено для надежного ухода
         const exitPoint = this._pickRandomOffscreenPoint(margin);
         this._startX = this.eyeX;
         this._startY = this.eyeY;
@@ -185,8 +191,8 @@ export class EyeLoader {
                 this.phase = 'saccade';
             }
         }
-        else if (this.phase === 'saccade') {
-            // Инерционное движение к target (для возврата), моментальное для прыжков
+        else if (this.phase === 'saccade' || this.phase === 'centering') {
+            // Инерционное движение к target
             this.eyeX += (this._targetX - this.eyeX) * 0.25;
             this.eyeY += (this._targetY - this.eyeY) * 0.25;
             this._drawEye(this.eyeX, this.eyeY);
@@ -194,14 +200,15 @@ export class EyeLoader {
         else if (this.phase === 'fly-out') {
             const elapsed = now - this._flyStartTime;
             const t = Math.min(1, elapsed / this._flyDuration);
-            // Ease-in для ускоряющегося улёта
-            const e = t * t;
+            // Используем тот же ease_in_out или аналогичный для симметрии
+            const e = this._easeInOut(t);
             this.eyeX = this._startX + (this._targetX - this._startX) * e;
             this.eyeY = this._startY + (this._targetY - this._startY) * e;
             this._drawEye(this.eyeX, this.eyeY);
             if (t >= 1) {
                 this.phase = 'done';
-                this.canvas.style.display = 'none'; // Полностью скрываем canvas
+                this.canvas.style.display = 'none'; 
+                // Веки открываются ТОЛЬКО ПОСЛЕ улета
                 this._openLids();
                 setTimeout(() => this._remove(), 950);
                 return;
