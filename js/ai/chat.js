@@ -69,7 +69,7 @@ export function initializeTriaChat() {
                 const label = stageLabels[stage] || `● ${stage}`;
 
                 const stageEl = document.createElement('div');
-                stageEl.style.cssText = 'font-size:0.78em; opacity:0.55; font-style:italic; padding:2px 0;';
+                stageEl.className = 'thinking-stage';
                 stageEl.textContent = label + '...';
                 thinkingContainer.appendChild(stageEl);
                 thinkingContainer.style.display = 'block';
@@ -81,18 +81,19 @@ export function initializeTriaChat() {
             if (!hasRealContent && chunk && !chunk.startsWith('[[')) {
                 hasRealContent = true;
                 if (thinkingContainer.children.length > 0) {
-                    thinkingContainer.style.overflow = 'hidden';
                     thinkingContainer.style.maxHeight = '0px';
-                    thinkingContainer.style.transition = 'max-height 0.3s ease';
+                    thinkingContainer.style.opacity = '0';
 
                     const toggleBtn = document.createElement('button');
+                    toggleBtn.className = 'thinking-toggle-btn';
                     toggleBtn.textContent = '▶ Мышление';
-                    toggleBtn.style.cssText = 'font-size:0.72em; opacity:0.4; background:none; border:none; color:currentColor; cursor:pointer; padding:0 0 4px 0; display:block;';
                     let expanded = false;
                     toggleBtn.addEventListener('click', () => {
                         expanded = !expanded;
-                        thinkingContainer.style.maxHeight = expanded ? '200px' : '0px';
+                        thinkingContainer.style.maxHeight = expanded ? '300px' : '0px';
+                        thinkingContainer.style.opacity = expanded ? '1' : '0.4';
                         toggleBtn.textContent = expanded ? '▼ Мышление' : '▶ Мышление';
+                        toggleBtn.classList.toggle('expanded', expanded);
                     });
                     msgDiv.insertBefore(toggleBtn, thinkingContainer);
                 }
