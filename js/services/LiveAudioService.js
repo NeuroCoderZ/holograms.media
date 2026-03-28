@@ -51,7 +51,11 @@ export class LiveAudioService {
         }
     }
 
-    async playPcmBase64(base64Data) {
+    async playPcmBase64(base64Data, sampleRate = 24000) {
+        const { getAudioContext, getInputProxyNode } = await import('../audio/audioProcessing.js');
+        const audioCtx = getAudioContext();
+        if (!audioCtx) return;
+
         const binaryString = atob(base64Data);
         const len = binaryString.length;
         const bytes = new Int16Array(len / 2);
@@ -64,20 +68,42 @@ export class LiveAudioService {
             floatData[i] = bytes[i] / 32768.0;
         }
 
-        const audioBuffer = this.audioContext.createBuffer(1, floatData.length, 16000);
+        // Gemini Live отдаёт 24kHz PCM
+        const audioBuffer = audioCtx.createBuffer(1, floatData.length, sampleRate);
         audioBuffer.getChannelData(0).set(floatData);
 
-        const source = this.audioContext.createBufferSource();
+        const source = audioCtx.createBufferSource();
         source.buffer = audioBuffer;
-        source.connect(this.audioContext.destination);
 
-        const currentTime = this.audioContext.currentTime;
+        // ✅ Роутинг через CWT Proxy → BasilaQ-128 → голограмма
+        const proxy = getInputProxyNode(audioCtx);
+        if (proxy) {
+            source.connect(proxy);
+        }
+        
+        // Воспроизведение
+        source.connect(audioCtx.destination);
+
+        // Помечаем активный источник для HologramRenderer
+        if (window._appState?.audio) {
+            window._appState.audio.activeSource = 'tria_voice';
+            window._appState.audio.isPlaying = true;
+        }
+
+        const currentTime = audioCtx.currentTime;
         if (this.nextStartTime < currentTime) {
             this.nextStartTime = currentTime;
         }
         
         source.start(this.nextStartTime);
         this.nextStartTime += audioBuffer.duration;
+
+        source.onended = () => {
+            if (window._appState?.audio?.activeSource === 'tria_voice') {
+                window._appState.audio.activeSource = null;
+                window._appState.audio.isPlaying = false;
+            }
+        };
     }
 
     disconnect() {
