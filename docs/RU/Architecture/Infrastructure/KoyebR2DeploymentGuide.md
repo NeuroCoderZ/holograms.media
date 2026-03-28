@@ -19,19 +19,18 @@ Cloudflare R2 — объектное хранилище с S3-совместим
 - S3-совместимый API
 - Прямая интеграция с Cloudflare Workers и Pages
 
-### 1.2. Создание и настройка B2 бакета
+### 1.2. Создание и настройка R2 бакета
 
-1. **Регистрация аккаунта:** Перейдите на [backblaze.com](https://www.backblaze.com) и создайте аккаунт
+1. **Регистрация аккаунта:** Перейдите в панель управления Cloudflare.
 2. **Создание бакета:**
-   - В панели управления перейдите в раздел "Buckets"
-   - Нажмите "Create a Bucket"
+   - Перейдите в раздел "R2"
+   - Нажмите "Create bucket"
    - Укажите имя бакета (например, `holograms-media-chunks`)
-   - Выберите тип: "Private"
-3. **Создание API ключей:**
-   - Перейдите в раздел "App Keys"
-   - Нажмите "Add a New Application Key"
-   - Укажите имя ключа и выберите бакет
-   - Сохраните `keyID` и `applicationKey`
+   - Выберите локацию (автоматически или ближайший регион)
+3. **Получение API ключей:**
+   - Нажмите "Manage R2 API Tokens"
+   - Создайте токен с правами "Edit"
+   - Сохраните `Access Key ID` и `Secret Access Key`
 
 ### 1.3. Структура объектов в B2
 
@@ -46,13 +45,13 @@ hologram_data/{hologram_id}/{version}/{filename}
 * `{user_id}/`: Уникальный идентификатор пользователя
 * `{unique_filename_with_uuid}`: Уникальное имя файла с UUID для предотвращения коллизий
 
-### 1.4. FastAPI эндпоинты для работы с B2
+### 1.4. FastAPI эндпоинты для работы с R2
 
 Эндпоинт для загрузки чанков реализован в `backend/routers/interaction_chunks.py`.
 
 **Ключевые моменты реализации:**
-* Использует библиотеку `agento3` для взаимодействия с S3-совместимым API
-* Аутентификация через JWT токены
+* Использует библиотеку `boto3` для взаимодействия с R2 API
+* Аутентификация через Google OAuth 2.0 (JWT)
 * Генерация уникальных имен файлов с UUID
 * Валидация типов файлов и размеров
 
@@ -84,32 +83,20 @@ Astra Database - это полностью управляемая база да�
 
 **Основные таблицы:**
 ```sql
--- Таблица пользователей
-CREATE TABLE holograms_keyspace.users (
-    user_id uuid PRIMARY KEY,
-    email text,
-    username text,
-    created_at timestamp,
-    updated_at timestamp
-);
-
--- Таблица голограмм
-CREATE TABLE holograms_keyspace.holograms (
-    hologram_id uuid PRIMARY KEY,
-    user_id uuid,
-    title text,
-    description text,
-    created_at timestamp,
-    version int
+-- Таблица базы знаний (RAG)
+CREATE TABLE tria_knowledge_gemini (
+    id uuid PRIMARY KEY,
+    content text,
+    metadata_json text,
+    embedding_vector vector<float, 3072>
 );
 
 -- Таблица чанков
-CREATE TABLE holograms_keyspace.chunks (
+CREATE TABLE audiovisual_gestural_chunks (
     chunk_id uuid PRIMARY KEY,
-    hologram_id uuid,
     user_id uuid,
     filename text,
-    b2_key text,
+    r2_key text,
     size bigint,
     content_type text,
     uploaded_at timestamp

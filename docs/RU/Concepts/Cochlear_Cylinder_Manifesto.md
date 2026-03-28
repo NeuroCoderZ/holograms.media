@@ -1,7 +1,7 @@
 # 🌀 Манифест Кохлеарного Цилиндра
 
-**Версия:** 1.0 (Draft)
-**Дата:** 2026-01-17
+**Версия:** 2.0 (Stabilized)
+**Дата:** 2026-03-28 (v0.20.246 Stabilization)
 **Статус:** Архитектурная Библия (Core Architecture)
 
 ---
@@ -40,8 +40,9 @@
 │              [ПОЛЬЗОВАТЕЛЬ]                             │
 │                                                         │
 │  Радиус цилиндра: 344 метра (1 акустическая секунда)   │
-│  **R&D Note (v0.19.050):** В визуальном пространстве   │
-│  радиус `XR_RADIUS = 1000`. Камера смещена на Z = -800. │
+│  **R&D Note (v0.20.246):** В визуальном пространстве        │
+│  используется BasilaQ-128: 1дБ = 1 ячейка сетки.        │
+│  Смещение Pan дискретно с шагом 1.41°.                 │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -119,6 +120,7 @@ function indexToSpatialPosition(index, pan) {
 | X (Влево/Вправо) | Pan | -1.0 to +1.0 |
 | Z (К себе/От себя) | Gain | 0.0 to 1.0 (натяжение) |
 | Thumb-Index Spread | Bandwidth | Ширина захвата частот |
+| **Gesture DNA v2** | Auth Hash | 128-dim PCA Embedding (моторика) |
 
 ### 3.2 Правило "Натяжения Струны"
 
@@ -136,10 +138,9 @@ function indexToSpatialPosition(index, pan) {
 
 ```
 ┌─────────────────────────────────────────┐
-│  ЛЕВАЯ РУКА         │  ПРАВАЯ РУКА      │
-│  Индексы 0-127      │  Индексы 128-255  │
-│  Басы/Мидс          │  Высокие          │
-│  Логика/Порядок     │  Хаос/Экспрессия  │
+│  ЛЕВАЯ ПАНЕЛЬ       │  ПРАВАЯ ПАНЕЛЬ    │
+│  История/Чат        │  Управление/Tria  │
+│  Контекст           │  Действие/Голос   │
 └─────────────────────────────────────────┘
 ```
 
@@ -163,8 +164,9 @@ sequenceDiagram
     GM->>SB: Normalized coords [freq, pan, gain, bandwidth]
     SB->>CQT: Modulate audio data
     CQT->>Net: Serialize to Quantum (~220 bytes)
-    Net->>Peer: WebRTC DataChannel
-    Peer->>Peer: Render + Sonify
+    Net->>Net: Verify Gesture DNA (3-5 sec)
+    Net->>Peer: WebRTC DataChannel (PQC encrypted)
+    Peer->>Peer: Render (GPU Instancing) + Sonify
 ```
 
 ---
@@ -225,10 +227,10 @@ Tria переводит жесты пользователя в исполняе�
 
 | ID | Проблема | Решение | Приоритет |
 |----|----------|---------|-----------|
-| TD1 | WASM `__wbindgen_placeholder__` | Использовать `holographic_core.js` loader | CRITICAL |
-| TD2 | Качество XR-камеры | Исследование Perspective vs Ortho (v0.19.050) | HIGH |
-| TD3 | Signaling server downtime | WebSockets reconnection policy | HIGH |
-| TD4 | Hardcoded gesture mappings | Dynamic learning system | MEDIUM |
+| TD1 | AudioWorklet `pL` undefined | Исправлено в v0.20.246 (eventBus flow) | DONE |
+| TD2 | GPU Load in XR | Внедрить **GPU Instancing** для 256 динамиков | HIGH |
+| TD3 | WebSocket 1006 error | Reconnection policy (signaling.js) | HIGH |
+| TD4 | Identity Theft | Внедрить **Gesture DNA v2** (3-5s auth) | STABLE |
 
 ---
 

@@ -1,5 +1,5 @@
 ````markdown name=PROJECT_CONTEXT.md
-# PROJECT_CONTEXT.MD - Контекст Проекта "Голографические Медиа" (Версия 31.2)
+# PROJECT_CONTEXT.MD - Контекст Проекта "Голографические Медиа" (Версия 0.20.246)
 
 Этот документ описывает текущий практический контекст и статус проекта "Голографические Медиа". Он должен рассматриваться в свете общей концепции и философии, изложенной в `docs/RU/ProjectOverview/ConceptAndPhilosophy.md`.
 
@@ -21,18 +21,18 @@
 1.  **Завершение и демонстрация всех основных функций MVP:**
     *   Аутентификация пользователей (Google OAuth 2.0).
     *   Загрузка медиа-"чанков" (Cloudflare R2 через FastAPI на Koyeb).
-    *   Базовая обработка "чанков" и ответы от Триа (преимущественно через FastAPI на Koyeb, с возможным использованием Cloudflare Workers для вспомогательных операций + LLM API).
-    *   Аудио-реактивная визуализация голограммы на фронтенде (Cloudflare Pages).
-    *   Сохранение и базовое извлечение пользовательских данных и истории через Tria API.
+    *   Интегрированный чат в **Правой панели** с поддержкой Markdown и стриминга.
+    *   Аудио-реактивная визуализация **BasilaQ-128** (шаг 1.41°, дискретная сетка).
+    *   Семантический поиск по кодовой базе (RAG) через Astra DB.
 2.  **Стабилизация и тестирование** всего цикла MVP, включая взаимодействие FastAPI на Koyeb, Cloudflare R2, Cloudflare (Pages, Workers) и Tria API.
 3.  **Актуализация ключевой документации** (включая `README.md`, `SYSTEM_INSTRUCTION_CURRENT.MD`, `SystemDescription.MD`) для отражения текущей архитектуры.
 4.  Обеспечение работы в рамках **бесплатных или экономичных квот** используемых сервисов (Koyeb, Cloudflare R2, Cloudflare).
 
 ## Ключевые Технические Вызовы и Задачи (Текущая Фаза)
 
-*   **Оптимизация производительности:** Улучшение CWT-анализа, WebAssembly и рендеринга Three.js для различных устройств.
-*   **Расширение AI-функциональности:** Улучшение системы Триа, интеграция новых LLM, оптимизация multimodal обработки.
-*   **Управление инфраструктурой:** Фазовая миграция на Cloudflare-native стэк (Workers, D1, R2). Текущий: Koyeb + Astra DB.
+*   **Стабилизация BasilaQ-128:** Улучшение CWT-анализа (Rust/WASM) и устранение замираний данных.
+*   **Оптимизация RAG:** Миграция на 3072d эмбеддинги для повышения точности поиска.
+*   **UI/UX правой панели:** Фиксация высоты контейнеров, корректный скролл и адаптивность.
 *   **Безопасность и масштабируемость:** Улучшение аутентификации, валидации данных, подготовка к росту нагрузки.
 
 Полный список задач и их статус отслеживаются в [GitHub Issues](https://github.com/NeuroCoderZ/holograms.media/issues) и [GitHub Projects](https://github.com/NeuroCoderZ/holograms.media/projects).
@@ -58,11 +58,9 @@
     *   **Аутентификация:** Google OAuth 2.0 (проверка токенов на бэкенде).
     *   **Хранилище файлов (чанков):** Cloudflare R2.
 *   **Фронтенд (Cloudflare Pages):**
-    *   Чистый JavaScript (ES6 Modules), HTML5, CSS3.
-    *   `frontend/js/main.js` как точка входа.
-    *   `frontend/js/core/`: Ядро фронтенда (состояние, события).
-    *   `frontend/js/3d/`: Three.js/WebGL для визуализации, CWT-анализатор (Rust/WASM) для аудиореактивности.
-    *   `frontend/js/services/`: Взаимодействие с FastAPI на Koyeb (через `apiService.js`) и Google OAuth 2.0.
+    *   `js/services/AudioService.js` — синглтон управления аудио-контекстом и ворклетами.
+    *   `js/3d/hologramRenderer.js` — ядро визуализации (BasilaQ-128).
+    *   `js/ai/chat.js` — логика чата v3.1 (стриминг, Thinking UI).
     *   `frontend/js/ui/`: UI-компоненты и менеджеры.
     *   `frontend/js/audio/`: Web Audio API.
 
@@ -85,11 +83,11 @@
 *   **CI/CD:** GitHub Actions для автоматического развертывания на Cloudflare Pages и Koyeb.
 *   **Продакшн (MVP):**
     *   Frontend: Cloudflare Pages.
-    *   Backend (API, основная логика): FastAPI на Koyeb (Python). **План:** Cloudflare Workers.
-    *   Backend (вспомогательные): Cloudflare Workers.
-    *   Database: Astra DB (Free Tier, 80GB). **План:** D1 + Vectorize.
-    *   Storage (чанков): Cloudflare R2.
-    *   Authentication: Google OAuth 2.0 (Firebase Auth).
+    *   Backend: FastAPI на Koyeb.
+    *   Database: Astra DB (Vector Search 3072d).
+    *   Storage: Cloudflare R2 / Backblaze B2.
+    *   Models: Gemini 3 Flash / Gemini 3.1 Flash Lite.
+    *   Authentication: Google OAuth 2.0.
 
 *Последнее обновление: 2026-03-07 (v0.19.050 Sovereign Audit)*
 ````

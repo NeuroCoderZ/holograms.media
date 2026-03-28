@@ -149,26 +149,22 @@ class HologramRenderer {
         const mesh = columnGroup.children[0];
         if (!(mesh instanceof THREE.Mesh)) return;
 
-        // Нормализация уровня громкости (от -100dB до 0dB)
-        const amplitude = THREE.MathUtils.clamp((dbLevel + 100) / 100.0, 0, 1);
+        // Нормализация уровня громкости (Физика BasilaQ-128: 1dB = 1 cell)
+        const amplitude = THREE.MathUtils.clamp((dbLevel + 128) / 128.0, 0, 1);
         
-        // Масштабирование по высоте
-        mesh.scale.z = Math.max(0.001, amplitude * GRID_DEPTH);
+        // Масштабирование по высоте (Z-scale)
+        mesh.scale.z = Math.max(0.001, amplitude * 128); // 128 + dB
         mesh.position.z = mesh.scale.z / 2;
 
-        // Изменение прозрачности
-        if (mesh.material instanceof THREE.MeshBasicMaterial) {
-            mesh.material.opacity = 0.3 + amplitude * 0.7;
+        // Яркость (Z-Dimming) пропорциональна длине
+        if (mesh.material instanceof THREE.MeshStandardMaterial) {
+            mesh.material.emissiveIntensity = amplitude;
         }
 
-        // Панорамирование
-        const panFactor = panAngle / 90.0;
-        const maxPanShift = columnPair.semitoneData.width / 2;
-        const baseX = isLeft ? 
-            (GRID_WIDTH - columnPair.semitoneData.width) / 2 : 
-            -(GRID_WIDTH - columnPair.semitoneData.width) / 2;
-        
-        columnGroup.position.x = baseX + (panFactor * maxPanShift * (isLeft ? -1 : 1));
+        // Панорамирование (дискретный шаг 1.41°)
+        const panStep = 1.41 * (Math.PI / 180);
+        const panIndex = Math.round(panAngle / 1.41);
+        columnGroup.position.x = panIndex * 1.41;
     }
 
     // Получение корневой группы голограммы

@@ -106,9 +106,10 @@
   width: 100%;
   justify-content: space-around;
   align-items: center;
-  padding: 10px 5px 0 5px;
+  padding: 15px 5px 5px 5px; /* Increased top padding */
   background: transparent;
-  z-index: 10;
+  z-index: 2000; /* Higher z-index to avoid overlap */
+  position: relative;
 }
 
 /* Individual Tab */
@@ -196,9 +197,8 @@
   transform: translateX(0) !important;
   pointer-events: auto !important;
   visibility: visible !important;
-  /* overflow-y: auto !important; Removed to move scroll to content-container */
   transition-delay: 0s;
-  touch-action: none !important;
+  touch-action: pan-y !important; /* Allow vertical touch scroll */
   left: auto;
   right: 0;
 }
