@@ -18,17 +18,26 @@ class MetaInstructionService:
 
     async def _setup(self):
         if not self._collection:
-            self._client = DataAPIClient(self.token)
-            db = self._client.get_async_database(self.endpoint, keyspace=self.keyspace)
-            self._collection = await db.create_collection(COLLECTION_NAME, check_exists=True)
+            try:
+                self._client = DataAPIClient(self.token)
+                db = self._client.get_async_database(self.endpoint, keyspace=self.keyspace)
+                # Используем get_collection — не создаём, не падаем если нет
+                self._collection = db.get_collection(COLLECTION_NAME)
+            except Exception as e:
+                print(f"[MetaAgent] AstraDB setup failed: {e}. Using default instructions.")
+                self._collection = None
 
     async def get_instruction(self, agent_id: str) -> str:
         """Получить актуальную мета-инструкцию для агента."""
-        await self._setup()
-        doc = await self._collection.find_one({"agent_id": agent_id})
-        if doc:
-            return doc.get("instruction", "")
-        return ""
+        try:
+            await self._setup()
+            if not self._collection:
+                return ""
+            doc = await self._collection.find_one({"agent_id": agent_id})
+            return doc.get("instruction", "") if doc else ""
+        except Exception as e:
+            print(f"[MetaAgent] get_instruction failed: {e}")
+            return ""
 
     async def set_instruction(self, agent_id: str, instruction: str):
         """Обновить мета-инструкцию (только для Meta-Learning Agent)."""
