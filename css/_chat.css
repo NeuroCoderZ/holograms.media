@@ -427,13 +427,56 @@
     to { opacity: 0.55; transform: scale(1) translateY(0); }
 }
 
-.thinking-toggle-btn {
-    transition: all 0.2s ease;
-}
-
 .thinking-toggle-btn:hover {
     opacity: 0.6 !important;
     text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+/* Thinking Indicator Styles */
+.thinking-indicator {
+    display: none;
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 0 8px 8px 0;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    overflow: hidden;
+}
+
+.thinking-stage {
+    font-size: 0.78em;
+    opacity: 0.55;
+    font-style: italic;
+    padding: 2px 0;
+    animation: fadeInThinking 0.5s ease-out both;
+}
+
+@keyframes fadeInThinking {
+    from { opacity: 0; transform: translateX(-5px); }
+    to { opacity: 0.55; transform: translateX(0); }
+}
+
+.thinking-toggle-btn {
+    display: block;
+    background: none;
+    border: none;
+    color: currentColor;
+    cursor: pointer;
+    font-size: 0.72em;
+    opacity: 0.4;
+    padding: 4px 0;
+    text-align: left;
+    width: fit-content;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.thinking-toggle-btn:hover {
+    opacity: 0.8 !important;
+}
+
+.thinking-toggle-btn.expanded {
+    opacity: 0.6;
 }
 
 #topPromptInput {
