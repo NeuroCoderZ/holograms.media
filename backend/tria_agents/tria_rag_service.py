@@ -55,11 +55,6 @@ class TriaRAGService:
             
             # Remove hard visibility check as documents may lack it.
             rls_filter = {} 
-            if user_id and user_id != "guest":
-                rls_filter = {"$or": [
-                    {"metadata.visibility": {"$ne": "private"}}, # Public or neutral
-                    {"metadata.owner_id": user_id}              # Or personal
-                ]}
 
             results = await collection.find(
                 filter=rls_filter if rls_filter else None,
@@ -70,15 +65,15 @@ class TriaRAGService:
             
             if not results:
                 logger.debug(f"RAG: No relevant context found for '{query}'")
-                return "### RAG: База знаний не вернула результатов для данного запроса."
+                return "" # Quiet return
             
             # 4. Format context with lowered threshold
             context_blocks = []
             for res in results:
                 content = res.get("content", "")
                 similarity = res.get("$similarity", 0.0)
-                # Lowered threshold 0.45 as per Tria Evolution Strategy
-                if similarity > 0.45: 
+                # Lowered threshold 0.40 for broader context retrieval
+                if similarity > 0.40: 
                     source = res.get("metadata", {}).get("source", "unknown")
                     context_blocks.append(f"Source: {source} (Sim: {similarity:.3f})\n{content}")
             
