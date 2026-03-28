@@ -120,4 +120,7 @@ export function resetCwtAnalyzer() {
     console.log('[AudioProcessing] 🔄 Performing Hard Reset of CWT Analyzer...');
     audioService.resetWorklet();
     window._cwtLinked = false; // [FIX] Сбрасываем флаг чтобы новый узел смог присоединиться
+    
+    // Уведомляем рендерер чтобы сбросил stale данные
+    eventBus.emit('audioReset', {});
 }

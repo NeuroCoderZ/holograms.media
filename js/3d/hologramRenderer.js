@@ -45,6 +45,13 @@ export class HologramRenderer {
             this.latestCwtData = data; 
         }
     });
+
+    // Сброс stale данных при Hard Reset WASM
+    this.eventBus.on('audioReset', () => {
+        this.latestCwtData = null;
+        this._panStates.fill(0);
+        console.log('[HologramRenderer] Audio reset: cleared stale CWT data');
+    });
     this.netHoloGlyphClient.connect(this.roomId, this.userId);
   }
 
@@ -107,13 +114,24 @@ export class HologramRenderer {
   }
 
   updateVisuals() {
-    const isActive = state.audio && (state.audio.isPlaying || state.audio.activeSource === 'microphone');
+    const isActive = state.audio && (
+        state.audio.isPlaying || 
+        state.audio.activeSource === 'microphone' || 
+        state.audio.activeSource === 'tria_voice'
+    );
     const isPaused = state.audio?.isPaused;
+
+    // Guard: если активно воспроизведение, но нет данных (WASM сбрасывается) — не рисуем stale
+    if (isActive && !isPaused && !this.latestCwtData && !state.audio?.latestAudioData) return;
 
     const dummy = this._dummy;
     const audioData = this.latestCwtData || state.audio?.latestAudioData;
     const dbLevels = audioData?.levels || new Float32Array(256).fill(-128);
     const panAngles = audioData?.pans || new Float32Array(256).fill(0);
+
+    // ✅ Вынести ЗА цикл — было внутри 128 итераций!
+    const scalesL = this.meshL.geometry.getAttribute('aColumnScaleZ');
+    const scalesR = this.meshR.geometry.getAttribute('aColumnScaleZ');
 
     for (let i = 0; i < semitones.length; i++) {
       const config = semitones[i];
@@ -122,15 +140,6 @@ export class HologramRenderer {
       const initialX_R = width / 2;
       const initialY = (i + 0.5) * CELL_HEIGHT - GRID_HEIGHT;
 
-      const scalesL = this.meshL.geometry.getAttribute('aColumnScaleZ');
-      const scalesR = this.meshR.geometry.getAttribute('aColumnScaleZ');
-
-      let hL = scalesL.getX(i);
-      let hR = scalesR.getX(i);
-
-      let pL = initialX_L;
-      let pR = initialX_R;
-
       let dbL = (dbLevels[i] !== undefined) ? dbLevels[i] : -128;
       let dbR = (dbLevels[i + 128] !== undefined) ? dbLevels[i + 128] : -128;
       
@@ -138,7 +147,7 @@ export class HologramRenderer {
 
       if (isActive && (!isPaused || hasSignal)) {
         const targetPan = panAngles[i] || 0;
-        this._panStates[i] += (targetPan - this._panStates[i]) * 0.7;
+        this._panStates[i] += (targetPan - this._panStates[i]) * 0.12;
         const p = this._panStates[i];
 
         const shadowDb = Math.abs(p) * (config.shadow_coef || 0) * 128.0;
@@ -146,8 +155,8 @@ export class HologramRenderer {
         else if (p > 0.01) dbL -= shadowDb;
 
         const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
-        pL = initialX_L - Math.round(Math.abs(Math.min(0, p)) * maxAvailableShift * 2);
-        pR = initialX_R + Math.round(Math.abs(Math.max(0, p)) * maxAvailableShift * 2);
+        pL = initialX_L - Math.abs(Math.min(0, p)) * maxAvailableShift * 1.5;
+        pR = initialX_R + Math.abs(Math.max(0, p)) * maxAvailableShift * 1.5;
 
         hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbL)));
         hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbR)));
@@ -156,8 +165,8 @@ export class HologramRenderer {
         scalesR.setX(i, hR);
       } else if (isPaused) {
         const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
-        pL = initialX_L - Math.round(Math.abs(Math.min(0, this._panStates[i])) * maxAvailableShift * 2);
-        pR = initialX_R + Math.round(Math.abs(Math.max(0, this._panStates[i])) * maxAvailableShift * 2);
+        pL = initialX_L - Math.abs(Math.min(0, this._panStates[i])) * maxAvailableShift * 1.5;
+        pR = initialX_R + Math.abs(Math.max(0, this._panStates[i])) * maxAvailableShift * 1.5;
       }
 
       // Re-use _dummy to avoid allocations
