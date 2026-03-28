@@ -32,7 +32,8 @@ class TriaOrchestrator:
         )
         keywords_str = await get_gemini_response(
             prompt=extract_prompt,
-            system_instruction="You are Tria Subagent (Research). Focus on technical keywords."
+            system_instruction="You are Tria Subagent (Research). Focus on technical keywords.",
+            model_id=SUB_MODEL
         )
         
         # Step 2: Parallel RAG & Skills
@@ -81,7 +82,7 @@ class TriaOrchestrator:
             ]
             
             candidates = await asyncio.gather(*[
-                get_gemini_response(p, system_instruction=system_instruction)
+                get_gemini_response(p, system_instruction=system_instruction, model_id=MAIN_MODEL)
                 for p in candidate_prompts
             ])
 
@@ -97,7 +98,8 @@ class TriaOrchestrator:
             
             final_response = await get_gemini_response(
                 prompt=critic_prompt,
-                system_instruction="You are Darwin Critic. Select the most accurate and safe response."
+                system_instruction="You are Darwin Critic. Select the most accurate and safe response.",
+                model_id=SUB_MODEL
             )
 
             # Final Output

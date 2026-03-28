@@ -85,7 +85,7 @@ class GeminiEmbeddingService:
         try:
             dim = dimensionality or self.output_dimensionality
             
-            response = self.client.models.embed_content(
+            response = await self.client.aio.models.embed_content(
                 model=self.model,
                 contents=text,
                 config=types.EmbedContentConfig(
