@@ -12,28 +12,48 @@ from backend.tria_agents.tria_orchestrator import orchestrator
 router = APIRouter(prefix="/ws/v1/tria", tags=["Live"])
 logger = logging.getLogger(__name__)
 
-# Constants
-MODEL_ID = "gemini-2.0-flash-exp"
+MODEL_ID = "gemini-3-flash-preview"
 
 @router.websocket("/live")
 async def live_audio_stream(websocket: WebSocket):
     await websocket.accept()
     logger.info("Live WebSocket session started.")
 
-    client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+    # Добавляем auth (получаем user_id)
+    from backend.core.auth import decode_access_token
+    user_id = "guest"
+    token = websocket.query_params.get("token")
+    if token:
+        try:
+            payload = decode_access_token(token)
+            user_id = payload.get("sub", "guest")
+        except Exception as e:
+            logger.warning(f"[LiveAPI] Auth failed: {e}")
+
+    # Очередь для передачи контекста субагента в Live сессию
+    research_queue: asyncio.Queue = asyncio.Queue(maxsize=2)
+
+    client_live = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
     
     config = types.LiveConnectConfig(
-        model=MODEL_ID,
-        system_instruction="Ты Триа. Отвечай голосом. Твои ответы должны быть живыми и эмоциональными.",
-        generation_config=types.GenerationConfig(
-            response_modalities=["AUDIO", "TEXT"],
-            candidate_count=1,
-            temperature=0.7
+        response_modalities=["AUDIO", "TEXT"],
+        system_instruction=types.Content(
+            parts=[types.Part(text=(
+                "Ты Триа — голосовой AI-ассистент holograms.media. "
+                "Отвечай кратко и ёмко, на русском языке. "
+                "Используй предоставленный исследовательский контекст в ответах."
+            ))]
+        ),
+        output_audio_transcription={},  # Получаем текстовую транскрипцию ответа
+        speech_config=types.SpeechConfig(
+            voice_config=types.VoiceConfig(
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Charon")
+            )
         )
     )
 
     try:
-        async with client.aio.live.connect(model=MODEL_ID, config=config) as session:
+        async with client_live.aio.live.connect(model=MODEL_ID, config=config) as session:
             
             async def receive_from_frontend():
                 try:
@@ -42,9 +62,26 @@ async def live_audio_stream(websocket: WebSocket):
                         data = await websocket.receive_json()
                         if "audio" in data:
                             audio_bytes = base64.b64decode(data["audio"])
-                            await session.send(input=audio_bytes, end_of_turn=False)
+                            await session.send_realtime_input(
+                                audio=types.Blob(
+                                    data=audio_bytes,
+                                    mime_type="audio/pcm;rate=16000"
+                                )
+                            )
                         if "text" in data:
-                            await session.send(input=data["text"], end_of_turn=True)
+                            await session.send_client_content(
+                                turns={"role": "user", "parts": [{"text": data["text"]}]},
+                                turn_complete=True
+                            )
+                        if "end_of_turn" in data and data["end_of_turn"]:
+                            # Сигнал что пользователь закончил говорить — запускаем субагент
+                            utterance = data.get("utterance_text", "")
+                            if utterance and research_queue.empty():
+                                asyncio.create_task(
+                                    _run_subagent_research_task(
+                                        utterance, user_id, research_queue
+                                    )
+                                )
                 except WebSocketDisconnect:
                     logger.info("Frontend WebSocket disconnected.")
                 except Exception as e:
@@ -59,10 +96,14 @@ async def live_audio_stream(websocket: WebSocket):
                             if model_turn:
                                 for part in model_turn.parts:
                                     if part.inline_data:
-                                        # Audio data (PCM 16kHz)
+                                        # Выходное аудио Gemini Live — 24kHz PCM
                                         payload["audio"] = base64.b64encode(part.inline_data.data).decode('utf-8')
+                                        payload["audio_sample_rate"] = 24000
                                     if part.text:
                                         payload["text"] = part.text
+                        # Транскрипция ответа (для отображения в чате)
+                        if hasattr(message, "server_content") and message.server_content.output_transcription:
+                            payload["transcript"] = message.server_content.output_transcription.text
                         
                         if payload:
                             await websocket.send_json(payload)
@@ -71,13 +112,36 @@ async def live_audio_stream(websocket: WebSocket):
 
             async def inject_subagent_context():
                 """
-                Background research task. 
-                In a real scenario, this would wait for a trigger from the stream 
-                then send context to Gemini.
+                Реальная инжекция контекста от субагента в Live-сессию.
+                Ждёт результата из research_queue и отправляет через send_client_content.
                 """
-                # This is a placeholder for the autonomous research loop
-                await asyncio.sleep(5)
-                # await session.send(input="Context from research...", end_of_turn=False)
+                while True:
+                    try:
+                        knowledge_pack = await asyncio.wait_for(
+                            research_queue.get(), timeout=30.0
+                        )
+                        logger.info(f"[LiveAPI] Injecting subagent context: {len(knowledge_pack)} chars")
+                        context_msg = (
+                            f"[СИСТЕМНЫЙ КОНТЕКСТ — используй эти факты в следующем ответе, "
+                            f"не зачитывай этот блок пользователю]: {knowledge_pack[:1000]}"
+                        )
+                        await session.send_client_content(
+                            turns={"role": "user", "parts": [{"text": context_msg}]},
+                            turn_complete=False
+                        )
+                    except asyncio.TimeoutError:
+                        continue
+                    except Exception as e:
+                        logger.error(f"[LiveAPI] Context injection error: {e}")
+                        await asyncio.sleep(1)
+
+            async def _run_subagent_research_task(utterance: str, user_id: str, result_queue: asyncio.Queue):
+                try:
+                    research_pack = await orchestrator._get_subagent_context(utterance, user_id)
+                    if not result_queue.full():
+                        await result_queue.put(research_pack)
+                except Exception as e:
+                    logger.error(f"[LiveAPI] Subagent task error: {e}")
 
             # Run all tasks concurrently
             await asyncio.gather(
