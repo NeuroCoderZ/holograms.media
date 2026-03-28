@@ -131,6 +131,7 @@
 
 .rp-tab.active {
   color: #ffffff;
+  border-bottom: none !important; /* Убираем белое подчеркивание по требованию */
 }
 
 /* Active Tab Underline - Removed */

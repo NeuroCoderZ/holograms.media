@@ -23,7 +23,10 @@ async function initializeMultimedia(appState) { // Added appState parameter
         }
 
         if (appState.microphoneManagerInstance) {
-            // This method initializeWithStream will be added to MicrophoneManager class in a subsequent step
+            // Регистрация синглтона для доступа из LiveAudioService/Chat
+            window._appState = appState;
+            window._appState.microphoneManager = appState.microphoneManagerInstance;
+            
             await appState.microphoneManagerInstance.initializeWithStream(stream, appState);
             console.log('Microphone initialized with shared stream.');
 

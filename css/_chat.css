@@ -396,6 +396,31 @@
   margin-top: 0 !important;
 }
 
+/* Триа: Стили для сворачиваемого блока мышления */
+.thinking-indicator {
+    padding: 2px 8px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 10px;
+}
+
+.thinking-indicator div {
+    animation: fadeInScale 0.3s ease-out both;
+}
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.95) translateY(-5px); }
+    to { opacity: 0.55; transform: scale(1) translateY(0); }
+}
+
+.thinking-toggle-btn {
+    transition: all 0.2s ease;
+}
+
+.thinking-toggle-btn:hover {
+    opacity: 0.6 !important;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
 #topPromptInput {
   width: 100%;
   background-color: transparent !important;
