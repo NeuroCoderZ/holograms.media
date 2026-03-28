@@ -1,6 +1,6 @@
 # Руководство по инфраструктуре Holograms.Media
 
-**Дата Актуализации:** 2026-03-07 (v0.19.050 Sovereign Audit)
+**Дата Актуализации:** 2026-03-28 (v0.20.246 Stabilization Audit)
 
 Это руководство описывает текущую инфраструктуру проекта holograms.media и план фазовой миграции на Cloudflare-native стэк.
 
@@ -8,11 +8,11 @@
 
 Проект holograms.media построен на распределенной облачной архитектуре:
 
-* **Фронтенд:** Cloudflare Pages с глобальным CDN
-* **Бэкенд (текущий):** Koyeb + FastAPI. **План:** Cloudflare Workers + Durable Objects.
-* **База данных (текущая):** Astra DB (Free Tier, 80GB). **План:** Cloudflare D1 (горячий кэш) + Vectorize.
-* **Хранение файлов:** Cloudflare R2 (нулевой egress)
-* **Дополнительно:** Cloudflare Workers (proxy, signaling), Firebase Auth
+* **Фронтенд:** Cloudflare Pages
+* **Бэкенд:** FastAPI на Koyeb (основной оркестратор Tria v3.1)
+* **База данных:** Astra DB (Vector Search 3072d Gemini Embedding 2)
+* **Хранение файлов:** Cloudflare R2 / Backblaze B2
+* **Модели:** Gemini 3 Flash (MAIN), Gemini 3.1 Flash Lite (SUB)
 
 ## 2. База Данных - Astra Database
 
@@ -29,10 +29,10 @@ Astra Database - это облачная база данных на базе Apa
 ### 2.2. Использование в проекте
 
 **Основные таблицы:**
-- `users` - данные пользователей
-- `holograms` - метаданные голограмм
-- `chunks` - информация о медиа-чанках
-- `interactions` - история взаимодействий пользователей
+- `users` — данные пользователей.
+- `tria_knowledge_gemini` — база знаний RAG (3072d Gemini 2).
+- `chat_history` — история диалогов с Триа.
+- `audiovisual_gestural_chunks` — метаданные медиа- и жестовых данных.
 
 **Пример подключения:**
 ```python
@@ -226,11 +226,11 @@ Cloudflare Pages предоставляет хостинг статически�
 
 ## 9. План Фазовой Миграции на Cloudflare-Native
 
-### Фаза A (Free Tier, текущий этап)
-- ✅ R2 для хранения (B2 заменён)
-- Workers proxy (проксирование к Koyeb, JWT-валидация)
-- Workers WebRTC signaling (замена FastAPI сигналинга)
-- D1 горячий кэш для метаданных (500MB Free)
+### Фаза A (v0.20.x, текущий этап)
+- ✅ Переход на Gemini 3 Flash / Gemini 3.1 Flash Lite
+- ✅ Миграция на Astra DB Vector Search (3072d)
+- ✅ Стабилизация BasilaQ-128 (1dB=1cell, 1.41° pan)
+- ✅ Консолидация управления в Правой панели
 
 ### Фаза B ($5/мес, Workers Paid)
 - Durable Objects для stateful NetHoloGlyph sessions

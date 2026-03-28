@@ -1,18 +1,18 @@
 # Стратегия Деплоя Holograms.Media
 
 **ID для отчета:** [20241201-DEPLOY-STRATEGY]
-**Дата Актуализации:** 2026-03-07 (v0.19.050 Sovereign Audit)
+**Дата Актуализации:** 2026-03-28 (v0.20.246 Stabilization Audit)
 **Цель:** Описание текущей стратегии деплоя и плана фазовой миграции на Cloudflare-native стэк.
 
 ## Обзор Текущей Инфраструктуры
 
 Проект holograms.media использует распределенную облачную архитектуру:
 
-* **Фронтенд:** Cloudflare Pages (глобальное CDN развертывание)
-* **Бэкенд (текущий):** Koyeb + FastAPI. **План:** Cloudflare Workers + Durable Objects.
-* **База данных (текущая):** Astra DB (Free Tier, 80GB). **План:** D1 (горячий кэш) + Vectorize.
-* **Хранение файлов:** Cloudflare R2 (нулевой egress, S3-совместимый API)
-* **Дополнительно:** Cloudflare Workers (proxy, signaling), Firebase Auth
+* **Фронтенд:** Cloudflare Pages
+* **Бэкенд:** FastAPI на Koyeb (оркестратор Tria v3.1)
+* **База данных:** Astra DB (Vector Search 3072d Gemini Embedding 2)
+* **Хранение файлов:** Cloudflare R2 / Backblaze B2
+* **AI Модели:** Gemini 3 Flash, Gemini 3.1 Flash Lite
 
 ## Компоненты Деплоя
 
@@ -50,10 +50,10 @@ backend/
 
 **Тип:** Cassandra NoSQL
 **Использование:** 
-- Хранение пользовательских данных
-- Метаданные голограмм
-- История взаимодействий
-- Настройки пользователей
+- Хранение данных пользователей (OAuth)
+- База знаний RAG (векторный поиск)
+- История диалогов (Thinking/Grounding)
+- Метаданные медиа-чанков
 
 ### 4. Хранение Файлов (Cloudflare R2)
 
@@ -93,17 +93,14 @@ koyeb services update holograms-backend --image your-registry/holograms-backend:
 
 ### Koyeb (Backend)
 ```
+GEMINI_API_KEY=your_google_ai_studio_key
 ASTRA_DB_APPLICATION_TOKEN=your_astra_token
 ASTRA_DB_ID=your_astra_db_id
 ASTRA_DB_REGION=your_region
-
 R2_ACCESS_KEY_ID=your_r2_access_key
 R2_SECRET_ACCESS_KEY=your_r2_secret_key
 R2_BUCKET_NAME=holograms-media-chunks
 R2_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
-
-MISTRAL_API_KEY=your_mistral_key
-OPENAI_API_KEY=your_openai_key
 ```
 
 ### Cloudflare Pages (Frontend)
