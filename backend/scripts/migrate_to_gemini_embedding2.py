@@ -43,7 +43,7 @@ except ImportError:
 COLLECTION_NAME = "tria_knowledge_gemini"
 CHUNK_SIZE_TOKENS = 5000  # С запасом до 8192
 MAX_REQUESTS_PER_MINUTE = 55  # С запасом до 60 RPM
-OUTPUT_DIMENSIONALITY = 1536  # Matryoshka: можно 3072 для макс качества
+OUTPUT_DIMENSIONALITY = 3072  # Gemini Embedding 2 Standard
 
 class GeminiEmbeddingService:
     """Сервис для генерации эмбеддингов через Gemini Embedding 2"""
