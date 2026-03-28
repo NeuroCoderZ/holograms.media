@@ -40,25 +40,40 @@
       transparent 100%) !important;
 }
 
-/* Custom Scrollbar for Chat */
 #chatHistory::-webkit-scrollbar,
-#chatMessages::-webkit-scrollbar {
+#chatMessages::-webkit-scrollbar,
+#myGesturesView::-webkit-scrollbar,
+#myHologramsView::-webkit-scrollbar,
+#versionTimeline::-webkit-scrollbar,
+#versionFrames::-webkit-scrollbar {
     width: 6px;
 }
 
 #chatHistory::-webkit-scrollbar-track,
-#chatMessages::-webkit-scrollbar-track {
+#chatMessages::-webkit-scrollbar-track,
+#myGesturesView::-webkit-scrollbar-track,
+#myHologramsView::-webkit-scrollbar-track,
+#versionTimeline::-webkit-scrollbar-track,
+#versionFrames::-webkit-scrollbar-track {
     background: transparent;
 }
 
 #chatHistory::-webkit-scrollbar-thumb,
-#chatMessages::-webkit-scrollbar-thumb {
+#chatMessages::-webkit-scrollbar-thumb,
+#myGesturesView::-webkit-scrollbar-thumb,
+#myHologramsView::-webkit-scrollbar-thumb,
+#versionTimeline::-webkit-scrollbar-thumb,
+#versionFrames::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
 }
 
 #chatHistory::-webkit-scrollbar-thumb:hover,
-#chatMessages::-webkit-scrollbar-thumb:hover {
+#chatMessages::-webkit-scrollbar-thumb:hover,
+#myGesturesView::-webkit-scrollbar-thumb:hover,
+#myHologramsView::-webkit-scrollbar-thumb:hover,
+#versionTimeline::-webkit-scrollbar-thumb:hover,
+#versionFrames::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
 

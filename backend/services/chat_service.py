@@ -48,7 +48,7 @@ async def get_llm_response(
     
     response_text = await orchestrator.process_user_prompt(
         prompt=user_message,
-        context=conversation_context,
+        history=[{"role": m.role, "content": m.message_content} for m in history[-10:]],
         user_email=user_email,
         user_id=user_id
     )
@@ -274,10 +274,13 @@ class ChatService:
         history_for_llm = await self.repo.get_messages_by_session_id(session_id=session_id, user_id=user_id, limit=12)
         conversation_context = _build_conversation_context(history_for_llm)
         try:
+            # Transform history to list of dicts for the orchestrator
+            history_list = [{"role": m.role, "content": m.message_content} for m in history_for_llm]
+            
             async for token in orchestrator.stream_user_prompt(
                 prompt=message_content,
                 user_email=user_email,
-                context=conversation_context,
+                history=history_list,
                 user_id=user_id
             ):
                 full_response += token

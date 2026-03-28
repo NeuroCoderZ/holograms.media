@@ -54,7 +54,6 @@ export function initializeTriaChat() {
         const stageLabels = {
             'RESEARCH': '🔍 Поиск в базе знаний',
             'SYNTHESIS': '🧠 Синтез ответа',
-            'SELECTION': '🔬 Критический отбор',
             'GROUNDING': '🌐 Веб-поиск'
         };
 
