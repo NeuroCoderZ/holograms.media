@@ -248,7 +248,7 @@
     *   `three/addons/libs/meshopt_decoder.module.js`
     *   `../config/hologramConfig.js` (для `semitones`, `GRID_WIDTH`, `GRID_HEIGHT`, `GRID_DEPTH`, `CELL_SIZE`)
     *   `../core/eventBus.js` (для подписки на результаты CWT)
-*   **Взаимодействие с `state`:** Не взаимодействует напрямую с глобальным `state` из `core/init.js` для своих внутренних операций. Работает с переданным ему объектом `THREE.Scene`. Экземпляр этого класса хранится в `state.hologramRendererInstance`. Подписывается на событие `cwtResult` через `eventBus`.
+*   **Взаимодействие с `state`:** Не взаимодействует напрямую с глобальным `state` из `core/init.js` для своих внутренних операций. Работает с переданным ему объектом `THREE.Scene`. Экземпляр этого класса хранится в `state.hologramRendererInstance`. Подписывается на событие `audioData` через `eventBus`.
 
 ## `js/3d/rendering.js`
 
@@ -329,7 +329,7 @@
     *   `../audio/waveletAnalyzer.js` (загружается как AudioWorklet модуль)
 *   **Взаимодействие с `state`:**
     *   Читает: `state.audio.audioContext`, `state.audio.targetFrequencies`.
-    *   Записывает: `state.audio.audioContext`, `state.audio.currentDbLevels`, `state.audio.currentPanAngles`, `state.audio.filePlayerGainNode`, `state.audio.cwtProcessorNodeFile`, `state.audio.microphoneGainNode`, `state.audio.cwtProcessorNodeMicrophone`, `state.audio.audioSource`, `state.audio.activeSource`. Получает `currentDbLevels` и `currentPanAngles` из `AudioWorkletNode` через `postMessage`.
+    *   Записывает: `state.audio.audioContext`, `state.audio.currentDbLevels`, `state.audio.currentPanAngles`. Получает данные через `eventBus` (событие `audioData`).
 
 ## `js/audio/audioVisualizer.js`
 
