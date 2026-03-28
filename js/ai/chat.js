@@ -22,36 +22,61 @@ export function initializeTriaChat() {
 
   /**
    * Добавляет сообщение в контейнер. 
-   * Если sender === 'tria', возвращает функцию для "допечатывания" текста.
+   * Поддерживает THINKING маркеры для визуализации этапов мышления.
    */
   const appendMessage = (text, sender) => {
     const msgDiv = document.createElement('div');
     msgDiv.className = `chat-message ${sender}-message`;
 
     if (sender === 'tria') {
+        const thinkingContainer = document.createElement('div');
+        thinkingContainer.className = 'thinking-indicator';
+        thinkingContainer.style.display = 'none';
+        thinkingContainer.style.fontSize = '0.8em';
+        thinkingContainer.style.opacity = '0.6';
+        thinkingContainer.style.marginBottom = '8px';
+        thinkingContainer.style.fontStyle = 'italic';
+        msgDiv.appendChild(thinkingContainer);
+
         const contentDiv = document.createElement('div');
         contentDiv.className = 'tria-content';
-        // Fix: Prevent text gluing
         contentDiv.style.whiteSpace = 'pre-wrap';
         contentDiv.style.wordBreak = 'break-word';
         msgDiv.appendChild(contentDiv);
         messagesContainer.appendChild(msgDiv);
 
-        const TYPING_DELAY_MS = 18;
+        const TYPING_DELAY_MS = 12;
         const charQueue = [];
         let isTyping = false;
 
         const flushQueue = () => {
             if (charQueue.length === 0) { isTyping = false; return; }
             isTyping = true;
-            // Fix: Use textContent to preserve whitespace
-            contentDiv.textContent += charQueue.shift();
+            const chunk = charQueue.shift();
+            
+            // Обработка THINKING маркеров
+            if (chunk && chunk.startsWith('[[THINKING:')) {
+                const match = chunk.match(/:(.*)]]/);
+                const stage = match ? match[1] : '...';
+                thinkingContainer.textContent = `● Thinking: ${stage}...`;
+                thinkingContainer.style.display = 'block';
+                setTimeout(flushQueue, 0);
+                return;
+            }
+
+            contentDiv.textContent += chunk;
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             setTimeout(flushQueue, TYPING_DELAY_MS);
         };
 
         const updateContent = (newChunk) => {
-            for (const char of newChunk) charQueue.push(char);
+            if (!newChunk) return;
+            // Если пришел целый маркер или обычный текст
+            if (newChunk.startsWith('[[THINKING:')) {
+                charQueue.push(newChunk);
+            } else {
+                for (const char of newChunk) charQueue.push(char);
+            }
             if (!isTyping) flushQueue();
         };
 
@@ -104,6 +129,37 @@ export function initializeTriaChat() {
     }
   };
 
+  // --- LIVE AUDIO INTEGRATION ---
+  const micButton = document.getElementById('micButton');
+  let isLiveActive = false;
+
+  if (micButton) {
+    micButton.onclick = async () => {
+      const { liveAudioService } = await import('../services/LiveAudioService.js');
+      const { microphoneManager } = await import('../main.js'); 
+
+      if (!isLiveActive) {
+        try {
+          await liveAudioService.connect();
+          await microphoneManager.startLiveStreaming((pcmBuffer) => {
+            liveAudioService.sendAudio(pcmBuffer);
+          });
+          micButton.classList.add('active');
+          isLiveActive = true;
+          console.log("[Chat] Live Mode ENABLED.");
+        } catch (err) {
+          console.error("[Chat] Failed to start Live Mode:", err);
+        }
+      } else {
+        microphoneManager.stopLiveStreaming();
+        liveAudioService.disconnect();
+        micButton.classList.remove('active');
+        isLiveActive = false;
+        console.log("[Chat] Live Mode DISABLED.");
+      }
+    };
+  }
+
   sendButton.onclick = handleSend;
 
   chatInput.onkeypress = (e) => {
@@ -135,4 +191,3 @@ export function sendChatMessage(message) {
     console.warn("Чат не инициализирован. Вызовите initializeTriaChat() сначала.");
   }
 }
-

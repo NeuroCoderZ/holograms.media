@@ -9,6 +9,10 @@ import { initAuth } from './core/auth.js';
 import gestureIntentClient from './services/gestureIntentClient.js';
 import { setupChat } from './ai/chat.js';
 import { EyeLoader } from './ui/EyeLoader.js';
+import { MicrophoneManager } from './audio/microphoneManager.js';
+import { getAudioContext } from './audio/audioProcessing.js';
+
+export let microphoneManager = null;
 
 /**
  * Главная асинхронная функция инициализации приложения.
@@ -33,6 +37,11 @@ async function main() {
         // 1. Инициализация Auth
         await initAuth();
         loader.setProgress(15);
+
+        // 1.5. Инициализация MicrophoneManager
+        const audioContext = getAudioContext();
+        microphoneManager = new MicrophoneManager(audioContext, state);
+        console.log("[Main] MicrophoneManager initialized.");
 
         // 2. Менеджер согласия
         const consentManager = new ConsentManager(state);

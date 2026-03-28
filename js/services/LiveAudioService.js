@@ -1,0 +1,91 @@
+// frontend/js/services/LiveAudioService.js
+/**
+ * Service for Gemini Multimodal Live API communication.
+ * Handles WebSocket connection, PCM streaming, and Audio playback.
+ */
+export class LiveAudioService {
+    constructor() {
+        this.ws = null;
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        this.nextStartTime = 0;
+    }
+
+    async connect() {
+        return new Promise((resolve, reject) => {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            this.ws = new WebSocket(`${protocol}//${window.location.host}/ws/v1/tria/live`);
+            
+            this.ws.onopen = () => {
+                console.log("[LiveAudioService] Connected to Tria Live.");
+                resolve();
+            };
+
+            this.ws.onmessage = async (event) => {
+                const data = JSON.parse(event.data);
+                if (data.audio) {
+                    await this.playPcmBase64(data.audio);
+                }
+                if (data.text) {
+                    // Dispatch to UI if needed
+                    document.dispatchEvent(new CustomEvent('tria-live-text', { detail: data.text }));
+                }
+            };
+
+            this.ws.onerror = (err) => {
+                console.error("[LiveAudioService] WebSocket Error:", err);
+                reject(err);
+            };
+
+            this.ws.onclose = () => {
+                console.log("[LiveAudioService] Disconnected.");
+            };
+        });
+    }
+
+    sendAudio(buffer) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            const base64Audio = btoa(
+                String.fromCharCode.apply(null, new Uint8Array(buffer))
+            );
+            this.ws.send(JSON.stringify({ audio: base64Audio }));
+        }
+    }
+
+    async playPcmBase64(base64Data) {
+        const binaryString = atob(base64Data);
+        const len = binaryString.length;
+        const bytes = new Int16Array(len / 2);
+        for (let i = 0; i < len; i += 2) {
+            bytes[i / 2] = (binaryString.charCodeAt(i + 1) << 8) | binaryString.charCodeAt(i);
+        }
+
+        const floatData = new Float32Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) {
+            floatData[i] = bytes[i] / 32768.0;
+        }
+
+        const audioBuffer = this.audioContext.createBuffer(1, floatData.length, 16000);
+        audioBuffer.getChannelData(0).set(floatData);
+
+        const source = this.audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(this.audioContext.destination);
+
+        const currentTime = this.audioContext.currentTime;
+        if (this.nextStartTime < currentTime) {
+            this.nextStartTime = currentTime;
+        }
+        
+        source.start(this.nextStartTime);
+        this.nextStartTime += audioBuffer.duration;
+    }
+
+    disconnect() {
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+    }
+}
+
+export const liveAudioService = new LiveAudioService();

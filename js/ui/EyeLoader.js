@@ -61,32 +61,42 @@ export class EyeLoader {
             position: 'absolute',
             left: '0',
             width: '100%',
-            height: '50.5%',
+            height: '50%', // EXACT 50%
             zIndex: '20',
             backdropFilter: 'blur(20px)',
             webkitBackdropFilter: 'blur(20px)',
             background: isUpper
-                ? 'linear-gradient(to bottom, rgba(8,8,18,0.98) 70%, rgba(15,15,35,0.85) 100%)'
-                : 'linear-gradient(to top,    rgba(8,8,18,0.98) 70%, rgba(15,15,35,0.85) 100%)',
+                ? 'linear-gradient(to bottom, rgba(8,8,18,0.99) 75%, rgba(15,15,35,0.88) 100%)'
+                : 'linear-gradient(to top,    rgba(8,8,18,0.99) 75%, rgba(15,15,35,0.88) 100%)',
             transition: 'transform 0.9s cubic-bezier(0.19, 1, 0.22, 1)',
             border: 'none',
-            boxShadow: isUpper ? '0 8px 18px rgba(0,0,0,0.38)' : '0 -8px 18px rgba(0,0,0,0.38)',
-            margin: '0'
+            boxShadow: 'none', // Removed shadow at seam
+            margin: '0',
+            padding: '0'
         });
-        lid.style.top = isUpper ? '-0.5%' : 'auto';
-        lid.style.bottom = isUpper ? 'auto' : '-0.5%';
+        lid.style.top = isUpper ? '0' : 'auto'; // EXACT 0
+        lid.style.bottom = isUpper ? 'auto' : '0'; // EXACT 0
         lid.style.transformOrigin = isUpper ? 'top center' : 'bottom center';
         return lid;
     }
 
     _pickRandomOffscreenPoint(margin) {
-        const edge = Math.floor(Math.random() * 4);
-        switch (edge) {
-            case 0: return { x: Math.random() * this.width, y: -margin };
-            case 1: return { x: this.width + margin, y: Math.random() * this.height };
-            case 2: return { x: Math.random() * this.width, y: this.height + margin };
-            default: return { x: -margin, y: Math.random() * this.height };
-        }
+        const angle = Math.random() * Math.PI * 2;
+        this._entryAngle = angle; // Store for symmetric exit
+        const dist = Math.max(this.width, this.height) * 1.5;
+        return {
+            x: this.cx + Math.cos(angle) * dist,
+            y: this.cy + Math.sin(angle) * dist
+        };
+    }
+
+    _pickSymmetricExitPoint(margin) {
+        const angle = (this._entryAngle || 0) + Math.PI; // Exact opposite
+        const dist = Math.max(this.width, this.height) * 1.5;
+        return {
+            x: this.cx + Math.cos(angle) * dist,
+            y: this.cy + Math.sin(angle) * dist
+        };
     }
 
     _resize() {
@@ -109,7 +119,7 @@ export class EyeLoader {
     /** Прилёт из случайного края в центр */
     _beginFlyIn() {
         this.phase = 'fly-in';
-        const margin = 80;
+        const margin = 120;
         const entryPoint = this._pickRandomOffscreenPoint(margin);
         this._startX = entryPoint.x;
         this._startY = entryPoint.y;
@@ -125,10 +135,8 @@ export class EyeLoader {
         if (this.phase !== 'saccade') return;
         const rIris = Math.min(this.width, this.height) * 0.15;
         const maxOffset = rIris * 2.5;
-        // Резкий прыжок — без easing, мгновенная смена target
         this._targetX = this.cx + (Math.random() - 0.5) * maxOffset * 2;
         this._targetY = this.cy + (Math.random() - 0.5) * maxOffset * 2;
-        // После паузы — возврат к центру
         clearTimeout(this._saccadeReturnTimer);
         this._saccadeReturnTimer = setTimeout(() => {
             this._targetX = this.cx;
@@ -140,12 +148,10 @@ export class EyeLoader {
         this.progress = Math.max(0, Math.min(100, p));
         
         if (this.progress >= 100 && this.phase === 'saccade') {
-            // Сначала центрируемся
             this._targetX = this.cx;
             this._targetY = this.cy;
             this.phase = 'centering';
             
-            // Ждем завершения инерционного доезда до центра (ок. 200мс)
             setTimeout(() => {
                 if (this.phase === 'centering') {
                     this._beginFlyOut();
@@ -154,11 +160,11 @@ export class EyeLoader {
         }
     }
 
-    /** Улёт за случайный край */
+    /** Улёт за симметричный край */
     _beginFlyOut() {
         this.phase = 'fly-out';
-        const margin = 800; // Увеличено для надежного ухода
-        const exitPoint = this._pickRandomOffscreenPoint(margin);
+        const margin = 1200; 
+        const exitPoint = this._pickSymmetricExitPoint(margin);
         this._startX = this.eyeX;
         this._startY = this.eyeY;
         this._targetX = exitPoint.x;
@@ -179,7 +185,7 @@ export class EyeLoader {
         if (this.phase === 'fly-in') {
             const elapsed = now - this._flyStartTime;
             const t = Math.min(1, elapsed / this._flyDuration);
-            const e = this._easeInOut(t);
+            const e = 1 - Math.pow(1 - t, 3); // easeOutCubic
             this.eyeX = this._startX + (this._targetX - this._startX) * e;
             this.eyeY = this._startY + (this._targetY - this._startY) * e;
             this._drawEye(this.eyeX, this.eyeY);
@@ -192,7 +198,6 @@ export class EyeLoader {
             }
         }
         else if (this.phase === 'saccade' || this.phase === 'centering') {
-            // Инерционное движение к target
             this.eyeX += (this._targetX - this.eyeX) * 0.25;
             this.eyeY += (this._targetY - this.eyeY) * 0.25;
             this._drawEye(this.eyeX, this.eyeY);
@@ -200,17 +205,15 @@ export class EyeLoader {
         else if (this.phase === 'fly-out') {
             const elapsed = now - this._flyStartTime;
             const t = Math.min(1, elapsed / this._flyDuration);
-            // Используем тот же ease_in_out или аналогичный для симметрии
-            const e = this._easeInOut(t);
+            const e = t * t * t; // easeInCubic
             this.eyeX = this._startX + (this._targetX - this._startX) * e;
             this.eyeY = this._startY + (this._targetY - this._startY) * e;
             this._drawEye(this.eyeX, this.eyeY);
             if (t >= 1) {
                 this.phase = 'done';
                 this.canvas.style.display = 'none'; 
-                // Веки открываются ТОЛЬКО ПОСЛЕ улета
                 this._openLids();
-                setTimeout(() => this._remove(), 950);
+                setTimeout(() => this._remove(), 1000);
                 return;
             }
         }

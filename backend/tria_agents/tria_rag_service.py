@@ -49,16 +49,20 @@ class TriaRAGService:
                 logger.error("RAG: Could not connect to AstraDB.")
                 return ""
             
+            # Performance-First RAG Threshold (v0.20.236)
+            # 3. Perform vector search with Soft Metadata Filter (RLS)
             collection = db.get_collection(self.collection_name)
             
-            # 3. Perform vector search with Metadata Filter (RLS)
-            # Если user_id не передан, ищем только публичные данные
-            rls_filter = {"$or": [{"metadata.visibility": "public"}]}
-            if user_id:
-                rls_filter["$or"].append({"metadata.owner_id": user_id})
+            # Remove hard visibility check as documents may lack it.
+            rls_filter = {} 
+            if user_id and user_id != "guest":
+                rls_filter = {"$or": [
+                    {"metadata.visibility": {"$ne": "private"}}, # Public or neutral
+                    {"metadata.owner_id": user_id}              # Or personal
+                ]}
 
             results = await collection.find(
-                filter=rls_filter,
+                filter=rls_filter if rls_filter else None,
                 sort={"$vector": query_vector},
                 limit=limit,
                 include_similarity=True
@@ -66,17 +70,21 @@ class TriaRAGService:
             
             if not results:
                 logger.debug(f"RAG: No relevant context found for '{query}'")
-                return ""
+                return "### RAG: База знаний не вернула результатов для данного запроса."
             
-            # 4. Format context
+            # 4. Format context with lowered threshold
             context_blocks = []
             for res in results:
                 content = res.get("content", "")
                 similarity = res.get("$similarity", 0.0)
-                if similarity > 0.6: # Confidence threshold
+                # Lowered threshold 0.45 as per Tria Evolution Strategy
+                if similarity > 0.45: 
                     source = res.get("metadata", {}).get("source", "unknown")
-                    context_blocks.append(f"Source: {source}\n{content}")
+                    context_blocks.append(f"Source: {source} (Sim: {similarity:.3f})\n{content}")
             
+            if not context_blocks:
+                return "### RAG: Найдено несколько совпадений, но их релевантность ниже 0.45."
+
             logger.info(f"RAG: Found {len(context_blocks)} relevant snippets.")
             return "\n\n---\n\n".join(context_blocks)
             
