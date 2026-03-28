@@ -25,7 +25,8 @@ async def get_gemini_response(
     history: list = None, 
     system_instruction: str = None,
     tools: List[Any] = None,
-    tool_map: Dict[str, Callable] = None
+    tool_map: Dict[str, Callable] = None,
+    model_id: str = None
 ) -> str:
     """
     Универсальный хелпер для Gemini с поддержкой Tool Calling.
@@ -48,7 +49,7 @@ async def get_gemini_response(
         # если передать функции прямо в tools.
         
         response = await client.aio.models.generate_content(
-            model='gemini-3-flash-preview',
+            model=model_id or 'gemini-3-flash-preview',
             contents=prompt,
             config=config
         )
@@ -93,7 +94,8 @@ async def generate_with_tools(
 async def get_gemini_response_stream(
     prompt: str,
     system_instruction: str = None,
-    tools: List[Any] = None
+    tools: List[Any] = None,
+    model_id: str = None
 ):
     """
     Streaming version of the Gemini response helper.
@@ -113,7 +115,7 @@ async def get_gemini_response_stream(
         )
 
         async for chunk in await client.aio.models.generate_content_stream(
-            model='gemini-3-flash-preview',
+            model=model_id or 'gemini-3-flash-preview',
             contents=prompt,
             config=config
         ):

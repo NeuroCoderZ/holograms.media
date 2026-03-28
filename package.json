@@ -1,6 +1,6 @@
 {
   "name": "holograms-media-backend",
-  "version": "0.20.236",
+  "version": "0.20.237",
   "description": "Backend services for Holograms Media",
   "main": "index.js",
   "dependencies": {

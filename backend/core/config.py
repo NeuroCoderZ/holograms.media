@@ -64,6 +64,10 @@ class Settings(BaseModel):
     
     # Environment
     ENVIRONMENT: str = (os.getenv("ENVIRONMENT") or "development").strip()
+    # AI Models (Tria v0.20.237)
+    DEFAULT_MODEL: str = "gemini-3-flash-preview"
+    SUBAGENT_MODEL: str = "gemini-3.1-flash-lite-preview"
+    ENABLE_GROUNDING: bool = os.getenv("ENABLE_GROUNDING", "true").lower() == "true"
     
     # CORS
     CORS_ORIGINS: list = [
