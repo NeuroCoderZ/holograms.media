@@ -174,14 +174,14 @@ export class MicrophoneManager {
 
   /**
    * Toggle microphone on/off.
+   * If liveMode is true, it starts Live Streaming session via WebSocket.
    */
-  async toggleMicrophone(micButtonElement, appState) {
+  async toggleMicrophone(micButtonElement, appState, liveMode = false) {
     const button = micButtonElement || this.state?.uiElements?.buttons?.micButton;
     const state = appState || this.state;
 
     if (!state || !state.audio) {
       console.error("[MicrophoneManager] State not initialized.");
-      if (button) button.textContent = "Mic Error";
       return;
     }
 
@@ -189,6 +189,7 @@ export class MicrophoneManager {
       if (state.audio.activeSource === 'microphone') {
         // Turn OFF
         this.stop();
+        if (liveMode) this.stopLiveStreaming();
         state.audio.activeSource = 'none';
 
         if (button) {
@@ -202,26 +203,64 @@ export class MicrophoneManager {
           await this.audioContext.resume();
         }
 
-        const result = await this.init();
-
-        state.audio.audioContext = result.audioContext;
-        state.audio.microphoneStream = result.stream;
+        await this.init();
         state.audio.activeSource = 'microphone';
 
         if (button) {
           button.classList.add('active');
           button.title = "Выключить микрофон";
         }
-        console.log("[MicrophoneManager] 🎤 Microphone started.");
+        
+        console.log(`[MicrophoneManager] 🎤 Microphone started (${liveMode ? 'LIVE' : 'STT'}).`);
       }
     } catch (error) {
       console.error("[MicrophoneManager] Error toggling microphone:", error);
-      if (button) button.textContent = "Mic Error";
       state.audio.activeSource = 'none';
-      if (this.microphoneStream) {
-        this.microphoneStream.getTracks().forEach(track => track.stop());
-        this.microphoneStream = null;
+    }
+  }
+
+  /**
+   * Start PCM 16kHz Streaming for Live API.
+   */
+  async startLiveStreaming(onData) {
+    if (!this.microphoneStream) await this.init();
+    
+    // Create processor for downsampling/PCM conversion
+    const bufferSize = 4096;
+    const scriptNode = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
+    
+    scriptNode.onaudioprocess = (e) => {
+      const inputData = e.inputBuffer.getChannelData(0);
+      
+      // Simple downsampling to 16kHz (crude but functional for MVP)
+      // Original Context usually 44.1kHz or 48kHz
+      const ratio = this.audioContext.sampleRate / 16000;
+      const newLength = Math.floor(inputData.length / ratio);
+      const result = new Int16Array(newLength);
+      
+      for (let i = 0; i < newLength; i++) {
+        const offset = Math.floor(i * ratio);
+        // Clamp Float32 [-1, 1] to Int16 [-32768, 32767]
+        let s = Math.max(-1, Math.min(1, inputData[offset]));
+        result[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
       }
+      
+      onData(result.buffer);
+    };
+
+    this.source.connect(scriptNode);
+    scriptNode.connect(this.audioContext.destination);
+    
+    this._liveStreamNode = scriptNode;
+    console.log("[MicrophoneManager] Live Streaming ACTIVE (PCM 16kHz).");
+  }
+
+  stopLiveStreaming() {
+    if (this._liveStreamNode) {
+      this._liveStreamNode.disconnect();
+      this._liveStreamNode = null;
+      console.log("[MicrophoneManager] Live Streaming STOPPED.");
     }
   }
 }
+

@@ -117,18 +117,19 @@ export class HologramRenderer {
 
     for (let i = 0; i < semitones.length; i++) {
       const config = semitones[i];
-      const width = config.width || 1; // Fallback if width is missing
+      const width = config.width || 1; 
       const initialX_L = -width / 2;
       const initialX_R = width / 2;
       const initialY = (i + 0.5) * CELL_HEIGHT - GRID_HEIGHT;
 
-      let currentHL = this.meshL.geometry.getAttribute('aColumnScaleZ').getX(i);
-      let currentHR = this.meshR.geometry.getAttribute('aColumnScaleZ').getX(i);
+      const scalesL = this.meshL.geometry.getAttribute('aColumnScaleZ');
+      const scalesR = this.meshR.geometry.getAttribute('aColumnScaleZ');
+
+      let hL = scalesL.getX(i);
+      let hR = scalesR.getX(i);
 
       let pL = initialX_L;
       let pR = initialX_R;
-      let hL = 0.1;
-      let hR = 0.1;
 
       let dbL = (dbLevels[i] !== undefined) ? dbLevels[i] : -128;
       let dbR = (dbLevels[i + 128] !== undefined) ? dbLevels[i + 128] : -128;
@@ -151,16 +152,15 @@ export class HologramRenderer {
         hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbL)));
         hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbR)));
         
-        this.meshL.geometry.getAttribute('aColumnScaleZ').setX(i, hL);
-        this.meshR.geometry.getAttribute('aColumnScaleZ').setX(i, hR);
+        scalesL.setX(i, hL);
+        scalesR.setX(i, hR);
       } else if (isPaused) {
         const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
         pL = initialX_L - Math.round(Math.abs(Math.min(0, this._panStates[i])) * maxAvailableShift * 2);
         pR = initialX_R + Math.round(Math.abs(Math.max(0, this._panStates[i])) * maxAvailableShift * 2);
-        hL = currentHL;
-        hR = currentHR;
       }
 
+      // Re-use _dummy to avoid allocations
       dummy.position.set(pL, initialY, 0);
       dummy.scale.set(width, 1, hL);
       dummy.updateMatrix();
