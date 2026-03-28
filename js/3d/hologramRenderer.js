@@ -145,6 +145,11 @@ export class HologramRenderer {
       
       const hasSignal = dbL > -100 || dbR > -100;
 
+      let pL = initialX_L;
+      let pR = initialX_R;
+      let hL = 0.1;
+      let hR = 0.1;
+
       if (isActive && (!isPaused || hasSignal)) {
         const targetPan = panAngles[i] || 0;
         this._panStates[i] += (targetPan - this._panStates[i]) * 0.12;

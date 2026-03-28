@@ -535,16 +535,21 @@ body.focus-mode .panel.right-panel {
 
 /* Container for scrollable content within panels */
 .content-container {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+  flex: 1 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important; /* Let children handle their own scroll */
 }
 
 /* Стили для окон в правой панели с отступами 5% и закругленными углами */
 #myHologramsView,
 #myGesturesView,
-#chatHistory {
+#chatHistory,
+#versionTimeline {
   flex: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
   min-height: 0 !important;
   overflow-y: auto !important;
   padding: 5% !important;
@@ -553,6 +558,9 @@ body.focus-mode .panel.right-panel {
   margin: 0 !important;
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.2) !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-sizing: border-box !important;
+  
+  /* Glass-fade mask */
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
   mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
 }/* Native Tooltips Style (fallback if JS tooltips fail) */
