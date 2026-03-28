@@ -48,6 +48,15 @@ export function initializeTriaChat() {
         const TYPING_DELAY_MS = 12;
         const charQueue = [];
         let isTyping = false;
+        let hasRealContent = false;
+        let thinkingCollapsed = false;
+
+        const stageLabels = {
+            'RESEARCH': '🔍 Поиск в базе знаний',
+            'SYNTHESIS': '🧠 Синтез ответа',
+            'SELECTION': '🔬 Критический отбор',
+            'GROUNDING': '🌐 Веб-поиск'
+        };
 
         const flushQueue = () => {
             if (charQueue.length === 0) { isTyping = false; return; }
@@ -56,12 +65,38 @@ export function initializeTriaChat() {
             
             // Обработка THINKING маркеров
             if (chunk && chunk.startsWith('[[THINKING:')) {
-                const match = chunk.match(/:(.*)]]/);
+                const match = chunk.match(/\[\[THINKING:(.*?)]]/);
                 const stage = match ? match[1] : '...';
-                thinkingContainer.textContent = `● Thinking: ${stage}...`;
+                const label = stageLabels[stage] || `● ${stage}`;
+
+                const stageEl = document.createElement('div');
+                stageEl.style.cssText = 'font-size:0.78em; opacity:0.55; font-style:italic; padding:2px 0;';
+                stageEl.textContent = label + '...';
+                thinkingContainer.appendChild(stageEl);
                 thinkingContainer.style.display = 'block';
                 setTimeout(flushQueue, 0);
                 return;
+            }
+
+            // Первый реальный контент — сворачиваем блок мышления
+            if (!hasRealContent && chunk && !chunk.startsWith('[[')) {
+                hasRealContent = true;
+                if (thinkingContainer.children.length > 0) {
+                    thinkingContainer.style.overflow = 'hidden';
+                    thinkingContainer.style.maxHeight = '0px';
+                    thinkingContainer.style.transition = 'max-height 0.3s ease';
+
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.textContent = '▶ Мышление';
+                    toggleBtn.style.cssText = 'font-size:0.72em; opacity:0.4; background:none; border:none; color:currentColor; cursor:pointer; padding:0 0 4px 0; display:block;';
+                    let expanded = false;
+                    toggleBtn.addEventListener('click', () => {
+                        expanded = !expanded;
+                        thinkingContainer.style.maxHeight = expanded ? '200px' : '0px';
+                        toggleBtn.textContent = expanded ? '▼ Мышление' : '▶ Мышление';
+                    });
+                    msgDiv.insertBefore(toggleBtn, thinkingContainer);
+                }
             }
 
             contentDiv.textContent += chunk;
@@ -71,7 +106,6 @@ export function initializeTriaChat() {
 
         const updateContent = (newChunk) => {
             if (!newChunk) return;
-            // Если пришел целый маркер или обычный текст
             if (newChunk.startsWith('[[THINKING:')) {
                 charQueue.push(newChunk);
             } else {
