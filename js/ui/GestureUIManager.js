@@ -298,7 +298,7 @@ class GestureUIManager {
             duration: performance.now() - this.recordingStartTime
         });
         
-        console.log("GestureUIManager: Recording stopped. Saving to local storage...");
+        console.log("GestureUIManager: Recording stopped. Saving to local storage and sync...");
         
         this._saveGestureToLocalStorage(Array.from(this.recordedPaths.entries()));
 
@@ -320,19 +320,48 @@ class GestureUIManager {
     _saveGestureToLocalStorage(paths) {
         try {
             const savedGestures = JSON.parse(localStorage.getItem('tria_saved_gestures') || '[]');
+            
+            // ЛОГИКА FIFO 10: 11-я запись удаляет 1-ю (самую раннюю и неточную)
+            if (savedGestures.length >= 10) {
+                console.log("GestureUIManager: FIFO Limit reached (10). Evicting oldest gesture variation.");
+                savedGestures.shift();
+            }
+
             const newGesture = {
                 id: `gesture_${Date.now()}`,
                 timestamp: new Date().toISOString(),
                 paths: paths,
-                name: `Запись ${new Date().toLocaleTimeString()}`
+                name: `Evolution iteration #${savedGestures.length + 1}`
             };
+
             savedGestures.push(newGesture);
             localStorage.setItem('tria_saved_gestures', JSON.stringify(savedGestures));
             
+            // Sync current state with backend/AstraDB
+            this._syncWithCloud(newGesture);
+
             // Оповещаем другие компоненты (например, панель "Ваши жесты")
             this.eventBus?.emit('gesturesDataUpdated', savedGestures);
         } catch (e) {
             console.error("GestureUIManager: Error saving gesture:", e);
+        }
+    }
+
+    /**
+     * Отправка жеста на бэкенд для обучения модели в AstraDB
+     */
+    async _syncWithCloud(gesture) {
+        try {
+            const response = await fetch('/api/v1/gestures/store', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(gesture)
+            });
+            if (response.ok) {
+                console.log("GestureUIManager: Cloud sync SUCCESS for iteration:", gesture.id);
+            }
+        } catch (error) {
+            console.warn("GestureUIManager: Cloud sync failed (offline mode):", error.message);
         }
     }
 

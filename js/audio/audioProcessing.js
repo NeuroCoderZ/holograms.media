@@ -72,10 +72,50 @@ eventBus.on('audio:spectralData', (data) => {
     // Отправляем в рендерер
     eventBus.emit('audioData', payload);
 });
+/**
+ * Оценка частоты обновления экрана (FPS) для синхронизации AudioWorklet.
+ * Замеряет интервал между 20 кадрами rAF.
+ */
+async function estimateScreenFPS() {
+    return new Promise(resolve => {
+        let frameCount = 0;
+        let samples = [];
+        let lastTime = performance.now();
+
+        function check(time) {
+            samples.push(time - lastTime);
+            lastTime = time;
+            frameCount++;
+            if (frameCount < 20) {
+                requestAnimationFrame(check);
+            } else {
+                // Убираем первый замер (он часто неточный)
+                const avgInterval = samples.slice(1).reduce((a, b) => a + b, 0) / (samples.length - 1);
+                const fps = Math.round(1000 / avgInterval);
+                // Стандартные затыки: 60, 75, 90, 120, 144, 240
+                const commonRates = [60, 75, 90, 120, 144, 240];
+                const closest = commonRates.reduce((prev, curr) => 
+                    Math.abs(curr - fps) < Math.abs(prev - fps) ? curr : prev
+                );
+                resolve(closest || fps);
+            }
+        }
+        requestAnimationFrame(check);
+    });
+}
+
 export async function initializeCwtWorklet(audioContext) {
-    console.log('[AudioProcessing] 🚀 Requesting CQT initialization from AudioService...');
+    console.log('[AudioProcessing] 🚀 Requesting CQT initialization...');
+    
+    // 1. Детектируем FPS экрана ПЕРЕД запуском ворклета
+    const screenFps = await estimateScreenFPS();
+    console.log(`[AudioProcessing] 🖥️ Detected Screen FPS: ${screenFps}`);
+    state.performance = { ...state.performance, screenFps };
+
     await audioService.initialize();
-    const node = audioService.createWorkletNode();
+    
+    // Передаем FPS в опции создания ноды
+    const node = audioService.createWorkletNode({ targetFps: screenFps });
     const ctx = audioContext || audioService.getAudioContext();
 
     // Ensure context is running (Non-blocking to prevent init hang)

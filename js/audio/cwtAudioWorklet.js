@@ -200,22 +200,25 @@ class CwtProcessor extends AudioWorkletProcessor {
 
             // ЗДЕСЬ БЫЛА УТЕЧКА FPS (PostMessage 375 раз в секунду при 48kHz / 128 сэмплов).
             // Оптимизируем отправку: используем накопитель, чтобы точно попадать в targetFps (Sample-Accurate)
+            // ✅ СИНХРОНИЗАЦИЯ РЕЗОНАНСА (v253): Троттлинг под частоту экрана.
+            // Теперь мы не спамим сообщениями, а подстраиваемся под герцовку монитора пользователя.
             if (this._sampleAccumulator === undefined) this._sampleAccumulator = 0;
-            this._sampleAccumulator += len; // len обычно 128
+            this._sampleAccumulator += len; 
 
-            const samplesPerFrame = this._sampleRate / this._targetFps;
+            // Используем targetFps, который мы замерили на старте (по умолчанию 60).
+            const targetFps = this._targetFps || 60; 
+            const samplesPerFrame = this._sampleRate / targetFps;
 
             if (this._sampleAccumulator >= samplesPerFrame) {
                 // Вычитаем ровно столько, сколько "потребил" один кадр отрисовки,
                 // сохраняя остаток для следующего цикла (jitter protection)
-                this._sampleAccumulator -= samplesPerFrame;
+                this._sampleAccumulator = Math.min(this._sampleAccumulator - samplesPerFrame, samplesPerFrame);
                 
-                // Рендерим слайсы ТОЛЬКО когда пора отправлять
+                // Извлекаем слайсы только тогда, когда пора отправлять
                 const levels = new Float32Array(mem.buffer, ptrs.levels, 256).slice(); 
                 const angles = new Float32Array(mem.buffer, ptrs.pans, 128).slice();
                 const confidence = new Float32Array(mem.buffer, ptrs.confidence, 128).slice();
 
-                // ✅ ТОЧНАЯ СИНХРОНИЗАЦИЯ: Отправка данных в рендерер в ритме частоты экрана
                 this.port.postMessage({
                     type: 'AUDIO_DATA',
                     levels,
