@@ -196,18 +196,10 @@ class AudioService {
                     this.workletNode.port.postMessage({
                         type: 'WASM_BUFFER',
                         buffer: bufferToSend
-                    }, [bufferToSend]); // TRANSFER the clone
-                } else if (this.wasmBuffer && this.wasmBuffer.byteLength === 0) {
-                     console.error('[AudioService] WASM buffer is empty (already transferred?). reloading...');
-                     this.loadWasmModule().then(() => {
-                        const bufferToSend = this.wasmBuffer.slice(0);
-                        this.workletNode.port.postMessage({
-                            type: 'WASM_BUFFER',
-                            buffer: bufferToSend
-                        }, [bufferToSend]);
-                     });
+                    }, [bufferToSend]); // TRANSFER the clone, NOT the original
                 } else {
-                    console.warn('[AudioService] WASM buffer not loaded yet. Handshake delayed.');
+                    console.error('[AudioService] WASM buffer is empty or not loaded. Reloading...');
+                    this.loadWasmModule();
                 }
                 return;
             }

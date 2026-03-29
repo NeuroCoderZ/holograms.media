@@ -47,9 +47,11 @@ if (deployLogRegex.test(html)) {
 }
 
 try {
+    console.log('🔄 Syncing Knowledge Base to AstraDB...');
+    execSync('python scripts/sync_knowledge_base.py', { stdio: 'inherit', cwd: ROOT });
     execSync('node scripts/generate_version.js', { stdio: 'inherit', cwd: ROOT });
 } catch (e) {
-    console.error('❌ generate_version.js failed:', e.message);
+    console.error('❌ Sync or Version Generation failed:', e.message);
     process.exit(1);
 }
 

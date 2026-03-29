@@ -44,7 +44,8 @@ async def live_audio_stream(websocket: WebSocket):
                 "Используй предоставленный исследовательский контекст в ответах."
             ))]
         ),
-        output_audio_transcription={},  # Получаем текстовую транскрипцию ответа
+        input_audio_transcription={},   # Активируем STT для голоса пользователя
+        output_audio_transcription={},  # Оставляем STT для ответа Триа
         speech_config=types.SpeechConfig(
             voice_config=types.VoiceConfig(
                 prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Charon")
@@ -92,18 +93,25 @@ async def live_audio_stream(websocket: WebSocket):
                     async for message in session.receive():
                         payload = {}
                         if message.server_content:
+                            # 1. Обработка транскрипции ВВОДА пользователя
+                            if message.server_content.input_transcription:
+                                it = message.server_content.input_transcription
+                                payload["input_transcript"] = it.text
+                                payload["is_final"] = it.is_final
+
+                            # 2. Обработка ОТВЕТА модели
                             model_turn = message.server_content.model_turn
                             if model_turn:
                                 for part in model_turn.parts:
                                     if part.inline_data:
-                                        # Выходное аудио Gemini Live — 24kHz PCM
                                         payload["audio"] = base64.b64encode(part.inline_data.data).decode('utf-8')
                                         payload["audio_sample_rate"] = 24000
                                     if part.text:
                                         payload["text"] = part.text
-                        # Транскрипция ответа (для отображения в чате)
-                        if hasattr(message, "server_content") and message.server_content.output_transcription:
-                            payload["transcript"] = message.server_content.output_transcription.text
+                            
+                            # 3. Обработка транскрипции ОТВЕТА модели
+                            if message.server_content.output_transcription:
+                                payload["transcript"] = message.server_content.output_transcription.text
                         
                         if payload:
                             await websocket.send_json(payload)

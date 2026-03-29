@@ -151,27 +151,49 @@ export class HologramRenderer {
       let hR = 0.1;
 
       if (isActive && (!isPaused || hasSignal)) {
+        // Физика BasilaQ-128: Шаг панорамы 1.41 градуса (180/128).
+        // Убираем плавную интерполяцию (* 0.12), используем прямое дискретное значение.
         const targetPan = panAngles[i] || 0;
-        this._panStates[i] += (targetPan - this._panStates[i]) * 0.12;
+        this._panStates[i] = targetPan; // Мгновенное переключение позиции
         const p = this._panStates[i];
 
         const shadowDb = Math.abs(p) * (config.shadow_coef || 0) * 128.0;
-        if (p < -0.01) dbR -= shadowDb;
-        else if (p > 0.01) dbL -= shadowDb;
+        let effectiveDbL = dbL;
+        let effectiveDbR = dbR;
+        
+        if (p < -0.01) effectiveDbR -= shadowDb;
+        else if (p > 0.01) effectiveDbL -= shadowDb;
 
         const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
-        pL = initialX_L - Math.abs(Math.min(0, p)) * maxAvailableShift * 1.5;
-        pR = initialX_R + Math.abs(Math.max(0, p)) * maxAvailableShift * 1.5;
+        
+        // ВАЖНО: Дискретное смещение (шаг в целую ячейку).
+        // p находится в диапазоне [-1, 1]. Масштабируем до количества ячеек (64 влево, 64 вправо).
+        const cellsToShift = Math.round(p * 64); 
+        const discreteShift = (cellsToShift / 64) * maxAvailableShift;
 
-        hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbL)));
-        hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, dbR)));
+        pL = initialX_L + Math.min(0, discreteShift) * 1.5;
+        pR = initialX_R + Math.max(0, discreteShift) * 1.5;
+
+        // Физика BasilaQ: 1дБ = 1 ячейка. Z-scale = 128 + dB. 
+        hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL)));
+        hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR)));
         
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);
-      } else if (isPaused) {
+      } else {
+        // В режиме паузы или отсутствия сигнала сбрасываем высоту, но сохраняем панораму
+        const p = this._panStates[i];
         const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
-        pL = initialX_L - Math.abs(Math.min(0, this._panStates[i])) * maxAvailableShift * 1.5;
-        pR = initialX_R + Math.abs(Math.max(0, this._panStates[i])) * maxAvailableShift * 1.5;
+        const cellsToShift = Math.round(p * 64);
+        const discreteShift = (cellsToShift / 64) * maxAvailableShift;
+
+        pL = initialX_L + Math.min(0, discreteShift) * 1.5;
+        pR = initialX_R + Math.max(0, discreteShift) * 1.5;
+        
+        hL = 0.1;
+        hR = 0.1;
+        scalesL.setX(i, hL);
+        scalesR.setX(i, hR);
       }
 
       // Re-use _dummy to avoid allocations

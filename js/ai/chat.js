@@ -54,7 +54,11 @@ export function initializeTriaChat() {
         const stageLabels = {
             'RESEARCH': '🔍 Поиск в базе знаний',
             'SYNTHESIS': '🧠 Синтез ответа',
-            'GROUNDING': '🌐 Веб-поиск'
+            'THOUGHT': '💭 Мышление',
+            'GROUNDING': '🌐 Веб-поиск',
+            'RESONANCE': '🔮 Расчет резонанса',
+            'ANALYSIS': '🧪 Анализ контекста',
+            'CRITIC': '🔬 Критический отбор'
         };
 
         const flushQueue = () => {
@@ -66,40 +70,58 @@ export function initializeTriaChat() {
             if (chunk && chunk.startsWith('[[THINKING:')) {
                 const match = chunk.match(/\[\[THINKING:(.*?)]]/);
                 const stage = match ? match[1] : '...';
+                
+                // Если это новый этап, создаем для него строку
                 const label = stageLabels[stage] || `● ${stage}`;
-
                 const stageEl = document.createElement('div');
-                stageEl.className = 'thinking-stage';
-                stageEl.textContent = label + '...';
+                stageEl.className = `thinking-stage stage-${stage.toLowerCase()}`;
+                stageEl.innerHTML = `<span class="stage-label">${label}...</span><span class="stage-detail"></span>`;
                 thinkingContainer.appendChild(stageEl);
                 thinkingContainer.style.display = 'block';
+                
                 setTimeout(flushQueue, 0);
                 return;
             }
 
-            // Первый реальный контент — сворачиваем блок мышления
+            // Обработка данных ВНУТРИ этапа (например, мысли модели)
+            if (chunk && chunk.startsWith('[[THOUGHT_DATA:')) {
+                const thoughtText = chunk.replace('[[THOUGHT_DATA:', '').replace(']]', '');
+                const lastStage = thinkingContainer.lastElementChild;
+                if (lastStage) {
+                    const detailEl = lastStage.querySelector('.stage-detail');
+                    if (detailEl) detailEl.textContent += thoughtText;
+                }
+                setTimeout(flushQueue, 0);
+                return;
+            }
+
+            // Первый реальный контент — сворачиваем блок мышления ПОСЛЕ начала основного вывода
             if (!hasRealContent && chunk && !chunk.startsWith('[[')) {
                 hasRealContent = true;
                 if (thinkingContainer.children.length > 0) {
-                    thinkingContainer.style.maxHeight = '0px';
-                    thinkingContainer.style.opacity = '0';
-
                     const toggleBtn = document.createElement('button');
                     toggleBtn.className = 'thinking-toggle-btn';
-                    toggleBtn.textContent = '▶ Мышление';
-                    let expanded = false;
-                    toggleBtn.addEventListener('click', () => {
-                        expanded = !expanded;
-                        thinkingContainer.style.maxHeight = expanded ? '300px' : '0px';
-                        thinkingContainer.style.opacity = expanded ? '1' : '0.4';
-                        toggleBtn.textContent = expanded ? '▼ Мышление' : '▶ Мышление';
-                        toggleBtn.classList.toggle('expanded', expanded);
-                    });
+                    toggleBtn.innerHTML = '<span class="icon">▶</span> Мышление';
+                    
                     msgDiv.insertBefore(toggleBtn, thinkingContainer);
+                    
+                    // Плавное автоматическое сворачивание
+                    setTimeout(() => {
+                        thinkingContainer.classList.add('collapsed');
+                    }, 500);
+
+                    toggleBtn.addEventListener('click', () => {
+                        const isCollapsed = thinkingContainer.classList.toggle('collapsed');
+                        toggleBtn.querySelector('.icon').textContent = isCollapsed ? '▶' : '▼';
+                        toggleBtn.classList.toggle('expanded', !isCollapsed);
+                    });
                 }
             }
 
-            contentDiv.textContent += chunk;
+            if (hasRealContent) {
+                contentDiv.textContent += chunk;
+            }
+            
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             setTimeout(flushQueue, TYPING_DELAY_MS);
         };
@@ -206,6 +228,21 @@ export function initializeTriaChat() {
   chatInput.addEventListener('input', () => {
     chatInput.style.height = 'auto';
     chatInput.style.height = `${Math.min(chatInput.scrollHeight, 200)}px`;
+  });
+
+  // --- LIVE STT INTEGRATION ---
+  document.addEventListener('tria-live-stt', (e) => {
+    const { text, isFinal } = e.detail;
+    if (chatInput) {
+      chatInput.value = text;
+      // Триггерим ресайз инпута под новый текст
+      chatInput.dispatchEvent(new Event('input'));
+      
+      if (isFinal) {
+        chatInput.style.textShadow = '0 0 8px rgba(0, 255, 136, 0.5)';
+        setTimeout(() => { chatInput.style.textShadow = ''; }, 1500);
+      }
+    }
   });
 
   console.log("Чат Триа успешно инициализирован и подключен к бэкенду.");

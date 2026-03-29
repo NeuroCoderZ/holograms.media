@@ -22,12 +22,26 @@ export class LiveAudioService {
 
             this.ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data);
+                
+                // 1. Обработка входящего голоса Триа
                 if (data.audio) {
-                    await this.playPcmBase64(data.audio);
+                    await this.playPcmBase64(data.audio, data.audio_sample_rate || 24000);
                 }
-                if (data.text) {
-                    // Dispatch to UI if needed
-                    document.dispatchEvent(new CustomEvent('tria-live-text', { detail: data.text }));
+
+                // 2. Обработка транскрипции ОТВЕТА Триа
+                if (data.text || data.transcript) {
+                    const text = data.text || data.transcript;
+                    document.dispatchEvent(new CustomEvent('tria-live-text', { detail: text }));
+                }
+
+                // 3. Обработка транскрипции ВВОДА пользователя (STT)
+                if (data.input_transcript) {
+                    document.dispatchEvent(new CustomEvent('tria-live-stt', { 
+                        detail: { 
+                            text: data.input_transcript,
+                            isFinal: data.is_final || false
+                        } 
+                    }));
                 }
             };
 

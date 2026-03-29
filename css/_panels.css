@@ -535,34 +535,47 @@ body.focus-mode .panel.right-panel {
 
 /* Container for scrollable content within panels */
 .content-container {
-  flex: 1 !important;
-  min-height: 0 !important;
   display: flex !important;
   flex-direction: column !important;
+  flex: 1 1 auto !important; /* Grow to fill space between dividers */
+  min-height: 0 !important;
   overflow: hidden !important; /* Let children handle their own scroll */
+  position: relative !important;
+  width: 100% !important;
 }
 
-/* Стили для окон в правой панели с отступами 5% и закругленными углами */
-#myHologramsView,
-#myGesturesView,
-#chatHistory,
-#versionTimeline {
-  flex: 1 !important;
+/* Стили для окон в правой панели - занимают 100% между разделителями */
+.right-panel-view {
+  display: none; /* Controlled by JS, but when active: */
+  flex-direction: column !important;
+  flex: 1 1 100% !important;
   width: 100% !important;
   height: 100% !important;
   min-height: 0 !important;
   overflow-y: auto !important;
-  padding: 5% !important;
-  border-radius: 15px !important;
-  background-color: rgba(0, 0, 0, 0.3) !important;
+  padding: 15px !important;
+  border-radius: 12px !important;
+  background-color: rgba(0, 0, 0, 0.25) !important;
   margin: 0 !important;
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
   box-sizing: border-box !important;
   
   /* Glass-fade mask */
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
   mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+}
+
+#chatHistory.right-panel-view {
+    display: flex; /* Default active tab */
+}
+
+/* Унификация скроллбаров для всех вкладок */
+.right-panel-view::-webkit-scrollbar {
+    width: 4px !important;
+}
+
+.right-panel-view::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 10px !important;
 }/* Native Tooltips Style (fallback if JS tooltips fail) */
 [data-tooltip]:hover::after {
   content: attr(data-tooltip);
