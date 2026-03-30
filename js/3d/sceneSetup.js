@@ -89,9 +89,12 @@ export async function initializeScene(state) {
     currentW: window.innerWidth,
     targetX: 0,
     targetW: window.innerWidth,
+    targetZoom: 1.0,
+    currentZoom: 1.0,
     lerpSpeed: 0.08,
   };
 
+  // Вызывается каждый кадр из render loop. Применяет lerp к камере.
   function updateViewOffset() {
     const cam = state.camera;
     if (!cam || !cam.isOrthographicCamera) return;
@@ -99,9 +102,13 @@ export async function initializeScene(state) {
     const vw = state._viewOffset;
     if (!vw) return;
 
-    // Интерполяция
+    // Lerp позиции
     vw.currentX += (vw.targetX - vw.currentX) * vw.lerpSpeed;
     vw.currentW += (vw.targetW - vw.currentW) * vw.lerpSpeed;
+
+    // Lerp зума
+    vw.currentZoom += (vw.targetZoom - vw.currentZoom) * vw.lerpSpeed;
+    cam.zoom = vw.currentZoom;
 
     // Применяем setViewOffset только если смещение значимо (>1px)
     if (Math.abs(vw.currentX) > 1 || Math.abs(vw.currentW - window.innerWidth) > 1) {
@@ -117,10 +124,8 @@ export async function initializeScene(state) {
   }
   state.updateViewOffset = updateViewOffset;
 
+  // Вызывается из ResizeObserver/MutationObserver. Только расчёт целей, БЕЗ обращения к камере.
   function recalcViewTarget() {
-    const cam = state.camera;
-    if (!cam || !cam.isOrthographicCamera) return;
-
     const leftPanel = document.querySelector('.left-panel') || document.getElementById('leftPanel');
     const rightPanel = document.querySelector('.right-panel') || document.getElementById('rightPanel');
 
@@ -139,9 +144,7 @@ export async function initializeScene(state) {
     const fullH = window.innerHeight;
     const maxH = fullH * 0.9;
     const hologramWorldH = 256; // GRID_HEIGHT * 2 = 128 * 2
-    const targetZoom = (maxH / hologramWorldH);
-    cam.zoom = Math.min(cam.zoom + (targetZoom - cam.zoom) * state._viewOffset.lerpSpeed, targetZoom);
-    cam.updateProjectionMatrix();
+    state._viewOffset.targetZoom = maxH / hologramWorldH;
   }
 
   // ResizeObserver на панели
@@ -160,7 +163,7 @@ export async function initializeScene(state) {
   if (leftPanel) panelObserver.observe(leftPanel, { attributes: true, attributeFilter: ['class', 'style'] });
   if (rightPanel) panelObserver.observe(rightPanel, { attributes: true, attributeFilter: ['class', 'style'] });
 
-  // Первичный расчёт
+  // Первичный расчёт целей
   recalcViewTarget();
 
   // Auto-return animation properties
