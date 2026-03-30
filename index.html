@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.261");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.262");</script>
   <!-- DEPLOY_VERSION_END -->
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
@@ -361,24 +361,24 @@
     <hr class="panel-hr">
 
     <!-- Единое поле ввода (всегда видимое, независимо от вкладки) -->
-    <div class="input-container" style="padding: 8px 12px;">
-      <textarea id="chatInput" rows="4" placeholder="Введите сообщение для Триа ..." style="width: 100%; box-sizing: border-box;"></textarea>
+    <div class="input-container" style="padding: clamp(0.5rem, 1dvh, 0.75rem) clamp(0.75rem, 1.5dvw, 1rem); flex-shrink: 0;">
+      <textarea id="chatInput" rows="4" placeholder="Введите сообщение для Триа ..." style="width: 100%; box-sizing: border-box; min-height: clamp(4rem, 10dvh, 8rem); resize: vertical; font-size: 0.875rem;"></textarea>
     </div>
 
     <!-- Блок с элементами управления (всегда видимый внизу) -->
-    <div class="controls-container" style="padding: 8px 12px 12px 12px; display: flex; flex-direction: column; gap: 8px;">
+    <div class="controls-container" style="padding: clamp(0.5rem, 1dvh, 0.75rem) clamp(0.75rem, 1.5dvw, 1rem); display: flex; flex-direction: column; gap: clamp(0.4rem, 0.8dvh, 0.6rem); flex-shrink: 0;">
 
-      <div class="action-buttons" style="display: flex; flex-direction: row; align-items: flex-end; width: 100%; gap: 10px;">
-        <button id="micButton" class="control-button" title="Микрофон" style="flex-shrink: 0; padding: 8px;">
+      <div class="action-buttons" style="display: flex; flex-direction: row; align-items: flex-end; width: 100%; gap: clamp(0.4rem, 0.8dvw, 0.6rem);">
+        <button id="micButton" class="control-button" title="Микрофон" style="flex-shrink: 0; padding: clamp(0.4rem, 0.8dvh, 0.6rem);">
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
             <path d="M480-400q-50 0-85-35t-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35Zm0-240Zm-40 520v-123q-104-14-172-93t-68-184h80q0 83 58.5 141.5T480-320q83 0 141.5-58.5T680-520h80q0 105-68 184t-172 93v123h-80Zm40-360q17 0 28.5-11.5T520-520v-240q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v240q0 17 11.5 28.5T480-480Z" />
           </svg>
         </button>
 
         <!-- Селектор модели ЛЛМ (широкий, между микрофоном и отправкой) -->
-        <div id="modelSelectContainer" style="flex: 1; min-width: 80px; display: flex; align-items: flex-end;" data-tooltip="Выбор модели">
+        <div id="modelSelectContainer" style="flex: 1 1 auto; max-width: 60%; display: flex; align-items: flex-end;" data-tooltip="Выбор модели">
           <select id="modelSelect"
-            style="width: 100%; background: rgba(0,0,0,0.4); color: #bbb; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; outline: none; font-size: 11px; cursor: pointer; padding: 8px 10px; backdrop-filter: blur(10px);">
+            style="width: 100%; background: rgba(0,0,0,0.4); color: #bbb; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; outline: none; font-size: clamp(0.65rem, 1.2dvw, 0.75rem); cursor: pointer; padding: clamp(0.4rem, 0.8dvh, 0.6rem) clamp(0.5rem, 1dvw, 0.75rem); backdrop-filter: blur(10px);">
             <option value="gemini/gemini-3-flash" style="background: #1a1a1a; color: #ddd;">Gemini 3 Flash</option>
             <option value="gemini/gemini-3.1-flash-lite" style="background: #1a1a1a; color: #ddd;">Gemini 3.1 Lite</option>
             <option value="mistral/mistral-large-latest" style="background: #1a1a1a; color: #ddd;">Mistral Small 4</option>
@@ -386,7 +386,7 @@
         </div>
 
         <!-- Кнопка отправить -->
-        <button id="submitChatMessage" class="control-button" title="Отправить сообщение" style="flex-shrink: 0; padding: 8px;">
+        <button id="submitChatMessage" class="control-button" title="Отправить сообщение" style="flex-shrink: 0; padding: clamp(0.4rem, 0.8dvh, 0.6rem);">
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
             <path d="M120-160v-640l760 320-760 320Zm80-120 474-200-474-200v140l240 60-240 60v140Zm0 0v-400 400Z"/>
           </svg>

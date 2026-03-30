@@ -81,43 +81,30 @@ export async function initializeScene(state) {
   state.initialControlsTarget = new THREE.Vector3(0, 0, 0); // Target at origin
   state.controls.target.copy(state.initialControlsTarget);
 
-  // ─── Dynamic Camera Centering (setViewOffset) ───────────────────────
+  // ─── Dynamic Camera Centering (hologramPivot lerp) ────────────────────
   // Голограмма центрируется между видимыми границами панелей.
-  // Lerp для плавности при раскрытии/скрытии панелей.
+  // Сдвигаем hologramPivot, а не камеру — это не ломает проекцию.
   state._viewOffset = {
     currentX: 0,
-    currentW: window.innerWidth,
     targetX: 0,
-    targetW: window.innerWidth,
     lerpSpeed: 0.08,
   };
 
-  // Вызывается каждый кадр из render loop. Применяет lerp к камере.
+  // Вызывается каждый кадр из render loop. Применяет lerp к hologramPivot.
   function updateViewOffset() {
-    const cam = state.camera;
-    if (!cam || !cam.isOrthographicCamera) return;
-
     const vw = state._viewOffset;
     if (!vw) return;
 
-    // Lerp позиции
     vw.currentX += (vw.targetX - vw.currentX) * vw.lerpSpeed;
-    vw.currentW += (vw.targetW - vw.currentW) * vw.lerpSpeed;
 
-    // Применяем setViewOffset только если смещение значимо (>1px)
-    if (Math.abs(vw.currentX) > 1 || Math.abs(vw.currentW - window.innerWidth) > 1) {
-      cam.setViewOffset(
-        window.innerWidth, window.innerHeight,
-        Math.round(vw.currentX), 0,
-        Math.round(vw.currentW), window.innerHeight
-      );
-    } else {
-      cam.clearViewOffset();
+    // Сдвигаем голограмму в противоположную сторону от смещения панелей
+    if (state.hologramRendererInstance) {
+      state.hologramRendererInstance.getHologramPivot().position.x = -vw.currentX;
     }
   }
   state.updateViewOffset = updateViewOffset;
 
-  // Вызывается из ResizeObserver/MutationObserver. Только расчёт целей, БЕЗ обращения к камере.
+  // Вызывается из ResizeObserver/MutationObserver. Только расчёт целей.
   function recalcViewTarget() {
     const leftPanel = document.querySelector('.left-panel') || document.getElementById('leftPanel');
     const rightPanel = document.querySelector('.right-panel') || document.getElementById('rightPanel');
@@ -128,10 +115,11 @@ export async function initializeScene(state) {
       ? rightPanel.getBoundingClientRect().width : 0;
 
     const fullW = window.innerWidth;
-    const effectiveW = fullW - Lw - Rw;
+    const visibleCenter = Lw + (fullW - Lw - Rw) / 2;
+    const cameraCenter = fullW / 2;
 
-    state._viewOffset.targetX = Lw;
-    state._viewOffset.targetW = effectiveW;
+    // Смещение центра видимой области относительно центра экрана
+    state._viewOffset.targetX = visibleCenter - cameraCenter;
   }
 
   // ResizeObserver на панели
