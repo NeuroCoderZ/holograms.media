@@ -65,57 +65,37 @@ class GeminiEmbeddingService:
         if elapsed < 0.8:
             await asyncio.sleep(0.8 - elapsed)
 
-        for attempt in range(1, MAX_RETRIES + 1):
-            try:
-                response = await asyncio.to_thread(
-                    self.client.models.embed_content,
-                    model=self.model,
-                    contents=text,
-                    config=types.EmbedContentConfig(
-                        task_type=task_type, output_dimensionality=OUTPUT_DIMENSIONALITY
-                    ),
-                )
-                self.last_request_time = time.time()
-                self.request_count += 1
-                if response.embeddings and len(response.embeddings) > 0:
-                    return response.embeddings[0].values
-                return None
+        try:
+            response = await asyncio.to_thread(
+                self.client.models.embed_content,
+                model=self.model,
+                contents=text,
+                config=types.EmbedContentConfig(
+                    task_type=task_type, output_dimensionality=OUTPUT_DIMENSIONALITY
+                ),
+            )
+            self.last_request_time = time.time()
+            self.request_count += 1
+            if response.embeddings and len(response.embeddings) > 0:
+                return response.embeddings[0].values
+            return None
 
-            except (
-                httpx.TimeoutException,
-                httpx.ConnectError,
-                httpx.NetworkError,
-            ) as e:
-                if attempt < MAX_RETRIES:
-                    delay = RETRY_DELAY * attempt
-                    print(
-                        f"  ⏳ Retry {attempt}/{MAX_RETRIES}: {type(e).__name__} "
-                        f"— ждём {delay}с перед повтором..."
-                    )
-                    await asyncio.sleep(delay)
-                else:
-                    print(
-                        f"\n!!! [FATAL] Все {MAX_RETRIES} попыток исчерпаны. "
-                        f"Google API недоступен: {type(e).__name__}: {e}\n"
-                    )
-                    sys.exit(1)
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.NetworkError) as e:
+            print(
+                f"\n⚠️  [NETWORK] Синхронизация знаний пропущена из-за сетевых ограничений.\n"
+                f"    Используйте облачный деплой (GitHub Actions) для обновления эмбеддингов.\n"
+                f"    Детали: {type(e).__name__}: {e}\n"
+            )
+            sys.exit(0)  # Не ломаем пайплайн
 
-            except Exception as e:
-                error_str = str(e)
-                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                    print(f"🛑 Quota exhausted for Gemini Embedding 2. Stopping.")
-                    self.quota_exhausted = True
-                    return None
-                if "503" in error_str or "UNAVAILABLE" in error_str:
-                    if attempt < MAX_RETRIES:
-                        delay = RETRY_DELAY * attempt
-                        print(
-                            f"  ⏳ Retry {attempt}/{MAX_RETRIES}: 503 — ждём {delay}с..."
-                        )
-                        await asyncio.sleep(delay)
-                        continue
-                print(f"🛑 Gemini API error: {e}")
+        except Exception as e:
+            error_str = str(e)
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                print(f"🛑 Quota exhausted for Gemini Embedding 2. Stopping.")
+                self.quota_exhausted = True
                 return None
+            print(f"🛑 Gemini API error: {e}")
+            return None
 
 
 # --- Парсинг и Хеширование ---
