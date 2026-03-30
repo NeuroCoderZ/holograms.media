@@ -66,6 +66,16 @@ export async function initializeScene(state) {
   state.camera.lookAt(0, 0, 0); // Ensure camera looks at the origin
   state.activeCamera = state.camera; // Set default active camera
 
+  // XR-режим требует PerspectiveCamera для корректного масштаба в метрах
+  state.xrCamera = new THREE.PerspectiveCamera(
+      75,  // FOV 75° — стандарт для XR очков
+      containerWidth / containerHeight,
+      0.01,   // near: 1 см
+      100.0   // far: 100 метров
+  );
+  state.xrCamera.position.set(0, 0, 0); // WebXR сам управляет позицией
+  // При входе в XR: renderer.xr.enabled = true → камера управляется WebXR API
+
   // Add OrbitControls for orthographic camera
   state.controls = new OrbitControls(state.camera, state.renderer.domElement);
   state.controls.enableRotate = true;
