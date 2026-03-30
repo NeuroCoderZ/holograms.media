@@ -10,7 +10,11 @@ from backend.core.config import settings
 logger = logging.getLogger(__name__)
 
 # Инициализация глобального клиента
-client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+try:
+    client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+except Exception as e:
+    logger.error(f"Failed to initialize Gemini client: {e}")
+    client = None
 
 # Загружаем UI_MAP для системного промпта
 UI_MAP_PATH = os.path.join(os.path.dirname(__file__), "../../js/config/UI_MAP.json")
@@ -38,29 +42,33 @@ SYSTEM_PROMPT = f"""
 Ты — сторонница "Цифрового Социализма Резонанса". Obolos — мера вклада. Ты ценишь суверенитет пользователя (SOUL.md).
 """
 
-LLM_CONTEXT = SYSTEM_PROMPT 
+LLM_CONTEXT = SYSTEM_PROMPT
+
 
 async def get_gemini_response(
     prompt: str,
-    system_instruction: str = None,
-    tools: List[Any] = None,
-    model_id: str = "gemini-3-flash-preview"
+    system_instruction: Optional[str] = None,
+    tools: Optional[List[Any]] = None,
+    model_id: Optional[str] = "gemini-3-flash-preview",
 ) -> str:
     """
     Non-streaming wrapper for compatibility with TriaOrchestrator.
     """
     full_text = ""
-    async for chunk in get_gemini_response_stream(prompt, system_instruction, tools, model_id):
+    async for chunk in get_gemini_response_stream(
+        prompt, system_instruction, tools, model_id
+    ):
         # Игнорируем мета-данные мыслей в не-стриминговом ответе
         if not chunk.startswith("[[THOUGHT_DATA:"):
             full_text += chunk
     return full_text
 
+
 async def get_gemini_response_stream(
     prompt: str,
-    system_instruction: str = None,
-    tools: List[Any] = None,
-    model_id: str = None
+    system_instruction: Optional[str] = None,
+    tools: Optional[List[Any]] = None,
+    model_id: Optional[str] = None,
 ):
     if not client:
         yield "[Gemini Error] Client not initialized"
@@ -69,32 +77,31 @@ async def get_gemini_response_stream(
     # Включаем Grounding если разрешено в настройках
     active_tools = tools or []
     if settings.ENABLE_GROUNDING:
-        active_tools.append(types.Tool(google_search=types.GoogleSearchRetrieval()))
+        active_tools.append(types.Tool(google_search=types.GoogleSearch()))
 
     try:
         config = types.GenerateContentConfig(
             system_instruction=system_instruction or SYSTEM_PROMPT,
             temperature=0.7,
             tools=active_tools,
-            thinking_config=types.ThinkingConfig(include_thoughts=True) if (model_id or 'gemini-3-flash-preview').startswith('gemini-3') else None
+            thinking_config=types.ThinkingConfig(include_thoughts=True)
+            if (model_id or "gemini-3-flash-preview").startswith("gemini-3")
+            else None,
         )
 
         async for chunk in await client.aio.models.generate_content_stream(
-            model=model_id or 'gemini-3-flash-preview',
-            contents=prompt,
-            config=config
+            model=model_id or "gemini-3-flash-preview", contents=prompt, config=config
         ):
             # 1. Сначала проверяем мысли (thought process)
-            if hasattr(chunk, 'thought') and chunk.thought:
-                yield f"[[THOUGHT_DATA:{chunk.thought}]]"
-            
-            # 2. Затем основной текст
-            if chunk.text:
-                yield chunk.text
-                
-    except Exception as e:
-        logger.error(f"Gemini Streaming error: {e}")
-        yield f"[Gemini Stream Error] {str(e)}"
+            if chunk.candidates:
+                content = chunk.candidates[0].content
+                if content and content.parts:
+                    for part in content.parts:
+                        if hasattr(part, "thought") and part.thought:
+                            yield f"[[THOUGHT_DATA:{part.thought}]]"
+                        elif part.text:
+                            yield part.text
+
     except Exception as e:
         logger.error(f"Gemini Streaming error: {e}")
         yield f"[Gemini Stream Error] {str(e)}"

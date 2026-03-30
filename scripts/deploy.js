@@ -36,8 +36,9 @@ pkg.version = newVersion;
 fs.writeFileSync(PACKAGE_JSON, JSON.stringify(pkg, null, 2));
 
 let html = fs.readFileSync(INDEX_HTML, 'utf8');
-const deployLogRegex = /console\.log\("DEPLOY VERSION: .*?"\);/;
-const newLogLine = `console.log("DEPLOY VERSION: ${newVersion} - ${commitMessage}");`;
+// Regex захватывает ТОЛЬКО номер версии, не трогая структуру строки
+const deployLogRegex = /console\.log\("DEPLOY VERSION: \d+\.\d+\.\d+"/;
+const newLogLine = `console.log("DEPLOY VERSION: ${newVersion}"`;
 if (deployLogRegex.test(html)) {
     html = html.replace(deployLogRegex, newLogLine);
     fs.writeFileSync(INDEX_HTML, html);

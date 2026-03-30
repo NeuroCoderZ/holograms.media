@@ -1,5 +1,4 @@
-// vite.config.js (ФИНАЛЬНАЯ, АБСОЛЮТНАЯ ВЕРСИЯ)
-// DEPLOY VERSION: 1.18.5 - LOCAL SHADERS
+// vite.config.js
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -7,7 +6,6 @@ import { VitePWA } from 'vite-plugin-pwa';
 // Получаем абсолютный путь к текущей директории
 const __dirname = resolve();
 
-// DEPLOY VERSION: 0.18.9 - CYLINDER PERSPECTIVE FIX
 export default defineConfig({
   plugins: [
     VitePWA({

@@ -2,11 +2,16 @@
 backend/tria_agents/meta_agent.py
 Реализация динамических инструкций через AstraDB.
 """
+
 import os
+import logging
 from typing import Optional
 from astrapy import DataAPIClient
 
+logger = logging.getLogger(__name__)
+
 COLLECTION_NAME = "tria_meta_instructions"
+
 
 class MetaInstructionService:
     def __init__(self):
@@ -19,12 +24,19 @@ class MetaInstructionService:
     async def _setup(self):
         if not self._collection:
             try:
+                if not self.token or not self.endpoint:
+                    logger.warning("[MetaAgent] ASTRA_DB credentials not set.")
+                    return
                 self._client = DataAPIClient(self.token)
-                db = self._client.get_async_database(self.endpoint, keyspace=self.keyspace)
+                db = self._client.get_async_database(
+                    self.endpoint, keyspace=self.keyspace
+                )
                 # Используем get_collection — не создаём, не падаем если нет
                 self._collection = db.get_collection(COLLECTION_NAME)
             except Exception as e:
-                print(f"[MetaAgent] AstraDB setup failed: {e}. Using default instructions.")
+                logger.error(
+                    f"[MetaAgent] AstraDB setup failed: {e}. Using default instructions."
+                )
                 self._collection = None
 
     async def get_instruction(self, agent_id: str) -> str:
@@ -42,7 +54,13 @@ class MetaInstructionService:
     async def set_instruction(self, agent_id: str, instruction: str):
         """Обновить мета-инструкцию (только для Meta-Learning Agent)."""
         await self._setup()
-        await self._collection.upsert_one(
+        if not self._collection:
+            logger.warning(
+                "[MetaAgent] Collection not available, skipping set_instruction."
+            )
+            return
+        await self._collection.update_one(
             {"agent_id": agent_id},
-            {"$set": {"instruction": instruction}}
+            {"$set": {"instruction": instruction}},
+            upsert=True,
         )
