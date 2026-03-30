@@ -1,4 +1,5 @@
 import eventBus from './eventBus.js';
+import uiContextManager from './UIContextManager.js';
 
 export class TriaOrchestrator {
     constructor(dbService, state) {
@@ -90,7 +91,8 @@ export class TriaOrchestrator {
                 },
                 body: JSON.stringify({
                     prompt: userInput,
-                    session_id: null
+                    session_id: null,
+                    ui_context: uiContextManager.getSnapshot(),
                 })
             });
 

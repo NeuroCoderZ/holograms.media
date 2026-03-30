@@ -81,6 +81,84 @@ export async function initializeScene(state) {
   state.initialControlsTarget = new THREE.Vector3(0, 0, 0); // Target at origin
   state.controls.target.copy(state.initialControlsTarget);
 
+  // ─── Dynamic Camera Centering (setViewOffset) ───────────────────────
+  // Голограмма центрируется между видимыми границами панелей.
+  // Lerp для плавности при раскрытии/скрытии панелей.
+  state._viewOffset = {
+    currentX: 0,
+    currentW: window.innerWidth,
+    targetX: 0,
+    targetW: window.innerWidth,
+    lerpSpeed: 0.08,
+  };
+
+  function updateViewOffset() {
+    const cam = state.camera;
+    if (!cam || !cam.isOrthographicCamera) return;
+
+    const vw = state._viewOffset;
+    // Интерполяция
+    vw.currentX += (vw.targetX - vw.currentX) * vw.lerpSpeed;
+    vw.currentW += (vw.targetW - vw.currentW) * vw.lerpSpeed;
+
+    // Применяем setViewOffset только если смещение значимо (>1px)
+    if (Math.abs(vw.currentX) > 1 || Math.abs(vw.currentW - window.innerWidth) > 1) {
+      cam.setViewOffset(
+        window.innerWidth, window.innerHeight,
+        Math.round(vw.currentX), 0,
+        Math.round(vw.currentW), window.innerHeight
+      );
+    } else {
+      cam.clearViewOffset();
+    }
+  }
+  state.updateViewOffset = updateViewOffset;
+
+  function recalcViewTarget() {
+    const leftPanel = document.querySelector('.left-panel') || document.getElementById('leftPanel');
+    const rightPanel = document.querySelector('.right-panel') || document.getElementById('rightPanel');
+
+    const Lw = (leftPanel && leftPanel.classList.contains('visible'))
+      ? leftPanel.getBoundingClientRect().width : 0;
+    const Rw = (rightPanel && rightPanel.classList.contains('visible'))
+      ? rightPanel.getBoundingClientRect().width : 0;
+
+    const fullW = window.innerWidth;
+    const effectiveW = fullW - Lw - Rw;
+
+    state._viewOffset.targetX = Lw;
+    state._viewOffset.targetW = effectiveW;
+
+    // Auto-zoom: 5% margin top/bottom
+    const fullH = window.innerHeight;
+    const maxH = fullH * 0.9;
+    const hologramWorldH = 256; // GRID_HEIGHT * 2 = 128 * 2
+    // camera.top/bottom = containerHeight/2. zoom = containerHeight/2 / hologramWorldH
+    // Чтобы голограмма занимала maxH: zoom = (fullH/2 * (maxH/fullH)) / (hologramWorldH/2)
+    const targetZoom = (maxH / hologramWorldH);
+    cam.zoom = Math.min(cam.zoom + (targetZoom - cam.zoom) * state._viewOffset.lerpSpeed, targetZoom);
+    cam.updateProjectionMatrix();
+  }
+
+  // ResizeObserver на панели
+  const leftPanel = document.querySelector('.left-panel') || document.getElementById('leftPanel');
+  const rightPanel = document.querySelector('.right-panel') || document.getElementById('rightPanel');
+
+  if (leftPanel) {
+    new ResizeObserver(recalcViewTarget).observe(leftPanel);
+  }
+  if (rightPanel) {
+    new ResizeObserver(recalcViewTarget).observe(rightPanel);
+  }
+
+  // MutationObserver для отслеживания смены классов visible/hidden
+  const panelObserver = new MutationObserver(recalcViewTarget);
+  if (leftPanel) panelObserver.observe(leftPanel, { attributes: true, attributeFilter: ['class', 'style'] });
+  if (rightPanel) panelObserver.observe(rightPanel, { attributes: true, attributeFilter: ['class', 'style'] });
+
+  // Первичный расчёт
+  recalcViewTarget();
+
   // Auto-return animation properties
   state.returnTween = null;
   state.returnTimeout = null; // Таймер задержки возврата

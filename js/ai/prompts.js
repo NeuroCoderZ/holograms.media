@@ -2,6 +2,7 @@
 
 // import { ui } from '../core/ui.js'; // Replaced with state.uiElements
 import { getSelectedModel } from './models.js';
+import uiContextManager from '../core/UIContextManager.js';
 // import { state } from '../core/init.js'; // Removed import
 
 // Переменные состояния
@@ -44,9 +45,8 @@ export async function sendPrompt(promptText, passedState) { // Added passedState
       prompt: promptText,
       model: selectedModel,
       context: {
-        // Добавляем контекст из текущего состояния приложения
-        // (например, информацию о текущей версии и т.д.)
-        branch: passedState.currentBranch || 'main' // Use passedState
+        branch: passedState.currentBranch || 'main',
+        ui_context: uiContextManager.getSnapshot(),
       }
     };
     

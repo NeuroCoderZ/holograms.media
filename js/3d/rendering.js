@@ -39,6 +39,11 @@ export function startAnimationLoop(appState) {
             appState.earthZero.update(deltaTime);
         }
 
+        // Dynamic camera centering (lerp setViewOffset)
+        if (appState.updateViewOffset) {
+            appState.updateViewOffset();
+        }
+
         if (isWebGPU) {
             await appState.renderer.renderAsync(appState.scene, appState.activeCamera);
         } else {
