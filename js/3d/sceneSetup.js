@@ -97,6 +97,8 @@ export async function initializeScene(state) {
     if (!cam || !cam.isOrthographicCamera) return;
 
     const vw = state._viewOffset;
+    if (!vw) return;
+
     // Интерполяция
     vw.currentX += (vw.targetX - vw.currentX) * vw.lerpSpeed;
     vw.currentW += (vw.targetW - vw.currentW) * vw.lerpSpeed;
@@ -111,10 +113,14 @@ export async function initializeScene(state) {
     } else {
       cam.clearViewOffset();
     }
+    cam.updateProjectionMatrix();
   }
   state.updateViewOffset = updateViewOffset;
 
   function recalcViewTarget() {
+    const cam = state.camera;
+    if (!cam || !cam.isOrthographicCamera) return;
+
     const leftPanel = document.querySelector('.left-panel') || document.getElementById('leftPanel');
     const rightPanel = document.querySelector('.right-panel') || document.getElementById('rightPanel');
 
@@ -133,8 +139,6 @@ export async function initializeScene(state) {
     const fullH = window.innerHeight;
     const maxH = fullH * 0.9;
     const hologramWorldH = 256; // GRID_HEIGHT * 2 = 128 * 2
-    // camera.top/bottom = containerHeight/2. zoom = containerHeight/2 / hologramWorldH
-    // Чтобы голограмма занимала maxH: zoom = (fullH/2 * (maxH/fullH)) / (hologramWorldH/2)
     const targetZoom = (maxH / hologramWorldH);
     cam.zoom = Math.min(cam.zoom + (targetZoom - cam.zoom) * state._viewOffset.lerpSpeed, targetZoom);
     cam.updateProjectionMatrix();
