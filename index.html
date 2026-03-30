@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.256");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.257");</script>
   <!-- DEPLOY_VERSION_END -->
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
@@ -360,15 +360,9 @@
     <!-- Общая разделительная линия (всегда видимая) -->
     <hr class="panel-hr">
 
-    <!-- Контейнер для ввода - переключаемые области -->
+    <!-- Единое поле ввода (всегда видимое, независимо от вкладки) -->
     <div class="input-container">
-      <!-- Поле ввода промпта (Режим Versions) -->
-      <div id="promptBar" class="panel-section right-panel-view" style="display: none;">
-        <textarea id="topPromptInput" rows="3" placeholder="Что бы вы хотели изменить?"></textarea>
-      </div>
-
-      <!-- Поле ввода чата (Режим Chat) -->
-      <div id="chatInputBar" class="panel-section right-panel-view chat-mode" style="display: block;">
+      <div id="chatInputBar" class="panel-section" style="display: block;">
         <textarea id="chatInput" rows="3" placeholder="Введите сообщение для Триа ..."></textarea>
       </div>
     </div>
@@ -376,27 +370,27 @@
     <!-- Блок с элементами управления (всегда видимый внизу) -->
     <div class="controls-container" style="padding: 10px; display: flex; flex-direction: column; gap: 8px;">
 
-      <!-- Селектор модели ЛЛМ (теперь всегда видим) -->
-      <div id="modelSelectContainer" style="width: 100%; display: flex; align-items: center;" data-tooltip="Выбор модели">
-        <select id="modelSelect"
-          style="width: 100%; background: rgba(0,0,0,0.4); color: #bbb; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; outline: none; font-size: 12px; cursor: pointer; padding: 5px 10px; backdrop-filter: blur(10px);">
-          <option value="gemini/gemini-3-flash" style="background: #1a1a1a; color: #ddd;">Gemini 3 Flash</option>
-          <option value="gemini/gemini-3.1-flash-lite" style="background: #1a1a1a; color: #ddd;">Gemini 3.1 Lite</option>
-          <option value="mistral/mistral-large-latest" style="background: #1a1a1a; color: #ddd;">Mistral Small 4</option>
-        </select>
-      </div>
-
-      <div class="action-buttons" style="display: flex; flex-direction: row; align-items: center; width: 100%; gap: 10px;">
+      <div class="action-buttons" style="display: flex; flex-direction: row; align-items: flex-end; width: 100%; gap: 8px;">
         <button id="micButton" class="control-button" title="Микрофон" style="flex-shrink: 0; padding: 6px;">
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
             <path d="M480-400q-50 0-85-35t-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35Zm0-240Zm-40 520v-123q-104-14-172-93t-68-184h80q0 83 58.5 141.5T480-320q83 0 141.5-58.5T680-520h80q0 105-68 184t-172 93v123h-80Zm40-360q17 0 28.5-11.5T520-520v-240q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v240q0 17 11.5 28.5T480-480Z" />
           </svg>
         </button>
 
+        <!-- Селектор модели ЛЛМ (между микрофоном и отправкой) -->
+        <div id="modelSelectContainer" style="flex-shrink: 1; min-width: 100px; display: flex; align-items: flex-end;" data-tooltip="Выбор модели">
+          <select id="modelSelect"
+            style="width: 100%; background: rgba(0,0,0,0.4); color: #bbb; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; outline: none; font-size: 11px; cursor: pointer; padding: 6px 8px; backdrop-filter: blur(10px);">
+            <option value="gemini/gemini-3-flash" style="background: #1a1a1a; color: #ddd;">Gemini 3 Flash</option>
+            <option value="gemini/gemini-3.1-flash-lite" style="background: #1a1a1a; color: #ddd;">Gemini 3.1 Lite</option>
+            <option value="mistral/mistral-large-latest" style="background: #1a1a1a; color: #ddd;">Mistral Small 4</option>
+          </select>
+        </div>
+
         <div style="flex-grow: 1;"></div>
 
-        <!-- Кнопка отправить (видима в режиме чата) -->
-        <button id="submitChatMessage" class="chat-mode control-button" title="Отправить сообщение">
+        <!-- Кнопка отправить -->
+        <button id="submitChatMessage" class="control-button" title="Отправить сообщение" style="flex-shrink: 0; padding: 6px;">
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
             <path d="M120-160v-640l760 320-760 320Zm80-120 474-200-474-200v140l240 60-240 60v140Zm0 0v-400 400Z"/>
           </svg>

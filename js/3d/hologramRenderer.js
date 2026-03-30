@@ -197,13 +197,18 @@ export class HologramRenderer {
       }
 
       // Re-use _dummy to avoid allocations
-      dummy.position.set(pL, initialY, 0);
-      dummy.scale.set(width, 1, hL);
+      // Скейл по Y (НЕ по Z): ортографическая камера не показывает глубину.
+      // Pivot BoxGeometry в центре Y, поэтому сдвигаем position.Y вверх на половину высоты,
+      // чтобы колонка росла ВВЕРХ от базовой линии.
+      const scaleY_L = hL / CELL_HEIGHT;
+      dummy.position.set(pL, initialY + CELL_HEIGHT * scaleY_L * 0.5, 0);
+      dummy.scale.set(width, scaleY_L, 1);
       dummy.updateMatrix();
       this.meshL.setMatrixAt(i, dummy.matrix);
 
-      dummy.position.set(pR, initialY, 0);
-      dummy.scale.set(width, 1, hR);
+      const scaleY_R = hR / CELL_HEIGHT;
+      dummy.position.set(pR, initialY + CELL_HEIGHT * scaleY_R * 0.5, 0);
+      dummy.scale.set(width, scaleY_R, 1);
       dummy.updateMatrix();
       this.meshR.setMatrixAt(i, dummy.matrix);
     }

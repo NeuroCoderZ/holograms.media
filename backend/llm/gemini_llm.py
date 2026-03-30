@@ -103,5 +103,9 @@ async def get_gemini_response_stream(
                             yield part.text
 
     except Exception as e:
+        error_str = str(e)
         logger.error(f"Gemini Streaming error: {e}")
-        yield f"[Gemini Stream Error] {str(e)}"
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+            yield "[Tria] Лимит запросов к Gemini исчерпан. Смените модель в селекторе или подождите."
+        else:
+            yield f"[Gemini Stream Error] {error_str}"

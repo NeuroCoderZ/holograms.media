@@ -48,14 +48,6 @@ class PanelManager {
 
         if (this.contentPanels.versionTimeline) {
             this.contentPanels.versionTimeline.style.display = 'block';
-            // Rest of initialization logic...
-            if (uiElements.inputs && uiElements.inputs.topPromptInput) { // Check for uiElements.inputs existence
-                uiElements.inputs.topPromptInput.placeholder = "Что бы вы хотели изменить?";
-                if (document.getElementById('promptBar')) document.getElementById('promptBar').style.display = 'block';
-                if (document.getElementById('chatInputBar')) document.getElementById('chatInputBar').style.display = 'none';
-                if (document.getElementById('submitTopPrompt')) document.getElementById('submitTopPrompt').style.display = 'block';
-                if (document.getElementById('submitChatMessage')) document.getElementById('submitChatMessage').style.display = 'none';
-            }
         }
 
         if (allFound) console.log('All content panels initialized.');
@@ -82,16 +74,8 @@ class PanelManager {
 
         if (panelKey === 'chatHistory') {
             if (uiElements.inputs.chatInput) uiElements.inputs.chatInput.placeholder = "Ваше сообщение для Триа...";
-            if (document.getElementById('chatInputBar')) document.getElementById('chatInputBar').style.display = 'block';
-            if (document.getElementById('promptBar')) document.getElementById('promptBar').style.display = 'none';
-            if (document.getElementById('submitChatMessage')) document.getElementById('submitChatMessage').style.display = 'block';
-            if (document.getElementById('submitTopPrompt')) document.getElementById('submitTopPrompt').style.display = 'none';
         } else {
-            if (uiElements.inputs.topPromptInput) uiElements.inputs.topPromptInput.placeholder = "Что бы вы хотели изменить?";
-            if (document.getElementById('promptBar')) document.getElementById('promptBar').style.display = 'block';
-            if (document.getElementById('chatInputBar')) document.getElementById('chatInputBar').style.display = 'none';
-            if (document.getElementById('submitTopPrompt')) document.getElementById('submitTopPrompt').style.display = 'block';
-            if (document.getElementById('submitChatMessage')) document.getElementById('submitChatMessage').style.display = 'none';
+            if (uiElements.inputs.chatInput) uiElements.inputs.chatInput.placeholder = "Что бы вы хотели изменить?";
         }
 
         if (header) {
