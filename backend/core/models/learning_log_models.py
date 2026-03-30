@@ -2,27 +2,61 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 
+
 class TriaLearningLogModel(BaseModel):
     """
     Pydantic model for Tria's learning log entries.
     Corresponds to the 'tria_learning_log' table in the database.
     """
-    log_id: Optional[int] = Field(default=None, description="Unique identifier for the log entry (auto-incrementing).") # Made optional
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Timestamp of when the log event occurred (UTC).")
-    user_id: Optional[str] = Field(default=None, description="ID of the user associated with this log event, references users table.") # Added from schema
-    session_id: Optional[str] = Field(default=None, description="ID of the chat session associated with this log event.") # Added from schema, using str for UUID
-    event_type: str = Field(..., description="Type of event being logged (e.g., 'model_retrained', 'feedback_received', 'error_encountered').")
-    agent_affected_id: Optional[str] = Field(default=None, description="Identifier of the Tria agent or component affected by the event, if applicable.")
-    summary_text: Optional[str] = Field(default=None, description="A brief summary of the learning event.")
-    prompt_text: Optional[str] = Field(default=None, description="Full text of the prompt given by the user or system.") # Added from schema
-    tria_response_text: Optional[str] = Field(default=None, description="Full text of Tria's response.") # Added from schema
-    model_used: Optional[str] = Field(default=None, description="Identifier for the specific AI/ML model used for the response.") # Added from schema
-    feedback_score: Optional[int] = Field(default=None, description="Optional user-provided feedback score.") # Added from schema
-    custom_data: Optional[Dict[str, Any]] = Field(default=None, description="Flexible JSONB field for any additional structured data relevant to the log entry.") # Renamed from details_json
+
+    log_id: Optional[int] = Field(
+        default=None,
+        description="Unique identifier for the log entry (auto-incrementing).",
+    )  # Made optional
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="Timestamp of when the log event occurred (UTC).",
+    )
+    user_id: Optional[str] = Field(
+        default=None,
+        description="ID of the user associated with this log event, references users table.",
+    )  # Added from schema
+    session_id: Optional[str] = Field(
+        default=None,
+        description="ID of the chat session associated with this log event.",
+    )  # Added from schema, using str for UUID
+    event_type: str = Field(
+        ...,
+        description="Type of event being logged (e.g., 'model_retrained', 'feedback_received', 'error_encountered').",
+    )
+    agent_affected_id: Optional[str] = Field(
+        default=None,
+        description="Identifier of the Tria agent or component affected by the event, if applicable.",
+    )
+    summary_text: Optional[str] = Field(
+        default=None, description="A brief summary of the learning event."
+    )
+    prompt_text: Optional[str] = Field(
+        default=None, description="Full text of the prompt given by the user or system."
+    )  # Added from schema
+    tria_response_text: Optional[str] = Field(
+        default=None, description="Full text of Tria's response."
+    )  # Added from schema
+    model_used: Optional[str] = Field(
+        default=None,
+        description="Identifier for the specific AI/ML model used for the response.",
+    )  # Added from schema
+    feedback_score: Optional[int] = Field(
+        default=None, description="Optional user-provided feedback score."
+    )  # Added from schema
+    custom_data: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Flexible JSONB field for any additional structured data relevant to the log entry.",
+    )  # Renamed from details_json
 
     class Config:
         from_attributes = True
-        schema_extra = {
+        json_schema_extra = {
             "examples": [
                 {
                     "log_id": 1,
@@ -39,11 +73,11 @@ class TriaLearningLogModel(BaseModel):
                     "custom_data": {
                         "interaction_id": "interaction_abc_789",
                         "rating": 5,
-                        "comment": "The voice was very clear and natural."
-                    }
+                        "comment": "The voice was very clear and natural.",
+                    },
                 },
                 {
-                    "log_id": None, # Example of creating without log_id
+                    "log_id": None,  # Example of creating without log_id
                     "timestamp": "2024-06-15T11:00:00Z",
                     "user_id": "user_def_456",
                     "session_id": None,
@@ -57,8 +91,8 @@ class TriaLearningLogModel(BaseModel):
                     "custom_data": {
                         "error_type": "NullPointerException",
                         "input_data_sample": "User said: '...' (truncated)",
-                        "action_taken": "Returned default intent 'unknown_intent'"
-                    }
-                }
+                        "action_taken": "Returned default intent 'unknown_intent'",
+                    },
+                },
             ]
         }
