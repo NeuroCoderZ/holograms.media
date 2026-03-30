@@ -78,8 +78,8 @@ export class HologramRenderer {
     this.meshR.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
     // Per-instance aColumnScaleZ attribute for shader brightness
-    const scalesL = new THREE.InstancedBufferAttribute(new Float32Array(count).fill(0.1), 1);
-    const scalesR = new THREE.InstancedBufferAttribute(new Float32Array(count).fill(0.1), 1);
+    const scalesL = new THREE.InstancedBufferAttribute(new Float32Array(count).fill(CELL_HEIGHT), 1);
+    const scalesR = new THREE.InstancedBufferAttribute(new Float32Array(count).fill(CELL_HEIGHT), 1);
     this.meshL.geometry.setAttribute('aColumnScaleZ', scalesL);
     this.meshR.geometry.setAttribute('aColumnScaleZ', scalesR);
 
@@ -147,8 +147,8 @@ export class HologramRenderer {
 
       let pL = initialX_L;
       let pR = initialX_R;
-      let hL = 0.1;
-      let hR = 0.1;
+      let hL = CELL_HEIGHT;
+      let hR = CELL_HEIGHT;
 
       if (isActive && (!isPaused || hasSignal)) {
         // Физика BasilaQ-128: Шаг панорамы 1.41 градуса (180/128).
@@ -190,8 +190,8 @@ export class HologramRenderer {
         pL = initialX_L + Math.min(0, discreteShift) * 1.5;
         pR = initialX_R + Math.max(0, discreteShift) * 1.5;
         
-        hL = 0.1;
-        hR = 0.1;
+        hL = CELL_HEIGHT;
+        hR = CELL_HEIGHT;
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);
       }

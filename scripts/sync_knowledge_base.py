@@ -289,7 +289,10 @@ async def sync_knowledge_base():
         )
 
     if to_process:
-        print("\n" + f"✨ Embedding with Gemini 2 (Batch Cap: {MAX_CHUNKS_PER_RUN})...")
+        print(
+            "\n"
+            + f"✨ Embedding with Gemini Embedding 2 (Batch Cap: {MAX_CHUNKS_PER_RUN})..."
+        )
         total_chunks = 0
 
         for path in sorted(to_process):

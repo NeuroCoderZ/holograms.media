@@ -89,8 +89,6 @@ export async function initializeScene(state) {
     currentW: window.innerWidth,
     targetX: 0,
     targetW: window.innerWidth,
-    targetZoom: 1.0,
-    currentZoom: 1.0,
     lerpSpeed: 0.08,
   };
 
@@ -106,10 +104,6 @@ export async function initializeScene(state) {
     vw.currentX += (vw.targetX - vw.currentX) * vw.lerpSpeed;
     vw.currentW += (vw.targetW - vw.currentW) * vw.lerpSpeed;
 
-    // Lerp зума
-    vw.currentZoom += (vw.targetZoom - vw.currentZoom) * vw.lerpSpeed;
-    cam.zoom = vw.currentZoom;
-
     // Применяем setViewOffset только если смещение значимо (>1px)
     if (Math.abs(vw.currentX) > 1 || Math.abs(vw.currentW - window.innerWidth) > 1) {
       cam.setViewOffset(
@@ -120,7 +114,6 @@ export async function initializeScene(state) {
     } else {
       cam.clearViewOffset();
     }
-    cam.updateProjectionMatrix();
   }
   state.updateViewOffset = updateViewOffset;
 
@@ -139,12 +132,6 @@ export async function initializeScene(state) {
 
     state._viewOffset.targetX = Lw;
     state._viewOffset.targetW = effectiveW;
-
-    // Auto-zoom: 5% margin top/bottom
-    const fullH = window.innerHeight;
-    const maxH = fullH * 0.9;
-    const hologramWorldH = 256; // GRID_HEIGHT * 2 = 128 * 2
-    state._viewOffset.targetZoom = maxH / hologramWorldH;
   }
 
   // ResizeObserver на панели
