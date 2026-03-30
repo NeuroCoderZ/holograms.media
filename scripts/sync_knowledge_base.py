@@ -35,7 +35,9 @@ CHUNK_SIZE_CHARS = (
 )
 CHUNK_OVERLAP_CHARS = 300
 OUTPUT_DIMENSIONALITY = 3072  # Нативная размерность Gemini Embedding 2
-API_TIMEOUT_SECONDS = 20  # FAIL-FAST: жёсткий таймаут для VPN/VLESS
+API_TIMEOUT_SECONDS = (
+    60  # Cloud-safe: GitHub Actions / Koyeb прямой доступ к Google API
+)
 
 # Квота на gemini-embedding-2 (Free Tier 2026)
 # Снижаем до 50 для максимальной стабильности SSL на плохих каналах
@@ -81,8 +83,7 @@ class GeminiEmbeddingService:
         except (httpx.TimeoutException, httpx.ConnectError, httpx.NetworkError) as e:
             print(
                 f"\n!!! [NETWORK ERROR] Превышено время ожидания ({API_TIMEOUT_SECONDS}с). "
-                f"Вероятно, текущий VPN-сервер заблокирован Google API. "
-                f"Смените узел VLESS и попробуйте снова.\n"
+                f"Google API недоступен. Проверьте сетевое соединение.\n"
                 f"    Детали: {type(e).__name__}: {e}\n"
             )
             sys.exit(1)

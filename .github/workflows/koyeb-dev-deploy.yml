@@ -19,27 +19,35 @@ jobs:
 
       - name: 🚀 Deploy and Sync Environment
         run: |
-          # Sync secrets to Vault (DEV versions) with output suppression to avoid CLI argument pollution
-          koyeb secret update DEV_GOOGLE_CLIENT_ID --value "${{ secrets.DEV_GOOGLE_CLIENT_ID }}" > /dev/null 2>&1 || koyeb secret create DEV_GOOGLE_CLIENT_ID --value "${{ secrets.DEV_GOOGLE_CLIENT_ID }}"
-          koyeb secret update DEV_GOOGLE_CLIENT_SECRET --value "${{ secrets.DEV_GOOGLE_CLIENT_SECRET }}" > /dev/null 2>&1 || koyeb secret create DEV_GOOGLE_CLIENT_SECRET --value "${{ secrets.DEV_GOOGLE_CLIENT_SECRET }}"
-          koyeb secret update ASTRA_DB_APPLICATION_TOKEN --value "${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}" > /dev/null 2>&1 || koyeb secret create ASTRA_DB_APPLICATION_TOKEN --value "${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}"
-          koyeb secret update ASTRA_DB_API_ENDPOINT --value "${{ secrets.ASTRA_DATABASE_URL }}" > /dev/null 2>&1 || koyeb secret create ASTRA_DB_API_ENDPOINT --value "${{ secrets.ASTRA_DATABASE_URL }}"
-          koyeb secret update GOOGLE_API_KEY --value "${{ secrets.GOOGLE_API_KEY }}" > /dev/null 2>&1 || koyeb secret create GOOGLE_API_KEY --value "${{ secrets.GOOGLE_API_KEY }}"
-          koyeb secret update MISTRAL_API_KEY --value "${{ secrets.MISTRAL_API_KEY }}" > /dev/null 2>&1 || koyeb secret create MISTRAL_API_KEY --value "${{ secrets.MISTRAL_API_KEY }}"
-          koyeb secret update OPENCLAW_GATEWAY_TOKEN --value "${{ secrets.OPENCLAW_GATEWAY_TOKEN }}" > /dev/null 2>&1 || koyeb secret create OPENCLAW_GATEWAY_TOKEN --value "${{ secrets.OPENCLAW_GATEWAY_TOKEN }}"
+          # Sync secrets to Vault one-by-one (DEV)
+          secrets=(
+            "DEV_GOOGLE_CLIENT_ID:${{ secrets.DEV_GOOGLE_CLIENT_ID }}"
+            "DEV_GOOGLE_CLIENT_SECRET:${{ secrets.DEV_GOOGLE_CLIENT_SECRET }}"
+            "ASTRA_DB_APPLICATION_TOKEN:${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}"
+            "ASTRA_DB_API_ENDPOINT:${{ secrets.ASTRA_DATABASE_URL }}"
+            "GOOGLE_API_KEY:${{ secrets.GOOGLE_API_KEY }}"
+            "MISTRAL_API_KEY:${{ secrets.MISTRAL_API_KEY }}"
+            "OPENCLAW_GATEWAY_TOKEN:${{ secrets.OPENCLAW_GATEWAY_TOKEN }}"
+          )
+          for entry in "${secrets[@]}"; do
+            name="${entry%%:*}"
+            value="${entry#*:}"
+            koyeb secret update "$name" --value "$value" > /dev/null 2>&1 || \
+              koyeb secret create "$name" --value "$value"
+          done
 
           # Update Development Service
           koyeb service update holograms-media-dev/holograms-media-dev \
             --git-branch dev \
             --git-builder docker \
             --git-docker-dockerfile Dockerfile \
-            --env ENVIRONMENT=development \
-            --env GOOGLE_CLIENT_ID={{ secret.DEV_GOOGLE_CLIENT_ID }} \
-            --env GOOGLE_CLIENT_SECRET={{ secret.DEV_GOOGLE_CLIENT_SECRET }} \
-            --env ASTRA_DB_APPLICATION_TOKEN={{ secret.ASTRA_DB_APPLICATION_TOKEN }} \
-            --env ASTRA_DB_API_ENDPOINT={{ secret.ASTRA_DB_API_ENDPOINT }} \
-            --env ASTRA_DATABASE_URL={{ secret.ASTRA_DB_API_ENDPOINT }} \
-            --env ASTRA_DB_KEYSPACE=default_keyspace \
-            --env GOOGLE_API_KEY={{ secret.GOOGLE_API_KEY }} \
-            --env MISTRAL_API_KEY={{ secret.MISTRAL_API_KEY }} \
-            --env OPENCLAW_GATEWAY_TOKEN={{ secret.OPENCLAW_GATEWAY_TOKEN }}
+            --env "ENVIRONMENT=development" \
+            --env "GOOGLE_CLIENT_ID={{ secret.DEV_GOOGLE_CLIENT_ID }}" \
+            --env "GOOGLE_CLIENT_SECRET={{ secret.DEV_GOOGLE_CLIENT_SECRET }}" \
+            --env "ASTRA_DB_APPLICATION_TOKEN={{ secret.ASTRA_DB_APPLICATION_TOKEN }}" \
+            --env "ASTRA_DB_API_ENDPOINT={{ secret.ASTRA_DB_API_ENDPOINT }}" \
+            --env "ASTRA_DATABASE_URL={{ secret.ASTRA_DB_API_ENDPOINT }}" \
+            --env "ASTRA_DB_KEYSPACE=default_keyspace" \
+            --env "GOOGLE_API_KEY={{ secret.GOOGLE_API_KEY }}" \
+            --env "MISTRAL_API_KEY={{ secret.MISTRAL_API_KEY }}" \
+            --env "OPENCLAW_GATEWAY_TOKEN={{ secret.OPENCLAW_GATEWAY_TOKEN }}"

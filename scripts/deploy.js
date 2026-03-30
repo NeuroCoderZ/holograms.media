@@ -48,11 +48,10 @@ if (deployLogRegex.test(html)) {
 }
 
 try {
-    console.log('🔄 Syncing Knowledge Base to AstraDB...');
-    execSync('python scripts/sync_knowledge_base.py', { stdio: 'inherit', cwd: ROOT });
+    console.log('🔄 Generating version manifest...');
     execSync('node scripts/generate_version.js', { stdio: 'inherit', cwd: ROOT });
 } catch (e) {
-    console.error('❌ Sync or Version Generation failed:', e.message);
+    console.error('❌ Version generation failed:', e.message);
     process.exit(1);
 }
 
@@ -61,7 +60,8 @@ try {
     execSync(`git commit -m "DEPLOY: v${newVersion} - ${commitMessage}"`,
         { stdio: 'inherit', cwd: ROOT });
     execSync('git push origin dev', { stdio: 'inherit', cwd: ROOT });
-    console.log(`\n🎉 Deployment Complete! v${newVersion}\n`);
+    console.log(`\n🎉 Deployment Complete! v${newVersion}`);
+    console.log(`📡 Knowledge sync will run in GitHub Actions.\n`);
 } catch (e) {
     console.error('❌ Git failed:', e.message);
     process.exit(1);
