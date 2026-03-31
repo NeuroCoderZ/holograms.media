@@ -5,6 +5,7 @@ import asyncio
 
 from backend.tria_agents.tria_rag_service import tria_rag
 from backend.llm.gemini_llm import get_gemini_response
+from backend.llm.mistral_llm import get_mistral_response
 from backend.tria_agents.skill_router import get_relevant_skills
 from backend.tria_agents.meta_agent import MetaInstructionService
 from backend.core.config import settings
@@ -14,6 +15,21 @@ logger = logging.getLogger(__name__)
 # Model Constants v3.0
 MAIN_MODEL = "gemini-3-flash-preview"
 SUB_MODEL = "gemini-3.1-flash-lite-preview"
+
+
+async def _mistral_fallback(prompt: str, system_instruction: str) -> str:
+    """Fallback на Mistral при 429 от Gemini."""
+    try:
+        from backend.llm.mistral_llm import get_mistral_response
+
+        return await get_mistral_response(
+            user_message=prompt,
+            history=[],
+            system_instruction=system_instruction,
+        )
+    except Exception as e:
+        logger.error(f"Mistral fallback failed: {e}")
+        return f"[Mistral Fallback Error] {str(e)}"
 
 
 class TriaOrchestrator:
@@ -121,8 +137,21 @@ class TriaOrchestrator:
                         p, system_instruction=system_instruction, model_id=MAIN_MODEL
                     )
                     for p in candidate_prompts
-                ]
+                ],
+                return_exceptions=True,
             )
+
+            # Fallback: если Gemini 429 — переключаемся на Mistral
+            for idx, c in enumerate(candidates):
+                if isinstance(c, Exception) and (
+                    "429" in str(c) or "RESOURCE_EXHAUSTED" in str(c)
+                ):
+                    logger.warning("Gemini 429: Switching to Mistral Small 4")
+                    candidates[idx] = await _mistral_fallback(
+                        candidate_prompts[idx], system_instruction
+                    )
+                elif isinstance(c, Exception):
+                    candidates[idx] = f"[Error] {str(c)}"
 
             # Stage 3: Selection (Darwin Critic) - Hidden from UI stream
             # yield "[[THINKING:SELECTION]]" # REMOVED per user request

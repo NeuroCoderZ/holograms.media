@@ -386,6 +386,10 @@ async function initializeWebGLRenderer(state) {
     state.renderer.setPixelRatio(window.devicePixelRatio);
     state.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
+    // WebXR: 1 unit = 1 метр. Тор будет правильного физического размера.
+    state.renderer.xr.enabled = true;
+    // IPD берётся автоматически из WebXR API очков — не задавать вручную
+
     const canvas = state.renderer.domElement;
 
     // Обработчики потери контекста WebGL

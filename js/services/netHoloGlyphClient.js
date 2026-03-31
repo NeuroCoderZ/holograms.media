@@ -194,6 +194,17 @@ class NetHoloGlyphClient {
                 }
                 
                 if (this.roomId && this.userId && jwtToken) {
+                    // JWT expiry check перед реконнектом
+                    try {
+                        const payload = JSON.parse(atob(jwtToken.split('.')[1]));
+                        if (payload.exp && Date.now() >= payload.exp * 1000) {
+                            console.warn("[NetHoloGlyphClient] JWT expired — aborting reconnect.");
+                            eventBus.emit('netHoloGlyph:sessionExpired', { message: 'Сессия истекла. Переавторизуйтесь через Google.' });
+                            this.isReconnecting = false;
+                            return;
+                        }
+                    } catch (e) { /* invalid JWT — proceed with reconnect attempt */ }
+
                     if (this.reconnectAttempts <= 5) console.log("[NetHoloGlyphClient] Attempting reconnect...");
                     this.connect(this.roomId, this.userId);
                 } else if (!jwtToken) {

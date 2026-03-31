@@ -4,7 +4,7 @@
  * Оптимизация через InstancedMesh: 256 объектов -> 2 draw calls.
  */
 
-import { state } from '../core/init.js';
+import { state, TORUS_PARAMS } from '../core/init.js';
 import * as THREE from 'three';
 import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../config/hologramConfig.js';
 import eventBus from '../core/eventBus.js';
@@ -12,6 +12,10 @@ import netHoloGlyphClient from '../services/netHoloGlyphClient.js';
 
 import { vertexShader, fragmentShader, makeColumnUniforms } from './shaders/hologramShaders.js';
 import { CELL_HEIGHT, createCentralMarkerSphere, createSphereForAxis, createGridVisualization, createAxis } from './hologramGridFactory.js';
+
+// TORUS_PARAMS: H_Y=3.44м, D_Z=1.72м, R_in=1.0м, GRID=128x128x256
+// Физические размеры: TORUS_PARAMS.H_Y=3.44м (Y), TORUS_PARAMS.D_Z=1.72м (Z)
+// Сетка отображается во фронтальной проекции, в XR масштаб 1:1
 
 export class HologramRenderer {
 
@@ -125,9 +129,29 @@ export class HologramRenderer {
     if (isActive && !isPaused && !this.latestCwtData && !state.audio?.latestAudioData) return;
 
     const dummy = this._dummy;
-    const audioData = this.latestCwtData || state.audio?.latestAudioData;
-    const dbLevels = audioData?.levels || new Float32Array(256).fill(-128);
+
+    // ─── Freeze Frame при паузе ───────────────────────────────
+    // При переходе в паузу — сохраняем последний кадр.
+    // При выходе из паузы — очищаем _frozenFrame мгновенно.
+    if (isPaused && !this._frozenFrame) {
+      const audioData = this.latestCwtData || state.audio?.latestAudioData;
+      if (audioData?.levels) {
+        this._frozenFrame = {
+          dbLevels: new Float32Array(audioData.levels),
+          pans: new Float32Array(audioData.pans || new Float32Array(256).fill(0)),
+        };
+      }
+    } else if (!isPaused && this._frozenFrame) {
+      this._frozenFrame = null;
+    }
+
+    // Определяем источник данных: frozen frame или live
+    const audioData = this._frozenFrame || this.latestCwtData || state.audio?.latestAudioData;
+    const dbLevels = audioData?.dbLevels || audioData?.levels || new Float32Array(256).fill(-128);
     const panAngles = audioData?.pans || new Float32Array(256).fill(0);
+
+    // Если в паузе и есть frozen frame — используем его полностью
+    const useFrozen = isPaused && this._frozenFrame;
 
     // ✅ Вынести ЗА цикл — было внутри 128 итераций!
     const scalesL = this.meshL.geometry.getAttribute('aColumnScaleZ');
@@ -150,7 +174,29 @@ export class HologramRenderer {
       let hL = CELL_HEIGHT;
       let hR = CELL_HEIGHT;
 
-      if (isActive && (!isPaused || hasSignal)) {
+      if (useFrozen) {
+        // Заморозка: используем сохранённые dbLevels и pans без изменений
+        const p = panAngles[i] || 0;
+        const shadowDb = Math.abs(p) * (config.shadow_coef || 0) * 128.0;
+        let effectiveDbL = dbL;
+        let effectiveDbR = dbR;
+        
+        if (p < -0.01) effectiveDbR -= shadowDb;
+        else if (p > 0.01) effectiveDbL -= shadowDb;
+
+        const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
+        const cellsToShift = Math.round(p * 64);
+        const discreteShift = (cellsToShift / 64) * maxAvailableShift;
+
+        pL = initialX_L + Math.min(0, discreteShift) * 1.5;
+        pR = initialX_R + Math.max(0, discreteShift) * 1.5;
+
+        hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL)));
+        hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR)));
+        
+        scalesL.setX(i, hL);
+        scalesR.setX(i, hR);
+      } else if (isActive && (!isPaused || hasSignal)) {
         // Физика BasilaQ-128: Шаг панорамы 1.41 градуса (180/128).
         // Убираем плавную интерполяцию (* 0.12), используем прямое дискретное значение.
         const targetPan = panAngles[i] || 0;
@@ -181,7 +227,7 @@ export class HologramRenderer {
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);
       } else {
-        // В режиме паузы или отсутствия сигнала сбрасываем высоту, но сохраняем панораму
+        // В режиме паузы без frozen frame или отсутствия сигнала — демо-режим
         const p = this._panStates[i];
         const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
         const cellsToShift = Math.round(p * 64);
