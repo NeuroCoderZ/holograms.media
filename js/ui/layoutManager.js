@@ -6,6 +6,12 @@ import eventBus from '../core/eventBus.js';
 let gridContainer = null;
 let initialLayout = { top: 0, left: 0, width: 0, height: 0 };
 let currentAnimation = null;
+let targetPivotX = 0;
+let targetPivotY = 0;
+let targetPivotScale = 1;
+let currentPivotX = 0;
+let currentPivotY = 0;
+let currentPivotScale = 1;
 
 function updateRendererAndCamera(appState, newWidth, newHeight) { // Added appState
     if (appState.renderer) {
@@ -265,7 +271,7 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     const visibleWidth = Math.max(10, windowWidth - leftW - rightW);
     const visibleHeight = containerHeight; // Vertically we use containerHeight
 
-    // Phantom Margins (v0.19.036): 90% of available space
+    // Phantom Margins (v0.19.036): 90% of available space → 5% отступы сверху/снизу/слева/справа
     const scaleH = (visibleHeight * 0.90) / HOLOGRAM_REFERENCE_HEIGHT;
     const scaleW = (visibleWidth * 0.90) / 256; 
     
@@ -273,6 +279,7 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     targetScaleValue = Math.max(targetScaleValue, 0.01);
 
     // Offset to align hologram center with visible area center
+    // hologramPivot.position.x = (leftW - rightW) / 2 / scale — это даёт равные отступы от обеих панелей
     const xOffset = (leftW - rightW) / 2;
 
     if (windowWidth > 768) {
@@ -302,9 +309,18 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         hologramPivot.scale.set(1, 1, 1);
         hologramPivot.position.set(0, 0, 0);
     } else {
-        hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
-        // Apply X-Offset for centering between visible panels
-        hologramPivot.position.set(xOffset / targetScaleValue, verticalCenterOffset / targetScaleValue, 0);
+        // Lerp для плавного масштабирования вместе с анимацией панелей (300ms)
+        const lerpSpeed = 0.15;
+        targetPivotX = xOffset / targetScaleValue;
+        targetPivotY = verticalCenterOffset / targetScaleValue;
+        targetPivotScale = targetScaleValue;
+        
+        currentPivotX += (targetPivotX - currentPivotX) * lerpSpeed;
+        currentPivotY += (targetPivotY - currentPivotY) * lerpSpeed;
+        currentPivotScale += (targetPivotScale - currentPivotScale) * lerpSpeed;
+        
+        hologramPivot.scale.set(currentPivotScale, currentPivotScale, currentPivotScale);
+        hologramPivot.position.set(currentPivotX, currentPivotY, 0);
     }
 
     // The desktop panel logic (getLeftPanelWidth, etc.) is removed from here as the

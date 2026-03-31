@@ -147,10 +147,12 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     ySphere.name = "YAxisSphere";
     group.add(ySphere);
 
-    // Ось Z
+    // Ось Z — длина = 128 (соответствует max высоте столбца: 128.0 + 0дБ)
+    // GRID_DEPTH=256 используется для сетки, но ось Z = max column height
+    const zAxisLength = 128;
     const zPoints = [];
     for (let i = 0; i <= segments; i++) {
-        const z = (i / segments) * zLength;
+        const z = (i / segments) * zAxisLength;
         zPoints.push(0, 0, z);
     }
     const zAxis = createLineForAxis(zPoints, 0xFFFFFF, 1.5, true);
@@ -158,7 +160,7 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     group.add(zAxis);
 
     const zSphere = createSphereForAxis(sphereRadius, 0xFFFFFF);
-    zSphere.position.set(0, 0, zLength);
+    zSphere.position.set(0, 0, zAxisLength);
     zSphere.name = "ZAxisSphere";
     group.add(zSphere);
 

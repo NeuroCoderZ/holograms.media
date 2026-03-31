@@ -68,7 +68,7 @@ export class HologramRenderer {
       vertexShader,
       fragmentShader,
       transparent: false,
-      depthWrite: true,
+      depthWrite: false,
       depthTest: true
     });
 
@@ -77,6 +77,14 @@ export class HologramRenderer {
 
     this.meshL = new THREE.InstancedMesh(this.columnGeometryL, this.instancedMaterial, count);
     this.meshR = new THREE.InstancedMesh(this.columnGeometryR, this.instancedMaterial.clone(), count);
+
+    // Back-to-front отрисовка: левая сетка (дальше) рисуется первой, правая (ближе) — второй
+    this.meshL.renderOrder = 0;
+    this.meshR.renderOrder = 1;
+    
+    // Сортировка инстансов от дальней стенки к ближней
+    this.meshL.sortObjects = true;
+    this.meshR.sortObjects = true;
 
     this.meshL.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.meshR.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -125,8 +133,8 @@ export class HologramRenderer {
     );
     const isPaused = state.audio?.isPaused;
 
-    // Guard: если активно воспроизведение, но нет данных (WASM сбрасывается) — не рисуем stale
-    if (isActive && !isPaused && !this.latestCwtData && !state.audio?.latestAudioData) return;
+    // Guard: если активно воспроизведение, но нет данных — используем frozen frame или демо
+    if (isActive && !isPaused && !this.latestCwtData && !state.audio?.latestAudioData && !this._frozenFrame) return;
 
     const dummy = this._dummy;
 
