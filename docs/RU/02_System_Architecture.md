@@ -13,7 +13,9 @@
 *   **Рендеринг:** Three.js (v0.165+). Приоритетный рендерер: **WebGPU** (с фоллбэком на WebGL).
 *   **Захват Интенций:** MediaPipe Hands (21 точка кисти @ 60-120 Гц).
 *   **Аудио-анализ:** Pure WASM (C-core) + AudioWorklet. Анализ спектра BasilaQ-128.
-*   **Локальный ИИ:** ONNX Runtime Web с поддержкой WebGPU для мгновенного резонанса жестов.
+*   **Локальный ИИ:** GestureVectorStore (IndexedDB KNN, < 5мс латентность).
+*   **Облачный ИИ:** Gemini Embedding 2 (gemini-embedding-2-preview, 3072d) через backend API.
+*   **Примечание:** NPU и ONNX не используются — сервис работает в браузере без установки.
 
 ### 2.2. Потоки данных
 1.  **Audio Stream:** `MicrophoneManager` -> `AudioWorklet` -> `WASM CWT` -> `eventBus ('audio:spectralData')` -> `HologramRenderer`.
@@ -33,7 +35,8 @@
 
 ## 4. Инфраструктура и P2P
 *   **Сигналинг:** WebSocket-сервер `dev.holograms.media` для WebRTC-рукопожатий.
-*   **P2P Протокол:** NetHoloGlyph. Обмен 1-битными квантами QJL для эхолокации в Рою.
+*   **P2P Протокол:** NetHoloGlyph. WebRTC сигналинг через WebSocket (SDP/ICE обмен реализован).
+*   **[PLANNED]:** QJL 1-битные кванты — в разработке для будущих версий.
 *   **Хранилище Медиа:** Cloudflare R2 / Backblaze B2 (Soma-блоки и ассеты голограмм).
 
 ---

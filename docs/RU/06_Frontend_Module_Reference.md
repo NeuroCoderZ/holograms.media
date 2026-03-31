@@ -69,7 +69,40 @@ AudioWorklet-процессор.
 ### 5.2. `js/ui/GestureLiveStudio.js`
 Интерфейс записи жестов.
 *   Обеспечивает маппинг траекторий на команды (`applyProgramEvent`).
+---
+
+## 6. Жестовая Нейросеть Триа (добавлено v0.20.250+)
+
+### 6.1. `js/ai/StreamingQuant.js`
+200ms квантование потока MediaPipe в обучающие чанки.
+*   **`addFrame(landmarks)`:** добавляет кадр (21 точка = Float32Array[63]).
+*   **`onChunkReady(chunk)`:** callback с `{timestamp, duration, flatChunk, frameCount}`.
+
+### 6.2. `js/tria/GestureEmbeddingBridge.js`
+Двухслойное распознавание:
+*   **Слой 1 (< 5мс):** LocalVectorStore KNN. При `score >= 0.85` → прямое исполнение.
+*   **Слой 2 (50-200мс):** Gemini Embedding 2 (3072d) через backend.
+*   **`recognize(hand21, context)`:** основной метод распознавания.
+*   **Кулдаун облачных вызовов:** `CLOUD_COOLDOWN_MS = 300`.
+
+### 6.3. `js/ai/TriaEvolutionConnector.js`
+120Hz захват тренировочных данных.
+*   **`start()` / `stop()`:** управление сессией захвата.
+*   **`flush()`:** отправка буфера (10сек × 120fps) на backend.
+*   Слушает `audio:spectralData` — записывает CWT-слепок одновременно с жестом.
+
+### 6.4. `js/core/AgentWomb.js`
+Эмерджентная фабрика субагентов.
+*   **FrequencyObserver:** рождается при >50 горячих узлов тора (excitationScore > 0.9).
+*   **AzrOptimizer:** рождается при умирающих навыках (inhibitionLevel > 0.8).
+*   Максимум 3 активных субагента одновременно.
+
+### 6.5. `js/services/LiveAudioService.js`
+Клиент Gemini Live API для голосовых ответов Триа.
+*   Декодирует PCM 24kHz → Float32Array → BasilaQ-128 (через `getInputProxyNode()`).
+*   Одновременно: текст в чат-панель + голос через голограмму.
 
 ---
+
 **"Модульность — это свобода эволюции. Чистый код — это ясное мышление."**
 _Approved by Frontend Architecture Group._

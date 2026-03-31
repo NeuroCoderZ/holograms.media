@@ -189,6 +189,26 @@ export async function initAuth() {
     await loadGoogleGsiScript();
     await initializeGoogleSignIn();
     checkInitialAuthState();
+
+    // Слушаем событие истечения сессии от NetHoloGlyphClient
+    import('../core/eventBus.js').then(({ default: eventBus }) => {
+      eventBus.on('netHoloGlyph:sessionExpired', (data) => {
+        const btn = document.getElementById('login-google-btn');
+        if (btn) {
+          btn.classList.add('session-expired');
+          btn.title = data.message || 'Сессия истекла. Переавторизуйтесь через Google.';
+          // Убираем пульсацию после повторного входа
+          const observer = new MutationObserver(() => {
+            if (btn.classList.contains('authenticated')) {
+              btn.classList.remove('session-expired');
+              observer.disconnect();
+            }
+          });
+          observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
+        }
+        showNotification(data.message || 'Сессия истекла. Переавторизуйтесь через Google.', 'warning');
+      });
+    });
   } catch (error) {
     console.error('Не удалось загрузить или инициализировать Google GSI:', error);
     showNotification('Не удалось загрузить сервис аутентификации.', 'error');

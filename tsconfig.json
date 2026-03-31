@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM", "WebXR", "WebAudio"],
+    "allowJs": true,
+    "checkJs": false,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "types": ["three", "webxr", "webidl-conversions", "vite/client"],
+    "plugins": []
+  },
+  "include": ["js/**/*.js", "js/**/*.ts"],
+  "exclude": ["node_modules", "dist", ".agent"]
+}

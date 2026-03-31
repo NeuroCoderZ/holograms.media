@@ -160,3 +160,25 @@ hr.left-panel-separator {
     transform: scale(1) translateX(0);
   }
 }
+
+/* Красная пульсация кнопки входа при истёкшей сессии */
+@keyframes sessionExpiredPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.6);
+    border-color: rgba(255, 50, 50, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 8px 4px rgba(255, 50, 50, 0.3);
+    border-color: rgba(255, 50, 50, 1);
+  }
+}
+
+#login-google-btn.session-expired {
+  animation: sessionExpiredPulse 1.5s ease-in-out infinite;
+  border: 1px solid rgba(255, 50, 50, 0.8);
+}
+
+#login-google-btn.session-expired .google-bw-icon {
+  color: #ff5555;
+  filter: none;
+}
