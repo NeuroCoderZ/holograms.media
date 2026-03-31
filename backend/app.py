@@ -88,8 +88,6 @@ async def lifespan(app: FastAPI):
 
     # --- Auto-create AstraDB collections ---
     try:
-        from backend.core.db.astra_connector import get_astra_db
-
         db = get_astra_db()
         if db:
             try:

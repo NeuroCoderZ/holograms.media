@@ -42,6 +42,7 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 4. **ЗАПРЕЩЕНО:** добавлять NPU, ONNX, TurboQuant в браузере, LoRA в браузере, ARC-AGI как метрику, DGM-H самомодификацию кода.
 5. **EMBED_DIM = 3072 ВЕЗДЕ И ВСЕГДА.** Никаких 768.
 6. **Модели:** только `gemini-3-flash-preview` (main) и `gemini-3.1-flash-lite-preview` (sub). Mistral — только как fallback при 429.
+7. **ЛОКАЛЬНЫЕ ТЕСТЫ НЕ ПРОВОЖУ.** Все проверки — только на серверах: Koyeb (backend), GitHub Actions (knowledge sync), Cloudflare Pages (frontend). Никаких `npm test`, `npm run build`, `python -m pytest` локально.
 
 ---
 
