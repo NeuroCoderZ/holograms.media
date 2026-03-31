@@ -137,6 +137,7 @@ export class HologramRenderer {
 
     const isActive = state.audio && (
         state.audio.isPlaying || 
+        state.audio.isPaused ||
         state.audio.activeSource === 'microphone' || 
         state.audio.activeSource === 'tria_voice'
     );
@@ -285,7 +286,7 @@ export class HologramRenderer {
     this.meshL.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
     this.meshR.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
 
-    const greetingValue = (isActive) ? 0.0 : 1.0;
+    const greetingValue = (isActive && !isPaused) ? 0.0 : 1.0;
     this.meshL.material.uniforms.uIsGreeting.value = greetingValue;
     this.meshR.material.uniforms.uIsGreeting.value = greetingValue;
   }
