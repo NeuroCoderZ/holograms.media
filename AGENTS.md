@@ -88,7 +88,7 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 
 ---
 
-## ИЗВЕСТНЫЕ ПРОБЛЕМЫ (v0.20.265)
+## ИЗВЕСТНЫЕ ПРОБЛЕМЫ (v0.20.267)
 
 | Компонент | Проблема | Статус |
 |-----------|----------|--------|
@@ -96,6 +96,8 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 | Столбцы при паузе | 2D-схлопывание | ✅ _frozenFrame |
 | JWT expiry | WebSocket 1006 | ✅ Abort reconnect + red pulse |
 | docs/RU/ | Устаревшие описания | ✅ Обновлены 02,03,04,06,07 |
+| Z-offset столбцов | Парящие столбцы | ✅ GRID_DEPTH=256, anchor z=0 |
+| Enkephalon WASM | Stub mode active | 🔮 Требуется полная сборка WASM |
 
 ---
 

@@ -25,7 +25,7 @@ export const SMOOTHING_TIME_CONSTANT = 0.0;
 // Grid and Scale Configuration
 export const GRID_WIDTH = 128;
 export const GRID_HEIGHT = 128;
-export const GRID_DEPTH = 128;
+export const GRID_DEPTH = 256;  // 128+0=128 max Z-scale, doubled for visual grid
 export const CELL_SIZE = 1.0;
 export const HOLOGRAM_REFERENCE_HEIGHT = 256; // Actual visual span is GRID_HEIGHT * 2
 

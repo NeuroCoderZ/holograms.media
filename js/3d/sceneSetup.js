@@ -3,6 +3,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import WebGPURenderer from 'three/examples/jsm/renderers/webgpu/WebGPURenderer.js';
 import { renderingCapabilities } from '../utils/renderingCapabilities.js';
 import { updateHologramLayout } from '../ui/layoutManager.js';
+import { TORUS_PARAMS } from '../core/init.js';
+import { GRID_DEPTH } from '../config/hologramConfig.js';
 
 /**
  * Initializes the Three.js scene, camera, renderer, and basic lighting.
@@ -75,6 +77,24 @@ export async function initializeScene(state) {
   );
   state.xrCamera.position.set(0, 0, 0); // WebXR сам управляет позицией
   // При входе в XR: renderer.xr.enabled = true → камера управляется WebXR API
+
+  // ─── WebXR Alignment: worldLandmarks → Three.js ─────────────────────
+  // MediaPipe worldLandmarks дают метрические координаты (метры) относительно запястья.
+  // TORUS_PARAMS: H_Y=3.44м, D_Z=1.72м, R_in=1.0м
+  // Синхронизация: рука Z=0.5м → слой голограммы ~128 юнитов по Z
+  // Масштаб: 1 unit Three.js = 1 метр (WebXR standard)
+  state._worldLandmarksToScene = (worldLandmarks) => {
+    if (!worldLandmarks || !state.hologramRendererInstance) return;
+    // worldLandmarks[0] = запястье (anchor point)
+    // Масштабируем к сетке: 1 метр → GRID_DEPTH юнитов
+    const wrist = worldLandmarks[0];
+    const scaleToGrid = GRID_DEPTH / TORUS_PARAMS.D_Z; // 256 / 1.72 ≈ 148.8
+    return {
+      x: wrist.x * scaleToGrid,
+      y: wrist.y * scaleToGrid,
+      z: wrist.z * scaleToGrid,
+    };
+  };
 
   // Add OrbitControls for orthographic camera
   state.controls = new OrbitControls(state.camera, state.renderer.domElement);
