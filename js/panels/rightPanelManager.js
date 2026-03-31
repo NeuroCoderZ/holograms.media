@@ -56,17 +56,13 @@ function switchTab(viewName) {
   if (elements.inputs.chat) elements.inputs.chat.style.display = 'none';
   if (elements.inputs.prompt) elements.inputs.prompt.style.display = 'none';
 
+  // Model selector ALWAYS visible между микрофоном и отправить
+  if (elements.modelSelectContainer) elements.modelSelectContainer.style.display = 'flex';
+
   if (viewName === 'chat') {
     if (elements.inputs.chat) elements.inputs.chat.style.display = 'block';
-    if (elements.modelSelectContainer) elements.modelSelectContainer.style.display = 'flex';
   } else if (viewName === 'versions') {
     if (elements.inputs.prompt) elements.inputs.prompt.style.display = 'block';
-    if (elements.modelSelectContainer) elements.modelSelectContainer.style.display = 'none';
-  } else if (viewName === 'evolution') {
-    // В режиме эволюции пока скрываем вводы, так как это информационная панель
-    if (elements.modelSelectContainer) elements.modelSelectContainer.style.display = 'none';
-  } else {
-    if (elements.modelSelectContainer) elements.modelSelectContainer.style.display = 'none';
   }
   
   // Refresh content if needed

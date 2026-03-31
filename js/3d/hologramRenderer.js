@@ -30,6 +30,8 @@ export class HologramRenderer {
     this.userId = userId;
 
     this._dummy = new THREE.Object3D(); // PRO-FIX: Reusable object to avoid allocations
+    this._lastUpdate = 0;
+    this._minUpdateInterval = 1000 / 60; // Throttle: max 60fps update (как в феврале 9d105c6)
 
     this.hologramPivot = new THREE.Group();
     this.mainSequencerGroup = new THREE.Group();
@@ -109,23 +111,30 @@ export class HologramRenderer {
 
   _createSequencerGrids() {
     const origin = new THREE.Vector3(0, -GRID_HEIGHT, 0);
+    // Сетки Z = 128 (соответствует длине белой оси Z и max высоте столбца)
+    const GRID_DEPTH_Z = 128;
 
     this.leftSequencerGroup = new THREE.Group();
     this.leftSequencerGroup.position.copy(origin);
-    this.leftSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, true));
-    this.leftSequencerGroup.add(createGridVisualization(-GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xBF00FF));
+    this.leftSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH_Z, true));
+    this.leftSequencerGroup.add(createGridVisualization(-GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH_Z, CELL_SIZE, 0xBF00FF));
     this.mainSequencerGroup.add(this.leftSequencerGroup);
 
     this.rightSequencerGroup = new THREE.Group();
     this.rightSequencerGroup.position.copy(origin);
-    this.rightSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, false));
-    this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH, CELL_SIZE, 0xFF0000));
+    this.rightSequencerGroup.add(createAxis(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH_Z, false));
+    this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH_Z, CELL_SIZE, 0xFF0000));
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
     this.mainSequencerGroup.add(createCentralMarkerSphere(2.4192, 0xffffff));
   }
 
   updateVisuals() {
+    // Throttle: не чаще 60fps (как в феврале 9d105c6)
+    const now = performance.now();
+    if (now - this._lastUpdate < this._minUpdateInterval) return;
+    this._lastUpdate = now;
+
     const isActive = state.audio && (
         state.audio.isPlaying || 
         state.audio.activeSource === 'microphone' || 

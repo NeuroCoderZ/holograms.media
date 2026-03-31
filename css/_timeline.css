@@ -9,6 +9,10 @@
   scrollbar-width: thin !important;
   scrollbar-color: var(--color-icon-disabled) transparent !important;
   
+  /* Нижняя граница-разделитель от промпт-бара */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  margin-bottom: 2px !important;
+  
   /* Glass-fade: dissolve versions at scroll edges */
   -webkit-mask-image: linear-gradient(to bottom, 
       transparent 0%, 
