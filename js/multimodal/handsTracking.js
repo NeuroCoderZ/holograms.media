@@ -13,7 +13,8 @@ console.log('[HandsTracking] Resolving MediaPipe globals:', {
 });
 import eventBus from '../core/eventBus.js';
 
-import { state } from '../core/init.js';
+import { state, TORUS_PARAMS } from '../core/init.js';
+import OneEuroFilter from '../filters/OneEuroFilter.js';
 // import { AtomicGestureClassifier } from '../gestures/AtomicGestureClassifier.js'; // Старый классификатор
 // import { GestureSequencer } from '../gestures/GestureSequencer.js'; // Старый секвенсор
 // import { GESTURE_SEQUENCES } from '../config/gestureSequences.js'; // Старые конфигурации последовательностей
@@ -29,6 +30,9 @@ const HAND_CONNECTIONS = [
     [0, 17], [13, 17], [17, 18], [18, 19], [19, 20]
 ];
 const FINGER_TIP_INDICES = [4, 8, 12, 16, 20];
+
+// One Euro Filter — глобальный экземпляр для всех кадров
+const euroFilter = OneEuroFilter.preset('default');
 
 // GRID constants
 const GRID_WIDTH = state.config?.GRID?.WIDTH || 128;
@@ -220,6 +224,8 @@ export function initializeMediaPipeHands() {
         modelComplexity: 1,
         minDetectionConfidence: 0.7,
         minTrackingConfidence: 0.7,
+        // NPU/WebGPU delegate для Windows 11 25H2 — ускоряет инференс
+        delegate: 'GPU',
     });
 
     state.multimodal.handsInstance.onResults(onResults);
@@ -306,6 +312,21 @@ function onResults(results) {
     }
 
     state.multimodal.lastHandData = results.multiHandLandmarks;
+
+    // --- worldLandmarks: метрические координаты (метры) ---
+    // MediaPipe worldLandmarks дают 3D координаты в метрах относительно запястья (landmark 0).
+    // Это идеально ложится на TORUS_PARAMS (H_Y=3.44м, D_Z=1.72м, R_in=1.0м).
+    if (results.multiWorldLandmarks && results.multiWorldLandmarks.length > 0) {
+        // Применяем One Euro Filter к метрическим координатам
+        const filteredWorld = results.multiWorldLandmarks.map(hand => euroFilter.filter(hand));
+        state.multimodal.filteredWorldLandmarks = filteredWorld;
+
+        // Emit для GestureEmbeddingBridge и других потребителей
+        eventBus.emit('worldLandmarks', {
+            landmarks: filteredWorld,
+            handedness: results.multiHandedness,
+        });
+    }
 
     // --- GESTURE TO AUDIO PARAM MAPPING ---
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {

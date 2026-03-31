@@ -12,12 +12,16 @@
  */
 
 import GestureVectorStore from './GestureVectorStore.js';
+import OneEuroFilter from '../filters/OneEuroFilter.js';
 import { state } from '../core/init.js';
 
 class GestureEmbeddingBridge {
     constructor() {
         this.localStore = null;
         this._ready = false;
+        
+        // One Euro Filter — адаптивное сглаживание 21 точки
+        this.euroFilter = OneEuroFilter.preset('default');
         
         // Thresholds
         this.LOCAL_ACCEPT = 0.85;    // Прямой KNN accept
@@ -53,8 +57,11 @@ class GestureEmbeddingBridge {
         if (!this._ready || !hand21 || hand21.length < 21) return null;
         this.stats.totalQueries++;
         
+        // One Euro Filter: сглаживаем джиттер перед распознаванием
+        const filtered = this.euroFilter.filter(hand21);
+        
         // Слой 1: Локальный KNN (< 5мс)
-        const localResults = await this.localStore.query(hand21, 3, this.LOCAL_SOFT);
+        const localResults = await this.localStore.query(filtered, 3, this.LOCAL_SOFT);
         
         if (localResults.length > 0) {
             const best = localResults[0];
@@ -73,7 +80,7 @@ class GestureEmbeddingBridge {
             
             // Средний confidence → облачная проверка (при наличии кулдауна)
             if (best.score >= this.LOCAL_SOFT) {
-                const cloudResult = await this._cloudVerify(hand21, best, context);
+                const cloudResult = await this._cloudVerify(filtered, best, context);
                 if (cloudResult) return cloudResult;
                 
                 // Если облако недоступно, используем локальный fallback
@@ -89,7 +96,7 @@ class GestureEmbeddingBridge {
         }
         
         // Нет локальных совпадений → полный облачный поиск
-        const cloudResult = await this._cloudSearch(hand21, context);
+        const cloudResult = await this._cloudSearch(filtered, context);
         return cloudResult;
     }
     

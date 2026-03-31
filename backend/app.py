@@ -102,6 +102,11 @@ async def lifespan(app: FastAPI):
                 logger.info("[Startup] Created collection: tria_meta_instructions")
             except Exception:
                 pass
+            try:
+                await db.create_collection("tria_gestures")
+                logger.info("[Startup] Created collection: tria_gestures")
+            except Exception:
+                pass
     except Exception as e:
         logger.warning(f"[Startup] Collection init failed: {e}")
 
