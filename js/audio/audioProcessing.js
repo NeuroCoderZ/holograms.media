@@ -104,6 +104,8 @@ async function estimateScreenFPS() {
     });
 }
 
+let silentGainNode = null;
+
 export async function initializeCwtWorklet(audioContext) {
     console.log('[AudioProcessing] 🚀 Requesting CQT initialization...');
     
@@ -130,12 +132,14 @@ export async function initializeCwtWorklet(audioContext) {
     if (node && proxy && !window._cwtLinked) {
         proxy.connect(node);
 
-        // FORCING DATA FLOW: Connect to destination via silent gain
+        // FORCING DATA FLOW: Connect to destination via silent gain (синглтон)
         // This ensures the browser calls process() even if the output isn't used for audio.
-        const silentGain = ctx.createGain();
-        silentGain.gain.value = 0;
-        node.connect(silentGain);
-        silentGain.connect(ctx.destination);
+        if (!silentGainNode) {
+            silentGainNode = ctx.createGain();
+            silentGainNode.gain.value = 0;
+            node.connect(silentGainNode);
+            silentGainNode.connect(ctx.destination);
+        }
 
         window._cwtLinked = true;
         console.log('[AudioProcessing] ✅ Pipeline Linked: Proxy -> Worklet -> Silent Output');
@@ -147,7 +151,7 @@ export async function setupAudioProcessing(sourceNode, audioContext, connectToOu
     const proxy = getInputProxyNode(audioContext);
     sourceNode.connect(proxy);
     await initializeCwtWorklet(audioContext);
-    if (connectToOutput) sourceNode.connect(audioContext.destination);
+    // УБРАНО: sourceNode.connect(destination) — дублирует звук через gainNode в audioFilePlayer
     return proxy;
 }
 

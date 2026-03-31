@@ -58,8 +58,10 @@ async def get_gemini_response(
     async for chunk in get_gemini_response_stream(
         prompt, system_instruction, tools, model_id
     ):
-        # Игнорируем мета-данные мыслей в не-стриминговом ответе
-        if not chunk.startswith("[[THOUGHT_DATA:"):
+        # Игнорируем мета-данные мыслей и THINKING маркеры
+        if not chunk.startswith("[[THOUGHT_DATA:") and not chunk.startswith(
+            "[[THINKING:"
+        ):
             full_text += chunk
     return full_text
 
@@ -85,7 +87,7 @@ async def get_gemini_response_stream(
             temperature=0.7,
             tools=active_tools,
             thinking_config=types.ThinkingConfig(include_thoughts=True)
-            if (model_id or "gemini-3-flash-preview").startswith("gemini-3")
+            if (model_id or "gemini-3-flash-preview") == "gemini-3-flash-preview"
             else None,
         )
 

@@ -169,7 +169,7 @@ class TriaOrchestrator:
 
             final_response = await get_gemini_response(
                 prompt=critic_prompt,
-                system_instruction="You are Darwin Critic. Return ONLY the final user-facing response.",
+                system_instruction="You are Darwin Critic. Return ONLY the final user-facing response. NO thinking tags, NO reasoning.",
                 model_id=SUB_MODEL,
             )
 
@@ -178,13 +178,15 @@ class TriaOrchestrator:
                 logger.warning(
                     "Darwin Critic returned empty response, using best candidate"
                 )
+                best = None
+                for c in candidates:
+                    if c and not isinstance(c, Exception) and str(c).strip():
+                        best = str(c)
+                        break
                 final_response = (
-                    candidates[0]
-                    if candidates[0] and not isinstance(candidates[0], Exception)
-                    else candidates[1]
+                    best
+                    or "Триа не смогла сформировать ответ. Попробуйте переформулировать запрос или повторите позже."
                 )
-                if not (final_response or "").strip():
-                    final_response = "Триа не смогла сформировать ответ. Попробуйте переформулировать запрос или повторите позже."
 
             # Final Output (Streaming)
             chunk_size = 64
