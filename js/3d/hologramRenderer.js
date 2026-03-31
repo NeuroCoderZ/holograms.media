@@ -213,8 +213,8 @@ export class HologramRenderer {
         pL = initialX_L + Math.min(0, discreteShift) * 1.5;
         pR = initialX_R + Math.max(0, discreteShift) * 1.5;
 
-        hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL)));
-        hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR)));
+        hL = Math.min(128.0, Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL))));
+        hR = Math.min(128.0, Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR))));
         
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);
@@ -243,8 +243,8 @@ export class HologramRenderer {
         pR = initialX_R + Math.max(0, discreteShift) * 1.5;
 
         // Физика BasilaQ: 1дБ = 1 ячейка. Z-scale = 128 + dB. 
-        hL = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL)));
-        hR = Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR)));
+        hL = Math.min(128.0, Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL))));
+        hR = Math.min(128.0, Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR))));
         
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);

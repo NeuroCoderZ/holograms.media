@@ -173,6 +173,19 @@ class TriaOrchestrator:
                 model_id=SUB_MODEL,
             )
 
+            # Fallback: если Darwin Critic вернул пустой ответ
+            if not (final_response or "").strip():
+                logger.warning(
+                    "Darwin Critic returned empty response, using best candidate"
+                )
+                final_response = (
+                    candidates[0]
+                    if candidates[0] and not isinstance(candidates[0], Exception)
+                    else candidates[1]
+                )
+                if not (final_response or "").strip():
+                    final_response = "Триа не смогла сформировать ответ. Попробуйте переформулировать запрос или повторите позже."
+
             # Final Output (Streaming)
             chunk_size = 64
             for i in range(0, len(final_response), chunk_size):
