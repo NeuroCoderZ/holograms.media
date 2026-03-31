@@ -68,7 +68,7 @@ export class HologramRenderer {
       vertexShader,
       fragmentShader,
       transparent: false,
-      depthWrite: false,
+      depthWrite: true,
       depthTest: true
     });
 
@@ -133,14 +133,9 @@ export class HologramRenderer {
     );
     const isPaused = state.audio?.isPaused;
 
-    // Guard: если активно воспроизведение, но нет данных — используем frozen frame или демо
-    if (isActive && !isPaused && !this.latestCwtData && !state.audio?.latestAudioData && !this._frozenFrame) return;
-
-    const dummy = this._dummy;
-
     // ─── Freeze Frame при паузе ───────────────────────────────
     // При переходе в паузу — сохраняем последний кадр.
-    // При выходе из паузы — очищаем _frozenFrame мгновенно.
+    // При выходе из паузы — НЕ очищаем мгновенно, а ждём первый live кадр.
     if (isPaused && !this._frozenFrame) {
       const audioData = this.latestCwtData || state.audio?.latestAudioData;
       if (audioData?.levels) {
@@ -149,12 +144,22 @@ export class HologramRenderer {
           pans: new Float32Array(audioData.pans || new Float32Array(256).fill(0)),
         };
       }
-    } else if (!isPaused && this._frozenFrame) {
-      this._frozenFrame = null;
     }
 
     // Определяем источник данных: frozen frame или live
+    // ВАЖНО: если только что сняли с паузы и live данных ещё нет — используем frozen frame
+    const hasLiveData = this.latestCwtData || state.audio?.latestAudioData;
     const audioData = this._frozenFrame || this.latestCwtData || state.audio?.latestAudioData;
+
+    // Если не в паузе И есть live данные — очищаем frozen frame
+    if (!isPaused && this._frozenFrame && hasLiveData) {
+      this._frozenFrame = null;
+    }
+
+    // Guard: если вообще нет данных — не рисуем
+    if (!audioData) return;
+
+    const dummy = this._dummy;
     const dbLevels = audioData?.dbLevels || audioData?.levels || new Float32Array(256).fill(-128);
     const panAngles = audioData?.pans || new Float32Array(256).fill(0);
 

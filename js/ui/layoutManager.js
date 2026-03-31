@@ -6,12 +6,6 @@ import eventBus from '../core/eventBus.js';
 let gridContainer = null;
 let initialLayout = { top: 0, left: 0, width: 0, height: 0 };
 let currentAnimation = null;
-let targetPivotX = 0;
-let targetPivotY = 0;
-let targetPivotScale = 1;
-let currentPivotX = 0;
-let currentPivotY = 0;
-let currentPivotScale = 1;
 
 function updateRendererAndCamera(appState, newWidth, newHeight) { // Added appState
     if (appState.renderer) {
@@ -259,28 +253,16 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     // Update renderer and camera to match current container size (redundant if called by TWEEN onUpdate, but safe)
     updateRendererAndCamera(appState, containerWidth, containerHeight); // Pass appState
 
-    // Scale Protection (v0.19.043): Use visibleWidth instead of containerWidth
-    const windowWidth = window.innerWidth;
-    const leftPanel = document.getElementById('left-panel');
-    const rightPanel = document.getElementById('right-panel');
-
-    const leftW = leftPanel ? (leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20) : 0;
-    const rightW = rightPanel ? (rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20) : 0;
-    
-    // Visible Width between panels
-    const visibleWidth = Math.max(10, windowWidth - leftW - rightW);
-    const visibleHeight = containerHeight; // Vertically we use containerHeight
-
+    // Scale Protection (v0.19.043): containerWidth уже учитывает панели через TWEEN анимацию
     // Phantom Margins (v0.19.036): 90% of available space → 5% отступы сверху/снизу/слева/справа
-    const scaleH = (visibleHeight * 0.90) / HOLOGRAM_REFERENCE_HEIGHT;
-    const scaleW = (visibleWidth * 0.90) / 256; 
+    const scaleH = (containerHeight * 0.90) / HOLOGRAM_REFERENCE_HEIGHT;
+    const scaleW = (containerWidth * 0.90) / 256; 
     
     let targetScaleValue = Math.min(scaleH, scaleW);
     targetScaleValue = Math.max(targetScaleValue, 0.01);
 
-    // Offset to align hologram center with visible area center
-    // hologramPivot.position.x = (leftW - rightW) / 2 / scale — это даёт равные отступы от обеих панелей
-    const xOffset = (leftW - rightW) / 2;
+    // xOffset = 0 — контейнер уже центрирован между панелями через TWEEN
+    const xOffset = 0;
 
     if (windowWidth > 768) {
         // Sync Gesture Area width to match the hologram
@@ -309,18 +291,8 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         hologramPivot.scale.set(1, 1, 1);
         hologramPivot.position.set(0, 0, 0);
     } else {
-        // Lerp для плавного масштабирования вместе с анимацией панелей (300ms)
-        const lerpSpeed = 0.15;
-        targetPivotX = xOffset / targetScaleValue;
-        targetPivotY = verticalCenterOffset / targetScaleValue;
-        targetPivotScale = targetScaleValue;
-        
-        currentPivotX += (targetPivotX - currentPivotX) * lerpSpeed;
-        currentPivotY += (targetPivotY - currentPivotY) * lerpSpeed;
-        currentPivotScale += (targetPivotScale - currentPivotScale) * lerpSpeed;
-        
-        hologramPivot.scale.set(currentPivotScale, currentPivotScale, currentPivotScale);
-        hologramPivot.position.set(currentPivotX, currentPivotY, 0);
+        hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
+        hologramPivot.position.set(xOffset / targetScaleValue, verticalCenterOffset / targetScaleValue, 0);
     }
 
     // The desktop panel logic (getLeftPanelWidth, etc.) is removed from here as the
