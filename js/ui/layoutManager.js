@@ -256,13 +256,15 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     // Scale Protection (v0.19.043): containerWidth уже учитывает панели через TWEEN анимацию
     // Phantom Margins (v0.19.036): 90% of available space → 5% отступы сверху/снизу/слева/справа
     const scaleH = (containerHeight * 0.90) / HOLOGRAM_REFERENCE_HEIGHT;
-    const scaleW = (containerWidth * 0.90) / 256; 
+    const scaleW = (containerWidth * 0.90) / 256;
     
     let targetScaleValue = Math.min(scaleH, scaleW);
     targetScaleValue = Math.max(targetScaleValue, 0.01);
 
     // xOffset = 0 — контейнер уже центрирован между панелями через TWEEN
     const xOffset = 0;
+
+    const windowWidth = window.innerWidth;
 
     if (windowWidth > 768) {
         // Sync Gesture Area width to match the hologram
