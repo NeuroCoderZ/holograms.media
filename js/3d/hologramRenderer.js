@@ -43,7 +43,6 @@ export class HologramRenderer {
     this._initInstancedMeshes();
     this._createSequencerGrids();
 
-    this.mainSequencerGroup.scale.set(0.95, 0.95, 0.95);
     this.scene.add(this.hologramPivot);
 
     this.eventBus.on('audioData', (data) => { 

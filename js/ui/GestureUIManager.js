@@ -98,9 +98,13 @@ class GestureUIManager {
         if (colBtn) {
             colBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                // Сброс красной линии влево
+                this.redLinePosition = 0;
+                // Очистка данных
                 this.recordedPaths.clear(); 
                 this.isRecording = false;
-                this.animateGestureArea(this.detectedHands.count > 0); 
+                // Возврат панели в базовое состояние
+                this.animateGestureArea(false); 
             });
         }
         
@@ -110,8 +114,9 @@ class GestureUIManager {
                 e.stopPropagation();
                 if (this.recordedPaths.size > 0) {
                     this._saveGestureToLocalStorage(Array.from(this.recordedPaths.entries()));
-                    saveBtn.style.color = '#00FF88'; // Flash green success
-                    setTimeout(() => saveBtn.style.color = '#E3E3E3', 2000);
+                    saveBtn.style.color = '#FFFFFF'; // Белый = сохранено
+                    saveBtn.classList.add('active');
+                    saveBtn.classList.remove('has-changes');
                 }
             });
         }
@@ -330,7 +335,7 @@ class GestureUIManager {
 
         this.isRecording = false;
         this.gestureAreaElement.classList.remove('recording');
-        this.redLinePosition = 0;
+        // НЕ сбрасываем redLinePosition — линия остаётся на месте завершения записи
 
         this.eventBus?.emit('gestureRecordingStopped', {
             paths: Array.from(this.recordedPaths.entries()),
@@ -392,17 +397,24 @@ class GestureUIManager {
     async _syncWithCloud(gesture) {
         try {
             const userState = this.state?.user || {};
-            const userId = userState.id || userState.sub || 'guest';
+            const userId = userState.id || userState.sub;
+            
+            // Не синхронизируем если нет идентификатора пользователя
+            if (!userId || userId === 'guest') {
+                console.log("GestureUIManager: Cloud sync skipped — no authenticated user.");
+                return;
+            }
             
             // Форматируем под UserGestureModel
             const payload = {
                 id: gesture.id,
                 gesture_name: gesture.name,
-                trajectories: gesture.paths, // массив [handId_fIdx, [pts]]
-                code: "" // can be populated later
+                trajectories: gesture.paths,
+                code: ""
             };
 
-            const response = await fetch(`/api/v1/users/${userId}/gestures`, {
+            const { API_BASE_URL } = await import('../../services/apiService.js');
+            const response = await fetch(`${API_BASE_URL}/api/v1/users/${userId}/gestures`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -464,16 +476,16 @@ class GestureUIManager {
                 this.ctx.strokeStyle = '#FF3B30';
                 this.ctx.lineWidth = 1;
 
-                // Top lane scanner line
+                // Top lane scanner line — от верхней границы вкладки до середины
                 this.ctx.beginPath();
-                this.ctx.moveTo(scannerX, laneVerticalPadding);
-                this.ctx.lineTo(scannerX, laneHeight - laneVerticalPadding);
+                this.ctx.moveTo(scannerX, 0);
+                this.ctx.lineTo(scannerX, laneHeight);
                 this.ctx.stroke();
 
-                // Bottom lane scanner line
+                // Bottom lane scanner line — от середины до нижнего края
                 this.ctx.beginPath();
-                this.ctx.moveTo(scannerX, laneHeight + laneVerticalPadding);
-                this.ctx.lineTo(scannerX, h - laneVerticalPadding);
+                this.ctx.moveTo(scannerX, laneHeight);
+                this.ctx.lineTo(scannerX, h);
                 this.ctx.stroke();
 
                 // Labels - fixed at bottom-right corner of each lane
@@ -491,12 +503,12 @@ class GestureUIManager {
                 // this.ctx.fillStyle = '#333333';
                 // this.ctx.fillRect(0, 0, w, h);
 
-                // Single scanner line
+                // Single scanner line — от вкладок до нижнего края
                 this.ctx.strokeStyle = '#FF3B30';
                 this.ctx.lineWidth = 1;
                 this.ctx.beginPath();
-                this.ctx.moveTo(scannerX, verticalPadding);
-                this.ctx.lineTo(scannerX, h - verticalPadding);
+                this.ctx.moveTo(scannerX, 0);
+                this.ctx.lineTo(scannerX, h);
                 this.ctx.stroke();
 
                 // Label - Improved visibility

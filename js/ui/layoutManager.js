@@ -242,9 +242,8 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         }
     }
 
-    // Доступная ширина между панелями — с отступами 5%
-    const availableWidth = Math.max(1, rightEdge - leftEdge - 2 * MIN_SIDE_MARGIN);
-    const availableHeight = Math.max(1, windowHeight - 2 * MIN_VERT_MARGIN);
+    const availableWidth = Math.max(1, rightEdge - leftEdge);
+    const availableHeight = Math.max(1, windowHeight);
 
     let containerWidth = overrideWidth ?? availableWidth;
     let containerHeight = overrideHeight ?? availableHeight;
@@ -254,15 +253,16 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         return;
     }
 
-    // Позиционируем gridContainer точно в пространстве между панелями
-    const containerLeft = leftEdge + MIN_SIDE_MARGIN;
-    const containerTop  = MIN_VERT_MARGIN;
+    // Позиционируем gridContainer точно в пространстве между панелями, без пустот
+    const containerLeft = leftEdge;
+    const containerTop  = 0;
 
     gridContainer.style.position = 'fixed';
     gridContainer.style.left     = `${containerLeft}px`;
     gridContainer.style.top      = `${containerTop}px`;
     gridContainer.style.width    = `${containerWidth}px`;
     gridContainer.style.height   = `${containerHeight}px`;
+    gridContainer.style.backgroundColor = '#000000'; // Чисто черный фон
 
     const hologramPivot = appState.hologramRendererInstance.getHologramPivot();
     if (!hologramPivot) return;
