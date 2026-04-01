@@ -263,6 +263,9 @@ export class AudioFilePlayer {
     this.startOffset = 0;
     this.state.audio.activeSource = 'none';
 
+    // [BUG-FIX] Сброс флага подключения — иначе следующий play не подключит источник к proxy!
+    window._cqtConnected = false;
+
     // Сброс буферов WASM при остановке
     resetCwtAnalyzer();
 

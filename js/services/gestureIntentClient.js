@@ -112,8 +112,10 @@ class GestureIntentClient {
     }
 }
 
-const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const wsUrl = `${wsProtocol}//${window.location.host}/ws/v1/gesture-intent`;
+// [FIX] WebSocket должен идти на Koyeb backend, НЕ на Cloudflare Pages!
+// VITE_API_URL = https://holograms-media-dev-...koyeb.app → wss://holograms-media-dev-...koyeb.app
+const apiUrl = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.host}`;
+const wsUrl = apiUrl.replace(/^https?:\/\//, (p) => p === 'https://' ? 'wss://' : 'ws://') + '/ws/v1/gesture-intent';
 
 const gestureIntentClient = new GestureIntentClient(wsUrl);
 export default gestureIntentClient;

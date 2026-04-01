@@ -5,6 +5,7 @@ import { AudioGestureBridge } from './AudioGestureBridge.js';
 import audioService from '../services/AudioService.js';
 
 let inputProxyNode = null;
+let _cqtConnectedSource = null; // ссылка на текущий source для корректного отключения
 
 export function getAudioContext() { return audioService.getAudioContext(); }
 
@@ -23,6 +24,22 @@ function getInputProxyNode(ctx) {
         console.log('[AudioProcessing] 🔗 Proxy Gain Node created');
     }
     return inputProxyNode;
+}
+
+/**
+ * Сбрасывает proxy-ноду для корректного пересоздания при следующем воспроизведении.
+ * КРИТИЧНО: без этого старый proxy остаётся подключён к мёртвому воркеру.
+ */
+export function resetInputProxy() {
+    if (inputProxyNode) {
+        try { inputProxyNode.disconnect(); } catch (_) {}
+        inputProxyNode = null;
+    }
+    if (silentGainNode) {
+        try { silentGainNode.disconnect(); } catch (_) {}
+        silentGainNode = null;
+    }
+    _cqtConnectedSource = null;
 }
 
 // ВАЖНО: Мы не перезаписываем onmessage, а подписываемся на событие из шины данных
@@ -163,8 +180,12 @@ export async function setupAudioProcessing(sourceNode, audioContext, connectToOu
 export function resetCwtAnalyzer() {
     console.log('[AudioProcessing] 🔄 Performing Hard Reset of CWT Analyzer...');
     audioService.resetWorklet();
-    window._cwtLinked = false; // [FIX] Сбрасываем флаг чтобы новый узел смог присоединиться
+    window._cwtLinked = false;   // новый воркер может подсоединиться к proxy
+    window._cqtConnected = false; // [BUG-FIX] источник должен переподключиться к proxy!
+    resetInputProxy();            // [BUG-FIX] убиваем старый proxy (он висит на мёртвом воркере)
+    window._pipelineVerified = false; // сбрасываем маркер первых данных
     
     // Уведомляем рендерер чтобы сбросил stale данные
     eventBus.emit('audioReset', {});
+    console.log('[AudioProcessing] ✅ Full reset complete. _cqtConnected=false, proxy=null');
 }

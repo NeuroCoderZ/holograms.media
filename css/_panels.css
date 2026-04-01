@@ -568,15 +568,140 @@ body.focus-mode .panel.right-panel {
     display: flex; /* Default active tab */
 }
 
-/* Унификация скроллбаров для всех вкладок */
-.right-panel-view::-webkit-scrollbar {
-    width: 4px !important;
+/* ==============================================
+   UNIFIED DARK SCROLLBARS (все вкладки + textarea)
+   Серый овал на чёрном фоне (как во вкладке Версии)
+   ============================================== */
+.right-panel-view::-webkit-scrollbar,
+#chatInput::-webkit-scrollbar,
+.right-panel-view *::-webkit-scrollbar {
+    width: 5px !important;
+    height: 5px !important;
+}
+.right-panel-view::-webkit-scrollbar-track,
+#chatInput::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+.right-panel-view::-webkit-scrollbar-thumb,
+#chatInput::-webkit-scrollbar-thumb {
+    background: rgba(180, 180, 180, 0.35) !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(0,0,0,0.2) !important;
+}
+.right-panel-view::-webkit-scrollbar-thumb:hover,
+#chatInput::-webkit-scrollbar-thumb:hover {
+    background: rgba(200, 200, 200, 0.55) !important;
 }
 
-.right-panel-view::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border-radius: 10px !important;
-}/* Native Tooltips Style (fallback if JS tooltips fail) */
+/* ==============================================
+   НИЖНИЙ РАЗДЕЛИТЕЛЬ — всегда виден (flex-shrink:0)
+   Не должен исчезать при переключении вкладок
+   ============================================== */
+.right-panel .panel-hr.bottom-divider,
+#right-panel hr.panel-hr[data-role="bottom"] {
+  flex-shrink: 0 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* ==============================================
+   TEXTAREA ЧАТА — авто-высота, без ручного resize
+   ============================================== */
+#chatInput {
+  resize: none !important;          /* убираем нелепый resize */
+  min-height: clamp(4rem, 12dvh, 9rem) !important;
+  max-height: clamp(8rem, 25dvh, 16rem) !important;
+  overflow-y: auto !important;       /* скролл при переполнении */
+  width: 100% !important;
+  box-sizing: border-box !important;
+  font-size: 0.875rem !important;
+  color: rgba(255,255,255,0.85) !important;
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+  line-height: 1.5 !important;
+  outline: none !important;
+  transition: border-color 0.2s ease !important;
+}
+#chatInput:focus {
+  border-color: rgba(255,255,255,0.18) !important;
+}
+
+/* ==============================================
+   НИЖНЯЯ ПАНЕЛЬ КНОПОК — авто-компоновка
+   Микрофон | [~~~~LLM SELECTOR~~~~] | Отправить
+   ============================================== */
+#chat-bottom-bar,
+.chat-input-row,
+div[id*="chatBottom"],
+div[id*="input-row"] {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+}
+
+/* Микрофон и Отправить — фиксированный размер */
+#micButton,
+#submitChatMessage {
+  flex: 0 0 auto !important;
+  width: clamp(32px, 4dvh, 40px) !important;
+  height: clamp(32px, 4dvh, 40px) !important;
+  padding: clamp(0.4rem, 0.8dvh, 0.6rem) !important;
+  border-radius: 50% !important;
+}
+
+/* Селектор LLM — занимает всё пространство между кнопками */
+#modelSelectContainer {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+#modelSelect {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+/* ==============================================
+   FIX: Белесость при скрытии панелей
+   Содержимое панели = opacity:1 ВСЕГДА
+   (проблема была в том что .panel opacity:0.4 проникала в children)
+   ============================================== */
+.panel.left-panel *,
+.panel.right-panel * {
+  opacity: inherit; /* наследуем от родителя */
+}
+
+/* Но САМИ кнопки и контент — всегда 100% opacity */
+.panel .control-button,
+.panel .panel-button,
+.panel .view-toggle-btn,
+.panel .panel-icon-link,
+.panel .panel-hr,
+.panel .panel-section,
+.panel .right-panel-tabs,
+.panel .rp-tab,
+.panel .right-panel-view,
+.panel .content-container,
+.panel #chatInput,
+.panel #micButton,
+.panel #submitChatMessage,
+.panel #modelSelect,
+.panel #modelSelectContainer {
+  opacity: 1 !important;
+}
+
+/* Native Tooltips Style */
 [data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: absolute;
