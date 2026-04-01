@@ -41,17 +41,10 @@ class GestureUIManager {
     }
 
     setInitialState() {
-        // Получаем актуальную ширину голограммы из layoutManager
-        const leftPanel = document.getElementById('left-panel');
-        const rightPanel = document.getElementById('right-panel');
-        const leftW = leftPanel && leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20;
-        const rightW = rightPanel && rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20;
+        // Панель жестов всегда центрирована по экрану, НЕ зависит от состояния панелей
         const w = window.innerWidth;
         const h = window.innerHeight;
-        
-        // Match scaling logic in layoutManager.js (90% of available space)
-        const availableWidth = w - leftW - rightW;
-        const targetScale = Math.min((availableWidth * 0.90) / 256, (h * 0.90) / 256);
+        const targetScale = Math.min((w * 0.90) / 256, (h * 0.90) / 256);
         const targetWidthPx = targetScale * 256;
 
         this.gestureAreaElement.style.left = '50%';

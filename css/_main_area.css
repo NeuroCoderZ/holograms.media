@@ -155,6 +155,18 @@
   border-bottom-color: #FFFFFF;
 }
 
+/* Убираем подчёркивание у кнопок Save и Свернуть */
+#gestureSaveCloudButton,
+#gestureCollapseButton {
+  border-bottom: none !important;
+  text-decoration: none !important;
+}
+#gestureSaveCloudButton:hover,
+#gestureCollapseButton:hover {
+  opacity: 1;
+  color: #FFFFFF;
+}
+
 /* Стили для голограммы */
 .hologram {
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), margin-bottom 0.5s ease;
