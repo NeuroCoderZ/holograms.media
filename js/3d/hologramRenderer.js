@@ -286,9 +286,14 @@ export class HologramRenderer {
     this.meshL.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
     this.meshR.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
 
-    const greetingValue = (isActive && !isPaused) ? 0.0 : 1.0;
+    const greetingValue = (!isActive || (isPaused && !this._frozenFrame)) ? 1.0 : 0.0;
     this.meshL.material.uniforms.uIsGreeting.value = greetingValue;
     this.meshR.material.uniforms.uIsGreeting.value = greetingValue;
+    
+    // При паузе убираем усиление яркости чтобы затемнение работало корректно
+    const brightnessBoost = (isPaused && this._frozenFrame) ? 1.0 : 1.4;
+    this.meshL.material.uniforms.uBrightnessBoost.value = brightnessBoost;
+    this.meshR.material.uniforms.uBrightnessBoost.value = brightnessBoost;
   }
 
   getHologramPivot() { return this.hologramPivot; }
