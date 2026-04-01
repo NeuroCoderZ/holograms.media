@@ -103,6 +103,12 @@ class GestureUIManager {
                 // Очистка данных
                 this.recordedPaths.clear(); 
                 this.isRecording = false;
+                // Сброс кнопки сохранения в серый
+                const saveBtn = document.getElementById('gestureSaveCloudButton');
+                if (saveBtn) {
+                    saveBtn.style.color = '#E3E3E3';
+                    saveBtn.classList.remove('active', 'has-changes');
+                }
                 // Возврат панели в базовое состояние
                 this.animateGestureArea(false); 
             });
@@ -114,7 +120,7 @@ class GestureUIManager {
                 e.stopPropagation();
                 if (this.recordedPaths.size > 0) {
                     this._saveGestureToLocalStorage(Array.from(this.recordedPaths.entries()));
-                    saveBtn.style.color = '#FFFFFF'; // Белый = сохранено
+                    saveBtn.style.color = '#FFFFFF';
                     saveBtn.classList.add('active');
                     saveBtn.classList.remove('has-changes');
                 }
@@ -138,6 +144,14 @@ class GestureUIManager {
             // Switch tab to 'edit' mode to show it is loaded
             const editTab = document.querySelector('.gesture-tab[data-mode="edit"]');
             if (editTab) editTab.click();
+            
+            // Mark save button as having changes (gray)
+            const saveBtn = document.getElementById('gestureSaveCloudButton');
+            if (saveBtn) {
+                saveBtn.style.color = '#E3E3E3';
+                saveBtn.classList.remove('active');
+                saveBtn.classList.add('has-changes');
+            }
         });
 
         // Map gesture commands to real DOM UI actions
