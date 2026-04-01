@@ -124,26 +124,49 @@ class GesturesListDisplay {
     }
 
     drawMiniature(canvas, pathsData) {
-        if (!pathsData || !Array.isArray(pathsData) || pathsData.length === 0) return;
+        if (!pathsData) return;
+        
+        // Нормализуем: pathsData может быть Map.entries, массивом массивов, или объектом
+        let normalizedPaths = [];
+        if (Array.isArray(pathsData)) {
+            normalizedPaths = pathsData;
+        } else if (typeof pathsData === 'object') {
+            // Если это объект/Map — конвертируем в массив
+            normalizedPaths = Array.isArray(pathsData) ? pathsData : Object.entries(pathsData);
+        }
+        
+        if (normalizedPaths.length === 0) return;
         
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         // Find bounds
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-        pathsData.forEach(([key, pts]) => {
+        let hasPoints = false;
+        normalizedPaths.forEach(([key, pts]) => {
             if (!Array.isArray(pts)) return;
             pts.forEach(p => {
-                if (p.x < minX) minX = p.x;
-                if (p.x > maxX) maxX = p.x;
-                if (p.y < minY) minY = p.y;
-                if (p.y > maxY) maxY = p.y;
+                if (p && typeof p.x === 'number' && typeof p.y === 'number') {
+                    if (p.x < minX) minX = p.x;
+                    if (p.x > maxX) maxX = p.x;
+                    if (p.y < minY) minY = p.y;
+                    if (p.y > maxY) maxY = p.y;
+                    hasPoints = true;
+                }
             });
         });
 
-        const w = maxX - minX;
-        const h = maxY - minY;
-        if (w <= 0 || h <= 0) return;
+        if (!hasPoints || minX === Infinity) {
+            // Нет точек — рисуем заглушку
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText('Нет данных', canvas.width/2, canvas.height/2);
+            return;
+        }
+
+        const w = maxX - minX || 1;
+        const h = maxY - minY || 1;
 
         const pad = 10;
         const scale = Math.min((canvas.width - pad*2) / w, (canvas.height - pad*2) / h);
@@ -154,15 +177,15 @@ class GesturesListDisplay {
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
 
-        pathsData.forEach(([key, pts], idx) => {
+        normalizedPaths.forEach(([key, pts], idx) => {
             if (!Array.isArray(pts) || pts.length === 0) return;
             
-            // Randomish color for different fingers
             const hue = (idx * 40) % 360;
             ctx.strokeStyle = `hsla(${hue}, 100%, 70%, 0.8)`;
             
             ctx.beginPath();
             pts.forEach((p, i) => {
+                if (!p || typeof p.x !== 'number') return;
                 const x = p.x * scale + offsetX;
                 const y = p.y * scale + offsetY;
                 if (i === 0) ctx.moveTo(x, y);
