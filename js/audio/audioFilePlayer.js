@@ -146,18 +146,19 @@ export class AudioFilePlayer {
       this.gainNode.gain.value = 1.0;
     }
 
-    // Connect to CQT processor (fire-and-forget)
-    // Graph: BufferSource -> setupAudioProcessing connects to Worklet -> Destination
-    setupAudioProcessing(this.audioBufferSource, this.audioContext, true)
-      .then(() => {
-        console.log('[AudioFilePlayer] ✅ CQT audio processing connected.');
-      })
-      .catch((err) => {
-        console.warn('[AudioFilePlayer] ⚠ CQT init issue, but playback continues:', err.message);
-      });
+    // Connect to CQT processor ONLY ONCE (not on every play)
+    if (!window._cqtConnected) {
+      window._cqtConnected = true;
+      setupAudioProcessing(this.audioBufferSource, this.audioContext, true)
+        .then(() => {
+          console.log('[AudioFilePlayer] ✅ CQT audio processing connected.');
+        })
+        .catch((err) => {
+          console.warn('[AudioFilePlayer] ⚠ CQT init issue, but playback continues:', err.message);
+        });
+    }
 
     // Connect source to destination for playback
-    // CQT worklet handles passthrough, but we also connect directly as backup
     this.audioBufferSource.connect(this.gainNode);
     this.gainNode.connect(this.audioContext.destination);
 
