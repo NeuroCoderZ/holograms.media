@@ -50,23 +50,11 @@ async def get_llm_response(
     # Определяем стек моделей
     use_mistral = selected_model and "mistral" in selected_model.lower()
     model_stack = "mistral" if use_mistral else "gemini"
-    main_model = "mistral-large-latest" if use_mistral else "gemini-3-flash-preview"
-    sub_model = (
-        "mistral-small-latest" if use_mistral else "gemini-3.1-flash-lite-preview"
-    )
 
-    # Если Mistral — используем напрямую (без Orchestrator Darwin Critic)
-    if use_mistral:
-        from backend.llm.mistral_llm import get_mistral_response
-
-        logger.info(f"LLM: Using Mistral stack ({main_model}/{sub_model})")
-        conversation_context = _build_conversation_context(history)
-        prompt = f"Предыдущий контекст:\n{conversation_context}\n\nСообщение пользователя: {user_message}"
-        response_text = await get_mistral_response(prompt)
-        return f"[Mistral Large] {response_text}"
-
-    # Gemini — через Orchestrator (с subagent Gemini 3.1 Flash Lite)
-    logger.info(f"LLM: Using Gemini stack ({main_model}/{sub_model})")
+    # Mistral — через Orchestrator (с subagent mistral-small-latest)
+    # Gemini — через Orchestrator (с subagent gemini-3.1-flash-lite-preview)
+    # Оба стека используют Darwin Critic с двумя кандидатами
+    logger.info(f"LLM: Using {model_stack} stack ({selected_model})")
 
     conversation_context = _build_conversation_context(history)
 
@@ -78,7 +66,8 @@ async def get_llm_response(
         context=f"Selected model: {selected_model}, stack: {model_stack}",
     )
 
-    return f"[Gemini 3 Flash] {response_text}"
+    model_label = "Mistral Large 3" if use_mistral else "Gemini 3 Flash"
+    return f"[{model_label}] {response_text}"
 
 
 class ChatService:

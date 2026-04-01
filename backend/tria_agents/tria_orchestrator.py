@@ -30,6 +30,7 @@ async def _mistral_fallback(prompt: str, system_instruction: str) -> str:
             user_message=prompt,
             history=[],
             system_instruction=system_instruction,
+            model_id=MISTRAL_MAIN,
         )
     except Exception as e:
         logger.error(f"Mistral fallback failed: {e}")
@@ -176,14 +177,26 @@ class TriaOrchestrator:
                 return_exceptions=True,
             )
 
-            # Fallback: если Gemini 429 — переключаемся на Mistral
+            # Fallback: если модель 429 — переключаемся на альтернативный стек
             for idx, c in enumerate(candidates):
                 if isinstance(c, Exception) and (
                     "429" in str(c) or "RESOURCE_EXHAUSTED" in str(c)
                 ):
-                    logger.warning("Gemini 429: Switching to Mistral Small 4")
-                    candidates[idx] = await _mistral_fallback(
-                        candidate_prompts[idx], system_instruction
+                    fallback_model = (
+                        MISTRAL_MAIN if model_stack == "gemini" else GEMINI_MAIN
+                    )
+                    fallback_fn = (
+                        get_mistral_response
+                        if model_stack == "gemini"
+                        else get_gemini_response
+                    )
+                    logger.warning(
+                        f"{model_stack} 429: Switching to {'Mistral' if model_stack == 'gemini' else 'Gemini'}"
+                    )
+                    candidates[idx] = await fallback_fn(
+                        prompt=candidate_prompts[idx],
+                        system_instruction=system_instruction,
+                        model_id=fallback_model,
                     )
                 elif isinstance(c, Exception):
                     candidates[idx] = f"[Error] {str(c)}"
