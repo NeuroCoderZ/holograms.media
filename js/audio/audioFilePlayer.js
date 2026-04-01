@@ -146,17 +146,15 @@ export class AudioFilePlayer {
       this.gainNode.gain.value = 1.0;
     }
 
-    // Connect to CQT processor ONLY ONCE (not on every play)
-    if (!window._cqtConnected) {
-      window._cqtConnected = true;
-      setupAudioProcessing(this.audioBufferSource, this.audioContext, true)
-        .then(() => {
-          console.log('[AudioFilePlayer] ✅ CQT audio processing connected.');
-        })
-        .catch((err) => {
-          console.warn('[AudioFilePlayer] ⚠ CQT init issue, but playback continues:', err.message);
-        });
-    }
+    // Connect to CQT processor — reconnect after reset
+    window._cqtConnected = false; // Сброс после resetCwtAnalyzer
+    setupAudioProcessing(this.audioBufferSource, this.audioContext, true)
+      .then(() => {
+        console.log('[AudioFilePlayer] ✅ CQT audio processing connected.');
+      })
+      .catch((err) => {
+        console.warn('[AudioFilePlayer] ⚠ CQT init issue, but playback continues:', err.message);
+      });
 
     // Connect source to destination for playback
     this.audioBufferSource.connect(this.gainNode);
