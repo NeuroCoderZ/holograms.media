@@ -253,9 +253,11 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         return;
     }
 
-    // Позиционируем gridContainer точно в пространстве между панелями, без пустот
-    const containerLeft = leftEdge;
+    // Позиционируем gridContainer на ВСЮ страницу — не ресайзим при анимации панелей
+    const containerLeft = 0;
     const containerTop  = 0;
+    const containerWidth = window.innerWidth;
+    const containerHeight = window.innerHeight;
 
     gridContainer.style.position = 'fixed';
     gridContainer.style.left     = `${containerLeft}px`;
@@ -269,10 +271,24 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
 
     updateRendererAndCamera(appState, containerWidth, containerHeight);
 
-    // 90% внутри контейнера — так голограмма никогда не упирается в края
+    // Вычисляем доступное пространство МЕЖДУ панелями для масштаба голограммы
+    const leftPanel = appState.uiElements?.leftPanel;
+    const rightPanel = appState.uiElements?.rightPanel;
+    const leftW = leftPanel && leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20;
+    const rightW = rightPanel && rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20;
+    const availableWidth = containerWidth - leftW - rightW;
+
+    // 90% доступного пространства между панелями — голограмма не касается краёв панелей
     const scaleH = (containerHeight * 0.90) / HOLOGRAM_REFERENCE_HEIGHT;
-    const scaleW = (containerWidth  * 0.90) / 256;
+    const scaleW = (availableWidth  * 0.90) / 256;
     let targetScaleValue = Math.max(Math.min(scaleH, scaleW), 0.01);
+
+    // Центрируем голограмму между панелями
+    const leftPanelRight = leftW;
+    const rightPanelLeft = containerWidth - rightW;
+    const hologramCenterX = (leftPanelRight + rightPanelLeft) / 2;
+    const containerCenterX = containerWidth / 2;
+    const xOffset = (hologramCenterX - containerCenterX) / targetScaleValue;
 
     const verticalCenterOffset = (containerHeight / 2) - (128 * targetScaleValue);
 
@@ -281,7 +297,7 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         hologramPivot.position.set(0, 0, 0);
     } else {
         hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
-        hologramPivot.position.set(0, verticalCenterOffset / targetScaleValue, 0);
+        hologramPivot.position.set(xOffset, verticalCenterOffset / targetScaleValue, 0);
     }
 
     // Синхронизируем панель жестов: та же ширина, строго под голограммой

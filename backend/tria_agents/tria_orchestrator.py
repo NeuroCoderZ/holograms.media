@@ -13,8 +13,12 @@ from backend.core.config import settings
 logger = logging.getLogger(__name__)
 
 # Model Constants v3.0
-MAIN_MODEL = "gemini-3-flash-preview"
-SUB_MODEL = "gemini-3.1-flash-lite-preview"
+# Gemini stack
+GEMINI_MAIN = "gemini-3-flash-preview"
+GEMINI_SUB = "gemini-3.1-flash-lite-preview"
+# Mistral stack
+MISTRAL_MAIN = "mistral-large-latest"
+MISTRAL_SUB = "mistral-small-latest"
 
 
 async def _mistral_fallback(prompt: str, system_instruction: str) -> str:
@@ -36,14 +40,19 @@ class TriaOrchestrator:
     def __init__(self):
         self.meta_service = MetaInstructionService()
         logger.info(
-            f"TriaOrchestrator v3.0 initialized with {MAIN_MODEL} / {SUB_MODEL}"
+            f"TriaOrchestrator v3.0 initialized with Gemini ({GEMINI_MAIN}/{GEMINI_SUB}) and Mistral ({MISTRAL_MAIN}/{MISTRAL_SUB})"
         )
 
     async def _get_subagent_context(
-        self, prompt: str, user_id: str, history: Optional[List[Dict]] = None
+        self,
+        prompt: str,
+        user_id: str,
+        history: Optional[List[Dict]] = None,
+        model_stack: str = "gemini",
     ) -> str:
         """
         Recursive RAG, Skill Routing & Situational Web Search via Subagent.
+        model_stack: 'gemini' or 'mistral'
         """
         # Step 1: Analyze intent and check if web search is needed
         history_str = "\n".join(
@@ -59,10 +68,15 @@ class TriaOrchestrator:
             "Format: Keywords: k1, k2 | Search: TRUE/FALSE"
         )
 
-        analysis_res = await get_gemini_response(
+        sub_model = GEMINI_SUB if model_stack == "gemini" else MISTRAL_SUB
+        get_response = (
+            get_gemini_response if model_stack == "gemini" else get_mistral_response
+        )
+
+        analysis_res = await get_response(
             prompt=analysis_prompt,
             system_instruction="You are Tria Subagent (Analyst). Determine keywords and search necessity.",
-            model_id=SUB_MODEL,
+            model_id=sub_model,
         )
 
         search_needed = "SEARCH: TRUE" in analysis_res.upper()
@@ -97,15 +111,27 @@ class TriaOrchestrator:
         history: Optional[List[Dict]] = None,
         user_id: str = "guest",
         ui_context: str = "",
-        context: str = "", # LLM_CONTEXT from tria_commands
+        context: str = "",  # LLM_CONTEXT from tria_commands
     ) -> AsyncGenerator[str, None]:
         """
         Streaming Orchestrator with Thinking UI markers and History.
         """
         try:
+            # Determine model stack from selected_model in context
+            # If context contains 'mistral', use Mistral stack
+            use_mistral = context and "mistral" in context.lower()
+            model_stack = "mistral" if use_mistral else "gemini"
+            main_model = MISTRAL_MAIN if use_mistral else GEMINI_MAIN
+            sub_model = MISTRAL_SUB if use_mistral else GEMINI_SUB
+            get_response = get_mistral_response if use_mistral else get_gemini_response
+
+            logger.info(f"[Orchestrator] Using {model_stack} stack")
+
             # Stage 1: Research
             yield "[[THINKING:RESEARCH]]"
-            research_pack = await self._get_subagent_context(prompt, user_id, history)
+            research_pack = await self._get_subagent_context(
+                prompt, user_id, history, model_stack
+            )
 
             # Check if web search was recommended
             use_grounding = "[Note: Web search recommended]" in research_pack
@@ -129,7 +155,11 @@ class TriaOrchestrator:
             )
 
             # Добавляем UI Snapshot если он есть (v0.20 GA B-5)
-            ui_snippet = f"\n\nUI Snapshot (Front-end context):\n{ui_context}" if ui_context else ""
+            ui_snippet = (
+                f"\n\nUI Snapshot (Front-end context):\n{ui_context}"
+                if ui_context
+                else ""
+            )
 
             candidate_prompts = [
                 f"History:\n{history_ctx}\n\nContext:\n{research_pack}{ui_snippet}\n\nTask: {prompt}\nVariant A: Elaborate and technical.",
@@ -138,8 +168,8 @@ class TriaOrchestrator:
 
             candidates = await asyncio.gather(
                 *[
-                    get_gemini_response(
-                        p, system_instruction=system_instruction, model_id=MAIN_MODEL
+                    get_response(
+                        p, system_instruction=system_instruction, model_id=main_model
                     )
                     for p in candidate_prompts
                 ],
@@ -172,10 +202,10 @@ class TriaOrchestrator:
                 "4. Your output must be ready to show directly to the end user."
             )
 
-            final_response = await get_gemini_response(
+            final_response = await get_response(
                 prompt=critic_prompt,
                 system_instruction="You are Darwin Critic. Return ONLY the final user-facing response. NO thinking tags, NO reasoning.",
-                model_id=SUB_MODEL,
+                model_id=sub_model,
             )
 
             # Fallback: если Darwin Critic вернул пустой ответ
