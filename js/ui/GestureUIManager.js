@@ -427,7 +427,7 @@ class GestureUIManager {
                 code: ""
             };
 
-            const { API_BASE_URL } = await import('../../services/apiService.js');
+            const { API_BASE_URL } = await import('../services/apiService.js');
             const response = await fetch(`${API_BASE_URL}/api/v1/users/${userId}/gestures`, {
                 method: 'POST',
                 headers: { 
