@@ -73,6 +73,15 @@ export function initializeResizeHandler(passedState) { // Changed signature
     availableHeight = Math.max(1, availableHeight);
 
     // Обновляем рендерер и камеру (используем localStateRef)
+    // FIX: Обновляем inline-стили gridContainer при resize (иначе чёрные полосы при F11/F12)
+    const gridContainer = localStateRef.uiElements?.gridContainer;
+    if (gridContainer) {
+        gridContainer.style.width = `${window.innerWidth}px`;
+        gridContainer.style.height = `${window.innerHeight}px`;
+        gridContainer.style.top = '0px';
+        gridContainer.style.left = '0px';
+    }
+
     if (localStateRef.renderer) { // Use localStateRef
       localStateRef.renderer.setSize(availableWidth, availableHeight);
       console.log('[Resize] Renderer resized:', { width: availableWidth, height: availableHeight });

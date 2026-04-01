@@ -146,6 +146,8 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
         }
     } else {
         // Hands are gone - return to expanded centered state
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
         const marginTop = windowHeight * 0.05;
         const marginBottom = windowHeight * 0.05;
         const gap = windowHeight * 0.05;

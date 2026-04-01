@@ -142,17 +142,17 @@ class AudioService {
     resetWorklet() {
         if (this.workletNode) {
             try {
-                this.workletNode.port.postMessage({ type: 'RESET' }); // Optional: tell worklet to reset internal state
+                this.workletNode.port.postMessage({ type: 'RESET' });
+                // Очищаем обработчик ДО disconnect чтобы зомби-сообщения не обрабатывались
+                this.workletNode.port.onmessage = null;
                 this.workletNode.disconnect();
             } catch (e) {
                 console.warn('[AudioService] Error disconnecting worklet:', e);
             }
             this.workletNode = null;
-            // Note: We DO NOT clear this.wasmBuffer because we need it for the next node!
-            // BUT: If we transferred it, it's gone. We must NOT transfer it if we plan to reuse it, 
-            // OR we must reload it.
-            // Strategy: Clone the buffer before sending? ArrayBuffer.slice(0)
         }
+        // Останавливаем FPS-мониторинг
+        this.stopRefreshRateMonitoring();
     }
 
     /**
@@ -281,8 +281,21 @@ class AudioService {
      * Вызывается автоматически при создании WorkletNode.
      */
     _startRefreshRateMonitoring() {
-        // [FIX] Disabled dynamic FPS monitoring to prevent WASM cwtanalyzer state corruption
-        // Initial detection at startup is sufficient.
+        // Мониторинг FPS экрана каждые 30 секунд (безопасный интервал)
+        if (this._fpsMonitorInterval) return;
+        this._fpsMonitorInterval = setInterval(async () => {
+            if (!this.workletNode) {
+                this.stopRefreshRateMonitoring();
+                return;
+            }
+            try {
+                const caps = await deviceCapabilities.detect();
+                const newFps = caps?.display?.refreshRate;
+                if (newFps && newFps > 0 && newFps !== this.targetFps) {
+                    this.setTargetFps(newFps);
+                }
+            } catch (e) { /* молча */ }
+        }, 30000);
     }
 
     /**
@@ -292,6 +305,10 @@ class AudioService {
         if (this._fpsMonitorId) {
             cancelAnimationFrame(this._fpsMonitorId);
             this._fpsMonitorId = null;
+        }
+        if (this._fpsMonitorInterval) {
+            clearInterval(this._fpsMonitorInterval);
+            this._fpsMonitorInterval = null;
         }
     }
 }

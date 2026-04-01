@@ -46,7 +46,7 @@ export const fragmentShader = /* glsl */`
         float depth = vZ * vColumnScaleZ;
         float cellIndex = floor(depth + 0.001);
         float bIndex = clamp(cellIndex, 0.0, 127.0);
-        float brightness = (bIndex + 1.0) / 128.0; 
+        float brightness = bIndex / 128.0; 
         
         if (vZ > 0.99) {
             float maxCell = floor(vColumnScaleZ + 0.001);

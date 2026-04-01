@@ -9,6 +9,11 @@ let cachedFloat32Memory = null;
 // Пред-аллокация указателей (reuse)
 let ptrs = { left: 0, right: 0, levels: 0, pans: 0, confidence: 0 };
 
+// Кэшированные fallback-массивы (НЕ создаём новые каждый вызов!)
+const FALLBACK_LEVELS = new Float32Array(256).fill(-128);
+const FALLBACK_ANGLES = new Float32Array(128).fill(0);
+const FALLBACK_CONFIDENCE = new Float32Array(128).fill(0);
+
 function getFloat32Memory() {
     if (!cachedFloat32Memory || cachedFloat32Memory.buffer.byteLength === 0) {
         cachedFloat32Memory = new Float32Array(wasm.memory.buffer);
@@ -21,7 +26,9 @@ class CwtProcessor extends AudioWorkletProcessor {
         super();
         this._hb = 0;
         this._initialized = false;
+        this._killed = false; // Флаг для чистого завершения
         this._lastFpsLog = null;
+        this._fallbackAccumulator = 0; // Throttle для fallback-пути
 
         // Configuration from service
         this._sampleRate = options.processorOptions.sampleRate || 48000;
@@ -55,12 +62,14 @@ class CwtProcessor extends AudioWorkletProcessor {
                         this._lastFpsLog = Date.now();
                     }
                 }
-            } else if (data.type === 'RESET' && wasm && analyzerPtr) {
+            } else if (data.type === 'RESET') {
                 // Сброс буферов при смене трека или Stop
-                if (wasm.cwtanalyzer_reset) {
+                if (wasm && analyzerPtr && wasm.cwtanalyzer_reset) {
                     wasm.cwtanalyzer_reset(analyzerPtr);
-                    this.port.postMessage({ type: 'LOG', msg: 'WASM_RESET_COMPLETE' });
                 }
+                // Убиваем процессор — process() вернёт false
+                this._killed = true;
+                this.port.postMessage({ type: 'LOG', msg: 'WASM_RESET_AND_KILL' });
             }
         };
 
@@ -119,26 +128,27 @@ class CwtProcessor extends AudioWorkletProcessor {
     }
 
     process(inputs, outputs) {
+        // Зомби-защита: если получили RESET — умираем
+        if (this._killed) return false;
+
         const input = inputs[0];
 
-        // HEARTBEAT even if not ready (каждые 300 кадров = ~5 сек при 60 FPS)
-        // if (this._hb++ % 300 === 0) {
-        //     this.port.postMessage({
-        //         type: 'LOG',
-        //         msg: `PULSE ready=${this._initialized} wasm=${!!wasm} input=${!!input && !!input[0]}`
-        //     });
-        // }
-
         if (!input || !input[0] || !wasm || !analyzerPtr || !this._initialized) {
-            // Emitting zeroed fallback data to prevent UI freeze
-            this.port.postMessage({
-                type: 'AUDIO_DATA',
-                levels: new Float32Array(256).fill(-128),
-                angles: new Float32Array(128).fill(0),
-                confidence: new Float32Array(128).fill(0),
-                timestamp: (typeof currentTime !== 'undefined') ? currentTime : 0,
-                isFallback: true
-            });
+            // THROTTLED fallback: отправляем НЕ чаще target FPS (вместо 375/сек!)
+            this._fallbackAccumulator += (input && input[0]) ? input[0].length : 128;
+            const samplesPerFrame = this._sampleRate / (this._targetFps || 60);
+            if (this._fallbackAccumulator >= samplesPerFrame) {
+                this._fallbackAccumulator -= samplesPerFrame;
+                // Используем кэшированные массивы — без аллокаций!
+                this.port.postMessage({
+                    type: 'AUDIO_DATA',
+                    levels: FALLBACK_LEVELS,
+                    angles: FALLBACK_ANGLES,
+                    confidence: FALLBACK_CONFIDENCE,
+                    timestamp: (typeof currentTime !== 'undefined') ? currentTime : 0,
+                    isFallback: true
+                });
+            }
             return true;
         }
 

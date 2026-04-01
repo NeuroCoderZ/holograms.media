@@ -286,7 +286,7 @@ export class HologramRenderer {
     this.meshL.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
     this.meshR.geometry.getAttribute('aColumnScaleZ').needsUpdate = true;
 
-    const greetingValue = (!isActive || (isPaused && !this._frozenFrame)) ? 1.0 : 0.0;
+    const greetingValue = !isActive ? 1.0 : 0.0;
     this.meshL.material.uniforms.uIsGreeting.value = greetingValue;
     this.meshR.material.uniforms.uIsGreeting.value = greetingValue;
     
