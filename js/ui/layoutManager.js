@@ -254,22 +254,30 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     }
 
     // Позиционируем gridContainer на ВСЮ страницу — не ресайзим при анимации панелей
-    const containerLeft = 0;
-    const containerTop  = 0;
     const containerWidth = window.innerWidth;
     const containerHeight = window.innerHeight;
 
-    gridContainer.style.position = 'fixed';
-    gridContainer.style.left     = `${containerLeft}px`;
-    gridContainer.style.top      = `${containerTop}px`;
-    gridContainer.style.width    = `${containerWidth}px`;
-    gridContainer.style.height   = `${containerHeight}px`;
-    gridContainer.style.backgroundColor = '#000000'; // Чисто черный фон
+    // НЕ меняем размер canvas если он уже правильный (предотвращает мигание при анимации)
+    const currentW = parseFloat(gridContainer.style.width) || 0;
+    const currentH = parseFloat(gridContainer.style.height) || 0;
+    if (Math.abs(currentW - containerWidth) > 1 || Math.abs(currentH - containerHeight) > 1) {
+        gridContainer.style.position = 'fixed';
+        gridContainer.style.left     = `0px`;
+        gridContainer.style.top      = `0px`;
+        gridContainer.style.width    = `${containerWidth}px`;
+        gridContainer.style.height   = `${containerHeight}px`;
+        gridContainer.style.backgroundColor = '#000000';
+    }
 
     const hologramPivot = appState.hologramRendererInstance.getHologramPivot();
     if (!hologramPivot) return;
 
-    updateRendererAndCamera(appState, containerWidth, containerHeight);
+    // НЕ ресайзим рендерер во время анимации — только если размер реально изменился
+    const rendererW = appState.renderer?.domElement?.width || 0;
+    const rendererH = appState.renderer?.domElement?.height || 0;
+    if (Math.abs(rendererW - containerWidth) > 10 || Math.abs(rendererH - containerHeight) > 10) {
+        updateRendererAndCamera(appState, containerWidth, containerHeight);
+    }
 
     // Вычисляем доступное пространство МЕЖДУ панелями для масштаба голограммы
     const leftPanel = appState.uiElements?.leftPanel;
