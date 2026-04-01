@@ -1,7 +1,7 @@
 // frontend/js/audio/audioFilePlayer.js
 // Audio File Player - Pure CQT Architecture (No FFT Analyzers)
 import { state } from '../core/init.js';
-import { getAudioContext, setupAudioProcessing, isCwtActive, resetCwtAnalyzer } from './audioProcessing.js';
+import { getAudioContext, setupAudioProcessing, isCwtActive, resetCwtAnalyzer, runBasilaQHealthCheck } from './audioProcessing.js';
 
 // Элементы управления плеером (module-level variables)
 let fileInput = null;
@@ -176,6 +176,9 @@ export class AudioFilePlayer {
     this.state.audio.isPaused = false;
 
     console.log('[AudioFilePlayer] ▶ Playing audio file...');
+
+    // Блок 7: Pipeline Health Check
+    runBasilaQHealthCheck();
 
     // Handle playback end
     this.audioBufferSource.onended = () => {

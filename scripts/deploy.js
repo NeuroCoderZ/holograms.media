@@ -28,6 +28,14 @@ const newVersion = parts.join('.');
 console.log(`\n🚀 Deploy: ${version} → ${newVersion}`);
 console.log(`📝 Message: ${commitMessage}\n`);
 
+// Block 7: Pre-deploy checklist
+try {
+    execSync('node scripts/pre-deploy-check.js', { stdio: 'inherit', cwd: ROOT });
+} catch (e) {
+    console.error('❌ Deploy blocked by pre-deploy check.');
+    process.exit(1);
+}
+
 // Обновляем файлы
 fs.writeFileSync(VERSION_FILE, newVersion);
 

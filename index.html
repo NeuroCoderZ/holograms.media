@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.280");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.281");</script>
   <!-- DEPLOY_VERSION_END -->
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
@@ -308,6 +308,8 @@
         <button class="gesture-tab" data-mode="action"><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M440-160v-487L216-423l-56-57 320-320 320 320-56 57-224-224v487h-80Z"/></svg>действие</button>
         <button class="gesture-tab" data-mode="chain"><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z"/></svg>сцепка</button>
         <button class="gesture-tab" data-mode="test"><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M320-200v-560l440 280-440 280Z"/></svg>тест</button>
+        <button class="gesture-tab" id="gestureSaveCloudButton" style="position: absolute; right: 40px; color: #E3E3E3; padding: 2px 5px;" title="Сохранить в облако (AstraDB)"><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z"/></svg></button>
+        <button class="gesture-tab" id="gestureCollapseButton" style="position: absolute; right: 10px; opacity: 0.5; padding: 2px 5px;" title="Свернуть панель"><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M200-440v-80h560v80H200Z"/></svg></button>
       </div>
       <div id="gesture-line"></div>
     </div>

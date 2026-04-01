@@ -96,6 +96,8 @@ class TriaOrchestrator:
         user_email: str = "",
         history: Optional[List[Dict]] = None,
         user_id: str = "guest",
+        ui_context: str = "",
+        context: str = "", # LLM_CONTEXT from tria_commands
     ) -> AsyncGenerator[str, None]:
         """
         Streaming Orchestrator with Thinking UI markers and History.
@@ -126,9 +128,12 @@ class TriaOrchestrator:
                 [f"{m['role']}: {m['content']}" for m in (history or [])[-10:]]
             )
 
+            # Добавляем UI Snapshot если он есть (v0.20 GA B-5)
+            ui_snippet = f"\n\nUI Snapshot (Front-end context):\n{ui_context}" if ui_context else ""
+
             candidate_prompts = [
-                f"History:\n{history_ctx}\n\nContext:\n{research_pack}\n\nTask: {prompt}\nVariant A: Elaborate and technical.",
-                f"History:\n{history_ctx}\n\nContext:\n{research_pack}\n\nTask: {prompt}\nVariant B: Concise and direct.",
+                f"History:\n{history_ctx}\n\nContext:\n{research_pack}{ui_snippet}\n\nTask: {prompt}\nVariant A: Elaborate and technical.",
+                f"History:\n{history_ctx}\n\nContext:\n{research_pack}{ui_snippet}\n\nTask: {prompt}\nVariant B: Concise and direct.",
             ]
 
             candidates = await asyncio.gather(

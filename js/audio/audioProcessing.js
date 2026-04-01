@@ -173,6 +173,59 @@ export async function setupAudioProcessing(sourceNode, audioContext, connectToOu
 }
 
 /**
+ * Диагностический модуль: pipeline health check.
+ * Запускается после старта воспроизведения для контроля Audio → WASM → 3D Pipeline.
+ */
+export function runBasilaQHealthCheck() {
+    console.log('[BasilaQ-HEALTH] 🔍 Initiating pipeline diagnostics...');
+    
+    // 1. WASM / Worklet Status
+    const isWasmActive = isCwtActive();
+    console.log(`[BasilaQ-HEALTH] WASM/Worklet: ${isWasmActive ? '✅ ACTIVE (Pure Rust CWT)' : '❌ DISCONNECTED'}`);
+    
+    // 2. Proxy Connection
+    const proxyConnected = !!inputProxyNode && window._cwtLinked;
+    console.log(`[BasilaQ-HEALTH] Pipeline Proxy: ${proxyConnected ? '✅ CONNECTED (Source -> Proxy -> Worklet)' : '❌ BROKEN'}`);
+
+    // 3. Data Flow / Levels Range
+    if (isWasmActive && proxyConnected) {
+        let hasMonitored = false;
+        const healthListener = (data) => {
+            if (hasMonitored) return;
+            hasMonitored = true;
+            
+            // Unsubscribe immediately to prevent memory leaks / overhead
+            eventBus.off('audioData', healthListener);
+            
+            if (data && data.levels && data.levels.length > 0) {
+                // Calculate min/max to verify data isn't crushed to -128
+                let min = Infinity, max = -Infinity;
+                for(let i=0; i<data.levels.length; i++) {
+                    if(data.levels[i] < min) min = data.levels[i];
+                    if(data.levels[i] > max) max = data.levels[i];
+                }
+                const isSilent = max <= -128;
+                console.log(`[BasilaQ-HEALTH] Spectral Data: ${isSilent ? '⚠️ SILENT FRAME (-128dB flatine)' : '✅ FLOWING'} (Range: ${min.toFixed(1)}dB to ${max.toFixed(1)}dB, Length: ${data.levels.length})`);
+            } else {
+                console.log('[BasilaQ-HEALTH] Spectral Data: ❌ NO METRICS IN PAYLOAD');
+            }
+        };
+        
+        // Listen for exactly one audio-visual data chunk
+        eventBus.on('audioData', healthListener);
+        
+        // Timeout if no data comes within 2 seconds
+        setTimeout(() => {
+            if (!hasMonitored) {
+                hasMonitored = true;
+                eventBus.off('audioData', healthListener);
+                console.log('[BasilaQ-HEALTH] Spectral Data: ❌ TIMEOUT (Pipeline is stalled!)');
+            }
+        }, 2000);
+    }
+}
+
+/**
  * Сбрасывает буферы CWT-анализатора в WASM.
  * Вызывается при смене трека или нажатии Stop.
  * Performs a hard reset by destroying the WorkletNode via AudioService.

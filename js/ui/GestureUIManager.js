@@ -93,8 +93,47 @@ class GestureUIManager {
             this.toggleRecording();
         });
 
+        // Initialize new UI Buttons
+        const colBtn = document.getElementById('gestureCollapseButton');
+        if (colBtn) {
+            colBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.recordedPaths.clear(); 
+                this.isRecording = false;
+                this.animateGestureArea(this.detectedHands.count > 0); 
+            });
+        }
+        
+        const saveBtn = document.getElementById('gestureSaveCloudButton');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.recordedPaths.size > 0) {
+                    this._saveGestureToLocalStorage(Array.from(this.recordedPaths.entries()));
+                    saveBtn.style.color = '#00FF88'; // Flash green success
+                    setTimeout(() => saveBtn.style.color = '#E3E3E3', 2000);
+                }
+            });
+        }
+
         // Start the visualization loop
         this.startVisualizationLoop();
+
+        // Load external gesture paths from UI
+        this.eventBus.on('loadGestureToStudio', (paths) => {
+            if (!paths) return;
+            this.recordedPaths.clear();
+            paths.forEach(([key, pts]) => {
+                this.recordedPaths.set(key, pts);
+            });
+            this.isRecording = false;
+            // Force panel to expand completely if it's currently shrunk
+            this.animateGestureArea(true);
+            
+            // Switch tab to 'edit' mode to show it is loaded
+            const editTab = document.querySelector('.gesture-tab[data-mode="edit"]');
+            if (editTab) editTab.click();
+        });
 
         // Map gesture commands to real DOM UI actions
         this.eventBus.on('studio:gestureMatched', (match) => {
@@ -217,10 +256,10 @@ class GestureUIManager {
 
         Object.assign(this.canvas.style, {
             position: 'absolute',
-            top: '0',
+            top: '32px', // Height of .gesture-tabs
             left: '0',
             width: '100%',
-            height: '100%',
+            height: 'calc(100% - 32px)',
             pointerEvents: 'none',
             zIndex: '1'
         });
@@ -352,13 +391,29 @@ class GestureUIManager {
      */
     async _syncWithCloud(gesture) {
         try {
-            const response = await fetch('/api/v1/gestures/store', {
+            const userState = this.state?.user || {};
+            const userId = userState.id || userState.sub || 'guest';
+            
+            // Форматируем под UserGestureModel
+            const payload = {
+                id: gesture.id,
+                gesture_name: gesture.name,
+                trajectories: gesture.paths, // массив [handId_fIdx, [pts]]
+                code: "" // can be populated later
+            };
+
+            const response = await fetch(`/api/v1/users/${userId}/gestures`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(gesture)
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('jwtToken') || ''}`
+                },
+                body: JSON.stringify(payload)
             });
             if (response.ok) {
                 console.log("GestureUIManager: Cloud sync SUCCESS for iteration:", gesture.id);
+            } else {
+                console.warn(`GestureUIManager: Cloud sync returned ${response.status}`);
             }
         } catch (error) {
             console.warn("GestureUIManager: Cloud sync failed (offline mode):", error.message);

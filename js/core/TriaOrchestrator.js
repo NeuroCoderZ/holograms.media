@@ -92,7 +92,7 @@ export class TriaOrchestrator {
                 body: JSON.stringify({
                     prompt: userInput,
                     session_id: null,
-                    ui_context: uiContextManager.getSnapshot(),
+                    ui_context: uiContextManager.formatForPrompt(),
                 })
             });
 

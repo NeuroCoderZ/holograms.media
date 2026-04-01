@@ -1,159 +1,181 @@
+// js/ui/GesturesListDisplay.js
 // Manages the display of saved gestures in the right panel.
-
-import axios from 'axios'; // Added import
-// import EventBus from '../core/eventBus';
+import axios from 'axios';
 
 class GesturesListDisplay {
     constructor(eventBus) {
         this.eventBus = eventBus;
-        this.gesturesListContainer = document.getElementById('gesturesListContainer'); // Main container for this view
+        this.gesturesListContainer = document.getElementById('myGesturesView');
 
         if (!this.gesturesListContainer) {
-            console.error("GesturesListDisplay: #gesturesListContainer not found. Cannot display gestures.");
+            console.error("GesturesListDisplay: #myGesturesView not found.");
             return;
         }
 
-        // This module becomes active when RightPanelManager shows its container.
-        // It might listen to an event like 'rightPanelModeChanged' to know when to load/show.
-        // if (this.eventBus) {
-        //     this.eventBus.on('rightPanelModeChanged', (mode) => {
-        //         if (mode === 'gesturesList' && this.gesturesListContainer.style.display !== 'none') {
-        //             this.loadAndRenderGestures();
-        //         }
-        //     });
-        // }
+        if (this.eventBus) {
+            this.eventBus.on('gesturesDataUpdated', () => {
+                this.loadAndRenderGestures();
+            });
+        }
+        
+        // Initial load
+        this.loadAndRenderGestures();
         console.log("GesturesListDisplay initialized.");
     }
 
     async loadAndRenderGestures() {
         if (!this.gesturesListContainer) return;
-        this.gesturesListContainer.innerHTML = '<p>Loading gestures...</p>'; // Loading indicator
 
         try {
-            // Replace '/api/gestures' with your actual backend endpoint
-            const response = await axios.get('/api/gestures');
-            const gestures = response.data.gestures || response.data; // Adjust based on backend response structure
+            // Загружаем из localStorage (самый быстрый локальный источник истины)
+            const savedStr = localStorage.getItem('tria_saved_gestures');
+            let gestures = [];
+            if (savedStr) {
+                gestures = JSON.parse(savedStr);
+            }
 
             if (!Array.isArray(gestures) || gestures.length === 0) {
-                this.gesturesListContainer.innerHTML = '<p>No saved gestures found.</p>';
+                this.gesturesListContainer.innerHTML = '<div style="padding: 20px; color: #888; text-align: center; font-size: 0.9em;">Жаждет первых паттернов... Запишите жест.</div>';
                 return;
             }
-            this.renderGestures(gestures);
+            
+            // Reverse so newest is on top
+            this.renderGestures(gestures.reverse());
         } catch (error) {
-            console.error("Error loading gestures:", error);
-            this.gesturesListContainer.innerHTML = '<p>Failed to load gestures. Please try again later.</p>';
+            console.error("Error loading gestures from local storage:", error);
+            this.gesturesListContainer.innerHTML = '<p>Failed to load gestures.</p>';
         }
     }
 
     renderGestures(gestures) {
         if (!this.gesturesListContainer) return;
-        this.gesturesListContainer.innerHTML = ''; // Clear loading message or previous list
+        this.gesturesListContainer.innerHTML = ''; 
 
-        const ul = document.createElement('ul');
-        ul.className = 'gestures-list';
+        const ul = document.createElement('div');
+        ul.className = 'gestures-grid';
+        ul.style.display = 'flex';
+        ul.style.flexDirection = 'column';
+        ul.style.gap = '10px';
+        ul.style.padding = '10px';
 
-        gestures.forEach((gesture, index) => {
-            const li = document.createElement('li');
-            li.className = 'gesture-list-item';
-            li.dataset.gestureId = gesture.id || `gesture-${index}`;
+        gestures.forEach((gesture) => {
+            const card = document.createElement('div');
+            card.className = 'gesture-card';
+            card.style.background = 'var(--glass-bg)';
+            card.style.border = '1px solid var(--glass-border)';
+            card.style.borderRadius = '12px';
+            card.style.padding = '10px';
+            card.style.cursor = 'pointer';
+            card.style.transition = 'all 0.2s ease';
+            card.dataset.id = gesture.id;
+            
+            card.onmouseenter = () => card.style.background = 'rgba(255, 255, 255, 0.1)';
+            card.onmouseleave = () => card.style.background = 'var(--glass-bg)';
 
-            const title = document.createElement('h4');
-            title.textContent = gesture.name || `Gesture ${gesture.id || index + 1}`;
+            const header = document.createElement('div');
+            header.style.display = 'flex';
+            header.style.justifyContent = 'space-between';
+            header.style.alignItems = 'center';
+            header.style.marginBottom = '8px';
 
-            const miniatureContainer = document.createElement('div');
-            miniatureContainer.className = 'gesture-miniature';
-            // Placeholder for miniature:
-            miniatureContainer.textContent = '[Miniature of gesture trails]';
-            // Actual miniature rendering would involve drawing on a small canvas
-            // based on gesture.trails data. This is a complex task.
-            this.renderMiniature(miniatureContainer, gesture.trails);
+            const title = document.createElement('div');
+            title.style.color = '#E3E3E3';
+            title.style.fontWeight = '500';
+            title.style.fontSize = '14px';
+            title.textContent = gesture.name || gesture.gesture_name || gesture.id;
 
+            const time = document.createElement('div');
+            time.style.color = '#888';
+            time.style.fontSize = '10px';
+            time.textContent = gesture.timestamp ? new Date(gesture.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
-            li.appendChild(title);
-            li.appendChild(miniatureContainer);
-            // Add more details if available (e.g., date, duration)
-            // const details = document.createElement('p');
-            // details.textContent = `Duration: ${(gesture.duration / 1000).toFixed(1)}s`;
-            // li.appendChild(details);
+            header.appendChild(title);
+            header.appendChild(time);
+            card.appendChild(header);
 
-            ul.appendChild(li);
-        });
-        this.gesturesListContainer.appendChild(ul);
-    }
+            const canvas = document.createElement('canvas');
+            canvas.width = 240;
+            canvas.height = 80;
+            canvas.style.width = '100%';
+            canvas.style.height = '60px';
+            canvas.style.background = 'rgba(0,0,0,0.3)';
+            canvas.style.borderRadius = '8px';
+            
+            this.drawMiniature(canvas, gesture.paths || gesture.trajectories);
+            card.appendChild(canvas);
 
-    renderMiniature(container, trails) {
-        // Placeholder for actual miniature rendering.
-        // This would involve creating a small canvas, scaling the trail coordinates,
-        // and drawing the paths.
-        const canvas = document.createElement('canvas');
-        canvas.width = 100; // Example fixed size
-        canvas.height = 50; // Example fixed size
-        canvas.style.border = '1px solid #ccc';
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (trails && Array.isArray(trails)) {
-            ctx.strokeStyle = 'rgba(0, 200, 0, 0.7)';
-            ctx.lineWidth = 1;
-
-            // Find bounds of the gesture to scale it into the canvas
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            trails.forEach(trail => {
-                if (Array.isArray(trail)) {
-                    trail.forEach(point => {
-                        if (point.x < minX) minX = point.x;
-                        if (point.x > maxX) maxX = point.x;
-                        if (point.y < minY) minY = point.y;
-                        if (point.y > maxY) maxY = point.y;
-                    });
+            // Клик -> Отправка в Студию
+            card.addEventListener('click', () => {
+                const paths = gesture.paths || gesture.trajectories;
+                if (!paths) return;
+                
+                // Эмиттим событие в EventBus
+                if (this.eventBus) {
+                    this.eventBus.emit('tria:status', { message: 'Импорт паттерна в двигатель...', pulse: true });
+                    this.eventBus.emit('loadGestureToStudio', paths);
+                    setTimeout(() => this.eventBus.emit('tria:status', { message: 'Жест загружен', pulse: false }), 500);
                 }
             });
 
-            const gestureWidth = maxX - minX;
-            const gestureHeight = maxY - minY;
+            ul.appendChild(card);
+        });
+        
+        this.gesturesListContainer.appendChild(ul);
+    }
 
-            if (gestureWidth > 0 && gestureHeight > 0) {
-                const scaleX = canvas.width / gestureWidth;
-                const scaleY = canvas.height / gestureHeight;
-                const scale = Math.min(scaleX, scaleY) * 0.9; // 90% to leave some margin
+    drawMiniature(canvas, pathsData) {
+        if (!pathsData || !Array.isArray(pathsData) || pathsData.length === 0) return;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Find bounds
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        pathsData.forEach(([key, pts]) => {
+            if (!Array.isArray(pts)) return;
+            pts.forEach(p => {
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.y > maxY) maxY = p.y;
+            });
+        });
 
-                trails.forEach(trail => {
-                    if (Array.isArray(trail) && trail.length > 1) {
-                        ctx.beginPath();
-                        ctx.moveTo(
-                            (trail[0].x - minX) * scale + (canvas.width - gestureWidth * scale) / 2,
-                            (trail[0].y - minY) * scale + (canvas.height - gestureHeight * scale) / 2
-                        );
-                        for (let i = 1; i < trail.length; i++) {
-                            ctx.lineTo(
-                                (trail[i].x - minX) * scale + (canvas.width - gestureWidth * scale) / 2,
-                                (trail[i].y - minY) * scale + (canvas.height - gestureHeight * scale) / 2
-                            );
-                        }
-                        ctx.stroke();
-                    }
-                });
-            } else {
-                 ctx.font = "10px Arial";
-                 ctx.textAlign = "center";
-                 ctx.fillText("No trail data", canvas.width/2, canvas.height/2);
-            }
-        } else {
-            ctx.font = "10px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("Invalid trail data", canvas.width/2, canvas.height/2);
-        }
-        container.innerHTML = ''; // Clear placeholder text
-        container.appendChild(canvas);
+        const w = maxX - minX;
+        const h = maxY - minY;
+        if (w <= 0 || h <= 0) return;
+
+        const pad = 10;
+        const scale = Math.min((canvas.width - pad*2) / w, (canvas.height - pad*2) / h);
+        const offsetX = (canvas.width - w * scale) / 2 - minX * scale;
+        const offsetY = (canvas.height - h * scale) / 2 - minY * scale;
+
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+
+        pathsData.forEach(([key, pts], idx) => {
+            if (!Array.isArray(pts) || pts.length === 0) return;
+            
+            // Randomish color for different fingers
+            const hue = (idx * 40) % 360;
+            ctx.strokeStyle = `hsla(${hue}, 100%, 70%, 0.8)`;
+            
+            ctx.beginPath();
+            pts.forEach((p, i) => {
+                const x = p.x * scale + offsetX;
+                const y = p.y * scale + offsetY;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+        });
     }
 
     destroy() {
-        // Remove event listeners if any
-        // if (this.eventBus) { this.eventBus.off('rightPanelModeChanged', ...); }
         if (this.gesturesListContainer) {
-            this.gesturesListContainer.innerHTML = ''; // Clear content
+            this.gesturesListContainer.innerHTML = ''; 
         }
-        console.log("GesturesListDisplay destroyed.");
     }
 }
 

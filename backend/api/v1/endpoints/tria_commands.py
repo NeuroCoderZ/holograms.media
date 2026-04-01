@@ -29,7 +29,8 @@ async def handle_tria_prompt(
         tria_response_text = await tria_orchestrator.process_user_prompt(
             prompt_data.prompt, 
             context=LLM_CONTEXT,
-            user_email=current_user.get("email", "")
+            user_email=current_user.get("email", ""),
+            ui_context=prompt_data.ui_context
         )
         
         if tria_response_text is None:

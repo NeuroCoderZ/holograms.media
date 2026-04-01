@@ -198,11 +198,40 @@ export default class XrLayout {
             }
         });
         window.dispatchEvent(event);
+
         // Update renderer size and hologram position after toggle
         if (this.state.updateRendererSize) {
             this.state.updateRendererSize();
         }
+
+        // [FIX] Автомасштабирование голограммы синхронно с CSS transition (400ms)
+        // Запускаем rAF-цикл на время анимации для плавного трекинга
+        const TRANSITION_MS = 420; // чуть больше transition duration (0.4s)
+        const startTime = performance.now();
+        const animateLayout = (now) => {
+            updateHologramLayout(this.state);
+            this._syncGestureAreaToHologram();
+            if (now - startTime < TRANSITION_MS) {
+                requestAnimationFrame(animateLayout);
+            }
+        };
+        requestAnimationFrame(animateLayout);
     }
+
+    /**
+     * Синхронизирует ширину и позицию панели жестов с голограммой.
+     * Панель жестов должна быть строго под голограммой и той же ширины.
+     */
+    _syncGestureAreaToHologram() {
+        const gestureArea = this.state.uiElements?.gestureArea;
+        const gridContainer = this.state.uiElements?.gridContainer;
+        if (!gestureArea || !gridContainer) return;
+
+        const rect = gridContainer.getBoundingClientRect();
+        gestureArea.style.width = `${rect.width}px`;
+        gestureArea.style.left = `${rect.left}px`;
+    }
+
 
     getTogglePanelsButton() {
         return this.togglePanelsButtonElement;

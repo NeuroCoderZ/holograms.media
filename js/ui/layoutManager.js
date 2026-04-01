@@ -209,101 +209,89 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
  * positions it correctly based on side panels, and scales the hologram.
  * Can accept override dimensions to avoid DOM reads during animation.
  */
-export function updateHologramLayout(appState, overrideWidth = null, overrideHeight = null) { // Added appState and overrides
+export function updateHologramLayout(appState, overrideWidth = null, overrideHeight = null) {
     if (!gridContainer) gridContainer = document.getElementById('grid-container');
     if (!gridContainer || !appState.renderer || !appState.hologramRendererInstance || typeof appState.hologramRendererInstance.getHologramPivot !== 'function') {
-        console.warn('[LayoutManager] Skipping updateHologramLayout: Essential elements not ready or appState missing.');
+        console.warn('[LayoutManager] Skipping updateHologramLayout: Essential elements not ready.');
         return;
     }
-
-    let containerWidth, containerHeight;
-
-    if (overrideWidth !== null && overrideHeight !== null) {
-        containerWidth = overrideWidth;
-        containerHeight = overrideHeight;
-    } else {
-        // --- START NEW CODE ---
-        // Ensure gridContainer is valid and has dimensions before trying to read them
-        if (!gridContainer || typeof gridContainer.clientWidth === 'undefined' || typeof gridContainer.clientHeight === 'undefined') {
-            console.warn('[LayoutManager] Skipping layout update: gridContainer is not valid or does not have clientWidth/Height properties.');
-            return;
-        }
-
-        containerWidth = gridContainer.clientWidth;
-        containerHeight = gridContainer.clientHeight;
-
-        if (!containerWidth || !containerHeight || isNaN(containerWidth) || isNaN(containerHeight)) {
-            console.warn('[LayoutManager] Skipping layout update due to invalid container dimensions (0 or NaN). W:', containerWidth, 'H:', containerHeight);
-            return; // EXIT FUNCTION
-        }
-        // --- END NEW CODE ---
-    }
-
-    const hologramPivot = appState.hologramRendererInstance.getHologramPivot();
-
-    // Check if hologramPivot was successfully retrieved before using it
-    if (!hologramPivot) {
-        console.warn('[LayoutManager] Skipping updateHologramLayout: Hologram pivot not available.');
-        return;
-    }
-
-    if (containerWidth <= 0 || containerHeight <= 0) {
-        console.warn('[LayoutManager] Invalid gridContainer dimensions for pivot scaling. W:', containerWidth, 'H:', containerHeight);
-        return;
-    }
-
-    // Update renderer and camera to match current container size (redundant if called by TWEEN onUpdate, but safe)
-    updateRendererAndCamera(appState, containerWidth, containerHeight); // Pass appState
-
-    // Scale Protection (v0.19.043): containerWidth уже учитывает панели через TWEEN анимацию
-    // Phantom Margins (v0.19.036): 90% of available space → 5% отступы сверху/снизу/слева/справа
-    const scaleH = (containerHeight * 0.90) / HOLOGRAM_REFERENCE_HEIGHT;
-    const scaleW = (containerWidth * 0.90) / 256;
-    
-    let targetScaleValue = Math.min(scaleH, scaleW);
-    targetScaleValue = Math.max(targetScaleValue, 0.01);
-
-    // xOffset = 0 — контейнер уже центрирован между панелями через TWEEN
-    const xOffset = 0;
 
     const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const isMobile = windowWidth <= 768 || windowHeight > windowWidth;
 
-    if (windowWidth > 768) {
-        // Sync Gesture Area width to match the hologram
-        const visualWidth = 256 * targetScaleValue;
-        const gestureArea = document.getElementById('gesture-area');
-        if (gestureArea) {
-            gestureArea.style.setProperty('--gesture-width', `${visualWidth}px`);
-            gestureArea.style.width = `${visualWidth}px`;
-            gestureArea.style.removeProperty('left');
-            gestureArea.style.removeProperty('transform');
-            gestureArea.style.margin = '0';
+    // [FIX] Вычисляем доступную ширину от реальных позиций панелей
+    // Минимальный отступ от каждой панели: 5% от windowWidth
+    const MIN_SIDE_MARGIN = windowWidth * 0.05;
+    const MIN_VERT_MARGIN  = windowHeight * 0.05;
+
+    let leftEdge = 0;
+    let rightEdge = windowWidth;
+
+    if (!isMobile) {
+        const leftPanel = appState.uiElements?.leftPanel;
+        const rightPanel = appState.uiElements?.rightPanel;
+
+        if (leftPanel) {
+            const r = leftPanel.getBoundingClientRect();
+            leftEdge = r.right; // правый край левой панели
         }
-    } else {
-        // Reset Gesture Area for Mobile
-        const gestureArea = document.getElementById('gesture-area');
-        if (gestureArea) {
-            gestureArea.style.removeProperty('--gesture-offset');
-            gestureArea.style.removeProperty('--gesture-width');
+        if (rightPanel) {
+            const r = rightPanel.getBoundingClientRect();
+            rightEdge = r.left; // левый край правой панели
         }
     }
 
-    // Set centering and vertical offset
+    // Доступная ширина между панелями — с отступами 5%
+    const availableWidth = Math.max(1, rightEdge - leftEdge - 2 * MIN_SIDE_MARGIN);
+    const availableHeight = Math.max(1, windowHeight - 2 * MIN_VERT_MARGIN);
+
+    let containerWidth = overrideWidth ?? availableWidth;
+    let containerHeight = overrideHeight ?? availableHeight;
+
+    if (!containerWidth || !containerHeight || isNaN(containerWidth) || isNaN(containerHeight)) {
+        console.warn('[LayoutManager] Invalid container dimensions. W:', containerWidth, 'H:', containerHeight);
+        return;
+    }
+
+    // Позиционируем gridContainer точно в пространстве между панелями
+    const containerLeft = leftEdge + MIN_SIDE_MARGIN;
+    const containerTop  = MIN_VERT_MARGIN;
+
+    gridContainer.style.position = 'fixed';
+    gridContainer.style.left     = `${containerLeft}px`;
+    gridContainer.style.top      = `${containerTop}px`;
+    gridContainer.style.width    = `${containerWidth}px`;
+    gridContainer.style.height   = `${containerHeight}px`;
+
+    const hologramPivot = appState.hologramRendererInstance.getHologramPivot();
+    if (!hologramPivot) return;
+
+    updateRendererAndCamera(appState, containerWidth, containerHeight);
+
+    // 90% внутри контейнера — так голограмма никогда не упирается в края
+    const scaleH = (containerHeight * 0.90) / HOLOGRAM_REFERENCE_HEIGHT;
+    const scaleW = (containerWidth  * 0.90) / 256;
+    let targetScaleValue = Math.max(Math.min(scaleH, scaleW), 0.01);
+
     const verticalCenterOffset = (containerHeight / 2) - (128 * targetScaleValue);
-    
+
     if (appState.isXRMode) {
         hologramPivot.scale.set(1, 1, 1);
         hologramPivot.position.set(0, 0, 0);
     } else {
         hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
-        hologramPivot.position.set(xOffset / targetScaleValue, verticalCenterOffset / targetScaleValue, 0);
+        hologramPivot.position.set(0, verticalCenterOffset / targetScaleValue, 0);
     }
 
-    // The desktop panel logic (getLeftPanelWidth, etc.) is removed from here as the
-    // container's left/width is now managed by the animation/initial setup logic.
-    // This function now assumes gridContainer is already correctly sized and positioned.
-
-    // console.log('[LayoutManager] Hologram pivot updated to fit new container size. Scale:', targetScaleValue);
+    // Синхронизируем панель жестов: та же ширина, строго под голограммой
+    const visualWidth = 256 * targetScaleValue;
+    const gestureArea = document.getElementById('gesture-area') || appState.uiElements?.gestureArea;
+    if (gestureArea) {
+        gestureArea.style.width  = `${visualWidth}px`;
+        gestureArea.style.left   = `${containerLeft + (containerWidth - visualWidth) / 2}px`;
+        gestureArea.style.setProperty('--gesture-width', `${visualWidth}px`);
+    }
 }
 
 /**

@@ -8,6 +8,7 @@ class TriaPromptRequest(BaseModel):
     """
     prompt: str
     session_id: Optional[str] = None
+    ui_context: Optional[str] = None
 
 class TriaPromptResponse(BaseModel):
     """

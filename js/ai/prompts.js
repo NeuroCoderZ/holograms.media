@@ -46,7 +46,7 @@ export async function sendPrompt(promptText, passedState) { // Added passedState
       model: selectedModel,
       context: {
         branch: passedState.currentBranch || 'main',
-        ui_context: uiContextManager.getSnapshot(),
+        ui_context: uiContextManager.formatForPrompt(),
       }
     };
     
