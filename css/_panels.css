@@ -647,14 +647,14 @@ div[id*="input-row"] {
   flex-shrink: 0 !important;
 }
 
-/* Микрофон и Отправить — фиксированный размер */
+/* Микрофон и Отправить — фиксированный размер, квадратные со скруглением */
 #micButton,
 #submitChatMessage {
   flex: 0 0 auto !important;
   width: clamp(32px, 4dvh, 40px) !important;
   height: clamp(32px, 4dvh, 40px) !important;
-  padding: clamp(0.4rem, 0.8dvh, 0.6rem) !important;
-  border-radius: 50% !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
 }
 
 /* Селектор LLM — занимает всё пространство между кнопками */

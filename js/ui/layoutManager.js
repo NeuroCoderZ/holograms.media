@@ -310,7 +310,7 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     const gestureArea = document.getElementById('gesture-area') || appState.uiElements?.gestureArea;
     if (gestureArea) {
         gestureArea.style.width  = `${visualWidth}px`;
-        gestureArea.style.left   = `${containerLeft + (containerWidth - visualWidth) / 2}px`;
+        gestureArea.style.left   = `${(containerWidth - visualWidth) / 2}px`;
         gestureArea.style.setProperty('--gesture-width', `${visualWidth}px`);
     }
 }
