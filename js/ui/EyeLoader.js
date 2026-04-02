@@ -229,7 +229,7 @@ export class EyeLoader {
 
         ctx.save();
 
-        // --- Внешний ореол (glass extrusion effect) ---
+        // --- Внешний ореол (чёрный вместо фиолетового) ---
         const glow = ctx.createRadialGradient(x, y, R * 0.9, x, y, R * 1.6);
         glow.addColorStop(0, 'rgba(0, 0, 0, 0.15)');
         glow.addColorStop(0.5, 'rgba(0, 0, 0, 0.05)');
