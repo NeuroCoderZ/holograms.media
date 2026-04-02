@@ -7,11 +7,14 @@
 ## КРИТИЧЕСКИЕ КОНСТАНТЫ
 
 ```
+# LLM Модели (Gemini 3 series, НЕ 2.5!)
+MAIN_MODEL    = "gemini-3-flash-preview"           # Основная модель чата
+SUB_MODEL     = "gemini-3.1-flash-lite-preview"    # Darwin Critic (выбор лучшего ответа)
+BACKUP_MODEL  = "mistral-large-latest"            # Fallback при Gemini 429
+
+# Эмбеддинг модель
 EMBED_MODEL   = "gemini-embedding-2-preview"
 EMBED_DIM     = 3072  ← НИКОГДА не менять. Коллекция tria_knowledge_gemini создана с 3072d.
-MAIN_MODEL    = "gemini-3-flash-preview"
-SUB_MODEL     = "gemini-3.1-flash-lite-preview"
-BACKUP_MODEL  = "mistral-small-latest"
 
 BASE_FREQ     = 16.352 Гц (C0)
 SEMITONES     = 128
@@ -90,15 +93,11 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 
 ---
 
-## ИЗВЕСТНЫЕ ПРОБЛЕМЫ (v0.20.267)
+## ИЗВЕСТНЫЕ ПРОБЛЕМЫ
 
 | Компонент | Проблема | Статус |
 |-----------|----------|--------|
-| Gemini API 429 | Лимит квоты | ✅ Fallback на Mistral |
-| Столбцы при паузе | 2D-схлопывание | ✅ _frozenFrame |
-| JWT expiry | WebSocket 1006 | ✅ Abort reconnect + red pulse |
-| docs/RU/ | Устаревшие описания | ✅ Обновлены 02,03,04,06,07 |
-| Z-offset столбцов | Парящие столбцы | ✅ GRID_DEPTH=256, anchor z=0 |
+| Gemini API 429 | Лимит квоты | 🔄 В процессе |
 | Enkephalon WASM | Stub mode active | 🔮 Требуется полная сборка WASM |
 
 ---
