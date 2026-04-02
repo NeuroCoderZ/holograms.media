@@ -47,10 +47,15 @@ eventBus.on('audio:spectralData', (data) => {
     // Если данных нет, даже не тратим время
     if (!data.levels || data.levels[0] === undefined) return;
 
-    // DEBUG: Один раз подтверждаем связь
-    if (!window._pipelineVerified) {
-        console.log('[AudioProcessing] 🟢 First Spectral Data received from EventBus!');
-        window._pipelineVerified = true;
+    // DIAGNOSTIC: Что приходит от CWT Worklet?
+    if (!window._cwtInputLog) {
+        console.log('[AudioProcessing] 📥 CWT Input raw:', {
+            levelsSample: data.levels.slice(0, 5),
+            anglesSample: data.angles ? data.angles.slice(0, 5) : 'no angles',
+            maxLevel: Math.max(...data.levels),
+            minLevel: Math.min(...data.levels)
+        });
+        window._cwtInputLog = true;
     }
 
     const modulation = state.multimodal?.gestureModulationData;
