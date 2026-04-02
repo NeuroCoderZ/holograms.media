@@ -10,7 +10,11 @@
 # LLM Модели (Gemini 3 series, НЕ 2.5!)
 MAIN_MODEL    = "gemini-3-flash-preview"           # Основная модель чата
 SUB_MODEL     = "gemini-3.1-flash-lite-preview"    # Darwin Critic (выбор лучшего ответа)
-BACKUP_MODEL  = "mistral-large-latest"            # Fallback при Gemini 429
+BACKUP_MODEL  = "mistral-large-latest"            # Fallback при Gemini 429 (Mistral Large 3)
+
+# Mistral Stack
+MISTRAL_MAIN  = "mistral-large-latest"            # Основная Mistral
+MISTRAL_SUB   = "mistral-small-latest"            # Субагент Mistral
 
 # Эмбеддинг модель
 EMBED_MODEL   = "gemini-embedding-2-preview"

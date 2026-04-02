@@ -408,6 +408,12 @@ class ChatService:
             session_id=session_id, user_id=user_id, limit=12
         )
         conversation_context = _build_conversation_context(history_for_llm)
+
+        # Extract selected model from metadata
+        selected_model = (metadata or {}).get("llm_model", "gemini-3-flash-preview")
+        use_mistral = selected_model and "mistral" in selected_model.lower()
+        model_context = f"selected_model={selected_model}"
+
         try:
             # Transform history to list of dicts for the orchestrator
             history_list = [
@@ -419,6 +425,7 @@ class ChatService:
                 user_email=user_email,
                 history=history_list,
                 user_id=user_id,
+                context=model_context,  # Pass model info to orchestrator
             ):
                 full_response += token
                 yield "data: " + json.dumps({"token": token}) + "\n\n"

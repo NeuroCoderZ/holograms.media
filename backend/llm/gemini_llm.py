@@ -91,7 +91,7 @@ async def get_gemini_response_stream(
             else None,
         )
 
-        async for chunk in await client.aio.models.generate_content_stream(
+        async for chunk in client.aio.models.generate_content_stream(
             model=model_id or "gemini-3-flash-preview", contents=prompt, config=config
         ):
             # 1. Сначала проверяем мысли (thought process)
