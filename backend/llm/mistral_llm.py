@@ -1,10 +1,13 @@
 import logging
+import json
 from typing import List, Dict, Any, Optional
-from mistralai import Mistral
+import httpx
 from backend.core.config import settings
 from backend.core.models import ChatMessageDB
 
 logger = logging.getLogger(__name__)
+
+MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 
 
 async def get_mistral_response(
@@ -15,31 +18,27 @@ async def get_mistral_response(
     user_message: str = "",
     history: Optional[List[ChatMessageDB]] = None,
 ) -> str:
-    """Gets response from Mistral using the official Python client.
-    Compatible signature with get_gemini_response for orchestrator use.
-    """
-    # Support both calling conventions
-    msg = user_message or prompt
+    """Gets response from Mistral via direct HTTP API (SDK-independent)."""
     if not settings.MISTRAL_API_KEY:
         logger.warning("MISTRAL_API_KEY is not set. Returning stub response.")
         return f"Триа [Mistral Stub]: ИИ-модуль не подключен."
 
-    try:
-        client = Mistral(api_key=settings.MISTRAL_API_KEY)
+    # Support both calling conventions
+    msg = user_message or prompt
 
+    try:
         model = model_id or "mistral-large-latest"
 
-        MAX_MISTRAL_CHARS = 400000
-        if len(system_instruction) > MAX_MISTRAL_CHARS:
-            system_instruction = (
-                system_instruction[:MAX_MISTRAL_CHARS] + "\n...[TRUNCATED]..."
-            )
-
-        messages = (
-            [{"role": "system", "content": system_instruction}]
-            if system_instruction
-            else []
+        MAX_CHARS = 400000
+        sys_instr = (
+            system_instruction[:MAX_CHARS]
+            if len(system_instruction) > MAX_CHARS
+            else system_instruction
         )
+
+        messages = []
+        if sys_instr:
+            messages.append({"role": "system", "content": sys_instr})
 
         if history:
             for msg_item in history:
@@ -48,15 +47,38 @@ async def get_mistral_response(
 
         messages.append({"role": "user", "content": msg})
 
-        response = await client.chat.stream_async(
-            model=model,
-            messages=messages,
-        )
+        # Direct HTTP streaming — no SDK dependency
+        headers = {
+            "Authorization": f"Bearer {settings.MISTRAL_API_KEY}",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+        }
+
+        payload = {
+            "model": model,
+            "messages": messages,
+            "stream": True,
+        }
 
         full_text = ""
-        async for chunk in response:
-            if chunk.data.choices and chunk.data.choices[0].delta.content is not None:
-                full_text += chunk.data.choices[0].delta.content
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            async with client.stream(
+                "POST", MISTRAL_API_URL, headers=headers, json=payload
+            ) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data_str = line[6:]
+                        if data_str.strip() == "[DONE]":
+                            break
+                        try:
+                            data = json.loads(data_str)
+                            delta = data.get("choices", [{}])[0].get("delta", {})
+                            content = delta.get("content")
+                            if content:
+                                full_text += content
+                        except (json.JSONDecodeError, KeyError, IndexError):
+                            continue
 
         return full_text
 
