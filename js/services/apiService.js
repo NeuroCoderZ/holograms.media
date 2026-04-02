@@ -193,3 +193,68 @@ export async function getPresignedUrl(filename, contentType, idToken) {
 // Например:
 // export async function getGestures(userId, idToken) { ... }
 // export async function getHolograms(userId, idToken) { ... }
+
+/**
+ * Загружает историю чата для указанной сессии.
+ * @param {string} sessionId - ID чат-сессии
+ * @param {string} idToken - Firebase ID токен
+ * @param {number} limit - Количество сообщений (по умолчанию 50)
+ * @returns {Promise<Array>} - Массив сообщений
+ */
+export async function getChatHistory(sessionId, idToken, limit = 50) {
+    const historyUrl = `${API_BASE_URL}/api/v1/chat/users/me/chat_sessions/${sessionId}/history?limit=${limit}`;
+    console.log(`[apiService] Fetching chat history from ${historyUrl}`);
+
+    try {
+        const response = await fetch(historyUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+            console.error(`[apiService] History request failed:`, errorData);
+            throw new Error(`History request failed: ${errorData.detail || response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('[apiService] Error fetching chat history:', error);
+        return [];
+    }
+}
+
+/**
+ * Получает список чат-сессий пользователя.
+ * @param {string} idToken - Firebase ID токен
+ * @param {number} limit - Количество сессий (по умолчанию 10)
+ * @returns {Promise<Array>} - Массив сессий
+ */
+export async function listChatSessions(idToken, limit = 10) {
+    const sessionsUrl = `${API_BASE_URL}/api/v1/chat/users/me/chat_sessions?limit=${limit}`;
+    console.log(`[apiService] Fetching chat sessions from ${sessionsUrl}`);
+
+    try {
+        const response = await fetch(sessionsUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+            console.error(`[apiService] Sessions request failed:`, errorData);
+            throw new Error(`Sessions request failed: ${errorData.detail || response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('[apiService] Error fetching chat sessions:', error);
+        return [];
+    }
+}

@@ -249,13 +249,13 @@ export class EyeLoader {
         ctx.fillStyle = gradScl;
         ctx.fill();
 
-        // --- Радужка (чёткая, без blur, +30% яркость) ---
+        // --- Радужка (чёткая, без blur, -10% яркость от предыдущего +30%) ---
         const gradIris = ctx.createRadialGradient(x, y, 0, x, y, R * 0.65);
-        gradIris.addColorStop(0,    '#7d7dff');
-        gradIris.addColorStop(0.15, '#5a5ae6');
-        gradIris.addColorStop(0.55, '#3838d0');
-        gradIris.addColorStop(0.85, '#2020b0');
-        gradIris.addColorStop(1,    '#101060');
+        gradIris.addColorStop(0,    '#6e6eeb');
+        gradIris.addColorStop(0.15, '#5151d1');
+        gradIris.addColorStop(0.55, '#2f2fbc');
+        gradIris.addColorStop(0.85, '#1b1b9e');
+        gradIris.addColorStop(1,    '#0e0e55');
         ctx.beginPath();
         ctx.arc(x, y, R * 0.65, 0, Math.PI * 2);
         ctx.fillStyle = gradIris;

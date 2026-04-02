@@ -91,6 +91,19 @@ eventBus.on('audio:spectralData', (data) => {
         state.audio.latestAudioData = payload;
     }
 
+    // DIAGNOSTIC: Log payload before emit
+    if (!window._audioDataEmittedLog) {
+        console.log('[AudioProcessing] 📤 Emit audioData:', {
+            levelsSample: payload.levels.slice(0, 5),
+            pansSample: payload.pans.slice(0, 5),
+            maxLevel: Math.max(...payload.levels),
+            minLevel: Math.min(...payload.levels),
+            stateAudioIsPlaying: state.audio?.isPlaying,
+            stateAudioActiveSource: state.audio?.activeSource
+        });
+        window._audioDataEmittedLog = true;
+    }
+
     // Отправляем в рендерер
     eventBus.emit('audioData', payload);
 });

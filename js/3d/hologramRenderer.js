@@ -47,7 +47,18 @@ export class HologramRenderer {
 
     this.eventBus.on('audioData', (data) => { 
         if (data && data.levels) {
-            this.latestCwtData = data; 
+            this.latestCwtData = data;
+            // DIAGNOSTIC: Log received data
+            if (!window._audioDataReceivedLog) {
+                console.log('[HologramRenderer] 📥 Received audioData:', {
+                    levelsSample: data.levels.slice(0, 5),
+                    pansSample: data.pans.slice(0, 5),
+                    maxLevel: Math.max(...data.levels),
+                    minLevel: Math.min(...data.levels),
+                    stateAudioLatest: !!state.audio?.latestAudioData
+                });
+                window._audioDataReceivedLog = true;
+            }
         }
     });
 

@@ -115,18 +115,19 @@
 
 .thinking-stage {
     font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 1);
     margin-bottom: 4px;
 }
 
 .stage-label {
     font-weight: 500;
+    opacity: 1;
 }
 
 .stage-detail {
     display: block;
     font-size: 0.75rem;
-    opacity: 0.5;
+    opacity: 1;
     padding-left: 18px;
     font-style: italic;
     white-space: pre-wrap;
