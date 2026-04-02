@@ -281,11 +281,11 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     const rightPanel = appState.uiElements?.rightPanel;
     const leftW = leftPanel && leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20;
     const rightW = rightPanel && rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20;
-    const availableWidth = containerWidth - leftW - rightW;
+    const panelGap = containerWidth - leftW - rightW;
 
     // 90% доступного пространства между панелями — голограмма не касается краёв панелей
     const scaleH = (containerHeight * 0.90) / HOLOGRAM_REFERENCE_HEIGHT;
-    const scaleW = (availableWidth  * 0.90) / 256;
+    const scaleW = (panelGap * 0.90) / 256;
     let targetScaleValue = Math.max(Math.min(scaleH, scaleW), 0.01);
 
     // Центрируем голограмму между панелями
