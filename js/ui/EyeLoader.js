@@ -239,11 +239,11 @@ export class EyeLoader {
         ctx.fillStyle = glow;
         ctx.fill();
 
-        // --- Склера (белок) ---
+        // --- Склера (белок) — чёрный, не серый ---
         const gradScl = ctx.createRadialGradient(x - R * 0.1, y - R * 0.1, 0, x, y, R);
-        gradScl.addColorStop(0, '#e8e8f8');
-        gradScl.addColorStop(0.7, '#c0c0e0');
-        gradScl.addColorStop(1, '#8080a0');
+        gradScl.addColorStop(0, '#202020');
+        gradScl.addColorStop(0.7, '#151515');
+        gradScl.addColorStop(1, '#080808');
         ctx.beginPath();
         ctx.arc(x, y, R, 0, Math.PI * 2);
         ctx.fillStyle = gradScl;
