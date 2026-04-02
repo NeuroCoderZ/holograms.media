@@ -61,21 +61,22 @@ export class EyeLoader {
             position: 'absolute',
             left: '0',
             width: '100%',
-            height: '50%', // EXACT 50%
+            height: '50%',
             zIndex: '20',
             backdropFilter: 'blur(20px)',
             webkitBackdropFilter: 'blur(20px)',
+            // Чёрное стекло вместо фиолетового — как боковые панели
             background: isUpper
-                ? 'linear-gradient(to bottom, rgba(8,8,18,0.99) 75%, rgba(15,15,35,0.88) 100%)'
-                : 'linear-gradient(to top,    rgba(8,8,18,0.99) 75%, rgba(15,15,35,0.88) 100%)',
+                ? 'linear-gradient(to bottom, rgba(0,0,0,0.98) 75%, rgba(5,5,10,0.90) 100%)'
+                : 'linear-gradient(to top,    rgba(0,0,0,0.98) 75%, rgba(5,5,10,0.90) 100%)',
             transition: 'transform 0.9s cubic-bezier(0.19, 1, 0.22, 1)',
             border: 'none',
-            boxShadow: 'none', // Removed shadow at seam
+            boxShadow: 'none',
             margin: '0',
             padding: '0'
         });
-        lid.style.top = isUpper ? '0' : 'auto'; // EXACT 0
-        lid.style.bottom = isUpper ? 'auto' : '0'; // EXACT 0
+        lid.style.top = isUpper ? '0' : 'auto';
+        lid.style.bottom = isUpper ? 'auto' : '0';
         lid.style.transformOrigin = isUpper ? 'top center' : 'bottom center';
         return lid;
     }
@@ -134,14 +135,10 @@ export class EyeLoader {
     triggerSaccade() {
         if (this.phase !== 'saccade') return;
         const rIris = Math.min(this.width, this.height) * 0.15;
-        const maxOffset = rIris * 2.5;
-        this._targetX = this.cx + (Math.random() - 0.5) * maxOffset * 2;
-        this._targetY = this.cy + (Math.random() - 0.5) * maxOffset * 2;
-        clearTimeout(this._saccadeReturnTimer);
-        this._saccadeReturnTimer = setTimeout(() => {
-            this._targetX = this.cx;
-            this._targetY = this.cy;
-        }, 120);
+        const maxOffsetH = rIris * 3.0;  // горизонтально — 1.5 диаметра (3 радиуса)
+        const maxOffsetV = rIris * 2.0;  // вертикально — 1 диаметр
+        this._targetX = this.cx + (Math.random() - 0.5) * maxOffsetH;
+        this._targetY = this.cy + (Math.random() - 0.5) * maxOffsetV;
     }
 
     setProgress(p) {
@@ -226,16 +223,16 @@ export class EyeLoader {
 
     _drawEye(x, y) {
         const ctx = this.ctx;
-        // УВЕЛИЧЕННЫЙ ГЛАЗ: 0.25 от экрана (был 0.15)
-        const R = Math.min(this.width, this.height) * 0.25; 
+        // УВЕЛИЧЕННЫЙ ГЛАЗ: +15% к базовому размеру
+        const R = Math.min(this.width, this.height) * 0.2875; // 0.25 * 1.15 = 0.2875
         const rPupil = R * 0.38;
 
         ctx.save();
 
         // --- Внешний ореол (glass extrusion effect) ---
         const glow = ctx.createRadialGradient(x, y, R * 0.9, x, y, R * 1.6);
-        glow.addColorStop(0, 'rgba(130, 100, 255, 0.18)');
-        glow.addColorStop(0.5, 'rgba(80, 60, 180, 0.07)');
+        glow.addColorStop(0, 'rgba(0, 0, 0, 0.15)');
+        glow.addColorStop(0.5, 'rgba(0, 0, 0, 0.05)');
         glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.beginPath();
         ctx.arc(x, y, R * 1.6, 0, Math.PI * 2);
@@ -246,7 +243,7 @@ export class EyeLoader {
         const gradScl = ctx.createRadialGradient(x - R * 0.1, y - R * 0.1, 0, x, y, R);
         gradScl.addColorStop(0, '#e8e8f8');
         gradScl.addColorStop(0.7, '#c0c0e0');
-        gradScl.addColorStop(1, '#5050a0');
+        gradScl.addColorStop(1, '#8080a0');
         ctx.beginPath();
         ctx.arc(x, y, R, 0, Math.PI * 2);
         ctx.fillStyle = gradScl;
