@@ -2,6 +2,7 @@
 
 import { sendChatMessage as apiSendChatMessage } from '../services/apiService.js';
 import { getJwtToken } from '../core/auth.js';
+import { getChatHistory } from '../services/apiService.js';
 
 let isChatInitialized = false;
 
@@ -19,6 +20,47 @@ export function initializeTriaChat() {
   }
 
   isChatInitialized = true;
+
+  // --- ЗАГРУЗКА ИСТОРИИ ЧАТА (xMemory RAG) ---
+  const loadChatHistory = async () => {
+    try {
+      const idToken = await getJwtToken();
+      if (!idToken) {
+        console.warn("[Chat] Нет JWT токена, история не загружена.");
+        return;
+      }
+
+      const sessions = await import('../services/apiService.js').then(m => m.listChatSessions(idToken));
+      if (!sessions || sessions.length === 0) {
+        console.log("[Chat] Нет сохранённых сессий.");
+        return;
+      }
+
+      // Берём последнюю сессию
+      const lastSession = sessions[0];
+      console.log(`[Chat] Загружаю историю из сессии: ${lastSession.id}`);
+
+      const history = await getChatHistory(lastSession.id, idToken);
+      if (!history || history.length === 0) {
+        console.log("[Chat] История пуста.");
+        return;
+      }
+
+      // Добавляем историю в чат (без анимации)
+      for (const msg of history) {
+        const sender = msg.role === 'user' ? 'user' : 'tria';
+        const content = msg.content || msg.message?.content || '';
+        if (content) {
+          appendMessage(content, sender);
+        }
+      }
+      console.log(`[Chat] Загружено ${history.length} сообщений из истории.`);
+    } catch (err) {
+      console.error("[Chat] Ошибка загрузки истории:", err);
+    }
+  };
+
+  loadChatHistory();
 
   /**
    * Добавляет сообщение в контейнер. 
