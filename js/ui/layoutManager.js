@@ -245,17 +245,14 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     const availableWidth = Math.max(1, rightEdge - leftEdge);
     const availableHeight = Math.max(1, windowHeight);
 
-    let containerWidth = overrideWidth ?? availableWidth;
-    let containerHeight = overrideHeight ?? availableHeight;
+    // Позиционируем gridContainer на ВСЮ страницу — не ресайзим при анимации панелей
+    const containerWidth = window.innerWidth;
+    const containerHeight = window.innerHeight;
 
     if (!containerWidth || !containerHeight || isNaN(containerWidth) || isNaN(containerHeight)) {
         console.warn('[LayoutManager] Invalid container dimensions. W:', containerWidth, 'H:', containerHeight);
         return;
     }
-
-    // Позиционируем gridContainer на ВСЮ страницу — не ресайзим при анимации панелей
-    const containerWidth = window.innerWidth;
-    const containerHeight = window.innerHeight;
 
     // НЕ меняем размер canvas если он уже правильный (предотвращает мигание при анимации)
     const currentW = parseFloat(gridContainer.style.width) || 0;
