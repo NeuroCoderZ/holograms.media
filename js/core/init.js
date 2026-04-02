@@ -491,7 +491,9 @@ export async function initCore() {
       const TriaCollectiveService = (await import('../tria/TriaCollectiveService.js')).default;
       state.collective = new TriaCollectiveService();
       // Подключаемся к сигнальному серверу (URL из конфига или дефолт)
-      await state.collective.connect(state.config?.signalingUrl || 'wss://dev.holograms.media/ws/signaling');
+      // FIX: Backend expects /ws/signaling/{room_id}, not just /ws/signaling
+      const signalingUrl = state.config?.signalingUrl || 'wss://dev.holograms.media/ws/signaling/default_room';
+      await state.collective.connect(signalingUrl);
 
       state.lastSoma = null; // Буфер между тактами
 
