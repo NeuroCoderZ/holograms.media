@@ -8,13 +8,12 @@ console.log('🔍 Running BasilaQ Pre-Deploy Health Check...\n');
 
 let hasErrors = false;
 
-// 1. Check WASM core
-const wasmPath = path.join(ROOT, 'enkephalon_wasm', 'pkg', 'enkephalon_wasm_bg.wasm');
+// 1. Check CWT WASM core
+const wasmPath = path.join(ROOT, 'holocore', 'pkg', 'holographic_core_bg.wasm');
 if (!fs.existsSync(wasmPath)) {
-    console.warn('⚠️  [WARNING] enkephalon_wasm_bg.wasm not found! The audio analyzer might fallback to JS. Please build the WASM module first.');
-    // Not failing the build because fallback exists, but warning.
+    console.warn('⚠️  [WARNING] holographic_core_bg.wasm not found! Please build the WASM module.');
 } else {
-    console.log('✅ Found Rust WASM core.');
+    console.log('✅ Found CWT WASM core (holographic_core).');
 }
 
 // 2. Check UI Context hooks in HTML
