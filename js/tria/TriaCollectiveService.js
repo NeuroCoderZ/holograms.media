@@ -45,13 +45,14 @@ export default class TriaCollectiveService {
         this._signaling = signalingUrl;
         this._ws.send(JSON.stringify({ type: 'register', peerId: this._selfId }));
         
-        // Heartbeat (G-2v)
+        // Heartbeat (G-2v) - 20s for Koyeb proxy timeout safety
         if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
         this._heartbeatInterval = setInterval(() => {
             if (this._ws && this._ws.readyState === WebSocket.OPEN) {
                 this._ws.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
+                console.log('[TriaCollective] Sent ping');
             }
-        }, 30000); // 30s for Koyeb/Cloudflare
+        }, 20000);
         
         resolve({ ok: true, url: signalingUrl });
       };

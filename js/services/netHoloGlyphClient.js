@@ -115,12 +115,14 @@ class NetHoloGlyphClient {
             if (this.fallbackActive) this.stopFallbackPolling();
             this.sendMessage({ type: 'join', userId: this.userId });
 
-            // Start heartbeat ping every 30 seconds
+            // Start heartbeat ping every 20 seconds (Koyeb proxy timeout is ~60s, use 20s for safety)
+            if (this.pingIntervalId) clearInterval(this.pingIntervalId);
             this.pingIntervalId = setInterval(() => {
                 if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-                    this.sendMessage({ type: 'ping' });
+                    this.websocket.send(JSON.stringify({ type: 'ping' }));
+                    console.log('[NetHoloGlyphClient] Sent ping');
                 }
-            }, 30000);
+            }, 20000);
         };
 
         this.websocket.onmessage = async (event) => {

@@ -91,9 +91,12 @@ async def get_gemini_response_stream(
             else None,
         )
 
-        async for chunk in client.aio.models.generate_content_stream(
+        # IMPORTANT: generate_content_stream returns a coroutine that must be awaited first
+        # Then we iterate over the response object, not the coroutine itself
+        stream_response = await client.aio.models.generate_content_stream(
             model=model_id or "gemini-3-flash-preview", contents=prompt, config=config
-        ):
+        )
+        async for chunk in stream_response:
             # 1. Сначала проверяем мысли (thought process)
             if chunk.candidates:
                 content = chunk.candidates[0].content

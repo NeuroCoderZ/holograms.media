@@ -166,11 +166,22 @@ export class HologramRenderer {
     }
 
     // Guard: если вообще нет данных — не рисуем
-    if (!audioData) return;
+    if (!audioData) {
+        console.warn('[HologramRenderer] No audio data for rendering:', {
+            hasFrozen: !!this._frozenFrame,
+            hasLatest: !!this.latestCwtData,
+            hasStateAudio: !!(state.audio?.latestAudioData),
+            latestKeys: this.latestCwtData ? Object.keys(this.latestCwtData) : 'null',
+            stateKeys: state.audio?.latestAudioData ? Object.keys(state.audio.latestAudioData) : 'null'
+        });
+        return;
+    }
 
     const dummy = this._dummy;
-    const dbLevels = audioData?.dbLevels || audioData?.levels || new Float32Array(256).fill(-128);
-    const panAngles = audioData?.pans || new Float32Array(256).fill(0);
+    // FIX: Handle both 'levels' (live) and 'dbLevels' (frozen) field names
+    const rawLevels = audioData.dbLevels || audioData.levels;
+    const dbLevels = rawLevels || new Float32Array(256).fill(-128);
+    const panAngles = audioData.pans || new Float32Array(256).fill(0);
 
     // Если в паузе и есть frozen frame — используем его полностью
     const useFrozen = isPaused && this._frozenFrame;
