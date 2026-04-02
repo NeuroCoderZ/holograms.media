@@ -647,14 +647,19 @@ div[id*="input-row"] {
   flex-shrink: 0 !important;
 }
 
-/* Микрофон и Отправить — фиксированный размер, квадратные со скруглением */
+/* Микрофон и Отправить — размер = высота селектора LLM */
 #micButton,
 #submitChatMessage {
   flex: 0 0 auto !important;
-  width: clamp(32px, 4dvh, 40px) !important;
-  height: clamp(32px, 4dvh, 40px) !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
   padding: 0 !important;
   border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* Селектор LLM — занимает всё пространство между кнопками */

@@ -187,12 +187,28 @@ class GestureUIManager {
         this.currentHandState.clear();
 
         const fingerIndices = [4, 8, 12, 16, 20]; // Thumb, Index, Middle, Ring, Pinky tips
+        const handPositions = []; // Track hand center X for reliable handedness
 
         data.landmarks.forEach((landmarks, index) => {
             const handedness = data.handedness[index];
             if (!handedness) return;
 
-            const handId = handedness.label || handedness.categoryName || index;
+            // MediaPipe handedness is unreliable for single hand — use X-coordinate instead
+            // Wrist (landmark 0) X position determines left/right:
+            // X < 0.5 = left half of screen = Left hand
+            // X >= 0.5 = right half of screen = Right hand
+            const wrist = landmarks[0];
+            const centerX = wrist ? wrist.x : 0.5;
+            const mpLabel = handedness.label || handedness.categoryName || '';
+            
+            // For 2 hands: use MediaPipe handedness (more reliable)
+            // For 1 hand: use X-coordinate (much more reliable)
+            let handId;
+            if (data.landmarks.length === 1) {
+                handId = centerX < 0.5 ? 'Left' : 'Right';
+            } else {
+                handId = mpLabel || (centerX < 0.5 ? 'Left' : 'Right');
+            }
 
             // Store current state for all 5 fingers
             const fingerStates = fingerIndices.map(idx => {
@@ -201,7 +217,16 @@ class GestureUIManager {
             }).filter(s => s !== null);
 
             this.currentHandState.set(handId, fingerStates);
+            handPositions.push({ handId, centerX });
         });
+
+        // Update detectedHands for label display
+        this.detectedHands.count = handPositions.length;
+        this.detectedHands.handedness = handPositions.map(p => ({
+            label: p.handId,
+            categoryName: p.handId,
+            centerX: p.centerX
+        }));
     }
 
 

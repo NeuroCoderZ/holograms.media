@@ -50,24 +50,41 @@ async def get_llm_response(
     # Определяем стек моделей
     use_mistral = selected_model and "mistral" in selected_model.lower()
     model_stack = "mistral" if use_mistral else "gemini"
-
-    # Mistral — через Orchestrator (с subagent mistral-small-latest)
-    # Gemini — через Orchestrator (с subagent gemini-3.1-flash-lite-preview)
-    # Оба стека используют Darwin Critic с двумя кандидатами
     logger.info(f"LLM: Using {model_stack} stack ({selected_model})")
 
+    # Mistral — прямой вызов без Orchestrator (быстрее, надёжнее)
+    if use_mistral:
+        from backend.llm.mistral_llm import get_mistral_response
+
+        conversation_context = _build_conversation_context(history)
+        prompt = f"Предыдущий контекст:\n{conversation_context}\n\nСообщение пользователя: {user_message}"
+        try:
+            response_text = await get_mistral_response(
+                prompt=prompt,
+                system_instruction="Ты Триа — AI-ассистент платформы holograms.media. Отвечай полезно и точно.",
+                model_id="mistral-large-latest",
+            )
+            return f"[Mistral Large 3] {response_text}"
+        except Exception as e:
+            logger.error(f"Mistral API error: {e}")
+            return f"[Mistral Large 3] Ошибка: {str(e)}"
+
+    # Gemini — через Orchestrator (с subagent gemini-3.1-flash-lite-preview)
     conversation_context = _build_conversation_context(history)
 
-    response_text = await orchestrator.process_user_prompt(
-        prompt=user_message,
-        history=[{"role": m.role, "content": m.message_content} for m in history[-10:]],
-        user_email=user_email,
-        user_id=user_id,
-        context=f"Selected model: {selected_model}, stack: {model_stack}",
-    )
-
-    model_label = "Mistral Large 3" if use_mistral else "Gemini 3 Flash"
-    return f"[{model_label}] {response_text}"
+    try:
+        response_text = await orchestrator.process_user_prompt(
+            prompt=user_message,
+            history=[
+                {"role": m.role, "content": m.message_content} for m in history[-10:]
+            ],
+            user_email=user_email,
+            user_id=user_id,
+        )
+        return f"[Gemini 3 Flash] {response_text}"
+    except Exception as e:
+        logger.error(f"Gemini API error: {e}")
+        return f"[Gemini 3 Flash] Ошибка: {str(e)}"
 
 
 class ChatService:
