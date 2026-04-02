@@ -63,14 +63,14 @@ export class EyeLoader {
             width: '100%',
             height: '50%',
             zIndex: '20',
-            backdropFilter: 'blur(20px)',
-            webkitBackdropFilter: 'blur(20px)',
-            // Чёрное стекло вместо фиолетового — как боковые панели
+            backdropFilter: 'blur(var(--glass-blur, 14px)) saturate(var(--glass-saturate, 140%))',
+            webkitBackdropFilter: 'blur(var(--glass-blur, 14px)) saturate(var(--glass-saturate, 140%))',
             background: isUpper
-                ? 'linear-gradient(to bottom, rgba(0,0,0,0.98) 75%, rgba(5,5,10,0.90) 100%)'
-                : 'linear-gradient(to top,    rgba(0,0,0,0.98) 75%, rgba(5,5,10,0.90) 100%)',
+                ? 'linear-gradient(to bottom, var(--glass-bg, rgba(255,255,255,0.04)) 60%, rgba(0,0,0,0.5) 100%)'
+                : 'linear-gradient(to top,    var(--glass-bg, rgba(255,255,255,0.04)) 60%, rgba(0,0,0,0.5) 100%)',
+            border: '1px solid var(--glass-border, rgba(255,255,255,0.10))',
+            borderRadius: isUpper ? '0 0 12px 12px' : '0 0 12px 12px',
             transition: 'transform 0.9s cubic-bezier(0.19, 1, 0.22, 1)',
-            border: 'none',
             boxShadow: 'none',
             margin: '0',
             padding: '0'
@@ -249,13 +249,13 @@ export class EyeLoader {
         ctx.fillStyle = gradScl;
         ctx.fill();
 
-        // --- Радужка (чёткая, без blur) ---
+        // --- Радужка (чёткая, без blur, +30% яркость) ---
         const gradIris = ctx.createRadialGradient(x, y, 0, x, y, R * 0.65);
-        gradIris.addColorStop(0,    '#6060ff');
-        gradIris.addColorStop(0.15, '#4040cc');
-        gradIris.addColorStop(0.55, '#2020aa');
-        gradIris.addColorStop(0.85, '#101080');
-        gradIris.addColorStop(1,    '#080840');
+        gradIris.addColorStop(0,    '#7d7dff');
+        gradIris.addColorStop(0.15, '#5a5ae6');
+        gradIris.addColorStop(0.55, '#3838d0');
+        gradIris.addColorStop(0.85, '#2020b0');
+        gradIris.addColorStop(1,    '#101060');
         ctx.beginPath();
         ctx.arc(x, y, R * 0.65, 0, Math.PI * 2);
         ctx.fillStyle = gradIris;
