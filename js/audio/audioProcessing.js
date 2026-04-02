@@ -86,6 +86,11 @@ eventBus.on('audio:spectralData', (data) => {
 
     const payload = { levels: fullLevels, pans: fullPans };
 
+    // Store in state for fallback/recovery
+    if (state.audio) {
+        state.audio.latestAudioData = payload;
+    }
+
     // Отправляем в рендерер
     eventBus.emit('audioData', payload);
 });

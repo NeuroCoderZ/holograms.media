@@ -171,6 +171,9 @@ export const state = {
     microphoneAnalysers: null, // {left: AnalyserNode, right: AnalyserNode}
     filePlayerAnalysers: null, // {left: AnalyserNode, right: AnalyserNode}
     filePlayerGainNode: null, // GainNode for file player
+    latestAudioData: null, // Fallback audio data for hologram renderer
+    isPlaying: false,
+    isPaused: false,
   },
 
   // --- Состояние пользовательского интерфейса ---
