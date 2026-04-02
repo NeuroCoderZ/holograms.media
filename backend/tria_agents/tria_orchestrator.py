@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # Gemini stack
 GEMINI_MAIN = "gemini-3-flash-preview"
 GEMINI_SUB = "gemini-3.1-flash-lite-preview"
-# Mistral stack
+# Mistral stack (алиасы на latest версии)
 MISTRAL_MAIN = "mistral-large-latest"
 MISTRAL_SUB = "mistral-small-latest"
 
@@ -221,8 +221,25 @@ class TriaOrchestrator:
                 model_id=sub_model,
             )
 
-            # Fallback: если Darwin Critic вернул пустой ответ
-            if not (final_response or "").strip():
+            # Fallback: если Darwin Critic вернул 429 — пробуем Mistral
+            if isinstance(final_response, Exception) and (
+                "429" in str(final_response)
+                or "RESOURCE_EXHAUSTED" in str(final_response)
+            ):
+                logger.warning(f"Sub-model {sub_model} 429: Falling back to Mistral")
+                final_response = await get_mistral_response(
+                    prompt=critic_prompt,
+                    system_instruction="You are Darwin Critic. Return ONLY the final user-facing response.",
+                    model_id=MISTRAL_MAIN,
+                )
+
+            # Fallback: если Darwin Critic вернул пустой ответ или Exception
+            response_text = (
+                final_response
+                if isinstance(final_response, str)
+                else str(final_response)
+            )
+            if not response_text.strip():
                 logger.warning(
                     "Darwin Critic returned empty response, using best candidate"
                 )
@@ -237,9 +254,14 @@ class TriaOrchestrator:
                 )
 
             # Final Output (Streaming)
+            response_text = (
+                final_response
+                if isinstance(final_response, str)
+                else str(final_response)
+            )
             chunk_size = 64
-            for i in range(0, len(final_response), chunk_size):
-                yield final_response[i : i + chunk_size]
+            for i in range(0, len(response_text), chunk_size):
+                yield response_text[i : i + chunk_size]
                 await asyncio.sleep(0.01)
 
         except Exception as e:
