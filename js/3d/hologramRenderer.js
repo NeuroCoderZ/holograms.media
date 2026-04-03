@@ -32,6 +32,7 @@ export class HologramRenderer {
     this._dummy = new THREE.Object3D(); // PRO-FIX: Reusable object to avoid allocations
     this._lastUpdate = 0;
     this._minUpdateInterval = 1000 / 60; // Throttle: max 60fps update (как в феврале 9d105c6)
+    this._initTime = Date.now(); // For WASM init grace period
 
     this.hologramPivot = new THREE.Group();
     this.mainSequencerGroup = new THREE.Group();
@@ -194,7 +195,12 @@ export class HologramRenderer {
     }
 
     // Guard: если вообще нет данных — рисуем DEMO столбцы (базовые)
-    if (!audioData) {
+    // Также рисуем демо если WASM в fallback mode (все -128) в течение grace period
+    const isAllSilence = audioData && audioData.levels &&
+        audioData.levels.every(v => v <= -127);
+    const wasmInitGrace = isAllSilence && (Date.now() - this._initTime < 5000);
+
+    if (!audioData || wasmInitGrace) {
         // Рисуем DEMO столбцы — синусоидальная волна для визуализации сетки
         if (!window._demoColumnsLogged) {
             console.log('[HologramRenderer] 🎨 No audio data — drawing DEMO columns');
@@ -269,8 +275,8 @@ export class HologramRenderer {
         pL = initialX_L + Math.min(0, discreteShift) * 1.5;
         pR = initialX_R + Math.max(0, discreteShift) * 1.5;
 
-        hL = Math.min(128.0, Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL))));
-        hR = Math.min(128.0, Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR))));
+        hL = Math.min(128.0, Math.max(1.0, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL))));
+        hR = Math.min(128.0, Math.max(1.0, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR))));
         
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);
@@ -298,9 +304,9 @@ export class HologramRenderer {
         pL = initialX_L + Math.min(0, discreteShift) * 1.5;
         pR = initialX_R + Math.max(0, discreteShift) * 1.5;
 
-        // Физика BasilaQ: 1дБ = 1 ячейка. Z-scale = 128 + dB. 
-        hL = Math.min(128.0, Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL))));
-        hR = Math.min(128.0, Math.max(0.1, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR))));
+        // Физика BasilaQ: 1дБ = 1 ячейка. Z-scale = 128 + dB.
+        hL = Math.min(128.0, Math.max(1.0, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL))));
+        hR = Math.min(128.0, Math.max(1.0, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR))));
         
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);
