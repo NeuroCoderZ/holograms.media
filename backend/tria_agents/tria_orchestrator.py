@@ -162,96 +162,129 @@ class TriaOrchestrator:
                 else ""
             )
 
-            candidate_prompts = [
-                f"History:\n{history_ctx}\n\nContext:\n{research_pack}{ui_snippet}\n\nTask: {prompt}\nVariant A: Elaborate and technical.",
-                f"History:\n{history_ctx}\n\nContext:\n{research_pack}{ui_snippet}\n\nTask: {prompt}\nVariant B: Concise and direct.",
-            ]
+            # OPTIMIZATION v3.1: Single candidate mode (Free Tier friendly)
+            # Используем один вызов вместо двух параллельных для экономии API
+            use_single_candidate = True  # Включить для Free Tier
 
-            candidates = await asyncio.gather(
-                *[
-                    get_response(
-                        p, system_instruction=system_instruction, model_id=main_model
+            if use_single_candidate:
+                # Stage 2a: Single generation (1 API call)
+                single_prompt = f"History:\n{history_ctx}\n\nContext:\n{research_pack}{ui_snippet}\n\nTask: {prompt}\nProvide a clear, helpful response."
+
+                candidates = [
+                    await get_response(
+                        single_prompt,
+                        system_instruction=system_instruction,
+                        model_id=main_model,
                     )
-                    for p in candidate_prompts
-                ],
-                return_exceptions=True,
-            )
+                ]
+                final_response = candidates[0]
+            else:
+                # Stage 2b: Dual candidate mode (2 API calls)
+                candidate_prompts = [
+                    f"History:\n{history_ctx}\n\nContext:\n{research_pack}{ui_snippet}\n\nTask: {prompt}\nVariant A: Elaborate and technical.",
+                    f"History:\n{history_ctx}\n\nContext:\n{research_pack}{ui_snippet}\n\nTask: {prompt}\nVariant B: Concise and direct.",
+                ]
+
+                candidates = await asyncio.gather(
+                    *[
+                        get_response(
+                            p,
+                            system_instruction=system_instruction,
+                            model_id=main_model,
+                        )
+                        for p in candidate_prompts
+                    ],
+                    return_exceptions=True,
+                )
 
             # Fallback: если модель 429 — переключаемся на альтернативный стек
-            for idx, c in enumerate(candidates):
-                if isinstance(c, Exception) and (
-                    "429" in str(c) or "RESOURCE_EXHAUSTED" in str(c)
-                ):
-                    fallback_model = (
-                        MISTRAL_MAIN if model_stack == "gemini" else GEMINI_MAIN
-                    )
-                    fallback_fn = (
-                        get_mistral_response
-                        if model_stack == "gemini"
-                        else get_gemini_response
-                    )
-                    logger.warning(
-                        f"{model_stack} 429: Switching to {'Mistral' if model_stack == 'gemini' else 'Gemini'}"
-                    )
-                    candidates[idx] = await fallback_fn(
-                        prompt=candidate_prompts[idx],
-                        system_instruction=system_instruction,
-                        model_id=fallback_model,
-                    )
-                elif isinstance(c, Exception):
-                    candidates[idx] = f"[Error] {str(c)}"
+            # OPTIMIZATION: Только для dual candidate mode
+            if not use_single_candidate:
+                for idx, c in enumerate(candidates):
+                    if isinstance(c, Exception) and (
+                        "429" in str(c) or "RESOURCE_EXHAUSTED" in str(c)
+                    ):
+                        fallback_model = (
+                            MISTRAL_MAIN if model_stack == "gemini" else GEMINI_MAIN
+                        )
+                        fallback_fn = (
+                            get_mistral_response
+                            if model_stack == "gemini"
+                            else get_gemini_response
+                        )
+                        logger.warning(
+                            f"{model_stack} 429: Switching to {'Mistral' if model_stack == 'gemini' else 'Gemini'}"
+                        )
+                        candidates[idx] = await fallback_fn(
+                            prompt=candidate_prompts[idx],
+                            system_instruction=system_instruction,
+                            model_id=fallback_model,
+                        )
+                    elif isinstance(c, Exception):
+                        candidates[idx] = f"[Error] {str(c)}"
 
             # Stage 3: Selection (Darwin Critic) - Hidden from UI stream
-            # yield "[[THINKING:SELECTION]]" # REMOVED per user request
-
-            critic_prompt = (
-                f"User requested: '{prompt}'\n\n"
-                f"Candidate 1: {candidates[0]}\n\n"
-                f"Candidate 2: {candidates[1]}\n\n"
-                "INSTRUCTIONS:\n"
-                "1. Pick the best response, merge or improve if necessary.\n"
-                "2. RETURN ONLY THE FINAL CLEAN RESPONSE TEXT.\n"
-                "3. DO NOT include any labels like 'Candidate 1', 'Selection', or any justification/reasoning.\n"
-                "4. Your output must be ready to show directly to the end user."
-            )
-
-            final_response = await get_response(
-                prompt=critic_prompt,
-                system_instruction="You are Darwin Critic. Return ONLY the final user-facing response. NO thinking tags, NO reasoning.",
-                model_id=sub_model,
-            )
-
-            # Fallback: если Darwin Critic вернул 429 — пробуем Mistral
-            if isinstance(final_response, Exception) and (
-                "429" in str(final_response)
-                or "RESOURCE_EXHAUSTED" in str(final_response)
-            ):
-                logger.warning(f"Sub-model {sub_model} 429: Falling back to Mistral")
-                final_response = await get_mistral_response(
-                    prompt=critic_prompt,
-                    system_instruction="You are Darwin Critic. Return ONLY the final user-facing response.",
-                    model_id=MISTRAL_MAIN,
-                )
-
-            # Fallback: если Darwin Critic вернул пустой ответ или Exception
-            response_text = (
-                final_response
-                if isinstance(final_response, str)
-                else str(final_response)
-            )
-            if not response_text.strip():
-                logger.warning(
-                    "Darwin Critic returned empty response, using best candidate"
-                )
-                best = None
-                for c in candidates:
-                    if c and not isinstance(c, Exception) and str(c).strip():
-                        best = str(c)
-                        break
+            # OPTIMIZATION v3.1: Пропускаем Darwin Critic если используем один кандидат (Free Tier)
+            if use_single_candidate:
                 final_response = (
-                    best
-                    or "Триа не смогла сформировать ответ. Попробуйте переформулировать запрос или повторите позже."
+                    candidates[0]
+                    if candidates
+                    else "Триа не смогла сформировать ответ."
                 )
+            else:
+                # Dual candidate mode: выбираем лучший через Darwin Critic
+                # yield "[[THINKING:SELECTION]]" # REMOVED per user request
+
+                critic_prompt = (
+                    f"User requested: '{prompt}'\n\n"
+                    f"Candidate 1: {candidates[0]}\n\n"
+                    f"Candidate 2: {candidates[1]}\n\n"
+                    "INSTRUCTIONS:\n"
+                    "1. Pick the best response, merge or improve if necessary.\n"
+                    "2. RETURN ONLY THE FINAL CLEAN RESPONSE TEXT.\n"
+                    "3. DO NOT include any labels like 'Candidate 1', 'Selection', or any justification/reasoning.\n"
+                    "4. Your output must be ready to show directly to the end user."
+                )
+
+                final_response = await get_response(
+                    prompt=critic_prompt,
+                    system_instruction="You are Darwin Critic. Return ONLY the final user-facing response. NO thinking tags, NO reasoning.",
+                    model_id=sub_model,
+                )
+
+                # Fallback: если Darwin Critic вернул 429 — пробуем Mistral
+                if isinstance(final_response, Exception) and (
+                    "429" in str(final_response)
+                    or "RESOURCE_EXHAUSTED" in str(final_response)
+                ):
+                    logger.warning(
+                        f"Sub-model {sub_model} 429: Falling back to Mistral"
+                    )
+                    final_response = await get_mistral_response(
+                        prompt=critic_prompt,
+                        system_instruction="You are Darwin Critic. Return ONLY the final user-facing response.",
+                        model_id=MISTRAL_MAIN,
+                    )
+
+                # Fallback: если Darwin Critic вернул пустой ответ или Exception
+                response_text = (
+                    final_response
+                    if isinstance(final_response, str)
+                    else str(final_response)
+                )
+                if not response_text.strip():
+                    logger.warning(
+                        "Darwin Critic returned empty response, using best candidate"
+                    )
+                    best = None
+                    for c in candidates:
+                        if c and not isinstance(c, Exception) and str(c).strip():
+                            best = str(c)
+                            break
+                    final_response = (
+                        best
+                        or "Триа не смогла сформировать ответ. Попробуйте переформулировать запрос или повторите позже."
+                    )
 
             # Final Output (Streaming)
             response_text = (

@@ -334,17 +334,27 @@ export async function initCore() {
       // --- ENKEPHALON WASM BRIDGE ---
       try {
           const { enkephalon } = await import('./EnkephalonBridge.js');
-          const { getWasmInstance } = await import('../wasm/wasm_loader.js');
           
-          let wasmInst = getWasmInstance();
-          if (!wasmInst) {
-              // Ждем инициализации WASM (если он еще в процессе)
-              await new Promise(r => setTimeout(r, 800));
-              wasmInst = getWasmInstance();
+          // Загружаем Enkephalon WASM (holographic_core с brain_* функциями)
+          let wasmExports = null;
+          try {
+              const { default: EnkephalonWasm } = await import('../wasm/holographic_core.js');
+              await EnkephalonWasm.default();
+              wasmExports = EnkephalonWasm;
+              console.log('[Enkephalon] WASM module loaded from holographic_core.js');
+          } catch (wasmErr) {
+              console.warn('[Enkephalon] holographic_core.js not found, trying fallback loader...');
+              const { getWasmInstance } = await import('../wasm/wasm_loader.js');
+              let wasmInst = getWasmInstance();
+              if (!wasmInst) {
+                  await new Promise(r => setTimeout(r, 800));
+                  wasmInst = getWasmInstance();
+              }
+              if (wasmInst) wasmExports = wasmInst.exports;
           }
 
-          if (wasmInst) {
-              enkephalon.init(wasmInst.exports);
+          if (wasmExports) {
+              enkephalon.init(wasmExports);
               state.enkephalon = enkephalon;
               
               if (savedWeights) {

@@ -1,17 +1,20 @@
 # backend/services/gesture_intent_service.py
 import logging
+
 # Removed asyncpg
 import math
-import os # Для доступа к GOOGLE_APPLICATION_CREDENTIALS
+import os  # Для доступа к GOOGLE_APPLICATION_CREDENTIALS
 from typing import List, Dict, Any, Optional
 from uuid import UUID
 from backend.repositories.embedding_repository import EmbeddingRepository
 
+
 def normalize_vector(v: List[float]) -> List[float]:
-    magnitude = math.sqrt(sum(x*x for x in v))
+    magnitude = math.sqrt(sum(x * x for x in v))
     if magnitude == 0:
         return v
     return [x / magnitude for x in v]
+
 
 # Импорт Google AI SDK
 from google import genai
@@ -31,20 +34,25 @@ try:
     # то явное конфигурирование ключа не всегда нужно, SDK может подхватить его из окружения.
     # Проверим, установлен ли GOOGLE_APPLICATION_CREDENTIALS
     if not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
-        logger.warning("GOOGLE_APPLICATION_CREDENTIALS is not set. Embedding generation might fail if not using API Key.")
+        logger.warning(
+            "GOOGLE_APPLICATION_CREDENTIALS is not set. Embedding generation might fail if not using API Key."
+        )
     # Если используется API-ключ, его нужно передать в configure()
     # genai.configure(api_key="YOUR_API_KEY") # Замените на ваш ключ или используйте env var
 
 except Exception as e:
-    logger.error(f"Failed to configure Google AI: {e}. GestureIntentService might not work correctly.")
+    logger.error(
+        f"Failed to configure Google AI: {e}. GestureIntentService might not work correctly."
+    )
 
 
 # Определяем условные векторы для наших намерений
-# Размерность должна быть 768 для text-embedding-004
+# Размерность ДОЛЖНА быть 3072 для gemini-embedding-2-preview (коллекция tria_knowledge_gemini создана с 3072d)
+EMBED_DIM = 3072
 SEMANTIC_DIRECTIONS = {
-    "select": normalize_vector([0.05] * 10 + [-0.05] * 10 + [0.01] * (768 - 20)),
-    "grab": normalize_vector([-0.05] * 10 + [0.05] * 10 + [-0.01] * (768 - 20)),
-    "navigate": [0.0] * 768
+    "select": normalize_vector([0.05] * 10 + [-0.05] * 10 + [0.01] * (EMBED_DIM - 20)),
+    "grab": normalize_vector([-0.05] * 10 + [0.05] * 10 + [-0.01] * (EMBED_DIM - 20)),
+    "navigate": [0.0] * EMBED_DIM,
 }
 
 
@@ -53,7 +61,9 @@ class GestureIntentService:
         self.db = db
         self.embedding_repo = EmbeddingRepository(self.db)
         self.learning_log_repo = LearningLogRepository(self.db)
-        self.embedding_model_name = "models/text-embedding-004" # Имя модели для Google AI SDK
+        self.embedding_model_name = (
+            "models/text-embedding-004"  # Имя модели для Google AI SDK
+        )
 
     # async def _get_embedding(self, text: str) -> Optional[List[float]]:
     #     """Вспомогательная функция для получения эмбеддинга текста."""
@@ -68,7 +78,9 @@ class GestureIntentService:
     #         logger.error(f"Failed to get embedding for text '{text[:50]}...': {e}")
     #         return None
 
-    async def apply_intent_to_embedding(self, user_id: str, intent_vector: dict, context_embedding: Any) -> dict: # Any пока что для EmbeddingDB
+    async def apply_intent_to_embedding(
+        self, user_id: str, intent_vector: dict, context_embedding: Any
+    ) -> dict:  # Any пока что для EmbeddingDB
         """
         Применяет вектор намерения к предоставленному базовому эмбеддингу.
 
@@ -78,36 +90,60 @@ class GestureIntentService:
             context_embedding (EmbeddingDB): Объект найденного эмбеддинга из БД.
         """
         intent_type = intent_vector.get("type", "unknown")
-        intensity_factor = float(intent_vector.get("intensity", 0.1)) # Используем intensity из intent_vector
+        intensity_factor = float(
+            intent_vector.get("intensity", 0.1)
+        )  # Используем intensity из intent_vector
 
-        logger.info(f"Applying intent_type '{intent_type}' with intensity {intensity_factor} to embedding_id {context_embedding.id} for user {user_id}")
+        logger.info(
+            f"Applying intent_type '{intent_type}' with intensity {intensity_factor} to embedding_id {context_embedding.id} for user {user_id}"
+        )
 
         # ✅ ШАГ 1: Проверка Аффордансов
         # Убедимся, что context_embedding.metadata существует и является словарем
         if not isinstance(context_embedding.metadata, dict):
-            logger.warning(f"Metadata for embedding {context_embedding.id} is not a dict or is missing. Skipping affordance check.")
+            logger.warning(
+                f"Metadata for embedding {context_embedding.id} is not a dict or is missing. Skipping affordance check."
+            )
             # Можно вернуть ошибку или продолжить без проверки, в зависимости от требований
             # return {"status": "error", "message": "Missing or invalid metadata for affordance check."}
         else:
-            available_gestures = context_embedding.metadata.get("gesture_affordances", [])
-            if not isinstance(available_gestures, list): # Дополнительная проверка типа
-                logger.warning(f"gesture_affordances for embedding {context_embedding.id} is not a list: {available_gestures}. Treating as no affordances.")
+            available_gestures = context_embedding.metadata.get(
+                "gesture_affordances", []
+            )
+            if not isinstance(available_gestures, list):  # Дополнительная проверка типа
+                logger.warning(
+                    f"gesture_affordances for embedding {context_embedding.id} is not a list: {available_gestures}. Treating as no affordances."
+                )
                 available_gestures = []
 
             if intent_type not in available_gestures:
                 message = f"Intent '{intent_type}' is not applicable to this context (Embedding ID: {context_embedding.id}). Available gestures: {available_gestures}"
                 logger.warning(message)
-                return {"status": "ignored", "message": message, "available_gestures": available_gestures}
+                return {
+                    "status": "ignored",
+                    "message": message,
+                    "available_gestures": available_gestures,
+                }
 
         # 2. Получаем вектор модификации для нашего намерения (стало Шаг 2)
         direction_vector = SEMANTIC_DIRECTIONS.get(intent_type)
         if direction_vector is None:
-            logger.info(f"Intent type '{intent_type}' has no defined vector operation for user {user_id}. No action taken.")
-            return {"status": "ignored", "message": f"Intent type '{intent_type}' has no defined vector operation."}
+            logger.info(
+                f"Intent type '{intent_type}' has no defined vector operation for user {user_id}. No action taken."
+            )
+            return {
+                "status": "ignored",
+                "message": f"Intent type '{intent_type}' has no defined vector operation.",
+            }
 
-        if len(direction_vector) != 768: # Проверка согласованности размерности
-            logger.error(f"Dimension mismatch for SEMANTIC_DIRECTIONS['{intent_type}']. Expected 768, got {len(direction_vector)}.")
-            return {"status": "error", "message": f"Internal configuration error for intent type '{intent_type}'."}
+        if len(direction_vector) != EMBED_DIM:  # Проверка согласованности размерности
+            logger.error(
+                f"Dimension mismatch for SEMANTIC_DIRECTIONS['{intent_type}']. Expected {EMBED_DIM}, got {len(direction_vector)}."
+            )
+            return {
+                "status": "error",
+                "message": f"Internal configuration error for intent type '{intent_type}'.",
+            }
 
         # 2. Выполняем векторную арифметику
         # context_embedding.embedding это List[float] (или embedding_vector если alias сработал)
@@ -115,54 +151,83 @@ class GestureIntentService:
         # В модели EmbeddingDB это поле 'embedding', которое алиасится в 'embedding_vector' при создании объекта.
         # Если объект приходит из репозитория, он должен иметь поле 'embedding' как List[float].
 
-        base_vector_list = context_embedding.embedding # Должно быть List[float]
-        if not isinstance(base_vector_list, list) or not all(isinstance(n, (int, float)) for n in base_vector_list):
-            logger.error(f"Base embedding vector is not a list of numbers. ID: {context_embedding.id}. Type: {type(base_vector_list)}")
-            return {"status": "error", "message": "Corrupted base embedding data (not a list of numbers)."}
+        base_vector_list = context_embedding.embedding  # Должно быть List[float]
+        if not isinstance(base_vector_list, list) or not all(
+            isinstance(n, (int, float)) for n in base_vector_list
+        ):
+            logger.error(
+                f"Base embedding vector is not a list of numbers. ID: {context_embedding.id}. Type: {type(base_vector_list)}"
+            )
+            return {
+                "status": "error",
+                "message": "Corrupted base embedding data (not a list of numbers).",
+            }
 
-        if len(base_vector_list) != 768:
-            logger.error(f"Dimension mismatch for base_vector. Expected 768, got {len(base_vector_list)}. Embedding ID: {context_embedding.id}")
-            return {"status": "error", "message": "Corrupted base embedding data (dimension mismatch)."}
+        if len(base_vector_list) != EMBED_DIM:
+            logger.error(
+                f"Dimension mismatch for base_vector. Expected {EMBED_DIM}, got {len(base_vector_list)}. Embedding ID: {context_embedding.id}"
+            )
+            return {
+                "status": "error",
+                "message": "Corrupted base embedding data (dimension mismatch).",
+            }
 
         # Векторная арифметика на чистом Python
-        modified_vector = [b + (d * intensity_factor) for b, d in zip(base_vector_list, direction_vector)]
+        modified_vector = [
+            b + (d * intensity_factor)
+            for b, d in zip(base_vector_list, direction_vector)
+        ]
 
         # Нормализуем, чтобы не "улететь" из семантического пространства
         modified_vector_list = normalize_vector(modified_vector)
-        
-        logger.info(f"Applied intent_type '{intent_type}', modified embedding {context_embedding.id}.")
 
+        logger.info(
+            f"Applied intent_type '{intent_type}', modified embedding {context_embedding.id}."
+        )
 
         # Обновляем вектор в базе данных (стало Шаг 3)
         success = await self.embedding_repo.update_embedding_vector(
-            embedding_id=context_embedding.id,
-            new_vector=modified_vector_list
+            embedding_id=context_embedding.id, new_vector=modified_vector_list
         )
 
         if success:
             return {
                 "status": "success",
                 "message": f"Intent '{intent_type}' applied. Embedding '{context_embedding.id}' was modified.",
-                "modified_embedding_id": str(context_embedding.id)
+                "modified_embedding_id": str(context_embedding.id),
             }
         else:
-            logger.error(f"Failed to update embedding {context_embedding.id} in database for intent_type '{intent_type}'.")
+            logger.error(
+                f"Failed to update embedding {context_embedding.id} in database for intent_type '{intent_type}'."
+            )
             return {
                 "status": "error",
                 "message": f"Failed to update embedding for intent_type '{intent_type}'.",
-                "target_embedding_id": str(context_embedding.id)
+                "target_embedding_id": str(context_embedding.id),
             }
 
-    async def _log_interaction(self, user_id: str, intent_vector: dict, context_embedding: Optional[Any], action_result_status: str, message: str, modified_embedding_id: Optional[UUID] = None):
+    async def _log_interaction(
+        self,
+        user_id: str,
+        intent_vector: dict,
+        context_embedding: Optional[Any],
+        action_result_status: str,
+        message: str,
+        modified_embedding_id: Optional[UUID] = None,
+    ):
         # Убедимся, что context_embedding не None перед доступом к его id
         # context_embedding_id может быть None, если, например, контекст не был найден MemoryAgent'ом
         # или если проверка аффордансов произошла до того, как context_embedding был получен (что не должно быть, но для безопасности)
 
         current_context_embedding_id = None
-        if hasattr(context_embedding, 'id'): # Проверяем, что у объекта есть атрибут id
+        if hasattr(context_embedding, "id"):  # Проверяем, что у объекта есть атрибут id
             current_context_embedding_id = context_embedding.id
-        elif context_embedding is not None: # Если это не None, но без id, логируем предупреждение
-            logger.warning(f"Context embedding object provided to _log_interaction does not have an 'id' attribute: {type(context_embedding)}")
+        elif (
+            context_embedding is not None
+        ):  # Если это не None, но без id, логируем предупреждение
+            logger.warning(
+                f"Context embedding object provided to _log_interaction does not have an 'id' attribute: {type(context_embedding)}"
+            )
 
         log_entry = TriaLearningLogCreate(
             user_id=user_id,
@@ -171,17 +236,24 @@ class GestureIntentService:
             context_embedding_id=current_context_embedding_id,
             action_result=action_result_status,
             result_message=message,
-            modified_embedding_id=modified_embedding_id
+            modified_embedding_id=modified_embedding_id,
             # additional_metadata можно будет добавить позже, если нужно
         )
         try:
             await self.learning_log_repo.create_log_entry(log_entry)
-            logger.info(f"Interaction logged for user {user_id}. Result: {action_result_status}, Intent: {intent_vector.get('type')}")
+            logger.info(
+                f"Interaction logged for user {user_id}. Result: {action_result_status}, Intent: {intent_vector.get('type')}"
+            )
         except Exception as e:
-            logger.error(f"Failed to create learning log entry for user {user_id}: {e}", exc_info=True)
+            logger.error(
+                f"Failed to create learning log entry for user {user_id}: {e}",
+                exc_info=True,
+            )
 
     # Обновленный apply_intent_to_embedding с логированием
-    async def apply_intent_to_embedding(self, user_id: str, intent_vector: dict, context_embedding: Any) -> dict: # Any для EmbeddingDB
+    async def apply_intent_to_embedding(
+        self, user_id: str, intent_vector: dict, context_embedding: Any
+    ) -> dict:  # Any для EmbeddingDB
         # intent_type = intent_vector.get("type", "unknown")
         # intensity_factor = float(intent_vector.get("intensity", 0.1))
         # action_result_status: str = "error" # Default to error
@@ -272,8 +344,10 @@ class GestureIntentService:
         #     logger.error(f"Failed to update embedding {context_embedding.id} in database for intent_type '{intent_type}'.")
         #     await self._log_interaction(user_id, intent_vector, context_embedding, action_result_status, message_to_return, modified_id)
         #     return {"status": action_result_status, "message": message_to_return, "target_embedding_id": str(context_embedding.id)}
-        logger.warning("GestureIntentService.apply_intent_to_embedding is disabled as it relies on local pgvector functionality, which has been deprecated in favor of a remote Tria API.")
+        logger.warning(
+            "GestureIntentService.apply_intent_to_embedding is disabled as it relies on local pgvector functionality, which has been deprecated in favor of a remote Tria API."
+        )
         return {
             "status": "ignored",
-            "message": "Local gesture intent processing is disabled."
+            "message": "Local gesture intent processing is disabled.",
         }
