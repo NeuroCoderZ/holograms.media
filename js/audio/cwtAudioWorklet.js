@@ -29,6 +29,7 @@ class CwtProcessor extends AudioWorkletProcessor {
         this._killed = false; // Флаг для чистого завершения
         this._lastFpsLog = null;
         this._fallbackAccumulator = 0; // Throttle для fallback-пути
+        this._cwtFallbackLog = false; // Diagnostic flag
 
         // Configuration from service
         this._sampleRate = options.processorOptions.sampleRate || 48000;
@@ -137,17 +138,19 @@ class CwtProcessor extends AudioWorkletProcessor {
         const input = inputs[0];
 
         if (!input || !input[0] || !wasm || !analyzerPtr || !this._initialized) {
-            // DIAGNOSTIC: Почему fallback?
-            if (!this._cwtFallbackLog) {
-                console.log('[CwtWorklet] ⚠️ Fallback mode:', {
-                    hasInput: !!input,
-                    hasInput0: !!(input && input[0]),
-                    hasWasm: !!wasm,
-                    hasAnalyzerPtr: !!analyzerPtr,
-                    initialized: this._initialized
-                });
-                this._cwtFallbackLog = true;
-            }
+        // DIAGNOSTIC: Почему fallback?
+        const diagKey = `fallback_${Date.now()}`;
+        if (!this._cwtFallbackLog) {
+            console.log('[CwtWorklet] ⚠️ Fallback mode:', {
+                hasInput: !!input,
+                hasInput0: !!(input && input[0]),
+                hasWasm: !!wasm,
+                hasAnalyzerPtr: !!analyzerPtr,
+                initialized: this._initialized,
+                killed: this._killed
+            });
+            this._cwtFallbackLog = true;
+        }
             
             // THROTTLED fallback: отправляем НЕ чаще target FPS (вместо 375/сек!)
             this._fallbackAccumulator += (input && input[0]) ? input[0].length : 128;

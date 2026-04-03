@@ -1,7 +1,9 @@
 use std::f32::consts::PI;
 
-mod brain;
 mod bio_auth;
+mod brain;
+
+pub use brain::*;
 
 // --- CONSTANTS ---
 const RING_BUFFER_SIZE: usize = 8192;
@@ -88,26 +90,35 @@ pub struct CwtAnalyzer {
 impl CwtAnalyzer {
     fn precalculate_wavelets(sample_rate: f32) -> Vec<MorletWavelet> {
         let mut wavelets = Vec::with_capacity(128);
-        let frequencies: [f32; 128] = (0..128).map(|i| 16.352 * 2.0_f32.powf(i as f32 / 12.0)).collect::<Vec<_>>().try_into().unwrap();
+        let frequencies: [f32; 128] = (0..128)
+            .map(|i| 16.352 * 2.0_f32.powf(i as f32 / 12.0))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
 
         for i in 0..128 {
             let freq = frequencies[i];
-            
+
             // Phase 4: Frequency-dependent Q-factor and Windowing
             // Higher frequencies = more periods for precision (min latency is still low)
             // Lower frequencies = fewer periods to stay within < 20ms latency budgets
-            let periods = if freq > 5000.0 { 6.0 } 
-                         else if freq > 1000.0 { 4.0 }
-                         else if freq > 100.0 { 2.0 }
-                         else { 1.2 }; // Extreme low end: fast response
+            let periods = if freq > 5000.0 {
+                6.0
+            } else if freq > 1000.0 {
+                4.0
+            } else if freq > 100.0 {
+                2.0
+            } else {
+                1.2
+            }; // Extreme low end: fast response
 
             let s = OMEGA0 * sample_rate / (2.0 * PI * freq);
             let t_max = (periods * s / OMEGA0) as usize;
             let length = (t_max * 2 + 1).max(7);
-            
+
             let mut wavelet_data = Vec::with_capacity(length);
-            
-            // Phase 17.0 (Claude's Recommendation #4): 
+
+            // Phase 17.0 (Claude's Recommendation #4):
             // Correct Wavelet Energy Normalization (Energy sum across the whole wavelet)
             let mut energy_sum = 0.0;
             for n in 0..length {
@@ -115,22 +126,23 @@ impl CwtAnalyzer {
                 let x = t / s;
                 let gaussian = (-0.5 * x * x).exp();
                 // Sine and cosine components squared sum equal 1.0 (Euler), so we only sum the envelope squared
-                energy_sum += gaussian * gaussian; 
+                energy_sum += gaussian * gaussian;
             }
-            let norm_factor = if energy_sum > 0.0 { 1.0 / energy_sum.sqrt() } else { 1e-6 };
+            let norm_factor = if energy_sum > 0.0 {
+                1.0 / energy_sum.sqrt()
+            } else {
+                1e-6
+            };
 
             for n in 0..length {
                 let t = n as f32 - t_max as f32;
                 let x = t / s;
                 let gaussian = (-0.5 * x * x).exp() * norm_factor;
                 let phase = OMEGA0 * x;
-                
-                wavelet_data.push(Complex::new(
-                    gaussian * phase.cos(),
-                    gaussian * phase.sin()
-                ));
+
+                wavelet_data.push(Complex::new(gaussian * phase.cos(), gaussian * phase.sin()));
             }
-            
+
             wavelets.push(MorletWavelet {
                 data: wavelet_data,
                 length,
@@ -143,7 +155,11 @@ impl CwtAnalyzer {
 // --- PURE WASM EXPORTS ---
 
 #[no_mangle]
-pub extern "C" fn cwtanalyzer_new(sample_rate: f32, target_fps: f32, source_type: u8) -> *mut CwtAnalyzer {
+pub extern "C" fn cwtanalyzer_new(
+    sample_rate: f32,
+    target_fps: f32,
+    source_type: u8,
+) -> *mut CwtAnalyzer {
     let wavelets = CwtAnalyzer::precalculate_wavelets(sample_rate);
     let samples_per_frame = (sample_rate / target_fps) as usize;
 
@@ -177,12 +193,24 @@ pub extern "C" fn cwtanalyzer_process(
     output_conf_ptr: *mut f32,
     output_conf_len: usize,
 ) {
-    if ptr.is_null() || input_left_ptr.is_null() || input_right_ptr.is_null() || output_db_ptr.is_null() || output_pan_ptr.is_null() || output_conf_ptr.is_null() { return; }
+    if ptr.is_null()
+        || input_left_ptr.is_null()
+        || input_right_ptr.is_null()
+        || output_db_ptr.is_null()
+        || output_pan_ptr.is_null()
+        || output_conf_ptr.is_null()
+    {
+        return;
+    }
     let analyzer = unsafe { &mut *ptr };
 
     // Safety: Ensure input lengths don't exceed reasonable limits
-    if input_left_len == 0 || input_left_len > RING_BUFFER_SIZE { return; }
-    if input_left_len != input_right_len { return; }
+    if input_left_len == 0 || input_left_len > RING_BUFFER_SIZE {
+        return;
+    }
+    if input_left_len != input_right_len {
+        return;
+    }
 
     let input_left = unsafe { std::slice::from_raw_parts(input_left_ptr, input_left_len) };
     let input_right = unsafe { std::slice::from_raw_parts(input_right_ptr, input_right_len) };
@@ -205,16 +233,17 @@ pub extern "C" fn cwtanalyzer_process(
         for i in 0..128 {
             let wavelet = &analyzer.wavelets[i];
             let len = wavelet.length;
-            
+
             let mut l_conv = Complex::new(0.0, 0.0);
             let mut r_conv = Complex::new(0.0, 0.0);
 
             // Convolution
             for n in 0..len {
-                let rb_idx = (analyzer.left_ring.cursor + RING_BUFFER_SIZE - len + n) % RING_BUFFER_SIZE;
+                let rb_idx =
+                    (analyzer.left_ring.cursor + RING_BUFFER_SIZE - len + n) % RING_BUFFER_SIZE;
                 let sl = analyzer.left_ring.data[rb_idx];
                 let sr = analyzer.right_ring.data[rb_idx];
-                
+
                 let w = wavelet.data[n];
                 l_conv = l_conv + (w * sl);
                 r_conv = r_conv + (w * sr);
@@ -222,7 +251,7 @@ pub extern "C" fn cwtanalyzer_process(
 
             let l_mag = l_conv.norm();
             let r_mag = r_conv.norm();
-            
+
             // --- CALIBRATED DB MAPPING ---
             let epsilon = 1e-10;
             // 25dB fixed gain + 128dB range + 10dB Parseval Compensation
@@ -235,23 +264,33 @@ pub extern "C" fn cwtanalyzer_process(
             // --- CONFIDENCE Score (SNR based approximation) ---
             let mag_sum = l_mag + r_mag;
             let confidence = (mag_sum / 1e-4).min(1.0); // 0.0 to 1.0 based on signal strength
-            if i < output_conf_len { output_conf[i] = confidence; }
+            if i < output_conf_len {
+                output_conf[i] = confidence;
+            }
 
             // --- SMART PAN (ITD / ILD Crossfade) ---
-            let ild = if mag_sum < 1e-9 { 0.0 } else { (l_mag - r_mag) / mag_sum };
-            
+            let ild = if mag_sum < 1e-9 {
+                0.0
+            } else {
+                (l_mag - r_mag) / mag_sum
+            };
+
             // Frequency calculation based on wavelet scale
             let freq = 16.352 * 2.0_f32.powf(i as f32 / 12.0);
-            
+
             let pan = if freq < 1500.0 {
                 // ITD + ILD blend
                 let phase_l = l_conv.arg();
                 let phase_r = r_conv.arg();
                 let mut itd_diff = phase_l - phase_r;
-                while itd_diff <= -PI { itd_diff += 2.0 * PI; }
-                while itd_diff > PI { itd_diff -= 2.0 * PI; }
+                while itd_diff <= -PI {
+                    itd_diff += 2.0 * PI;
+                }
+                while itd_diff > PI {
+                    itd_diff -= 2.0 * PI;
+                }
                 let itd = (itd_diff / PI).max(-1.0).min(1.0);
-                
+
                 // Quadratic crossfade: ILD dominates as we approach 1500Hz
                 let cross = (freq / 1500.0).powi(2);
                 (ild * cross + itd * (1.0 - cross)).max(-1.0).min(1.0)
@@ -280,12 +319,14 @@ pub extern "C" fn cwtanalyzer_process(
 /// или при изменении частоты монитора (60, 90, 120, 144, 165, 240 Hz).
 #[no_mangle]
 pub extern "C" fn cwtanalyzer_set_fps(ptr: *mut CwtAnalyzer, new_fps: f32) {
-    if ptr.is_null() || new_fps <= 0.0 { return; }
+    if ptr.is_null() || new_fps <= 0.0 {
+        return;
+    }
     let analyzer = unsafe { &mut *ptr };
-    
+
     // Пересчитываем samples_per_frame
     let new_samples_per_frame = (analyzer.sample_rate / new_fps) as usize;
-    
+
     // Safety: минимум 64 семплов на кадр (защита от экстремальных FPS)
     analyzer.samples_per_frame = new_samples_per_frame.max(64);
     analyzer.target_fps = new_fps;
@@ -295,19 +336,29 @@ pub extern "C" fn cwtanalyzer_set_fps(ptr: *mut CwtAnalyzer, new_fps: f32) {
 /// Вызывается при смене трека или нажатии Stop для очистки "памяти" буферов.
 #[no_mangle]
 pub extern "C" fn cwtanalyzer_reset(ptr: *mut CwtAnalyzer) {
-    if ptr.is_null() { return; }
+    if ptr.is_null() {
+        return;
+    }
     let analyzer = unsafe { &mut *ptr };
-    
+
     // Очистка кольцевых буферов (забиваем нулями)
-    for sample in analyzer.left_ring.data.iter_mut() { *sample = 0.0; }
-    for sample in analyzer.right_ring.data.iter_mut() { *sample = 0.0; }
+    for sample in analyzer.left_ring.data.iter_mut() {
+        *sample = 0.0;
+    }
+    for sample in analyzer.right_ring.data.iter_mut() {
+        *sample = 0.0;
+    }
     analyzer.left_ring.cursor = 0;
     analyzer.right_ring.cursor = 0;
-    
+
     // Сброс выходных значений в тишину
-    for db in analyzer.last_db.iter_mut() { *db = -128.0; }
-    for pan in analyzer.last_pan.iter_mut() { *pan = 0.0; }
-    
+    for db in analyzer.last_db.iter_mut() {
+        *db = -128.0;
+    }
+    for pan in analyzer.last_pan.iter_mut() {
+        *pan = 0.0;
+    }
+
     // Сброс счетчика семплов
     analyzer.samples_since_last_calc = 0;
 }

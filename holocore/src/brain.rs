@@ -20,12 +20,15 @@ struct SimpleLCG {
 
 impl SimpleLCG {
     fn new(seed: u64) -> Self {
-        Self { state: if seed == 0 { 1 } else { seed } }
+        Self {
+            state: if seed == 0 { 1 } else { seed },
+        }
     }
 
     /// Возвращает f32 в диапазоне [0.0, 1.0)
     fn next_f32(&mut self) -> f32 {
-        self.state = self.state
+        self.state = self
+            .state
             .wrapping_mul(6364136223846793005)
             .wrapping_add(1442695040888963407);
         ((self.state >> 33) as f32) / (u32::MAX as f32 / 2.0)
@@ -42,13 +45,13 @@ fn xavier_init(n_in: usize, n_out: usize, seed: u64) -> Vec<f32> {
 
 // --- Enkephalon ---
 pub struct Brain {
-    proj: Vec<f32>,          // Synapsis: матрица проекции [embedding_dim × input_dim]
-    assoc: Vec<f32>,         // Synapsis: матрица ассоциации [intent_dim × embedding_dim]
-    input_dim: usize,        // 63 (21 точка × 3 координаты)
-    embedding_dim: usize,    // 64
-    intent_dim: usize,       // 25
-    lr: f32,                 // скорость обучения 0.01
-    decay: f32,              // Lethe: коэффициент затухания 0.001
+    proj: Vec<f32>,       // Synapsis: матрица проекции [embedding_dim × input_dim]
+    assoc: Vec<f32>,      // Synapsis: матрица ассоциации [intent_dim × embedding_dim]
+    input_dim: usize,     // 63 (21 точка × 3 координаты)
+    embedding_dim: usize, // 64
+    intent_dim: usize,    // 25
+    lr: f32,              // скорость обучения 0.01
+    decay: f32,           // Lethe: коэффициент затухания 0.001
 }
 
 impl Brain {
@@ -95,8 +98,8 @@ impl Brain {
             let row_offset = i * self.embedding_dim;
             for j in 0..self.embedding_dim {
                 let idx = row_offset + j;
-                self.assoc[idx] += self.lr * intent[i] * embedding[j]
-                                   - self.decay * self.assoc[idx];
+                self.assoc[idx] +=
+                    self.lr * intent[i] * embedding[j] - self.decay * self.assoc[idx];
             }
         }
     }
@@ -105,8 +108,12 @@ impl Brain {
     /// W *= (1 − λ). Неиспользуемые знания «тонут в Лете».
     pub fn decay_all(&mut self) {
         let factor = 1.0 - self.decay;
-        for w in self.proj.iter_mut() { *w *= factor; }
-        for w in self.assoc.iter_mut() { *w *= factor; }
+        for w in self.proj.iter_mut() {
+            *w *= factor;
+        }
+        for w in self.assoc.iter_mut() {
+            *w *= factor;
+        }
     }
 
     pub fn total_params(&self) -> usize {
@@ -124,9 +131,10 @@ impl Brain {
     pub fn import_weights(&mut self, data: &[f32]) {
         let proj_len = self.proj.len();
         self.proj.copy_from_slice(&data[..proj_len]);
-        
+
         let assoc_len = self.assoc.len();
-        self.assoc.copy_from_slice(&data[proj_len..proj_len + assoc_len]);
+        self.assoc
+            .copy_from_slice(&data[proj_len..proj_len + assoc_len]);
     }
 }
 
@@ -134,16 +142,26 @@ impl Brain {
 
 #[no_mangle]
 pub extern "C" fn brain_new(
-    input_dim: usize, embedding_dim: usize, intent_dim: usize, seed: u64,
+    input_dim: usize,
+    embedding_dim: usize,
+    intent_dim: usize,
+    seed: u64,
 ) -> *mut Brain {
-    Box::into_raw(Box::new(Brain::new(input_dim, embedding_dim, intent_dim, seed)))
+    Box::into_raw(Box::new(Brain::new(
+        input_dim,
+        embedding_dim,
+        intent_dim,
+        seed,
+    )))
 }
 
 #[no_mangle]
 pub extern "C" fn brain_encode(
     ptr: *mut Brain,
-    input_ptr: *const f32, input_len: usize,
-    output_ptr: *mut f32, output_len: usize,
+    input_ptr: *const f32,
+    input_len: usize,
+    output_ptr: *mut f32,
+    output_len: usize,
 ) {
     let brain = unsafe { &*ptr };
     let input = unsafe { slice::from_raw_parts(input_ptr, input_len) };
@@ -154,8 +172,10 @@ pub extern "C" fn brain_encode(
 #[no_mangle]
 pub extern "C" fn brain_recall(
     ptr: *mut Brain,
-    emb_ptr: *const f32, emb_len: usize,
-    output_ptr: *mut f32, output_len: usize,
+    emb_ptr: *const f32,
+    emb_len: usize,
+    output_ptr: *mut f32,
+    output_len: usize,
 ) {
     let brain = unsafe { &*ptr };
     let embedding = unsafe { slice::from_raw_parts(emb_ptr, emb_len) };
@@ -166,8 +186,10 @@ pub extern "C" fn brain_recall(
 #[no_mangle]
 pub extern "C" fn brain_learn(
     ptr: *mut Brain,
-    emb_ptr: *const f32, emb_len: usize,
-    intent_ptr: *const f32, intent_len: usize,
+    emb_ptr: *const f32,
+    emb_len: usize,
+    intent_ptr: *const f32,
+    intent_len: usize,
 ) {
     let brain = unsafe { &mut *ptr };
     let embedding = unsafe { slice::from_raw_parts(emb_ptr, emb_len) };
@@ -186,18 +208,14 @@ pub extern "C" fn brain_total_params(ptr: *mut Brain) -> usize {
 }
 
 #[no_mangle]
-pub extern "C" fn brain_export_weights(
-    ptr: *mut Brain, output_ptr: *mut f32, output_len: usize,
-) {
+pub extern "C" fn brain_export_weights(ptr: *mut Brain, output_ptr: *mut f32, output_len: usize) {
     let brain = unsafe { &*ptr };
     let output = unsafe { slice::from_raw_parts_mut(output_ptr, output_len) };
     brain.export_weights(output);
 }
 
 #[no_mangle]
-pub extern "C" fn brain_import_weights(
-    ptr: *mut Brain, data_ptr: *const f32, data_len: usize,
-) {
+pub extern "C" fn brain_import_weights(ptr: *mut Brain, data_ptr: *const f32, data_len: usize) {
     let brain = unsafe { &mut *ptr };
     let data = unsafe { slice::from_raw_parts(data_ptr, data_len) };
     brain.import_weights(data);
@@ -206,6 +224,8 @@ pub extern "C" fn brain_import_weights(
 #[no_mangle]
 pub extern "C" fn brain_free(ptr: *mut Brain) {
     if !ptr.is_null() {
-        unsafe { drop(Box::from_raw(ptr)); }
+        unsafe {
+            drop(Box::from_raw(ptr));
+        }
     }
 }
