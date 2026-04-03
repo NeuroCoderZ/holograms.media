@@ -104,10 +104,14 @@ class GestureUIManager {
                 // Очистка данных
                 this.recordedPaths.clear(); 
                 this.isRecording = false;
+                // Очистка canvas траекторий
+                if (this.ctx && this.canvas) {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                }
                 // Сброс кнопки сохранения в серый
                 const saveBtn = document.getElementById('gestureSaveCloudButton');
                 if (saveBtn) {
-                    saveBtn.style.color = '#E3E3E3';
+                    saveBtn.style.color = '#aaaaaa';
                     saveBtn.classList.remove('active', 'has-changes');
                 }
                 // Возврат панели в базовое состояние
@@ -121,9 +125,9 @@ class GestureUIManager {
                 e.stopPropagation();
                 if (this.recordedPaths.size > 0) {
                     this._saveGestureToLocalStorage(Array.from(this.recordedPaths.entries()));
-                    saveBtn.style.color = '#FFFFFF';
-                    saveBtn.classList.add('active');
-                    saveBtn.classList.remove('has-changes');
+                    // После сохранения — кнопка становится серой (нет несохранённых изменений)
+                    saveBtn.style.color = '#aaaaaa';
+                    saveBtn.classList.remove('active', 'has-changes');
                 }
             });
         }
@@ -351,6 +355,13 @@ class GestureUIManager {
         this.recordedPaths.clear(); // Clear previous recording paths
         this.gestureAreaElement.classList.add('recording');
         
+        // Кнопка сохранения — серая (нет данных ещё)
+        const saveBtn = document.getElementById('gestureSaveCloudButton');
+        if (saveBtn) {
+            saveBtn.style.color = '#aaaaaa';
+            saveBtn.classList.remove('active', 'has-changes');
+        }
+        
         console.log("GestureUIManager: Recording started (20s timeout active).");
         this.eventBus?.emit('gestureRecordingStarted');
 
@@ -375,6 +386,13 @@ class GestureUIManager {
         this.isRecording = false;
         this.gestureAreaElement.classList.remove('recording');
         // НЕ сбрасываем redLinePosition — линия остаётся на месте завершения записи
+
+        // Если есть записанные данные — кнопка сохранения становится белой
+        const saveBtn = document.getElementById('gestureSaveCloudButton');
+        if (saveBtn && this.recordedPaths.size > 0) {
+            saveBtn.style.color = '#ffffff';
+            saveBtn.classList.add('active');
+        }
 
         this.eventBus?.emit('gestureRecordingStopped', {
             paths: Array.from(this.recordedPaths.entries()),
@@ -410,11 +428,20 @@ class GestureUIManager {
                 savedGestures.shift();
             }
 
+            // Создаём миниатюру из canvas
+            let thumbnail = null;
+            if (this.canvas) {
+                try {
+                    thumbnail = this.canvas.toDataURL('image/png', 0.5);
+                } catch (_) { /* ignore */ }
+            }
+
             const newGesture = {
                 id: `gesture_${Date.now()}`,
                 timestamp: new Date().toISOString(),
                 paths: paths,
-                name: `Evolution iteration #${savedGestures.length + 1}`
+                name: `Evolution iteration #${savedGestures.length + 1}`,
+                thumbnail: thumbnail
             };
 
             savedGestures.push(newGesture);

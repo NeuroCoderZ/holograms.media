@@ -81,6 +81,7 @@ export class GestureLiveStudio {
             this.savedGestures = request.result || [];
             console.log(`[GestureLiveStudio] Loaded ${this.savedGestures.length} saved gestures.`);
             eventBus.emit('studio:gesturesLoaded', this.savedGestures);
+            this._renderGestureList();
         };
     }
 
@@ -119,6 +120,72 @@ export class GestureLiveStudio {
         tx.objectStore('bindings').put(binding);
         eventBus.emit('studio:bindingCreated', binding);
         console.log(`[GestureLiveStudio] Binding: gesture=${gestureId} → command=${commandId}`);
+    }
+
+    // ─── Gesture List UI ──────────────────────────────────────────
+
+    _renderGestureList() {
+        const listContainer = document.getElementById('gestureListContainer');
+        if (!listContainer) return;
+
+        if (!this.savedGestures || this.savedGestures.length === 0) {
+            listContainer.innerHTML = '<div class="empty-gesture-list">Нет сохранённых жестов. Запишите первый жест!</div>';
+            return;
+        }
+
+        listContainer.innerHTML = this.savedGestures.map(g => `
+            <div class="gesture-list-item" data-gesture-id="${g.id}">
+                <div class="gesture-thumbnail">
+                    ${g.thumbnail ? `<img src="${g.thumbnail}" alt="${g.name}">` : '<div class="no-thumbnail">🖐️</div>'}
+                </div>
+                <div class="gesture-info">
+                    <div class="gesture-name">${g.name}</div>
+                    <div class="gesture-meta">
+                        ${g.metadata?.duration ? `${(g.metadata.duration / 1000).toFixed(1)}с` : ''}
+                        ${g.metadata?.handCount ? ` · ${g.metadata.handCount} рук(и)` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        // Обработчик клика по жесту
+        listContainer.querySelectorAll('.gesture-list-item').forEach(item => {
+            item.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const gestureId = parseInt(item.dataset.gestureId);
+                await this._loadGestureToPanel(gestureId);
+            });
+        });
+    }
+
+    async _loadGestureToPanel(gestureId) {
+        const gesture = this.savedGestures.find(g => g.id === gestureId);
+        if (!gesture) {
+            console.warn('[GestureLiveStudio] Gesture not found:', gestureId);
+            return;
+        }
+
+        console.log(`[GestureLiveStudio] Loading gesture to panel: ${gesture.name}`);
+
+        // Загружаем траекторию в панель жестов
+        if (this.uiManager && gesture.trajectory) {
+            const paths = new Map();
+            Object.entries(gesture.trajectory).forEach(([key, pts]) => {
+                paths.set(key, pts.map(pt => ({ x: pt.x, y: pt.y, r: pt.r || 1 })));
+            });
+
+            // Эмитим событие для загрузки в GestureUIManager
+            eventBus.emit('loadGestureToStudio', paths);
+
+            // Разворачиваем панель жестов
+            this.uiManager.animateGestureArea(true);
+
+            // Панель жестов больше не скрывается до ручного сворачивания
+            this.gestureArea.classList.add('active');
+            this.gestureArea.classList.add('hands-detected');
+
+            console.log(`[GestureLiveStudio] Gesture "${gesture.name}" loaded to panel.`);
+        }
     }
 
     // ─── Mode Management ──────────────────────────────────────────
