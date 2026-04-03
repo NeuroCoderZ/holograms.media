@@ -348,31 +348,26 @@ export async function initCore() {
               console.warn('[Enkephalon] WASM load failed:', wasmErr.message);
           }
 
-          if (wasmExports) {
-              enkephalon.init(wasmExports);
-              state.enkephalon = enkephalon;
-              
-              // IntentAccumulator + GestureSemanticLayer (C-3)
-              state.intentAccumulator = new IntentAccumulator({
-                  intentDim: 25,
-                  threshold: 0.75,
-                  decayFast: 0.60
-              });
-              state.gestureSemanticLayer = new GestureSemanticLayer();
-              
-              // Подписка на готовые intents
-              state.intentAccumulator.addEventListener('intentReady', (e) => {
-                  const { intent, confidence, switchedFrom } = e.detail;
-                  eventBus.emit('gesture_intent', { intent, confidence });
-                  if (switchedFrom) {
-                      console.log('[IntentAccumulator] Intent switched at confidence:', confidence);
-                  }
-              });
-              
-              if (savedWeights) {
-                  enkephalon.importWeights(savedWeights);
-              }
-              enkephalon.scheduleWeightSnapshot(state.triaMemory);
+              if (wasmExports) {
+                enkephalon.init(wasmExports);
+                state.enkephalon = enkephalon;
+                
+                state.intentAccumulator = new IntentAccumulator({
+                    intentDim: 25,
+                    threshold: 0.75,
+                    decayFast: 0.60
+                });
+                state.gestureSemanticLayer = new GestureSemanticLayer();
+                
+                state.intentAccumulator.addEventListener('intentReady', (e) => {
+                    const { intent, confidence, switchedFrom } = e.detail;
+                    eventBus.emit('gesture_intent', { intent, confidence });
+                    if (switchedFrom) {
+                        console.log('[IntentAccumulator] Intent switched at confidence:', confidence);
+                    }
+                });
+                
+                enkephalon.scheduleWeightSnapshot(state.triaMemory);
           } else {
               console.warn('[Enkephalon] WASM instance not found. Stub mode active.');
           }
