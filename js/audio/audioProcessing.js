@@ -43,9 +43,34 @@ export function resetInputProxy() {
 }
 
 // ВАЖНО: Мы не перезаписываем onmessage, а подписываемся на событие из шины данных
+let _lastSpectralLog = 0;
+const _LOG_INTERVAL = 3000; // Логируем каждые 3 секунды
+
 eventBus.on('audio:spectralData', (data) => {
+    const now = Date.now();
+    const shouldLog = !window._spectralDataHandlerLog || (now - _lastSpectralLog > _LOG_INTERVAL);
+    
+    if (shouldLog) {
+        console.log('[AudioProcessing] ⚡ audio:spectralData handler:', {
+            hasData: !!data,
+            hasLevels: !!(data?.levels),
+            hasAngles: !!(data?.angles),
+            levelsLen: data?.levels?.length,
+            anglesLen: data?.angles?.length,
+            levelsSample: data?.levels ? Array.from(data.levels.slice(0, 3)) : 'N/A',
+            anglesSample: data?.angles ? Array.from(data.angles.slice(0, 3)) : 'N/A'
+        });
+        if (!window._spectralDataHandlerLog) window._spectralDataHandlerLog = true;
+        _lastSpectralLog = now;
+    }
+
     // Если данных нет, даже не тратим время
-    if (!data.levels || data.levels[0] === undefined) return;
+    if (!data.levels || data.levels[0] === undefined) {
+        if (shouldLog) {
+            console.warn('[AudioProcessing] ⚠️ Empty audio:spectralData - SKIPPING');
+        }
+        return;
+    }
 
     // DIAGNOSTIC: Что приходит от CWT Worklet?
     if (!window._cwtInputLog) {

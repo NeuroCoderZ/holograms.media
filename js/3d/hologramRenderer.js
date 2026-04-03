@@ -46,6 +46,23 @@ export class HologramRenderer {
     this.scene.add(this.hologramPivot);
 
     this.eventBus.on('audioData', (data) => { 
+        const now = Date.now();
+        const shouldLog = !window._audioDataHandlerLog || (now - (window._lastAudioDataLog || 0) > 3000);
+        
+        if (shouldLog) {
+            console.log('[HologramRenderer] ⚡ audioData handler:', {
+                hasData: !!data,
+                hasLevels: !!(data?.levels),
+                hasPans: !!(data?.pans),
+                levelsLen: data?.levels?.length,
+                pansLen: data?.pans?.length,
+                levelsSample: data?.levels ? Array.from(data.levels.slice(0, 3)) : 'N/A',
+                pansSample: data?.pans ? Array.from(data.pans.slice(0, 3)) : 'N/A'
+            });
+            if (!window._audioDataHandlerLog) window._audioDataHandlerLog = true;
+            window._lastAudioDataLog = now;
+        }
+        
         if (data && data.levels) {
             this.latestCwtData = data;
             // DIAGNOSTIC: Log received data

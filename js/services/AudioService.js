@@ -221,6 +221,17 @@ class AudioService {
             }
 
             if (type === 'AUDIO_DATA') {
+                // DIAGNOSTIC: Что приходит от Worklet?
+                if (!window._audioServiceEmitLog) {
+                    console.log('[AudioService] 📤 Emitting audio:spectralData:', {
+                        hasLevels: !!(levels),
+                        hasAngles: !!(angles),
+                        levelsLen: levels?.length,
+                        anglesLen: angles?.length,
+                        isFallback: data?.isFallback
+                    });
+                    window._audioServiceEmitLog = true;
+                }
                 // Standardized event for the entire app
                 eventBus.emit('audio:spectralData', { levels, angles });
             }
