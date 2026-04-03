@@ -490,10 +490,16 @@ export async function initCore() {
       // --- Stage 3: P2P Collective Sync (Takt 1) ---
       const TriaCollectiveService = (await import('../tria/TriaCollectiveService.js')).default;
       state.collective = new TriaCollectiveService();
-      // Подключаемся к сигнальному серверу (URL из конфига или дефолт)
-      // FIX: Backend expects /ws/signaling/{room_id}, not just /ws/signaling
+      
+      // WebSocket signaling - room_id это НЕ чат-рум, а WebRTC signaling room
+      // room_id нужен для P2P соединения между пользователями
+      // Примечание: Koyeb не поддерживает долгие WebSocket соединения - ошибка 1006
       const signalingUrl = state.config?.signalingUrl || 'wss://dev.holograms.media/ws/signaling/default_room';
-      await state.collective.connect(signalingUrl);
+      
+      // Тест: пробуем без room_id
+      const testUrl = 'wss://dev.holograms.media/ws/signaling';
+      console.log('[TriaCollective] Testing WebSocket connection to:', testUrl);
+      await state.collective.connect(testUrl);
 
       state.lastSoma = null; // Буфер между тактами
 

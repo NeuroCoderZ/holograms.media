@@ -6,7 +6,8 @@ import json
 from backend.auth.security import get_current_active_user_ws
 
 MAX_MESSAGE_SIZE = 65536  # 64KB limit for signaling messages
-ROOM_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]{4,36}$')
+ROOM_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{4,36}$")
+
 
 class ConnectionManager:
     def __init__(self):
@@ -20,15 +21,18 @@ class ConnectionManager:
         if room_id not in self.active_connections:
             self.active_connections[room_id] = []
         self.active_connections[room_id].append(websocket)
-        print(f"Client connected to room {room_id}. Total clients: {len(self.active_connections[room_id])}")
-
+        print(
+            f"Client connected to room {room_id}. Total clients: {len(self.active_connections[room_id])}"
+        )
 
     def disconnect(self, websocket: WebSocket, room_id: str):
         """Отключает WebSocket и удаляет его из комнаты."""
         if room_id in self.active_connections:
             try:
                 self.active_connections[room_id].remove(websocket)
-                print(f"Client disconnected from room {room_id}. Total clients: {len(self.active_connections[room_id])}")
+                print(
+                    f"Client disconnected from room {room_id}. Total clients: {len(self.active_connections[room_id])}"
+                )
             except ValueError:
                 # Соединение уже было удалено, например, в ходе массовой очистки
                 pass
@@ -43,7 +47,7 @@ class ConnectionManager:
                 if connection != sender:
                     try:
                         # Проверяем состояние перед отправкой
-                        if connection.client_state.value == 1: # CONNECTED
+                        if connection.client_state.value == 1:  # CONNECTED
                             await connection.send_text(message)
                             print(f"Message broadcasted to a client in room {room_id}")
                         else:
@@ -51,14 +55,14 @@ class ConnectionManager:
                     except Exception as e:
                         print(f"Failed to send message in room {room_id}: {e}")
                         disconnected.append(connection)
-            
+
             # Удаляем те, что упали или неактивны
             for conn in disconnected:
                 try:
                     self.active_connections[room_id].remove(conn)
                 except ValueError:
                     pass
-            
+
             if not self.active_connections[room_id]:
                 del self.active_connections[room_id]
 
@@ -66,16 +70,40 @@ class ConnectionManager:
 router = APIRouter()
 manager = ConnectionManager()
 
+
 @router.get("/test-signaling")
 async def test_signaling_endpoint():
     return {"message": "Signaling router is active!"}
 
+
+# Fallback endpoint БЕЗ room_id (для тестирования)
+@router.websocket("/ws/signaling")
+async def websocket_endpoint_default(websocket: WebSocket):
+    """WebSocket эндпоинт без room_id (fallback для тестирования)."""
+    await manager.connect(websocket, "default")
+    try:
+        while True:
+            data = await websocket.receive_text()
+            if len(data) > MAX_MESSAGE_SIZE:
+                continue
+            try:
+                msg_json = json.loads(data)
+                if msg_json.get("type") == "ping":
+                    await websocket.send_text('{"type": "pong"}')
+                    continue
+            except Exception:
+                pass
+            await manager.broadcast_to_room(data, "default", websocket)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, "default")
+
+
 @router.websocket("/ws/signaling/{room_id}")
 async def websocket_endpoint(
-    websocket: WebSocket, 
+    websocket: WebSocket,
     room_id: str,
     # [SECURITY] Lockdown: Обязательная аутентификация для сигналинга
-    user: dict = Depends(get_current_active_user_ws)
+    user: dict = Depends(get_current_active_user_ws),
 ):
     """
     WebSocket эндпоинт для сигналинга WebRTC.
@@ -96,9 +124,11 @@ async def websocket_endpoint(
             data = await websocket.receive_text()
             # ✅ Лимит размера сообщения (защита от DoS)
             if len(data) > MAX_MESSAGE_SIZE:
-                print(f"Message too large from client in room {room_id}: {len(data)} bytes")
+                print(
+                    f"Message too large from client in room {room_id}: {len(data)} bytes"
+                )
                 continue
-                
+
             # Обработка ping для поддержания соединения (Koyeb idle timeout ~60s)
             try:
                 msg_json = json.loads(data)
