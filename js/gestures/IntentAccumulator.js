@@ -37,7 +37,7 @@ export class IntentAccumulator extends EventTarget {
         this.frameAge    = 0;
         this._lastEmit   = null;
         this._lastEmitFrame = -999;
-        this._emitCooldown = 15;
+        this._emitCooldown = 45; // 0.75s at 60fps — prevent spam
     }
 
     /**
@@ -78,6 +78,15 @@ export class IntentAccumulator extends EventTarget {
             const intentNorm = bufNorm > 0
                 ? intentSnapshot.map(v => v / bufNorm)
                 : intentSnapshot;
+
+            // Проверяем что intent действительно изменился (не дубликат)
+            if (this._lastEmit) {
+                const sim = this._cosineSim(intentNorm, this._lastEmit);
+                if (sim > 0.95) {
+                    // Тот же intent — не emit
+                    return this.confidence;
+                }
+            }
 
             this.dispatchEvent(new CustomEvent('intentReady', {
                 detail: {
