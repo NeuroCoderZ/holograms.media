@@ -283,9 +283,14 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     const rightW = rightPanel && rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20;
     const panelGap = containerWidth - leftW - rightW;
 
-    // 90% доступного пространства между панелями — голограмма не касается краёв панелей
-    const scaleH = (containerHeight * 0.90) / HOLOGRAM_REFERENCE_HEIGHT;
-    const scaleW = (panelGap * 0.90) / 256;
+    // МИНИМАЛЬНЫЕ 5% ОТСТУПЫ: голограмма масштабируется так чтобы всегда иметь
+    // минимум 5% от viewport сверху/снизу и 5% от краёв панелей по горизонтали
+    const maxHologramH = containerHeight * 0.90; // 5% сверху + 5% снизу = 90% max
+    const maxHologramW = panelGap * 0.90;        // 5% отступ от каждой панели
+    const hologramSize = Math.min(maxHologramW, maxHologramH);
+
+    const scaleH = maxHologramH / HOLOGRAM_REFERENCE_HEIGHT;
+    const scaleW = maxHologramW / 256;
     let targetScaleValue = Math.max(Math.min(scaleH, scaleW), 0.01);
 
     // Центрируем голограмму между панелями
@@ -295,7 +300,9 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     const containerCenterX = containerWidth / 2;
     const xOffset = (hologramCenterX - containerCenterX) / targetScaleValue;
 
-    const verticalCenterOffset = (containerHeight / 2) - (128 * targetScaleValue);
+    // Вертикальное центрирование с учётом 5% отступов
+    const hologramVisualH = HOLOGRAM_REFERENCE_HEIGHT * targetScaleValue;
+    const verticalCenterOffset = (containerHeight - hologramVisualH) / 2;
 
     if (appState.isXRMode) {
         hologramPivot.scale.set(1, 1, 1);
@@ -305,12 +312,14 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         hologramPivot.position.set(xOffset, verticalCenterOffset / targetScaleValue, 0);
     }
 
-    // Синхронизируем панель жестов: та же ширина, строго под голограммой
+    // Синхронизируем панель жестов: та же ширина что и голограмма, строго под ней
     const visualWidth = 256 * targetScaleValue;
     const gestureArea = document.getElementById('gesture-area') || appState.uiElements?.gestureArea;
     if (gestureArea) {
-        gestureArea.style.width  = `${visualWidth}px`;
-        gestureArea.style.left   = `${(containerWidth - visualWidth) / 2}px`;
+        // Убираем CSS-центрирование, управляем позицией напрямую
+        gestureArea.style.transform = 'none';
+        gestureArea.style.left = `${(containerWidth - visualWidth) / 2}px`;
+        gestureArea.style.width = `${visualWidth}px`;
         gestureArea.style.setProperty('--gesture-width', `${visualWidth}px`);
     }
 }

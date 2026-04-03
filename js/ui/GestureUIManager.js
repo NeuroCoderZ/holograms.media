@@ -47,8 +47,9 @@ class GestureUIManager {
         const targetScale = Math.min((w * 0.90) / 256, (h * 0.90) / 256);
         const targetWidthPx = targetScale * 256;
 
-        this.gestureAreaElement.style.left = '50%';
-        this.gestureAreaElement.style.transform = 'translateX(-50%)';
+        // JS управляет позицией напрямую — без translateX
+        this.gestureAreaElement.style.left = `${(w - targetWidthPx) / 2}px`;
+        this.gestureAreaElement.style.transform = 'none';
         this.gestureAreaElement.style.width = `${targetWidthPx}px`;
         this.gestureAreaElement.style.height = '6px';
         this.gestureAreaElement.style.position = 'fixed';
@@ -254,10 +255,9 @@ class GestureUIManager {
         const currentHeightPx = this.gestureAreaElement.offsetHeight;
         const currentWidthPx = this.gestureAreaElement.offsetWidth;
 
-        // Always center horizontally to avoid jumps during animation
-        // Always center horizontally
-        this.gestureAreaElement.style.left = '50%';
-        this.gestureAreaElement.style.transform = 'translateX(-50%)';
+        // Always center horizontally — JS управляет позицией напрямую
+        this.gestureAreaElement.style.left = `${(w - targetWidthPx) / 2}px`;
+        this.gestureAreaElement.style.transform = 'none';
 
         if (present) {
             this.gestureAreaElement.classList.add('hands-detected');
@@ -282,10 +282,10 @@ class GestureUIManager {
             .to({ height: targetHeightPx, width: targetWidthPx }, 300)
             .easing(window.TWEEN.Easing.Cubic.Out) // Faster, snappier feel like side panels
             .onUpdate(() => {
-
-
                 this.gestureAreaElement.style.height = `${coords.height}px`;
                 this.gestureAreaElement.style.width = `${coords.width}px`;
+                // Обновляем позицию при изменении ширины
+                this.gestureAreaElement.style.left = `${(w - coords.width) / 2}px`;
             })
             .onComplete(() => {
                 this.currentAnimation = null;

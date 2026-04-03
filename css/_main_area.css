@@ -44,8 +44,8 @@
 #gesture-area {
   position: fixed;
   bottom: 0 !important;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  transform: none;
   width: var(--gesture-width, 100%) !important;
   height: 60px !important;
 
@@ -74,14 +74,14 @@
 
 /* Peek effect: торчит на 20px когда неактивна */
 #gesture-area:not(.active):not(.hands-detected) {
-  transform: translateX(-50%) translateY(calc(100% - 20px)) !important;
+  transform: translateY(calc(100% - 20px)) !important;
   opacity: 0.6;
   /* Slightly more visible peek */
 }
 
 /* Активная область жестов */
 #gesture-area.hands-detected {
-  transform: translateX(-50%) translateY(0) !important;
+  transform: translateY(0) !important;
   border-color: var(--color-active-green) !important;
   box-shadow: 0 -5px 30px rgba(0, 255, 136, 0.2) !important;
 }
