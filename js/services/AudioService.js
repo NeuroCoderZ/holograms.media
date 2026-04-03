@@ -228,7 +228,7 @@ class AudioService {
                         hasAngles: !!(angles),
                         levelsLen: levels?.length,
                         anglesLen: angles?.length,
-                        isFallback: data?.isFallback
+                        isFallback: event.data?.isFallback
                     });
                     window._audioServiceEmitLog = true;
                 }
