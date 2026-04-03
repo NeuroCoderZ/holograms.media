@@ -142,12 +142,15 @@ class TriaOrchestrator:
         """
         try:
             # Determine model stack from selected_model in context
-            # If context contains 'mistral', use Mistral stack
-            use_mistral = context and "mistral" in context.lower()
-            model_stack = "mistral" if use_mistral else "gemini"
-            main_model = MISTRAL_MAIN if use_mistral else GEMINI_MAIN
-            sub_model = MISTRAL_SUB if use_mistral else GEMINI_SUB
-            get_response = get_mistral_response if use_mistral else get_gemini_response
+            # Mistral — primary (no RPM issues), Gemini — opt-in by explicit request
+            use_gemini_explicitly = context and "gemini" in context.lower()
+            use_mistral = not use_gemini_explicitly  # default: Mistral
+            model_stack = "gemini" if use_gemini_explicitly else "mistral"
+            main_model = GEMINI_MAIN if use_gemini_explicitly else MISTRAL_MAIN
+            sub_model = GEMINI_SUB if use_gemini_explicitly else MISTRAL_SUB
+            get_response = (
+                get_gemini_response if use_gemini_explicitly else get_mistral_response
+            )
 
             logger.info(f"[Orchestrator] Using {model_stack} stack")
 
@@ -170,8 +173,21 @@ class TriaOrchestrator:
             if not system_instruction:
                 system_instruction = (
                     f"Ты Триа (v{settings.ENVIRONMENT}). AI-ассистент платформы holograms.media. "
-                    "Используй предоставленный контекст исследования для точных ответов."
+                    "Используй предоставленный контекст исследования для точных ответов. "
+                    "ВАЖНО: Не используй markdown форматирование (**жирный**, *курсив*). "
+                    "Используй обычные кавычки «» для выделения слов и фраз. "
+                    "Отвечай простым текстом без звёздочек."
                 )
+            else:
+                # Добавляем no-markdown правило к существующей инструкции
+                if (
+                    "**" not in system_instruction
+                    and "markdown" not in system_instruction.lower()
+                ):
+                    system_instruction += (
+                        "\n\nВАЖНО: Не используй markdown форматирование (**жирный**, *курсив*). "
+                        "Используй обычные кавычки «» для выделения. Отвечай простым текстом."
+                    )
 
             # Generate two candidates in parallel with history context
             history_ctx = "\n".join(
@@ -193,13 +209,34 @@ class TriaOrchestrator:
                 # Stage 2a: Single generation (1 API call)
                 single_prompt = f"History:\n{history_ctx}\n\nContext:\n{research_pack}{ui_snippet}\n\nTask: {prompt}\nProvide a clear, helpful response."
 
-                candidates = [
-                    await get_response(
+                result = await get_response(
+                    single_prompt,
+                    system_instruction=system_instruction,
+                    model_id=main_model,
+                )
+
+                # Fallback: если основная модель 429 — переключаемся на альтернативный стек
+                if isinstance(result, Exception) and (
+                    "429" in str(result) or "RESOURCE_EXHAUSTED" in str(result)
+                ):
+                    fallback_model = (
+                        GEMINI_MAIN if model_stack == "mistral" else MISTRAL_MAIN
+                    )
+                    fallback_fn = (
+                        get_gemini_response
+                        if model_stack == "mistral"
+                        else get_mistral_response
+                    )
+                    logger.warning(
+                        f"{model_stack} 429: Falling back to {'Gemini' if model_stack == 'mistral' else 'Mistral'}"
+                    )
+                    result = await fallback_fn(
                         single_prompt,
                         system_instruction=system_instruction,
-                        model_id=main_model,
+                        model_id=fallback_model,
                     )
-                ]
+
+                candidates = [result]
                 final_response = candidates[0]
             else:
                 # Stage 2b: Dual candidate mode (2 API calls)
@@ -228,15 +265,15 @@ class TriaOrchestrator:
                         "429" in str(c) or "RESOURCE_EXHAUSTED" in str(c)
                     ):
                         fallback_model = (
-                            MISTRAL_MAIN if model_stack == "gemini" else GEMINI_MAIN
+                            GEMINI_MAIN if model_stack == "mistral" else MISTRAL_MAIN
                         )
                         fallback_fn = (
-                            get_mistral_response
-                            if model_stack == "gemini"
-                            else get_gemini_response
+                            get_gemini_response
+                            if model_stack == "mistral"
+                            else get_mistral_response
                         )
                         logger.warning(
-                            f"{model_stack} 429: Switching to {'Mistral' if model_stack == 'gemini' else 'Gemini'}"
+                            f"{model_stack} 429: Switching to {'Gemini' if model_stack == 'mistral' else 'Mistral'}"
                         )
                         candidates[idx] = await fallback_fn(
                             prompt=candidate_prompts[idx],
