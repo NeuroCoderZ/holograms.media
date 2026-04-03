@@ -49,11 +49,14 @@ eventBus.on('audio:spectralData', (data) => {
 
     // DIAGNOSTIC: Что приходит от CWT Worklet?
     if (!window._cwtInputLog) {
+        const maxLv = Math.max(...data.levels);
+        const minLv = Math.min(...data.levels);
         console.log('[AudioProcessing] 📥 CWT Input raw:', {
-            levelsSample: data.levels.slice(0, 5),
-            anglesSample: data.angles ? data.angles.slice(0, 5) : 'no angles',
-            maxLevel: Math.max(...data.levels),
-            minLevel: Math.min(...data.levels)
+            levelsSample: Array.from(data.levels.slice(0, 5)),
+            anglesSample: data.angles ? Array.from(data.angles.slice(0, 5)) : 'no angles',
+            maxLevel: maxLv,
+            minLevel: minLv,
+            isFallback: data.isFallback || false
         });
         window._cwtInputLog = true;
     }
