@@ -134,6 +134,18 @@ class CwtProcessor extends AudioWorkletProcessor {
         const input = inputs[0];
 
         if (!input || !input[0] || !wasm || !analyzerPtr || !this._initialized) {
+            // DIAGNOSTIC: Почему fallback?
+            if (!window._cwtFallbackLog) {
+                console.log('[CwtWorklet] ⚠️ Fallback mode:', {
+                    hasInput: !!input,
+                    hasInput0: !!(input && input[0]),
+                    hasWasm: !!wasm,
+                    hasAnalyzerPtr: !!analyzerPtr,
+                    initialized: this._initialized
+                });
+                window._cwtFallbackLog = true;
+            }
+            
             // THROTTLED fallback: отправляем НЕ чаще target FPS (вместо 375/сек!)
             this._fallbackAccumulator += (input && input[0]) ? input[0].length : 128;
             const samplesPerFrame = this._sampleRate / (this._targetFps || 60);

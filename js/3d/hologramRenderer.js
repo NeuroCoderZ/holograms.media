@@ -193,15 +193,32 @@ export class HologramRenderer {
       this._frozenFrame = null;
     }
 
-    // Guard: если вообще нет данных — не рисуем
+    // Guard: если вообще нет данных — рисуем DEMO столбцы (базовые)
     if (!audioData) {
-        console.warn('[HologramRenderer] No audio data for rendering:', {
-            hasFrozen: !!this._frozenFrame,
-            hasLatest: !!this.latestCwtData,
-            hasStateAudio: !!(state.audio?.latestAudioData),
-            latestKeys: this.latestCwtData ? Object.keys(this.latestCwtData) : 'null',
-            stateKeys: state.audio?.latestAudioData ? Object.keys(state.audio.latestAudioData) : 'null'
-        });
+        // Рисуем DEMO столбцы — синусоидальная волна для визуализации сетки
+        if (!window._demoColumnsLogged) {
+            console.log('[HologramRenderer] 🎨 No audio data — drawing DEMO columns');
+            window._demoColumnsLogged = true;
+        }
+        
+        const scalesL = this.meshL.geometry.getAttribute('aColumnScaleZ');
+        const scalesR = this.meshR.geometry.getAttribute('aColumnScaleZ');
+        const time = Date.now() * 0.001;
+        
+        for (let i = 0; i < semitones.length; i++) {
+            const config = semitones[i];
+            const width = config.width || 1;
+            
+            // Демо-волна: small sine wave pattern (base height 5-20)
+            const demoH = 5 + Math.sin(time * 2 + i * 0.1) * 3 + Math.sin(time * 0.5 + i * 0.05) * 2;
+            const demoH2 = 5 + Math.sin(time * 2 + i * 0.1 + Math.PI) * 3 + Math.sin(time * 0.5 + i * 0.05 + 1) * 2;
+            
+            scalesL.setX(i, Math.max(0.5, demoH));
+            scalesR.setX(i, Math.max(0.5, demoH2));
+        }
+        
+        scalesL.needsUpdate = true;
+        scalesR.needsUpdate = true;
         return;
     }
 
