@@ -104,6 +104,9 @@ class CwtProcessor extends AudioWorkletProcessor {
                 throw new Error('cwtanalyzer_new returned null');
             }
 
+            // CRITICAL: Mark initialized BEFORE logging/buffer allocation
+            this._initialized = true;
+
             this.port.postMessage({
                 type: 'LOG',
                 msg: `WASM Engine Created. Ptr: ${analyzerPtr}, SR: ${this._sampleRate}, FPS: ${this._targetFps}`
@@ -116,7 +119,7 @@ class CwtProcessor extends AudioWorkletProcessor {
             ptrs.pans = wasm.malloc(128 * 4);
             ptrs.confidence = wasm.malloc(128 * 4);
 
-            this._initialized = true;
+            // Already set: this._initialized = true; // Moved before buffer allocation
             this.port.postMessage({ type: 'WASM_READY' });
             this.port.postMessage({ type: 'LOG', msg: 'PIPELINE_FULLY_READY' });
         } catch (err) {
