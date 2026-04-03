@@ -31,11 +31,6 @@ class VersionTimelinePanel {
         if (!this.versionFramesContainer) return;
 
         this.mutationObserver = new MutationObserver((mutationsList, observer) => {
-            // Check if the scroll is already near the bottom or if user has scrolled up
-            const isScrolledToBottom = this.versionFramesContainer.scrollHeight - this.versionFramesContainer.clientHeight <= this.versionFramesContainer.scrollTop + 10; // 10px threshold
-
-            // Only auto-scroll if new items are added and we are already near the bottom
-            // This prevents auto-scrolling if the user has intentionally scrolled up.
             let newNodesAdded = false;
             for (const mutation of mutationsList) {
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
@@ -44,10 +39,9 @@ class VersionTimelinePanel {
                 }
             }
 
-            if (newNodesAdded && isScrolledToBottom) {
-                this.scrollToBottom();
-            } else if (newNodesAdded && this.versionFramesContainer.children.length <= 1) {
-                // Or if it's the very first item, always scroll
+            // Всегда скроллим вниз при добавлении новых элементов
+            // (пользователь может проскроллить вверх вручную — тогда автоскролл не мешает)
+            if (newNodesAdded) {
                 this.scrollToBottom();
             }
         });
