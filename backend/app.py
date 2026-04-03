@@ -110,6 +110,14 @@ async def lifespan(app: FastAPI):
                 logger.info("[Startup] Created collection: chat_history")
             except Exception:
                 pass
+            try:
+                await db.create_collection(
+                    "tria_episodic_memory",
+                    definition={"vector": {"dimension": 3072, "metric": "cosine"}},
+                )
+                logger.info("[Startup] Created collection: tria_episodic_memory")
+            except Exception:
+                pass
     except Exception as e:
         logger.warning(f"[Startup] Collection init failed: {e}")
 

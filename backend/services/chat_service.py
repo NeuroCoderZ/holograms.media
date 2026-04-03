@@ -13,6 +13,14 @@ from backend.core.models import (
     ChatSessionWithHistory,
     UserInDB,
 )
+
+# xMemory: Background episode saving
+try:
+    from backend.tria_agents.tria_memory_service import save_episode_to_memory
+
+    XMEMORY_SAVE_AVAILABLE = True
+except ImportError:
+    XMEMORY_SAVE_AVAILABLE = False
 from backend.core.config import settings
 from backend.llm.mistral_llm import get_mistral_response
 from backend.llm.gemini_llm import get_gemini_response
@@ -449,6 +457,30 @@ class ChatService:
                     message_in=assistant_msg, user_id=user_id
                 )
                 logger.info(f"Stream finished and saved to session {session_id}")
+
+                # xMemory: Фоновое сохранение эпизода (без блокировки основного потока)
+                if XMEMORY_SAVE_AVAILABLE and user_id and user_id != "guest":
+                    try:
+                        history_for_memory = await self.repo.get_messages_by_session_id(
+                            session_id=session_id, user_id=user_id, skip=0, limit=20
+                        )
+                        if history_for_memory and len(history_for_memory) >= 4:
+                            if len(history_for_memory) % 4 == 0:
+                                asyncio.create_task(
+                                    save_episode_to_memory(
+                                        messages=[
+                                            {
+                                                "role": m.role,
+                                                "content": m.message_content,
+                                            }
+                                            for m in history_for_memory[-8:]
+                                        ],
+                                        session_id=str(session_id),
+                                        user_id=user_id,
+                                    )
+                                )
+                    except Exception as xm_err:
+                        logger.warning(f"xMemory background save error: {xm_err}")
             yield "data: " + json.dumps({"done": True}) + "\n\n"
 
     async def get_session_with_history(

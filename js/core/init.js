@@ -215,6 +215,8 @@ import PanelManager from '../ui/panelManager.js';
 import { XRSessionManager } from '../xr/webxr_session_manager.js';
 import GestureUIManager from '../ui/GestureUIManager.js';
 import eventBus from '../core/eventBus.js';
+import { IntentAccumulator } from '../gestures/IntentAccumulator.js';
+import { GestureSemanticLayer } from '../gestures/GestureSemanticLayer.js';
 import { GestureCommandEngine } from '../core/GestureCommandEngine.js';
 import { GestureToCodeExecutor } from '../core/GestureToCodeExecutor.js';
 import { GestureLiveStudio } from '../ui/GestureLiveStudio.js';
@@ -357,10 +359,26 @@ export async function initCore() {
               enkephalon.init(wasmExports);
               state.enkephalon = enkephalon;
               
+              // IntentAccumulator + GestureSemanticLayer (C-3)
+              state.intentAccumulator = new IntentAccumulator({
+                  intentDim: 25,
+                  threshold: 0.75,
+                  decayFast: 0.60
+              });
+              state.gestureSemanticLayer = new GestureSemanticLayer();
+              
+              // Подписка на готовые intents
+              state.intentAccumulator.addEventListener('intentReady', (e) => {
+                  const { intent, confidence, switchedFrom } = e.detail;
+                  eventBus.emit('gesture_intent', { intent, confidence });
+                  if (switchedFrom) {
+                      console.log('[IntentAccumulator] Intent switched at confidence:', confidence);
+                  }
+              });
+              
               if (savedWeights) {
                   enkephalon.importWeights(savedWeights);
               }
-              // Запуск планировщика снапшотов (C-2)
               enkephalon.scheduleWeightSnapshot(state.triaMemory);
           } else {
               console.warn('[Enkephalon] WASM instance not found. Stub mode active.');
@@ -452,6 +470,17 @@ export async function initCore() {
               
               // 3. Recall predicted intent
               const predictedIntent = state.enkephalon.recall(embedding);
+
+              // IntentAccumulator: накопление и смена намерения (C-3)
+              if (state.intentAccumulator) {
+                  const confidence = state.intentAccumulator.update(predictedIntent);
+                  
+                  // GestureSemanticLayer: интерпретация в XR-команды
+                  if (confidence >= 0.7) {
+                      const currentIntent = state.intentAccumulator.getCurrentIntent();
+                      state.gestureSemanticLayer.interpret(currentIntent, confidence);
+                  }
+              }
 
               // 4. Learning (Hebbian)
               state.enkephalon.learn(embedding, predictedIntent);

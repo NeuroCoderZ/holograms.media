@@ -20,10 +20,13 @@ export default class TriaCollectiveService {
   }
 
   /**
-   * Connect to signaling server via WebSocket.
+   * Connect to signaling server via WebSocket with reconnect logic.
    * @param {string} signalingUrl — ws:// or wss:// URL
    */
-  async connect(signalingUrl) {
+  async connect(signalingUrl, retryCount = 0) {
+    const MAX_RETRIES = 5;
+    const RETRY_DELAY = Math.min(1000 * Math.pow(2, retryCount), 30000);
+
     if (!signalingUrl || signalingUrl === 'local') {
       console.warn('[TriaCollective] No signaling URL, running in local-only mode.');
       this._signaling = 'local';
@@ -44,13 +47,12 @@ export default class TriaCollectiveService {
         console.log('[TriaCollective] WebSocket connected to', signalingUrl);
         this._signaling = signalingUrl;
         this._ws.send(JSON.stringify({ type: 'register', peerId: this._selfId }));
+        retryCount = 0;
         
-        // Heartbeat (G-2v) - 10s for Koyeb proxy timeout safety
         if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
         this._heartbeatInterval = setInterval(() => {
             if (this._ws && this._ws.readyState === WebSocket.OPEN) {
                 this._ws.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
-                console.log('[TriaCollective] Sent ping');
             }
         }, 10000);
         
@@ -68,13 +70,19 @@ export default class TriaCollectiveService {
 
       this._ws.onerror = (err) => {
         console.warn('[TriaCollective] WebSocket error:', err);
-        this._signaling = 'local';
-        resolve({ ok: true, url: 'local', fallback: true });
       };
 
-      this._ws.onclose = () => {
-        console.log('[TriaCollective] WebSocket closed');
+      this._ws.onclose = (e) => {
+        console.log('[TriaCollective] WebSocket closed, code:', e.code);
         if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
+        
+        if (retryCount < MAX_RETRIES) {
+          console.log(`[TriaCollective] Reconnecting in ${RETRY_DELAY}ms (attempt ${retryCount+1}/${MAX_RETRIES})`);
+          setTimeout(() => this.connect(signalingUrl, retryCount + 1), RETRY_DELAY);
+        } else {
+          console.warn('[TriaCollective] Max reconnect attempts reached. P2P disabled.');
+          this._signaling = 'local';
+        }
       };
     });
   }

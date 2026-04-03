@@ -3,6 +3,17 @@ import logging
 from typing import Dict, Any, List, Optional, AsyncGenerator
 import asyncio
 
+logger = logging.getLogger(__name__)
+
+# xMemory: Personalized Memory Retrieval
+try:
+    from backend.tria_agents.tria_memory_service import retrieve_personal_context
+
+    XMEMORY_AVAILABLE = True
+except ImportError:
+    XMEMORY_AVAILABLE = False
+    logger.warning("xMemory not available — using RAG only")
+
 from backend.tria_agents.tria_rag_service import tria_rag
 from backend.llm.gemini_llm import get_gemini_response
 from backend.llm.mistral_llm import get_mistral_response
@@ -101,9 +112,21 @@ class TriaOrchestrator:
 
         # Step 3: Synthesis
         context_body = "\n---\n".join(set(filter(None, rag_results)))
-        return (
-            f"{skills_context}\n\n### Research Findings:\n{context_body}{web_context}"
+
+        # xMemory: Personal Memory Context
+        personal_memory = ""
+        if XMEMORY_AVAILABLE and user_id and user_id != "guest":
+            try:
+                personal_memory = await retrieve_personal_context(
+                    query=prompt, user_id=user_id, limit=3, similarity_threshold=0.55
+                )
+            except Exception as pm_err:
+                logger.warning(f"xMemory retrieval failed: {pm_err}")
+
+        memory_section = (
+            f"\n\n### Personal Memory:\n{personal_memory}" if personal_memory else ""
         )
+        return f"{skills_context}\n\n### Research Findings:\n{context_body}{web_context}{memory_section}"
 
     async def stream_user_prompt(
         self,
