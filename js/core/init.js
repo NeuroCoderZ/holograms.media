@@ -340,12 +340,14 @@ export async function initCore() {
           // Загружаем Enkephalon WASM (holographic_core с brain_* функциями)
           let wasmExports = null;
           try {
-              const { default: EnkephalonWasm } = await import('../wasm/holographic_core.js');
+              // Load from public/wasm/ (正确的路径 after Vite build)
+              const wasmUrl = '/wasm/holographic_core.js';
+              const { default: EnkephalonWasm } = await import(wasmUrl);
               await EnkephalonWasm.default();
               wasmExports = EnkephalonWasm;
-              console.log('[Enkephalon] WASM module loaded from holographic_core.js');
+              console.log('[Enkephalon] WASM module loaded from', wasmUrl);
           } catch (wasmErr) {
-              console.warn('[Enkephalon] holographic_core.js not found, trying fallback loader...');
+              console.warn('[Enkephalon] holographic_core.js not found at /wasm/, trying fallback...', wasmErr);
               const { getWasmInstance } = await import('../wasm/wasm_loader.js');
               let wasmInst = getWasmInstance();
               if (!wasmInst) {
