@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.377");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.378");</script>
   <!-- DEPLOY_VERSION_END -->
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
@@ -312,7 +312,6 @@
         <button class="gesture-tab" id="gestureCollapseButton" style="position: absolute; right: 10px; opacity: 0.6; padding: 4px 8px; text-decoration: none; border-bottom: none;" title="Свернуть панель"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M240-400v-80h480v80H240Z"/></svg></button>
       </div>
       <div id="gesture-line"></div>
-      <div id="gestureListContainer"></div>
     </div>
   </div>
 
@@ -339,7 +338,7 @@
 
       <!-- Список жестов (Режим Gestures) -->
       <div id="myGesturesView" class="right-panel-view" style="display: none;">
-        <!-- Сюда будет добавляться список жестов -->
+        <div id="gestureListContainer"></div>
       </div>
 
       <!-- Список голограмм (Режим Holograms) -->

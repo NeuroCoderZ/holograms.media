@@ -126,7 +126,10 @@ export class GestureLiveStudio {
 
     _renderGestureList() {
         const listContainer = document.getElementById('gestureListContainer');
-        if (!listContainer) return;
+        if (!listContainer) {
+            console.warn('[GestureLiveStudio] #gestureListContainer not found');
+            return;
+        }
 
         if (!this.savedGestures || this.savedGestures.length === 0) {
             listContainer.innerHTML = '<div class="empty-gesture-list">Нет сохранённых жестов. Запишите первый жест!</div>';
@@ -148,7 +151,7 @@ export class GestureLiveStudio {
             </div>
         `).join('');
 
-        // Обработчик клика по жесту
+        // Обработчик клика по жесту — загрузка в панель жестов
         listContainer.querySelectorAll('.gesture-list-item').forEach(item => {
             item.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -394,6 +397,16 @@ export class GestureLiveStudio {
             if (this.currentRecording) {
                 this.currentRecording.handCount = data?.count || 0;
             }
+        });
+
+        // Обновление списка жестов после сохранения
+        eventBus.on('studio:gestureSaved', () => {
+            this._renderGestureList();
+        });
+
+        // Обновление списка при активации вкладки "Жесты"
+        eventBus.on('gestures:viewActivated', () => {
+            this._renderGestureList();
         });
     }
 

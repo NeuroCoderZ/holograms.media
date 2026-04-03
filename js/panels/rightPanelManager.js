@@ -69,6 +69,11 @@ function switchTab(viewName) {
   if (viewName === 'versions') {
     eventBus.emit('versions:refresh');
   }
+  
+  // Обновить список жестов при переключении на вкладку "Жесты"
+  if (viewName === 'gestures') {
+    eventBus.emit('gestures:viewActivated');
+  }
 }
 
 // --- Экспортируемые функции ---
