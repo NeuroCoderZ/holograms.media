@@ -70,6 +70,7 @@ export default class TriaCollectiveService {
 
       this._ws.onerror = (err) => {
         console.warn('[TriaCollective] WebSocket error:', err);
+        resolve({ ok: false, error: err });
       };
 
       this._ws.onclose = (e) => {
@@ -78,10 +79,12 @@ export default class TriaCollectiveService {
         
         if (retryCount < MAX_RETRIES) {
           console.log(`[TriaCollective] Reconnecting in ${RETRY_DELAY}ms (attempt ${retryCount+1}/${MAX_RETRIES})`);
+          resolve({ ok: false, retry: true });
           setTimeout(() => this.connect(signalingUrl, retryCount + 1), RETRY_DELAY);
         } else {
           console.warn('[TriaCollective] Max reconnect attempts reached. P2P disabled.');
           this._signaling = 'local';
+          resolve({ ok: false, disabled: true });
         }
       };
     });
