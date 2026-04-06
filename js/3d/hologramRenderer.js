@@ -33,6 +33,7 @@ export class HologramRenderer {
     this._lastUpdate = 0;
     this._minUpdateInterval = 1000 / 60; // Throttle: max 60fps update (как в феврале 9d105c6)
     this._initTime = Date.now(); // For WASM init grace period
+    this._lastAudioActive = false; // Track when audio becomes active
 
     this.hologramPivot = new THREE.Group();
     this.mainSequencerGroup = new THREE.Group();
@@ -198,7 +199,12 @@ export class HologramRenderer {
     // Также рисуем демо если WASM в fallback mode (все -128) в течение grace period
     const isAllSilence = audioData && audioData.levels &&
         audioData.levels.every(v => v <= -127);
-    const wasmInitGrace = isAllSilence && (Date.now() - this._initTime < 5000);
+    
+    // Grace period: либо при загрузке страницы, либо при активации аудио
+    const audioJustActivated = isActive && !this._lastAudioActive;
+    if (isActive) this._lastAudioActive = true;
+    const graceTime = audioJustActivated ? Date.now() : this._initTime;
+    const wasmInitGrace = isAllSilence && (Date.now() - graceTime < 5000);
 
     if (!audioData || wasmInitGrace) {
         // Рисуем DEMO столбцы — синусоидальная волна для визуализации сетки
