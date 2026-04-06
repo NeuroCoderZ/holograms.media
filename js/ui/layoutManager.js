@@ -293,12 +293,14 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     const scaleW = maxHologramW / 256;
     let targetScaleValue = Math.max(Math.min(scaleH, scaleW), 0.01);
 
-    // Центрируем голограмму между панелями
-    const leftPanelRight = leftW;
-    const rightPanelLeft = containerWidth - rightW;
-    const hologramCenterX = (leftPanelRight + rightPanelLeft) / 2;
-    const containerCenterX = containerWidth / 2;
-    const xOffset = (hologramCenterX - containerCenterX) / targetScaleValue;
+    // Визуальный центр голограммы в координатах viewport
+    const visualCenterX = leftW + panelGap / 2;
+
+    // Голограмма центрирована в canvas (координата 0 = центр canvas)
+    // Но canvas = full viewport, центр canvas = containerWidth / 2
+    // Смещение = визуальный центр - центр canvas
+    const canvasCenterX = containerWidth / 2;
+    const xOffset = (visualCenterX - canvasCenterX) / targetScaleValue;
 
     // Вертикальное центрирование с учётом 5% отступов
     const hologramVisualH = HOLOGRAM_REFERENCE_HEIGHT * targetScaleValue;

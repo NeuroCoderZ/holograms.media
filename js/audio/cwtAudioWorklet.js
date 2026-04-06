@@ -242,12 +242,30 @@ class CwtProcessor extends AudioWorkletProcessor {
                 // сохраняя остаток для следующего цикла (jitter protection)
                 this._sampleAccumulator = Math.min(this._sampleAccumulator - samplesPerFrame, samplesPerFrame);
                 
-                // Извлекаем слайсы только тогда, когда пора отправлять
-                const levels = new Float32Array(mem.buffer, ptrs.levels, 256).slice(); 
-                const angles = new Float32Array(mem.buffer, ptrs.pans, 128).slice();
-                const confidence = new Float32Array(mem.buffer, ptrs.confidence, 128).slice();
+            // Извлекаем слайсы только тогда, когда пора отправлять
+            const levels = new Float32Array(mem.buffer, ptrs.levels, 256).slice(); 
+            const angles = new Float32Array(mem.buffer, ptrs.pans, 128).slice();
+            const confidence = new Float32Array(mem.buffer, ptrs.confidence, 128).slice();
 
-                this.port.postMessage({
+            // DIAGNOSTIC: проверить первые 4 значения levels
+            if (!this._diagLogged) {
+                this._diagLogged = true;
+                const sample = Array.from(levels.slice(0, 8));
+                const inputSample = Array.from(input[0].slice(0, 8));
+                const inputRms = Math.sqrt(input[0].reduce((s, v) => s + v*v, 0) / input[0].length);
+                console.log('[CwtWorklet] DIAGNOSTIC:', {
+                    levelsFirst8: sample,
+                    inputFirst8: inputSample,
+                    inputRMS: inputRms.toFixed(6),
+                    analyzerPtr,
+                    sampleRate: this._sampleRate,
+                    targetFps: this._targetFps,
+                    ptrs: { left: ptrs.left, right: ptrs.right, levels: ptrs.levels, pans: ptrs.pans },
+                    memLength: mem.length
+                });
+            }
+
+            this.port.postMessage({
                     type: 'AUDIO_DATA',
                     levels,
                     angles,
