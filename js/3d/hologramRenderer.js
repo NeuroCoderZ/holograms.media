@@ -311,6 +311,7 @@ export class HologramRenderer {
         pR = initialX_R + Math.max(0, discreteShift) * 1.5;
 
         // Физика BasilaQ: 1дБ = 1 ячейка. Z-scale = 128 + dB.
+        // Clamp к [1.0, 128.0] — столбцы НЕ выходят за пределы сетки
         hL = Math.min(128.0, Math.max(1.0, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL))));
         hR = Math.min(128.0, Math.max(1.0, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR))));
         
@@ -356,11 +357,6 @@ export class HologramRenderer {
     const greetingValue = !isActive ? 1.0 : 0.0;
     this.meshL.material.uniforms.uIsGreeting.value = greetingValue;
     this.meshR.material.uniforms.uIsGreeting.value = greetingValue;
-    
-    // При паузе убираем усиление яркости чтобы затемнение работало корректно
-    const brightnessBoost = (isPaused && this._frozenFrame) ? 1.0 : 1.4;
-    this.meshL.material.uniforms.uBrightnessBoost.value = brightnessBoost;
-    this.meshR.material.uniforms.uBrightnessBoost.value = brightnessBoost;
   }
 
   getHologramPivot() { return this.hologramPivot; }

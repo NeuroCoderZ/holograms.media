@@ -43,24 +43,33 @@ export const fragmentShader = /* glsl */`
         // Используем цвет из аттрибута (инстанс) или из униформа (обычный меш)
         vec3 baseColor = mix(uBaseColor, vColor, 1.0); // vColor доминирует если есть
 
+        // ═══ Z-Dimming: затемнение к чёрному по глубине ═══
+        // vZ ∈ [0, 1] — локальная координата геометрии столбца
+        // vColumnScaleZ — высота столбца в ячейках (1..128)
+        // depth ∈ [0, vColumnScaleZ] — абсолютная глубина от основания
         float depth = vZ * vColumnScaleZ;
-        float cellIndex = floor(depth + 0.001);
+
+        // cellIndex = 0 (основание, чёрный) .. 127 (вершина, чистый цвет)
+        float cellIndex = floor(depth);
         float bIndex = clamp(cellIndex, 0.0, 127.0);
-        float brightness = bIndex / 128.0; 
-        
+
+        // Линейное затемнение: 0/128 = чёрный, 127/128 = чистый цвет
+        float brightness = bIndex / 127.0;
+
+        // Верхняя грань (крышка столбца) — всегда чистый цвет
         if (vZ > 0.99) {
-            float maxCell = floor(vColumnScaleZ + 0.001);
-            brightness = clamp(maxCell + 1.0, 1.0, 128.0) / 128.0;
+            brightness = 1.0;
         }
 
-        vec3 finalColor = baseColor * brightness;
+        // Смешиваем: чистый чёрный → базовый цвет
+        vec3 finalColor = mix(vec3(0.0), baseColor, brightness);
 
         if (uIsGreeting > 0.5) {
             finalColor = baseColor;
         }
 
-        finalColor += uSelection * 0.3; 
-        gl_FragColor = vec4(finalColor * uBrightnessBoost, 1.0);
+        finalColor += uSelection * 0.3;
+        gl_FragColor = vec4(finalColor, 1.0);
     }
 `;
 
@@ -70,6 +79,6 @@ export function makeColumnUniforms(baseColor) {
         uBaseColor: { value: baseColor },
         uSelection: { value: 0.0 },
         uIsGreeting: { value: 1.0 },
-        uBrightnessBoost: { value: 1.4 }, // Increased for self-illumination
+        uBrightnessBoost: { value: 1.0 }, // Нейтральный — затемнение через mix()
     };
 }

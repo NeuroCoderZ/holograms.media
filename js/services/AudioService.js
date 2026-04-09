@@ -139,6 +139,25 @@ class AudioService {
      * Resets the Worklet Node (disconnects and nulls it) to force recreation.
      * This is useful when stopping playback to ensure a clean state for the next run.
      */
+    /**
+     * Сбрасывает буферы CWT-анализатора БЕЗ уничтожения WorkletNode.
+     * Используется при смене трека или нажатии Stop.
+     * Worklet остаётся живым, WASM получает RESET и продолжает работать.
+     */
+    resetCwtBuffers() {
+        if (this.workletNode) {
+            try {
+                this.workletNode.port.postMessage({ type: 'RESET' });
+            } catch (e) {
+                console.warn('[AudioService] Error sending RESET to worklet:', e);
+            }
+        }
+    }
+
+    /**
+     * Полностью уничтожает Worklet Node (disconnect и null).
+     * Используется только при полной остановке приложения.
+     */
     resetWorklet() {
         if (this.workletNode) {
             try {

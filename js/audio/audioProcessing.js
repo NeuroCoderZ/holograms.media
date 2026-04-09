@@ -190,30 +190,28 @@ async function estimateScreenFPS() {
 let silentGainNode = null;
 
 export async function initializeCwtWorklet(audioContext) {
-    console.log('[AudioProcessing] 🚀 Requesting CQT initialization...');
-
     const ctx = audioContext || audioService.getAudioContext();
 
     // Если worklet уже создан — просто вернём его (синглтон в AudioService)
     if (audioService.workletNode) {
-        console.log('[AudioProcessing] ♻️ Worklet already exists, reusing.');
         window._cwtLinked = true;
         return audioService.workletNode;
     }
 
-    // 1. Детектируем FPS экрана ПЕРЕД запуском ворклета (24-240 Гц)
+    console.log('[AudioProcessing] 🚀 Creating CWT Worklet...');
+
+    // Детектируем FPS экрана (24-240 Гц)
     const screenFps = await estimateScreenFPS();
     console.log(`[AudioProcessing] 🖥️ Detected Screen FPS: ${screenFps}`);
     state.performance = { ...state.performance, screenFps };
 
     await audioService.initialize();
 
-    // Передаем FPS в опции создания ноды
+    // Создаём worklet с целевым FPS
     const node = audioService.createWorkletNode('file', { targetFps: screenFps });
 
-    // Ensure context is running (Non-blocking to prevent init hang)
+    // Ensure context is running (Non-blocking)
     if (ctx.state === 'suspended') {
-        console.log('[AudioProcessing] ⚠ AudioContext suspended. Resuming in background...');
         ctx.resume().catch(err => {
             console.warn('[AudioProcessing] Could not resume context during init:', err.message);
         });
@@ -302,14 +300,14 @@ export function runBasilaQHealthCheck() {
  * Performs a hard reset by destroying the WorkletNode via AudioService.
  */
 export function resetCwtAnalyzer() {
-    console.log('[AudioProcessing] 🔄 Performing Hard Reset of CWT Analyzer...');
-    audioService.resetWorklet();
-    window._cwtLinked = false;   // новый воркер может подсоединиться к proxy
+    console.log('[AudioProcessing] 🔄 Performing Soft Reset of CWT Analyzer...');
+    audioService.resetCwtBuffers();  // НЕ уничтожаем worklet, только сброс буферов
+    window._cwtLinked = false;   // следующий source переподключится к proxy
     window._cqtConnected = false; // [BUG-FIX] источник должен переподключиться к proxy!
     resetInputProxy();            // [BUG-FIX] убиваем старый proxy (он висит на мёртвом воркере)
     window._pipelineVerified = false; // сбрасываем маркер первых данных
 
     // Уведомляем рендерер чтобы сбросил stale данные
     eventBus.emit('audioReset', {});
-    console.log('[AudioProcessing] ✅ Full reset complete. _cqtConnected=false, proxy=null');
+    console.log('[AudioProcessing] ✅ Soft reset complete. Worklet preserved.');
 }

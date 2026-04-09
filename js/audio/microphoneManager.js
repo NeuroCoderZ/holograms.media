@@ -159,6 +159,11 @@ export class MicrophoneManager {
       this.gainNode = null;
     }
 
+    // НЕ вызываем resetCwtAnalyzer — worklet должен жить для следующего источника
+    // Только сбрасываем флаги подключения
+    window._cwtLinked = false;
+    window._cqtConnected = false;
+
     console.log('[MicrophoneManager] ⏹ Stopped.');
   }
 
@@ -198,7 +203,12 @@ export class MicrophoneManager {
         }
         console.log("[MicrophoneManager] 🔇 Microphone stopped.");
       } else {
-        // Turn ON
+        // Защита: если микрофон уже запущен (по stream), не включать повторно
+        if (this.microphoneStream && this.source) {
+          console.warn("[MicrophoneManager] Microphone already active, ignoring duplicate toggle.");
+          return;
+        }
+
         if (this.audioContext.state === 'suspended') {
           await this.audioContext.resume();
         }
@@ -210,7 +220,7 @@ export class MicrophoneManager {
           button.classList.add('active');
           button.title = "Выключить микрофон";
         }
-        
+
         console.log(`[MicrophoneManager] 🎤 Microphone started (${liveMode ? 'LIVE' : 'STT'}).`);
       }
     } catch (error) {
