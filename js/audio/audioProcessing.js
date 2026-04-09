@@ -238,13 +238,12 @@ export async function initializeCwtWorklet(audioContext) {
  */
 export async function setupAudioProcessing(sourceNode, audioContext) {
     const ctx = audioContext || audioService.getAudioContext();
-    const isFirstTime = !audioService.workletNode;
 
     // Подключаем source к proxy
     const proxy = getInputProxyNode(ctx);
     sourceNode.connect(proxy);
 
-    if (isFirstTime) {
+    if (!audioService.workletNode) {
         // Первый вызов — создаём полный pipeline
         const workletNode = await initializeCwtWorklet(audioContext);
         proxy.connect(workletNode);
@@ -252,11 +251,13 @@ export async function setupAudioProcessing(sourceNode, audioContext) {
         return workletNode;
     }
 
-    // Повторный вызов — worklet уже существует и подключён к proxy
-    console.log('[AudioProcessing] ♻️ Reusing existing CWT pipeline');
+    // Повторный вызов — worklet уже существует, НО нужно подключить proxy к нему!
+    const workletNode = audioService.workletNode;
+    proxy.connect(workletNode);
     window._cwtLinked = true;
     window._cqtConnected = true;
-    return audioService.workletNode;
+    console.log('[AudioProcessing] ♻️ Reusing existing CWT pipeline, proxy connected');
+    return workletNode;
 }
 
 /**

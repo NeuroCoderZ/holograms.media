@@ -124,7 +124,11 @@ export class PipelineSelfTest {
     async _step4_DataFlow() {
         return new Promise((resolve) => {
             const timeout = 5000;
+            let resolved = false;
+
             const timer = setTimeout(() => {
+                if (resolved) return;
+                resolved = true;
                 this.results.dataFlow = 'fail';
                 this.results.dataFlowDetail = `Timeout ${timeout}ms — no audioData received`;
                 console.log(`[PipelineSelfTest] Step 4: DataFlow — ${this.results.dataFlow} (${this.results.dataFlowDetail})`);
@@ -133,7 +137,11 @@ export class PipelineSelfTest {
             }, timeout);
 
             const listener = (data) => {
+                if (resolved) return;
+                resolved = true;
                 clearTimeout(timer);
+                eventBus.off('audioData', listener);
+
                 const hasLevels = data && data.levels && data.levels.length === 256;
                 const hasPans = data && data.pans && data.pans.length === 256;
                 const ok = hasLevels && hasPans;
