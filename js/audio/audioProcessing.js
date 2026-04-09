@@ -4,7 +4,7 @@ import { state } from '../core/init.js';
 import { AudioGestureBridge } from './AudioGestureBridge.js';
 import audioService from '../services/AudioService.js';
 
-
+export function getAudioContext() { return audioService.getAudioContext(); }
 
 // ВАЖНО: Мы не перезаписываем onmessage, а подписываемся на событие из шины данных
 let _lastSpectralLog = 0;
