@@ -111,7 +111,7 @@ export class AudioFilePlayer {
 
   /**
    * Обработчик нажатия кнопки Play.
-   * Audio Graph: BufferSource -> GainNode -> CwtWorklet -> Destination
+   * Audio Graph: BufferSource -> GainNode -> Proxy -> CwtWorklet(WASM) -> Destination
    */
   async playAudio() {
     this.state.audio.activeSource = 'file';
@@ -146,13 +146,10 @@ export class AudioFilePlayer {
       this.gainNode.gain.value = 1.0;
     }
 
-    // Connect to CQT processor
-    const workletNode = await setupAudioProcessing(this.audioContext);
-
-    // Connect source to destination for playback
+    // Connect through CQT processor via Proxy architecture
+    // Chain: source -> gainNode -> proxy -> worklet(WASM) -> destination
     this.audioBufferSource.connect(this.gainNode);
-    this.gainNode.connect(workletNode);
-    workletNode.connect(this.audioContext.destination);
+    const workletNode = await setupAudioProcessing(this.gainNode, this.audioContext);
 
     // Start playback AFTER CQT is ready
     const offsetToPlay = this.pausedAt;

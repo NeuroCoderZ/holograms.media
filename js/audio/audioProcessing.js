@@ -4,7 +4,54 @@ import { state } from '../core/init.js';
 import { AudioGestureBridge } from './AudioGestureBridge.js';
 import audioService from '../services/AudioService.js';
 
+// ═══ Proxy-архитектура BasilaQ-128 ═══
+// Единая точка входа для всех аудио-источников (файл, микрофон, голос Триа)
+let inputProxyNode = null;
+let _cqtConnectedSource = null;
+
 export function getAudioContext() { return audioService.getAudioContext(); }
+
+/**
+ * Проверяет, активен ли CWT-анализатор (AudioWorklet + WASM).
+ * @returns {boolean}
+ */
+export function isCwtActive() {
+    return !!audioService.workletNode;
+}
+
+/**
+ * Возвращает или создаёт Proxy Gain Node — единую точку входа
+ * для всех аудио-источников, которые должны пройти через BasilaQ-128.
+ */
+function getInputProxyNode(ctx) {
+    if (!inputProxyNode) {
+        inputProxyNode = ctx.createGain();
+        inputProxyNode.gain.value = 1.0;
+        console.log('[AudioProcessing] 🔗 Proxy Gain Node created');
+    }
+    return inputProxyNode;
+}
+
+/**
+ * Экспорт getInputProxyNode для внешнего использования (LiveAudioService).
+ */
+export { getInputProxyNode };
+
+/**
+ * Сбрасывает proxy-ноду для корректного пересоздания при следующем воспроизведении.
+ * КРИТИЧНО: без этого старый proxy остаётся подключён к мёртвому воркеру.
+ */
+export function resetInputProxy() {
+    if (inputProxyNode) {
+        try { inputProxyNode.disconnect(); } catch (_) {}
+        inputProxyNode = null;
+    }
+    if (silentGainNode) {
+        try { silentGainNode.disconnect(); } catch (_) {}
+        silentGainNode = null;
+    }
+    _cqtConnectedSource = null;
+}
 
 // ВАЖНО: Мы не перезаписываем onmessage, а подписываемся на событие из шины данных
 let _lastSpectralLog = 0;
@@ -106,7 +153,7 @@ eventBus.on('audio:spectralData', (data) => {
 });
 /**
  * Оценка частоты обновления экрана (FPS) для синхронизации AudioWorklet.
- * Замеряет интервал между 20 кадрами rAF.
+ * Замеряет интервал между 60 кадрами rAF для точности (поддержка 24-240 Гц).
  */
 async function estimateScreenFPS() {
     return new Promise(resolve => {
@@ -118,18 +165,22 @@ async function estimateScreenFPS() {
             samples.push(time - lastTime);
             lastTime = time;
             frameCount++;
-            if (frameCount < 20) {
+            if (frameCount < 60) {
                 requestAnimationFrame(check);
             } else {
-                // Убираем первый замер (он часто неточный)
-                const avgInterval = samples.slice(1).reduce((a, b) => a + b, 0) / (samples.length - 1);
+                // Убираем первые 2 замера (нестабильные)
+                const avgInterval = samples.slice(2).reduce((a, b) => a + b, 0) / (samples.length - 2);
                 const fps = Math.round(1000 / avgInterval);
-                // Стандартные затыки: 60, 75, 90, 120, 144, 240
-                const commonRates = [60, 75, 90, 120, 144, 240];
-                const closest = commonRates.reduce((prev, curr) => 
+                // Стандартные частоты: 24, 25, 30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 170, 200, 240
+                const commonRates = [24, 25, 30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 170, 200, 240];
+                const closest = commonRates.reduce((prev, curr) =>
                     Math.abs(curr - fps) < Math.abs(prev - fps) ? curr : prev
                 );
-                resolve(closest || fps);
+                const snapped = closest || fps;
+                // Clamp to valid range
+                const result = Math.max(24, Math.min(240, snapped));
+                console.log(`[AudioProcessing] 🖥️ FPS detection: raw=${fps}, snapped=${snapped}, final=${result}`);
+                resolve(result);
             }
         }
         requestAnimationFrame(check);
@@ -140,17 +191,25 @@ let silentGainNode = null;
 
 export async function initializeCwtWorklet(audioContext) {
     console.log('[AudioProcessing] 🚀 Requesting CQT initialization...');
-    
-    // 1. Детектируем FPS экрана ПЕРЕД запуском ворклета
+
+    const ctx = audioContext || audioService.getAudioContext();
+
+    // Если worklet уже создан — просто вернём его (синглтон в AudioService)
+    if (audioService.workletNode) {
+        console.log('[AudioProcessing] ♻️ Worklet already exists, reusing.');
+        window._cwtLinked = true;
+        return audioService.workletNode;
+    }
+
+    // 1. Детектируем FPS экрана ПЕРЕД запуском ворклета (24-240 Гц)
     const screenFps = await estimateScreenFPS();
     console.log(`[AudioProcessing] 🖥️ Detected Screen FPS: ${screenFps}`);
     state.performance = { ...state.performance, screenFps };
 
     await audioService.initialize();
-    
+
     // Передаем FPS в опции создания ноды
     const node = audioService.createWorkletNode('file', { targetFps: screenFps });
-    const ctx = audioContext || audioService.getAudioContext();
 
     // Ensure context is running (Non-blocking to prevent init hang)
     if (ctx.state === 'suspended') {
@@ -160,12 +219,27 @@ export async function initializeCwtWorklet(audioContext) {
         });
     }
 
+    // Подключаем worklet к destination — звук проходит через WASM-анализ
+    node.connect(ctx.destination);
+
+    window._cwtLinked = true;
+    console.log('[AudioProcessing] ✅ Worklet created and linked to destination');
 
     return node;
 }
 
-export async function setupAudioProcessing(audioContext) {
+/**
+ * Подключает аудио-источник к BasilaQ-128 через Proxy-архитектуру.
+ * Цепочка: sourceNode -> Proxy -> Worklet(WASM) -> Destination
+ * @param {AudioNode} sourceNode - Источник (GainNode, MediaStreamSource, BufferSource)
+ * @param {AudioContext} audioContext
+ */
+export async function setupAudioProcessing(sourceNode, audioContext) {
+    const proxy = getInputProxyNode(audioContext);
+    sourceNode.connect(proxy);
     const workletNode = await initializeCwtWorklet(audioContext);
+    proxy.connect(workletNode);
+    window._cqtConnected = true;
     return workletNode;
 }
 
@@ -232,8 +306,9 @@ export function resetCwtAnalyzer() {
     audioService.resetWorklet();
     window._cwtLinked = false;   // новый воркер может подсоединиться к proxy
     window._cqtConnected = false; // [BUG-FIX] источник должен переподключиться к proxy!
+    resetInputProxy();            // [BUG-FIX] убиваем старый proxy (он висит на мёртвом воркере)
     window._pipelineVerified = false; // сбрасываем маркер первых данных
-    
+
     // Уведомляем рендерер чтобы сбросил stale данные
     eventBus.emit('audioReset', {});
     console.log('[AudioProcessing] ✅ Full reset complete. _cqtConnected=false, proxy=null');

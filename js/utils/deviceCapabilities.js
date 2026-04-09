@@ -156,12 +156,12 @@ export class DeviceCapabilities {
                     const avgFrameTime = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
                     const refreshRate = Math.round(1000 / avgFrameTime);
 
-                    // Snap to common values
-                    if (refreshRate >= 115 && refreshRate <= 125) resolve(120);
-                    else if (refreshRate >= 85 && refreshRate <= 95) resolve(90);
-                    else if (refreshRate >= 55 && refreshRate <= 65) resolve(60);
-                    else if (refreshRate >= 25 && refreshRate <= 35) resolve(30);
-                    else resolve(refreshRate);
+                    // Snap to common values (24-240 Гц)
+                    const commonRates = [24, 25, 30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 170, 200, 240];
+                    const closest = commonRates.reduce((prev, curr) =>
+                        Math.abs(curr - refreshRate) < Math.abs(prev - refreshRate) ? curr : prev
+                    );
+                    resolve(Math.max(24, Math.min(240, closest)));
                 }
             };
 

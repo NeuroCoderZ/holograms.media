@@ -66,7 +66,7 @@ export class LiveAudioService {
     }
 
     async playPcmBase64(base64Data, sampleRate = 24000) {
-        const { getAudioContext, getInputProxyNode } = await import('../audio/audioProcessing.js');
+        const { getAudioContext, setupAudioProcessing } = await import('../audio/audioProcessing.js');
         const audioCtx = getAudioContext();
         if (!audioCtx) return;
 
@@ -90,13 +90,11 @@ export class LiveAudioService {
         source.buffer = audioBuffer;
 
         // ✅ Роутинг через CWT Proxy → BasilaQ-128 → голограмма
-        const proxy = getInputProxyNode(audioCtx);
-        if (proxy) {
-            source.connect(proxy);
-        }
-        
-        // Воспроизведение
-        source.connect(audioCtx.destination);
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.value = 1.0;
+        source.connect(gainNode);
+        const workletNode = await setupAudioProcessing(gainNode, audioCtx);
+        // workletNode уже подключён к destination в initializeCwtWorklet
 
         // Помечаем активный источник для HologramRenderer
         if (window._appState?.audio) {
@@ -108,7 +106,7 @@ export class LiveAudioService {
         if (this.nextStartTime < currentTime) {
             this.nextStartTime = currentTime;
         }
-        
+
         source.start(this.nextStartTime);
         this.nextStartTime += audioBuffer.duration;
 

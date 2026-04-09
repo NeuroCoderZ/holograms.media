@@ -56,9 +56,9 @@ export class MicrophoneManager {
       this.gainNode = this.audioContext.createGain();
       this.gainNode.gain.value = 1.0;
 
-      // Connect to CQT processor (fire-and-forget)
-      // Graph: Microphone -> CwtWorklet -> (passthrough to destination)
-      setupAudioProcessing(this.source, this.audioContext, false)
+      // Connect to CQT processor via Proxy architecture
+      // Graph: Microphone -> Proxy -> CwtWorklet(WASM) -> Destination
+      setupAudioProcessing(this.source, this.audioContext)
         .then(() => {
           console.log('[MicrophoneManager] ✅ CQT audio processing connected.');
         })
