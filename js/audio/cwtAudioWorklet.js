@@ -64,13 +64,22 @@ class CwtProcessor extends AudioWorkletProcessor {
                     }
                 }
             } else if (data.type === 'RESET') {
-                // Сброс буферов при смене трека или Stop
+                // Полная смерть worklet (только при остановке приложения)
                 if (wasm && analyzerPtr && wasm.cwtanalyzer_reset) {
                     wasm.cwtanalyzer_reset(analyzerPtr);
                 }
-                // Убиваем процессор — process() вернёт false
                 this._killed = true;
                 this.port.postMessage({ type: 'LOG', msg: 'WASM_RESET_AND_KILL' });
+            } else if (data.type === 'CLEAR') {
+                // Мягкий сброс буферов БЕЗ убийства worklet
+                // Используется при stop/play/sмене трека
+                if (wasm && analyzerPtr && wasm.cwtanalyzer_reset) {
+                    wasm.cwtanalyzer_reset(analyzerPtr);
+                    this.port.postMessage({ type: 'LOG', msg: 'WASM_BUFFERS_CLEARED (worklet alive)' });
+                }
+                // Сбросим аккумуляторы для корректного подсчёта сэмплов
+                this._sampleAccumulator = 0;
+                this._fallbackAccumulator = 0;
             }
         };
 

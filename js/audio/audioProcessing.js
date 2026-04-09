@@ -46,7 +46,7 @@ export function resetInputProxy() {
         try { inputProxyNode.disconnect(); } catch (_) {}
         inputProxyNode = null;
     }
-    if (silentGainNode) {
+    if (typeof silentGainNode !== 'undefined' && silentGainNode) {
         try { silentGainNode.disconnect(); } catch (_) {}
         silentGainNode = null;
     }
@@ -229,16 +229,34 @@ export async function initializeCwtWorklet(audioContext) {
 /**
  * Подключает аудио-источник к BasilaQ-128 через Proxy-архитектуру.
  * Цепочка: sourceNode -> Proxy -> Worklet(WASM) -> Destination
+ *
+ * При первом вызове создаёт полный pipeline.
+ * При повторных — только подключает sourceNode к существующему proxy.
+ *
  * @param {AudioNode} sourceNode - Источник (GainNode, MediaStreamSource, BufferSource)
  * @param {AudioContext} audioContext
  */
 export async function setupAudioProcessing(sourceNode, audioContext) {
-    const proxy = getInputProxyNode(audioContext);
+    const ctx = audioContext || audioService.getAudioContext();
+    const isFirstTime = !audioService.workletNode;
+
+    // Подключаем source к proxy
+    const proxy = getInputProxyNode(ctx);
     sourceNode.connect(proxy);
-    const workletNode = await initializeCwtWorklet(audioContext);
-    proxy.connect(workletNode);
+
+    if (isFirstTime) {
+        // Первый вызов — создаём полный pipeline
+        const workletNode = await initializeCwtWorklet(audioContext);
+        proxy.connect(workletNode);
+        window._cqtConnected = true;
+        return workletNode;
+    }
+
+    // Повторный вызов — worklet уже существует и подключён к proxy
+    console.log('[AudioProcessing] ♻️ Reusing existing CWT pipeline');
+    window._cwtLinked = true;
     window._cqtConnected = true;
-    return workletNode;
+    return audioService.workletNode;
 }
 
 /**

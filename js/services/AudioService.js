@@ -142,14 +142,15 @@ class AudioService {
     /**
      * Сбрасывает буферы CWT-анализатора БЕЗ уничтожения WorkletNode.
      * Используется при смене трека или нажатии Stop.
-     * Worklet остаётся живым, WASM получает RESET и продолжает работать.
+     * Worklet остаётся живым, WASM получает CLEAR и продолжает работать.
      */
     resetCwtBuffers() {
         if (this.workletNode) {
             try {
-                this.workletNode.port.postMessage({ type: 'RESET' });
+                // CLEAR — мягкий сброс, worklet остаётся жив
+                this.workletNode.port.postMessage({ type: 'CLEAR' });
             } catch (e) {
-                console.warn('[AudioService] Error sending RESET to worklet:', e);
+                console.warn('[AudioService] Error sending CLEAR to worklet:', e);
             }
         }
     }

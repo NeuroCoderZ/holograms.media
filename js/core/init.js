@@ -606,6 +606,7 @@ export async function initCore() {
       const { default: audioService } = await import('../services/AudioService.js');
       await audioService.initialize();
       state.audioService = audioService; // Сохраняем в state для доступа
+      window._audioServiceForTest = { default: audioService }; // Для pipeline self-test
       console.log('✅ AudioService инициализирован');
 
       // state.webAudioEngine = new WebAudioEngine(); // REMOVED LEGACY
@@ -659,6 +660,20 @@ export async function initCore() {
     }
 
     console.log('✅ Ядро приложения инициализировано успешно');
+
+    // ─── BasilaQ-128 Pipeline Self-Test ────────────────────────
+    // Запускается асинхронно, НЕ блокирует инициализацию
+    (async () => {
+      try {
+        const { selfTest } = await import('../audio/pipelineSelfTest.js');
+        window._hologramRendererForTest = state.hologramRendererInstance;
+        await selfTest.run();
+      } catch (e) {
+        console.warn('[PipelineSelfTest] Could not run self-test:', e.message);
+      }
+    })();
+    // ───────────────────────────────────────────────────────────
+
     // --- Start Auto-Reload ---
     autoReloadService.start();
     // NOTE: lightingManager.initialize() moved to main.js (after UI is visible)
