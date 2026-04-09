@@ -140,10 +140,10 @@ export class AudioFilePlayer {
     this.audioBufferSource = this.audioContext.createBufferSource();
     this.audioBufferSource.buffer = this.audioBuffer;
 
-    // Create gain node for volume control
+    // Create gain node for volume control + pre-amp для WASM
     if (!this.gainNode) {
       this.gainNode = this.audioContext.createGain();
-      this.gainNode.gain.value = 1.0;
+      this.gainNode.gain.value = 2.0; // Pre-amp: компенсируем потери в chain
     }
 
     // Connect through CQT processor via Proxy architecture
@@ -227,6 +227,11 @@ export class AudioFilePlayer {
    * Обработчик нажатия кнопки Stop.
    */
   stopAudio() {
+    // Защита от дублирования (onended + явный клик Stop)
+    if (!this.isPlaying && this.pausedAt === 0) {
+      return;
+    }
+
     // VINYL STOP EFFECT: Ramp playbackRate from current to 0.0 before stopping
     if (this.isPlaying && this.audioBufferSource) {
       const now = this.audioContext.currentTime;

@@ -252,11 +252,13 @@ pub extern "C" fn cwtanalyzer_process(
             let l_mag = l_conv.norm();
             let r_mag = r_conv.norm();
 
-            // --- CALIBRATED DB MAPPING ---
+            // --- CALIBRATED DB MAPPING (Integer only) ---
             let epsilon = 1e-10;
-            // 25dB fixed gain + 128dB range + 10dB Parseval Compensation
-            let l_db = (20.0 * (l_mag + epsilon).log10()).max(-128.0).min(0.0);
-            let r_db = (20.0 * (r_mag + epsilon).log10()).max(-128.0).min(0.0);
+            let l_db_raw = 20.0 * (l_mag + epsilon).log10();
+            let r_db_raw = 20.0 * (r_mag + epsilon).log10();
+            // Округляем до целых дБ: BasilaQ-128 = 1 дБ = 1 слой вокселя
+            let l_db = l_db_raw.max(-128.0).min(0.0).round();
+            let r_db = r_db_raw.max(-128.0).min(0.0).round();
 
             analyzer.last_db[i] = l_db;
             analyzer.last_db[i + 128] = r_db;

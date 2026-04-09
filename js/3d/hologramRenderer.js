@@ -110,12 +110,9 @@ export class HologramRenderer {
     this.meshR = new THREE.InstancedMesh(this.columnGeometryR, this.instancedMaterial.clone(), count);
 
     // Back-to-front отрисовка: левая сетка (дальше) рисуется первой, правая (ближе) — второй
+    // Фиксированный renderOrder: НЕ используем sortObjects — он сортирует по distance to camera
     this.meshL.renderOrder = 0;
     this.meshR.renderOrder = 1;
-    
-    // Сортировка инстансов от дальней стенки к ближней
-    this.meshL.sortObjects = true;
-    this.meshR.sortObjects = true;
 
     this.meshL.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.meshR.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -311,9 +308,9 @@ export class HologramRenderer {
         pR = initialX_R + Math.max(0, discreteShift) * 1.5;
 
         // Физика BasilaQ: 1дБ = 1 ячейка. Z-scale = 128 + dB.
-        // Clamp к [1.0, 128.0] — столбцы НЕ выходят за пределы сетки
-        hL = Math.min(128.0, Math.max(1.0, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL))));
-        hR = Math.min(128.0, Math.max(1.0, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR))));
+        // Math.round() → целочисленные слои. Clamp [1, 128].
+        hL = Math.round(Math.min(128, Math.max(1, 128 + Math.max(-128, Math.min(0, effectiveDbL)))));
+        hR = Math.round(Math.min(128, Math.max(1, 128 + Math.max(-128, Math.min(0, effectiveDbR)))));
         
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);

@@ -47,7 +47,7 @@ export const fragmentShader = /* glsl */`
         // vZ ∈ [0, 1] — локальная координата геометрии столбца
         // vColumnScaleZ — высота столбца в ячейках (1..128)
         // depth ∈ [0, vColumnScaleZ] — абсолютная глубина от основания
-        float depth = vZ * vColumnScaleZ;
+        float depth = min(vZ * vColumnScaleZ, 127.0); // Жёсткий clip: столбцы НЕ вылезут за слой 127
 
         // cellIndex = 0 (основание, чёрный) .. 127 (вершина, чистый цвет)
         float cellIndex = floor(depth);
