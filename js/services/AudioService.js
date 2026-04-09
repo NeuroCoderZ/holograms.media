@@ -159,12 +159,13 @@ class AudioService {
      * Creates or retrieves the CWT Worklet Node (Singleton).
      * @param {string} sourceType - 'file', 'microphone', or 'synth'
      */
-    createWorkletNode(sourceType = 'file') {
+    createWorkletNode(sourceType = 'file', options = {}) {
         const sourceTypeCode = (sourceType === 'microphone') ? 1 : 0;
 
         if (!this.context) throw new Error('AudioContext not associated.');
 
         if (this.workletNode) {
+            // Если узел уже есть, просто возвращаем его
             return this.workletNode;
         }
 
@@ -175,7 +176,7 @@ class AudioService {
             outputChannelCount: [2],
             processorOptions: {
                 sampleRate: this.context.sampleRate,
-                targetFps: this.targetFps,
+                targetFps: options.targetFps || this.targetFps, // Используем FPS из опций или дефолтный
                 sourceType: sourceTypeCode,
                 ...this.cqtConfig
             }

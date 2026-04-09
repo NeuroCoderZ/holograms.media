@@ -185,7 +185,7 @@ export async function initializeCwtWorklet(audioContext) {
     await audioService.initialize();
     
     // Передаем FPS в опции создания ноды
-    const node = audioService.createWorkletNode({ targetFps: screenFps });
+    const node = audioService.createWorkletNode('file', { targetFps: screenFps });
     const ctx = audioContext || audioService.getAudioContext();
 
     // Ensure context is running (Non-blocking to prevent init hang)
@@ -215,12 +215,11 @@ export async function initializeCwtWorklet(audioContext) {
     return true;
 }
 
-export async function setupAudioProcessing(sourceNode, audioContext, connectToOutput = true) {
+export async function setupAudioProcessing(sourceNode, audioContext) {
     const proxy = getInputProxyNode(audioContext);
     sourceNode.connect(proxy);
-    await initializeCwtWorklet(audioContext);
-    // УБРАНО: sourceNode.connect(destination) — дублирует звук через gainNode в audioFilePlayer
-    return proxy;
+    const workletNode = await initializeCwtWorklet(audioContext);
+    return workletNode;
 }
 
 /**

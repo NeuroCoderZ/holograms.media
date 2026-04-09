@@ -146,18 +146,13 @@ export class AudioFilePlayer {
       this.gainNode.gain.value = 1.0;
     }
 
-    // Connect to CQT processor — WAIT for it before starting playback
-    window._cqtConnected = false; // Сброс после resetCwtAnalyzer
-    try {
-      await setupAudioProcessing(this.audioBufferSource, this.audioContext, true);
-      console.log('[AudioFilePlayer] ✅ CQT audio processing connected.');
-    } catch (err) {
-      console.warn('[AudioFilePlayer] ⚠ CQT init issue, but playback continues:', err.message);
-    }
+    // Connect to CQT processor
+    const workletNode = await setupAudioProcessing(this.audioBufferSource, this.audioContext);
 
     // Connect source to destination for playback
     this.audioBufferSource.connect(this.gainNode);
-    this.gainNode.connect(this.audioContext.destination);
+    this.gainNode.connect(workletNode);
+    workletNode.connect(this.audioContext.destination);
 
     // Start playback AFTER CQT is ready
     const offsetToPlay = this.pausedAt;
