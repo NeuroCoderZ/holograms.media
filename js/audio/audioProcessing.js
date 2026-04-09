@@ -232,7 +232,6 @@ export function resetCwtAnalyzer() {
     audioService.resetWorklet();
     window._cwtLinked = false;   // новый воркер может подсоединиться к proxy
     window._cqtConnected = false; // [BUG-FIX] источник должен переподключиться к proxy!
-    resetInputProxy();            // [BUG-FIX] убиваем старый proxy (он висит на мёртвом воркере)
     window._pipelineVerified = false; // сбрасываем маркер первых данных
     
     // Уведомляем рендерер чтобы сбросил stale данные
