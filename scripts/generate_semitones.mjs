@@ -10,31 +10,23 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.join(__dirname, '..');
 
-const notes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+// i=127 → G10 (ID=1, width=1) → первый в списке
+// i=0 → C0 (ID=128, width=128) → последний в списке
 const BASE_FREQ = 16.352;
+const notes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
 let lines = [];
 lines.push('const semitones = [');
 
-for (let i = 0; i < 128; i++) {
-  // Частота
+for (let i = 127; i >= 0; i--) {
   const f = BASE_FREQ * Math.pow(2, i / 12);
-  
-  // ID = 128 - i (обратный порядок: 128=C0 низкие, 1=G10 высокие)
   const id = 128 - i;
-  const width = id; // ID = ширина в ячейках
-  
-  // Угол рассеивания: 180° для C0 → 1.40625° для G10
+  const width = id;
   const deg = 180.00 - (i * 1.40625);
-  
-  // Цвет: HSL hue от 0 (красный, низкие) до 270 (фиолетовый, высокие)
   const hue = (270.0 * i) / 127;
-  
-  // Нота
   const octave = Math.floor(i / 12);
   const noteName = notes[i % 12] + octave;
   
-  // ILD coefficient
   let maxIldDb = 0;
   if (f > 500) {
     if (f <= 3000) {
@@ -45,7 +37,7 @@ for (let i = 0; i < 128; i++) {
   }
   const shadowCoef = parseFloat((maxIldDb / 30.0).toFixed(4));
   
-  const comma = i < 127 ? ',' : '';
+  const comma = i > 0 ? ',' : '';
   lines.push(`  { id: ${id}, width: ${width}, n: "${noteName}", f: ${f.toFixed(6)}, deg: ${deg.toFixed(6)}, dBLeft: 0, dBRight: 0, color: 'hsl(${hue.toFixed(2)}, 100%, 50%)', shadow_coef: ${shadowCoef} }${comma}`);
 }
 
@@ -65,5 +57,5 @@ lines.push('- Визуальный код: Сканер считывает за�
 const content = lines.join('\n');
 fs.writeFileSync(path.join(ROOT, 'Semitones_Angles.md'), content, 'utf8');
 console.log(`✅ Semitones_Angles.md обновлён: ${lines.length} строк`);
-console.log(`   Первый: ID=128, C0, ${BASE_FREQ} Гц, width=128`);
-console.log(`   Последний: ID=1, G10, ${(BASE_FREQ * Math.pow(2, 127/12)).toFixed(6)} Гц, width=1`);
+console.log(`   Первый:  ID=1, G10, ${(BASE_FREQ * Math.pow(2, 127/12)).toFixed(6)} Гц, width=1`);
+console.log(`   Последний: ID=128, C0, ${BASE_FREQ} Гц, width=128`);

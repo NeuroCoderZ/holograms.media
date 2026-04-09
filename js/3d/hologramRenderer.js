@@ -271,12 +271,14 @@ export class HologramRenderer {
         if (p < -0.01) effectiveDbR -= shadowDb;
         else if (p > 0.01) effectiveDbL -= shadowDb;
 
-        const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
-        const cellsToShift = Math.round(p * 64);
-        const discreteShift = (cellsToShift / 64) * maxAvailableShift;
+        // ═══ ДИСКРЕТНОЕ смещение по X (ровно в целых ячейках) ═══
+        const maxShiftCells = Math.floor((GRID_WIDTH - width) / 2); // целые ячейки
+        const panCellsFromCenter = Math.round(p * 64); // -64..+64
+        const clampedShift = Math.max(-maxShiftCells, Math.min(maxShiftCells, panCellsFromCenter));
+        const discreteShift = clampedShift; // уже в целых ячейках (CELL_SIZE = 1.0)
 
-        pL = initialX_L + Math.min(0, discreteShift) * 1.5;
-        pR = initialX_R + Math.max(0, discreteShift) * 1.5;
+        pL = initialX_L + Math.min(0, discreteShift);
+        pR = initialX_R + Math.max(0, discreteShift);
 
         // dB SPL: 0 = тишина (1 ячейка), 128 = максимум (128 ячеек)
         hL = Math.max(1, Math.min(128, Math.round(effectiveDbL)));
@@ -297,12 +299,14 @@ export class HologramRenderer {
         if (p < -0.01) effectiveDbR -= shadowDb;
         else if (p > 0.01) effectiveDbL -= shadowDb;
 
-        const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
-        const cellsToShift = Math.round(p * 64);
-        const discreteShift = (cellsToShift / 64) * maxAvailableShift;
+        // ═══ ДИСКРЕТНОЕ смещение по X (ровно в целых ячейках) ═══
+        const maxShiftCells = Math.floor((GRID_WIDTH - width) / 2); // целые ячейки
+        const panCellsFromCenter = Math.round(p * 64); // -64..+64
+        const clampedShift = Math.max(-maxShiftCells, Math.min(maxShiftCells, panCellsFromCenter));
+        const discreteShift = clampedShift; // уже в целых ячейках (CELL_SIZE = 1.0)
 
-        pL = initialX_L + Math.min(0, discreteShift) * 1.5;
-        pR = initialX_R + Math.max(0, discreteShift) * 1.5;
+        pL = initialX_L + Math.min(0, discreteShift);
+        pR = initialX_R + Math.max(0, discreteShift);
 
         // dB SPL: 0 = тишина, 128 = максимум. Clamp [1, 128].
         hL = Math.max(1, Math.min(128, Math.round(effectiveDbL)));
@@ -313,12 +317,14 @@ export class HologramRenderer {
       } else {
         // В режиме паузы без frozen frame или отсутствия сигнала — демо-режим
         const p = this._panStates[i];
-        const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
-        const cellsToShift = Math.round(p * 64);
-        const discreteShift = (cellsToShift / 64) * maxAvailableShift;
+        // ═══ ДИСКРЕТНОЕ смещение по X (ровно в целых ячейках) ═══
+        const maxShiftCells = Math.floor((GRID_WIDTH - width) / 2); // целые ячейки
+        const panCellsFromCenter = Math.round(p * 64); // -64..+64
+        const clampedShift = Math.max(-maxShiftCells, Math.min(maxShiftCells, panCellsFromCenter));
+        const discreteShift = clampedShift; // уже в целых ячейках (CELL_SIZE = 1.0)
 
-        pL = initialX_L + Math.min(0, discreteShift) * 1.5;
-        pR = initialX_R + Math.max(0, discreteShift) * 1.5;
+        pL = initialX_L + Math.min(0, discreteShift);
+        pR = initialX_R + Math.max(0, discreteShift);
         
         hL = CELL_HEIGHT;
         hR = CELL_HEIGHT;
