@@ -117,7 +117,8 @@ eventBus.on('audio:spectralData', (data) => {
 
     // FIX: Ensure Levels are also 256 length (Stereo duplication if Mono)
     // The Renderer expects indices i+128 to exist.
-    const fullLevels = new Float32Array(256).fill(-128); // Default silence
+    // dB SPL: 0 = тишина, 128 = максимум
+    const fullLevels = new Float32Array(256).fill(0); // Default silence (0 dB SPL)
     if (modulated.levels.length === 128) {
         fullLevels.set(modulated.levels, 0);
         fullLevels.set(modulated.levels, 128);

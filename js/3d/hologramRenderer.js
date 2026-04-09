@@ -251,10 +251,10 @@ export class HologramRenderer {
       const initialX_R = width / 2;
       const initialY = (i + 0.5) * CELL_HEIGHT - GRID_HEIGHT;
 
-      let dbL = (dbLevels[i] !== undefined) ? dbLevels[i] : -128;
-      let dbR = (dbLevels[i + 128] !== undefined) ? dbLevels[i + 128] : -128;
-      
-      const hasSignal = dbL > -100 || dbR > -100;
+      let dbL = (dbLevels[i] !== undefined) ? dbLevels[i] : 0;     // dB SPL: 0..128
+      let dbR = (dbLevels[i + 128] !== undefined) ? dbLevels[i + 128] : 0;
+
+      const hasSignal = dbL > 0 || dbR > 0;
 
       let pL = initialX_L;
       let pR = initialX_R;
@@ -262,12 +262,12 @@ export class HologramRenderer {
       let hR = CELL_HEIGHT;
 
       if (useFrozen) {
-        // Заморозка: используем сохранённые dbLevels и pans без изменений
+        // Заморозка: используем сохранённые значения
         const p = panAngles[i] || 0;
         const shadowDb = Math.abs(p) * (config.shadow_coef || 0) * 128.0;
         let effectiveDbL = dbL;
         let effectiveDbR = dbR;
-        
+
         if (p < -0.01) effectiveDbR -= shadowDb;
         else if (p > 0.01) effectiveDbL -= shadowDb;
 
@@ -278,40 +278,36 @@ export class HologramRenderer {
         pL = initialX_L + Math.min(0, discreteShift) * 1.5;
         pR = initialX_R + Math.max(0, discreteShift) * 1.5;
 
-        hL = Math.min(128.0, Math.max(1.0, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbL))));
-        hR = Math.min(128.0, Math.max(1.0, 128.0 + Math.max(-128.0, Math.min(0.0, effectiveDbR))));
-        
+        // dB SPL: 0 = тишина (1 ячейка), 128 = максимум (128 ячеек)
+        hL = Math.max(1, Math.min(128, Math.round(effectiveDbL)));
+        hR = Math.max(1, Math.min(128, Math.round(effectiveDbR)));
+
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);
       } else if (isActive && (!isPaused || hasSignal)) {
-        // Физика BasilaQ-128: Шаг панорамы 1.41 градуса (180/128).
-        // Убираем плавную интерполяцию (* 0.12), используем прямое дискретное значение.
-        const targetPan = panAngles[i] || 0;
-        this._panStates[i] = targetPan; // Мгновенное переключение позиции
-        const p = this._panStates[i];
+        // Pan: WASM выдаёт ячейки 0..128. Конвертируем в [-1, 1].
+        const panCells = panAngles[i] || 64; // 64 = центр
+        const p = (panCells - 64) / 64.0;    // [-1, 1]
+        this._panStates[i] = p;
 
         const shadowDb = Math.abs(p) * (config.shadow_coef || 0) * 128.0;
         let effectiveDbL = dbL;
         let effectiveDbR = dbR;
-        
+
         if (p < -0.01) effectiveDbR -= shadowDb;
         else if (p > 0.01) effectiveDbL -= shadowDb;
 
         const maxAvailableShift = (GRID_WIDTH - width) * 0.5;
-        
-        // ВАЖНО: Дискретное смещение (шаг в целую ячейку).
-        // p находится в диапазоне [-1, 1]. Масштабируем до количества ячеек (64 влево, 64 вправо).
-        const cellsToShift = Math.round(p * 64); 
+        const cellsToShift = Math.round(p * 64);
         const discreteShift = (cellsToShift / 64) * maxAvailableShift;
 
         pL = initialX_L + Math.min(0, discreteShift) * 1.5;
         pR = initialX_R + Math.max(0, discreteShift) * 1.5;
 
-        // Физика BasilaQ: 1дБ = 1 ячейка. Z-scale = 128 + dB.
-        // Math.round() → целочисленные слои. Clamp [1, 128].
-        hL = Math.round(Math.min(128, Math.max(1, 128 + Math.max(-128, Math.min(0, effectiveDbL)))));
-        hR = Math.round(Math.min(128, Math.max(1, 128 + Math.max(-128, Math.min(0, effectiveDbR)))));
-        
+        // dB SPL: 0 = тишина, 128 = максимум. Clamp [1, 128].
+        hL = Math.max(1, Math.min(128, Math.round(effectiveDbL)));
+        hR = Math.max(1, Math.min(128, Math.round(effectiveDbR)));
+
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);
       } else {

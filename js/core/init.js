@@ -661,15 +661,15 @@ export async function initCore() {
 
     console.log('✅ Ядро приложения инициализировано успешно');
 
-    // ─── BasilaQ-128 Pipeline Self-Test ────────────────────────
-    // Запускается асинхронно, НЕ блокирует инициализацию
+    // ─── BasilaQ-128 Browser Pipeline Diagnostic ──────────────
+    // Перехватывает inputRMS каждого кадра worklet для выявления
+    // разрывов в цепочке AudioNode.
     (async () => {
       try {
-        const { selfTest } = await import('../audio/pipelineSelfTest.js');
-        window._hologramRendererForTest = state.hologramRendererInstance;
-        await selfTest.run();
+        const { browserPipelineTest } = await import('../audio/browserPipelineTest.js');
+        browserPipelineTest.start();
       } catch (e) {
-        console.warn('[PipelineSelfTest] Could not run self-test:', e.message);
+        console.warn('[BrowserPipelineTest] Could not start:', e.message);
       }
     })();
     // ───────────────────────────────────────────────────────────

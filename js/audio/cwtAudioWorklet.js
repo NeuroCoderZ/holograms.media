@@ -274,12 +274,16 @@ class CwtProcessor extends AudioWorkletProcessor {
                 });
             }
 
+            // Вычисляем inputRMS для браузерной диагностики
+            const inputRms = Math.sqrt(input[0].reduce((s, v) => s + v*v, 0) / input[0].length);
+
             this.port.postMessage({
                     type: 'AUDIO_DATA',
                     levels,
                     angles,
                     confidence,
-                    timestamp: (typeof currentTime !== 'undefined') ? currentTime : 0
+                    timestamp: (typeof currentTime !== 'undefined') ? currentTime : 0,
+                    _inputRms: inputRms  // Для browserPipelineTest
                 });
             }
 

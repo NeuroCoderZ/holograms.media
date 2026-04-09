@@ -171,7 +171,7 @@ pub extern "C" fn cwtanalyzer_new(
         target_fps,
         samples_per_frame,
         samples_since_last_calc: 0,
-        last_db: vec![-128.0; 256],
+        last_db: vec![0.0; 256],   // 0 dB SPL = тишина
         last_pan: vec![0.0; 128],
         source_type,
     });
@@ -252,16 +252,15 @@ pub extern "C" fn cwtanalyzer_process(
             let l_mag = l_conv.norm();
             let r_mag = r_conv.norm();
 
-            // --- CALIBRATED DB MAPPING (Integer only) ---
+            // --- CALIBRATED DB MAPPING (dBFS → dB SPL) ---
+            // dBFS: цифровой [-128..0] → dB SPL: акустический [0..128]
+            // 1 dB SPL = 1 ячейка по оси Z
             let epsilon = 1e-10;
-            let l_db_raw = 20.0 * (l_mag + epsilon).log10();
-            let r_db_raw = 20.0 * (r_mag + epsilon).log10();
-            // Округляем до целых дБ: BasilaQ-128 = 1 дБ = 1 слой вокселя
-            let l_db = l_db_raw.max(-128.0).min(0.0).round();
-            let r_db = r_db_raw.max(-128.0).min(0.0).round();
+            let l_db_spl = (128.0 + 20.0 * (l_mag + epsilon).log10()).round().max(0.0).min(128.0);
+            let r_db_spl = (128.0 + 20.0 * (r_mag + epsilon).log10()).round().max(0.0).min(128.0);
 
-            analyzer.last_db[i] = l_db;
-            analyzer.last_db[i + 128] = r_db;
+            analyzer.last_db[i] = l_db_spl;
+            analyzer.last_db[i + 128] = r_db_spl;
 
             // --- CONFIDENCE Score (SNR based approximation) ---
             let mag_sum = l_mag + r_mag;
@@ -277,11 +276,9 @@ pub extern "C" fn cwtanalyzer_process(
                 (l_mag - r_mag) / mag_sum
             };
 
-            // Frequency calculation based on wavelet scale
             let freq = 16.352 * 2.0_f32.powf(i as f32 / 12.0);
 
-            let pan = if freq < 1500.0 {
-                // ITD + ILD blend
+            let pan_float = if freq < 1500.0 {
                 let phase_l = l_conv.arg();
                 let phase_r = r_conv.arg();
                 let mut itd_diff = phase_l - phase_r;
@@ -292,16 +289,19 @@ pub extern "C" fn cwtanalyzer_process(
                     itd_diff -= 2.0 * PI;
                 }
                 let itd = (itd_diff / PI).max(-1.0).min(1.0);
-
-                // Quadratic crossfade: ILD dominates as we approach 1500Hz
                 let cross = (freq / 1500.0).powi(2);
                 (ild * cross + itd * (1.0 - cross)).max(-1.0).min(1.0)
             } else {
-                // ILD only for high frequencies
                 ild.max(-1.0).min(1.0)
             };
 
-            analyzer.last_pan[i] = pan * 0.95; // Magnetic Pan limit
+            // Конвертируем pan [-1, 1] → ячейки [0, 128]
+            // pan_float = -1.0 → 0 ячеек (крайний лево)
+            // pan_float =  0.0 → 64 ячейки (центр)
+            // pan_float = +1.0 → 128 ячеек (крайний право)
+            let pan_cells = ((pan_float + 1.0) * 64.0).round().max(0.0).min(128.0);
+
+            analyzer.last_pan[i] = pan_cells;
         }
     }
 
@@ -353,9 +353,9 @@ pub extern "C" fn cwtanalyzer_reset(ptr: *mut CwtAnalyzer) {
     analyzer.left_ring.cursor = 0;
     analyzer.right_ring.cursor = 0;
 
-    // Сброс выходных значений в тишину
+    // Сброс выходных значений в тишину (0 dB SPL = тишина)
     for db in analyzer.last_db.iter_mut() {
-        *db = -128.0;
+        *db = 0.0;
     }
     for pan in analyzer.last_pan.iter_mut() {
         *pan = 0.0;

@@ -1,9 +1,6 @@
 import * as THREE from 'three';
 
-// import * as THREE from 'three'; // Removed for global THREE
-
 // Color configuration constants
-// Assuming THREE is global
 const { Color } = THREE;
 export const START_HUE = 0; // Red
 export const END_HUE = 270; // Violet
@@ -18,35 +15,40 @@ export const STARTING_OCTAVE = 0;
 // Note names configuration
 export const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-// Add microphone processing constants
+// Microphone processing constants
 export const FFT_SIZE = 4096;
 export const SMOOTHING_TIME_CONSTANT = 0.0;
 
 // Grid and Scale Configuration
 export const GRID_WIDTH = 128;
 export const GRID_HEIGHT = 128;
-export const GRID_DEPTH = 256;  // 128+0=128 max Z-scale, doubled for visual grid
+export const GRID_DEPTH = 256;
 export const CELL_SIZE = 1.0;
-export const HOLOGRAM_REFERENCE_HEIGHT = 256; // Actual visual span is GRID_HEIGHT * 2
+export const HOLOGRAM_REFERENCE_HEIGHT = 256;
 
-export function degreesToCells(index) {
-  const maxWidth = 128;
-  const minWidth = 1;
-  const totalSemitones = 128;
-  const width = maxWidth - index / (totalSemitones - 1) * (maxWidth - minWidth);
-  // Remove strict alignment with grid lines to allow 128 unique widths
-  return Math.max(0.5, width);
-}
-
-// Генерация массива полутонов
+/**
+ * Генерация массива полутонов BasilaQ-128
+ * 
+ * Новая нумерация:
+ * - ID 1   = G10 (25088 Гц) — ширина 1 ячейка (высокие летят прицельно)
+ * - ID 128 = C0  (16.35 Гц) — ширина 128 ячеек (низкие разлетаются)
+ * - ID = число ячеек (физический смысл ширины пучка)
+ * 
+ * Массив отсортирован от низких к высоким (i=0=C0, i=127=G10)
+ * но ID идёт в обратном порядке: ID = 128 - i
+ */
 export const semitones = Array.from({ length: 128 }, (_, i) => {
-  // Частота: базовая частота (27.5 Гц) умножается на 2^(i/12)
+  // i=0 → C0 (16.35 Гц, ID=128, width=128)
+  // i=127 → G10 (25088 Гц, ID=1, width=1)
+
+  // Частота: от низких к высоким
   const f = BASE_FREQUENCY * Math.pow(2, i / NOTES_PER_OCTAVE);
 
-  // Ширина колонки
-  const width = degreesToCells(i);
+  // ID = число ячеек = физический смысл ширины пучка
+  const id = 128 - i;
+  const width = id; // ID = ширина в ячейках!
 
-  // Цвет: линейная интерполяция от START_HUE (0) до END_HUE (270)
+  // Цвет: красный (низкие, i=0) → фиолетовый (высокие, i=127)
   const hue = ((END_HUE - START_HUE) * i) / (127) + START_HUE;
   const color = new THREE.Color().setHSL(hue / 360, SATURATION, LIGHTNESS);
 
@@ -55,30 +57,28 @@ export const semitones = Array.from({ length: 128 }, (_, i) => {
   const noteIndex = i % NOTES_PER_OCTAVE;
   const note = NOTES[noteIndex] + octave;
 
-  // BasilaQ-128: Z-Shade calculation (Linear 8-bit mapping)
-  const v = Math.round((i / 127) * 255);
-  const zShade = `rgb(${v},${v},${v})`;
+  // Угол рассеивания: шаг 1.40625° = 180/128
+  const deg = 180.00 - (i * 1.40625);
 
   // Psychoacoustic Head Shadow Model (ILD)
-  // Max shadow is ~30dB at high frequencies.
   let maxIldDb = 0;
   if (f > 500) {
     if (f <= 3000) {
-      maxIldDb = 20 * ((f - 500) / 2500); // Linear growth 500Hz -> 3000Hz (0 to 20dB)
+      maxIldDb = 20 * ((f - 500) / 2500);
     } else {
-      maxIldDb = 20 + 10 * (1 - Math.exp(-(f - 3000) / 5000)); // Asymptotic to 30dB
+      maxIldDb = 20 + 10 * (1 - Math.exp(-(f - 3000) / 5000));
     }
   }
   const shadowCoef = parseFloat((maxIldDb / 30.0).toFixed(4));
 
   return {
-    key: note.replace("#", "s"), // Для React (если будет использоваться)
+    id: id,           // 1..128 (ID = ширина в ячейках)
+    key: note.replace("#", "s"),
     note: note,
     f: f,
-    width: width,
-    color: color, // This will be a THREE.Color object
-    z_shade: zShade,
+    width: width,     // = ID (физический смысл!)
+    color: color,
     shadow_coef: shadowCoef,
-    deg: 180.00 - (i * 1.40625), // Угол для визуализации
+    deg: deg,         // 180° → 1.41° (угол рассеивания)
   };
 });
