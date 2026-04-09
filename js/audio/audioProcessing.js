@@ -160,22 +160,7 @@ export async function initializeCwtWorklet(audioContext) {
         });
     }
 
-    const proxy = getInputProxyNode(ctx);
-    if (node && proxy && !window._cwtLinked) {
-        proxy.connect(node);
 
-        // FORCING DATA FLOW: Connect to destination via silent gain (синглтон)
-        // This ensures the browser calls process() even if the output isn't used for audio.
-        if (!silentGainNode) {
-            silentGainNode = ctx.createGain();
-            silentGainNode.gain.value = 0;
-            node.connect(silentGainNode);
-            silentGainNode.connect(ctx.destination);
-        }
-
-        window._cwtLinked = true;
-        console.log('[AudioProcessing] ✅ Pipeline Linked: Proxy -> Worklet -> Silent Output');
-    }
     return node;
 }
 
