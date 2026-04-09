@@ -140,10 +140,10 @@ export class AudioFilePlayer {
     this.audioBufferSource = this.audioContext.createBufferSource();
     this.audioBufferSource.buffer = this.audioBuffer;
 
-    // Create gain node for volume control + pre-amp для WASM
+    // Create gain node for volume control
     if (!this.gainNode) {
       this.gainNode = this.audioContext.createGain();
-      this.gainNode.gain.value = 2.0; // Pre-amp: компенсируем потери в chain
+      this.gainNode.gain.value = 1.0;
     }
 
     // Connect through CQT processor via Proxy architecture
