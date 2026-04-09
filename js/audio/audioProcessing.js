@@ -212,7 +212,7 @@ export async function initializeCwtWorklet(audioContext) {
         window._cwtLinked = true;
         console.log('[AudioProcessing] ✅ Pipeline Linked: Proxy -> Worklet -> Silent Output');
     }
-    return true;
+    return node;
 }
 
 export async function setupAudioProcessing(sourceNode, audioContext) {
