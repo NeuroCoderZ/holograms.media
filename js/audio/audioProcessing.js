@@ -4,43 +4,7 @@ import { state } from '../core/init.js';
 import { AudioGestureBridge } from './AudioGestureBridge.js';
 import audioService from '../services/AudioService.js';
 
-let inputProxyNode = null;
-let _cqtConnectedSource = null; // ссылка на текущий source для корректного отключения
 
-export function getAudioContext() { return audioService.getAudioContext(); }
-
-/**
- * Проверяет, активен ли CWT-анализатор (AudioWorklet).
- * @returns {boolean}
- */
-export function isCwtActive() {
-    return !!audioService.workletNode;
-}
-
-function getInputProxyNode(ctx) {
-    if (!inputProxyNode) {
-        inputProxyNode = ctx.createGain();
-        inputProxyNode.gain.value = 1.0;
-        console.log('[AudioProcessing] 🔗 Proxy Gain Node created');
-    }
-    return inputProxyNode;
-}
-
-/**
- * Сбрасывает proxy-ноду для корректного пересоздания при следующем воспроизведении.
- * КРИТИЧНО: без этого старый proxy остаётся подключён к мёртвому воркеру.
- */
-export function resetInputProxy() {
-    if (inputProxyNode) {
-        try { inputProxyNode.disconnect(); } catch (_) {}
-        inputProxyNode = null;
-    }
-    if (silentGainNode) {
-        try { silentGainNode.disconnect(); } catch (_) {}
-        silentGainNode = null;
-    }
-    _cqtConnectedSource = null;
-}
 
 // ВАЖНО: Мы не перезаписываем onmessage, а подписываемся на событие из шины данных
 let _lastSpectralLog = 0;
@@ -215,9 +179,7 @@ export async function initializeCwtWorklet(audioContext) {
     return node;
 }
 
-export async function setupAudioProcessing(sourceNode, audioContext) {
-    const proxy = getInputProxyNode(audioContext);
-    sourceNode.connect(proxy);
+export async function setupAudioProcessing(audioContext) {
     const workletNode = await initializeCwtWorklet(audioContext);
     return workletNode;
 }

@@ -147,7 +147,7 @@ export class AudioFilePlayer {
     }
 
     // Connect to CQT processor
-    const workletNode = await setupAudioProcessing(this.audioBufferSource, this.audioContext);
+    const workletNode = await setupAudioProcessing(this.audioContext);
 
     // Connect source to destination for playback
     this.audioBufferSource.connect(this.gainNode);
