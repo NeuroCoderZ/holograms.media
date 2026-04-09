@@ -63,11 +63,11 @@ class AudioService {
             }
 
 
-            // 3. Load AudioWorklet
-            await this.loadAudioWorklet();
-
-            // 4. Load WASM
+            // 3. Load WASM
             await this.loadWasmModule();
+
+            // 4. Load AudioWorklet
+            await this.loadAudioWorklet();
 
             this.isReady = true;
             eventBus.emit('audio:ready', { context: this.context });
