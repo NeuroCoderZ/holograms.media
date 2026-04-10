@@ -152,9 +152,13 @@ export class HologramRenderer {
     this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH_Z, CELL_SIZE, 0xFF0000));
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
-    // Синяя точка на ПЕРЕСЕЧЕНИИ осей — в каждой сетке (0,0,0 локальные)
-    this.leftSequencerGroup.add(createCentralMarkerSphere(0.5, 0x0000FF));
-    this.rightSequencerGroup.add(createCentralMarkerSphere(0.5, 0x0000FF));
+    // ═══ Синяя точка на ПЕРЕСЕЧЕНИИ всех осей ═══
+    // Обе сетки стыкуются и имеют общую грань (плоскость Y-Z).
+    // Пересечение осей = (0, 0, 0) мировых координат = центр mainSequencerGroup.
+    // Одна синяя сфера (две совмещены = видна одна).
+    const blueDot = createCentralMarkerSphere(1.0, 0x0000FF);
+    blueDot.position.set(0, 0, 0);
+    this.mainSequencerGroup.add(blueDot);
   }
 
   updateVisuals() {
@@ -205,20 +209,20 @@ export class HologramRenderer {
     const graceTime = audioJustActivated ? Date.now() : this._initTime;
     const wasmInitGrace = isAllSilence && (Date.now() - graceTime < 5000);
 
-    // ═══ ДЕМО-РЕЖИМ: нет аудио ИЛИ тишина в grace period ═══
-    if (!audioData || wasmInitGrace) {
+    // ═══ ДЕМО-РЕЖИМ: нет аудио ИЛИ тишина без активного источника ═══
+    if (!audioData || (isAllSilence && !isActive)) {
         if (!window._demoColumnsLogged) {
-            console.log('[HologramRenderer] 🎨 No audio data — drawing DEMO columns (hL=1, full color)');
+            console.log('[HologramRenderer] 🎨 No audio data — drawing DEMO columns');
             window._demoColumnsLogged = true;
         }
 
         const scalesL = this.meshL.geometry.getAttribute('aColumnScaleZ');
         const scalesR = this.meshR.geometry.getAttribute('aColumnScaleZ');
 
-        // Демо: 1 ячейка глубины, полный цвет, прижаты к дальней стенке (position.z=0 уже)
+        // Демо: 64 ячейки глубины (половина сетки), полный цвет, видны сразу
         for (let i = 0; i < semitones.length; i++) {
-            scalesL.setX(i, 1);
-            scalesR.setX(i, 1);
+            scalesL.setX(i, 64);
+            scalesR.setX(i, 64);
         }
 
         scalesL.needsUpdate = true;
