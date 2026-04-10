@@ -1,15 +1,12 @@
 #!/usr/bin/env node
 /**
- * monitor-server.js — Локальный веб-сервер панели мониторинга
- * =============================================================
- * Запуск: node scripts/monitor-server.js
- * Открой: http://localhost:3001
- * 
- * Опрос: GitHub Actions → Cloudflare Pages → Koyeb (каждые 10 сек)
- * Токены: из .env.local
+ * monitor-server.js — Панель мониторинга HoloEngine
+ * ===================================================
+ * node scripts/monitor-server.js → http://localhost:3001
  */
 
 import http from 'http';
+import https from 'https';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -19,7 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const PORT = 3001;
 
-// ─── Загрузка токенов ───────────────────────────────────────────
+// ─── Токены ─────────────────────────────────────────────────────
 const envPath = path.join(ROOT, '.env.local');
 const env = {};
 if (fs.existsSync(envPath)) {
@@ -32,16 +29,8 @@ if (fs.existsSync(envPath)) {
 const CF_TOKEN = env.CLOUDFLARE_API_TOKEN;
 const CF_ACCOUNT = env.CLOUDFLARE_ACCOUNT_ID;
 const KOYEB_TOKEN = env.KOYEB_TOKEN;
-const GH_TOKEN = process.env.GITHUB_TOKEN || '';
 
-// ─── Кэш статусов ───────────────────────────────────────────────
-let statusCache = {
-  github: [],
-  cloudflare: [],
-  koyeb: [],
-  browserLogs: [],
-  lastUpdate: null,
-};
+let statusCache = { github: [], cloudflare: [], koyeb: [], lastUpdate: null };
 
 function run(cmd, timeout = 15000) {
   try {
@@ -51,189 +40,202 @@ function run(cmd, timeout = 15000) {
   }
 }
 
-async function fetchStatus() {
-  const result = { github: [], cloudflare: [], koyeb: [], browserLogs: [], lastUpdate: new Date().toISOString() };
+function httpsGet(url, token) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: token ? { Authorization: `Bearer ${token}` } : {}, timeout: 12000 }, res => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => { try { resolve(JSON.parse(body)); } catch { resolve({ error: 'Parse error', raw: body.substring(0, 200) }); } });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+  });
+}
 
-  // 1. GitHub Actions (через gh CLI или API)
+function timeAgo(dateStr) {
+  if (!dateStr) return '—';
+  const s = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (s < 0) return 'future';
+  if (s < 60) return s + 'с назад';
+  if (s < 3600) return Math.floor(s / 60) + 'м назад';
+  if (s < 86400) return Math.floor(s / 3600) + 'ч назад';
+  return Math.floor(s / 86400) + 'д назад';
+}
+
+async function fetchStatus() {
+  const result = { github: [], cloudflare: [], koyeb: [], lastUpdate: new Date().toISOString() };
+
+  // GitHub — gh CLI
   try {
-    const ghRaw = run('gh run list --limit 5 --json status,conclusion,headBranch,createdAt,displayTitle,databaseId');
-    if (typeof ghRaw === 'string') {
-      result.github = JSON.parse(ghRaw).map(r => ({
-        id: r.databaseId,
-        branch: r.headBranch,
-        status: r.status,
-        conclusion: r.conclusion,
-        title: r.displayTitle,
-        createdAt: r.createdAt,
-        url: `https://github.com/NeuroCoderZ/holograms.media/actions/runs/${r.databaseId}`,
-      }));
+    const raw = run('gh run list --limit 8 --json status,conclusion,headBranch,createdAt,displayTitle,databaseId');
+    if (typeof raw === 'string') {
+      result.github = JSON.parse(raw).map(r => {
+        // Парсим версию из displayTitle: "DEPLOY: v0.20.409 - ..."
+        const verMatch = r.displayTitle?.match(/v?(\d+\.\d+\.\d+)/);
+        const commit = r.displayTitle?.replace(/^DEPLOY:\s*v?\d+\.\d+\.\d+\s*-\s*/, '').substring(0, 60) || '';
+        return {
+          id: verMatch ? verMatch[1] : 'run-' + r.databaseId,
+          branch: r.headBranch,
+          status: r.conclusion || r.status,
+          createdAt: r.createdAt,
+          commit,
+        };
+      });
     }
   } catch (e) { result.github = [{ error: e.message }]; }
 
-  // 2. Cloudflare Pages (REST API)
+  // Cloudflare — fetch через https (проект holograms-media-dev для dev ветки)
   try {
-    const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/holograms-media/deployments?per_page=5`;
-    const cfRaw = run(`curl -s -H "Authorization: Bearer ${CF_TOKEN}" "${cfUrl}"`);
-    if (typeof cfRaw === 'string') {
-      const parsed = JSON.parse(cfRaw);
-      result.cloudflare = (parsed.result || []).map(d => ({
-        id: d.id,
-        status: d.latest_stage?.status,
-        branch: d.deployment_trigger?.metadata?.branch || d.branch,
-        url: d.url,
-        createdAt: d.created_on,
-        duration: d.latest_stage?.finished_on ? `${Math.round((new Date(d.latest_stage.finished_on) - new Date(d.created_on))/1000)}s` : 'in_progress',
-      }));
+    const project = 'holograms-media-dev';
+    const url = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${project}/deployments?per_page=8`;
+    const parsed = await httpsGet(url, CF_TOKEN);
+    if (parsed.success && parsed.result) {
+      result.cloudflare = parsed.result.map(d => {
+        const finished = d.latest_stage?.finished_on;
+        const duration = finished ? `${Math.round((new Date(finished) - new Date(d.created_on)) / 1000)}s` : '';
+        return {
+          id: d.id.substring(0, 8),
+          branch: d.deployment_trigger?.metadata?.branch || d.branch || 'manual',
+          status: d.latest_stage?.status,
+          url: d.url,
+          createdAt: d.created_on,
+          duration,
+        };
+      });
+    } else {
+      result.cloudflare = [{ error: parsed.error || 'API error' }];
     }
   } catch (e) { result.cloudflare = [{ error: e.message }]; }
 
-  // 3. Koyeb (REST API)
+  // Koyeb — fetch через https
   try {
-    const kRaw = run(`curl -s -H "Authorization: Bearer ${KOYEB_TOKEN}" "https://app.koyeb.com/v1/services?limit=5"`);
-    if (typeof kRaw === 'string') {
-      const parsed = JSON.parse(kRaw);
-      result.koyeb = (parsed.services || []).map(s => ({
-        name: s.name,
-        status: s.latest_deployment?.status,
-        url: s.domains?.[0],
-        createdAt: s.latest_deployment?.created_at,
-        commit: s.latest_deployment?.source?.git?.commit_id?.substring(0, 8),
-      }));
+    const parsed = await httpsGet('https://app.koyeb.com/v1/services?limit=5', KOYEB_TOKEN);
+    if (parsed.services) {
+      result.koyeb = parsed.services.map(s => {
+        const dep = s.latest_deployment || {};
+        const git = dep.source?.git || {};
+        const envVars = dep.env || {};
+        const env = envVars.ENVIRONMENT || envVars.VITE_ENVIRONMENT || '';
+        const domain = s.name.includes('dev') ? 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app' : '';
+        return {
+          id: s.name,
+          branch: git.branch || env || 'docker',
+          status: dep.status || s.status,
+          createdAt: dep.created_at || s.updated_at,
+          commit: (git.commit_id || '').substring(0, 8),
+          deployUrl: domain,
+        };
+      });
+    } else {
+      result.koyeb = [{ error: 'No services found' }];
     }
   } catch (e) { result.koyeb = [{ error: e.message }]; }
-
-  // 4. Browser logs
-  const logPath = path.join(ROOT, 'logs', 'client-errors.json');
-  if (fs.existsSync(logPath)) {
-    try {
-      result.browserLogs = JSON.parse(fs.readFileSync(logPath, 'utf8') || '[]').slice(-20);
-    } catch {}
-  }
 
   statusCache = result;
   return result;
 }
 
-// Первоначальный опрос
 fetchStatus();
 setInterval(fetchStatus, 10000);
 
-// ─── HTTP Server ────────────────────────────────────────────────
-const htmlPage = `<!DOCTYPE html>
+// ─── HTML ───────────────────────────────────────────────────────
+const html = `<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HoloEngine Monitor</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Courier New', monospace; background: #0a0a0a; color: #e0e0e0; padding: 20px; }
-  .header { text-align: center; margin-bottom: 30px; }
-  .header h1 { color: #00ff88; font-size: 24px; }
-  .header .time { color: #666; font-size: 12px; }
-  .section { margin-bottom: 30px; background: #111; border: 1px solid #222; border-radius: 8px; overflow: hidden; }
-  .section-header { padding: 12px 16px; font-size: 16px; font-weight: bold; border-bottom: 1px solid #222; }
-  .section-header.gh { background: #1a1a2e; color: #646cff; }
-  .section-header.cf { background: #1a2e1a; color: #f6821f; }
-  .section-header.ky { background: #2e1a1a; color: #e040fb; }
-  .section-header.bl { background: #1a2e2e; color: #00bcd4; }
-  .row { padding: 10px 16px; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; gap: 12px; }
-  .row:last-child { border-bottom: none; }
-  .status-icon { font-size: 18px; min-width: 24px; }
-  .row-info { flex: 1; }
-  .row-title { font-size: 13px; color: #fff; }
-  .row-meta { font-size: 11px; color: #666; margin-top: 2px; }
-  .badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
-  .badge.success { background: #0a3a0a; color: #00ff88; }
-  .badge.failure { background: #3a0a0a; color: #ff4444; }
-  .badge.running { background: #3a3a0a; color: #ffcc00; }
-  .badge.unknown { background: #1a1a1a; color: #666; }
-  a { color: #646cff; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .error-msg { color: #ff4444; padding: 10px 16px; }
-  .auto-refresh { position: fixed; bottom: 10px; right: 10px; font-size: 11px; color: #444; }
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d;
+    --text: #c9d1d9; --muted: #8b949e;
+    --green: #238636; --red: #da3633; --yellow: #d29922; --blue: #58a6ff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 32px; max-width: 1400px; margin: 0 auto; position: relative; }
+  .title { font-size: 28px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .sub span { color: var(--blue); }
+  .btn { padding: 6px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  .sec { margin-bottom: 40px; }
+  .sec-h { font-size: 18px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+  .sec-h .lbl { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+  .row { display: grid; grid-template-columns: 12px 120px 80px minmax(400px, 1fr) 120px; gap: 16px; align-items: center; padding: 10px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; font-size: 14px; }
+  .row:first-child { border-left: 3px solid var(--blue); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.g { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.r { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .dot.y { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .dot.x { background: #484f58; }
+
+  .ver { color: var(--muted); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; }
+  .br { font-weight: 600; font-size: 13px; }
+  .br.dev { color: #a371f7; }
+  .br.main { color: var(--green); }
+  .msg { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tm { color: var(--muted); font-size: 13px; text-align: right; }
+  .err { color: var(--red); padding: 10px 16px; background: rgba(218,54,51,0.1); border-radius: 6px; margin-bottom: 6px; font-size: 13px; }
+
+  .btn { position: fixed; top: 24px; right: 32px; padding: 8px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; cursor: pointer; }
+  .btn:hover { border-color: var(--blue); color: var(--blue); }
 </style>
 </head>
 <body>
-  <div class="header">
-    <h1>📡 HoloEngine Full-Stack Monitor</h1>
-    <div class="time" id="lastUpdate">Загрузка...</div>
-  </div>
+<div class="title">HoloEngine Full-Stack Monitor</div>
+<div class="sub" id="sub">Загрузка...</div>
+<button class="btn" onclick="copyLogs()">📋 Копировать логи</button>
 
-  <div class="section">
-    <div class="section-header gh">🐙 GitHub Actions</div>
-    <div id="githubSection"></div>
-  </div>
-
-  <div class="section">
-    <div class="section-header cf">☁️ Cloudflare Pages</div>
-    <div id="cfSection"></div>
-  </div>
-
-  <div class="section">
-    <div class="section-header ky">🚀 Koyeb Backend</div>
-    <div id="koyebSection"></div>
-  </div>
-
-  <div class="section">
-    <div class="section-header bl">🌐 Browser Console Logs</div>
-    <div id="logsSection"></div>
-  </div>
-
-  <div class="auto-refresh">🔄 Автообновление каждые 10 сек</div>
+<div class="sec"><div class="sec-h">GitHub Actions <span class="lbl">Сборка</span></div><div id="gh"></div></div>
+<div class="sec"><div class="sec-h">Cloudflare Pages <span class="lbl">Фронтенд</span></div><div id="cf"></div></div>
+<div class="sec"><div class="sec-h">Koyeb <span class="lbl">Бэкенд</span></div><div id="ky"></div></div>
 
 <script>
-function badgeClass(s) {
-  if (s === 'success' || s === 'SUCCESSFUL') return 'success';
-  if (s === 'failure' || s === 'FAILED') return 'failure';
-  if (s === 'in_progress' || s === 'RUNNING') return 'running';
-  return 'unknown';
-}
+function dc(s){if(s==='success'||s==='SUCCESSFUL'||s==='HEALTHY')return'g';if(s==='failure'||s==='FAILED')return'r';if(s==='in_progress'||s==='RUNNING')return'y';return'x'}
+function ta(d){if(!d)return'—';const s=Math.floor((Date.now()-new Date(d))/1000);if(s<0)return'future';if(s<60)return s+'с';if(s<3600)return Math.floor(s/60)+'м';if(s<86400)return Math.floor(s/3600)+'ч';return Math.floor(s/86400)+'д'}
+function xv(t){const m=t?.match(/v?(\\d+\\.\\d+\\.\\d+)/);return m?m[1]:''}
 
-function icon(s) {
-  if (s === 'success' || s === 'SUCCESSFUL') return '✅';
-  if (s === 'failure' || s === 'FAILED') return '❌';
-  if (s === 'in_progress' || s === 'RUNNING') return '🔄';
-  return '⚠️';
-}
-
-function renderRow(item) {
-  if (item.error) return '<div class="error-msg">⚠️ ' + item.error + '</div>';
-  const s = item.status || item.conclusion || 'unknown';
-  return '<div class="row">' +
-    '<span class="status-icon">' + icon(s) + '</span>' +
-    '<div class="row-info">' +
-      '<div class="row-title">' + (item.title || item.name || item.branch || item.id || 'N/A') + '</div>' +
-      '<div class="row-meta">' +
-        (item.url ? '<a href="' + item.url + '" target="_blank">' + (item.url.length > 50 ? item.url.substring(0,50)+'...' : item.url) + '</a> ' : '') +
-        (item.commit ? 'commit: ' + item.commit + ' ' : '') +
-        (item.createdAt ? item.createdAt : '') +
-        (item.duration ? ' | ⏱️ ' + item.duration : '') +
-      '</div>' +
-    '</div>' +
-    '<span class="badge ' + badgeClass(s) + '">' + s + '</span>' +
-  '</div>';
+function render(items, id) {
+  const el = document.getElementById(id);
+  if (!items || items.length === 0) { el.innerHTML = '<div class="err">Нет данных</div>'; return; }
+  el.innerHTML = items.map((x, i) => {
+    if (x.error) return '<div class="err">⚠ ' + x.error + '</div>';
+    if (x.info) return '<div class="err" style="background:rgba(88,166,255,0.1);color:var(--blue)">' + x.info + '</div>';
+    const d = dc(x.status);
+    const v = x.id || '—';
+    const b = x.branch || '';
+    const bc = b === 'main' ? 'main' : b === 'dev' ? 'dev' : '';
+    const m = x.commit || x.deployUrl || x.url || '';
+    const t = ta(x.createdAt) + (x.duration ? ' (' + x.duration + ')' : '');
+    return '<div class="row"><div class="dot ' + d + '"></div><div class="ver">' + v + '</div><div class="br ' + bc + '">' + b + '</div><div class="msg">' + m + '</div><div class="tm">' + t + '</div></div>';
+  }).join('');
 }
 
 function update() {
-  fetch('/api/status')
-    .then(r => r.json())
-    .then(data => {
-      document.getElementById('lastUpdate').textContent = 'Последнее обновление: ' + data.lastUpdate;
+  fetch('/api/status').then(r => r.json()).then(d => {
+    document.getElementById('sub').innerHTML = 'Обновлено: <span>' + new Date(d.lastUpdate).toLocaleTimeString('ru') + '</span>';
+    render(d.github, 'gh');
+    render(d.cloudflare, 'cf');
+    render(d.koyeb, 'ky');
+  });
+}
 
-      document.getElementById('githubSection').innerHTML = data.github.map(renderRow).join('');
-      document.getElementById('cfSection').innerHTML = data.cloudflare.map(renderRow).join('');
-      document.getElementById('koyebSection').innerHTML = data.koyeb.map(renderRow).join('');
-
-      if (data.browserLogs.length > 0) {
-        document.getElementById('logsSection').innerHTML = data.browserLogs.map(l =>
-          '<div class="row"><span class="status-icon">📝</span><div class="row-info"><div class="row-title">' + (l.msg || '').substring(0,150) + '</div><div class="row-meta">' + (l.time || '') + '</div></div></div>'
-        ).join('');
-      } else {
-        document.getElementById('logsSection').innerHTML = '<div class="row"><span class="status-icon">📝</span><div class="row-info"><div class="row-title">Нет ошибок в консоли</div></div></div>';
-      }
-    })
-    .catch(e => console.error('Fetch error:', e));
+function copyLogs() {
+  fetch('/api/status').then(r => r.json()).then(d => {
+    let t = 'HoloEngine Monitor ' + new Date().toISOString() + '\\n\\n';
+    t += '[GitHub Actions]\\n';
+    d.github.forEach(g => { if (!g.error) t += g.id + ' | ' + g.branch + ' | ' + g.status + ' | ' + (g.commit || '') + ' | ' + g.createdAt + '\\n'; });
+    t += '\\n[Cloudflare Pages]\\n';
+    d.cloudflare.forEach(c => { if (!c.error && !c.info) t += c.id + ' | ' + c.branch + ' | ' + c.status + ' | ' + c.url + ' | ' + c.createdAt + '\\n'; else if (c.info) t += c.info + '\\n'; });
+    t += '\\n[Koyeb]\\n';
+    d.koyeb.forEach(k => { if (!k.error) t += k.id + ' | ' + k.branch + ' | ' + k.status + ' | ' + (k.deployUrl || '') + ' | ' + k.createdAt + '\\n'; });
+    navigator.clipboard.writeText(t).then(() => {
+      document.querySelector('.btn').textContent = '✅ Скопировано';
+      setTimeout(() => document.querySelector('.btn').textContent = '📋 Копировать логи', 2000);
+    });
+  });
 }
 
 update();
@@ -244,41 +246,15 @@ setInterval(update, 10000);
 
 const server = http.createServer((req, res) => {
   if (req.url === '/api/status') {
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(statusCache));
     return;
   }
-
-  if (req.url === '/api/logs') {
-    // Принять F12 логи из браузера
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const logData = JSON.parse(body);
-        const logPath = path.join(ROOT, 'logs', 'client-errors.json');
-        let logs = [];
-        if (fs.existsSync(logPath)) {
-          try { logs = JSON.parse(fs.readFileSync(logPath, 'utf8') || '[]'); } catch {}
-        }
-        logs.push({ time: new Date().toISOString(), ...logData });
-        if (logs.length > 100) logs = logs.slice(-100);
-        fs.writeFileSync(logPath, JSON.stringify(logs, null, 2));
-        res.writeHead(200);
-        res.end('OK');
-      } catch { res.writeHead(400); res.end('Bad JSON'); }
-    });
-    return;
-  }
-
-  // Главная страница
   res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(htmlPage);
+  res.end(html);
 });
 
 server.listen(PORT, () => {
-  console.log(`📡 HoloEngine Monitor: http://localhost:${PORT}`);
-  console.log(`📋 API: http://localhost:${PORT}/api/status`);
-  console.log(`📝 Logs: POST http://localhost:${PORT}/api/logs`);
-  console.log('\n🔄 Опрос каждые 10 секунд...');
+  console.log('\n📡 Monitor: http://localhost:' + PORT);
+  console.log('🔄 Опрос каждые 10 сек\n');
 });

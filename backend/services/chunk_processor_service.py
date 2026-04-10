@@ -5,7 +5,8 @@ from backend.core import crud_operations
 from backend.core.models.interaction_chunk_model import InteractionChunkCreate, InteractionChunkDB
 from backend.core.models.hologram_embedding_models import HologramSemanticEmbedding # Import the new model
 from backend.repositories.interaction_chunk_repository import InteractionChunkRepository # ADDED
-from backend.core.storage.b2_service import B2StorageService
+
+# Storage: AstraDB only (B2 removed, R2 planned)
 
 # Assuming these would be initialized elsewhere and passed (e.g., via dependency injection)
 # For now, just a placeholder for dependencies like LLM client for embedding generation.
@@ -36,20 +37,8 @@ async def process_new_chunk_and_generate_embedding(
 
     print(f"[CHUNK PROCESSOR] Interaction chunk {created_chunk.id} metadata saved.")
 
-    # 2. Simulate embedding generation (this would involve LLM calls, gesture analysis etc.)
-    # In a real scenario, this would be a complex process involving:
-    # - Reading audio/video/gesture data from Backblaze B2 (using data_ref fields in chunk_create_data)
-    # - Sending relevant data to an LLM for text embedding (e.g., summary of interaction)
-    # - Analyzing gesture data to generate gesture-specific vectors
-    # - Combining these into a comprehensive HologramSemanticEmbedding
-    
-    b2 = B2StorageService()
-    if chunk_create_data.storage_ref:
-        # Example: Generate presigned URL for the LLM to access the file
-        # Assuming storage_ref contains the object key or full path
-        object_key = chunk_create_data.storage_ref.split('/')[-1] # Simplistic extraction
-        file_url = b2.generate_presigned_url(object_key)
-        print(f"[CHUNK PROCESSOR] Generated B2 presigned URL for processing: {file_url}")
+    # 2. Embedding generation (AstraDB only — no external storage)
+    # In a real scenario: LLM calls, gesture analysis, audio/video processing
     
     # Placeholder for a generated embedding vector and metadata
     simulated_embedding_vector = [0.0] * 768  # Assuming 768 dimensions for text-embedding-004

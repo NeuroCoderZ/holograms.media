@@ -3,7 +3,7 @@
  *
  * L1: горячая память (7 дней) — IndexedDB, полные блоки
  * L2: тёплая память (30 дней) — IndexedDB, без Float32Array
- * L3: холодная память (90 дней) — Backblaze B2 (Phase 2)
+ * L3: холодная память (90 дней) — AstraDB (Phase 2)
  *
  * Также хранит снимки весов Enkephalon (brain snapshot).
  */

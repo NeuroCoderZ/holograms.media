@@ -39,7 +39,7 @@ export const TriaConfig = {
     storage: {
         l1RetentionDays: 7,   // горячая память → IndexedDB
         l2RetentionDays: 30,  // тёплая память → IndexedDB (сжатая)
-        l3RetentionDays: 90,  // холодная память → Backblaze B2
+        l3RetentionDays: 90,  // холодная память (AstraDB)
         maxLocalSizeMb: 5.7,  // лимит локального хранилища
     },
 

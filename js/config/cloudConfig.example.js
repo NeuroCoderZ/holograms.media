@@ -16,12 +16,11 @@ export const cloudConfig = {
     gestureProcessingEndpoint: '/api/gesture-processing'
   },
 
-  backblaze: {
-    keyId: '<YOUR_B2_KEY_ID>',
-    keyName: '<YOUR_B2_KEY_NAME>',
-    applicationKey: '<YOUR_B2_APPLICATION_KEY>',
-    bucketName: '<YOUR_B2_BUCKET_NAME>',
-    apiUrl: 'https://api.backblazeb2.com/b2api/v2'
+  // Storage: AstraDB only (B2 removed, R2 planned)
+  astra: {
+    token: '<YOUR_ASTRA_DB_TOKEN>',
+    databaseId: '<YOUR_ASTRA_DB_ID>',
+    region: 'us-east-2'
   },
 
   cloudflare: {

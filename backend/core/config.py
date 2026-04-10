@@ -80,11 +80,9 @@ class Settings(BaseModel):
         os.getenv("ASTRA_DB_KEYSPACE") or "default_keyspace"
     ).strip()
 
-    # Storage (Backblaze B2)
-    B2_ENDPOINT_URL: str = os.getenv("B2_ENDPOINT_URL", "").strip()
-    B2_ACCESS_KEY_ID: str = os.getenv("B2_ACCESS_KEY_ID", "").strip()
-    B2_SECRET_ACCESS_KEY: str = os.getenv("B2_SECRET_ACCESS_KEY", "").strip()
-    B2_BUCKET_NAME: str = os.getenv("B2_BUCKET_NAME", "holograms-media").strip()
+    # Storage: AstraDB (vector, 80GB free). R2 planned for future media.
+    ASTRA_DB_APPLICATION_TOKEN: str = (os.getenv("ASTRA_DB_APPLICATION_TOKEN") or "").strip()
+    ASTRA_DB_API_ENDPOINT: str = (os.getenv("ASTRA_DB_API_ENDPOINT") or "").strip()
 
     # Environment
     ENVIRONMENT: str = (os.getenv("ENVIRONMENT") or "development").strip()
