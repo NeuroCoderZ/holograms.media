@@ -11,7 +11,7 @@ import * as THREE from 'three';
 export const CELL_HEIGHT = 2.0;
 
 /** Opacity сетки (едва видима — только намечает объём) */
-const GRID_OPACITY = 0.0023; // Calibration v0.19.035: ultra-subtle balance.
+const GRID_OPACITY = 0.0021; // Calibration v0.20.399: -5% from 0.0023
 
 /**
  * Невидимая маркерная сфера (для внутреннего позиционирования).
@@ -137,33 +137,30 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     xSphere.name = "XAxisSphere";
     group.add(xSphere);
 
-    // Ось Y (позвоночник — зелёная)
-    const spineLine = createLineForAxis([...origin, 0, yLength, 0], 0x00FF00, 1.5, true);
+    // Ось Y (позвоночник — зелёная, от -yLength/2 до +yLength/2)
+    const yStart = -yLength / 2;
+    const yEnd = yLength / 2;
+    const spineLine = createLineForAxis([0, yStart, 0, 0, yEnd, 0], 0x00FF00, 1.5, true);
     spineLine.name = "YAxis";
     group.add(spineLine);
 
     const ySphere = createSphereForAxis(sphereRadius, 0x00FF00);
-    ySphere.position.set(0, yLength, 0);
+    ySphere.position.set(0, yEnd, 0);
     ySphere.name = "YAxisSphere";
     group.add(ySphere);
 
-    // Ось Z — длина = 128 (соответствует max высоте столбца: 128.0 + 0дБ)
-    // GRID_DEPTH=256 используется для сетки, но ось Z = max column height
+    // Ось Z (белая, от 0 до zLength)
     const zAxisLength = 128;
-    const zPoints = [];
-    for (let i = 0; i <= segments; i++) {
-        const z = (i / segments) * zAxisLength;
-        zPoints.push(0, 0, z);
-    }
-    const zAxis = createLineForAxis(zPoints, 0xFFFFFF, 1.5, true);
-    zAxis.name = "ZAxis";
-    group.add(zAxis);
+    const zLine = createLineForAxis([0, 0, 0, 0, 0, zAxisLength], 0xFFFFFF, 1.5, true);
+    zLine.name = "ZAxis";
+    group.add(zLine);
 
     const zSphere = createSphereForAxis(sphereRadius, 0xFFFFFF);
     zSphere.position.set(0, 0, zAxisLength);
     zSphere.name = "ZAxisSphere";
     group.add(zSphere);
 
-    group.position.z = 0.5;
+    // Центр группы = (0, 0, 0) — пересечение всех осей
+    group.position.set(0, 0, 0);
     return group;
 }
