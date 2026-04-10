@@ -1,14 +1,13 @@
 /**
- * HologramWebGPU.js — Точка входа HoloEngine
- * ============================================
+ * HologramWebGPU.js — Точка входа HoloEngine (с подробным логированием)
+ * =====================================================================
  * WebGPU рендеринг голограммы BasilaQ-128.
- * Работает параллельно с Three.js, затем заменит его полностью.
+ * Полностью заменяет Three.js для BasilaQ-128 визуализации.
  */
 
 import { HoloEngine } from './Engine.js';
 import { InstancedColumns } from './InstancedColumns.js';
 import { GridWireframe } from './GridWireframe.js';
-import { semitones } from '../config/hologramConfig.js';
 import eventBus from '../core/eventBus.js';
 
 export class HologramWebGPU {
@@ -21,53 +20,79 @@ export class HologramWebGPU {
         this.isInitialized = false;
         this.latestAudioData = null;
         this.isDemoMode = true;
+        this._frameCount = 0;
+
+        console.log('[HoloEngine] 🏗️ Конструктор создан');
 
         // Подписка на аудио-данные
         eventBus.on('audioData', (data) => {
+            if (this.isDemoMode) {
+                console.log('[HoloEngine] 🎵 Переключение: DEMO → AUDIO MODE');
+            }
             this.latestAudioData = data;
             this.isDemoMode = false;
         });
 
         eventBus.on('audioReset', () => {
+            console.log('[HoloEngine] 🔄 Переключение: AUDIO → DEMO MODE');
             this.latestAudioData = null;
             this.isDemoMode = true;
         });
     }
 
     async init() {
-        // Создаём canvas поверх grid-container
+        console.log('[HoloEngine] 🚀 Запуск инициализации...');
+
+        // 1. Находим контейнер
         const container = document.getElementById('grid-container');
         if (!container) {
-            console.warn('[HologramWebGPU] grid-container не найден');
+            console.error('[HoloEngine] ❌ grid-container не найден!');
             return;
         }
+        const rect = container.getBoundingClientRect();
+        console.log(`[HoloEngine] 📐 grid-container: ${rect.width.toFixed(0)}x${rect.height.toFixed(0)}px`);
 
+        // 2. Создаём canvas
         this.canvas = document.createElement('canvas');
         this.canvas.id = 'holo-webgpu-canvas';
         this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;';
         container.style.position = 'relative';
         container.appendChild(this.canvas);
 
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        console.log(`[HoloEngine] 🖼️ Canvas создан: ${this.canvas.width}x${this.canvas.height} (DPR: ${dpr})`);
+
         try {
-            // WebGPU Engine
+            // 3. WebGPU Engine
+            console.log('[HoloEngine] 🔧 Создание HoloEngine...');
             this.engine = new HoloEngine(this.canvas);
             await this.engine.init();
+            console.log('[HoloEngine] ✅ HoloEngine инициализирован');
 
-            // Depth texture
+            // 4. Depth texture
+            console.log('[HoloEngine] 📦 Создание depth texture...');
             this._createDepthTexture();
+            console.log('[HoloEngine] ✅ Depth texture создан');
 
-            // Шейдер
+            // 5. Шейдеры
+            console.log('[HoloEngine] 📝 Компиляция WGSL шейдеров...');
             const shaderCode = this._buildShaderCode();
+            console.log(`[HoloEngine] 📝 WGSL код: ${shaderCode.length} символов`);
             const shaderModule = this.engine.device.createShaderModule({ code: shaderCode });
+            console.log('[HoloEngine] ✅ Шейдеры скомпилированы');
 
-            // Bind group layout
+            // 6. Bind group layout
+            console.log('[HoloEngine] 🔗 Создание bind group layout...');
             const bindGroupLayout = this.engine.device.createBindGroupLayout({
                 entries: [
                     { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: 'uniform' } },
                 ],
             });
 
-            // Uniform buffer
+            // 7. Uniform buffer
+            console.log('[HoloEngine] 📋 Создание uniform buffer (128 bytes)...');
             this.uniformBuffer = this.engine.device.createBuffer({
                 size: 128,
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -77,21 +102,31 @@ export class HologramWebGPU {
                 layout: bindGroupLayout,
                 entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }],
             });
+            console.log('[HoloEngine] ✅ Uniform buffer + bind group созданы');
 
-            // Instanced columns
+            // 8. Instanced columns
+            console.log('[HoloEngine] 🏗️ Создание InstancedColumns (128 инстансов × 2)...');
             this.columns = new InstancedColumns(this.engine.device, shaderModule, bindGroupLayout);
+            console.log('[HoloEngine] ✅ InstancedColumns созданы');
 
-            // Grid wireframe
+            // 9. Grid wireframe
+            console.log('[HoloEngine] 📐 Создание GridWireframe...');
             this.grid = new GridWireframe(this.engine.device, shaderModule, bindGroupLayout);
+            console.log('[HoloEngine] ✅ GridWireframe создан');
 
+            // 10. Инициализация завершена
             this.isInitialized = true;
-            console.log('[HologramWebGPU] ✅ Инициализирован');
+            console.log('[HoloEngine] 🎉 ВСЁ ИНИЦИАЛИЗИРОВАНО');
+            console.log(`[HoloEngine] 📊 Режим: ${this.isDemoMode ? 'DEMO (hL=64)' : 'AUDIO'}`);
 
-            // Render loop
+            // 11. Запуск render loop
+            console.log('[HoloEngine] 🎬 Запуск render loop...');
             this._renderLoop();
 
         } catch (error) {
-            console.error('[HologramWebGPU] ❌ Ошибка инициализации:', error);
+            console.error('[HoloEngine] ❌ ОШИБКА ИНИЦИАЛИЗАЦИИ:', error);
+            console.error('[HoloEngine] 📍 Stack:', error.stack);
+            this._showError(error.message);
         }
     }
 
@@ -133,7 +168,7 @@ export class HologramWebGPU {
                 var out: VSOutput;
                 out.vColor = input.color;
                 out.vWorldZHeight = (input.position.z + 0.5) * input.scaleZ;
-                
+
                 let model = mat4x4<f32>(input.m0, input.m1, input.m2, input.m3);
                 let worldPos = model * vec4<f32>(input.position, 1.0);
                 let viewPos = uniforms.uViewMatrix * worldPos;
@@ -150,7 +185,6 @@ export class HologramWebGPU {
                 return vec4<f32>(finalColor, 1.0);
             }
 
-            // Grid шейдеры
             struct GridVSInput {
                 @location(0) position: vec3<f32>,
                 @location(1) color: vec3<f32>,
@@ -177,6 +211,11 @@ export class HologramWebGPU {
     _renderLoop = () => {
         if (!this.isInitialized) return;
 
+        // Лог первых 5 кадров
+        if (this._frameCount < 5) {
+            console.log(`[HoloEngine] 🎬 Кадр #${this._frameCount}: mode=${this.isDemoMode ? 'DEMO' : 'AUDIO'}, canvas=${this.canvas.width}x${this.canvas.height}`);
+        }
+
         this.engine.resize();
         this._createDepthTexture();
 
@@ -186,7 +225,7 @@ export class HologramWebGPU {
         this.engine.device.queue.writeBuffer(this.uniformBuffer, 0, proj);
         this.engine.device.queue.writeBuffer(this.uniformBuffer, 64, view);
 
-        // Demo mode: hL=64, или реальные аудио-данные
+        // Demo или Audio
         if (this.isDemoMode || !this.latestAudioData) {
             this.columns.setDemoMode(64);
         } else {
@@ -217,8 +256,30 @@ export class HologramWebGPU {
         pass.end();
         this.engine.device.queue.submit([commandEncoder.finish()]);
 
+        this._frameCount++;
         requestAnimationFrame(this._renderLoop);
     };
+
+    _showError(message) {
+        const overlay = document.createElement('div');
+        overlay.id = 'holoengine-error';
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); color: #f44; display: flex;
+            align-items: center; justify-content: center; z-index: 999999;
+            font-family: monospace; font-size: 16px; text-align: center; padding: 20px;
+        `;
+        overlay.innerHTML = `<div>
+            <h1>⚠️ HoloEngine ошибка</h1>
+            <p>${message}</p>
+            <p>Используйте Chrome 113+, Edge 113+, Firefox 141+</p>
+        </div>`;
+        document.body.appendChild(overlay);
+    }
+
+    setXRMode(enabled) {
+        this.engine.setXRMode(enabled);
+    }
 }
 
 // Singleton
