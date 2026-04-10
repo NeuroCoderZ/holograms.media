@@ -152,7 +152,9 @@ export class HologramRenderer {
     this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH_Z, CELL_SIZE, 0xFF0000));
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
-    this.mainSequencerGroup.add(createCentralMarkerSphere(2.4192, 0x0000FF));
+    // Синяя точка на ПЕРЕСЕЧЕНИИ осей — в каждой сетке (0,0,0 локальные)
+    this.leftSequencerGroup.add(createCentralMarkerSphere(0.5, 0x0000FF));
+    this.rightSequencerGroup.add(createCentralMarkerSphere(0.5, 0x0000FF));
   }
 
   updateVisuals() {
@@ -193,41 +195,38 @@ export class HologramRenderer {
     }
 
     // Guard: если вообще нет данных — рисуем DEMO столбцы (базовые)
-    // Также рисуем демо если WASM в fallback mode (все -128) в течение grace period
+    // Также рисуем демо если WASM в fallback mode (все 0 dB SPL = тишина) в течение grace period
     const isAllSilence = audioData && audioData.levels &&
-        audioData.levels.every(v => v <= -127);
-    
+        audioData.levels.every(v => v <= 1);  // dB SPL: 0-1 = тишина
+
     // Grace period: либо при загрузке страницы, либо при активации аудио
     const audioJustActivated = isActive && !this._lastAudioActive;
     if (isActive) this._lastAudioActive = true;
     const graceTime = audioJustActivated ? Date.now() : this._initTime;
     const wasmInitGrace = isAllSilence && (Date.now() - graceTime < 5000);
 
+    // ═══ ДЕМО-РЕЖИМ: нет аудио ИЛИ тишина в grace period ═══
     if (!audioData || wasmInitGrace) {
-        // Рисуем DEMO столбцы — синусоидальная волна для визуализации сетки
         if (!window._demoColumnsLogged) {
-            console.log('[HologramRenderer] 🎨 No audio data — drawing DEMO columns');
+            console.log('[HologramRenderer] 🎨 No audio data — drawing DEMO columns (hL=1, full color)');
             window._demoColumnsLogged = true;
         }
-        
+
         const scalesL = this.meshL.geometry.getAttribute('aColumnScaleZ');
         const scalesR = this.meshR.geometry.getAttribute('aColumnScaleZ');
-        const time = Date.now() * 0.001;
-        
+
+        // Демо: 1 ячейка глубины, полный цвет, прижаты к дальней стенке (position.z=0 уже)
         for (let i = 0; i < semitones.length; i++) {
-            const config = semitones[i];
-            const width = config.width || 1;
-            
-            // Демо-волна: small sine wave pattern (base height 5-20)
-            const demoH = 5 + Math.sin(time * 2 + i * 0.1) * 3 + Math.sin(time * 0.5 + i * 0.05) * 2;
-            const demoH2 = 5 + Math.sin(time * 2 + i * 0.1 + Math.PI) * 3 + Math.sin(time * 0.5 + i * 0.05 + 1) * 2;
-            
-            scalesL.setX(i, Math.max(0.5, demoH));
-            scalesR.setX(i, Math.max(0.5, demoH2));
+            scalesL.setX(i, 1);
+            scalesR.setX(i, 1);
         }
-        
+
         scalesL.needsUpdate = true;
         scalesR.needsUpdate = true;
+
+        // Greeting mode = полный цвет без затемнения
+        this.meshL.material.uniforms.uIsGreeting.value = 1.0;
+        this.meshR.material.uniforms.uIsGreeting.value = 1.0;
         return;
     }
 
@@ -325,9 +324,10 @@ export class HologramRenderer {
 
         pL = initialX_L + Math.min(0, discreteShift);
         pR = initialX_R + Math.max(0, discreteShift);
-        
-        hL = CELL_HEIGHT;
-        hR = CELL_HEIGHT;
+
+        // Демо: 1 ячейка глубины, прижаты к дальней стенке
+        hL = 1;
+        hR = 1;
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);
       }
