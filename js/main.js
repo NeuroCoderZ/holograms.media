@@ -107,7 +107,7 @@ async function startFullApplication(appState, loader) {
 
         // Инициализация сервисов и чата
         setupChat();
-        setupReloadPrank();
+        // setupReloadPrank(); // DISABLED
 
         startAnimationLoop(appState);
 
