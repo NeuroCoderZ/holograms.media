@@ -674,8 +674,8 @@ export async function initCore() {
     })();
     // ───────────────────────────────────────────────────────────
 
-    // --- Start Auto-Reload ---
-    autoReloadService.start();
+    // --- Auto-Reload DISABLED (не работает корректно) ---
+    // autoReloadService.start();
     // NOTE: lightingManager.initialize() moved to main.js (after UI is visible)
     // to prevent double-init and ensure elements are in DOM when refreshElements() runs
 

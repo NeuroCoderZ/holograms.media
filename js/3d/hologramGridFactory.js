@@ -137,15 +137,13 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     xSphere.name = "XAxisSphere";
     group.add(xSphere);
 
-    // Ось Y (позвоночник — зелёная, от -yLength/2 до +yLength/2)
-    const yStart = -yLength / 2;
-    const yEnd = yLength / 2;
-    const spineLine = createLineForAxis([0, yStart, 0, 0, yEnd, 0], 0x00FF00, 1.5, true);
+    // Ось Y (позвоночник — зелёная, от 0 до yLength)
+    const spineLine = createLineForAxis([0, 0, 0, 0, yLength, 0], 0x00FF00, 1.5, true);
     spineLine.name = "YAxis";
     group.add(spineLine);
 
     const ySphere = createSphereForAxis(sphereRadius, 0x00FF00);
-    ySphere.position.set(0, yEnd, 0);
+    ySphere.position.set(0, yLength, 0);
     ySphere.name = "YAxisSphere";
     group.add(ySphere);
 
@@ -160,7 +158,7 @@ export function createAxis(xLength, yLength, zLength, isLeftGrid) {
     zSphere.name = "ZAxisSphere";
     group.add(zSphere);
 
-    // Центр группы = (0, 0, 0) — пересечение всех осей
+    // Центр группы = (0, 0, 0) — пересечение всех осей в начале каждой сетки
     group.position.set(0, 0, 0);
     return group;
 }
