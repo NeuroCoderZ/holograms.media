@@ -246,23 +246,16 @@ export async function initCore() {
 
     console.log('✅ Three.js сцена и рендерер успешно инициализированы');
 
-    // Инициализируем HologramRenderer с обработкой ошибок
-    try {
-      state.hologramRendererInstance = new HologramRenderer(state.scene, "test_room", "user_local_test");
-      console.log('✅ HologramRenderer инициализирован');
-    } catch (error) {
-      window.handleThreeJSError(error, 'hologram_renderer_init');
-      throw error;
-    }
-
-    // Инициализируем HoloEngine (WebGPU) параллельно с Three.js
+    // Инициализируем HoloEngine (WebGPU) — полный рендеринг голограммы
+    // Столбцы + сетки + оси + сферы — всё на нашем движке, без Three.js
     try {
       const { hologramWebGPU } = await import('../engine/HologramWebGPU.js');
       state.holoEngine = hologramWebGPU;
       await hologramWebGPU.init();
       console.log('✅ HoloEngine (WebGPU) инициализирован');
     } catch (error) {
-      console.warn('⚠️ HoloEngine (WebGPU) не инициализирован:', error.message);
+      console.error('❌ HoloEngine (WebGPU) ошибка:', error.message);
+      console.warn('⚠️ Голограмма может не отображаться');
     }
 
     // Инициализируем GestureManager
