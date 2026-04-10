@@ -112,17 +112,16 @@ async function fetchStatus() {
     const parsed = await httpsGet('https://app.koyeb.com/v1/services?limit=5', KOYEB_TOKEN);
     if (parsed.services) {
       result.koyeb = parsed.services.map(s => {
-        const dep = s.latest_deployment || {};
-        const git = dep.source?.git || {};
-        const envVars = dep.env || {};
-        const env = envVars.ENVIRONMENT || envVars.VITE_ENVIRONMENT || '';
+        // active_deployment_id: "bc2731ed-e7e3-4165-81c1-52c31ca22995"
+        const deployId = (s.active_deployment_id || s.latest_deployment_id || '').split('-')[0] || '—';
+        const env = 'docker'; // Docker builder, git_ref из state.auto_release
         const domain = s.name.includes('dev') ? 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app' : '';
         return {
-          id: s.name,
-          branch: git.branch || env || 'docker',
-          status: dep.status || s.status,
-          createdAt: dep.created_at || s.updated_at,
-          commit: (git.commit_id || '').substring(0, 8),
+          id: deployId,
+          branch: env,
+          status: s.status,
+          createdAt: s.updated_at,
+          commit: '',
           deployUrl: domain,
         };
       });
@@ -163,7 +162,7 @@ const html = `<!DOCTYPE html>
   .sec-h { font-size: 18px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
   .sec-h .lbl { color: var(--muted); font-weight: 400; font-size: 13px; }
 
-  .row { display: grid; grid-template-columns: 12px 120px 80px minmax(400px, 1fr) 120px; gap: 16px; align-items: center; padding: 10px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; font-size: 14px; }
+  .row { display: grid; grid-template-columns: 12px 120px 80px minmax(500px, 1fr) 120px; gap: 16px; align-items: center; padding: 10px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; font-size: 14px; }
   .row:first-child { border-left: 3px solid var(--blue); }
   .dot { width: 10px; height: 10px; border-radius: 50%; }
   .dot.g { background: var(--green); box-shadow: 0 0 6px var(--green); }
@@ -175,12 +174,9 @@ const html = `<!DOCTYPE html>
   .br { font-weight: 600; font-size: 13px; }
   .br.dev { color: #a371f7; }
   .br.main { color: var(--green); }
-  .msg { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msg { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .tm { color: var(--muted); font-size: 13px; text-align: right; }
   .err { color: var(--red); padding: 10px 16px; background: rgba(218,54,51,0.1); border-radius: 6px; margin-bottom: 6px; font-size: 13px; }
-
-  .btn { position: fixed; top: 24px; right: 32px; padding: 8px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; cursor: pointer; }
-  .btn:hover { border-color: var(--blue); color: var(--blue); }
 </style>
 </head>
 <body>
@@ -200,7 +196,8 @@ function xv(t){const m=t?.match(/v?(\\d+\\.\\d+\\.\\d+)/);return m?m[1]:''}
 function render(items, id) {
   const el = document.getElementById(id);
   if (!items || items.length === 0) { el.innerHTML = '<div class="err">Нет данных</div>'; return; }
-  el.innerHTML = items.map((x, i) => {
+  const limited = items.slice(0, 6);
+  el.innerHTML = limited.map((x, i) => {
     if (x.error) return '<div class="err">⚠ ' + x.error + '</div>';
     if (x.info) return '<div class="err" style="background:rgba(88,166,255,0.1);color:var(--blue)">' + x.info + '</div>';
     const d = dc(x.status);
