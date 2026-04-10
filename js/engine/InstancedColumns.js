@@ -88,7 +88,7 @@ export class InstancedColumns {
             },
             fragment: {
                 module: shaderModule,
-                entryPoint: 'main',
+                entryPoint: 'fsMain',
                 targets: [{ format: navigator.gpu.getPreferredCanvasFormat() }],
             },
             primitive: {

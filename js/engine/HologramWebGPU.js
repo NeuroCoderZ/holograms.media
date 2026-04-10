@@ -147,6 +147,7 @@ export class HologramWebGPU {
             };
             @binding(0) @group(0) var<uniform> uniforms: Uniforms;
 
+            // ─── Column Shaders ─────────────────────────────────────
             struct VSInput {
                 @location(0) position: vec3<f32>,
                 @location(1) m0: vec4<f32>,
@@ -164,11 +165,10 @@ export class HologramWebGPU {
             };
 
             @vertex
-            fn vsMain(input: VSInput) -> VSOutput {
+            fn main(input: VSInput) -> VSOutput {
                 var out: VSOutput;
                 out.vColor = input.color;
                 out.vWorldZHeight = (input.position.z + 0.5) * input.scaleZ;
-
                 let model = mat4x4<f32>(input.m0, input.m1, input.m2, input.m3);
                 let worldPos = model * vec4<f32>(input.position, 1.0);
                 let viewPos = uniforms.uViewMatrix * worldPos;
@@ -181,17 +181,17 @@ export class HologramWebGPU {
                 let cellIndex = floor(input.vWorldZHeight);
                 let bIndex = clamp(cellIndex, 0.0, 127.0);
                 let brightness = (bIndex + 1.0) / 128.0;
-                let finalColor = input.vColor * brightness;
-                return vec4<f32>(finalColor, 1.0);
+                return vec4<f32>(input.vColor * brightness, 1.0);
             }
 
+            // ─── Grid Shaders ───────────────────────────────────────
             struct GridVSInput {
                 @location(0) position: vec3<f32>,
                 @location(1) color: vec3<f32>,
             };
 
             @vertex
-            fn gridVS(input: GridVSInput) -> VSOutput {
+            fn gridVertex(input: GridVSInput) -> VSOutput {
                 var out: VSOutput;
                 out.vColor = input.color;
                 out.vWorldZHeight = 0.0;
@@ -202,7 +202,7 @@ export class HologramWebGPU {
             }
 
             @fragment
-            fn gridFS(input: VSOutput) -> @location(0) vec4<f32> {
+            fn gridFragment(input: VSOutput) -> @location(0) vec4<f32> {
                 return vec4<f32>(input.vColor, 1.0);
             }
         `;
