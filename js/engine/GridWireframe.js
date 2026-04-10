@@ -8,8 +8,6 @@
 
 import { GRID_OPACITY } from '../config/hologramConfig.js';
 
-const GRID_OPACITY = 0.0021;
-
 export class GridWireframe {
     constructor(device, shaderModule, bindGroupLayout) {
         this.device = device;
