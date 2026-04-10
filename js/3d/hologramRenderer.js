@@ -152,7 +152,7 @@ export class HologramRenderer {
     this.rightSequencerGroup.add(createGridVisualization(GRID_WIDTH, GRID_HEIGHT * 2, GRID_DEPTH_Z, CELL_SIZE, 0xFF0000));
     this.mainSequencerGroup.add(this.rightSequencerGroup);
 
-    this.mainSequencerGroup.add(createCentralMarkerSphere(2.4192, 0xffffff));
+    this.mainSequencerGroup.add(createCentralMarkerSphere(2.4192, 0x0000FF));
   }
 
   updateVisuals() {
@@ -336,12 +336,12 @@ export class HologramRenderer {
       // Z-scale: рост вглубь (вдоль белой оси Z).
       // BoxGeometry(1, CELL_HEIGHT, 1).translate(0, 0, 0.5) — центр геометрии в z=0.5.
       // При scale.z=hL столбец занимает z=0..hL, якорь в z=0.
-      dummy.position.set(pL, initialY, hL / 2);
+      dummy.position.set(pL, initialY, 0);
       dummy.scale.set(width, 1, hL);
       dummy.updateMatrix();
       this.meshL.setMatrixAt(i, dummy.matrix);
 
-      dummy.position.set(pR, initialY, hR / 2);
+      dummy.position.set(pR, initialY, 0);
       dummy.scale.set(width, 1, hR);
       dummy.updateMatrix();
       this.meshR.setMatrixAt(i, dummy.matrix);
