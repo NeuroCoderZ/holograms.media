@@ -106,6 +106,15 @@ export class InstancedColumns {
         this._initInstanceBuffers();
     }
 
+    setDemoMode(height) {
+        for (let i = 0; i < this.count; i++) {
+            const s = semitones[i];
+            this._setInstance(this.leftInstanceData, i, 0, -128 + i, height, s.color, s.width);
+            this._setInstance(this.rightInstanceData, i, 0, -128 + i, height, s.color, s.width);
+        }
+        this._uploadInstances();
+    }
+
     _initInstanceBuffers() {
         // 80 байт на инстанс: mat4(64) + color(12) + scaleZ(4)
         const instanceSize = 80;

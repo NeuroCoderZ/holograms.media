@@ -255,6 +255,16 @@ export async function initCore() {
       throw error;
     }
 
+    // Инициализируем HoloEngine (WebGPU) параллельно с Three.js
+    try {
+      const { hologramWebGPU } = await import('../engine/HologramWebGPU.js');
+      state.holoEngine = hologramWebGPU;
+      await hologramWebGPU.init();
+      console.log('✅ HoloEngine (WebGPU) инициализирован');
+    } catch (error) {
+      console.warn('⚠️ HoloEngine (WebGPU) не инициализирован:', error.message);
+    }
+
     // Инициализируем GestureManager
     try {
       state.gestureManager = new GestureManager();

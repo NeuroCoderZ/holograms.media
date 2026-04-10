@@ -1,58 +1,73 @@
 /**
  * HologramWebGPU.js — Точка входа HoloEngine
  * ============================================
- * Инициализирует WebGPU рендеринг голограммы.
- * Заменяет Three.js для BasilaQ-128 визуализации.
+ * WebGPU рендеринг голограммы BasilaQ-128.
+ * Работает параллельно с Three.js, затем заменит его полностью.
  */
 
-import { HoloEngine } from './engine/Engine.js';
-import { InstancedColumns } from './engine/InstancedColumns.js';
-import { GridWireframe } from './engine/GridWireframe.js';
-import { holoEngine } from './engine/Engine.js';
-import eventBus from './core/eventBus.js';
+import { HoloEngine } from './Engine.js';
+import { InstancedColumns } from './InstancedColumns.js';
+import { GridWireframe } from './GridWireframe.js';
+import { semitones } from '../config/hologramConfig.js';
+import eventBus from '../core/eventBus.js';
 
-class HologramWebGPU {
-    constructor(canvas) {
-        this.canvas = canvas;
+export class HologramWebGPU {
+    constructor() {
+        this.canvas = null;
         this.engine = null;
         this.columns = null;
         this.grid = null;
         this.depthTexture = null;
         this.isInitialized = false;
         this.latestAudioData = null;
+        this.isDemoMode = true;
 
         // Подписка на аудио-данные
         eventBus.on('audioData', (data) => {
             this.latestAudioData = data;
+            this.isDemoMode = false;
         });
 
         eventBus.on('audioReset', () => {
             this.latestAudioData = null;
+            this.isDemoMode = true;
         });
     }
 
     async init() {
+        // Создаём canvas поверх grid-container
+        const container = document.getElementById('grid-container');
+        if (!container) {
+            console.warn('[HologramWebGPU] grid-container не найден');
+            return;
+        }
+
+        this.canvas = document.createElement('canvas');
+        this.canvas.id = 'holo-webgpu-canvas';
+        this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;';
+        container.style.position = 'relative';
+        container.appendChild(this.canvas);
+
         try {
-            // 1. WebGPU Engine
+            // WebGPU Engine
             this.engine = new HoloEngine(this.canvas);
             await this.engine.init();
 
-            // 2. Depth texture
+            // Depth texture
             this._createDepthTexture();
 
-            // 3. Shader module
-            const shaderModule = this.engine.device.createShaderModule({
-                code: await this._loadShaders(),
-            });
+            // Шейдер
+            const shaderCode = this._buildShaderCode();
+            const shaderModule = this.engine.device.createShaderModule({ code: shaderCode });
 
-            // 4. Bind group layout
+            // Bind group layout
             const bindGroupLayout = this.engine.device.createBindGroupLayout({
                 entries: [
                     { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: 'uniform' } },
                 ],
             });
 
-            // 5. Uniform buffer (projection + view = 128 bytes)
+            // Uniform buffer
             this.uniformBuffer = this.engine.device.createBuffer({
                 size: 128,
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -63,21 +78,20 @@ class HologramWebGPU {
                 entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }],
             });
 
-            // 6. Instanced columns
+            // Instanced columns
             this.columns = new InstancedColumns(this.engine.device, shaderModule, bindGroupLayout);
 
-            // 7. Grid wireframe
+            // Grid wireframe
             this.grid = new GridWireframe(this.engine.device, shaderModule, bindGroupLayout);
 
             this.isInitialized = true;
             console.log('[HologramWebGPU] ✅ Инициализирован');
 
-            // Start render loop
+            // Render loop
             this._renderLoop();
 
         } catch (error) {
             console.error('[HologramWebGPU] ❌ Ошибка инициализации:', error);
-            this._showError(error.message);
         }
     }
 
@@ -90,34 +104,7 @@ class HologramWebGPU {
         });
     }
 
-    async _loadShaders() {
-        // WGSL шейдеры встроены как JS модули
-        const { vertexWGSL, fragmentWGSL } = await import('./engine/shaders/columns.wgsl.js');
-
-        // Добавляем grid шейдеры
-        const gridVertexWGSL = /* wgsl */`
-            struct Uniforms {
-                uProjectionMatrix: mat4x4<f32>,
-                uViewMatrix: mat4x4<f32>,
-            };
-            @binding(0) @group(0) var<uniform> uniforms: Uniforms;
-
-            @vertex
-            fn gridVertex(@location(0) position: vec3<f32>, @location(1) color: vec3<f32>) -> @builtin(position) vec4<f32> {
-                let worldPos = vec4<f32>(position, 1.0);
-                let viewPos = uniforms.uViewMatrix * worldPos;
-                return uniforms.uProjectionMatrix * viewPos;
-            }
-        `;
-
-        const gridFragmentWGSL = /* wgsl */`
-            @fragment
-            fn gridFragment(@location(0) color: vec3<f32>) -> @location(0) vec4<f32> {
-                return vec4<f32>(color, 1.0);
-            }
-        `;
-
-        // Объединяем все шейдеры в один модуль
+    _buildShaderCode() {
         return `
             struct Uniforms {
                 uProjectionMatrix: mat4x4<f32>,
@@ -125,15 +112,65 @@ class HologramWebGPU {
             };
             @binding(0) @group(0) var<uniform> uniforms: Uniforms;
 
-            ${vertexWGSL.replace('struct Uniforms { ... };', '')
-                        .replace('@binding(0) @group(0) var<uniform> uniforms: Uniforms;', '')}
+            struct VSInput {
+                @location(0) position: vec3<f32>,
+                @location(1) m0: vec4<f32>,
+                @location(2) m1: vec4<f32>,
+                @location(3) m2: vec4<f32>,
+                @location(4) m3: vec4<f32>,
+                @location(5) color: vec3<f32>,
+                @location(6) scaleZ: f32,
+            };
 
-            ${fragmentWGSL}
+            struct VSOutput {
+                @builtin(position) position: vec4<f32>,
+                @location(0) vWorldZHeight: f32,
+                @location(1) vColor: vec3<f32>,
+            };
 
-            ${gridVertexWGSL.replace('struct Uniforms { ... };', '')
-                            .replace('@binding(0) @group(0) var<uniform> uniforms: Uniforms;', '')}
+            @vertex
+            fn vsMain(input: VSInput) -> VSOutput {
+                var out: VSOutput;
+                out.vColor = input.color;
+                out.vWorldZHeight = (input.position.z + 0.5) * input.scaleZ;
+                
+                let model = mat4x4<f32>(input.m0, input.m1, input.m2, input.m3);
+                let worldPos = model * vec4<f32>(input.position, 1.0);
+                let viewPos = uniforms.uViewMatrix * worldPos;
+                out.position = uniforms.uProjectionMatrix * viewPos;
+                return out;
+            }
 
-            ${gridFragmentWGSL}
+            @fragment
+            fn fsMain(input: VSOutput) -> @location(0) vec4<f32> {
+                let cellIndex = floor(input.vWorldZHeight);
+                let bIndex = clamp(cellIndex, 0.0, 127.0);
+                let brightness = (bIndex + 1.0) / 128.0;
+                let finalColor = input.vColor * brightness;
+                return vec4<f32>(finalColor, 1.0);
+            }
+
+            // Grid шейдеры
+            struct GridVSInput {
+                @location(0) position: vec3<f32>,
+                @location(1) color: vec3<f32>,
+            };
+
+            @vertex
+            fn gridVS(input: GridVSInput) -> VSOutput {
+                var out: VSOutput;
+                out.vColor = input.color;
+                out.vWorldZHeight = 0.0;
+                let worldPos = vec4<f32>(input.position, 1.0);
+                let viewPos = uniforms.uViewMatrix * worldPos;
+                out.position = uniforms.uProjectionMatrix * viewPos;
+                return out;
+            }
+
+            @fragment
+            fn gridFS(input: VSOutput) -> @location(0) vec4<f32> {
+                return vec4<f32>(input.vColor, 1.0);
+            }
         `;
     }
 
@@ -143,14 +180,16 @@ class HologramWebGPU {
         this.engine.resize();
         this._createDepthTexture();
 
-        // Обновляем uniform buffer
+        // Uniforms
         const proj = this.engine.getCurrentProjection();
         const view = this.engine.getViewMatrix();
         this.engine.device.queue.writeBuffer(this.uniformBuffer, 0, proj);
         this.engine.device.queue.writeBuffer(this.uniformBuffer, 64, view);
 
-        // Обновляем столбцы из аудио-данных
-        if (this.latestAudioData) {
+        // Demo mode: hL=64, или реальные аудио-данные
+        if (this.isDemoMode || !this.latestAudioData) {
+            this.columns.setDemoMode(64);
+        } else {
             this.columns.update(this.latestAudioData);
         }
 
@@ -172,47 +211,16 @@ class HologramWebGPU {
         });
 
         pass.setBindGroup(0, this.bindGroup);
-
-        // Рисуем сетку (глубина не пишется)
         this.grid.draw(pass);
-
-        // Рисуем столбцы
         this.columns.drawLeft(pass);
         this.columns.drawRight(pass);
-
         pass.end();
         this.engine.device.queue.submit([commandEncoder.finish()]);
 
         requestAnimationFrame(this._renderLoop);
     };
-
-    _showError(message) {
-        const overlay = document.createElement('div');
-        overlay.id = 'webgpu-error';
-        overlay.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; color: #f00; display: flex; align-items: center;
-            justify-content: center; z-index: 99999; font-family: monospace;
-            font-size: 18px; text-align: center; padding: 20px;
-        `;
-        overlay.innerHTML = `
-            <div>
-                <h1>⚠️ WebGPU не поддерживается</h1>
-                <p>${message}</p>
-                <p>Используйте Chrome 113+, Edge 113+, Firefox 141+ или Safari 16.4+</p>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-    }
-
-    setXRMode(enabled) {
-        this.engine.setXRMode(enabled);
-    }
 }
 
 // Singleton
-export const hologramWebGPU = new HologramWebGPU(
-    document.getElementById('holo-canvas') || document.createElement('canvas')
-);
-
+export const hologramWebGPU = new HologramWebGPU();
 export default hologramWebGPU;
