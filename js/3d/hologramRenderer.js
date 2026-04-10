@@ -219,10 +219,10 @@ export class HologramRenderer {
         const scalesL = this.meshL.geometry.getAttribute('aColumnScaleZ');
         const scalesR = this.meshR.geometry.getAttribute('aColumnScaleZ');
 
-        // Демо: 1 ячейка глубины (1 dB SPL), прижаты к дальней стенке
+        // Демо: 64 ячейки глубины (половина сетки), полный цвет, видны сразу
         for (let i = 0; i < semitones.length; i++) {
-            scalesL.setX(i, 1);
-            scalesR.setX(i, 1);
+            scalesL.setX(i, 64);
+            scalesR.setX(i, 64);
         }
 
         scalesL.needsUpdate = true;
