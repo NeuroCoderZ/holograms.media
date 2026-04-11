@@ -55,7 +55,7 @@ export class HologramWebGPU {
         // 2. Создаём canvas — под панелями, поверх Three.js
         this.canvas = document.createElement('canvas');
         this.canvas.id = 'holo-webgpu-canvas';
-        this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;';
+        this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100;';
         container.style.position = 'relative';
         container.style.backgroundColor = 'transparent';
         container.appendChild(this.canvas);
