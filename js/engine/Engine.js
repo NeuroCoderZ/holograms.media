@@ -96,22 +96,24 @@ export class HoloEngine {
         const w = right - left;
         const h = top - bottom;
         const d = far - near;
+        // WGSL column-major (транспонированная OpenGL матрица)
         return new Float32Array([
-            2/w, 0, 0, 0,
-            0, 2/h, 0, 0,
-            0, 0, -2/d, 0,
-            -(left+right)/w, -(top+bottom)/h, -(near+far)/d, 1,
+            2/w, 0, 0, -(left+right)/w,
+            0, 2/h, 0, -(top+bottom)/h,
+            0, 0, -2/d, -(near+far)/d,
+            0, 0, 0, 1,
         ]);
     }
 
     _perspective(fov, aspect, near, far) {
         const f = 1.0 / Math.tan(fov / 2);
         const nf = 1 / (near - far);
+        // WGSL column-major
         return new Float32Array([
             f / aspect, 0, 0, 0,
             0, f, 0, 0,
-            0, 0, (near + far) * nf, -1,
-            0, 0, 2 * near * far * nf, 0,
+            0, 0, (near + far) * nf, 2 * near * far * nf,
+            0, 0, -1, 0,
         ]);
     }
 
@@ -126,6 +128,7 @@ export class HoloEngine {
 
         const y = [z[1]*x[2]-z[2]*x[1], z[2]*x[0]-z[0]*x[2], z[0]*x[1]-z[1]*x[0]];
 
+        // WGSL column-major (транспонированная OpenGL матрица)
         return new Float32Array([
             x[0], y[0], z[0], 0,
             x[1], y[1], z[1], 0,
