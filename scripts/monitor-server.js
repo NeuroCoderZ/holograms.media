@@ -255,8 +255,16 @@ async function fetchStatus() {
     const deployLogs = await fetchDeployLogs();
     result.copyText = deployLogs;
     statusCache.copyText = deployLogs;
+    // Автосохранение в файл — чтобы AI читал без ручного копирования
+    const logPath = path.join(ROOT, 'logs', 'deploy-logs.txt');
+    if (deployLogs && deployLogs.length > 100) {
+      fs.writeFileSync(logPath, deployLogs);
+      console.log('[saveLogs] Written', deployLogs.length, 'bytes');
+    } else {
+      console.log('[saveLogs] Logs too short:', deployLogs?.length || 0);
+    }
   } catch (e) {
-    console.error('fetchDeployLogs error:', e.message);
+    console.error('[saveLogs] fetchDeployLogs error:', e.message);
   }
 
   statusCache = result;

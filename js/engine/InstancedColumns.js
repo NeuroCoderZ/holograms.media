@@ -64,24 +64,17 @@ export class InstancedColumns {
                         arrayStride: 12,
                         attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }],
                     },
-                    // instanceMatrix: mat4x4 (4 x vec4)
+                    // instance data: mat4x4(64) + color(12) + scaleZ(4) = 80 bytes
                     {
-                        arrayStride: 64,
+                        arrayStride: 80,
                         stepMode: 'instance',
                         attributes: [
                             { shaderLocation: 1, offset: 0, format: 'float32x4' },
                             { shaderLocation: 2, offset: 16, format: 'float32x4' },
                             { shaderLocation: 3, offset: 32, format: 'float32x4' },
                             { shaderLocation: 4, offset: 48, format: 'float32x4' },
-                        ],
-                    },
-                    // aInstanceColor: vec3<f32> + aColumnScaleZ: f32 (padding до 16)
-                    {
-                        arrayStride: 16,
-                        stepMode: 'instance',
-                        attributes: [
-                            { shaderLocation: 5, offset: 0, format: 'float32x3' },
-                            { shaderLocation: 6, offset: 12, format: 'float32' },
+                            { shaderLocation: 5, offset: 64, format: 'float32x3' },
+                            { shaderLocation: 6, offset: 76, format: 'float32' },
                         ],
                     },
                 ],
@@ -195,8 +188,7 @@ export class InstancedColumns {
     drawLeft(pass) {
         pass.setPipeline(this.pipeline);
         pass.setVertexBuffer(0, this.vertexBuffer);
-        pass.setVertexBuffer(1, this.leftInstanceBuffer, 0, 64);
-        pass.setVertexBuffer(2, this.leftInstanceBuffer, 64, 16);
+        pass.setVertexBuffer(1, this.leftInstanceBuffer);
         pass.setIndexBuffer(this.indexBuffer, 'uint16');
         pass.drawIndexed(36, this.count);
     }
@@ -204,8 +196,7 @@ export class InstancedColumns {
     drawRight(pass) {
         pass.setPipeline(this.pipeline);
         pass.setVertexBuffer(0, this.vertexBuffer);
-        pass.setVertexBuffer(1, this.rightInstanceBuffer, 0, 64);
-        pass.setVertexBuffer(2, this.rightInstanceBuffer, 64, 16);
+        pass.setVertexBuffer(1, this.rightInstanceBuffer);
         pass.setIndexBuffer(this.indexBuffer, 'uint16');
         pass.drawIndexed(36, this.count);
     }
