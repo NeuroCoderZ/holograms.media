@@ -367,26 +367,15 @@ function copyLogs() {
   const btn = document.querySelector('.copy-btn');
   btn.textContent = '⏳';
 
-  // Сначала пробуем свежие логи с сервера
-  fetch('/api/deploy-logs')
-    .then(r => {
-      if (r.status === 202) return cachedCopy; // Ещё грузятся — используем кэш
-      return r.text();
-    })
-    .then(text => {
-      navigator.clipboard.writeText(text).then(() => {
-        btn.textContent = '✅';
-        btn.title = 'Логи скопированы!';
-        setTimeout(() => { btn.textContent = '📋'; btn.title = 'Скопировать логи'; }, 2000);
-      });
-    })
-    .catch(() => {
-      // Fallback на кэш
-      navigator.clipboard.writeText(cachedCopy).then(() => {
-        btn.textContent = '✅';
-        setTimeout(() => { btn.textContent = '📋'; }, 2000);
-      });
-    });
+  // Копируем то, что уже загружено (cachedCopy) — без дополнительных запросов
+  navigator.clipboard.writeText(cachedCopy).then(() => {
+    btn.textContent = '✅';
+    btn.title = 'Логи скопированы!';
+    setTimeout(() => { btn.textContent = '📋'; btn.title = 'Скопировать логи'; }, 2000);
+  }).catch(() => {
+    btn.textContent = '❌';
+    setTimeout(() => { btn.textContent = '📋'; }, 2000);
+  });
 }
 
 update();
