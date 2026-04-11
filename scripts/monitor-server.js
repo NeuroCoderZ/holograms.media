@@ -195,26 +195,51 @@ async function fetchStatus() {
     }
   } catch (e) { result.cloudflare = [{ error: e.message }]; }
 
-  // Koyeb — история деплоев (последние 3) через REST API
+  // Koyeb — статус сервиса через CLI
   try {
-    const kDepRaw = await httpsGet('https://app.koyeb.com/v1/deployments?limit=3&service_name=holograms-media-dev&service_app_name=holograms-media-dev', KOYEB_TOKEN);
-    if (kDepRaw.deployments) {
-      result.koyeb = kDepRaw.deployments.slice(0, 3).map(d => {
-        const id = (d.id || '').split('-')[0] || '—';
-        const status = (d.messages?.[0] || '').substring(0, 40);
-        const createdAt = d.created_at || '';
-        const gitSha = d.metadata?.git?.git_env?.sha || '';
+    const svcRaw = run('koyeb services list 2>&1', 15000);
+    let svcStatus = 'unknown';
+    if (typeof svcRaw === 'string' && svcRaw.includes('holograms-media-dev')) {
+      const lines = svcRaw.split('\n').filter(l => l.includes('holograms-media-dev'));
+      if (lines.length > 0) {
+        const parts = lines[0].trim().split(/\s{2,}/);
+        // Формат: ID APP NAME TYPE STATUS CREATED AT
+        svcStatus = parts[4] || 'unknown';
+      }
+    }
+
+    // История деплоев
+    const depRaw = run('koyeb deployment list --service holograms-media-dev/holograms-media-dev --limit 3 2>&1', 15000);
+    if (typeof depRaw === 'string' && depRaw.includes('ID')) {
+      const lines = depRaw.split('\n').filter(l => l.trim() && !l.startsWith('ID') && !l.startsWith('❌'));
+      result.koyeb = lines.slice(0, 3).map(line => {
+        const parts = line.trim().split(/\s{2,}/);
+        const id = (parts[0] || '—').substring(0, 8);
+        const dateStr = parts[6] || '';
+        const dateMatch = dateStr.match(/(\d{2})\s+(\w{3})\s+(\d{2})\s+(\d{2}):(\d{2})/);
+        let createdAt = '';
+        if (dateMatch) {
+          const months = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+          createdAt = `20${dateMatch[3]}-${months[dateMatch[2]]}-${dateMatch[1]}T${dateMatch[4]}:${dateMatch[5]}:00Z`;
+        }
         return {
           id: id,
           branch: 'docker',
-          status: status,
+          status: svcStatus,
           createdAt: createdAt,
-          commit: gitSha.substring(0, 8),
+          commit: '',
           deployUrl: 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app',
         };
       });
     } else {
-      result.koyeb = [{ error: 'No deployments found' }];
+      result.koyeb = [{
+        id: 'svc',
+        branch: 'docker',
+        status: svcStatus,
+        createdAt: new Date().toISOString(),
+        commit: '',
+        deployUrl: 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app',
+      }];
     }
   } catch (e) { result.koyeb = [{ error: e.message }]; }
 

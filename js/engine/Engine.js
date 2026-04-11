@@ -42,6 +42,7 @@ export class HoloEngine {
         this._setupCameras();
 
         console.log('[HoloEngine] ✅ WebGPU инициализирован');
+        console.log('[HoloEngine] 📷 Camera: eye=[0, -64, 160], target=[0, -64, 0], ortho=[-140,140,-140,10]');
         return this;
     }
 

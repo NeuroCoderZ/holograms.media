@@ -232,12 +232,12 @@ export class HologramWebGPU {
             this.columns.update(this.latestAudioData);
         }
 
-        // Render pass
+        // Render pass — ПРОЗРАЧНЫЙ фон (Three.js виден под нами)
         const commandEncoder = this.engine.device.createCommandEncoder();
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
                 view: this.engine.context.getCurrentTexture().createView(),
-                clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                clearValue: { r: 0, g: 0, b: 0, a: 0 }, // Прозрачный!
                 loadOp: 'clear',
                 storeOp: 'store',
             }],
