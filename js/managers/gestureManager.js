@@ -1,7 +1,7 @@
 // js/managers/GestureManager.js
 import { SmartHologram } from '../SmartHologram.js';
 import { state } from '../core/init.js';
-import { CloudGestureStorage } from '../services/CloudGestureStorage.js';
+// CloudGestureStorage removed (B2 purged) — gestures now stored in AstraDB only
 import { gestureSynthesizer } from '../audio/GestureSynthesizer.js';
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js';
 import { gestureDNA } from '../tria/GestureDNA.js';
@@ -29,7 +29,7 @@ export class GestureManager {
         this.loadFromLocalStorage();
         this.learningMode = false;
         this.currentRecording = null;
-        this.cloudStorage = new CloudGestureStorage();
+        // cloudStorage removed — B2 purged
     }
 
     async init(container) {
@@ -351,9 +351,8 @@ export class GestureManager {
         // Сохраняем локально в localStorage
         this.saveToLocalStorage();
 
-
-        // Сохраняем в облако
-        await this.cloudStorage.saveGesture(gestureData);
+        // B2 purged — cloud storage removed
+        // await this.cloudStorage.saveGesture(gestureData);
 
         console.log(`Пользовательский жест "${name}" сохранен локально`);
     }
@@ -362,10 +361,11 @@ export class GestureManager {
      * Загрузка жестовых кодов из облака
      */
     async loadGestureCodesFromCloud() {
-        try {
-            const gestures = await this.cloudStorage.loadUserGestures(this.getCurrentUserId());
+        // B2 purged — cloud storage removed, using local only
+        // const gestures = await this.cloudStorage.loadUserGestures(this.getCurrentUserId());
+        const gestures = []; // stub
 
-            for (const gesture of gestures) {
+        for (const gesture of gestures) {
                 this.customGestures.set(gesture.name, gesture);
                 this.gestureCodes.set(gesture.code, gesture);
             }
