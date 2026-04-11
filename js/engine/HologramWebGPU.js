@@ -220,25 +220,15 @@ export class HologramWebGPU {
         this.engine.resize();
         this._createDepthTexture();
 
-        // Uniforms
-        const proj = this.engine.getCurrentProjection();
-        const view = this.engine.getViewMatrix();
-        this.engine.device.queue.writeBuffer(this.uniformBuffer, 0, proj);
-        this.engine.device.queue.writeBuffer(this.uniformBuffer, 64, view);
-
-        // Demo или Audio
-        if (this.isDemoMode || !this.latestAudioData) {
-            this.columns.setDemoMode(64);
-        } else {
-            this.columns.update(this.latestAudioData);
-        }
-
-        // Render pass — ПРОЗРАЧНЫЙ фон (Three.js виден под нами)
+        // ═══════════════════════════════════════════════════
+        // DEBUG: Рисуем красный полноэкранный треугольник
+        // Если экран стал красным — пайплайн работает!
+        // ═══════════════════════════════════════════════════
         const commandEncoder = this.engine.device.createCommandEncoder();
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
                 view: this.engine.context.getCurrentTexture().createView(),
-                clearValue: { r: 0, g: 0, b: 0, a: 0 }, // Прозрачный!
+                clearValue: { r: 1, g: 0, b: 0, a: 1 }, // КРАСНЫЙ ФОН!
                 loadOp: 'clear',
                 storeOp: 'store',
             }],
@@ -249,11 +239,6 @@ export class HologramWebGPU {
                 depthStoreOp: 'store',
             },
         });
-
-        pass.setBindGroup(0, this.bindGroup);
-        this.grid.draw(pass);
-        this.columns.drawLeft(pass);
-        this.columns.drawRight(pass);
         pass.end();
         this.engine.device.queue.submit([commandEncoder.finish()]);
 
