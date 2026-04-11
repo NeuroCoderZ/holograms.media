@@ -52,13 +52,12 @@ export class HologramWebGPU {
         const rect = container.getBoundingClientRect();
         console.log(`[HoloEngine] 📐 grid-container: ${rect.width.toFixed(0)}x${rect.height.toFixed(0)}px`);
 
-        // 2. Создаём canvas
+        // 2. Создаём canvas — НАД всем
         this.canvas = document.createElement('canvas');
         this.canvas.id = 'holo-webgpu-canvas';
-        this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;';
-        container.style.position = 'relative';
-        container.style.backgroundColor = 'transparent';
-        container.appendChild(this.canvas);
+        this.canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999;outline:3px solid red;';
+        document.body.appendChild(this.canvas);
+        console.log('[HoloEngine] 🖼️ Canvas appended to body (z-index 99999)');
 
         const dpr = window.devicePixelRatio || 1;
         this.canvas.width = rect.width * dpr;
