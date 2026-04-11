@@ -85,8 +85,8 @@ export class HologramWebGPU {
              0, -1,  t,  0,  1,  t,  0, -1, -t,  0,  1, -t,
              t,  0, -1,  t,  0,  1, -t,  0, -1, -t,  0,  1
         ]);
-        // Нормализуем радиус ~0.2
-        const scale = 0.2;
+        // Нормализуем радиус ~0.5 (крупнее для видимости)
+        const scale = 0.5;
         for(let i=0; i<vertices.length; i++) vertices[i] *= scale;
 
         const indices = new Uint16Array([
@@ -188,7 +188,7 @@ export class HologramWebGPU {
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
                 view: this.engine.context.getCurrentTexture().createView(),
-                clearValue: { r: 0, g: 0, b: 0, a: 0 }, // Прозрачный фон
+                clearValue: { r: 0.05, g: 0.05, b: 0.15, a: 1 }, // Тёмно-синий фон для контраста
                 loadOp: 'clear',
                 storeOp: 'store',
             }],
