@@ -68,12 +68,13 @@ async function fetchDeployLogs() {
 
   // GitHub — логи последнего ранa
   try {
-    const ghRaw = run('gh run list --limit 1 --json databaseId,conclusion');
+    const ghRaw = run('gh run list --limit 1 --json databaseId,conclusion,name');
     if (typeof ghRaw === 'string') {
       const runs = JSON.parse(ghRaw);
       if (runs?.[0]?.databaseId) {
         const runId = runs[0].databaseId;
-        console.log('[fetchDeployLogs] Fetching GH logs for run', runId);
+        const wfName = runs[0].name || '';
+        console.log('[fetchDeployLogs] Fetching GH logs for run', runId, '(' + wfName + ')');
         // Берём ВСЕ логи билда (без ограничения)
         const psCmd = "gh run view " + runId + ' --log 2>&1 | Out-String';
         const rawLog = run('powershell -NoProfile -Command "' + psCmd + '"', 60000);
@@ -138,26 +139,37 @@ async function fetchDeployLogs() {
 async function fetchStatus() {
   const result = { github: [], cloudflare: [], koyeb: [], lastUpdate: new Date().toISOString(), copyText: '' };
 
-  // GitHub — gh CLI (убираем дубликаты — один ран на пуш)
+  // GitHub — gh CLI (показываем 3 workflow последнего пуша, а не 3 пуша)
   try {
-    const raw = run('gh run list --limit 8 --json status,conclusion,headBranch,createdAt,displayTitle,databaseId');
+    const raw = run('gh run list --limit 6 --json status,conclusion,headBranch,createdAt,name,displayTitle,databaseId');
     if (typeof raw === 'string') {
       const runs = JSON.parse(raw);
-      // Дедупликация: берём только первый ран для каждой версии
-      const seen = new Set();
-      result.github = runs
-        .map(r => {
+      if (runs.length > 0) {
+        // Находим самый свежий createdAt — это последний пуш
+        const latestTime = runs[0].createdAt;
+        // Берём все ранa с этим же временем (один пуш = 3 workflow)
+        const latestRuns = runs.filter(r => r.createdAt === latestTime).slice(0, 3);
+        
+        result.github = latestRuns.map(r => {
+          // Версию берём из displayTitle: "DEPLOY: v0.20.414 - v0.20.414 - fix: ..."
           const verMatch = r.displayTitle?.match(/v?(\d+\.\d+\.\d+)/);
           const ver = verMatch ? verMatch[1] : 'run-' + r.databaseId;
-          const fullMsg = r.displayTitle?.replace(/^DEPLOY:\s*v?\d+\.\d+\.\d+\s*-\s*v?\d+\.\d+\.\d+\s*-\s*/, '') || '';
-          return { id: ver, branch: r.headBranch, status: r.conclusion || r.status, createdAt: r.createdAt, commit: fullMsg, _key: ver };
-        })
-        .filter(r => {
-          if (seen.has(r._key)) return false;
-          seen.add(r._key);
-          return true;
-        })
-        .map(r => { delete r._key; return r; });
+          // Имя workflow берём из name: "🚀 Deploy Frontend to Cloudflare Pages"
+          const fullMsg = r.name || '';
+          return { id: ver, branch: r.headBranch, status: r.conclusion || r.status, createdAt: r.createdAt, commit: fullMsg };
+        });
+        
+        // Если сгруппировали < 3 (например ещё не все ранa запустились), дополняем
+        if (result.github.length < 3 && runs.length > latestRuns.length) {
+          const remaining = runs.slice(latestRuns.length).filter(r => r.createdAt !== latestTime).slice(0, 3 - result.github.length);
+          result.github = result.github.concat(remaining.map(r => {
+            const verMatch = r.displayTitle?.match(/v?(\d+\.\d+\.\d+)/);
+            const ver = verMatch ? verMatch[1] : 'run-' + r.databaseId;
+            const fullMsg = r.name || '';
+            return { id: ver, branch: r.headBranch, status: r.conclusion || r.status, createdAt: r.createdAt, commit: fullMsg };
+          }));
+        }
+      }
     }
   } catch (e) { result.github = [{ error: e.message }]; }
 
@@ -184,26 +196,26 @@ async function fetchStatus() {
     }
   } catch (e) { result.cloudflare = [{ error: e.message }]; }
 
-  // Koyeb — fetch через https
+  // Koyeb — история деплоев (последние 3) через REST API
   try {
-    const parsed = await httpsGet('https://app.koyeb.com/v1/services?limit=5', KOYEB_TOKEN);
-    if (parsed.services) {
-      result.koyeb = parsed.services.map(s => {
-        // active_deployment_id: "bc2731ed-e7e3-4165-81c1-52c31ca22995"
-        const deployId = (s.active_deployment_id || s.latest_deployment_id || '').split('-')[0] || '—';
-        const env = 'docker'; // Docker builder, git_ref из state.auto_release
-        const domain = s.name.includes('dev') ? 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app' : '';
+    const kDepRaw = await httpsGet('https://app.koyeb.com/v1/deployments?limit=3&service_name=holograms-media-dev&service_app_name=holograms-media-dev', KOYEB_TOKEN);
+    if (kDepRaw.deployments) {
+      result.koyeb = kDepRaw.deployments.slice(0, 3).map(d => {
+        const id = (d.id || '').split('-')[0] || '—';
+        const status = (d.messages?.[0] || '').substring(0, 40);
+        const createdAt = d.created_at || '';
+        const gitSha = d.metadata?.git?.git_env?.sha || '';
         return {
-          id: deployId,
-          branch: env,
-          status: s.status,
-          createdAt: s.updated_at,
-          commit: '',
-          deployUrl: domain,
+          id: id,
+          branch: 'docker',
+          status: status,
+          createdAt: createdAt,
+          commit: gitSha.substring(0, 8),
+          deployUrl: 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app',
         };
       });
     } else {
-      result.koyeb = [{ error: 'No services found' }];
+      result.koyeb = [{ error: 'No deployments found' }];
     }
   } catch (e) { result.koyeb = [{ error: e.message }]; }
 
