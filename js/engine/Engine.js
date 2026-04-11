@@ -95,12 +95,12 @@ export class HoloEngine {
     _ortho(left, right, bottom, top, near, far) {
         const w = right - left;
         const h = top - bottom;
-        const d = far - near;
-        // WGSL column-major (транспонированная OpenGL матрица)
+        const nf = 1.0 / (near - far); // WebGPU: z → [0, 1]
+        // WGSL column-major + WebGPU NDC z ∈ [0,1]
         return new Float32Array([
             2/w, 0, 0, -(left+right)/w,
             0, 2/h, 0, -(top+bottom)/h,
-            0, 0, -2/d, -(near+far)/d,
+            0, 0, nf, near * nf,  // ← WebGPU z-range [0,1]
             0, 0, 0, 1,
         ]);
     }

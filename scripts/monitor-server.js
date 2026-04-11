@@ -178,24 +178,26 @@ async function fetchStatus() {
     const url = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${project}/deployments?per_page=8`;
     const parsed = await httpsGet(url, CF_TOKEN);
     if (parsed.success && parsed.result) {
-      result.cloudflare = parsed.result.map(d => {
+      // Только 1 последний деплой
+      const d = parsed.result[0];
+      if (d) {
         const finished = d.latest_stage?.finished_on;
         const duration = finished ? `${Math.round((new Date(finished) - new Date(d.created_on)) / 1000)}s` : '';
-        return {
+        result.cloudflare = [{
           id: d.id.substring(0, 8),
           branch: d.deployment_trigger?.metadata?.branch || d.branch || 'manual',
           status: d.latest_stage?.status,
           url: d.url,
           createdAt: d.created_on,
           duration,
-        };
-      });
+        }];
+      }
     } else {
       result.cloudflare = [{ error: parsed.error || 'API error' }];
     }
   } catch (e) { result.cloudflare = [{ error: e.message }]; }
 
-  // Koyeb — статус сервиса через CLI
+  // Koyeb — статус сервиса + история деплоев через CLI
   try {
     const svcRaw = run('koyeb services list 2>&1', 15000);
     let svcStatus = 'unknown';
@@ -215,7 +217,10 @@ async function fetchStatus() {
       result.koyeb = lines.slice(0, 3).map(line => {
         const parts = line.trim().split(/\s{2,}/);
         const id = (parts[0] || '—').substring(0, 8);
+        const msg = parts[4] || ''; // сообщение деплоя
         const dateStr = parts[6] || '';
+        // Извлекаем commit SHA из сообщения деплоя
+        const shaMatch = msg.match(/([a-f0-9]{7})/);
         const dateMatch = dateStr.match(/(\d{2})\s+(\w{3})\s+(\d{2})\s+(\d{2}):(\d{2})/);
         let createdAt = '';
         if (dateMatch) {
@@ -224,17 +229,18 @@ async function fetchStatus() {
         }
         return {
           id: id,
-          branch: 'docker',
-          status: svcStatus,
+          branch: 'dev', // Koyeb dev сервис
+          status: svcStatus, // HEALTHY = зелёный
           createdAt: createdAt,
-          commit: '',
+          commit: shaMatch ? shaMatch[1] : '',
           deployUrl: 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app',
         };
       });
     } else {
+      // Fallback: только статус сервиса
       result.koyeb = [{
         id: 'svc',
-        branch: 'docker',
+        branch: 'dev',
         status: svcStatus,
         createdAt: new Date().toISOString(),
         commit: '',

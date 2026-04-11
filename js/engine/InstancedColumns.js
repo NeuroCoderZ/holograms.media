@@ -92,7 +92,7 @@ export class InstancedColumns {
             },
             primitive: {
                 topology: 'triangle-list',
-                cullMode: 'back',
+                cullMode: 'none', // debug: show all faces
             },
             depthStencil: {
                 format: 'depth24plus',
