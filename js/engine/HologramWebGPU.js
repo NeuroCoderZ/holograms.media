@@ -52,12 +52,13 @@ export class HologramWebGPU {
         const rect = container.getBoundingClientRect();
         console.log(`[HoloEngine] 📐 grid-container: ${rect.width.toFixed(0)}x${rect.height.toFixed(0)}px`);
 
-        // 2. Создаём canvas — НАД всем
+        // 2. Создаём canvas — под панелями, поверх Three.js
         this.canvas = document.createElement('canvas');
         this.canvas.id = 'holo-webgpu-canvas';
-        this.canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999;outline:3px solid red;';
-        document.body.appendChild(this.canvas);
-        console.log('[HoloEngine] 🖼️ Canvas appended to body (z-index 99999)');
+        this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;';
+        container.style.position = 'relative';
+        container.style.backgroundColor = 'transparent';
+        container.appendChild(this.canvas);
 
         const dpr = window.devicePixelRatio || 1;
         this.canvas.width = rect.width * dpr;
@@ -227,7 +228,7 @@ export class HologramWebGPU {
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
                 view: this.engine.context.getCurrentTexture().createView(),
-                clearValue: { r: 1, g: 0, b: 0, a: 1 }, // КРАСНЫЙ ФОН!
+                clearValue: { r: 0, g: 0, b: 0, a: 0 }, // Прозрачный
                 loadOp: 'clear',
                 storeOp: 'store',
             }],
