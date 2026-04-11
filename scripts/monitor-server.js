@@ -73,14 +73,18 @@ async function fetchDeployLogs() {
       const runs = JSON.parse(ghRaw);
       if (runs?.[0]?.databaseId) {
         const runId = runs[0].databaseId;
+        console.log('[fetchDeployLogs] Fetching GH logs for run', runId);
         // Берём ВСЕ логи билда (без ограничения)
-        const psCmd = '(gh run view ' + runId + ' --log 2>&1) -join "`n"';
-        const rawLog = run('powershell -NoProfile -Command "' + psCmd + '"');
-        if (typeof rawLog === 'string' && rawLog.length > 20 && !rawLog.startsWith('{')) {
+        const psCmd = "gh run view " + runId + ' --log 2>&1 | Out-String';
+        const rawLog = run('powershell -NoProfile -Command "' + psCmd + '"', 60000);
+        console.log('[fetchDeployLogs] GH log result:', typeof rawLog, rawLog?.length || 0, rawLog?.substring?.(0, 30) || '');
+        if (typeof rawLog === 'string' && rawLog.length > 20 && !rawLog.startsWith('{') && !rawLog.includes('Error:')) {
           logs += '[GitHub Actions — Build Log]\n' + rawLog + '\n\n';
         } else {
           logs += '[GitHub Actions — Build Log]\nЛоги пусты\nURL: https://github.com/NeuroCoderZ/holograms.media/actions/runs/' + runId + '\n\n';
         }
+      } else {
+        logs += '[GitHub Actions] Нет данных о последнем ране\n\n';
       }
     }
   } catch (e) { logs += '[GitHub Actions] Ошибка: ' + e.message + '\n\n'; }
@@ -105,22 +109,28 @@ async function fetchDeployLogs() {
     }
   } catch (e) { logs += '[Cloudflare Pages] Ошибка: ' + e.message + '\n\n'; }
 
-  // Koyeb — статус деплоя + ссылка на дашборд (CLI tail не работает в скрипте)
+  // Koyeb — логи билда через CLI (работает без --tail)
   try {
-    const kParsed = await httpsGet('https://app.koyeb.com/v1/services?limit=1', KOYEB_TOKEN);
-    if (kParsed.services?.[0]) {
-      const svc = kParsed.services[0];
-      const deployId = svc.active_deployment_id || svc.latest_deployment_id || '';
-      logs += '[Koyeb — Deploy Status]\n';
-      logs += `Service: ${svc.name}\n`;
-      logs += `Deploy ID: ${deployId.split('-')[0]}\n`;
-      logs += `Status: ${svc.status}\n`;
-      logs += `Updated: ${svc.updated_at}\n`;
-      logs += `URL: https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app\n`;
-      logs += `Dashboard: https://app.koyeb.com/orgs/neurocoder/services/${svc.name}/deploys/${deployId}\n`;
-      logs += `CLI: koyeb services logs ${svc.name} --type build\n\n`;
+    const koyebLog = run('koyeb services logs holograms-media-dev/holograms-media-dev --type build --order desc --full 2>&1', 30000);
+    if (typeof koyebLog === 'string' && koyebLog.length > 20 && !koyebLog.includes('Invalid command') && !koyebLog.includes('Unable to find')) {
+      // Берём последние 80 строк для читаемости
+      const lines = koyebLog.split('\n').filter(l => l.trim()).slice(-80);
+      logs += '[Koyeb — Build Log]\n' + lines.join('\n') + '\n\n';
+    } else {
+      // Fallback: статус деплоя
+      const kParsed = await httpsGet('https://app.koyeb.com/v1/services?limit=1', KOYEB_TOKEN);
+      if (kParsed.services?.[0]) {
+        const svc = kParsed.services[0];
+        const deployId = svc.active_deployment_id || svc.latest_deployment_id || '';
+        logs += '[Koyeb — Deploy Status]\n';
+        logs += `Service: ${svc.name}\nDeploy ID: ${deployId.split('-')[0]}\nStatus: ${svc.status}\nUpdated: ${svc.updated_at}\n`;
+        logs += `URL: https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app\n`;
+        logs += `Dashboard: https://app.koyeb.com/orgs/neurocoder/services/${svc.name}/deploys/${deployId}\n\n`;
+      }
     }
-  } catch (e) { logs += '[Koyeb] Ошибка: ' + e.message + '\n\n'; }
+  } catch (e) {
+    logs += '[Koyeb] Ошибка: ' + e.message + '\n\n';
+  }
 
   return logs;
 }
