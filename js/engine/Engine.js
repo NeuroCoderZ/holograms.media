@@ -47,8 +47,10 @@ export class HoloEngine {
     }
 
     _setupCameras() {
-        // Ортографическая камера — Y от -128 до +10 (все столбцы с запасом)
-        this.orthoProjection = this._ortho(-70, 70, -130, 10, 0.1, 300);
+        // Ортографическая камера
+        // Столбцы: X от -64 до +64 (самый широкий C0 width=128)
+        // Y от -64 до +63 (view space)
+        this.orthoProjection = this._ortho(-70, 70, -70, 70, 0.1, 300);
 
         // Перспективная камера (XR режим)
         this.perspectiveProjection = this._perspective(Math.PI / 4, 1.6, 0.1, 300);
@@ -93,26 +95,25 @@ export class HoloEngine {
     _ortho(left, right, bottom, top, near, far) {
         const w = right - left;
         const h = top - bottom;
-        const nf = 1.0 / (near - far);
-        // WGSL column-major: [col0, col1, col2, col3]
+        const nf = 1.0 / (near - far); // WebGPU: z → [0, 1]
+        // WGSL column-major + WebGPU NDC z ∈ [0,1]
         return new Float32Array([
-            2/w, 0,   0,   0,                    // col0: sx, 0, 0, 0
-            0,   2/h, 0,   0,                    // col1: 0, sy, 0, 0
-            0,   0,   nf,  0,                    // col2: 0, 0, sz, 0
-            -(left+right)/w, -(top+bottom)/h,    // col3: tx, ty, tz, 1
-            near * nf, 1,
+            2/w, 0, 0, -(left+right)/w,
+            0, 2/h, 0, -(top+bottom)/h,
+            0, 0, nf, near * nf,  // ← WebGPU z-range [0,1]
+            0, 0, 0, 1,
         ]);
     }
 
     _perspective(fov, aspect, near, far) {
         const f = 1.0 / Math.tan(fov / 2);
         const nf = 1 / (near - far);
-        // WGSL column-major: [col0, col1, col2, col3]
+        // WGSL column-major
         return new Float32Array([
-            f / aspect, 0, 0, 0,                         // col0
-            0, f, 0, 0,                                  // col1
-            0, 0, (near + far) * nf, -1,                // col2: A=-1 at [2][3]
-            0, 0, 2 * near * far * nf, 0,               // col3: B at [3][2]
+            f / aspect, 0, 0, 0,
+            0, f, 0, 0,
+            0, 0, (near + far) * nf, 2 * near * far * nf,
+            0, 0, -1, 0,
         ]);
     }
 
@@ -127,16 +128,15 @@ export class HoloEngine {
 
         const y = [z[1]*x[2]-z[2]*x[1], z[2]*x[0]-z[0]*x[2], z[0]*x[1]-z[1]*x[0]];
 
-        const tx = -(x[0]*eye[0]+x[1]*eye[1]+x[2]*eye[2]);
-        const ty = -(y[0]*eye[0]+y[1]*eye[1]+y[2]*eye[2]);
-        const tz = -(z[0]*eye[0]+z[1]*eye[1]+z[2]*eye[2]);
-
-        // WGSL column-major: транспонированная относительно row-major
+        // WGSL column-major (транспонированная OpenGL матрица)
         return new Float32Array([
-            x[0], x[1], x[2], tx,
-            y[0], y[1], y[2], ty,
-            z[0], z[1], z[2], tz,
-            0,    0,    0,    1,
+            x[0], y[0], z[0], 0,
+            x[1], y[1], z[1], 0,
+            x[2], y[2], z[2], 0,
+            -(x[0]*eye[0]+x[1]*eye[1]+x[2]*eye[2]),
+            -(y[0]*eye[0]+y[1]*eye[1]+y[2]*eye[2]),
+            -(z[0]*eye[0]+z[1]*eye[1]+z[2]*eye[2]),
+            1,
         ]);
     }
 }
