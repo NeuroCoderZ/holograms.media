@@ -66,47 +66,48 @@ function timeAgo(dateStr) {
 async function fetchDeployLogs() {
   let logs = 'HoloEngine Deploy Logs\n' + '='.repeat(50) + '\n\n';
 
-  // GitHub — логи последнего ранa
+  // GitHub — логи последнего Build & Deploy рана (фронтенд)
   try {
-    const ghRaw = run('gh run list --limit 1 --json databaseId,conclusion,name');
+    const ghRaw = run('gh run list --limit 20 --json status,conclusion,name,databaseId');
     if (typeof ghRaw === 'string') {
       const runs = JSON.parse(ghRaw);
-      if (runs?.[0]?.databaseId) {
-        const runId = runs[0].databaseId;
-        const wfName = runs[0].name || '';
-        console.log('[fetchDeployLogs] Fetching GH logs for run', runId, '(' + wfName + ')');
-        // Берём ВСЕ логи билда (без ограничения)
+      // Ищем Deploy Frontend workflow (он содержит build)
+      const buildRun = runs.find(r => r.name && r.name.includes('Frontend'));
+      if (buildRun) {
+        const runId = buildRun.databaseId;
+        console.log('[fetchDeployLogs] Fetching GH build logs for run', runId);
         const psCmd = "gh run view " + runId + ' --log 2>&1 | Out-String';
         const rawLog = run('powershell -NoProfile -Command "' + psCmd + '"', 60000);
-        console.log('[fetchDeployLogs] GH log result:', typeof rawLog, rawLog?.length || 0, rawLog?.substring?.(0, 30) || '');
+        console.log('[fetchDeployLogs] GH log result:', typeof rawLog, rawLog?.length || 0);
         if (typeof rawLog === 'string' && rawLog.length > 20 && !rawLog.startsWith('{') && !rawLog.includes('Error:')) {
           logs += '[GitHub Actions — Build Log]\n' + rawLog + '\n\n';
         } else {
           logs += '[GitHub Actions — Build Log]\nЛоги пусты\nURL: https://github.com/NeuroCoderZ/holograms.media/actions/runs/' + runId + '\n\n';
         }
       } else {
-        logs += '[GitHub Actions] Нет данных о последнем ране\n\n';
+        logs += '[GitHub Actions] Нет Build & Deploy workflow\n\n';
       }
     }
   } catch (e) { logs += '[GitHub Actions] Ошибка: ' + e.message + '\n\n'; }
 
-  // Cloudflare — статус последнего деплоя + ссылка на логи
+  // Cloudflare — логи деплоя через Wrangler CLI
   try {
-    const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/holograms-media-dev/deployments?per_page=1`;
-    const parsed = await httpsGet(cfUrl, CF_TOKEN);
-    if (parsed.success && parsed.result?.[0]) {
-      const dep = parsed.result[0];
-      const dur = dep.latest_stage?.finished_on ? `${Math.round((new Date(dep.latest_stage.finished_on) - new Date(dep.created_on))/1000)}s` : 'in_progress';
-      logs += '[Cloudflare Pages — Deploy Status]\n';
-      logs += `ID: ${dep.id.substring(0, 8)}\n`;
-      logs += `Branch: ${dep.branch || dep.deployment_trigger?.metadata?.branch || 'manual'}\n`;
-      logs += `Status: ${dep.latest_stage?.status}\n`;
-      logs += `Duration: ${dur}\n`;
-      logs += `URL: ${dep.url}\n`;
-      logs += `Started: ${dep.created_on}\n`;
-      logs += `Dashboard: https://dash.cloudflare.com/${CF_ACCOUNT}/pages/view/holograms-media-dev/${dep.id}\n\n`;
+    const cfRaw = run('wrangler pages deployment list --limit 1 --json 2>&1', 15000);
+    if (typeof cfRaw === 'string' && cfRaw.startsWith('[')) {
+      const dep = JSON.parse(cfRaw)[0];
+      if (dep) {
+        logs += '[Cloudflare Pages]\n';
+        logs += `ID: ${dep.id}\nStatus: ${dep.latest_stage?.status}\nStarted: ${dep.created_on}\nURL: ${dep.url}\n\n`;
+      }
     } else {
-      logs += '[Cloudflare Pages] Нет данных\n\n';
+      // Fallback: REST API
+      const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/holograms-media-dev/deployments?per_page=1`;
+      const parsed = await httpsGet(cfUrl, CF_TOKEN);
+      if (parsed.success && parsed.result?.[0]) {
+        const dep = parsed.result[0];
+        logs += '[Cloudflare Pages]\n';
+        logs += `ID: ${dep.id.substring(0, 8)}\nStatus: ${dep.latest_stage?.status}\nStarted: ${dep.created_on}\nURL: ${dep.url}\n\n`;
+      }
     }
   } catch (e) { logs += '[Cloudflare Pages] Ошибка: ' + e.message + '\n\n'; }
 
@@ -123,10 +124,8 @@ async function fetchDeployLogs() {
       if (kParsed.services?.[0]) {
         const svc = kParsed.services[0];
         const deployId = svc.active_deployment_id || svc.latest_deployment_id || '';
-        logs += '[Koyeb — Deploy Status]\n';
-        logs += `Service: ${svc.name}\nDeploy ID: ${deployId.split('-')[0]}\nStatus: ${svc.status}\nUpdated: ${svc.updated_at}\n`;
-        logs += `URL: https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app\n`;
-        logs += `Dashboard: https://app.koyeb.com/orgs/neurocoder/services/${svc.name}/deploys/${deployId}\n\n`;
+        logs += '[Koyeb]\n';
+        logs += `Deploy: ${deployId.split('-')[0]}\nStatus: ${svc.status}\nUpdated: ${svc.updated_at}\n\n`;
       }
     }
   } catch (e) {
