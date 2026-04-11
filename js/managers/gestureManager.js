@@ -362,10 +362,11 @@ export class GestureManager {
      */
     async loadGestureCodesFromCloud() {
         // B2 purged — cloud storage removed, using local only
-        // const gestures = await this.cloudStorage.loadUserGestures(this.getCurrentUserId());
-        const gestures = []; // stub
+        try {
+            // const gestures = await this.cloudStorage.loadUserGestures(this.getCurrentUserId());
+            const gestures = []; // stub
 
-        for (const gesture of gestures) {
+            for (const gesture of gestures) {
                 this.customGestures.set(gesture.name, gesture);
                 this.gestureCodes.set(gesture.code, gesture);
             }
