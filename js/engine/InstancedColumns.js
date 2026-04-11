@@ -82,7 +82,13 @@ export class InstancedColumns {
             fragment: {
                 module: shaderModule,
                 entryPoint: 'fsMain',
-                targets: [{ format: navigator.gpu.getPreferredCanvasFormat() }],
+                targets: [{
+                    format: navigator.gpu.getPreferredCanvasFormat(),
+                    blend: {
+                        color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+                        alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+                    },
+                }],
             },
             primitive: {
                 topology: 'triangle-list',
