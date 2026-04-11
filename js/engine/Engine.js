@@ -47,10 +47,8 @@ export class HoloEngine {
     }
 
     _setupCameras() {
-        // Ортографическая камера
-        // Столбцы: Y от -128 до -1 (мир). Камера на Y=-64.
-        // В view space: Y от -64 до +63. Видим с запасом.
-        this.orthoProjection = this._ortho(-70, 70, -70, 70, 0.1, 300);
+        // Ортографическая камера — Y от -128 до +10 (все столбцы с запасом)
+        this.orthoProjection = this._ortho(-70, 70, -130, 10, 0.1, 300);
 
         // Перспективная камера (XR режим)
         this.perspectiveProjection = this._perspective(Math.PI / 4, 1.6, 0.1, 300);
