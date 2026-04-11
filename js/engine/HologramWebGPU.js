@@ -53,10 +53,21 @@ export class HologramWebGPU {
             console.log('[HoloEngine] 🔵 Создание Синей Сферы...');
             this._createSphere();
 
+            // 5. Создаём uniform buffer для матриц (128 bytes)
+            console.log('[HoloEngine] 📋 Создание uniform buffer (128 bytes)...');
+            this.uniformBuffer = this.engine.device.createBuffer({
+                size: 128, // 2 × mat4x4 × 16 floats × 4 bytes
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            });
+            this.bindGroup = this.engine.device.createBindGroup({
+                layout: this.spherePipeline.getBindGroupLayout(0),
+                entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }],
+            });
+
             console.log('[HoloEngine] 🎉 ВСЁ ИНИЦИАЛИЗИРОВАНО');
             this.isInitialized = true;
 
-            // 5. Запуск
+            // 6. Запуск
             this.isDemoMode = true;
             this._renderLoop();
 
@@ -165,6 +176,14 @@ export class HologramWebGPU {
     _renderLoop = () => {
         if (!this.isInitialized) return;
 
+        // Записываем матрицы в uniform buffer
+        const proj = this.engine.getCurrentProjection();
+        const view = this.engine.getViewMatrix();
+        const uniforms = new Float32Array(32);
+        uniforms.set(proj, 0);
+        uniforms.set(view, 16);
+        this.engine.device.queue.writeBuffer(this.uniformBuffer, 0, uniforms);
+
         const commandEncoder = this.engine.device.createCommandEncoder();
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
@@ -176,6 +195,7 @@ export class HologramWebGPU {
         });
 
         pass.setPipeline(this.spherePipeline);
+        pass.setBindGroup(0, this.bindGroup);
         pass.setVertexBuffer(0, this.sphereVertexBuffer);
         pass.setIndexBuffer(this.sphereIndexBuffer, 'uint16');
         pass.drawIndexed(this.indexCount);
