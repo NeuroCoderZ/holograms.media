@@ -254,6 +254,38 @@ export class HologramWebGPU {
         });
 
         pass.setBindGroup(0, this.bindGroup);
+
+        // ═══════════════════════════════════════════════════
+        // DEBUG: Yellow triangle — если виден, pipeline работает
+        // ═══════════════════════════════════════════════════
+        if (!this.debugPipeline) {
+            const debugShader = this.engine.device.createShaderModule({ code: `
+                @vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
+                    var p = array<vec2<f32>, 3>(
+                        vec2<f32>(-0.5, -0.5),
+                        vec2<f32>( 0.5, -0.5),
+                        vec2<f32>( 0.0,  0.5)
+                    );
+                    return vec4<f32>(p[i], 0.0, 1.0);
+                }
+                @fragment fn fs() -> @location(0) vec4<f32> {
+                    return vec4<f32>(1.0, 1.0, 0.0, 1.0);
+                }
+            `});
+            this.debugPipeline = this.engine.device.createRenderPipeline({
+                layout: 'auto',
+                vertex: { module: debugShader, entryPoint: 'vs' },
+                fragment: { module: debugShader, entryPoint: 'fs', targets: [{ format: navigator.gpu.getPreferredCanvasFormat(), blend: { color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } } }] },
+                primitive: { topology: 'triangle-list', cullMode: 'none' },
+                depthStencil: { format: 'depth24plus', depthWriteEnabled: false, depthCompare: 'always' },
+            });
+        }
+        pass.setPipeline(this.debugPipeline);
+        pass.draw(3);
+        console.log('[HoloEngine] 🔺 DEBUG triangle drawn');
+
+        // Reset bind group for columns
+        pass.setBindGroup(0, this.bindGroup);
         this.grid.draw(pass);
         this.columns.drawLeft(pass);
         this.columns.drawRight(pass);
