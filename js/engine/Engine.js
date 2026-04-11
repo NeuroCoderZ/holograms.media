@@ -47,16 +47,15 @@ export class HoloEngine {
     }
 
     _setupCameras() {
-        // Ортографическая камера
-        // Столбцы: X от -64 до +64 (самый широкий C0 width=128)
-        // Y от -128 до -1 (все 128 полутонов)
-        this.orthoProjection = this._ortho(-70, 70, -130, 10, 0.1, 300);
+        // Ортографическая камера — смотрит на центр (0,0,0)
+        // Видимая область: от -5 до +5 по X и Y
+        this.orthoProjection = this._ortho(-5, 5, -5, 5, 0.1, 20);
 
         // Перспективная камера (XR режим)
-        this.perspectiveProjection = this._perspective(Math.PI / 4, 1.6, 0.1, 300);
+        this.perspectiveProjection = this._perspective(Math.PI / 4, 1.6, 0.1, 20);
 
-        // Позиция камеры
-        this.viewMatrix = this._lookAt([0, -64, 160], [0, -64, 0], [0, 1, 0]);
+        // Камера стоит перед точкой 0.0.0 (на расстоянии 4 единицы)
+        this.viewMatrix = this._lookAt([0, 0, 4], [0, 0, 0], [0, 1, 0]);
     }
 
     resize() {
