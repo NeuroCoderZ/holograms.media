@@ -224,11 +224,24 @@ export class HologramWebGPU {
         // DEBUG: Рисуем красный полноэкранный треугольник
         // Если экран стал красным — пайплайн работает!
         // ═══════════════════════════════════════════════════
+        // Uniforms
+        const proj = this.engine.getCurrentProjection();
+        const view = this.engine.getViewMatrix();
+        this.engine.device.queue.writeBuffer(this.uniformBuffer, 0, proj);
+        this.engine.device.queue.writeBuffer(this.uniformBuffer, 64, view);
+
+        // Demo или Audio
+        if (this.isDemoMode || !this.latestAudioData) {
+            this.columns.setDemoMode(64);
+        } else {
+            this.columns.update(this.latestAudioData);
+        }
+
         const commandEncoder = this.engine.device.createCommandEncoder();
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
                 view: this.engine.context.getCurrentTexture().createView(),
-                clearValue: { r: 0, g: 0, b: 0, a: 0 }, // Прозрачный
+                clearValue: { r: 0, g: 0, b: 0, a: 0 },
                 loadOp: 'clear',
                 storeOp: 'store',
             }],
@@ -239,6 +252,11 @@ export class HologramWebGPU {
                 depthStoreOp: 'store',
             },
         });
+
+        pass.setBindGroup(0, this.bindGroup);
+        this.grid.draw(pass);
+        this.columns.drawLeft(pass);
+        this.columns.drawRight(pass);
         pass.end();
         this.engine.device.queue.submit([commandEncoder.finish()]);
 
