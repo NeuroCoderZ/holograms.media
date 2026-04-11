@@ -62,25 +62,92 @@ function timeAgo(dateStr) {
   return Math.floor(s / 86400) + 'д назад';
 }
 
-async function fetchStatus() {
-  const result = { github: [], cloudflare: [], koyeb: [], lastUpdate: new Date().toISOString() };
+// ─── Формирование текста для копирования (build/deploy логи) ───
+async function fetchDeployLogs() {
+  let logs = 'HoloEngine Deploy Logs\n' + '='.repeat(50) + '\n\n';
 
-  // GitHub — gh CLI
+  // GitHub — логи последнего ранa
+  try {
+    const ghRaw = run('gh run list --limit 1 --json databaseId,conclusion');
+    if (typeof ghRaw === 'string') {
+      const runs = JSON.parse(ghRaw);
+      if (runs?.[0]?.databaseId) {
+        const runId = runs[0].databaseId;
+        // Берём ВСЕ логи билда (без ограничения)
+        const psCmd = '(gh run view ' + runId + ' --log 2>&1) -join "`n"';
+        const rawLog = run('powershell -NoProfile -Command "' + psCmd + '"');
+        if (typeof rawLog === 'string' && rawLog.length > 20 && !rawLog.startsWith('{')) {
+          logs += '[GitHub Actions — Build Log]\n' + rawLog + '\n\n';
+        } else {
+          logs += '[GitHub Actions — Build Log]\nЛоги пусты\nURL: https://github.com/NeuroCoderZ/holograms.media/actions/runs/' + runId + '\n\n';
+        }
+      }
+    }
+  } catch (e) { logs += '[GitHub Actions] Ошибка: ' + e.message + '\n\n'; }
+
+  // Cloudflare — статус последнего деплоя + ссылка на логи
+  try {
+    const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/holograms-media-dev/deployments?per_page=1`;
+    const parsed = await httpsGet(cfUrl, CF_TOKEN);
+    if (parsed.success && parsed.result?.[0]) {
+      const dep = parsed.result[0];
+      const dur = dep.latest_stage?.finished_on ? `${Math.round((new Date(dep.latest_stage.finished_on) - new Date(dep.created_on))/1000)}s` : 'in_progress';
+      logs += '[Cloudflare Pages — Deploy Status]\n';
+      logs += `ID: ${dep.id.substring(0, 8)}\n`;
+      logs += `Branch: ${dep.branch || dep.deployment_trigger?.metadata?.branch || 'manual'}\n`;
+      logs += `Status: ${dep.latest_stage?.status}\n`;
+      logs += `Duration: ${dur}\n`;
+      logs += `URL: ${dep.url}\n`;
+      logs += `Started: ${dep.created_on}\n`;
+      logs += `Dashboard: https://dash.cloudflare.com/${CF_ACCOUNT}/pages/view/holograms-media-dev/${dep.id}\n\n`;
+    } else {
+      logs += '[Cloudflare Pages] Нет данных\n\n';
+    }
+  } catch (e) { logs += '[Cloudflare Pages] Ошибка: ' + e.message + '\n\n'; }
+
+  // Koyeb — статус деплоя + ссылка на дашборд (CLI tail не работает в скрипте)
+  try {
+    const kParsed = await httpsGet('https://app.koyeb.com/v1/services?limit=1', KOYEB_TOKEN);
+    if (kParsed.services?.[0]) {
+      const svc = kParsed.services[0];
+      const deployId = svc.active_deployment_id || svc.latest_deployment_id || '';
+      logs += '[Koyeb — Deploy Status]\n';
+      logs += `Service: ${svc.name}\n`;
+      logs += `Deploy ID: ${deployId.split('-')[0]}\n`;
+      logs += `Status: ${svc.status}\n`;
+      logs += `Updated: ${svc.updated_at}\n`;
+      logs += `URL: https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app\n`;
+      logs += `Dashboard: https://app.koyeb.com/orgs/neurocoder/services/${svc.name}/deploys/${deployId}\n`;
+      logs += `CLI: koyeb services logs ${svc.name} --type build\n\n`;
+    }
+  } catch (e) { logs += '[Koyeb] Ошибка: ' + e.message + '\n\n'; }
+
+  return logs;
+}
+
+async function fetchStatus() {
+  const result = { github: [], cloudflare: [], koyeb: [], lastUpdate: new Date().toISOString(), copyText: '' };
+
+  // GitHub — gh CLI (убираем дубликаты — один ран на пуш)
   try {
     const raw = run('gh run list --limit 8 --json status,conclusion,headBranch,createdAt,displayTitle,databaseId');
     if (typeof raw === 'string') {
-      result.github = JSON.parse(raw).map(r => {
-        // Парсим версию из displayTitle: "DEPLOY: v0.20.409 - ..."
-        const verMatch = r.displayTitle?.match(/v?(\d+\.\d+\.\d+)/);
-        const commit = r.displayTitle?.replace(/^DEPLOY:\s*v?\d+\.\d+\.\d+\s*-\s*/, '').substring(0, 60) || '';
-        return {
-          id: verMatch ? verMatch[1] : 'run-' + r.databaseId,
-          branch: r.headBranch,
-          status: r.conclusion || r.status,
-          createdAt: r.createdAt,
-          commit,
-        };
-      });
+      const runs = JSON.parse(raw);
+      // Дедупликация: берём только первый ран для каждой версии
+      const seen = new Set();
+      result.github = runs
+        .map(r => {
+          const verMatch = r.displayTitle?.match(/v?(\d+\.\d+\.\d+)/);
+          const ver = verMatch ? verMatch[1] : 'run-' + r.databaseId;
+          const fullMsg = r.displayTitle?.replace(/^DEPLOY:\s*v?\d+\.\d+\.\d+\s*-\s*v?\d+\.\d+\.\d+\s*-\s*/, '') || '';
+          return { id: ver, branch: r.headBranch, status: r.conclusion || r.status, createdAt: r.createdAt, commit: fullMsg, _key: ver };
+        })
+        .filter(r => {
+          if (seen.has(r._key)) return false;
+          seen.add(r._key);
+          return true;
+        })
+        .map(r => { delete r._key; return r; });
     }
   } catch (e) { result.github = [{ error: e.message }]; }
 
@@ -130,6 +197,46 @@ async function fetchStatus() {
     }
   } catch (e) { result.koyeb = [{ error: e.message }]; }
 
+  // Формируем готовый текст для копирования — только свежие записи
+  const gh = result.github?.find(g => !g.error);
+  const cf = result.cloudflare?.find(c => !c.error && !c.info);
+  const ky = result.koyeb?.find(k => !k.error);
+  const refTime = gh ? new Date(gh.createdAt).getTime() : 0;
+  const windowMs = 5 * 60 * 1000;
+
+  const pushAgo = gh ? timeAgo(gh.createdAt) : (cf ? timeAgo(cf.createdAt) : (ky ? timeAgo(ky.createdAt) : '—'));
+  let ct = 'HoloEngine Monitor — Last Push: ' + pushAgo + '\n\n';
+
+  if (gh) {
+    const cleanCommit = (gh.commit || '').replace(/^v?\d+\.\d+\.\d+\s*-\s*/, '');
+    const icon = gh.status === 'success' ? '✅ ' : gh.status === 'failure' ? '❌ ' : '🔄 ';
+    ct += '[GitHub Actions]\n' + gh.id + ' | ' + gh.branch + ' | ' + icon + gh.status + ' | ' + cleanCommit + ' | ' + timeAgo(gh.createdAt) + '\n';
+  }
+  if (cf) {
+    const cfTime = new Date(cf.createdAt).getTime();
+    if (!refTime || Math.abs(cfTime - refTime) < windowMs) {
+      const icon = cf.status === 'success' ? '✅ ' : cf.status === 'failure' ? '❌ ' : '🔄 ';
+      ct += '\n[Cloudflare Pages]\n' + cf.id + ' | ' + cf.branch + ' | ' + icon + cf.status + ' | ' + timeAgo(cf.createdAt) + '\n';
+    }
+  }
+  if (ky) {
+    const kyTime = new Date(ky.createdAt).getTime();
+    if (!refTime || Math.abs(kyTime - refTime) < windowMs) {
+      const icon = ky.status === 'HEALTHY' ? '✅ ' : ky.status === 'STOPPED' ? '❌ ' : '🔄 ';
+      ct += '\n[Koyeb]\n' + ky.id + ' | ' + ky.branch + ' | ' + icon + ky.status + ' | ' + timeAgo(ky.createdAt) + '\n';
+    }
+  }
+  result.copyText = ct;
+
+  // Загрузка deploy логов (ждём завершения перед сохранением)
+  try {
+    const deployLogs = await fetchDeployLogs();
+    result.copyText = deployLogs;
+    statusCache.copyText = deployLogs;
+  } catch (e) {
+    console.error('fetchDeployLogs error:', e.message);
+  }
+
   statusCache = result;
   return result;
 }
@@ -152,11 +259,12 @@ const html = `<!DOCTYPE html>
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 32px; max-width: 1400px; margin: 0 auto; position: relative; }
-  .title { font-size: 28px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
+  .title { font-size: 28px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 12px; }
+  .copy-btn { padding: 6px 10px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 16px; cursor: pointer; line-height: 1; opacity: 0.3; pointer-events: none; transition: all 0.3s; }
+  .copy-btn.ready { opacity: 1; pointer-events: auto; }
+  .copy-btn.ready:hover { border-color: var(--blue); color: var(--blue); }
   .sub { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
   .sub span { color: var(--blue); }
-  .btn { padding: 6px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; cursor: pointer; white-space: nowrap; }
-  .btn:hover { border-color: var(--blue); color: var(--blue); }
 
   .sec { margin-bottom: 40px; }
   .sec-h { font-size: 18px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
@@ -180,9 +288,8 @@ const html = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="title">HoloEngine Full-Stack Monitor</div>
+<div class="title"><span>HoloEngine Full-Stack Monitor</span><button class="copy-btn" onclick="copyLogs()">📋</button></div>
 <div class="sub" id="sub">Загрузка...</div>
-<button class="btn" onclick="copyLogs()">📋 Копировать логи</button>
 
 <div class="sec"><div class="sec-h">GitHub Actions <span class="lbl">Сборка</span></div><div id="gh"></div></div>
 <div class="sec"><div class="sec-h">Cloudflare Pages <span class="lbl">Фронтенд</span></div><div id="cf"></div></div>
@@ -210,29 +317,54 @@ function render(items, id) {
   }).join('');
 }
 
+let cachedCopy = '';
+
+let logsReady = false;
+
 function update() {
   fetch('/api/status').then(r => r.json()).then(d => {
     document.getElementById('sub').innerHTML = 'Обновлено: <span>' + new Date(d.lastUpdate).toLocaleTimeString('ru') + '</span>';
     render(d.github, 'gh');
     render(d.cloudflare, 'cf');
     render(d.koyeb, 'ky');
+    cachedCopy = d.copyText || '';
+
+    // Кнопка активна только когда логи готовы (содержат секции [GitHub], [Koyeb] и т.д.)
+    const btn = document.querySelector('.copy-btn');
+    if (d.copyText && d.copyText.includes('[GitHub') && !logsReady) {
+      logsReady = true;
+      btn.classList.add('ready');
+      btn.title = 'Логи загружены — нажмите для копирования';
+    }
   });
 }
 
 function copyLogs() {
-  fetch('/api/status').then(r => r.json()).then(d => {
-    let t = 'HoloEngine Monitor ' + new Date().toISOString() + '\\n\\n';
-    t += '[GitHub Actions]\\n';
-    d.github.forEach(g => { if (!g.error) t += g.id + ' | ' + g.branch + ' | ' + g.status + ' | ' + (g.commit || '') + ' | ' + g.createdAt + '\\n'; });
-    t += '\\n[Cloudflare Pages]\\n';
-    d.cloudflare.forEach(c => { if (!c.error && !c.info) t += c.id + ' | ' + c.branch + ' | ' + c.status + ' | ' + c.url + ' | ' + c.createdAt + '\\n'; else if (c.info) t += c.info + '\\n'; });
-    t += '\\n[Koyeb]\\n';
-    d.koyeb.forEach(k => { if (!k.error) t += k.id + ' | ' + k.branch + ' | ' + k.status + ' | ' + (k.deployUrl || '') + ' | ' + k.createdAt + '\\n'; });
-    navigator.clipboard.writeText(t).then(() => {
-      document.querySelector('.btn').textContent = '✅ Скопировано';
-      setTimeout(() => document.querySelector('.btn').textContent = '📋 Копировать логи', 2000);
+  if (!logsReady || !cachedCopy) return;
+
+  const btn = document.querySelector('.copy-btn');
+  btn.textContent = '⏳';
+
+  // Сначала пробуем свежие логи с сервера
+  fetch('/api/deploy-logs')
+    .then(r => {
+      if (r.status === 202) return cachedCopy; // Ещё грузятся — используем кэш
+      return r.text();
+    })
+    .then(text => {
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅';
+        btn.title = 'Логи скопированы!';
+        setTimeout(() => { btn.textContent = '📋'; btn.title = 'Скопировать логи'; }, 2000);
+      });
+    })
+    .catch(() => {
+      // Fallback на кэш
+      navigator.clipboard.writeText(cachedCopy).then(() => {
+        btn.textContent = '✅';
+        setTimeout(() => { btn.textContent = '📋'; }, 2000);
+      });
     });
-  });
 }
 
 update();
@@ -245,6 +377,17 @@ const server = http.createServer((req, res) => {
   if (req.url === '/api/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(statusCache));
+    return;
+  }
+  if (req.url === '/api/deploy-logs') {
+    // Если логи ещё грузятся — ждём
+    if (statusCache.copyText && statusCache.copyText.includes('[')) {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(statusCache.copyText);
+    } else {
+      res.writeHead(202, { 'Content-Type': 'text/plain' });
+      res.end('Логи ещё загружаются...');
+    }
     return;
   }
   res.writeHead(200, { 'Content-Type': 'text/html' });
