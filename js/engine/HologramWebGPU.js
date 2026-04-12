@@ -165,11 +165,6 @@ export class HologramWebGPU {
                 topology: 'triangle-list',
                 cullMode: 'none',
             },
-            depthStencil: {
-                format: 'depth24plus',
-                depthWriteEnabled: true,
-                depthCompare: 'less',
-            },
         });
     }
 
