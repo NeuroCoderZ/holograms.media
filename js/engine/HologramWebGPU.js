@@ -49,11 +49,19 @@ export class HologramWebGPU {
             await this.engine.init();
             console.log('[HoloEngine] ✅ HoloEngine инициализирован');
 
-            // 4. Создаём Синюю Сферу
+            // 4. Создаём depth texture (ОДИН РАЗ при инициализации!)
+            console.log('[HoloEngine] 📦 Создание depth texture...');
+            this.depthTexture = this.engine.device.createTexture({
+                size: [this.canvas.width, this.canvas.height],
+                format: 'depth24plus',
+                usage: GPUTextureUsage.RENDER_ATTACHMENT,
+            });
+
+            // 5. Создаём Синюю Сферу
             console.log('[HoloEngine] 🔵 Создание Синей Сферы...');
             this._createSphere();
 
-            // 5. Создаём uniform buffer для матриц (128 bytes)
+            // 6. Создаём uniform buffer для матриц (128 bytes)
             console.log('[HoloEngine] 📋 Создание uniform buffer (128 bytes)...');
             this.uniformBuffer = this.engine.device.createBuffer({
                 size: 128, // 2 × mat4x4 × 16 floats × 4 bytes
@@ -67,7 +75,7 @@ export class HologramWebGPU {
             console.log('[HoloEngine] 🎉 ВСЁ ИНИЦИАЛИЗИРОВАНО');
             this.isInitialized = true;
 
-            // 6. Запуск
+            // 7. Запуск
             this.isDemoMode = true;
             this._renderLoop();
 
@@ -115,18 +123,23 @@ export class HologramWebGPU {
         new Uint16Array(this.sphereIndexBuffer.getMappedRange()).set(indices);
         this.sphereIndexBuffer.unmap();
 
-        // Шейдер: просто синий цвет
+        // Шейдер: просто синий цвет (uniforms ПЕРЕД функциями!)
         const shaderModule = this.engine.device.createShaderModule({ code: `
+            @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+
+            struct Uniforms {
+                uProjectionMatrix: mat4x4<f32>,
+                uViewMatrix: mat4x4<f32>,
+            };
+
             struct VSOutput {
                 @builtin(position) position: vec4<f32>,
                 @location(0) color: vec4<f32>,
             };
 
             @vertex fn vs(
-                @location(0) pos: vec3<f32>,
-                @builtin(instance_index) idx: u32
+                @location(0) pos: vec3<f32>
             ) -> VSOutput {
-                // Матрицы из uniform buffer
                 let viewProj = uniforms.uProjectionMatrix * uniforms.uViewMatrix;
                 var out: VSOutput;
                 out.position = viewProj * vec4<f32>(pos, 1.0);
@@ -137,13 +150,6 @@ export class HologramWebGPU {
             @fragment fn fs(input: VSOutput) -> @location(0) vec4<f32> {
                 return input.color;
             }
-
-            @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-
-            struct Uniforms {
-                uProjectionMatrix: mat4x4<f32>,
-                uViewMatrix: mat4x4<f32>,
-            };
         `});
 
         this.spherePipeline = this.engine.device.createRenderPipeline({
@@ -188,11 +194,7 @@ export class HologramWebGPU {
                 storeOp: 'store',
             }],
             depthStencilAttachment: {
-                view: this.engine.device.createTexture({
-                    size: [this.canvas.width, this.canvas.height],
-                    format: 'depth24plus',
-                    usage: GPUTextureUsage.RENDER_ATTACHMENT,
-                }).createView(),
+                view: this.depthTexture.createView(),
                 depthClearValue: 1.0,
                 depthLoadOp: 'clear',
                 depthStoreOp: 'discard',
