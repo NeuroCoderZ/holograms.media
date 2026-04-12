@@ -183,10 +183,20 @@ export class HologramWebGPU {
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
                 view: this.engine.context.getCurrentTexture().createView(),
-                clearValue: { r: 0.05, g: 0.05, b: 0.15, a: 1 }, // Тёмно-синий фон для контраста
+                clearValue: { r: 0.05, g: 0.05, b: 0.15, a: 1 }, // Тёмно-синий фон
                 loadOp: 'clear',
                 storeOp: 'store',
             }],
+            depthStencilAttachment: {
+                view: this.engine.device.createTexture({
+                    size: [this.canvas.width, this.canvas.height],
+                    format: 'depth24plus',
+                    usage: GPUTextureUsage.RENDER_ATTACHMENT,
+                }).createView(),
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'discard',
+            },
         });
 
         pass.setPipeline(this.spherePipeline);
