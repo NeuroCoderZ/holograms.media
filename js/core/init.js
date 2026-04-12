@@ -249,7 +249,7 @@ export async function initCore() {
     // Инициализируем HoloEngine (WebGPU) — полный рендеринг голограммы
     // Столбцы + сетки + оси + сферы — всё на нашем движке, без Three.js
     try {
-      const { hologramWebGPU } = await import('../engine/HologramWebGPU.js');
+      const { hologramWebGPU } = await import('../engine/HologramWebGPU.js?v=444');
       state.holoEngine = hologramWebGPU;
       await hologramWebGPU.init();
       console.log('✅ HoloEngine (WebGPU) инициализирован');

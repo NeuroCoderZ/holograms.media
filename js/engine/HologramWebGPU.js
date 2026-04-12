@@ -49,19 +49,11 @@ export class HologramWebGPU {
             await this.engine.init();
             console.log('[HoloEngine] ✅ HoloEngine инициализирован');
 
-            // 4. Создаём depth texture (ОДИН РАЗ при инициализации!)
-            console.log('[HoloEngine] 📦 Создание depth texture...');
-            this.depthTexture = this.engine.device.createTexture({
-                size: [this.canvas.width, this.canvas.height],
-                format: 'depth24plus',
-                usage: GPUTextureUsage.RENDER_ATTACHMENT,
-            });
-
-            // 5. Создаём Синюю Сферу
+            // 4. Создаём Синюю Сферу
             console.log('[HoloEngine] 🔵 Создание Синей Сферы...');
             this._createSphere();
 
-            // 6. Создаём uniform buffer для матриц (128 bytes)
+            // 5. Создаём uniform buffer для матриц (128 bytes)
             console.log('[HoloEngine] 📋 Создание uniform buffer (128 bytes)...');
             this.uniformBuffer = this.engine.device.createBuffer({
                 size: 128, // 2 × mat4x4 × 16 floats × 4 bytes
@@ -193,12 +185,6 @@ export class HologramWebGPU {
                 loadOp: 'clear',
                 storeOp: 'store',
             }],
-            depthStencilAttachment: {
-                view: this.depthTexture.createView(),
-                depthClearValue: 1.0,
-                depthLoadOp: 'clear',
-                depthStoreOp: 'discard',
-            },
         });
 
         pass.setPipeline(this.spherePipeline);
