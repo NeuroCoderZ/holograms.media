@@ -153,7 +153,7 @@ export class HologramWebGPU {
                 @location(0) vColor: vec3<f32>,
             };
 
-            @vertex fn colMain(input: ColVSInput) -> VSOutput {
+            @vertex fn main(input: ColVSInput) -> VSOutput {
                 var out: VSOutput;
                 out.vColor = input.color;
                 let model = mat4x4<f32>(input.m0, input.m1, input.m2, input.m3);
