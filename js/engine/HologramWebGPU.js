@@ -284,7 +284,7 @@ export class HologramWebGPU {
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
                 view: this.engine.context.getCurrentTexture().createView(),
-                clearValue: { r: 0.05, g: 0.05, b: 0.15, a: 1 }, // Тёмный фон
+                clearValue: { r: 0, g: 0, b: 0, a: 0 }, // Прозрачный фон, чтобы Three.js глаз был виден нормально
                 loadOp: 'clear', storeOp: 'store',
             }],
             depthStencilAttachment: {
