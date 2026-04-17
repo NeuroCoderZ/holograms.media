@@ -140,6 +140,11 @@ export class HologramWebGPU {
             };
             @binding(0) @group(0) var<uniform> uniforms: Uniforms;
 
+            struct VSOutput {
+                @builtin(position) position: vec4<f32>,
+                @location(0) vColor: vec3<f32>,
+            };
+
             // ─── Columns ─────────────────────────────────────
             struct ColVSInput {
                 @location(0) position: vec3<f32>,
@@ -147,10 +152,6 @@ export class HologramWebGPU {
                 @location(3) m2: vec4<f32>, @location(4) m3: vec4<f32>,
                 @location(5) color: vec3<f32>,
                 @location(6) scaleZ: f32,
-            };
-            struct VSOutput {
-                @builtin(position) position: vec4<f32>,
-                @location(0) vColor: vec3<f32>,
             };
 
             @vertex fn main(input: ColVSInput) -> VSOutput {
@@ -203,48 +204,59 @@ export class HologramWebGPU {
     _initSpheres(shaderModule, bindGroupLayout) {
         const device = this.engine.device;
 
-        // 1. Geometry Buffers
         this.vertexBuffer = device.createBuffer({ size: SPHERE_VERTICES.byteLength, usage: GPUBufferUsage.VERTEX, mappedAtCreation: true });
         new Float32Array(this.vertexBuffer.getMappedRange()).set(SPHERE_VERTICES); this.vertexBuffer.unmap();
 
         this.indexBuffer = device.createBuffer({ size: SPHERE_INDICES.byteLength, usage: GPUBufferUsage.INDEX, mappedAtCreation: true });
         new Uint16Array(this.indexBuffer.getMappedRange()).set(SPHERE_INDICES); this.indexBuffer.unmap();
 
-        // 2. Instance Buffer (4 сферы)
-        // Структура: pos(12) + data(16) + color(16) = 44 bytes -> 48 bytes alignment
-        // pos: 3 floats. data: x,y,z,scale. color: r,g,b,1.
-        const instanceData = new Float32Array([
-            // pos(0,0,0) [unused for instance, used for local mesh], data, color
-            // 1. Center (Blue) - Scale 1.2
-            0,0,0,  0,0,0,1.2,  0,0.4,1,1,
-            // 2. Right (Red) - Scale 1.0
-            0,0,0,  128,0,0,1.0,  1,0,0,1,
-            // 3. Left (Violet) - Scale 1.0
-            0,0,0,  -128,0,0,1.0,  0.6,0,1,1,
-            // 4. Top (Green) - Scale 1.0
-            0,0,0,  0,256,0,1.0,  0,1,0,1,
+        const dataBufferData = new Float32Array([
+            0,0,0,1.2,    // Center (Blue) - Scale 1.2
+            128,0,0,1.0,  // Right (Red)
+            -128,0,0,1.0, // Left (Violet)
+            0,256,0,1.0,  // Top (Green)
         ]);
 
-        this.sphereInstanceBuffer = device.createBuffer({
-            size: instanceData.byteLength,
-            usage: GPUBufferUsage.VERTEX,
-            mappedAtCreation: true,
-        });
-        new Float32Array(this.sphereInstanceBuffer.getMappedRange()).set(instanceData);
-        this.sphereInstanceBuffer.unmap();
+        const colorBufferData = new Float32Array([
+            0,0.4,1,1,    // Center
+            1,0,0,1,      // Right
+            0.6,0,1,1,    // Left
+            0,1,0,1,      // Top
+        ]);
 
-        // 3. Pipeline
+        this.sphereDataBuffer = device.createBuffer({
+            size: dataBufferData.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        device.queue.writeBuffer(this.sphereDataBuffer, 0, dataBufferData);
+
+        this.sphereColorBuffer = device.createBuffer({
+            size: colorBufferData.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        device.queue.writeBuffer(this.sphereColorBuffer, 0, colorBufferData);
+
         this.spherePipeline = device.createRenderPipeline({
             layout: device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
             vertex: {
                 module: shaderModule, entryPoint: 'sphereVertex',
                 buffers: [
-                    { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] }, // Local Pos
-                    { arrayStride: 48, stepMode: 'instance', attributes: [{ shaderLocation: 1, offset: 12, format: 'float32x4' }] }, // Data
-                    { arrayStride: 48, stepMode: 'instance', attributes: [{ shaderLocation: 2, offset: 28, format: 'float32x4' }] }, // Color
+                    { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] }, 
+                    { arrayStride: 16, stepMode: 'instance', attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x4' }] }, 
+                    { arrayStride: 16, stepMode: 'instance', attributes: [{ shaderLocation: 2, offset: 0, format: 'float32x4' }] }, 
                 ],
             },
-            fragment: { module: shaderModule, entryPoint: 'sphereFragment', targets: [{ format: navigator.gpu.getPreferredCanvasFormat() }] },
+            fragment: { 
+                module: shaderModule, 
+                entryPoint: 'sphereFragment', 
+                targets: [{ 
+                    format: navigator.gpu.getPreferredCanvasFormat(),
+                    blend: {
+                        color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' },
+                        alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' }
+                    }
+                }] 
+            },
             primitive: { topology: 'triangle-list', cullMode: 'none' },
             depthStencil: { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less' },
         });
@@ -254,14 +266,12 @@ export class HologramWebGPU {
 
     _drawSpheres(pass) {
         pass.setPipeline(this.spherePipeline);
-        pass.setBindGroup(0, this.bindGroup);
-        pass.setVertexBuffer(0, this.sphereVertexBuffer); // Wait, need to define this
-        pass.setVertexBuffer(1, this.sphereInstanceBuffer);
-        pass.setIndexBuffer(this.sphereIndexBuffer, 'uint16');
-        pass.drawIndexed(this.sphereIndexCount, 4); // 4 instances
+        pass.setVertexBuffer(0, this.vertexBuffer);      
+        pass.setVertexBuffer(1, this.sphereDataBuffer);  
+        pass.setVertexBuffer(2, this.sphereColorBuffer); 
+        pass.setIndexBuffer(this.indexBuffer, 'uint16');
+        pass.drawIndexed(this.sphereIndexCount, 4);
     }
-    // Fix: buffers are local to _initSpheres, need to save them
-    // Let's fix _initSpheres to save buffers to this.sphereVertexBuffer etc.
 
     _renderLoop = () => {
         if (!this.isInitialized) return;
@@ -284,7 +294,7 @@ export class HologramWebGPU {
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
                 view: this.engine.context.getCurrentTexture().createView(),
-                clearValue: { r: 0, g: 0, b: 0, a: 0 }, // Прозрачный фон, чтобы Three.js глаз был виден нормально
+                clearValue: { r: 0, g: 0, b: 0, a: 0 }, 
                 loadOp: 'clear', storeOp: 'store',
             }],
             depthStencilAttachment: {
@@ -298,12 +308,7 @@ export class HologramWebGPU {
         this.columns.drawLeft(pass);
         this.columns.drawRight(pass);
         
-        // Spheres
-        pass.setPipeline(this.spherePipeline);
-        pass.setVertexBuffer(0, this.vertexBuffer);
-        pass.setVertexBuffer(1, this.sphereInstanceBuffer);
-        pass.setIndexBuffer(this.indexBuffer, 'uint16');
-        pass.drawIndexed(this.sphereIndexCount, 4);
+        this._drawSpheres(pass);
 
         pass.end();
         this.engine.device.queue.submit([commandEncoder.finish()]);

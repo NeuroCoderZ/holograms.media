@@ -251,11 +251,11 @@ export class EyeLoader {
 
         // --- Радужка (чёткая, без blur, -20% яркость от предыдущего +30%) ---
         const gradIris = ctx.createRadialGradient(x, y, 0, x, y, R * 0.65);
-        gradIris.addColorStop(0,    '#5a5ad4');    // -20% от #6e6eeb
-        gradIris.addColorStop(0.15, '#4242a8');    // -20% от #5151d1
-        gradIris.addColorStop(0.55, '#262698');    // -20% от #2f2fbc
-        gradIris.addColorStop(0.85, '#161680');    // -20% от #1b1b9e
-        gradIris.addColorStop(1,    '#0b0b44');    // -20% от #0e0e55
+        gradIris.addColorStop(0,    '#9eb2a0');    // Оливково-серый центр (как на фото)
+        gradIris.addColorStop(0.3,   '#7da8b8');    // Основной стальной синий
+        gradIris.addColorStop(0.7,   '#4e7287');    // Глубокий сине-серый
+        gradIris.addColorStop(0.9,   '#2e4a5e');    // Темный край радужки (лимб)
+        gradIris.addColorStop(1,     '#1a2835');    // Глубокая тень периметра
         ctx.beginPath();
         ctx.arc(x, y, R * 0.65, 0, Math.PI * 2);
         ctx.fillStyle = gradIris;
