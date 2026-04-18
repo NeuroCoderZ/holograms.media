@@ -44,13 +44,11 @@ export class HologramWebGPU {
         console.log('[HoloEngine] 🏗️ Конструктор создан');
 
         eventBus.on('audioData', (data) => {
-            if (this.isDemoMode) console.log('[HoloEngine] 🎵 Переключение: DEMO → AUDIO MODE');
             this.latestAudioData = data;
             this.isDemoMode = false;
         });
 
         eventBus.on('audioReset', () => {
-            console.log('[HoloEngine] 🔄 Переключение: AUDIO → DEMO MODE');
             this.latestAudioData = null;
             this.isDemoMode = true;
         });
@@ -66,7 +64,6 @@ export class HologramWebGPU {
         }
         const rect = container.getBoundingClientRect();
 
-        // 1. Canvas
         this.canvas = document.createElement('canvas');
         this.canvas.id = 'holo-webgpu-canvas';
         this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100;';
@@ -79,20 +76,14 @@ export class HologramWebGPU {
         this.canvas.height = rect.height * dpr;
 
         try {
-            // 2. Engine
-            console.log('[HoloEngine] 🔧 Создание HoloEngine...');
             this.engine = new HoloEngine(this.canvas);
             await this.engine.init();
 
-            // 3. Depth
             this._createDepthTexture();
 
-            // 4. Shaders
-            console.log('[HoloEngine] 📝 Компиляция WGSL...');
             const shaderCode = this._buildShaderCode();
             const shaderModule = this.engine.device.createShaderModule({ code: shaderCode });
 
-            // 5. Bind Group
             const bindGroupLayout = this.engine.device.createBindGroupLayout({
                 entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: 'uniform' } }],
             });
@@ -105,12 +96,9 @@ export class HologramWebGPU {
                 entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }],
             });
 
-            // 6. Components
-            console.log('[HoloEngine] 🏗️ Создание компонентов...');
             this.columns = new InstancedColumns(this.engine.device, shaderModule, bindGroupLayout);
             this.grid = new GridWireframe(this.engine.device, shaderModule, bindGroupLayout);
 
-            // 7. Spheres (4 маркера: Центр+Оси)
             this._initSpheres(shaderModule, bindGroupLayout);
 
             this.isInitialized = true;
@@ -211,10 +199,10 @@ export class HologramWebGPU {
         new Uint16Array(this.indexBuffer.getMappedRange()).set(SPHERE_INDICES); this.indexBuffer.unmap();
 
         const dataBufferData = new Float32Array([
-            0,0,0,1.2,    // Center (Blue) - Scale 1.2
-            128,0,0,1.0,  // Right (Red)
-            -128,0,0,1.0, // Left (Violet)
-            0,256,0,1.0,  // Top (Green)
+            0,0,0,1.2,    // Center (Blue)
+            128,0,75,1.0, // Right (Red) - сдвиг на Z=75
+            -128,0,75,1.0, // Left (Violet)
+            0,256,75,1.0,  // Top (Green)
         ]);
 
         const colorBufferData = new Float32Array([

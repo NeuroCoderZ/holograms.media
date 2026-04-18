@@ -36,7 +36,7 @@ export class InstancedColumns {
         this.device = device;
         this.count = semitones.length; // 128
 
-        // Vertex buffer (общий для всех инстансов)
+        // Vertex buffer
         this.vertexBuffer = device.createBuffer({
             size: CUBE_VERTICES.byteLength,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -59,12 +59,10 @@ export class InstancedColumns {
                 module: shaderModule,
                 entryPoint: 'main',
                 buffers: [
-                    // position: vec3<f32>
                     {
                         arrayStride: 12,
                         attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }],
                     },
-                    // instance data: mat4x4(64) + color(12) + scaleZ(4) = 80 bytes
                     {
                         arrayStride: 80,
                         stepMode: 'instance',
@@ -92,7 +90,7 @@ export class InstancedColumns {
             },
             primitive: {
                 topology: 'triangle-list',
-                cullMode: 'none', // debug: show all faces
+                cullMode: 'none',
             },
             depthStencil: {
                 format: 'depth24plus',
@@ -101,66 +99,57 @@ export class InstancedColumns {
             },
         });
 
-        // Instance buffers (будут обновляться каждый кадр)
         this._initInstanceBuffers();
     }
 
     setDemoMode(height) {
         for (let i = 0; i < this.count; i++) {
             const s = semitones[i];
-            this._setInstance(this.leftInstanceData, i, 0, -128 + i, height, s.color, s.width);
-            this._setInstance(this.rightInstanceData, i, 0, -128 + i, height, s.color, s.width);
+            const posY = i * 2; // Высота ячейки = 2.0
+            this._setInstance(this.leftInstanceData, i, 0, posY, height, s.color, s.width);
+            this._setInstance(this.rightInstanceData, i, 0, posY, height, s.color, s.width);
         }
         this._uploadInstances();
     }
 
     _initInstanceBuffers() {
-        // 80 байт на инстанс: mat4(64) + color(12) + scaleZ(4)
         const instanceSize = 80;
         const bufferSize = instanceSize * this.count;
 
-        // Левая сетка
         this.leftInstanceBuffer = this.device.createBuffer({
             size: bufferSize,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
-        this.leftInstanceData = new Float32Array(this.count * 20); // 80/4 = 20 floats
+        this.leftInstanceData = new Float32Array(this.count * 20);
 
-        // Правая сетка
         this.rightInstanceBuffer = this.device.createBuffer({
             size: bufferSize,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
         this.rightInstanceData = new Float32Array(this.count * 20);
 
-        // Демо: hL=1, полный цвет
-        for (let i = 0; i < this.count; i++) {
-            const s = semitones[i];
-            this._setInstance(this.leftInstanceData, i, 0, -128 + i, 1, s.color, s.width);
-            this._setInstance(this.rightInstanceData, i, 0, -128 + i, 1, s.color, s.width);
-        }
-
-        this._uploadInstances();
+        this.setDemoMode(64);
     }
 
     _setInstance(data, idx, panX, posY, height, color, width) {
         const base = idx * 20;
-        // Матрица: translation + scale
         const x = panX;
         const y = posY;
-        const z = 0;
+        const z = 75; // Протокол 1 Метр (внутренняя грань)
         const w = width || 1;
         const h = Math.max(1, Math.min(128, height));
 
-        // Row 0: [w, 0, 0, 0]
+        // WGSL Column-Major Matrix
+        // Column 0: [w, 0, 0, 0]
         data[base + 0] = w; data[base + 1] = 0;  data[base + 2] = 0;  data[base + 3] = 0;
-        // Row 1: [0, 2, 0, 0] — CELL_HEIGHT = 2
+        // Column 1: [0, 2, 0, 0] — Удвоенная высота ячейки
         data[base + 4] = 0;  data[base + 5] = 2;  data[base + 6] = 0;  data[base + 7] = 0;
-        // Row 2: [0, 0, h, 0]
+        // Column 2: [0, 0, h, 0] — Глубина (амплитуда)
         data[base + 8] = 0;  data[base + 9] = 0;  data[base + 10] = h; data[base + 11] = 0;
-        // Row 3: [x, y, h/2, 1] — position.z = h/2 (центр столбца)
-        data[base + 12] = x; data[base + 13] = y; data[base + 14] = h/2; data[base + 15] = 1;
-        // Color: r, g, b, scaleZ
+        // Column 3: [x, y, z + h/2, 1] — Позиция центра столбца
+        data[base + 12] = x; data[base + 13] = y; data[base + 14] = z + h/2; data[base + 15] = 1;
+        
+        // Color & aColumnScaleZ (для шейдера)
         data[base + 16] = color.r; data[base + 17] = color.g; data[base + 18] = color.b;
         data[base + 19] = h;
     }
@@ -171,7 +160,6 @@ export class InstancedColumns {
     }
 
     update(audioData) {
-        // audioData: { levels: Float32Array(256), pans: Float32Array(256) }
         if (!audioData || !audioData.levels) return;
 
         for (let i = 0; i < this.count; i++) {
@@ -181,12 +169,12 @@ export class InstancedColumns {
             const hL = Math.max(1, Math.min(128, Math.round(dbL)));
             const hR = Math.max(1, Math.min(128, Math.round(dbR)));
 
-            // Pan cells → X смещение
             const panL = (audioData.pans?.[i] ?? 64) - 64;
             const panR = (audioData.pans?.[i + 128] ?? 64) - 64;
 
-            this._setInstance(this.leftInstanceData, i, panL, -128 + i, hL, s.color, s.width);
-            this._setInstance(this.rightInstanceData, i, panR, -128 + i, hR, s.color, s.width);
+            const posY = i * 2;
+            this._setInstance(this.leftInstanceData, i, panL, posY, hL, s.color, s.width);
+            this._setInstance(this.rightInstanceData, i, panR, posY, hR, s.color, s.width);
         }
         this._uploadInstances();
     }

@@ -6,31 +6,28 @@
  * Синяя точка на пересечении осей
  */
 
-import { GRID_OPACITY } from '../config/hologramConfig.js';
+import { GRID_WIDTH, GRID_HEIGHT } from '../config/hologramConstants.js';
 
 export class GridWireframe {
     constructor(device, shaderModule, bindGroupLayout) {
         this.device = device;
+        this.pointCount = 0;
 
-        // Создаём линии сеток и осей
-        const { points, colors } = this._buildGridAndAxes();
-        this.pointCount = points.length / 3;
+        const { vertices, colors } = this._buildGridAndAxes();
+        this.pointCount = vertices.length / 3;
 
-        // Vertex buffer
         this.vertexBuffer = device.createBuffer({
-            size: points.byteLength,
+            size: vertices.byteLength,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
-        device.queue.writeBuffer(this.vertexBuffer, 0, points);
+        device.queue.writeBuffer(this.vertexBuffer, 0, vertices);
 
-        // Color buffer
         this.colorBuffer = device.createBuffer({
             size: colors.byteLength,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
         device.queue.writeBuffer(this.colorBuffer, 0, colors);
 
-        // Pipeline (lines)
         this.pipeline = device.createRenderPipeline({
             layout: device.createPipelineLayout({
                 bindGroupLayouts: [bindGroupLayout],
@@ -39,96 +36,62 @@ export class GridWireframe {
                 module: shaderModule,
                 entryPoint: 'gridVertex',
                 buffers: [
-                    { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] },
-                    { arrayStride: 12, attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x3' }] },
+                    {
+                        arrayStride: 12,
+                        attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }],
+                    },
+                    {
+                        arrayStride: 12,
+                        attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x3' }],
+                    }
                 ],
             },
             fragment: {
                 module: shaderModule,
                 entryPoint: 'gridFragment',
-                targets: [{
-                    format: navigator.gpu.getPreferredCanvasFormat(),
-                    blend: {
-                        color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
-                        alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
-                    },
-                }],
+                targets: [{ format: navigator.gpu.getPreferredCanvasFormat() }],
             },
             primitive: {
                 topology: 'line-list',
             },
             depthStencil: {
                 format: 'depth24plus',
-                depthWriteEnabled: false,
+                depthWriteEnabled: true,
                 depthCompare: 'less',
-            },
+            }
         });
     }
 
     _buildGridAndAxes() {
-        const points = [];
+        const vertices = [];
         const colors = [];
 
-        const pushLine = (x0, y0, z0, x1, y1, z1, r, g, b) => {
-            points.push(x0, y0, z0, x1, y1, z1);
-            colors.push(r, g, b, r, g, b);
+        const addLine = (p1, p2, color) => {
+            vertices.push(...p1, ...p2);
+            colors.push(...color, ...color);
         };
 
-        const GRID_WIDTH = 128;
-        const GRID_HEIGHT = 256; // 128 * CELL_HEIGHT(2)
-        const GRID_DEPTH = 128;
+        const Z_BASE = 75; // Протокол 1 Метр
+        const STEP_Y = 2.0; // Высота ячейки
 
-        // ═══ Левая сетка (фиолетовая, X: 0→-128) ═══
-        const purple = [0.749, 0.0, 1.0]; // 0xBF00FF
-        for (let y = 0; y <= GRID_HEIGHT; y += 16) {
-            for (let z = 0; z <= GRID_DEPTH; z += 16) {
-                pushLine(0, y, z, -GRID_WIDTH, y, z, ...purple);
-            }
-        }
-        for (let x = 0; x >= -GRID_WIDTH; x -= 16) {
-            for (let z = 0; z <= GRID_DEPTH; z += 16) {
-                pushLine(x, 0, z, x, GRID_HEIGHT, z, ...purple);
-            }
-        }
+        // 1. Оси из точки (0, 0, Z_BASE)
+        addLine([0, 0, Z_BASE], [128, 0, Z_BASE], [1, 0, 0]);   // X+ (Красная)
+        addLine([0, 0, Z_BASE], [-128, 0, Z_BASE], [0.5, 0, 1]); // X- (Фиолетовая)
+        addLine([0, 0, Z_BASE], [0, 256, Z_BASE], [0, 1, 0]);   // Y+ (Зеленая)
+        addLine([0, 0, Z_BASE], [0, 0, Z_BASE + 128], [0, 0, 1]); // Z+ (Синяя вглубь)
 
-        // ═══ Правая сетка (красная, X: 0→+128) ═══
-        const red = [1.0, 0.0, 0.0];
-        for (let y = 0; y <= GRID_HEIGHT; y += 16) {
-            for (let z = 0; z <= GRID_DEPTH; z += 16) {
-                pushLine(0, y, z, GRID_WIDTH, y, z, ...red);
-            }
+        // 2. Сетки (Правая - Красная, Левая - Фиолетовая)
+        // Горизонтальные линии
+        for (let y = 0; y <= 256; y += 32) {
+            addLine([-128, y, Z_BASE], [128, y, Z_BASE], [0.3, 0.3, 0.3]);
         }
-        for (let x = 0; x <= GRID_WIDTH; x += 16) {
-            for (let z = 0; z <= GRID_DEPTH; z += 16) {
-                pushLine(x, 0, z, x, GRID_HEIGHT, z, ...red);
-            }
-        }
-
-        // ═══ Оси ═══
-        // Ось X фиолетовая (лево)
-        pushLine(0, 0, 0, -GRID_WIDTH, 0, 0, ...purple);
-        // Ось X красная (право)
-        pushLine(0, 0, 0, GRID_WIDTH, 0, 0, ...red);
-        // Ось Y зелёная
-        pushLine(0, 0, 0, 0, GRID_HEIGHT, 0, 0.0, 1.0, 0.0);
-        // Ось Z белая
-        pushLine(0, 0, 0, 0, 0, GRID_DEPTH, 1.0, 1.0, 1.0);
-
-        // ═══ Синяя точка (сфера на пересечении) ═══
-        // 16 линий для имитации сферы
-        const sphereR = 3;
-        for (let i = 0; i < 16; i++) {
-            const a1 = (i / 16) * Math.PI * 2;
-            const a2 = ((i + 1) / 16) * Math.PI * 2;
-            pushLine(
-                Math.cos(a1) * sphereR, Math.sin(a1) * sphereR, 0,
-                Math.cos(a2) * sphereR, Math.sin(a2) * sphereR, 0,
-                0.0, 0.0, 1.0
-            );
+        // Вертикальные линии
+        for (let x = -128; x <= 128; x += 32) {
+            addLine([x, 0, Z_BASE], [x, 256, Z_BASE], [0.3, 0.3, 0.3]);
         }
 
         return {
-            points: new Float32Array(points),
+            vertices: new Float32Array(vertices),
             colors: new Float32Array(colors),
         };
     }
