@@ -39,7 +39,6 @@ export class HoloEngine {
     }
 
     getCurrentProjection() {
-        // Базовый режим — ортография (для Сканера и монитора)
         return this.orthoProjection;
     }
 
@@ -48,15 +47,13 @@ export class HoloEngine {
     }
 
     _setupCameras() {
-        // Ортографическая камера — «человеческий» обзор
-        // Голограмма: X[-128..128], Y[0..256], Z[75..203]
-        // Фокусируемся так, чтобы видеть фронтальный квадрат
+        // WebGPU Ortho: Z maps to [0, 1]
         this.orthoProjection = this._ortho(-150, 150, -20, 280, 0.1, 1000);
 
-        // Перспективная камера (XR режим)
+        // Perspective for XR
         this.perspectiveProjection = this._perspective(Math.PI / 4, 1.6, 0.1, 1000);
 
-        // Взгляд: стоим в центре (0,0,0) на высоте 1.72м (128 ед.), смотрим в метр перед собой (Z=75)
+        // Взгляд пользователя: высота 1.72м (128 ед), смотрим на стенку в 1 метре (Z=75)
         this.viewMatrix = this._lookAt([0, 128, 0], [0, 128, 75], [0, 1, 0]);
     }
 
@@ -69,24 +66,24 @@ export class HoloEngine {
         if (this.canvas.width !== width || this.canvas.height !== height) {
             this.canvas.width = width;
             this.canvas.height = height;
-            // Обновляем перспективу при изменении аспекта
             this.perspectiveProjection = this._perspective(Math.PI / 4, width / height, 0.1, 1000);
         }
     }
 
-    // --- Математика матриц (Row-Major для JS, будет Column-Major в WGSL при передаче) ---
+    // --- WebGPU-Compatible Matrix Math (Column-Major) ---
 
     _ortho(left, right, bottom, top, near, far) {
         const out = new Float32Array(16);
         const lr = 1 / (left - right);
         const bt = 1 / (bottom - top);
         const nf = 1 / (near - far);
+        
         out[0] = -2 * lr;
         out[5] = -2 * bt;
-        out[10] = 2 * nf;
+        out[10] = nf; // WebGPU: 1 / (n - f)
         out[12] = (left + right) * lr;
         out[13] = (top + bottom) * bt;
-        out[14] = (far + near) * nf;
+        out[14] = near * nf; // WebGPU: n / (n - f)
         out[15] = 1;
         return out;
     }
@@ -95,11 +92,12 @@ export class HoloEngine {
         const out = new Float32Array(16);
         const f = 1.0 / Math.tan(fovy / 2);
         const nf = 1 / (near - far);
+        
         out[0] = f / aspect;
         out[5] = f;
-        out[10] = (far + near) * nf;
+        out[10] = far * nf;
         out[11] = -1;
-        out[14] = (2 * far * near) * nf;
+        out[14] = far * near * nf;
         return out;
     }
 
@@ -133,5 +131,4 @@ export class HoloEngine {
     }
 }
 
-// Singleton
 export const holoEngine = new HoloEngine(document.getElementById('holo-canvas') || document.createElement('canvas'));
