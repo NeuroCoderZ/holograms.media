@@ -75,6 +75,69 @@ class LearningAgent:
             logger.error(f"Mathetes: Error processing Soma block: {e}", exc_info=True)
             return {"status": "error", "message": str(e)}
 
+    async def raise_exchange_score(self, user_id: str, target_user_id: str, pattern_quality: float = 0.5) -> Dict[str, Any]:
+        """
+        Holoca-style: Personal Tria (Source Chain) value grows with exchange.
+        When user shares a gesture/pattern with others, their utility_score increases
+        proportionally to the quality of the shared pattern.
+        
+        Args:
+            user_id: The user who is sharing (Personal Tria).
+            target_user_id: The recipient of the shared pattern.
+            pattern_quality: 0.0 to 1.0 (how good is the shared pattern).
+        
+        Returns:
+            Updated utility_score and Obolos earned.
+        """
+        try:
+            # 1. Base raise: Exchange = +0.1 base reward
+            base_raise = 0.1
+            
+            # 2. Quality multiplier (proportional to pattern quality)
+            quality_multiplier = 1.0 + (pattern_quality * 2.0)  # Range: 1.0 to 3.0
+            
+            # 3. Calculate new utility_score raise
+            raise_amount = base_raise * quality_multiplier
+            
+            # 4. Log this exchange event
+            log_entry = TriaLearningLogModel(
+                log_id=str(uuid4()),
+                user_id=user_id,
+                session_id=f"exchange_to_{target_user_id}",
+                event_type="EXCHANGE_RAISE",
+                agent_affected_id="mathetes_v1",
+                summary_text=f"Exchange Reward: Shared pattern with {target_user_id}. Quality: {pattern_quality:.2f}",
+                prompt_text=f"Pattern Quality: {pattern_quality}",
+                tria_response_text=f"Mathetes: Utility increased by {raise_amount:.4f}.",
+                model_used="Hebbian-WASM",
+                feedback_score=int(raise_amount * 100),
+                custom_data={
+                    "base_raise": base_raise,
+                    "quality_multiplier": quality_multiplier,
+                    "pattern_quality": pattern_quality,
+                    "target_user": target_user_id
+                },
+                timestamp=None
+            )
+            
+            await create_tria_learning_log_entry(self.db, log_entry_create=log_entry)
+            
+            logger.info(f"Mathetes: User {user_id} shared pattern with {target_user_id}. Utility raised by {raise_amount:.4f}")
+            
+            # 5. Bonus: If target user accepts, extra raise (confirmation of quality)
+            return {
+                "status": "success",
+                "base_raise": base_raise,
+                "quality_multiplier": quality_multiplier,
+                "total_raise": raise_amount,
+                "obolos_reward": raise_amount, # 1 Obolos per 1.0 utility
+                "message": f"Personal Tria value increased by {raise_amount:.4f} through exchange."
+            }
+            
+        except Exception as e:
+            logger.error(f"Mathetes: Error raising exchange score: {e}", exc_info=True)
+            return {"status": "error", "message": str(e)}
+
     # Legacy method wrapper for compatibility
     async def log_learning_event(self, user_id: str, event_data: Dict[str, Any]):
         return await self.process_soma_block(user_id, event_data)

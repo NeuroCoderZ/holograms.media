@@ -7,9 +7,32 @@ import logging
 from typing import Dict, Any, Optional
 from backend.tria_agents.meta_agent import MetaInstructionService
 from backend.tria_agents.tria_rag_service import TriaRAGService
+import asyncio
+import socket
 
 # Initialize RAG service
 tria_rag = TriaRAGService()
+
+    async def ping_hermes(self) -> bool:
+        """
+        "Вкликание" (Ping) Гермеса.
+        Checks if Hermes Agent (Mistral Small 4) is running on port 8642.
+        Implements Holochain Philosophy: Personal (Local) availability check.
+        """
+        try:
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None, socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect_ex, ("127.0.0.1", 8642)
+            )
+            if result == 0:
+                logger.info("HermesCore: Hermes is alive on port 8642! (Personal Tria wins)")
+                return True
+            else:
+                logger.warning(f"HermesCore: Hermes not reachable on 8642 (Code: {result}). Falling back to Global.")
+                return False
+        except Exception as e:
+            logger.error(f"HermesCore: Ping failed: {e}")
+            return False
 
 logger = logging.getLogger(__name__)
 

@@ -10,17 +10,26 @@
 
 ---
 
-## КРИТИЧЕСКИЕ КОНСТАНТЫ
+## КРИТИЧЕСКИЕ КОНСТАНТЫ 
 
 ```
-# LLM Модели (Gemini 3 series, НЕ 2.5!)
-MAIN_MODEL    = "gemini-3-flash-preview"           # Основная модель чата
-SUB_MODEL     = "gemini-3.1-flash-lite-preview"    # Darwin Critic (выбор лучшего ответа)
-BACKUP_MODEL  = "mistral-large-latest"            # Fallback при Gemini 429 (Mistral Large 3)
+# LLM Модели (Hermes Family Architecture)
+HERMES_MAIN   = "mistral-small-latest"          # Hermes (Mistral Small 4 Latest) - Personal Tria (Local)
+GEMINI_MAIN   = "gemini-3-flash-preview"           # Global Tria (Archetype) Fallback
+GEMINI_SUB    = "gemini-3.1-flash-lite-preview"    # Darwin Critic (выбор лучшего ответа)
 
-# Mistral Stack
-MISTRAL_MAIN  = "mistral-large-latest"            # Основная Mistral
-MISTRAL_SUB   = "mistral-small-latest"            # Субагент Mistral
+# Triple Token Architecture (Holochain Philosophy)
+# Personal (Local) WINS over Global!
+PERSONAL_TOKEN = "personal_{user_id}_{agent_id}"  # High precision: 6-8 digits (0.12345678)
+GLOBAL_TOKEN   = "global_{agent_id}"                   # Medium precision: 3 digits (0.850)
+NETWORK_TOKEN  = "pattern_hash"                        # Low precision: 2 digits (0.85)
+
+# Hermes Family (Meta-Agents / DGM-H)
+HERMES_CORE    = "hermes_core"       # Meta-Agent / Coordinator
+HERMES_BEHAVIOR = "hermes_behavior"   # Gestures, Clicks, Predictions (Markov Chain)
+HERMES_CONTEXT = "hermes_context"   # Codebase, Docs, Stack
+HERMES_MEMORY  = "hermes_memory"    # Enkephalon + AstraDB (3072d)
+HERMES_WALLET  = "hermes_wallet"    # Obolos, Energy, DAO
 
 # Эмбеддинг модель
 EMBED_MODEL   = "gemini-embedding-2-preview"
@@ -44,6 +53,12 @@ BRANCH: dev (Cloudflare Pages смотрит только dev)
 DEPLOY CMD: node scripts/deploy.js "описание"
 ```
 
+### Философия Holochain (Agent-Centric)
+- **Personal (Local) WINS:** Source Chain (user-owned) is immutable and sovereign.
+- **Global Tria:** Statistical archetypes (aggregated patterns), NOT dictator. 
+- **Rule:** Personal instruction ALWAYS overrides Global suggestion.
+- **Implementation:** `personal_{user_id}_{agent_id}` → `global_{agent_id}`.
+
 ---
 
 ## ПРАВИЛА РАБОТЫ
@@ -54,8 +69,10 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 3. **ПЕРЕД КАЖДОЙ ПРАВКОЙ:** прочитать актуальный кусок файла через Read, убедиться что old_str точно совпадает.
 4. **ЗАПРЕЩЕНО:** добавлять NPU, ONNX, TurboQuant в браузере, LoRA в браузере, ARC-AGI как метрику, DGM-H самомодификацию кода.
 5. **EMBED_DIM = 3072 ВЕЗДЕ И ВСЕГДА.** Никаких 768.
-6. **Модели:** только `gemini-3-flash-preview` (main) и `gemini-3.1-flash-lite-preview` (sub). Mistral — только как fallback при 429.
-7. **ЛОКАЛЬНЫЕ ТЕСТЫ НЕ ПРОВОЖУ.** Все проверки — только на серверах: Koyeb (backend), GitHub Actions (knowledge sync), Cloudflare Pages (frontend). Никаких `npm test`, `npm run build`, `python -m pytest` локально.
+6. **Модели:** Hermes (Mistral Small 4 Latest) — приоритет (Personal Tria). Gemini — Global fallback (Global Tria). Mistral — только как fallback при 429. **OpenClaw УДАЛЕН**.
+7. **Triple Token Architecture:** Personal (Local, 6-8 digits) WINS over Global (3 digits) over Network (2 digits). **Personal (Local) WINS over Global.**
+8. **ЛОКАЛЬНЫЕ ТЕСТЫ НЕ ПРОВОЖУ.** Все проверки — только на серверах: Koyeb (backend), GitHub Actions (knowledge sync), Cloudflare Pages (frontend). Никаких `npm test`, `npm run build`, `python -m pytest` локально.
+9. **Hermes Family:** Core (Meta-Agent), Behavior (Gestures/Clicks), Context (Docs/Code), Memory (AstraDB), Wallet (Obolos/Energy).
 
 ---
 

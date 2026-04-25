@@ -24,9 +24,11 @@ except ImportError:
 from backend.core.config import settings
 from backend.llm.mistral_llm import get_mistral_response
 from backend.llm.gemini_llm import get_gemini_response
-from backend.llm.openclaw_llm import get_openclaw_response  # ADDED
-from backend.skills.openclaw_patrol import patrol_agent
-from backend.skills.openclaw_economist import economist_agent
+from backend.llm.hermes_llm import get_hermes_response  # Hermes Family (Tria Cortex)
+from backend.skills.hermes_behavior import behavior_agent  # Hermes Behavior: Gestures, Clicks, Predictions
+from backend.skills.hermes_wallet import wallet_agent  # Hermes Wallet: Obolos, Energy, DAO
+from backend.skills.hermes_context import context_agent  # Hermes Context: Codebase, Docs, Stack
+from backend.skills.hermes_memory import memory_agent  # Hermes Memory: AstraDB, 3072d embeddings
 from backend.tria_agents.tria_rag_service import tria_rag
 
 from backend.tria_agents.tria_orchestrator import orchestrator
@@ -211,23 +213,22 @@ class ChatService:
         )
 
         patrol_report = {}
-        # --- OPENCLAW: ВХОДНОЙ ПАТРУЛЬ ---
+        # --- HERMES BEHAVIOR: ВХОДНОЙ ПАТРУЛЬ (Tria Cortex) ---
         if role == "user":
             gesture_dna = metadata.get("gesture_dna") if metadata else None
-            patrol_report = patrol_agent.verify_incoming_block(
+            patrol_report = behavior_agent.verify_incoming_block(
                 user_id, gesture_dna, metadata or {"text_note": message_content}
             )
 
             if patrol_report.get("status") in ["quarantine", "rejected"]:
                 penalty = patrol_report.get("utility_score_penalty", 0.0)
                 logger.warning(
-                    f"OpenClaw Patrol blocked message from {user_id}. Penalty: {penalty}"
+                    f"HermesBehavior Patrol blocked message from {user_id}. Penalty: {penalty}"
                 )
-                # Возвращаем системное сообщение о блокировке
                 rejection_msg = ChatMessageCreate(
                     user_chat_session_id=session_id,
                     role="system",
-                    message_content=f"🛡️ OpenClaw Patrol: Запрос отклонен. Причина: {patrol_report.get('reason')}",
+                    message_content=f"🛡️ HermesBehavior Patrol: Запрос отклонен. Причина: {patrol_report.get('reason')}",
                     metadata={
                         "patrol_report": patrol_report,
                         "utility_score_penalty": penalty,
@@ -243,23 +244,21 @@ class ChatService:
                     else None
                 )
 
-        # --- OPENCLAW: ЭКОНОМИСТ (Интерцепция) ---
+        # --- HERMES WALLET: ЭКОНОМИСТ (Интерцепция) ---
         if role == "user" and any(
             trigger in message_content.lower()
             for trigger in ["оценка", "баланс", "цена", "obolos", "gas", "экономик"]
         ):
-            # Мокаем compute_requested из длины сообщения или метаданных
             compute_req = (
                 metadata.get("compute_requested", len(message_content) * 10)
                 if metadata
                 else len(message_content) * 10
             )
-            econ_report = economist_agent.analyze_transaction(
+            wallet_report = wallet_agent.analyze_transaction(
                 compute_req,
                 user_reputation=metadata.get("reputation", 50.0) if metadata else 50.0,
             )
 
-            # Сохраняем сообщение пользователя
             msg_create = ChatMessageCreate(
                 user_chat_session_id=session_id,
                 role=role,
@@ -270,13 +269,12 @@ class ChatService:
                 message_in=msg_create, user_id=user_id
             )
 
-            # Возвращаем ответ от Экономиста напрямую, минуя LLM
-            econ_response_text = f"📊 **Отчет Экономиста:**\nСтоимость (Obolos): {econ_report['total_cost_obolos']:.8f}\nЗагрузка сети: {econ_report['network_load']}\nРекомендация: {econ_report['recommendation']}"
+            econ_response_text = f"📊 **Отчет HermesWallet:**\nСтоимость (Obolos): {wallet_report['total_cost_obolos']:.8f}\nЗагрузка сети: {wallet_report['network_load']}\nРекомендация: {wallet_report['recommendation']}"
             econ_msg = ChatMessageCreate(
                 user_chat_session_id=session_id,
                 role="assistant",
                 message_content=econ_response_text,
-                metadata={"agent": "openclaw_economist", "report": econ_report},
+                metadata={"agent": "hermes_wallet", "report": wallet_report},
             )
             saved_econ = await self.repo.add_message_to_history(
                 message_in=econ_msg, user_id=user_id
@@ -342,7 +340,7 @@ class ChatService:
                     **user_saved_message.dict()
                 )  # Return the user's message if LLM fails
 
-            # --- OPENCLAW: ВЫХОДНОЙ ПАТРУЛЬ ---
+            # --- HERMES BEHAVIOR: ВЫХОДНОЙ ПАТРУЛЬ (Tria Cortex) ---
             out_patrol_report = patrol_agent.verify_outgoing_response(
                 llm_response_content
             )

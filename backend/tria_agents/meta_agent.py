@@ -108,3 +108,29 @@ class MetaInstructionService:
             {"$set": {"instruction": instruction}},
             upsert=True,
         )
+
+    async def sync_global_pattern(self, pattern_id: str, quality_score: float):
+        """
+        Holoca-style: When a pattern is shared/exchanged, its value (weight) increases.
+        Global Tria (Statistical Archetype): Pattern weight grows with quality.
+        We update the 'global_{pattern_id}' entry to increase its relevance.
+        """
+        await self._setup()
+        if not self._collection:
+            logger.warning("[MetaAgent] Collection not available for sync.")
+            return
+        
+        global_key = f"global_{pattern_id}"
+        # Quality_score: 0.0 to 1.0. Weight increase: proportional to quality.
+        weight_increase = 0.1 + (quality_score * 0.5)  # Range: 0.1 to 0.6
+        
+        try:
+            # In AstraDB, we update a 'weight' field or similar metadata
+            await self._collection.update_one(
+                {"agent_id": global_key},
+                {"$inc": {"sync_weight": weight_increase}},
+                upsert=True
+            )
+            logger.info(f"[MetaAgent] Global Tria: Pattern {global_key} weight increased by {weight_increase:.2f}")
+        except Exception as e:
+            logger.error(f"[MetaAgent] Sync failed for {global_key}: {e}")

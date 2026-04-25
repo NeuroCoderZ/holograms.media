@@ -51,7 +51,7 @@ export class AgenticDAO {
     }
 
     /**
-     * Зарегистрировать ручной штраф (например, от OpenClaw за спам)
+     * Зарегистрировать ручной штраф (например, от HermesBehavior за спам)
      * @param {number} amount - Величина штрафа
      * @param {string} reason - Причина
      */
@@ -108,7 +108,7 @@ export class AgenticDAO {
             idlePenalty = Math.min(20, idleHours * 1.0); // Макс штраф 20 за сессию бездействия
         }
 
-        // 2. Внешние штрафы (OpenClaw / Spam / Malicious)
+        // 2. Внешние штрафы (HermesBehavior / Spam / Malicious)
         let externalPenalty = 0;
         for (const p of this.penalties) {
             if (now - p.timestamp < ONE_DAY) {

@@ -1,11 +1,13 @@
 # backend/tria_agents/hermes_router.py
 # Hermes Router: Routes requests to the correct Hermes Agent family member
 # Uses Mistral Small 4 (Latest) as the primary LLM (as per user request)
-# Implements: Personal Tria (Local) overrides Global Tria
+# Implements: Personal Tria (Local) overrides Global Tria.
+# Includes "ping" (check) to Hermes Agent (port 8642) - if alive, Personal wins.
 
 import logging
 from typing import Dict, Any, Optional
 from backend.llm.hermes_llm import get_hermes_response
+from backend.tria_agents.hermes_core import HermesCore
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -71,15 +73,36 @@ async def route_to_hermes(
         if personal_context:
             system_instr += f"\n\nPersonal Tria Context (Source Chain):\n{personal_context}"
     
-    # 3. Call Hermes LLM (Mistral Small Latest)
+    # 3. Ping Hermes (Personal Tria check)
+    hermes_core = HermesCore()
+    personal_available = await hermes_core.ping_hermes()
+    
+    if personal_available:
+        logger.info(f"HermesRouter: Personal Tria (Hermes) wins for {agent_type}")
+        try:
+            response = await get_hermes_response(
+                prompt=prompt,
+                model="mistral-small-latest",  # Mistral Small 4 (Latest)
+                system_instruction=system_instr
+            )
+            return response
+        except Exception as e:
+            logger.error(f"HermesRouter: Hermes failed despite ping: {e}")
+            # Fall through to Global fallback
+    
+    # 4. Global Fallback (Gemini - Global Tria stats)
+    logger.warning(f"HermesRouter: Hermes not reachable. Falling back to Global Tria (Gemini).")
     try:
-        logger.info(f"HermesRouter: Routing to {agent_type} for user {user_id}")
-        response = await get_hermes_response(
-            prompt=query,
-            model="mistral-small-latest",  # As requested: Mistral Small 4 (Latest)
-            system_instruction=system_instr
+        from backend.llm.gemini_llm import get_gemini_response
+        response = await get_gemini_response(
+            prompt=prompt,
+            system_instruction=system_instr,
+            model_id="gemini-3-flash-preview"
         )
         return response
+    except Exception as e:
+        logger.error(f"HermesRouter: Global fallback failed: {e}")
+        return f"[HermesRouter Error] Both Personal and Global failed. {str(e)}"
     except Exception as e:
         logger.error(f"HermesRouter: Error routing to {agent_type}: {e}")
         return f"[HermesRouter Error] {str(e)}"

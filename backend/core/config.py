@@ -64,12 +64,31 @@ class Settings(BaseModel):
     # Mistral AI
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "").strip()
 
-    # Hermes Agent (Priority AI - OpenAI-compatible API)
+    # Hermes Family (Tria Cortex v2.6) - Priority AI Agents
+    # Hermes = Tria Cortex: Core, Behavior, Context, Memory, Wallet
     HERMES_API_KEY: str = os.getenv("HERMES_API_KEY", "").strip()
     HERMES_BASE_URL: str = os.getenv("HERMES_BASE_URL", "http://127.0.0.1:8642/v1").strip()
+    HERMES_MODEL: str = "mistral-small-latest"  # Hermes (Mistral Small 4 Latest) - Personal Tria
 
-    # OpenClaw.ai (Deprecated - use Hermes)
-    OPENCLAW_GATEWAY_TOKEN: str = os.getenv("OPENCLAW_GATEWAY_TOKEN", "").strip()
+    # Tria Cortex v2.6 Configuration (matches js/tria/config.js)
+    # Enkephalon: Neural Core (Rust/WASM)
+    ENKEPHALON_INPUT_DIM: int = 63  # 21 points × 3 coords
+    ENKEPHALON_EMBEDDING_DIM: int = 3072  # NEVER change - AstraDB collection
+    ENKEPHALON_LEARNING_RATE: float = 0.01  # η - Hebbian update
+    ENKEPHALON_DECAY_RATE: float = 0.001    # λ - Lethe decay
+
+    # Lethe: Decay mechanism (Global Tria absorbs Personal when offline)
+    LETHE_INTERVAL_MS: int = 86400000  # 24 hours
+    LETHE_ABSORPTION_RATE_PER_DAY: float = 0.05  # 5% per day offline
+
+    # Mnesis: Memory write mode
+    MNESIS_AUTO_START: bool = True
+    MNESIS_GESTURE_THRESHOLD_MS: int = 3000
+    MNESIS_MAX_BLOCKS_PER_SESSION: int = 500
+
+    # Obolos: Utility token (Personal Tria wins)
+    OBOLOS_BASE_GAS_FEE: float = 0.000001
+    OBOLOS_REPUTATION_DISCOUNT_MAX: float = 0.2  # Max 20% discount
 
     # Database (Astra DB)
     ASTRA_DB_APPLICATION_TOKEN: str = os.getenv(

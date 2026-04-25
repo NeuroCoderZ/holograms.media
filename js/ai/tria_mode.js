@@ -70,7 +70,7 @@ export async function applyPromptWithTriaMode(prompt, model) {
 
       const data = await response.json();
       
-      // E-2: Handle penalties from OpenClaw/Patrol via Metadata
+      // E-2: Handle penalties from HermesBehavior/Patrol via Metadata
       if (data.metadata && data.metadata.utility_score_penalty) {
           const penalty = data.metadata.utility_score_penalty;
           const reason = data.metadata.patrol_report?.reason || "Security violation";

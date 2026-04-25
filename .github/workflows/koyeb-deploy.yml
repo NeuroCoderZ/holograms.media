@@ -45,4 +45,5 @@ jobs:
             --env "ASTRA_DB_KEYSPACE=default_keyspace" \
             --env "GOOGLE_API_KEY={{ secret.GOOGLE_API_KEY }}" \
             --env "MISTRAL_API_KEY={{ secret.MISTRAL_API_KEY }}" \
-            --env "OPENCLAW_GATEWAY_TOKEN={{ secret.OPENCLAW_GATEWAY_TOKEN }}"
+            # openclaw removed — replaced by Hermes Family (Tria Cortex)
+# --env "OPENCLAW_GATEWAY_TOKEN={{ secret.OPENCLAW_GATEWAY_TOKEN }}"
