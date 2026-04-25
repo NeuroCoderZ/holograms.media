@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Optional
 from abc import ABC, abstractmethod
 from backend.llm.gemini_llm import get_gemini_response
 from backend.llm.mistral_llm import get_mistral_response
-from backend.llm.openclaw_llm import get_openclaw_response
+from backend.llm.hermes_llm import get_hermes_response
 from backend.core.config import settings
 
 # Assuming TriaRequest and TriaResponse are defined in tria_rag_service.py
@@ -14,18 +14,18 @@ from backend.tria_agents.tria_rag_service import TriaRequest, TriaResponse
 logger = logging.getLogger(__name__)
 
 async def _get_agent_response_text(query: str, system_instr: str, domain: str) -> str:
-    """Helper to get response text with OpenClaw priority and fallbacks."""
-    # 1. OpenClaw Priority
-    if settings.OPENCLAW_GATEWAY_TOKEN:
+    """Helper to get response text with Hermes (Mistral Small) priority and fallbacks."""
+    # 1. Hermes Priority (Personal Tria / Meta-Agent)
+    if settings.HERMES_API_KEY:
         try:
-            model = "gemini-3-flash-preview" if domain != "architecture" else "mistral-small-latest"
-            answer = await get_openclaw_response(query, model=model, system_instruction=system_instr)
-            if not answer.startswith("[OpenClaw Error]"):
+            # Using Mistral Small Latest as requested
+            answer = await get_hermes_response(query, system_instruction=system_instr, model="mistral-small-latest")
+            if not answer.startswith("[Hermes Error]"):
                 return answer
         except Exception as e:
-            logger.error(f"OpenClaw failed for agent {domain}: {e}")
+            logger.error(f"Hermes failed for agent {domain}: {e}")
 
-    # 2. Fallbacks
+    # 2. Fallbacks (Gemini -> Mistral)
     if domain == "architecture":
         return await get_mistral_response(query, [], system_instruction=system_instr)
     else:

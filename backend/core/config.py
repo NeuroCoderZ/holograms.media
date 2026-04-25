@@ -64,7 +64,11 @@ class Settings(BaseModel):
     # Mistral AI
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "").strip()
 
-    # OpenClaw.ai (Successor to Moltbook)
+    # Hermes Agent (Priority AI - OpenAI-compatible API)
+    HERMES_API_KEY: str = os.getenv("HERMES_API_KEY", "").strip()
+    HERMES_BASE_URL: str = os.getenv("HERMES_BASE_URL", "http://127.0.0.1:8642/v1").strip()
+
+    # OpenClaw.ai (Deprecated - use Hermes)
     OPENCLAW_GATEWAY_TOKEN: str = os.getenv("OPENCLAW_GATEWAY_TOKEN", "").strip()
 
     # Database (Astra DB)
