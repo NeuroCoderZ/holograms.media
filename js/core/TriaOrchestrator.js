@@ -11,6 +11,7 @@ export class TriaOrchestrator {
             memory: null, // Инициализируется позже
             synthesis: null
         };
+        this._lastHermaionIntent = null;
 
         this._setupEventListeners();
         console.log('[TriaOrchestrator] Gesture-aware orchestration ready.');
@@ -39,12 +40,14 @@ export class TriaOrchestrator {
     }
 
     /**
-     * Основной метод обработки намерения пользователя (Intent).
-     * @param {string} intent - Описание задачи (напр. "сделай голограмму ярче")
+     * Основной метод обработки намерения пользователя.
+     * Принимает и старые строковые команды, и IntentEmbedding из HermaionBridge.
+     * @param {string|object} intent - Описание задачи или IntentEmbedding
      * @param {object} gestureData - Траектория жеста для контекста
      */
     async handleIntent(intent, gestureData) {
-        this.log(`Processing intent: "${intent}"`);
+        const normalized = this._normalizeIntent(intent, gestureData);
+        this.log(`Processing intent: "${normalized.text}"`);
         try {
             // Маппинг паттернов на команды через конфиг (ТЗ v0.20 GA B-2)
             const intentMap = [
@@ -54,20 +57,56 @@ export class TriaOrchestrator {
                 { pattern: /reset|сброс|restart/i, code: "emit('hologram:reset'); return 'Reset done';" },
             ];
 
-            let generatedCode = "console.log('[TriaOrchestrator] Generic intent:', '" + intent.replace(/'/g, "\\'") + "'); return 'Processing...';";
+            let generatedCode = "console.log('[TriaOrchestrator] Generic intent:', '" + normalized.text.replace(/'/g, "\\'") + "'); return 'Processing...';";
             for (const entry of intentMap) {
-                if (entry.pattern.test(intent)) {
+                if (entry.pattern.test(normalized.text)) {
                     generatedCode = entry.code;
                     break;
                 }
             }
 
             if (this.codeExecutor) {
-                await this.codeExecutor.executeTriaCode(generatedCode, { intent, gestureData });
+                await this.codeExecutor.executeTriaCode(generatedCode, {
+                    intent: normalized.text,
+                    gestureData: normalized.gestureData,
+                    hermaion: normalized.embedding
+                });
             }
         } catch (error) {
             this.log(`❌ Intent processing failed: ${error.message}`, 'error');
         }
+    }
+
+    _normalizeIntent(intent, gestureData = {}) {
+        if (intent && typeof intent === 'object') {
+            const isHermaion = intent.kind === 'hermaion.intent_embedding.v1'
+                || intent.source === 'hermaion_bridge'
+                || intent.intentType;
+
+            if (isHermaion) {
+                const embedding = typeof intent.toJSON === 'function' ? intent.toJSON() : intent;
+                this._lastHermaionIntent = embedding;
+                const text = typeof intent.toOrchestratorIntent === 'function'
+                    ? intent.toOrchestratorIntent()
+                    : intent.symbolicText || `gesture intent: ${intent.intentType || 'unknown'}`;
+                return {
+                    text,
+                    gestureData: {
+                        ...gestureData,
+                        intentType: intent.intentType,
+                        confidence: intent.confidence,
+                        spatialPosition: intent.spatialPosition
+                    },
+                    embedding
+                };
+            }
+        }
+
+        return {
+            text: String(intent || ''),
+            gestureData: gestureData || {},
+            embedding: null
+        };
     }
 
     async processCommand(userInput) {

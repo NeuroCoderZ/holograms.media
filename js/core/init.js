@@ -469,7 +469,15 @@ export async function initCore() {
                   // GestureSemanticLayer: интерпретация в XR-команды
                   if (confidence >= 0.7) {
                       const currentIntent = state.intentAccumulator.getCurrentIntent();
-                      state.gestureSemanticLayer.interpret(currentIntent, confidence);
+                      const semanticIntent = state.gestureSemanticLayer.interpret(currentIntent, confidence);
+                      if (semanticIntent && state.hermaionBridge) {
+                          await state.hermaionBridge.processSemanticIntent(semanticIntent, {
+                              rawIntent: currentIntent,
+                              predictedIntent,
+                              landmarks,
+                              gestureFlat
+                          });
+                      }
                   }
               }
 
@@ -591,6 +599,33 @@ export async function initCore() {
       // ТЗ v4.5: Инициализация Gesture Phase модулей
       state.gestureCommandEngine = new GestureCommandEngine();
       state.gestureToCodeExecutor = new GestureToCodeExecutor(state.gestureCommandEngine);
+      state.triaOrchestrator = new TriaOrchestrator(null, state);
+      if (state.agentWomb) state.agentWomb.orchestrator = state.triaOrchestrator;
+
+      try {
+          const { HermaionBridge } = await import('../tria/HermaionBridge.js');
+          const { gestureEmbeddingBridge } = await import('../tria/GestureEmbeddingBridge.js');
+          const gestureIntentClient = (await import('../services/gestureIntentClient.js')).default;
+
+          // Инициализируем двухслойный KNN+Cloud pipeline
+          try {
+              await gestureEmbeddingBridge.init();
+          } catch (embErr) {
+              console.warn('[GestureEmbeddingBridge] Init fallback:', embErr.message);
+          }
+
+          state.hermaionBridge = new HermaionBridge({
+              eventBus,
+              triaOrchestrator: state.triaOrchestrator,
+              gestureEmbeddingBridge: gestureEmbeddingBridge._ready ? gestureEmbeddingBridge : null,
+              gestureIntentClient
+          });
+          window.hermaionBridge = state.hermaionBridge;
+          console.log('✅ HermaionBridge initialized: Gesture Eidos ↔ Hermes Logos');
+      } catch (bridgeError) {
+          console.warn('[HermaionBridge] Init skipped:', bridgeError.message);
+      }
+
       state.gestureLiveStudio = new GestureLiveStudio(state.gestureUIManager, state.gestureCommandEngine);
 
       console.log('✅ Gesture Phase modules (v4.5) initialized');

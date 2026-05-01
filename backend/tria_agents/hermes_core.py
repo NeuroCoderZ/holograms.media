@@ -13,6 +13,25 @@ import socket
 # Initialize RAG service
 tria_rag = TriaRAGService()
 
+logger = logging.getLogger(__name__)
+
+class HermesCore:
+    """
+    HermesCore is the Meta-Agent (Kernel) of the Tria system.
+    It monitors the state of the project (via deploy.js commits / AstraDB RAG)
+    and evolves the instructions for other agents (Personal Tria).
+    
+    Philosophy: 
+    - Personal Tria = Source Chain (Immutable, user-owned).
+    - Global Tria = Aggregated patterns (DGM-H Archive).
+    - HermesCore = The bridge that evolves instructions based on "what's broken".
+    """
+    
+    def __init__(self, db_session=None):
+        self.meta_service = MetaInstructionService()
+        self.history_context = ""  # Accumulator of "what happened" (from deploy.js / git log)
+        logger.info("HermesCore (Meta-Agent) initialized. Connected to MetaInstructionService.")
+    
     async def ping_hermes(self) -> bool:
         """
         "Вкликание" (Ping) Гермеса.
@@ -33,25 +52,6 @@ tria_rag = TriaRAGService()
         except Exception as e:
             logger.error(f"HermesCore: Ping failed: {e}")
             return False
-
-logger = logging.getLogger(__name__)
-
-class HermesCore:
-    """
-    HermesCore is the Meta-Agent (Kernel) of the Tria system.
-    It monitors the state of the project (via deploy.js commits / AstraDB RAG)
-    and evolves the instructions for other agents (Personal Tria).
-    
-    Philosophy: 
-    - Personal Tria = Source Chain (Immutable, user-owned).
-    - Global Tria = Aggregated patterns (DGM-H Archive).
-    - HermesCore = The bridge that evolves instructions based on "what's broken".
-    """
-    
-    def __init__(self, db_session=None):
-        self.meta_service = MetaInstructionService()
-        self.history_context = ""  # Accumulator of "what happened" (from deploy.js / git log)
-        logger.info("HermesCore (Meta-Agent) initialized. Connected to MetaInstructionService.")
 
     async def _get_global_context(self, query: str) -> str:
         """
