@@ -343,6 +343,11 @@ function onResults(results) {
             gestureManager.processHandLandmarks(results.multiHandLandmarks, results.multiHandedness);
         }
 
+        // --- ГЕРМЕС-ЭЙДОС: подача чанков в ChunkProcessor ---
+        if (state.chunkProcessor) {
+            state.chunkProcessor.onNewFrame(handLandmarks, performance.now());
+        }
+
         // --- ✅ НОВАЯ ЛОГИКА: Классификация, формирование deltaVector и применение к WebAudioEngine ---
         if (state.gestureIntentClassifier && state.webAudioEngine && (state.webAudioEngine.isInitialized || state.webAudioEngine.audioContext)) {
             state.gestureIntentClassifier.predict(handLandmarks).then(intent => {
@@ -399,6 +404,11 @@ function onResults(results) {
             state.multimodal.handsVisible = false;
             state.multimodal.lastHandCount = 0;
             eventBus.emit('handsLost');
+
+            // --- ГЕРМЕС-ЭЙДОС: завершение жеста при потере рук ---
+            if (state.chunkProcessor) {
+                state.chunkProcessor.endGesture(performance.now());
+            }
         }
         // Если руки не видны, старая логика отправляла null в секвенсор
         // if (state.gestureSequencer) { // Старая логика

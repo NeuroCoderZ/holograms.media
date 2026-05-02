@@ -746,7 +746,48 @@ export async function initCore() {
               return reward;
           };
 
-          window.hermaionDiag = () => state.hermaionBridge?.diagnostic();
+          window.hermaionDiag = () => {
+              const bridge = state.hermaionBridge;
+              if (!bridge) { console.error('❌ Bridge не создан'); return null; }
+
+              console.log('🌉 ═══════ ДВОЙСТВЕННЫЙ ГЕРМЕС — ДИАГНОСТИКА ═══════');
+
+              // 1. Bridge core stats
+              const bridgeInfo = bridge.diagnostic();
+
+              // 2. ChunkProcessor
+              if (state.chunkProcessor) {
+                  const cs = state.chunkProcessor.stats;
+                  console.log('🧠 [Эйдос] ChunkProcessor:',
+                      `window=50мс | frames=${cs.framesReceived} | chunks=${cs.chunksEmitted} | gestures=${cs.gesturesCompleted}`,
+                      `| active=${state.chunkProcessor.isActive} | buffered=${state.chunkProcessor.currentGestureChunks}`);
+              } else {
+                  console.warn('🧠 [Эйдос] ChunkProcessor: не подключён');
+              }
+
+              // 3. PredictiveRAG — последние предсказания
+              if (state.predictiveRAG && bridgeInfo.lastPrediction) {
+                  console.log('🔮 [Эйдос] PredictiveRAG:', {
+                      anchors: state.predictiveRAG.anchorCount,
+                      lastTop: bridgeInfo.lastPrediction.top,
+                      confidence: bridgeInfo.lastPrediction.confidence,
+                      consensus: bridgeInfo.lastPrediction.consensus
+                  });
+              }
+
+              // 4. Obolos
+              if (bridgeInfo.obolosStats) {
+                  console.log('💰 [Obolos]',
+                      `minted=${bridgeInfo.obolosStats.totalMinted.toFixed(4)}`,
+                      `| spent=${bridgeInfo.obolosStats.totalSpent.toFixed(4)}`,
+                      `| gestures=${bridgeInfo.obolosStats.gestures}`,
+                      `| predictive=${bridgeInfo.obolosStats.predictiveHits}`,
+                      `| crossmodal=${bridgeInfo.obolosStats.crossmodalHits}`);
+              }
+
+              console.log('🌉 ═══════════════════════════════════════════════════');
+              return bridgeInfo;
+          };
 
           console.log('✅ HermaionBridge initialized: Двойственный Гермес (Эйдос ↔ Логос)');
           console.log('💡 Тесты: testHermaionBridge() | testChunkProcessor() | testPredictiveRAG() | testObolosReward()');
