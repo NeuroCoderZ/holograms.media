@@ -556,50 +556,89 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   if (rightEl) rightObserver.observe(rightEl, { attributes: true, attributeFilter: ['class', 'style'] });
 
   // --- Scanner Button ---
-  // Toggles hologram scanning mode (camera → audio synthesis)
   if (uiElements.buttons.scanButton) {
-    uiElements.buttons.scanButton.addEventListener('click', async () => {
+    uiElements.buttons.scanButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showScannerPopupMenu(e.currentTarget);
+    });
+    console.log('[UIManager] Scanner button initialized with popover menu.');
+  }
+
+  function showScannerPopupMenu(anchor) {
+    const existingPop = document.getElementById('scanner-popup-menu');
+    if (existingPop) {
+      existingPop.remove();
+      return;
+    }
+
+    const pop = document.createElement('div');
+    pop.id = 'scanner-popup-menu';
+    pop.className = 'auth-popup-menu'; // Переиспользуем стиль всплывающего меню
+    pop.innerHTML = `
+        <div class="pop-item" id="scan-mode-gesture">Скан: Жесты (камера)</div>
+        <div class="pop-item" id="scan-mode-hologram">Декод: Голограмма (звук)</div>
+        <div class="pop-item logout" id="scan-mode-stop" style="display: none; color: #ff5555;">Остановить сканер</div>
+     `;
+
+    const rect = anchor.getBoundingClientRect();
+    pop.style.position = 'fixed';
+    pop.style.left = `${rect.right + 10}px`;
+    pop.style.top = `${rect.top}px`;
+    document.body.appendChild(pop);
+
+    // Логика состояния: если сканер уже активен, показываем кнопку остановки
+    if (hologramScanner.isActive || state.multimodal?.scannerActive) {
+        document.getElementById('scan-mode-stop').style.display = 'block';
+    }
+
+    document.getElementById('scan-mode-gesture').addEventListener('click', async () => {
+      // Здесь может быть логика включения отдельного GestureScanner, если он отличается от базового handsTracking
+      if (window.showNotification) window.showNotification("Режим 'Скан: Жесты' активирован", "info");
+      pop.remove();
+    });
+
+    document.getElementById('scan-mode-hologram').addEventListener('click', async () => {
       try {
-        if (hologramScanner.isActive) {
-          hologramScanner.stop();
-          uiElements.buttons.scanButton.classList.remove('active');
-
-          // Remove scanner-active class from grid container and any JS override
-          const gridContainer = document.getElementById('grid-container');
-          if (gridContainer) {
-            gridContainer.classList.remove('scanner-active');
-            gridContainer.style.transform = '';
-          }
-
-          console.log('[UIManager] Scanner stopped.');
-        } else {
+        if (!hologramScanner.isActive) {
           await hologramScanner.start();
           uiElements.buttons.scanButton.classList.add('active');
 
-          // Handle panel visibility based on device type
           const isMobilePortrait = window.innerWidth <= 768 || window.innerHeight > window.innerWidth;
-
           if (isMobilePortrait && appState.panelManager) {
-            // Mobile: hide all content panels
             appState.panelManager.closeAllContentPanels();
-            console.log('[UIManager] Scanner started on mobile - panels hidden.');
           } else {
-            // Desktop: add scanner-active class to sideshift hologram
             const gridContainer = document.getElementById('grid-container');
-            if (gridContainer) {
-              gridContainer.classList.add('scanner-active');
-            }
-            console.log('[UIManager] Scanner started on desktop - hologram shifted.');
+            if (gridContainer) gridContainer.classList.add('scanner-active');
           }
-
-          console.log('[UIManager] Scanner started.');
+          if (window.showNotification) window.showNotification("Режим 'Декод: Голограмма' запущен", "success");
         }
       } catch (error) {
         console.error('[UIManager] Scanner toggle failed:', error);
         uiElements.buttons.scanButton.classList.remove('active');
       }
+      pop.remove();
     });
-    console.log('[UIManager] Scanner button initialized.');
+
+    document.getElementById('scan-mode-stop').addEventListener('click', () => {
+      if (hologramScanner.isActive) {
+        hologramScanner.stop();
+        uiElements.buttons.scanButton.classList.remove('active');
+        const gridContainer = document.getElementById('grid-container');
+        if (gridContainer) {
+          gridContainer.classList.remove('scanner-active');
+          gridContainer.style.transform = '';
+        }
+      }
+      if (window.showNotification) window.showNotification("Сканер остановлен", "info");
+      pop.remove();
+    });
+
+    // Закрытие по клику вне меню
+    const closePop = () => {
+      pop.remove();
+      document.removeEventListener('click', closePop);
+    };
+    setTimeout(() => document.addEventListener('click', closePop), 10);
   }
   // addButtonListener(uiElements.buttons.bluetoothButton, null, "Bluetooth button clicked - functionality pending."); // Logic implemented elsewhere
   // addButtonListener(uiElements.buttons.triaButton, null, "Tria (Activate Training) button clicked - functionality pending."); // Logic implemented elsewhere

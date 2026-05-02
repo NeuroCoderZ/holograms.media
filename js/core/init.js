@@ -604,6 +604,9 @@ export async function initCore() {
 
       try {
           const { HermaionBridge } = await import('../tria/HermaionBridge.js');
+          const { NeuralDecoderService } = await import('../services/NeuralDecoderService.js');
+
+          state.neuralDecoder = new NeuralDecoderService();
 
           // GestureEmbeddingBridge — опциональный, graceful fallback
           let embBridge = null;

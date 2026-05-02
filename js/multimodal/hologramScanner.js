@@ -4,6 +4,7 @@
 import { semitones, GRID_HEIGHT, START_HUE, END_HUE } from '../config/hologramConfig.js';
 import { HologramSynthesizer } from './hologramSynthesizer.js';
 import eventBus from '../core/eventBus.js';
+import { state } from '../core/init.js';
 
 /**
  * HologramScanner captures camera frames and extracts audio parameters
@@ -98,6 +99,11 @@ export class HologramScanner {
             await this.synthesizer.init();
 
             this.isActive = true;
+
+            // Start NeuralDecoderService if it exists
+            if (state && state.neuralDecoder) {
+                state.neuralDecoder.start();
+            }
 
             // Disable hand tracking while scanning
             eventBus.emit('scannerStarted');
@@ -194,6 +200,11 @@ export class HologramScanner {
         // Clear stabilization state to prevent memory leaks
         this.lastStableFramePoints = null;
 
+        // Stop NeuralDecoderService
+        if (state && state.neuralDecoder) {
+            state.neuralDecoder.stop();
+        }
+
         console.log('[HologramScanner] Stopped');
         eventBus.emit('scannerStopped');
     }
@@ -244,7 +255,17 @@ export class HologramScanner {
         this.stabilization.offY += (centroid.weight > 0.01 ? (centroid.y - 0.5) * cropH * 0.1 : -this.stabilization.offY * 0.05);
 
         if (this.synthesizer && audioParams) {
-            this.synthesizer.update(audioParams.levels, audioParams.pans);
+            let finalLevels = audioParams.levels;
+            let finalPans = audioParams.pans;
+            
+            // Нейросетевое обогащение, если доступно (Tria 3)
+            if (state && state.neuralDecoder && state.neuralDecoder.isActive) {
+                const enriched = state.neuralDecoder.applyEnrichment(audioParams.levels, audioParams.pans);
+                finalLevels = enriched.enrichedLevels;
+                finalPans = enriched.enrichedPans;
+            }
+
+            this.synthesizer.update(finalLevels, finalPans);
         }
 
         eventBus.emit('scannerData', audioParams);
