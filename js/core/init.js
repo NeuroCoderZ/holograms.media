@@ -623,15 +623,73 @@ export async function initCore() {
               console.warn('[gestureIntentClient] Import fallback:', wsErr.message);
           }
 
+          // ─── Гермес-Эйдос: ChunkProcessor + EmbeddingStream + PredictiveRAG ───
+          let chunkProcessor = null, embeddingStream = null, predictiveRAG = null;
+          try {
+              const { ChunkProcessor } = await import('../tria/eidos/ChunkProcessor.js');
+              const { EmbeddingStream } = await import('../tria/eidos/EmbeddingStream.js');
+              const { PredictiveRAG } = await import('../tria/eidos/PredictiveRAG.js');
+
+              chunkProcessor = new ChunkProcessor(eventBus);
+              embeddingStream = new EmbeddingStream();
+              predictiveRAG = new PredictiveRAG();
+
+              // Подключаем Enkephalon если доступен
+              if (state.enkephalonBridge?.isReady) {
+                  embeddingStream.init(state.enkephalonBridge);
+              }
+
+              state.chunkProcessor = chunkProcessor;
+              state.predictiveRAG = predictiveRAG;
+              console.log(`✅ Гермес-Эйдос: ChunkProcessor(50мс) + EmbeddingStream + PredictiveRAG(${predictiveRAG.anchorCount} anchors)`);
+          } catch (eidosErr) {
+              console.warn('[Гермес-Эйдос] Init fallback:', eidosErr.message);
+          }
+
+          // ─── ObolosRewardEngine ───
+          let obolosReward = null;
+          try {
+              const { ObolosRewardEngine } = await import('../tria/ObolosRewardEngine.js');
+              obolosReward = new ObolosRewardEngine();
+              state.obolosRewardEngine = obolosReward;
+              console.log('✅ ObolosRewardEngine: Dual-Nature Token ready');
+          } catch (rewardErr) {
+              console.warn('[ObolosRewardEngine] Init fallback:', rewardErr.message);
+          }
+
+          // ─── Собираем HermaionBridge (мозолистое тело) ───
           state.hermaionBridge = new HermaionBridge({
               eventBus,
               triaOrchestrator: state.triaOrchestrator,
               gestureEmbeddingBridge: embBridge,
-              gestureIntentClient: wsClient
+              gestureIntentClient: wsClient,
+              obolosRewardEngine: obolosReward
           });
           window.hermaionBridge = state.hermaionBridge;
 
-          // Глобальные тест-функции — инлайн, чтобы не зависеть от бандлера
+          // ─── Wiring: ChunkProcessor → EmbeddingStream → PredictiveRAG → Bridge ───
+          if (chunkProcessor && embeddingStream && predictiveRAG) {
+              eventBus.on('eidos:chunkReady', (chunk) => {
+                  const embedding = embeddingStream.encode(chunk);
+                  if (embedding) {
+                      const ragResult = predictiveRAG.search(embedding, chunk.index);
+                      state.hermaionBridge.onPredictiveResult(ragResult);
+                  }
+              });
+              console.log('✅ Pipeline: ChunkProcessor → EmbeddingStream → PredictiveRAG → HermaionBridge');
+          }
+
+          // ─── Wiring: Obolos reward → HermaionWallet ───
+          if (obolosReward) {
+              eventBus.on('hermaion:obolosMinted', async (reward) => {
+                  try {
+                      const { hermaionWallet } = await import('../tria/HermaionWallet.js');
+                      await hermaionWallet.earnFromBridge(reward.amount, reward.reason);
+                  } catch (e) { /* wallet sync deferred */ }
+              });
+          }
+
+          // ─── Глобальные тест-функции ───
           window.testHermaionBridge = async (action = 'select', confidence = 0.85) => {
               const bridge = state.hermaionBridge;
               console.log('🌉 ══════════════════════════════════════');
@@ -650,10 +708,48 @@ export async function initCore() {
               console.log('🌉 ══════════════════════════════════════');
               return result;
           };
+
+          window.testChunkProcessor = () => {
+              if (!state.chunkProcessor) { console.error('❌ ChunkProcessor не создан'); return; }
+              console.log('🧪 Simulating 10 frames → ~3 chunks (50ms each)...');
+              const cp = state.chunkProcessor;
+              const t0 = performance.now();
+              for (let i = 0; i < 10; i++) {
+                  const fakeLandmarks = Array.from({length: 21}, (_, j) => ({
+                      x: 0.5 + Math.sin(i * 0.3 + j) * 0.1,
+                      y: 0.5 + Math.cos(i * 0.3 + j) * 0.1,
+                      z: Math.random() * 0.01
+                  }));
+                  cp.onNewFrame(fakeLandmarks, t0 + i * 20);
+              }
+              cp.endGesture(t0 + 200);
+              console.log('🧪 ChunkProcessor stats:', cp.stats);
+          };
+
+          window.testPredictiveRAG = () => {
+              if (!state.predictiveRAG) { console.error('❌ PredictiveRAG не создан'); return; }
+              const fakeEmbed = new Float32Array(64);
+              fakeEmbed[0] = 1.0; // bias
+              const result = state.predictiveRAG.search(fakeEmbed, 3);
+              console.log('🧪 PredictiveRAG result:', result);
+              return result;
+          };
+
+          window.testObolosReward = () => {
+              if (!state.obolosRewardEngine) { console.error('❌ ObolosRewardEngine не создан'); return; }
+              const scoring = state.obolosRewardEngine.scoreTransition(
+                  { predictions: [{intent: 'select', score: 0.9}], confidence: 0.9, isEarly: true },
+                  { intentType: 'select', orchestratorHandled: true, wsDelivered: true }
+              );
+              const reward = state.obolosRewardEngine.mintObolos(scoring);
+              console.log('🧪 ObolosReward:', reward);
+              return reward;
+          };
+
           window.hermaionDiag = () => state.hermaionBridge?.diagnostic();
 
-          console.log('✅ HermaionBridge initialized: Gesture Eidos ↔ Hermes Logos');
-          console.log('💡 Тест: window.testHermaionBridge() или window.testHermaionBridge("grab", 0.9)');
+          console.log('✅ HermaionBridge initialized: Двойственный Гермес (Эйдос ↔ Логос)');
+          console.log('💡 Тесты: testHermaionBridge() | testChunkProcessor() | testPredictiveRAG() | testObolosReward()');
       } catch (bridgeError) {
           console.warn('[HermaionBridge] Init skipped:', bridgeError.message);
       }

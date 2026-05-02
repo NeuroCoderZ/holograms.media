@@ -91,6 +91,54 @@ export class HermaionWallet {
     }
 
     /**
+     * Начисление Obolos от HermaionBridge (dual-nature reward).
+     * Сначала локально, затем синхронизация с сервером.
+     * @param {number} amount - сумма начисления
+     * @param {string} reason - причина (gesture, predictive+gesture, crossmodal+gesture)
+     * @returns {boolean}
+     */
+    async earnFromBridge(amount, reason = 'gesture') {
+        if (amount <= 0) return false;
+        
+        this.obolosBalance += amount;
+        this._recordTx('bridge_reward', amount, `HermaionBridge: ${reason}`);
+        
+        // Асинхронная синхронизация с сервером (не блокирует)
+        const token = localStorage.getItem('jwtToken');
+        if (token) {
+            try {
+                await fetch('/api/v1/wallet/obolos/earn', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ gesture_count: 1, bridge_reward: amount, reason })
+                });
+            } catch (err) {
+                // Не критично — локальный баланс уже обновлён
+                console.debug('[Hermaion] Bridge reward sync deferred:', err.message);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Списание Obolos за использование LLM (Гермес тратит на модель).
+     * @param {string} modelId - идентификатор модели
+     * @param {number} cost - стоимость
+     */
+    spendOnLLM(modelId, cost) {
+        if (this.obolosBalance < cost) {
+            console.warn(`[Hermaion] Insufficient Obolos for ${modelId}: ${this.obolosBalance} < ${cost}`);
+            return false;
+        }
+        this.obolosBalance -= cost;
+        this._recordTx('llm_spend', cost, `LLM: ${modelId}`);
+        return true;
+    }
+
+    /**
      * @deprecated Метод pay требует безопасной реализации через подписи на бэкенде.
      */
     async pay(amount, service) {

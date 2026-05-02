@@ -33,6 +33,8 @@ export class ProofOfGesture {
             previousHash: this.chain.length > 0 ? this.chain[this.chain.length - 1].hash : "GENESIS_BLOCK",
             // Ценность блока = число активных связей в реальном времени. Больше связей → меньше дробность → выше ценность.
             utilityValue: (this.activeConnections > 0) ? (this.activeConnections * 1.5) : 0.1,
+            // Dual-Nature Obolos: награда = utilityValue × качество жеста
+            obolosReward: 0, // заполняется извне через ObolosRewardEngine
             hash: null,
             signature_algo: "ML-DSA" // Post-Quantum Cryptography target
         };

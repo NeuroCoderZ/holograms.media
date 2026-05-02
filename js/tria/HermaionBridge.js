@@ -1,19 +1,18 @@
 /**
- * HermaionBridge.js — Мост между жестовым и символьным миром
+ * HermaionBridge.js — Мозолистое тело Двойственного Гермеса
  * ==========================================================
- * Архитектура «мозолистого тела»:
+ * Один Гермес, два полушария:
  *
- *   [Жест] → GestureEmbeddingBridge (KNN+Cloud) → IntentEmbedding → symbolicText
- *         → eventBus('hermaion:intentReady')
- *         → triaOrchestrator.handleIntent()
- *         → gestureIntentClient.sendIntent() → WebSocket → Backend
- *         → eventBus('hermaion:resultReady') ← обратная связь
+ *   Гермес-Эйдос (жестовое) → ChunkProcessor → EmbeddingStream → PredictiveRAG
+ *                              ↓ cosine similarity
+ *   HermaionBridge (мозолистое тело) → IntentEmbedding → ObolosRewardEngine
+ *                              ↓
+ *   Гермес-Логос (символьное) → TriaOrchestrator → LLM → Действие
+ *                              ↓
+ *   gestureIntentClient → WebSocket → Backend
  *
- * Зависимости:
- *   - IntentEmbedding.js   — создание структурированного интента
- *   - IntentActionMap.js   — жест→символьный текст + threshold
- *   - GestureEmbeddingBridge.js — двухслойный KNN+Cloud pipeline (опционально)
- *   - gestureIntentClient.js — WebSocket к бэкенду (опционально)
+ * Эйдос обрабатывает чанки по 50мс, предсказывает намерение,
+ * а Логос выполняет действие. Obolos вознаграждает за качество.
  */
 
 import { createIntentEmbedding } from './IntentEmbedding.js';
@@ -25,22 +24,29 @@ export class HermaionBridge {
         triaOrchestrator = null,
         gestureEmbeddingBridge = null,
         gestureIntentClient = null,
+        obolosRewardEngine = null,
         emitCooldownMs = 700
     } = {}) {
         this.eventBus = eventBus;
         this.triaOrchestrator = triaOrchestrator;
         this.gestureEmbeddingBridge = gestureEmbeddingBridge;
         this.gestureIntentClient = gestureIntentClient;
+        this.obolosRewardEngine = obolosRewardEngine;
         this.emitCooldownMs = emitCooldownMs;
         this.lastIntent = null;
         this._lastEmitAt = 0;
         this._lastIntentKey = '';
-        this._stats = { total: 0, filtered: 0, emitted: 0, errors: 0 };
+        this._stats = { total: 0, filtered: 0, emitted: 0, errors: 0, obolosMinted: 0 };
+
+        // Эйдос: текущие гипотезы предиктивного RAG
+        this._progressiveIntent = null;  // накопленное предсказание по чанкам
+        this._lastPrediction = null;     // последний результат PredictiveRAG
 
         console.log('🌉 [HermaionBridge] Initialized',
             '| orchestrator:', !!triaOrchestrator,
             '| embeddingBridge:', !!gestureEmbeddingBridge,
             '| wsClient:', !!gestureIntentClient,
+            '| obolosReward:', !!obolosRewardEngine,
             '| cooldown:', emitCooldownMs, 'ms');
     }
 
@@ -186,7 +192,50 @@ export class HermaionBridge {
             console.log('🌉 [HermaionBridge] 📡 → WebSocket sent:', intentType);
         }
 
+        // 4. Obolos Reward — вознаграждение за качество перехода
+        if (this.obolosRewardEngine) {
+            try {
+                const scoring = this.obolosRewardEngine.scoreTransition(
+                    this._lastPrediction,
+                    { intentType, orchestratorHandled: !!this.triaOrchestrator, wsDelivered: !!this.gestureIntentClient }
+                );
+                const reward = this.obolosRewardEngine.mintObolos(scoring);
+                if (reward.amount > 0) {
+                    this._stats.obolosMinted += reward.amount;
+                    this.eventBus?.emit?.('hermaion:obolosMinted', reward);
+                    console.log(`🌉 💰 Obolos +${reward.amount.toFixed(4)} [${reward.reason}]`);
+                }
+            } catch (rewardErr) {
+                console.warn('🌉 [ObolosReward] Error:', rewardErr.message);
+            }
+        }
+
         return embedding;
+    }
+
+    // ─── Эйдос: приём чанков от PredictiveRAG ────────
+
+    /**
+     * Приём предсказания от PredictiveRAG (вызывается каждые 50мс).
+     * Накапливает гипотезы и при высоком confidence → автоматически emit.
+     */
+    onPredictiveResult(ragResult) {
+        if (!ragResult?.predictions?.length) return;
+
+        this._lastPrediction = ragResult;
+        const top = ragResult.predictions[0];
+
+        // Progressive: при confidence >= 0.8 и consensus → автоматический emit
+        if (ragResult.confidence >= 0.8 && ragResult.consensusIntent) {
+            console.log(`🌉 🔮 Predictive EMIT: ${ragResult.consensusIntent} (conf: ${ragResult.confidence.toFixed(2)}, chunk #${ragResult.chunkIndex})`);
+            this.processSemanticIntent({
+                action: ragResult.consensusIntent,
+                confidence: ragResult.confidence,
+                intensity: ragResult.confidence,
+                xr_event: getXREvent(ragResult.consensusIntent),
+                raw_score: top.score
+            }, { predictive: true, chunkIndex: ragResult.chunkIndex });
+        }
     }
 
     _shouldEmit(intentType, confidence = 0) {
@@ -214,11 +263,19 @@ export class HermaionBridge {
                 eventBus: !!this.eventBus,
                 orchestrator: !!this.triaOrchestrator,
                 embeddingBridge: !!this.gestureEmbeddingBridge,
-                wsClient: !!this.gestureIntentClient
-            }
+                wsClient: !!this.gestureIntentClient,
+                obolosReward: !!this.obolosRewardEngine
+            },
+            obolosStats: this.obolosRewardEngine?.stats || null,
+            lastPrediction: this._lastPrediction ? {
+                top: this._lastPrediction.predictions?.[0],
+                confidence: this._lastPrediction.confidence,
+                consensus: this._lastPrediction.consensusIntent
+            } : null
         };
         console.table(info.stats);
         console.log('🌉 [HermaionBridge] Diagnostic:', info);
+        if (this.obolosRewardEngine) this.obolosRewardEngine.diagnostic();
         return info;
     }
 
