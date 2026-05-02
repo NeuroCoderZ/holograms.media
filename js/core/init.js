@@ -621,7 +621,14 @@ export async function initCore() {
               gestureIntentClient
           });
           window.hermaionBridge = state.hermaionBridge;
+
+          // Глобальные тест-функции для консоли браузера
+          window.testHermaionBridge = (action, confidence) =>
+              HermaionBridge.selfTest(state.hermaionBridge, action, confidence);
+          window.hermaionDiag = () => state.hermaionBridge?.diagnostic();
+
           console.log('✅ HermaionBridge initialized: Gesture Eidos ↔ Hermes Logos');
+          console.log('💡 Тест из консоли: window.testHermaionBridge() или window.testHermaionBridge("grab", 0.9)');
       } catch (bridgeError) {
           console.warn('[HermaionBridge] Init skipped:', bridgeError.message);
       }

@@ -35,6 +35,13 @@ export class HermaionBridge {
         this.lastIntent = null;
         this._lastEmitAt = 0;
         this._lastIntentKey = '';
+        this._stats = { total: 0, filtered: 0, emitted: 0, errors: 0 };
+
+        console.log('🌉 [HermaionBridge] Initialized',
+            '| orchestrator:', !!triaOrchestrator,
+            '| embeddingBridge:', !!gestureEmbeddingBridge,
+            '| wsClient:', !!gestureIntentClient,
+            '| cooldown:', emitCooldownMs, 'ms');
     }
 
     /**
@@ -43,6 +50,7 @@ export class HermaionBridge {
      */
     async processSemanticIntent(semanticResult, context = {}) {
         if (!semanticResult?.action) return null;
+        console.log('🌉 [HermaionBridge] ← SemanticIntent:', semanticResult.action, '| conf:', semanticResult.confidence?.toFixed(2));
         return this.onGestureReady(
             context.gestureDNA || null,
             semanticResult.action,
@@ -87,11 +95,20 @@ export class HermaionBridge {
      * Главный обработчик: создаёт IntentEmbedding и распространяет его.
      */
     async onGestureReady(gestureDNAVector, intentType, confidence, metadata = {}) {
+        this._stats.total++;
+
         // Проверка дедупликации и cooldown
-        if (!intentType || !this._shouldEmit(intentType, confidence)) return this.lastIntent;
+        if (!intentType || !this._shouldEmit(intentType, confidence)) {
+            this._stats.filtered++;
+            return this.lastIntent;
+        }
 
         // Проверка минимального confidence из IntentActionMap
-        if (!meetsThreshold(intentType, confidence)) return this.lastIntent;
+        if (!meetsThreshold(intentType, confidence)) {
+            this._stats.filtered++;
+            console.debug('🌉 [HermaionBridge] ⏭️ Below threshold:', intentType, confidence?.toFixed(2));
+            return this.lastIntent;
+        }
 
         // Создание IntentEmbedding
         const embedding = createIntentEmbedding({
@@ -117,7 +134,16 @@ export class HermaionBridge {
         this._lastEmitAt = Date.now();
         this._lastIntentKey = this._intentKey(intentType, confidence);
 
+        this._stats.emitted++;
+
         // ─── Распространение ───────────────────────────────
+        console.log(
+            `🌉 [HermaionBridge] ✅ EMIT #${this._stats.emitted}`,
+            `| ${intentType} [${embedding.category}]`,
+            `| conf: ${confidence?.toFixed(2)}`,
+            `| seq: ${embedding.sequenceIndex}`,
+            `| text: "${embedding.symbolicText?.slice(0, 60)}"`
+        );
 
         // 1. EventBus → UI и другие компоненты
         this.eventBus?.emit?.('hermaion:intentReady', embedding);
@@ -136,7 +162,8 @@ export class HermaionBridge {
                     status: 'success'
                 });
             } catch (err) {
-                console.warn('[HermaionBridge] Orchestrator error:', err.message);
+                this._stats.errors++;
+                console.warn('🌉 [HermaionBridge] ❌ Orchestrator error:', err.message);
                 this.eventBus?.emit?.('hermaion:resultReady', {
                     embedding,
                     result: null,
@@ -156,6 +183,7 @@ export class HermaionBridge {
                 symbolicText: embedding.symbolicText,
                 source: embedding.source
             });
+            console.log('🌉 [HermaionBridge] 📡 → WebSocket sent:', intentType);
         }
 
         return embedding;
@@ -169,7 +197,78 @@ export class HermaionBridge {
     _intentKey(intentType, confidence) {
         return `${intentType}:${Math.round((confidence || 0) * 10)}`;
     }
+    // ─── Диагностика ───────────────────────────────────
+
+    diagnostic() {
+        const info = {
+            stats: { ...this._stats },
+            lastIntent: this.lastIntent ? {
+                type: this.lastIntent.intentType,
+                confidence: this.lastIntent.confidence,
+                category: this.lastIntent.category,
+                sessionId: this.lastIntent.sessionId,
+                sequenceIndex: this.lastIntent.sequenceIndex,
+                text: this.lastIntent.symbolicText
+            } : null,
+            connections: {
+                eventBus: !!this.eventBus,
+                orchestrator: !!this.triaOrchestrator,
+                embeddingBridge: !!this.gestureEmbeddingBridge,
+                wsClient: !!this.gestureIntentClient
+            }
+        };
+        console.table(info.stats);
+        console.log('🌉 [HermaionBridge] Diagnostic:', info);
+        return info;
+    }
+
+    /**
+     * Ручной тест — вызов из консоли браузера:
+     *   window.testHermaionBridge()
+     * или:
+     *   window.testHermaionBridge('grab', 0.9)
+     */
+    static async selfTest(bridge, action = 'select', confidence = 0.85) {
+        console.log('🌉 ══════════════════════════════════════');
+        console.log('🌉 [HermaionBridge] 🧪 SELF-TEST START');
+        console.log(`🌉 Action: ${action} | Confidence: ${confidence}`);
+        console.log('🌉 ══════════════════════════════════════');
+
+        if (!bridge) {
+            console.error('🌉 ❌ Bridge не инициализирован! state.hermaionBridge = null');
+            return null;
+        }
+
+        // Симулируем результат от GestureSemanticLayer
+        const fakeSemanticResult = {
+            action,
+            confidence,
+            intensity: confidence,
+            xr_event: `on${action.charAt(0).toUpperCase() + action.slice(1)}`,
+            raw_score: confidence
+        };
+
+        const result = await bridge.processSemanticIntent(fakeSemanticResult, {
+            testMode: true,
+            gestureDNA: null
+        });
+
+        if (result) {
+            console.log('🌉 ✅ TEST PASSED! IntentEmbedding created:');
+            console.log('🌉   intentType:', result.intentType);
+            console.log('🌉   confidence:', result.confidence);
+            console.log('🌉   category:', result.category);
+            console.log('🌉   sessionId:', result.sessionId);
+            console.log('🌉   symbolicText:', result.symbolicText);
+            console.log('🌉   xrEvent:', result.xrEvent);
+        } else {
+            console.warn('🌉 ⚠️ TEST: No embedding returned (filtered by threshold or cooldown)');
+        }
+
+        console.log('🌉 ══════════════════════════════════════');
+        bridge.diagnostic();
+        return result;
+    }
 }
 
 export default HermaionBridge;
-
