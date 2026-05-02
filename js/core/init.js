@@ -604,31 +604,56 @@ export async function initCore() {
 
       try {
           const { HermaionBridge } = await import('../tria/HermaionBridge.js');
-          const { gestureEmbeddingBridge } = await import('../tria/GestureEmbeddingBridge.js');
-          const gestureIntentClient = (await import('../services/gestureIntentClient.js')).default;
 
-          // Инициализируем двухслойный KNN+Cloud pipeline
+          // GestureEmbeddingBridge — опциональный, graceful fallback
+          let embBridge = null;
           try {
+              const { gestureEmbeddingBridge } = await import('../tria/GestureEmbeddingBridge.js');
               await gestureEmbeddingBridge.init();
+              embBridge = gestureEmbeddingBridge._ready ? gestureEmbeddingBridge : null;
           } catch (embErr) {
               console.warn('[GestureEmbeddingBridge] Init fallback:', embErr.message);
+          }
+
+          // gestureIntentClient — опциональный, graceful fallback
+          let wsClient = null;
+          try {
+              wsClient = (await import('../services/gestureIntentClient.js')).default;
+          } catch (wsErr) {
+              console.warn('[gestureIntentClient] Import fallback:', wsErr.message);
           }
 
           state.hermaionBridge = new HermaionBridge({
               eventBus,
               triaOrchestrator: state.triaOrchestrator,
-              gestureEmbeddingBridge: gestureEmbeddingBridge._ready ? gestureEmbeddingBridge : null,
-              gestureIntentClient
+              gestureEmbeddingBridge: embBridge,
+              gestureIntentClient: wsClient
           });
           window.hermaionBridge = state.hermaionBridge;
 
-          // Глобальные тест-функции для консоли браузера
-          window.testHermaionBridge = (action, confidence) =>
-              HermaionBridge.selfTest(state.hermaionBridge, action, confidence);
+          // Глобальные тест-функции — инлайн, чтобы не зависеть от бандлера
+          window.testHermaionBridge = async (action = 'select', confidence = 0.85) => {
+              const bridge = state.hermaionBridge;
+              console.log('🌉 ══════════════════════════════════════');
+              console.log('🌉 [HermaionBridge] 🧪 SELF-TEST START');
+              console.log(`🌉 Action: ${action} | Confidence: ${confidence}`);
+              if (!bridge) { console.error('🌉 ❌ Bridge не создан!'); return null; }
+              const result = await bridge.processSemanticIntent(
+                  { action, confidence, intensity: confidence, xr_event: `on${action[0].toUpperCase()+action.slice(1)}`, raw_score: confidence },
+                  { testMode: true }
+              );
+              if (result) {
+                  console.log('🌉 ✅ PASS:', result.intentType, '['+result.category+']', '→', result.symbolicText?.slice(0, 60));
+              } else {
+                  console.warn('🌉 ⚠️ Filtered (threshold/cooldown). Подожди 1 сек и повтори.');
+              }
+              console.log('🌉 ══════════════════════════════════════');
+              return result;
+          };
           window.hermaionDiag = () => state.hermaionBridge?.diagnostic();
 
           console.log('✅ HermaionBridge initialized: Gesture Eidos ↔ Hermes Logos');
-          console.log('💡 Тест из консоли: window.testHermaionBridge() или window.testHermaionBridge("grab", 0.9)');
+          console.log('💡 Тест: window.testHermaionBridge() или window.testHermaionBridge("grab", 0.9)');
       } catch (bridgeError) {
           console.warn('[HermaionBridge] Init skipped:', bridgeError.message);
       }

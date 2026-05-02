@@ -4,8 +4,8 @@
 export const models = {
   TRIA: 'tria', // Fallback internal logic
   MISTRAL: 'mistral-small-latest',
-  GEMINI: 'gemini-3-flash-preview', // Or just 'gemini-3-flash' based on backend
-  // Keeping keys consistent with metadata mapping below
+  MISTRAL_MEDIUM: 'mistral-medium-3-5',
+  GEMINI: 'gemini-3-flash-preview',
 };
 
 // Метаданные моделей
@@ -18,6 +18,11 @@ export const modelMetadata = {
   'mistral-small-latest': {
     name: 'Mistral 4 Small',
     description: 'Mistral AI',
+    isDefault: false
+  },
+  'mistral-medium-3-5': {
+    name: 'Mistral Medium 3.5',
+    description: 'Mistral AI — средняя модель',
     isDefault: false
   },
   'gemini-3-flash-preview': {
@@ -70,7 +75,8 @@ export function initializeModelSelector(state) {
   // Let's rely on metadata to generate options:
   const options = [
       { val: 'gemini/gemini-3-flash', txt: 'Gemini 3 Flash' },
-      { val: 'mistral/mistral-large-latest', txt: 'Mistral 4 Small' } // Backend likely maps this string
+      { val: 'mistral/mistral-large-latest', txt: 'Mistral 4 Small' },
+      { val: 'mistral/mistral-medium-3-5', txt: 'Mistral Medium 3.5' },
   ];
 
   options.forEach(opt => {
