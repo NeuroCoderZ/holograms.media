@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "build": {
+    "command": "node scripts/build-neuroescrow.js",
+    "cwd": "/",
+    "watchPaths": ["neuroescrow/**"]
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/neuroescrow/$1"
+    }
+  ]
+}
