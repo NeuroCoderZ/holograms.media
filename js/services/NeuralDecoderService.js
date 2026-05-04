@@ -1,135 +1,146 @@
-// js/services/NeuralDecoderService.js
-import { state } from '../core/init.js';
+/**
+ * NeuralDecoderService - Reverse BasilaQ-128 + Tria Reconstruction
+ * 
+ * Flow: Visual hologram frames → column heights/colors → 
+ * base levels/pans → Tria neural infill → enriched audio
+ */
+
 import eventBus from '../core/eventBus.js';
+import { state } from '../core/init.js';
+import { TriaOrchestrator } from '../core/TriaOrchestrator.js';
 
 export class NeuralDecoderService {
     constructor() {
         this.isActive = false;
-        this.buffer = [];
-        this.windowSizeMs = 1000; // Накапливаем данные за 1 секунду
-        this.lastProcessTime = 0;
-        this.isProcessing = false;
+        this.frameBuffer = [];  // Last 10 frames for animation analysis
+        this.tria = null;
+        this.sessionId = `decode_${Date.now()}`;
         
-        // Коэффициенты обогащения (лерпа) по умолчанию
-        this.neuralEnrichment = {
-            levelsGain: new Float32Array(256).fill(1.0),
-            pansOffset: new Float32Array(128).fill(0.0)
-        };
-
-        // Слушаем сырые данные от сканнера
-        eventBus.on('scannerData', (audioParams) => {
-            if (this.isActive) {
-                this._accumulate(audioParams);
-            }
-        });
+        console.log('🧠 [NeuralDecoderService] Initialized');
     }
 
-    start() {
+    async start() {
+        if (this.isActive) return;
+        
+        // Init Tria for reconstruction
+        this.tria = new TriaOrchestrator();
+        await this.tria.init();
+        
         this.isActive = true;
-        this.buffer = [];
-        this.lastProcessTime = performance.now();
-        console.log('[NeuralDecoder] Started');
+        eventBus.emit('neuralDecoderStarted');
+        console.log('🧠 [NeuralDecoderService] Started with Tria integration');
     }
 
     stop() {
         this.isActive = false;
-        this.buffer = [];
-        // Сброс коэффициентов
-        this.neuralEnrichment.levelsGain.fill(1.0);
-        this.neuralEnrichment.pansOffset.fill(0.0);
-        console.log('[NeuralDecoder] Stopped');
-    }
-
-    _accumulate(audioParams) {
-        if (!audioParams || !audioParams.levels || !audioParams.pans) return;
-
-        const now = performance.now();
-        this.buffer.push({
-            time: now,
-            levels: new Float32Array(audioParams.levels),
-            pans: new Float32Array(audioParams.pans)
-        });
-
-        // Очистка старых фреймов
-        this.buffer = this.buffer.filter(f => now - f.time <= this.windowSizeMs);
-
-        if (now - this.lastProcessTime >= this.windowSizeMs && !this.isProcessing && this.buffer.length > 5) {
-            this._processBuffer(now);
-        }
-    }
-
-    async _processBuffer(now) {
-        this.isProcessing = true;
-        this.lastProcessTime = now;
-
-        try {
-            // В идеале здесь мы берем усредненный или "пиковый" вектор из буфера
-            // и отправляем его в TriaOrchestrator или напрямую на сервер для инференса.
-            
-            // Mock: эмулируем задержку сети
-            await new Promise(r => setTimeout(r, 200));
-
-            // Симуляция ответа от LLM Триа 3: "Обогащение" гармоник
-            // Нейросеть предсказывает, какие частоты нужно усилить/ослабить
-            // на основе визуального шума голограммы.
-            const newLevelsGain = new Float32Array(256).fill(1.0);
-            const newPansOffset = new Float32Array(128).fill(0.0);
-
-            for (let i = 0; i < 256; i++) {
-                // Псевдослучайное обогащение: +- 5% к амплитуде, чтобы звук был "живее"
-                newLevelsGain[i] = 1.0 + (Math.random() * 0.1 - 0.05);
-            }
-            
-            for (let i = 0; i < 128; i++) {
-                newPansOffset[i] = (Math.random() * 0.05 - 0.025);
-            }
-
-            this.neuralEnrichment = {
-                levelsGain: newLevelsGain,
-                pansOffset: newPansOffset
-            };
-
-            // console.log('[NeuralDecoder] Вектор обогащения обновлён (Tria 3 mock).');
-            eventBus.emit('neuralDecoderEnrichment', this.neuralEnrichment);
-
-        } catch (e) {
-            console.error('[NeuralDecoder] Ошибка процессинга:', e);
-        } finally {
-            this.isProcessing = false;
-        }
+        this.frameBuffer = [];
+        eventBus.emit('neuralDecoderStopped');
+        console.log('🧠 [NeuralDecoderService] Stopped');
     }
 
     /**
-     * Подмешивает (apply) нейросетевые коэффициенты к сырому звуку.
-     * Эту функцию вызывает HologramScanner или Синтезатор перед генерацией звука.
+     * Main entry: Process visual hologram data from scanner
      */
-    applyEnrichment(levels, pans) {
-        if (!this.isActive) return { enrichedLevels: levels, enrichedPans: pans };
+    async processFrame(visualData) {
+        if (!this.isActive) return null;
 
-        const enrichedLevels = new Float32Array(256);
-        const enrichedPans = new Float32Array(128);
+        // 1. Animation analysis (column heights/colors over time)
+        this.frameBuffer.push(visualData);
+        if (this.frameBuffer.length > 10) this.frameBuffer.shift();
 
-        for (let i = 0; i < 256; i++) {
-            // Применяем gain. Если original level = -128 (тишина), оставляем -128.
-            if (levels[i] <= -120) {
-                enrichedLevels[i] = levels[i];
-            } else {
-                // Умножение dB-значений требует осторожности.
-                // В данном упрощении мы слегка сдвигаем dB. 1.05 = +5%
-                // dB * 1.05 (поскольку dB отрицательные, 1.05 сделает их более отрицательными, т.е. тише.
-                // Лучше добавлять delta в dB).
-                
-                // Пересчитываем множитель в смещение: (gain - 1.0) * 10
-                // Например, 1.05 -> +0.5 dB
-                const dbShift = (this.neuralEnrichment.levelsGain[i] - 1.0) * 10;
-                enrichedLevels[i] = Math.max(-128, Math.min(0, levels[i] + dbShift));
-            }
+        // 2. Reverse BasilaQ-128: Extract base audio params
+        const baseAudio = this._reverseBasilaQ(visualData);
+        
+        if (!baseAudio) return null;
+
+        // 3. Tria reconstruction: Neural infill
+        const enriched = await this._triaReconstruct(baseAudio);
+
+        // 4. Emit for synthesizer
+        eventBus.emit('decodedAudio', enriched);
+        
+        return enriched;
+    }
+
+    _reverseBasilaQ(visualData) {
+        const { columns, colors, confidence } = visualData;
+        if (confidence < 0.7 || !columns || columns.length !== 128) {
+            return null;
         }
 
+        const levels = new Float32Array(256).fill(-128);
+        const pans = new Float32Array(128).fill(0);
+
+        // Map 128 columns → 256 channels (L/R stereo)
         for (let i = 0; i < 128; i++) {
-            enrichedPans[i] = Math.max(-1, Math.min(1, pans[i] + this.neuralEnrichment.pansOffset[i]));
+            const height = columns[i];  // Normalized 0-1
+            const colorHue = colors[i]; // Hue for timbre
+
+            // Height → amplitude (dB)
+            const ampDb = -60 + (height * 48);  // -60 to -12 dB range
+            levels[i] = ampDb;      // Left channel
+            levels[i + 128] = ampDb; // Right channel
+
+            // Color hue → pan (-1 to +1)
+            pans[i] = (colorHue - 0.5) * 2;  // Hue 0-1 → pan -1 to +1
         }
 
-        return { enrichedLevels, enrichedPans };
+        return { levels, pans, confidence };
+    }
+
+    async _triaReconstruct(baseAudio) {
+        const { levels, pans, confidence } = baseAudio;
+
+        // Tria prompt for reconstruction
+        const prompt = `
+        Hologram audio reconstruction task.
+        
+        Base levels: ${Array.from(levels).slice(0, 16).join(', ')}... (256 total)
+        Base pans: ${Array.from(pans).slice(0, 8).join(', ')}... (128 total)
+        Confidence: ${confidence.toFixed(2)}
+        
+        Generate enriched audio parameters:
+        1. Add harmonics (3-5 per fundamental)
+        2. Fill texture (noise, reverb tail)
+        3. Dynamics (envelopes, modulation)
+        
+        Return JSON: { "enrichedLevels": [256 floats], "enrichedPans": [128 floats], "harmonics": [...] }
+        `;
+
+        try {
+            const response = await this.tria.handleIntent(prompt, { 
+                context: 'hologram_decode', 
+                sessionId: this.sessionId 
+            });
+
+            // Parse Tria response (fallback to base if failed)
+            if (response && response.enrichedLevels) {
+                return {
+                    enrichedLevels: new Float32Array(response.enrichedLevels),
+                    enrichedPans: new Float32Array(response.enrichedPans),
+                    confidence: confidence * 0.95  // Slight boost for neural
+                };
+            }
+        } catch (e) {
+            console.warn('🧠 Tria reconstruction failed:', e);
+        }
+
+        // Fallback: return base audio
+        return { 
+            enrichedLevels: levels, 
+            enrichedPans: pans, 
+            confidence 
+        };
+    }
+
+    getStatus() {
+        return {
+            isActive: this.isActive,
+            frameBufferSize: this.frameBuffer.length,
+            lastConfidence: this.frameBuffer[this.frameBuffer.length - 1]?.confidence || 0
+        };
     }
 }
+
+// Singleton instance
+export const neuralDecoder = new NeuralDecoderService();

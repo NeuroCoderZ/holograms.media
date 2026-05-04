@@ -5,6 +5,7 @@ brain/
 repomix-context.xml
 conductor/
 tmp/
+reports/
 *.log
 .DS_Store
 Thumbs.db

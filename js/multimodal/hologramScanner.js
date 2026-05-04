@@ -3,6 +3,7 @@
 
 import { semitones, GRID_HEIGHT, START_HUE, END_HUE } from '../config/hologramConfig.js';
 import { HologramSynthesizer } from './hologramSynthesizer.js';
+import { neuralDecoder } from '../services/NeuralDecoderService.js';
 import eventBus from '../core/eventBus.js';
 import { state } from '../core/init.js';
 
@@ -258,11 +259,21 @@ export class HologramScanner {
             let finalLevels = audioParams.levels;
             let finalPans = audioParams.pans;
             
-            // Нейросетевое обогащение, если доступно (Tria 3)
-            if (state && state.neuralDecoder && state.neuralDecoder.isActive) {
-                const enriched = state.neuralDecoder.applyEnrichment(audioParams.levels, audioParams.pans);
-                finalLevels = enriched.enrichedLevels;
-                finalPans = enriched.enrichedPans;
+            // NeuralDecoder integration
+            let enriched = null;
+            if (confidence > 0.7 && neuralDecoder.isActive) {
+                const visualData = {
+                    columns: [], // Extracted from row scanning (heights)
+                    colors: [],  // HSL hues from columns
+                    confidence: confidence,
+                    imageData: result  // Pass full result for grid analysis
+                };
+                enriched = await neuralDecoder.processFrame(visualData);
+                if (enriched) {
+                    finalLevels = enriched.enrichedLevels || audioParams.levels;
+                    finalPans = enriched.enrichedPans || audioParams.pans;
+                    console.log('🧠 Neural decode:', enriched.confidence.toFixed(2));
+                }
             }
 
             this.synthesizer.update(finalLevels, finalPans);

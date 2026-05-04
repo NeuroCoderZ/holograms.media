@@ -76,6 +76,8 @@ LPT9
 koyeb.exe
 koyeb-cli_*.zip
 
+reports/
+
 # OpenCode (contains API keys)
 opencode.json
 .aider*
