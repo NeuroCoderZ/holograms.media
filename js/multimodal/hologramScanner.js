@@ -213,7 +213,7 @@ export class HologramScanner {
     /**
      * Main frame processing loop.
      */
-    _processFrame() {
+    async _processFrame() {
         if (!this.isActive || !this.videoElement || this.videoElement.readyState < 2) {
             if (this.isActive) this.animationFrameId = requestAnimationFrame(() => this._processFrame());
             return;
