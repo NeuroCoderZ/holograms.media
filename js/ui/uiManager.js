@@ -662,7 +662,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // Telegram button opens NeuroEscrow Mini App
   if (uiElements.buttons.telegramLinkButton) {
     uiElements.buttons.telegramLinkButton.addEventListener('click', () => {
-      const miniAppUrl = 'https://neurocoderz.github.io/NeuroEscrow/miniapp/';
+      const miniAppUrl = 'https://neuroescrow.holograms.media';
       
       if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.openLink(miniAppUrl);

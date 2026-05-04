@@ -1,0 +1,462 @@
+/* NeuroEscrow Hub — Telegram Mini App Styles */
+
+:root {
+    --tg-bg: var(--tg-theme-bg-color, #ffffff);
+    --tg-text: var(--tg-theme-text-color, #000000);
+    --tg-hint: var(--tg-theme-hint-color, #999999);
+    --tg-link: var(--tg-theme-link-color, #2481cc);
+    --tg-button: var(--tg-theme-button-color, #2481cc);
+    --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
+    --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #f5f5f5);
+    --tg-header-bg: var(--tg-theme-header-bg-color, #ffffff);
+    --tg-accent: var(--tg-theme-accent-text-color, #2481cc);
+    --tg-section-bg: var(--tg-theme-section-bg-color, #f5f5f5);
+    --tg-section-header: var(--tg-theme-section-header-text-color, #6d6d6d);
+    --tg-subtitle: var(--tg-theme-subtitle-text-color, #6d6d6d);
+    --tg-destructive: var(--tg-theme-destructive-text-color, #ff3b30);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--tg-bg);
+    color: var(--tg-text);
+    height: 100%;
+    overflow: hidden;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+}
+
+/* Header */
+.app-header {
+    background: var(--tg-header-bg);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 12px 16px;
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.app-header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--tg-text);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.role-badge {
+    background: var(--tg-button);
+    color: var(--tg-button-text);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Main Content */
+.app-main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px;
+    padding-bottom: 80px;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-around;
+    background: var(--tg-header-bg);
+    border-top: 1px solid rgba(0,0,0,0.05);
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    z-index: 100;
+}
+
+.nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 16px;
+    border: none;
+    background: none;
+    color: var(--tg-hint);
+    font-size: 11px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.nav-btn.active {
+    color: var(--tg-button);
+}
+
+.nav-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.nav-label {
+    font-weight: 500;
+}
+
+/* Cards */
+.card {
+    background: var(--tg-secondary-bg);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.card-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--tg-text);
+}
+
+.card-subtitle {
+    font-size: 13px;
+    color: var(--tg-hint);
+    margin-bottom: 12px;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    width: 100%;
+}
+
+.btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+}
+
+.btn-primary {
+    background: var(--tg-button);
+    color: var(--tg-button-text);
+}
+
+.btn-secondary {
+    background: var(--tg-secondary-bg);
+    color: var(--tg-link);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--tg-button);
+    color: var(--tg-button);
+}
+
+.btn-success {
+    background: #34c759;
+    color: white;
+}
+
+.btn-danger {
+    background: var(--tg-destructive);
+    color: white;
+}
+
+/* Lists */
+.list-item {
+    background: var(--tg-secondary-bg);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.list-item-content {
+    flex: 1;
+}
+
+.list-item-title {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.list-item-subtitle {
+    font-size: 13px;
+    color: var(--tg-hint);
+}
+
+.list-item-action {
+    margin-left: 12px;
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-stream {
+    background: #34c75920;
+    color: #34c759;
+}
+
+.badge-auction {
+    background: #ff950020;
+    color: #ff9500;
+}
+
+.badge-completed {
+    background: #007aff20;
+    color: #007aff;
+}
+
+.badge-dispute {
+    background: #ff3b3020;
+    color: #ff3b30;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tg-section-header);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: var(--tg-bg);
+    color: var(--tg-text);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.form-input:focus {
+    border-color: var(--tg-button);
+}
+
+/* Toggle Switch */
+.toggle-group {
+    display: flex;
+    background: var(--tg-secondary-bg);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 16px;
+}
+
+.toggle-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tg-hint);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toggle-btn.active {
+    background: var(--tg-button);
+    color: var(--tg-button-text);
+}
+
+/* Balance Dashboard */
+.balance-header {
+    text-align: center;
+    padding: 24px 16px;
+    background: linear-gradient(135deg, var(--tg-button) 0%, #1a6fc4 100%);
+    border-radius: 16px;
+    margin-bottom: 20px;
+    color: white;
+}
+
+.balance-amount {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.balance-label {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    height: 220px;
+    margin: 16px 0;
+}
+
+/* Transaction Item */
+.tx-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.tx-item:last-child {
+    border-bottom: none;
+}
+
+.tx-info {
+    flex: 1;
+}
+
+.tx-type {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.tx-date {
+    font-size: 12px;
+    color: var(--tg-hint);
+}
+
+.tx-amount {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.tx-amount.positive {
+    color: #34c759;
+}
+
+.tx-amount.negative {
+    color: #ff3b30;
+}
+
+/* Filters */
+.filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.filter-chip {
+    padding: 6px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: var(--tg-bg);
+    color: var(--tg-text);
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.filter-chip.active {
+    background: var(--tg-button);
+    color: var(--tg-button-text);
+    border-color: var(--tg-button);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--tg-hint);
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.empty-text {
+    font-size: 15px;
+}
+
+/* TON Connect */
+#ton-connect {
+    margin: 16px 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.view {
+    animation: fadeIn 0.25s ease-out;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--tg-hint);
+    border-radius: 2px;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+    .app-main {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+}
