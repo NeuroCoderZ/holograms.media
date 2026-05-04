@@ -84,7 +84,20 @@ class TelegramIntegration {
      */
     haptic(type = 'light') {
         if (tg.HapticFeedback) {
-            tg.HapticFeedback.impactOccurred(type);
+            const validTypes = ['light', 'medium', 'heavy', 'rigid', 'soft'];
+            const impactType = validTypes.includes(type) ? type : 'light';
+            tg.HapticFeedback.impactOccurred(impactType);
+        }
+    }
+
+    /**
+     * Haptic notification feedback
+     */
+    hapticNotification(type = 'success') {
+        if (tg.HapticFeedback) {
+            const validTypes = ['success', 'warning', 'error'];
+            const notifType = validTypes.includes(type) ? type : 'success';
+            tg.HapticFeedback.notificationOccurred(notifType);
         }
     }
 

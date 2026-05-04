@@ -1,80 +1,72 @@
 /**
- * NeuroEscrow Hub — Main Application
- * Manages views, data, and user interactions
+ * NeuroEscrow — Voice-First Intelligent Agent
+ * Hermes connects clients and neurocoders through voice
  */
 
 class NeuroEscrowApp {
     constructor() {
-        this.currentView = 'orders';
+        this.currentView = 'hermes';
         this.userData = null;
-        this.orders = [];
+        this.voiceState = 'IDLE'; // IDLE, LISTENING, PROCESSING
+        this.isRecording = false;
+        this.isProcessing = false;
         this.deals = [];
-        this.transactions = [];
         this.balance = 0;
-        this.cache = {};
+        this.responseTimeout = null;
+        this.mediaRecorder = null;
+        this.audioChunks = [];
         
         this.init();
     }
 
     async init() {
-        // Load user from Telegram
         this.userData = telegram.getUser();
         this.updateHeader();
-        
-        // Load cached data
         await this.loadCache();
+        this.navigate('hermes');
         
-        // Render initial view
-        this.navigate('orders');
-        
-        // Setup event listeners
         window.addEventListener('ton:statusChange', (e) => {
             this.onTonStatusChange(e.detail);
         });
         
-        // Request fresh data from bot
         this.requestDataFromBot();
     }
 
     updateHeader() {
         const nameEl = document.getElementById('user-name');
-        const roleEl = document.getElementById('user-role');
         
         if (this.userData) {
             const name = this.userData.first_name || this.userData.username || 'Пользователь';
             nameEl.textContent = name;
-            roleEl.textContent = 'АКТИВЕН';
         } else {
             nameEl.textContent = 'Гость';
-            roleEl.textContent = '—';
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Navigation
-    // -------------------------------------------------------------------------
-
     navigate(view) {
+        // Reset voice state when switching tabs
+        if (view !== 'hermes' && this.voiceState !== 'IDLE') {
+            this.resetVoiceState();
+        }
+        
         this.currentView = view;
         
-        // Update nav buttons
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.view === view);
         });
         
-        // Render view
         const main = document.getElementById('main-content');
         main.innerHTML = '';
         
         switch(view) {
-            case 'orders':
-                this.renderOrdersView(main);
+            case 'hermes':
+                this.renderHermesView(main);
                 break;
             case 'deals':
                 this.renderDealsView(main);
                 break;
-            case 'balance':
-                this.renderBalanceView(main);
+            case 'profile':
+                this.renderProfileView(main);
                 break;
         }
         
@@ -82,100 +74,219 @@ class NeuroEscrowApp {
     }
 
     // -------------------------------------------------------------------------
-    // Orders View (Stream + Auction)
+    // Hermes View (Voice Interface - Main Screen)
     // -------------------------------------------------------------------------
 
-    renderOrdersView(container) {
+    renderHermesView(container) {
         const view = document.createElement('div');
         view.className = 'view';
         
         view.innerHTML = `
-            <div class="toggle-group">
-                <button class="toggle-btn active" onclick="app.setOrderMode('stream')">Поток</button>
-                <button class="toggle-btn" onclick="app.setOrderMode('auction')">Аукцион</button>
+            <div class="voice-interface">
+                <button class="voice-button" id="voice-btn" onclick="app.toggleVoice()">
+                    <span class="voice-icon">🎙️</span>
+                </button>
+                <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Гермес</div>
+                <div class="voice-hint">Нажмите и говорите</div>
+                <div class="voice-status" id="voice-status"></div>
+                <div style="font-size:13px;color:var(--ne-light-gray);margin-top:24px;max-width:300px;">
+                    Опишите задачу голосом. Гермес поможет сформулировать и найдёт подходящего нейрокодера.
+                </div>
             </div>
-            <div id="orders-list"></div>
         `;
         
         container.appendChild(view);
-        this.renderOrdersList('stream');
     }
 
-    setOrderMode(mode) {
-        document.querySelectorAll('.toggle-group .toggle-btn').forEach((btn, i) => {
-            btn.classList.toggle('active', (mode === 'stream' && i === 0) || (mode === 'auction' && i === 1));
-        });
-        this.renderOrdersList(mode);
-        telegram.haptic('light');
-    }
-
-    renderOrdersList(mode) {
-        const list = document.getElementById('orders-list');
-        if (!list) return;
-        
-        // Use cached or sample data
-        const orders = this.orders.length > 0 ? this.orders : this.getSampleOrders(mode);
-        
-        if (orders.length === 0) {
-            list.innerHTML = this.emptyState('📋', 'Нет доступных заказов');
+    toggleVoice() {
+        // Explicit protection against multiple taps during processing
+        if (this.voiceState === 'PROCESSING' || this.isProcessing) {
             return;
         }
         
-        list.innerHTML = orders.map(order => this.orderCard(order, mode)).join('');
-    }
-
-    orderCard(order, mode) {
-        const isStream = mode === 'stream';
-        const badgeClass = isStream ? 'badge-stream' : 'badge-auction';
-        const badgeText = isStream ? 'ПОТОК' : 'АУКЦИОН';
-        const actionBtn = isStream 
-            ? `<button class="btn btn-success" onclick="app.takeOrder('${order.id}')">Взять в работу</button>`
-            : `<button class="btn btn-primary" onclick="app.bidOrder('${order.id}')">Предложить цену</button>`;
-        
-        return `
-            <div class="card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <span class="badge ${badgeClass}">${badgeText}</span>
-                    <span style="font-size:13px;color:var(--tg-hint);">${order.date}</span>
-                </div>
-                <div class="card-title">${order.title}</div>
-                <div class="card-subtitle">${order.description}</div>
-                <div style="display:flex;gap:12px;margin:12px 0;font-size:14px;">
-                    <span>💰 <strong>${order.budget} USDT</strong></span>
-                    <span>⏰ ${order.deadline}</span>
-                </div>
-                ${actionBtn}
-            </div>
-        `;
-    }
-
-    getSampleOrders(mode) {
-        if (mode === 'stream') {
-            return [
-                { id: '1', title: 'Telegram бот для интернет-магазина', description: 'Нужен бот с каталогом, корзиной и оплатой через Stars', budget: '500', deadline: '3 дня', date: '2 мин назад' },
-                { id: '2', title: 'Парсер данных с сайта', description: 'Собрать цены и описания товаров с 5 источников', budget: '300', deadline: '5 дней', date: '15 мин назад' },
-                { id: '3', title: 'Интеграция LLM API', description: 'Подключить GPT-4 к существующему сервису через FastAPI', budget: '800', deadline: '7 дней', date: '1 час назад' },
-            ];
+        if (this.voiceState === 'LISTENING') {
+            this.stopVoiceRecording();
         } else {
-            return [
-                { id: '4', title: 'Мобильное приложение на Flutter', description: 'Приложение-доставка еды с картами и уведомлениями', budget: '2000', deadline: '14 дней', date: '30 мин назад', bids: 3 },
-                { id: '5', title: 'Аудит безопасности смарт-контракта', description: 'Проверить TON контракт на уязвимости', budget: '1500', deadline: '5 дней', date: '2 часа назад', bids: 1 },
-            ];
+            this.voiceState = 'LISTENING';
+            this.updateVoiceButton();
+            this.startVoiceRecording();
+        }
+        
+        telegram.haptic('medium');
+    }
+
+    async startVoiceRecording() {
+        try {
+            // Try native Telegram voice recording (Bot API 9.6+)
+            if (typeof tg.requestVoiceMessage === 'function') {
+                const result = await tg.requestVoiceMessage();
+                
+                if (result && result.file_id) {
+                    this.sendVoiceToBot(result.file_id, result.duration);
+                } else {
+                    throw new Error('No file_id received');
+                }
+            } else {
+                // Fallback to manual recording
+                this.fallbackToManualRecording();
+            }
+        } catch (error) {
+            console.error('[NeuroEscrow] Voice recording failed:', error);
+            this.handleVoiceError(error);
         }
     }
 
-    takeOrder(orderId) {
-        telegram.showConfirm('Взять этот заказ в работу?', (confirmed) => {
-            if (confirmed) {
-                telegram.sendData({ action: 'take_order', order_id: orderId });
-                telegram.showAlert('Заявка отправлена! Ожидайте подтверждения клиента.');
-                telegram.haptic('heavy');
-            }
-        });
+    stopVoiceRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+            this.mediaRecorder.stop();
+        }
+        this.resetVoiceState();
     }
 
-    bidOrder(orderId) {
-        telegram.showAlert('Функция ставок в разработке. Используйте бота для торгов.');
+    fallbackToManualRecording() {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                this.mediaRecorder = new MediaRecorder(stream);
+                this.audioChunks = [];
+                
+                this.mediaRecorder.ondataavailable = (e) => {
+                    this.audioChunks.push(e.data);
+                };
+                
+                this.mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(this.audioChunks, { type: 'audio/ogg' });
+                    this.uploadVoiceBlob(audioBlob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                this.mediaRecorder.start();
+                console.log('[NeuroEscrow] Fallback recording started');
+            })
+            .catch(error => {
+                this.handleVoiceError(error);
+            });
+    }
+
+    uploadVoiceBlob(blob) {
+        // This would require bot-side endpoint for blob upload
+        // For now, just show error
+        this.handleVoiceError(new Error('Manual recording not yet implemented'));
+    }
+
+    sendVoiceToBot(fileId, duration) {
+        this.voiceState = 'PROCESSING';
+        this.isProcessing = true;
+        this.updateVoiceButton();
+        this.setupResponseTimeout();
+        
+        const payload = {
+            action: 'voice_message',
+            file_id: fileId,
+            duration: duration,
+            timestamp: Date.now(),
+            user_id: telegram.getUserId()
+        };
+        
+        telegram.sendData(payload);
+        console.log('[NeuroEscrow] Voice sent to bot:', fileId);
+    }
+
+    updateVoiceButton() {
+        const btn = document.getElementById('voice-btn');
+        const status = document.getElementById('voice-status');
+        
+        if (!btn || !status) return;
+        
+        // Remove all state classes
+        btn.classList.remove('recording', 'processing');
+        
+        switch (this.voiceState) {
+            case 'IDLE':
+                status.textContent = '';
+                status.style.display = 'none';
+                this.isRecording = false;
+                break;
+                
+            case 'LISTENING':
+                btn.classList.add('recording');
+                status.textContent = 'Слушаю...';
+                status.style.display = 'block';
+                this.isRecording = true;
+                break;
+                
+            case 'PROCESSING':
+                btn.classList.add('processing');
+                status.textContent = 'Гермес обрабатывает...';
+                status.style.display = 'block';
+                this.isRecording = false;
+                break;
+        }
+    }
+
+    setupResponseTimeout() {
+        if (this.responseTimeout) {
+            clearTimeout(this.responseTimeout);
+        }
+        
+        this.responseTimeout = setTimeout(() => {
+            if (this.voiceState === 'PROCESSING') {
+                this.handleVoiceError(new Error('timeout'));
+            }
+        }, 30000);
+    }
+
+    handleVoiceError(error) {
+        console.error('[NeuroEscrow] Voice error:', error);
+        
+        this.resetVoiceState();
+        
+        let message = 'Ошибка записи голоса';
+        
+        if (error.message.includes('permission')) {
+            message = 'Нет доступа к микрофону';
+        } else if (error.message.includes('timeout')) {
+            message = 'Превышено время ожидания';
+        } else if (error.message.includes('cancelled')) {
+            message = 'Запись отменена';
+        }
+        
+        telegram.showAlert(message);
+        telegram.hapticNotification('error');
+    }
+
+    resetVoiceState() {
+        this.voiceState = 'IDLE';
+        this.isRecording = false;
+        this.isProcessing = false;
+        this.updateVoiceButton();
+        
+        if (this.responseTimeout) {
+            clearTimeout(this.responseTimeout);
+            this.responseTimeout = null;
+        }
+    }
+
+    handleDraftCreated(draft) {
+        if (this.responseTimeout) {
+            clearTimeout(this.responseTimeout);
+        }
+        
+        // Check for duplicates
+        const existingIndex = this.deals.findIndex(d => d.id === draft.id);
+        if (existingIndex !== -1) {
+            this.deals[existingIndex] = { ...draft, type: 'draft', isNew: true };
+        } else {
+            this.deals.unshift({ ...draft, type: 'draft', isNew: true });
+        }
+        
+        this.resetVoiceState();
+        this.saveCache(); // Save immediately after adding draft
+        this.navigate('deals');
+        
+        telegram.hapticNotification('success');
+        telegram.showAlert('Черновик создан');
+        
+        console.log('[NeuroEscrow] Draft created:', draft.id);
     }
 
     // -------------------------------------------------------------------------
@@ -189,55 +300,73 @@ class NeuroEscrowApp {
         const deals = this.deals.length > 0 ? this.deals : this.getSampleDeals();
         
         view.innerHTML = `
-            <h2 style="font-size:18px;margin-bottom:16px;">Мои сделки</h2>
+            <h2 style="font-size:18px;margin-bottom:16px;font-weight:600;">Мои сделки</h2>
             ${deals.length === 0 ? this.emptyState('🤝', 'У вас пока нет сделок') : ''}
             <div id="deals-list">
-                ${deals.map(deal => this.dealCard(deal)).join('')}
+                ${deals.map(deal => deal.type === 'draft' ? this.renderDraftCard(deal) : this.dealCard(deal)).join('')}
             </div>
         `;
         
         container.appendChild(view);
     }
 
+    renderDraftCard(draft) {
+        const title = this.escapeHtml(draft.title || 'Без названия');
+        const description = this.escapeHtml(draft.description || '');
+        const budget = draft.budget || 'Не указан';
+        const deadline = draft.deadline || 'Не указан';
+        
+        return `
+            <div class="card draft-card" style="border-left:2px solid rgba(255, 255, 255, 0.34);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:12px;font-weight:600;color:rgba(255, 255, 255, 0.34);text-transform:uppercase;letter-spacing:0.5px;">Черновик</span>
+                    <span style="font-size:11px;color:var(--ne-light-gray);">${this.formatDate(draft.created_at)}</span>
+                </div>
+                <div class="card-title">${title}</div>
+                <p style="font-size:13px;color:var(--ne-light-gray);margin:8px 0;">${description}</p>
+                <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
+                    <span>💰 ${budget}</span>
+                    <span>⏱️ ${deadline}</span>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                    <button class="btn btn-primary" onclick="app.editDraft('${draft.id}')" style="flex:1;">Редактировать</button>
+                    <button class="btn btn-secondary" onclick="app.publishDraft('${draft.id}')" style="flex:1;">Опубликовать</button>
+                </div>
+            </div>
+        `;
+    }
+
     dealCard(deal) {
         const statusColors = {
-            'incoming': '#ff9500',
-            'negotiating': '#007aff',
-            'funded': '#34c759',
-            'in_progress': '#5856d6',
-            'delivered': '#af52de',
-            'accepted': '#34c759',
-            'dispute': '#ff3b30',
-            'refunded': '#8e8e93'
+            'draft': 'rgba(255, 255, 255, 0.34)',
+            'negotiating': '#dddddd',
+            'in_progress': '#dddddd',
+            'completed': 'rgba(255, 255, 255, 0.67)'
         };
         
         const statusNames = {
-            'incoming': 'Новая',
+            'draft': 'Черновик',
             'negotiating': 'Переговоры',
-            'funded': 'Оплачена',
             'in_progress': 'В работе',
-            'delivered': 'На проверке',
-            'accepted': 'Завершена',
-            'dispute': 'Спор',
-            'refunded': 'Возврат'
+            'completed': 'Завершена'
         };
         
-        const color = statusColors[deal.status] || '#8e8e93';
+        const color = statusColors[deal.status] || 'rgba(255, 255, 255, 0.34)';
         const statusName = statusNames[deal.status] || deal.status;
         
         return `
-            <div class="card" style="border-left:4px solid ${color};">
+            <div class="card" style="border-left:2px solid ${color};">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <span style="font-size:13px;font-weight:600;color:${color};">${statusName}</span>
-                    <span style="font-size:12px;color:var(--tg-hint);">#${deal.id}</span>
+                    <span style="font-size:12px;font-weight:600;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${statusName}</span>
+                    <span style="font-size:11px;color:var(--ne-light-gray);">#${deal.id}</span>
                 </div>
                 <div class="card-title">${deal.title}</div>
-                <div style="display:flex;gap:16px;margin-top:12px;font-size:14px;">
+                <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
                     <span>💰 ${deal.budget} USDT</span>
                     <span>👤 ${deal.counterparty}</span>
                 </div>
                 <div style="margin-top:12px;">
-                    <button class="btn btn-secondary" onclick="app.viewDeal('${deal.id}')">Подробнее</button>
+                    <button class="btn btn-secondary" onclick="app.viewDeal('${deal.id}')">Открыть в боте</button>
                 </div>
             </div>
         `;
@@ -246,8 +375,7 @@ class NeuroEscrowApp {
     getSampleDeals() {
         return [
             { id: 'a1b2', title: 'Telegram бот для интернет-магазина', status: 'in_progress', budget: '500', counterparty: 'client_42' },
-            { id: 'c3d4', title: 'Парсер данных с сайта', status: 'accepted', budget: '300', counterparty: 'client_17' },
-            { id: 'e5f6', title: 'Интеграция LLM API', status: 'dispute', budget: '800', counterparty: 'client_91' },
+            { id: 'c3d4', title: 'Парсер данных с сайта', status: 'completed', budget: '300', counterparty: 'client_17' },
         ];
     }
 
@@ -256,150 +384,103 @@ class NeuroEscrowApp {
         telegram.showAlert('Открываю детали сделки в боте...');
     }
 
+    editDraft(draftId) {
+        telegram.sendData({ action: 'edit_draft', draft_id: draftId });
+        telegram.showAlert('Открываю редактор в боте...');
+    }
+
+    publishDraft(draftId) {
+        telegram.sendData({ action: 'publish_draft', draft_id: draftId });
+        telegram.showAlert('Публикую черновик...');
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    formatDate(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp * 1000);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) return 'только что';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
+        
+        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    }
+
     // -------------------------------------------------------------------------
-    // Balance View
+    // Profile View
     // -------------------------------------------------------------------------
 
-    renderBalanceView(container) {
+    renderProfileView(container) {
         const view = document.createElement('div');
         view.className = 'view';
         
-        const txData = this.transactions.length > 0 ? this.transactions : this.getSampleTransactions();
-        const chartData = charts.generateSampleData('week');
-        const typeData = charts.generateSampleTypes();
-        
         view.innerHTML = `
-            <div class="balance-header">
-                <div class="balance-amount">${this.balance.toFixed(2)} USDT</div>
-                <div class="balance-label">Ваш баланс</div>
-            </div>
-            
-            <div id="ton-connect" style="margin-bottom:16px;"></div>
-            
-            <div class="card">
-                <div class="card-title">Доходы и расходы</div>
-                <div class="toggle-group" style="margin-bottom:12px;">
-                    <button class="toggle-btn active" onclick="app.setChartPeriod('week')">Неделя</button>
-                    <button class="toggle-btn" onclick="app.setChartPeriod('month')">Месяц</button>
+            <div class="card" style="text-align:center;padding:24px;">
+                <div style="font-size:32px;font-weight:700;margin-bottom:8px;">${this.balance.toFixed(2)} USDT</div>
+                <div style="font-size:13px;color:var(--ne-light-gray);margin-bottom:20px;">Ваш баланс</div>
+                
+                <div style="display:flex;gap:8px;margin-bottom:16px;">
+                    <button class="btn btn-primary" onclick="app.donate()" style="flex:1;">
+                        💝 Поддержать
+                    </button>
+                    <button class="btn btn-secondary" onclick="app.leaveTip()" style="flex:1;">
+                        ⭐ Чаевые
+                    </button>
                 </div>
-                <div class="chart-container">
-                    <canvas id="balance-chart"></canvas>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-title">Распределение</div>
-                <div class="chart-container" style="height:180px;">
-                    <canvas id="type-chart"></canvas>
+                
+                <div style="font-size:11px;color:var(--ne-light-gray);margin-top:12px;">
+                    TON • USDT • Telegram Stars
                 </div>
             </div>
             
+            <div id="ton-connect" style="margin:16px 0;"></div>
+            
             <div class="card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <div class="card-title" style="margin:0;">История транзакций</div>
-                </div>
-                <div class="filter-row">
-                    <button class="filter-chip active" onclick="app.filterTx('all')">Все</button>
-                    <button class="filter-chip" onclick="app.filterTx('deposit')">Пополнения</button>
-                    <button class="filter-chip" onclick="app.filterTx('withdraw')">Выплаты</button>
-                    <button class="filter-chip" onclick="app.filterTx('escrow')">Эскроу</button>
-                </div>
-                <div id="tx-list">
-                    ${this.renderTxList(txData)}
+                <div class="card-title">Настройки</div>
+                <div class="form-group">
+                    <label class="form-label">LLM Модель</label>
+                    <select class="form-input" id="model-selector">
+                        <option value="auto">Автоматически</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="claude">Claude</option>
+                        <option value="grok">Grok</option>
+                        <option value="custom">Своя модель</option>
+                    </select>
                 </div>
             </div>
         `;
         
         container.appendChild(view);
         
-        // Init TON Connect
         setTimeout(() => {
             tonConnect.init('ton-connect');
         }, 100);
-        
-        // Render charts
-        setTimeout(() => {
-            charts.renderBalanceChart('balance-chart', chartData);
-            charts.renderTypeChart('type-chart', typeData);
-        }, 200);
     }
 
-    setChartPeriod(period) {
-        document.querySelectorAll('.toggle-group .toggle-btn').forEach((btn, i) => {
-            btn.classList.toggle('active', (period === 'week' && i === 0) || (period === 'month' && i === 1));
-        });
-        
-        const data = charts.generateSampleData(period);
-        charts.renderBalanceChart('balance-chart', data);
-        telegram.haptic('light');
+    donate() {
+        telegram.showAlert('Выберите способ:\n\n⭐ Stars: 50, 100, 250, 500\n💎 TON: 1, 5, 10, 25\n💵 USDT: 5, 10, 25, 50');
     }
 
-    renderTxList(transactions) {
-        if (transactions.length === 0) {
-            return '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Нет транзакций</div></div>';
-        }
-        
-        return transactions.map(tx => `
-            <div class="tx-item">
-                <div class="tx-info">
-                    <div class="tx-type">${tx.type}</div>
-                    <div class="tx-date">${tx.date}</div>
-                </div>
-                <div class="tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}">
-                    ${tx.amount >= 0 ? '+' : ''}${tx.amount.toFixed(2)} USDT
-                </div>
-            </div>
-        `).join('');
-    }
-
-    filterTx(type) {
-        document.querySelectorAll('.filter-chip').forEach(chip => {
-            chip.classList.toggle('active', 
-                (type === 'all' && chip.textContent === 'Все') ||
-                (type === 'deposit' && chip.textContent === 'Пополнения') ||
-                (type === 'withdraw' && chip.textContent === 'Выплаты') ||
-                (type === 'escrow' && chip.textContent === 'Эскроу')
-            );
-        });
-        
-        const allTx = this.transactions.length > 0 ? this.transactions : this.getSampleTransactions();
-        const filtered = type === 'all' ? allTx : allTx.filter(tx => tx.type.toLowerCase().includes(type));
-        
-        const list = document.getElementById('tx-list');
-        if (list) {
-            list.innerHTML = this.renderTxList(filtered);
-        }
-        
-        telegram.haptic('light');
-    }
-
-    getSampleTransactions() {
-        return [
-            { type: 'Пополнение через Stars', amount: 70.00, date: '01.05.2026 14:30' },
-            { type: 'Выплата по сделке #a1b2', amount: -500.00, date: '30.04.2026 18:15' },
-            { type: 'Пополнение через TON', amount: 150.00, date: '28.04.2026 09:45' },
-            { type: 'Эскроу-депозит', amount: -200.00, date: '27.04.2026 16:20' },
-            { type: 'Возврат по спору', amount: 80.00, date: '25.04.2026 11:00' },
-            { type: 'Комиссия платформы', amount: -15.00, date: '24.04.2026 20:10' },
-        ];
+    leaveTip() {
+        telegram.showAlert('Быстрые чаевые:\n\n10 ⭐ | 25 ⭐ | 50 ⭐ | 100 ⭐');
     }
 
     onTonStatusChange(detail) {
         console.log('[App] TON status changed:', detail);
-        // Could update UI here
     }
-
-    // -------------------------------------------------------------------------
-    // Data Management
-    // -------------------------------------------------------------------------
 
     async loadCache() {
         try {
             const cached = await telegram.cloudGet('neuroescrow_data');
             if (cached) {
-                this.orders = cached.orders || [];
                 this.deals = cached.deals || [];
-                this.transactions = cached.transactions || [];
                 this.balance = cached.balance || 0;
                 console.log('[App] Cache loaded');
             }
@@ -410,9 +491,7 @@ class NeuroEscrowApp {
 
     async saveCache() {
         const data = {
-            orders: this.orders,
             deals: this.deals,
-            transactions: this.transactions,
             balance: this.balance,
             timestamp: Date.now()
         };
@@ -420,33 +499,37 @@ class NeuroEscrowApp {
     }
 
     requestDataFromBot() {
-        // Request fresh data from bot
         telegram.sendData({ action: 'get_dashboard_data' });
     }
 
     handleBotData(data) {
         console.log('[App] Data from bot:', data);
         
-        if (data.orders) this.orders = data.orders;
+        // Handle different event types
+        if (data.event === 'draft_created' && data.draft) {
+            this.handleDraftCreated(data.draft);
+            return;
+        }
+        
+        if (data.event === 'error') {
+            this.handleVoiceError(new Error(data.error || 'Unknown error'));
+            return;
+        }
+        
+        // Handle dashboard data
         if (data.deals) this.deals = data.deals;
-        if (data.transactions) this.transactions = data.transactions;
         if (data.balance !== undefined) this.balance = data.balance;
         
         this.saveCache();
         
-        // Refresh current view
         const main = document.getElementById('main-content');
         main.innerHTML = '';
         switch(this.currentView) {
-            case 'orders': this.renderOrdersView(main); break;
+            case 'hermes': this.renderHermesView(main); break;
             case 'deals': this.renderDealsView(main); break;
-            case 'balance': this.renderBalanceView(main); break;
+            case 'profile': this.renderProfileView(main); break;
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Utilities
-    // -------------------------------------------------------------------------
 
     emptyState(icon, text) {
         return `
@@ -458,13 +541,11 @@ class NeuroEscrowApp {
     }
 }
 
-// Initialize app when DOM is ready
 let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new NeuroEscrowApp();
 });
 
-// Handle data from bot (via postEvent)
 window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'bot_data' && app) {
         app.handleBotData(event.data.payload);
