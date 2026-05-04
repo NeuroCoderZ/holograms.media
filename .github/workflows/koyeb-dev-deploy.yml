@@ -27,8 +27,6 @@ jobs:
             "ASTRA_DB_API_ENDPOINT:${{ secrets.ASTRA_DATABASE_URL }}"
             "GOOGLE_API_KEY:${{ secrets.GOOGLE_API_KEY }}"
             "MISTRAL_API_KEY:${{ secrets.MISTRAL_API_KEY }}"
-            # openclaw removed — replaced by Hermes Family (Tria Cortex)
-#             "OPENCLAW_GATEWAY_TOKEN:${{ secrets.OPENCLAW_GATEWAY_TOKEN }}"
           )
           for entry in "${secrets[@]}"; do
             name="${entry%%:*}"

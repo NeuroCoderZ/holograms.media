@@ -218,7 +218,11 @@ import eventBus from '../core/eventBus.js';
 import { IntentAccumulator } from '../gestures/IntentAccumulator.js';
 import { GestureSemanticLayer } from '../gestures/GestureSemanticLayer.js';
 import { GestureCommandEngine } from '../core/GestureCommandEngine.js';
-import { GestureToCodeExecutor } from '../core/GestureToCodeExecutor.js';\r\nimport { GestureLiveStudio } from '../ui/GestureLiveStudio.js';\r\nimport { TriaOrchestrator } from './TriaOrchestrator.js';\r\nimport { HermaionBridge } from '../tria/HermaionBridge.js';\r\nimport VersionTimelinePanel from '../ui/VersionTimelinePanel.js';
+import { GestureToCodeExecutor } from '../core/GestureToCodeExecutor.js';
+import { GestureLiveStudio } from '../ui/GestureLiveStudio.js';
+import { TriaOrchestrator } from './TriaOrchestrator.js';
+import { HermaionBridge } from '../tria/HermaionBridge.js';
+import VersionTimelinePanel from '../ui/VersionTimelinePanel.js';
 
 export async function initCore() {
   console.log('🚀 Инициализация ядра приложения...');
