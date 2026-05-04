@@ -659,7 +659,20 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   }
 
   // --- External Link Buttons ---
-  addButtonListener(uiElements.buttons.telegramLinkButton, () => window.open('https://t.me/hologramsmedia', '_blank'), "Telegram link button clicked.");
+  // Telegram button opens NeuroEscrow Mini App
+  if (uiElements.buttons.telegramLinkButton) {
+    uiElements.buttons.telegramLinkButton.addEventListener('click', () => {
+      const miniAppUrl = 'https://neurocoderz.github.io/NeuroEscrow/miniapp/';
+      
+      if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.openLink(miniAppUrl);
+      } else {
+        window.open(miniAppUrl, '_blank');
+      }
+      
+      console.log('[UIManager] Opening NeuroEscrow Mini App:', miniAppUrl);
+    });
+  }
   addButtonListener(uiElements.buttons.githubButton, () => window.open('https://github.com/NeuroCoderZ/holograms.media/', '_blank'), "GitHub link button clicked.");
 
   // --- Treasury Button (Obolos Wallet Modal) ---
