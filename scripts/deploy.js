@@ -66,15 +66,15 @@ try {
     process.exit(1);
 }
 
-// NeuroEscrow Hermes Deployment
-if (commitMessage.toLowerCase().includes('hermes') || commitMessage.toLowerCase().includes('neuroescrow')) {
-    console.log('\n🤖 Deploying NeuroEscrow Hermes...');
-    try {
-        deployNeuroEscrow();
-    } catch (e) {
-        console.error('❌ NeuroEscrow deployment failed:', e.message);
-        process.exit(1);
-    }
+// NeuroEscrow Hermes Deployment (всегда деплоим)
+console.log('\n🤖 Deploying NeuroEscrow Hermes...');
+try {
+    deployNeuroEscrow();
+    console.log('✅ NeuroEscrow deployed successfully!');
+} catch (e) {
+    console.error('❌ NeuroEscrow deployment failed:', e.message);
+    console.log('⚠️  Python Workers can only be deployed via GitHub Actions.');
+    console.log('📡 Hermes will be deployed automatically on push.\n');
 }
 
 try {
