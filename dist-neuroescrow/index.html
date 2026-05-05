@@ -26,37 +26,6 @@
             <!-- Views will be rendered here -->
         </main>
 
-        <!-- Chat Input (Fixed at bottom, only visible on Hermes tab) -->
-        <div class="chat-input-container" id="chat-input-container" style="display:none;">
-            <button class="attach-btn" id="attach-btn" onclick="app.showAttachMenu()">
-                <span>📎</span>
-            </button>
-            <input type="text" class="chat-input" id="chat-input" placeholder="Напишите сообщение..." />
-            <button class="send-btn" id="send-btn" onclick="app.sendTextMessage()">
-                <span>➤</span>
-            </button>
-        </div>
-
-        <!-- Attach Menu -->
-        <div class="attach-menu" id="attach-menu" style="display:none;">
-            <button class="attach-option" onclick="app.attachPhoto()">
-                <span class="attach-icon">📷</span>
-                <span>Фото</span>
-            </button>
-            <button class="attach-option" onclick="app.attachVideo()">
-                <span class="attach-icon">🎥</span>
-                <span>Видео</span>
-            </button>
-            <button class="attach-option" onclick="app.recordVideo()">
-                <span class="attach-icon">📹</span>
-                <span>Записать видео</span>
-            </button>
-            <button class="attach-option" onclick="app.shareScreen()">
-                <span class="attach-icon">🖥️</span>
-                <span>Экран</span>
-            </button>
-        </div>
-
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <button class="nav-btn active" data-view="hermes" onclick="app.navigate('hermes')">

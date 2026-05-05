@@ -1,10 +1,11 @@
 {
   "name": "holograms-media-backend",
-  "version": "0.20.466",
+  "version": "0.20.469",
   "description": "Backend services for Holograms Media",
   "main": "index.js",
   "dependencies": {
     "axios": "^1.15.0",
+    "dotenv": "^17.4.2",
     "express": "^4.18.2",
     "mpg123-decoder": "^1.0.3",
     "three": "^0.160.0",

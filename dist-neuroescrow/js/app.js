@@ -15,9 +15,6 @@ class NeuroEscrowApp {
         this.responseTimeout = null;
         this.mediaRecorder = null;
         this.audioChunks = [];
-        this.chatMessages = [];
-        this.currentStream = null;
-        this.currentFacingMode = 'user';
         
         this.init();
     }
@@ -61,12 +58,6 @@ class NeuroEscrowApp {
         const main = document.getElementById('main-content');
         main.innerHTML = '';
         
-        // Show/hide chat input based on view
-        const chatInput = document.getElementById('chat-input-container');
-        if (chatInput) {
-            chatInput.style.display = view === 'hermes' ? 'flex' : 'none';
-        }
-        
         switch(view) {
             case 'hermes':
                 this.renderHermesView(main);
@@ -102,11 +93,9 @@ class NeuroEscrowApp {
                     Опишите задачу голосом. Гермес поможет сформулировать и найдёт подходящего нейрокодера.
                 </div>
             </div>
-            <div class="chat-messages" id="chat-messages"></div>
         `;
         
         container.appendChild(view);
-        this.renderChatMessages();
     }
 
     toggleVoice() {
@@ -493,7 +482,6 @@ class NeuroEscrowApp {
             if (cached) {
                 this.deals = cached.deals || [];
                 this.balance = cached.balance || 0;
-                this.chatMessages = cached.chatMessages || [];
                 console.log('[App] Cache loaded');
             }
         } catch (e) {
@@ -505,7 +493,6 @@ class NeuroEscrowApp {
         const data = {
             deals: this.deals,
             balance: this.balance,
-            chatMessages: this.chatMessages,
             timestamp: Date.now()
         };
         await telegram.cloudSet('neuroescrow_data', data);
@@ -526,16 +513,6 @@ class NeuroEscrowApp {
         
         if (data.event === 'error') {
             this.handleVoiceError(new Error(data.error || 'Unknown error'));
-            return;
-        }
-
-        if (data.event === 'hermes_reply' && data.text) {
-            this.addChatMessage('hermes', data.text);
-            return;
-        }
-
-        if (data.event === 'moderation_block') {
-            telegram.showAlert('⚠️ Ваш контент нарушает правила платформы');
             return;
         }
         
@@ -561,291 +538,6 @@ class NeuroEscrowApp {
                 <div class="empty-text">${text}</div>
             </div>
         `;
-    }
-
-    // -------------------------------------------------------------------------
-    // Chat Interface Methods
-    // -------------------------------------------------------------------------
-
-    renderChatMessages() {
-        const container = document.getElementById('chat-messages');
-        if (!container) return;
-
-        container.innerHTML = this.chatMessages.map(msg => `
-            <div class="chat-message ${msg.sender}">
-                <div class="message-bubble">${this.escapeHtml(msg.text)}</div>
-                <div class="message-time">${this.formatTime(msg.timestamp)}</div>
-            </div>
-        `).join('');
-
-        container.scrollTop = container.scrollHeight;
-    }
-
-    addChatMessage(sender, text) {
-        this.chatMessages.push({
-            sender,
-            text,
-            timestamp: Date.now()
-        });
-        this.renderChatMessages();
-        this.saveCache();
-    }
-
-    async sendTextMessage() {
-        const input = document.getElementById('chat-input');
-        if (!input || !input.value.trim()) return;
-
-        const text = input.value.trim();
-        this.addChatMessage('user', text);
-        input.value = '';
-
-        telegram.haptic('light');
-
-        // Call Hermes backend
-        try {
-            const response = await fetch('/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: text,
-                    user_id: telegram.getUserId(),
-                    session_id: `tg_${telegram.getUserId()}`,
-                    persona: 'hermes'
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.blocked) {
-                this.addChatMessage('system', `⚠️ ${data.reason}`);
-            } else if (data.response) {
-                this.addChatMessage('hermes', data.response);
-            } else if (data.error) {
-                this.addChatMessage('system', `❌ Ошибка: ${data.error_message}`);
-            }
-        } catch (error) {
-            console.error('[App] Chat error:', error);
-            this.addChatMessage('system', '❌ Ошибка соединения с сервером');
-        }
-    }
-
-    showAttachMenu() {
-        const menu = document.getElementById('attach-menu');
-        if (!menu) return;
-
-        menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
-        telegram.haptic('light');
-    }
-
-    hideAttachMenu() {
-        const menu = document.getElementById('attach-menu');
-        if (menu) menu.style.display = 'none';
-    }
-
-    attachPhoto() {
-        this.hideAttachMenu();
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
-        input.click();
-    }
-
-    attachVideo() {
-        this.hideAttachMenu();
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'video/*';
-        input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
-        input.click();
-    }
-
-    async recordVideo() {
-        this.hideAttachMenu();
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: this.currentFacingMode },
-                audio: true
-            });
-            this.currentStream = stream;
-            this.showVideoRecorder(stream);
-        } catch (error) {
-            telegram.showAlert('Нет доступа к камере');
-        }
-    }
-
-    showVideoRecorder(stream) {
-        const recorder = document.createElement('div');
-        recorder.className = 'video-recording';
-        recorder.innerHTML = `
-            <div class="video-preview">
-                <video id="video-preview" autoplay playsinline muted></video>
-                <div class="video-controls">
-                    <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
-                    <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
-                    <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(recorder);
-
-        const video = document.getElementById('video-preview');
-        video.srcObject = stream;
-    }
-
-    async switchCamera() {
-        this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
-        if (this.currentStream) {
-            this.currentStream.getTracks().forEach(track => track.stop());
-        }
-        await this.recordVideo();
-    }
-
-    toggleVideoRecording() {
-        const btn = document.getElementById('record-btn');
-        if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
-            this.startVideoRecording();
-            btn.classList.add('recording');
-        } else {
-            this.stopVideoRecording();
-            btn.classList.remove('recording');
-        }
-    }
-
-    startVideoRecording() {
-        if (!this.currentStream) return;
-
-        this.mediaRecorder = new MediaRecorder(this.currentStream);
-        this.audioChunks = [];
-
-        this.mediaRecorder.ondataavailable = (e) => {
-            this.audioChunks.push(e.data);
-        };
-
-        this.mediaRecorder.onstop = () => {
-            const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
-            this.handleVideoUpload(videoBlob);
-        };
-
-        this.mediaRecorder.start();
-    }
-
-    stopVideoRecording() {
-        if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-            this.mediaRecorder.stop();
-        }
-    }
-
-    closeVideoRecorder() {
-        if (this.currentStream) {
-            this.currentStream.getTracks().forEach(track => track.stop());
-            this.currentStream = null;
-        }
-        const recorder = document.querySelector('.video-recording');
-        if (recorder) recorder.remove();
-    }
-
-    async shareScreen() {
-        this.hideAttachMenu();
-        try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({
-                video: true
-            });
-            
-            const mediaRecorder = new MediaRecorder(stream);
-            const chunks = [];
-
-            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'video/webm' });
-                this.handleVideoUpload(blob);
-                stream.getTracks().forEach(track => track.stop());
-            };
-
-            mediaRecorder.start();
-            setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
-        } catch (error) {
-            telegram.showAlert('Нет доступа к экрану');
-        }
-    }
-
-    async handleFileUpload(file, type) {
-        if (!file) return;
-
-        this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                // Upload to backend and get URL
-                const imageUrl = e.target.result; // Base64 data URL
-
-                // Call Hermes image analysis
-                const response = await fetch('/analyze-image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        image_url: imageUrl,
-                        prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
-                        user_id: telegram.getUserId(),
-                        session_id: `tg_${telegram.getUserId()}`
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.response) {
-                    this.addChatMessage('hermes', data.response);
-                } else if (data.error) {
-                    this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-                }
-            } catch (error) {
-                console.error('[App] Upload error:', error);
-                this.addChatMessage('system', '❌ Ошибка загрузки файла');
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-
-    async handleVideoUpload(blob) {
-        this.addChatMessage('user', '[🎥 Видеозапись]');
-        this.closeVideoRecorder();
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const videoUrl = e.target.result;
-
-                // Call Hermes video analysis
-                const response = await fetch('/analyze-image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        image_url: videoUrl,
-                        prompt: 'Проанализируй это видео',
-                        user_id: telegram.getUserId(),
-                        session_id: `tg_${telegram.getUserId()}`
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.response) {
-                    this.addChatMessage('hermes', data.response);
-                } else if (data.error) {
-                    this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-                }
-            } catch (error) {
-                console.error('[App] Video upload error:', error);
-                this.addChatMessage('system', '❌ Ошибка загрузки видео');
-            }
-        };
-        reader.readAsDataURL(blob);
-    }
-
-    formatTime(timestamp) {
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     }
 }
 

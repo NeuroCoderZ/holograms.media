@@ -1,0 +1,146 @@
+name: Deploy Hermes to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'neuroescrow/backend/**'
+      - 'neuroescrow/js/**'
+      - 'neuroescrow/css/**'
+      - 'neuroescrow/index.html'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Hermes Backend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd neuroescrow/backend
+          pip install -r requirements.txt
+      
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'neuroescrow/backend'
+          command: deploy
+      
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "✅ Hermes deployed successfully!"
+          echo "🔗 URL: https://neuroescrow-hermes.${{ secrets.CLOUDFLARE_SUBDOMAIN }}.workers.dev"
+
+  index-codebase:
+    runs-on: ubuntu-latest
+    name: Index Codebase
+    needs: deploy
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install RepoMix
+        run: npm install -g repomix
+      
+      - name: Generate repomix output
+        run: |
+          cd neuroescrow
+          repomix
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd neuroescrow/backend
+          pip install -r requirements.txt
+      
+      - name: Run indexing script
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          ASTRA_DB_TOKEN: ${{ secrets.ASTRA_DB_TOKEN }}
+          ASTRA_DB_ENDPOINT: ${{ secrets.ASTRA_DB_ENDPOINT }}
+        run: |
+          cd neuroescrow/backend
+          python scripts/index.py
+      
+      - name: Notify indexing complete
+        if: success()
+        run: echo "✅ Codebase indexed successfully!"
+
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+    needs: deploy
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Health check
+        run: |
+          RESPONSE=$(curl -s https://neuroescrow-hermes.${{ secrets.CLOUDFLARE_SUBDOMAIN }}.workers.dev/health)
+          echo "Health check response: $RESPONSE"
+          
+          STATUS=$(echo $RESPONSE | jq -r '.status')
+          if [ "$STATUS" != "healthy" ]; then
+            echo "❌ Health check failed!"
+            exit 1
+          fi
+          
+          echo "✅ Health check passed!"
+      
+      - name: Test chat endpoint
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            https://neuroescrow-hermes.${{ secrets.CLOUDFLARE_SUBDOMAIN }}.workers.dev/chat \
+            -H "Content-Type: application/json" \
+            -d '{
+              "message": "Привет, Гермес!",
+              "user_id": "test_user",
+              "session_id": "test_session"
+            }')
+          
+          echo "Chat response: $RESPONSE"
+          
+          BLOCKED=$(echo $RESPONSE | jq -r '.blocked')
+          if [ "$BLOCKED" == "true" ]; then
+            echo "❌ Chat test failed (message blocked)!"
+            exit 1
+          fi
+          
+          echo "✅ Chat test passed!"
+      
+      - name: Test stats endpoint
+        run: |
+          RESPONSE=$(curl -s https://neuroescrow-hermes.${{ secrets.CLOUDFLARE_SUBDOMAIN }}.workers.dev/stats)
+          echo "Stats response: $RESPONSE"
+          
+          CODEBASE_COUNT=$(echo $RESPONSE | jq -r '.codebase.document_count')
+          if [ "$CODEBASE_COUNT" -lt 1 ]; then
+            echo "⚠️ Warning: Codebase collection is empty!"
+          else
+            echo "✅ Stats test passed! Codebase has $CODEBASE_COUNT documents"
+          fi

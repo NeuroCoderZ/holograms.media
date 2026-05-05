@@ -1,0 +1,37 @@
+# Security & Secrets
+.env
+.env.*
+*.key
+*.pem
+wrangler.toml
+secrets/
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build artifacts
+dist/
+build/
+*.wasm
+
+# Logs & temp
+*.log
+.DS_Store
+.cache/
+
+# IDE
+.vscode/
+.idea/
+
+# Generated & Reports
+repomix-output.md
+reports/
+
+# Old documentation (exclude from RAG context)
+backend/RAG_CONFIG.md
+backend/QUESTION_FOR_GROK.md
+backend/README.md
