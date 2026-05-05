@@ -7,7 +7,12 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env.local') });
+
+// Load .env.local only if exists (local development)
+const envPath = path.join(__dirname, '..', '.env.local');
+if (fs.existsSync(envPath)) {
+    require('dotenv').config({ path: envPath });
+}
 
 // Configuration
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
