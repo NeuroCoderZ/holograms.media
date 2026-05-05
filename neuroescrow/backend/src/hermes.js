@@ -8,8 +8,11 @@ import { moderateContent } from './moderation.js';
 
 export class HermesAgent {
   constructor(kvCache, env) {
-    this.apiKey = env.MISTRAL_API_KEY;
-    this.model = env.MODEL_NAME || 'mistral-medium-3.5';
+    this.apiKey = env?.MISTRAL_API_KEY;
+    if (!this.apiKey) {
+      throw new Error('MISTRAL_API_KEY not found in environment');
+    }
+    this.model = env?.MODEL_NAME || 'mistral-medium-3.5';
     this.rag = new HermesRAG(kvCache, env);
     this.sessions = new Map();
     this.kvCache = kvCache;

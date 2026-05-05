@@ -4,11 +4,11 @@
 
 export class AstraDBConnector {
   constructor(env) {
-    this.token = env.ASTRA_DB_TOKEN;
-    this.endpoint = env.ASTRA_DB_ENDPOINT;
+    this.token = env?.ASTRA_DB_TOKEN;
+    this.endpoint = env?.ASTRA_DB_ENDPOINT;
     
     if (!this.token || !this.endpoint) {
-      throw new Error('ASTRA_DB_TOKEN and ASTRA_DB_ENDPOINT must be set');
+      throw new Error(`AstraDB credentials missing: token=${!!this.token}, endpoint=${!!this.endpoint}`);
     }
     
     this.CODEBASE_COLLECTION = 'neuroescrow_codebase';

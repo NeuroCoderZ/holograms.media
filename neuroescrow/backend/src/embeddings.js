@@ -5,9 +5,12 @@
 
 export class MistralEmbeddings {
   constructor(kvCache, env) {
-    this.apiKey = env.MISTRAL_API_KEY;
-    this.model = env.EMBEDDING_MODEL || 'codestral-embed-2505';
-    this.dimension = parseInt(env.EMBEDDING_DIMENSION || '1536');
+    this.apiKey = env?.MISTRAL_API_KEY;
+    if (!this.apiKey) {
+      throw new Error('MISTRAL_API_KEY not found in environment');
+    }
+    this.model = env?.EMBEDDING_MODEL || 'codestral-embed-2505';
+    this.dimension = parseInt(env?.EMBEDDING_DIMENSION || '1536');
     this.kvCache = kvCache;
   }
   

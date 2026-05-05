@@ -9,6 +9,10 @@ MODEL_NAME = "mistral-medium-3.5"
 EMBEDDING_MODEL = "codestral-embed-2505"
 EMBEDDING_DIMENSION = 1536
 
+# Объявление обязательных секретов (новый синтаксис 2026)
+[[secrets]]
+required = ["MISTRAL_API_KEY", "ASTRA_DB_TOKEN", "ASTRA_DB_ENDPOINT"]
+
 # KV for embedding cache
 [[kv_namespaces]]
 binding = "CACHE"
