@@ -93,9 +93,42 @@ try {
  * Deploy NeuroEscrow Hermes backend to Cloudflare Workers
  */
 function deployNeuroEscrow() {
-    console.log('\n📦 NeuroEscrow Deployment Steps:');
+    console.log('\n📦 Step 1: Setting up Cloudflare secrets...');
     
-    console.log('\n📦 Step 1: Generating RepoMix context...');
+    // Check required environment variables
+    const requiredVars = [
+        'MISTRAL_API_KEY',
+        'ASTRA_DB_APPLICATION_TOKEN',
+        'ASTRA_DB_API_ENDPOINT'
+    ];
+    
+    const missing = requiredVars.filter(v => !process.env[v]);
+    if (missing.length > 0) {
+        throw new Error(`Missing environment variables: ${missing.join(', ')}`);
+    }
+    
+    // Set Cloudflare secrets (non-interactive)
+    const secrets = {
+        'MISTRAL_API_KEY': process.env.MISTRAL_API_KEY,
+        'ASTRA_DB_TOKEN': process.env.ASTRA_DB_APPLICATION_TOKEN,
+        'ASTRA_DB_ENDPOINT': process.env.ASTRA_DB_API_ENDPOINT
+    };
+    
+    for (const [name, value] of Object.entries(secrets)) {
+        try {
+            // Use echo to pipe secret value to wrangler
+            const cmd = process.platform === 'win32'
+                ? `echo ${value} | npx wrangler secret put ${name} --cwd neuroescrow/backend`
+                : `echo "${value}" | npx wrangler secret put ${name} --cwd neuroescrow/backend`;
+            
+            execSync(cmd, { cwd: ROOT, stdio: 'pipe' });
+            console.log(`   ✅ ${name} set`);
+        } catch (e) {
+            console.warn(`   ⚠️  ${name} already set or failed: ${e.message}`);
+        }
+    }
+    
+    console.log('\n📦 Step 2: Generating RepoMix context...');
     try {
         execSync('npx repomix', { cwd: NEUROESCROW_DIR, stdio: 'inherit' });
         console.log('   ✅ repomix-output.md generated');
@@ -103,19 +136,17 @@ function deployNeuroEscrow() {
         throw new Error(`RepoMix failed: ${e.message}`);
     }
     
-    console.log('\n📦 Step 2: Indexing codebase into AstraDB...');
+    console.log('\n📦 Step 3: Deploying to Cloudflare Workers...');
     try {
-        // Use Node.js indexer (bypasses Python installation issues)
-        execSync('node scripts/index-hermes.js', { 
-            cwd: ROOT, 
-            stdio: 'inherit',
-            env: { ...process.env }
+        execSync('npx wrangler deploy', { 
+            cwd: NEUROESCROW_BACKEND, 
+            stdio: 'inherit' 
         });
-        console.log('   ✅ Codebase indexed (Node.js)');
+        console.log('   ✅ Hermes deployed to Cloudflare Workers');
     } catch (e) {
-        throw new Error(`Indexing failed: ${e.message}`);
+        throw new Error(`Wrangler deploy failed: ${e.message}`);
     }
     
-    console.log('\n✅ NeuroEscrow knowledge base updated!');
-    console.log('🔗 Cloudflare Worker deployment will run in GitHub Actions\n');
+    console.log('\n🎉 NeuroEscrow Hermes deployment complete!');
+    console.log('🔗 Check your Workers dashboard for the live URL\n');
 }

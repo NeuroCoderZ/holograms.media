@@ -53,7 +53,6 @@ jobs:
         ASTRA_DB_APPLICATION_TOKEN: ${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}
         ASTRA_DB_API_ENDPOINT: ${{ secrets.ASTRA_DATABASE_URL }}
       run: |
-        npm install dotenv
         cd neuroescrow
         npx repomix
         cd ..
