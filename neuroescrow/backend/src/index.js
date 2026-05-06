@@ -24,7 +24,7 @@ export default {
     try {
       // Health check
       if (url.pathname === '/health') {
-        const rag = new HermesRAG(env.CACHE);
+        const rag = new HermesRAG(env.CACHE, env);
         const stats = await rag.getStats();
         
         return new Response(JSON.stringify({
@@ -79,7 +79,7 @@ export default {
       
       // Stats
       if (url.pathname === '/stats') {
-        const rag = new HermesRAG(env.CACHE);
+        const rag = new HermesRAG(env.CACHE, env);
         const stats = await rag.getStats();
         
         return new Response(JSON.stringify(stats), {
