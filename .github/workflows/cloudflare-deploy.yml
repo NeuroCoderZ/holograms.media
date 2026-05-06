@@ -15,6 +15,12 @@ jobs:
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
+      
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(echo "${{ github.event.head_commit.message }}" | grep -oP 'v\d+\.\d+\.\d+' || echo "unknown")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
@@ -46,4 +52,10 @@ jobs:
           projectName: ${{ github.ref_name == 'main' && 'holograms-media' || 'holograms-media-dev' }}
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main # Принудительно сообщаем Cloudflare, что это Production-ветка
+          branch: main
+      
+      - name: Summary
+        run: |
+          echo "## ✅ Frontend Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.event.head_commit.message }}" >> $GITHUB_STEP_SUMMARY
