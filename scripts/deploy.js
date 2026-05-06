@@ -39,6 +39,27 @@ try {
     process.exit(1);
 }
 
+// Generate knowledge base files
+console.log('\n📚 Generating knowledge base files...');
+try {
+    console.log('   📦 Holograms.Media context...');
+    execSync('npx repomix --style xml --output repomix-output.xml --no-security-check', { 
+        stdio: 'inherit', 
+        cwd: ROOT 
+    });
+    console.log('   ✅ repomix-output.xml generated');
+    
+    console.log('   📦 NeuroEscrow context...');
+    execSync('npx repomix', { 
+        stdio: 'inherit', 
+        cwd: NEUROESCROW_DIR 
+    });
+    console.log('   ✅ neuroescrow/repomix-output.md generated');
+} catch (e) {
+    console.error('❌ Knowledge base generation failed:', e.message);
+    process.exit(1);
+}
+
 // Обновляем файлы
 fs.writeFileSync(VERSION_FILE, newVersion);
 
@@ -128,13 +149,12 @@ function deployNeuroEscrow() {
         }
     }
     
-    console.log('\n📦 Step 2: Generating RepoMix context...');
-    try {
-        execSync('npx repomix', { cwd: NEUROESCROW_DIR, stdio: 'inherit' });
-        console.log('   ✅ repomix-output.md generated');
-    } catch (e) {
-        throw new Error(`RepoMix failed: ${e.message}`);
+    console.log('\n📦 Step 2: Using pre-generated RepoMix context...');
+    const repomixPath = path.join(NEUROESCROW_DIR, 'repomix-output.md');
+    if (!fs.existsSync(repomixPath)) {
+        throw new Error('repomix-output.md not found! Run npm run deploy first.');
     }
+    console.log('   ✅ repomix-output.md ready');
     
     console.log('\n📦 Step 3: Deploying to Cloudflare Workers...');
     try {

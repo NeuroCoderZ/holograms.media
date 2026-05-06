@@ -46,7 +46,7 @@ rustup-init.exe
 # Project specific
 holocore/target/
 conductor/
-repomix-context.xml
+repomix-output.xml
 .continue/
 3D torus with rectan.png
 .qwen/

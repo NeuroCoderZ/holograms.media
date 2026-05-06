@@ -18,7 +18,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:unit": "node ./tests/unit/run_tests.js",
     "deploy": "node scripts/deploy.js",
-    "ctx": "repomix --style xml --output repomix-context.xml --no-security-check"
+    "ctx": "repomix --style xml --output repomix-output.xml --no-security-check"
   },
   "author": "",
   "license": "ISC",
