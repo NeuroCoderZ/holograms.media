@@ -1,8 +1,7 @@
 name: 🚀 Deploy Frontend to Cloudflare Pages
 
 on:
-  push:
-    branches: [main, dev]
+  # Деплой только вручную через npm run deploy локально
   workflow_dispatch: {}
 
 jobs:

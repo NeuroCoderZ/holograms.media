@@ -1,8 +1,7 @@
 name: 🚀 Deploy Backend to Koyeb (Production)
 
 on:
-  push:
-    branches: [main]
+  # Деплой только вручную через npm run deploy локально
   workflow_dispatch: {}
 
 jobs:
