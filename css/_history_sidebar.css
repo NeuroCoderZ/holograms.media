@@ -1,0 +1,253 @@
+/* History Sidebar - unified Glassmorphism выдвижная панель (внутри right-panel) */
+
+.history-sidebar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 95%;
+
+    /* Layer 1: Base Glass (match .panel from css/_panels.css) */
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+    -moz-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-right: none !important;
+    border-radius: 16px 0 0 16px !important;
+
+    box-shadow: none; /* Remove colored shadows */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    /* Glass layers */
+    isolation: isolate;
+    z-index: 10;
+
+    /* Match .panel transitions */
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease-in-out;
+    visibility: visible;
+    pointer-events: auto;
+
+    /* Optimization */
+    will-change: transform, opacity;
+
+    /* Default closed state */
+    opacity: 0.4;
+    transform: translateX(calc(100% - 16px));
+}
+
+/* Hover: open smoothly */
+.history-sidebar:hover {
+    opacity: 1;
+    transform: translateX(5%);
+    pointer-events: auto;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+    -moz-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+}
+
+/* Layer 2: Inner highlight (match .panel::before) */
+.history-sidebar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--glass-inner-light), var(--glass-inner-dark);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Layer 3: Specular prism edge (match .panel::after) */
+.history-sidebar::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: var(--glass-specular, transparent);
+    mix-blend-mode: screen;
+    pointer-events: none;
+    z-index: 2;
+    opacity: var(--glass-specular-opacity, 0.8);
+    transition: background 0.12s ease-out, opacity 0.12s ease-out;
+
+    /* Prism edge mask */
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    padding: 1px;
+    box-sizing: border-box;
+}
+
+/* Список чатов */
+.history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+/* Scrollbar (keep existing feel, but make it blend with panel scrollbars) */
+.history-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.history-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.history-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Элемент чата */
+.history-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 2px;
+
+    /* glass-ish items */
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    min-height: 40px;
+
+    z-index: 1; /* above ::before/::after */
+}
+
+/* Hover */
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(-2px);
+}
+
+/* Active */
+.history-item.active {
+    background: rgba(0, 255, 136, 0.1);
+    border-color: rgba(0, 255, 136, 0.3);
+}
+
+.history-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: #00ff88;
+    border-radius: 0 2px 2px 0;
+}
+
+/* Заголовок чата */
+.history-item-title {
+    flex: 1;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 8px;
+    line-height: 1.4;
+}
+
+.history-item.active .history-item-title {
+    color: #00ff88;
+    font-weight: 500;
+}
+
+/* Редактирование заголовка */
+.history-item-title-input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 136, 0.5);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: #fff;
+    font-size: 0.85em;
+    outline: none;
+}
+
+/* Меню действий */
+.history-item-menu {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.history-item:hover .history-item-menu {
+    opacity: 1;
+}
+
+.history-item-menu-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    font-size: 14px;
+}
+
+.history-item-menu-btn:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Пустое состояние */
+.history-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.85em;
+}
+
+.history-empty svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+    opacity: 0.3;
+}
+
+/* Touch устройства */
+@media (hover: none) and (pointer: coarse) {
+    .history-sidebar {
+        touch-action: pan-y;
+    }
+
+    .history-item-menu {
+        opacity: 1;
+    }
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 768px) {
+    .history-sidebar {
+        width: 90%;
+    }
+
+    .history-sidebar:hover {
+        transform: translateX(10%);
+    }
+}

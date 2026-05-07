@@ -787,6 +787,9 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // Initialize Right Panel Logic
   initializeRightPanel(appState);
 
+  // Initialize History Sidebar
+  initHistorySidebar();
+
   // --- Account Modal Logic ---
   uiElements.buttons.accountSettingsButton = document.getElementById('accountSettingsButton');
 
@@ -1034,6 +1037,57 @@ export { logLayoutState };
 // The lines in initializeMainUI:
 // uiElements.leftPanel = state.panelManager.leftPanelElement;
 // uiElements.rightPanel = state.panelManager.rightPanelElement;
+// Initialize History Sidebar
+function initHistorySidebar() {
+  const historySidebar = document.getElementById('historySidebar');
+  if (!historySidebar) return;
+
+  const historyList = document.getElementById('historyList');
+  if (!historyList) return;
+
+  // Load chat history (placeholder for now)
+  loadChatHistory(historyList);
+
+  // Optional: Add event listeners for items
+}
+
+// Placeholder function to load chat history
+function loadChatHistory(container) {
+  // Mock data for demonstration
+  const mockChats = [
+    { id: 1, title: 'Обсуждение BasilaQ-128', active: false },
+    { id: 2, title: 'Жестовый синтез реальностей', active: true },
+    { id: 3, title: 'Триа и эмбеддинги', active: false }
+  ];
+
+  container.innerHTML = '';
+
+  if (mockChats.length === 0) {
+    container.innerHTML = `
+      <div class="history-empty">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+        <p>История чатов пуста</p>
+      </div>
+    `;
+    return;
+  }
+
+  mockChats.forEach(chat => {
+    const item = document.createElement('div');
+    item.className = `history-item ${chat.active ? 'active' : ''}`;
+    item.innerHTML = `
+      <div class="history-item-title">${chat.title}</div>
+      <div class="history-item-menu">
+        <button class="history-item-menu-btn" title="Редактировать">✏️</button>
+        <button class="history-item-menu-btn" title="Удалить">🗑️</button>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+}
+
 // uiElements.togglePanelsButton = state.panelManager.togglePanelsButtonElement;
 // correctly assign the panel DOM elements (managed by the global PanelManager) to the local uiElements object
 // for any other parts of uiManager that might still refer to them directly (though ideally, they'd also use state.panelManager).
