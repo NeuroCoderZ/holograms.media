@@ -1,7 +1,11 @@
 name: 🤖 Deploy Hermes to Cloudflare Workers
 
 on:
-  # Деплой только вручную через npm run deploy локально
+  push:
+    branches: [dev, main]
+    paths:
+      - 'neuroescrow/backend/**'
+      - '.github/workflows/deploy-hermes.yml'
   workflow_dispatch: {}
 
 jobs:

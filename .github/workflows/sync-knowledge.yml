@@ -1,7 +1,6 @@
 name: 'Sync Knowledge Base'
 
 on:
-  # Автоматическая синхронизация знаний при пуше
   push:
     branches:
       - dev
