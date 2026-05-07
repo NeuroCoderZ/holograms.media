@@ -44,11 +44,17 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
+backend/src/astra.js
 backend/src/astra.py
+backend/src/embeddings.js
 backend/src/embeddings.py
+backend/src/hermes.js
 backend/src/hermes.py
+backend/src/index.js
 backend/src/index.py
+backend/src/moderation.js
 backend/src/moderation.py
+backend/src/rag.js
 backend/src/rag.py
 css/style.css
 index.html
@@ -60,6 +66,147 @@ js/tonconnect.js
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="backend/src/astra.js">
+  1: /**
+  2:  * AstraDB Connector - JavaScript Edition
+  3:  */
+  4: 
+  5: export class AstraDBConnector {
+  6:   constructor(env) {
+  7:     this.token = env?.ASTRA_DB_TOKEN;
+  8:     this.endpoint = env?.ASTRA_DB_ENDPOINT;
+  9:     
+ 10:     if (!this.token || !this.endpoint) {
+ 11:       throw new Error(`AstraDB credentials missing: token=${!!this.token}, endpoint=${!!this.endpoint}`);
+ 12:     }
+ 13:     
+ 14:     this.CODEBASE_COLLECTION = 'neuroescrow_codebase';
+ 15:     this.MEMORY_COLLECTION = 'neuroescrow_memory';
+ 16:   }
+ 17:   
+ 18:   async insertDocument(collectionName, document, vector = null) {
+ 19:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
+ 20:     
+ 21:     const payload = {
+ 22:       insertOne: {
+ 23:         document: {
+ 24:           ...document,
+ 25:           ...(vector ? { $vector: vector } : {})
+ 26:         }
+ 27:       }
+ 28:     };
+ 29:     
+ 30:     const response = await fetch(url, {
+ 31:       method: 'POST',
+ 32:       headers: {
+ 33:         'Token': this.token,
+ 34:         'Content-Type': 'application/json'
+ 35:       },
+ 36:       body: JSON.stringify(payload)
+ 37:     });
+ 38:     
+ 39:     if (!response.ok) {
+ 40:       throw new Error(`AstraDB insert error: ${response.status}`);
+ 41:     }
+ 42:     
+ 43:     const data = await response.json();
+ 44:     return data.status?.insertedIds?.[0];
+ 45:   }
+ 46:   
+ 47:   async vectorSearch(collectionName, queryVector, limit = 5, filter = null, includeSimilarity = true) {
+ 48:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
+ 49:     
+ 50:     const payload = {
+ 51:       find: {
+ 52:         sort: { $vector: queryVector },
+ 53:         options: {
+ 54:           limit,
+ 55:           includeSimilarity
+ 56:         }
+ 57:       }
+ 58:     };
+ 59:     
+ 60:     if (filter) {
+ 61:       payload.find.filter = filter;
+ 62:     }
+ 63:     
+ 64:     const response = await fetch(url, {
+ 65:       method: 'POST',
+ 66:       headers: {
+ 67:         'Token': this.token,
+ 68:         'Content-Type': 'application/json'
+ 69:       },
+ 70:       body: JSON.stringify(payload)
+ 71:     });
+ 72:     
+ 73:     if (!response.ok) {
+ 74:       throw new Error(`AstraDB search error: ${response.status}`);
+ 75:     }
+ 76:     
+ 77:     const data = await response.json();
+ 78:     return data.data?.documents || [];
+ 79:   }
+ 80:   
+ 81:   async deleteByFilter(collectionName, filter) {
+ 82:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
+ 83:     
+ 84:     const payload = {
+ 85:       deleteMany: { filter }
+ 86:     };
+ 87:     
+ 88:     const response = await fetch(url, {
+ 89:       method: 'POST',
+ 90:       headers: {
+ 91:         'Token': this.token,
+ 92:         'Content-Type': 'application/json'
+ 93:       },
+ 94:       body: JSON.stringify(payload)
+ 95:     });
+ 96:     
+ 97:     if (!response.ok) {
+ 98:       throw new Error(`AstraDB delete error: ${response.status}`);
+ 99:     }
+100:     
+101:     const data = await response.json();
+102:     return data.status?.deletedCount || 0;
+103:   }
+104:   
+105:   async getStats(collectionName) {
+106:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
+107:     
+108:     const payload = {
+109:       countDocuments: {}
+110:     };
+111:     
+112:     const response = await fetch(url, {
+113:       method: 'POST',
+114:       headers: {
+115:         'Token': this.token,
+116:         'Content-Type': 'application/json'
+117:       },
+118:       body: JSON.stringify(payload)
+119:     });
+120:     
+121:     if (!response.ok) {
+122:       return {
+123:         collection: collectionName,
+124:         document_count: 0,
+125:         status: 'error'
+126:       };
+127:     }
+128:     
+129:     const data = await response.json();
+130:     const count = data.status?.count || 0;
+131:     
+132:     return {
+133:       collection: collectionName,
+134:       document_count: count,
+135:       status: 'healthy'
+136:     };
+137:   }
+138: }
+</file>
 
 <file path="backend/src/astra.py">
   1: """
@@ -172,6 +319,149 @@ This section contains the contents of the repository's files.
 108: def get_astra_connector() -> AstraDBConnector:
 109:     """Get singleton AstraDB connector instance"""
 110:     return AstraDBConnector()
+</file>
+
+<file path="backend/src/embeddings.js">
+  1: /**
+  2:  * Mistral Embeddings - JavaScript Edition
+  3:  * Uses codestral-embed-2505 (1536 dimensions)
+  4:  */
+  5: 
+  6: export class MistralEmbeddings {
+  7:   constructor(kvCache, env) {
+  8:     this.apiKey = env?.MISTRAL_API_KEY;
+  9:     if (!this.apiKey) {
+ 10:       throw new Error('MISTRAL_API_KEY not found in environment');
+ 11:     }
+ 12:     this.model = env?.EMBEDDING_MODEL || 'codestral-embed-2505';
+ 13:     this.dimension = parseInt(env?.EMBEDDING_DIMENSION || '1536');
+ 14:     this.kvCache = kvCache;
+ 15:   }
+ 16:   
+ 17:   getCacheKey(text) {
+ 18:     return `emb:${this.hashString(text).substring(0, 16)}`;
+ 19:   }
+ 20:   
+ 21:   hashString(str) {
+ 22:     let hash = 0;
+ 23:     for (let i = 0; i < str.length; i++) {
+ 24:       const char = str.charCodeAt(i);
+ 25:       hash = ((hash << 5) - hash) + char;
+ 26:       hash = hash & hash;
+ 27:     }
+ 28:     return Math.abs(hash).toString(16);
+ 29:   }
+ 30:   
+ 31:   async getFromCache(text) {
+ 32:     if (!this.kvCache) return null;
+ 33:     
+ 34:     try {
+ 35:       const cacheKey = this.getCacheKey(text);
+ 36:       const cached = await this.kvCache.get(cacheKey);
+ 37:       if (cached) {
+ 38:         return JSON.parse(cached);
+ 39:       }
+ 40:     } catch (error) {
+ 41:       // Ignore cache errors
+ 42:     }
+ 43:     
+ 44:     return null;
+ 45:   }
+ 46:   
+ 47:   async saveToCache(text, embedding) {
+ 48:     if (!this.kvCache) return;
+ 49:     
+ 50:     try {
+ 51:       const cacheKey = this.getCacheKey(text);
+ 52:       // Cache for 7 days
+ 53:       await this.kvCache.put(cacheKey, JSON.stringify(embedding), {
+ 54:         expirationTtl: 604800
+ 55:       });
+ 56:     } catch (error) {
+ 57:       // Ignore cache errors
+ 58:     }
+ 59:   }
+ 60:   
+ 61:   async embed(text) {
+ 62:     // Check cache
+ 63:     const cached = await this.getFromCache(text);
+ 64:     if (cached) return cached;
+ 65:     
+ 66:     // Call Mistral API
+ 67:     const response = await fetch('https://api.mistral.ai/v1/embeddings', {
+ 68:       method: 'POST',
+ 69:       headers: {
+ 70:         'Authorization': `Bearer ${this.apiKey}`,
+ 71:         'Content-Type': 'application/json'
+ 72:       },
+ 73:       body: JSON.stringify({
+ 74:         model: this.model,
+ 75:         input: [text]
+ 76:       })
+ 77:     });
+ 78:     
+ 79:     if (!response.ok) {
+ 80:       throw new Error(`Mistral Embeddings API error: ${response.status}`);
+ 81:     }
+ 82:     
+ 83:     const data = await response.json();
+ 84:     const embedding = data.data[0].embedding;
+ 85:     
+ 86:     // Save to cache
+ 87:     await this.saveToCache(text, embedding);
+ 88:     
+ 89:     return embedding;
+ 90:   }
+ 91:   
+ 92:   async embedBatch(texts) {
+ 93:     const embeddings = [];
+ 94:     const uncachedTexts = [];
+ 95:     const uncachedIndices = [];
+ 96:     
+ 97:     // Check cache for each text
+ 98:     for (let i = 0; i < texts.length; i++) {
+ 99:       const cached = await this.getFromCache(texts[i]);
+100:       if (cached) {
+101:         embeddings.push(cached);
+102:       } else {
+103:         embeddings.push(null);
+104:         uncachedTexts.push(texts[i]);
+105:         uncachedIndices.push(i);
+106:       }
+107:     }
+108:     
+109:     // Batch call for uncached texts
+110:     if (uncachedTexts.length > 0) {
+111:       const response = await fetch('https://api.mistral.ai/v1/embeddings', {
+112:         method: 'POST',
+113:         headers: {
+114:           'Authorization': `Bearer ${this.apiKey}`,
+115:           'Content-Type': 'application/json'
+116:         },
+117:         body: JSON.stringify({
+118:           model: this.model,
+119:           input: uncachedTexts
+120:         })
+121:       });
+122:       
+123:       if (!response.ok) {
+124:         throw new Error(`Mistral Embeddings API error: ${response.status}`);
+125:       }
+126:       
+127:       const data = await response.json();
+128:       
+129:       // Fill in uncached embeddings
+130:       for (let i = 0; i < data.data.length; i++) {
+131:         const embedding = data.data[i].embedding;
+132:         const idx = uncachedIndices[i];
+133:         embeddings[idx] = embedding;
+134:         await this.saveToCache(uncachedTexts[i], embedding);
+135:       }
+136:     }
+137:     
+138:     return embeddings;
+139:   }
+140: }
 </file>
 
 <file path="backend/src/embeddings.py">
@@ -308,6 +598,264 @@ This section contains the contents of the repository's files.
 131: def get_embeddings_client(kv_cache=None) -> MistralEmbeddings:
 132:     """Get Mistral embeddings client"""
 133:     return MistralEmbeddings(kv_cache=kv_cache)
+</file>
+
+<file path="backend/src/hermes.js">
+  1: /**
+  2:  * Hermes Agent - JavaScript Edition
+  3:  * Powered by Mistral Medium 3.5
+  4:  */
+  5: 
+  6: import { HermesRAG } from './rag.js';
+  7: import { moderateContent } from './moderation.js';
+  8: 
+  9: export class HermesAgent {
+ 10:   constructor(kvCache, env) {
+ 11:     this.apiKey = env?.MISTRAL_API_KEY;
+ 12:     if (!this.apiKey) {
+ 13:       throw new Error('MISTRAL_API_KEY not found in environment');
+ 14:     }
+ 15:     this.model = env?.MODEL_NAME || 'mistral-medium-3.5';
+ 16:     this.rag = new HermesRAG(kvCache, env);
+ 17:     this.sessions = new Map();
+ 18:     this.kvCache = kvCache;
+ 19:   }
+ 20:   
+ 21:   getSystemPrompt(persona = 'hermes') {
+ 22:     const prompts = {
+ 23:       hermes: `Ты — Гермес, интеллектуальный агент-посредник NeuroEscrow.
+ 24: 
+ 25: Твои возможности:
+ 26: - Глубокое понимание кодовой базы NeuroEscrow через RAG
+ 27: - Помощь в создании и проверке смарт-контрактов
+ 28: - Анализ фото и видео (документы, товары)
+ 29: - Ведение переговоров между сторонами сделки
+ 30: - Модерация контента и блокировка нарушителей
+ 31: 
+ 32: Твой стиль:
+ 33: - Профессиональный, но дружелюбный
+ 34: - Краткие и точные ответы
+ 35: - Используешь эмодзи умеренно
+ 36: - Всегда объясняешь технические детали простым языком`,
+ 37:       
+ 38:       client: `Ты — Гермес в режиме помощи клиенту.
+ 39: Фокус: помощь в создании сделки, объяснение условий, защита интересов клиента.`,
+ 40:       
+ 41:       creator: `Ты — Гермес в режиме помощи исполнителю.
+ 42: Фокус: помощь в выполнении заказа, проверка требований, защита от недобросовестных заказчиков.`
+ 43:     };
+ 44:     
+ 45:     return prompts[persona] || prompts.hermes;
+ 46:   }
+ 47:   
+ 48:   getSessionHistory(sessionId, limit = 10) {
+ 49:     if (!this.sessions.has(sessionId)) {
+ 50:       this.sessions.set(sessionId, []);
+ 51:     }
+ 52:     const history = this.sessions.get(sessionId);
+ 53:     return history.slice(-limit);
+ 54:   }
+ 55:   
+ 56:   addToSession(sessionId, role, content) {
+ 57:     if (!this.sessions.has(sessionId)) {
+ 58:       this.sessions.set(sessionId, []);
+ 59:     }
+ 60:     this.sessions.get(sessionId).push({
+ 61:       role,
+ 62:       content,
+ 63:       timestamp: new Date().toISOString()
+ 64:     });
+ 65:   }
+ 66:   
+ 67:   async buildContext(query, userId, sessionId) {
+ 68:     const contextParts = [];
+ 69:     
+ 70:     // Search codebase
+ 71:     const codebaseResults = await this.rag.searchCodebase(query, 3);
+ 72:     if (codebaseResults.length > 0) {
+ 73:       contextParts.push('📚 Релевантный код из базы:');
+ 74:       codebaseResults.forEach((result, i) => {
+ 75:         const filepath = result.filepath || 'unknown';
+ 76:         const text = (result.text || '').substring(0, 500);
+ 77:         const similarity = result.$similarity || 0;
+ 78:         contextParts.push(`\n${i + 1}. ${filepath} (similarity: ${similarity.toFixed(2)})\n\`\`\`\n${text}\n\`\`\``);
+ 79:       });
+ 80:     }
+ 81:     
+ 82:     // Search memory
+ 83:     const memoryResults = await this.rag.searchMemory(query, userId, 2);
+ 84:     if (memoryResults.length > 0) {
+ 85:       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
+ 86:       memoryResults.forEach((result, i) => {
+ 87:         const content = result.content || '';
+ 88:         const timestamp = result.timestamp || '';
+ 89:         contextParts.push(`\n${i + 1}. [${timestamp}] ${content}`);
+ 90:       });
+ 91:     }
+ 92:     
+ 93:     return contextParts.join('');
+ 94:   }
+ 95:   
+ 96:   async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true) {
+ 97:     // Moderate content
+ 98:     const moderation = moderateContent(message);
+ 99:     if (!moderation.safe) {
+100:       return {
+101:         response: `⚠️ Сообщение заблокировано: ${moderation.reason}`,
+102:         blocked: true,
+103:         reason: moderation.reason
+104:       };
+105:     }
+106:     
+107:     // Build context
+108:     let context = '';
+109:     if (useRag) {
+110:       context = await this.buildContext(message, userId, sessionId);
+111:     }
+112:     
+113:     // Get history
+114:     const history = this.getSessionHistory(sessionId);
+115:     
+116:     // Build messages
+117:     const messages = [
+118:       { role: 'system', content: this.getSystemPrompt(persona) }
+119:     ];
+120:     
+121:     if (context) {
+122:       messages.push({
+123:         role: 'system',
+124:         content: `Контекст для ответа:\n${context}`
+125:       });
+126:     }
+127:     
+128:     // Add history
+129:     history.forEach(msg => {
+130:       messages.push({
+131:         role: msg.role,
+132:         content: msg.content
+133:       });
+134:     });
+135:     
+136:     // Add current message
+137:     if (imageUrl) {
+138:       messages.push({
+139:         role: 'user',
+140:         content: [
+141:           { type: 'text', text: message },
+142:           { type: 'image_url', image_url: { url: imageUrl } }
+143:         ]
+144:       });
+145:     } else {
+146:       messages.push({
+147:         role: 'user',
+148:         content: message
+149:       });
+150:     }
+151:     
+152:     // Call Mistral API
+153:     try {
+154:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+155:         method: 'POST',
+156:         headers: {
+157:           'Authorization': `Bearer ${this.apiKey}`,
+158:           'Content-Type': 'application/json'
+159:         },
+160:         body: JSON.stringify({
+161:           model: this.model,
+162:           messages,
+163:           temperature: 0.7,
+164:           max_tokens: 2000
+165:         })
+166:       });
+167:       
+168:       if (!response.ok) {
+169:         throw new Error(`Mistral API error: ${response.status}`);
+170:       }
+171:       
+172:       const data = await response.json();
+173:       const assistantMessage = data.choices[0].message.content;
+174:       
+175:       // Add to session
+176:       this.addToSession(sessionId, 'user', message);
+177:       this.addToSession(sessionId, 'assistant', assistantMessage);
+178:       
+179:       // Save to memory (substantial messages only)
+180:       if (message.length > 50) {
+181:         await this.rag.addMemory(
+182:           userId,
+183:           sessionId,
+184:           `User: ${message}\nHermes: ${assistantMessage}`,
+185:           'conversation'
+186:         );
+187:       }
+188:       
+189:       return {
+190:         response: assistantMessage,
+191:         blocked: false,
+192:         context_used: !!context,
+193:         tokens_used: data.usage?.total_tokens || 0
+194:       };
+195:       
+196:     } catch (error) {
+197:       return {
+198:         response: `❌ Ошибка: ${error.message}`,
+199:         error: true,
+200:         error_message: error.message
+201:       };
+202:     }
+203:   }
+204:   
+205:   async analyzeImage(imageUrl, prompt, userId, sessionId) {
+206:     return this.chat(prompt, userId, sessionId, 'hermes', imageUrl, false);
+207:   }
+208:   
+209:   async getSessionSummary(sessionId) {
+210:     const history = this.getSessionHistory(sessionId, 100);
+211:     
+212:     if (history.length === 0) {
+213:       return 'Нет истории сессии';
+214:     }
+215:     
+216:     const conversation = history.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+217:     
+218:     const messages = [
+219:       {
+220:         role: 'system',
+221:         content: 'Создай краткое резюме этого разговора (2-3 предложения).'
+222:       },
+223:       {
+224:         role: 'user',
+225:         content: conversation
+226:       }
+227:     ];
+228:     
+229:     try {
+230:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+231:         method: 'POST',
+232:         headers: {
+233:           'Authorization': `Bearer ${this.apiKey}`,
+234:           'Content-Type': 'application/json'
+235:         },
+236:         body: JSON.stringify({
+237:           model: this.model,
+238:           messages,
+239:           temperature: 0.5,
+240:           max_tokens: 200
+241:         })
+242:       });
+243:       
+244:       const data = await response.json();
+245:       return data.choices[0].message.content;
+246:       
+247:     } catch (error) {
+248:       return `Ошибка создания резюме: ${error.message}`;
+249:     }
+250:   }
+251:   
+252:   clearSession(sessionId) {
+253:     this.sessions.delete(sessionId);
+254:   }
+255: }
 </file>
 
 <file path="backend/src/hermes.py">
@@ -599,6 +1147,147 @@ This section contains the contents of the repository's files.
 286:     return HermesAgent(kv_cache=kv_cache)
 </file>
 
+<file path="backend/src/index.js">
+  1: /**
+  2:  * Hermes Worker - JavaScript Edition
+  3:  * Cloudflare Workers entry point
+  4:  */
+  5: 
+  6: import { HermesAgent } from './hermes.js';
+  7: import { HermesRAG } from './rag.js';
+  8: 
+  9: export default {
+ 10:   async fetch(request, env, ctx) {
+ 11:     const url = new URL(request.url);
+ 12:     
+ 13:     // CORS headers
+ 14:     const corsHeaders = {
+ 15:       'Access-Control-Allow-Origin': '*',
+ 16:       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+ 17:       'Access-Control-Allow-Headers': 'Content-Type',
+ 18:     };
+ 19:     
+ 20:     if (request.method === 'OPTIONS') {
+ 21:       return new Response(null, { headers: corsHeaders });
+ 22:     }
+ 23:     
+ 24:     try {
+ 25:       // Health check
+ 26:       if (url.pathname === '/health') {
+ 27:         const rag = new HermesRAG(env.CACHE, env);
+ 28:         const stats = await rag.getStats();
+ 29:         
+ 30:         return new Response(JSON.stringify({
+ 31:           status: 'healthy',
+ 32:           service: 'hermes-neuroescrow',
+ 33:           version: '1.0.0',
+ 34:           stats
+ 35:         }), {
+ 36:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 37:         });
+ 38:       }
+ 39:       
+ 40:       // Chat endpoint
+ 41:       if (url.pathname === '/chat' && request.method === 'POST') {
+ 42:         const data = await request.json();
+ 43:         const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes' } = data;
+ 44:         
+ 45:         if (!message) {
+ 46:           return new Response(JSON.stringify({ error: 'Message is required' }), {
+ 47:             status: 400,
+ 48:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 49:           });
+ 50:         }
+ 51:         
+ 52:         const hermes = new HermesAgent(env.CACHE, env);
+ 53:         const result = await hermes.chat(message, user_id, session_id, persona);
+ 54:         
+ 55:         return new Response(JSON.stringify(result), {
+ 56:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 57:         });
+ 58:       }
+ 59:       
+ 60:       // Image analysis
+ 61:       if (url.pathname === '/analyze-image' && request.method === 'POST') {
+ 62:         const data = await request.json();
+ 63:         const { image_url, prompt = 'Опиши это изображение', user_id = 'anonymous', session_id = 'default' } = data;
+ 64:         
+ 65:         if (!image_url) {
+ 66:           return new Response(JSON.stringify({ error: 'image_url is required' }), {
+ 67:             status: 400,
+ 68:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 69:           });
+ 70:         }
+ 71:         
+ 72:         const hermes = new HermesAgent(env.CACHE, env);
+ 73:         const result = await hermes.analyzeImage(image_url, prompt, user_id, session_id);
+ 74:         
+ 75:         return new Response(JSON.stringify(result), {
+ 76:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 77:         });
+ 78:       }
+ 79:       
+ 80:       // Stats
+ 81:       if (url.pathname === '/stats') {
+ 82:         const rag = new HermesRAG(env.CACHE, env);
+ 83:         const stats = await rag.getStats();
+ 84:         
+ 85:         return new Response(JSON.stringify(stats), {
+ 86:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 87:         });
+ 88:       }
+ 89:       
+ 90:       // Sessions list
+ 91:       if (url.pathname === '/sessions') {
+ 92:         // TODO: Implement sessions storage in KV
+ 93:         return new Response(JSON.stringify([]), {
+ 94:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 95:         });
+ 96:       }
+ 97:       
+ 98:       // Load session
+ 99:       if (url.pathname.startsWith('/session/') && request.method === 'GET') {
+100:         const sessionId = url.pathname.split('/')[2];
+101:         // TODO: Load from KV
+102:         return new Response(JSON.stringify({ messages: [] }), {
+103:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+104:         });
+105:       }
+106:       
+107:       // Create session
+108:       if (url.pathname === '/session' && request.method === 'POST') {
+109:         const data = await request.json();
+110:         const sessionId = crypto.randomUUID();
+111:         // TODO: Save to KV
+112:         return new Response(JSON.stringify({ session_id: sessionId }), {
+113:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+114:         });
+115:       }
+116:       
+117:       // Delete session
+118:       if (url.pathname.startsWith('/session/') && request.method === 'DELETE') {
+119:         const sessionId = url.pathname.split('/')[2];
+120:         // TODO: Delete from KV
+121:         return new Response(JSON.stringify({ ok: true }), {
+122:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+123:         });
+124:       }
+125:       
+126:       return new Response(JSON.stringify({ error: 'Not found' }), {
+127:         status: 404,
+128:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+129:       });
+130:       
+131:     } catch (error) {
+132:       return new Response(JSON.stringify({ error: error.message }), {
+133:         status: 500,
+134:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+135:       });
+136:     }
+137:   }
+138: };
+</file>
+
 <file path="backend/src/index.py">
   1: """
   2: Cloudflare Workers Entry Point for Hermes
@@ -822,6 +1511,67 @@ This section contains the contents of the repository's files.
 220:     return await handle_request(request, env)
 </file>
 
+<file path="backend/src/moderation.js">
+ 1: /**
+ 2:  * Content Moderation - JavaScript Edition
+ 3:  */
+ 4: 
+ 5: export function moderateContent(text) {
+ 6:   const lowerText = text.toLowerCase();
+ 7:   
+ 8:   // Spam patterns
+ 9:   const spamPatterns = [
+10:     /\b(viagra|cialis|casino|lottery|winner)\b/i,
+11:     /\b(click here|buy now|limited offer)\b/i,
+12:     /(http|https):\/\/[^\s]+/g // Multiple URLs
+13:   ];
+14:   
+15:   // Offensive patterns
+16:   const offensivePatterns = [
+17:     /\b(fuck|shit|bitch|asshole)\b/i,
+18:     // Add more as needed
+19:   ];
+20:   
+21:   // Check spam
+22:   for (const pattern of spamPatterns) {
+23:     if (pattern.test(text)) {
+24:       return {
+25:         safe: false,
+26:         reason: 'Spam detected',
+27:         category: 'spam'
+28:       };
+29:     }
+30:   }
+31:   
+32:   // Check offensive
+33:   for (const pattern of offensivePatterns) {
+34:     if (pattern.test(text)) {
+35:       return {
+36:         safe: false,
+37:         reason: 'Offensive language detected',
+38:         category: 'offensive'
+39:       };
+40:     }
+41:   }
+42:   
+43:   // Check excessive caps
+44:   const capsRatio = (text.match(/[A-Z]/g) || []).length / text.length;
+45:   if (capsRatio > 0.7 && text.length > 20) {
+46:     return {
+47:       safe: false,
+48:       reason: 'Excessive caps lock',
+49:       category: 'spam'
+50:     };
+51:   }
+52:   
+53:   return {
+54:     safe: true,
+55:     reason: null,
+56:     category: null
+57:   };
+58: }
+</file>
+
 <file path="backend/src/moderation.py">
   1: """
   2: Content Moderation for Hermes
@@ -991,6 +1741,80 @@ This section contains the contents of the repository's files.
 166:             "action": "monitor",
 167:             "reason": "Минимальные нарушения"
 168:         }
+</file>
+
+<file path="backend/src/rag.js">
+ 1: /**
+ 2:  * RAG System - JavaScript Edition
+ 3:  * Uses Mistral Codestral Embed + AstraDB
+ 4:  */
+ 5: 
+ 6: import { MistralEmbeddings } from './embeddings.js';
+ 7: import { AstraDBConnector } from './astra.js';
+ 8: 
+ 9: export class HermesRAG {
+10:   constructor(kvCache, env) {
+11:     this.embeddings = new MistralEmbeddings(kvCache, env);
+12:     this.astra = new AstraDBConnector(env);
+13:     this.chunkSize = 2000;
+14:     this.chunkOverlap = 700;
+15:   }
+16:   
+17:   async searchCodebase(query, limit = 4, language = null, filename = null) {
+18:     const queryEmbedding = await this.embeddings.embed(query);
+19:     
+20:     const filter = {};
+21:     if (language) filter.language = language;
+22:     if (filename) filter.filename = filename;
+23:     
+24:     return await this.astra.vectorSearch(
+25:       this.astra.CODEBASE_COLLECTION,
+26:       queryEmbedding,
+27:       limit,
+28:       Object.keys(filter).length > 0 ? filter : null,
+29:       true
+30:     );
+31:   }
+32:   
+33:   async addMemory(userId, sessionId, content, memoryType = 'conversation') {
+34:     const embedding = await this.embeddings.embed(content);
+35:     
+36:     const document = {
+37:       user_id: userId,
+38:       session_id: sessionId,
+39:       content,
+40:       memory_type: memoryType,
+41:       timestamp: new Date().toISOString()
+42:     };
+43:     
+44:     return await this.astra.insertDocument(
+45:       this.astra.MEMORY_COLLECTION,
+46:       document,
+47:       embedding
+48:     );
+49:   }
+50:   
+51:   async searchMemory(query, userId = null, limit = 3) {
+52:     const queryEmbedding = await this.embeddings.embed(query);
+53:     
+54:     const filter = {};
+55:     if (userId) filter.user_id = userId;
+56:     
+57:     return await this.astra.vectorSearch(
+58:       this.astra.MEMORY_COLLECTION,
+59:       queryEmbedding,
+60:       limit,
+61:       Object.keys(filter).length > 0 ? filter : null
+62:     );
+63:   }
+64:   
+65:   async getStats() {
+66:     return {
+67:       codebase: await this.astra.getStats(this.astra.CODEBASE_COLLECTION),
+68:       memory: await this.astra.getStats(this.astra.MEMORY_COLLECTION)
+69:     };
+70:   }
+71: }
 </file>
 
 <file path="backend/src/rag.py">
