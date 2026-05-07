@@ -11,7 +11,9 @@ const NEUROESCROW_DIR = path.join(ROOT, 'neuroescrow');
 const NEUROESCROW_BACKEND = path.join(NEUROESCROW_DIR, 'backend');
 
 const args = process.argv.slice(2);
-const commitMessage = args[0] || 'Update: General improvements and fixes';
+let commitMessage = args[0] || 'Update: General improvements and fixes';
+// Escape quotes for git commit message
+commitMessage = commitMessage.replace(/"/g, '\\"');
 
 // Читаем версию — УБИРАЕМ букву v если есть
 let version = '0.20.0';
