@@ -1078,11 +1078,15 @@ function initHistorySidebar() {
     decided = false;
   };
 
-  if (historySidebar) {
-    historySidebar.addEventListener('pointerdown', onPointerDown, { passive: false });
-    historySidebar.addEventListener('pointermove', onPointerMove, { passive: true });
-    historySidebar.addEventListener('pointerup', endPointer, { passive: true });
-    historySidebar.addEventListener('pointercancel', endPointer, { passive: true });
+  try {
+    if (historySidebar) {
+      historySidebar.addEventListener('pointerdown', onPointerDown, { passive: false });
+      historySidebar.addEventListener('pointermove', onPointerMove, { passive: true });
+      historySidebar.addEventListener('pointerup', endPointer, { passive: true });
+      historySidebar.addEventListener('pointercancel', endPointer, { passive: true });
+    }
+  } catch (e) {
+    console.error('Error adding pointer event listeners to historySidebar:', e);
   }
 
    // Optional: Add event listeners for items
