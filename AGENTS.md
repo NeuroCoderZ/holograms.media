@@ -129,4 +129,34 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 
 ---
 
+## Единый деплой / мониторинг (что должны знать агенты)
+
+### 1) Единый деплой — `scripts/deploy.js`
+Агенты должны запускать обновления проекта через **одну команду**:
+- `node scripts/deploy.js "Описание изменений"`
+
+`deploy.js` выполняет в этом порядке:
+1. `npm run build` (чтобы GitHub Actions работали по уже собранным артефактам)
+2. pre-deploy checklist (`node scripts/pre-deploy-check.js`)
+3. генерацию контекста репозиториев (`npx repomix` и `neuroescrow/repomix-output.md`)
+4. bump версии (`version.txt`, `package.json`, `index.html`) через `node scripts/generate_version.js`
+5. деплой NeuroEscrow Hermes в Cloudflare Workers (`wrangler deploy`)
+6. `git add` → `git commit` → `git push origin dev`
+
+### 2) Почему GitHub UI показывает “старые билды”
+workflow на GitHub Actions стартует **не от локального build**, а от **push/commit** в ветку, соответствующую CI.
+Значит: если изменений не коммитили/не пушили — новые runs на GitHub не появятся.
+
+### 3) Контекст для двух Hermes обновляется через CI-пайплайн
+Обновления для гермесов (core/behavior/context/memory) получают актуальный контекст после деплой-события, потому что пайплайн использует:
+- версионные изменения (bump)
+- сгенерированный RepoMix контекст (репозиторный “код→знания”)
+- push в `dev` (триггер workflows)
+
+### 4) Самописный монитор — `scripts/monitor-server.js`
+Для контроля процесса и статуса используется:
+- `node scripts/monitor-server.js` → http://localhost:3001
+
+Монитор читает агрегированные данные через endpoint’ы (`/api/status`) и отображает сборку/деплой/логи, а также управляет “копированием логов” только после того, как данные реально загружены (не по хрупким подстрокам).
+
 *"Архитектура следует за интенцией. Код — это геометрия резонанса."*

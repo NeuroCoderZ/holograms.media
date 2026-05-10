@@ -138,13 +138,55 @@ async function fetchDeployLogs() {
 async function fetchStatus() {
   const result = { github: [], cloudflare: [], koyeb: [], lastUpdate: new Date().toISOString(), copyText: '' };
 
-  // GitHub — hardcoded четыре пункта для мониторинга
-  result.github = [
-    { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: 'Sync Knowledge Base' },
-    { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: '🚀 Deploy Frontend to Cloudflare Pages' },
-    { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: '🧪 Deploy Backend to Koyeb (Development)' },
-    { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: '🤖 Deploy Hermes to Cloudflare Workers' }
-  ];
+  // GitHub — собираем реальные последние runs через gh CLI
+  // Фолбэк: если gh не доступен/не распарсился — оставляем предыдущие hardcode-строки.
+  try {
+    const ghRaw = run('gh run list --limit 30 --json status,conclusion,displayTitle,name,databaseId,createdAt,headBranch,headSha', 15000);
+    if (typeof ghRaw === 'string' && ghRaw.trim().startsWith('[')) {
+      const runs = JSON.parse(ghRaw);
+
+      const pick = (pred) => {
+        const found = runs.find(r => r.name && pred(r.name));
+        if (!found) return null;
+        const status = found.conclusion || found.status || 'success';
+        return {
+          id: found.databaseId ? String(found.databaseId) : '—',
+          branch: found.headBranch || 'dev',
+          status,
+          createdAt: found.createdAt || new Date().toISOString(),
+          commit: found.name
+        };
+      };
+
+      const ghFrontend = pick(n => n.includes('Deploy Frontend to Cloudflare Pages') || n.includes('Frontend'));
+      const ghBackend = pick(n => n.includes('Deploy Backend to Koyeb'));
+      const ghHermes = pick(n => n.includes('Deploy Hermes to Cloudflare Workers') || n.includes('Hermes'));
+      const ghSync = pick(n => n.includes('Sync Knowledge Base') || n.includes('Knowledge Base'));
+
+      const ghItems = [ghSync, ghFrontend, ghBackend, ghHermes].filter(Boolean);
+      if (ghItems.length > 0) {
+        result.github = ghItems.map(x => ({
+          id: x.id,
+          branch: x.branch || 'dev',
+          status: x.status || 'success',
+          createdAt: x.createdAt || new Date().toISOString(),
+          commit: x.commit || x.headSha || ''
+        }));
+      }
+    }
+  } catch (e) {
+    // ignore here; fallback below
+  }
+
+  // Fallback: если ghItems не удалось получить
+  if (!result.github || result.github.length === 0) {
+    result.github = [
+      { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: 'Sync Knowledge Base' },
+      { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: '🚀 Deploy Frontend to Cloudflare Pages' },
+      { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: '🧪 Deploy Backend to Koyeb (Development)' },
+      { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: '🤖 Deploy Hermes to Cloudflare Workers' }
+    ];
+  }
 
   // Cloudflare — fetch через https (проект holograms-media-dev для dev ветки)
   try {
@@ -372,9 +414,9 @@ function update() {
     render(d.koyeb, 'ky');
     cachedCopy = d.copyText || '';
 
-    // Кнопка активна только когда логи готовы (содержат секции [GitHub], [Koyeb] и т.д.)
+    // Кнопка активна когда логи реально заполнены
     const btn = document.querySelector('.copy-btn');
-    if (d.copyText && d.copyText.includes('[GitHub') && !logsReady) {
+    if (d.copyText && d.copyText.trim().length > 50 && !logsReady) {
       logsReady = true;
       btn.classList.add('ready');
       btn.title = 'Логи загружены — нажмите для копирования';

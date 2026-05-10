@@ -20,11 +20,27 @@ The Holograms Media project utilizes a hybrid infrastructure to ensure maximum e
 ## 2. Deployment Pipeline (CI/CD)
 Automation is implemented in the `scripts/deploy.js` script.
 
-### 2.1. "Code-to-Knowledge" Cycle
+### 2.1. "Build → Deploy → Push" cycle (current standard)
 Each deployment includes:
-1.  **Versioning:** Incrementing the patch version in `package.json` and `index.html`.
-2.  **RAG Sync:** Enforced call to `python scripts/sync_knowledge_base.py`. This synchronizes changes in `docs/RU` with the **AstraDB (3072d)** vector database.
-3.  **Git Push:** Pushing to the `dev` branch for an automatic build.
+
+1) **Frontend build (to align GitHub Actions with built artifacts)**  
+   - `npm run build` is executed at the start of `scripts/deploy.js`.
+
+2) **Pre-deploy checklist + repo context generation**  
+   - `node scripts/pre-deploy-check.js`
+   - `npx repomix --style xml --output repomix-output.xml --no-security-check`
+   - `npx repomix` inside `neuroescrow/`
+
+3) **Versioning bump**  
+   - increments patch version in `version.txt`
+   - updates `package.json`
+   - updates `index.html` deploy version log line
+   - runs `node scripts/generate_version.js`
+
+4) **Hermes deployment + GitHub Actions trigger**  
+   - deploys NeuroEscrow Hermes via `wrangler deploy` (Cloudflare Workers)
+   - then commits and pushes to `dev` using `git push origin dev`  
+   This push is what triggers GitHub Actions for knowledge sync / further pipeline steps (exact workflows depend on repo CI configuration).
 
 ---
 **"Infrastructure consists of the vessels through which Intention flows."**

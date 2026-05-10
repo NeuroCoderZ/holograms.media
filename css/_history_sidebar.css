@@ -25,40 +25,36 @@
     isolation: isolate;
     z-index: 10;
 
-    /* Match .panel transitions */
+    /* Match .panel transitions (same timing/feel) */
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-in-out;
     visibility: visible;
-    pointer-events: auto;
+    pointer-events: none;
 
     /* Optimization */
     will-change: transform, opacity;
 
     /*
-      Default: slightly visible.
-      We keep the panel effectively "closed" without disappearing completely.
-      This avoids UX where touch devices cannot ever open because there's no hover.
+      Closed state:
+      - when right panel is hidden, this must be completely invisible (no peek).
+      - JS will toggle .is-open to show it.
     */
-    opacity: 0.8;
-
-    /*
-      Slightly out: leave ~5% of this sidebar width still hidden.
-      Since width is 95%, moving it by calc(100% - 16px) is fragile across layouts.
-      We instead use translateX(5%) to guarantee a small visible edge.
-    */
-    transform: translateX(5%);
+    opacity: 0;
+    transform: translateX(100%);
 }
 
-/* Hover: open smoothly (desktop) */
-.history-sidebar:hover,
+/* Open state (only via .is-open, not via hover on container) */
 .history-sidebar.is-open {
     opacity: 1;
-    transform: translateX(0);
     pointer-events: auto;
-    /* Do NOT add extra dark overlay; it can visually "flatten" other panels' glass blur */
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-    -moz-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+
+    /*
+      Slide in almost all of the right panel width.
+      Since history-sidebar is inside right panel, we can approximate
+      "95% of right-panel width" using translateX(-95% of its own width):
+      - closed: 100% (fully outside)
+      - open:  -95% => leave ~5% hidden
+    */
+    transform: translateX(-95%);
 }
 
 /* Layer 2: Inner highlight (match .panel::before) */

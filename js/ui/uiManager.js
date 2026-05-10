@@ -1045,59 +1045,51 @@ function initHistorySidebar() {
   const historyList = document.getElementById('historyList');
   if (!historyList) return;
 
+  const rightPanel = document.getElementById('right-panel');
+
+  const isRightPanelVisible = () => {
+    if (!rightPanel) return false;
+    // layout toggling uses .hidden/.visible in css/_panels.css
+    return rightPanel.classList.contains('visible') && !rightPanel.classList.contains('hidden');
+  };
+
+  const openIfAllowed = () => {
+    if (!isRightPanelVisible()) return;
+    historySidebar.classList.add('is-open');
+  };
+
+  const closeHistory = () => {
+    historySidebar.classList.remove('is-open');
+  };
+
   // Load chat history (placeholder for now)
   loadChatHistory(historyList);
 
-  // Add event listeners for items
-  // initHistoryEvents(); // TODO: Implement if needed
+  // Desktop: open on hover, close on leave (only when right panel is visible)
+  historySidebar.addEventListener('pointerenter', openIfAllowed);
+  historySidebar.addEventListener('pointerleave', closeHistory);
 
-  // Add swipe support
+  // Touch: swipe support + close on leave handled in initHistorySwipe
   initHistorySwipe(historySidebar);
+
+  // If right panel gets hidden by toggle button, immediately close history
+  if (rightPanel) {
+    const mo = new MutationObserver(() => {
+      if (!isRightPanelVisible()) closeHistory();
+    });
+    mo.observe(rightPanel, { attributes: true, attributeFilter: ['class', 'style'] });
+  }
 }
 
-  let startX = 0;
-  let currentX = 0;
-  let pointerActive = false;
-  let decided = false;
-
-  const onPointerDown = (e) => {
-    startX = e.clientX;
-    currentX = e.clientX;
-    pointerActive = true;
-    decided = false;
-  };
-
-  const onPointerMove = (e) => {
-    if (!pointerActive) return;
-    currentX = e.clientX;
-    // Optional: handle move if needed
-  };
-
-  const endPointer = () => {
-    pointerActive = false;
-    decided = false;
-  };
-
-  try {
-    if (historySidebar) {
-      historySidebar.addEventListener('pointerdown', onPointerDown, { passive: false });
-      historySidebar.addEventListener('pointermove', onPointerMove, { passive: true });
-      historySidebar.addEventListener('pointerup', endPointer, { passive: true });
-      historySidebar.addEventListener('pointercancel', endPointer, { passive: true });
-    }
-  } catch (e) {
-    console.error('Error adding pointer event listeners to historySidebar:', e);
-  }
-
-   // Optional: Add event listeners for items
+// NOTE: removed broken dangling pointer-block that referenced historySidebar outside of scope.
 
 // Placeholder function to load chat history
 function loadChatHistory(container) {
-  // Mock data for demonstration
+  // Mock data for demonstration (no green "active" highlight)
   const mockChats = [
-    { id: 1, title: 'Обсуждение BasilaQ-128', active: false },
-    { id: 2, title: 'Жестовый синтез реальностей', active: true },
-    { id: 3, title: 'Триа и эмбеддинги', active: false }
+    { id: 1, title: 'Обсуждение BasilaQ-128' },
+    { id: 2, title: 'Жестовый синтез реальностей' },
+    { id: 3, title: 'Триа и эмбеддинги' }
   ];
 
   container.innerHTML = '';
@@ -1116,14 +1108,25 @@ function loadChatHistory(container) {
 
   mockChats.forEach(chat => {
     const item = document.createElement('div');
-    item.className = `history-item ${chat.active ? 'active' : ''}`;
+    item.className = 'history-item';
+    item.dataset.chatSessionId = String(chat.id);
+
     item.innerHTML = `
       <div class="history-item-title">${chat.title}</div>
       <div class="history-item-menu">
-        <button class="history-item-menu-btn" title="Редактировать">✏️</button>
-        <button class="history-item-menu-btn" title="Удалить">🗑️</button>
+        <button class="history-item-menu-btn" title="Редактировать" type="button">✏️</button>
+        <button class="history-item-menu-btn" title="Удалить" type="button">🗑️</button>
       </div>
     `;
+
+    // Placeholder click: in next step we'll wire real history loading + hermes context.
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sessionId = item.dataset.chatSessionId || null;
+      console.log('[HistorySidebar] mock select sessionId:', sessionId);
+      // no green active styles
+    });
+
     container.appendChild(item);
   });
 }
@@ -1138,48 +1141,52 @@ function loadChatHistory(container) {
 
 // Initialize swipe support for history sidebar
 function initHistorySwipe(sidebar) {
+  // Touch handling now matches CSS+JS state:
+  // - history should only open when right panel is visible
+  // - history should close when leaving
+  // We keep swipe as a "show/hide" trigger, but only if right panel is visible.
   let startX = 0;
   let currentX = 0;
-  let isOpen = false;
-  const threshold = 50; // px to trigger swipe
 
-  const updateState = () => {
-    isOpen = sidebar.style.transform !== 'translateX(calc(100% - 16px))';
+  const threshold = 45; // px
+
+  const isRightPanelVisible = () => {
+    const rightPanel = document.getElementById('right-panel');
+    if (!rightPanel) return false;
+    return !rightPanel.classList.contains('hidden');
+  };
+
+  const openHistory = () => {
+    if (!isRightPanelVisible()) return;
+    sidebar.classList.add('is-open');
+  };
+
+  const closeHistory = () => {
+    sidebar.classList.remove('is-open');
   };
 
   sidebar.addEventListener('touchstart', (e) => {
+    if (!e.touches || !e.touches[0]) return;
     startX = e.touches[0].clientX;
-    updateState();
-  });
+    currentX = startX;
+  }, { passive: true });
 
   sidebar.addEventListener('touchmove', (e) => {
+    if (!e.touches || !e.touches[0]) return;
     currentX = e.touches[0].clientX;
+  }, { passive: true });
+
+  sidebar.addEventListener('touchend', () => {
     const deltaX = currentX - startX;
-    if (!isOpen && deltaX < -threshold) {
-      // Swipe right to left: open
-      sidebar.style.opacity = '1';
-      sidebar.style.transform = 'translateX(5%)';
-    } else if (isOpen && deltaX > threshold) {
-      // Swipe left to right: close
-      sidebar.style.opacity = '0.4';
-      sidebar.style.transform = 'translateX(calc(100% - 16px))';
+    if (Math.abs(deltaX) < threshold) return;
+
+    if (deltaX < 0) {
+      openHistory();
+    } else {
+      closeHistory();
     }
   });
 
-  sidebar.addEventListener('touchend', () => {
-    // Snap to state based on final position
-    const deltaX = currentX - startX;
-    if (Math.abs(deltaX) > threshold) {
-      if (!isOpen && deltaX < -threshold) {
-        // Open
-        sidebar.style.opacity = '1';
-        sidebar.style.transform = 'translateX(5%)';
-      } else if (isOpen && deltaX > threshold) {
-        // Close
-        sidebar.style.opacity = '0.4';
-        sidebar.style.transform = 'translateX(calc(100% - 16px))';
-      }
-    }
-    updateState();
-  });
+  // Also close on pointer leaving the history area
+  sidebar.addEventListener('pointerleave', () => closeHistory());
 }

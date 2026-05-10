@@ -10,6 +10,16 @@ const INDEX_HTML     = path.join(ROOT, 'index.html');
 const NEUROESCROW_DIR = path.join(ROOT, 'neuroescrow');
 const NEUROESCROW_BACKEND = path.join(NEUROESCROW_DIR, 'backend');
 
+// One-script deploy: build first, so the pushed commit/Actions corresponds to built artifacts.
+console.log('\n🧱 Running frontend build before deploy (npm run build)...\n');
+try {
+    execSync('npm run build', { stdio: 'inherit', cwd: ROOT });
+    console.log('\n✅ Build completed.\n');
+} catch (e) {
+    console.error('\n❌ Build failed. Deploy aborted.\n');
+    process.exit(1);
+}
+
 const args = process.argv.slice(2);
 let commitMessage = args[0] || 'Update: General improvements and fixes';
 // Escape quotes for git commit message
