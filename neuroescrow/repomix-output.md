@@ -636,226 +636,227 @@ This section contains the contents of the repository's files.
  33: - Профессиональный, но дружелюбный
  34: - Краткие и точные ответы
  35: - Используешь эмодзи умеренно
- 36: - Всегда объясняешь технические детали простым языком`,
- 37:       
- 38:       client: `Ты — Гермес в режиме помощи клиенту.
- 39: Фокус: помощь в создании сделки, объяснение условий, защита интересов клиента.`,
- 40:       
- 41:       creator: `Ты — Гермес в режиме помощи исполнителю.
- 42: Фокус: помощь в выполнении заказа, проверка требований, защита от недобросовестных заказчиков.`
- 43:     };
- 44:     
- 45:     return prompts[persona] || prompts.hermes;
- 46:   }
- 47:   
- 48:   getSessionHistory(sessionId, limit = 10) {
- 49:     if (!this.sessions.has(sessionId)) {
- 50:       this.sessions.set(sessionId, []);
- 51:     }
- 52:     const history = this.sessions.get(sessionId);
- 53:     return history.slice(-limit);
- 54:   }
- 55:   
- 56:   addToSession(sessionId, role, content) {
- 57:     if (!this.sessions.has(sessionId)) {
- 58:       this.sessions.set(sessionId, []);
- 59:     }
- 60:     this.sessions.get(sessionId).push({
- 61:       role,
- 62:       content,
- 63:       timestamp: new Date().toISOString()
- 64:     });
- 65:   }
- 66:   
- 67:   async buildContext(query, userId, sessionId) {
- 68:     const contextParts = [];
- 69:     
- 70:     // Search codebase
- 71:     const codebaseResults = await this.rag.searchCodebase(query, 3);
- 72:     if (codebaseResults.length > 0) {
- 73:       contextParts.push('📚 Релевантный код из базы:');
- 74:       codebaseResults.forEach((result, i) => {
- 75:         const filepath = result.filepath || 'unknown';
- 76:         const text = (result.text || '').substring(0, 500);
- 77:         const similarity = result.$similarity || 0;
- 78:         contextParts.push(`\n${i + 1}. ${filepath} (similarity: ${similarity.toFixed(2)})\n\`\`\`\n${text}\n\`\`\``);
- 79:       });
- 80:     }
- 81:     
- 82:     // Search memory
- 83:     const memoryResults = await this.rag.searchMemory(query, userId, 2);
- 84:     if (memoryResults.length > 0) {
- 85:       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
- 86:       memoryResults.forEach((result, i) => {
- 87:         const content = result.content || '';
- 88:         const timestamp = result.timestamp || '';
- 89:         contextParts.push(`\n${i + 1}. [${timestamp}] ${content}`);
- 90:       });
- 91:     }
- 92:     
- 93:     return contextParts.join('');
- 94:   }
- 95:   
- 96:   async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true) {
- 97:     // Moderate content
- 98:     const moderation = moderateContent(message);
- 99:     if (!moderation.safe) {
-100:       return {
-101:         response: `⚠️ Сообщение заблокировано: ${moderation.reason}`,
-102:         blocked: true,
-103:         reason: moderation.reason
-104:       };
-105:     }
-106:     
-107:     // Build context
-108:     let context = '';
-109:     if (useRag) {
-110:       context = await this.buildContext(message, userId, sessionId);
-111:     }
-112:     
-113:     // Get history
-114:     const history = this.getSessionHistory(sessionId);
-115:     
-116:     // Build messages
-117:     const messages = [
-118:       { role: 'system', content: this.getSystemPrompt(persona) }
-119:     ];
-120:     
-121:     if (context) {
-122:       messages.push({
-123:         role: 'system',
-124:         content: `Контекст для ответа:\n${context}`
-125:       });
-126:     }
-127:     
-128:     // Add history
-129:     history.forEach(msg => {
-130:       messages.push({
-131:         role: msg.role,
-132:         content: msg.content
-133:       });
-134:     });
-135:     
-136:     // Add current message
-137:     if (imageUrl) {
-138:       messages.push({
-139:         role: 'user',
-140:         content: [
-141:           { type: 'text', text: message },
-142:           { type: 'image_url', image_url: { url: imageUrl } }
-143:         ]
-144:       });
-145:     } else {
-146:       messages.push({
-147:         role: 'user',
-148:         content: message
-149:       });
-150:     }
-151:     
-152:     // Call Mistral API
-153:     try {
-154:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-155:         method: 'POST',
-156:         headers: {
-157:           'Authorization': `Bearer ${this.apiKey}`,
-158:           'Content-Type': 'application/json'
-159:         },
-160:         body: JSON.stringify({
-161:           model: this.model,
-162:           messages,
-163:           temperature: 0.7,
-164:           max_tokens: 2000
-165:         })
-166:       });
-167:       
-168:       if (!response.ok) {
-169:         throw new Error(`Mistral API error: ${response.status}`);
-170:       }
-171:       
-172:       const data = await response.json();
-173:       const assistantMessage = data.choices[0].message.content;
-174:       
-175:       // Add to session
-176:       this.addToSession(sessionId, 'user', message);
-177:       this.addToSession(sessionId, 'assistant', assistantMessage);
-178:       
-179:       // Save to memory (substantial messages only)
-180:       if (message.length > 50) {
-181:         await this.rag.addMemory(
-182:           userId,
-183:           sessionId,
-184:           `User: ${message}\nHermes: ${assistantMessage}`,
-185:           'conversation'
-186:         );
-187:       }
-188:       
-189:       return {
-190:         response: assistantMessage,
-191:         blocked: false,
-192:         context_used: !!context,
-193:         tokens_used: data.usage?.total_tokens || 0
-194:       };
-195:       
-196:     } catch (error) {
-197:       return {
-198:         response: `❌ Ошибка: ${error.message}`,
-199:         error: true,
-200:         error_message: error.message
-201:       };
-202:     }
-203:   }
-204:   
-205:   async analyzeImage(imageUrl, prompt, userId, sessionId) {
-206:     return this.chat(prompt, userId, sessionId, 'hermes', imageUrl, false);
-207:   }
-208:   
-209:   async getSessionSummary(sessionId) {
-210:     const history = this.getSessionHistory(sessionId, 100);
-211:     
-212:     if (history.length === 0) {
-213:       return 'Нет истории сессии';
-214:     }
-215:     
-216:     const conversation = history.map(msg => `${msg.role}: ${msg.content}`).join('\n');
-217:     
-218:     const messages = [
-219:       {
-220:         role: 'system',
-221:         content: 'Создай краткое резюме этого разговора (2-3 предложения).'
-222:       },
-223:       {
-224:         role: 'user',
-225:         content: conversation
-226:       }
-227:     ];
-228:     
-229:     try {
-230:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-231:         method: 'POST',
-232:         headers: {
-233:           'Authorization': `Bearer ${this.apiKey}`,
-234:           'Content-Type': 'application/json'
-235:         },
-236:         body: JSON.stringify({
-237:           model: this.model,
-238:           messages,
-239:           temperature: 0.5,
-240:           max_tokens: 200
-241:         })
-242:       });
-243:       
-244:       const data = await response.json();
-245:       return data.choices[0].message.content;
-246:       
-247:     } catch (error) {
-248:       return `Ошибка создания резюме: ${error.message}`;
-249:     }
-250:   }
-251:   
-252:   clearSession(sessionId) {
-253:     this.sessions.delete(sessionId);
-254:   }
-255: }
+ 36: - Всегда объясняешь технические детали простым языком
+ 37: - Отвечай на русском языке, без использования markdown (**, *, #), с правильной пунктуацией, абзацами и отступами. Используй естественный русский стиль.`,
+ 38:       
+ 39:       client: `Ты — Гермес в режиме помощи клиенту.
+ 40: Фокус: помощь в создании сделки, объяснение условий, защита интересов клиента.`,
+ 41:       
+ 42:       creator: `Ты — Гермес в режиме помощи исполнителю.
+ 43: Фокус: помощь в выполнении заказа, проверка требований, защита от недобросовестных заказчиков.`
+ 44:     };
+ 45:     
+ 46:     return prompts[persona] || prompts.hermes;
+ 47:   }
+ 48:   
+ 49:   getSessionHistory(sessionId, limit = 10) {
+ 50:     if (!this.sessions.has(sessionId)) {
+ 51:       this.sessions.set(sessionId, []);
+ 52:     }
+ 53:     const history = this.sessions.get(sessionId);
+ 54:     return history.slice(-limit);
+ 55:   }
+ 56:   
+ 57:   addToSession(sessionId, role, content) {
+ 58:     if (!this.sessions.has(sessionId)) {
+ 59:       this.sessions.set(sessionId, []);
+ 60:     }
+ 61:     this.sessions.get(sessionId).push({
+ 62:       role,
+ 63:       content,
+ 64:       timestamp: new Date().toISOString()
+ 65:     });
+ 66:   }
+ 67:   
+ 68:   async buildContext(query, userId, sessionId) {
+ 69:     const contextParts = [];
+ 70:     
+ 71:     // Search codebase
+ 72:     const codebaseResults = await this.rag.searchCodebase(query, 3);
+ 73:     if (codebaseResults.length > 0) {
+ 74:       contextParts.push('📚 Релевантный код из базы:');
+ 75:       codebaseResults.forEach((result, i) => {
+ 76:         const filepath = result.filepath || 'unknown';
+ 77:         const text = (result.text || '').substring(0, 500);
+ 78:         const similarity = result.$similarity || 0;
+ 79:         contextParts.push(`\n${i + 1}. ${filepath} (similarity: ${similarity.toFixed(2)})\n\`\`\`\n${text}\n\`\`\``);
+ 80:       });
+ 81:     }
+ 82:     
+ 83:     // Search memory
+ 84:     const memoryResults = await this.rag.searchMemory(query, userId, 2);
+ 85:     if (memoryResults.length > 0) {
+ 86:       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
+ 87:       memoryResults.forEach((result, i) => {
+ 88:         const content = result.content || '';
+ 89:         const timestamp = result.timestamp || '';
+ 90:         contextParts.push(`\n${i + 1}. [${timestamp}] ${content}`);
+ 91:       });
+ 92:     }
+ 93:     
+ 94:     return contextParts.join('');
+ 95:   }
+ 96:   
+ 97:   async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true) {
+ 98:     // Moderate content
+ 99:     const moderation = moderateContent(message);
+100:     if (!moderation.safe) {
+101:       return {
+102:         response: `⚠️ Сообщение заблокировано: ${moderation.reason}`,
+103:         blocked: true,
+104:         reason: moderation.reason
+105:       };
+106:     }
+107:     
+108:     // Build context
+109:     let context = '';
+110:     if (useRag) {
+111:       context = await this.buildContext(message, userId, sessionId);
+112:     }
+113:     
+114:     // Get history
+115:     const history = this.getSessionHistory(sessionId);
+116:     
+117:     // Build messages
+118:     const messages = [
+119:       { role: 'system', content: this.getSystemPrompt(persona) }
+120:     ];
+121:     
+122:     if (context) {
+123:       messages.push({
+124:         role: 'system',
+125:         content: `Контекст для ответа:\n${context}`
+126:       });
+127:     }
+128:     
+129:     // Add history
+130:     history.forEach(msg => {
+131:       messages.push({
+132:         role: msg.role,
+133:         content: msg.content
+134:       });
+135:     });
+136:     
+137:     // Add current message
+138:     if (imageUrl) {
+139:       messages.push({
+140:         role: 'user',
+141:         content: [
+142:           { type: 'text', text: message },
+143:           { type: 'image_url', image_url: { url: imageUrl } }
+144:         ]
+145:       });
+146:     } else {
+147:       messages.push({
+148:         role: 'user',
+149:         content: message
+150:       });
+151:     }
+152:     
+153:     // Call Mistral API
+154:     try {
+155:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+156:         method: 'POST',
+157:         headers: {
+158:           'Authorization': `Bearer ${this.apiKey}`,
+159:           'Content-Type': 'application/json'
+160:         },
+161:         body: JSON.stringify({
+162:           model: this.model,
+163:           messages,
+164:           temperature: 0.7,
+165:           max_tokens: 2000
+166:         })
+167:       });
+168:       
+169:       if (!response.ok) {
+170:         throw new Error(`Mistral API error: ${response.status}`);
+171:       }
+172:       
+173:       const data = await response.json();
+174:       const assistantMessage = data.choices[0].message.content;
+175:       
+176:       // Add to session
+177:       this.addToSession(sessionId, 'user', message);
+178:       this.addToSession(sessionId, 'assistant', assistantMessage);
+179:       
+180:       // Save to memory (substantial messages only)
+181:       if (message.length > 50) {
+182:         await this.rag.addMemory(
+183:           userId,
+184:           sessionId,
+185:           `User: ${message}\nHermes: ${assistantMessage}`,
+186:           'conversation'
+187:         );
+188:       }
+189:       
+190:       return {
+191:         response: assistantMessage,
+192:         blocked: false,
+193:         context_used: !!context,
+194:         tokens_used: data.usage?.total_tokens || 0
+195:       };
+196:       
+197:     } catch (error) {
+198:       return {
+199:         response: `❌ Ошибка: ${error.message}`,
+200:         error: true,
+201:         error_message: error.message
+202:       };
+203:     }
+204:   }
+205:   
+206:   async analyzeImage(imageUrl, prompt, userId, sessionId) {
+207:     return this.chat(prompt, userId, sessionId, 'hermes', imageUrl, false);
+208:   }
+209:   
+210:   async getSessionSummary(sessionId) {
+211:     const history = this.getSessionHistory(sessionId, 100);
+212:     
+213:     if (history.length === 0) {
+214:       return 'Нет истории сессии';
+215:     }
+216:     
+217:     const conversation = history.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+218:     
+219:     const messages = [
+220:       {
+221:         role: 'system',
+222:         content: 'Создай краткое резюме этого разговора (2-3 предложения).'
+223:       },
+224:       {
+225:         role: 'user',
+226:         content: conversation
+227:       }
+228:     ];
+229:     
+230:     try {
+231:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+232:         method: 'POST',
+233:         headers: {
+234:           'Authorization': `Bearer ${this.apiKey}`,
+235:           'Content-Type': 'application/json'
+236:         },
+237:         body: JSON.stringify({
+238:           model: this.model,
+239:           messages,
+240:           temperature: 0.5,
+241:           max_tokens: 200
+242:         })
+243:       });
+244:       
+245:       const data = await response.json();
+246:       return data.choices[0].message.content;
+247:       
+248:     } catch (error) {
+249:       return `Ошибка создания резюме: ${error.message}`;
+250:     }
+251:   }
+252:   
+253:   clearSession(sessionId) {
+254:     this.sessions.delete(sessionId);
+255:   }
+256: }
 </file>
 
 <file path="backend/src/hermes.py">

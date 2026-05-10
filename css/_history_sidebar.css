@@ -26,24 +26,36 @@
     z-index: 10;
 
     /* Match .panel transitions */
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease-in-out;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-in-out;
     visibility: visible;
     pointer-events: auto;
 
     /* Optimization */
     will-change: transform, opacity;
 
-    /* Default closed state */
-    opacity: 0.4;
-    transform: translateX(calc(100% - 16px));
+    /*
+      Default: slightly visible.
+      We keep the panel effectively "closed" without disappearing completely.
+      This avoids UX where touch devices cannot ever open because there's no hover.
+    */
+    opacity: 0.8;
+
+    /*
+      Slightly out: leave ~5% of this sidebar width still hidden.
+      Since width is 95%, moving it by calc(100% - 16px) is fragile across layouts.
+      We instead use translateX(5%) to guarantee a small visible edge.
+    */
+    transform: translateX(5%);
 }
 
-/* Hover: open smoothly */
-.history-sidebar:hover {
+/* Hover: open smoothly (desktop) */
+.history-sidebar:hover,
+.history-sidebar.is-open {
     opacity: 1;
-    transform: translateX(5%);
+    transform: translateX(0);
     pointer-events: auto;
-    background-color: rgba(0, 0, 0, 0.5) !important;
+    /* Do NOT add extra dark overlay; it can visually "flatten" other panels' glass blur */
+    background: var(--glass-bg) !important;
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     -moz-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;

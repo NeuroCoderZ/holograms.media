@@ -1,19 +1,11 @@
-# Hologram Decode MVP v0.20.459 - ✅ ЗАВЕРШЕНО
+# TODO — History Sidebar glassmorphism
 
-## ✅ Выполнено полностью
-- [x] Code audit всех scanner файлов
-- [x] NeuralDecoderService.js (reverse BasilaQ + Tria)
-- [x] Интеграция в hologramScanner.js (импорт + processFrame)
-- [x] Grid/sphere detection (фиолет/красные anchors)
-- [x] Viewfinder UX (темнота + 4 угла)
-- [x] WALKTHROUGH.md для тестирования
-
-## 🎮 Тестирование
-См. WALKTHROUGH.md
-
-## 📈 Следующие шаги
-- [ ] Performance optimization
-- [ ] Backend gesture_agent.py sync
-- [ ] Production deploy v0.20.459
-
-**Hologram Decode готов к использованию!** 🚀
+- [ ] Update `css/_history_sidebar.css`:
+  - [ ] Add `.history-sidebar.is-open` styles
+  - [ ] Set default state to “slightly visible”
+  - [ ] Keep hover behavior consistent
+- [ ] Update `js/ui/uiManager.js`:
+  - [ ] Extend `initHistorySidebar()` with open/close logic:
+    - [ ] Desktop: mouse enter/leave
+    - [ ] Touch/pen: swipe right-to-close, left-to-open (within visible area)
+- [ ] Verify: history sidebar appears and does not break other glassmorphism blur

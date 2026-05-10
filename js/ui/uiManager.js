@@ -1048,6 +1048,94 @@ function initHistorySidebar() {
   // Load chat history (placeholder for now)
   loadChatHistory(historyList);
 
+  // --- Desktop hover open/close ---
+  // Keep CSS hover, but also allow "auto-close" on mouseleave for consistent UX
+  // (so it doesn't stay open due to stale is-open class).
+  historySidebar.addEventListener('mouseenter', () => {
+    historySidebar.classList.add('is-open');
+  });
+
+  historySidebar.addEventListener('mouseleave', () => {
+    historySidebar.classList.remove('is-open');
+  });
+
+  // --- Touch / Pen swipe handling (open within visible area) ---
+  // Requirement:
+  // - swipe left (finger moves left) => OPEN
+  // - swipe right => CLOSE
+  // - gesture only meaningful when touch starts inside the sidebar visible area
+  let pointerActive = false;
+  let startX = 0;
+  let startY = 0;
+  let lastX = 0;
+  let lastY = 0;
+  let decided = false;
+
+  const getSidebarRect = () => historySidebar.getBoundingClientRect();
+
+  const isTouchIntent = (dx, dy) => {
+    // prefer horizontal swipes, ignore vertical scroll
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+    return absX > 40 && absX > absY * 1.2;
+  };
+
+  const onPointerDown = (e) => {
+    // Only touch/pen/primary mouse button.
+    if (e.pointerType === 'mouse' && e.buttons !== 1) return;
+
+    const rect = getSidebarRect();
+    const within =
+      e.clientX >= rect.left &&
+      e.clientX <= rect.right &&
+      e.clientY >= rect.top &&
+      e.clientY <= rect.bottom;
+
+    if (!within) return;
+
+    pointerActive = true;
+    decided = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    // prevent click/pinch interactions from fighting swipe
+    if (e.pointerType !== 'mouse') {
+      historySidebar.setPointerCapture?.(e.pointerId);
+      e.preventDefault();
+    }
+  };
+
+  const onPointerMove = (e) => {
+    if (!pointerActive) return;
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    const dx = lastX - startX;
+    const dy = lastY - startY;
+
+    if (!decided && isTouchIntent(dx, dy)) {
+      decided = true;
+      // dx < 0 => swipe left => open
+      // dx > 0 => swipe right => close
+      if (dx < 0) historySidebar.classList.add('is-open');
+      else historySidebar.classList.remove('is-open');
+
+      // once decided, stop further handling; allow content scrolling if needed
+    }
+  };
+
+  const endPointer = () => {
+    pointerActive = false;
+    decided = false;
+  };
+
+  historySidebar.addEventListener('pointerdown', onPointerDown, { passive: false });
+  historySidebar.addEventListener('pointermove', onPointerMove, { passive: true });
+  historySidebar.addEventListener('pointerup', endPointer, { passive: true });
+  historySidebar.addEventListener('pointercancel', endPointer, { passive: true });
+
   // Optional: Add event listeners for items
 }
 
