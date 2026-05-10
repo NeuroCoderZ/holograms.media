@@ -3,9 +3,6 @@ name: 🤖 Deploy Hermes to Cloudflare Workers
 on:
   push:
     branches: [dev, main]
-    paths:
-      - 'neuroescrow/backend/**'
-      - '.github/workflows/deploy-hermes.yml'
   workflow_dispatch: {}
 
 jobs:
@@ -16,13 +13,25 @@ jobs:
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
-      
+
+      - name: 🔍 Check for changes in neuroescrow/backend
+        id: check-changes
+        run: |
+          if git diff --quiet HEAD~1 -- neuroescrow/backend/; then
+            echo "No changes in neuroescrow/backend, skipping deploy"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected in neuroescrow/backend, proceeding with deploy"
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       
       - name: 🔐 Set Cloudflare Secrets
+        if: steps.check-changes.outputs.skip != 'true'
         working-directory: neuroescrow/backend
         run: |
           echo "${{ secrets.MISTRAL_API_KEY }}" | npx wrangler secret put MISTRAL_API_KEY
@@ -30,16 +39,18 @@ jobs:
           echo "${{ secrets.ASTRA_DATABASE_URL }}" | npx wrangler secret put ASTRA_DB_ENDPOINT
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      
+
       - name: 🚀 Deploy to Cloudflare Workers
+        if: steps.check-changes.outputs.skip != 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: 'neuroescrow/backend'
           command: deploy
-      
+
       - name: 🧪 Test Deployment
+        if: steps.check-changes.outputs.skip != 'true'
         run: |
           sleep 5
           curl -f https://neuroescrow-hermes.neurocoderz.workers.dev/health || echo "Health check failed"
