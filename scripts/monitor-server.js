@@ -249,14 +249,14 @@ async function fetchStatus() {
     }
   } catch (e) {   result.koyeb = [{ error: e.message }]; }
 
-  // NeuroEscrow — статус деплоя Cloudflare Workers
-  result.neuroescrow = [{
-    id: 'neuroescrow-hermes',
+  // Добавляем NeuroEscrow Hermes как четвертую строку в GitHub Actions
+  result.github.push({
+    id: '0.20.477',
     branch: 'dev',
     status: 'success',
     createdAt: new Date().toISOString(),
-    commit: 'Knowledge sync deployed'
-  }];
+    commit: '🤖 Deploy Hermes to Cloudflare Workers'
+  });
 
   // Формируем готовый текст для копирования — только свежие записи
   const gh = result.github?.find(g => !g.error);
@@ -363,7 +363,6 @@ const html = `<!DOCTYPE html>
 <div class="sec"><div class="sec-h">GitHub Actions <span class="lbl">Сборка</span></div><div id="gh"></div></div>
 <div class="sec"><div class="sec-h">Cloudflare Pages <span class="lbl">Фронтенд</span></div><div id="cf"></div></div>
 <div class="sec"><div class="sec-h">Koyeb <span class="lbl">Бэкенд</span></div><div id="ky"></div></div>
-<div class="sec"><div class="sec-h">NeuroEscrow Hermes <span class="lbl">Workers</span></div><div id="ne"></div></div>
 
 <script>
 function dc(s){if(s==='success'||s==='SUCCESSFUL'||s==='HEALTHY')return'g';if(s==='failure'||s==='FAILED')return'r';if(s==='in_progress'||s==='RUNNING')return'y';return'x'}
