@@ -396,7 +396,6 @@ function update() {
     render(d.github, 'gh');
     render(d.cloudflare, 'cf');
     render(d.koyeb, 'ky');
-    render(d.neuroescrow, 'ne');
     cachedCopy = d.copyText || '';
 
     // Кнопка активна только когда логи готовы (содержат секции [GitHub], [Koyeb] и т.д.)
