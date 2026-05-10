@@ -1054,26 +1054,6 @@ function initHistorySidebar() {
   // Add swipe support
   initHistorySwipe(historySidebar);
 }
-  };
-
-  const onPointerMove = (e) => {
-    if (!pointerActive) return;
-    lastX = e.clientX;
-    lastY = e.clientY;
-
-    const dx = lastX - startX;
-    const dy = lastY - startY;
-
-    if (!decided && isTouchIntent(dx, dy)) {
-      decided = true;
-      // dx < 0 => swipe left => open
-      // dx > 0 => swipe right => close
-      if (dx < 0) historySidebar.classList.add('is-open');
-      else historySidebar.classList.remove('is-open');
-
-      // once decided, stop further handling; allow content scrolling if needed
-    }
-  };
 
   const endPointer = () => {
     pointerActive = false;
@@ -1132,3 +1112,51 @@ function loadChatHistory(container) {
 
 // Also, removed the import of PanelManager from './panelManager.js' as it's no longer instantiated here.
 // Added checks for state.panelManager before using its methods/properties.
+
+// Initialize swipe support for history sidebar
+function initHistorySwipe(sidebar) {
+  let startX = 0;
+  let currentX = 0;
+  let isOpen = false;
+  const threshold = 50; // px to trigger swipe
+
+  const updateState = () => {
+    isOpen = sidebar.style.transform !== 'translateX(calc(100% - 16px))';
+  };
+
+  sidebar.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    updateState();
+  });
+
+  sidebar.addEventListener('touchmove', (e) => {
+    currentX = e.touches[0].clientX;
+    const deltaX = currentX - startX;
+    if (!isOpen && deltaX < -threshold) {
+      // Swipe right to left: open
+      sidebar.style.opacity = '1';
+      sidebar.style.transform = 'translateX(5%)';
+    } else if (isOpen && deltaX > threshold) {
+      // Swipe left to right: close
+      sidebar.style.opacity = '0.4';
+      sidebar.style.transform = 'translateX(calc(100% - 16px))';
+    }
+  });
+
+  sidebar.addEventListener('touchend', () => {
+    // Snap to state based on final position
+    const deltaX = currentX - startX;
+    if (Math.abs(deltaX) > threshold) {
+      if (!isOpen && deltaX < -threshold) {
+        // Open
+        sidebar.style.opacity = '1';
+        sidebar.style.transform = 'translateX(5%)';
+      } else if (isOpen && deltaX > threshold) {
+        // Close
+        sidebar.style.opacity = '0.4';
+        sidebar.style.transform = 'translateX(calc(100% - 16px))';
+      }
+    }
+    updateState();
+  });
+}
