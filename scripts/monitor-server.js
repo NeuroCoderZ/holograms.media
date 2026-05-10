@@ -372,7 +372,7 @@ function xv(t){const m=t?.match(/v?(\\d+\\.\\d+\\.\\d+)/);return m?m[1]:''}
 function render(items, id) {
   const el = document.getElementById(id);
   if (!items || items.length === 0) { el.innerHTML = '<div class="err">Нет данных</div>'; return; }
-  const limited = items.slice(0, 3);
+  const limited = items.slice(0, 4);
   el.innerHTML = limited.map((x, i) => {
     if (x.error) return '<div class="err">⚠ ' + x.error + '</div>';
     if (x.info) return '<div class="err" style="background:rgba(88,166,255,0.1);color:var(--blue)">' + x.info + '</div>';
