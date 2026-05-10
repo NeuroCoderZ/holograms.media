@@ -1,0 +1,9 @@
+{
+  "name": "Holograms Media",
+  "short_name": "Holograms",
+  "description": "Holographic audio visualization and media platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212"
+}

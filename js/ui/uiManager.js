@@ -1055,6 +1055,24 @@ function initHistorySidebar() {
   initHistorySwipe(historySidebar);
 }
 
+  let startX = 0;
+  let currentX = 0;
+  let pointerActive = false;
+  let decided = false;
+
+  const onPointerDown = (e) => {
+    startX = e.clientX;
+    currentX = e.clientX;
+    pointerActive = true;
+    decided = false;
+  };
+
+  const onPointerMove = (e) => {
+    if (!pointerActive) return;
+    currentX = e.clientX;
+    // Optional: handle move if needed
+  };
+
   const endPointer = () => {
     pointerActive = false;
     decided = false;
