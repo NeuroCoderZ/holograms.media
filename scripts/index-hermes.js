@@ -248,7 +248,7 @@ async function main() {
     
     let totalChunks = 0;
     let filesIndexed = 0;
-    const BATCH_SIZE = 32; // Mistral API supports up to 32 texts per request
+    const BATCH_SIZE = 16; // Reduced for stability
     
     // Collect all chunks first
     const allChunks = [];
