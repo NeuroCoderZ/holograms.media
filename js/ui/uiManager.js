@@ -1065,7 +1065,7 @@ function initHistorySidebar() {
   historySidebar.addEventListener('pointerup', endPointer, { passive: true });
   historySidebar.addEventListener('pointercancel', endPointer, { passive: true });
 
-  // Optional: Add event listeners for items
+   // Optional: Add event listeners for items
 }
 
 // Placeholder function to load chat history
