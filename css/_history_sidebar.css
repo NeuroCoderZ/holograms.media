@@ -5,7 +5,7 @@
     right: 0;
     top: 0;
     bottom: 0;
-    width: 95%;
+    width: 100%;
 
     /* Layer 1: Base Glass (match .panel from css/_panels.css) */
     background: var(--glass-bg) !important;
@@ -14,7 +14,7 @@
     -moz-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     border: 1px solid var(--glass-border) !important;
     border-right: none !important;
-    border-radius: 16px 0 0 16px !important;
+    border-radius: 20px 0 0 20px !important;
 
     box-shadow: none; /* Remove colored shadows */
     overflow: hidden;
