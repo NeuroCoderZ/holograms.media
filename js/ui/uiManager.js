@@ -1049,7 +1049,7 @@ function initHistorySidebar() {
   loadChatHistory(historyList);
 
   // Add event listeners for items
-  initHistoryEvents();
+  // initHistoryEvents(); // TODO: Implement if needed
 
   // Add swipe support
   initHistorySwipe(historySidebar);
