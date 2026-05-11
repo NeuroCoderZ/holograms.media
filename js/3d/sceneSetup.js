@@ -7,12 +7,51 @@ import { TORUS_PARAMS } from '../core/init.js';
 import { GRID_DEPTH } from '../config/hologramConfig.js';
 
 /**
+ * renderBackend flag:
+ * - ?renderBackend=three|webgpu|hybrid
+ * - localStorage fallback
+ * - default: 'three' (current stable path uses WebGLRenderer)
+ */
+function resolveRenderBackendFlag() {
+  try {
+    const url = new URL(window.location.href);
+    const qp = url.searchParams.get('renderBackend');
+    if (qp === 'three' || qp === 'webgpu' || qp === 'hybrid') return qp;
+  } catch (e) {}
+
+  try {
+    const ls = window.localStorage.getItem('renderBackend');
+    if (ls === 'three' || ls === 'webgpu' || ls === 'hybrid') return ls;
+  } catch (e) {}
+
+  return 'three';
+}
+
+function applyRenderBackendFlag(state) {
+  const rb = resolveRenderBackendFlag();
+  state.renderBackend = rb;
+
+  // keep user selection sticky
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('renderBackend')) {
+      window.localStorage.setItem('renderBackend', rb);
+    }
+  } catch (e) {}
+
+  console.log(`[renderBackend] selected=${rb}`);
+}
+
+/**
  * Initializes the Three.js scene, camera, renderer, and basic lighting.
  * Assigns these components to the provided state object.
  * @param {object} state - The global state object to populate with scene components.
  *                         Expected to have a `config.CAMERA` object or defaults will be used.
  */
 export async function initializeScene(state) {
+  // ensure renderBackend is set ASAP (URL + localStorage + fallback)
+  applyRenderBackendFlag(state);
+
   // Scene
   state.scene = new THREE.Scene();
   state.scene.background = new THREE.Color(0x000000); // Black background
@@ -31,10 +70,20 @@ export async function initializeScene(state) {
     state.renderingCapabilities = capabilities;
     state.currentRenderer = preferredRenderer;
 
-    // --- Инициализация рендерера в зависимости от возможностей устройства ---
-    // STABILITY FIX: WebGPU's WebGL2 backend causes hologram invisibility.
-    // Force WebGL until browser has native WebGPU support.
-    await initializeWebGLRenderer(state);
+    // --- Инициализация рендерера в зависимости от renderBackend (feature flag) ---
+    // default/three => current stable WebGL path
+    if (state.renderBackend === 'webgpu') {
+      try {
+        await initializeWebGPURenderer(state);
+      } catch (e) {
+        console.error('[WebGPU] Init failed, falling back to WebGL:', e);
+        state.renderBackend = 'three';
+        await initializeWebGLRenderer(state);
+      }
+    } else {
+      // hybrid пока оставляем как стабильный WebGL (как требование)
+      await initializeWebGLRenderer(state);
+    }
 
   } catch (error) {
     console.error('[Renderer Detection] Ошибка при определении возможностей рендеринга:', error);
