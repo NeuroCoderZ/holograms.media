@@ -134,6 +134,18 @@ if (fs.existsSync(glsJs)) {
     }
 }
 
+ // 8. Check Three.js exports (catches deprecated removals like LinearEncoding)
+console.log('\n🔍 Checking Three.js module exports...');
+try {
+    execSync(
+        `node --input-type=module -e "import('three').then(m => { if (!m.LinearSRGBColorSpace) throw new Error('Broken Three exports: LinearSRGBColorSpace missing'); console.log('✅ Three.js exports valid'); })"`,
+        { stdio: 'inherit', cwd: ROOT }
+    );
+} catch (e) {
+    console.error('❌ [ERROR] Three.js module check failed:', e.message);
+    hasErrors = true;
+}
+
 console.log('');
 if (hasErrors) {
     console.error('❌ Pre-deploy check FAILED. Please fix the errors above.');

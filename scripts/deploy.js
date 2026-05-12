@@ -10,15 +10,12 @@ const INDEX_HTML     = path.join(ROOT, 'index.html');
 const NEUROESCROW_DIR = path.join(ROOT, 'neuroescrow');
 const NEUROESCROW_BACKEND = path.join(NEUROESCROW_DIR, 'backend');
 
-// One-script deploy: build first, so the pushed commit/Actions corresponds to built artifacts.
-console.log('\n🧱 Running frontend build before deploy (npm run build)...\n');
-try {
-    execSync('npm run build', { stdio: 'inherit', cwd: ROOT });
-    console.log('\n✅ Build completed.\n');
-} catch (e) {
-    console.error('\n❌ Build failed. Deploy aborted.\n');
-    process.exit(1);
-}
+/**
+ * One-script deploy.
+ * Cloudflare/GitHub Actions are responsible for frontend build.
+ * Local `npm run build` is intentionally skipped to avoid wasting time & misleading agents.
+ */
+console.log('\n🧱 Skipping local frontend build (Cloudflare builds in CI). \n');
 
 const args = process.argv.slice(2);
 let commitMessage = args[0] || 'Update: General improvements and fixes';
@@ -151,8 +148,8 @@ function deployNeuroEscrow() {
         try {
             // Use echo to pipe secret value to wrangler
             const cmd = process.platform === 'win32'
-                ? `echo ${value} | npx wrangler@latest secret put ${name} --cwd neuroescrow/backend`
-                : `echo "${value}" | npx wrangler@latest secret put ${name} --cwd neuroescrow/backend`;
+                ? `echo ${value} | npx wrangler@4.90.0 secret put ${name} --cwd neuroescrow/backend`
+                : `echo "${value}" | npx wrangler@4.90.0 secret put ${name} --cwd neuroescrow/backend`;
             
             execSync(cmd, { cwd: ROOT, stdio: 'pipe' });
             console.log(`   ✅ ${name} set`);
@@ -170,7 +167,7 @@ function deployNeuroEscrow() {
     
     console.log('\n📦 Step 3: Deploying to Cloudflare Workers...');
     try {
-        execSync('npx wrangler@latest deploy', { 
+        execSync('npx wrangler@4.90.0 deploy', { 
             cwd: NEUROESCROW_BACKEND, 
             stdio: 'inherit' 
         });
