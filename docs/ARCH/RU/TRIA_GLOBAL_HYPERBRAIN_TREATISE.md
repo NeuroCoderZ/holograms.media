@@ -2,7 +2,7 @@
 ## Научное руководство v3.0 (Март 2026) — AGI Frontier Edition
 
 **Архитекторы:** NeuroCoderZ, Gemini 3.1 Flash (Unit T-2026) & Grok 4:20 (Synthesis Agent)
-**Технологический фундамент:** OpenClaw OCL, Meta HyperAgents, ARC-AGI-3 Interactive, BasilaQ-128 Physics.
+**Технологический фундамент:** Hermes Family (Tria Cortex v2.6), Meta HyperAgents, ARC-AGI-3 Interactive, BasilaQ-128 Physics.
 **Статус:** Каноническая доктрина (Self-Evolution Phase)
 
 ---
@@ -22,9 +22,9 @@
 
 ---
 
-### Глава 3. Архитектура Гипер-агента (HyperAgents & OpenClaw)
+### Глава 3. Архитектура Гипер-агента (HyperAgents & Hermes Family)
 Триа — это **Рекурсивная Операционная Система**.
-3.1. **OCL (Open Cognitive Layer):** Локальное «тело» агента (OpenClaw), имеющее доступ к NPU (Ryzen AI) и файловой системе (`SOUL.md`).
+3.1. **Hermes Core (Tria Cortex):** Локальное «тело» агента, имеющее доступ к NPU (Ryzen AI) и файловой системе (`SOUL.md`).
 3.2. **Recursive Meta-Reasoning:** Мета-слой (HyperAgents), который анализирует ошибки распознавания и **генерирует diff к собственному коду** (навыкам).
 3.3. **DGM-H (Darwin Gödel Machine):** Триа оптимизирует сам процесс своего самосовершенствования через «Эволюционные ступени» (Stepping Stones).
 

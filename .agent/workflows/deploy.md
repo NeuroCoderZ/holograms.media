@@ -51,5 +51,5 @@ npm run ctx
 ## Секреты (Koyeb + GitHub)
 
 Все env vars проброшены через `koyeb-dev-deploy.yml`:
-`GOOGLE_API_KEY`, `MISTRAL_API_KEY`, `OPENCLAW_GATEWAY_TOKEN`,
+`GOOGLE_API_KEY`, `MISTRAL_API_KEY`,
 `ASTRA_DB_APPLICATION_TOKEN`, `ASTRA_DB_API_ENDPOINT`, `ASTRA_DB_KEYSPACE`

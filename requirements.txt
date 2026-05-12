@@ -17,6 +17,5 @@ email-validator>=2.2.0
 google-genai>=0.4.0
 mistralai==2.0.4
 watchdog==6.0.0
-# openclaw removed — replaced by Hermes Family (Tria Cortex)
 # force rebuild 2026-03-23
 # Gemini Embedding 2 migration

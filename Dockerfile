@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     python -c "from mistralai.client import Mistral; print('Mistral import OK')"
 
-# Устанавливаем системные зависимости для OpenClaw (если нужны, например git или curl)
+# Устанавливаем системные зависимости для Hermes/Tria Cortex (если нужны, например git или curl)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \

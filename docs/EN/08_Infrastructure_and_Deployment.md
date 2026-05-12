@@ -23,8 +23,8 @@ Automation is implemented in the `scripts/deploy.js` script.
 ### 2.1. "Build → Deploy → Push" cycle (current standard)
 Each deployment includes:
 
-1) **Frontend build (to align GitHub Actions with built artifacts)**  
-   - `npm run build` is executed at the start of `scripts/deploy.js`.
+1) **Frontend build (handled by CI/CD)**  
+   - CI/CD выполняет сборку (vite build) автоматически; локальный запуск сборки запрещён.
 
 2) **Pre-deploy checklist + repo context generation**  
    - `node scripts/pre-deploy-check.js`

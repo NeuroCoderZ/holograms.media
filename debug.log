@@ -1,0 +1,4 @@
+[0512/220901.667:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Не удается найти указанный файл. (0x2)
+[0512/220907.840:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Не удается найти указанный файл. (0x2)
+[0512/220957.053:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Не удается найти указанный файл. (0x2)
+[0512/221000.687:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Не удается найти указанный файл. (0x2)

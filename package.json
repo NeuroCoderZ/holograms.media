@@ -13,7 +13,6 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/generate_version.js",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:unit": "node ./tests/unit/run_tests.js",

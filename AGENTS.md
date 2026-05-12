@@ -71,7 +71,7 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 5. **EMBED_DIM = 3072 ВЕЗДЕ И ВСЕГДА.** Никаких 768.
 6. **Модели:** Hermes (Mistral Small 4 Latest) — приоритет (Personal Tria). Gemini — Global fallback (Global Tria). Mistral — только как fallback при 429. **OpenClaw УДАЛЕН**.
 7. **Triple Token Architecture:** Personal (Local, 6-8 digits) WINS over Global (3 digits) over Network (2 digits). **Personal (Local) WINS over Global.**
-8. **ЛОКАЛЬНЫЕ ТЕСТЫ НЕ ПРОВОЖУ.** Все проверки — только на серверах: Koyeb (backend), GitHub Actions (knowledge sync), Cloudflare Pages (frontend). Никаких `npm test`, `npm run build`, `python -m pytest` локально.
+8. **⛔ ЛОКАЛЬНЫЕ СБОРКИ И ТЕСТЫ ЗАПРЕЩЕНЫ.** Запуск `npm run build`, `npm run dev`, `vite build`, `npm test`, `python -m pytest` локально строго запрещён. Все проверки, билды и валидации выполняются ТОЛЬКО в CI/CD (GitHub Actions → Cloudflare Pages / Koyeb). Агенты работают исключительно через `git push` и мониторинг ранов.
 9. **Hermes Family:** Core (Meta-Agent), Behavior (Gestures/Clicks), Context (Docs/Code), Memory (AstraDB), Wallet (Obolos/Energy).
 
 ---
@@ -136,7 +136,7 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 - `node scripts/deploy.js "Описание изменений"`
 
 `deploy.js` выполняет в этом порядке:
-1. `npm run build` (чтобы GitHub Actions работали по уже собранным артефактам)
+1. *Frontend build выполняется на стороне CI/CD (Cloudflare/GitHub Actions); локальный запуск `npm run build` запрещён.*
 2. pre-deploy checklist (`node scripts/pre-deploy-check.js`)
 3. генерацию контекста репозиториев (`npx repomix` и `neuroescrow/repomix-output.md`)
 4. bump версии (`version.txt`, `package.json`, `index.html`) через `node scripts/generate_version.js`

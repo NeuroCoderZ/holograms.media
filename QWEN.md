@@ -82,7 +82,7 @@ C:\holograms.media/
 ### CI/CD Pipeline
 ```
 push → dev branch
-  ├── GitHub Actions: npm run build (vite build)
+  ├── GitHub Actions: CI выполняет frontend build (vite build)
   ├── Cloudflare Pages: deploy dist/ → dev.holograms.media
   └── Koyeb: Docker build → backend deploy
 ```
@@ -94,7 +94,7 @@ push → dev branch
 | Команда | Описание |
 |---------|----------|
 | `npm run dev` | Vite dev server (port 8000) |
-| `npm run build` | Vite production build |
+| *CI/CD* (vite build) | Vite production build |
 | `npm run deploy` | `node scripts/deploy.js "описание"` |
 | `node scripts/monitor-server.js` | Локальная панель мониторинга (http://localhost:3001) |
 | `node scripts/fullstack-monitor.mjs` | CLI мониторинг (GitHub + CF + Koyeb) |
