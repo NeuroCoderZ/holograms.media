@@ -2640,89 +2640,124 @@ This section contains the contents of the repository's files.
 </file>
 
 <file path="index.html">
- 1: <!DOCTYPE html>
- 2: <html lang="ru">
- 3: <head>
- 4:     <meta charset="UTF-8">
- 5:     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
- 6:     <title>NeuroEscrow</title>
- 7:     <script src="https://telegram.org/js/telegram-web-app.js"></script>
- 8:     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
- 9:     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-10:     <link rel="stylesheet" href="css/style.css">
-11: </head>
-12: <body>
-13:     <div id="app">
-14:         <!-- Header -->
-15:         <header class="app-header">
-16:             <div class="header-content">
-17:                 <h1>NeuroEscrow</h1>
-18:                 <div class="user-info">
-19:                     <span id="user-name">Загрузка...</span>
-20:                 </div>
-21:             </div>
-22:         </header>
-23: 
-24:         <!-- Main Content -->
-25:         <main class="app-main" id="main-content">
-26:             <!-- Views will be rendered here -->
-27:         </main>
-28: 
-29:         <!-- Chat Input (Fixed at bottom, only visible on Hermes tab) -->
-30:         <div class="chat-input-container" id="chat-input-container" style="display:none;">
-31:             <button class="attach-btn" id="attach-btn" onclick="app.showAttachMenu()">
-32:                 <span>📎</span>
-33:             </button>
-34:             <input type="text" class="chat-input" id="chat-input" placeholder="Напишите сообщение..." />
-35:             <button class="send-btn" id="send-btn" onclick="app.sendTextMessage()">
-36:                 <span>➤</span>
-37:             </button>
-38:         </div>
-39: 
-40:         <!-- Attach Menu -->
-41:         <div class="attach-menu" id="attach-menu" style="display:none;">
-42:             <button class="attach-option" onclick="app.attachPhoto()">
-43:                 <span class="attach-icon">📷</span>
-44:                 <span>Фото</span>
-45:             </button>
-46:             <button class="attach-option" onclick="app.attachVideo()">
-47:                 <span class="attach-icon">🎥</span>
-48:                 <span>Видео</span>
-49:             </button>
-50:             <button class="attach-option" onclick="app.recordVideo()">
-51:                 <span class="attach-icon">📹</span>
-52:                 <span>Записать видео</span>
-53:             </button>
-54:             <button class="attach-option" onclick="app.shareScreen()">
-55:                 <span class="attach-icon">🖥️</span>
-56:                 <span>Экран</span>
-57:             </button>
-58:         </div>
-59: 
-60:         <!-- Bottom Navigation -->
-61:         <nav class="bottom-nav">
-62:             <button class="nav-btn active" data-view="hermes" onclick="app.navigate('hermes')">
-63:                 <span class="nav-icon">🎙️</span>
-64:                 <span class="nav-label">Гермес</span>
-65:             </button>
-66:             <button class="nav-btn" data-view="deals" onclick="app.navigate('deals')">
-67:                 <span class="nav-icon">🤝</span>
-68:                 <span class="nav-label">Сделки</span>
-69:             </button>
-70:             <button class="nav-btn" data-view="profile" onclick="app.navigate('profile')">
-71:                 <span class="nav-icon">👤</span>
-72:                 <span class="nav-label">Профиль</span>
-73:             </button>
-74:         </nav>
-75:     </div>
-76: 
-77:     <!-- Scripts -->
-78:     <script src="js/telegram.js"></script>
-79:     <script src="js/tonconnect.js"></script>
-80:     <script src="js/charts.js"></script>
-81:     <script src="js/app.js"></script>
-82: </body>
-83: </html>
+  1: <!DOCTYPE html>
+  2: <html lang="ru">
+  3: <head>
+  4:     <meta charset="UTF-8">
+  5:     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  6:     <title>NeuroEscrow</title>
+  7:     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  8:     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+  9:     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+ 10:     <link rel="stylesheet" href="css/style.css">
+ 11:     
+ 12:     <!-- Telegram Mini App SDK Initialization (Phase 6.5) -->
+ 13:     <script>
+ 14:         // Initialize Telegram WebApp SDK (v9.x)
+ 15:         if (window.Telegram && window.Telegram.WebApp) {
+ 16:             const tg = window.Telegram.WebApp;
+ 17:             
+ 18:             // Expand viewport to full height
+ 19:             tg.expand();
+ 20:             
+ 21:             // Enable closing confirmation
+ 22:             tg.enableClosingConfirmation();
+ 23:             
+ 24:             // Apply theme colors
+ 25:             document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
+ 26:             document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
+ 27:             document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#999999');
+ 28:             document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#2481cc');
+ 29:             document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
+ 30:             document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+ 31:             
+ 32:             // Signal ready state
+ 33:             tg.ready();
+ 34:             
+ 35:             console.log('[TG WebApp] Initialized', {
+ 36:                 version: tg.version,
+ 37:                 platform: tg.platform,
+ 38:                 colorScheme: tg.colorScheme,
+ 39:                 viewportHeight: tg.viewportHeight,
+ 40:                 isExpanded: tg.isExpanded
+ 41:             });
+ 42:         } else {
+ 43:             console.warn('[TG WebApp] SDK not loaded, running in standalone mode');
+ 44:         }
+ 45:     </script>
+ 46: </head>
+ 47: <body>
+ 48:     <div id="app">
+ 49:         <!-- Header -->
+ 50:         <header class="app-header">
+ 51:             <div class="header-content">
+ 52:                 <h1>NeuroEscrow</h1>
+ 53:                 <div class="user-info">
+ 54:                     <span id="user-name">Загрузка...</span>
+ 55:                 </div>
+ 56:             </div>
+ 57:         </header>
+ 58: 
+ 59:         <!-- Main Content -->
+ 60:         <main class="app-main" id="main-content">
+ 61:             <!-- Views will be rendered here -->
+ 62:         </main>
+ 63: 
+ 64:         <!-- Chat Input (Fixed at bottom, only visible on Hermes tab) -->
+ 65:         <div class="chat-input-container" id="chat-input-container" style="display:none;">
+ 66:             <button class="attach-btn" id="attach-btn" onclick="app.showAttachMenu()">
+ 67:                 <span>📎</span>
+ 68:             </button>
+ 69:             <input type="text" class="chat-input" id="chat-input" placeholder="Напишите сообщение..." />
+ 70:             <button class="send-btn" id="send-btn" onclick="app.sendTextMessage()">
+ 71:                 <span>➤</span>
+ 72:             </button>
+ 73:         </div>
+ 74: 
+ 75:         <!-- Attach Menu -->
+ 76:         <div class="attach-menu" id="attach-menu" style="display:none;">
+ 77:             <button class="attach-option" onclick="app.attachPhoto()">
+ 78:                 <span class="attach-icon">📷</span>
+ 79:                 <span>Фото</span>
+ 80:             </button>
+ 81:             <button class="attach-option" onclick="app.attachVideo()">
+ 82:                 <span class="attach-icon">🎥</span>
+ 83:                 <span>Видео</span>
+ 84:             </button>
+ 85:             <button class="attach-option" onclick="app.recordVideo()">
+ 86:                 <span class="attach-icon">📹</span>
+ 87:                 <span>Записать видео</span>
+ 88:             </button>
+ 89:             <button class="attach-option" onclick="app.shareScreen()">
+ 90:                 <span class="attach-icon">🖥️</span>
+ 91:                 <span>Экран</span>
+ 92:             </button>
+ 93:         </div>
+ 94: 
+ 95:         <!-- Bottom Navigation -->
+ 96:         <nav class="bottom-nav">
+ 97:             <button class="nav-btn active" data-view="hermes" onclick="app.navigate('hermes')">
+ 98:                 <span class="nav-icon">🎙️</span>
+ 99:                 <span class="nav-label">Гермес</span>
+100:             </button>
+101:             <button class="nav-btn" data-view="deals" onclick="app.navigate('deals')">
+102:                 <span class="nav-icon">🤝</span>
+103:                 <span class="nav-label">Сделки</span>
+104:             </button>
+105:             <button class="nav-btn" data-view="profile" onclick="app.navigate('profile')">
+106:                 <span class="nav-icon">👤</span>
+107:                 <span class="nav-label">Профиль</span>
+108:             </button>
+109:         </nav>
+110:     </div>
+111: 
+112:     <!-- Scripts -->
+113:     <script src="js/telegram.js"></script>
+114:     <script src="js/tonconnect.js"></script>
+115:     <script src="js/charts.js"></script>
+116:     <script src="js/app.js"></script>
+117: </body>
+118: </html>
 </file>
 
 <file path="js/app.js">
