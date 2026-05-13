@@ -13,10 +13,10 @@
 ## КРИТИЧЕСКИЕ КОНСТАНТЫ 
 
 ```
-# LLM Модели (Hermes Family Architecture)
-HERMES_MAIN   = "mistral-small-latest"          # Hermes (Mistral Small 4 Latest) - Personal Tria (Local)
-GEMINI_MAIN   = "gemini-3-flash-preview"           # Global Tria (Archetype) Fallback
-GEMINI_SUB    = "gemini-3.1-flash-lite-preview"    # Darwin Critic (выбор лучшего ответа)
+# LLM Модели (Hermes Family Architecture - Model Lock 13.05.2026)
+HERMES_MAIN   = "mistral-medium-3.5"            # Hermes Main (128B, 256k ctx) - Personal Tria (Local)
+HERMES_SUB    = "mistral-small-latest"          # Hermes Sub (Architecture/Routing) - Personal Tria
+EMBED_MODEL   = "gemini-embedding-2-preview"    # Embeddings ONLY (3072d) - NEVER change
 
 # Triple Token Architecture (Holochain Philosophy)
 # Personal (Local) WINS over Global!
@@ -69,7 +69,7 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 3. **ПЕРЕД КАЖДОЙ ПРАВКОЙ:** прочитать актуальный кусок файла через Read, убедиться что old_str точно совпадает.
 4. **ЗАПРЕЩЕНО:** добавлять NPU, ONNX, TurboQuant в браузере, LoRA в браузере, ARC-AGI как метрику, DGM-H самомодификацию кода.
 5. **EMBED_DIM = 3072 ВЕЗДЕ И ВСЕГДА.** Никаких 768.
-6. **Модели:** Hermes (Mistral Small 4 Latest) — приоритет (Personal Tria). Gemini — Global fallback (Global Tria). Mistral — только как fallback при 429. **OpenClaw УДАЛЕН**.
+6. **Модели:** Hermes Main (`mistral-medium-3.5`, 128B) — основная (Personal Tria). Hermes Sub (`mistral-small-latest`) — архитектура/роутинг. Embeddings (`gemini-embedding-2-preview`, 3072d) — ТОЛЬКО для RAG. **Gemini генеративные модели выведены из стека (май 2026). OpenClaw УДАЛЕН**.
 7. **Triple Token Architecture:** Personal (Local, 6-8 digits) WINS over Global (3 digits) over Network (2 digits). **Personal (Local) WINS over Global.**
 8. **⛔ ЛОКАЛЬНЫЕ СБОРКИ И ТЕСТЫ ЗАПРЕЩЕНЫ.** Запуск `npm run build`, `npm run dev`, `vite build`, `npm test`, `python -m pytest` локально строго запрещён. Все проверки, билды и валидации выполняются ТОЛЬКО в CI/CD (GitHub Actions → Cloudflare Pages / Koyeb). Агенты работают исключительно через `git push` и мониторинг ранов.
 9. **Hermes Family:** Core (Meta-Agent), Behavior (Gestures/Clicks), Context (Docs/Code), Memory (AstraDB), Wallet (Obolos/Energy).

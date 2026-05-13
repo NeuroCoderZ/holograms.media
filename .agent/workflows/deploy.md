@@ -17,12 +17,13 @@ npm run deploy "описание изменений"
 
 `scripts/deploy.js` выполняет в этом порядке:
 
-1. **Pre-deploy checklist** — `node scripts/pre-deploy-check.js` (BasilaQ health check, audio pipeline, Three.js exports)
-2. **RepoMix контекст** — генерация `repomix-output.xml` (Holograms.Media) и `neuroescrow/repomix-output.md` (NeuroEscrow)
-3. **Version bump** — инкрементирует patch в `version.txt`, обновляет `package.json` и `index.html`
-4. **Version manifest** — `node scripts/generate_version.js` → `public/version.json` с timestamp
-5. **NeuroEscrow Hermes деплой** — `npx wrangler@4.90.0 deploy` (Cloudflare Workers, Python)
-6. **Git push** — `git add . && git commit && git push origin dev`
+1. **Warden Security Check** — проверка красных зон в staged files (см. [.agent/skills/warden-security/SKILL.md](../.agent/skills/warden-security/SKILL.md))
+2. **Pre-deploy checklist** — `node scripts/pre-deploy-check.js` (BasilaQ health check, audio pipeline, Three.js exports)
+3. **RepoMix контекст** — генерация `repomix-output.xml` (Holograms.Media) и `neuroescrow/repomix-output.md` (NeuroEscrow)
+4. **Version bump** — инкрементирует patch в `version.txt`, обновляет `package.json` и `index.html`
+5. **Version manifest** — `node scripts/generate_version.js` → `public/version.json` с timestamp
+6. **NeuroEscrow Hermes деплой** — `npx wrangler@4.90.0 deploy` (Cloudflare Workers, Python)
+7. **Git push** — `git add . && git commit && git push origin dev`
 
 **Важно:** Frontend build выполняется на стороне CI/CD (Cloudflare Pages). Локальный `npm run build` запрещён.
 
@@ -48,16 +49,20 @@ RepoMix контекст генерируется автоматически п�
 
 Используется `sync_knowledge_base.py` (GitHub Actions) для инкрементального обновления AstraDB.
 
-## Модели (ЗАФИКСИРОВАНЫ)
+## Модели (Model Lock 13.05.2026)
 
 | Модель | ID | Назначение |
 |---|---|---|
-| LLM | `gemini-3-flash-preview` | Генерация ответов Tria |
-| Embeddings | `gemini-embedding-2-preview` | Эмбеддинги (3072d) |
-| Architecture | `mistral-small-latest` | ArchitectureAgent |
+| Hermes Main | `mistral-medium-3.5` | Основная модель (128B, 256k ctx) |
+| Hermes Sub | `mistral-small-latest` | Архитектурный агент, роутинг |
+| Embeddings | `gemini-embedding-2-preview` | Эмбеддинги (3072d) — НИКОГДА не менять |
+
+**ЗАПРЕЩЕНО:** `gemini-3-flash-preview`, `gemini-3.1-flash-lite-preview` (выведены из стека, май 2026)
 
 ## Секреты (Koyeb + GitHub)
 
 Все env vars проброшены через `koyeb-dev-deploy.yml`:
 `GOOGLE_API_KEY`, `MISTRAL_API_KEY`,
 `ASTRA_DB_APPLICATION_TOKEN`, `ASTRA_DB_API_ENDPOINT`, `ASTRA_DB_KEYSPACE`
+
+**⚠️ КРАСНЫЕ ЗОНЫ:** Модификация деплой-скриптов, workflows и секретов требует явного `✅ Принято` от НейроКодера. См. [security-zones.md](../.agent/instructions/security-zones.md)

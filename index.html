@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.491");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.492");</script>
   <!-- DEPLOY_VERSION_END -->
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
@@ -383,13 +383,12 @@
           </svg>
         </button>
 
-        <!-- Селектор модели ЛЛМ (широкий, между микрофоном и отправкой) -->
+        <!-- Селектор модели ЛЛМ (Model Lock 13.05.2026: Hermes Family only) -->
         <div id="modelSelectContainer" style="flex: 1 1 auto; min-width: 0; height: 100%; display: flex; align-items: stretch;" data-tooltip="Выбор модели">
           <select id="modelSelect"
             style="width: 100%; height: 100%; background: rgba(0,0,0,0.4); color: #bbb; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; outline: none; font-size: clamp(0.65rem, 1.2dvw, 0.75rem); cursor: pointer; padding: 0 clamp(0.5rem, 1dvw, 0.75rem); backdrop-filter: blur(10px);">
-            <option value="mistral-medium-3.5" selected style="background: #1a1a1a; color: #ddd;">Mistral Medium 3.5</option>
-            <option value="gemini-3-flash-preview" style="background: #1a1a1a; color: #ddd;">Gemini 3 Flash</option>
-            <option value="mistral-large-latest" style="background: #1a1a1a; color: #ddd;">Mistral Large 3</option>
+            <option value="mistral-medium-3.5" selected style="background: #1a1a1a; color: #ddd;">Hermes Main (Mistral Medium 3.5)</option>
+            <option value="mistral-small-latest" style="background: #1a1a1a; color: #ddd;">Hermes Sub (Mistral Small)</option>
           </select>
         </div>
 

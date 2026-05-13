@@ -116,9 +116,11 @@ class Settings(BaseModel):
     TORUS_R_IN: float = 1.0  # meters inner radius
     TORUS_GRID: str = "128x128x256"
 
-    # AI Models (Tria v0.20.237)
-    DEFAULT_MODEL: str = "gemini-3-flash-preview"
-    SUBAGENT_MODEL: str = "gemini-3.1-flash-lite-preview"
+    # AI Models (Tria Cortex v2.6 - Model Lock 13.05.2026)
+    # Hermes Family: Personal Tria (Local) WINS over Global
+    DEFAULT_MODEL: str = "mistral-medium-3.5"  # Main: 128B, 256k ctx, released 29.04.2026
+    SUBAGENT_MODEL: str = "mistral-small-latest"  # Architecture/Routing agent
+    EMBEDDING_MODEL: str = "gemini-embedding-2-preview"  # 3072d - NEVER change
     ENABLE_GROUNDING: bool = os.getenv("ENABLE_GROUNDING", "true").lower() == "true"
 
     # CORS

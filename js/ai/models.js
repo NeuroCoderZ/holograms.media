@@ -1,39 +1,34 @@
 // frontend/js/ai/models.js - Управление моделями ИИ
 
-// Доступные модели
+// Доступные модели (Model Lock 13.05.2026)
+// Hermes Family (Tria Cortex v2.6): Personal Tria WINS over Global
 export const models = {
-  TRIA: 'tria', // Fallback internal logic
-  MISTRAL: 'mistral-small-latest',
-  MISTRAL_MEDIUM: 'mistral-medium-3-5',
-  GEMINI: 'gemini-3-flash-preview',
+  HERMES_MAIN: 'mistral-medium-3.5',      // Main: 128B, 256k ctx (released 29.04.2026)
+  HERMES_SUB: 'mistral-small-latest',     // Architecture/Routing agent
+  TRIA: 'tria',                           // Legacy fallback (internal logic)
 };
 
 // Метаданные моделей
 export const modelMetadata = {
-  'tria': { // Legacy/Default
-    name: 'Tria (Default)',
-    description: 'Интегрированный ИИ',
-    isDefault: false
+  'mistral-medium-3.5': {
+    name: 'Hermes Main (Mistral Medium 3.5)',
+    description: 'Основная модель — 128B параметров, 256k контекст',
+    isDefault: true
   },
   'mistral-small-latest': {
-    name: 'Mistral 4 Small',
-    description: 'Mistral AI',
+    name: 'Hermes Sub (Mistral Small)',
+    description: 'Архитектурный агент, роутинг',
     isDefault: false
   },
-  'mistral-medium-3-5': {
-    name: 'Mistral Medium 3.5',
-    description: 'Mistral AI — средняя модель',
+  'tria': {
+    name: 'Tria (Legacy)',
+    description: 'Внутренняя логика (fallback)',
     isDefault: false
-  },
-  'gemini-3-flash-preview': {
-    name: 'Gemini 3 Flash',
-    description: 'Google Gemini',
-    isDefault: true
   }
 };
 
-// Текущая выбранная модель (по умолчанию Gemini)
-let selectedModel = 'gemini-3-flash-preview'; 
+// Текущая выбранная модель (по умолчанию Hermes Main)
+let selectedModel = 'mistral-medium-3.5'; 
 
 // Получить текущую выбранную модель
 export function getSelectedModel(modelSelectElement) {
@@ -70,21 +65,15 @@ export function initializeModelSelector(state) {
   // Очищаем и заполняем
   modelSelectElement.innerHTML = '';
   
-  // Hardcode options logic to match index.html for safety
-  // Or use metadata. 
-  // Let's rely on metadata to generate options:
-  const options = [
-      { val: 'gemini/gemini-3-flash', txt: 'Gemini 3 Flash' },
-      { val: 'mistral/mistral-large-latest', txt: 'Mistral 4 Small' },
-      { val: 'mistral/mistral-medium-3-5', txt: 'Mistral Medium 3.5' },
-  ];
-
-  options.forEach(opt => {
-      if (opt.val === selectedModel) return; // Task 3: Skip currently selected
-      const el = document.createElement('option');
-      el.value = opt.val;
-      el.textContent = opt.txt;
-      modelSelectElement.appendChild(el);
+  // Generate options from modelMetadata (Model Lock 13.05.2026)
+  Object.entries(modelMetadata).forEach(([modelId, meta]) => {
+    const el = document.createElement('option');
+    el.value = modelId;
+    el.textContent = meta.name;
+    if (meta.isDefault) {
+      el.selected = true;
+    }
+    modelSelectElement.appendChild(el);
   });
   
   // Restore selection

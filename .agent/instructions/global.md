@@ -40,11 +40,40 @@
 # Правила
 ## 🔒 MODEL LOCK — АБСОЛЮТНОЕ ПРАВИЛО
 ЗАПРЕЩЕНО менять LLM-модели без явного письменного указания НейроКодера.
-Разрешённые модели:
-- `gemini-3-flash-preview` — основная, для всех задач
-- `mistral-small-latest` — только для ArchitectureAgent
-ЗАПРЕЩЕНО использовать: gemini-2.0-flash, gemini-1.5-pro, любые другие.
+
+**Генеративные модели (Hermes Family / Tria Cortex v2.6):**
+- `mistral-medium-3.5` — основная модель (128B, 256k context, релиз 29.04.2026)
+- `mistral-small-latest` — архитектурный агент, роутинг
+
+**Эмбеддинг модели (RAG / Knowledge Base):**
+- `gemini-embedding-2-preview` — ЕДИНСТВЕННАЯ модель для эмбеддингов (3072d, НИКОГДА не менять)
+
+**ЗАПРЕЩЕНО использовать:**
+- `gemini-3-flash-preview`, `gemini-3.1-flash-lite-preview` — выведены из стека (нестабильность, май 2026)
+- `gemini-2.0-flash`, `gemini-1.5-pro` — устаревшие
+- Любые другие модели без явного разрешения
+
 Нарушение = ГРУБАЯ ОШИБКА.
+
+## 🚫 КРАСНЫЕ ЗОНЫ AI-КОДА
+ЗАПРЕЩЕНО модифицировать критические участки кода без явного `✅ Принято` от НейроКодера.
+
+**Красные зоны (только чтение, модификация требует разрешения):**
+- `backend/auth/` — аутентификация, JWT, OAuth
+- `backend/core/db/`, `backend/db/` — AstraDB connectors
+- `scripts/deploy.js`, `scripts/pre-deploy-check.js` — деплой-скрипты
+- `.github/workflows/` — CI/CD пайплайны
+- `backend/api/v1/endpoints/wallet.py` — платежи, Obolos
+- `neuroescrow/js/tonconnect.js` — TON Connect
+- `.env.local`, `.env.production` — секреты (НЕ логировать значения!)
+
+**Правила работы с красными зонами:**
+- ✅ Чтение разрешено (для понимания архитектуры)
+- ❌ Модификация запрещена без `✅ Принято`
+- ⚠️ Копирование паттернов требует review
+- 🚫 Логирование секретов абсолютно запрещено
+
+**Подробности:** См. [.agent/instructions/security-zones.md](.agent/instructions/security-zones.md)
 
 ## 🇷🇺 ЯЗЫКОВОЙ РЕЖИМ (CRITICAL)
 Абсолютно все элементы интерфейса среды (Tasks, Implementation Plan), отчеты, комментарии в коде и сообщения коммитов ДОЛЖНЫ генерироваться СТРОГО на русском языке.
