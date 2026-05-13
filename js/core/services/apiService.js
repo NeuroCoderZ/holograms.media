@@ -9,27 +9,24 @@
 // Вариант 1: Для развернутых Cloud Functions (замените плейсхолдеры!)
 const API_BASE_URL = 'holograms-media-dev-holograms-media-cb8383e3.koyeb.app';
 
-// Вариант 2: Для локального тестирования с Firebase Emulator (раскомментируйте и замените плейсхолдеры, если нужно)
-// const API_BASE_URL = 'http://127.0.0.1:5001/YOUR_PROJECT_ID/YOUR_REGION';
-
-// Проверка, что URL был изменен с плейсхолдеров (кроме случая, когда он пуст для эмулятора по умолчанию)
+// Проверка, что URL был изменен с плейсхолдеров
 if (API_BASE_URL) {
     if (API_BASE_URL.includes('YOUR_PROJECT_ID') || API_BASE_URL.includes('YOUR_REGION')) {
         console.warn(
             `API_BASE_URL в apiService.js (${API_BASE_URL}) все еще содержит плейсхолдеры YOUR_PROJECT_ID/YOUR_REGION! ` +
-            `Замените их на актуальные значения или выберите правильный вариант для локального эмулятора/развернутых функций.`
+            `Замените их на актуальные значения.`
         );
     }
-} else if (API_BASE_URL !== '') { // Если не задан и не пустая строка (для эмулятора)
+} else if (API_BASE_URL !== '') {
     console.error(
-        'API_BASE_URL в apiService.js не сконфигурирован (например, пуст, когда ожидается URL)! Функции API не будут работать.'
+        'API_BASE_URL в apiService.js не сконфигурирован! Функции API не будут работать.'
     );
 }
 
 
 /**
- * Sends the Firebase ID token to the backend for user synchronization.
- * @param {string} idToken - The Firebase JWT (ID Token).
+ * Sends the JWT token to the backend for user synchronization.
+ * @param {string} idToken - The JWT (ID Token) for authorization.
  * @returns {Promise<Object>} A promise that resolves with the backend's JSON response or rejects with an error.
  */
 export async function syncUserAuth(idToken) {
@@ -85,7 +82,7 @@ export async function syncUserAuth(idToken) {
 /**
  * Sends a chat message to the backend Tria chat handler Cloud Function.
  * @param {string} messageText - The text content of the chat message.
- * @param {string} idToken - The Firebase JWT (ID Token) of the authenticated user.
+ * @param {string} idToken - The JWT (ID Token) of the authenticated user.
  * @returns {Promise<Object>} A promise that resolves with the backend's JSON response or rejects with an error.
  */
 export async function sendChatMessage(messageText, idToken) {

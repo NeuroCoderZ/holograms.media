@@ -2,9 +2,8 @@
 
 
 
-// Placeholder for the Cloud Function URL.
-// Replace this with your actual deployed Cloud Function URL.
-const TRIA_CHAT_HANDLER_URL = 'https://europe-west1-holograms-media.cloudfunctions.net/tria_chat_handler_on_request'; // TODO: Обновить этот URL на новый эндпоинт бэкенда, не связанный с Firebase Cloud Functions.
+// TODO: Update this URL to the actual backend endpoint (Koyeb FastAPI)
+const TRIA_CHAT_HANDLER_URL = 'https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app/api/v1/chat';
 
 function getUserIdFromLocalStorage() {
     // Placeholder: In a real app, this would retrieve the user ID from a secure source

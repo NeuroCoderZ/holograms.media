@@ -136,10 +136,6 @@ screenshots/**
 .agent/**
 .eslintcache
 
-# ===== Логи Firebase =====
-firebase-debug.log
-firebase-debug.*.log
-
 # ===== Coverage отчеты =====
 coverage/
 coverage/**

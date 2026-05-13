@@ -6,7 +6,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:80
 /**
  * Отправляет сообщение в чат на бэкенд и поддерживает стриминг ответа.
  * @param {string} text - Текст сообщения от пользователя.
- * @param {string} idToken - Firebase ID токен пользователя.
+ * @param {string} idToken - JWT токен пользователя для авторизации.
  * @param {string} selectedModel - Выбранная модель (опционально).
  * @param {function} onChunk - Коллбэк для обработки каждого чанка (токена) в реальном времени.
  * @returns {Promise<string>} - Полный текст ответа (после завершения стрима).
@@ -108,9 +108,9 @@ export async function sendChatMessage(text, idToken, selectedModel = null, onChu
 
 /**
  * Загружает чанк на бэкенд Koyeb.
- * @param {string} userId - ID пользователя Firebase.
+ * @param {string} userId - ID пользователя.
  * @param {File} file - Файл для загрузки.
- * @param {string} idToken - Firebase ID токен пользователя.
+ * @param {string} idToken - JWT токен пользователя для авторизации.
  * @returns {Promise<object>} - Ответ от сервера в формате JSON.
  * @throws {Error} - Если произошла ошибка при загрузке или ответ сервера не OK.
  */
@@ -155,7 +155,7 @@ export async function uploadChunk(userId, file, idToken) {
  * Requests a presigned URL from the backend.
  * @param {string} filename - The name of the file.
  * @param {string} contentType - The content type of the file.
- * @param {string} idToken - Firebase ID token for authorization.
+ * @param {string} idToken - JWT токен пользователя для авторизации.
  * @returns {Promise<object>} - Object containing url, fields, and object_key.
  * @throws {Error} if the request fails.
  */
@@ -197,7 +197,7 @@ export async function getPresignedUrl(filename, contentType, idToken) {
 /**
  * Загружает историю чата для указанной сессии.
  * @param {string} sessionId - ID чат-сессии
- * @param {string} idToken - Firebase ID токен
+ * @param {string} idToken - JWT токен пользователя для авторизации
  * @param {number} limit - Количество сообщений (по умолчанию 50)
  * @returns {Promise<Array>} - Массив сообщений
  */
@@ -229,7 +229,7 @@ export async function getChatHistory(sessionId, idToken, limit = 50) {
 
 /**
  * Получает список чат-сессий пользователя.
- * @param {string} idToken - Firebase ID токен
+ * @param {string} idToken - JWT токен пользователя для авторизации
  * @param {number} limit - Количество сессий (по умолчанию 10)
  * @returns {Promise<Array>} - Массив сессий
  */

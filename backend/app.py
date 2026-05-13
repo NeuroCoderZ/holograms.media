@@ -314,39 +314,44 @@ async def serve_version():
     return {"version": "unknown", "timestamp": str(time.time())}
 
 
-# Compatibility alias for /icons -> /public/icons
-app.mount(
-    "/icons",
-    StaticFiles(directory=os.path.join(base_dir, "public", "icons")),
-    name="icons_alias",
-)
+# Mount subdirectories with existence checks
+_js_dir = os.path.join(base_dir, "js")
+if os.path.isdir(_js_dir):
+    app.mount("/js", StaticFiles(directory=_js_dir), name="js")
+else:
+    logger.warning(f"[StaticFiles] Directory '{_js_dir}' not found. Skipping /js mount.")
 
-# Mount subdirectories
-app.mount("/js", StaticFiles(directory=os.path.join(base_dir, "js")), name="js")
-app.mount("/css", StaticFiles(directory=os.path.join(base_dir, "css")), name="css")
-app.mount(
-    "/public", StaticFiles(directory=os.path.join(base_dir, "public")), name="public"
-)
-app.mount(
-    "/holocore",
-    StaticFiles(directory=os.path.join(base_dir, "holocore")),
-    name="holocore",
-)
+_css_dir = os.path.join(base_dir, "css")
+if os.path.isdir(_css_dir):
+    app.mount("/css", StaticFiles(directory=_css_dir), name="css")
+else:
+    logger.warning(f"[StaticFiles] Directory '{_css_dir}' not found. Skipping /css mount.")
+
+_public_dir = os.path.join(base_dir, "public")
+if os.path.isdir(_public_dir):
+    app.mount("/public", StaticFiles(directory=_public_dir), name="public")
+else:
+    logger.warning(f"[StaticFiles] Directory '{_public_dir}' not found. Skipping /public mount.")
+
+_holocore_dir = os.path.join(base_dir, "holocore")
+if os.path.isdir(_holocore_dir):
+    app.mount("/holocore", StaticFiles(directory=_holocore_dir), name="holocore")
+else:
+    logger.warning(f"[StaticFiles] Directory '{_holocore_dir}' not found. Skipping /holocore mount.")
 
 # Compatibility alias for /icons -> /public/icons (for manifest.json)
-app.mount(
-    "/icons",
-    StaticFiles(directory=os.path.join(base_dir, "public", "icons")),
-    name="icons_alias",
-)
+_icons_dir = os.path.join(base_dir, "public", "icons")
+if os.path.isdir(_icons_dir):
+    app.mount("/icons", StaticFiles(directory=_icons_dir), name="icons_alias")
+else:
+    logger.warning(f"[StaticFiles] Directory '{_icons_dir}' not found. Skipping /icons mount.")
 
-# Compatibility alias for /wasm -> /public/wasm or similar if needed
-# The frontend uses /js/wasm/ or /wasm/
-app.mount(
-    "/wasm",
-    StaticFiles(directory=os.path.join(base_dir, "public", "wasm")),
-    name="wasm_root",
-)
+# Compatibility alias for /wasm -> /public/wasm
+_wasm_dir = os.path.join(base_dir, "public", "wasm")
+if os.path.isdir(_wasm_dir):
+    app.mount("/wasm", StaticFiles(directory=_wasm_dir), name="wasm_root")
+else:
+    logger.warning(f"[StaticFiles] Directory '{_wasm_dir}' not found. Skipping /wasm mount.")
 
 from backend.core.config import settings
 

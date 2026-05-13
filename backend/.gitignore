@@ -19,10 +19,6 @@ build/
 .idea/
 *.DS_Store # macOS
 
-# Firebase
-/.firebase/ # Служебная папка Firebase CLI
-firebase-debug.log
-firebase-debug.*.log
 *.local # Уже есть
 
 # Environment variables (NEVER commit .env files with secrets)

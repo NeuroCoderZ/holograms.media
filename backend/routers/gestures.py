@@ -37,7 +37,7 @@ async def create_new_user_gesture(
     except HTTPException:
         raise
     except Exception as e:
-        # print(f"[GUESTURE ROUTER ERROR] Error creating user gesture for {current_user.firebase_uid}, name {gesture_in.gesture_name}: {e}")
+        # print(f"[GUESTURE ROUTER ERROR] Error creating user gesture for {current_user.user_id}, name {gesture_in.gesture_name}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error creating gesture: {str(e)}")
 
 @router.get("/", response_model=List[core_models.UserGestureDefinitionDB])
@@ -83,7 +83,7 @@ async def update_existing_user_gesture(
     update_data = gesture_update.dict(exclude_unset=True) 
     
     if not update_data: 
-        # print(f"[GUESTURE ROUTER WARN] No update data provided for gesture ID: {gesture_id} by user {current_user.firebase_uid}.")
+        # print(f"[GUESTURE ROUTER WARN] No update data provided for gesture ID: {gesture_id} by user {current_user.user_id}.")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided.")
 
     # print(f"[GUESTURE ROUTER INFO] User {current_user.user_id} updating gesture ID: {gesture_id} with data: {update_data}")

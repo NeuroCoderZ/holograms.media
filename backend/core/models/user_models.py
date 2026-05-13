@@ -54,6 +54,6 @@ class UserInDB(UserInDBBase):
 class UserUpdate(BaseModel):
     user_settings: Optional[dict] = None
     # Add other fields that a user can update themselves, e.g., display_name if you add it.
-    # Email updates should be handled carefully, potentially requiring re-verification via Firebase.
+    # Email updates should be handled carefully, potentially requiring re-verification.
     # Role updates would typically be an admin-only operation.
     is_active: Optional[bool] = None # Typically admin controlled
