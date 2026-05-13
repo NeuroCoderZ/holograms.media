@@ -91,6 +91,8 @@ if (deployLogRegex.test(html)) {
 try {
     console.log('🔄 Generating version manifest...');
     execSync('node scripts/generate_version.js', { stdio: 'inherit', cwd: ROOT });
+    console.log('🔄 Updating agent card...');
+    execSync('node scripts/update-agent-card.js', { stdio: 'inherit', cwd: ROOT });
 } catch (e) {
     console.error('❌ Version generation failed:', e.message);
     process.exit(1);

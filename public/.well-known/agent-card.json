@@ -1,0 +1,174 @@
+{
+  "name": "Hermes (Tria Cortex v2.6)",
+  "version": "0.20.494",
+  "description": "Post-symbolic multimodal agent for gesture/audio/intent resonance. Combines MediaPipe hand tracking, BasilaQ-128 audio spectrum analysis, and Enkephalon neural memory for non-symbolic AI interaction.",
+  "agent_id": "hermes_tria_v2.6",
+  "organization": {
+    "name": "NeuroCoderZ",
+    "url": "https://holograms.media",
+    "contact": "neurocoderz@gmail.com"
+  },
+  "capabilities": [
+    "rag",
+    "gesture_analysis",
+    "audio_cwt",
+    "memory_recall",
+    "funding",
+    "xr_rendering"
+  ],
+  "modalities": [
+    "text",
+    "audio",
+    "gesture",
+    "3d_spatial"
+  ],
+  "endpoints": {
+    "mcp": {
+      "tools": "https://holograms.media/api/v1/mcp/tools",
+      "resources": "https://holograms.media/api/v1/mcp/resources",
+      "prompts": "https://holograms.media/api/v1/mcp/prompts",
+      "execute": "https://holograms.media/api/v1/mcp/tools/execute"
+    },
+    "a2a": {
+      "state": "https://holograms.media/api/v1/a2a/state",
+      "handoff": "https://holograms.media/api/v1/a2a/handoff",
+      "sync": "https://holograms.media/api/v1/a2a/sync"
+    },
+    "health": "https://neuroescrow-hermes.neurocoderz.workers.dev/health",
+    "docs": "https://holograms.media/docs/api"
+  },
+  "auth": {
+    "type": "bearer",
+    "scopes": [
+      "read",
+      "execute",
+      "admin"
+    ],
+    "token_endpoint": "https://holograms.media/api/v1/auth/token",
+    "oauth2": {
+      "enabled": false,
+      "authorization_endpoint": null,
+      "token_endpoint": null,
+      "scopes": []
+    }
+  },
+  "limits": {
+    "rpm": 10,
+    "max_payload_kb": 50,
+    "timeout_s": 10,
+    "streaming_timeout_s": 20
+  },
+  "protocols": {
+    "mcp": {
+      "version": "1.2",
+      "features": [
+        "tools",
+        "resources",
+        "prompts",
+        "streaming"
+      ]
+    },
+    "a2a": {
+      "version": "0.9",
+      "features": [
+        "state_sync",
+        "session_handoff",
+        "crdt_merge"
+      ],
+      "compatible": true
+    }
+  },
+  "models": {
+    "primary": {
+      "name": "Mistral Medium 3.5",
+      "id": "mistral-medium-3.5",
+      "parameters": "128B",
+      "context_window": 256000,
+      "provider": "Mistral AI"
+    },
+    "embedding": {
+      "name": "Gemini Embedding 2",
+      "id": "gemini-embedding-2-preview",
+      "dimensions": 3072,
+      "provider": "Google DeepMind"
+    },
+    "architecture": {
+      "name": "Mistral Small",
+      "id": "mistral-small-latest",
+      "provider": "Mistral AI"
+    }
+  },
+  "data_sources": {
+    "knowledge_base": {
+      "type": "vector_db",
+      "provider": "AstraDB",
+      "collection": "tria_knowledge_gemini",
+      "dimensions": 3072,
+      "metric": "cosine",
+      "document_count": 1523
+    },
+    "memory": {
+      "type": "neural_memory",
+      "provider": "Enkephalon (WASM)",
+      "dimensions": 3072,
+      "decay_rate": 0.001
+    }
+  },
+  "specializations": {
+    "gesture_recognition": {
+      "description": "MediaPipe hand tracking → 63-dim landmarks → 3072-dim embeddings",
+      "input": "21 hand landmarks (x, y, z)",
+      "output": "Gesture ID + confidence + intent",
+      "latency_ms": 50
+    },
+    "audio_spectrum": {
+      "description": "BasilaQ-128 continuous wavelet transform (C0 to G9)",
+      "input": "PCM audio (48kHz, mono)",
+      "output": "128 semitone bins + dominant frequency + energy",
+      "latency_ms": 16
+    },
+    "rag": {
+      "description": "Semantic search in Holograms Media codebase + docs",
+      "input": "Natural language query",
+      "output": "Top-K results with similarity scores",
+      "latency_ms": 500
+    }
+  },
+  "a2a_compatible": true,
+  "crdt_support": {
+    "enabled": true,
+    "types": [
+      "gesture_deltas",
+      "spectrum_deltas",
+      "memory_deltas"
+    ],
+    "merge_strategy": "last_write_wins"
+  },
+  "metadata": {
+    "license": "MIT",
+    "repository": "https://github.com/NeuroCoderZ/holograms.media",
+    "documentation": "https://holograms.media/docs",
+    "status": "production",
+    "uptime_percent": 99.5,
+    "last_updated": "2026-05-13T12:55:37.038Z"
+  },
+  "discovery": {
+    "tags": [
+      "multimodal",
+      "gesture",
+      "audio",
+      "xr",
+      "rag",
+      "post-symbolic"
+    ],
+    "categories": [
+      "ai_agent",
+      "multimodal_interface",
+      "xr_platform"
+    ],
+    "languages": [
+      "ru",
+      "en"
+    ]
+  }
+}

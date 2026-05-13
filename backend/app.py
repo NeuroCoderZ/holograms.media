@@ -186,6 +186,7 @@ from backend.routers.auth import router as auth_router  # Import the new auth ro
 from backend.routers.chat_sessions import router as chat_sessions_router
 from backend.api.v1.endpoints.wallet import router as wallet_router
 from backend.api.v1.endpoints.github_proxy import router as github_proxy_router
+from backend.api.v1.endpoints.mcp import router as mcp_router
 from backend.routers.gesture_embedding import router as gesture_embedding_router
 from backend.routers import live
 
@@ -208,6 +209,7 @@ app.include_router(
 )
 app.include_router(wallet_router, prefix=f"{API_V1_PREFIX}/wallet", tags=["Wallet"])
 app.include_router(github_proxy_router, prefix=API_V1_PREFIX, tags=["GitHub Proxy"])
+app.include_router(mcp_router, prefix=f"{API_V1_PREFIX}/mcp", tags=["MCP"])
 app.include_router(
     user_gestures_router,
     prefix=f"{API_V1_PREFIX}/users/me/gestures",

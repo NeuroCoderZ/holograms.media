@@ -1,4 +1,8 @@
-/*
-  Cross-Origin-Opener-Policy: same-origin-allow-popups
-  Cross-Origin-Resource-Policy: cross-origin
-  Content-Security-Policy: default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss: ws: blob: data: https://accounts.google.com https://cdnjs.cloudflare.com https://static.cloudflareinsights.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://accounts.google.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://accounts.google.com; img-src 'self' https: data: blob: https://*.googleusercontent.com https://accounts.google.com; worker-src 'self' blob: https://cdnjs.cloudflare.com https://unpkg.com;
+# Cloudflare Pages CORS configuration for .well-known/*
+
+/.well-known/agent-card.json
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, OPTIONS
+  Access-Control-Allow-Headers: Content-Type, X-MCP-Version
+  Cache-Control: public, max-age=3600
+  Content-Type: application/json
