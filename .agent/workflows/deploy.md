@@ -15,9 +15,16 @@ npm run deploy "описание изменений"
 
 ## Внутренний процесс
 
-1. **`scripts/deploy.js`** — инкрементирует patch в `version.txt`, обновляет `package.json` и `index.html`
-2. **`scripts/generate_version.js`** — генерирует `public/version.json` с timestamp
-3. **`git add . && git commit && git push origin dev`** — пуш в GitHub
+`scripts/deploy.js` выполняет в этом порядке:
+
+1. **Pre-deploy checklist** — `node scripts/pre-deploy-check.js` (BasilaQ health check, audio pipeline, Three.js exports)
+2. **RepoMix контекст** — генерация `repomix-output.xml` (Holograms.Media) и `neuroescrow/repomix-output.md` (NeuroEscrow)
+3. **Version bump** — инкрементирует patch в `version.txt`, обновляет `package.json` и `index.html`
+4. **Version manifest** — `node scripts/generate_version.js` → `public/version.json` с timestamp
+5. **NeuroEscrow Hermes деплой** — `npx wrangler@4.90.0 deploy` (Cloudflare Workers, Python)
+6. **Git push** — `git add . && git commit && git push origin dev`
+
+**Важно:** Frontend build выполняется на стороне CI/CD (Cloudflare Pages). Локальный `npm run build` запрещён.
 
 ## GitHub Actions (автоматически)
 
@@ -35,10 +42,11 @@ npm run deploy "описание изменений"
 
 ## Обновление базы знаний
 
-```bash
-npm run ctx
-```
-Генерирует `repomix-context.xml` который используется `sync_knowledge_base.py` для инкрементального обновления AstraDB.
+RepoMix контекст генерируется автоматически при каждом деплое:
+- `repomix-output.xml` — Holograms.Media (XML format)
+- `neuroescrow/repomix-output.md` — NeuroEscrow Hermes (Markdown format)
+
+Используется `sync_knowledge_base.py` (GitHub Actions) для инкрементального обновления AstraDB.
 
 ## Модели (ЗАФИКСИРОВАНЫ)
 

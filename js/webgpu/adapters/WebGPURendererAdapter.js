@@ -1,10 +1,13 @@
+// WebGPU Phase 1: adapters created, renderer pending prototype
+// TODO: Integrate adapters into sceneSetup.js when WebGPU renderer is ready
+
 /**
  * WebGPURendererAdapter - conforms to IRenderer contract.
  * Phase 1: minimal skeleton that can be used by Phase 2/3 wiring later.
  */
-import { IRenderer } from '../interfaces/IRenderer.js';
+// import { IRenderer } from '../interfaces/IRenderer.js';
 
-export class WebGPURendererAdapter extends IRenderer {
+// export class WebGPURendererAdapter extends IRenderer {
   /**
    * @param {{ renderer: any }} args
    */
@@ -46,4 +49,4 @@ export class WebGPURendererAdapter extends IRenderer {
   get isWebGPURenderer() {
     return true;
   }
-}
+// }

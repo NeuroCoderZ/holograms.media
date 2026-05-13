@@ -1,10 +1,13 @@
+// WebGPU Phase 1: adapters created, renderer pending prototype
+// TODO: Integrate adapters into sceneSetup.js when WebGPU renderer is ready
+
 /**
  * ThreeRendererAdapter - wraps existing Three.js renderer to conform to IRenderer contract.
  * Phase 1: minimal wrapper only; no behavioral changes.
  */
-import { IRenderer } from '../interfaces/IRenderer.js';
+// import { IRenderer } from '../interfaces/IRenderer.js';
 
-export class ThreeRendererAdapter extends IRenderer {
+// export class ThreeRendererAdapter extends IRenderer {
   /**
    * @param {{ renderer: any }} args
    */
@@ -48,4 +51,4 @@ export class ThreeRendererAdapter extends IRenderer {
     // by definition
     return false;
   }
-}
+// }
