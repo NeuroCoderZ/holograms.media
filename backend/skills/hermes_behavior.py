@@ -88,7 +88,7 @@ class HermesBehavior:
             return {
                 "status": "rejected", 
                 "reason": "Gesture DNA verification failed",
-                "utility_score_penalty": 2.0
+                "utility_score_penalty": 2.0,
                 "predicted_action": self.next_predicted_action  # Still provide prediction
             }
         
