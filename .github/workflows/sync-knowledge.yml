@@ -24,7 +24,10 @@ jobs:
       id: version
       run: |
         VERSION=$(echo "${{ github.event.head_commit.message }}" | grep -oP 'v\d+\.\d+\.\d+' || echo "unknown")
-        echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+        VERSION=${VERSION#v}
+        echo "version<<EOF" >> $GITHUB_OUTPUT
+        echo "$VERSION" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
         echo "message=${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
 
     - name: 'Set up Python'
