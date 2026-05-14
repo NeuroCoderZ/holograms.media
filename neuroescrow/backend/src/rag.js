@@ -1,14 +1,15 @@
 /**
  * RAG System - JavaScript Edition
- * Uses Mistral Codestral Embed + AstraDB
+ * Uses Gemini Embedding 2 Preview (3072d) + AstraDB
+ * Migrated from Mistral Codestral Embed (1536d) — A1 Phase
  */
 
-import { MistralEmbeddings } from './embeddings.js';
+import { GeminiEmbeddings } from './embeddings.js';
 import { AstraDBConnector } from './astra.js';
 
 export class HermesRAG {
   constructor(kvCache, env) {
-    this.embeddings = new MistralEmbeddings(kvCache, env);
+    this.embeddings = new GeminiEmbeddings(kvCache, env);
     this.astra = new AstraDBConnector(env);
     this.chunkSize = 2000;
     this.chunkOverlap = 700;

@@ -41,7 +41,8 @@ async def handle_request(request: Request, env: Dict[str, Any]) -> Response:
     os.environ['ASTRA_DB_TOKEN'] = env.get('ASTRA_DB_TOKEN', '')
     os.environ['ASTRA_DB_ENDPOINT'] = env.get('ASTRA_DB_ENDPOINT', '')
     os.environ['MODEL_NAME'] = env.get('MODEL_NAME', 'mistral-medium-3.5')
-    os.environ['EMBEDDING_MODEL'] = env.get('EMBEDDING_MODEL', 'codestral-embed-2505')
+    os.environ['EMBEDDING_MODEL'] = env.get('EMBEDDING_MODEL', 'gemini-embedding-2-preview')
+    os.environ['GOOGLE_API_KEY'] = env.get('GOOGLE_API_KEY', '')
     
     # Get KV cache
     kv_cache = env.get('CACHE')

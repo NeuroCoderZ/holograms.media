@@ -33,12 +33,12 @@ class AstraDBConnector:
         self.db = self.client.get_database(self.endpoint)
         
         # Collection names (isolated from main holograms.media)
-        self.CODEBASE_COLLECTION = "neuroescrow_codebase"
-        self.MEMORY_COLLECTION = "neuroescrow_memory"
+        self.CODEBASE_COLLECTION = "neuroescrow_codebase_3072"
+        self.MEMORY_COLLECTION = "neuroescrow_memory_3072"
         
         self._initialized = True
     
-    def _ensure_collection(self, collection_name: str, dimension: int = 1536):
+    def _ensure_collection(self, collection_name: str, dimension: int = 3072):
         """Ensure collection exists with proper vector configuration"""
         try:
             return self.db.get_collection(collection_name)

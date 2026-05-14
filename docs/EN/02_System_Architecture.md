@@ -34,7 +34,7 @@ The backend is deployed on **Koyeb** (Docker containers) and written in **FastAP
 ## 4. Infrastructure and P2P
 *   **Signaling:** `dev.holograms.media` WebSocket server for WebRTC handshakes.
 *   **P2P Protocol:** NetHoloGlyph. Exchange of 1-bit QJL quanta for swarm echo-location.
-*   **Media Storage:** Cloudflare R2 / Backblaze B2 (Soma blocks and hologram assets).
+*   **Media Storage:** Cloudflare R2 (Soma blocks and hologram assets).
 
 ---
 **"Architecture follows intention. Code is the geometry of resonance."**

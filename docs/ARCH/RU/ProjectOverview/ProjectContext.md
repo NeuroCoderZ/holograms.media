@@ -85,7 +85,7 @@
     *   Frontend: Cloudflare Pages.
     *   Backend: FastAPI на Koyeb.
     *   Database: Astra DB (Vector Search 3072d).
-    *   Storage: Cloudflare R2 / Backblaze B2.
+    *   Storage: Cloudflare R2.
     *   Models: Gemini 3 Flash / Gemini 3.1 Flash Lite.
     *   Authentication: Google OAuth 2.0.
 

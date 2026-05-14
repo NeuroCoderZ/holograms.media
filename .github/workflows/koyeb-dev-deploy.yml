@@ -27,6 +27,8 @@ jobs:
             "ASTRA_DB_API_ENDPOINT:${{ secrets.ASTRA_DATABASE_URL }}"
             "GOOGLE_API_KEY:${{ secrets.GOOGLE_API_KEY }}"
             "MISTRAL_API_KEY:${{ secrets.MISTRAL_API_KEY }}"
+            "TELEGRAM_BOT_TOKEN:${{ secrets.TELEGRAM_BOT_TOKEN }}"
+            "TOKEN_LEDGER_CHAT_ID:${{ secrets.TOKEN_LEDGER_CHAT_ID }}"
           )
           for entry in "${secrets[@]}"; do
             name="${entry%%:*}"
@@ -48,4 +50,6 @@ jobs:
             --env "ASTRA_DATABASE_URL={{ secret.ASTRA_DB_API_ENDPOINT }}" \
             --env "ASTRA_DB_KEYSPACE=default_keyspace" \
             --env "GOOGLE_API_KEY={{ secret.GOOGLE_API_KEY }}" \
-            --env "MISTRAL_API_KEY={{ secret.MISTRAL_API_KEY }}"
+            --env "MISTRAL_API_KEY={{ secret.MISTRAL_API_KEY }}" \
+            --env "TELEGRAM_BOT_TOKEN={{ secret.TELEGRAM_BOT_TOKEN }}" \
+            --env "TOKEN_LEDGER_CHAT_ID={{ secret.TOKEN_LEDGER_CHAT_ID }}"

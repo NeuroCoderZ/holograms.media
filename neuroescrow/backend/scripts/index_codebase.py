@@ -18,7 +18,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from memory.embeddings import MistralEmbeddingClient
+from memory.embeddings import GeminiEmbeddingClient
 from memory.core import HermesMemory
 
 
@@ -121,7 +121,7 @@ async def index_codebase(repomix_path: Path, mistral_api_key: str, astra_token: 
     """Main indexing pipeline."""
     
     # Initialize clients
-    embed_client = MistralEmbeddingClient(api_key=mistral_api_key)
+    embed_client = GeminiEmbeddingClient(api_key=mistral_api_key)
     
     # Initialize AstraDB client (placeholder - needs actual implementation)
     # For now, we'll use a mock

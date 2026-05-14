@@ -94,6 +94,20 @@ async def lifespan(app: FastAPI):
                 logger.info("[Startup] Created collection: tria_episodic_memory")
             except Exception:
                 pass
+            # CrewAI Hermes Family collections (3072d)
+            try:
+                await db.create_collection(
+                    "crewai_memory_3072",
+                    definition={"vector": {"dimension": 3072, "metric": "cosine"}},
+                )
+                logger.info("[Startup] Created collection: crewai_memory_3072")
+            except Exception:
+                pass
+            try:
+                await db.create_collection("crewai_checkpoints")
+                logger.info("[Startup] Created collection: crewai_checkpoints")
+            except Exception:
+                pass
     except Exception as e:
         logger.warning(f"[Startup] Collection init failed: {e}")
 
@@ -189,6 +203,7 @@ from backend.api.v1.endpoints.github_proxy import router as github_proxy_router
 from backend.api.v1.endpoints.mcp import router as mcp_router
 from backend.routers.gesture_embedding import router as gesture_embedding_router
 from backend.routers import live
+from backend.hermes_family.router import router as hermes_family_router
 
 API_V1_PREFIX = "/api/v1"
 
@@ -210,6 +225,7 @@ app.include_router(
 app.include_router(wallet_router, prefix=f"{API_V1_PREFIX}/wallet", tags=["Wallet"])
 app.include_router(github_proxy_router, prefix=API_V1_PREFIX, tags=["GitHub Proxy"])
 app.include_router(mcp_router, prefix=f"{API_V1_PREFIX}/mcp", tags=["MCP"])
+app.include_router(hermes_family_router, tags=["Hermes Family"])
 app.include_router(
     user_gestures_router,
     prefix=f"{API_V1_PREFIX}/users/me/gestures",

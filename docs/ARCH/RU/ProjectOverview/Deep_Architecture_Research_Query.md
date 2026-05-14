@@ -9,7 +9,7 @@
 - **Frontend**: Cloudflare Pages.
 - **Backend**: FastAPI (Koyeb).
 - **Database**: Astra DB (Vector Search, 3072d Gemini Embeddings).
-- **Storage**: Используется Cloudflare R2 / Backblaze B2.
+- **Storage**: Используется Cloudflare R2.
 
 **Проблема:** Рассинхрон состояний (state synchronization) в NetHoloGlyph и высокие задержки при мультиплеерном взаимодействии. Существует риск «инфраструктурного паразитизма» на дорогих внешних решениях.
 

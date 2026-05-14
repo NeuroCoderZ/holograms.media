@@ -17,7 +17,7 @@ class HermesRAG:
         self.astra = get_astra_connector()
         self.embeddings = get_embeddings_client(kv_cache=kv_cache)
         
-        # Chunking parameters (2026 best practices for codestral-embed-2505)
+        # Chunking parameters (optimized for gemini-embedding-2-preview, 3072d)
         self.chunk_size = 2000  # ~500 tokens
         self.chunk_overlap = 700  # ~35% overlap
     

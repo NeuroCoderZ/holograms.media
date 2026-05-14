@@ -56,6 +56,7 @@ backend/src/moderation.js
 backend/src/moderation.py
 backend/src/rag.js
 backend/src/rag.py
+backend/src/telegram.js
 css/style.css
 index.html
 js/app.js
@@ -81,8 +82,8 @@ This section contains the contents of the repository's files.
  11:       throw new Error(`AstraDB credentials missing: token=${!!this.token}, endpoint=${!!this.endpoint}`);
  12:     }
  13:     
- 14:     this.CODEBASE_COLLECTION = 'neuroescrow_codebase';
- 15:     this.MEMORY_COLLECTION = 'neuroescrow_memory';
+ 14:     this.CODEBASE_COLLECTION = 'neuroescrow_codebase_3072';
+ 15:     this.MEMORY_COLLECTION = 'neuroescrow_memory_3072';
  16:   }
  17:   
  18:   async insertDocument(collectionName, document, vector = null) {
@@ -244,12 +245,12 @@ This section contains the contents of the repository's files.
  33:         self.db = self.client.get_database(self.endpoint)
  34:         
  35:         # Collection names (isolated from main holograms.media)
- 36:         self.CODEBASE_COLLECTION = "neuroescrow_codebase"
- 37:         self.MEMORY_COLLECTION = "neuroescrow_memory"
+ 36:         self.CODEBASE_COLLECTION = "neuroescrow_codebase_3072"
+ 37:         self.MEMORY_COLLECTION = "neuroescrow_memory_3072"
  38:         
  39:         self._initialized = True
  40:     
- 41:     def _ensure_collection(self, collection_name: str, dimension: int = 1536):
+ 41:     def _ensure_collection(self, collection_name: str, dimension: int = 3072):
  42:         """Ensure collection exists with proper vector configuration"""
  43:         try:
  44:             return self.db.get_collection(collection_name)
@@ -323,281 +324,318 @@ This section contains the contents of the repository's files.
 
 <file path="backend/src/embeddings.js">
   1: /**
-  2:  * Mistral Embeddings - JavaScript Edition
-  3:  * Uses codestral-embed-2505 (1536 dimensions)
-  4:  */
-  5: 
-  6: export class MistralEmbeddings {
-  7:   constructor(kvCache, env) {
-  8:     this.apiKey = env?.MISTRAL_API_KEY;
-  9:     if (!this.apiKey) {
- 10:       throw new Error('MISTRAL_API_KEY not found in environment');
- 11:     }
- 12:     this.model = env?.EMBEDDING_MODEL || 'codestral-embed-2505';
- 13:     this.dimension = parseInt(env?.EMBEDDING_DIMENSION || '1536');
- 14:     this.kvCache = kvCache;
- 15:   }
- 16:   
- 17:   getCacheKey(text) {
- 18:     return `emb:${this.hashString(text).substring(0, 16)}`;
- 19:   }
- 20:   
- 21:   hashString(str) {
- 22:     let hash = 0;
- 23:     for (let i = 0; i < str.length; i++) {
- 24:       const char = str.charCodeAt(i);
- 25:       hash = ((hash << 5) - hash) + char;
- 26:       hash = hash & hash;
- 27:     }
- 28:     return Math.abs(hash).toString(16);
- 29:   }
- 30:   
- 31:   async getFromCache(text) {
- 32:     if (!this.kvCache) return null;
- 33:     
- 34:     try {
- 35:       const cacheKey = this.getCacheKey(text);
- 36:       const cached = await this.kvCache.get(cacheKey);
- 37:       if (cached) {
- 38:         return JSON.parse(cached);
- 39:       }
- 40:     } catch (error) {
- 41:       // Ignore cache errors
- 42:     }
- 43:     
- 44:     return null;
- 45:   }
- 46:   
- 47:   async saveToCache(text, embedding) {
- 48:     if (!this.kvCache) return;
- 49:     
- 50:     try {
- 51:       const cacheKey = this.getCacheKey(text);
- 52:       // Cache for 7 days
- 53:       await this.kvCache.put(cacheKey, JSON.stringify(embedding), {
- 54:         expirationTtl: 604800
- 55:       });
- 56:     } catch (error) {
- 57:       // Ignore cache errors
- 58:     }
- 59:   }
- 60:   
- 61:   async embed(text) {
- 62:     // Check cache
- 63:     const cached = await this.getFromCache(text);
- 64:     if (cached) return cached;
- 65:     
- 66:     // Call Mistral API
- 67:     const response = await fetch('https://api.mistral.ai/v1/embeddings', {
- 68:       method: 'POST',
- 69:       headers: {
- 70:         'Authorization': `Bearer ${this.apiKey}`,
- 71:         'Content-Type': 'application/json'
- 72:       },
- 73:       body: JSON.stringify({
- 74:         model: this.model,
- 75:         input: [text]
- 76:       })
- 77:     });
- 78:     
- 79:     if (!response.ok) {
- 80:       throw new Error(`Mistral Embeddings API error: ${response.status}`);
- 81:     }
- 82:     
- 83:     const data = await response.json();
- 84:     const embedding = data.data[0].embedding;
- 85:     
- 86:     // Save to cache
- 87:     await this.saveToCache(text, embedding);
- 88:     
- 89:     return embedding;
- 90:   }
- 91:   
- 92:   async embedBatch(texts) {
- 93:     const embeddings = [];
- 94:     const uncachedTexts = [];
- 95:     const uncachedIndices = [];
- 96:     
- 97:     // Check cache for each text
- 98:     for (let i = 0; i < texts.length; i++) {
- 99:       const cached = await this.getFromCache(texts[i]);
-100:       if (cached) {
-101:         embeddings.push(cached);
-102:       } else {
-103:         embeddings.push(null);
-104:         uncachedTexts.push(texts[i]);
-105:         uncachedIndices.push(i);
-106:       }
-107:     }
-108:     
-109:     // Batch call for uncached texts
-110:     if (uncachedTexts.length > 0) {
-111:       const response = await fetch('https://api.mistral.ai/v1/embeddings', {
-112:         method: 'POST',
-113:         headers: {
-114:           'Authorization': `Bearer ${this.apiKey}`,
-115:           'Content-Type': 'application/json'
-116:         },
-117:         body: JSON.stringify({
-118:           model: this.model,
-119:           input: uncachedTexts
-120:         })
-121:       });
-122:       
-123:       if (!response.ok) {
-124:         throw new Error(`Mistral Embeddings API error: ${response.status}`);
-125:       }
-126:       
-127:       const data = await response.json();
-128:       
-129:       // Fill in uncached embeddings
-130:       for (let i = 0; i < data.data.length; i++) {
-131:         const embedding = data.data[i].embedding;
-132:         const idx = uncachedIndices[i];
-133:         embeddings[idx] = embedding;
-134:         await this.saveToCache(uncachedTexts[i], embedding);
-135:       }
-136:     }
-137:     
-138:     return embeddings;
-139:   }
-140: }
+  2:  * Gemini Embeddings - JavaScript Edition
+  3:  * Uses gemini-embedding-2-preview (3072 dimensions)
+  4:  * Migrated from Mistral codestral-embed-2505 (1536d) — A1 Phase
+  5:  */
+  6: 
+  7: export class GeminiEmbeddings {
+  8:   constructor(kvCache, env) {
+  9:     this.apiKey = env?.GOOGLE_API_KEY || env?.GEMINI_API_KEY;
+ 10:     if (!this.apiKey) {
+ 11:       throw new Error('GOOGLE_API_KEY or GEMINI_API_KEY not found in environment');
+ 12:     }
+ 13:     this.model = env?.EMBEDDING_MODEL || 'gemini-embedding-2-preview';
+ 14:     this.dimension = parseInt(env?.EMBEDDING_DIMENSION || '3072');
+ 15:     this.kvCache = kvCache;
+ 16:     this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+ 17:   }
+ 18: 
+ 19:   getCacheKey(text) {
+ 20:     return `emb:${this.hashString(text).substring(0, 16)}`;
+ 21:   }
+ 22: 
+ 23:   hashString(str) {
+ 24:     let hash = 0;
+ 25:     for (let i = 0; i < str.length; i++) {
+ 26:       const char = str.charCodeAt(i);
+ 27:       hash = ((hash << 5) - hash) + char;
+ 28:       hash = hash & hash;
+ 29:     }
+ 30:     return Math.abs(hash).toString(16);
+ 31:   }
+ 32: 
+ 33:   async getFromCache(text) {
+ 34:     if (!this.kvCache) return null;
+ 35: 
+ 36:     try {
+ 37:       const cacheKey = this.getCacheKey(text);
+ 38:       const cached = await this.kvCache.get(cacheKey);
+ 39:       if (cached) {
+ 40:         return JSON.parse(cached);
+ 41:       }
+ 42:     } catch (error) {
+ 43:       // Ignore cache errors
+ 44:     }
+ 45: 
+ 46:     return null;
+ 47:   }
+ 48: 
+ 49:   async saveToCache(text, embedding) {
+ 50:     if (!this.kvCache) return;
+ 51: 
+ 52:     try {
+ 53:       const cacheKey = this.getCacheKey(text);
+ 54:       // Cache for 7 days
+ 55:       await this.kvCache.put(cacheKey, JSON.stringify(embedding), {
+ 56:         expirationTtl: 604800
+ 57:       });
+ 58:     } catch (error) {
+ 59:       // Ignore cache errors
+ 60:     }
+ 61:   }
+ 62: 
+ 63:   async embed(text) {
+ 64:     // Check cache
+ 65:     const cached = await this.getFromCache(text);
+ 66:     if (cached) return cached;
+ 67: 
+ 68:     // Call Gemini Embedding API
+ 69:     const url = `${this.baseUrl}/${this.model}:embedContent?key=${this.apiKey}`;
+ 70: 
+ 71:     const response = await fetch(url, {
+ 72:       method: 'POST',
+ 73:       headers: {
+ 74:         'Content-Type': 'application/json'
+ 75:       },
+ 76:       body: JSON.stringify({
+ 77:         model: `models/${this.model}`,
+ 78:         content: {
+ 79:           parts: [{ text }]
+ 80:         }
+ 81:       })
+ 82:     });
+ 83: 
+ 84:     if (!response.ok) {
+ 85:       const errorBody = await response.text();
+ 86:       throw new Error(`Gemini Embeddings API error: ${response.status} — ${errorBody}`);
+ 87:     }
+ 88: 
+ 89:     const data = await response.json();
+ 90:     const embedding = data.embedding?.values;
+ 91: 
+ 92:     if (!embedding || embedding.length !== this.dimension) {
+ 93:       throw new Error(`Unexpected embedding dimension: ${embedding?.length}, expected ${this.dimension}`);
+ 94:     }
+ 95: 
+ 96:     // Save to cache
+ 97:     await this.saveToCache(text, embedding);
+ 98: 
+ 99:     return embedding;
+100:   }
+101: 
+102:   async embedBatch(texts) {
+103:     const embeddings = [];
+104:     const uncachedTexts = [];
+105:     const uncachedIndices = [];
+106: 
+107:     // Check cache for each text
+108:     for (let i = 0; i < texts.length; i++) {
+109:       const cached = await this.getFromCache(texts[i]);
+110:       if (cached) {
+111:         embeddings.push(cached);
+112:       } else {
+113:         embeddings.push(null);
+114:         uncachedTexts.push(texts[i]);
+115:         uncachedIndices.push(i);
+116:       }
+117:     }
+118: 
+119:     // Batch call for uncached texts (Gemini batchEmbedContents)
+120:     if (uncachedTexts.length > 0) {
+121:       // Gemini batch API supports up to 100 texts per request
+122:       for (let batchStart = 0; batchStart < uncachedTexts.length; batchStart += 100) {
+123:         const batchTexts = uncachedTexts.slice(batchStart, batchStart + 100);
+124:         const batchIndices = uncachedIndices.slice(batchStart, batchStart + 100);
+125: 
+126:         const url = `${this.baseUrl}/${this.model}:batchEmbedContents?key=${this.apiKey}`;
+127: 
+128:         const requests = batchTexts.map(text => ({
+129:           model: `models/${this.model}`,
+130:           content: {
+131:             parts: [{ text }]
+132:           }
+133:         }));
+134: 
+135:         const response = await fetch(url, {
+136:           method: 'POST',
+137:           headers: {
+138:             'Content-Type': 'application/json'
+139:           },
+140:           body: JSON.stringify({ requests })
+141:         });
+142: 
+143:         if (!response.ok) {
+144:           const errorBody = await response.text();
+145:           throw new Error(`Gemini Batch Embeddings API error: ${response.status} — ${errorBody}`);
+146:         }
+147: 
+148:         const data = await response.json();
+149:         const batchEmbeddings = data.embeddings || [];
+150: 
+151:         // Fill in uncached embeddings
+152:         for (let j = 0; j < batchEmbeddings.length; j++) {
+153:           const embedding = batchEmbeddings[j].values;
+154:           const idx = batchIndices[j];
+155:           embeddings[idx] = embedding;
+156:           await this.saveToCache(batchTexts[j], embedding);
+157:         }
+158:       }
+159:     }
+160: 
+161:     return embeddings;
+162:   }
+163: }
 </file>
 
 <file path="backend/src/embeddings.py">
   1: """
-  2: Mistral Embeddings with KV Cache
-  3: Uses codestral-embed-2505 (1536 dimensions)
-  4: """
-  5: import os
-  6: import hashlib
-  7: import json
-  8: from typing import List, Optional
-  9: import httpx
- 10: 
+  2: Gemini Embeddings with KV Cache
+  3: Uses gemini-embedding-2-preview (3072 dimensions)
+  4: Migrated from Mistral codestral-embed-2505 (1536d) — A1 Phase
+  5: """
+  6: import os
+  7: import hashlib
+  8: import json
+  9: from typing import List, Optional
+ 10: import httpx
  11: 
- 12: class MistralEmbeddings:
- 13:     """Mistral embeddings client with KV caching"""
- 14:     
- 15:     def __init__(self, kv_cache=None):
- 16:         self.api_key = os.getenv('MISTRAL_API_KEY')
- 17:         if not self.api_key:
- 18:             raise ValueError("MISTRAL_API_KEY must be set")
- 19:         
- 20:         self.model = os.getenv('EMBEDDING_MODEL', 'codestral-embed-2505')
- 21:         self.dimension = int(os.getenv('EMBEDDING_DIMENSION', '1536'))
- 22:         self.kv_cache = kv_cache
- 23:         
- 24:         self.base_url = "https://api.mistral.ai/v1/embeddings"
- 25:         self.headers = {
- 26:             "Authorization": f"Bearer {self.api_key}",
- 27:             "Content-Type": "application/json"
- 28:         }
- 29:     
- 30:     def _get_cache_key(self, text: str) -> str:
- 31:         """Generate cache key from text"""
- 32:         return f"emb:{hashlib.sha256(text.encode()).hexdigest()[:16]}"
- 33:     
- 34:     def _get_from_cache(self, text: str) -> Optional[List[float]]:
- 35:         """Get embedding from KV cache"""
- 36:         if not self.kv_cache:
- 37:             return None
- 38:         
- 39:         try:
- 40:             cache_key = self._get_cache_key(text)
- 41:             cached = self.kv_cache.get(cache_key)
- 42:             if cached:
- 43:                 return json.loads(cached)
- 44:         except Exception:
- 45:             pass
- 46:         
- 47:         return None
- 48:     
- 49:     def _save_to_cache(self, text: str, embedding: List[float]):
- 50:         """Save embedding to KV cache"""
- 51:         if not self.kv_cache:
- 52:             return
- 53:         
- 54:         try:
- 55:             cache_key = self._get_cache_key(text)
- 56:             # Cache for 7 days
- 57:             self.kv_cache.put(cache_key, json.dumps(embedding), expiration_ttl=604800)
- 58:         except Exception:
- 59:             pass
- 60:     
- 61:     def embed(self, text: str) -> List[float]:
- 62:         """Generate embedding for single text"""
- 63:         # Check cache first
- 64:         cached = self._get_from_cache(text)
- 65:         if cached:
- 66:             return cached
- 67:         
- 68:         # Call Mistral API
- 69:         with httpx.Client() as client:
- 70:             response = client.post(
- 71:                 self.base_url,
- 72:                 headers=self.headers,
- 73:                 json={
- 74:                     "model": self.model,
- 75:                     "input": [text]
- 76:                 },
- 77:                 timeout=30.0
- 78:             )
- 79:             response.raise_for_status()
- 80:             
- 81:             data = response.json()
- 82:             embedding = data['data'][0]['embedding']
- 83:             
- 84:             # Save to cache
- 85:             self._save_to_cache(text, embedding)
- 86:             
- 87:             return embedding
- 88:     
- 89:     def embed_batch(self, texts: List[str]) -> List[List[float]]:
- 90:         """Generate embeddings for multiple texts (batch)"""
- 91:         embeddings = []
- 92:         uncached_texts = []
- 93:         uncached_indices = []
- 94:         
- 95:         # Check cache for each text
- 96:         for i, text in enumerate(texts):
- 97:             cached = self._get_from_cache(text)
- 98:             if cached:
- 99:                 embeddings.append(cached)
-100:             else:
-101:                 embeddings.append(None)
-102:                 uncached_texts.append(text)
-103:                 uncached_indices.append(i)
-104:         
-105:         # Batch call for uncached texts
-106:         if uncached_texts:
-107:             with httpx.Client() as client:
-108:                 response = client.post(
-109:                     self.base_url,
-110:                     headers=self.headers,
-111:                     json={
-112:                         "model": self.model,
-113:                         "input": uncached_texts
-114:                     },
-115:                     timeout=60.0
-116:                 )
-117:                 response.raise_for_status()
-118:                 
-119:                 data = response.json()
-120:                 
-121:                 # Fill in uncached embeddings and save to cache
-122:                 for i, emb_data in enumerate(data['data']):
-123:                     embedding = emb_data['embedding']
-124:                     idx = uncached_indices[i]
-125:                     embeddings[idx] = embedding
-126:                     self._save_to_cache(uncached_texts[i], embedding)
-127:         
-128:         return embeddings
-129: 
-130: 
-131: def get_embeddings_client(kv_cache=None) -> MistralEmbeddings:
-132:     """Get Mistral embeddings client"""
-133:     return MistralEmbeddings(kv_cache=kv_cache)
+ 12: 
+ 13: class GeminiEmbeddings:
+ 14:     """Gemini embeddings client with KV caching"""
+ 15: 
+ 16:     def __init__(self, kv_cache=None):
+ 17:         self.api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
+ 18:         if not self.api_key:
+ 19:             raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY must be set")
+ 20: 
+ 21:         self.model = os.getenv('EMBEDDING_MODEL', 'gemini-embedding-2-preview')
+ 22:         self.dimension = int(os.getenv('EMBEDDING_DIMENSION', '3072'))
+ 23:         self.kv_cache = kv_cache
+ 24: 
+ 25:         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
+ 26: 
+ 27:     def _get_cache_key(self, text: str) -> str:
+ 28:         """Generate cache key from text"""
+ 29:         return f"emb:{hashlib.sha256(text.encode()).hexdigest()[:16]}"
+ 30: 
+ 31:     def _get_from_cache(self, text: str) -> Optional[List[float]]:
+ 32:         """Get embedding from KV cache"""
+ 33:         if not self.kv_cache:
+ 34:             return None
+ 35: 
+ 36:         try:
+ 37:             cache_key = self._get_cache_key(text)
+ 38:             cached = self.kv_cache.get(cache_key)
+ 39:             if cached:
+ 40:                 return json.loads(cached)
+ 41:         except Exception:
+ 42:             pass
+ 43: 
+ 44:         return None
+ 45: 
+ 46:     def _save_to_cache(self, text: str, embedding: List[float]):
+ 47:         """Save embedding to KV cache"""
+ 48:         if not self.kv_cache:
+ 49:             return
+ 50: 
+ 51:         try:
+ 52:             cache_key = self._get_cache_key(text)
+ 53:             # Cache for 7 days
+ 54:             self.kv_cache.put(cache_key, json.dumps(embedding), expiration_ttl=604800)
+ 55:         except Exception:
+ 56:             pass
+ 57: 
+ 58:     def embed(self, text: str) -> List[float]:
+ 59:         """Generate embedding for single text"""
+ 60:         # Check cache first
+ 61:         cached = self._get_from_cache(text)
+ 62:         if cached:
+ 63:             return cached
+ 64: 
+ 65:         # Call Gemini Embedding API
+ 66:         url = f"{self.base_url}/{self.model}:embedContent"
+ 67:         with httpx.Client(timeout=30.0) as client:
+ 68:             response = client.post(
+ 69:                 url,
+ 70:                 params={"key": self.api_key},
+ 71:                 json={
+ 72:                     "model": f"models/{self.model}",
+ 73:                     "content": {
+ 74:                         "parts": [{"text": text}]
+ 75:                     }
+ 76:                 }
+ 77:             )
+ 78:             response.raise_for_status()
+ 79: 
+ 80:             data = response.json()
+ 81:             embedding = data.get("embedding", {}).get("values", [])
+ 82: 
+ 83:             if len(embedding) != self.dimension:
+ 84:                 raise ValueError(f"Unexpected embedding dimension: {len(embedding)}, expected {self.dimension}")
+ 85: 
+ 86:             # Save to cache
+ 87:             self._save_to_cache(text, embedding)
+ 88: 
+ 89:             return embedding
+ 90: 
+ 91:     def embed_batch(self, texts: List[str]) -> List[List[float]]:
+ 92:         """Generate embeddings for multiple texts using batchEmbedContents"""
+ 93:         embeddings = []
+ 94:         uncached_texts = []
+ 95:         uncached_indices = []
+ 96: 
+ 97:         # Check cache for each text
+ 98:         for i, text in enumerate(texts):
+ 99:             cached = self._get_from_cache(text)
+100:             if cached:
+101:                 embeddings.append(cached)
+102:             else:
+103:                 embeddings.append(None)
+104:                 uncached_texts.append(text)
+105:                 uncached_indices.append(i)
+106: 
+107:         # Batch call for uncached texts (max 100 per request)
+108:         if uncached_texts:
+109:             for batch_start in range(0, len(uncached_texts), 100):
+110:                 batch_texts = uncached_texts[batch_start:batch_start + 100]
+111:                 batch_indices = uncached_indices[batch_start:batch_start + 100]
+112: 
+113:                 url = f"{self.base_url}/{self.model}:batchEmbedContents"
+114:                 requests = [
+115:                     {
+116:                         "model": f"models/{self.model}",
+117:                         "content": {
+118:                             "parts": [{"text": text}]
+119:                         }
+120:                     }
+121:                     for text in batch_texts
+122:                 ]
+123: 
+124:                 with httpx.Client(timeout=60.0) as client:
+125:                     response = client.post(
+126:                         url,
+127:                         params={"key": self.api_key},
+128:                         json={"requests": requests}
+129:                     )
+130:                     response.raise_for_status()
+131: 
+132:                     data = response.json()
+133:                     batch_data = data.get("embeddings", [])
+134: 
+135:                     # Fill in uncached embeddings and save to cache
+136:                     for j, emb_data in enumerate(batch_data):
+137:                         embedding = emb_data.get("values", [])
+138:                         idx = batch_indices[j]
+139:                         embeddings[idx] = embedding
+140:                         self._save_to_cache(batch_texts[j], embedding)
+141: 
+142:         return embeddings
+143: 
+144: 
+145: def get_embeddings_client(kv_cache=None) -> GeminiEmbeddings:
+146:     """Get Gemini embeddings client"""
+147:     return GeminiEmbeddings(kv_cache=kv_cache)
 </file>
 
 <file path="backend/src/hermes.js">
@@ -1152,141 +1190,253 @@ This section contains the contents of the repository's files.
   1: /**
   2:  * Hermes Worker - JavaScript Edition
   3:  * Cloudflare Workers entry point
-  4:  */
-  5: 
-  6: import { HermesAgent } from './hermes.js';
-  7: import { HermesRAG } from './rag.js';
-  8: 
-  9: export default {
- 10:   async fetch(request, env, ctx) {
- 11:     const url = new URL(request.url);
- 12:     
- 13:     // CORS headers
- 14:     const corsHeaders = {
- 15:       'Access-Control-Allow-Origin': '*',
- 16:       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
- 17:       'Access-Control-Allow-Headers': 'Content-Type',
- 18:     };
- 19:     
- 20:     if (request.method === 'OPTIONS') {
- 21:       return new Response(null, { headers: corsHeaders });
- 22:     }
- 23:     
- 24:     try {
- 25:       // Health check
- 26:       if (url.pathname === '/health') {
- 27:         const rag = new HermesRAG(env.CACHE, env);
- 28:         const stats = await rag.getStats();
- 29:         
- 30:         return new Response(JSON.stringify({
- 31:           status: 'healthy',
- 32:           service: 'hermes-neuroescrow',
- 33:           version: '1.0.0',
- 34:           stats
- 35:         }), {
- 36:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
- 37:         });
- 38:       }
- 39:       
- 40:       // Chat endpoint
- 41:       if (url.pathname === '/chat' && request.method === 'POST') {
- 42:         const data = await request.json();
- 43:         const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes' } = data;
- 44:         
- 45:         if (!message) {
- 46:           return new Response(JSON.stringify({ error: 'Message is required' }), {
- 47:             status: 400,
- 48:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
- 49:           });
- 50:         }
- 51:         
- 52:         const hermes = new HermesAgent(env.CACHE, env);
- 53:         const result = await hermes.chat(message, user_id, session_id, persona);
- 54:         
- 55:         return new Response(JSON.stringify(result), {
- 56:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
- 57:         });
- 58:       }
- 59:       
- 60:       // Image analysis
- 61:       if (url.pathname === '/analyze-image' && request.method === 'POST') {
- 62:         const data = await request.json();
- 63:         const { image_url, prompt = 'Опиши это изображение', user_id = 'anonymous', session_id = 'default' } = data;
- 64:         
- 65:         if (!image_url) {
- 66:           return new Response(JSON.stringify({ error: 'image_url is required' }), {
- 67:             status: 400,
- 68:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
- 69:           });
- 70:         }
- 71:         
- 72:         const hermes = new HermesAgent(env.CACHE, env);
- 73:         const result = await hermes.analyzeImage(image_url, prompt, user_id, session_id);
- 74:         
- 75:         return new Response(JSON.stringify(result), {
- 76:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
- 77:         });
- 78:       }
- 79:       
- 80:       // Stats
- 81:       if (url.pathname === '/stats') {
- 82:         const rag = new HermesRAG(env.CACHE, env);
- 83:         const stats = await rag.getStats();
- 84:         
- 85:         return new Response(JSON.stringify(stats), {
+  4:  * KV sessions implemented — A2 Phase
+  5:  */
+  6: 
+  7: import { HermesAgent } from './hermes.js';
+  8: import { HermesRAG } from './rag.js';
+  9: import { handleTelegramUpdate } from './telegram.js';
+ 10: 
+ 11: const SESSION_TTL = 86400; // 24 hours
+ 12: const SESSION_PREFIX = 'session:';
+ 13: 
+ 14: export default {
+ 15:   async fetch(request, env, ctx) {
+ 16:     const url = new URL(request.url);
+ 17: 
+ 18:     // CORS headers
+ 19:     const corsHeaders = {
+ 20:       'Access-Control-Allow-Origin': '*',
+ 21:       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+ 22:       'Access-Control-Allow-Headers': 'Content-Type',
+ 23:     };
+ 24: 
+ 25:     if (request.method === 'OPTIONS') {
+ 26:       return new Response(null, { headers: corsHeaders });
+ 27:     }
+ 28: 
+ 29:     try {
+ 30:       // Health check
+ 31:       if (url.pathname === '/health') {
+ 32:         const rag = new HermesRAG(env.CACHE, env);
+ 33:         const stats = await rag.getStats();
+ 34: 
+ 35:         return new Response(JSON.stringify({
+ 36:           status: 'healthy',
+ 37:           service: 'hermes-neuroescrow',
+ 38:           version: '2.0.0',
+ 39:           embedding_model: 'gemini-embedding-2-preview',
+ 40:           embedding_dim: 3072,
+ 41:           stats
+ 42:         }), {
+ 43:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 44:         });
+ 45:       }
+ 46: 
+ 47:       // Chat endpoint
+ 48:       if (url.pathname === '/chat' && request.method === 'POST') {
+ 49:         const data = await request.json();
+ 50:         const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes' } = data;
+ 51: 
+ 52:         if (!message) {
+ 53:           return new Response(JSON.stringify({ error: 'Message is required' }), {
+ 54:             status: 400,
+ 55:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 56:           });
+ 57:         }
+ 58: 
+ 59:         const hermes = new HermesAgent(env.CACHE, env);
+ 60:         const result = await hermes.chat(message, user_id, session_id, persona);
+ 61: 
+ 62:         // Persist session to KV (fire-and-forget)
+ 63:         ctx.waitUntil(saveSession(env, session_id, hermes.getSessionHistory(session_id)));
+ 64: 
+ 65:         return new Response(JSON.stringify(result), {
+ 66:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 67:         });
+ 68:       }
+ 69: 
+ 70:       // Image analysis
+ 71:       if (url.pathname === '/analyze-image' && request.method === 'POST') {
+ 72:         const data = await request.json();
+ 73:         const { image_url, prompt = 'Опиши это изображение', user_id = 'anonymous', session_id = 'default' } = data;
+ 74: 
+ 75:         if (!image_url) {
+ 76:           return new Response(JSON.stringify({ error: 'image_url is required' }), {
+ 77:             status: 400,
+ 78:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 79:           });
+ 80:         }
+ 81: 
+ 82:         const hermes = new HermesAgent(env.CACHE, env);
+ 83:         const result = await hermes.analyzeImage(image_url, prompt, user_id, session_id);
+ 84: 
+ 85:         return new Response(JSON.stringify(result), {
  86:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
  87:         });
  88:       }
- 89:       
- 90:       // Sessions list
- 91:       if (url.pathname === '/sessions') {
- 92:         // TODO: Implement sessions storage in KV
- 93:         return new Response(JSON.stringify([]), {
- 94:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
- 95:         });
- 96:       }
- 97:       
- 98:       // Load session
- 99:       if (url.pathname.startsWith('/session/') && request.method === 'GET') {
-100:         const sessionId = url.pathname.split('/')[2];
-101:         // TODO: Load from KV
-102:         return new Response(JSON.stringify({ messages: [] }), {
-103:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-104:         });
-105:       }
-106:       
-107:       // Create session
-108:       if (url.pathname === '/session' && request.method === 'POST') {
-109:         const data = await request.json();
-110:         const sessionId = crypto.randomUUID();
-111:         // TODO: Save to KV
-112:         return new Response(JSON.stringify({ session_id: sessionId }), {
+ 89: 
+ 90:       // Stats
+ 91:       if (url.pathname === '/stats') {
+ 92:         const rag = new HermesRAG(env.CACHE, env);
+ 93:         const stats = await rag.getStats();
+ 94: 
+ 95:         return new Response(JSON.stringify(stats), {
+ 96:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 97:         });
+ 98:       }
+ 99: 
+100:       // Sessions list
+101:       if (url.pathname === '/sessions') {
+102:         const sessions = await listSessions(env);
+103:         return new Response(JSON.stringify(sessions), {
+104:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+105:         });
+106:       }
+107: 
+108:       // Load session
+109:       if (url.pathname.startsWith('/session/') && request.method === 'GET') {
+110:         const sessionId = url.pathname.split('/')[2];
+111:         const session = await loadSession(env, sessionId);
+112:         return new Response(JSON.stringify(session || { messages: [] }), {
 113:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 114:         });
 115:       }
-116:       
-117:       // Delete session
-118:       if (url.pathname.startsWith('/session/') && request.method === 'DELETE') {
-119:         const sessionId = url.pathname.split('/')[2];
-120:         // TODO: Delete from KV
-121:         return new Response(JSON.stringify({ ok: true }), {
-122:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-123:         });
-124:       }
-125:       
-126:       return new Response(JSON.stringify({ error: 'Not found' }), {
-127:         status: 404,
-128:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-129:       });
-130:       
-131:     } catch (error) {
-132:       return new Response(JSON.stringify({ error: error.message }), {
-133:         status: 500,
-134:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-135:       });
-136:     }
-137:   }
-138: };
+116: 
+117:       // Create session
+118:       if (url.pathname === '/session' && request.method === 'POST') {
+119:         const data = await request.json();
+120:         const sessionId = data?.session_id || crypto.randomUUID();
+121:         const session = {
+122:           id: sessionId,
+123:           messages: [],
+124:           created_at: new Date().toISOString(),
+125:           updated_at: new Date().toISOString()
+126:         };
+127:         await env.CACHE.put(
+128:           `${SESSION_PREFIX}${sessionId}`,
+129:           JSON.stringify(session),
+130:           { expirationTtl: SESSION_TTL }
+131:         );
+132:         return new Response(JSON.stringify({ session_id: sessionId }), {
+133:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+134:         });
+135:       }
+136: 
+137:       // Delete session
+138:       if (url.pathname.startsWith('/session/') && request.method === 'DELETE') {
+139:         const sessionId = url.pathname.split('/')[2];
+140:         await env.CACHE.delete(`${SESSION_PREFIX}${sessionId}`);
+141:         return new Response(JSON.stringify({ ok: true }), {
+142:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+143:         });
+144:       }
+145: 
+146:       // Telegram webhook endpoint
+147:       if (url.pathname === '/webhook/telegram' && request.method === 'POST') {
+148:         const update = await request.json();
+149:         const hermes = new HermesAgent(env.CACHE, env);
+150:         const result = await handleTelegramUpdate(update, env, hermes);
+151:         return new Response(JSON.stringify(result), {
+152:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+153:         });
+154:       }
+155: 
+156:       return new Response(JSON.stringify({ error: 'Not found' }), {
+157:         status: 404,
+158:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+159:       });
+160: 
+161:     } catch (error) {
+162:       return new Response(JSON.stringify({ error: error.message }), {
+163:         status: 500,
+164:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+165:       });
+166:     }
+167:   },
+168: 
+169:   // Scheduled handler for session cleanup (cron trigger)
+170:   async scheduled(event, env, ctx) {
+171:     ctx.waitUntil(cleanupExpiredSessions(env));
+172:   }
+173: };
+174: 
+175: // === KV Session Helpers ===
+176: 
+177: async function saveSession(env, sessionId, history) {
+178:   if (!env.CACHE || !sessionId || sessionId === 'default') return;
+179: 
+180:   try {
+181:     const key = `${SESSION_PREFIX}${sessionId}`;
+182:     const existing = await env.CACHE.get(key);
+183:     const session = existing ? JSON.parse(existing) : {
+184:       id: sessionId,
+185:       messages: [],
+186:       created_at: new Date().toISOString()
+187:     };
+188: 
+189:     session.messages = history.slice(-50); // Keep last 50 messages
+190:     session.updated_at = new Date().toISOString();
+191: 
+192:     await env.CACHE.put(key, JSON.stringify(session), {
+193:       expirationTtl: SESSION_TTL
+194:     });
+195:   } catch (error) {
+196:     // KV errors are non-critical
+197:   }
+198: }
+199: 
+200: async function loadSession(env, sessionId) {
+201:   if (!env.CACHE) return null;
+202: 
+203:   try {
+204:     const key = `${SESSION_PREFIX}${sessionId}`;
+205:     const data = await env.CACHE.get(key);
+206:     return data ? JSON.parse(data) : null;
+207:   } catch (error) {
+208:     return null;
+209:   }
+210: }
+211: 
+212: async function listSessions(env) {
+213:   if (!env.CACHE) return [];
+214: 
+215:   try {
+216:     const list = await env.CACHE.list({ prefix: SESSION_PREFIX });
+217:     return list.keys.map(key => ({
+218:       id: key.name.replace(SESSION_PREFIX, ''),
+219:       updated_at: key.metadata?.updated_at || null
+220:     }));
+221:   } catch (error) {
+222:     return [];
+223:   }
+224: }
+225: 
+226: async function cleanupExpiredSessions(env) {
+227:   if (!env.CACHE) return;
+228: 
+229:   try {
+230:     const list = await env.CACHE.list({ prefix: SESSION_PREFIX });
+231:     const now = Date.now();
+232:     let cleaned = 0;
+233: 
+234:     for (const key of list.keys) {
+235:       // KV with expirationTtl handles auto-cleanup,
+236:       // but we can force-delete stale sessions older than 48h
+237:       if (key.metadata?.updated_at) {
+238:         const updated = new Date(key.metadata.updated_at).getTime();
+239:         if (now - updated > 172800000) { // 48h
+240:           await env.CACHE.delete(key.name);
+241:           cleaned++;
+242:         }
+243:       }
+244:     }
+245: 
+246:     console.log(`Session cleanup: ${cleaned} expired sessions removed`);
+247:   } catch (error) {
+248:     console.error(`Session cleanup error: ${error.message}`);
+249:   }
+250: }
 </file>
 
 <file path="backend/src/index.py">
@@ -1333,183 +1483,184 @@ This section contains the contents of the repository's files.
  41:     os.environ['ASTRA_DB_TOKEN'] = env.get('ASTRA_DB_TOKEN', '')
  42:     os.environ['ASTRA_DB_ENDPOINT'] = env.get('ASTRA_DB_ENDPOINT', '')
  43:     os.environ['MODEL_NAME'] = env.get('MODEL_NAME', 'mistral-medium-3.5')
- 44:     os.environ['EMBEDDING_MODEL'] = env.get('EMBEDDING_MODEL', 'codestral-embed-2505')
- 45:     
- 46:     # Get KV cache
- 47:     kv_cache = env.get('CACHE')
- 48:     
- 49:     # Route handling
- 50:     if request.method == "GET" and "/health" in request.url:
- 51:         return await handle_health(kv_cache)
- 52:     
- 53:     elif request.method == "POST" and "/chat" in request.url:
- 54:         return await handle_chat(request, kv_cache)
- 55:     
- 56:     elif request.method == "POST" and "/analyze-image" in request.url:
- 57:         return await handle_analyze_image(request, kv_cache)
- 58:     
- 59:     elif request.method == "GET" and "/stats" in request.url:
- 60:         return await handle_stats(kv_cache)
- 61:     
- 62:     elif request.method == "POST" and "/webhook" in request.url:
- 63:         return await handle_telegram_webhook(request, kv_cache)
- 64:     
- 65:     else:
- 66:         return Response(
- 67:             json.dumps({"error": "Not found"}),
- 68:             status=404
- 69:         )
- 70: 
+ 44:     os.environ['EMBEDDING_MODEL'] = env.get('EMBEDDING_MODEL', 'gemini-embedding-2-preview')
+ 45:     os.environ['GOOGLE_API_KEY'] = env.get('GOOGLE_API_KEY', '')
+ 46:     
+ 47:     # Get KV cache
+ 48:     kv_cache = env.get('CACHE')
+ 49:     
+ 50:     # Route handling
+ 51:     if request.method == "GET" and "/health" in request.url:
+ 52:         return await handle_health(kv_cache)
+ 53:     
+ 54:     elif request.method == "POST" and "/chat" in request.url:
+ 55:         return await handle_chat(request, kv_cache)
+ 56:     
+ 57:     elif request.method == "POST" and "/analyze-image" in request.url:
+ 58:         return await handle_analyze_image(request, kv_cache)
+ 59:     
+ 60:     elif request.method == "GET" and "/stats" in request.url:
+ 61:         return await handle_stats(kv_cache)
+ 62:     
+ 63:     elif request.method == "POST" and "/webhook" in request.url:
+ 64:         return await handle_telegram_webhook(request, kv_cache)
+ 65:     
+ 66:     else:
+ 67:         return Response(
+ 68:             json.dumps({"error": "Not found"}),
+ 69:             status=404
+ 70:         )
  71: 
- 72: async def handle_health(kv_cache) -> Response:
- 73:     """Health check endpoint"""
- 74:     try:
- 75:         rag_system = rag.get_rag_system(kv_cache)
- 76:         stats = rag_system.get_stats()
- 77:         
- 78:         return Response(json.dumps({
- 79:             "status": "healthy",
- 80:             "service": "hermes-neuroescrow",
- 81:             "version": "1.0.0",
- 82:             "stats": stats
- 83:         }))
- 84:     except Exception as e:
- 85:         return Response(
- 86:             json.dumps({
- 87:                 "status": "unhealthy",
- 88:                 "error": str(e)
- 89:             }),
- 90:             status=500
- 91:         )
- 92: 
+ 72: 
+ 73: async def handle_health(kv_cache) -> Response:
+ 74:     """Health check endpoint"""
+ 75:     try:
+ 76:         rag_system = rag.get_rag_system(kv_cache)
+ 77:         stats = rag_system.get_stats()
+ 78:         
+ 79:         return Response(json.dumps({
+ 80:             "status": "healthy",
+ 81:             "service": "hermes-neuroescrow",
+ 82:             "version": "1.0.0",
+ 83:             "stats": stats
+ 84:         }))
+ 85:     except Exception as e:
+ 86:         return Response(
+ 87:             json.dumps({
+ 88:                 "status": "unhealthy",
+ 89:                 "error": str(e)
+ 90:             }),
+ 91:             status=500
+ 92:         )
  93: 
- 94: async def handle_chat(request: Request, kv_cache) -> Response:
- 95:     """Chat endpoint"""
- 96:     try:
- 97:         data = await request.json()
- 98:         
- 99:         message = data.get('message', '')
-100:         user_id = data.get('user_id', 'anonymous')
-101:         session_id = data.get('session_id', 'default')
-102:         persona = data.get('persona', 'hermes')
-103:         
-104:         if not message:
-105:             return Response(
-106:                 json.dumps({"error": "Message is required"}),
-107:                 status=400
-108:             )
-109:         
-110:         # Get Hermes agent
-111:         hermes_agent = hermes.get_hermes_agent(kv_cache)
-112:         
-113:         # Process message
-114:         result = hermes_agent.chat(
-115:             message=message,
-116:             user_id=user_id,
-117:             session_id=session_id,
-118:             persona=persona
-119:         )
-120:         
-121:         return Response(json.dumps(result))
-122:     
-123:     except Exception as e:
-124:         return Response(
-125:             json.dumps({"error": str(e)}),
-126:             status=500
-127:         )
-128: 
+ 94: 
+ 95: async def handle_chat(request: Request, kv_cache) -> Response:
+ 96:     """Chat endpoint"""
+ 97:     try:
+ 98:         data = await request.json()
+ 99:         
+100:         message = data.get('message', '')
+101:         user_id = data.get('user_id', 'anonymous')
+102:         session_id = data.get('session_id', 'default')
+103:         persona = data.get('persona', 'hermes')
+104:         
+105:         if not message:
+106:             return Response(
+107:                 json.dumps({"error": "Message is required"}),
+108:                 status=400
+109:             )
+110:         
+111:         # Get Hermes agent
+112:         hermes_agent = hermes.get_hermes_agent(kv_cache)
+113:         
+114:         # Process message
+115:         result = hermes_agent.chat(
+116:             message=message,
+117:             user_id=user_id,
+118:             session_id=session_id,
+119:             persona=persona
+120:         )
+121:         
+122:         return Response(json.dumps(result))
+123:     
+124:     except Exception as e:
+125:         return Response(
+126:             json.dumps({"error": str(e)}),
+127:             status=500
+128:         )
 129: 
-130: async def handle_analyze_image(request: Request, kv_cache) -> Response:
-131:     """Image analysis endpoint"""
-132:     try:
-133:         data = await request.json()
-134:         
-135:         image_url = data.get('image_url', '')
-136:         prompt = data.get('prompt', 'Опиши это изображение')
-137:         user_id = data.get('user_id', 'anonymous')
-138:         session_id = data.get('session_id', 'default')
-139:         
-140:         if not image_url:
-141:             return Response(
-142:                 json.dumps({"error": "image_url is required"}),
-143:                 status=400
-144:             )
-145:         
-146:         # Get Hermes agent
-147:         hermes_agent = hermes.get_hermes_agent(kv_cache)
-148:         
-149:         # Analyze image
-150:         result = hermes_agent.analyze_image(
-151:             image_url=image_url,
-152:             prompt=prompt,
-153:             user_id=user_id,
-154:             session_id=session_id
-155:         )
-156:         
-157:         return Response(json.dumps(result))
-158:     
-159:     except Exception as e:
-160:         return Response(
-161:             json.dumps({"error": str(e)}),
-162:             status=500
-163:         )
-164: 
+130: 
+131: async def handle_analyze_image(request: Request, kv_cache) -> Response:
+132:     """Image analysis endpoint"""
+133:     try:
+134:         data = await request.json()
+135:         
+136:         image_url = data.get('image_url', '')
+137:         prompt = data.get('prompt', 'Опиши это изображение')
+138:         user_id = data.get('user_id', 'anonymous')
+139:         session_id = data.get('session_id', 'default')
+140:         
+141:         if not image_url:
+142:             return Response(
+143:                 json.dumps({"error": "image_url is required"}),
+144:                 status=400
+145:             )
+146:         
+147:         # Get Hermes agent
+148:         hermes_agent = hermes.get_hermes_agent(kv_cache)
+149:         
+150:         # Analyze image
+151:         result = hermes_agent.analyze_image(
+152:             image_url=image_url,
+153:             prompt=prompt,
+154:             user_id=user_id,
+155:             session_id=session_id
+156:         )
+157:         
+158:         return Response(json.dumps(result))
+159:     
+160:     except Exception as e:
+161:         return Response(
+162:             json.dumps({"error": str(e)}),
+163:             status=500
+164:         )
 165: 
-166: async def handle_stats(kv_cache) -> Response:
-167:     """Stats endpoint"""
-168:     try:
-169:         rag_system = rag.get_rag_system(kv_cache)
-170:         stats = rag_system.get_stats()
-171:         
-172:         return Response(json.dumps(stats))
-173:     
-174:     except Exception as e:
-175:         return Response(
-176:             json.dumps({"error": str(e)}),
-177:             status=500
-178:         )
-179: 
+166: 
+167: async def handle_stats(kv_cache) -> Response:
+168:     """Stats endpoint"""
+169:     try:
+170:         rag_system = rag.get_rag_system(kv_cache)
+171:         stats = rag_system.get_stats()
+172:         
+173:         return Response(json.dumps(stats))
+174:     
+175:     except Exception as e:
+176:         return Response(
+177:             json.dumps({"error": str(e)}),
+178:             status=500
+179:         )
 180: 
-181: async def handle_telegram_webhook(request: Request, kv_cache) -> Response:
-182:     """Telegram webhook handler"""
-183:     try:
-184:         data = await request.json()
-185:         
-186:         # Extract message from Telegram update
-187:         message = data.get('message', {})
-188:         text = message.get('text', '')
-189:         user_id = str(message.get('from', {}).get('id', 'unknown'))
-190:         chat_id = message.get('chat', {}).get('id')
-191:         
-192:         if not text or not chat_id:
-193:             return Response(json.dumps({"ok": True}))
-194:         
-195:         # Get Hermes agent
-196:         hermes_agent = hermes.get_hermes_agent(kv_cache)
-197:         
-198:         # Process message
-199:         result = hermes_agent.chat(
-200:             message=text,
-201:             user_id=user_id,
-202:             session_id=f"tg_{chat_id}"
-203:         )
-204:         
-205:         # Send response back to Telegram
-206:         # TODO: Implement Telegram API call to send message
-207:         
-208:         return Response(json.dumps({"ok": True}))
-209:     
-210:     except Exception as e:
-211:         return Response(
-212:             json.dumps({"error": str(e)}),
-213:             status=500
-214:         )
-215: 
+181: 
+182: async def handle_telegram_webhook(request: Request, kv_cache) -> Response:
+183:     """Telegram webhook handler"""
+184:     try:
+185:         data = await request.json()
+186:         
+187:         # Extract message from Telegram update
+188:         message = data.get('message', {})
+189:         text = message.get('text', '')
+190:         user_id = str(message.get('from', {}).get('id', 'unknown'))
+191:         chat_id = message.get('chat', {}).get('id')
+192:         
+193:         if not text or not chat_id:
+194:             return Response(json.dumps({"ok": True}))
+195:         
+196:         # Get Hermes agent
+197:         hermes_agent = hermes.get_hermes_agent(kv_cache)
+198:         
+199:         # Process message
+200:         result = hermes_agent.chat(
+201:             message=text,
+202:             user_id=user_id,
+203:             session_id=f"tg_{chat_id}"
+204:         )
+205:         
+206:         # Send response back to Telegram
+207:         # TODO: Implement Telegram API call to send message
+208:         
+209:         return Response(json.dumps({"ok": True}))
+210:     
+211:     except Exception as e:
+212:         return Response(
+213:             json.dumps({"error": str(e)}),
+214:             status=500
+215:         )
 216: 
-217: # Cloudflare Workers entry point
-218: async def on_fetch(request, env):
-219:     """Workers fetch handler"""
-220:     return await handle_request(request, env)
+217: 
+218: # Cloudflare Workers entry point
+219: async def on_fetch(request, env):
+220:     """Workers fetch handler"""
+221:     return await handle_request(request, env)
 </file>
 
 <file path="backend/src/moderation.js">
@@ -1747,75 +1898,76 @@ This section contains the contents of the repository's files.
 <file path="backend/src/rag.js">
  1: /**
  2:  * RAG System - JavaScript Edition
- 3:  * Uses Mistral Codestral Embed + AstraDB
- 4:  */
- 5: 
- 6: import { MistralEmbeddings } from './embeddings.js';
- 7: import { AstraDBConnector } from './astra.js';
- 8: 
- 9: export class HermesRAG {
-10:   constructor(kvCache, env) {
-11:     this.embeddings = new MistralEmbeddings(kvCache, env);
-12:     this.astra = new AstraDBConnector(env);
-13:     this.chunkSize = 2000;
-14:     this.chunkOverlap = 700;
-15:   }
-16:   
-17:   async searchCodebase(query, limit = 4, language = null, filename = null) {
-18:     const queryEmbedding = await this.embeddings.embed(query);
-19:     
-20:     const filter = {};
-21:     if (language) filter.language = language;
-22:     if (filename) filter.filename = filename;
-23:     
-24:     return await this.astra.vectorSearch(
-25:       this.astra.CODEBASE_COLLECTION,
-26:       queryEmbedding,
-27:       limit,
-28:       Object.keys(filter).length > 0 ? filter : null,
-29:       true
-30:     );
-31:   }
-32:   
-33:   async addMemory(userId, sessionId, content, memoryType = 'conversation') {
-34:     const embedding = await this.embeddings.embed(content);
-35:     
-36:     const document = {
-37:       user_id: userId,
-38:       session_id: sessionId,
-39:       content,
-40:       memory_type: memoryType,
-41:       timestamp: new Date().toISOString()
-42:     };
-43:     
-44:     return await this.astra.insertDocument(
-45:       this.astra.MEMORY_COLLECTION,
-46:       document,
-47:       embedding
-48:     );
-49:   }
-50:   
-51:   async searchMemory(query, userId = null, limit = 3) {
-52:     const queryEmbedding = await this.embeddings.embed(query);
-53:     
-54:     const filter = {};
-55:     if (userId) filter.user_id = userId;
-56:     
-57:     return await this.astra.vectorSearch(
-58:       this.astra.MEMORY_COLLECTION,
-59:       queryEmbedding,
-60:       limit,
-61:       Object.keys(filter).length > 0 ? filter : null
-62:     );
-63:   }
-64:   
-65:   async getStats() {
-66:     return {
-67:       codebase: await this.astra.getStats(this.astra.CODEBASE_COLLECTION),
-68:       memory: await this.astra.getStats(this.astra.MEMORY_COLLECTION)
-69:     };
-70:   }
-71: }
+ 3:  * Uses Gemini Embedding 2 Preview (3072d) + AstraDB
+ 4:  * Migrated from Mistral Codestral Embed (1536d) — A1 Phase
+ 5:  */
+ 6: 
+ 7: import { GeminiEmbeddings } from './embeddings.js';
+ 8: import { AstraDBConnector } from './astra.js';
+ 9: 
+10: export class HermesRAG {
+11:   constructor(kvCache, env) {
+12:     this.embeddings = new GeminiEmbeddings(kvCache, env);
+13:     this.astra = new AstraDBConnector(env);
+14:     this.chunkSize = 2000;
+15:     this.chunkOverlap = 700;
+16:   }
+17:   
+18:   async searchCodebase(query, limit = 4, language = null, filename = null) {
+19:     const queryEmbedding = await this.embeddings.embed(query);
+20:     
+21:     const filter = {};
+22:     if (language) filter.language = language;
+23:     if (filename) filter.filename = filename;
+24:     
+25:     return await this.astra.vectorSearch(
+26:       this.astra.CODEBASE_COLLECTION,
+27:       queryEmbedding,
+28:       limit,
+29:       Object.keys(filter).length > 0 ? filter : null,
+30:       true
+31:     );
+32:   }
+33:   
+34:   async addMemory(userId, sessionId, content, memoryType = 'conversation') {
+35:     const embedding = await this.embeddings.embed(content);
+36:     
+37:     const document = {
+38:       user_id: userId,
+39:       session_id: sessionId,
+40:       content,
+41:       memory_type: memoryType,
+42:       timestamp: new Date().toISOString()
+43:     };
+44:     
+45:     return await this.astra.insertDocument(
+46:       this.astra.MEMORY_COLLECTION,
+47:       document,
+48:       embedding
+49:     );
+50:   }
+51:   
+52:   async searchMemory(query, userId = null, limit = 3) {
+53:     const queryEmbedding = await this.embeddings.embed(query);
+54:     
+55:     const filter = {};
+56:     if (userId) filter.user_id = userId;
+57:     
+58:     return await this.astra.vectorSearch(
+59:       this.astra.MEMORY_COLLECTION,
+60:       queryEmbedding,
+61:       limit,
+62:       Object.keys(filter).length > 0 ? filter : null
+63:     );
+64:   }
+65:   
+66:   async getStats() {
+67:     return {
+68:       codebase: await this.astra.getStats(this.astra.CODEBASE_COLLECTION),
+69:       memory: await this.astra.getStats(this.astra.MEMORY_COLLECTION)
+70:     };
+71:   }
+72: }
 </file>
 
 <file path="backend/src/rag.py">
@@ -1838,7 +1990,7 @@ This section contains the contents of the repository's files.
  17:         self.astra = get_astra_connector()
  18:         self.embeddings = get_embeddings_client(kv_cache=kv_cache)
  19:         
- 20:         # Chunking parameters (2026 best practices for codestral-embed-2505)
+ 20:         # Chunking parameters (optimized for gemini-embedding-2-preview, 3072d)
  21:         self.chunk_size = 2000  # ~500 tokens
  22:         self.chunk_overlap = 700  # ~35% overlap
  23:     
@@ -2030,6 +2182,238 @@ This section contains the contents of the repository's files.
 209: def get_rag_system(kv_cache=None) -> HermesRAG:
 210:     """Get RAG system instance"""
 211:     return HermesRAG(kv_cache=kv_cache)
+</file>
+
+<file path="backend/src/telegram.js">
+  1: /**
+  2:  * Telegram Bot API 10.0 Integration
+  3:  * Guest Mode, Bot-to-Bot communication, WebApp
+  4:  * A3 Phase
+  5:  */
+  6: 
+  7: const TG_API_BASE = 'https://api.telegram.org/bot';
+  8: 
+  9: export class TelegramBot {
+ 10:   constructor(env) {
+ 11:     this.token = env?.TELEGRAM_BOT_TOKEN;
+ 12:     this.apiBase = `${TG_API_BASE}${this.token}`;
+ 13:   }
+ 14: 
+ 15:   async apiCall(method, payload = {}) {
+ 16:     if (!this.token) {
+ 17:       throw new Error('TELEGRAM_BOT_TOKEN not configured');
+ 18:     }
+ 19: 
+ 20:     const response = await fetch(`${this.apiBase}/${method}`, {
+ 21:       method: 'POST',
+ 22:       headers: { 'Content-Type': 'application/json' },
+ 23:       body: JSON.stringify(payload)
+ 24:     });
+ 25: 
+ 26:     const data = await response.json();
+ 27: 
+ 28:     if (!data.ok) {
+ 29:       throw new Error(`Telegram API error: ${data.description}`);
+ 30:     }
+ 31: 
+ 32:     return data.result;
+ 33:   }
+ 34: 
+ 35:   // === Bot API 10.0: Guest Mode ===
+ 36: 
+ 37:   async setMyCommands(commands) {
+ 38:     return this.apiCall('setMyCommands', { commands });
+ 39:   }
+ 40: 
+ 41:   async setChatMenuButton(chatId, menuButton) {
+ 42:     return this.apiCall('setChatMenuButton', {
+ 43:       chat_id: chatId,
+ 44:       menu_button: menuButton
+ 45:     });
+ 46:   }
+ 47: 
+ 48:   // === Core messaging ===
+ 49: 
+ 50:   async sendMessage(chatId, text, options = {}) {
+ 51:     return this.apiCall('sendMessage', {
+ 52:       chat_id: chatId,
+ 53:       text,
+ 54:       parse_mode: options.parse_mode || 'HTML',
+ 55:       reply_markup: options.reply_markup,
+ 56:       reply_to_message_id: options.reply_to_message_id,
+ 57:       disable_notification: options.silent || false
+ 58:     });
+ 59:   }
+ 60: 
+ 61:   async sendHITLConfirmation(chatId, patchSummary, patchId) {
+ 62:     /**
+ 63:      * Send a diff-patch for human approval via inline keyboard.
+ 64:      * Bot API 10.0: inline_keyboard for HITL.
+ 65:      */
+ 66:     const keyboard = {
+ 67:       inline_keyboard: [
+ 68:         [
+ 69:           { text: '\u2705 Принято', callback_data: `approve:${patchId}` },
+ 70:           { text: '\u274c Отклонено', callback_data: `reject:${patchId}` },
+ 71:           { text: '\u270F\ufe0f Правка', callback_data: `edit:${patchId}` }
+ 72:         ]
+ 73:       ]
+ 74:     };
+ 75: 
+ 76:     const text = `<b>Hermes CodeGen Patch</b>\n` +
+ 77:       `<code>${patchSummary}</code>\n\n` +
+ 78:       `Patch ID: <code>${patchId}</code>\n` +
+ 79:       `Ожидание подтверждения...`;
+ 80: 
+ 81:     return this.sendMessage(chatId, text, { reply_markup: keyboard });
+ 82:   }
+ 83: 
+ 84:   async answerCallbackQuery(callbackQueryId, text = '') {
+ 85:     return this.apiCall('answerCallbackQuery', {
+ 86:       callback_query_id: callbackQueryId,
+ 87:       text
+ 88:     });
+ 89:   }
+ 90: 
+ 91:   // === Bot API 10.0: Bot-to-Bot Communication ===
+ 92: 
+ 93:   async sendBotCommand(targetBotUsername, command, payload = {}) {
+ 94:     /**
+ 95:      * Send a command to another bot via /command JSON payload.
+ 96:      * Bot-to-Bot: messages between bots with structured data.
+ 97:      */
+ 98:     return this.sendMessage(`@${targetBotUsername}`, `/${command}`, {
+ 99:       parse_mode: 'HTML',
+100:       reply_markup: {
+101:         inline_keyboard: [[
+102:           { text: 'Ack', callback_data: `bot_ack:${command}` }
+103:         ]]
+104:       }
+105:     });
+106:   }
+107: 
+108:   // === WebApp Integration ===
+109: 
+110:   async sendWebAppButton(chatId, webAppUrl, buttonText = 'Open NeuroEscrow') {
+111:     return this.sendMessage(chatId, 'Select action:', {
+112:       reply_markup: {
+113:         inline_keyboard: [[
+114:           {
+115:             text: buttonText,
+116:             web_app: { url: webAppUrl }
+117:           }
+118:         ]]
+119:       }
+120:     });
+121:   }
+122: 
+123:   // === Webhook Management ===
+124: 
+125:   async setWebhook(url, options = {}) {
+126:     return this.apiCall('setWebhook', {
+127:       url,
+128:       allowed_updates: options.allowed_updates || ['message', 'callback_query'],
+129:       drop_pending_updates: options.drop_pending || false
+130:     });
+131:   }
+132: 
+133:   async deleteWebhook() {
+134:     return this.apiCall('deleteWebhook');
+135:   }
+136: 
+137:   async getWebhookInfo() {
+138:     return this.apiCall('getWebhookInfo');
+139:   }
+140: 
+141:   // === Token Ledger Alert ===
+142: 
+143:   async sendTokenAlert(chatId, usage, limit, percentage) {
+144:     const emoji = percentage >= 90 ? '\ud83d\udd34' : percentage >= 75 ? '\ud83d\udfe1' : '\ud83d\udfe2';
+145:     const text = `${emoji} <b>Token Ledger Alert</b>\n\n` +
+146:       `Used: ${usage.toLocaleString()} / ${limit.toLocaleString()}\n` +
+147:       `Usage: ${percentage.toFixed(1)}%\n\n` +
+148:       (percentage >= 90
+149:         ? '\u26a0\ufe0f Рекомендуется переключить LLM через .env'
+150:         : percentage >= 75
+151:           ? 'Внимание: приближение к лимиту free-tier'
+152:           : 'Нормальный расход');
+153: 
+154:     return this.sendMessage(chatId, text);
+155:   }
+156: }
+157: 
+158: 
+159: /**
+160:  * Handle incoming Telegram webhook update
+161:  */
+162: export async function handleTelegramUpdate(update, env, hermesAgent) {
+163:   const bot = new TelegramBot(env);
+164: 
+165:   // Handle callback queries (HITL responses)
+166:   if (update.callback_query) {
+167:     const { id, data, message } = update.callback_query;
+168:     const chatId = message?.chat?.id;
+169: 
+170:     await bot.answerCallbackQuery(id, 'Processing...');
+171: 
+172:     if (data.startsWith('approve:')) {
+173:       const patchId = data.replace('approve:', '');
+174:       await bot.sendMessage(chatId, `\u2705 Patch ${patchId} approved. Applying...`);
+175:       // TODO: Trigger patch application via CrewAI flow
+176:       return { action: 'approved', patch_id: patchId };
+177:     }
+178: 
+179:     if (data.startsWith('reject:')) {
+180:       const patchId = data.replace('reject:', '');
+181:       await bot.sendMessage(chatId, `\u274c Patch ${patchId} rejected.`);
+182:       return { action: 'rejected', patch_id: patchId };
+183:     }
+184: 
+185:     if (data.startsWith('edit:')) {
+186:       const patchId = data.replace('edit:', '');
+187:       await bot.sendMessage(chatId, `\u270F\ufe0f Patch ${patchId} — отправьте правки текстом.`);
+188:       return { action: 'edit_requested', patch_id: patchId };
+189:     }
+190: 
+191:     if (data.startsWith('bot_ack:')) {
+192:       return { action: 'bot_ack', command: data.replace('bot_ack:', '') };
+193:     }
+194: 
+195:     return { action: 'unknown_callback' };
+196:   }
+197: 
+198:   // Handle regular messages
+199:   if (update.message) {
+200:     const { text, from, chat } = update.message;
+201:     const userId = String(from?.id || 'unknown');
+202:     const chatId = chat?.id;
+203: 
+204:     if (!text) return { action: 'ignored', reason: 'no_text' };
+205: 
+206:     // /start command — Guest Mode onboarding
+207:     if (text === '/start') {
+208:       const webAppUrl = env?.WEBAPP_URL || 'https://neuroescrow.holograms.media';
+209:       await bot.sendWebAppButton(chatId, webAppUrl, 'Open NeuroEscrow');
+210:       await bot.sendMessage(chatId,
+211:         'Welcome to NeuroEscrow Hermes!\n\n' +
+212:         'I can help you with:\n' +
+213:         '- Code analysis and generation\n' +
+214:         '- Smart contract review\n' +
+215:         '- Deal negotiation\n\n' +
+216:         'Type a message or use the button below to open the Mini App.'
+217:       );
+218:       return { action: 'start', user_id: userId };
+219:     }
+220: 
+221:     // Regular chat — forward to Hermes
+222:     const sessionId = `tg_${chatId}`;
+223:     const result = await hermesAgent.chat(text, userId, sessionId);
+224:     await bot.sendMessage(chatId, result.response);
+225:     return { action: 'chat', user_id: userId };
+226:   }
+227: 
+228:   return { action: 'ignored' };
+229: }
 </file>
 
 <file path="css/style.css">

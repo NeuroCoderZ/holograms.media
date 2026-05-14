@@ -11,8 +11,8 @@ export class AstraDBConnector {
       throw new Error(`AstraDB credentials missing: token=${!!this.token}, endpoint=${!!this.endpoint}`);
     }
     
-    this.CODEBASE_COLLECTION = 'neuroescrow_codebase';
-    this.MEMORY_COLLECTION = 'neuroescrow_memory';
+    this.CODEBASE_COLLECTION = 'neuroescrow_codebase_3072';
+    this.MEMORY_COLLECTION = 'neuroescrow_memory_3072';
   }
   
   async insertDocument(collectionName, document, vector = null) {

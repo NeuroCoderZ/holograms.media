@@ -12,9 +12,10 @@ from astrapy import DataAPIClient
 logger = logging.getLogger(__name__)
 
 # NeuroEscrow-specific collections (isolated from holograms.media)
+# Migrated to 3072d (gemini-embedding-2-preview) — A1 Phase
 NEUROESCROW_COLLECTIONS = {
-    "memory": "neuroescrow_memory",      # Chat history + deal context
-    "codebase": "neuroescrow_codebase",  # Code chunks for RAG
+    "memory": "neuroescrow_memory_3072",      # Chat history + deal context (3072d)
+    "codebase": "neuroescrow_codebase_3072",  # Code chunks for RAG (3072d)
 }
 
 
@@ -93,10 +94,10 @@ class NeuroEscrowAstraConnector:
             # Collection doesn't exist, create it
             logger.info(f"Creating new collection: {collection_name}")
             
-            # Vector dimension: 1536 for Mistral codestral-embed-2505
+            # Vector dimension: 3072 for Gemini embedding-2-preview
             collection = await self.db.create_collection(
                 collection_name,
-                dimension=1536,
+                dimension=3072,
                 metric="cosine"
             )
             self._collections[collection_name] = collection

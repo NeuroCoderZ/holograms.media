@@ -54,7 +54,7 @@
     {
       "path": "/upload-chunk",
       "method": "POST",
-      "description": "Загрузка медиа-чанков в Backblaze B2 с поддержкой multipart upload",
+      "description": "Загрузка медиа-чанков в Cloudflare R2 с поддержкой multipart upload",
       "tags": ["Chunks"],
       "parameters": {
         "chunk": {
@@ -77,9 +77,9 @@
           "type": "string",
           "description": "Идентификатор multipart upload сессии"
         },
-        "b2_bucket_name": {
+        "r2_bucket_name": {
           "type": "string",
-          "description": "Имя B2 бакета для загрузки"
+          "description": "Имя R2 бакета для загрузки"
         }
       },
       "responses": {
@@ -297,7 +297,7 @@
     }
   ],
   "infrastructure": {
-    "storage": "Backblaze B2 + Cloudflare R2",
+    "storage": "Cloudflare R2",
     "database": "Astra Database (Cassandra)",
     "compute": "Koyeb",
     "cdn": "Cloudflare Pages + Cloudflare CDN"

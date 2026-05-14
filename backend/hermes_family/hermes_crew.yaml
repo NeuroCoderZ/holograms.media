@@ -1,0 +1,113 @@
+# Hermes Family CrewAI Configuration
+# Model Lock 13.05.2026
+# Zero-Budget: manual LLM swap, no auto-failover
+
+crew:
+  name: HermesFamily
+  process: hierarchical
+  manager_llm: "mistral/mistral-medium-3.5"
+  verbose: true
+  planning: true
+  planning_llm: "mistral/mistral-small-latest"
+  max_rpm: 10
+  memory: true
+
+agents:
+  - role: "Hermes-Prime: Meta-Agent Coordinator"
+    goal: "Декомпозиция задач, Kanban-трекинг, контроль token_budget, routing"
+    backstory: >
+      Central coordinator of Hermes Family.
+      Decomposes user requests into subtasks, routes to specialized agents,
+      tracks token budget, and ensures human approval before critical actions.
+    llm: "mistral/mistral-medium-3.5"
+    max_iter: 5
+    max_rpm: 10
+    cache: true
+    respect_context_window: true
+    allow_delegation: true
+    verbose: true
+
+  - role: "Hermes-CodeGen: Diff-Patch Generator"
+    goal: "Генерация дифф-патчей для кодовой базы holograms.media"
+    backstory: >
+      Specialized code generator that produces structured DiffPatchSet output.
+      Uses Pydantic output_pydantic=DiffPatchSet for guaranteed structure.
+      Never rewrites entire files — only precise diff-patches.
+    llm: "mistral/mistral-medium-3.5"
+    max_iter: 3
+    max_rpm: 8
+    cache: true
+    respect_context_window: true
+    allow_delegation: false
+    output_pydantic: "DiffPatchSet"
+
+  - role: "Hermes-Reviewer: Security & Quality Auditor"
+    goal: "Аудит дифф-патчей, проверка безопасности, AST-валидация"
+    backstory: >
+      Security-first reviewer. Validates patches with AST parsing,
+      checks for injection patterns, verifies EMBED_DIM=3072 compliance.
+      Runs in Docker sandbox for isolation.
+    llm: "mistral/mistral-small-latest"
+    max_iter: 3
+    max_rpm: 6
+    cache: true
+    respect_context_window: true
+    allow_delegation: false
+
+  - role: "Hermes-GestureUX: Gesture & UX Specialist"
+    goal: "Оптимизация медиапайплайна, CHUNK_MS=200, confidence thresholds"
+    backstory: >
+      Gesture engine specialist. Understands MediaPipe pipeline,
+      ACCEPT_LOCAL=0.85, ACCEPT_CLOUD=0.65, EARLY_TRIGGER logic,
+      and audio visualization architecture (BasilaQ-128).
+    llm: "mistral/mistral-small-latest"
+    max_iter: 3
+    max_rpm: 8
+    cache: true
+    respect_context_window: true
+    allow_delegation: false
+
+  - role: "Hermes-TriaWeaver: Tria Memory & Context Weaver"
+    goal: "Интеграция с AstraDB 3072d, RAG retrieval, Personal Tria routing"
+    backstory: >
+      Memory and context specialist. Manages AstraDB collections,
+      Gemini Embedding 2 (3072d), Personal vs Global Tria routing,
+      and Cognitive Memory (encode/consolidate/recall/forget).
+    llm: "mistral/mistral-small-latest"
+    max_iter: 3
+    max_rpm: 8
+    cache: true
+    respect_context_window: true
+    allow_delegation: false
+
+tasks:
+  code_generation:
+    description: "Сгенерировать дифф-патчи для: {request}"
+    agent: "Hermes-CodeGen"
+    output_pydantic: "DiffPatchSet"
+    guardrail:
+      - "validate_diff_patches"
+      - "no_injection"
+    max_retries: 3
+
+  code_review:
+    description: "Проверить безопасность и качество: {request}"
+    agent: "Hermes-Reviewer"
+    guardrail:
+      - "no_injection"
+    max_retries: 2
+
+  gesture_optimization:
+    description: "Оптимизировать жестовый пайплайн: {request}"
+    agent: "Hermes-GestureUX"
+    max_retries: 2
+
+  memory_integration:
+    description: "Интегрировать с AstraDB/RAG: {request}"
+    agent: "Hermes-TriaWeaver"
+    max_retries: 2
+
+  coordination:
+    description: "Координировать выполнение: {request}"
+    agent: "Hermes-Prime"
+    human_input: false

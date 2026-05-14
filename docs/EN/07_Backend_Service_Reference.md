@@ -11,7 +11,7 @@ The backend is a high-performance asynchronous application built on **FastAPI 0.
 ### 1.1. Lifespan
 Upon server startup, the following are initialized:
 *   **Astra DB Client:** Connection to the vector store.
-*   **S3 Client (Boto3):** Link to Cloudflare R2 / Backblaze B2.
+*   **S3 Client (Boto3):** Link to Cloudflare R2.
 *   **Tria Orchestrator:** Initialization of the model supervisor.
 
 ## 2. API v1: Primary Endpoints

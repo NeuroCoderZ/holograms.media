@@ -35,6 +35,8 @@ def clean_poisoned_vars():
         "JWT_SECRET_KEY",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_API_KEY",
+        "TELEGRAM_BOT_TOKEN",
+        "TOKEN_LEDGER_CHAT_ID",
     ]
     for k in keys:
         val = (os.getenv(k) or "").strip()
@@ -104,8 +106,11 @@ class Settings(BaseModel):
     ).strip()
 
     # Storage: AstraDB (vector, 80GB free). R2 planned for future media.
-    ASTRA_DB_APPLICATION_TOKEN: str = (os.getenv("ASTRA_DB_APPLICATION_TOKEN") or "").strip()
-    ASTRA_DB_API_ENDPOINT: str = (os.getenv("ASTRA_DB_API_ENDPOINT") or "").strip()
+    R2_BUCKET_NAME: str = os.getenv("R2_BUCKET_NAME", "").strip()
+
+    # Telegram Bot (HITL + Token Ledger alerts)
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+    TOKEN_LEDGER_CHAT_ID: str = os.getenv("TOKEN_LEDGER_CHAT_ID", "").strip()
 
     # Environment
     ENVIRONMENT: str = (os.getenv("ENVIRONMENT") or "development").strip()

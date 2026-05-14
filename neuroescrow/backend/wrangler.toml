@@ -6,12 +6,13 @@ workers_dev = true
 [vars]
 ENVIRONMENT = "production"
 MODEL_NAME = "mistral-medium-3.5"
-EMBEDDING_MODEL = "codestral-embed-2505"
-EMBEDDING_DIMENSION = 1536
+EMBEDDING_MODEL = "gemini-embedding-2-preview"
+EMBEDDING_DIMENSION = 3072
+WEBAPP_URL = "https://neuroescrow.holograms.media"
 
 # Объявление обязательных секретов (новый синтаксис 2026)
 [secrets]
-required = ["MISTRAL_API_KEY", "ASTRA_DB_TOKEN", "ASTRA_DB_ENDPOINT"]
+required = ["MISTRAL_API_KEY", "GOOGLE_API_KEY", "ASTRA_DB_TOKEN", "ASTRA_DB_ENDPOINT", "TELEGRAM_BOT_TOKEN"]
 
 # KV for embedding cache
 [[kv_namespaces]]
@@ -19,7 +20,13 @@ binding = "CACHE"
 id = "367aa39f2c134d6b882653d4b9228132"
 
 # Secrets (set via: wrangler secret put SECRET_NAME)
-# MISTRAL_API_KEY - Mistral API key for Medium 3.5 + embeddings
+# MISTRAL_API_KEY - Mistral API key for Medium 3.5
+# GOOGLE_API_KEY - Google API key for Gemini Embeddings (3072d)
 # ASTRA_DB_TOKEN - AstraDB application token
 # ASTRA_DB_ENDPOINT - AstraDB API endpoint
-# TELEGRAM_BOT_TOKEN - Telegram bot token
+# TELEGRAM_BOT_TOKEN - Telegram bot token (HITL + alerts)
+# TOKEN_LEDGER_CHAT_ID - Telegram chat ID for token usage alerts
+
+# Cron trigger for session cleanup (every 6 hours)
+[triggers]
+crons = ["0 */6 * * *"]

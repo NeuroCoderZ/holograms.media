@@ -36,18 +36,18 @@ async def generate_upload_url(
     current_user: UserInDB = Depends(get_current_active_user)
 ):
     """
-    Generate a presigned POST URL for uploading a file directly to Backblaze B2.
+    Generate a presigned POST URL for uploading a file directly to Cloudflare R2.
     """
     s3_client = request.app.state.s3_client
-    b2_bucket_name = settings.B2_BUCKET_NAME
+    r2_bucket_name = settings.R2_BUCKET_NAME
 
     if not s3_client:
-        logger.error("S3 client not initialized. B2 service unavailable.")
-        raise HTTPException(status_code=503, detail="B2 service is unavailable due to server configuration error.")
+        logger.error("S3 client not initialized. R2 service unavailable.")
+        raise HTTPException(status_code=503, detail="R2 service is unavailable due to server configuration error.")
 
-    if not b2_bucket_name:
-        logger.error("B2_BUCKET_NAME not configured.")
-        raise HTTPException(status_code=503, detail="B2 bucket name not configured.")
+    if not r2_bucket_name:
+        logger.error("R2_BUCKET_NAME not configured.")
+        raise HTTPException(status_code=503, detail="R2 bucket name not configured.")
 
     # Generate a unique object key
     file_extension = os.path.splitext(request_data.filename)[1]
@@ -56,7 +56,7 @@ async def generate_upload_url(
 
     try:
         presigned_post = s3_client.generate_presigned_post(
-            Bucket=b2_bucket_name,
+            Bucket=r2_bucket_name,
             Key=object_key,
             Fields={"Content-Type": request_data.content_type},
             Conditions=[{"Content-Type": request_data.content_type}],
@@ -81,14 +81,14 @@ async def upload_chunk(
     current_user: UserInDB = Depends(get_current_active_user)
 ):
     """
-    Endpoint to upload a media chunk for a specific user to B2 and trigger metadata processing.
+    Endpoint to upload a media chunk for a specific user to R2 and trigger metadata processing.
     """
     s3_client = request.app.state.s3_client
-    b2_bucket_name = settings.B2_BUCKET_NAME
+    r2_bucket_name = settings.R2_BUCKET_NAME
 
     if not s3_client:
-        logger.error("S3 client not initialized. B2 service unavailable.")
-        raise HTTPException(status_code=503, detail="B2 service is unavailable.")
+        logger.error("S3 client not initialized. R2 service unavailable.")
+        raise HTTPException(status_code=503, detail="R2 service is unavailable.")
 
     logger.info(f"Received chunk upload for user_id: {user_id}")
 
@@ -101,15 +101,15 @@ async def upload_chunk(
         file_size = len(file_content)
         
         s3_client.put_object(
-            Bucket=b2_bucket_name,
+            Bucket=r2_bucket_name,
             Key=object_key,
             Body=file_content,
             ContentType=file.content_type
         )
-        logger.info(f"Successfully uploaded chunk to B2: {object_key}")
+        logger.info(f"Successfully uploaded chunk to R2: {object_key}")
     except Exception as e:
-        logger.error(f"Failed to upload chunk to B2 for user {user_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to upload file to B2: {str(e)}")
+        logger.error(f"Failed to upload chunk to R2 for user {user_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to upload file to R2: {str(e)}")
 
     try:
         chunk_processor = ChunkProcessorAgent()

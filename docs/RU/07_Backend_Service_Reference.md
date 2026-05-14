@@ -11,7 +11,7 @@
 ### 1.1. Жизненный цикл (Lifespan)
 При старте сервера инициализируются:
 *   **Astra DB Client:** Подключение к векторному хранилищу.
-*   **S3 Client (Boto3):** Связь с Cloudflare R2 / Backblaze B2.
+*   **S3 Client (Boto3):** Связь с Cloudflare R2.
 *   **Tria Orchestrator:** Инициализация супервизора моделей.
 
 ## 2. API v1: Основные эндпоинты
@@ -44,7 +44,7 @@
 *   **Коллекции:** `tria_knowledge_gemini` (3072d, COSINE), `user_chat_sessions`, `tria_meta_instructions`.
 *   ⚠️ `user_chat_sessions` — создаётся автоматически при старте (app.py). До v0.20.257 — fallback in-memory.
 
-### 4.2. Cloudflare R2 / Backblaze B2 [PLANNED]
+### 4.2. Cloudflare R2 [PLANNED]
 Будет добавлено при переходе на медиа-чанки (аудио/видео файлы).
 Текущий статус: не используется.
 

@@ -5,7 +5,7 @@
 
 Этот документ описывает шаги для развертывания FastAPI бэкенда на Koyeb с Astra DB и Cloudflare R2.
 
-> **Статус миграции:** Хранилище мигрировано с Backblaze B2 на **Cloudflare R2** (нулевой egress). Koyeb и Astra DB — текущий стэк. **План:** Workers + D1 (Фаза A → B → C, см. `DeploymentStrategy.md`).
+> **Статус миграции:** Хранилище использует **Cloudflare R2** (нулевой egress). Koyeb и Astra DB — текущий стэк. **План:** Workers + D1 (Фаза A → B → C, см. `DeploymentStrategy.md`).
 
 ## 1. Хранение файлов (чанков) на Cloudflare R2
 
@@ -196,7 +196,7 @@ class ChunkRepository:
 
     def save_chunk_metadata(self, chunk_data: dict):
         query = """
-        INSERT INTO chunks (chunk_id, hologram_id, user_id, filename, b2_key, size, content_type, uploaded_at)
+        INSERT INTO chunks (chunk_id, hologram_id, user_id, filename, r2_key, size, content_type, uploaded_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
         self.session.execute(query, chunk_data)
@@ -259,7 +259,7 @@ async def upload_chunk(
         'hologram_id': None,  # Определяется позже
         'user_id': user_id,
         'filename': file.filename,
-        'b2_key': b2_key,
+        'r2_key': r2_key,
         'size': file.size,
         'content_type': file.content_type,
         'uploaded_at': datetime.utcnow()
@@ -291,7 +291,7 @@ logger = logging.getLogger(__name__)
 ```python
 # backend/routers/health.py
 from fastapi import APIRouter
-from services.storage_service import get_b2_client
+from services.storage_service import get_r2_client
 from core.database import get_cassandra_session
 
 router = APIRouter()

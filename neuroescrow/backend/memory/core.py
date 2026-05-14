@@ -2,7 +2,8 @@
 NeuroEscrow / Hermes — RAG Memory Core
 
 Vector memory for Hermes using AstraDB (holograms.media infrastructure).
-Stores codebase chunks with Mistral embeddings (1536d).
+Stores codebase chunks with Gemini embeddings (3072d).
+Migrated from Mistral codestral-embed (1536d) — A1 Phase.
 """
 
 import asyncio
@@ -16,9 +17,9 @@ class HermesMemory:
     Uses AstraDB for storage (shared with holograms.media).
     """
 
-    VECTOR_SIZE = 1536  # codestral-embed-2505
+    VECTOR_SIZE = 3072  # gemini-embedding-2-preview
 
-    def __init__(self, astra_client, embedding_client, collection_name="neuroescrow_codebase"):
+    def __init__(self, astra_client, embedding_client, collection_name="neuroescrow_codebase_3072"):
         """
         Initialize memory with AstraDB client and embedding client.
         

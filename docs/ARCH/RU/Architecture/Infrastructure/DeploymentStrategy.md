@@ -11,7 +11,7 @@
 * **Фронтенд:** Cloudflare Pages
 * **Бэкенд:** FastAPI на Koyeb (оркестратор Tria v3.1)
 * **База данных:** Astra DB (Vector Search 3072d Gemini Embedding 2)
-* **Хранение файлов:** Cloudflare R2 / Backblaze B2
+* **Хранение файлов:** Cloudflare R2
 * **AI Модели:** Gemini 3 Flash, Gemini 3.1 Flash Lite
 
 ## Компоненты Деплоя
