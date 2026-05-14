@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Устанавливаем зависимости
 COPY backend/requirements.txt .
+# Cache bust v0.20.498
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     python -c "from mistralai.client import Mistral; print('Mistral import OK')" && \
