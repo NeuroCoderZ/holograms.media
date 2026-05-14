@@ -3,13 +3,6 @@ name: Hermes Family CI
 on:
   push:
     branches: [dev]
-    paths:
-      - 'backend/hermes_family/**'
-      - 'backend/app.py'
-      - 'requirements.txt'
-      - 'Dockerfile'
-  pull_request:
-    branches: [dev]
   workflow_dispatch: {}
 
 jobs:
