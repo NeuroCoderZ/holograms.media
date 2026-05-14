@@ -83,7 +83,7 @@ export default defineConfig({
   build: {
     target: 'esnext',
     rollupOptions: {
-      external: ['three']
+      external: ['three', /^three\//]
     }
   },
   optimizeDeps: {
