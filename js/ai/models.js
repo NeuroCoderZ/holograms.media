@@ -11,12 +11,12 @@ export const models = {
 // Метаданные моделей
 export const modelMetadata = {
   'mistral-medium-3.5': {
-    name: 'Hermes Main (Mistral Medium 3.5)',
+    name: 'Mistral Medium 3.5',
     description: 'Основная модель — 128B параметров, 256k контекст',
     isDefault: true
   },
   'mistral-small-latest': {
-    name: 'Hermes Sub (Mistral Small)',
+    name: 'Mistral Small 4',
     description: 'Архитектурный агент, роутинг',
     isDefault: false
   },
@@ -27,7 +27,7 @@ export const modelMetadata = {
   }
 };
 
-// Текущая выбранная модель (по умолчанию Hermes Main)
+// Текущая выбранная модель (по умолчанию Mistral Medium 3.5)
 let selectedModel = 'mistral-medium-3.5'; 
 
 // Получить текущую выбранную модель

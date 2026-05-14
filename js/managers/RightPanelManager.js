@@ -18,7 +18,7 @@ class RightPanelManager {
         if (!this.gesturesListContainer) console.warn("RightPanelManager: #myGesturesView not found.");
 
         // Initialize currentMode from state.rightPanelMode or default to 'timeline'
-        this.currentMode = (this.state && this.state.rightPanelMode) ? this.state.rightPanelMode : 'timeline';
+        this.currentMode = (this.state && this.state.rightPanelMode) ? this.state.rightPanelMode : 'chat';
         // Ensure the state also reflects this initial mode if it wasn't set
         if (this.state && !this.state.rightPanelMode) {
             this.state.rightPanelMode = this.currentMode;
