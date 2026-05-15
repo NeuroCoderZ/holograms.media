@@ -158,6 +158,26 @@ export default {
         });
       }
 
+      // Feedback endpoint
+      if (url.pathname === '/feedback' && request.method === 'POST') {
+        const data = await request.json();
+        const { message_id, feedback, user_id = 'anonymous', session_id = 'default', text = '' } = data;
+
+        if (!feedback || !['up', 'down'].includes(feedback)) {
+          return new Response(JSON.stringify({ error: 'feedback must be "up" or "down"' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const hermes = new HermesAgent(env.CACHE, env);
+        const result = await hermes.recordFeedback(user_id, session_id, message_id, feedback, text);
+
+        return new Response(JSON.stringify(result), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       // Stats
       if (url.pathname === '/stats') {
         const rag = new HermesRAG(env.CACHE, env);

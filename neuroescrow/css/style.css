@@ -315,6 +315,12 @@ html, body {
     background: rgba(255, 255, 255, 0.12);
 }
 
+.feedback-buttons {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
 /* Typing indicator */
 .typing-indicator {
     display: flex;

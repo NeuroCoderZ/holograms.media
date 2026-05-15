@@ -6,6 +6,15 @@
 import { HermesRAG } from './rag.js';
 import { moderateContent } from './moderation.js';
 
+const RAG_CONFIG = {
+  similarityThreshold: 0.7,
+  maxCodebaseResults: 5,
+  maxMemoryResults: 4,
+  minQueryLength: 15,
+  logHits: true,
+  logMisses: true
+};
+
 export class HermesAgent {
   constructor(kvCache, env) {
     this.apiKey = env?.MISTRAL_API_KEY;
@@ -16,6 +25,8 @@ export class HermesAgent {
     this.rag = new HermesRAG(kvCache, env);
     this.sessions = new Map();
     this.kvCache = kvCache;
+    this.ragHits = 0;
+    this.ragMisses = 0;
   }
   
   getSystemPrompt(persona = 'hermes') {
@@ -51,13 +62,13 @@ export class HermesAgent {
   
   async buildContext(query, userId, sessionId) {
     // Skip RAG for short messages (greetings, etc.)
-    if (!query || query.trim().length < 15) return '';
+    if (!query || query.trim().length < RAG_CONFIG.minQueryLength) return '';
 
     const contextParts = [];
 
-    // Search codebase with similarity threshold 0.7
-    const codebaseResults = await this.rag.searchCodebase(query, 5);
-    const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= 0.7);
+    // Search codebase with similarity threshold
+    const codebaseResults = await this.rag.searchCodebase(query, RAG_CONFIG.maxCodebaseResults);
+    const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= RAG_CONFIG.similarityThreshold);
     if (filteredCodebase.length > 0) {
       contextParts.push('📚 Релевантный код из базы:');
       filteredCodebase.forEach((result, i) => {
@@ -68,9 +79,9 @@ export class HermesAgent {
       });
     }
 
-    // Search memory with similarity threshold 0.7
-    const memoryResults = await this.rag.searchMemory(query, userId, 4);
-    const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= 0.7);
+    // Search memory with similarity threshold
+    const memoryResults = await this.rag.searchMemory(query, userId, RAG_CONFIG.maxMemoryResults);
+    const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= RAG_CONFIG.similarityThreshold);
     if (filteredMemory.length > 0) {
       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
       filteredMemory.forEach((result, i) => {
@@ -78,6 +89,20 @@ export class HermesAgent {
         const timestamp = result.timestamp || '';
         contextParts.push(`\n${i + 1}. [${timestamp}] ${content}`);
       });
+    }
+
+    // Log hit/miss
+    const hasContext = contextParts.length > 0;
+    if (hasContext) {
+      this.ragHits++;
+      if (RAG_CONFIG.logHits) {
+        console.log(`[RAG] HIT session=${sessionId} query="${query.substring(0, 30)}..." codebase=${filteredCodebase.length} memory=${filteredMemory.length}`);
+      }
+    } else {
+      this.ragMisses++;
+      if (RAG_CONFIG.logMisses) {
+        console.log(`[RAG] MISS session=${sessionId} query="${query.substring(0, 30)}..."`);
+      }
     }
     
     return contextParts.join('');
@@ -254,5 +279,40 @@ export class HermesAgent {
   
   clearSession(sessionId) {
     this.sessions.delete(sessionId);
+  }
+
+  async recordFeedback(userId, sessionId, messageId, feedback, text) {
+    const logEntry = {
+      user_id: userId,
+      session_id: sessionId,
+      message_id: messageId,
+      feedback,
+      text_preview: text.substring(0, 100),
+      timestamp: new Date().toISOString()
+    };
+
+    console.log(`[FEEDBACK] ${feedback === 'up' ? '👍' : '👎'} user=${userId} session=${sessionId} msg=${messageId}`);
+
+    // Store in KV for analytics
+    if (this.kvCache) {
+      try {
+        const key = `feedback:${sessionId}:${messageId}`;
+        await this.kvCache.put(key, JSON.stringify(logEntry), { expirationTtl: 86400 * 30 });
+      } catch (e) {
+        console.warn('[FEEDBACK] KV storage error:', e.message);
+      }
+    }
+
+    return { ok: true, feedback };
+  }
+
+  getRagStats() {
+    return {
+      hits: this.ragHits,
+      misses: this.ragMisses,
+      hitRate: this.ragHits + this.ragMisses > 0
+        ? (this.ragHits / (this.ragHits + this.ragMisses) * 100).toFixed(1) + '%'
+        : 'N/A'
+    };
   }
 }

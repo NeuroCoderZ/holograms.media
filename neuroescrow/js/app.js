@@ -626,11 +626,19 @@ class NeuroEscrowApp {
         container.innerHTML = this.chatMessages.map((msg, idx) => {
             const isLastHermes = idx === this.chatMessages.length - 1 && msg.sender === 'hermes' && msg.text === '';
             const streamingClass = isLastHermes ? ' streaming' : '';
+            const isHermesComplete = msg.sender === 'hermes' && msg.text !== '' && !isLastHermes;
+            const feedbackHtml = isHermesComplete && !msg.feedback ? `
+                <div class="feedback-buttons">
+                    <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'up')">👍</button>
+                    <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
+                </div>
+            ` : '';
             return `
             <div class="chat-message ${msg.sender}">
                 <div class="message-bubble${streamingClass}">
                     ${this.escapeHtml(msg.text)}
                     <span class="msg-time">${this.formatTime(msg.timestamp)}</span>
+                    ${feedbackHtml}
                 </div>
             </div>
         `;
@@ -976,6 +984,38 @@ class NeuroEscrowApp {
     formatTime(timestamp) {
         const date = new Date(timestamp);
         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async submitFeedback(msgIdx, feedback) {
+        const msg = this.chatMessages[msgIdx];
+        if (!msg || msg.feedback) return;
+
+        msg.feedback = feedback;
+        this.renderChatMessages();
+
+        try {
+            const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+                ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+                : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+
+            await fetch(baseUrl + 'feedback', {
+                method: 'POST',
+                mode: 'cors',
+                credentials: 'omit',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message_id: msgIdx,
+                    feedback,
+                    user_id: telegram.getUserId(),
+                    session_id: `tg_${telegram.getUserId()}`,
+                    text: msg.text.substring(0, 200)
+                })
+            });
+
+            telegram.haptic('light');
+        } catch (error) {
+            console.error('[Feedback] Error:', error.message);
+        }
     }
 }
 
