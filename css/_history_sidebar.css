@@ -34,12 +34,13 @@
     will-change: transform, opacity;
 
     /*
-      Closed state:
-      - when right panel is hidden, this must be completely invisible (no peek).
+      Closed state (peek):
+      - 12px visible = matches border-radius of the right panel
+      - When right panel is hidden, this must be completely invisible.
       - JS will toggle .is-open to show it.
     */
-    opacity: 0;
-    transform: translateX(100%);
+    opacity: 1;
+    transform: translateX(calc(100% - 12px));
 }
 
 /* Open state (only via .is-open, not via hover on container) */
@@ -48,13 +49,10 @@
     pointer-events: auto;
 
     /*
-      Slide in almost all of the right panel width.
-      Since history-sidebar is inside right panel, we can approximate
-      "95% of right-panel width" using translateX(-95% of its own width):
-      - closed: 100% (fully outside)
-      - open:  -95% => leave ~5% hidden
+      Slide in to show 95% of the panel width.
+      translateX(5%) means 5% is outside right edge (mirrors 12px peek).
     */
-    transform: translateX(-95%);
+    transform: translateX(5%);
 }
 
 /* Layer 2: Inner highlight (match .panel::before) */

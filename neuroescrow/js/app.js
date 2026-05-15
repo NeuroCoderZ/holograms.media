@@ -23,6 +23,7 @@ class NeuroEscrowApp {
     }
 
     async init() {
+        if (window.Telegram?.WebApp) window.Telegram.WebApp.expand();
         this.userData = telegram.getUser();
         this.updateHeader();
         await this.loadCache();

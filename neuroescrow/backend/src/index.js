@@ -46,15 +46,29 @@ export default {
 
       // Chat endpoint
       if (url.pathname === '/chat' && request.method === 'POST') {
-        const data = await request.json();
-        const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes' } = data;
+        let data;
+        try {
+          data = await request.json();
+        } catch {
+          try {
+            const raw = await request.text();
+            data = JSON.parse(raw.replace(/^\\+/, '').trim());
+          } catch {
+            return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+        }
 
-        if (!message) {
+        if (!data || !data.message) {
           return new Response(JSON.stringify({ error: 'Message is required' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
+
+        const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes' } = data;
 
         const hermes = new HermesAgent(env.CACHE, env);
         const result = await hermes.chat(message, user_id, session_id, persona);

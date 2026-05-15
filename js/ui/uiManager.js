@@ -1141,19 +1141,13 @@ function loadChatHistory(container) {
 
 // Initialize swipe support for history sidebar
 function initHistorySwipe(sidebar) {
-  // Touch handling now matches CSS+JS state:
-  // - history should only open when right panel is visible
-  // - history should close when leaving
-  // We keep swipe as a "show/hide" trigger, but only if right panel is visible.
   let startX = 0;
-  let currentX = 0;
-
-  const threshold = 45; // px
+  const threshold = 45;
 
   const isRightPanelVisible = () => {
     const rightPanel = document.getElementById('right-panel');
     if (!rightPanel) return false;
-    return !rightPanel.classList.contains('hidden');
+    return rightPanel.classList.contains('visible') && !rightPanel.classList.contains('hidden');
   };
 
   const openHistory = () => {
@@ -1168,24 +1162,21 @@ function initHistorySwipe(sidebar) {
   sidebar.addEventListener('touchstart', (e) => {
     if (!e.touches || !e.touches[0]) return;
     startX = e.touches[0].clientX;
-    currentX = startX;
   }, { passive: true });
 
-  sidebar.addEventListener('touchmove', (e) => {
-    if (!e.touches || !e.touches[0]) return;
-    currentX = e.touches[0].clientX;
-  }, { passive: true });
+  sidebar.addEventListener('touchend', (e) => {
+    if (!e.changedTouches || !e.changedTouches[0]) return;
+    const endX = e.changedTouches[0].clientX;
+    const deltaX = endX - startX;
 
-  sidebar.addEventListener('touchend', () => {
-    const deltaX = currentX - startX;
     if (Math.abs(deltaX) < threshold) return;
 
-    if (deltaX < 0) {
-      openHistory();
-    } else {
-      closeHistory();
+    if (deltaX > threshold) {
+      openHistory(); // Свайп слева-направо → показать
+    } else if (deltaX < -threshold) {
+      closeHistory(); // Свайп справа-налево → скрыть
     }
-  });
+  }, { passive: true });
 
   // Also close on pointer leaving the history area
   sidebar.addEventListener('pointerleave', () => closeHistory());

@@ -29,6 +29,12 @@ export class HermesAgent {
 - Ведение переговоров между сторонами сделки
 - Модерация контента и блокировка нарушителей
 
+ВАЖНО:
+- Отвечай ТОЛЬКО на последнее сообщение пользователя.
+- Не используй устаревший контекст из предыдущих сессий.
+- Если вопрос неясен или не относится к предоставленному контексту — уточни у пользователя.
+- Не галлюцинируй: если не знаешь ответа — скажи об этом.
+
 Твой стиль:
 - Профессиональный, но дружелюбный
 - Краткие и точные ответы
@@ -66,25 +72,30 @@ export class HermesAgent {
   }
   
   async buildContext(query, userId, sessionId) {
+    // Skip RAG for short messages (greetings, etc.)
+    if (!query || query.trim().length < 10) return '';
+
     const contextParts = [];
-    
-    // Search codebase
-    const codebaseResults = await this.rag.searchCodebase(query, 3);
-    if (codebaseResults.length > 0) {
+
+    // Search codebase with similarity threshold
+    const codebaseResults = await this.rag.searchCodebase(query, 5);
+    const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= 0.6);
+    if (filteredCodebase.length > 0) {
       contextParts.push('📚 Релевантный код из базы:');
-      codebaseResults.forEach((result, i) => {
+      filteredCodebase.forEach((result, i) => {
         const filepath = result.filepath || 'unknown';
         const text = (result.text || '').substring(0, 500);
         const similarity = result.$similarity || 0;
         contextParts.push(`\n${i + 1}. ${filepath} (similarity: ${similarity.toFixed(2)})\n\`\`\`\n${text}\n\`\`\``);
       });
     }
-    
-    // Search memory
-    const memoryResults = await this.rag.searchMemory(query, userId, 2);
-    if (memoryResults.length > 0) {
+
+    // Search memory with similarity threshold
+    const memoryResults = await this.rag.searchMemory(query, userId, 4);
+    const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= 0.6);
+    if (filteredMemory.length > 0) {
       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
-      memoryResults.forEach((result, i) => {
+      filteredMemory.forEach((result, i) => {
         const content = result.content || '';
         const timestamp = result.timestamp || '';
         contextParts.push(`\n${i + 1}. [${timestamp}] ${content}`);
