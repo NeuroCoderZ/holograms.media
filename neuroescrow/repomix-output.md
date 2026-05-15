@@ -1247,221 +1247,222 @@ This section contains the contents of the repository's files.
  47:       // Chat endpoint
  48:       if (url.pathname === '/chat' && request.method === 'POST') {
  49:         let data;
- 50:         try {
- 51:           data = await request.json();
- 52:         } catch {
- 53:           try {
- 54:             const raw = await request.text();
- 55:             data = JSON.parse(raw.replace(/^\\+/, '').trim());
- 56:           } catch {
- 57:             return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
- 58:               status: 400,
- 59:               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
- 60:             });
- 61:           }
- 62:         }
- 63: 
- 64:         if (!data || !data.message) {
- 65:           return new Response(JSON.stringify({ error: 'Message is required' }), {
- 66:             status: 400,
- 67:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
- 68:           });
- 69:         }
- 70: 
- 71:         const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes' } = data;
- 72: 
- 73:         const hermes = new HermesAgent(env.CACHE, env);
- 74:         const result = await hermes.chat(message, user_id, session_id, persona);
- 75: 
- 76:         // Persist session to KV (fire-and-forget)
- 77:         ctx.waitUntil(saveSession(env, session_id, hermes.getSessionHistory(session_id)));
- 78: 
- 79:         return new Response(JSON.stringify(result), {
- 80:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
- 81:         });
- 82:       }
- 83: 
- 84:       // Image analysis
- 85:       if (url.pathname === '/analyze-image' && request.method === 'POST') {
- 86:         const data = await request.json();
- 87:         const { image_url, prompt = 'Опиши это изображение', user_id = 'anonymous', session_id = 'default' } = data;
- 88: 
- 89:         if (!image_url) {
- 90:           return new Response(JSON.stringify({ error: 'image_url is required' }), {
- 91:             status: 400,
- 92:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
- 93:           });
- 94:         }
- 95: 
- 96:         const hermes = new HermesAgent(env.CACHE, env);
- 97:         const result = await hermes.analyzeImage(image_url, prompt, user_id, session_id);
- 98: 
- 99:         return new Response(JSON.stringify(result), {
-100:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-101:         });
-102:       }
-103: 
-104:       // Stats
-105:       if (url.pathname === '/stats') {
-106:         const rag = new HermesRAG(env.CACHE, env);
-107:         const stats = await rag.getStats();
-108: 
-109:         return new Response(JSON.stringify(stats), {
-110:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-111:         });
-112:       }
-113: 
-114:       // Sessions list
-115:       if (url.pathname === '/sessions') {
-116:         const sessions = await listSessions(env);
-117:         return new Response(JSON.stringify(sessions), {
-118:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-119:         });
-120:       }
-121: 
-122:       // Load session
-123:       if (url.pathname.startsWith('/session/') && request.method === 'GET') {
-124:         const sessionId = url.pathname.split('/')[2];
-125:         const session = await loadSession(env, sessionId);
-126:         return new Response(JSON.stringify(session || { messages: [] }), {
-127:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-128:         });
-129:       }
-130: 
-131:       // Create session
-132:       if (url.pathname === '/session' && request.method === 'POST') {
-133:         const data = await request.json();
-134:         const sessionId = data?.session_id || crypto.randomUUID();
-135:         const session = {
-136:           id: sessionId,
-137:           messages: [],
-138:           created_at: new Date().toISOString(),
-139:           updated_at: new Date().toISOString()
-140:         };
-141:         await env.CACHE.put(
-142:           `${SESSION_PREFIX}${sessionId}`,
-143:           JSON.stringify(session),
-144:           { expirationTtl: SESSION_TTL }
-145:         );
-146:         return new Response(JSON.stringify({ session_id: sessionId }), {
-147:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-148:         });
-149:       }
-150: 
-151:       // Delete session
-152:       if (url.pathname.startsWith('/session/') && request.method === 'DELETE') {
-153:         const sessionId = url.pathname.split('/')[2];
-154:         await env.CACHE.delete(`${SESSION_PREFIX}${sessionId}`);
-155:         return new Response(JSON.stringify({ ok: true }), {
-156:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-157:         });
-158:       }
-159: 
-160:       // Telegram webhook endpoint
-161:       if (url.pathname === '/webhook/telegram' && request.method === 'POST') {
-162:         const update = await request.json();
-163:         const hermes = new HermesAgent(env.CACHE, env);
-164:         const result = await handleTelegramUpdate(update, env, hermes);
-165:         return new Response(JSON.stringify(result), {
-166:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-167:         });
-168:       }
-169: 
-170:       return new Response(JSON.stringify({ error: 'Not found' }), {
-171:         status: 404,
-172:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-173:       });
-174: 
-175:     } catch (error) {
-176:       return new Response(JSON.stringify({ error: error.message }), {
-177:         status: 500,
-178:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-179:       });
-180:     }
-181:   },
-182: 
-183:   // Scheduled handler for session cleanup (cron trigger)
-184:   async scheduled(event, env, ctx) {
-185:     ctx.waitUntil(cleanupExpiredSessions(env));
-186:   }
-187: };
-188: 
-189: // === KV Session Helpers ===
-190: 
-191: async function saveSession(env, sessionId, history) {
-192:   if (!env.CACHE || !sessionId || sessionId === 'default') return;
-193: 
-194:   try {
-195:     const key = `${SESSION_PREFIX}${sessionId}`;
-196:     const existing = await env.CACHE.get(key);
-197:     const session = existing ? JSON.parse(existing) : {
-198:       id: sessionId,
-199:       messages: [],
-200:       created_at: new Date().toISOString()
-201:     };
-202: 
-203:     session.messages = history.slice(-50); // Keep last 50 messages
-204:     session.updated_at = new Date().toISOString();
-205: 
-206:     await env.CACHE.put(key, JSON.stringify(session), {
-207:       expirationTtl: SESSION_TTL
-208:     });
-209:   } catch (error) {
-210:     // KV errors are non-critical
-211:   }
-212: }
-213: 
-214: async function loadSession(env, sessionId) {
-215:   if (!env.CACHE) return null;
-216: 
-217:   try {
-218:     const key = `${SESSION_PREFIX}${sessionId}`;
-219:     const data = await env.CACHE.get(key);
-220:     return data ? JSON.parse(data) : null;
-221:   } catch (error) {
-222:     return null;
-223:   }
-224: }
-225: 
-226: async function listSessions(env) {
-227:   if (!env.CACHE) return [];
-228: 
-229:   try {
-230:     const list = await env.CACHE.list({ prefix: SESSION_PREFIX });
-231:     return list.keys.map(key => ({
-232:       id: key.name.replace(SESSION_PREFIX, ''),
-233:       updated_at: key.metadata?.updated_at || null
-234:     }));
-235:   } catch (error) {
-236:     return [];
-237:   }
-238: }
-239: 
-240: async function cleanupExpiredSessions(env) {
-241:   if (!env.CACHE) return;
-242: 
-243:   try {
-244:     const list = await env.CACHE.list({ prefix: SESSION_PREFIX });
-245:     const now = Date.now();
-246:     let cleaned = 0;
-247: 
-248:     for (const key of list.keys) {
-249:       // KV with expirationTtl handles auto-cleanup,
-250:       // but we can force-delete stale sessions older than 48h
-251:       if (key.metadata?.updated_at) {
-252:         const updated = new Date(key.metadata.updated_at).getTime();
-253:         if (now - updated > 172800000) { // 48h
-254:           await env.CACHE.delete(key.name);
-255:           cleaned++;
-256:         }
-257:       }
-258:     }
-259: 
-260:     console.log(`Session cleanup: ${cleaned} expired sessions removed`);
-261:   } catch (error) {
-262:     console.error(`Session cleanup error: ${error.message}`);
-263:   }
-264: }
+ 50:         const contentType = request.headers.get('content-type') || '';
+ 51:         try {
+ 52:           if (contentType.includes('application/json')) {
+ 53:             data = await request.json();
+ 54:           } else {
+ 55:             const raw = await request.text();
+ 56:             data = JSON.parse(raw);
+ 57:           }
+ 58:         } catch (e) {
+ 59:           return new Response(JSON.stringify({ error: 'Invalid JSON', details: e.message }), {
+ 60:             status: 400,
+ 61:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 62:           });
+ 63:         }
+ 64: 
+ 65:         if (!data || typeof data.message !== 'string') {
+ 66:           return new Response(JSON.stringify({ error: 'message field required' }), {
+ 67:             status: 400,
+ 68:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 69:           });
+ 70:         }
+ 71: 
+ 72:         const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes' } = data;
+ 73: 
+ 74:         const hermes = new HermesAgent(env.CACHE, env);
+ 75:         const result = await hermes.chat(message, user_id, session_id, persona);
+ 76: 
+ 77:         // Persist session to KV (fire-and-forget)
+ 78:         ctx.waitUntil(saveSession(env, session_id, hermes.getSessionHistory(session_id)));
+ 79: 
+ 80:         return new Response(JSON.stringify(result), {
+ 81:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 82:         });
+ 83:       }
+ 84: 
+ 85:       // Image analysis
+ 86:       if (url.pathname === '/analyze-image' && request.method === 'POST') {
+ 87:         const data = await request.json();
+ 88:         const { image_url, prompt = 'Опиши это изображение', user_id = 'anonymous', session_id = 'default' } = data;
+ 89: 
+ 90:         if (!image_url) {
+ 91:           return new Response(JSON.stringify({ error: 'image_url is required' }), {
+ 92:             status: 400,
+ 93:             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+ 94:           });
+ 95:         }
+ 96: 
+ 97:         const hermes = new HermesAgent(env.CACHE, env);
+ 98:         const result = await hermes.analyzeImage(image_url, prompt, user_id, session_id);
+ 99: 
+100:         return new Response(JSON.stringify(result), {
+101:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+102:         });
+103:       }
+104: 
+105:       // Stats
+106:       if (url.pathname === '/stats') {
+107:         const rag = new HermesRAG(env.CACHE, env);
+108:         const stats = await rag.getStats();
+109: 
+110:         return new Response(JSON.stringify(stats), {
+111:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+112:         });
+113:       }
+114: 
+115:       // Sessions list
+116:       if (url.pathname === '/sessions') {
+117:         const sessions = await listSessions(env);
+118:         return new Response(JSON.stringify(sessions), {
+119:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+120:         });
+121:       }
+122: 
+123:       // Load session
+124:       if (url.pathname.startsWith('/session/') && request.method === 'GET') {
+125:         const sessionId = url.pathname.split('/')[2];
+126:         const session = await loadSession(env, sessionId);
+127:         return new Response(JSON.stringify(session || { messages: [] }), {
+128:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+129:         });
+130:       }
+131: 
+132:       // Create session
+133:       if (url.pathname === '/session' && request.method === 'POST') {
+134:         const data = await request.json();
+135:         const sessionId = data?.session_id || crypto.randomUUID();
+136:         const session = {
+137:           id: sessionId,
+138:           messages: [],
+139:           created_at: new Date().toISOString(),
+140:           updated_at: new Date().toISOString()
+141:         };
+142:         await env.CACHE.put(
+143:           `${SESSION_PREFIX}${sessionId}`,
+144:           JSON.stringify(session),
+145:           { expirationTtl: SESSION_TTL }
+146:         );
+147:         return new Response(JSON.stringify({ session_id: sessionId }), {
+148:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+149:         });
+150:       }
+151: 
+152:       // Delete session
+153:       if (url.pathname.startsWith('/session/') && request.method === 'DELETE') {
+154:         const sessionId = url.pathname.split('/')[2];
+155:         await env.CACHE.delete(`${SESSION_PREFIX}${sessionId}`);
+156:         return new Response(JSON.stringify({ ok: true }), {
+157:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+158:         });
+159:       }
+160: 
+161:       // Telegram webhook endpoint
+162:       if (url.pathname === '/webhook/telegram' && request.method === 'POST') {
+163:         const update = await request.json();
+164:         const hermes = new HermesAgent(env.CACHE, env);
+165:         const result = await handleTelegramUpdate(update, env, hermes);
+166:         return new Response(JSON.stringify(result), {
+167:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+168:         });
+169:       }
+170: 
+171:       return new Response(JSON.stringify({ error: 'Not found' }), {
+172:         status: 404,
+173:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+174:       });
+175: 
+176:     } catch (error) {
+177:       return new Response(JSON.stringify({ error: error.message }), {
+178:         status: 500,
+179:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+180:       });
+181:     }
+182:   },
+183: 
+184:   // Scheduled handler for session cleanup (cron trigger)
+185:   async scheduled(event, env, ctx) {
+186:     ctx.waitUntil(cleanupExpiredSessions(env));
+187:   }
+188: };
+189: 
+190: // === KV Session Helpers ===
+191: 
+192: async function saveSession(env, sessionId, history) {
+193:   if (!env.CACHE || !sessionId || sessionId === 'default') return;
+194: 
+195:   try {
+196:     const key = `${SESSION_PREFIX}${sessionId}`;
+197:     const existing = await env.CACHE.get(key);
+198:     const session = existing ? JSON.parse(existing) : {
+199:       id: sessionId,
+200:       messages: [],
+201:       created_at: new Date().toISOString()
+202:     };
+203: 
+204:     session.messages = history.slice(-50); // Keep last 50 messages
+205:     session.updated_at = new Date().toISOString();
+206: 
+207:     await env.CACHE.put(key, JSON.stringify(session), {
+208:       expirationTtl: SESSION_TTL
+209:     });
+210:   } catch (error) {
+211:     // KV errors are non-critical
+212:   }
+213: }
+214: 
+215: async function loadSession(env, sessionId) {
+216:   if (!env.CACHE) return null;
+217: 
+218:   try {
+219:     const key = `${SESSION_PREFIX}${sessionId}`;
+220:     const data = await env.CACHE.get(key);
+221:     return data ? JSON.parse(data) : null;
+222:   } catch (error) {
+223:     return null;
+224:   }
+225: }
+226: 
+227: async function listSessions(env) {
+228:   if (!env.CACHE) return [];
+229: 
+230:   try {
+231:     const list = await env.CACHE.list({ prefix: SESSION_PREFIX });
+232:     return list.keys.map(key => ({
+233:       id: key.name.replace(SESSION_PREFIX, ''),
+234:       updated_at: key.metadata?.updated_at || null
+235:     }));
+236:   } catch (error) {
+237:     return [];
+238:   }
+239: }
+240: 
+241: async function cleanupExpiredSessions(env) {
+242:   if (!env.CACHE) return;
+243: 
+244:   try {
+245:     const list = await env.CACHE.list({ prefix: SESSION_PREFIX });
+246:     const now = Date.now();
+247:     let cleaned = 0;
+248: 
+249:     for (const key of list.keys) {
+250:       // KV with expirationTtl handles auto-cleanup,
+251:       // but we can force-delete stale sessions older than 48h
+252:       if (key.metadata?.updated_at) {
+253:         const updated = new Date(key.metadata.updated_at).getTime();
+254:         if (now - updated > 172800000) { // 48h
+255:           await env.CACHE.delete(key.name);
+256:           cleaned++;
+257:         }
+258:       }
+259:     }
+260: 
+261:     console.log(`Session cleanup: ${cleaned} expired sessions removed`);
+262:   } catch (error) {
+263:     console.error(`Session cleanup error: ${error.message}`);
+264:   }
+265: }
 </file>
 
 <file path="backend/src/index.py">
@@ -2418,14 +2419,14 @@ This section contains the contents of the repository's files.
 206:     // /start command — Guest Mode onboarding
 207:     if (text === '/start') {
 208:       const webAppUrl = env?.WEBAPP_URL || 'https://neuroescrow.holograms.media';
-209:       await bot.sendWebAppButton(chatId, webAppUrl, 'Open NeuroEscrow');
+209:       await bot.sendWebAppButton(chatId, webAppUrl, 'Открыть NeuroEscrow');
 210:       await bot.sendMessage(chatId,
-211:         'Welcome to NeuroEscrow Hermes!\n\n' +
-212:         'I can help you with:\n' +
-213:         '- Code analysis and generation\n' +
-214:         '- Smart contract review\n' +
-215:         '- Deal negotiation\n\n' +
-216:         'Type a message or use the button below to open the Mini App.'
+211:         'Добро пожаловать в NeuroEscrow Hermes!\n\n' +
+212:         'Я могу помочь вам с:\n' +
+213:         '- Анализом и генерацией кода\n' +
+214:         '- Проверкой смарт-контрактов\n' +
+215:         '- Ведением переговоров по сделкам\n\n' +
+216:         'Напишите сообщение или нажмите кнопку ниже, чтобы открыть Mini App.'
 217:       );
 218:       return { action: 'start', user_id: userId };
 219:     }
@@ -3033,22 +3034,35 @@ This section contains the contents of the repository's files.
 589: /* Responsive */
 590: @media (min-width: 768px) {
 591:     .app-main {
-592:         max-width: 600px;
-593:         margin: 0 auto;
+592:         max-width: none !important;
+593:         margin: 0;
 594:     }
 595:     
 596:     .chat-input-container {
-597:         max-width: 600px;
-598:         left: 50%;
-599:         transform: translateX(-50%);
+597:         max-width: none;
+598:         left: 0;
+599:         transform: none;
 600:     }
 601:     
 602:     .attach-menu {
-603:         max-width: 568px;
-604:         left: 50%;
-605:         transform: translateX(-50%);
+603:         max-width: none;
+604:         left: var(--ne-spacing-lg);
+605:         transform: none;
 606:     }
 607: }
+608: 
+609: /* Telegram Mini App Desktop Fullscreen Override */
+610: @media (min-width: 768px) {
+611:     html, body, #app, .app-main, .container, .tg-web-app {
+612:         max-width: none !important;
+613:         width: 100vw !important;
+614:         height: 100vh !important;
+615:         height: 100dvh !important;
+616:         margin: 0 !important;
+617:         padding: 0 !important;
+618:         overflow: hidden !important;
+619:     }
+620: }
 </file>
 
 <file path="index.html">
@@ -3198,843 +3212,846 @@ This section contains the contents of the repository's files.
  23:     }
  24: 
  25:     async init() {
- 26:         if (window.Telegram?.WebApp) window.Telegram.WebApp.expand();
- 27:         this.userData = telegram.getUser();
- 28:         this.updateHeader();
- 29:         await this.loadCache();
- 30:         this.navigate('hermes');
- 31:         
- 32:         window.addEventListener('ton:statusChange', (e) => {
- 33:             this.onTonStatusChange(e.detail);
- 34:         });
- 35:         
- 36:         this.requestDataFromBot();
- 37:     }
- 38: 
- 39:     updateHeader() {
- 40:         const nameEl = document.getElementById('user-name');
- 41:         
- 42:         if (this.userData) {
- 43:             const name = this.userData.first_name || this.userData.username || 'Пользователь';
- 44:             nameEl.textContent = name;
- 45:         } else {
- 46:             nameEl.textContent = 'Гость';
- 47:         }
- 48:     }
- 49: 
- 50:     navigate(view) {
- 51:         // Reset voice state when switching tabs
- 52:         if (view !== 'hermes' && this.voiceState !== 'IDLE') {
- 53:             this.resetVoiceState();
- 54:         }
- 55:         
- 56:         this.currentView = view;
- 57:         
- 58:         document.querySelectorAll('.nav-btn').forEach(btn => {
- 59:             btn.classList.toggle('active', btn.dataset.view === view);
- 60:         });
- 61:         
- 62:         const main = document.getElementById('main-content');
- 63:         main.innerHTML = '';
+ 26:         if (window.Telegram?.WebApp) {
+ 27:             window.Telegram.WebApp.ready();
+ 28:             window.Telegram.WebApp.expand();
+ 29:         }
+ 30:         this.userData = telegram.getUser();
+ 31:         this.updateHeader();
+ 32:         await this.loadCache();
+ 33:         this.navigate('hermes');
+ 34:         
+ 35:         window.addEventListener('ton:statusChange', (e) => {
+ 36:             this.onTonStatusChange(e.detail);
+ 37:         });
+ 38:         
+ 39:         this.requestDataFromBot();
+ 40:     }
+ 41: 
+ 42:     updateHeader() {
+ 43:         const nameEl = document.getElementById('user-name');
+ 44:         
+ 45:         if (this.userData) {
+ 46:             const name = this.userData.first_name || this.userData.username || 'Пользователь';
+ 47:             nameEl.textContent = name;
+ 48:         } else {
+ 49:             nameEl.textContent = 'Гость';
+ 50:         }
+ 51:     }
+ 52: 
+ 53:     navigate(view) {
+ 54:         // Reset voice state when switching tabs
+ 55:         if (view !== 'hermes' && this.voiceState !== 'IDLE') {
+ 56:             this.resetVoiceState();
+ 57:         }
+ 58:         
+ 59:         this.currentView = view;
+ 60:         
+ 61:         document.querySelectorAll('.nav-btn').forEach(btn => {
+ 62:             btn.classList.toggle('active', btn.dataset.view === view);
+ 63:         });
  64:         
- 65:         // Show/hide chat input based on view
- 66:         const chatInput = document.getElementById('chat-input-container');
- 67:         if (chatInput) {
- 68:             chatInput.style.display = view === 'hermes' ? 'flex' : 'none';
- 69:         }
- 70:         
- 71:         switch(view) {
- 72:             case 'hermes':
- 73:                 this.renderHermesView(main);
- 74:                 break;
- 75:             case 'deals':
- 76:                 this.renderDealsView(main);
+ 65:         const main = document.getElementById('main-content');
+ 66:         main.innerHTML = '';
+ 67:         
+ 68:         // Show/hide chat input based on view
+ 69:         const chatInput = document.getElementById('chat-input-container');
+ 70:         if (chatInput) {
+ 71:             chatInput.style.display = view === 'hermes' ? 'flex' : 'none';
+ 72:         }
+ 73:         
+ 74:         switch(view) {
+ 75:             case 'hermes':
+ 76:                 this.renderHermesView(main);
  77:                 break;
- 78:             case 'profile':
- 79:                 this.renderProfileView(main);
+ 78:             case 'deals':
+ 79:                 this.renderDealsView(main);
  80:                 break;
- 81:         }
- 82:         
- 83:         telegram.haptic('light');
- 84:     }
- 85: 
- 86:     // -------------------------------------------------------------------------
- 87:     // Hermes View (Voice Interface - Main Screen)
- 88:     // -------------------------------------------------------------------------
- 89: 
- 90:     renderHermesView(container) {
- 91:         const view = document.createElement('div');
- 92:         view.className = 'view';
- 93:         
- 94:         view.innerHTML = `
- 95:             <div class="voice-interface">
- 96:                 <button class="voice-button" id="voice-btn" onclick="app.toggleVoice()">
- 97:                     <span class="voice-icon">🎙️</span>
- 98:                 </button>
- 99:                 <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Гермес</div>
-100:                 <div class="voice-hint">Нажмите и говорите</div>
-101:                 <div class="voice-status" id="voice-status"></div>
-102:                 <div style="font-size:13px;color:var(--ne-light-gray);margin-top:24px;max-width:300px;">
-103:                     Опишите задачу голосом. Гермес поможет сформулировать и найдёт подходящего нейрокодера.
-104:                 </div>
-105:             </div>
-106:             <div class="chat-messages" id="chat-messages"></div>
-107:         `;
-108:         
-109:         container.appendChild(view);
-110:         this.renderChatMessages();
-111:     }
-112: 
-113:     toggleVoice() {
-114:         // Explicit protection against multiple taps during processing
-115:         if (this.voiceState === 'PROCESSING' || this.isProcessing) {
-116:             return;
-117:         }
-118:         
-119:         if (this.voiceState === 'LISTENING') {
-120:             this.stopVoiceRecording();
-121:         } else {
-122:             this.voiceState = 'LISTENING';
-123:             this.updateVoiceButton();
-124:             this.startVoiceRecording();
-125:         }
-126:         
-127:         telegram.haptic('medium');
-128:     }
-129: 
-130:     async startVoiceRecording() {
-131:         try {
-132:             // Try native Telegram voice recording (Bot API 9.6+)
-133:             if (typeof tg.requestVoiceMessage === 'function') {
-134:                 const result = await tg.requestVoiceMessage();
-135:                 
-136:                 if (result && result.file_id) {
-137:                     this.sendVoiceToBot(result.file_id, result.duration);
-138:                 } else {
-139:                     throw new Error('No file_id received');
-140:                 }
-141:             } else {
-142:                 // Fallback to manual recording
-143:                 this.fallbackToManualRecording();
-144:             }
-145:         } catch (error) {
-146:             console.error('[NeuroEscrow] Voice recording failed:', error);
-147:             this.handleVoiceError(error);
-148:         }
-149:     }
-150: 
-151:     stopVoiceRecording() {
-152:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-153:             this.mediaRecorder.stop();
-154:         }
-155:         this.resetVoiceState();
-156:     }
-157: 
-158:     fallbackToManualRecording() {
-159:         navigator.mediaDevices.getUserMedia({ audio: true })
-160:             .then(stream => {
-161:                 this.mediaRecorder = new MediaRecorder(stream);
-162:                 this.audioChunks = [];
-163:                 
-164:                 this.mediaRecorder.ondataavailable = (e) => {
-165:                     this.audioChunks.push(e.data);
-166:                 };
-167:                 
-168:                 this.mediaRecorder.onstop = () => {
-169:                     const audioBlob = new Blob(this.audioChunks, { type: 'audio/ogg' });
-170:                     this.uploadVoiceBlob(audioBlob);
-171:                     stream.getTracks().forEach(track => track.stop());
-172:                 };
-173:                 
-174:                 this.mediaRecorder.start();
-175:                 console.log('[NeuroEscrow] Fallback recording started');
-176:             })
-177:             .catch(error => {
-178:                 this.handleVoiceError(error);
-179:             });
-180:     }
-181: 
-182:     uploadVoiceBlob(blob) {
-183:         // This would require bot-side endpoint for blob upload
-184:         // For now, just show error
-185:         this.handleVoiceError(new Error('Manual recording not yet implemented'));
-186:     }
-187: 
-188:     sendVoiceToBot(fileId, duration) {
-189:         this.voiceState = 'PROCESSING';
-190:         this.isProcessing = true;
-191:         this.updateVoiceButton();
-192:         this.setupResponseTimeout();
-193:         
-194:         const payload = {
-195:             action: 'voice_message',
-196:             file_id: fileId,
-197:             duration: duration,
-198:             timestamp: Date.now(),
-199:             user_id: telegram.getUserId()
-200:         };
-201:         
-202:         telegram.sendData(payload);
-203:         console.log('[NeuroEscrow] Voice sent to bot:', fileId);
-204:     }
-205: 
-206:     updateVoiceButton() {
-207:         const btn = document.getElementById('voice-btn');
-208:         const status = document.getElementById('voice-status');
-209:         
-210:         if (!btn || !status) return;
-211:         
-212:         // Remove all state classes
-213:         btn.classList.remove('recording', 'processing');
+ 81:             case 'profile':
+ 82:                 this.renderProfileView(main);
+ 83:                 break;
+ 84:         }
+ 85:         
+ 86:         telegram.haptic('light');
+ 87:     }
+ 88: 
+ 89:     // -------------------------------------------------------------------------
+ 90:     // Hermes View (Voice Interface - Main Screen)
+ 91:     // -------------------------------------------------------------------------
+ 92: 
+ 93:     renderHermesView(container) {
+ 94:         const view = document.createElement('div');
+ 95:         view.className = 'view';
+ 96:         
+ 97:         view.innerHTML = `
+ 98:             <div class="voice-interface">
+ 99:                 <button class="voice-button" id="voice-btn" onclick="app.toggleVoice()">
+100:                     <span class="voice-icon">🎙️</span>
+101:                 </button>
+102:                 <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Гермес</div>
+103:                 <div class="voice-hint">Нажмите и говорите</div>
+104:                 <div class="voice-status" id="voice-status"></div>
+105:                 <div style="font-size:13px;color:var(--ne-light-gray);margin-top:24px;max-width:300px;">
+106:                     Опишите задачу голосом. Гермес поможет сформулировать и найдёт подходящего нейрокодера.
+107:                 </div>
+108:             </div>
+109:             <div class="chat-messages" id="chat-messages"></div>
+110:         `;
+111:         
+112:         container.appendChild(view);
+113:         this.renderChatMessages();
+114:     }
+115: 
+116:     toggleVoice() {
+117:         // Explicit protection against multiple taps during processing
+118:         if (this.voiceState === 'PROCESSING' || this.isProcessing) {
+119:             return;
+120:         }
+121:         
+122:         if (this.voiceState === 'LISTENING') {
+123:             this.stopVoiceRecording();
+124:         } else {
+125:             this.voiceState = 'LISTENING';
+126:             this.updateVoiceButton();
+127:             this.startVoiceRecording();
+128:         }
+129:         
+130:         telegram.haptic('medium');
+131:     }
+132: 
+133:     async startVoiceRecording() {
+134:         try {
+135:             // Try native Telegram voice recording (Bot API 9.6+)
+136:             if (typeof tg.requestVoiceMessage === 'function') {
+137:                 const result = await tg.requestVoiceMessage();
+138:                 
+139:                 if (result && result.file_id) {
+140:                     this.sendVoiceToBot(result.file_id, result.duration);
+141:                 } else {
+142:                     throw new Error('No file_id received');
+143:                 }
+144:             } else {
+145:                 // Fallback to manual recording
+146:                 this.fallbackToManualRecording();
+147:             }
+148:         } catch (error) {
+149:             console.error('[NeuroEscrow] Voice recording failed:', error);
+150:             this.handleVoiceError(error);
+151:         }
+152:     }
+153: 
+154:     stopVoiceRecording() {
+155:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+156:             this.mediaRecorder.stop();
+157:         }
+158:         this.resetVoiceState();
+159:     }
+160: 
+161:     fallbackToManualRecording() {
+162:         navigator.mediaDevices.getUserMedia({ audio: true })
+163:             .then(stream => {
+164:                 this.mediaRecorder = new MediaRecorder(stream);
+165:                 this.audioChunks = [];
+166:                 
+167:                 this.mediaRecorder.ondataavailable = (e) => {
+168:                     this.audioChunks.push(e.data);
+169:                 };
+170:                 
+171:                 this.mediaRecorder.onstop = () => {
+172:                     const audioBlob = new Blob(this.audioChunks, { type: 'audio/ogg' });
+173:                     this.uploadVoiceBlob(audioBlob);
+174:                     stream.getTracks().forEach(track => track.stop());
+175:                 };
+176:                 
+177:                 this.mediaRecorder.start();
+178:                 console.log('[NeuroEscrow] Fallback recording started');
+179:             })
+180:             .catch(error => {
+181:                 this.handleVoiceError(error);
+182:             });
+183:     }
+184: 
+185:     uploadVoiceBlob(blob) {
+186:         // This would require bot-side endpoint for blob upload
+187:         // For now, just show error
+188:         this.handleVoiceError(new Error('Manual recording not yet implemented'));
+189:     }
+190: 
+191:     sendVoiceToBot(fileId, duration) {
+192:         this.voiceState = 'PROCESSING';
+193:         this.isProcessing = true;
+194:         this.updateVoiceButton();
+195:         this.setupResponseTimeout();
+196:         
+197:         const payload = {
+198:             action: 'voice_message',
+199:             file_id: fileId,
+200:             duration: duration,
+201:             timestamp: Date.now(),
+202:             user_id: telegram.getUserId()
+203:         };
+204:         
+205:         telegram.sendData(payload);
+206:         console.log('[NeuroEscrow] Voice sent to bot:', fileId);
+207:     }
+208: 
+209:     updateVoiceButton() {
+210:         const btn = document.getElementById('voice-btn');
+211:         const status = document.getElementById('voice-status');
+212:         
+213:         if (!btn || !status) return;
 214:         
-215:         switch (this.voiceState) {
-216:             case 'IDLE':
-217:                 status.textContent = '';
-218:                 status.style.display = 'none';
-219:                 this.isRecording = false;
-220:                 break;
-221:                 
-222:             case 'LISTENING':
-223:                 btn.classList.add('recording');
-224:                 status.textContent = 'Слушаю...';
-225:                 status.style.display = 'block';
-226:                 this.isRecording = true;
-227:                 break;
-228:                 
-229:             case 'PROCESSING':
-230:                 btn.classList.add('processing');
-231:                 status.textContent = 'Гермес обрабатывает...';
-232:                 status.style.display = 'block';
-233:                 this.isRecording = false;
-234:                 break;
-235:         }
-236:     }
-237: 
-238:     setupResponseTimeout() {
-239:         if (this.responseTimeout) {
-240:             clearTimeout(this.responseTimeout);
-241:         }
-242:         
-243:         this.responseTimeout = setTimeout(() => {
-244:             if (this.voiceState === 'PROCESSING') {
-245:                 this.handleVoiceError(new Error('timeout'));
-246:             }
-247:         }, 30000);
-248:     }
-249: 
-250:     handleVoiceError(error) {
-251:         console.error('[NeuroEscrow] Voice error:', error);
-252:         
-253:         this.resetVoiceState();
-254:         
-255:         let message = 'Ошибка записи голоса';
-256:         
-257:         if (error.message.includes('permission')) {
-258:             message = 'Нет доступа к микрофону';
-259:         } else if (error.message.includes('timeout')) {
-260:             message = 'Превышено время ожидания';
-261:         } else if (error.message.includes('cancelled')) {
-262:             message = 'Запись отменена';
-263:         }
-264:         
-265:         telegram.showAlert(message);
-266:         telegram.hapticNotification('error');
-267:     }
-268: 
-269:     resetVoiceState() {
-270:         this.voiceState = 'IDLE';
-271:         this.isRecording = false;
-272:         this.isProcessing = false;
-273:         this.updateVoiceButton();
-274:         
-275:         if (this.responseTimeout) {
-276:             clearTimeout(this.responseTimeout);
-277:             this.responseTimeout = null;
-278:         }
-279:     }
-280: 
-281:     handleDraftCreated(draft) {
-282:         if (this.responseTimeout) {
-283:             clearTimeout(this.responseTimeout);
-284:         }
-285:         
-286:         // Check for duplicates
-287:         const existingIndex = this.deals.findIndex(d => d.id === draft.id);
-288:         if (existingIndex !== -1) {
-289:             this.deals[existingIndex] = { ...draft, type: 'draft', isNew: true };
-290:         } else {
-291:             this.deals.unshift({ ...draft, type: 'draft', isNew: true });
-292:         }
-293:         
-294:         this.resetVoiceState();
-295:         this.saveCache(); // Save immediately after adding draft
-296:         this.navigate('deals');
-297:         
-298:         telegram.hapticNotification('success');
-299:         telegram.showAlert('Черновик создан');
+215:         // Remove all state classes
+216:         btn.classList.remove('recording', 'processing');
+217:         
+218:         switch (this.voiceState) {
+219:             case 'IDLE':
+220:                 status.textContent = '';
+221:                 status.style.display = 'none';
+222:                 this.isRecording = false;
+223:                 break;
+224:                 
+225:             case 'LISTENING':
+226:                 btn.classList.add('recording');
+227:                 status.textContent = 'Слушаю...';
+228:                 status.style.display = 'block';
+229:                 this.isRecording = true;
+230:                 break;
+231:                 
+232:             case 'PROCESSING':
+233:                 btn.classList.add('processing');
+234:                 status.textContent = 'Гермес обрабатывает...';
+235:                 status.style.display = 'block';
+236:                 this.isRecording = false;
+237:                 break;
+238:         }
+239:     }
+240: 
+241:     setupResponseTimeout() {
+242:         if (this.responseTimeout) {
+243:             clearTimeout(this.responseTimeout);
+244:         }
+245:         
+246:         this.responseTimeout = setTimeout(() => {
+247:             if (this.voiceState === 'PROCESSING') {
+248:                 this.handleVoiceError(new Error('timeout'));
+249:             }
+250:         }, 30000);
+251:     }
+252: 
+253:     handleVoiceError(error) {
+254:         console.error('[NeuroEscrow] Voice error:', error);
+255:         
+256:         this.resetVoiceState();
+257:         
+258:         let message = 'Ошибка записи голоса';
+259:         
+260:         if (error.message.includes('permission')) {
+261:             message = 'Нет доступа к микрофону';
+262:         } else if (error.message.includes('timeout')) {
+263:             message = 'Превышено время ожидания';
+264:         } else if (error.message.includes('cancelled')) {
+265:             message = 'Запись отменена';
+266:         }
+267:         
+268:         telegram.showAlert(message);
+269:         telegram.hapticNotification('error');
+270:     }
+271: 
+272:     resetVoiceState() {
+273:         this.voiceState = 'IDLE';
+274:         this.isRecording = false;
+275:         this.isProcessing = false;
+276:         this.updateVoiceButton();
+277:         
+278:         if (this.responseTimeout) {
+279:             clearTimeout(this.responseTimeout);
+280:             this.responseTimeout = null;
+281:         }
+282:     }
+283: 
+284:     handleDraftCreated(draft) {
+285:         if (this.responseTimeout) {
+286:             clearTimeout(this.responseTimeout);
+287:         }
+288:         
+289:         // Check for duplicates
+290:         const existingIndex = this.deals.findIndex(d => d.id === draft.id);
+291:         if (existingIndex !== -1) {
+292:             this.deals[existingIndex] = { ...draft, type: 'draft', isNew: true };
+293:         } else {
+294:             this.deals.unshift({ ...draft, type: 'draft', isNew: true });
+295:         }
+296:         
+297:         this.resetVoiceState();
+298:         this.saveCache(); // Save immediately after adding draft
+299:         this.navigate('deals');
 300:         
-301:         console.log('[NeuroEscrow] Draft created:', draft.id);
-302:     }
-303: 
-304:     // -------------------------------------------------------------------------
-305:     // Deals View
-306:     // -------------------------------------------------------------------------
-307: 
-308:     renderDealsView(container) {
-309:         const view = document.createElement('div');
-310:         view.className = 'view';
-311:         
-312:         const deals = this.deals.length > 0 ? this.deals : this.getSampleDeals();
-313:         
-314:         view.innerHTML = `
-315:             <h2 style="font-size:18px;margin-bottom:16px;font-weight:600;">Мои сделки</h2>
-316:             ${deals.length === 0 ? this.emptyState('🤝', 'У вас пока нет сделок') : ''}
-317:             <div id="deals-list">
-318:                 ${deals.map(deal => deal.type === 'draft' ? this.renderDraftCard(deal) : this.dealCard(deal)).join('')}
-319:             </div>
-320:         `;
-321:         
-322:         container.appendChild(view);
-323:     }
-324: 
-325:     renderDraftCard(draft) {
-326:         const title = this.escapeHtml(draft.title || 'Без названия');
-327:         const description = this.escapeHtml(draft.description || '');
-328:         const budget = draft.budget || 'Не указан';
-329:         const deadline = draft.deadline || 'Не указан';
-330:         
-331:         return `
-332:             <div class="card draft-card" style="border-left:2px solid rgba(255, 255, 255, 0.34);">
-333:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-334:                     <span style="font-size:12px;font-weight:600;color:rgba(255, 255, 255, 0.34);text-transform:uppercase;letter-spacing:0.5px;">Черновик</span>
-335:                     <span style="font-size:11px;color:var(--ne-light-gray);">${this.formatDate(draft.created_at)}</span>
-336:                 </div>
-337:                 <div class="card-title">${title}</div>
-338:                 <p style="font-size:13px;color:var(--ne-light-gray);margin:8px 0;">${description}</p>
-339:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
-340:                     <span>💰 ${budget}</span>
-341:                     <span>⏱️ ${deadline}</span>
-342:                 </div>
-343:                 <div style="display:flex;gap:8px;margin-top:12px;">
-344:                     <button class="btn btn-primary" onclick="app.editDraft('${draft.id}')" style="flex:1;">Редактировать</button>
-345:                     <button class="btn btn-secondary" onclick="app.publishDraft('${draft.id}')" style="flex:1;">Опубликовать</button>
-346:                 </div>
-347:             </div>
-348:         `;
-349:     }
-350: 
-351:     dealCard(deal) {
-352:         const statusColors = {
-353:             'draft': 'rgba(255, 255, 255, 0.34)',
-354:             'negotiating': '#dddddd',
-355:             'in_progress': '#dddddd',
-356:             'completed': 'rgba(255, 255, 255, 0.67)'
-357:         };
-358:         
-359:         const statusNames = {
-360:             'draft': 'Черновик',
-361:             'negotiating': 'Переговоры',
-362:             'in_progress': 'В работе',
-363:             'completed': 'Завершена'
-364:         };
-365:         
-366:         const color = statusColors[deal.status] || 'rgba(255, 255, 255, 0.34)';
-367:         const statusName = statusNames[deal.status] || deal.status;
+301:         telegram.hapticNotification('success');
+302:         telegram.showAlert('Черновик создан');
+303:         
+304:         console.log('[NeuroEscrow] Draft created:', draft.id);
+305:     }
+306: 
+307:     // -------------------------------------------------------------------------
+308:     // Deals View
+309:     // -------------------------------------------------------------------------
+310: 
+311:     renderDealsView(container) {
+312:         const view = document.createElement('div');
+313:         view.className = 'view';
+314:         
+315:         const deals = this.deals.length > 0 ? this.deals : this.getSampleDeals();
+316:         
+317:         view.innerHTML = `
+318:             <h2 style="font-size:18px;margin-bottom:16px;font-weight:600;">Мои сделки</h2>
+319:             ${deals.length === 0 ? this.emptyState('🤝', 'У вас пока нет сделок') : ''}
+320:             <div id="deals-list">
+321:                 ${deals.map(deal => deal.type === 'draft' ? this.renderDraftCard(deal) : this.dealCard(deal)).join('')}
+322:             </div>
+323:         `;
+324:         
+325:         container.appendChild(view);
+326:     }
+327: 
+328:     renderDraftCard(draft) {
+329:         const title = this.escapeHtml(draft.title || 'Без названия');
+330:         const description = this.escapeHtml(draft.description || '');
+331:         const budget = draft.budget || 'Не указан';
+332:         const deadline = draft.deadline || 'Не указан';
+333:         
+334:         return `
+335:             <div class="card draft-card" style="border-left:2px solid rgba(255, 255, 255, 0.34);">
+336:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+337:                     <span style="font-size:12px;font-weight:600;color:rgba(255, 255, 255, 0.34);text-transform:uppercase;letter-spacing:0.5px;">Черновик</span>
+338:                     <span style="font-size:11px;color:var(--ne-light-gray);">${this.formatDate(draft.created_at)}</span>
+339:                 </div>
+340:                 <div class="card-title">${title}</div>
+341:                 <p style="font-size:13px;color:var(--ne-light-gray);margin:8px 0;">${description}</p>
+342:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
+343:                     <span>💰 ${budget}</span>
+344:                     <span>⏱️ ${deadline}</span>
+345:                 </div>
+346:                 <div style="display:flex;gap:8px;margin-top:12px;">
+347:                     <button class="btn btn-primary" onclick="app.editDraft('${draft.id}')" style="flex:1;">Редактировать</button>
+348:                     <button class="btn btn-secondary" onclick="app.publishDraft('${draft.id}')" style="flex:1;">Опубликовать</button>
+349:                 </div>
+350:             </div>
+351:         `;
+352:     }
+353: 
+354:     dealCard(deal) {
+355:         const statusColors = {
+356:             'draft': 'rgba(255, 255, 255, 0.34)',
+357:             'negotiating': '#dddddd',
+358:             'in_progress': '#dddddd',
+359:             'completed': 'rgba(255, 255, 255, 0.67)'
+360:         };
+361:         
+362:         const statusNames = {
+363:             'draft': 'Черновик',
+364:             'negotiating': 'Переговоры',
+365:             'in_progress': 'В работе',
+366:             'completed': 'Завершена'
+367:         };
 368:         
-369:         return `
-370:             <div class="card" style="border-left:2px solid ${color};">
-371:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-372:                     <span style="font-size:12px;font-weight:600;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${statusName}</span>
-373:                     <span style="font-size:11px;color:var(--ne-light-gray);">#${deal.id}</span>
-374:                 </div>
-375:                 <div class="card-title">${deal.title}</div>
-376:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
-377:                     <span>💰 ${deal.budget} USDT</span>
-378:                     <span>👤 ${deal.counterparty}</span>
-379:                 </div>
-380:                 <div style="margin-top:12px;">
-381:                     <button class="btn btn-secondary" onclick="app.viewDeal('${deal.id}')">Открыть в боте</button>
+369:         const color = statusColors[deal.status] || 'rgba(255, 255, 255, 0.34)';
+370:         const statusName = statusNames[deal.status] || deal.status;
+371:         
+372:         return `
+373:             <div class="card" style="border-left:2px solid ${color};">
+374:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+375:                     <span style="font-size:12px;font-weight:600;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${statusName}</span>
+376:                     <span style="font-size:11px;color:var(--ne-light-gray);">#${deal.id}</span>
+377:                 </div>
+378:                 <div class="card-title">${deal.title}</div>
+379:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
+380:                     <span>💰 ${deal.budget} USDT</span>
+381:                     <span>👤 ${deal.counterparty}</span>
 382:                 </div>
-383:             </div>
-384:         `;
-385:     }
-386: 
-387:     getSampleDeals() {
-388:         return [
-389:             { id: 'a1b2', title: 'Telegram бот для интернет-магазина', status: 'in_progress', budget: '500', counterparty: 'client_42' },
-390:             { id: 'c3d4', title: 'Парсер данных с сайта', status: 'completed', budget: '300', counterparty: 'client_17' },
-391:         ];
-392:     }
-393: 
-394:     viewDeal(dealId) {
-395:         telegram.sendData({ action: 'view_deal', deal_id: dealId });
-396:         telegram.showAlert('Открываю детали сделки в боте...');
-397:     }
-398: 
-399:     editDraft(draftId) {
-400:         telegram.sendData({ action: 'edit_draft', draft_id: draftId });
-401:         telegram.showAlert('Открываю редактор в боте...');
-402:     }
-403: 
-404:     publishDraft(draftId) {
-405:         telegram.sendData({ action: 'publish_draft', draft_id: draftId });
-406:         telegram.showAlert('Публикую черновик...');
-407:     }
-408: 
-409:     escapeHtml(text) {
-410:         const div = document.createElement('div');
-411:         div.textContent = text;
-412:         return div.innerHTML;
-413:     }
-414: 
-415:     formatDate(timestamp) {
-416:         if (!timestamp) return '';
-417:         const date = new Date(timestamp * 1000);
-418:         const now = new Date();
-419:         const diff = now - date;
-420:         
-421:         if (diff < 60000) return 'только что';
-422:         if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
-423:         if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
-424:         
-425:         return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-426:     }
-427: 
-428:     // -------------------------------------------------------------------------
-429:     // Profile View
-430:     // -------------------------------------------------------------------------
-431: 
-432:     renderProfileView(container) {
-433:         const view = document.createElement('div');
-434:         view.className = 'view';
-435:         
-436:         view.innerHTML = `
-437:             <div class="card" style="text-align:center;padding:24px;">
-438:                 <div style="font-size:32px;font-weight:700;margin-bottom:8px;">${this.balance.toFixed(2)} USDT</div>
-439:                 <div style="font-size:13px;color:var(--ne-light-gray);margin-bottom:20px;">Ваш баланс</div>
-440:                 
-441:                 <div style="display:flex;gap:8px;margin-bottom:16px;">
-442:                     <button class="btn btn-primary" onclick="app.donate()" style="flex:1;">
-443:                         💝 Поддержать
-444:                     </button>
-445:                     <button class="btn btn-secondary" onclick="app.leaveTip()" style="flex:1;">
-446:                         ⭐ Чаевые
+383:                 <div style="margin-top:12px;">
+384:                     <button class="btn btn-secondary" onclick="app.viewDeal('${deal.id}')">Открыть в боте</button>
+385:                 </div>
+386:             </div>
+387:         `;
+388:     }
+389: 
+390:     getSampleDeals() {
+391:         return [
+392:             { id: 'a1b2', title: 'Telegram бот для интернет-магазина', status: 'in_progress', budget: '500', counterparty: 'client_42' },
+393:             { id: 'c3d4', title: 'Парсер данных с сайта', status: 'completed', budget: '300', counterparty: 'client_17' },
+394:         ];
+395:     }
+396: 
+397:     viewDeal(dealId) {
+398:         telegram.sendData({ action: 'view_deal', deal_id: dealId });
+399:         telegram.showAlert('Открываю детали сделки в боте...');
+400:     }
+401: 
+402:     editDraft(draftId) {
+403:         telegram.sendData({ action: 'edit_draft', draft_id: draftId });
+404:         telegram.showAlert('Открываю редактор в боте...');
+405:     }
+406: 
+407:     publishDraft(draftId) {
+408:         telegram.sendData({ action: 'publish_draft', draft_id: draftId });
+409:         telegram.showAlert('Публикую черновик...');
+410:     }
+411: 
+412:     escapeHtml(text) {
+413:         const div = document.createElement('div');
+414:         div.textContent = text;
+415:         return div.innerHTML;
+416:     }
+417: 
+418:     formatDate(timestamp) {
+419:         if (!timestamp) return '';
+420:         const date = new Date(timestamp * 1000);
+421:         const now = new Date();
+422:         const diff = now - date;
+423:         
+424:         if (diff < 60000) return 'только что';
+425:         if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
+426:         if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
+427:         
+428:         return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+429:     }
+430: 
+431:     // -------------------------------------------------------------------------
+432:     // Profile View
+433:     // -------------------------------------------------------------------------
+434: 
+435:     renderProfileView(container) {
+436:         const view = document.createElement('div');
+437:         view.className = 'view';
+438:         
+439:         view.innerHTML = `
+440:             <div class="card" style="text-align:center;padding:24px;">
+441:                 <div style="font-size:32px;font-weight:700;margin-bottom:8px;">${this.balance.toFixed(2)} USDT</div>
+442:                 <div style="font-size:13px;color:var(--ne-light-gray);margin-bottom:20px;">Ваш баланс</div>
+443:                 
+444:                 <div style="display:flex;gap:8px;margin-bottom:16px;">
+445:                     <button class="btn btn-primary" onclick="app.donate()" style="flex:1;">
+446:                         💝 Поддержать
 447:                     </button>
-448:                 </div>
-449:                 
-450:                 <div style="font-size:11px;color:var(--ne-light-gray);margin-top:12px;">
-451:                     TON • USDT • Telegram Stars
-452:                 </div>
-453:             </div>
-454:             
-455:             <div id="ton-connect" style="margin:16px 0;"></div>
-456:             
-457:             <div class="card">
-458:                 <div class="card-title">Настройки</div>
-459:                 <div class="form-group">
-460:                     <label class="form-label">LLM Модель</label>
-461:                     <select class="form-input" id="model-selector">
-462:                         <option value="auto">Автоматически</option>
-463:                         <option value="gpt-4">GPT-4</option>
-464:                         <option value="claude">Claude</option>
-465:                         <option value="grok">Grok</option>
-466:                         <option value="custom">Своя модель</option>
-467:                     </select>
-468:                 </div>
-469:             </div>
-470:         `;
-471:         
-472:         container.appendChild(view);
-473:         
-474:         setTimeout(() => {
-475:             tonConnect.init('ton-connect');
-476:         }, 100);
-477:     }
-478: 
-479:     donate() {
-480:         telegram.showAlert('Выберите способ:\n\n⭐ Stars: 50, 100, 250, 500\n💎 TON: 1, 5, 10, 25\n💵 USDT: 5, 10, 25, 50');
-481:     }
-482: 
-483:     leaveTip() {
-484:         telegram.showAlert('Быстрые чаевые:\n\n10 ⭐ | 25 ⭐ | 50 ⭐ | 100 ⭐');
-485:     }
-486: 
-487:     onTonStatusChange(detail) {
-488:         console.log('[App] TON status changed:', detail);
-489:     }
-490: 
-491:     async loadCache() {
-492:         try {
-493:             const cached = await telegram.cloudGet('neuroescrow_data');
-494:             if (cached) {
-495:                 this.deals = cached.deals || [];
-496:                 this.balance = cached.balance || 0;
-497:                 this.chatMessages = cached.chatMessages || [];
-498:                 console.log('[App] Cache loaded');
-499:             }
-500:         } catch (e) {
-501:             console.log('[App] No cache found');
-502:         }
-503:     }
-504: 
-505:     async saveCache() {
-506:         const data = {
-507:             deals: this.deals,
-508:             balance: this.balance,
-509:             chatMessages: this.chatMessages,
-510:             timestamp: Date.now()
-511:         };
-512:         await telegram.cloudSet('neuroescrow_data', data);
-513:     }
-514: 
-515:     requestDataFromBot() {
-516:         telegram.sendData({ action: 'get_dashboard_data' });
-517:     }
-518: 
-519:     handleBotData(data) {
-520:         console.log('[App] Data from bot:', data);
-521:         
-522:         // Handle different event types
-523:         if (data.event === 'draft_created' && data.draft) {
-524:             this.handleDraftCreated(data.draft);
-525:             return;
-526:         }
-527:         
-528:         if (data.event === 'error') {
-529:             this.handleVoiceError(new Error(data.error || 'Unknown error'));
-530:             return;
-531:         }
-532: 
-533:         if (data.event === 'hermes_reply' && data.text) {
-534:             this.addChatMessage('hermes', data.text);
-535:             return;
-536:         }
-537: 
-538:         if (data.event === 'moderation_block') {
-539:             telegram.showAlert('⚠️ Ваш контент нарушает правила платформы');
-540:             return;
-541:         }
-542:         
-543:         // Handle dashboard data
-544:         if (data.deals) this.deals = data.deals;
-545:         if (data.balance !== undefined) this.balance = data.balance;
-546:         
-547:         this.saveCache();
-548:         
-549:         const main = document.getElementById('main-content');
-550:         main.innerHTML = '';
-551:         switch(this.currentView) {
-552:             case 'hermes': this.renderHermesView(main); break;
-553:             case 'deals': this.renderDealsView(main); break;
-554:             case 'profile': this.renderProfileView(main); break;
-555:         }
-556:     }
-557: 
-558:     emptyState(icon, text) {
-559:         return `
-560:             <div class="empty-state">
-561:                 <div class="empty-icon">${icon}</div>
-562:                 <div class="empty-text">${text}</div>
-563:             </div>
-564:         `;
-565:     }
-566: 
-567:     // -------------------------------------------------------------------------
-568:     // Chat Interface Methods
-569:     // -------------------------------------------------------------------------
-570: 
-571:     renderChatMessages() {
-572:         const container = document.getElementById('chat-messages');
-573:         if (!container) return;
-574: 
-575:         container.innerHTML = this.chatMessages.map(msg => `
-576:             <div class="chat-message ${msg.sender}">
-577:                 <div class="message-bubble">${this.escapeHtml(msg.text)}</div>
-578:                 <div class="message-time">${this.formatTime(msg.timestamp)}</div>
-579:             </div>
-580:         `).join('');
-581: 
-582:         container.scrollTop = container.scrollHeight;
-583:     }
+448:                     <button class="btn btn-secondary" onclick="app.leaveTip()" style="flex:1;">
+449:                         ⭐ Чаевые
+450:                     </button>
+451:                 </div>
+452:                 
+453:                 <div style="font-size:11px;color:var(--ne-light-gray);margin-top:12px;">
+454:                     TON • USDT • Telegram Stars
+455:                 </div>
+456:             </div>
+457:             
+458:             <div id="ton-connect" style="margin:16px 0;"></div>
+459:             
+460:             <div class="card">
+461:                 <div class="card-title">Настройки</div>
+462:                 <div class="form-group">
+463:                     <label class="form-label">LLM Модель</label>
+464:                     <select class="form-input" id="model-selector">
+465:                         <option value="auto">Автоматически</option>
+466:                         <option value="gpt-4">GPT-4</option>
+467:                         <option value="claude">Claude</option>
+468:                         <option value="grok">Grok</option>
+469:                         <option value="custom">Своя модель</option>
+470:                     </select>
+471:                 </div>
+472:             </div>
+473:         `;
+474:         
+475:         container.appendChild(view);
+476:         
+477:         setTimeout(() => {
+478:             tonConnect.init('ton-connect');
+479:         }, 100);
+480:     }
+481: 
+482:     donate() {
+483:         telegram.showAlert('Выберите способ:\n\n⭐ Stars: 50, 100, 250, 500\n💎 TON: 1, 5, 10, 25\n💵 USDT: 5, 10, 25, 50');
+484:     }
+485: 
+486:     leaveTip() {
+487:         telegram.showAlert('Быстрые чаевые:\n\n10 ⭐ | 25 ⭐ | 50 ⭐ | 100 ⭐');
+488:     }
+489: 
+490:     onTonStatusChange(detail) {
+491:         console.log('[App] TON status changed:', detail);
+492:     }
+493: 
+494:     async loadCache() {
+495:         try {
+496:             const cached = await telegram.cloudGet('neuroescrow_data');
+497:             if (cached) {
+498:                 this.deals = cached.deals || [];
+499:                 this.balance = cached.balance || 0;
+500:                 this.chatMessages = cached.chatMessages || [];
+501:                 console.log('[App] Cache loaded');
+502:             }
+503:         } catch (e) {
+504:             console.log('[App] No cache found');
+505:         }
+506:     }
+507: 
+508:     async saveCache() {
+509:         const data = {
+510:             deals: this.deals,
+511:             balance: this.balance,
+512:             chatMessages: this.chatMessages,
+513:             timestamp: Date.now()
+514:         };
+515:         await telegram.cloudSet('neuroescrow_data', data);
+516:     }
+517: 
+518:     requestDataFromBot() {
+519:         telegram.sendData({ action: 'get_dashboard_data' });
+520:     }
+521: 
+522:     handleBotData(data) {
+523:         console.log('[App] Data from bot:', data);
+524:         
+525:         // Handle different event types
+526:         if (data.event === 'draft_created' && data.draft) {
+527:             this.handleDraftCreated(data.draft);
+528:             return;
+529:         }
+530:         
+531:         if (data.event === 'error') {
+532:             this.handleVoiceError(new Error(data.error || 'Unknown error'));
+533:             return;
+534:         }
+535: 
+536:         if (data.event === 'hermes_reply' && data.text) {
+537:             this.addChatMessage('hermes', data.text);
+538:             return;
+539:         }
+540: 
+541:         if (data.event === 'moderation_block') {
+542:             telegram.showAlert('⚠️ Ваш контент нарушает правила платформы');
+543:             return;
+544:         }
+545:         
+546:         // Handle dashboard data
+547:         if (data.deals) this.deals = data.deals;
+548:         if (data.balance !== undefined) this.balance = data.balance;
+549:         
+550:         this.saveCache();
+551:         
+552:         const main = document.getElementById('main-content');
+553:         main.innerHTML = '';
+554:         switch(this.currentView) {
+555:             case 'hermes': this.renderHermesView(main); break;
+556:             case 'deals': this.renderDealsView(main); break;
+557:             case 'profile': this.renderProfileView(main); break;
+558:         }
+559:     }
+560: 
+561:     emptyState(icon, text) {
+562:         return `
+563:             <div class="empty-state">
+564:                 <div class="empty-icon">${icon}</div>
+565:                 <div class="empty-text">${text}</div>
+566:             </div>
+567:         `;
+568:     }
+569: 
+570:     // -------------------------------------------------------------------------
+571:     // Chat Interface Methods
+572:     // -------------------------------------------------------------------------
+573: 
+574:     renderChatMessages() {
+575:         const container = document.getElementById('chat-messages');
+576:         if (!container) return;
+577: 
+578:         container.innerHTML = this.chatMessages.map(msg => `
+579:             <div class="chat-message ${msg.sender}">
+580:                 <div class="message-bubble">${this.escapeHtml(msg.text)}</div>
+581:                 <div class="message-time">${this.formatTime(msg.timestamp)}</div>
+582:             </div>
+583:         `).join('');
 584: 
-585:     addChatMessage(sender, text) {
-586:         this.chatMessages.push({
-587:             sender,
-588:             text,
-589:             timestamp: Date.now()
-590:         });
-591:         this.renderChatMessages();
-592:         this.saveCache();
-593:     }
-594: 
-595:     async sendTextMessage() {
-596:         const input = document.getElementById('chat-input');
-597:         if (!input || !input.value.trim()) return;
-598: 
-599:         const text = input.value.trim();
-600:         this.addChatMessage('user', text);
-601:         input.value = '';
-602: 
-603:         telegram.haptic('light');
-604: 
-605:         // Call Hermes backend
-606:         try {
-607:             const response = await fetch('/chat', {
-608:                 method: 'POST',
-609:                 headers: { 'Content-Type': 'application/json' },
-610:                 body: JSON.stringify({
-611:                     message: text,
-612:                     user_id: telegram.getUserId(),
-613:                     session_id: `tg_${telegram.getUserId()}`,
-614:                     persona: 'hermes'
-615:                 })
-616:             });
-617: 
-618:             const data = await response.json();
-619: 
-620:             if (data.blocked) {
-621:                 this.addChatMessage('system', `⚠️ ${data.reason}`);
-622:             } else if (data.response) {
-623:                 this.addChatMessage('hermes', data.response);
-624:             } else if (data.error) {
-625:                 this.addChatMessage('system', `❌ Ошибка: ${data.error_message}`);
-626:             }
-627:         } catch (error) {
-628:             console.error('[App] Chat error:', error);
-629:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
-630:         }
-631:     }
-632: 
-633:     showAttachMenu() {
-634:         const menu = document.getElementById('attach-menu');
-635:         if (!menu) return;
-636: 
-637:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
-638:         telegram.haptic('light');
-639:     }
-640: 
-641:     hideAttachMenu() {
-642:         const menu = document.getElementById('attach-menu');
-643:         if (menu) menu.style.display = 'none';
-644:     }
-645: 
-646:     attachPhoto() {
-647:         this.hideAttachMenu();
-648:         const input = document.createElement('input');
-649:         input.type = 'file';
-650:         input.accept = 'image/*';
-651:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
-652:         input.click();
-653:     }
-654: 
-655:     attachVideo() {
-656:         this.hideAttachMenu();
-657:         const input = document.createElement('input');
-658:         input.type = 'file';
-659:         input.accept = 'video/*';
-660:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
-661:         input.click();
-662:     }
-663: 
-664:     async recordVideo() {
-665:         this.hideAttachMenu();
-666:         try {
-667:             const stream = await navigator.mediaDevices.getUserMedia({
-668:                 video: { facingMode: this.currentFacingMode },
-669:                 audio: true
-670:             });
-671:             this.currentStream = stream;
-672:             this.showVideoRecorder(stream);
-673:         } catch (error) {
-674:             telegram.showAlert('Нет доступа к камере');
-675:         }
-676:     }
-677: 
-678:     showVideoRecorder(stream) {
-679:         const recorder = document.createElement('div');
-680:         recorder.className = 'video-recording';
-681:         recorder.innerHTML = `
-682:             <div class="video-preview">
-683:                 <video id="video-preview" autoplay playsinline muted></video>
-684:                 <div class="video-controls">
-685:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
-686:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
-687:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
-688:                 </div>
-689:             </div>
-690:         `;
-691:         document.body.appendChild(recorder);
-692: 
-693:         const video = document.getElementById('video-preview');
-694:         video.srcObject = stream;
-695:     }
-696: 
-697:     async switchCamera() {
-698:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
-699:         if (this.currentStream) {
-700:             this.currentStream.getTracks().forEach(track => track.stop());
-701:         }
-702:         await this.recordVideo();
-703:     }
-704: 
-705:     toggleVideoRecording() {
-706:         const btn = document.getElementById('record-btn');
-707:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
-708:             this.startVideoRecording();
-709:             btn.classList.add('recording');
-710:         } else {
-711:             this.stopVideoRecording();
-712:             btn.classList.remove('recording');
-713:         }
-714:     }
-715: 
-716:     startVideoRecording() {
-717:         if (!this.currentStream) return;
+585:         container.scrollTop = container.scrollHeight;
+586:     }
+587: 
+588:     addChatMessage(sender, text) {
+589:         this.chatMessages.push({
+590:             sender,
+591:             text,
+592:             timestamp: Date.now()
+593:         });
+594:         this.renderChatMessages();
+595:         this.saveCache();
+596:     }
+597: 
+598:     async sendTextMessage() {
+599:         const input = document.getElementById('chat-input');
+600:         if (!input || !input.value.trim()) return;
+601: 
+602:         const text = input.value.trim();
+603:         this.addChatMessage('user', text);
+604:         input.value = '';
+605: 
+606:         telegram.haptic('light');
+607: 
+608:         // Call Hermes backend
+609:         try {
+610:             const response = await fetch('/chat', {
+611:                 method: 'POST',
+612:                 headers: { 'Content-Type': 'application/json' },
+613:                 body: JSON.stringify({
+614:                     message: text,
+615:                     user_id: telegram.getUserId(),
+616:                     session_id: `tg_${telegram.getUserId()}`,
+617:                     persona: 'hermes'
+618:                 })
+619:             });
+620: 
+621:             const data = await response.json();
+622: 
+623:             if (data.blocked) {
+624:                 this.addChatMessage('system', `⚠️ ${data.reason}`);
+625:             } else if (data.response) {
+626:                 this.addChatMessage('hermes', data.response);
+627:             } else if (data.error) {
+628:                 this.addChatMessage('system', `❌ Ошибка: ${data.error_message}`);
+629:             }
+630:         } catch (error) {
+631:             console.error('[App] Chat error:', error);
+632:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
+633:         }
+634:     }
+635: 
+636:     showAttachMenu() {
+637:         const menu = document.getElementById('attach-menu');
+638:         if (!menu) return;
+639: 
+640:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
+641:         telegram.haptic('light');
+642:     }
+643: 
+644:     hideAttachMenu() {
+645:         const menu = document.getElementById('attach-menu');
+646:         if (menu) menu.style.display = 'none';
+647:     }
+648: 
+649:     attachPhoto() {
+650:         this.hideAttachMenu();
+651:         const input = document.createElement('input');
+652:         input.type = 'file';
+653:         input.accept = 'image/*';
+654:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
+655:         input.click();
+656:     }
+657: 
+658:     attachVideo() {
+659:         this.hideAttachMenu();
+660:         const input = document.createElement('input');
+661:         input.type = 'file';
+662:         input.accept = 'video/*';
+663:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
+664:         input.click();
+665:     }
+666: 
+667:     async recordVideo() {
+668:         this.hideAttachMenu();
+669:         try {
+670:             const stream = await navigator.mediaDevices.getUserMedia({
+671:                 video: { facingMode: this.currentFacingMode },
+672:                 audio: true
+673:             });
+674:             this.currentStream = stream;
+675:             this.showVideoRecorder(stream);
+676:         } catch (error) {
+677:             telegram.showAlert('Нет доступа к камере');
+678:         }
+679:     }
+680: 
+681:     showVideoRecorder(stream) {
+682:         const recorder = document.createElement('div');
+683:         recorder.className = 'video-recording';
+684:         recorder.innerHTML = `
+685:             <div class="video-preview">
+686:                 <video id="video-preview" autoplay playsinline muted></video>
+687:                 <div class="video-controls">
+688:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
+689:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
+690:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
+691:                 </div>
+692:             </div>
+693:         `;
+694:         document.body.appendChild(recorder);
+695: 
+696:         const video = document.getElementById('video-preview');
+697:         video.srcObject = stream;
+698:     }
+699: 
+700:     async switchCamera() {
+701:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+702:         if (this.currentStream) {
+703:             this.currentStream.getTracks().forEach(track => track.stop());
+704:         }
+705:         await this.recordVideo();
+706:     }
+707: 
+708:     toggleVideoRecording() {
+709:         const btn = document.getElementById('record-btn');
+710:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
+711:             this.startVideoRecording();
+712:             btn.classList.add('recording');
+713:         } else {
+714:             this.stopVideoRecording();
+715:             btn.classList.remove('recording');
+716:         }
+717:     }
 718: 
-719:         this.mediaRecorder = new MediaRecorder(this.currentStream);
-720:         this.audioChunks = [];
+719:     startVideoRecording() {
+720:         if (!this.currentStream) return;
 721: 
-722:         this.mediaRecorder.ondataavailable = (e) => {
-723:             this.audioChunks.push(e.data);
-724:         };
-725: 
-726:         this.mediaRecorder.onstop = () => {
-727:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
-728:             this.handleVideoUpload(videoBlob);
-729:         };
-730: 
-731:         this.mediaRecorder.start();
-732:     }
+722:         this.mediaRecorder = new MediaRecorder(this.currentStream);
+723:         this.audioChunks = [];
+724: 
+725:         this.mediaRecorder.ondataavailable = (e) => {
+726:             this.audioChunks.push(e.data);
+727:         };
+728: 
+729:         this.mediaRecorder.onstop = () => {
+730:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
+731:             this.handleVideoUpload(videoBlob);
+732:         };
 733: 
-734:     stopVideoRecording() {
-735:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-736:             this.mediaRecorder.stop();
-737:         }
-738:     }
-739: 
-740:     closeVideoRecorder() {
-741:         if (this.currentStream) {
-742:             this.currentStream.getTracks().forEach(track => track.stop());
-743:             this.currentStream = null;
-744:         }
-745:         const recorder = document.querySelector('.video-recording');
-746:         if (recorder) recorder.remove();
-747:     }
-748: 
-749:     async shareScreen() {
-750:         this.hideAttachMenu();
-751:         try {
-752:             const stream = await navigator.mediaDevices.getDisplayMedia({
-753:                 video: true
-754:             });
-755:             
-756:             const mediaRecorder = new MediaRecorder(stream);
-757:             const chunks = [];
-758: 
-759:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-760:             mediaRecorder.onstop = () => {
-761:                 const blob = new Blob(chunks, { type: 'video/webm' });
-762:                 this.handleVideoUpload(blob);
-763:                 stream.getTracks().forEach(track => track.stop());
-764:             };
-765: 
-766:             mediaRecorder.start();
-767:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
-768:         } catch (error) {
-769:             telegram.showAlert('Нет доступа к экрану');
-770:         }
-771:     }
-772: 
-773:     async handleFileUpload(file, type) {
-774:         if (!file) return;
+734:         this.mediaRecorder.start();
+735:     }
+736: 
+737:     stopVideoRecording() {
+738:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+739:             this.mediaRecorder.stop();
+740:         }
+741:     }
+742: 
+743:     closeVideoRecorder() {
+744:         if (this.currentStream) {
+745:             this.currentStream.getTracks().forEach(track => track.stop());
+746:             this.currentStream = null;
+747:         }
+748:         const recorder = document.querySelector('.video-recording');
+749:         if (recorder) recorder.remove();
+750:     }
+751: 
+752:     async shareScreen() {
+753:         this.hideAttachMenu();
+754:         try {
+755:             const stream = await navigator.mediaDevices.getDisplayMedia({
+756:                 video: true
+757:             });
+758:             
+759:             const mediaRecorder = new MediaRecorder(stream);
+760:             const chunks = [];
+761: 
+762:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+763:             mediaRecorder.onstop = () => {
+764:                 const blob = new Blob(chunks, { type: 'video/webm' });
+765:                 this.handleVideoUpload(blob);
+766:                 stream.getTracks().forEach(track => track.stop());
+767:             };
+768: 
+769:             mediaRecorder.start();
+770:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
+771:         } catch (error) {
+772:             telegram.showAlert('Нет доступа к экрану');
+773:         }
+774:     }
 775: 
-776:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
-777: 
-778:         const reader = new FileReader();
-779:         reader.onload = async (e) => {
-780:             try {
-781:                 // Upload to backend and get URL
-782:                 const imageUrl = e.target.result; // Base64 data URL
-783: 
-784:                 // Call Hermes image analysis
-785:                 const response = await fetch('/analyze-image', {
-786:                     method: 'POST',
-787:                     headers: { 'Content-Type': 'application/json' },
-788:                     body: JSON.stringify({
-789:                         image_url: imageUrl,
-790:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
-791:                         user_id: telegram.getUserId(),
-792:                         session_id: `tg_${telegram.getUserId()}`
-793:                     })
-794:                 });
-795: 
-796:                 const data = await response.json();
-797: 
-798:                 if (data.response) {
-799:                     this.addChatMessage('hermes', data.response);
-800:                 } else if (data.error) {
-801:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-802:                 }
-803:             } catch (error) {
-804:                 console.error('[App] Upload error:', error);
-805:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
-806:             }
-807:         };
-808:         reader.readAsDataURL(file);
-809:     }
-810: 
-811:     async handleVideoUpload(blob) {
-812:         this.addChatMessage('user', '[🎥 Видеозапись]');
-813:         this.closeVideoRecorder();
-814: 
-815:         const reader = new FileReader();
-816:         reader.onload = async (e) => {
-817:             try {
-818:                 const videoUrl = e.target.result;
-819: 
-820:                 // Call Hermes video analysis
-821:                 const response = await fetch('/analyze-image', {
-822:                     method: 'POST',
-823:                     headers: { 'Content-Type': 'application/json' },
-824:                     body: JSON.stringify({
-825:                         image_url: videoUrl,
-826:                         prompt: 'Проанализируй это видео',
-827:                         user_id: telegram.getUserId(),
-828:                         session_id: `tg_${telegram.getUserId()}`
-829:                     })
-830:                 });
-831: 
-832:                 const data = await response.json();
-833: 
-834:                 if (data.response) {
-835:                     this.addChatMessage('hermes', data.response);
-836:                 } else if (data.error) {
-837:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-838:                 }
-839:             } catch (error) {
-840:                 console.error('[App] Video upload error:', error);
-841:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
-842:             }
-843:         };
-844:         reader.readAsDataURL(blob);
-845:     }
-846: 
-847:     formatTime(timestamp) {
-848:         const date = new Date(timestamp);
-849:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-850:     }
-851: }
-852: 
-853: let app;
-854: document.addEventListener('DOMContentLoaded', () => {
-855:     app = new NeuroEscrowApp();
-856: });
-857: 
-858: window.addEventListener('message', (event) => {
-859:     if (event.data && event.data.type === 'bot_data' && app) {
-860:         app.handleBotData(event.data.payload);
-861:     }
-862: });
+776:     async handleFileUpload(file, type) {
+777:         if (!file) return;
+778: 
+779:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
+780: 
+781:         const reader = new FileReader();
+782:         reader.onload = async (e) => {
+783:             try {
+784:                 // Upload to backend and get URL
+785:                 const imageUrl = e.target.result; // Base64 data URL
+786: 
+787:                 // Call Hermes image analysis
+788:                 const response = await fetch('/analyze-image', {
+789:                     method: 'POST',
+790:                     headers: { 'Content-Type': 'application/json' },
+791:                     body: JSON.stringify({
+792:                         image_url: imageUrl,
+793:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
+794:                         user_id: telegram.getUserId(),
+795:                         session_id: `tg_${telegram.getUserId()}`
+796:                     })
+797:                 });
+798: 
+799:                 const data = await response.json();
+800: 
+801:                 if (data.response) {
+802:                     this.addChatMessage('hermes', data.response);
+803:                 } else if (data.error) {
+804:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+805:                 }
+806:             } catch (error) {
+807:                 console.error('[App] Upload error:', error);
+808:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
+809:             }
+810:         };
+811:         reader.readAsDataURL(file);
+812:     }
+813: 
+814:     async handleVideoUpload(blob) {
+815:         this.addChatMessage('user', '[🎥 Видеозапись]');
+816:         this.closeVideoRecorder();
+817: 
+818:         const reader = new FileReader();
+819:         reader.onload = async (e) => {
+820:             try {
+821:                 const videoUrl = e.target.result;
+822: 
+823:                 // Call Hermes video analysis
+824:                 const response = await fetch('/analyze-image', {
+825:                     method: 'POST',
+826:                     headers: { 'Content-Type': 'application/json' },
+827:                     body: JSON.stringify({
+828:                         image_url: videoUrl,
+829:                         prompt: 'Проанализируй это видео',
+830:                         user_id: telegram.getUserId(),
+831:                         session_id: `tg_${telegram.getUserId()}`
+832:                     })
+833:                 });
+834: 
+835:                 const data = await response.json();
+836: 
+837:                 if (data.response) {
+838:                     this.addChatMessage('hermes', data.response);
+839:                 } else if (data.error) {
+840:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+841:                 }
+842:             } catch (error) {
+843:                 console.error('[App] Video upload error:', error);
+844:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
+845:             }
+846:         };
+847:         reader.readAsDataURL(blob);
+848:     }
+849: 
+850:     formatTime(timestamp) {
+851:         const date = new Date(timestamp);
+852:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+853:     }
+854: }
+855: 
+856: let app;
+857: document.addEventListener('DOMContentLoaded', () => {
+858:     app = new NeuroEscrowApp();
+859: });
+860: 
+861: window.addEventListener('message', (event) => {
+862:     if (event.data && event.data.type === 'bot_data' && app) {
+863:         app.handleBotData(event.data.payload);
+864:     }
+865: });
 </file>
 
 <file path="js/charts.js">

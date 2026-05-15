@@ -55,6 +55,14 @@
     transform: translateX(5%);
 }
 
+/* CSS hover fallback for desktop — pure CSS, no JS conflicts */
+@media (hover: hover) and (pointer: fine) {
+    .history-sidebar:hover {
+        transform: translateX(5%);
+        pointer-events: auto;
+    }
+}
+
 /* Layer 2: Inner highlight (match .panel::before) */
 .history-sidebar::before {
     content: '';

@@ -206,14 +206,14 @@ export async function handleTelegramUpdate(update, env, hermesAgent) {
     // /start command — Guest Mode onboarding
     if (text === '/start') {
       const webAppUrl = env?.WEBAPP_URL || 'https://neuroescrow.holograms.media';
-      await bot.sendWebAppButton(chatId, webAppUrl, 'Open NeuroEscrow');
+      await bot.sendWebAppButton(chatId, webAppUrl, 'Открыть NeuroEscrow');
       await bot.sendMessage(chatId,
-        'Welcome to NeuroEscrow Hermes!\n\n' +
-        'I can help you with:\n' +
-        '- Code analysis and generation\n' +
-        '- Smart contract review\n' +
-        '- Deal negotiation\n\n' +
-        'Type a message or use the button below to open the Mini App.'
+        'Добро пожаловать в NeuroEscrow Hermes!\n\n' +
+        'Я могу помочь вам с:\n' +
+        '- Анализом и генерацией кода\n' +
+        '- Проверкой смарт-контрактов\n' +
+        '- Ведением переговоров по сделкам\n\n' +
+        'Напишите сообщение или нажмите кнопку ниже, чтобы открыть Mini App.'
       );
       return { action: 'start', user_id: userId };
     }

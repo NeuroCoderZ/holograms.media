@@ -47,22 +47,23 @@ export default {
       // Chat endpoint
       if (url.pathname === '/chat' && request.method === 'POST') {
         let data;
+        const contentType = request.headers.get('content-type') || '';
         try {
-          data = await request.json();
-        } catch {
-          try {
+          if (contentType.includes('application/json')) {
+            data = await request.json();
+          } else {
             const raw = await request.text();
-            data = JSON.parse(raw.replace(/^\\+/, '').trim());
-          } catch {
-            return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            data = JSON.parse(raw);
           }
+        } catch (e) {
+          return new Response(JSON.stringify({ error: 'Invalid JSON', details: e.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
         }
 
-        if (!data || !data.message) {
-          return new Response(JSON.stringify({ error: 'Message is required' }), {
+        if (!data || typeof data.message !== 'string') {
+          return new Response(JSON.stringify({ error: 'message field required' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });

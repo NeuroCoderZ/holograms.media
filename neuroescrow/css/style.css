@@ -589,19 +589,32 @@ html, body {
 /* Responsive */
 @media (min-width: 768px) {
     .app-main {
-        max-width: 600px;
-        margin: 0 auto;
+        max-width: none !important;
+        margin: 0;
     }
     
     .chat-input-container {
-        max-width: 600px;
-        left: 50%;
-        transform: translateX(-50%);
+        max-width: none;
+        left: 0;
+        transform: none;
     }
     
     .attach-menu {
-        max-width: 568px;
-        left: 50%;
-        transform: translateX(-50%);
+        max-width: none;
+        left: var(--ne-spacing-lg);
+        transform: none;
+    }
+}
+
+/* Telegram Mini App Desktop Fullscreen Override */
+@media (min-width: 768px) {
+    html, body, #app, .app-main, .container, .tg-web-app {
+        max-width: none !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
     }
 }
