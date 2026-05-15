@@ -15,9 +15,6 @@
         if (window.Telegram && window.Telegram.WebApp) {
             const tg = window.Telegram.WebApp;
             
-            // Expand viewport to full height
-            tg.expand();
-            
             // Enable closing confirmation
             tg.enableClosingConfirmation();
             
@@ -29,7 +26,7 @@
             document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
             document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
             
-            // Signal ready state
+            // Signal ready state (expand/fullscreen handled in app.js)
             tg.ready();
             
             console.log('[TG WebApp] Initialized', {
@@ -52,6 +49,7 @@
                 <h1>NeuroEscrow</h1>
                 <div class="user-info">
                     <span id="user-name">Загрузка...</span>
+                    <button id="tg-fullscreen-btn" class="btn btn-secondary" style="font-size:12px;padding:4px 10px;margin-left:8px;display:none;">🖥️ На весь экран</button>
                 </div>
             </div>
         </header>

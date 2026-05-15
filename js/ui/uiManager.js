@@ -1065,10 +1065,8 @@ function initHistorySidebar() {
   // Load chat history (placeholder for now)
   loadChatHistory(historyList);
 
-  // Desktop: open on hover, close on leave (only when right panel is visible)
-  historySidebar.addEventListener('pointerenter', openIfAllowed);
-  historySidebar.addEventListener('pointerleave', closeHistory);
-
+  // Desktop: CSS :hover handles open/close (see css/_history_sidebar.css @media hover:hover)
+  // JS pointerenter/leave disabled on desktop to avoid conflict with CSS hover
   // Touch: swipe support + close on leave handled in initHistorySwipe
   initHistorySwipe(historySidebar);
 
@@ -1178,6 +1176,5 @@ function initHistorySwipe(sidebar) {
     }
   }, { passive: true });
 
-  // Also close on pointer leaving the history area
-  sidebar.addEventListener('pointerleave', () => closeHistory());
+  // CSS :hover handles desktop hover open/close — no JS pointerleave needed
 }

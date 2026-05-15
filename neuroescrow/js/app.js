@@ -24,8 +24,14 @@ class NeuroEscrowApp {
 
     async init() {
         if (window.Telegram?.WebApp) {
-            window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand();
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            // Bot API 8.0+: requestFullscreen for desktop/immersive, fallback to expand()
+            if (typeof tg.requestFullscreen === 'function') {
+                tg.requestFullscreen();
+            } else {
+                tg.expand();
+            }
         }
         this.userData = telegram.getUser();
         this.updateHeader();
@@ -37,6 +43,50 @@ class NeuroEscrowApp {
         });
         
         this.requestDataFromBot();
+
+        // Fullscreen button handler (user gesture required on TG Desktop)
+        const fsBtn = document.getElementById('tg-fullscreen-btn');
+        if (fsBtn && window.Telegram?.WebApp) {
+            const tg = window.Telegram.WebApp;
+            if (typeof tg.requestFullscreen === 'function') {
+                fsBtn.addEventListener('click', () => {
+                    tg.requestFullscreen().catch(e => console.warn('[TG] Fullscreen blocked:', e));
+                });
+                // Hide button if already in fullscreen
+                if (tg.isFullscreen === true) {
+                    fsBtn.style.display = 'none';
+                }
+                // Listen for fullscreen changes
+                tg.onEvent('fullscreenChanged', () => {
+                    if (fsBtn) fsBtn.style.display = tg.isFullscreen ? 'none' : 'inline-block';
+                });
+            } else {
+                fsBtn.style.display = 'none';
+            }
+        }
+
+        // Enter key fix for chat input — prevent form submit / page reload
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendTextMessage();
+                }
+            });
+        }
+
+        // Prevent any accidental form submit if input is wrapped in <form>
+        const chatContainer = document.getElementById('chat-input-container');
+        if (chatContainer) {
+            chatContainer.addEventListener('submit', (e) => e.preventDefault());
+        }
+
+        // Ensure send button is type="button" not "submit"
+        const sendBtn = document.getElementById('send-btn');
+        if (sendBtn && !sendBtn.getAttribute('type')) {
+            sendBtn.setAttribute('type', 'button');
+        }
     }
 
     updateHeader() {
@@ -607,8 +657,16 @@ class NeuroEscrowApp {
 
         // Call Hermes backend
         try {
-            const response = await fetch('/chat', {
+            const workerUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+                ? new URL('/chat', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+                : 'https://neuroescrow-hermes.neurocoderz.workers.dev/chat';
+
+            console.log('[Chat] Fetching:', workerUrl);
+
+            const response = await fetch(workerUrl, {
                 method: 'POST',
+                mode: 'cors',
+                credentials: 'omit',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: text,
@@ -618,6 +676,8 @@ class NeuroEscrowApp {
                 })
             });
 
+            console.log('[Chat] Response status:', response.status, response.statusText);
+
             const data = await response.json();
 
             if (data.blocked) {
@@ -625,10 +685,10 @@ class NeuroEscrowApp {
             } else if (data.response) {
                 this.addChatMessage('hermes', data.response);
             } else if (data.error) {
-                this.addChatMessage('system', `❌ Ошибка: ${data.error_message}`);
+                this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
             }
         } catch (error) {
-            console.error('[App] Chat error:', error);
+            console.error('[Chat] Fetch failed:', error.message, error.stack);
             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
         }
     }
