@@ -146,7 +146,6 @@ class NeuroEscrowApp {
         
         view.innerHTML = `
             <div class="voice-interface">
-                <div class="voice-title">Гермес</div>
                 <button class="voice-button" id="voice-btn" onclick="app.toggleVoice()">
                     <span class="voice-icon">🎙️</span>
                 </button>

@@ -1,4 +1,4 @@
-/* History Sidebar - Liquid Glass, поверх right-panel */
+/* History Sidebar — Liquid Glass, изоляция от выделения */
 
 .history-sidebar {
     position: absolute;
@@ -7,7 +7,7 @@
     bottom: 0;
     width: 100%;
 
-    /* Liquid Glass — exact match with .panel */
+    /* Liquid Glass — точное совпадение с .panel */
     background: var(--glass-bg) !important;
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
@@ -20,7 +20,7 @@
     display: flex;
     flex-direction: column;
 
-    /* Isolate from parent, above right-panel (z-index: 1001) */
+    /* Изоляция: поверх right-panel (z-index: 1001), без наследования */
     isolation: isolate;
     z-index: 10001;
 
@@ -30,8 +30,18 @@
 
     will-change: transform, opacity;
 
+    /* Запрет выделения текста в панели (кроме заголовков) */
+    user-select: none;
+    -webkit-user-select: none;
+
     opacity: 1;
     transform: translateX(calc(100% - 12px));
+}
+
+/* Разрешить выделение только в заголовках чатов */
+.history-item-title {
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 /* Open state (only via .is-open, not via hover on container) */
