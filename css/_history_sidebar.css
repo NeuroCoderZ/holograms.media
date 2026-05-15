@@ -1,4 +1,4 @@
-/* History Sidebar - unified Glassmorphism выдвижная панель (внутри right-panel) */
+/* History Sidebar - unified Glassmorphism выдвижная панель (поверх right-panel) */
 
 .history-sidebar {
     position: absolute;
@@ -7,7 +7,7 @@
     bottom: 0;
     width: 100%;
 
-    /* Layer 1: Base Glass (match .panel from css/_panels.css) */
+    /* Layer 1: Base Glass — exact match with .panel from css/_panels.css */
     background: var(--glass-bg) !important;
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
@@ -21,15 +21,14 @@
     display: flex;
     flex-direction: column;
 
-    /* Glass layers */
+    /* Isolate from parent filter/transform inheritance */
     isolation: isolate;
-    z-index: 10;
+    z-index: 10000; /* Above right-panel (z-index: 1001) */
 
     /* Match .panel transitions (same timing/feel) */
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-in-out;
     visibility: visible;
     pointer-events: auto;
-    z-index: 9999;
 
     /* Optimization */
     will-change: transform, opacity;

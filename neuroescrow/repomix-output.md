@@ -675,237 +675,243 @@ This section contains the contents of the repository's files.
  34: - Не используй устаревший контекст из предыдущих сессий.
  35: - Если вопрос неясен или не относится к предоставленному контексту — уточни у пользователя.
  36: - Не галлюцинируй: если не знаешь ответа — скажи об этом.
- 37: 
- 38: Твой стиль:
- 39: - Профессиональный, но дружелюбный
- 40: - Краткие и точные ответы
- 41: - Используешь эмодзи умеренно
- 42: - Всегда объясняешь технические детали простым языком
- 43: - Отвечай на русском языке, без использования markdown (**, *, #), с правильной пунктуацией, абзацами и отступами. Используй естественный русский стиль.`,
- 44:       
- 45:       client: `Ты — Гермес в режиме помощи клиенту.
- 46: Фокус: помощь в создании сделки, объяснение условий, защита интересов клиента.`,
+ 37: - Отвечай кратко и строго по теме последнего сообщения.
+ 38: - Не упоминай технические ограничения API, лимиты моделей, сторонние технологии (CWT, нетгологлифы), если пользователь не спросил о них напрямую.
+ 39: - Никогда не начинай ответ с префиксов типа "[Tria]", "[Hermes]", "[AI]" или подобных.
+ 40: 
+ 41: Твой стиль:
+ 42: - Профессиональный, но дружелюбный
+ 43: - Краткие и точные ответы
+ 44: - Используешь эмодзи умеренно
+ 45: - Всегда объясняешь технические детали простым языком
+ 46: - Отвечай на русском языке, без использования markdown (**, *, #), с правильной пунктуацией, абзацами и отступами. Используй естественный русский стиль.`,
  47:       
- 48:       creator: `Ты — Гермес в режиме помощи исполнителю.
- 49: Фокус: помощь в выполнении заказа, проверка требований, защита от недобросовестных заказчиков.`
- 50:     };
- 51:     
- 52:     return prompts[persona] || prompts.hermes;
- 53:   }
- 54:   
- 55:   getSessionHistory(sessionId, limit = 10) {
- 56:     if (!this.sessions.has(sessionId)) {
- 57:       this.sessions.set(sessionId, []);
- 58:     }
- 59:     const history = this.sessions.get(sessionId);
- 60:     return history.slice(-limit);
- 61:   }
- 62:   
- 63:   addToSession(sessionId, role, content) {
- 64:     if (!this.sessions.has(sessionId)) {
- 65:       this.sessions.set(sessionId, []);
- 66:     }
- 67:     this.sessions.get(sessionId).push({
- 68:       role,
- 69:       content,
- 70:       timestamp: new Date().toISOString()
- 71:     });
- 72:   }
- 73:   
- 74:   async buildContext(query, userId, sessionId) {
- 75:     // Skip RAG for short messages (greetings, etc.)
- 76:     if (!query || query.trim().length < 10) return '';
- 77: 
- 78:     const contextParts = [];
- 79: 
- 80:     // Search codebase with similarity threshold
- 81:     const codebaseResults = await this.rag.searchCodebase(query, 5);
- 82:     const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= 0.6);
- 83:     if (filteredCodebase.length > 0) {
- 84:       contextParts.push('📚 Релевантный код из базы:');
- 85:       filteredCodebase.forEach((result, i) => {
- 86:         const filepath = result.filepath || 'unknown';
- 87:         const text = (result.text || '').substring(0, 500);
- 88:         const similarity = result.$similarity || 0;
- 89:         contextParts.push(`\n${i + 1}. ${filepath} (similarity: ${similarity.toFixed(2)})\n\`\`\`\n${text}\n\`\`\``);
- 90:       });
- 91:     }
- 92: 
- 93:     // Search memory with similarity threshold
- 94:     const memoryResults = await this.rag.searchMemory(query, userId, 4);
- 95:     const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= 0.6);
- 96:     if (filteredMemory.length > 0) {
- 97:       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
- 98:       filteredMemory.forEach((result, i) => {
- 99:         const content = result.content || '';
-100:         const timestamp = result.timestamp || '';
-101:         contextParts.push(`\n${i + 1}. [${timestamp}] ${content}`);
-102:       });
-103:     }
-104:     
-105:     return contextParts.join('');
-106:   }
-107:   
-108:   async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true) {
-109:     // Moderate content
-110:     const moderation = moderateContent(message);
-111:     if (!moderation.safe) {
-112:       return {
-113:         response: `⚠️ Сообщение заблокировано: ${moderation.reason}`,
-114:         blocked: true,
-115:         reason: moderation.reason
-116:       };
-117:     }
-118:     
-119:     // Build context
-120:     let context = '';
-121:     if (useRag) {
-122:       context = await this.buildContext(message, userId, sessionId);
-123:     }
-124:     
-125:     // Get history
-126:     const history = this.getSessionHistory(sessionId);
+ 48:       client: `Ты — Гермес в режиме помощи клиенту.
+ 49: Фокус: помощь в создании сделки, объяснение условий, защита интересов клиента.`,
+ 50:       
+ 51:       creator: `Ты — Гермес в режиме помощи исполнителю.
+ 52: Фокус: помощь в выполнении заказа, проверка требований, защита от недобросовестных заказчиков.`
+ 53:     };
+ 54:     
+ 55:     return prompts[persona] || prompts.hermes;
+ 56:   }
+ 57:   
+ 58:   getSessionHistory(sessionId, limit = 10) {
+ 59:     if (!this.sessions.has(sessionId)) {
+ 60:       this.sessions.set(sessionId, []);
+ 61:     }
+ 62:     const history = this.sessions.get(sessionId);
+ 63:     return history.slice(-limit);
+ 64:   }
+ 65:   
+ 66:   addToSession(sessionId, role, content) {
+ 67:     if (!this.sessions.has(sessionId)) {
+ 68:       this.sessions.set(sessionId, []);
+ 69:     }
+ 70:     this.sessions.get(sessionId).push({
+ 71:       role,
+ 72:       content,
+ 73:       timestamp: new Date().toISOString()
+ 74:     });
+ 75:   }
+ 76:   
+ 77:   async buildContext(query, userId, sessionId) {
+ 78:     // Skip RAG for short messages (greetings, etc.)
+ 79:     if (!query || query.trim().length < 15) return '';
+ 80: 
+ 81:     const contextParts = [];
+ 82: 
+ 83:     // Search codebase with similarity threshold
+ 84:     const codebaseResults = await this.rag.searchCodebase(query, 5);
+ 85:     const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= 0.65);
+ 86:     if (filteredCodebase.length > 0) {
+ 87:       contextParts.push('📚 Релевантный код из базы:');
+ 88:       filteredCodebase.forEach((result, i) => {
+ 89:         const filepath = result.filepath || 'unknown';
+ 90:         const text = (result.text || '').substring(0, 500);
+ 91:         const similarity = result.$similarity || 0;
+ 92:         contextParts.push(`\n${i + 1}. ${filepath} (similarity: ${similarity.toFixed(2)})\n\`\`\`\n${text}\n\`\`\``);
+ 93:       });
+ 94:     }
+ 95: 
+ 96:     // Search memory with similarity threshold
+ 97:     const memoryResults = await this.rag.searchMemory(query, userId, 4);
+ 98:     const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= 0.65);
+ 99:     if (filteredMemory.length > 0) {
+100:       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
+101:       filteredMemory.forEach((result, i) => {
+102:         const content = result.content || '';
+103:         const timestamp = result.timestamp || '';
+104:         contextParts.push(`\n${i + 1}. [${timestamp}] ${content}`);
+105:       });
+106:     }
+107:     
+108:     return contextParts.join('');
+109:   }
+110:   
+111:   async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true) {
+112:     // Moderate content
+113:     const moderation = moderateContent(message);
+114:     if (!moderation.safe) {
+115:       return {
+116:         response: `⚠️ Сообщение заблокировано: ${moderation.reason}`,
+117:         blocked: true,
+118:         reason: moderation.reason
+119:       };
+120:     }
+121:     
+122:     // Build context
+123:     let context = '';
+124:     if (useRag) {
+125:       context = await this.buildContext(message, userId, sessionId);
+126:     }
 127:     
-128:     // Build messages
-129:     const messages = [
-130:       { role: 'system', content: this.getSystemPrompt(persona) }
-131:     ];
-132:     
-133:     if (context) {
-134:       messages.push({
-135:         role: 'system',
-136:         content: `Контекст для ответа:\n${context}`
-137:       });
-138:     }
-139:     
-140:     // Add history
-141:     history.forEach(msg => {
-142:       messages.push({
-143:         role: msg.role,
-144:         content: msg.content
-145:       });
-146:     });
-147:     
-148:     // Add current message
-149:     if (imageUrl) {
-150:       messages.push({
-151:         role: 'user',
-152:         content: [
-153:           { type: 'text', text: message },
-154:           { type: 'image_url', image_url: { url: imageUrl } }
-155:         ]
-156:       });
-157:     } else {
-158:       messages.push({
-159:         role: 'user',
-160:         content: message
-161:       });
-162:     }
-163:     
-164:     // Call Mistral API
-165:     try {
-166:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-167:         method: 'POST',
-168:         headers: {
-169:           'Authorization': `Bearer ${this.apiKey}`,
-170:           'Content-Type': 'application/json'
-171:         },
-172:         body: JSON.stringify({
-173:           model: this.model,
-174:           messages,
-175:           temperature: 0.7,
-176:           max_tokens: 2000
-177:         })
-178:       });
-179:       
-180:       if (!response.ok) {
-181:         throw new Error(`Mistral API error: ${response.status}`);
-182:       }
-183:       
-184:       const data = await response.json();
-185:       const assistantMessage = data.choices[0].message.content;
+128:     // Get history
+129:     const history = this.getSessionHistory(sessionId);
+130:     
+131:     // Build messages
+132:     const messages = [
+133:       { role: 'system', content: this.getSystemPrompt(persona) }
+134:     ];
+135:     
+136:     if (context) {
+137:       messages.push({
+138:         role: 'system',
+139:         content: `Контекст для ответа:\n${context}`
+140:       });
+141:     }
+142:     
+143:     // Add history
+144:     history.forEach(msg => {
+145:       messages.push({
+146:         role: msg.role,
+147:         content: msg.content
+148:       });
+149:     });
+150:     
+151:     // Add current message
+152:     if (imageUrl) {
+153:       messages.push({
+154:         role: 'user',
+155:         content: [
+156:           { type: 'text', text: message },
+157:           { type: 'image_url', image_url: { url: imageUrl } }
+158:         ]
+159:       });
+160:     } else {
+161:       messages.push({
+162:         role: 'user',
+163:         content: message
+164:       });
+165:     }
+166:     
+167:     // Call Mistral API
+168:     try {
+169:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+170:         method: 'POST',
+171:         headers: {
+172:           'Authorization': `Bearer ${this.apiKey}`,
+173:           'Content-Type': 'application/json'
+174:         },
+175:         body: JSON.stringify({
+176:           model: this.model,
+177:           messages,
+178:           temperature: 0.7,
+179:           max_tokens: 2000
+180:         })
+181:       });
+182:       
+183:       if (!response.ok) {
+184:         throw new Error(`Mistral API error: ${response.status}`);
+185:       }
 186:       
-187:       // Add to session
-188:       this.addToSession(sessionId, 'user', message);
-189:       this.addToSession(sessionId, 'assistant', assistantMessage);
-190:       
-191:       // Save to memory (substantial messages only)
-192:       if (message.length > 50) {
-193:         await this.rag.addMemory(
-194:           userId,
-195:           sessionId,
-196:           `User: ${message}\nHermes: ${assistantMessage}`,
-197:           'conversation'
-198:         );
-199:       }
-200:       
-201:       return {
-202:         response: assistantMessage,
-203:         blocked: false,
-204:         context_used: !!context,
-205:         tokens_used: data.usage?.total_tokens || 0
-206:       };
-207:       
-208:     } catch (error) {
-209:       return {
-210:         response: `❌ Ошибка: ${error.message}`,
-211:         error: true,
-212:         error_message: error.message
-213:       };
-214:     }
-215:   }
-216:   
-217:   async analyzeImage(imageUrl, prompt, userId, sessionId) {
-218:     return this.chat(prompt, userId, sessionId, 'hermes', imageUrl, false);
-219:   }
-220:   
-221:   async getSessionSummary(sessionId) {
-222:     const history = this.getSessionHistory(sessionId, 100);
-223:     
-224:     if (history.length === 0) {
-225:       return 'Нет истории сессии';
-226:     }
-227:     
-228:     const conversation = history.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+187:       const data = await response.json();
+188:       let assistantMessage = data.choices[0].message.content;
+189:       
+190:       // Sanitize response: remove [Tria] and similar prefixes
+191:       assistantMessage = assistantMessage.replace(/^\[(Tria|Hermes|AI|Bot)\]\s*/i, '').trim();
+192:       
+193:       // Add to session
+194:       this.addToSession(sessionId, 'user', message);
+195:       this.addToSession(sessionId, 'assistant', assistantMessage);
+196:       
+197:       // Save to memory (substantial messages only)
+198:       if (message.length > 50) {
+199:         await this.rag.addMemory(
+200:           userId,
+201:           sessionId,
+202:           `User: ${message}\nHermes: ${assistantMessage}`,
+203:           'conversation'
+204:         );
+205:       }
+206:       
+207:       return {
+208:         response: assistantMessage,
+209:         blocked: false,
+210:         context_used: !!context,
+211:         tokens_used: data.usage?.total_tokens || 0
+212:       };
+213:       
+214:     } catch (error) {
+215:       return {
+216:         response: `❌ Ошибка: ${error.message}`,
+217:         error: true,
+218:         error_message: error.message
+219:       };
+220:     }
+221:   }
+222:   
+223:   async analyzeImage(imageUrl, prompt, userId, sessionId) {
+224:     return this.chat(prompt, userId, sessionId, 'hermes', imageUrl, false);
+225:   }
+226:   
+227:   async getSessionSummary(sessionId) {
+228:     const history = this.getSessionHistory(sessionId, 100);
 229:     
-230:     const messages = [
-231:       {
-232:         role: 'system',
-233:         content: 'Создай краткое резюме этого разговора (2-3 предложения).'
-234:       },
-235:       {
-236:         role: 'user',
-237:         content: conversation
-238:       }
-239:     ];
-240:     
-241:     try {
-242:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-243:         method: 'POST',
-244:         headers: {
-245:           'Authorization': `Bearer ${this.apiKey}`,
-246:           'Content-Type': 'application/json'
-247:         },
-248:         body: JSON.stringify({
-249:           model: this.model,
-250:           messages,
-251:           temperature: 0.5,
-252:           max_tokens: 200
-253:         })
-254:       });
-255:       
-256:       const data = await response.json();
-257:       return data.choices[0].message.content;
-258:       
-259:     } catch (error) {
-260:       return `Ошибка создания резюме: ${error.message}`;
-261:     }
-262:   }
-263:   
-264:   clearSession(sessionId) {
-265:     this.sessions.delete(sessionId);
-266:   }
-267: }
+230:     if (history.length === 0) {
+231:       return 'Нет истории сессии';
+232:     }
+233:     
+234:     const conversation = history.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+235:     
+236:     const messages = [
+237:       {
+238:         role: 'system',
+239:         content: 'Создай краткое резюме этого разговора (2-3 предложения).'
+240:       },
+241:       {
+242:         role: 'user',
+243:         content: conversation
+244:       }
+245:     ];
+246:     
+247:     try {
+248:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+249:         method: 'POST',
+250:         headers: {
+251:           'Authorization': `Bearer ${this.apiKey}`,
+252:           'Content-Type': 'application/json'
+253:         },
+254:         body: JSON.stringify({
+255:           model: this.model,
+256:           messages,
+257:           temperature: 0.5,
+258:           max_tokens: 200
+259:         })
+260:       });
+261:       
+262:       const data = await response.json();
+263:       return data.choices[0].message.content;
+264:       
+265:     } catch (error) {
+266:       return `Ошибка создания резюме: ${error.message}`;
+267:     }
+268:   }
+269:   
+270:   clearSession(sessionId) {
+271:     this.sessions.delete(sessionId);
+272:   }
+273: }
 </file>
 
 <file path="backend/src/hermes.py">
@@ -2794,274 +2800,304 @@ This section contains the contents of the repository's files.
 349:     padding: var(--ne-spacing-lg) 0;
 350:     max-height: 50vh;
 351:     overflow-y: auto;
-352: }
-353: 
-354: .chat-message {
-355:     display: flex;
-356:     flex-direction: column;
-357:     gap: 4px;
-358:     animation: fadeIn 0.3s ease-out;
-359: }
-360: 
-361: .chat-message.user {
-362:     align-items: flex-end;
-363: }
-364: 
-365: .chat-message.hermes {
-366:     align-items: flex-start;
-367: }
-368: 
-369: .chat-message.system {
-370:     align-items: center;
-371: }
-372: 
-373: .message-bubble {
-374:     max-width: 75%;
-375:     padding: 10px 14px;
-376:     border-radius: 16px;
-377:     font-size: 14px;
-378:     line-height: 1.4;
-379:     word-wrap: break-word;
-380: }
-381: 
-382: .chat-message.user .message-bubble {
-383:     background: var(--ne-white);
-384:     color: var(--ne-black);
-385:     border-bottom-right-radius: 4px;
-386: }
-387: 
-388: .chat-message.hermes .message-bubble {
-389:     background: var(--ne-dark-gray);
-390:     color: var(--ne-white);
-391:     border: 1px solid var(--ne-border);
-392:     border-bottom-left-radius: 4px;
-393: }
-394: 
-395: .chat-message.system .message-bubble {
-396:     background: rgba(255, 255, 255, 0.05);
-397:     color: var(--ne-light-gray);
-398:     border: 1px solid var(--ne-border);
-399:     border-radius: 12px;
-400:     font-size: 12px;
-401:     text-align: center;
-402: }
-403: 
-404: .message-time {
-405:     font-size: 11px;
-406:     color: var(--ne-light-gray);
-407:     padding: 0 8px;
-408: }
-409: 
-410: .message-media {
-411:     max-width: 75%;
-412:     border-radius: 12px;
-413:     overflow: hidden;
-414:     border: 1px solid var(--ne-border);
-415: }
-416: 
-417: .message-media img,
-418: .message-media video {
-419:     width: 100%;
-420:     display: block;
-421: }
-422: 
-423: /* Chat Input Container */
-424: .chat-input-container {
-425:     position: fixed;
-426:     bottom: 60px;
-427:     left: 0;
-428:     right: 0;
-429:     background: var(--ne-black);
-430:     border-top: 1px solid var(--ne-border);
-431:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
-432:     display: flex;
-433:     align-items: center;
-434:     gap: var(--ne-spacing-sm);
-435:     z-index: 100;
-436: }
-437: 
-438: .attach-btn,
-439: .send-btn {
-440:     width: 36px;
-441:     height: 36px;
-442:     border-radius: 50%;
-443:     border: 1px solid var(--ne-border);
-444:     background: var(--ne-dark-gray);
-445:     color: var(--ne-white);
-446:     display: flex;
-447:     align-items: center;
-448:     justify-content: center;
-449:     cursor: pointer;
-450:     transition: all 0.2s;
-451:     font-size: 18px;
-452:     flex-shrink: 0;
-453: }
-454: 
-455: .attach-btn:active,
-456: .send-btn:active {
-457:     transform: scale(0.9);
-458: }
-459: 
-460: .send-btn {
-461:     background: var(--ne-white);
-462:     color: var(--ne-black);
-463:     border-color: var(--ne-white);
-464: }
-465: 
-466: .chat-input {
-467:     flex: 1;
-468:     padding: 10px 14px;
-469:     border-radius: 18px;
-470:     border: 1px solid var(--ne-border);
-471:     background: var(--ne-dark-gray);
-472:     color: var(--ne-white);
-473:     font-size: 14px;
-474:     outline: none;
-475:     transition: border-color 0.2s;
-476: }
-477: 
-478: .chat-input:focus {
-479:     border-color: var(--ne-light-gray);
-480: }
-481: 
-482: /* Attach Menu */
-483: .attach-menu {
-484:     position: fixed;
-485:     bottom: 100px;
-486:     left: var(--ne-spacing-lg);
-487:     right: var(--ne-spacing-lg);
-488:     background: var(--ne-dark-gray);
-489:     border: 1px solid var(--ne-border);
-490:     border-radius: 12px;
-491:     padding: var(--ne-spacing-sm);
-492:     display: grid;
-493:     grid-template-columns: repeat(2, 1fr);
-494:     gap: var(--ne-spacing-sm);
-495:     z-index: 101;
-496:     animation: fadeIn 0.2s ease-out;
-497: }
-498: 
-499: .attach-option {
-500:     display: flex;
-501:     flex-direction: column;
-502:     align-items: center;
-503:     gap: 6px;
-504:     padding: var(--ne-spacing-lg);
-505:     border-radius: 8px;
-506:     border: 1px solid var(--ne-border);
-507:     background: var(--ne-black);
-508:     color: var(--ne-white);
-509:     font-size: 12px;
-510:     cursor: pointer;
-511:     transition: all 0.2s;
-512: }
-513: 
-514: .attach-option:active {
-515:     transform: scale(0.95);
-516: }
-517: 
-518: .attach-icon {
-519:     font-size: 28px;
-520: }
-521: 
-522: /* Video Recording Interface */
-523: .video-recording {
-524:     position: fixed;
-525:     top: 0;
-526:     left: 0;
-527:     right: 0;
-528:     bottom: 0;
-529:     background: var(--ne-black);
-530:     z-index: 200;
-531:     display: flex;
-532:     flex-direction: column;
-533: }
-534: 
-535: .video-preview {
-536:     flex: 1;
-537:     position: relative;
-538:     background: var(--ne-black);
-539: }
-540: 
-541: .video-preview video {
-542:     width: 100%;
-543:     height: 100%;
-544:     object-fit: cover;
-545: }
-546: 
-547: .video-controls {
-548:     position: absolute;
-549:     bottom: 0;
-550:     left: 0;
-551:     right: 0;
-552:     padding: var(--ne-spacing-xl);
-553:     display: flex;
-554:     justify-content: center;
-555:     align-items: center;
-556:     gap: var(--ne-spacing-lg);
-557:     background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-558: }
-559: 
-560: .video-record-btn {
-561:     width: 64px;
-562:     height: 64px;
-563:     border-radius: 50%;
-564:     border: 4px solid var(--ne-white);
-565:     background: transparent;
-566:     cursor: pointer;
-567:     transition: all 0.2s;
-568: }
-569: 
-570: .video-record-btn.recording {
-571:     background: #ff0000;
-572:     border-radius: 12px;
-573: }
-574: 
-575: .camera-switch-btn {
-576:     width: 48px;
-577:     height: 48px;
-578:     border-radius: 50%;
-579:     border: 1px solid var(--ne-border);
-580:     background: rgba(0,0,0,0.5);
-581:     color: var(--ne-white);
-582:     font-size: 24px;
-583:     cursor: pointer;
-584:     display: flex;
+352:     padding-bottom: 120px;
+353: }
+354: 
+355: .chat-message {
+356:     display: flex;
+357:     flex-direction: column;
+358:     gap: 4px;
+359:     animation: fadeIn 0.3s ease-out;
+360: }
+361: 
+362: .chat-message.user {
+363:     align-items: flex-end;
+364: }
+365: 
+366: .chat-message.hermes {
+367:     align-items: flex-start;
+368: }
+369: 
+370: .chat-message.system {
+371:     align-items: center;
+372: }
+373: 
+374: .message-bubble {
+375:     max-width: 75%;
+376:     padding: 10px 14px;
+377:     border-radius: 16px;
+378:     font-size: 14px;
+379:     line-height: 1.4;
+380:     word-wrap: break-word;
+381:     position: relative;
+382: }
+383: 
+384: .chat-message.user .message-bubble {
+385:     background: var(--ne-white);
+386:     color: var(--ne-black);
+387:     border-bottom-right-radius: 4px;
+388: }
+389: 
+390: .chat-message.hermes .message-bubble {
+391:     background: var(--ne-dark-gray);
+392:     color: var(--ne-white);
+393:     border: 1px solid var(--ne-border);
+394:     border-bottom-left-radius: 4px;
+395: }
+396: 
+397: .chat-message.system .message-bubble {
+398:     background: rgba(255, 255, 255, 0.05);
+399:     color: var(--ne-light-gray);
+400:     border: 1px solid var(--ne-border);
+401:     border-radius: 12px;
+402:     font-size: 12px;
+403:     text-align: center;
+404: }
+405: 
+406: .message-time {
+407:     font-size: 10px;
+408:     color: var(--ne-light-gray);
+409:     padding: 0 8px;
+410:     opacity: 0.6;
+411:     text-align: right;
+412: }
+413: 
+414: /* Typing indicator */
+415: .typing-indicator {
+416:     display: flex;
+417:     align-items: center;
+418:     gap: 4px;
+419:     padding: 8px 14px;
+420:     font-size: 12px;
+421:     color: var(--ne-light-gray);
+422: }
+423: 
+424: .typing-indicator .dot {
+425:     width: 6px;
+426:     height: 6px;
+427:     border-radius: 50%;
+428:     background: var(--ne-light-gray);
+429:     animation: typing-bounce 1.4s infinite;
+430: }
+431: 
+432: .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+433: .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+434: 
+435: @keyframes typing-bounce {
+436:     0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+437:     30% { transform: translateY(-4px); opacity: 1; }
+438: }
+439: 
+440: .message-media {
+441:     max-width: 75%;
+442:     border-radius: 12px;
+443:     overflow: hidden;
+444:     border: 1px solid var(--ne-border);
+445: }
+446: 
+447: .message-media img,
+448: .message-media video {
+449:     width: 100%;
+450:     display: block;
+451: }
+452: 
+453: /* Chat Input Container */
+454: .chat-input-container {
+455:     position: fixed;
+456:     bottom: 60px;
+457:     left: 0;
+458:     right: 0;
+459:     background: var(--ne-black);
+460:     border-top: 1px solid var(--ne-border);
+461:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
+462:     display: flex;
+463:     align-items: center;
+464:     gap: var(--ne-spacing-sm);
+465:     z-index: 100;
+466: }
+467: 
+468: .attach-btn,
+469: .send-btn {
+470:     width: 36px;
+471:     height: 36px;
+472:     border-radius: 50%;
+473:     border: 1px solid var(--ne-border);
+474:     background: var(--ne-dark-gray);
+475:     color: var(--ne-white);
+476:     display: flex;
+477:     align-items: center;
+478:     justify-content: center;
+479:     cursor: pointer;
+480:     transition: all 0.2s;
+481:     font-size: 18px;
+482:     flex-shrink: 0;
+483: }
+484: 
+485: .attach-btn:active,
+486: .send-btn:active {
+487:     transform: scale(0.9);
+488: }
+489: 
+490: .send-btn {
+491:     background: var(--ne-white);
+492:     color: var(--ne-black);
+493:     border-color: var(--ne-white);
+494: }
+495: 
+496: .chat-input {
+497:     flex: 1;
+498:     padding: 10px 14px;
+499:     border-radius: 18px;
+500:     border: 1px solid var(--ne-border);
+501:     background: var(--ne-dark-gray);
+502:     color: var(--ne-white);
+503:     font-size: 14px;
+504:     outline: none;
+505:     transition: border-color 0.2s;
+506: }
+507: 
+508: .chat-input:focus {
+509:     border-color: var(--ne-light-gray);
+510: }
+511: 
+512: /* Attach Menu */
+513: .attach-menu {
+514:     position: fixed;
+515:     bottom: 100px;
+516:     left: var(--ne-spacing-lg);
+517:     right: var(--ne-spacing-lg);
+518:     background: var(--ne-dark-gray);
+519:     border: 1px solid var(--ne-border);
+520:     border-radius: 12px;
+521:     padding: var(--ne-spacing-sm);
+522:     display: grid;
+523:     grid-template-columns: repeat(2, 1fr);
+524:     gap: var(--ne-spacing-sm);
+525:     z-index: 101;
+526:     animation: fadeIn 0.2s ease-out;
+527: }
+528: 
+529: .attach-option {
+530:     display: flex;
+531:     flex-direction: column;
+532:     align-items: center;
+533:     gap: 6px;
+534:     padding: var(--ne-spacing-lg);
+535:     border-radius: 8px;
+536:     border: 1px solid var(--ne-border);
+537:     background: var(--ne-black);
+538:     color: var(--ne-white);
+539:     font-size: 12px;
+540:     cursor: pointer;
+541:     transition: all 0.2s;
+542: }
+543: 
+544: .attach-option:active {
+545:     transform: scale(0.95);
+546: }
+547: 
+548: .attach-icon {
+549:     font-size: 28px;
+550: }
+551: 
+552: /* Video Recording Interface */
+553: .video-recording {
+554:     position: fixed;
+555:     top: 0;
+556:     left: 0;
+557:     right: 0;
+558:     bottom: 0;
+559:     background: var(--ne-black);
+560:     z-index: 200;
+561:     display: flex;
+562:     flex-direction: column;
+563: }
+564: 
+565: .video-preview {
+566:     flex: 1;
+567:     position: relative;
+568:     background: var(--ne-black);
+569: }
+570: 
+571: .video-preview video {
+572:     width: 100%;
+573:     height: 100%;
+574:     object-fit: cover;
+575: }
+576: 
+577: .video-controls {
+578:     position: absolute;
+579:     bottom: 0;
+580:     left: 0;
+581:     right: 0;
+582:     padding: var(--ne-spacing-xl);
+583:     display: flex;
+584:     justify-content: center;
 585:     align-items: center;
-586:     justify-content: center;
-587: }
-588: 
-589: /* Responsive */
-590: @media (min-width: 768px) {
-591:     .app-main {
-592:         max-width: none !important;
-593:         margin: 0;
-594:     }
-595:     
-596:     .chat-input-container {
-597:         max-width: none;
-598:         left: 0;
-599:         transform: none;
-600:     }
-601:     
-602:     .attach-menu {
-603:         max-width: none;
-604:         left: var(--ne-spacing-lg);
-605:         transform: none;
-606:     }
-607: }
-608: 
-609: /* Telegram Mini App Desktop Fullscreen Override */
-610: @media (min-width: 768px) {
-611:     html, body, #app, .app-main, .container, .tg-web-app {
-612:         max-width: none !important;
-613:         width: 100vw !important;
-614:         height: var(--tg-viewport-stable-height, 100dvh) !important;
-615:         margin: 0 !important;
-616:         padding: 0 !important;
-617:         overflow-x: hidden !important;
-618:     }
-619: }
+586:     gap: var(--ne-spacing-lg);
+587:     background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+588: }
+589: 
+590: .video-record-btn {
+591:     width: 64px;
+592:     height: 64px;
+593:     border-radius: 50%;
+594:     border: 4px solid var(--ne-white);
+595:     background: transparent;
+596:     cursor: pointer;
+597:     transition: all 0.2s;
+598: }
+599: 
+600: .video-record-btn.recording {
+601:     background: #ff0000;
+602:     border-radius: 12px;
+603: }
+604: 
+605: .camera-switch-btn {
+606:     width: 48px;
+607:     height: 48px;
+608:     border-radius: 50%;
+609:     border: 1px solid var(--ne-border);
+610:     background: rgba(0,0,0,0.5);
+611:     color: var(--ne-white);
+612:     font-size: 24px;
+613:     cursor: pointer;
+614:     display: flex;
+615:     align-items: center;
+616:     justify-content: center;
+617: }
+618: 
+619: /* Responsive */
+620: @media (min-width: 768px) {
+621:     .app-main {
+622:         max-width: none !important;
+623:         margin: 0;
+624:     }
+625:     
+626:     .chat-input-container {
+627:         max-width: none;
+628:         left: 0;
+629:         transform: none;
+630:     }
+631:     
+632:     .attach-menu {
+633:         max-width: none;
+634:         left: var(--ne-spacing-lg);
+635:         transform: none;
+636:     }
+637: }
+638: 
+639: /* Telegram Mini App Desktop Fullscreen Override */
+640: @media (min-width: 768px) {
+641:     html, body, #app, .app-main, .container, .tg-web-app {
+642:         max-width: none !important;
+643:         width: 100vw !important;
+644:         height: var(--tg-viewport-stable-height, 100dvh) !important;
+645:         margin: 0 !important;
+646:         padding: 0 !important;
+647:         overflow-x: hidden !important;
+648:     }
+649: }
 </file>
 
 <file path="index.html">
@@ -3813,302 +3849,328 @@ This section contains the contents of the repository's files.
 627: 
 628:         container.innerHTML = this.chatMessages.map(msg => `
 629:             <div class="chat-message ${msg.sender}">
-630:                 <div class="message-bubble">${this.escapeHtml(msg.text)}</div>
-631:                 <div class="message-time">${this.formatTime(msg.timestamp)}</div>
-632:             </div>
-633:         `).join('');
-634: 
-635:         container.scrollTop = container.scrollHeight;
-636:     }
-637: 
-638:     addChatMessage(sender, text) {
-639:         this.chatMessages.push({
-640:             sender,
-641:             text,
-642:             timestamp: Date.now()
-643:         });
-644:         this.renderChatMessages();
-645:         this.saveCache();
-646:     }
-647: 
-648:     async sendTextMessage() {
-649:         const input = document.getElementById('chat-input');
-650:         if (!input || !input.value.trim()) return;
-651: 
-652:         const text = input.value.trim();
-653:         this.addChatMessage('user', text);
-654:         input.value = '';
-655: 
-656:         telegram.haptic('light');
-657: 
-658:         // Call Hermes backend
-659:         try {
-660:             const workerUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
-661:                 ? new URL('/chat', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
-662:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/chat';
-663: 
-664:             console.log('[Chat] Fetching:', workerUrl);
+630:                 <div class="message-bubble">
+631:                     ${this.escapeHtml(msg.text)}
+632:                     <span class="msg-time">${this.formatTime(msg.timestamp)}</span>
+633:                 </div>
+634:             </div>
+635:         `).join('');
+636: 
+637:         container.scrollTop = container.scrollHeight;
+638:     }
+639: 
+640:     addChatMessage(sender, text) {
+641:         this.chatMessages.push({
+642:             sender,
+643:             text,
+644:             timestamp: Date.now()
+645:         });
+646:         this.renderChatMessages();
+647:         this.saveCache();
+648:     }
+649: 
+650:     showTypingIndicator() {
+651:         const container = document.getElementById('chat-messages');
+652:         if (!container) return;
+653:         const typing = document.createElement('div');
+654:         typing.className = 'typing-indicator';
+655:         typing.id = 'typing-indicator';
+656:         typing.innerHTML = '<span>Гермес печатает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+657:         container.appendChild(typing);
+658:         container.scrollTop = container.scrollHeight;
+659:     }
+660: 
+661:     hideTypingIndicator() {
+662:         const typing = document.getElementById('typing-indicator');
+663:         if (typing) typing.remove();
+664:     }
 665: 
-666:             const response = await fetch(workerUrl, {
-667:                 method: 'POST',
-668:                 mode: 'cors',
-669:                 credentials: 'omit',
-670:                 headers: { 'Content-Type': 'application/json' },
-671:                 body: JSON.stringify({
-672:                     message: text,
-673:                     user_id: telegram.getUserId(),
-674:                     session_id: `tg_${telegram.getUserId()}`,
-675:                     persona: 'hermes'
-676:                 })
-677:             });
-678: 
-679:             console.log('[Chat] Response status:', response.status, response.statusText);
-680: 
-681:             const data = await response.json();
-682: 
-683:             if (data.blocked) {
-684:                 this.addChatMessage('system', `⚠️ ${data.reason}`);
-685:             } else if (data.response) {
-686:                 this.addChatMessage('hermes', data.response);
-687:             } else if (data.error) {
-688:                 this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
-689:             }
-690:         } catch (error) {
-691:             console.error('[Chat] Fetch failed:', error.message, error.stack);
-692:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
-693:         }
-694:     }
-695: 
-696:     showAttachMenu() {
-697:         const menu = document.getElementById('attach-menu');
-698:         if (!menu) return;
+666:     async sendTextMessage() {
+667:         const input = document.getElementById('chat-input');
+668:         if (!input || !input.value.trim()) return;
+669: 
+670:         const text = input.value.trim();
+671:         this.addChatMessage('user', text);
+672:         input.value = '';
+673: 
+674:         telegram.haptic('light');
+675: 
+676:         // Call Hermes backend
+677:         try {
+678:             const workerUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+679:                 ? new URL('/chat', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+680:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/chat';
+681: 
+682:             console.log('[Chat] Fetching:', workerUrl);
+683: 
+684:             // Show typing indicator
+685:             this.showTypingIndicator();
+686: 
+687:             const response = await fetch(workerUrl, {
+688:                 method: 'POST',
+689:                 mode: 'cors',
+690:                 credentials: 'omit',
+691:                 headers: { 'Content-Type': 'application/json' },
+692:                 body: JSON.stringify({
+693:                     message: text,
+694:                     user_id: telegram.getUserId(),
+695:                     session_id: `tg_${telegram.getUserId()}`,
+696:                     persona: 'hermes'
+697:                 })
+698:             });
 699: 
-700:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
-701:         telegram.haptic('light');
-702:     }
-703: 
-704:     hideAttachMenu() {
-705:         const menu = document.getElementById('attach-menu');
-706:         if (menu) menu.style.display = 'none';
-707:     }
-708: 
-709:     attachPhoto() {
-710:         this.hideAttachMenu();
-711:         const input = document.createElement('input');
-712:         input.type = 'file';
-713:         input.accept = 'image/*';
-714:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
-715:         input.click();
-716:     }
-717: 
-718:     attachVideo() {
-719:         this.hideAttachMenu();
-720:         const input = document.createElement('input');
-721:         input.type = 'file';
-722:         input.accept = 'video/*';
-723:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
-724:         input.click();
-725:     }
-726: 
-727:     async recordVideo() {
-728:         this.hideAttachMenu();
-729:         try {
-730:             const stream = await navigator.mediaDevices.getUserMedia({
-731:                 video: { facingMode: this.currentFacingMode },
-732:                 audio: true
-733:             });
-734:             this.currentStream = stream;
-735:             this.showVideoRecorder(stream);
-736:         } catch (error) {
-737:             telegram.showAlert('Нет доступа к камере');
-738:         }
-739:     }
-740: 
-741:     showVideoRecorder(stream) {
-742:         const recorder = document.createElement('div');
-743:         recorder.className = 'video-recording';
-744:         recorder.innerHTML = `
-745:             <div class="video-preview">
-746:                 <video id="video-preview" autoplay playsinline muted></video>
-747:                 <div class="video-controls">
-748:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
-749:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
-750:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
-751:                 </div>
-752:             </div>
-753:         `;
-754:         document.body.appendChild(recorder);
-755: 
-756:         const video = document.getElementById('video-preview');
-757:         video.srcObject = stream;
-758:     }
-759: 
-760:     async switchCamera() {
-761:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
-762:         if (this.currentStream) {
-763:             this.currentStream.getTracks().forEach(track => track.stop());
+700:             console.log('[Chat] Response status:', response.status, response.statusText);
+701: 
+702:             // Hide typing indicator immediately
+703:             this.hideTypingIndicator();
+704: 
+705:             const data = await response.json();
+706: 
+707:             // Update DOM synchronously
+708:             if (data.blocked) {
+709:                 this.addChatMessage('system', `⚠️ ${data.reason}`);
+710:             } else if (data.response) {
+711:                 this.addChatMessage('hermes', data.response);
+712:             } else if (data.error) {
+713:                 this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
+714:             }
+715:         } catch (error) {
+716:             console.error('[Chat] Fetch failed:', error.message, error.stack);
+717:             this.hideTypingIndicator();
+718:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
+719:         }
+720:     }
+721: 
+722:     showAttachMenu() {
+723:         const menu = document.getElementById('attach-menu');
+724:         if (!menu) return;
+725: 
+726:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
+727:         telegram.haptic('light');
+728:     }
+729: 
+730:     hideAttachMenu() {
+731:         const menu = document.getElementById('attach-menu');
+732:         if (menu) menu.style.display = 'none';
+733:     }
+734: 
+735:     attachPhoto() {
+736:         this.hideAttachMenu();
+737:         const input = document.createElement('input');
+738:         input.type = 'file';
+739:         input.accept = 'image/*';
+740:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
+741:         input.click();
+742:     }
+743: 
+744:     attachVideo() {
+745:         this.hideAttachMenu();
+746:         const input = document.createElement('input');
+747:         input.type = 'file';
+748:         input.accept = 'video/*';
+749:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
+750:         input.click();
+751:     }
+752: 
+753:     async recordVideo() {
+754:         this.hideAttachMenu();
+755:         try {
+756:             const stream = await navigator.mediaDevices.getUserMedia({
+757:                 video: { facingMode: this.currentFacingMode },
+758:                 audio: true
+759:             });
+760:             this.currentStream = stream;
+761:             this.showVideoRecorder(stream);
+762:         } catch (error) {
+763:             telegram.showAlert('Нет доступа к камере');
 764:         }
-765:         await this.recordVideo();
-766:     }
-767: 
-768:     toggleVideoRecording() {
-769:         const btn = document.getElementById('record-btn');
-770:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
-771:             this.startVideoRecording();
-772:             btn.classList.add('recording');
-773:         } else {
-774:             this.stopVideoRecording();
-775:             btn.classList.remove('recording');
-776:         }
-777:     }
-778: 
-779:     startVideoRecording() {
-780:         if (!this.currentStream) return;
+765:     }
+766: 
+767:     showVideoRecorder(stream) {
+768:         const recorder = document.createElement('div');
+769:         recorder.className = 'video-recording';
+770:         recorder.innerHTML = `
+771:             <div class="video-preview">
+772:                 <video id="video-preview" autoplay playsinline muted></video>
+773:                 <div class="video-controls">
+774:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
+775:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
+776:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
+777:                 </div>
+778:             </div>
+779:         `;
+780:         document.body.appendChild(recorder);
 781: 
-782:         this.mediaRecorder = new MediaRecorder(this.currentStream);
-783:         this.audioChunks = [];
-784: 
-785:         this.mediaRecorder.ondataavailable = (e) => {
-786:             this.audioChunks.push(e.data);
-787:         };
-788: 
-789:         this.mediaRecorder.onstop = () => {
-790:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
-791:             this.handleVideoUpload(videoBlob);
-792:         };
+782:         const video = document.getElementById('video-preview');
+783:         video.srcObject = stream;
+784:     }
+785: 
+786:     async switchCamera() {
+787:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+788:         if (this.currentStream) {
+789:             this.currentStream.getTracks().forEach(track => track.stop());
+790:         }
+791:         await this.recordVideo();
+792:     }
 793: 
-794:         this.mediaRecorder.start();
-795:     }
-796: 
-797:     stopVideoRecording() {
-798:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-799:             this.mediaRecorder.stop();
-800:         }
-801:     }
-802: 
-803:     closeVideoRecorder() {
-804:         if (this.currentStream) {
-805:             this.currentStream.getTracks().forEach(track => track.stop());
-806:             this.currentStream = null;
-807:         }
-808:         const recorder = document.querySelector('.video-recording');
-809:         if (recorder) recorder.remove();
-810:     }
-811: 
-812:     async shareScreen() {
-813:         this.hideAttachMenu();
-814:         try {
-815:             const stream = await navigator.mediaDevices.getDisplayMedia({
-816:                 video: true
-817:             });
-818:             
-819:             const mediaRecorder = new MediaRecorder(stream);
-820:             const chunks = [];
-821: 
-822:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-823:             mediaRecorder.onstop = () => {
-824:                 const blob = new Blob(chunks, { type: 'video/webm' });
-825:                 this.handleVideoUpload(blob);
-826:                 stream.getTracks().forEach(track => track.stop());
-827:             };
+794:     toggleVideoRecording() {
+795:         const btn = document.getElementById('record-btn');
+796:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
+797:             this.startVideoRecording();
+798:             btn.classList.add('recording');
+799:         } else {
+800:             this.stopVideoRecording();
+801:             btn.classList.remove('recording');
+802:         }
+803:     }
+804: 
+805:     startVideoRecording() {
+806:         if (!this.currentStream) return;
+807: 
+808:         this.mediaRecorder = new MediaRecorder(this.currentStream);
+809:         this.audioChunks = [];
+810: 
+811:         this.mediaRecorder.ondataavailable = (e) => {
+812:             this.audioChunks.push(e.data);
+813:         };
+814: 
+815:         this.mediaRecorder.onstop = () => {
+816:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
+817:             this.handleVideoUpload(videoBlob);
+818:         };
+819: 
+820:         this.mediaRecorder.start();
+821:     }
+822: 
+823:     stopVideoRecording() {
+824:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+825:             this.mediaRecorder.stop();
+826:         }
+827:     }
 828: 
-829:             mediaRecorder.start();
-830:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
-831:         } catch (error) {
-832:             telegram.showAlert('Нет доступа к экрану');
+829:     closeVideoRecorder() {
+830:         if (this.currentStream) {
+831:             this.currentStream.getTracks().forEach(track => track.stop());
+832:             this.currentStream = null;
 833:         }
-834:     }
-835: 
-836:     async handleFileUpload(file, type) {
-837:         if (!file) return;
-838: 
-839:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
-840: 
-841:         const reader = new FileReader();
-842:         reader.onload = async (e) => {
-843:             try {
-844:                 // Upload to backend and get URL
-845:                 const imageUrl = e.target.result; // Base64 data URL
-846: 
-847:                 // Call Hermes image analysis
-848:                 const response = await fetch('/analyze-image', {
-849:                     method: 'POST',
-850:                     headers: { 'Content-Type': 'application/json' },
-851:                     body: JSON.stringify({
-852:                         image_url: imageUrl,
-853:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
-854:                         user_id: telegram.getUserId(),
-855:                         session_id: `tg_${telegram.getUserId()}`
-856:                     })
-857:                 });
-858: 
-859:                 const data = await response.json();
-860: 
-861:                 if (data.response) {
-862:                     this.addChatMessage('hermes', data.response);
-863:                 } else if (data.error) {
-864:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-865:                 }
-866:             } catch (error) {
-867:                 console.error('[App] Upload error:', error);
-868:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
-869:             }
-870:         };
-871:         reader.readAsDataURL(file);
-872:     }
-873: 
-874:     async handleVideoUpload(blob) {
-875:         this.addChatMessage('user', '[🎥 Видеозапись]');
-876:         this.closeVideoRecorder();
-877: 
-878:         const reader = new FileReader();
-879:         reader.onload = async (e) => {
-880:             try {
-881:                 const videoUrl = e.target.result;
-882: 
-883:                 // Call Hermes video analysis
-884:                 const response = await fetch('/analyze-image', {
-885:                     method: 'POST',
-886:                     headers: { 'Content-Type': 'application/json' },
-887:                     body: JSON.stringify({
-888:                         image_url: videoUrl,
-889:                         prompt: 'Проанализируй это видео',
-890:                         user_id: telegram.getUserId(),
-891:                         session_id: `tg_${telegram.getUserId()}`
-892:                     })
-893:                 });
-894: 
-895:                 const data = await response.json();
-896: 
-897:                 if (data.response) {
-898:                     this.addChatMessage('hermes', data.response);
-899:                 } else if (data.error) {
-900:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-901:                 }
-902:             } catch (error) {
-903:                 console.error('[App] Video upload error:', error);
-904:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
-905:             }
-906:         };
-907:         reader.readAsDataURL(blob);
-908:     }
-909: 
-910:     formatTime(timestamp) {
-911:         const date = new Date(timestamp);
-912:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-913:     }
-914: }
-915: 
-916: let app;
-917: document.addEventListener('DOMContentLoaded', () => {
-918:     app = new NeuroEscrowApp();
-919: });
+834:         const recorder = document.querySelector('.video-recording');
+835:         if (recorder) recorder.remove();
+836:     }
+837: 
+838:     async shareScreen() {
+839:         this.hideAttachMenu();
+840:         try {
+841:             const stream = await navigator.mediaDevices.getDisplayMedia({
+842:                 video: true
+843:             });
+844:             
+845:             const mediaRecorder = new MediaRecorder(stream);
+846:             const chunks = [];
+847: 
+848:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+849:             mediaRecorder.onstop = () => {
+850:                 const blob = new Blob(chunks, { type: 'video/webm' });
+851:                 this.handleVideoUpload(blob);
+852:                 stream.getTracks().forEach(track => track.stop());
+853:             };
+854: 
+855:             mediaRecorder.start();
+856:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
+857:         } catch (error) {
+858:             telegram.showAlert('Нет доступа к экрану');
+859:         }
+860:     }
+861: 
+862:     async handleFileUpload(file, type) {
+863:         if (!file) return;
+864: 
+865:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
+866: 
+867:         const reader = new FileReader();
+868:         reader.onload = async (e) => {
+869:             try {
+870:                 // Upload to backend and get URL
+871:                 const imageUrl = e.target.result; // Base64 data URL
+872: 
+873:                 // Call Hermes image analysis
+874:                 const response = await fetch('/analyze-image', {
+875:                     method: 'POST',
+876:                     headers: { 'Content-Type': 'application/json' },
+877:                     body: JSON.stringify({
+878:                         image_url: imageUrl,
+879:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
+880:                         user_id: telegram.getUserId(),
+881:                         session_id: `tg_${telegram.getUserId()}`
+882:                     })
+883:                 });
+884: 
+885:                 const data = await response.json();
+886: 
+887:                 if (data.response) {
+888:                     this.addChatMessage('hermes', data.response);
+889:                 } else if (data.error) {
+890:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+891:                 }
+892:             } catch (error) {
+893:                 console.error('[App] Upload error:', error);
+894:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
+895:             }
+896:         };
+897:         reader.readAsDataURL(file);
+898:     }
+899: 
+900:     async handleVideoUpload(blob) {
+901:         this.addChatMessage('user', '[🎥 Видеозапись]');
+902:         this.closeVideoRecorder();
+903: 
+904:         const reader = new FileReader();
+905:         reader.onload = async (e) => {
+906:             try {
+907:                 const videoUrl = e.target.result;
+908: 
+909:                 // Call Hermes video analysis
+910:                 const response = await fetch('/analyze-image', {
+911:                     method: 'POST',
+912:                     headers: { 'Content-Type': 'application/json' },
+913:                     body: JSON.stringify({
+914:                         image_url: videoUrl,
+915:                         prompt: 'Проанализируй это видео',
+916:                         user_id: telegram.getUserId(),
+917:                         session_id: `tg_${telegram.getUserId()}`
+918:                     })
+919:                 });
 920: 
-921: window.addEventListener('message', (event) => {
-922:     if (event.data && event.data.type === 'bot_data' && app) {
-923:         app.handleBotData(event.data.payload);
-924:     }
-925: });
+921:                 const data = await response.json();
+922: 
+923:                 if (data.response) {
+924:                     this.addChatMessage('hermes', data.response);
+925:                 } else if (data.error) {
+926:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+927:                 }
+928:             } catch (error) {
+929:                 console.error('[App] Video upload error:', error);
+930:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
+931:             }
+932:         };
+933:         reader.readAsDataURL(blob);
+934:     }
+935: 
+936:     formatTime(timestamp) {
+937:         const date = new Date(timestamp);
+938:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+939:     }
+940: }
+941: 
+942: let app;
+943: document.addEventListener('DOMContentLoaded', () => {
+944:     app = new NeuroEscrowApp();
+945: });
+946: 
+947: window.addEventListener('message', (event) => {
+948:     if (event.data && event.data.type === 'bot_data' && app) {
+949:         app.handleBotData(event.data.payload);
+950:     }
+951: });
 </file>
 
 <file path="js/charts.js">

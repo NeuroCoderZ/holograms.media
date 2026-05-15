@@ -34,6 +34,9 @@ export class HermesAgent {
 - Не используй устаревший контекст из предыдущих сессий.
 - Если вопрос неясен или не относится к предоставленному контексту — уточни у пользователя.
 - Не галлюцинируй: если не знаешь ответа — скажи об этом.
+- Отвечай кратко и строго по теме последнего сообщения.
+- Не упоминай технические ограничения API, лимиты моделей, сторонние технологии (CWT, нетгологлифы), если пользователь не спросил о них напрямую.
+- Никогда не начинай ответ с префиксов типа "[Tria]", "[Hermes]", "[AI]" или подобных.
 
 Твой стиль:
 - Профессиональный, но дружелюбный
@@ -73,13 +76,13 @@ export class HermesAgent {
   
   async buildContext(query, userId, sessionId) {
     // Skip RAG for short messages (greetings, etc.)
-    if (!query || query.trim().length < 10) return '';
+    if (!query || query.trim().length < 15) return '';
 
     const contextParts = [];
 
     // Search codebase with similarity threshold
     const codebaseResults = await this.rag.searchCodebase(query, 5);
-    const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= 0.6);
+    const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= 0.65);
     if (filteredCodebase.length > 0) {
       contextParts.push('📚 Релевантный код из базы:');
       filteredCodebase.forEach((result, i) => {
@@ -92,7 +95,7 @@ export class HermesAgent {
 
     // Search memory with similarity threshold
     const memoryResults = await this.rag.searchMemory(query, userId, 4);
-    const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= 0.6);
+    const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= 0.65);
     if (filteredMemory.length > 0) {
       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
       filteredMemory.forEach((result, i) => {
@@ -182,7 +185,10 @@ export class HermesAgent {
       }
       
       const data = await response.json();
-      const assistantMessage = data.choices[0].message.content;
+      let assistantMessage = data.choices[0].message.content;
+      
+      // Sanitize response: remove [Tria] and similar prefixes
+      assistantMessage = assistantMessage.replace(/^\[(Tria|Hermes|AI|Bot)\]\s*/i, '').trim();
       
       // Add to session
       this.addToSession(sessionId, 'user', message);

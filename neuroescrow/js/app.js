@@ -627,8 +627,10 @@ class NeuroEscrowApp {
 
         container.innerHTML = this.chatMessages.map(msg => `
             <div class="chat-message ${msg.sender}">
-                <div class="message-bubble">${this.escapeHtml(msg.text)}</div>
-                <div class="message-time">${this.formatTime(msg.timestamp)}</div>
+                <div class="message-bubble">
+                    ${this.escapeHtml(msg.text)}
+                    <span class="msg-time">${this.formatTime(msg.timestamp)}</span>
+                </div>
             </div>
         `).join('');
 
@@ -643,6 +645,22 @@ class NeuroEscrowApp {
         });
         this.renderChatMessages();
         this.saveCache();
+    }
+
+    showTypingIndicator() {
+        const container = document.getElementById('chat-messages');
+        if (!container) return;
+        const typing = document.createElement('div');
+        typing.className = 'typing-indicator';
+        typing.id = 'typing-indicator';
+        typing.innerHTML = '<span>Гермес печатает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+        container.appendChild(typing);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    hideTypingIndicator() {
+        const typing = document.getElementById('typing-indicator');
+        if (typing) typing.remove();
     }
 
     async sendTextMessage() {
@@ -663,6 +681,9 @@ class NeuroEscrowApp {
 
             console.log('[Chat] Fetching:', workerUrl);
 
+            // Show typing indicator
+            this.showTypingIndicator();
+
             const response = await fetch(workerUrl, {
                 method: 'POST',
                 mode: 'cors',
@@ -678,8 +699,12 @@ class NeuroEscrowApp {
 
             console.log('[Chat] Response status:', response.status, response.statusText);
 
+            // Hide typing indicator immediately
+            this.hideTypingIndicator();
+
             const data = await response.json();
 
+            // Update DOM synchronously
             if (data.blocked) {
                 this.addChatMessage('system', `⚠️ ${data.reason}`);
             } else if (data.response) {
@@ -689,6 +714,7 @@ class NeuroEscrowApp {
             }
         } catch (error) {
             console.error('[Chat] Fetch failed:', error.message, error.stack);
+            this.hideTypingIndicator();
             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
         }
     }
