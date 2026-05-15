@@ -146,15 +146,11 @@ class NeuroEscrowApp {
         
         view.innerHTML = `
             <div class="voice-interface">
+                <div class="voice-title">Гермес</div>
                 <button class="voice-button" id="voice-btn" onclick="app.toggleVoice()">
                     <span class="voice-icon">🎙️</span>
                 </button>
-                <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Гермес</div>
-                <div class="voice-hint">Нажмите и говорите</div>
                 <div class="voice-status" id="voice-status"></div>
-                <div style="font-size:13px;color:var(--ne-light-gray);margin-top:24px;max-width:300px;">
-                    Опишите задачу голосом. Гермес поможет сформулировать и найдёт подходящего нейрокодера.
-                </div>
             </div>
             <div class="chat-messages" id="chat-messages"></div>
         `;
@@ -182,8 +178,9 @@ class NeuroEscrowApp {
 
     async startVoiceRecording() {
         try {
+            const tg = window.Telegram?.WebApp;
             // Try native Telegram voice recording (Bot API 9.6+)
-            if (typeof tg.requestVoiceMessage === 'function') {
+            if (tg && typeof tg.requestVoiceMessage === 'function') {
                 const result = await tg.requestVoiceMessage();
                 
                 if (result && result.file_id) {
@@ -191,12 +188,14 @@ class NeuroEscrowApp {
                 } else {
                     throw new Error('No file_id received');
                 }
-            } else {
+            } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 // Fallback to manual recording
                 this.fallbackToManualRecording();
+            } else {
+                telegram.showAlert('Запись голоса не поддерживается в вашем браузере. Используйте текстовый ввод.');
             }
         } catch (error) {
-            console.error('[NeuroEscrow] Voice recording failed:', error);
+            console.error('[Voice] Recording failed:', error.message);
             this.handleVoiceError(error);
         }
     }
@@ -625,14 +624,18 @@ class NeuroEscrowApp {
         const container = document.getElementById('chat-messages');
         if (!container) return;
 
-        container.innerHTML = this.chatMessages.map(msg => `
+        container.innerHTML = this.chatMessages.map((msg, idx) => {
+            const isLastHermes = idx === this.chatMessages.length - 1 && msg.sender === 'hermes' && msg.text === '';
+            const streamingClass = isLastHermes ? ' streaming' : '';
+            return `
             <div class="chat-message ${msg.sender}">
-                <div class="message-bubble">
+                <div class="message-bubble${streamingClass}">
                     ${this.escapeHtml(msg.text)}
                     <span class="msg-time">${this.formatTime(msg.timestamp)}</span>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         container.scrollTop = container.scrollHeight;
     }
@@ -675,16 +678,18 @@ class NeuroEscrowApp {
 
         // Call Hermes backend
         try {
-            const workerUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
-                ? new URL('/chat', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
-                : 'https://neuroescrow-hermes.neurocoderz.workers.dev/chat';
+            const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+                ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+                : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
 
-            console.log('[Chat] Fetching:', workerUrl);
+            console.log('[Chat] Fetching:', baseUrl + 'chat');
 
             // Show typing indicator
             this.showTypingIndicator();
 
-            const response = await fetch(workerUrl, {
+            // Try streaming first
+            const streamUrl = baseUrl + 'chat/stream';
+            const response = await fetch(streamUrl, {
                 method: 'POST',
                 mode: 'cors',
                 credentials: 'omit',
@@ -699,21 +704,57 @@ class NeuroEscrowApp {
 
             console.log('[Chat] Response status:', response.status, response.statusText);
 
-            // Hide typing indicator immediately
+            // Hide typing indicator
             this.hideTypingIndicator();
 
-            const data = await response.json();
+            const contentType = response.headers.get('content-type') || '';
 
-            // Update DOM synchronously
-            if (data.blocked) {
-                this.addChatMessage('system', `⚠️ ${data.reason}`);
-            } else if (data.response) {
-                this.addChatMessage('hermes', data.response);
-            } else if (data.error) {
-                this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
+            if (contentType.includes('text/event-stream')) {
+                // Streaming response — typewriter effect
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = '';
+
+                // Create empty hermes message bubble for streaming
+                const msgIdx = this.chatMessages.length;
+                this.chatMessages.push({ sender: 'hermes', text: '', timestamp: Date.now() });
+                this.renderChatMessages();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+
+                    for (const line of lines) {
+                        try {
+                            const parsed = JSON.parse(line.replace('data: ', ''));
+                            if (parsed.done) break;
+                            if (parsed.char !== undefined) {
+                                fullText += parsed.char;
+                                this.chatMessages[msgIdx].text = fullText;
+                                this.renderChatMessages();
+                            }
+                        } catch { /* skip malformed SSE lines */ }
+                    }
+                }
+
+                this.saveCache();
+            } else {
+                // Fallback: regular JSON response
+                const data = await response.json();
+
+                if (data.blocked) {
+                    this.addChatMessage('system', `⚠️ ${data.reason}`);
+                } else if (data.response) {
+                    this.addChatMessage('hermes', data.response);
+                } else if (data.error) {
+                    this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
+                }
             }
         } catch (error) {
-            console.error('[Chat] Fetch failed:', error.message, error.stack);
+            console.error('[Chat] Fetch failed:', error.message);
             this.hideTypingIndicator();
             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
         }

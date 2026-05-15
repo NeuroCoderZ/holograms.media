@@ -1,4 +1,4 @@
-/* History Sidebar - unified Glassmorphism выдвижная панель (поверх right-panel) */
+/* History Sidebar - Liquid Glass, поверх right-panel */
 
 .history-sidebar {
     position: absolute;
@@ -7,38 +7,29 @@
     bottom: 0;
     width: 100%;
 
-    /* Layer 1: Base Glass — exact match with .panel from css/_panels.css */
+    /* Liquid Glass — exact match with .panel */
     background: var(--glass-bg) !important;
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-    -moz-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-    border: 1px solid var(--glass-border) !important;
+    border: var(--glass-border) !important;
     border-right: none !important;
     border-radius: 20px 0 0 20px !important;
 
-    box-shadow: none; /* Remove colored shadows */
+    box-shadow: none;
     overflow: hidden;
     display: flex;
     flex-direction: column;
 
-    /* Isolate from parent filter/transform inheritance */
+    /* Isolate from parent, above right-panel (z-index: 1001) */
     isolation: isolate;
-    z-index: 10000; /* Above right-panel (z-index: 1001) */
+    z-index: 10001;
 
-    /* Match .panel transitions (same timing/feel) */
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-in-out;
     visibility: visible;
     pointer-events: auto;
 
-    /* Optimization */
     will-change: transform, opacity;
 
-    /*
-      Closed state (peek):
-      - 12px visible = matches border-radius of the right panel
-      - When right panel is hidden, this must be completely invisible.
-      - JS will toggle .is-open to show it.
-    */
     opacity: 1;
     transform: translateX(calc(100% - 12px));
 }

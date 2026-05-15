@@ -82,6 +82,62 @@ export default {
         });
       }
 
+      // Chat streaming endpoint (SSE)
+      if (url.pathname === '/chat/stream' && request.method === 'POST') {
+        let data;
+        try {
+          data = await request.json();
+        } catch {
+          return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        if (!data || typeof data.message !== 'string') {
+          return new Response(JSON.stringify({ error: 'message field required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes' } = data;
+        const hermes = new HermesAgent(env.CACHE, env);
+
+        // Stream response via SSE
+        const stream = new ReadableStream({
+          async start(controller) {
+            try {
+              const result = await hermes.chat(message, user_id, session_id, persona);
+              const text = result.response || '';
+              
+              // Send character by character
+              for (let i = 0; i < text.length; i++) {
+                controller.enqueue(`data: ${JSON.stringify({ char: text[i], index: i, done: false })}\n\n`);
+              }
+              
+              controller.enqueue(`data: ${JSON.stringify({ done: true, session_id })}\n\n`);
+              controller.close();
+              
+              // Persist session
+              ctx.waitUntil(saveSession(env, session_id, hermes.getSessionHistory(session_id)));
+            } catch (error) {
+              controller.enqueue(`data: ${JSON.stringify({ error: error.message, done: true })}\n\n`);
+              controller.close();
+            }
+          }
+        });
+
+        return new Response(stream, {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+          }
+        });
+      }
+
       // Image analysis
       if (url.pathname === '/analyze-image' && request.method === 'POST') {
         const data = await request.json();

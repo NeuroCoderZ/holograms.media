@@ -20,36 +20,11 @@ export class HermesAgent {
   
   getSystemPrompt(persona = 'hermes') {
     const prompts = {
-      hermes: `Ты — Гермес, интеллектуальный агент-посредник NeuroEscrow.
-
-Твои возможности:
-- Глубокое понимание кодовой базы NeuroEscrow через RAG
-- Помощь в создании и проверке смарт-контрактов
-- Анализ фото и видео (документы, товары)
-- Ведение переговоров между сторонами сделки
-- Модерация контента и блокировка нарушителей
-
-ВАЖНО:
-- Отвечай ТОЛЬКО на последнее сообщение пользователя.
-- Не используй устаревший контекст из предыдущих сессий.
-- Если вопрос неясен или не относится к предоставленному контексту — уточни у пользователя.
-- Не галлюцинируй: если не знаешь ответа — скажи об этом.
-- Отвечай кратко и строго по теме последнего сообщения.
-- Не упоминай технические ограничения API, лимиты моделей, сторонние технологии (CWT, нетгологлифы), если пользователь не спросил о них напрямую.
-- Никогда не начинай ответ с префиксов типа "[Tria]", "[Hermes]", "[AI]" или подобных.
-
-Твой стиль:
-- Профессиональный, но дружелюбный
-- Краткие и точные ответы
-- Используешь эмодзи умеренно
-- Всегда объясняешь технические детали простым языком
-- Отвечай на русском языке, без использования markdown (**, *, #), с правильной пунктуацией, абзацами и отступами. Используй естественный русский стиль.`,
+      hermes: `Ты — Гермес, помощник в NeuroEscrow. Отвечай строго на основе контекста из RAG. Если контекста нет — скажи, что у тебя нет информации. Не используй собственные знания LLM.`,
       
-      client: `Ты — Гермес в режиме помощи клиенту.
-Фокус: помощь в создании сделки, объяснение условий, защита интересов клиента.`,
+      client: `Ты — Гермес, помощник в NeuroEscrow. Отвечай строго на основе контекста из RAG. Фокус: помощь клиенту.`,
       
-      creator: `Ты — Гермес в режиме помощи исполнителю.
-Фокус: помощь в выполнении заказа, проверка требований, защита от недобросовестных заказчиков.`
+      creator: `Ты — Гермес, помощник в NeuroEscrow. Отвечай строго на основе контекста из RAG. Фокус: помощь исполнителю.`
     };
     
     return prompts[persona] || prompts.hermes;
@@ -80,9 +55,9 @@ export class HermesAgent {
 
     const contextParts = [];
 
-    // Search codebase with similarity threshold
+    // Search codebase with similarity threshold 0.7
     const codebaseResults = await this.rag.searchCodebase(query, 5);
-    const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= 0.65);
+    const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= 0.7);
     if (filteredCodebase.length > 0) {
       contextParts.push('📚 Релевантный код из базы:');
       filteredCodebase.forEach((result, i) => {
@@ -93,9 +68,9 @@ export class HermesAgent {
       });
     }
 
-    // Search memory with similarity threshold
+    // Search memory with similarity threshold 0.7
     const memoryResults = await this.rag.searchMemory(query, userId, 4);
-    const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= 0.65);
+    const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= 0.7);
     if (filteredMemory.length > 0) {
       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
       filteredMemory.forEach((result, i) => {
@@ -123,6 +98,16 @@ export class HermesAgent {
     let context = '';
     if (useRag) {
       context = await this.buildContext(message, userId, sessionId);
+    }
+    
+    // RAG-only mode: if no context found, return specific message
+    if (useRag && !context && message.trim().length >= 15) {
+      return {
+        response: 'У меня нет информации об этом в базе знаний. Уточни вопрос.',
+        blocked: false,
+        context_used: false,
+        tokens_used: 0
+      };
     }
     
     // Get history
