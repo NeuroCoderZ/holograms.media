@@ -961,102 +961,106 @@ This section contains the contents of the repository's files.
 318:   }
 319: 
 320:   async computeDOV({ semanticLabel, attentionRaw, computeFlops, userId }) {
-321:     // 1. Embedding смысла жеста (Gemini)
-322:     const embedResp = await fetch(
-323:       `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent?key=${this.env?.GOOGLE_API_KEY}`,
-324:       {
-325:         method: 'POST',
-326:         headers: { 'Content-Type': 'application/json' },
-327:         body: JSON.stringify({
-328:           model: 'models/gemini-embedding-2-preview',
-329:           content: { parts: [{ text: semanticLabel }] },
-330:           outputDimensionality: 3072
-331:         })
-332:       }
-333:     );
-334:     const embedData = await embedResp.json();
-335:     const embedding = embedData.embedding?.values;
-336:     if (!embedding) throw new Error('Embedding failed for semanticLabel');
-337: 
-338:     // 2. SemanticNovelty: поиск похожих смыслов в AstraDB
-339:     const searchResp = await fetch(
-340:       `${this.astra.endpoint}/api/json/v1/default_keyspace/${this.astra.GESTURES_COLLECTION}`,
-341:       {
-342:         method: 'POST',
-343:         headers: {
-344:           'Content-Type': 'application/json',
-345:           'Token': this.astra.token
-346:         },
-347:         body: JSON.stringify({
-348:           find: {
-349:             sort: { $vector: embedding },
-350:             options: { limit: 20, includeSimilarity: true }
-351:           }
-352:         })
-353:       }
-354:     );
-355:     const searchData = await searchResp.json();
-356:     const docs = searchData.data?.documents || [];
-357:     const N = docs.length || 1;
-358:     const k = docs.filter(d => d.$similarity > 0.85).length;
-359:     const semanticNovelty = Math.max(0, 1 - k / N);
-360: 
-361:     // 3. Нормализация метрик
-362:     const attention = Math.min(1, Math.max(0, attentionRaw ?? 0.5));
-363:     const compute = Math.min(1, (computeFlops ?? 0) / 1e9);
+321:     const astraEndpoint = this.env?.ASTRA_DB_ENDPOINT;
+322:     const astraToken = this.env?.ASTRA_DB_TOKEN;
+323:     if (!astraEndpoint || !astraToken) throw new Error('AstraDB credentials missing');
+324: 
+325:     // 1. Embedding смысла жеста (Gemini)
+326:     const embedResp = await fetch(
+327:       `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent?key=${this.env?.GOOGLE_API_KEY}`,
+328:       {
+329:         method: 'POST',
+330:         headers: { 'Content-Type': 'application/json' },
+331:         body: JSON.stringify({
+332:           model: 'models/gemini-embedding-2-preview',
+333:           content: { parts: [{ text: semanticLabel }] },
+334:           outputDimensionality: 3072
+335:         })
+336:       }
+337:     );
+338:     const embedData = await embedResp.json();
+339:     const embedding = embedData.embedding?.values;
+340:     if (!embedding) throw new Error('Embedding failed for semanticLabel');
+341: 
+342:     // 2. SemanticNovelty: поиск похожих смыслов в AstraDB
+343:     const searchResp = await fetch(
+344:       `${astraEndpoint}/api/json/v1/default_keyspace/gestures_semantic_3072`,
+345:       {
+346:         method: 'POST',
+347:         headers: {
+348:           'Content-Type': 'application/json',
+349:           'Token': astraToken
+350:         },
+351:         body: JSON.stringify({
+352:           find: {
+353:             sort: { $vector: embedding },
+354:             options: { limit: 20, includeSimilarity: true }
+355:           }
+356:         })
+357:       }
+358:     );
+359:     const searchData = await searchResp.json();
+360:     const docs = searchData.data?.documents || [];
+361:     const N = docs.length || 1;
+362:     const k = docs.filter(d => d.$similarity > 0.85).length;
+363:     const semanticNovelty = Math.max(0, 1 - k / N);
 364: 
-365:     // 4. Коэффициенты (пока дефолт, далее — DAO)
-366:     const alpha = 0.35, beta = 0.30, gamma = 0.35;
-367:     const dov = alpha * attention + beta * compute + gamma * semanticNovelty;
+365:     // 3. Нормализация метрик
+366:     const attention = Math.min(1, Math.max(0, attentionRaw ?? 0.5));
+367:     const compute = Math.min(1, (computeFlops ?? 0) / 1e9);
 368: 
-369:     // 5. Сохранение эмбеддинга смысла
-370:     const docId = `${userId}_${Date.now()}`;
-371:     await fetch(
-372:       `${this.astra.endpoint}/api/json/v1/default_keyspace/${this.astra.GESTURES_COLLECTION}`,
-373:       {
-374:         method: 'POST',
-375:         headers: { 'Content-Type': 'application/json', 'Token': this.astra.token },
-376:         body: JSON.stringify({
-377:           insertOne: {
-378:             document: {
-379:               _id: docId,
-380:               $vector: embedding,
-381:               semanticLabel,
-382:               userId,
-383:               timestamp: new Date().toISOString()
-384:             }
-385:           }
-386:         })
-387:       }
-388:     );
-389: 
-390:     // 6. Логирование DOV
-391:     await fetch(
-392:       `${this.astra.endpoint}/api/json/v1/default_keyspace/${this.astra.DOV_LOG_COLLECTION}`,
-393:       {
-394:         method: 'POST',
-395:         headers: { 'Content-Type': 'application/json', 'Token': this.astra.token },
-396:         body: JSON.stringify({
-397:           insertOne: {
-398:             document: {
-399:               _id: `dov_${docId}`,
-400:               userId,
-401:               semanticLabel,
-402:               attention,
-403:               compute,
-404:               semanticNovelty,
-405:               dov,
-406:               alpha, beta, gamma,
-407:               timestamp: new Date().toISOString()
-408:             }
-409:           }
-410:         })
-411:       }
-412:     );
-413: 
-414:     return { dov, attention, compute, semanticNovelty, embedding: docId };
-415:   }
-416: }
+369:     // 4. Коэффициенты (пока дефолт, далее — DAO)
+370:     const alpha = 0.35, beta = 0.30, gamma = 0.35;
+371:     const dov = alpha * attention + beta * compute + gamma * semanticNovelty;
+372: 
+373:     // 5. Сохранение эмбеддинга смысла
+374:     const docId = `${userId}_${Date.now()}`;
+375:     await fetch(
+376:       `${astraEndpoint}/api/json/v1/default_keyspace/gestures_semantic_3072`,
+377:       {
+378:         method: 'POST',
+379:         headers: { 'Content-Type': 'application/json', 'Token': astraToken },
+380:         body: JSON.stringify({
+381:           insertOne: {
+382:             document: {
+383:               _id: docId,
+384:               $vector: embedding,
+385:               semanticLabel,
+386:               userId,
+387:               timestamp: new Date().toISOString()
+388:             }
+389:           }
+390:         })
+391:       }
+392:     );
+393: 
+394:     // 6. Логирование DOV
+395:     await fetch(
+396:       `${astraEndpoint}/api/json/v1/default_keyspace/gestures_dov_log`,
+397:       {
+398:         method: 'POST',
+399:         headers: { 'Content-Type': 'application/json', 'Token': astraToken },
+400:         body: JSON.stringify({
+401:           insertOne: {
+402:             document: {
+403:               _id: `dov_${docId}`,
+404:               userId,
+405:               semanticLabel,
+406:               attention,
+407:               compute,
+408:               semanticNovelty,
+409:               dov,
+410:               alpha, beta, gamma,
+411:               timestamp: new Date().toISOString()
+412:             }
+413:           }
+414:         })
+415:       }
+416:     );
+417: 
+418:     return { dov, attention, compute, semanticNovelty, embedding: docId };
+419:   }
+420: }
 </file>
 
 <file path="backend/src/hermes.py">

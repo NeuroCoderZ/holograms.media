@@ -318,6 +318,10 @@ export class HermesAgent {
   }
 
   async computeDOV({ semanticLabel, attentionRaw, computeFlops, userId }) {
+    const astraEndpoint = this.env?.ASTRA_DB_ENDPOINT;
+    const astraToken = this.env?.ASTRA_DB_TOKEN;
+    if (!astraEndpoint || !astraToken) throw new Error('AstraDB credentials missing');
+
     // 1. Embedding смысла жеста (Gemini)
     const embedResp = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent?key=${this.env?.GOOGLE_API_KEY}`,
@@ -337,12 +341,12 @@ export class HermesAgent {
 
     // 2. SemanticNovelty: поиск похожих смыслов в AstraDB
     const searchResp = await fetch(
-      `${this.astra.endpoint}/api/json/v1/default_keyspace/${this.astra.GESTURES_COLLECTION}`,
+      `${astraEndpoint}/api/json/v1/default_keyspace/gestures_semantic_3072`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Token': this.astra.token
+          'Token': astraToken
         },
         body: JSON.stringify({
           find: {
@@ -369,10 +373,10 @@ export class HermesAgent {
     // 5. Сохранение эмбеддинга смысла
     const docId = `${userId}_${Date.now()}`;
     await fetch(
-      `${this.astra.endpoint}/api/json/v1/default_keyspace/${this.astra.GESTURES_COLLECTION}`,
+      `${astraEndpoint}/api/json/v1/default_keyspace/gestures_semantic_3072`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Token': this.astra.token },
+        headers: { 'Content-Type': 'application/json', 'Token': astraToken },
         body: JSON.stringify({
           insertOne: {
             document: {
@@ -389,10 +393,10 @@ export class HermesAgent {
 
     // 6. Логирование DOV
     await fetch(
-      `${this.astra.endpoint}/api/json/v1/default_keyspace/${this.astra.DOV_LOG_COLLECTION}`,
+      `${astraEndpoint}/api/json/v1/default_keyspace/gestures_dov_log`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Token': this.astra.token },
+        headers: { 'Content-Type': 'application/json', 'Token': astraToken },
         body: JSON.stringify({
           insertOne: {
             document: {
