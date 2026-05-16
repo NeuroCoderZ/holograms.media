@@ -963,7 +963,7 @@ This section contains the contents of the repository's files.
 320:   async computeDOV({ semanticLabel, attentionRaw, computeFlops, userId }) {
 321:     // 1. Embedding смысла жеста (Gemini)
 322:     const embedResp = await fetch(
-323:       `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent?key=${this.env?.GEMINI_API_KEY}`,
+323:       `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent?key=${this.env?.GOOGLE_API_KEY}`,
 324:       {
 325:         method: 'POST',
 326:         headers: { 'Content-Type': 'application/json' },

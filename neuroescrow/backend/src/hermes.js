@@ -320,7 +320,7 @@ export class HermesAgent {
   async computeDOV({ semanticLabel, attentionRaw, computeFlops, userId }) {
     // 1. Embedding смысла жеста (Gemini)
     const embedResp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent?key=${this.env?.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent?key=${this.env?.GOOGLE_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
