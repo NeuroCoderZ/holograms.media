@@ -29,22 +29,45 @@ class NeuroEscrowApp {
         if (window.Telegram?.WebApp) {
             const tg = window.Telegram.WebApp;
             tg.ready();
+
             // Bot API 8.0+: requestFullscreen for desktop/immersive, fallback to expand()
+            // Fullscreen requires user gesture on Desktop — handled by button below
             if (typeof tg.requestFullscreen === 'function') {
-                tg.requestFullscreen();
+                tg.requestFullscreen().catch(() => {
+                    // User gesture required on Desktop — fallback to expand()
+                    tg.expand();
+                });
             } else {
                 tg.expand();
             }
+
+            // Listen for fullscreen state changes
+            tg.onEvent('fullscreenChanged', () => {
+                console.log('[TG] fullscreenChanged:', tg.isFullscreen);
+                const fsBtn = document.getElementById('tg-fullscreen-btn');
+                if (fsBtn) fsBtn.style.display = tg.isFullscreen ? 'none' : 'inline-block';
+            });
+
+            // Handle fullscreen failure gracefully
+            tg.onEvent('fullscreenFailed', (reason) => {
+                console.warn('[TG] fullscreenFailed:', reason);
+                tg.expand(); // Fallback
+            });
+
+            // Safe area insets — apply CSS padding to respect device notches
+            this.applySafeAreaInsets();
+            tg.onEvent('safeAreaChanged', () => this.applySafeAreaInsets());
+            tg.onEvent('contentSafeAreaChanged', () => this.applySafeAreaInsets());
         }
         this.userData = telegram.getUser();
         this.updateHeader();
         await this.loadCache();
         this.navigate('hermes');
-        
+
         window.addEventListener('ton:statusChange', (e) => {
             this.onTonStatusChange(e.detail);
         });
-        
+
         this.requestDataFromBot();
 
         // Fullscreen button handler (user gesture required on TG Desktop)
@@ -53,16 +76,15 @@ class NeuroEscrowApp {
             const tg = window.Telegram.WebApp;
             if (typeof tg.requestFullscreen === 'function') {
                 fsBtn.addEventListener('click', () => {
-                    tg.requestFullscreen().catch(e => console.warn('[TG] Fullscreen blocked:', e));
+                    tg.requestFullscreen().catch(e => {
+                        console.warn('[TG] Fullscreen blocked:', e);
+                        tg.expand(); // Fallback
+                    });
                 });
                 // Hide button if already in fullscreen
                 if (tg.isFullscreen === true) {
                     fsBtn.style.display = 'none';
                 }
-                // Listen for fullscreen changes
-                tg.onEvent('fullscreenChanged', () => {
-                    if (fsBtn) fsBtn.style.display = tg.isFullscreen ? 'none' : 'inline-block';
-                });
             } else {
                 fsBtn.style.display = 'none';
             }
@@ -125,6 +147,30 @@ class NeuroEscrowApp {
             nameEl.textContent = name;
         } else {
             nameEl.textContent = 'Гость';
+        }
+    }
+
+    applySafeAreaInsets() {
+        const tg = window.Telegram?.WebApp;
+        if (!tg) return;
+
+        // Apply safe area insets as CSS custom properties
+        // Docs: https://docs.telegram-mini-apps.com/packages/tma-js-sdk/features/viewport
+        const root = document.documentElement;
+        if (tg.safeAreaInset) {
+            root.style.setProperty('--tg-safe-area-inset-top', `${tg.safeAreaInset.top}px`);
+            root.style.setProperty('--tg-safe-area-inset-bottom', `${tg.safeAreaInset.bottom}px`);
+            root.style.setProperty('--tg-safe-area-inset-left', `${tg.safeAreaInset.left}px`);
+            root.style.setProperty('--tg-safe-area-inset-right', `${tg.safeAreaInset.right}px`);
+        }
+        if (tg.contentSafeAreaInset) {
+            root.style.setProperty('--tg-content-safe-area-inset-top', `${tg.contentSafeAreaInset.top}px`);
+            root.style.setProperty('--tg-content-safe-area-inset-bottom', `${tg.contentSafeAreaInset.bottom}px`);
+        }
+
+        // Use viewportStableHeight for layout (doesn't change during gestures)
+        if (tg.viewportStableHeight) {
+            root.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight}px`);
         }
     }
 

@@ -222,3 +222,84 @@ export async function initAuth() {
 export function getJwtToken() {
   return localStorage.getItem('jwtToken');
 }
+
+/**
+ * Проверяет, истёк ли JWT токен.
+ * @param {string} token - JWT токен
+ * @returns {boolean} true если токен истёк или невалиден
+ */
+export function isJwtExpired(token) {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const now = Date.now() / 1000;
+    // 60-секундный буфер для предотвращения race condition
+    return payload.exp < (now + 60);
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Глобальный 401-interceptor для fetch-запросов.
+ * Автоматически редиректит на re-auth при получении 401.
+ * @param {Response} response - Ответ от fetch
+ * @param {string} url - URL запроса
+ * @returns {boolean} true если нужно повторить запрос после re-auth
+ */
+export async function handle401Response(response, url) {
+  if (response.status !== 401) return false;
+
+  console.warn('[Auth] 401 Unauthorized from:', url);
+
+  // Проверяем, не является ли это запросом к auth endpoint (чтобы избежать бесконечного цикла)
+  if (url?.includes('/auth/')) {
+    localStorage.removeItem('jwtToken');
+    state.isAuthenticated = false;
+    updateAuthUI();
+    return false;
+  }
+
+  // Проверяем, не истёк ли токен
+  const token = getJwtToken();
+  if (isJwtExpired(token)) {
+    console.warn('[Auth] JWT expired — triggering re-auth');
+    localStorage.removeItem('jwtToken');
+    state.isAuthenticated = false;
+    updateAuthUI();
+
+    // Показываем уведомление с предложением переавторизоваться
+    showNotification('Сессия истекла. Войдите снова через Google.', 'warning');
+
+    // Показываем модалку входа
+    const modal = document.getElementById('start-session-modal');
+    if (modal) modal.style.display = 'flex';
+
+    // Dispatch event для других модулей
+    import('../core/eventBus.js').then(({ default: eventBus }) => {
+      eventBus.emit('auth:sessionExpired', { url });
+    });
+  }
+
+  return false;
+}
+
+/**
+ * Обёртка над fetch с автоматической обработкой 401.
+ * @param {string} url - URL запроса
+ * @param {object} options - Опции fetch
+ * @returns {Promise<Response>}
+ */
+export async function fetchWithAuth(url, options = {}) {
+  const token = getJwtToken();
+  if (token && !options.headers?.['Authorization']) {
+    options.headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    };
+  }
+
+  const response = await fetch(url, options);
+  await handle401Response(response, url);
+  return response;
+}

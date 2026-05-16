@@ -3,6 +3,62 @@
 // Указываем базовый URL API из переменных окружения Vite с фоллбеком для локальной разработки
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
+// ─── Fallback: CloudStorage / DeviceStorage ─────────────────────────────
+// Используется когда бэкенд Koyeb недоступен (404, 503, network error)
+// Docs: https://docs.telegram-mini-apps.com/packages/tma-js-sdk/features/storage
+
+async function cloudStorageGet(key) {
+    if (window.Telegram?.WebApp?.CloudStorage) {
+        return new Promise((res, rej) =>
+            Telegram.WebApp.CloudStorage.getItem(key, (err, val) => err ? rej(err) : res(val))
+        );
+    }
+    return localStorage.getItem(key);
+}
+
+async function cloudStorageSet(key, value) {
+    if (window.Telegram?.WebApp?.CloudStorage) {
+        return new Promise((res, rej) =>
+            Telegram.WebApp.CloudStorage.setItem(key, value, (err, ok) => err ? rej(err) : res(ok))
+        );
+    }
+    localStorage.setItem(key, value);
+}
+
+async function getFallbackSessions() {
+    try {
+        const raw = await cloudStorageGet('ne_chat_sessions');
+        return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+}
+
+async function saveFallbackSession(session) {
+    try {
+        const sessions = await getFallbackSessions();
+        const idx = sessions.findIndex(s => s.id === session.id);
+        if (idx >= 0) sessions[idx] = session;
+        else sessions.unshift(session);
+        if (sessions.length > 20) sessions.pop(); // limit
+        await cloudStorageSet('ne_chat_sessions', JSON.stringify(sessions));
+    } catch (e) { console.warn('[apiService] Fallback save failed:', e); }
+}
+
+async function getFallbackHistory(sessionId) {
+    try {
+        const raw = await cloudStorageGet(`ne_chat_history_${sessionId}`);
+        return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+}
+
+async function saveFallbackMessage(sessionId, msg) {
+    try {
+        const history = await getFallbackHistory(sessionId);
+        history.push(msg);
+        if (history.length > 100) history.splice(0, history.length - 100); // keep last 100
+        await cloudStorageSet(`ne_chat_history_${sessionId}`, JSON.stringify(history));
+    } catch (e) { console.warn('[apiService] Fallback message save failed:', e); }
+}
+
 /**
  * Отправляет сообщение в чат на бэкенд и поддерживает стриминг ответа.
  * @param {string} text - Текст сообщения от пользователя.
@@ -215,15 +271,15 @@ export async function getChatHistory(sessionId, idToken, limit = 50) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-            console.error(`[apiService] History request failed:`, errorData);
-            throw new Error(`History request failed: ${errorData.detail || response.statusText}`);
+            // Fallback to CloudStorage/DeviceStorage when backend unavailable
+            console.warn(`[apiService] Backend returned ${response.status}, using fallback storage`);
+            return await getFallbackHistory(sessionId);
         }
 
         return await response.json();
     } catch (error) {
-        console.error('[apiService] Error fetching chat history:', error);
-        return [];
+        console.error('[apiService] Error fetching chat history, using fallback:', error.message);
+        return await getFallbackHistory(sessionId);
     }
 }
 
@@ -247,14 +303,17 @@ export async function listChatSessions(idToken, limit = 10) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-            console.error(`[apiService] Sessions request failed:`, errorData);
-            throw new Error(`Sessions request failed: ${errorData.detail || response.statusText}`);
+            // Fallback to CloudStorage/DeviceStorage when backend unavailable
+            console.warn(`[apiService] Backend returned ${response.status}, using fallback storage`);
+            return await getFallbackSessions();
         }
 
         return await response.json();
     } catch (error) {
-        console.error('[apiService] Error fetching chat sessions:', error);
-        return [];
+        console.error('[apiService] Error fetching chat sessions, using fallback:', error.message);
+        return await getFallbackSessions();
     }
 }
+
+// Export fallback helpers for use by other modules
+export { saveFallbackSession, saveFallbackMessage };
