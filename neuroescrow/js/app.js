@@ -33,10 +33,16 @@ class NeuroEscrowApp {
             // Bot API 8.0+: requestFullscreen for desktop/immersive, fallback to expand()
             // Fullscreen requires user gesture on Desktop — handled by button below
             if (typeof tg.requestFullscreen === 'function') {
-                tg.requestFullscreen().catch(() => {
-                    // User gesture required on Desktop — fallback to expand()
+                const fsResult = tg.requestFullscreen();
+                if (fsResult && typeof fsResult.catch === 'function') {
+                    fsResult.catch(() => {
+                        // User gesture required on Desktop — fallback to expand()
+                        tg.expand();
+                    });
+                } else {
+                    // requestFullscreen returned undefined — fallback to expand()
                     tg.expand();
-                });
+                }
             } else {
                 tg.expand();
             }
@@ -76,10 +82,15 @@ class NeuroEscrowApp {
             const tg = window.Telegram.WebApp;
             if (typeof tg.requestFullscreen === 'function') {
                 fsBtn.addEventListener('click', () => {
-                    tg.requestFullscreen().catch(e => {
-                        console.warn('[TG] Fullscreen blocked:', e);
+                    const fsResult = tg.requestFullscreen();
+                    if (fsResult && typeof fsResult.catch === 'function') {
+                        fsResult.catch(e => {
+                            console.warn('[TG] Fullscreen blocked:', e);
+                            tg.expand(); // Fallback
+                        });
+                    } else {
                         tg.expand(); // Fallback
-                    });
+                    }
                 });
                 // Hide button if already in fullscreen
                 if (tg.isFullscreen === true) {

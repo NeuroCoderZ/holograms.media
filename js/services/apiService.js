@@ -25,6 +25,21 @@ async function cloudStorageSet(key, value) {
     localStorage.setItem(key, value);
 }
 
+// ─── 401 Interceptor ────────────────────────────────────────────────────
+// Динамический импорт чтобы избежать circular dependency с auth.js
+
+async function handleApi401(response, url) {
+    if (response.status !== 401) return false;
+    console.warn('[apiService] 401 Unauthorized from:', url);
+    try {
+        const { handle401Response } = await import('../core/auth.js');
+        await handle401Response(response, url);
+    } catch (e) {
+        console.warn('[apiService] 401 handler import failed:', e);
+    }
+    return true;
+}
+
 async function getFallbackSessions() {
     try {
         const raw = await cloudStorageGet('ne_chat_sessions');
@@ -85,6 +100,12 @@ export async function sendChatMessage(text, idToken, selectedModel = null, onChu
                 metadata: selectedModel ? { llm_model: selectedModel } : {}
             }),
         });
+
+        if (response.status === 401) {
+            await handleApi401(response, chatUrl);
+            const errorData = await response.json().catch(() => ({ detail: 'Unauthorized' }));
+            throw new Error(`Требуется авторизация: ${errorData.detail || response.statusText}`);
+        }
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ detail: 'Unknown chat error' }));
@@ -189,6 +210,12 @@ export async function uploadChunk(userId, file, idToken) {
             body: formData,
         });
 
+        if (response.status === 401) {
+            await handleApi401(response, uploadUrl);
+            const errorData = await response.json().catch(() => ({ detail: 'Unauthorized' }));
+            throw new Error(`Требуется авторизация: ${errorData.detail || response.statusText}`);
+        }
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ detail: 'Unknown error during upload, and error response parsing failed.' }));
             console.error(`[apiService] Upload failed with status ${response.status}:`, errorData);
@@ -228,6 +255,12 @@ export async function getPresignedUrl(filename, contentType, idToken) {
             },
             body: JSON.stringify({ filename, content_type: contentType }),
         });
+
+        if (response.status === 401) {
+            await handleApi401(response, requestUrl);
+            const errorData = await response.json().catch(() => ({ detail: 'Unauthorized' }));
+            throw new Error(`Требуется авторизация: ${errorData.detail || response.statusText}`);
+        }
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ detail: 'Failed to get presigned URL and error response parsing failed.' }));
@@ -270,6 +303,11 @@ export async function getChatHistory(sessionId, idToken, limit = 50) {
             },
         });
 
+        if (response.status === 401) {
+            await handleApi401(response, historyUrl);
+            return await getFallbackHistory(sessionId);
+        }
+
         if (!response.ok) {
             // Fallback to CloudStorage/DeviceStorage when backend unavailable
             console.warn(`[apiService] Backend returned ${response.status}, using fallback storage`);
@@ -301,6 +339,11 @@ export async function listChatSessions(idToken, limit = 10) {
                 'Authorization': `Bearer ${idToken}`,
             },
         });
+
+        if (response.status === 401) {
+            await handleApi401(response, sessionsUrl);
+            return await getFallbackSessions();
+        }
 
         if (!response.ok) {
             // Fallback to CloudStorage/DeviceStorage when backend unavailable
