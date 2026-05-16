@@ -7,6 +7,88 @@ let gridContainer = null;
 let initialLayout = { top: 0, left: 0, width: 0, height: 0 };
 let currentAnimation = null;
 
+// ─── Race Condition Fix: MutationObserver + Retry ─────────────────────
+// Ждём готовности DOM элементов перед первым вызовом updateHologramLayout
+let layoutReady = false;
+let layoutRetryCount = 0;
+const MAX_LAYOUT_RETRIES = 10;
+const LAYOUT_RETRY_DELAY = 200; // ms
+
+/**
+ * Проверяет, готовы ли все необходимые элементы для рендеринга.
+ */
+function areLayoutElementsReady(appState) {
+    return !!(
+        gridContainer &&
+        appState?.renderer &&
+        appState?.hologramRendererInstance &&
+        typeof appState.hologramRendererInstance.getHologramPivot === 'function'
+    );
+}
+
+/**
+ * Пытается вызвать updateHologramLayout с retry-механизмом.
+ * Если элементы не готовы — устанавливает MutationObserver и ждёт.
+ */
+export function scheduleLayoutUpdate(appState) {
+    if (layoutReady) {
+        updateHologramLayout(appState);
+        return;
+    }
+
+    if (areLayoutElementsReady(appState)) {
+        layoutReady = true;
+        console.log('[LayoutManager] Layout elements ready, proceeding with update.');
+        updateHologramLayout(appState);
+        return;
+    }
+
+    layoutRetryCount++;
+    if (layoutRetryCount > MAX_LAYOUT_RETRIES) {
+        console.warn('[LayoutManager] Max retries reached. Elements may never be ready.');
+        return;
+    }
+
+    console.log(`[LayoutManager] Elements not ready, retry ${layoutRetryCount}/${MAX_LAYOUT_RETRIES} in ${LAYOUT_RETRY_DELAY}ms`);
+
+    // MutationObserver на #grid-container и основные панели
+    const observerTargets = [
+        document.getElementById('grid-container'),
+        document.getElementById('left-panel'),
+        document.getElementById('right-panel'),
+        document.body
+    ].filter(Boolean);
+
+    const observer = new MutationObserver((mutations, obs) => {
+        if (areLayoutElementsReady(appState)) {
+            obs.disconnect();
+            layoutReady = true;
+            layoutRetryCount = 0;
+            console.log('[LayoutManager] MutationObserver detected elements ready.');
+            updateHologramLayout(appState);
+        }
+    });
+
+    observerTargets.forEach(target => {
+        observer.observe(target, { childList: true, subtree: true, attributes: true });
+    });
+
+    // Fallback retry через таймаут (если MutationObserver не сработал)
+    setTimeout(() => {
+        observer.disconnect();
+        if (!layoutReady) {
+            scheduleLayoutUpdate(appState);
+        }
+    }, LAYOUT_RETRY_DELAY * layoutRetryCount);
+}
+
+// Экспорт для сброса состояния при навигации/релоаде
+export function resetLayoutState() {
+    layoutReady = false;
+    layoutRetryCount = 0;
+    gridContainer = null;
+}
+
 function updateRendererAndCamera(appState, newWidth, newHeight) { // Added appState
     if (appState.renderer) {
         appState.renderer.setSize(newWidth, newHeight);
@@ -211,8 +293,13 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
  */
 export function updateHologramLayout(appState, overrideWidth = null, overrideHeight = null) {
     if (!gridContainer) gridContainer = document.getElementById('grid-container');
-    if (!gridContainer || !appState.renderer || !appState.hologramRendererInstance || typeof appState.hologramRendererInstance.getHologramPivot !== 'function') {
-        console.warn('[LayoutManager] Skipping updateHologramLayout: Essential elements not ready.');
+
+    // Graceful check — если элементы не готовы, не спамим варнингами
+    if (!gridContainer || !appState?.renderer || !appState?.hologramRendererInstance || typeof appState.hologramRendererInstance?.getHologramPivot !== 'function') {
+        // Только первый лог, последующие — silent
+        if (!layoutReady && layoutRetryCount <= 1) {
+            console.warn('[LayoutManager] Skipping updateHologramLayout: Essential elements not ready. Scheduling retry...');
+        }
         return;
     }
 

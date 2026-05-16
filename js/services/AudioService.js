@@ -218,6 +218,7 @@ class AudioService {
                         type: 'WASM_BUFFER',
                         buffer: bufferToSend
                     }, [bufferToSend]); // TRANSFER the clone, NOT the original
+                    console.log(`[AudioService] WASM buffer sent: ${bufferToSend.byteLength} bytes`);
                 } else {
                     console.error('[AudioService] WASM buffer is empty or not loaded. Reloading...');
                     this.loadWasmModule();

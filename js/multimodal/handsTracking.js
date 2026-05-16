@@ -115,9 +115,21 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
 
                 state.multimodal.cameraInstance = new Camera(videoElement, {
                     onFrame: async () => {
+                        // 0. Stream health check — graceful degradation if camera lost
+                        const stream = videoElement.srcObject;
+                        if (!stream || !stream.active) {
+                            if (Date.now() - lastErrorTime > 5000) {
+                                console.warn('[HandsTracking] Camera stream inactive, skipping frame');
+                                lastErrorTime = Date.now();
+                            }
+                            isProcessing = false;
+                            return;
+                        }
+
                         // 1. Safety Check: Dimensions
                         if (videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
                             // Video not ready yet, skip silently
+                            isProcessing = false;
                             return;
                         }
 
@@ -129,7 +141,7 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                             if (!handsInstance || typeof handsInstance.send !== 'function') {
                                 // Throttle generic warning
                                 if (Date.now() - lastErrorTime > 5000) {
-                                    console.warn("MediaPipe Hands instance not available, skipping frame");
+                                    console.warn('[HandsTracking] MediaPipe Hands instance not available, skipping frame');
                                     lastErrorTime = Date.now();
                                 }
                                 isProcessing = false;
@@ -142,14 +154,18 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                             if (lastErrorTime !== 0) lastErrorTime = 0;
 
                         } catch (handsError) {
-                            // 3. Error Throttling (once per 2 seconds)
-                            if (Date.now() - lastErrorTime > 2000) {
-                                console.error("Error in Camera onFrame handler:", handsError);
+                            // 3. Error Throttling (once per 5 seconds for less noise)
+                            if (Date.now() - lastErrorTime > 5000) {
+                                console.error('[HandsTracking] Camera onFrame error:', handsError.name, handsError.message);
                                 lastErrorTime = Date.now();
 
-                                // Optional: if error is fatal (WASM crash), we might want to stop/restart
-                                if (handsError.message && handsError.message.includes('memory')) {
-                                    console.error("Critical WASM error detected. Suggest reloading.");
+                                // Graceful degradation: if error is fatal (WASM crash), stop camera
+                                if (handsError.message && (handsError.message.includes('memory') || handsError.message.includes('aborted'))) {
+                                    console.error('[HandsTracking] Critical WASM error — stopping camera to prevent crash loop');
+                                    try {
+                                        state.multimodal.cameraInstance?.stop();
+                                        state.multimodal.cameraStarted = false;
+                                    } catch (e) { /* ignore stop errors */ }
                                 }
                             }
                         } finally {
