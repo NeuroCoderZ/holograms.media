@@ -2717,955 +2717,1092 @@ This section contains the contents of the repository's files.
 </file>
 
 <file path="css/style.css">
-  1: /* NeuroEscrow — Liquid Glass Design System v0.20.509
-  2:  * Colors: Black, White, Silver, Purple, Red, Gold (metallic accents)
-  3:  * Style: Frosted glass, matte transparency, blur, refraction
-  4:  */
-  5: 
-  6: :root {
-  7:     /* Core palette */
-  8:     --ne-black: #000000;
-  9:     --ne-dark: #1a1a1f;
- 10:     --ne-gray: #3a3a42;
- 11:     --ne-light-gray: #b0b0b8;
- 12:     --ne-white: #f0f0f5;
- 13:     --ne-silver: #c0c0c8;
- 14:     
- 15:     /* Accent colors */
- 16:     --ne-purple: #8B5CF6;
- 17:     --ne-red: #EF4444;
- 18:     --ne-gold: #FFD700;
- 19:     
- 20:     /* Liquid Glass (Apple iOS 26 style) */
- 21:     --glass-bg: rgba(255, 255, 255, 0.04);
- 22:     --glass-bg-light: rgba(255, 255, 255, 0.08);
- 23:     --glass-bg-dark: rgba(0, 0, 0, 0.4);
- 24:     --glass-border: 1px solid rgba(255, 255, 255, 0.08);
- 25:     --glass-border-light: 1px solid rgba(255, 255, 255, 0.12);
- 26:     --glass-blur: 24px;
- 27:     --glass-saturate: 180%;
- 28:     --glass-radius: 16px;
- 29:     --glass-radius-sm: 12px;
- 30:     --glass-radius-lg: 24px;
- 31:     --glass-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
- 32:     
- 33:     /* Metallic gradient for mic icon */
- 34:     --metallic-gradient: linear-gradient(135deg, #808080 0%, #C0C0C0 30%, #A855F7 55%, #EF4444 75%, #404040 100%);
- 35:     
- 36:     /* Spacing */
- 37:     --ne-spacing-xs: 4px;
- 38:     --ne-spacing-sm: 8px;
- 39:     --ne-spacing-md: 12px;
- 40:     --ne-spacing-lg: 16px;
- 41:     --ne-spacing-xl: 24px;
- 42: }
- 43: 
- 44: * {
- 45:     margin: 0;
- 46:     padding: 0;
- 47:     box-sizing: border-box;
- 48:     -webkit-tap-highlight-color: transparent;
- 49: }
- 50: 
- 51: html, body {
- 52:     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
- 53:     background: var(--ne-black);
- 54:     color: var(--ne-white);
- 55:     height: var(--tg-viewport-stable-height, 100dvh);
- 56:     width: 100vw;
- 57:     margin: 0;
- 58:     padding: 0;
- 59:     overflow-x: hidden;
- 60: }
- 61: 
- 62: #app {
- 63:     display: flex;
- 64:     flex-direction: column;
- 65:     height: var(--tg-viewport-stable-height, 100dvh);
- 66:     width: 100vw;
- 67:     position: relative;
- 68: }
- 69: 
- 70: /* ===== HEADER ===== */
- 71: .app-header {
- 72:     background: rgba(0, 0, 0, 0.6);
- 73:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
- 74:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
- 75:     border-bottom: var(--glass-border);
- 76:     padding: var(--ne-spacing-md) var(--ne-spacing-lg);
- 77:     flex-shrink: 0;
- 78:     z-index: 100;
- 79: }
- 80: 
- 81: .header-content {
- 82:     display: flex;
- 83:     justify-content: space-between;
- 84:     align-items: center;
- 85: }
- 86: 
- 87: .app-header h1 {
- 88:     font-size: 18px;
- 89:     font-weight: 600;
- 90:     color: var(--ne-white);
- 91:     letter-spacing: -0.5px;
- 92: }
- 93: 
- 94: .user-info {
- 95:     font-size: 13px;
- 96:     color: var(--ne-light-gray);
- 97: }
- 98: 
- 99: /* ===== MAIN CONTENT ===== */
-100: .app-main {
-101:     flex: 1;
-102:     overflow-y: auto;
-103:     overflow-x: hidden;
-104:     padding: var(--ne-spacing-lg);
-105:     padding-bottom: 80px;
-106:     -webkit-overflow-scrolling: touch;
-107: }
-108: 
-109: /* ===== VOICE INTERFACE (Glass Microphone) ===== */
-110: .voice-interface {
-111:     display: flex;
-112:     flex-direction: column;
-113:     align-items: center;
-114:     justify-content: center;
-115:     min-height: 180px;
-116:     text-align: center;
-117:     position: relative;
-118:     padding: var(--ne-spacing-xl) 0;
-119: }
-120: 
-121: .voice-button {
-122:     width: 140px;
-123:     height: 140px;
-124:     border-radius: 50%;
-125:     /* Thick glass chunk */
-126:     background: linear-gradient(145deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 50%, rgba(0,0,0,0.2) 100%);
-127:     backdrop-filter: blur(24px) saturate(180%);
-128:     -webkit-backdrop-filter: blur(24px) saturate(180%);
-129:     border: 1px solid rgba(255, 255, 255, 0.15);
-130:     /* Inner bevel + outer shadow */
-131:     box-shadow: 
-132:         inset 0 2px 0 rgba(255, 255, 255, 0.2),
-133:         inset 0 -2px 4px rgba(0, 0, 0, 0.3),
-134:         0 8px 32px rgba(0, 0, 0, 0.4),
-135:         0 0 0 1px rgba(255, 255, 255, 0.05);
-136:     display: flex;
-137:     align-items: center;
-138:     justify-content: center;
-139:     cursor: pointer;
-140:     transition: var(--glass-transition);
-141:     position: relative;
-142:     overflow: hidden;
-143: }
-144: 
-145: /* Glass highlight arc */
-146: .voice-button::before {
-147:     content: '';
-148:     position: absolute;
-149:     top: 4px;
-150:     left: 10%;
-151:     right: 10%;
-152:     height: 40%;
-153:     border-radius: 50%;
-154:     background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
-155:     pointer-events: none;
-156: }
-157: 
-158: .voice-button:active {
-159:     transform: scale(0.96);
-160:     box-shadow: 
-161:         inset 0 2px 8px rgba(0, 0, 0, 0.5),
-162:         0 4px 16px rgba(0, 0, 0, 0.3);
-163: }
-164: 
-165: .voice-button.recording {
-166:     border-color: var(--ne-purple);
-167:     box-shadow: 
-168:         inset 0 2px 0 rgba(255, 255, 255, 0.2),
-169:         inset 0 -2px 4px rgba(0, 0, 0, 0.3),
-170:         0 0 24px rgba(139, 92, 246, 0.3),
-171:         0 8px 32px rgba(0, 0, 0, 0.4);
-172:     animation: pulse-glass 1.5s ease-in-out infinite;
-173: }
-174: 
-175: @keyframes pulse-glass {
-176:     0%, 100% { box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.3), 0 0 24px rgba(139,92,246,0.3), 0 8px 32px rgba(0,0,0,0.4); }
-177:     50% { box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.3), 0 0 40px rgba(139,92,246,0.5), 0 8px 32px rgba(0,0,0,0.4); }
-178: }
-179: 
-180: /* Metallic microphone icon */
-181: .voice-icon {
-182:     font-size: 56px;
-183:     background: var(--metallic-gradient);
-184:     -webkit-background-clip: text;
-185:     -webkit-text-fill-color: transparent;
-186:     background-clip: text;
-187:     filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4));
-188:     position: relative;
-189:     z-index: 1;
-190: }
-191: 
-192: .voice-status {
-193:     font-size: 12px;
-194:     color: var(--ne-light-gray);
-195:     margin-top: var(--ne-spacing-md);
-196:     min-height: 18px;
-197:     opacity: 0.7;
-198: }
-199: 
-200: /* ===== CHAT HISTORY CONTAINER ===== */
-201: .chat-messages {
-202:     display: flex;
-203:     flex-direction: column;
-204:     gap: var(--ne-spacing-md);
-205:     padding: var(--ne-spacing-md) var(--ne-spacing-lg);
-206:     overflow-y: auto;
-207:     padding-bottom: 140px;
-208:     flex: 1;
-209: }
-210: 
-211: /* ===== CHAT MESSAGES ===== */
-212: .chat-message {
-213:     display: flex;
-214:     flex-direction: column;
-215:     gap: 2px;
-216:     animation: fadeIn 0.3s ease-out;
-217: }
-218: 
-219: .chat-message.user {
-220:     align-items: flex-end;
-221: }
-222: 
-223: .chat-message.hermes {
-224:     align-items: flex-start;
-225: }
-226: 
-227: .chat-message.system {
-228:     align-items: center;
-229: }
-230: 
-231: .message-bubble {
-232:     max-width: 80%;
-233:     padding: 12px 16px;
-234:     border-radius: var(--glass-radius);
-235:     font-size: 14px;
-236:     line-height: 1.5;
-237:     word-wrap: break-word;
-238:     position: relative;
-239:     transition: var(--glass-transition);
-240: }
-241: 
-242: /* User message: white glass with black text */
-243: .chat-message.user .message-bubble {
-244:     background: rgba(255, 255, 255, 0.92);
-245:     backdrop-filter: blur(12px) saturate(150%);
-246:     -webkit-backdrop-filter: blur(12px) saturate(150%);
-247:     color: #000;
-248:     border: 1px solid rgba(255, 255, 255, 0.3);
-249:     border-bottom-right-radius: 4px;
-250:     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-251: }
-252: 
-253: /* Hermes message: black glass with white text */
-254: .chat-message.hermes .message-bubble {
-255:     background: rgba(0, 0, 0, 0.8);
-256:     backdrop-filter: blur(12px) saturate(150%);
-257:     -webkit-backdrop-filter: blur(12px) saturate(150%);
-258:     color: var(--ne-white);
-259:     border: 1px solid rgba(255, 255, 255, 0.08);
-260:     border-bottom-left-radius: 4px;
-261:     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-262: }
-263: 
-264: .chat-message.system .message-bubble {
-265:     background: rgba(255, 255, 255, 0.03);
-266:     backdrop-filter: blur(8px);
-267:     -webkit-backdrop-filter: blur(8px);
-268:     color: var(--ne-light-gray);
-269:     border: var(--glass-border);
-270:     border-radius: var(--glass-radius-sm);
-271:     font-size: 12px;
-272:     text-align: center;
-273: }
-274: 
-275: /* Message timestamp */
-276: .message-time {
-277:     font-size: 9px;
-278:     color: var(--ne-light-gray);
-279:     padding: 0 6px;
-280:     opacity: 0.4;
-281:     text-align: right;
-282:     margin-top: 2px;
-283: }
-284: 
-285: .chat-message.user .message-time {
-286:     color: rgba(0, 0, 0, 0.4);
-287: }
-288: 
-289: /* Feedback buttons */
-290: .message-feedback {
-291:     display: flex;
-292:     gap: 4px;
-293:     margin-top: 4px;
-294:     opacity: 0;
-295:     transition: opacity 0.2s;
-296: }
-297: 
-298: .chat-message.hermes:hover .message-feedback {
-299:     opacity: 1;
-300: }
-301: 
-302: .feedback-btn {
-303:     background: rgba(255, 255, 255, 0.06);
-304:     border: 1px solid rgba(255, 255, 255, 0.08);
-305:     border-radius: 8px;
-306:     padding: 2px 8px;
-307:     font-size: 12px;
-308:     cursor: pointer;
-309:     transition: var(--glass-transition);
-310:     color: var(--ne-light-gray);
-311: }
-312: 
-313: .feedback-btn:active {
-314:     transform: scale(0.95);
-315:     background: rgba(255, 255, 255, 0.12);
-316: }
-317: 
-318: .feedback-buttons {
-319:     display: flex;
-320:     gap: 6px;
-321:     margin-top: 6px;
-322: }
-323: 
-324: /* Typing indicator */
-325: .typing-indicator {
-326:     display: flex;
-327:     align-items: center;
-328:     gap: 4px;
-329:     padding: 8px 16px;
-330:     font-size: 12px;
-331:     color: var(--ne-light-gray);
-332:     opacity: 0.7;
-333: }
-334: 
-335: .typing-indicator .dot {
-336:     width: 6px;
-337:     height: 6px;
-338:     border-radius: 50%;
-339:     background: var(--ne-purple);
-340:     animation: typing-bounce 1.4s infinite;
-341: }
-342: 
-343: .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
-344: .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
-345: 
-346: @keyframes typing-bounce {
-347:     0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-348:     30% { transform: translateY(-4px); opacity: 1; }
-349: }
-350: 
-351: /* Streaming cursor */
-352: .message-bubble.streaming::after {
-353:     content: '▋';
-354:     animation: cursor-blink 0.8s infinite;
-355:     color: var(--ne-purple);
-356:     margin-left: 2px;
-357: }
-358: 
-359: @keyframes cursor-blink {
-360:     0%, 50% { opacity: 1; }
-361:     51%, 100% { opacity: 0; }
-362: }
-363: 
-364: /* ===== CHAT INPUT ===== */
-365: .chat-input-container {
-366:     position: fixed;
-367:     bottom: 64px;
-368:     left: 0;
-369:     right: 0;
-370:     background: rgba(0, 0, 0, 0.7);
-371:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-372:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-373:     border-top: var(--glass-border);
-374:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
-375:     display: flex;
-376:     align-items: center;
-377:     gap: var(--ne-spacing-sm);
-378:     z-index: 100;
-379: }
-380: 
-381: .attach-btn,
-382: .send-btn {
-383:     width: 40px;
-384:     height: 40px;
-385:     border-radius: 50%;
-386:     border: var(--glass-border-light);
-387:     background: var(--glass-bg-light);
-388:     backdrop-filter: blur(12px);
-389:     -webkit-backdrop-filter: blur(12px);
-390:     color: var(--ne-white);
-391:     display: flex;
-392:     align-items: center;
-393:     justify-content: center;
-394:     cursor: pointer;
-395:     transition: var(--glass-transition);
-396:     font-size: 18px;
-397:     flex-shrink: 0;
-398: }
-399: 
-400: .attach-btn:active,
-401: .send-btn:active {
-402:     transform: scale(0.92);
-403:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
-404: }
-405: 
-406: .send-btn {
-407:     background: linear-gradient(135deg, var(--ne-purple), var(--ne-red));
-408:     border: none;
-409:     color: #fff;
-410: }
-411: 
-412: .chat-input {
-413:     flex: 1;
-414:     padding: 10px 16px;
-415:     border-radius: 20px;
-416:     border: var(--glass-border-light);
-417:     background: rgba(255, 255, 255, 0.06);
-418:     backdrop-filter: blur(8px);
-419:     -webkit-backdrop-filter: blur(8px);
-420:     color: var(--ne-white);
-421:     font-size: 14px;
-422:     outline: none;
-423:     transition: var(--glass-transition);
-424: }
-425: 
-426: .chat-input::placeholder {
-427:     color: rgba(255, 255, 255, 0.3);
-428: }
-429: 
-430: .chat-input:focus {
-431:     border-color: var(--ne-purple);
-432:     background: rgba(255, 255, 255, 0.08);
-433: }
-434: 
-435: /* ===== BOTTOM NAVIGATION (3 Glass Tabs) ===== */
-436: .bottom-nav {
-437:     position: fixed;
-438:     bottom: 0;
-439:     left: 0;
-440:     right: 0;
-441:     height: 64px;
-442:     display: flex;
-443:     background: rgba(0, 0, 0, 0.75);
-444:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-445:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-446:     border-top: var(--glass-border-light);
-447:     z-index: 101;
-448: }
-449: 
-450: .nav-btn {
-451:     flex: 1;
-452:     display: flex;
-453:     flex-direction: column;
-454:     align-items: center;
-455:     justify-content: center;
-456:     gap: 2px;
-457:     padding: var(--ne-spacing-xs) 0;
-458:     border: none;
-459:     background: none;
-460:     color: var(--ne-light-gray);
-461:     font-size: 10px;
-462:     cursor: pointer;
-463:     transition: var(--glass-transition);
-464:     position: relative;
-465: }
-466: 
-467: /* Divider between tabs (inset groove) */
-468: .nav-btn:not(:last-child)::after {
-469:     content: '';
-470:     position: absolute;
-471:     right: 0;
-472:     top: 20%;
-473:     bottom: 20%;
-474:     width: 1px;
-475:     background: linear-gradient(180deg, transparent, rgba(255,255,255,0.08), transparent);
-476: }
-477: 
-478: .nav-btn.active {
-479:     color: var(--ne-white);
-480: }
-481: 
-482: .nav-btn.active::before {
-483:     content: '';
-484:     position: absolute;
-485:     top: 0;
-486:     left: 20%;
-487:     right: 20%;
-488:     height: 2px;
-489:     background: linear-gradient(90deg, var(--ne-purple), var(--ne-red));
-490:     border-radius: 1px;
-491: }
-492: 
-493: .nav-btn:active {
-494:     box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
-495: }
-496: 
-497: .nav-icon {
-498:     font-size: 22px;
-499:     line-height: 1;
-500: }
-501: 
-502: .nav-label {
-503:     font-weight: 500;
-504: }
-505: 
-506: /* ===== BUTTONS (Glass) ===== */
-507: .btn {
-508:     display: inline-flex;
-509:     align-items: center;
-510:     justify-content: center;
-511:     gap: 6px;
-512:     padding: 10px 20px;
-513:     border-radius: var(--glass-radius);
-514:     border: var(--glass-border-light);
-515:     font-size: 14px;
-516:     font-weight: 500;
-517:     cursor: pointer;
-518:     transition: var(--glass-transition);
-519:     width: 100%;
-520:     background: var(--glass-bg-light);
-521:     backdrop-filter: blur(12px) saturate(150%);
-522:     -webkit-backdrop-filter: blur(12px) saturate(150%);
-523:     color: var(--ne-white);
-524: }
-525: 
-526: .btn:active {
-527:     transform: scale(0.98);
-528:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
-529: }
-530: 
-531: .btn-primary {
-532:     background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(239, 68, 68, 0.2));
-533:     border-color: rgba(139, 92, 246, 0.3);
-534:     color: var(--ne-white);
-535: }
-536: 
-537: .btn-secondary {
-538:     background: var(--glass-bg);
-539:     color: var(--ne-white);
-540:     border-color: var(--glass-border);
-541: }
-542: 
-543: /* ===== FORMS ===== */
-544: .form-group {
-545:     margin-bottom: var(--ne-spacing-lg);
-546: }
-547: 
-548: .form-label {
-549:     display: block;
-550:     font-size: 13px;
-551:     font-weight: 500;
-552:     color: var(--ne-light-gray);
-553:     margin-bottom: var(--ne-spacing-sm);
-554:     text-transform: uppercase;
-555:     letter-spacing: 0.5px;
-556: }
-557: 
-558: .form-input {
-559:     width: 100%;
-560:     padding: 12px 14px;
-561:     border-radius: var(--glass-radius);
-562:     border: var(--glass-border-light);
-563:     background: rgba(255, 255, 255, 0.04);
-564:     backdrop-filter: blur(8px);
-565:     -webkit-backdrop-filter: blur(8px);
-566:     color: var(--ne-white);
-567:     font-size: 14px;
-568:     outline: none;
-569:     transition: var(--glass-transition);
-570: }
-571: 
-572: .form-input:focus {
-573:     border-color: var(--ne-purple);
-574:     background: rgba(255, 255, 255, 0.06);
-575: }
-576: 
-577: /* ===== CARDS ===== */
-578: .card {
-579:     background: var(--glass-bg);
-580:     backdrop-filter: blur(12px) saturate(150%);
-581:     -webkit-backdrop-filter: blur(12px) saturate(150%);
-582:     border: var(--glass-border);
-583:     border-radius: var(--glass-radius);
-584:     padding: var(--ne-spacing-lg);
-585:     margin-bottom: var(--ne-spacing-md);
-586: }
-587: 
-588: .draft-card {
-589:     background: rgba(255, 255, 255, 0.02);
-590:     border-left-width: 3px;
-591: }
-592: 
-593: .card-title {
-594:     font-size: 15px;
-595:     font-weight: 600;
-596:     margin-bottom: var(--ne-spacing-sm);
-597:     color: var(--ne-white);
-598: }
-599: 
-600: .card-subtitle {
-601:     font-size: 13px;
-602:     color: var(--ne-light-gray);
-603:     margin-bottom: var(--ne-spacing-md);
-604: }
-605: 
-606: /* ===== SCROLLBAR ===== */
-607: ::-webkit-scrollbar {
-608:     width: 4px;
-609: }
-610: 
-611: ::-webkit-scrollbar-track {
-612:     background: transparent;
-613: }
-614: 
-615: ::-webkit-scrollbar-thumb {
-616:     background: rgba(255, 255, 255, 0.12);
-617:     border-radius: 2px;
-618: }
-619: 
-620: ::-webkit-scrollbar-thumb:hover {
-621:     background: rgba(255, 255, 255, 0.2);
-622: }
-623: 
-624: /* ===== ANIMATIONS ===== */
-625: @keyframes fadeIn {
-626:     from { opacity: 0; transform: translateY(8px); }
-627:     to { opacity: 1; transform: translateY(0); }
-628: }
-629: 
-630: .view {
-631:     animation: fadeIn 0.25s ease-out;
-632: }
-633: 
-634: /* ===== EMPTY STATE ===== */
-635: .empty-state {
-636:     text-align: center;
-637:     padding: 48px 24px;
-638:     color: var(--ne-light-gray);
-639: }
-640: 
-641: .empty-icon {
-642:     font-size: 48px;
-643:     margin-bottom: var(--ne-spacing-md);
-644:     opacity: 0.5;
-645: }
-646: 
-647: .empty-text {
-648:     font-size: 14px;
-649: }
-650: 
-651: /* ===== ATTACH MENU ===== */
-652: .attach-menu {
-653:     position: fixed;
-654:     bottom: 100px;
-655:     left: var(--ne-spacing-lg);
-656:     right: var(--ne-spacing-lg);
-657:     background: rgba(0, 0, 0, 0.8);
-658:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-659:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-660:     border: var(--glass-border-light);
-661:     border-radius: var(--glass-radius);
-662:     padding: var(--ne-spacing-sm);
-663:     display: grid;
-664:     grid-template-columns: repeat(2, 1fr);
-665:     gap: var(--ne-spacing-sm);
-666:     z-index: 102;
-667:     animation: fadeIn 0.2s ease-out;
-668: }
-669: 
-670: .attach-option {
-671:     display: flex;
-672:     flex-direction: column;
-673:     align-items: center;
-674:     gap: 6px;
-675:     padding: var(--ne-spacing-lg);
-676:     border-radius: var(--glass-radius-sm);
-677:     border: var(--glass-border);
-678:     background: var(--glass-bg);
-679:     color: var(--ne-white);
-680:     font-size: 12px;
-681:     cursor: pointer;
-682:     transition: var(--glass-transition);
-683: }
-684: 
-685: .attach-option:active {
-686:     transform: scale(0.95);
-687:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
-688: }
-689: 
-690: .attach-icon {
-691:     font-size: 28px;
-692: }
-693: 
-694: /* ===== VIDEO RECORDING ===== */
-695: .video-recording {
-696:     position: fixed;
-697:     top: 0;
-698:     left: 0;
-699:     right: 0;
-700:     bottom: 0;
-701:     background: var(--ne-black);
-702:     z-index: 200;
-703:     display: flex;
-704:     flex-direction: column;
-705: }
-706: 
-707: .video-preview {
-708:     flex: 1;
-709:     position: relative;
-710:     background: var(--ne-black);
-711: }
-712: 
-713: .video-preview video {
-714:     width: 100%;
-715:     height: 100%;
-716:     object-fit: cover;
-717: }
-718: 
-719: .video-controls {
-720:     position: absolute;
-721:     bottom: 0;
-722:     left: 0;
-723:     right: 0;
-724:     padding: var(--ne-spacing-xl);
-725:     display: flex;
-726:     justify-content: center;
-727:     align-items: center;
-728:     gap: var(--ne-spacing-lg);
-729:     background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-730: }
-731: 
-732: .video-record-btn {
-733:     width: 64px;
-734:     height: 64px;
-735:     border-radius: 50%;
-736:     border: 4px solid var(--ne-white);
-737:     background: transparent;
-738:     cursor: pointer;
-739:     transition: all 0.2s;
-740: }
-741: 
-742: .video-record-btn.recording {
-743:     background: var(--ne-red);
-744:     border-radius: 12px;
-745: }
-746: 
-747: .camera-switch-btn {
-748:     width: 48px;
-749:     height: 48px;
-750:     border-radius: 50%;
-751:     border: var(--glass-border);
-752:     background: rgba(0,0,0,0.5);
-753:     backdrop-filter: blur(8px);
-754:     -webkit-backdrop-filter: blur(8px);
-755:     color: var(--ne-white);
-756:     font-size: 24px;
-757:     cursor: pointer;
-758:     display: flex;
-759:     align-items: center;
-760:     justify-content: center;
-761: }
-762: 
-763: /* ===== RESPONSIVE ===== */
-764: @media (min-width: 768px) {
-765:     .app-main {
-766:         max-width: none !important;
-767:         margin: 0;
-768:     }
-769:     
-770:     .chat-input-container {
-771:         max-width: none;
-772:         left: 0;
-773:         transform: none;
-774:     }
-775:     
-776:     .attach-menu {
-777:         max-width: none;
-778:         left: var(--ne-spacing-lg);
-779:         transform: none;
-780:     }
-781: }
-782: 
-783: @media (min-width: 768px) {
-784:     html, body, #app, .app-main, .container, .tg-web-app {
-785:         max-width: none !important;
-786:         width: 100vw !important;
-787:         height: var(--tg-viewport-stable-height, 100dvh) !important;
-788:         margin: 0 !important;
-789:         padding: 0 !important;
-790:         overflow-x: hidden !important;
-791:     }
-792: }
-793: 
-794: /* ===== REDUCED TRANSPARENCY (Accessibility) ===== */
-795: @media (prefers-reduced-transparency: reduce) {
-796:     .message-bubble,
-797:     .chat-input-container,
-798:     .bottom-nav,
-799:     .btn,
-800:     .form-input {
-801:         backdrop-filter: none;
-802:         -webkit-backdrop-filter: none;
-803:     }
-804:     
-805:     .chat-message.user .message-bubble {
-806:         background: rgba(255, 255, 255, 0.95);
-807:     }
-808:     
-809:     .chat-message.hermes .message-bubble {
-810:         background: rgba(0, 0, 0, 0.95);
-811:     }
-812: }
-813: 
-814: /* ===== NEW UI STRUCTURE v0.20.511 ===== */
-815: /* Top control panel: mic (left) + task spec (right) */
-816: 
-817: .top-control-panel {
-818:     display: flex;
-819:     justify-content: space-between;
-820:     align-items: center;
-821:     gap: var(--ne-spacing-md);
-822:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
-823:     background: var(--glass-bg);
-824:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-825:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-826:     border-bottom: var(--glass-border);
-827:     min-height: 56px;
-828: }
-829: 
-830: .left-mic-panel {
-831:     display: flex;
-832:     align-items: center;
-833:     gap: var(--ne-spacing-sm);
-834: }
-835: 
-836: .mic-button {
-837:     width: 44px;
-838:     height: 44px;
-839:     border-radius: 50%;
-840:     background: var(--glass-bg-light);
-841:     border: var(--glass-border);
-842:     display: flex;
-843:     align-items: center;
-844:     justify-content: center;
-845:     cursor: pointer;
-846:     transition: var(--glass-transition);
-847:     font-size: 20px;
-848: }
-849: 
-850: .mic-button:hover {
-851:     background: rgba(255, 255, 255, 0.12);
-852:     border-color: rgba(255, 255, 255, 0.2);
-853: }
-854: 
-855: .mic-button.recording {
-856:     background: rgba(239, 68, 68, 0.2);
-857:     border-color: rgba(239, 68, 68, 0.4);
-858:     animation: pulse-recording 1.5s ease-in-out infinite;
-859: }
-860: 
-861: @keyframes pulse-recording {
-862:     0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-863:     50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-864: }
-865: 
-866: .right-contract-panel {
-867:     flex: 1;
-868:     max-width: 60%;
-869:     min-height: 40px;
-870: }
-871: 
-872: .task-spec-container {
-873:     background: var(--glass-bg);
-874:     border: var(--glass-border);
-875:     border-radius: var(--glass-radius-sm);
-876:     padding: var(--ne-spacing-sm) var(--ne-spacing-md);
-877:     font-size: 13px;
-878:     color: var(--ne-light-gray);
-879:     max-height: 120px;
-880:     overflow-y: auto;
-881:     transition: var(--glass-transition);
-882: }
-883: 
-884: .task-spec-container.has-content {
-885:     border-color: rgba(139, 92, 246, 0.3);
-886:     background: rgba(139, 92, 246, 0.05);
-887: }
-888: 
-889: .task-spec-title {
-890:     font-size: 11px;
-891:     font-weight: 600;
-892:     color: var(--ne-purple);
-893:     text-transform: uppercase;
-894:     letter-spacing: 0.5px;
-895:     margin-bottom: 4px;
-896: }
-897: 
-898: /* Vertical connectors */
-899: .vertical-connector {
-900:     position: absolute;
-901:     top: 0;
-902:     bottom: 0;
-903:     width: 1px;
-904:     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15), transparent);
-905:     pointer-events: none;
-906:     z-index: 0;
-907: }
-908: 
-909: .vertical-connector.left {
-910:     left: calc(var(--ne-spacing-lg) + 22px);
-911: }
-912: 
-913: .vertical-connector.right {
-914:     right: calc(var(--ne-spacing-lg) + 22px);
-915: }
-916: 
-917: /* Chat area with top panel spacing */
-918: .view.has-top-panel .chat-messages {
-919:     padding-top: var(--ne-spacing-sm);
-920: }
-921: 
-922: /* Task spec questions */
-923: .task-question {
-924:     margin-top: var(--ne-spacing-sm);
-925:     padding-top: var(--ne-spacing-sm);
-926:     border-top: 1px solid rgba(255, 255, 255, 0.06);
-927: }
-928: 
-929: .task-question p {
-930:     font-size: 12px;
-931:     color: var(--ne-silver);
-932:     margin-bottom: 4px;
-933: }
-934: 
-935: .task-question input {
-936:     width: 100%;
-937:     background: rgba(0, 0, 0, 0.3);
-938:     border: 1px solid rgba(255, 255, 255, 0.1);
-939:     border-radius: 6px;
-940:     padding: 6px 10px;
-941:     color: var(--ne-white);
-942:     font-size: 12px;
-943:     outline: none;
-944:     transition: var(--glass-transition);
-945: }
-946: 
-947: .task-question input:focus {
-948:     border-color: rgba(139, 92, 246, 0.5);
-949: }
+   1: /* NeuroEscrow — Liquid Glass Design System v0.20.509
+   2:  * Colors: Black, White, Silver, Purple, Red, Gold (metallic accents)
+   3:  * Style: Frosted glass, matte transparency, blur, refraction
+   4:  */
+   5: 
+   6: :root {
+   7:     /* Core palette */
+   8:     --ne-black: #000000;
+   9:     --ne-dark: #1a1a1f;
+  10:     --ne-gray: #3a3a42;
+  11:     --ne-light-gray: #b0b0b8;
+  12:     --ne-white: #f0f0f5;
+  13:     --ne-silver: #c0c0c8;
+  14:     
+  15:     /* Accent colors */
+  16:     --ne-purple: #8B5CF6;
+  17:     --ne-red: #EF4444;
+  18:     --ne-gold: #FFD700;
+  19:     
+  20:     /* Liquid Glass (Apple iOS 26 style) */
+  21:     --glass-bg: rgba(255, 255, 255, 0.04);
+  22:     --glass-bg-light: rgba(255, 255, 255, 0.08);
+  23:     --glass-bg-dark: rgba(0, 0, 0, 0.4);
+  24:     --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+  25:     --glass-border-light: 1px solid rgba(255, 255, 255, 0.12);
+  26:     --glass-blur: 24px;
+  27:     --glass-saturate: 180%;
+  28:     --glass-radius: 16px;
+  29:     --glass-radius-sm: 12px;
+  30:     --glass-radius-lg: 24px;
+  31:     --glass-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  32:     
+  33:     /* Metallic gradient for mic icon */
+  34:     --metallic-gradient: linear-gradient(135deg, #808080 0%, #C0C0C0 30%, #A855F7 55%, #EF4444 75%, #404040 100%);
+  35:     
+  36:     /* Spacing */
+  37:     --ne-spacing-xs: 4px;
+  38:     --ne-spacing-sm: 8px;
+  39:     --ne-spacing-md: 12px;
+  40:     --ne-spacing-lg: 16px;
+  41:     --ne-spacing-xl: 24px;
+  42: }
+  43: 
+  44: * {
+  45:     margin: 0;
+  46:     padding: 0;
+  47:     box-sizing: border-box;
+  48:     -webkit-tap-highlight-color: transparent;
+  49: }
+  50: 
+  51: html, body {
+  52:     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  53:     background: var(--ne-black);
+  54:     color: var(--ne-white);
+  55:     height: var(--tg-viewport-stable-height, 100dvh);
+  56:     width: 100vw;
+  57:     margin: 0;
+  58:     padding: 0;
+  59:     overflow-x: hidden;
+  60: }
+  61: 
+  62: #app {
+  63:     display: flex;
+  64:     flex-direction: column;
+  65:     height: var(--tg-viewport-stable-height, 100dvh);
+  66:     width: 100vw;
+  67:     position: relative;
+  68: }
+  69: 
+  70: /* ===== HEADER ===== */
+  71: .app-header {
+  72:     background: rgba(0, 0, 0, 0.6);
+  73:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  74:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  75:     border-bottom: var(--glass-border);
+  76:     padding: var(--ne-spacing-md) var(--ne-spacing-lg);
+  77:     flex-shrink: 0;
+  78:     z-index: 100;
+  79: }
+  80: 
+  81: .header-content {
+  82:     display: flex;
+  83:     justify-content: space-between;
+  84:     align-items: center;
+  85: }
+  86: 
+  87: .app-header h1 {
+  88:     font-size: 18px;
+  89:     font-weight: 600;
+  90:     color: var(--ne-white);
+  91:     letter-spacing: -0.5px;
+  92: }
+  93: 
+  94: .user-info {
+  95:     font-size: 13px;
+  96:     color: var(--ne-light-gray);
+  97: }
+  98: 
+  99: /* ===== MAIN CONTENT ===== */
+ 100: .app-main {
+ 101:     flex: 1;
+ 102:     overflow-y: auto;
+ 103:     overflow-x: hidden;
+ 104:     padding: var(--ne-spacing-lg);
+ 105:     padding-bottom: 80px;
+ 106:     -webkit-overflow-scrolling: touch;
+ 107: }
+ 108: 
+ 109: /* ===== VOICE INTERFACE (Glass Microphone) ===== */
+ 110: .voice-interface {
+ 111:     display: flex;
+ 112:     flex-direction: column;
+ 113:     align-items: center;
+ 114:     justify-content: center;
+ 115:     min-height: 180px;
+ 116:     text-align: center;
+ 117:     position: relative;
+ 118:     padding: var(--ne-spacing-xl) 0;
+ 119: }
+ 120: 
+ 121: .voice-button {
+ 122:     width: 140px;
+ 123:     height: 140px;
+ 124:     border-radius: 50%;
+ 125:     /* Thick glass chunk */
+ 126:     background: linear-gradient(145deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 50%, rgba(0,0,0,0.2) 100%);
+ 127:     backdrop-filter: blur(24px) saturate(180%);
+ 128:     -webkit-backdrop-filter: blur(24px) saturate(180%);
+ 129:     border: 1px solid rgba(255, 255, 255, 0.15);
+ 130:     /* Inner bevel + outer shadow */
+ 131:     box-shadow: 
+ 132:         inset 0 2px 0 rgba(255, 255, 255, 0.2),
+ 133:         inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+ 134:         0 8px 32px rgba(0, 0, 0, 0.4),
+ 135:         0 0 0 1px rgba(255, 255, 255, 0.05);
+ 136:     display: flex;
+ 137:     align-items: center;
+ 138:     justify-content: center;
+ 139:     cursor: pointer;
+ 140:     transition: var(--glass-transition);
+ 141:     position: relative;
+ 142:     overflow: hidden;
+ 143: }
+ 144: 
+ 145: /* Glass highlight arc */
+ 146: .voice-button::before {
+ 147:     content: '';
+ 148:     position: absolute;
+ 149:     top: 4px;
+ 150:     left: 10%;
+ 151:     right: 10%;
+ 152:     height: 40%;
+ 153:     border-radius: 50%;
+ 154:     background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+ 155:     pointer-events: none;
+ 156: }
+ 157: 
+ 158: .voice-button:active {
+ 159:     transform: scale(0.96);
+ 160:     box-shadow: 
+ 161:         inset 0 2px 8px rgba(0, 0, 0, 0.5),
+ 162:         0 4px 16px rgba(0, 0, 0, 0.3);
+ 163: }
+ 164: 
+ 165: .voice-button.recording {
+ 166:     border-color: var(--ne-purple);
+ 167:     box-shadow: 
+ 168:         inset 0 2px 0 rgba(255, 255, 255, 0.2),
+ 169:         inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+ 170:         0 0 24px rgba(139, 92, 246, 0.3),
+ 171:         0 8px 32px rgba(0, 0, 0, 0.4);
+ 172:     animation: pulse-glass 1.5s ease-in-out infinite;
+ 173: }
+ 174: 
+ 175: @keyframes pulse-glass {
+ 176:     0%, 100% { box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.3), 0 0 24px rgba(139,92,246,0.3), 0 8px 32px rgba(0,0,0,0.4); }
+ 177:     50% { box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.3), 0 0 40px rgba(139,92,246,0.5), 0 8px 32px rgba(0,0,0,0.4); }
+ 178: }
+ 179: 
+ 180: /* Metallic microphone icon */
+ 181: .voice-icon {
+ 182:     font-size: 56px;
+ 183:     background: var(--metallic-gradient);
+ 184:     -webkit-background-clip: text;
+ 185:     -webkit-text-fill-color: transparent;
+ 186:     background-clip: text;
+ 187:     filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4));
+ 188:     position: relative;
+ 189:     z-index: 1;
+ 190: }
+ 191: 
+ 192: .voice-status {
+ 193:     font-size: 12px;
+ 194:     color: var(--ne-light-gray);
+ 195:     margin-top: var(--ne-spacing-md);
+ 196:     min-height: 18px;
+ 197:     opacity: 0.7;
+ 198: }
+ 199: 
+ 200: /* ===== CHAT HISTORY CONTAINER ===== */
+ 201: .chat-messages {
+ 202:     display: flex;
+ 203:     flex-direction: column;
+ 204:     gap: var(--ne-spacing-md);
+ 205:     padding: var(--ne-spacing-md) var(--ne-spacing-lg);
+ 206:     overflow-y: auto;
+ 207:     padding-bottom: 140px;
+ 208:     flex: 1;
+ 209: }
+ 210: 
+ 211: /* ===== CHAT MESSAGES ===== */
+ 212: .chat-message {
+ 213:     display: flex;
+ 214:     flex-direction: column;
+ 215:     gap: 2px;
+ 216:     animation: fadeIn 0.3s ease-out;
+ 217: }
+ 218: 
+ 219: .chat-message.user {
+ 220:     align-items: flex-end;
+ 221: }
+ 222: 
+ 223: .chat-message.hermes {
+ 224:     align-items: flex-start;
+ 225: }
+ 226: 
+ 227: .chat-message.system {
+ 228:     align-items: center;
+ 229: }
+ 230: 
+ 231: .message-bubble {
+ 232:     max-width: 80%;
+ 233:     padding: 12px 16px;
+ 234:     border-radius: var(--glass-radius);
+ 235:     font-size: 14px;
+ 236:     line-height: 1.5;
+ 237:     word-wrap: break-word;
+ 238:     position: relative;
+ 239:     transition: var(--glass-transition);
+ 240: }
+ 241: 
+ 242: /* User message: white glass with black text */
+ 243: .chat-message.user .message-bubble {
+ 244:     background: rgba(255, 255, 255, 0.92);
+ 245:     backdrop-filter: blur(12px) saturate(150%);
+ 246:     -webkit-backdrop-filter: blur(12px) saturate(150%);
+ 247:     color: #000;
+ 248:     border: 1px solid rgba(255, 255, 255, 0.3);
+ 249:     border-bottom-right-radius: 4px;
+ 250:     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+ 251: }
+ 252: 
+ 253: /* Hermes message: black glass with white text */
+ 254: .chat-message.hermes .message-bubble {
+ 255:     background: rgba(0, 0, 0, 0.8);
+ 256:     backdrop-filter: blur(12px) saturate(150%);
+ 257:     -webkit-backdrop-filter: blur(12px) saturate(150%);
+ 258:     color: var(--ne-white);
+ 259:     border: 1px solid rgba(255, 255, 255, 0.08);
+ 260:     border-bottom-left-radius: 4px;
+ 261:     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+ 262: }
+ 263: 
+ 264: .chat-message.system .message-bubble {
+ 265:     background: rgba(255, 255, 255, 0.03);
+ 266:     backdrop-filter: blur(8px);
+ 267:     -webkit-backdrop-filter: blur(8px);
+ 268:     color: var(--ne-light-gray);
+ 269:     border: var(--glass-border);
+ 270:     border-radius: var(--glass-radius-sm);
+ 271:     font-size: 12px;
+ 272:     text-align: center;
+ 273: }
+ 274: 
+ 275: /* Message timestamp */
+ 276: .message-time {
+ 277:     font-size: 9px;
+ 278:     color: var(--ne-light-gray);
+ 279:     padding: 0 6px;
+ 280:     opacity: 0.4;
+ 281:     text-align: right;
+ 282:     margin-top: 2px;
+ 283: }
+ 284: 
+ 285: .chat-message.user .message-time {
+ 286:     color: rgba(0, 0, 0, 0.4);
+ 287: }
+ 288: 
+ 289: /* Feedback buttons */
+ 290: .message-feedback {
+ 291:     display: flex;
+ 292:     gap: 4px;
+ 293:     margin-top: 4px;
+ 294:     opacity: 0;
+ 295:     transition: opacity 0.2s;
+ 296: }
+ 297: 
+ 298: .chat-message.hermes:hover .message-feedback {
+ 299:     opacity: 1;
+ 300: }
+ 301: 
+ 302: .feedback-btn {
+ 303:     background: rgba(255, 255, 255, 0.06);
+ 304:     border: 1px solid rgba(255, 255, 255, 0.08);
+ 305:     border-radius: 8px;
+ 306:     padding: 2px 8px;
+ 307:     font-size: 12px;
+ 308:     cursor: pointer;
+ 309:     transition: var(--glass-transition);
+ 310:     color: var(--ne-light-gray);
+ 311: }
+ 312: 
+ 313: .feedback-btn:active {
+ 314:     transform: scale(0.95);
+ 315:     background: rgba(255, 255, 255, 0.12);
+ 316: }
+ 317: 
+ 318: .feedback-buttons {
+ 319:     display: flex;
+ 320:     gap: 6px;
+ 321:     margin-top: 6px;
+ 322: }
+ 323: 
+ 324: /* Typing indicator */
+ 325: .typing-indicator {
+ 326:     display: flex;
+ 327:     align-items: center;
+ 328:     gap: 4px;
+ 329:     padding: 8px 16px;
+ 330:     font-size: 12px;
+ 331:     color: var(--ne-light-gray);
+ 332:     opacity: 0.7;
+ 333: }
+ 334: 
+ 335: .typing-indicator .dot {
+ 336:     width: 6px;
+ 337:     height: 6px;
+ 338:     border-radius: 50%;
+ 339:     background: var(--ne-purple);
+ 340:     animation: typing-bounce 1.4s infinite;
+ 341: }
+ 342: 
+ 343: .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+ 344: .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+ 345: 
+ 346: @keyframes typing-bounce {
+ 347:     0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+ 348:     30% { transform: translateY(-4px); opacity: 1; }
+ 349: }
+ 350: 
+ 351: /* Streaming cursor */
+ 352: .message-bubble.streaming::after {
+ 353:     content: '▋';
+ 354:     animation: cursor-blink 0.8s infinite;
+ 355:     color: var(--ne-purple);
+ 356:     margin-left: 2px;
+ 357: }
+ 358: 
+ 359: @keyframes cursor-blink {
+ 360:     0%, 50% { opacity: 1; }
+ 361:     51%, 100% { opacity: 0; }
+ 362: }
+ 363: 
+ 364: /* ===== CHAT INPUT ===== */
+ 365: .chat-input-container {
+ 366:     position: fixed;
+ 367:     bottom: 64px;
+ 368:     left: 0;
+ 369:     right: 0;
+ 370:     background: rgba(0, 0, 0, 0.7);
+ 371:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 372:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 373:     border-top: var(--glass-border);
+ 374:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
+ 375:     display: flex;
+ 376:     align-items: center;
+ 377:     gap: var(--ne-spacing-sm);
+ 378:     z-index: 100;
+ 379: }
+ 380: 
+ 381: .attach-btn,
+ 382: .send-btn {
+ 383:     width: 40px;
+ 384:     height: 40px;
+ 385:     border-radius: 50%;
+ 386:     border: var(--glass-border-light);
+ 387:     background: var(--glass-bg-light);
+ 388:     backdrop-filter: blur(12px);
+ 389:     -webkit-backdrop-filter: blur(12px);
+ 390:     color: var(--ne-white);
+ 391:     display: flex;
+ 392:     align-items: center;
+ 393:     justify-content: center;
+ 394:     cursor: pointer;
+ 395:     transition: var(--glass-transition);
+ 396:     font-size: 18px;
+ 397:     flex-shrink: 0;
+ 398: }
+ 399: 
+ 400: .attach-btn:active,
+ 401: .send-btn:active {
+ 402:     transform: scale(0.92);
+ 403:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+ 404: }
+ 405: 
+ 406: .send-btn {
+ 407:     background: linear-gradient(135deg, var(--ne-purple), var(--ne-red));
+ 408:     border: none;
+ 409:     color: #fff;
+ 410: }
+ 411: 
+ 412: .chat-input {
+ 413:     flex: 1;
+ 414:     padding: 10px 16px;
+ 415:     border-radius: 20px;
+ 416:     border: var(--glass-border-light);
+ 417:     background: rgba(255, 255, 255, 0.06);
+ 418:     backdrop-filter: blur(8px);
+ 419:     -webkit-backdrop-filter: blur(8px);
+ 420:     color: var(--ne-white);
+ 421:     font-size: 14px;
+ 422:     outline: none;
+ 423:     transition: var(--glass-transition);
+ 424: }
+ 425: 
+ 426: .chat-input::placeholder {
+ 427:     color: rgba(255, 255, 255, 0.3);
+ 428: }
+ 429: 
+ 430: .chat-input:focus {
+ 431:     border-color: var(--ne-purple);
+ 432:     background: rgba(255, 255, 255, 0.08);
+ 433: }
+ 434: 
+ 435: /* ===== BOTTOM NAVIGATION (3 Glass Tabs) ===== */
+ 436: .bottom-nav {
+ 437:     position: fixed;
+ 438:     bottom: 0;
+ 439:     left: 0;
+ 440:     right: 0;
+ 441:     height: 64px;
+ 442:     display: flex;
+ 443:     background: rgba(0, 0, 0, 0.75);
+ 444:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 445:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 446:     border-top: var(--glass-border-light);
+ 447:     z-index: 101;
+ 448: }
+ 449: 
+ 450: .nav-btn {
+ 451:     flex: 1;
+ 452:     display: flex;
+ 453:     flex-direction: column;
+ 454:     align-items: center;
+ 455:     justify-content: center;
+ 456:     gap: 2px;
+ 457:     padding: var(--ne-spacing-xs) 0;
+ 458:     border: none;
+ 459:     background: none;
+ 460:     color: var(--ne-light-gray);
+ 461:     font-size: 10px;
+ 462:     cursor: pointer;
+ 463:     transition: var(--glass-transition);
+ 464:     position: relative;
+ 465: }
+ 466: 
+ 467: /* Divider between tabs (inset groove) */
+ 468: .nav-btn:not(:last-child)::after {
+ 469:     content: '';
+ 470:     position: absolute;
+ 471:     right: 0;
+ 472:     top: 20%;
+ 473:     bottom: 20%;
+ 474:     width: 1px;
+ 475:     background: linear-gradient(180deg, transparent, rgba(255,255,255,0.08), transparent);
+ 476: }
+ 477: 
+ 478: .nav-btn.active {
+ 479:     color: var(--ne-white);
+ 480: }
+ 481: 
+ 482: .nav-btn.active::before {
+ 483:     content: '';
+ 484:     position: absolute;
+ 485:     top: 0;
+ 486:     left: 20%;
+ 487:     right: 20%;
+ 488:     height: 2px;
+ 489:     background: linear-gradient(90deg, var(--ne-purple), var(--ne-red));
+ 490:     border-radius: 1px;
+ 491: }
+ 492: 
+ 493: .nav-btn:active {
+ 494:     box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+ 495: }
+ 496: 
+ 497: .nav-icon {
+ 498:     font-size: 22px;
+ 499:     line-height: 1;
+ 500: }
+ 501: 
+ 502: .nav-label {
+ 503:     font-weight: 500;
+ 504: }
+ 505: 
+ 506: /* ===== BUTTONS (Glass) ===== */
+ 507: .btn {
+ 508:     display: inline-flex;
+ 509:     align-items: center;
+ 510:     justify-content: center;
+ 511:     gap: 6px;
+ 512:     padding: 10px 20px;
+ 513:     border-radius: var(--glass-radius);
+ 514:     border: var(--glass-border-light);
+ 515:     font-size: 14px;
+ 516:     font-weight: 500;
+ 517:     cursor: pointer;
+ 518:     transition: var(--glass-transition);
+ 519:     width: 100%;
+ 520:     background: var(--glass-bg-light);
+ 521:     backdrop-filter: blur(12px) saturate(150%);
+ 522:     -webkit-backdrop-filter: blur(12px) saturate(150%);
+ 523:     color: var(--ne-white);
+ 524: }
+ 525: 
+ 526: .btn:active {
+ 527:     transform: scale(0.98);
+ 528:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+ 529: }
+ 530: 
+ 531: .btn-primary {
+ 532:     background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(239, 68, 68, 0.2));
+ 533:     border-color: rgba(139, 92, 246, 0.3);
+ 534:     color: var(--ne-white);
+ 535: }
+ 536: 
+ 537: .btn-secondary {
+ 538:     background: var(--glass-bg);
+ 539:     color: var(--ne-white);
+ 540:     border-color: var(--glass-border);
+ 541: }
+ 542: 
+ 543: /* ===== FORMS ===== */
+ 544: .form-group {
+ 545:     margin-bottom: var(--ne-spacing-lg);
+ 546: }
+ 547: 
+ 548: .form-label {
+ 549:     display: block;
+ 550:     font-size: 13px;
+ 551:     font-weight: 500;
+ 552:     color: var(--ne-light-gray);
+ 553:     margin-bottom: var(--ne-spacing-sm);
+ 554:     text-transform: uppercase;
+ 555:     letter-spacing: 0.5px;
+ 556: }
+ 557: 
+ 558: .form-input {
+ 559:     width: 100%;
+ 560:     padding: 12px 14px;
+ 561:     border-radius: var(--glass-radius);
+ 562:     border: var(--glass-border-light);
+ 563:     background: rgba(255, 255, 255, 0.04);
+ 564:     backdrop-filter: blur(8px);
+ 565:     -webkit-backdrop-filter: blur(8px);
+ 566:     color: var(--ne-white);
+ 567:     font-size: 14px;
+ 568:     outline: none;
+ 569:     transition: var(--glass-transition);
+ 570: }
+ 571: 
+ 572: .form-input:focus {
+ 573:     border-color: var(--ne-purple);
+ 574:     background: rgba(255, 255, 255, 0.06);
+ 575: }
+ 576: 
+ 577: /* ===== CARDS ===== */
+ 578: .card {
+ 579:     background: var(--glass-bg);
+ 580:     backdrop-filter: blur(12px) saturate(150%);
+ 581:     -webkit-backdrop-filter: blur(12px) saturate(150%);
+ 582:     border: var(--glass-border);
+ 583:     border-radius: var(--glass-radius);
+ 584:     padding: var(--ne-spacing-lg);
+ 585:     margin-bottom: var(--ne-spacing-md);
+ 586: }
+ 587: 
+ 588: .draft-card {
+ 589:     background: rgba(255, 255, 255, 0.02);
+ 590:     border-left-width: 3px;
+ 591: }
+ 592: 
+ 593: .card-title {
+ 594:     font-size: 15px;
+ 595:     font-weight: 600;
+ 596:     margin-bottom: var(--ne-spacing-sm);
+ 597:     color: var(--ne-white);
+ 598: }
+ 599: 
+ 600: .card-subtitle {
+ 601:     font-size: 13px;
+ 602:     color: var(--ne-light-gray);
+ 603:     margin-bottom: var(--ne-spacing-md);
+ 604: }
+ 605: 
+ 606: /* ===== SCROLLBAR ===== */
+ 607: ::-webkit-scrollbar {
+ 608:     width: 4px;
+ 609: }
+ 610: 
+ 611: ::-webkit-scrollbar-track {
+ 612:     background: transparent;
+ 613: }
+ 614: 
+ 615: ::-webkit-scrollbar-thumb {
+ 616:     background: rgba(255, 255, 255, 0.12);
+ 617:     border-radius: 2px;
+ 618: }
+ 619: 
+ 620: ::-webkit-scrollbar-thumb:hover {
+ 621:     background: rgba(255, 255, 255, 0.2);
+ 622: }
+ 623: 
+ 624: /* ===== ANIMATIONS ===== */
+ 625: @keyframes fadeIn {
+ 626:     from { opacity: 0; transform: translateY(8px); }
+ 627:     to { opacity: 1; transform: translateY(0); }
+ 628: }
+ 629: 
+ 630: .view {
+ 631:     animation: fadeIn 0.25s ease-out;
+ 632: }
+ 633: 
+ 634: /* ===== EMPTY STATE ===== */
+ 635: .empty-state {
+ 636:     text-align: center;
+ 637:     padding: 48px 24px;
+ 638:     color: var(--ne-light-gray);
+ 639: }
+ 640: 
+ 641: .empty-icon {
+ 642:     font-size: 48px;
+ 643:     margin-bottom: var(--ne-spacing-md);
+ 644:     opacity: 0.5;
+ 645: }
+ 646: 
+ 647: .empty-text {
+ 648:     font-size: 14px;
+ 649: }
+ 650: 
+ 651: /* ===== ATTACH MENU ===== */
+ 652: .attach-menu {
+ 653:     position: fixed;
+ 654:     bottom: 100px;
+ 655:     left: var(--ne-spacing-lg);
+ 656:     right: var(--ne-spacing-lg);
+ 657:     background: rgba(0, 0, 0, 0.8);
+ 658:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 659:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 660:     border: var(--glass-border-light);
+ 661:     border-radius: var(--glass-radius);
+ 662:     padding: var(--ne-spacing-sm);
+ 663:     display: grid;
+ 664:     grid-template-columns: repeat(2, 1fr);
+ 665:     gap: var(--ne-spacing-sm);
+ 666:     z-index: 102;
+ 667:     animation: fadeIn 0.2s ease-out;
+ 668: }
+ 669: 
+ 670: .attach-option {
+ 671:     display: flex;
+ 672:     flex-direction: column;
+ 673:     align-items: center;
+ 674:     gap: 6px;
+ 675:     padding: var(--ne-spacing-lg);
+ 676:     border-radius: var(--glass-radius-sm);
+ 677:     border: var(--glass-border);
+ 678:     background: var(--glass-bg);
+ 679:     color: var(--ne-white);
+ 680:     font-size: 12px;
+ 681:     cursor: pointer;
+ 682:     transition: var(--glass-transition);
+ 683: }
+ 684: 
+ 685: .attach-option:active {
+ 686:     transform: scale(0.95);
+ 687:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+ 688: }
+ 689: 
+ 690: .attach-icon {
+ 691:     font-size: 28px;
+ 692: }
+ 693: 
+ 694: /* ===== VIDEO RECORDING ===== */
+ 695: .video-recording {
+ 696:     position: fixed;
+ 697:     top: 0;
+ 698:     left: 0;
+ 699:     right: 0;
+ 700:     bottom: 0;
+ 701:     background: var(--ne-black);
+ 702:     z-index: 200;
+ 703:     display: flex;
+ 704:     flex-direction: column;
+ 705: }
+ 706: 
+ 707: .video-preview {
+ 708:     flex: 1;
+ 709:     position: relative;
+ 710:     background: var(--ne-black);
+ 711: }
+ 712: 
+ 713: .video-preview video {
+ 714:     width: 100%;
+ 715:     height: 100%;
+ 716:     object-fit: cover;
+ 717: }
+ 718: 
+ 719: .video-controls {
+ 720:     position: absolute;
+ 721:     bottom: 0;
+ 722:     left: 0;
+ 723:     right: 0;
+ 724:     padding: var(--ne-spacing-xl);
+ 725:     display: flex;
+ 726:     justify-content: center;
+ 727:     align-items: center;
+ 728:     gap: var(--ne-spacing-lg);
+ 729:     background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+ 730: }
+ 731: 
+ 732: .video-record-btn {
+ 733:     width: 64px;
+ 734:     height: 64px;
+ 735:     border-radius: 50%;
+ 736:     border: 4px solid var(--ne-white);
+ 737:     background: transparent;
+ 738:     cursor: pointer;
+ 739:     transition: all 0.2s;
+ 740: }
+ 741: 
+ 742: .video-record-btn.recording {
+ 743:     background: var(--ne-red);
+ 744:     border-radius: 12px;
+ 745: }
+ 746: 
+ 747: .camera-switch-btn {
+ 748:     width: 48px;
+ 749:     height: 48px;
+ 750:     border-radius: 50%;
+ 751:     border: var(--glass-border);
+ 752:     background: rgba(0,0,0,0.5);
+ 753:     backdrop-filter: blur(8px);
+ 754:     -webkit-backdrop-filter: blur(8px);
+ 755:     color: var(--ne-white);
+ 756:     font-size: 24px;
+ 757:     cursor: pointer;
+ 758:     display: flex;
+ 759:     align-items: center;
+ 760:     justify-content: center;
+ 761: }
+ 762: 
+ 763: /* ===== RESPONSIVE ===== */
+ 764: @media (min-width: 768px) {
+ 765:     .app-main {
+ 766:         max-width: none !important;
+ 767:         margin: 0;
+ 768:     }
+ 769:     
+ 770:     .chat-input-container {
+ 771:         max-width: none;
+ 772:         left: 0;
+ 773:         transform: none;
+ 774:     }
+ 775:     
+ 776:     .attach-menu {
+ 777:         max-width: none;
+ 778:         left: var(--ne-spacing-lg);
+ 779:         transform: none;
+ 780:     }
+ 781: }
+ 782: 
+ 783: @media (min-width: 768px) {
+ 784:     html, body, #app, .app-main, .container, .tg-web-app {
+ 785:         max-width: none !important;
+ 786:         width: 100vw !important;
+ 787:         height: var(--tg-viewport-stable-height, 100dvh) !important;
+ 788:         margin: 0 !important;
+ 789:         padding: 0 !important;
+ 790:         overflow-x: hidden !important;
+ 791:     }
+ 792: }
+ 793: 
+ 794: /* ===== REDUCED TRANSPARENCY (Accessibility) ===== */
+ 795: @media (prefers-reduced-transparency: reduce) {
+ 796:     .message-bubble,
+ 797:     .chat-input-container,
+ 798:     .bottom-nav,
+ 799:     .btn,
+ 800:     .form-input {
+ 801:         backdrop-filter: none;
+ 802:         -webkit-backdrop-filter: none;
+ 803:     }
+ 804:     
+ 805:     .chat-message.user .message-bubble {
+ 806:         background: rgba(255, 255, 255, 0.95);
+ 807:     }
+ 808:     
+ 809:     .chat-message.hermes .message-bubble {
+ 810:         background: rgba(0, 0, 0, 0.95);
+ 811:     }
+ 812: }
+ 813: 
+ 814: /* ===== NEW UI STRUCTURE v0.20.511 ===== */
+ 815: /* Top control panel: mic (left) + task spec (right) */
+ 816: 
+ 817: .top-control-panel {
+ 818:     display: flex;
+ 819:     justify-content: space-between;
+ 820:     align-items: center;
+ 821:     gap: var(--ne-spacing-md);
+ 822:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
+ 823:     background: var(--glass-bg);
+ 824:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 825:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 826:     border-bottom: var(--glass-border);
+ 827:     min-height: 56px;
+ 828: }
+ 829: 
+ 830: .left-mic-panel {
+ 831:     display: flex;
+ 832:     align-items: center;
+ 833:     gap: var(--ne-spacing-sm);
+ 834: }
+ 835: 
+ 836: .mic-button {
+ 837:     width: 44px;
+ 838:     height: 44px;
+ 839:     border-radius: 50%;
+ 840:     background: var(--glass-bg-light);
+ 841:     border: var(--glass-border);
+ 842:     display: flex;
+ 843:     align-items: center;
+ 844:     justify-content: center;
+ 845:     cursor: pointer;
+ 846:     transition: var(--glass-transition);
+ 847:     font-size: 20px;
+ 848: }
+ 849: 
+ 850: .mic-button:hover {
+ 851:     background: rgba(255, 255, 255, 0.12);
+ 852:     border-color: rgba(255, 255, 255, 0.2);
+ 853: }
+ 854: 
+ 855: .mic-button.recording {
+ 856:     background: rgba(239, 68, 68, 0.2);
+ 857:     border-color: rgba(239, 68, 68, 0.4);
+ 858:     animation: pulse-recording 1.5s ease-in-out infinite;
+ 859: }
+ 860: 
+ 861: @keyframes pulse-recording {
+ 862:     0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+ 863:     50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+ 864: }
+ 865: 
+ 866: .right-contract-panel {
+ 867:     flex: 1;
+ 868:     max-width: 60%;
+ 869:     min-height: 40px;
+ 870: }
+ 871: 
+ 872: .task-spec-container {
+ 873:     background: var(--glass-bg);
+ 874:     border: var(--glass-border);
+ 875:     border-radius: var(--glass-radius-sm);
+ 876:     padding: var(--ne-spacing-sm) var(--ne-spacing-md);
+ 877:     font-size: 13px;
+ 878:     color: var(--ne-light-gray);
+ 879:     max-height: 120px;
+ 880:     overflow-y: auto;
+ 881:     transition: var(--glass-transition);
+ 882: }
+ 883: 
+ 884: .task-spec-container.has-content {
+ 885:     border-color: rgba(139, 92, 246, 0.3);
+ 886:     background: rgba(139, 92, 246, 0.05);
+ 887: }
+ 888: 
+ 889: .task-spec-title {
+ 890:     font-size: 11px;
+ 891:     font-weight: 600;
+ 892:     color: var(--ne-purple);
+ 893:     text-transform: uppercase;
+ 894:     letter-spacing: 0.5px;
+ 895:     margin-bottom: 4px;
+ 896: }
+ 897: 
+ 898: /* Vertical connectors */
+ 899: .vertical-connector {
+ 900:     position: absolute;
+ 901:     top: 0;
+ 902:     bottom: 0;
+ 903:     width: 1px;
+ 904:     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15), transparent);
+ 905:     pointer-events: none;
+ 906:     z-index: 0;
+ 907: }
+ 908: 
+ 909: .vertical-connector.left {
+ 910:     left: calc(var(--ne-spacing-lg) + 22px);
+ 911: }
+ 912: 
+ 913: .vertical-connector.right {
+ 914:     right: calc(var(--ne-spacing-lg) + 22px);
+ 915: }
+ 916: 
+ 917: /* Chat area with top panel spacing */
+ 918: .view.has-top-panel .chat-messages {
+ 919:     padding-top: var(--ne-spacing-sm);
+ 920: }
+ 921: 
+ 922: /* Task spec questions */
+ 923: .task-question {
+ 924:     margin-top: var(--ne-spacing-sm);
+ 925:     padding-top: var(--ne-spacing-sm);
+ 926:     border-top: 1px solid rgba(255, 255, 255, 0.06);
+ 927: }
+ 928: 
+ 929: .task-question p {
+ 930:     font-size: 12px;
+ 931:     color: var(--ne-silver);
+ 932:     margin-bottom: 4px;
+ 933: }
+ 934: 
+ 935: .task-question input {
+ 936:     width: 100%;
+ 937:     background: rgba(0, 0, 0, 0.3);
+ 938:     border: 1px solid rgba(255, 255, 255, 0.1);
+ 939:     border-radius: 6px;
+ 940:     padding: 6px 10px;
+ 941:     color: var(--ne-white);
+ 942:     font-size: 12px;
+ 943:     outline: none;
+ 944:     transition: var(--glass-transition);
+ 945: }
+ 946: 
+ 947: .task-question input:focus {
+ 948:     border-color: rgba(139, 92, 246, 0.5);
+ 949: }
+ 950: 
+ 951: /* ─── Панель вопросов смарт-контракта ─────────────────────────────── */
+ 952: .contract-qa-panel {
+ 953:     margin: var(--ne-spacing-md) var(--ne-spacing-lg);
+ 954:     padding: var(--ne-spacing-md);
+ 955:     background: var(--glass-bg);
+ 956:     border: var(--glass-border);
+ 957:     border-radius: var(--glass-radius-sm);
+ 958:     backdrop-filter: blur(8px);
+ 959:     -webkit-backdrop-filter: blur(8px);
+ 960: }
+ 961: 
+ 962: .qa-item {
+ 963:     margin-bottom: 10px;
+ 964:     padding-bottom: 10px;
+ 965:     border-bottom: 1px solid rgba(255,255,255,0.06);
+ 966: }
+ 967: 
+ 968: .qa-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+ 969: 
+ 970: .qa-question {
+ 971:     font-size: 0.85rem;
+ 972:     color: #a0b4ff;
+ 973:     margin-bottom: 6px;
+ 974:     line-height: 1.4;
+ 975: }
+ 976: 
+ 977: .qa-answer-input {
+ 978:     width: 100%;
+ 979:     padding: 8px 10px;
+ 980:     background: rgba(0,0,0,0.3);
+ 981:     border: 1px solid rgba(255,255,255,0.1);
+ 982:     border-radius: 8px;
+ 983:     color: #fff;
+ 984:     font-size: 0.85rem;
+ 985:     outline: none;
+ 986:     transition: border-color 0.2s;
+ 987: }
+ 988: 
+ 989: .qa-answer-input:focus { border-color: #00ff88; }
+ 990: 
+ 991: .qa-empty { color: #666; font-size: 0.8rem; text-align: center; padding: 8px 0; }
+ 992: 
+ 993: /* ─── Голосовой ввод (пульсация) ──────────────────────────────────── */
+ 994: .mic-button.recording,
+ 995: #micButton.recording {
+ 996:     animation: pulse-recording 1.2s infinite ease-in-out;
+ 997:     border-color: #ff4d4d !important;
+ 998:     box-shadow: 0 0 12px rgba(255,77,77,0.4);
+ 999: }
+1000: 
+1001: @keyframes pulse-recording {
+1002:     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0.5); }
+1003:     70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(255,77,77,0); }
+1004:     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0); }
+1005: }
+1006: 
+1007: /* ─── История ТЗ ──────────────────────────────────────────────────── */
+1008: .task-history-panel {
+1009:     position: fixed;
+1010:     bottom: 80px;
+1011:     left: 50%;
+1012:     transform: translateX(-50%) translateY(20px);
+1013:     width: 90%;
+1014:     max-width: 400px;
+1015:     max-height: 50vh;
+1016:     background: rgba(18,18,24,0.95);
+1017:     border: 1px solid rgba(255,255,255,0.1);
+1018:     border-radius: 16px;
+1019:     padding: 12px;
+1020:     overflow-y: auto;
+1021:     opacity: 0;
+1022:     pointer-events: none;
+1023:     transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+1024:     z-index: 900;
+1025:     backdrop-filter: blur(12px);
+1026:     -webkit-backdrop-filter: blur(12px);
+1027: }
+1028: 
+1029: .task-history-panel.visible {
+1030:     opacity: 1;
+1031:     pointer-events: auto;
+1032:     transform: translateX(-50%) translateY(0);
+1033: }
+1034: 
+1035: .task-history-panel .history-item {
+1036:     display: flex;
+1037:     gap: 8px;
+1038:     padding: 8px;
+1039:     border-radius: 8px;
+1040:     cursor: pointer;
+1041:     transition: background 0.15s;
+1042: }
+1043: 
+1044: .task-history-panel .history-item:hover { background: rgba(255,255,255,0.06); }
+1045: 
+1046: .task-history-panel .history-time { color: #666; font-size: 0.75rem; min-width: 42px; }
+1047: 
+1048: .task-history-panel .history-text { color: #ccc; font-size: 0.8rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+1049: 
+1050: .task-history-panel .history-empty { color: #555; text-align: center; padding: 16px 0; font-size: 0.8rem; }
+1051: 
+1052: /* ─── Кнопка экспорта ─────────────────────────────────────────────── */
+1053: .export-btn-sm {
+1054:     flex: 1;
+1055:     padding: 6px 8px;
+1056:     background: rgba(255,255,255,0.06);
+1057:     border: 1px solid rgba(255,255,255,0.1);
+1058:     border-radius: 8px;
+1059:     color: var(--ne-light-gray);
+1060:     font-size: 0.75rem;
+1061:     cursor: pointer;
+1062:     transition: var(--glass-transition);
+1063: }
+1064: 
+1065: .export-btn-sm:hover {
+1066:     background: rgba(255,255,255,0.12);
+1067:     border-color: rgba(255,255,255,0.2);
+1068: }
+1069: 
+1070: .export-btn-sm:active { transform: scale(0.97); }
+1071: 
+1072: .export-btn {
+1073:     margin-top: 10px;
+1074:     width: 100%;
+1075:     padding: 10px;
+1076:     background: linear-gradient(135deg, #00ff88 0%, #00b8ff 100%);
+1077:     border: none;
+1078:     border-radius: 10px;
+1079:     color: #000;
+1080:     font-weight: 600;
+1081:     font-size: 0.85rem;
+1082:     cursor: pointer;
+1083:     transition: opacity 0.2s, transform 0.1s;
+1084: }
+1085: 
+1086: .export-btn:active { transform: scale(0.98); opacity: 0.9; }
 </file>
 
 <file path="index.html">
@@ -3808,1001 +3945,1001 @@ This section contains the contents of the repository's files.
   18:         this.chatMessages = [];
   19:         this.currentStream = null;
   20:         this.currentFacingMode = 'user';
-  21:         
-  22:         this.init();
-  23:     }
-  24: 
-  25:     async init() {
-  26:         if (window.Telegram?.WebApp) {
-  27:             const tg = window.Telegram.WebApp;
-  28:             tg.ready();
-  29:             // Bot API 8.0+: requestFullscreen for desktop/immersive, fallback to expand()
-  30:             if (typeof tg.requestFullscreen === 'function') {
-  31:                 tg.requestFullscreen();
-  32:             } else {
-  33:                 tg.expand();
-  34:             }
-  35:         }
-  36:         this.userData = telegram.getUser();
-  37:         this.updateHeader();
-  38:         await this.loadCache();
-  39:         this.navigate('hermes');
-  40:         
-  41:         window.addEventListener('ton:statusChange', (e) => {
-  42:             this.onTonStatusChange(e.detail);
-  43:         });
-  44:         
-  45:         this.requestDataFromBot();
-  46: 
-  47:         // Fullscreen button handler (user gesture required on TG Desktop)
-  48:         const fsBtn = document.getElementById('tg-fullscreen-btn');
-  49:         if (fsBtn && window.Telegram?.WebApp) {
-  50:             const tg = window.Telegram.WebApp;
-  51:             if (typeof tg.requestFullscreen === 'function') {
-  52:                 fsBtn.addEventListener('click', () => {
-  53:                     tg.requestFullscreen().catch(e => console.warn('[TG] Fullscreen blocked:', e));
-  54:                 });
-  55:                 // Hide button if already in fullscreen
-  56:                 if (tg.isFullscreen === true) {
-  57:                     fsBtn.style.display = 'none';
-  58:                 }
-  59:                 // Listen for fullscreen changes
-  60:                 tg.onEvent('fullscreenChanged', () => {
-  61:                     if (fsBtn) fsBtn.style.display = tg.isFullscreen ? 'none' : 'inline-block';
-  62:                 });
-  63:             } else {
-  64:                 fsBtn.style.display = 'none';
-  65:             }
-  66:         }
-  67: 
-  68:         // Enter key fix for chat input — prevent form submit / page reload
-  69:         const chatInput = document.getElementById('chat-input');
-  70:         if (chatInput) {
-  71:             chatInput.addEventListener('keydown', (e) => {
-  72:                 if (e.key === 'Enter' && !e.shiftKey) {
-  73:                     e.preventDefault();
-  74:                     this.sendTextMessage();
-  75:                 }
-  76:             });
-  77:         }
-  78: 
-  79:         // Prevent any accidental form submit if input is wrapped in <form>
-  80:         const chatContainer = document.getElementById('chat-input-container');
-  81:         if (chatContainer) {
-  82:             chatContainer.addEventListener('submit', (e) => e.preventDefault());
-  83:         }
-  84: 
-  85:         // Ensure send button is type="button" not "submit"
-  86:         const sendBtn = document.getElementById('send-btn');
-  87:         if (sendBtn && !sendBtn.getAttribute('type')) {
-  88:             sendBtn.setAttribute('type', 'button');
-  89:         }
-  90:     }
-  91: 
-  92:     updateHeader() {
-  93:         const nameEl = document.getElementById('user-name');
-  94:         
-  95:         if (this.userData) {
-  96:             const name = this.userData.first_name || this.userData.username || 'Пользователь';
-  97:             nameEl.textContent = name;
-  98:         } else {
-  99:             nameEl.textContent = 'Гость';
- 100:         }
- 101:     }
- 102: 
- 103:     navigate(view) {
- 104:         // Reset voice state when switching tabs
- 105:         if (view !== 'hermes' && this.voiceState !== 'IDLE') {
- 106:             this.resetVoiceState();
- 107:         }
- 108:         
- 109:         this.currentView = view;
- 110:         
- 111:         document.querySelectorAll('.nav-btn').forEach(btn => {
- 112:             btn.classList.toggle('active', btn.dataset.view === view);
- 113:         });
- 114:         
- 115:         const main = document.getElementById('main-content');
- 116:         main.innerHTML = '';
- 117:         
- 118:         // Show/hide chat input based on view
- 119:         const chatInput = document.getElementById('chat-input-container');
- 120:         if (chatInput) {
- 121:             chatInput.style.display = view === 'hermes' ? 'flex' : 'none';
- 122:         }
- 123:         
- 124:         switch(view) {
- 125:             case 'hermes':
- 126:                 this.renderHermesView(main);
- 127:                 break;
- 128:             case 'deals':
- 129:                 this.renderDealsView(main);
- 130:                 break;
- 131:             case 'profile':
- 132:                 this.renderProfileView(main);
- 133:                 break;
- 134:         }
- 135:         
- 136:         telegram.haptic('light');
- 137:     }
- 138: 
- 139:     // -------------------------------------------------------------------------
- 140:     // Hermes View (Voice Interface - Main Screen)
- 141:     // -------------------------------------------------------------------------
- 142: 
- 143:     renderHermesView(container) {
- 144:         const view = document.createElement('div');
- 145:         view.className = 'view has-top-panel';
- 146:         
- 147:         view.innerHTML = `
- 148:             <div class="top-control-panel">
- 149:                 <div class="left-mic-panel">
- 150:                     <button class="mic-button" id="voice-btn" onclick="app.toggleVoice()">
- 151:                         <span class="voice-icon">🎙️</span>
- 152:                     </button>
- 153:                 </div>
- 154:                 <div class="right-contract-panel">
- 155:                     <div id="task-spec" class="task-spec-container">
- 156:                         <div class="task-spec-title">Техническое задание</div>
- 157:                         <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
- 158:                     </div>
- 159:                 </div>
- 160:             </div>
- 161:             <div class="chat-messages" id="chat-messages"></div>
- 162:         `;
+  21:         this.recognition = null;
+  22:         this.contractAnswers = {};
+  23:         this.taskSpecHistory = [];
+  24:         
+  25:         this.init();
+  26:     }
+  27: 
+  28:     async init() {
+  29:         if (window.Telegram?.WebApp) {
+  30:             const tg = window.Telegram.WebApp;
+  31:             tg.ready();
+  32:             // Bot API 8.0+: requestFullscreen for desktop/immersive, fallback to expand()
+  33:             if (typeof tg.requestFullscreen === 'function') {
+  34:                 tg.requestFullscreen();
+  35:             } else {
+  36:                 tg.expand();
+  37:             }
+  38:         }
+  39:         this.userData = telegram.getUser();
+  40:         this.updateHeader();
+  41:         await this.loadCache();
+  42:         this.navigate('hermes');
+  43:         
+  44:         window.addEventListener('ton:statusChange', (e) => {
+  45:             this.onTonStatusChange(e.detail);
+  46:         });
+  47:         
+  48:         this.requestDataFromBot();
+  49: 
+  50:         // Fullscreen button handler (user gesture required on TG Desktop)
+  51:         const fsBtn = document.getElementById('tg-fullscreen-btn');
+  52:         if (fsBtn && window.Telegram?.WebApp) {
+  53:             const tg = window.Telegram.WebApp;
+  54:             if (typeof tg.requestFullscreen === 'function') {
+  55:                 fsBtn.addEventListener('click', () => {
+  56:                     tg.requestFullscreen().catch(e => console.warn('[TG] Fullscreen blocked:', e));
+  57:                 });
+  58:                 // Hide button if already in fullscreen
+  59:                 if (tg.isFullscreen === true) {
+  60:                     fsBtn.style.display = 'none';
+  61:                 }
+  62:                 // Listen for fullscreen changes
+  63:                 tg.onEvent('fullscreenChanged', () => {
+  64:                     if (fsBtn) fsBtn.style.display = tg.isFullscreen ? 'none' : 'inline-block';
+  65:                 });
+  66:             } else {
+  67:                 fsBtn.style.display = 'none';
+  68:             }
+  69:         }
+  70: 
+  71:         // Enter key fix for chat input — prevent form submit / page reload
+  72:         const chatInput = document.getElementById('chat-input');
+  73:         if (chatInput) {
+  74:             chatInput.addEventListener('keydown', (e) => {
+  75:                 if (e.key === 'Enter' && !e.shiftKey) {
+  76:                     e.preventDefault();
+  77:                     this.sendTextMessage();
+  78:                 }
+  79:             });
+  80:         }
+  81: 
+  82:         // Prevent any accidental form submit if input is wrapped in <form>
+  83:         const chatContainer = document.getElementById('chat-input-container');
+  84:         if (chatContainer) {
+  85:             chatContainer.addEventListener('submit', (e) => e.preventDefault());
+  86:         }
+  87: 
+  88:         // Ensure send button is type="button" not "submit"
+  89:         const sendBtn = document.getElementById('send-btn');
+  90:         if (sendBtn && !sendBtn.getAttribute('type')) {
+  91:             sendBtn.setAttribute('type', 'button');
+  92:         }
+  93: 
+  94:         // Priority 2-3: Voice input, Contract Q&A, Task Spec history
+  95:         this.initVoiceInput();
+  96:         this.loadTaskSpecHistory();
+  97: 
+  98:         const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
+  99:         if (micBtn) micBtn.onclick = () => this.toggleVoiceRecording();
+ 100: 
+ 101:         const exportBtn = document.getElementById('exportTaskSpecBtn');
+ 102:         if (exportBtn) exportBtn.onclick = () => this.exportTaskSpec();
+ 103: 
+ 104:         const historyToggle = document.getElementById('toggleTaskHistoryBtn');
+ 105:         const historyPanel = document.getElementById('task-history-panel');
+ 106:         if (historyToggle && historyPanel) {
+ 107:             historyToggle.onclick = () => {
+ 108:                 historyPanel.classList.toggle('visible');
+ 109:                 telegram.haptic('light');
+ 110:             };
+ 111:         }
+ 112: 
+ 113:         this.renderContractQuestions([
+ 114:             { id: 'q1', text: 'Каков дедлайн исполнения смарт-контракта?' },
+ 115:             { id: 'q2', text: 'Укажите условия возврата средств при срыве сроков.' },
+ 116:             { id: 'q3', text: 'Требуется ли арбитраж третьей стороны?' }
+ 117:         ]);
+ 118:     }
+ 119: 
+ 120:     updateHeader() {
+ 121:         const nameEl = document.getElementById('user-name');
+ 122:         
+ 123:         if (this.userData) {
+ 124:             const name = this.userData.first_name || this.userData.username || 'Пользователь';
+ 125:             nameEl.textContent = name;
+ 126:         } else {
+ 127:             nameEl.textContent = 'Гость';
+ 128:         }
+ 129:     }
+ 130: 
+ 131:     navigate(view) {
+ 132:         // Reset voice state when switching tabs
+ 133:         if (view !== 'hermes' && this.voiceState !== 'IDLE') {
+ 134:             this.resetVoiceState();
+ 135:         }
+ 136:         
+ 137:         this.currentView = view;
+ 138:         
+ 139:         document.querySelectorAll('.nav-btn').forEach(btn => {
+ 140:             btn.classList.toggle('active', btn.dataset.view === view);
+ 141:         });
+ 142:         
+ 143:         const main = document.getElementById('main-content');
+ 144:         main.innerHTML = '';
+ 145:         
+ 146:         // Show/hide chat input based on view
+ 147:         const chatInput = document.getElementById('chat-input-container');
+ 148:         if (chatInput) {
+ 149:             chatInput.style.display = view === 'hermes' ? 'flex' : 'none';
+ 150:         }
+ 151:         
+ 152:         switch(view) {
+ 153:             case 'hermes':
+ 154:                 this.renderHermesView(main);
+ 155:                 break;
+ 156:             case 'deals':
+ 157:                 this.renderDealsView(main);
+ 158:                 break;
+ 159:             case 'profile':
+ 160:                 this.renderProfileView(main);
+ 161:                 break;
+ 162:         }
  163:         
- 164:         container.appendChild(view);
- 165:         this.renderChatMessages();
- 166:     }
- 167: 
- 168:     toggleVoice() {
- 169:         // Explicit protection against multiple taps during processing
- 170:         if (this.voiceState === 'PROCESSING' || this.isProcessing) {
- 171:             return;
- 172:         }
- 173:         
- 174:         if (this.voiceState === 'LISTENING') {
- 175:             this.stopVoiceRecording();
- 176:         } else {
- 177:             this.voiceState = 'LISTENING';
- 178:             this.updateVoiceButton();
- 179:             this.startVoiceRecording();
- 180:         }
- 181:         
- 182:         telegram.haptic('medium');
- 183:     }
- 184: 
- 185:     async startVoiceRecording() {
- 186:         try {
- 187:             const tg = window.Telegram?.WebApp;
- 188:             // Try native Telegram voice recording (Bot API 9.6+)
- 189:             if (tg && typeof tg.requestVoiceMessage === 'function') {
- 190:                 const result = await tg.requestVoiceMessage();
- 191:                 
- 192:                 if (result && result.file_id) {
- 193:                     this.sendVoiceToBot(result.file_id, result.duration);
- 194:                 } else {
- 195:                     throw new Error('No file_id received');
- 196:                 }
- 197:             } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
- 198:                 // Fallback to manual recording
- 199:                 this.fallbackToManualRecording();
- 200:             } else {
- 201:                 telegram.showAlert('Запись голоса не поддерживается в вашем браузере. Используйте текстовый ввод.');
- 202:             }
- 203:         } catch (error) {
- 204:             console.error('[Voice] Recording failed:', error.message);
- 205:             this.handleVoiceError(error);
- 206:         }
- 207:     }
- 208: 
- 209:     stopVoiceRecording() {
- 210:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
- 211:             this.mediaRecorder.stop();
- 212:         }
- 213:         this.resetVoiceState();
- 214:     }
- 215: 
- 216:     fallbackToManualRecording() {
- 217:         navigator.mediaDevices.getUserMedia({ audio: true })
- 218:             .then(stream => {
- 219:                 this.mediaRecorder = new MediaRecorder(stream);
- 220:                 this.audioChunks = [];
- 221:                 
- 222:                 this.mediaRecorder.ondataavailable = (e) => {
- 223:                     this.audioChunks.push(e.data);
- 224:                 };
- 225:                 
- 226:                 this.mediaRecorder.onstop = () => {
- 227:                     const audioBlob = new Blob(this.audioChunks, { type: 'audio/ogg' });
- 228:                     this.uploadVoiceBlob(audioBlob);
- 229:                     stream.getTracks().forEach(track => track.stop());
- 230:                 };
- 231:                 
- 232:                 this.mediaRecorder.start();
- 233:                 console.log('[NeuroEscrow] Fallback recording started');
- 234:             })
- 235:             .catch(error => {
- 236:                 this.handleVoiceError(error);
- 237:             });
- 238:     }
- 239: 
- 240:     uploadVoiceBlob(blob) {
- 241:         // This would require bot-side endpoint for blob upload
- 242:         // For now, just show error
- 243:         this.handleVoiceError(new Error('Manual recording not yet implemented'));
- 244:     }
- 245: 
- 246:     sendVoiceToBot(fileId, duration) {
- 247:         this.voiceState = 'PROCESSING';
- 248:         this.isProcessing = true;
- 249:         this.updateVoiceButton();
- 250:         this.setupResponseTimeout();
- 251:         
- 252:         const payload = {
- 253:             action: 'voice_message',
- 254:             file_id: fileId,
- 255:             duration: duration,
- 256:             timestamp: Date.now(),
- 257:             user_id: telegram.getUserId()
- 258:         };
- 259:         
- 260:         telegram.sendData(payload);
- 261:         console.log('[NeuroEscrow] Voice sent to bot:', fileId);
- 262:     }
- 263: 
- 264:     updateVoiceButton() {
- 265:         const btn = document.getElementById('voice-btn');
- 266:         const status = document.getElementById('voice-status');
- 267:         
- 268:         if (!btn) return;
- 269:         
- 270:         // Remove all state classes
- 271:         btn.classList.remove('recording', 'processing');
- 272:         
- 273:         switch (this.voiceState) {
- 274:             case 'IDLE':
- 275:                 if (status) { status.textContent = ''; status.style.display = 'none'; }
- 276:                 this.isRecording = false;
- 277:                 break;
- 278:                 
- 279:             case 'LISTENING':
- 280:                 btn.classList.add('recording');
- 281:                 if (status) { status.textContent = 'Слушаю...'; status.style.display = 'block'; }
- 282:                 this.isRecording = true;
- 283:                 break;
- 284:                 
- 285:             case 'PROCESSING':
- 286:                 btn.classList.add('processing');
- 287:                 if (status) { status.textContent = 'Гермес обрабатывает...'; status.style.display = 'block'; }
- 288:                 this.isRecording = false;
- 289:                 break;
- 290:         }
- 291:     }
- 292: 
- 293:     setupResponseTimeout() {
- 294:         if (this.responseTimeout) {
- 295:             clearTimeout(this.responseTimeout);
- 296:         }
- 297:         
- 298:         this.responseTimeout = setTimeout(() => {
- 299:             if (this.voiceState === 'PROCESSING') {
- 300:                 this.handleVoiceError(new Error('timeout'));
- 301:             }
- 302:         }, 30000);
- 303:     }
- 304: 
- 305:     handleVoiceError(error) {
- 306:         console.error('[NeuroEscrow] Voice error:', error);
- 307:         
- 308:         this.resetVoiceState();
- 309:         
- 310:         let message = 'Ошибка записи голоса';
- 311:         
- 312:         if (error.message.includes('permission')) {
- 313:             message = 'Нет доступа к микрофону';
- 314:         } else if (error.message.includes('timeout')) {
- 315:             message = 'Превышено время ожидания';
- 316:         } else if (error.message.includes('cancelled')) {
- 317:             message = 'Запись отменена';
- 318:         }
- 319:         
- 320:         telegram.showAlert(message);
- 321:         telegram.hapticNotification('error');
- 322:     }
- 323: 
- 324:     resetVoiceState() {
- 325:         this.voiceState = 'IDLE';
- 326:         this.isRecording = false;
- 327:         this.isProcessing = false;
- 328:         this.updateVoiceButton();
- 329:         
+ 164:         telegram.haptic('light');
+ 165:     }
+ 166: 
+ 167:     // -------------------------------------------------------------------------
+ 168:     // Hermes View (Voice Interface - Main Screen)
+ 169:     // -------------------------------------------------------------------------
+ 170: 
+ 171:     renderHermesView(container) {
+ 172:         const view = document.createElement('div');
+ 173:         view.className = 'view has-top-panel';
+ 174:         
+ 175:         view.innerHTML = `
+ 176:             <div class="top-control-panel">
+ 177:                 <div class="left-mic-panel">
+ 178:                     <button class="mic-button" id="micButton">
+ 179:                         <span class="voice-icon">🎙️</span>
+ 180:                     </button>
+ 181:                 </div>
+ 182:                 <div class="right-contract-panel">
+ 183:                     <div id="task-spec" class="task-spec-container">
+ 184:                         <div class="task-spec-title">Техническое задание</div>
+ 185:                         <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
+ 186:                         <div style="display:flex;gap:6px;margin-top:8px;">
+ 187:                             <button id="exportTaskSpecBtn" class="export-btn-sm" type="button">📥 Экспорт</button>
+ 188:                             <button id="toggleTaskHistoryBtn" class="export-btn-sm" type="button">📜 История</button>
+ 189:                         </div>
+ 190:                     </div>
+ 191:                 </div>
+ 192:             </div>
+ 193:             <div class="chat-messages" id="chat-messages"></div>
+ 194:             <div id="contract-qa-container" class="contract-qa-panel"></div>
+ 195:             <div id="task-history-panel" class="task-history-panel">
+ 196:                 <div id="task-history-list"></div>
+ 197:             </div>
+ 198:         `;
+ 199:         
+ 200:         container.appendChild(view);
+ 201:         this.renderChatMessages();
+ 202:     }
+ 203: 
+ 204:     toggleVoice() {
+ 205:         // Explicit protection against multiple taps during processing
+ 206:         if (this.voiceState === 'PROCESSING' || this.isProcessing) {
+ 207:             return;
+ 208:         }
+ 209:         
+ 210:         if (this.voiceState === 'LISTENING') {
+ 211:             this.stopVoiceRecording();
+ 212:         } else {
+ 213:             this.voiceState = 'LISTENING';
+ 214:             this.updateVoiceButton();
+ 215:             this.startVoiceRecording();
+ 216:         }
+ 217:         
+ 218:         telegram.haptic('medium');
+ 219:     }
+ 220: 
+ 221:     async startVoiceRecording() {
+ 222:         try {
+ 223:             const tg = window.Telegram?.WebApp;
+ 224:             // Try native Telegram voice recording (Bot API 9.6+)
+ 225:             if (tg && typeof tg.requestVoiceMessage === 'function') {
+ 226:                 const result = await tg.requestVoiceMessage();
+ 227:                 
+ 228:                 if (result && result.file_id) {
+ 229:                     this.sendVoiceToBot(result.file_id, result.duration);
+ 230:                 } else {
+ 231:                     throw new Error('No file_id received');
+ 232:                 }
+ 233:             } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+ 234:                 // Fallback to manual recording
+ 235:                 this.fallbackToManualRecording();
+ 236:             } else {
+ 237:                 telegram.showAlert('Запись голоса не поддерживается в вашем браузере. Используйте текстовый ввод.');
+ 238:             }
+ 239:         } catch (error) {
+ 240:             console.error('[Voice] Recording failed:', error.message);
+ 241:             this.handleVoiceError(error);
+ 242:         }
+ 243:     }
+ 244: 
+ 245:     stopVoiceRecording() {
+ 246:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+ 247:             this.mediaRecorder.stop();
+ 248:         }
+ 249:         this.resetVoiceState();
+ 250:     }
+ 251: 
+ 252:     fallbackToManualRecording() {
+ 253:         navigator.mediaDevices.getUserMedia({ audio: true })
+ 254:             .then(stream => {
+ 255:                 this.mediaRecorder = new MediaRecorder(stream);
+ 256:                 this.audioChunks = [];
+ 257:                 
+ 258:                 this.mediaRecorder.ondataavailable = (e) => {
+ 259:                     this.audioChunks.push(e.data);
+ 260:                 };
+ 261:                 
+ 262:                 this.mediaRecorder.onstop = () => {
+ 263:                     const audioBlob = new Blob(this.audioChunks, { type: 'audio/ogg' });
+ 264:                     this.uploadVoiceBlob(audioBlob);
+ 265:                     stream.getTracks().forEach(track => track.stop());
+ 266:                 };
+ 267:                 
+ 268:                 this.mediaRecorder.start();
+ 269:                 console.log('[NeuroEscrow] Fallback recording started');
+ 270:             })
+ 271:             .catch(error => {
+ 272:                 this.handleVoiceError(error);
+ 273:             });
+ 274:     }
+ 275: 
+ 276:     uploadVoiceBlob(blob) {
+ 277:         // This would require bot-side endpoint for blob upload
+ 278:         // For now, just show error
+ 279:         this.handleVoiceError(new Error('Manual recording not yet implemented'));
+ 280:     }
+ 281: 
+ 282:     sendVoiceToBot(fileId, duration) {
+ 283:         this.voiceState = 'PROCESSING';
+ 284:         this.isProcessing = true;
+ 285:         this.updateVoiceButton();
+ 286:         this.setupResponseTimeout();
+ 287:         
+ 288:         const payload = {
+ 289:             action: 'voice_message',
+ 290:             file_id: fileId,
+ 291:             duration: duration,
+ 292:             timestamp: Date.now(),
+ 293:             user_id: telegram.getUserId()
+ 294:         };
+ 295:         
+ 296:         telegram.sendData(payload);
+ 297:         console.log('[NeuroEscrow] Voice sent to bot:', fileId);
+ 298:     }
+ 299: 
+ 300:     updateVoiceButton() {
+ 301:         const btn = document.getElementById('voice-btn');
+ 302:         const status = document.getElementById('voice-status');
+ 303:         
+ 304:         if (!btn) return;
+ 305:         
+ 306:         // Remove all state classes
+ 307:         btn.classList.remove('recording', 'processing');
+ 308:         
+ 309:         switch (this.voiceState) {
+ 310:             case 'IDLE':
+ 311:                 if (status) { status.textContent = ''; status.style.display = 'none'; }
+ 312:                 this.isRecording = false;
+ 313:                 break;
+ 314:                 
+ 315:             case 'LISTENING':
+ 316:                 btn.classList.add('recording');
+ 317:                 if (status) { status.textContent = 'Слушаю...'; status.style.display = 'block'; }
+ 318:                 this.isRecording = true;
+ 319:                 break;
+ 320:                 
+ 321:             case 'PROCESSING':
+ 322:                 btn.classList.add('processing');
+ 323:                 if (status) { status.textContent = 'Гермес обрабатывает...'; status.style.display = 'block'; }
+ 324:                 this.isRecording = false;
+ 325:                 break;
+ 326:         }
+ 327:     }
+ 328: 
+ 329:     setupResponseTimeout() {
  330:         if (this.responseTimeout) {
  331:             clearTimeout(this.responseTimeout);
- 332:             this.responseTimeout = null;
- 333:         }
- 334:     }
- 335: 
- 336:     handleDraftCreated(draft) {
- 337:         if (this.responseTimeout) {
- 338:             clearTimeout(this.responseTimeout);
- 339:         }
- 340:         
- 341:         // Check for duplicates
- 342:         const existingIndex = this.deals.findIndex(d => d.id === draft.id);
- 343:         if (existingIndex !== -1) {
- 344:             this.deals[existingIndex] = { ...draft, type: 'draft', isNew: true };
- 345:         } else {
- 346:             this.deals.unshift({ ...draft, type: 'draft', isNew: true });
- 347:         }
- 348:         
- 349:         this.resetVoiceState();
- 350:         this.saveCache(); // Save immediately after adding draft
- 351:         this.navigate('deals');
- 352:         
- 353:         telegram.hapticNotification('success');
- 354:         telegram.showAlert('Черновик создан');
+ 332:         }
+ 333:         
+ 334:         this.responseTimeout = setTimeout(() => {
+ 335:             if (this.voiceState === 'PROCESSING') {
+ 336:                 this.handleVoiceError(new Error('timeout'));
+ 337:             }
+ 338:         }, 30000);
+ 339:     }
+ 340: 
+ 341:     handleVoiceError(error) {
+ 342:         console.error('[NeuroEscrow] Voice error:', error);
+ 343:         
+ 344:         this.resetVoiceState();
+ 345:         
+ 346:         let message = 'Ошибка записи голоса';
+ 347:         
+ 348:         if (error.message.includes('permission')) {
+ 349:             message = 'Нет доступа к микрофону';
+ 350:         } else if (error.message.includes('timeout')) {
+ 351:             message = 'Превышено время ожидания';
+ 352:         } else if (error.message.includes('cancelled')) {
+ 353:             message = 'Запись отменена';
+ 354:         }
  355:         
- 356:         console.log('[NeuroEscrow] Draft created:', draft.id);
- 357:     }
- 358: 
- 359:     // -------------------------------------------------------------------------
- 360:     // Deals View
- 361:     // -------------------------------------------------------------------------
- 362: 
- 363:     renderDealsView(container) {
- 364:         const view = document.createElement('div');
- 365:         view.className = 'view';
- 366:         
- 367:         const deals = this.deals.length > 0 ? this.deals : this.getSampleDeals();
- 368:         
- 369:         view.innerHTML = `
- 370:             <h2 style="font-size:18px;margin-bottom:16px;font-weight:600;">Мои сделки</h2>
- 371:             ${deals.length === 0 ? this.emptyState('🤝', 'У вас пока нет сделок') : ''}
- 372:             <div id="deals-list">
- 373:                 ${deals.map(deal => deal.type === 'draft' ? this.renderDraftCard(deal) : this.dealCard(deal)).join('')}
- 374:             </div>
- 375:         `;
+ 356:         telegram.showAlert(message);
+ 357:         telegram.hapticNotification('error');
+ 358:     }
+ 359: 
+ 360:     resetVoiceState() {
+ 361:         this.voiceState = 'IDLE';
+ 362:         this.isRecording = false;
+ 363:         this.isProcessing = false;
+ 364:         this.updateVoiceButton();
+ 365:         
+ 366:         if (this.responseTimeout) {
+ 367:             clearTimeout(this.responseTimeout);
+ 368:             this.responseTimeout = null;
+ 369:         }
+ 370:     }
+ 371: 
+ 372:     handleDraftCreated(draft) {
+ 373:         if (this.responseTimeout) {
+ 374:             clearTimeout(this.responseTimeout);
+ 375:         }
  376:         
- 377:         container.appendChild(view);
- 378:     }
- 379: 
- 380:     renderDraftCard(draft) {
- 381:         const title = this.escapeHtml(draft.title || 'Без названия');
- 382:         const description = this.escapeHtml(draft.description || '');
- 383:         const budget = draft.budget || 'Не указан';
- 384:         const deadline = draft.deadline || 'Не указан';
- 385:         
- 386:         return `
- 387:             <div class="card draft-card" style="border-left:2px solid rgba(255, 255, 255, 0.34);">
- 388:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
- 389:                     <span style="font-size:12px;font-weight:600;color:rgba(255, 255, 255, 0.34);text-transform:uppercase;letter-spacing:0.5px;">Черновик</span>
- 390:                     <span style="font-size:11px;color:var(--ne-light-gray);">${this.formatDate(draft.created_at)}</span>
- 391:                 </div>
- 392:                 <div class="card-title">${title}</div>
- 393:                 <p style="font-size:13px;color:var(--ne-light-gray);margin:8px 0;">${description}</p>
- 394:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
- 395:                     <span>💰 ${budget}</span>
- 396:                     <span>⏱️ ${deadline}</span>
- 397:                 </div>
- 398:                 <div style="display:flex;gap:8px;margin-top:12px;">
- 399:                     <button class="btn btn-primary" onclick="app.editDraft('${draft.id}')" style="flex:1;">Редактировать</button>
- 400:                     <button class="btn btn-secondary" onclick="app.publishDraft('${draft.id}')" style="flex:1;">Опубликовать</button>
- 401:                 </div>
- 402:             </div>
- 403:         `;
- 404:     }
- 405: 
- 406:     dealCard(deal) {
- 407:         const statusColors = {
- 408:             'draft': 'rgba(255, 255, 255, 0.34)',
- 409:             'negotiating': '#dddddd',
- 410:             'in_progress': '#dddddd',
- 411:             'completed': 'rgba(255, 255, 255, 0.67)'
- 412:         };
- 413:         
- 414:         const statusNames = {
- 415:             'draft': 'Черновик',
- 416:             'negotiating': 'Переговоры',
- 417:             'in_progress': 'В работе',
- 418:             'completed': 'Завершена'
- 419:         };
- 420:         
- 421:         const color = statusColors[deal.status] || 'rgba(255, 255, 255, 0.34)';
- 422:         const statusName = statusNames[deal.status] || deal.status;
- 423:         
- 424:         return `
- 425:             <div class="card" style="border-left:2px solid ${color};">
- 426:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
- 427:                     <span style="font-size:12px;font-weight:600;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${statusName}</span>
- 428:                     <span style="font-size:11px;color:var(--ne-light-gray);">#${deal.id}</span>
- 429:                 </div>
- 430:                 <div class="card-title">${deal.title}</div>
- 431:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
- 432:                     <span>💰 ${deal.budget} USDT</span>
- 433:                     <span>👤 ${deal.counterparty}</span>
- 434:                 </div>
- 435:                 <div style="margin-top:12px;">
- 436:                     <button class="btn btn-secondary" onclick="app.viewDeal('${deal.id}')">Открыть в боте</button>
+ 377:         // Check for duplicates
+ 378:         const existingIndex = this.deals.findIndex(d => d.id === draft.id);
+ 379:         if (existingIndex !== -1) {
+ 380:             this.deals[existingIndex] = { ...draft, type: 'draft', isNew: true };
+ 381:         } else {
+ 382:             this.deals.unshift({ ...draft, type: 'draft', isNew: true });
+ 383:         }
+ 384:         
+ 385:         this.resetVoiceState();
+ 386:         this.saveCache(); // Save immediately after adding draft
+ 387:         this.navigate('deals');
+ 388:         
+ 389:         telegram.hapticNotification('success');
+ 390:         telegram.showAlert('Черновик создан');
+ 391:         
+ 392:         console.log('[NeuroEscrow] Draft created:', draft.id);
+ 393:     }
+ 394: 
+ 395:     // -------------------------------------------------------------------------
+ 396:     // Deals View
+ 397:     // -------------------------------------------------------------------------
+ 398: 
+ 399:     renderDealsView(container) {
+ 400:         const view = document.createElement('div');
+ 401:         view.className = 'view';
+ 402:         
+ 403:         const deals = this.deals.length > 0 ? this.deals : this.getSampleDeals();
+ 404:         
+ 405:         view.innerHTML = `
+ 406:             <h2 style="font-size:18px;margin-bottom:16px;font-weight:600;">Мои сделки</h2>
+ 407:             ${deals.length === 0 ? this.emptyState('🤝', 'У вас пока нет сделок') : ''}
+ 408:             <div id="deals-list">
+ 409:                 ${deals.map(deal => deal.type === 'draft' ? this.renderDraftCard(deal) : this.dealCard(deal)).join('')}
+ 410:             </div>
+ 411:         `;
+ 412:         
+ 413:         container.appendChild(view);
+ 414:     }
+ 415: 
+ 416:     renderDraftCard(draft) {
+ 417:         const title = this.escapeHtml(draft.title || 'Без названия');
+ 418:         const description = this.escapeHtml(draft.description || '');
+ 419:         const budget = draft.budget || 'Не указан';
+ 420:         const deadline = draft.deadline || 'Не указан';
+ 421:         
+ 422:         return `
+ 423:             <div class="card draft-card" style="border-left:2px solid rgba(255, 255, 255, 0.34);">
+ 424:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+ 425:                     <span style="font-size:12px;font-weight:600;color:rgba(255, 255, 255, 0.34);text-transform:uppercase;letter-spacing:0.5px;">Черновик</span>
+ 426:                     <span style="font-size:11px;color:var(--ne-light-gray);">${this.formatDate(draft.created_at)}</span>
+ 427:                 </div>
+ 428:                 <div class="card-title">${title}</div>
+ 429:                 <p style="font-size:13px;color:var(--ne-light-gray);margin:8px 0;">${description}</p>
+ 430:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
+ 431:                     <span>💰 ${budget}</span>
+ 432:                     <span>⏱️ ${deadline}</span>
+ 433:                 </div>
+ 434:                 <div style="display:flex;gap:8px;margin-top:12px;">
+ 435:                     <button class="btn btn-primary" onclick="app.editDraft('${draft.id}')" style="flex:1;">Редактировать</button>
+ 436:                     <button class="btn btn-secondary" onclick="app.publishDraft('${draft.id}')" style="flex:1;">Опубликовать</button>
  437:                 </div>
  438:             </div>
  439:         `;
  440:     }
  441: 
- 442:     getSampleDeals() {
- 443:         return [
- 444:             { id: 'a1b2', title: 'Telegram бот для интернет-магазина', status: 'in_progress', budget: '500', counterparty: 'client_42' },
- 445:             { id: 'c3d4', title: 'Парсер данных с сайта', status: 'completed', budget: '300', counterparty: 'client_17' },
- 446:         ];
- 447:     }
- 448: 
- 449:     viewDeal(dealId) {
- 450:         telegram.sendData({ action: 'view_deal', deal_id: dealId });
- 451:         telegram.showAlert('Открываю детали сделки в боте...');
- 452:     }
- 453: 
- 454:     editDraft(draftId) {
- 455:         telegram.sendData({ action: 'edit_draft', draft_id: draftId });
- 456:         telegram.showAlert('Открываю редактор в боте...');
- 457:     }
- 458: 
- 459:     publishDraft(draftId) {
- 460:         telegram.sendData({ action: 'publish_draft', draft_id: draftId });
- 461:         telegram.showAlert('Публикую черновик...');
- 462:     }
- 463: 
- 464:     escapeHtml(text) {
- 465:         const div = document.createElement('div');
- 466:         div.textContent = text;
- 467:         return div.innerHTML;
- 468:     }
- 469: 
- 470:     formatDate(timestamp) {
- 471:         if (!timestamp) return '';
- 472:         const date = new Date(timestamp * 1000);
- 473:         const now = new Date();
- 474:         const diff = now - date;
- 475:         
- 476:         if (diff < 60000) return 'только что';
- 477:         if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
- 478:         if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
- 479:         
- 480:         return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
- 481:     }
- 482: 
- 483:     // -------------------------------------------------------------------------
- 484:     // Profile View
- 485:     // -------------------------------------------------------------------------
- 486: 
- 487:     renderProfileView(container) {
- 488:         const view = document.createElement('div');
- 489:         view.className = 'view';
- 490:         
- 491:         view.innerHTML = `
- 492:             <div class="card" style="text-align:center;padding:24px;">
- 493:                 <div style="font-size:32px;font-weight:700;margin-bottom:8px;">${this.balance.toFixed(2)} USDT</div>
- 494:                 <div style="font-size:13px;color:var(--ne-light-gray);margin-bottom:20px;">Ваш баланс</div>
- 495:                 
- 496:                 <div style="display:flex;gap:8px;margin-bottom:16px;">
- 497:                     <button class="btn btn-primary" onclick="app.donate()" style="flex:1;">
- 498:                         💝 Поддержать
- 499:                     </button>
- 500:                     <button class="btn btn-secondary" onclick="app.leaveTip()" style="flex:1;">
- 501:                         ⭐ Чаевые
- 502:                     </button>
- 503:                 </div>
- 504:                 
- 505:                 <div style="font-size:11px;color:var(--ne-light-gray);margin-top:12px;">
- 506:                     TON • USDT • Telegram Stars
- 507:                 </div>
- 508:             </div>
- 509:             
- 510:             <div id="ton-connect" style="margin:16px 0;"></div>
- 511:             
- 512:             <div class="card">
- 513:                 <div class="card-title">Настройки</div>
- 514:                 <div class="form-group">
- 515:                     <label class="form-label">LLM Модель</label>
- 516:                     <select class="form-input" id="model-selector">
- 517:                         <option value="auto">Автоматически</option>
- 518:                         <option value="gpt-4">GPT-4</option>
- 519:                         <option value="claude">Claude</option>
- 520:                         <option value="grok">Grok</option>
- 521:                         <option value="custom">Своя модель</option>
- 522:                     </select>
- 523:                 </div>
- 524:             </div>
- 525:         `;
+ 442:     dealCard(deal) {
+ 443:         const statusColors = {
+ 444:             'draft': 'rgba(255, 255, 255, 0.34)',
+ 445:             'negotiating': '#dddddd',
+ 446:             'in_progress': '#dddddd',
+ 447:             'completed': 'rgba(255, 255, 255, 0.67)'
+ 448:         };
+ 449:         
+ 450:         const statusNames = {
+ 451:             'draft': 'Черновик',
+ 452:             'negotiating': 'Переговоры',
+ 453:             'in_progress': 'В работе',
+ 454:             'completed': 'Завершена'
+ 455:         };
+ 456:         
+ 457:         const color = statusColors[deal.status] || 'rgba(255, 255, 255, 0.34)';
+ 458:         const statusName = statusNames[deal.status] || deal.status;
+ 459:         
+ 460:         return `
+ 461:             <div class="card" style="border-left:2px solid ${color};">
+ 462:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+ 463:                     <span style="font-size:12px;font-weight:600;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${statusName}</span>
+ 464:                     <span style="font-size:11px;color:var(--ne-light-gray);">#${deal.id}</span>
+ 465:                 </div>
+ 466:                 <div class="card-title">${deal.title}</div>
+ 467:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
+ 468:                     <span>💰 ${deal.budget} USDT</span>
+ 469:                     <span>👤 ${deal.counterparty}</span>
+ 470:                 </div>
+ 471:                 <div style="margin-top:12px;">
+ 472:                     <button class="btn btn-secondary" onclick="app.viewDeal('${deal.id}')">Открыть в боте</button>
+ 473:                 </div>
+ 474:             </div>
+ 475:         `;
+ 476:     }
+ 477: 
+ 478:     getSampleDeals() {
+ 479:         return [
+ 480:             { id: 'a1b2', title: 'Telegram бот для интернет-магазина', status: 'in_progress', budget: '500', counterparty: 'client_42' },
+ 481:             { id: 'c3d4', title: 'Парсер данных с сайта', status: 'completed', budget: '300', counterparty: 'client_17' },
+ 482:         ];
+ 483:     }
+ 484: 
+ 485:     viewDeal(dealId) {
+ 486:         telegram.sendData({ action: 'view_deal', deal_id: dealId });
+ 487:         telegram.showAlert('Открываю детали сделки в боте...');
+ 488:     }
+ 489: 
+ 490:     editDraft(draftId) {
+ 491:         telegram.sendData({ action: 'edit_draft', draft_id: draftId });
+ 492:         telegram.showAlert('Открываю редактор в боте...');
+ 493:     }
+ 494: 
+ 495:     publishDraft(draftId) {
+ 496:         telegram.sendData({ action: 'publish_draft', draft_id: draftId });
+ 497:         telegram.showAlert('Публикую черновик...');
+ 498:     }
+ 499: 
+ 500:     escapeHtml(text) {
+ 501:         const div = document.createElement('div');
+ 502:         div.textContent = text;
+ 503:         return div.innerHTML;
+ 504:     }
+ 505: 
+ 506:     formatDate(timestamp) {
+ 507:         if (!timestamp) return '';
+ 508:         const date = new Date(timestamp * 1000);
+ 509:         const now = new Date();
+ 510:         const diff = now - date;
+ 511:         
+ 512:         if (diff < 60000) return 'только что';
+ 513:         if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
+ 514:         if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
+ 515:         
+ 516:         return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+ 517:     }
+ 518: 
+ 519:     // -------------------------------------------------------------------------
+ 520:     // Profile View
+ 521:     // -------------------------------------------------------------------------
+ 522: 
+ 523:     renderProfileView(container) {
+ 524:         const view = document.createElement('div');
+ 525:         view.className = 'view';
  526:         
- 527:         container.appendChild(view);
- 528:         
- 529:         setTimeout(() => {
- 530:             tonConnect.init('ton-connect');
- 531:         }, 100);
- 532:     }
- 533: 
- 534:     donate() {
- 535:         telegram.showAlert('Выберите способ:\n\n⭐ Stars: 50, 100, 250, 500\n💎 TON: 1, 5, 10, 25\n💵 USDT: 5, 10, 25, 50');
- 536:     }
- 537: 
- 538:     leaveTip() {
- 539:         telegram.showAlert('Быстрые чаевые:\n\n10 ⭐ | 25 ⭐ | 50 ⭐ | 100 ⭐');
- 540:     }
- 541: 
- 542:     onTonStatusChange(detail) {
- 543:         console.log('[App] TON status changed:', detail);
- 544:     }
- 545: 
- 546:     async loadCache() {
- 547:         try {
- 548:             const cached = await telegram.cloudGet('neuroescrow_data');
- 549:             if (cached) {
- 550:                 this.deals = cached.deals || [];
- 551:                 this.balance = cached.balance || 0;
- 552:                 this.chatMessages = cached.chatMessages || [];
- 553:                 console.log('[App] Cache loaded');
- 554:             }
- 555:         } catch (e) {
- 556:             console.log('[App] No cache found');
- 557:         }
- 558:     }
- 559: 
- 560:     async saveCache() {
- 561:         const data = {
- 562:             deals: this.deals,
- 563:             balance: this.balance,
- 564:             chatMessages: this.chatMessages,
- 565:             timestamp: Date.now()
- 566:         };
- 567:         await telegram.cloudSet('neuroescrow_data', data);
+ 527:         view.innerHTML = `
+ 528:             <div class="card" style="text-align:center;padding:24px;">
+ 529:                 <div style="font-size:32px;font-weight:700;margin-bottom:8px;">${this.balance.toFixed(2)} USDT</div>
+ 530:                 <div style="font-size:13px;color:var(--ne-light-gray);margin-bottom:20px;">Ваш баланс</div>
+ 531:                 
+ 532:                 <div style="display:flex;gap:8px;margin-bottom:16px;">
+ 533:                     <button class="btn btn-primary" onclick="app.donate()" style="flex:1;">
+ 534:                         💝 Поддержать
+ 535:                     </button>
+ 536:                     <button class="btn btn-secondary" onclick="app.leaveTip()" style="flex:1;">
+ 537:                         ⭐ Чаевые
+ 538:                     </button>
+ 539:                 </div>
+ 540:                 
+ 541:                 <div style="font-size:11px;color:var(--ne-light-gray);margin-top:12px;">
+ 542:                     TON • USDT • Telegram Stars
+ 543:                 </div>
+ 544:             </div>
+ 545:             
+ 546:             <div id="ton-connect" style="margin:16px 0;"></div>
+ 547:             
+ 548:             <div class="card">
+ 549:                 <div class="card-title">Настройки</div>
+ 550:                 <div class="form-group">
+ 551:                     <label class="form-label">LLM Модель</label>
+ 552:                     <select class="form-input" id="model-selector">
+ 553:                         <option value="auto">Автоматически</option>
+ 554:                         <option value="gpt-4">GPT-4</option>
+ 555:                         <option value="claude">Claude</option>
+ 556:                         <option value="grok">Grok</option>
+ 557:                         <option value="custom">Своя модель</option>
+ 558:                     </select>
+ 559:                 </div>
+ 560:             </div>
+ 561:         `;
+ 562:         
+ 563:         container.appendChild(view);
+ 564:         
+ 565:         setTimeout(() => {
+ 566:             tonConnect.init('ton-connect');
+ 567:         }, 100);
  568:     }
  569: 
- 570:     async loadSession(sessionId) {
- 571:         const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
- 572:             ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
- 573:             : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
- 574: 
- 575:         try {
- 576:             const resp = await fetch(baseUrl + 'session/' + sessionId, { mode: 'cors' });
- 577:             if (!resp.ok) return;
- 578: 
- 579:             const session = await resp.json();
- 580:             const messages = session.messages || [];
+ 570:     donate() {
+ 571:         telegram.showAlert('Выберите способ:\n\n⭐ Stars: 50, 100, 250, 500\n💎 TON: 1, 5, 10, 25\n💵 USDT: 5, 10, 25, 50');
+ 572:     }
+ 573: 
+ 574:     leaveTip() {
+ 575:         telegram.showAlert('Быстрые чаевые:\n\n10 ⭐ | 25 ⭐ | 50 ⭐ | 100 ⭐');
+ 576:     }
+ 577: 
+ 578:     onTonStatusChange(detail) {
+ 579:         console.log('[App] TON status changed:', detail);
+ 580:     }
  581: 
- 582:             this.chatMessages = messages.map(msg => ({
- 583:                 sender: msg.role === 'user' ? 'user' : 'hermes',
- 584:                 text: msg.content || msg.text || '',
- 585:                 timestamp: msg.timestamp ? new Date(msg.timestamp).getTime() : Date.now()
- 586:             }));
- 587: 
- 588:             this.renderChatMessages();
- 589:             this.saveCache();
- 590:         } catch (e) {
- 591:             console.error('[App] Load session error:', e.message);
- 592:         }
- 593:     }
- 594: 
- 595:     async loadSessionsList() {
- 596:         const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
- 597:             ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
- 598:             : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
- 599: 
- 600:         try {
- 601:             const resp = await fetch(baseUrl + 'sessions', { mode: 'cors' });
- 602:             if (!resp.ok) return [];
- 603:             return await resp.json();
- 604:         } catch (e) {
- 605:             console.error('[App] Load sessions error:', e.message);
- 606:             return [];
- 607:         }
- 608:     }
- 609: 
- 610:     requestDataFromBot() {
- 611:         telegram.sendData({ action: 'get_dashboard_data' });
- 612:     }
- 613: 
- 614:     handleBotData(data) {
- 615:         console.log('[App] Data from bot:', data);
- 616:         
- 617:         // Handle different event types
- 618:         if (data.event === 'draft_created' && data.draft) {
- 619:             this.handleDraftCreated(data.draft);
- 620:             return;
- 621:         }
- 622:         
- 623:         if (data.event === 'error') {
- 624:             this.handleVoiceError(new Error(data.error || 'Unknown error'));
- 625:             return;
- 626:         }
- 627: 
- 628:         if (data.event === 'hermes_reply' && data.text) {
- 629:             this.addChatMessage('hermes', data.text);
- 630:             return;
- 631:         }
- 632: 
- 633:         if (data.event === 'moderation_block') {
- 634:             telegram.showAlert('⚠️ Ваш контент нарушает правила платформы');
- 635:             return;
- 636:         }
- 637:         
- 638:         // Handle dashboard data
- 639:         if (data.deals) this.deals = data.deals;
- 640:         if (data.balance !== undefined) this.balance = data.balance;
- 641:         
- 642:         this.saveCache();
- 643:         
- 644:         const main = document.getElementById('main-content');
- 645:         main.innerHTML = '';
- 646:         switch(this.currentView) {
- 647:             case 'hermes': this.renderHermesView(main); break;
- 648:             case 'deals': this.renderDealsView(main); break;
- 649:             case 'profile': this.renderProfileView(main); break;
- 650:         }
- 651:     }
- 652: 
- 653:     emptyState(icon, text) {
- 654:         return `
- 655:             <div class="empty-state">
- 656:                 <div class="empty-icon">${icon}</div>
- 657:                 <div class="empty-text">${text}</div>
- 658:             </div>
- 659:         `;
- 660:     }
- 661: 
- 662:     // -------------------------------------------------------------------------
- 663:     // Chat Interface Methods
- 664:     // -------------------------------------------------------------------------
- 665: 
- 666:     renderChatMessages() {
- 667:         const container = document.getElementById('chat-messages');
- 668:         if (!container) return;
- 669: 
- 670:         container.innerHTML = this.chatMessages.map((msg, idx) => {
- 671:             const isLastHermes = idx === this.chatMessages.length - 1 && msg.sender === 'hermes' && msg.text === '';
- 672:             const streamingClass = isLastHermes ? ' streaming' : '';
- 673:             const isHermesComplete = msg.sender === 'hermes' && msg.text !== '' && !isLastHermes;
- 674:             const feedbackHtml = isHermesComplete && !msg.feedback ? `
- 675:                 <div class="feedback-buttons">
- 676:                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'up')">👍</button>
- 677:                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
- 678:                 </div>
- 679:             ` : '';
- 680:             return `
- 681:             <div class="chat-message ${msg.sender}">
- 682:                 <div class="message-bubble${streamingClass}">
- 683:                     ${this.escapeHtml(msg.text)}
- 684:                     <span class="msg-time">${this.formatTime(msg.timestamp)}</span>
- 685:                     ${feedbackHtml}
- 686:                 </div>
- 687:             </div>
- 688:         `;
- 689:         }).join('');
- 690: 
- 691:         this.scrollToBottom();
- 692:     }
- 693: 
- 694:     scrollToBottom() {
- 695:         const container = document.getElementById('chat-messages');
- 696:         if (!container) return;
- 697:         requestAnimationFrame(() => {
- 698:             container.scrollTop = container.scrollHeight;
- 699:         });
- 700:     }
+ 582:     async loadCache() {
+ 583:         try {
+ 584:             const cached = await telegram.cloudGet('neuroescrow_data');
+ 585:             if (cached) {
+ 586:                 this.deals = cached.deals || [];
+ 587:                 this.balance = cached.balance || 0;
+ 588:                 this.chatMessages = cached.chatMessages || [];
+ 589:                 console.log('[App] Cache loaded');
+ 590:             }
+ 591:         } catch (e) {
+ 592:             console.log('[App] No cache found');
+ 593:         }
+ 594:     }
+ 595: 
+ 596:     async saveCache() {
+ 597:         const data = {
+ 598:             deals: this.deals,
+ 599:             balance: this.balance,
+ 600:             chatMessages: this.chatMessages,
+ 601:             timestamp: Date.now()
+ 602:         };
+ 603:         await telegram.cloudSet('neuroescrow_data', data);
+ 604:     }
+ 605: 
+ 606:     async loadSession(sessionId) {
+ 607:         const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+ 608:             ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+ 609:             : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+ 610: 
+ 611:         try {
+ 612:             const resp = await fetch(baseUrl + 'session/' + sessionId, { mode: 'cors' });
+ 613:             if (!resp.ok) return;
+ 614: 
+ 615:             const session = await resp.json();
+ 616:             const messages = session.messages || [];
+ 617: 
+ 618:             this.chatMessages = messages.map(msg => ({
+ 619:                 sender: msg.role === 'user' ? 'user' : 'hermes',
+ 620:                 text: msg.content || msg.text || '',
+ 621:                 timestamp: msg.timestamp ? new Date(msg.timestamp).getTime() : Date.now()
+ 622:             }));
+ 623: 
+ 624:             this.renderChatMessages();
+ 625:             this.saveCache();
+ 626:         } catch (e) {
+ 627:             console.error('[App] Load session error:', e.message);
+ 628:         }
+ 629:     }
+ 630: 
+ 631:     async loadSessionsList() {
+ 632:         const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+ 633:             ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+ 634:             : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+ 635: 
+ 636:         try {
+ 637:             const resp = await fetch(baseUrl + 'sessions', { mode: 'cors' });
+ 638:             if (!resp.ok) return [];
+ 639:             return await resp.json();
+ 640:         } catch (e) {
+ 641:             console.error('[App] Load sessions error:', e.message);
+ 642:             return [];
+ 643:         }
+ 644:     }
+ 645: 
+ 646:     requestDataFromBot() {
+ 647:         telegram.sendData({ action: 'get_dashboard_data' });
+ 648:     }
+ 649: 
+ 650:     handleBotData(data) {
+ 651:         console.log('[App] Data from bot:', data);
+ 652:         
+ 653:         // Handle different event types
+ 654:         if (data.event === 'draft_created' && data.draft) {
+ 655:             this.handleDraftCreated(data.draft);
+ 656:             return;
+ 657:         }
+ 658:         
+ 659:         if (data.event === 'error') {
+ 660:             this.handleVoiceError(new Error(data.error || 'Unknown error'));
+ 661:             return;
+ 662:         }
+ 663: 
+ 664:         if (data.event === 'hermes_reply' && data.text) {
+ 665:             this.addChatMessage('hermes', data.text);
+ 666:             return;
+ 667:         }
+ 668: 
+ 669:         if (data.event === 'moderation_block') {
+ 670:             telegram.showAlert('⚠️ Ваш контент нарушает правила платформы');
+ 671:             return;
+ 672:         }
+ 673:         
+ 674:         // Handle dashboard data
+ 675:         if (data.deals) this.deals = data.deals;
+ 676:         if (data.balance !== undefined) this.balance = data.balance;
+ 677:         
+ 678:         this.saveCache();
+ 679:         
+ 680:         const main = document.getElementById('main-content');
+ 681:         main.innerHTML = '';
+ 682:         switch(this.currentView) {
+ 683:             case 'hermes': this.renderHermesView(main); break;
+ 684:             case 'deals': this.renderDealsView(main); break;
+ 685:             case 'profile': this.renderProfileView(main); break;
+ 686:         }
+ 687:     }
+ 688: 
+ 689:     emptyState(icon, text) {
+ 690:         return `
+ 691:             <div class="empty-state">
+ 692:                 <div class="empty-icon">${icon}</div>
+ 693:                 <div class="empty-text">${text}</div>
+ 694:             </div>
+ 695:         `;
+ 696:     }
+ 697: 
+ 698:     // -------------------------------------------------------------------------
+ 699:     // Chat Interface Methods
+ 700:     // -------------------------------------------------------------------------
  701: 
- 702:     addChatMessage(sender, text) {
- 703:         this.chatMessages.push({
- 704:             sender,
- 705:             text,
- 706:             timestamp: Date.now()
- 707:         });
- 708:         this.renderChatMessages();
- 709:         this.saveCache();
- 710:     }
- 711: 
- 712:     showTypingIndicator() {
- 713:         const container = document.getElementById('chat-messages');
- 714:         if (!container) return;
- 715:         const typing = document.createElement('div');
- 716:         typing.className = 'typing-indicator';
- 717:         typing.id = 'typing-indicator';
- 718:         typing.innerHTML = '<span>Гермес печатает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div>';
- 719:         container.appendChild(typing);
- 720:         container.scrollTop = container.scrollHeight;
- 721:     }
- 722: 
- 723:     hideTypingIndicator() {
- 724:         const typing = document.getElementById('typing-indicator');
- 725:         if (typing) typing.remove();
- 726:     }
- 727: 
- 728:     async sendTextMessage() {
- 729:         const input = document.getElementById('chat-input');
- 730:         if (!input || !input.value.trim()) return;
- 731: 
- 732:         const text = input.value.trim();
- 733:         this.addChatMessage('user', text);
- 734:         input.value = '';
- 735: 
- 736:         telegram.haptic('light');
+ 702:     renderChatMessages() {
+ 703:         const container = document.getElementById('chat-messages');
+ 704:         if (!container) return;
+ 705: 
+ 706:         container.innerHTML = this.chatMessages.map((msg, idx) => {
+ 707:             const isLastHermes = idx === this.chatMessages.length - 1 && msg.sender === 'hermes' && msg.text === '';
+ 708:             const streamingClass = isLastHermes ? ' streaming' : '';
+ 709:             const isHermesComplete = msg.sender === 'hermes' && msg.text !== '' && !isLastHermes;
+ 710:             const feedbackHtml = isHermesComplete && !msg.feedback ? `
+ 711:                 <div class="feedback-buttons">
+ 712:                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'up')">👍</button>
+ 713:                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
+ 714:                 </div>
+ 715:             ` : '';
+ 716:             return `
+ 717:             <div class="chat-message ${msg.sender}">
+ 718:                 <div class="message-bubble${streamingClass}">
+ 719:                     ${this.escapeHtml(msg.text)}
+ 720:                     <span class="msg-time">${this.formatTime(msg.timestamp)}</span>
+ 721:                     ${feedbackHtml}
+ 722:                 </div>
+ 723:             </div>
+ 724:         `;
+ 725:         }).join('');
+ 726: 
+ 727:         this.scrollToBottom();
+ 728:     }
+ 729: 
+ 730:     scrollToBottom() {
+ 731:         const container = document.getElementById('chat-messages');
+ 732:         if (!container) return;
+ 733:         requestAnimationFrame(() => {
+ 734:             container.scrollTop = container.scrollHeight;
+ 735:         });
+ 736:     }
  737: 
- 738:         // Call Hermes backend
- 739:         try {
- 740:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
- 741:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
- 742:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
- 743: 
- 744:             console.log('[Chat] Fetching:', baseUrl + 'chat');
- 745: 
- 746:             // Show typing indicator
- 747:             this.showTypingIndicator();
- 748: 
- 749:             // Try streaming first
- 750:             const streamUrl = baseUrl + 'chat/stream';
- 751:             const response = await fetch(streamUrl, {
- 752:                 method: 'POST',
- 753:                 mode: 'cors',
- 754:                 credentials: 'omit',
- 755:                 headers: { 'Content-Type': 'application/json' },
- 756:                 body: JSON.stringify({
- 757:                     message: text,
- 758:                     user_id: telegram.getUserId(),
- 759:                     session_id: `tg_${telegram.getUserId()}`,
- 760:                     persona: 'hermes'
- 761:                 })
- 762:             });
+ 738:     addChatMessage(sender, text) {
+ 739:         this.chatMessages.push({
+ 740:             sender,
+ 741:             text,
+ 742:             timestamp: Date.now()
+ 743:         });
+ 744:         this.renderChatMessages();
+ 745:         this.saveCache();
+ 746:     }
+ 747: 
+ 748:     showTypingIndicator() {
+ 749:         const container = document.getElementById('chat-messages');
+ 750:         if (!container) return;
+ 751:         const typing = document.createElement('div');
+ 752:         typing.className = 'typing-indicator';
+ 753:         typing.id = 'typing-indicator';
+ 754:         typing.innerHTML = '<span>Гермес печатает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+ 755:         container.appendChild(typing);
+ 756:         container.scrollTop = container.scrollHeight;
+ 757:     }
+ 758: 
+ 759:     hideTypingIndicator() {
+ 760:         const typing = document.getElementById('typing-indicator');
+ 761:         if (typing) typing.remove();
+ 762:     }
  763: 
- 764:             console.log('[Chat] Response status:', response.status, response.statusText);
- 765: 
- 766:             // Hide typing indicator
- 767:             this.hideTypingIndicator();
- 768: 
- 769:             const contentType = response.headers.get('content-type') || '';
- 770: 
- 771:             if (contentType.includes('text/event-stream')) {
- 772:                 // Streaming response — typewriter effect
- 773:                 const reader = response.body.getReader();
- 774:                 const decoder = new TextDecoder();
- 775:                 let fullText = '';
- 776: 
- 777:                 // Create empty hermes message bubble for streaming
- 778:                 const msgIdx = this.chatMessages.length;
- 779:                 this.chatMessages.push({ sender: 'hermes', text: '', timestamp: Date.now() });
- 780:                 this.renderChatMessages();
+ 764:     async sendTextMessage() {
+ 765:         const input = document.getElementById('chat-input');
+ 766:         if (!input || !input.value.trim()) return;
+ 767: 
+ 768:         const text = input.value.trim();
+ 769:         this.addChatMessage('user', text);
+ 770:         input.value = '';
+ 771: 
+ 772:         telegram.haptic('light');
+ 773: 
+ 774:         // Call Hermes backend
+ 775:         try {
+ 776:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+ 777:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+ 778:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+ 779: 
+ 780:             console.log('[Chat] Fetching:', baseUrl + 'chat');
  781: 
- 782:                 while (true) {
- 783:                     const { done, value } = await reader.read();
- 784:                     if (done) break;
- 785: 
- 786:                     const chunk = decoder.decode(value, { stream: true });
- 787:                     const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
- 788: 
- 789:                     for (const line of lines) {
- 790:                         try {
- 791:                             const parsed = JSON.parse(line.replace('data: ', ''));
- 792:                             if (parsed.done) break;
- 793:                             if (parsed.char !== undefined) {
- 794:                                 fullText += parsed.char;
- 795:                                 this.chatMessages[msgIdx].text = fullText;
- 796:                                 this.renderChatMessages();
- 797:                             }
- 798:                         } catch { /* skip malformed SSE lines */ }
- 799:                     }
- 800:                 }
+ 782:             // Show typing indicator
+ 783:             this.showTypingIndicator();
+ 784: 
+ 785:             // Try streaming first
+ 786:             const streamUrl = baseUrl + 'chat/stream';
+ 787:             const response = await fetch(streamUrl, {
+ 788:                 method: 'POST',
+ 789:                 mode: 'cors',
+ 790:                 credentials: 'omit',
+ 791:                 headers: { 'Content-Type': 'application/json' },
+ 792:                 body: JSON.stringify({
+ 793:                     message: text,
+ 794:                     user_id: telegram.getUserId(),
+ 795:                     session_id: `tg_${telegram.getUserId()}`,
+ 796:                     persona: 'hermes'
+ 797:                 })
+ 798:             });
+ 799: 
+ 800:             console.log('[Chat] Response status:', response.status, response.statusText);
  801: 
- 802:                 this.saveCache();
- 803:             } else {
- 804:                 // Fallback: regular JSON response
- 805:                 const data = await response.json();
+ 802:             // Hide typing indicator
+ 803:             this.hideTypingIndicator();
+ 804: 
+ 805:             const contentType = response.headers.get('content-type') || '';
  806: 
- 807:                 if (data.blocked) {
- 808:                     this.addChatMessage('system', `⚠️ ${data.reason}`);
- 809:                 } else if (data.response) {
- 810:                     this.addChatMessage('hermes', data.response);
- 811:                 } else if (data.error) {
- 812:                     this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
- 813:                 }
- 814:             }
- 815:         } catch (error) {
- 816:             console.error('[Chat] Fetch failed:', error.message);
- 817:             this.hideTypingIndicator();
- 818:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
- 819:         }
- 820:     }
+ 807:             if (contentType.includes('text/event-stream')) {
+ 808:                 // Streaming response — typewriter effect
+ 809:                 const reader = response.body.getReader();
+ 810:                 const decoder = new TextDecoder();
+ 811:                 let fullText = '';
+ 812: 
+ 813:                 // Create empty hermes message bubble for streaming
+ 814:                 const msgIdx = this.chatMessages.length;
+ 815:                 this.chatMessages.push({ sender: 'hermes', text: '', timestamp: Date.now() });
+ 816:                 this.renderChatMessages();
+ 817: 
+ 818:                 while (true) {
+ 819:                     const { done, value } = await reader.read();
+ 820:                     if (done) break;
  821: 
- 822:     showAttachMenu() {
- 823:         const menu = document.getElementById('attach-menu');
- 824:         if (!menu) return;
- 825: 
- 826:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
- 827:         telegram.haptic('light');
- 828:     }
- 829: 
- 830:     hideAttachMenu() {
- 831:         const menu = document.getElementById('attach-menu');
- 832:         if (menu) menu.style.display = 'none';
- 833:     }
- 834: 
- 835:     attachPhoto() {
- 836:         this.hideAttachMenu();
- 837:         const input = document.createElement('input');
- 838:         input.type = 'file';
- 839:         input.accept = 'image/*';
- 840:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
- 841:         input.click();
- 842:     }
- 843: 
- 844:     attachVideo() {
- 845:         this.hideAttachMenu();
- 846:         const input = document.createElement('input');
- 847:         input.type = 'file';
- 848:         input.accept = 'video/*';
- 849:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
- 850:         input.click();
- 851:     }
- 852: 
- 853:     async recordVideo() {
- 854:         this.hideAttachMenu();
- 855:         try {
- 856:             const stream = await navigator.mediaDevices.getUserMedia({
- 857:                 video: { facingMode: this.currentFacingMode },
- 858:                 audio: true
- 859:             });
- 860:             this.currentStream = stream;
- 861:             this.showVideoRecorder(stream);
- 862:         } catch (error) {
- 863:             telegram.showAlert('Нет доступа к камере');
- 864:         }
- 865:     }
- 866: 
- 867:     showVideoRecorder(stream) {
- 868:         const recorder = document.createElement('div');
- 869:         recorder.className = 'video-recording';
- 870:         recorder.innerHTML = `
- 871:             <div class="video-preview">
- 872:                 <video id="video-preview" autoplay playsinline muted></video>
- 873:                 <div class="video-controls">
- 874:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
- 875:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
- 876:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
- 877:                 </div>
- 878:             </div>
- 879:         `;
- 880:         document.body.appendChild(recorder);
- 881: 
- 882:         const video = document.getElementById('video-preview');
- 883:         video.srcObject = stream;
- 884:     }
- 885: 
- 886:     async switchCamera() {
- 887:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
- 888:         if (this.currentStream) {
- 889:             this.currentStream.getTracks().forEach(track => track.stop());
- 890:         }
- 891:         await this.recordVideo();
- 892:     }
- 893: 
- 894:     toggleVideoRecording() {
- 895:         const btn = document.getElementById('record-btn');
- 896:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
- 897:             this.startVideoRecording();
- 898:             btn.classList.add('recording');
- 899:         } else {
- 900:             this.stopVideoRecording();
- 901:             btn.classList.remove('recording');
- 902:         }
- 903:     }
- 904: 
- 905:     startVideoRecording() {
- 906:         if (!this.currentStream) return;
- 907: 
- 908:         this.mediaRecorder = new MediaRecorder(this.currentStream);
- 909:         this.audioChunks = [];
- 910: 
- 911:         this.mediaRecorder.ondataavailable = (e) => {
- 912:             this.audioChunks.push(e.data);
- 913:         };
- 914: 
- 915:         this.mediaRecorder.onstop = () => {
- 916:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
- 917:             this.handleVideoUpload(videoBlob);
- 918:         };
- 919: 
- 920:         this.mediaRecorder.start();
- 921:     }
- 922: 
- 923:     stopVideoRecording() {
- 924:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
- 925:             this.mediaRecorder.stop();
+ 822:                     const chunk = decoder.decode(value, { stream: true });
+ 823:                     const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+ 824: 
+ 825:                     for (const line of lines) {
+ 826:                         try {
+ 827:                             const parsed = JSON.parse(line.replace('data: ', ''));
+ 828:                             if (parsed.done) break;
+ 829:                             if (parsed.char !== undefined) {
+ 830:                                 fullText += parsed.char;
+ 831:                                 this.chatMessages[msgIdx].text = fullText;
+ 832:                                 this.renderChatMessages();
+ 833:                             }
+ 834:                         } catch { /* skip malformed SSE lines */ }
+ 835:                     }
+ 836:                 }
+ 837: 
+ 838:                 this.saveCache();
+ 839:             } else {
+ 840:                 // Fallback: regular JSON response
+ 841:                 const data = await response.json();
+ 842: 
+ 843:                 if (data.blocked) {
+ 844:                     this.addChatMessage('system', `⚠️ ${data.reason}`);
+ 845:                 } else if (data.response) {
+ 846:                     this.addChatMessage('hermes', data.response);
+ 847:                 } else if (data.error) {
+ 848:                     this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
+ 849:                 }
+ 850:             }
+ 851:         } catch (error) {
+ 852:             console.error('[Chat] Fetch failed:', error.message);
+ 853:             this.hideTypingIndicator();
+ 854:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
+ 855:         }
+ 856:     }
+ 857: 
+ 858:     showAttachMenu() {
+ 859:         const menu = document.getElementById('attach-menu');
+ 860:         if (!menu) return;
+ 861: 
+ 862:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
+ 863:         telegram.haptic('light');
+ 864:     }
+ 865: 
+ 866:     hideAttachMenu() {
+ 867:         const menu = document.getElementById('attach-menu');
+ 868:         if (menu) menu.style.display = 'none';
+ 869:     }
+ 870: 
+ 871:     attachPhoto() {
+ 872:         this.hideAttachMenu();
+ 873:         const input = document.createElement('input');
+ 874:         input.type = 'file';
+ 875:         input.accept = 'image/*';
+ 876:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
+ 877:         input.click();
+ 878:     }
+ 879: 
+ 880:     attachVideo() {
+ 881:         this.hideAttachMenu();
+ 882:         const input = document.createElement('input');
+ 883:         input.type = 'file';
+ 884:         input.accept = 'video/*';
+ 885:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
+ 886:         input.click();
+ 887:     }
+ 888: 
+ 889:     async recordVideo() {
+ 890:         this.hideAttachMenu();
+ 891:         try {
+ 892:             const stream = await navigator.mediaDevices.getUserMedia({
+ 893:                 video: { facingMode: this.currentFacingMode },
+ 894:                 audio: true
+ 895:             });
+ 896:             this.currentStream = stream;
+ 897:             this.showVideoRecorder(stream);
+ 898:         } catch (error) {
+ 899:             telegram.showAlert('Нет доступа к камере');
+ 900:         }
+ 901:     }
+ 902: 
+ 903:     showVideoRecorder(stream) {
+ 904:         const recorder = document.createElement('div');
+ 905:         recorder.className = 'video-recording';
+ 906:         recorder.innerHTML = `
+ 907:             <div class="video-preview">
+ 908:                 <video id="video-preview" autoplay playsinline muted></video>
+ 909:                 <div class="video-controls">
+ 910:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
+ 911:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
+ 912:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
+ 913:                 </div>
+ 914:             </div>
+ 915:         `;
+ 916:         document.body.appendChild(recorder);
+ 917: 
+ 918:         const video = document.getElementById('video-preview');
+ 919:         video.srcObject = stream;
+ 920:     }
+ 921: 
+ 922:     async switchCamera() {
+ 923:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+ 924:         if (this.currentStream) {
+ 925:             this.currentStream.getTracks().forEach(track => track.stop());
  926:         }
- 927:     }
- 928: 
- 929:     closeVideoRecorder() {
- 930:         if (this.currentStream) {
- 931:             this.currentStream.getTracks().forEach(track => track.stop());
- 932:             this.currentStream = null;
- 933:         }
- 934:         const recorder = document.querySelector('.video-recording');
- 935:         if (recorder) recorder.remove();
- 936:     }
- 937: 
- 938:     async shareScreen() {
- 939:         this.hideAttachMenu();
- 940:         try {
- 941:             const stream = await navigator.mediaDevices.getDisplayMedia({
- 942:                 video: true
- 943:             });
- 944:             
- 945:             const mediaRecorder = new MediaRecorder(stream);
- 946:             const chunks = [];
- 947: 
- 948:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
- 949:             mediaRecorder.onstop = () => {
- 950:                 const blob = new Blob(chunks, { type: 'video/webm' });
- 951:                 this.handleVideoUpload(blob);
- 952:                 stream.getTracks().forEach(track => track.stop());
- 953:             };
- 954: 
- 955:             mediaRecorder.start();
- 956:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
- 957:         } catch (error) {
- 958:             telegram.showAlert('Нет доступа к экрану');
- 959:         }
- 960:     }
- 961: 
- 962:     async handleFileUpload(file, type) {
- 963:         if (!file) return;
+ 927:         await this.recordVideo();
+ 928:     }
+ 929: 
+ 930:     toggleVideoRecording() {
+ 931:         const btn = document.getElementById('record-btn');
+ 932:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
+ 933:             this.startVideoRecording();
+ 934:             btn.classList.add('recording');
+ 935:         } else {
+ 936:             this.stopVideoRecording();
+ 937:             btn.classList.remove('recording');
+ 938:         }
+ 939:     }
+ 940: 
+ 941:     startVideoRecording() {
+ 942:         if (!this.currentStream) return;
+ 943: 
+ 944:         this.mediaRecorder = new MediaRecorder(this.currentStream);
+ 945:         this.audioChunks = [];
+ 946: 
+ 947:         this.mediaRecorder.ondataavailable = (e) => {
+ 948:             this.audioChunks.push(e.data);
+ 949:         };
+ 950: 
+ 951:         this.mediaRecorder.onstop = () => {
+ 952:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
+ 953:             this.handleVideoUpload(videoBlob);
+ 954:         };
+ 955: 
+ 956:         this.mediaRecorder.start();
+ 957:     }
+ 958: 
+ 959:     stopVideoRecording() {
+ 960:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+ 961:             this.mediaRecorder.stop();
+ 962:         }
+ 963:     }
  964: 
- 965:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
- 966: 
- 967:         const reader = new FileReader();
- 968:         reader.onload = async (e) => {
- 969:             try {
- 970:                 // Upload to backend and get URL
- 971:                 const imageUrl = e.target.result; // Base64 data URL
- 972: 
- 973:                 // Call Hermes image analysis
- 974:                 const response = await fetch('/analyze-image', {
- 975:                     method: 'POST',
- 976:                     headers: { 'Content-Type': 'application/json' },
- 977:                     body: JSON.stringify({
- 978:                         image_url: imageUrl,
- 979:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
- 980:                         user_id: telegram.getUserId(),
- 981:                         session_id: `tg_${telegram.getUserId()}`
- 982:                     })
- 983:                 });
- 984: 
- 985:                 const data = await response.json();
- 986: 
- 987:                 if (data.response) {
- 988:                     this.addChatMessage('hermes', data.response);
- 989:                 } else if (data.error) {
- 990:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
- 991:                 }
- 992:             } catch (error) {
- 993:                 console.error('[App] Upload error:', error);
- 994:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
- 995:             }
- 996:         };
- 997:         reader.readAsDataURL(file);
- 998:     }
- 999: 
-1000:     async handleVideoUpload(blob) {
-1001:         this.addChatMessage('user', '[🎥 Видеозапись]');
-1002:         this.closeVideoRecorder();
-1003: 
-1004:         const reader = new FileReader();
-1005:         reader.onload = async (e) => {
-1006:             try {
-1007:                 const videoUrl = e.target.result;
+ 965:     closeVideoRecorder() {
+ 966:         if (this.currentStream) {
+ 967:             this.currentStream.getTracks().forEach(track => track.stop());
+ 968:             this.currentStream = null;
+ 969:         }
+ 970:         const recorder = document.querySelector('.video-recording');
+ 971:         if (recorder) recorder.remove();
+ 972:     }
+ 973: 
+ 974:     async shareScreen() {
+ 975:         this.hideAttachMenu();
+ 976:         try {
+ 977:             const stream = await navigator.mediaDevices.getDisplayMedia({
+ 978:                 video: true
+ 979:             });
+ 980:             
+ 981:             const mediaRecorder = new MediaRecorder(stream);
+ 982:             const chunks = [];
+ 983: 
+ 984:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+ 985:             mediaRecorder.onstop = () => {
+ 986:                 const blob = new Blob(chunks, { type: 'video/webm' });
+ 987:                 this.handleVideoUpload(blob);
+ 988:                 stream.getTracks().forEach(track => track.stop());
+ 989:             };
+ 990: 
+ 991:             mediaRecorder.start();
+ 992:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
+ 993:         } catch (error) {
+ 994:             telegram.showAlert('Нет доступа к экрану');
+ 995:         }
+ 996:     }
+ 997: 
+ 998:     async handleFileUpload(file, type) {
+ 999:         if (!file) return;
+1000: 
+1001:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
+1002: 
+1003:         const reader = new FileReader();
+1004:         reader.onload = async (e) => {
+1005:             try {
+1006:                 // Upload to backend and get URL
+1007:                 const imageUrl = e.target.result; // Base64 data URL
 1008: 
-1009:                 // Call Hermes video analysis
+1009:                 // Call Hermes image analysis
 1010:                 const response = await fetch('/analyze-image', {
 1011:                     method: 'POST',
 1012:                     headers: { 'Content-Type': 'application/json' },
 1013:                     body: JSON.stringify({
-1014:                         image_url: videoUrl,
-1015:                         prompt: 'Проанализируй это видео',
+1014:                         image_url: imageUrl,
+1015:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
 1016:                         user_id: telegram.getUserId(),
 1017:                         session_id: `tg_${telegram.getUserId()}`
 1018:                     })
@@ -4816,82 +4953,278 @@ This section contains the contents of the repository's files.
 1026:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
 1027:                 }
 1028:             } catch (error) {
-1029:                 console.error('[App] Video upload error:', error);
-1030:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
+1029:                 console.error('[App] Upload error:', error);
+1030:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
 1031:             }
 1032:         };
-1033:         reader.readAsDataURL(blob);
+1033:         reader.readAsDataURL(file);
 1034:     }
 1035: 
-1036:     formatTime(timestamp) {
-1037:         const date = new Date(timestamp);
-1038:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-1039:     }
-1040: 
-1041:     async submitFeedback(msgIdx, feedback) {
-1042:         const msg = this.chatMessages[msgIdx];
-1043:         if (!msg || msg.feedback) return;
+1036:     async handleVideoUpload(blob) {
+1037:         this.addChatMessage('user', '[🎥 Видеозапись]');
+1038:         this.closeVideoRecorder();
+1039: 
+1040:         const reader = new FileReader();
+1041:         reader.onload = async (e) => {
+1042:             try {
+1043:                 const videoUrl = e.target.result;
 1044: 
-1045:         msg.feedback = feedback;
-1046:         this.renderChatMessages();
-1047: 
-1048:         try {
-1049:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
-1050:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
-1051:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
-1052: 
-1053:             await fetch(baseUrl + 'feedback', {
-1054:                 method: 'POST',
-1055:                 mode: 'cors',
-1056:                 credentials: 'omit',
-1057:                 headers: { 'Content-Type': 'application/json' },
-1058:                 body: JSON.stringify({
-1059:                     message_id: msgIdx,
-1060:                     feedback,
-1061:                     user_id: telegram.getUserId(),
-1062:                     session_id: `tg_${telegram.getUserId()}`,
-1063:                     text: msg.text.substring(0, 200)
-1064:                 })
-1065:             });
-1066: 
-1067:             telegram.haptic('light');
-1068:         } catch (error) {
-1069:             console.error('[Feedback] Error:', error.message);
-1070:         }
-1071:     }
-1072: 
-1073:     updateTaskSpec(title, content) {
-1074:         const specContainer = document.getElementById('task-spec');
-1075:         const specContent = document.getElementById('task-spec-content');
-1076:         if (!specContainer || !specContent) return;
-1077: 
-1078:         specContainer.classList.add('has-content');
-1079:         specContent.innerHTML = `
-1080:             <div class="task-spec-title">${this.escapeHtml(title)}</div>
-1081:             <div>${this.escapeHtml(content)}</div>
-1082:         `;
-1083:     }
-1084: 
-1085:     clearTaskSpec() {
-1086:         const specContainer = document.getElementById('task-spec');
-1087:         const specContent = document.getElementById('task-spec-content');
-1088:         if (!specContainer || !specContent) return;
-1089: 
-1090:         specContainer.classList.remove('has-content');
-1091:         specContent.textContent = 'Ожидание ТЗ от Гермеса...';
-1092:     }
-1093: }
-1094: 
-1095: let app;
-1096: document.addEventListener('DOMContentLoaded', () => {
-1097:     app = new NeuroEscrowApp();
-1098: });
-1099: 
-1100: window.addEventListener('message', (event) => {
-1101:     if (event.data && event.data.type === 'bot_data' && app) {
-1102:         app.handleBotData(event.data.payload);
-1103:     }
-1104: });
+1045:                 // Call Hermes video analysis
+1046:                 const response = await fetch('/analyze-image', {
+1047:                     method: 'POST',
+1048:                     headers: { 'Content-Type': 'application/json' },
+1049:                     body: JSON.stringify({
+1050:                         image_url: videoUrl,
+1051:                         prompt: 'Проанализируй это видео',
+1052:                         user_id: telegram.getUserId(),
+1053:                         session_id: `tg_${telegram.getUserId()}`
+1054:                     })
+1055:                 });
+1056: 
+1057:                 const data = await response.json();
+1058: 
+1059:                 if (data.response) {
+1060:                     this.addChatMessage('hermes', data.response);
+1061:                 } else if (data.error) {
+1062:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+1063:                 }
+1064:             } catch (error) {
+1065:                 console.error('[App] Video upload error:', error);
+1066:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
+1067:             }
+1068:         };
+1069:         reader.readAsDataURL(blob);
+1070:     }
+1071: 
+1072:     formatTime(timestamp) {
+1073:         const date = new Date(timestamp);
+1074:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+1075:     }
+1076: 
+1077:     async submitFeedback(msgIdx, feedback) {
+1078:         const msg = this.chatMessages[msgIdx];
+1079:         if (!msg || msg.feedback) return;
+1080: 
+1081:         msg.feedback = feedback;
+1082:         this.renderChatMessages();
+1083: 
+1084:         try {
+1085:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+1086:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+1087:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+1088: 
+1089:             await fetch(baseUrl + 'feedback', {
+1090:                 method: 'POST',
+1091:                 mode: 'cors',
+1092:                 credentials: 'omit',
+1093:                 headers: { 'Content-Type': 'application/json' },
+1094:                 body: JSON.stringify({
+1095:                     message_id: msgIdx,
+1096:                     feedback,
+1097:                     user_id: telegram.getUserId(),
+1098:                     session_id: `tg_${telegram.getUserId()}`,
+1099:                     text: msg.text.substring(0, 200)
+1100:                 })
+1101:             });
+1102: 
+1103:             telegram.haptic('light');
+1104:         } catch (error) {
+1105:             console.error('[Feedback] Error:', error.message);
+1106:         }
+1107:     }
+1108: 
+1109:     updateTaskSpec(title, content) {
+1110:         const specContainer = document.getElementById('task-spec');
+1111:         const specContent = document.getElementById('task-spec-content');
+1112:         if (!specContainer || !specContent) return;
+1113: 
+1114:         specContainer.classList.add('has-content');
+1115:         specContent.innerHTML = `
+1116:             <div class="task-spec-title">${this.escapeHtml(title)}</div>
+1117:             <div>${this.escapeHtml(content)}</div>
+1118:         `;
+1119:     }
+1120: 
+1121:     clearTaskSpec() {
+1122:         const specContainer = document.getElementById('task-spec');
+1123:         const specContent = document.getElementById('task-spec-content');
+1124:         if (!specContainer || !specContent) return;
+1125: 
+1126:         specContainer.classList.remove('has-content');
+1127:         specContent.textContent = 'Ожидание ТЗ от Гермеса...';
+1128:     }
+1129: 
+1130:     // ─── Голосовой ввод ТЗ ───────────────────────────────────────────────
+1131:     initVoiceInput() {
+1132:         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+1133:         if (!SpeechRecognition) {
+1134:             console.warn('[App] SpeechRecognition не поддерживается в этом браузере');
+1135:             return;
+1136:         }
+1137:         this.recognition = new SpeechRecognition();
+1138:         this.recognition.lang = 'ru-RU';
+1139:         this.recognition.interimResults = true;
+1140:         this.recognition.continuous = true;
+1141: 
+1142:         this.recognition.onresult = (event) => {
+1143:             let interim = '';
+1144:             let final = '';
+1145:             for (let i = event.resultIndex; i < event.results.length; i++) {
+1146:                 const transcript = event.results[i][0].transcript;
+1147:                 if (event.results[i].isFinal) final += transcript + ' ';
+1148:                 else interim += transcript;
+1149:             }
+1150:             const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+1151:             if (input) {
+1152:                 input.value = (this._voiceBaseText || '') + final + interim;
+1153:             }
+1154:         };
+1155: 
+1156:         this.recognition.onerror = (e) => console.warn('[App] Voice error:', e.error);
+1157:         this.recognition.onend = () => {
+1158:             this.isRecording = false;
+1159:             const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
+1160:             if (micBtn) micBtn.classList.remove('recording');
+1161:         };
+1162:     }
+1163: 
+1164:     toggleVoiceRecording() {
+1165:         if (!this.recognition) return telegram.showAlert('Голосовой ввод не поддерживается');
+1166:         const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
+1167:         if (this.isRecording) {
+1168:             this.recognition.stop();
+1169:             this.isRecording = false;
+1170:             if (micBtn) micBtn.classList.remove('recording');
+1171:         } else {
+1172:             const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+1173:             this._voiceBaseText = input ? input.value + ' ' : '';
+1174:             this.recognition.start();
+1175:             this.isRecording = true;
+1176:             if (micBtn) micBtn.classList.add('recording');
+1177:             telegram.haptic('light');
+1178:         }
+1179:     }
+1180: 
+1181:     // ─── Панель смарт-контракта (вопросы Гермеса) ────────────────────────
+1182:     renderContractQuestions(questions = []) {
+1183:         const container = document.getElementById('contract-qa-container');
+1184:         if (!container) return;
+1185:         container.innerHTML = '';
+1186:         if (!questions.length) {
+1187:             container.innerHTML = '<div class="qa-empty">Нет активных вопросов от Гермеса</div>';
+1188:             return;
+1189:         }
+1190:         questions.forEach((q, idx) => {
+1191:             const wrap = document.createElement('div');
+1192:             wrap.className = 'qa-item';
+1193:             wrap.innerHTML = `
+1194:                 <div class="qa-question">${idx + 1}. ${this.escapeHtml(q.text)}</div>
+1195:                 <input type="text" class="qa-answer-input" placeholder="Ваш ответ..." data-qid="${q.id || idx}" />
+1196:             `;
+1197:             container.appendChild(wrap);
+1198:         });
+1199:         container.querySelectorAll('.qa-answer-input').forEach(inp => {
+1200:             inp.addEventListener('change', () => this.saveContractAnswers());
+1201:         });
+1202:     }
+1203: 
+1204:     saveContractAnswers() {
+1205:         const inputs = document.querySelectorAll('.qa-answer-input');
+1206:         const answers = {};
+1207:         inputs.forEach(inp => answers[inp.dataset.qid] = inp.value.trim());
+1208:         this.contractAnswers = answers;
+1209:         this.saveCache();
+1210:     }
+1211: 
+1212:     // ─── История ТЗ ──────────────────────────────────────────────────────
+1213:     async saveTaskSpecHistory(specText) {
+1214:         if (!specText?.trim()) return;
+1215:         const history = this.taskSpecHistory || [];
+1216:         history.unshift({ text: specText, timestamp: Date.now() });
+1217:         if (history.length > 20) history.pop();
+1218:         this.taskSpecHistory = history;
+1219:         try {
+1220:             if (window.Telegram?.WebApp?.CloudStorage) {
+1221:                 await new Promise((res, rej) => Telegram.WebApp.CloudStorage.setItem('task_spec_history', JSON.stringify(history), (err, ok) => err ? rej(err) : res(ok)));
+1222:             } else {
+1223:                 localStorage.setItem('task_spec_history', JSON.stringify(history));
+1224:             }
+1225:         } catch (e) { console.warn('[App] History save failed:', e); }
+1226:     }
+1227: 
+1228:     async loadTaskSpecHistory() {
+1229:         try {
+1230:             let raw = null;
+1231:             if (window.Telegram?.WebApp?.CloudStorage) {
+1232:                 raw = await new Promise((res, rej) => Telegram.WebApp.CloudStorage.getItem('task_spec_history', (err, val) => err ? rej(err) : res(val)));
+1233:             } else {
+1234:                 raw = localStorage.getItem('task_spec_history');
+1235:             }
+1236:             this.taskSpecHistory = raw ? JSON.parse(raw) : [];
+1237:         } catch (e) {
+1238:             this.taskSpecHistory = [];
+1239:         }
+1240:         this.renderTaskSpecHistory();
+1241:     }
+1242: 
+1243:     renderTaskSpecHistory() {
+1244:         const list = document.getElementById('task-history-list');
+1245:         if (!list) return;
+1246:         list.innerHTML = '';
+1247:         if (!this.taskSpecHistory?.length) {
+1248:             list.innerHTML = '<div class="history-empty">История пуста</div>';
+1249:             return;
+1250:         }
+1251:         this.taskSpecHistory.forEach((item, idx) => {
+1252:             const el = document.createElement('div');
+1253:             el.className = 'history-item';
+1254:             const time = new Date(item.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+1255:             el.innerHTML = `<span class="history-time">${time}</span><span class="history-text">${this.escapeHtml(item.text.slice(0, 60))}...</span>`;
+1256:             el.onclick = () => {
+1257:                 const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+1258:                 if (input) input.value = item.text;
+1259:                 telegram.haptic('light');
+1260:             };
+1261:             list.appendChild(el);
+1262:         });
+1263:     }
+1264: 
+1265:     // ─── Экспорт ТЗ ──────────────────────────────────────────────────────
+1266:     exportTaskSpec() {
+1267:         const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+1268:         const spec = input?.value?.trim() || '';
+1269:         const answers = this.contractAnswers || {};
+1270:         if (!spec && !Object.keys(answers).length) return telegram.showAlert('Нет данных для экспорта');
+1271: 
+1272:         const payload = {
+1273:             task_spec: spec,
+1274:             contract_answers: answers,
+1275:             exported_at: new Date().toISOString(),
+1276:             user_id: telegram.getUserId?.() || 'unknown'
+1277:         };
+1278:         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+1279:         const url = URL.createObjectURL(blob);
+1280:         const a = document.createElement('a');
+1281:         a.href = url;
+1282:         a.download = `task_spec_${Date.now()}.json`;
+1283:         document.body.appendChild(a);
+1284:         a.click();
+1285:         a.remove();
+1286:         URL.revokeObjectURL(url);
+1287:         telegram.haptic('success');
+1288:     }
+1289: }
+1290: 
+1291: let app;
+1292: document.addEventListener('DOMContentLoaded', () => {
+1293:     app = new NeuroEscrowApp();
+1294: });
+1295: 
+1296: window.addEventListener('message', (event) => {
+1297:     if (event.data && event.data.type === 'bot_data' && app) {
+1298:         app.handleBotData(event.data.payload);
+1299:     }
+1300: });
 </file>
 
 <file path="js/charts.js">
