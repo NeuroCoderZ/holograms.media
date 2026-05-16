@@ -1,6 +1,6 @@
 // scripts/test-audio-pipeline.mjs
 // ===================================================================
-// УРОВЕНЬ 1: Статический анализ аудио-конвейера BasilaQ-128
+// УРОВЕНЬ 1: Статический анализ аудио-конвейера BasilaQ-256
 // Запуск: node scripts/test-audio-pipeline.mjs
 // Проверка: импорты, экспорты, WASM контракт, цепочка событий
 // ===================================================================
@@ -30,7 +30,7 @@ function readFile(relPath) {
     return fs.readFileSync(fullPath, 'utf8');
 }
 
-console.log('\n🔊 BasilaQ-128 Audio Pipeline — Static Analysis\n');
+console.log('\n🔊 BasilaQ-256 Audio Pipeline — Static Analysis\n');
 
 // ===================================================================
 // 1. Экспорты audioProcessing.js

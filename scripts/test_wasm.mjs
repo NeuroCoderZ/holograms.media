@@ -1,5 +1,5 @@
 // scripts/test_wasm.mjs
-// Загружает WASM BasilaQ-128 напрямую, подает тестовый сигнал, проверяет выходные данные
+// Загружает WASM BasilaQ-256 напрямую, подает тестовый сигнал, проверяет выходные данные
 
 import fs from 'fs';
 import path from 'path';
@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.join(__dirname, '..');
 
-console.log('\n🧪 BasilaQ-128 WASM — Автономный тест\n');
+console.log('\n🧪 BasilaQ-256 WASM — Автономный тест\n');
 
 // 1. Загрузить WASM
 const wasmPath = path.join(ROOT, 'holocore', 'pkg', 'holographic_core_bg.wasm');

@@ -1,7 +1,7 @@
 /**
  * TriaFileSystem.js — Биологическая Виртуальная Файловая Система (v0.20.125)
  * Реализует структуру "Гипермозга", L/R симметрию и резонансный доступ.
- * Пространство памяти маппится на Тор BasilaQ-128.
+ * Пространство памяти маппится на Тор BasilaQ-256.
  */
 import { EmotionalMonitor } from './EmotionalMonitor.js';
 import { HRRMath } from '../utils/HRRMath.js';
@@ -114,7 +114,7 @@ export class TriaFileSystem {
     }
 
     /**
-     * Поглощение тика BasilaQ-128
+     * Поглощение тика BasilaQ-256
      * 1дБ = 1 ячейка = 1 фонон-нод
      */
     async ingestBasilaQTick(levels, angles) {

@@ -872,7 +872,7 @@ export async function initCore() {
 
     console.log('✅ Ядро приложения инициализировано успешно');
 
-    // ─── BasilaQ-128 Browser Pipeline Diagnostic ──────────────
+    // ─── BasilaQ-256 Browser Pipeline Diagnostic ──────────────
     // Перехватывает inputRMS каждого кадра worklet для выявления
     // разрывов в цепочке AudioNode.
     (async () => {

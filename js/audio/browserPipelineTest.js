@@ -1,5 +1,5 @@
 /**
- * browserPipelineTest.js — Диагностика BasilaQ-128 (первые 10 кадров)
+ * browserPipelineTest.js — Диагностика BasilaQ-256 (первые 10 кадров)
  */
 
 import eventBus from '../core/eventBus.js';

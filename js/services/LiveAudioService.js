@@ -89,7 +89,7 @@ export class LiveAudioService {
         const source = audioCtx.createBufferSource();
         source.buffer = audioBuffer;
 
-        // ✅ Роутинг через CWT Proxy → BasilaQ-128 → голограмма
+        // ✅ Роутинг через CWT Proxy → BasilaQ-256 → голограмма
         const gainNode = audioCtx.createGain();
         gainNode.gain.value = 1.0;
         source.connect(gainNode);

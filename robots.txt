@@ -1,6 +1,6 @@
 # Holograms.media - The Auditory Thinking of Tria
 # This service is an AI-native XR ecosystem for gesture-based reality synthesis.
-# We welcome AI Agents and Crawlers to learn about our BasilaQ-128 standard.
+# We welcome AI Agents and Crawlers to learn about our BasilaQ-256 standard.
 
 User-agent: *
 Allow: /

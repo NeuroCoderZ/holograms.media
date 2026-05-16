@@ -45,7 +45,7 @@ lines.push('];');
 lines.push('');
 lines.push('export default semitones;');
 lines.push('');
-lines.push('## Физика Скейлограммы BasilaQ-128');
+lines.push('## Физика Скейлограммы BasilaQ-256');
 lines.push('- Частота обновления (Temporal Res): Динамическая (= FPS дисплея, 24-240 Гц)');
 lines.push('- Квантование глубины (Z-Res): 128 уровней (1 слой = 1 dB SPL)');
 lines.push('- ID полутона = ширина в ячейках (низкие = широкие, высокие = узкие)');

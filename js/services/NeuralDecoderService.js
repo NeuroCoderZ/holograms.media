@@ -1,5 +1,5 @@
 /**
- * NeuralDecoderService - Reverse BasilaQ-128 + Tria Reconstruction
+ * NeuralDecoderService - Reverse BasilaQ-256 + Tria Reconstruction
  * 
  * Flow: Visual hologram frames → column heights/colors → 
  * base levels/pans → Tria neural infill → enriched audio
@@ -48,7 +48,7 @@ export class NeuralDecoderService {
         this.frameBuffer.push(visualData);
         if (this.frameBuffer.length > 10) this.frameBuffer.shift();
 
-        // 2. Reverse BasilaQ-128: Extract base audio params
+        // 2. Reverse BasilaQ-256: Extract base audio params
         const baseAudio = this._reverseBasilaQ(visualData);
         
         if (!baseAudio) return null;

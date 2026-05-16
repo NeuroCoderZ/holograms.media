@@ -1,5 +1,5 @@
 /**
- * hologramShaders.js — BasilaQ-128 GLSL шейдеры
+ * hologramShaders.js — BasilaQ-256 GLSL шейдеры
  * ================================================
  * Pure Reconstruction v17.3 (Instancing Support)
  */

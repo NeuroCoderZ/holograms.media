@@ -178,6 +178,49 @@ export default {
         });
       }
 
+      // DOV Semantic Counter endpoint
+      if (url.pathname === '/gesture/dov' && request.method === 'POST') {
+        const contentType = request.headers.get('content-type') || '';
+        let data;
+        try {
+          data = contentType.includes('application/json')
+            ? await request.json()
+            : JSON.parse(await request.text());
+        } catch (e) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid JSON', details: e.message }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { semanticLabel, attentionRaw, computeFlops, userId } = data;
+        if (!semanticLabel || typeof semanticLabel !== 'string') {
+          return new Response(
+            JSON.stringify({ error: 'semanticLabel required' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        try {
+          const hermes = new HermesAgent(env.CACHE, env);
+          const result = await hermes.computeDOV({
+            semanticLabel: semanticLabel.slice(0, 200),
+            attentionRaw: Number(attentionRaw) || 0.5,
+            computeFlops: Number(computeFlops) || 0,
+            userId: userId || 'anonymous'
+          });
+          return new Response(
+            JSON.stringify({ ok: true, ...result }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } catch (e) {
+          return new Response(
+            JSON.stringify({ error: 'DOV computation failed', details: e.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
       // Stats
       if (url.pathname === '/stats') {
         const rag = new HermesRAG(env.CACHE, env);

@@ -81,7 +81,7 @@ export class MicrophoneManager {
 
   /**
    * Request microphone access and initialize with SMART STEREO detection.
-   * BasilaQ-128: Maximize hardware capabilities for accurate panorama.
+   * BasilaQ-256: Maximize hardware capabilities for accurate panorama.
    */
   async init() {
     try {

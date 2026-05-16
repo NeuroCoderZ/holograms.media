@@ -1,5 +1,5 @@
 /**
- * pipelineSelfTest.js — Runtime-диагностика BasilaQ-128
+ * pipelineSelfTest.js — Runtime-диагностика BasilaQ-256
  * ======================================================
  * Запускается ОДИН РАЗ при инициализации ядра.
  * Проверяет 5 шагов аудио-визуализационного конвейера.
@@ -218,7 +218,7 @@ export class PipelineSelfTest {
         badge.innerHTML = `⚠️ AUDIO PIPELINE FAILED<br><small style="opacity:0.8">${fails}</small>`;
         badge.title = 'Click for details';
         badge.addEventListener('click', () => {
-            alert(`BasilaQ-128 Pipeline Self-Test\n\n${JSON.stringify(this.results, null, 2)}`);
+            alert(`BasilaQ-256 Pipeline Self-Test\n\n${JSON.stringify(this.results, null, 2)}`);
         });
 
         document.body.appendChild(badge);

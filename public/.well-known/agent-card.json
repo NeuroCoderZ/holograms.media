@@ -1,7 +1,7 @@
 {
   "name": "Hermes (Tria Cortex v2.6)",
-  "version": "0.20.510",
-  "description": "Post-symbolic multimodal agent for gesture/audio/intent resonance. Combines MediaPipe hand tracking, BasilaQ-128 audio spectrum analysis, and Enkephalon neural memory for non-symbolic AI interaction.",
+  "version": "0.20.511",
+  "description": "Post-symbolic multimodal agent for gesture/audio/intent resonance. Combines MediaPipe hand tracking, BasilaQ-256 audio spectrum analysis, and Enkephalon neural memory for non-symbolic AI interaction.",
   "agent_id": "hermes_tria_v2.6",
   "organization": {
     "name": "NeuroCoderZ",
@@ -122,7 +122,7 @@
       "latency_ms": 50
     },
     "audio_spectrum": {
-      "description": "BasilaQ-128 continuous wavelet transform (C0 to G9)",
+      "description": "BasilaQ-256 continuous wavelet transform (C0 to G9)",
       "input": "PCM audio (48kHz, mono)",
       "output": "128 semitone bins + dominant frequency + energy",
       "latency_ms": 16
@@ -150,7 +150,7 @@
     "documentation": "https://holograms.media/docs",
     "status": "production",
     "uptime_percent": 99.5,
-    "last_updated": "2026-05-15T14:45:21.960Z"
+    "last_updated": "2026-05-16T08:07:34.889Z"
   },
   "discovery": {
     "tags": [

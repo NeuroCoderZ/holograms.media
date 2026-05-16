@@ -13,6 +13,8 @@ export class AstraDBConnector {
     
     this.CODEBASE_COLLECTION = 'neuroescrow_codebase_3072';
     this.MEMORY_COLLECTION = 'neuroescrow_memory_3072';
+    this.GESTURES_COLLECTION = 'gestures_semantic_3072';
+    this.DOV_LOG_COLLECTION = 'gestures_dov_log';
   }
   
   async insertDocument(collectionName, document, vector = null) {

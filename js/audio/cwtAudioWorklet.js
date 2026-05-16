@@ -1,5 +1,5 @@
 // frontend/js/audio/cwtAudioWorklet.js
-// BasilaQ-128 Engine
+// BasilaQ-256 Engine
 // STRICT WASM MODE.
 
 let wasm = null;

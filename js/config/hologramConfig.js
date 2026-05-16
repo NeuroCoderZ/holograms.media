@@ -27,7 +27,7 @@ export const CELL_SIZE = 1.0;
 export const HOLOGRAM_REFERENCE_HEIGHT = 256;
 
 /**
- * Генерация массива полутонов BasilaQ-128
+ * Генерация массива полутонов BasilaQ-256
  * 
  * Новая нумерация:
  * - ID 1   = G10 (25088 Гц) — ширина 1 ячейка (высокие летят прицельно)

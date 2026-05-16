@@ -1,5 +1,5 @@
 /**
- * Performance Monitor for BasilaQ-128
+ * Performance Monitor for BasilaQ-256
  * Tracks Latency and WASM processing time to ensure < 25ms targets.
  */
 class PerformanceMonitor {

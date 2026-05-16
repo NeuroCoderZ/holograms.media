@@ -84,129 +84,131 @@ This section contains the contents of the repository's files.
  13:     
  14:     this.CODEBASE_COLLECTION = 'neuroescrow_codebase_3072';
  15:     this.MEMORY_COLLECTION = 'neuroescrow_memory_3072';
- 16:   }
- 17:   
- 18:   async insertDocument(collectionName, document, vector = null) {
- 19:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
- 20:     
- 21:     const payload = {
- 22:       insertOne: {
- 23:         document: {
- 24:           ...document,
- 25:           ...(vector ? { $vector: vector } : {})
- 26:         }
- 27:       }
- 28:     };
- 29:     
- 30:     const response = await fetch(url, {
- 31:       method: 'POST',
- 32:       headers: {
- 33:         'Token': this.token,
- 34:         'Content-Type': 'application/json'
- 35:       },
- 36:       body: JSON.stringify(payload)
- 37:     });
- 38:     
- 39:     if (!response.ok) {
- 40:       throw new Error(`AstraDB insert error: ${response.status}`);
- 41:     }
- 42:     
- 43:     const data = await response.json();
- 44:     return data.status?.insertedIds?.[0];
- 45:   }
- 46:   
- 47:   async vectorSearch(collectionName, queryVector, limit = 5, filter = null, includeSimilarity = true) {
- 48:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
- 49:     
- 50:     const payload = {
- 51:       find: {
- 52:         sort: { $vector: queryVector },
- 53:         options: {
- 54:           limit,
- 55:           includeSimilarity
- 56:         }
- 57:       }
- 58:     };
- 59:     
- 60:     if (filter) {
- 61:       payload.find.filter = filter;
- 62:     }
- 63:     
- 64:     const response = await fetch(url, {
- 65:       method: 'POST',
- 66:       headers: {
- 67:         'Token': this.token,
- 68:         'Content-Type': 'application/json'
- 69:       },
- 70:       body: JSON.stringify(payload)
- 71:     });
- 72:     
- 73:     if (!response.ok) {
- 74:       throw new Error(`AstraDB search error: ${response.status}`);
- 75:     }
- 76:     
- 77:     const data = await response.json();
- 78:     return data.data?.documents || [];
- 79:   }
- 80:   
- 81:   async deleteByFilter(collectionName, filter) {
- 82:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
- 83:     
- 84:     const payload = {
- 85:       deleteMany: { filter }
- 86:     };
- 87:     
- 88:     const response = await fetch(url, {
- 89:       method: 'POST',
- 90:       headers: {
- 91:         'Token': this.token,
- 92:         'Content-Type': 'application/json'
- 93:       },
- 94:       body: JSON.stringify(payload)
- 95:     });
- 96:     
- 97:     if (!response.ok) {
- 98:       throw new Error(`AstraDB delete error: ${response.status}`);
- 99:     }
-100:     
-101:     const data = await response.json();
-102:     return data.status?.deletedCount || 0;
-103:   }
-104:   
-105:   async getStats(collectionName) {
-106:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
-107:     
-108:     const payload = {
-109:       countDocuments: {}
-110:     };
-111:     
-112:     const response = await fetch(url, {
-113:       method: 'POST',
-114:       headers: {
-115:         'Token': this.token,
-116:         'Content-Type': 'application/json'
-117:       },
-118:       body: JSON.stringify(payload)
-119:     });
-120:     
-121:     if (!response.ok) {
-122:       return {
-123:         collection: collectionName,
-124:         document_count: 0,
-125:         status: 'error'
-126:       };
-127:     }
-128:     
-129:     const data = await response.json();
-130:     const count = data.status?.count || 0;
-131:     
-132:     return {
-133:       collection: collectionName,
-134:       document_count: count,
-135:       status: 'healthy'
-136:     };
-137:   }
-138: }
+ 16:     this.GESTURES_COLLECTION = 'gestures_semantic_3072';
+ 17:     this.DOV_LOG_COLLECTION = 'gestures_dov_log';
+ 18:   }
+ 19:   
+ 20:   async insertDocument(collectionName, document, vector = null) {
+ 21:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
+ 22:     
+ 23:     const payload = {
+ 24:       insertOne: {
+ 25:         document: {
+ 26:           ...document,
+ 27:           ...(vector ? { $vector: vector } : {})
+ 28:         }
+ 29:       }
+ 30:     };
+ 31:     
+ 32:     const response = await fetch(url, {
+ 33:       method: 'POST',
+ 34:       headers: {
+ 35:         'Token': this.token,
+ 36:         'Content-Type': 'application/json'
+ 37:       },
+ 38:       body: JSON.stringify(payload)
+ 39:     });
+ 40:     
+ 41:     if (!response.ok) {
+ 42:       throw new Error(`AstraDB insert error: ${response.status}`);
+ 43:     }
+ 44:     
+ 45:     const data = await response.json();
+ 46:     return data.status?.insertedIds?.[0];
+ 47:   }
+ 48:   
+ 49:   async vectorSearch(collectionName, queryVector, limit = 5, filter = null, includeSimilarity = true) {
+ 50:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
+ 51:     
+ 52:     const payload = {
+ 53:       find: {
+ 54:         sort: { $vector: queryVector },
+ 55:         options: {
+ 56:           limit,
+ 57:           includeSimilarity
+ 58:         }
+ 59:       }
+ 60:     };
+ 61:     
+ 62:     if (filter) {
+ 63:       payload.find.filter = filter;
+ 64:     }
+ 65:     
+ 66:     const response = await fetch(url, {
+ 67:       method: 'POST',
+ 68:       headers: {
+ 69:         'Token': this.token,
+ 70:         'Content-Type': 'application/json'
+ 71:       },
+ 72:       body: JSON.stringify(payload)
+ 73:     });
+ 74:     
+ 75:     if (!response.ok) {
+ 76:       throw new Error(`AstraDB search error: ${response.status}`);
+ 77:     }
+ 78:     
+ 79:     const data = await response.json();
+ 80:     return data.data?.documents || [];
+ 81:   }
+ 82:   
+ 83:   async deleteByFilter(collectionName, filter) {
+ 84:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
+ 85:     
+ 86:     const payload = {
+ 87:       deleteMany: { filter }
+ 88:     };
+ 89:     
+ 90:     const response = await fetch(url, {
+ 91:       method: 'POST',
+ 92:       headers: {
+ 93:         'Token': this.token,
+ 94:         'Content-Type': 'application/json'
+ 95:       },
+ 96:       body: JSON.stringify(payload)
+ 97:     });
+ 98:     
+ 99:     if (!response.ok) {
+100:       throw new Error(`AstraDB delete error: ${response.status}`);
+101:     }
+102:     
+103:     const data = await response.json();
+104:     return data.status?.deletedCount || 0;
+105:   }
+106:   
+107:   async getStats(collectionName) {
+108:     const url = `${this.endpoint}/api/json/v1/default_keyspace/${collectionName}`;
+109:     
+110:     const payload = {
+111:       countDocuments: {}
+112:     };
+113:     
+114:     const response = await fetch(url, {
+115:       method: 'POST',
+116:       headers: {
+117:         'Token': this.token,
+118:         'Content-Type': 'application/json'
+119:       },
+120:       body: JSON.stringify(payload)
+121:     });
+122:     
+123:     if (!response.ok) {
+124:       return {
+125:         collection: collectionName,
+126:         document_count: 0,
+127:         status: 'error'
+128:       };
+129:     }
+130:     
+131:     const data = await response.json();
+132:     const count = data.status?.count || 0;
+133:     
+134:     return {
+135:       collection: collectionName,
+136:       document_count: count,
+137:       status: 'healthy'
+138:     };
+139:   }
+140: }
 </file>
 
 <file path="backend/src/astra.py">
@@ -668,295 +670,393 @@ This section contains the contents of the repository's files.
  27:     this.kvCache = kvCache;
  28:     this.ragHits = 0;
  29:     this.ragMisses = 0;
- 30:   }
- 31:   
- 32:   getSystemPrompt(persona = 'hermes') {
- 33:     const prompts = {
- 34:       hermes: `Ты — Гермес, помощник в NeuroEscrow. Отвечай строго на основе контекста из RAG. Если контекста нет — скажи, что у тебя нет информации. Не используй собственные знания LLM.`,
- 35:       
- 36:       client: `Ты — Гермес, помощник в NeuroEscrow. Отвечай строго на основе контекста из RAG. Фокус: помощь клиенту.`,
- 37:       
- 38:       creator: `Ты — Гермес, помощник в NeuroEscrow. Отвечай строго на основе контекста из RAG. Фокус: помощь исполнителю.`
- 39:     };
- 40:     
- 41:     return prompts[persona] || prompts.hermes;
- 42:   }
- 43:   
- 44:   getSessionHistory(sessionId, limit = 10) {
- 45:     if (!this.sessions.has(sessionId)) {
- 46:       this.sessions.set(sessionId, []);
- 47:     }
- 48:     const history = this.sessions.get(sessionId);
- 49:     return history.slice(-limit);
- 50:   }
- 51:   
- 52:   addToSession(sessionId, role, content) {
- 53:     if (!this.sessions.has(sessionId)) {
- 54:       this.sessions.set(sessionId, []);
- 55:     }
- 56:     this.sessions.get(sessionId).push({
- 57:       role,
- 58:       content,
- 59:       timestamp: new Date().toISOString()
- 60:     });
- 61:   }
- 62:   
- 63:   async buildContext(query, userId, sessionId) {
- 64:     // Skip RAG for short messages (greetings, etc.)
- 65:     if (!query || query.trim().length < RAG_CONFIG.minQueryLength) return '';
- 66: 
- 67:     const contextParts = [];
- 68: 
- 69:     // Search codebase with similarity threshold
- 70:     const codebaseResults = await this.rag.searchCodebase(query, RAG_CONFIG.maxCodebaseResults);
- 71:     const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= RAG_CONFIG.similarityThreshold);
- 72:     if (filteredCodebase.length > 0) {
- 73:       contextParts.push('📚 Релевантный код из базы:');
- 74:       filteredCodebase.forEach((result, i) => {
- 75:         const filepath = result.filepath || 'unknown';
- 76:         const text = (result.text || '').substring(0, 500);
- 77:         const similarity = result.$similarity || 0;
- 78:         contextParts.push(`\n${i + 1}. ${filepath} (similarity: ${similarity.toFixed(2)})\n\`\`\`\n${text}\n\`\`\``);
- 79:       });
- 80:     }
- 81: 
- 82:     // Search memory with similarity threshold
- 83:     const memoryResults = await this.rag.searchMemory(query, userId, RAG_CONFIG.maxMemoryResults);
- 84:     const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= RAG_CONFIG.similarityThreshold);
- 85:     if (filteredMemory.length > 0) {
- 86:       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
- 87:       filteredMemory.forEach((result, i) => {
- 88:         const content = result.content || '';
- 89:         const timestamp = result.timestamp || '';
- 90:         contextParts.push(`\n${i + 1}. [${timestamp}] ${content}`);
- 91:       });
- 92:     }
- 93: 
- 94:     // Log hit/miss
- 95:     const hasContext = contextParts.length > 0;
- 96:     if (hasContext) {
- 97:       this.ragHits++;
- 98:       if (RAG_CONFIG.logHits) {
- 99:         console.log(`[RAG] HIT session=${sessionId} query="${query.substring(0, 30)}..." codebase=${filteredCodebase.length} memory=${filteredMemory.length}`);
-100:       }
-101:     } else {
-102:       this.ragMisses++;
-103:       if (RAG_CONFIG.logMisses) {
-104:         console.log(`[RAG] MISS session=${sessionId} query="${query.substring(0, 30)}..."`);
-105:       }
-106:     }
-107:     
-108:     return contextParts.join('');
-109:   }
-110:   
-111:   async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true) {
-112:     // Moderate content
-113:     const moderation = moderateContent(message);
-114:     if (!moderation.safe) {
-115:       return {
-116:         response: `⚠️ Сообщение заблокировано: ${moderation.reason}`,
-117:         blocked: true,
-118:         reason: moderation.reason
-119:       };
-120:     }
-121:     
-122:     // Build context
-123:     let context = '';
-124:     if (useRag) {
-125:       context = await this.buildContext(message, userId, sessionId);
-126:     }
-127:     
-128:     // RAG-only mode: if no context found, return specific message
-129:     if (useRag && !context && message.trim().length >= 15) {
-130:       return {
-131:         response: 'У меня нет информации об этом в базе знаний. Уточни вопрос.',
-132:         blocked: false,
-133:         context_used: false,
-134:         tokens_used: 0
-135:       };
-136:     }
-137:     
-138:     // Get history
-139:     const history = this.getSessionHistory(sessionId);
-140:     
-141:     // Build messages
-142:     const messages = [
-143:       { role: 'system', content: this.getSystemPrompt(persona) }
-144:     ];
-145:     
-146:     if (context) {
-147:       messages.push({
-148:         role: 'system',
-149:         content: `Контекст для ответа:\n${context}`
-150:       });
-151:     }
-152:     
-153:     // Add history
-154:     history.forEach(msg => {
-155:       messages.push({
-156:         role: msg.role,
-157:         content: msg.content
-158:       });
-159:     });
-160:     
-161:     // Add current message
-162:     if (imageUrl) {
-163:       messages.push({
-164:         role: 'user',
-165:         content: [
-166:           { type: 'text', text: message },
-167:           { type: 'image_url', image_url: { url: imageUrl } }
-168:         ]
-169:       });
-170:     } else {
-171:       messages.push({
-172:         role: 'user',
-173:         content: message
-174:       });
-175:     }
-176:     
-177:     // Call Mistral API
-178:     try {
-179:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-180:         method: 'POST',
-181:         headers: {
-182:           'Authorization': `Bearer ${this.apiKey}`,
-183:           'Content-Type': 'application/json'
-184:         },
-185:         body: JSON.stringify({
-186:           model: this.model,
-187:           messages,
-188:           temperature: 0.7,
-189:           max_tokens: 2000
-190:         })
-191:       });
-192:       
-193:       if (!response.ok) {
-194:         throw new Error(`Mistral API error: ${response.status}`);
-195:       }
-196:       
-197:       const data = await response.json();
-198:       let assistantMessage = data.choices[0].message.content;
-199:       
-200:       // Sanitize response: remove [Tria] and similar prefixes
-201:       assistantMessage = assistantMessage.replace(/^\[(Tria|Hermes|AI|Bot)\]\s*/i, '').trim();
-202:       
-203:       // Add to session
-204:       this.addToSession(sessionId, 'user', message);
-205:       this.addToSession(sessionId, 'assistant', assistantMessage);
-206:       
-207:       // Save to memory (substantial messages only)
-208:       if (message.length > 50) {
-209:         await this.rag.addMemory(
-210:           userId,
-211:           sessionId,
-212:           `User: ${message}\nHermes: ${assistantMessage}`,
-213:           'conversation'
-214:         );
-215:       }
-216:       
-217:       return {
-218:         response: assistantMessage,
-219:         blocked: false,
-220:         context_used: !!context,
-221:         tokens_used: data.usage?.total_tokens || 0
-222:       };
-223:       
-224:     } catch (error) {
-225:       return {
-226:         response: `❌ Ошибка: ${error.message}`,
-227:         error: true,
-228:         error_message: error.message
-229:       };
-230:     }
-231:   }
-232:   
-233:   async analyzeImage(imageUrl, prompt, userId, sessionId) {
-234:     return this.chat(prompt, userId, sessionId, 'hermes', imageUrl, false);
-235:   }
-236:   
-237:   async getSessionSummary(sessionId) {
-238:     const history = this.getSessionHistory(sessionId, 100);
-239:     
-240:     if (history.length === 0) {
-241:       return 'Нет истории сессии';
-242:     }
-243:     
-244:     const conversation = history.map(msg => `${msg.role}: ${msg.content}`).join('\n');
-245:     
-246:     const messages = [
-247:       {
-248:         role: 'system',
-249:         content: 'Создай краткое резюме этого разговора (2-3 предложения).'
-250:       },
-251:       {
-252:         role: 'user',
-253:         content: conversation
-254:       }
-255:     ];
-256:     
-257:     try {
-258:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-259:         method: 'POST',
-260:         headers: {
-261:           'Authorization': `Bearer ${this.apiKey}`,
-262:           'Content-Type': 'application/json'
-263:         },
-264:         body: JSON.stringify({
-265:           model: this.model,
-266:           messages,
-267:           temperature: 0.5,
-268:           max_tokens: 200
-269:         })
-270:       });
-271:       
-272:       const data = await response.json();
-273:       return data.choices[0].message.content;
-274:       
-275:     } catch (error) {
-276:       return `Ошибка создания резюме: ${error.message}`;
-277:     }
-278:   }
-279:   
-280:   clearSession(sessionId) {
-281:     this.sessions.delete(sessionId);
-282:   }
-283: 
-284:   async recordFeedback(userId, sessionId, messageId, feedback, text) {
-285:     const logEntry = {
-286:       user_id: userId,
-287:       session_id: sessionId,
-288:       message_id: messageId,
-289:       feedback,
-290:       text_preview: text.substring(0, 100),
-291:       timestamp: new Date().toISOString()
-292:     };
-293: 
-294:     console.log(`[FEEDBACK] ${feedback === 'up' ? '👍' : '👎'} user=${userId} session=${sessionId} msg=${messageId}`);
-295: 
-296:     // Store in KV for analytics
-297:     if (this.kvCache) {
-298:       try {
-299:         const key = `feedback:${sessionId}:${messageId}`;
-300:         await this.kvCache.put(key, JSON.stringify(logEntry), { expirationTtl: 86400 * 30 });
-301:       } catch (e) {
-302:         console.warn('[FEEDBACK] KV storage error:', e.message);
-303:       }
-304:     }
-305: 
-306:     return { ok: true, feedback };
-307:   }
-308: 
-309:   getRagStats() {
-310:     return {
-311:       hits: this.ragHits,
-312:       misses: this.ragMisses,
-313:       hitRate: this.ragHits + this.ragMisses > 0
-314:         ? (this.ragHits / (this.ragHits + this.ragMisses) * 100).toFixed(1) + '%'
-315:         : 'N/A'
-316:     };
-317:   }
-318: }
+ 30:     this.env = env;
+ 31:   }
+ 32:   
+ 33:   getSystemPrompt(persona = 'hermes') {
+ 34:     const prompts = {
+ 35:       hermes: `Ты — Гермес, помощник в NeuroEscrow. Отвечай строго на основе контекста из RAG. Если контекста нет — скажи, что у тебя нет информации. Не используй собственные знания LLM.`,
+ 36:       
+ 37:       client: `Ты — Гермес, помощник в NeuroEscrow. Отвечай строго на основе контекста из RAG. Фокус: помощь клиенту.`,
+ 38:       
+ 39:       creator: `Ты — Гермес, помощник в NeuroEscrow. Отвечай строго на основе контекста из RAG. Фокус: помощь исполнителю.`
+ 40:     };
+ 41:     
+ 42:     return prompts[persona] || prompts.hermes;
+ 43:   }
+ 44:   
+ 45:   getSessionHistory(sessionId, limit = 10) {
+ 46:     if (!this.sessions.has(sessionId)) {
+ 47:       this.sessions.set(sessionId, []);
+ 48:     }
+ 49:     const history = this.sessions.get(sessionId);
+ 50:     return history.slice(-limit);
+ 51:   }
+ 52:   
+ 53:   addToSession(sessionId, role, content) {
+ 54:     if (!this.sessions.has(sessionId)) {
+ 55:       this.sessions.set(sessionId, []);
+ 56:     }
+ 57:     this.sessions.get(sessionId).push({
+ 58:       role,
+ 59:       content,
+ 60:       timestamp: new Date().toISOString()
+ 61:     });
+ 62:   }
+ 63:   
+ 64:   async buildContext(query, userId, sessionId) {
+ 65:     // Skip RAG for short messages (greetings, etc.)
+ 66:     if (!query || query.trim().length < RAG_CONFIG.minQueryLength) return '';
+ 67: 
+ 68:     const contextParts = [];
+ 69: 
+ 70:     // Search codebase with similarity threshold
+ 71:     const codebaseResults = await this.rag.searchCodebase(query, RAG_CONFIG.maxCodebaseResults);
+ 72:     const filteredCodebase = codebaseResults.filter(r => (r.$similarity || 0) >= RAG_CONFIG.similarityThreshold);
+ 73:     if (filteredCodebase.length > 0) {
+ 74:       contextParts.push('📚 Релевантный код из базы:');
+ 75:       filteredCodebase.forEach((result, i) => {
+ 76:         const filepath = result.filepath || 'unknown';
+ 77:         const text = (result.text || '').substring(0, 500);
+ 78:         const similarity = result.$similarity || 0;
+ 79:         contextParts.push(`\n${i + 1}. ${filepath} (similarity: ${similarity.toFixed(2)})\n\`\`\`\n${text}\n\`\`\``);
+ 80:       });
+ 81:     }
+ 82: 
+ 83:     // Search memory with similarity threshold
+ 84:     const memoryResults = await this.rag.searchMemory(query, userId, RAG_CONFIG.maxMemoryResults);
+ 85:     const filteredMemory = memoryResults.filter(r => (r.$similarity || 0) >= RAG_CONFIG.similarityThreshold);
+ 86:     if (filteredMemory.length > 0) {
+ 87:       contextParts.push('\n\n🧠 Из долгосрочной памяти:');
+ 88:       filteredMemory.forEach((result, i) => {
+ 89:         const content = result.content || '';
+ 90:         const timestamp = result.timestamp || '';
+ 91:         contextParts.push(`\n${i + 1}. [${timestamp}] ${content}`);
+ 92:       });
+ 93:     }
+ 94: 
+ 95:     // Log hit/miss
+ 96:     const hasContext = contextParts.length > 0;
+ 97:     if (hasContext) {
+ 98:       this.ragHits++;
+ 99:       if (RAG_CONFIG.logHits) {
+100:         console.log(`[RAG] HIT session=${sessionId} query="${query.substring(0, 30)}..." codebase=${filteredCodebase.length} memory=${filteredMemory.length}`);
+101:       }
+102:     } else {
+103:       this.ragMisses++;
+104:       if (RAG_CONFIG.logMisses) {
+105:         console.log(`[RAG] MISS session=${sessionId} query="${query.substring(0, 30)}..."`);
+106:       }
+107:     }
+108:     
+109:     return contextParts.join('');
+110:   }
+111:   
+112:   async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true) {
+113:     // Moderate content
+114:     const moderation = moderateContent(message);
+115:     if (!moderation.safe) {
+116:       return {
+117:         response: `⚠️ Сообщение заблокировано: ${moderation.reason}`,
+118:         blocked: true,
+119:         reason: moderation.reason
+120:       };
+121:     }
+122:     
+123:     // Build context
+124:     let context = '';
+125:     if (useRag) {
+126:       context = await this.buildContext(message, userId, sessionId);
+127:     }
+128:     
+129:     // RAG-only mode: if no context found, return specific message
+130:     if (useRag && !context && message.trim().length >= 15) {
+131:       return {
+132:         response: 'У меня нет информации об этом в базе знаний. Уточни вопрос.',
+133:         blocked: false,
+134:         context_used: false,
+135:         tokens_used: 0
+136:       };
+137:     }
+138:     
+139:     // Get history
+140:     const history = this.getSessionHistory(sessionId);
+141:     
+142:     // Build messages
+143:     const messages = [
+144:       { role: 'system', content: this.getSystemPrompt(persona) }
+145:     ];
+146:     
+147:     if (context) {
+148:       messages.push({
+149:         role: 'system',
+150:         content: `Контекст для ответа:\n${context}`
+151:       });
+152:     }
+153:     
+154:     // Add history
+155:     history.forEach(msg => {
+156:       messages.push({
+157:         role: msg.role,
+158:         content: msg.content
+159:       });
+160:     });
+161:     
+162:     // Add current message
+163:     if (imageUrl) {
+164:       messages.push({
+165:         role: 'user',
+166:         content: [
+167:           { type: 'text', text: message },
+168:           { type: 'image_url', image_url: { url: imageUrl } }
+169:         ]
+170:       });
+171:     } else {
+172:       messages.push({
+173:         role: 'user',
+174:         content: message
+175:       });
+176:     }
+177:     
+178:     // Call Mistral API
+179:     try {
+180:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+181:         method: 'POST',
+182:         headers: {
+183:           'Authorization': `Bearer ${this.apiKey}`,
+184:           'Content-Type': 'application/json'
+185:         },
+186:         body: JSON.stringify({
+187:           model: this.model,
+188:           messages,
+189:           temperature: 0.7,
+190:           max_tokens: 2000
+191:         })
+192:       });
+193:       
+194:       if (!response.ok) {
+195:         throw new Error(`Mistral API error: ${response.status}`);
+196:       }
+197:       
+198:       const data = await response.json();
+199:       let assistantMessage = data.choices[0].message.content;
+200:       
+201:       // Sanitize response: remove [Tria] and similar prefixes
+202:       assistantMessage = assistantMessage.replace(/^\[(Tria|Hermes|AI|Bot)\]\s*/i, '').trim();
+203:       
+204:       // Add to session
+205:       this.addToSession(sessionId, 'user', message);
+206:       this.addToSession(sessionId, 'assistant', assistantMessage);
+207:       
+208:       // Save to memory (substantial messages only)
+209:       if (message.length > 50) {
+210:         await this.rag.addMemory(
+211:           userId,
+212:           sessionId,
+213:           `User: ${message}\nHermes: ${assistantMessage}`,
+214:           'conversation'
+215:         );
+216:       }
+217:       
+218:       return {
+219:         response: assistantMessage,
+220:         blocked: false,
+221:         context_used: !!context,
+222:         tokens_used: data.usage?.total_tokens || 0
+223:       };
+224:       
+225:     } catch (error) {
+226:       return {
+227:         response: `❌ Ошибка: ${error.message}`,
+228:         error: true,
+229:         error_message: error.message
+230:       };
+231:     }
+232:   }
+233:   
+234:   async analyzeImage(imageUrl, prompt, userId, sessionId) {
+235:     return this.chat(prompt, userId, sessionId, 'hermes', imageUrl, false);
+236:   }
+237:   
+238:   async getSessionSummary(sessionId) {
+239:     const history = this.getSessionHistory(sessionId, 100);
+240:     
+241:     if (history.length === 0) {
+242:       return 'Нет истории сессии';
+243:     }
+244:     
+245:     const conversation = history.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+246:     
+247:     const messages = [
+248:       {
+249:         role: 'system',
+250:         content: 'Создай краткое резюме этого разговора (2-3 предложения).'
+251:       },
+252:       {
+253:         role: 'user',
+254:         content: conversation
+255:       }
+256:     ];
+257:     
+258:     try {
+259:       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+260:         method: 'POST',
+261:         headers: {
+262:           'Authorization': `Bearer ${this.apiKey}`,
+263:           'Content-Type': 'application/json'
+264:         },
+265:         body: JSON.stringify({
+266:           model: this.model,
+267:           messages,
+268:           temperature: 0.5,
+269:           max_tokens: 200
+270:         })
+271:       });
+272:       
+273:       const data = await response.json();
+274:       return data.choices[0].message.content;
+275:       
+276:     } catch (error) {
+277:       return `Ошибка создания резюме: ${error.message}`;
+278:     }
+279:   }
+280:   
+281:   clearSession(sessionId) {
+282:     this.sessions.delete(sessionId);
+283:   }
+284: 
+285:   async recordFeedback(userId, sessionId, messageId, feedback, text) {
+286:     const logEntry = {
+287:       user_id: userId,
+288:       session_id: sessionId,
+289:       message_id: messageId,
+290:       feedback,
+291:       text_preview: text.substring(0, 100),
+292:       timestamp: new Date().toISOString()
+293:     };
+294: 
+295:     console.log(`[FEEDBACK] ${feedback === 'up' ? '👍' : '👎'} user=${userId} session=${sessionId} msg=${messageId}`);
+296: 
+297:     // Store in KV for analytics
+298:     if (this.kvCache) {
+299:       try {
+300:         const key = `feedback:${sessionId}:${messageId}`;
+301:         await this.kvCache.put(key, JSON.stringify(logEntry), { expirationTtl: 86400 * 30 });
+302:       } catch (e) {
+303:         console.warn('[FEEDBACK] KV storage error:', e.message);
+304:       }
+305:     }
+306: 
+307:     return { ok: true, feedback };
+308:   }
+309: 
+310:   getRagStats() {
+311:     return {
+312:       hits: this.ragHits,
+313:       misses: this.ragMisses,
+314:       hitRate: this.ragHits + this.ragMisses > 0
+315:         ? (this.ragHits / (this.ragHits + this.ragMisses) * 100).toFixed(1) + '%'
+316:         : 'N/A'
+317:     };
+318:   }
+319: 
+320:   async computeDOV({ semanticLabel, attentionRaw, computeFlops, userId }) {
+321:     // 1. Embedding смысла жеста (Gemini)
+322:     const embedResp = await fetch(
+323:       `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2-preview:embedContent?key=${this.env?.GEMINI_API_KEY}`,
+324:       {
+325:         method: 'POST',
+326:         headers: { 'Content-Type': 'application/json' },
+327:         body: JSON.stringify({
+328:           model: 'models/gemini-embedding-2-preview',
+329:           content: { parts: [{ text: semanticLabel }] },
+330:           outputDimensionality: 3072
+331:         })
+332:       }
+333:     );
+334:     const embedData = await embedResp.json();
+335:     const embedding = embedData.embedding?.values;
+336:     if (!embedding) throw new Error('Embedding failed for semanticLabel');
+337: 
+338:     // 2. SemanticNovelty: поиск похожих смыслов в AstraDB
+339:     const searchResp = await fetch(
+340:       `${this.astra.endpoint}/api/json/v1/default_keyspace/${this.astra.GESTURES_COLLECTION}`,
+341:       {
+342:         method: 'POST',
+343:         headers: {
+344:           'Content-Type': 'application/json',
+345:           'Token': this.astra.token
+346:         },
+347:         body: JSON.stringify({
+348:           find: {
+349:             sort: { $vector: embedding },
+350:             options: { limit: 20, includeSimilarity: true }
+351:           }
+352:         })
+353:       }
+354:     );
+355:     const searchData = await searchResp.json();
+356:     const docs = searchData.data?.documents || [];
+357:     const N = docs.length || 1;
+358:     const k = docs.filter(d => d.$similarity > 0.85).length;
+359:     const semanticNovelty = Math.max(0, 1 - k / N);
+360: 
+361:     // 3. Нормализация метрик
+362:     const attention = Math.min(1, Math.max(0, attentionRaw ?? 0.5));
+363:     const compute = Math.min(1, (computeFlops ?? 0) / 1e9);
+364: 
+365:     // 4. Коэффициенты (пока дефолт, далее — DAO)
+366:     const alpha = 0.35, beta = 0.30, gamma = 0.35;
+367:     const dov = alpha * attention + beta * compute + gamma * semanticNovelty;
+368: 
+369:     // 5. Сохранение эмбеддинга смысла
+370:     const docId = `${userId}_${Date.now()}`;
+371:     await fetch(
+372:       `${this.astra.endpoint}/api/json/v1/default_keyspace/${this.astra.GESTURES_COLLECTION}`,
+373:       {
+374:         method: 'POST',
+375:         headers: { 'Content-Type': 'application/json', 'Token': this.astra.token },
+376:         body: JSON.stringify({
+377:           insertOne: {
+378:             document: {
+379:               _id: docId,
+380:               $vector: embedding,
+381:               semanticLabel,
+382:               userId,
+383:               timestamp: new Date().toISOString()
+384:             }
+385:           }
+386:         })
+387:       }
+388:     );
+389: 
+390:     // 6. Логирование DOV
+391:     await fetch(
+392:       `${this.astra.endpoint}/api/json/v1/default_keyspace/${this.astra.DOV_LOG_COLLECTION}`,
+393:       {
+394:         method: 'POST',
+395:         headers: { 'Content-Type': 'application/json', 'Token': this.astra.token },
+396:         body: JSON.stringify({
+397:           insertOne: {
+398:             document: {
+399:               _id: `dov_${docId}`,
+400:               userId,
+401:               semanticLabel,
+402:               attention,
+403:               compute,
+404:               semanticNovelty,
+405:               dov,
+406:               alpha, beta, gamma,
+407:               timestamp: new Date().toISOString()
+408:             }
+409:           }
+410:         })
+411:       }
+412:     );
+413: 
+414:     return { dov, attention, compute, semanticNovelty, embedding: docId };
+415:   }
+416: }
 </file>
 
 <file path="backend/src/hermes.py">
@@ -1429,167 +1529,210 @@ This section contains the contents of the repository's files.
 178:         });
 179:       }
 180: 
-181:       // Stats
-182:       if (url.pathname === '/stats') {
-183:         const rag = new HermesRAG(env.CACHE, env);
-184:         const stats = await rag.getStats();
-185: 
-186:         return new Response(JSON.stringify(stats), {
-187:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-188:         });
-189:       }
-190: 
-191:       // Sessions list
-192:       if (url.pathname === '/sessions') {
-193:         const sessions = await listSessions(env);
-194:         return new Response(JSON.stringify(sessions), {
-195:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-196:         });
-197:       }
-198: 
-199:       // Load session
-200:       if (url.pathname.startsWith('/session/') && request.method === 'GET') {
-201:         const sessionId = url.pathname.split('/')[2];
-202:         const session = await loadSession(env, sessionId);
-203:         return new Response(JSON.stringify(session || { messages: [] }), {
-204:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-205:         });
-206:       }
-207: 
-208:       // Create session
-209:       if (url.pathname === '/session' && request.method === 'POST') {
-210:         const data = await request.json();
-211:         const sessionId = data?.session_id || crypto.randomUUID();
-212:         const session = {
-213:           id: sessionId,
-214:           messages: [],
-215:           created_at: new Date().toISOString(),
-216:           updated_at: new Date().toISOString()
-217:         };
-218:         await env.CACHE.put(
-219:           `${SESSION_PREFIX}${sessionId}`,
-220:           JSON.stringify(session),
-221:           { expirationTtl: SESSION_TTL }
-222:         );
-223:         return new Response(JSON.stringify({ session_id: sessionId }), {
-224:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-225:         });
-226:       }
-227: 
-228:       // Delete session
-229:       if (url.pathname.startsWith('/session/') && request.method === 'DELETE') {
-230:         const sessionId = url.pathname.split('/')[2];
-231:         await env.CACHE.delete(`${SESSION_PREFIX}${sessionId}`);
-232:         return new Response(JSON.stringify({ ok: true }), {
-233:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-234:         });
-235:       }
-236: 
-237:       // Telegram webhook endpoint
-238:       if (url.pathname === '/webhook/telegram' && request.method === 'POST') {
-239:         const update = await request.json();
-240:         const hermes = new HermesAgent(env.CACHE, env);
-241:         const result = await handleTelegramUpdate(update, env, hermes);
-242:         return new Response(JSON.stringify(result), {
-243:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-244:         });
-245:       }
-246: 
-247:       return new Response(JSON.stringify({ error: 'Not found' }), {
-248:         status: 404,
-249:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-250:       });
-251: 
-252:     } catch (error) {
-253:       return new Response(JSON.stringify({ error: error.message }), {
-254:         status: 500,
-255:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-256:       });
-257:     }
-258:   },
-259: 
-260:   // Scheduled handler for session cleanup (cron trigger)
-261:   async scheduled(event, env, ctx) {
-262:     ctx.waitUntil(cleanupExpiredSessions(env));
-263:   }
-264: };
-265: 
-266: // === KV Session Helpers ===
-267: 
-268: async function saveSession(env, sessionId, history) {
-269:   if (!env.CACHE || !sessionId || sessionId === 'default') return;
+181:       // DOV Semantic Counter endpoint
+182:       if (url.pathname === '/gesture/dov' && request.method === 'POST') {
+183:         const contentType = request.headers.get('content-type') || '';
+184:         let data;
+185:         try {
+186:           data = contentType.includes('application/json')
+187:             ? await request.json()
+188:             : JSON.parse(await request.text());
+189:         } catch (e) {
+190:           return new Response(
+191:             JSON.stringify({ error: 'Invalid JSON', details: e.message }),
+192:             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+193:           );
+194:         }
+195: 
+196:         const { semanticLabel, attentionRaw, computeFlops, userId } = data;
+197:         if (!semanticLabel || typeof semanticLabel !== 'string') {
+198:           return new Response(
+199:             JSON.stringify({ error: 'semanticLabel required' }),
+200:             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+201:           );
+202:         }
+203: 
+204:         try {
+205:           const hermes = new HermesAgent(env.CACHE, env);
+206:           const result = await hermes.computeDOV({
+207:             semanticLabel: semanticLabel.slice(0, 200),
+208:             attentionRaw: Number(attentionRaw) || 0.5,
+209:             computeFlops: Number(computeFlops) || 0,
+210:             userId: userId || 'anonymous'
+211:           });
+212:           return new Response(
+213:             JSON.stringify({ ok: true, ...result }),
+214:             { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+215:           );
+216:         } catch (e) {
+217:           return new Response(
+218:             JSON.stringify({ error: 'DOV computation failed', details: e.message }),
+219:             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+220:           );
+221:         }
+222:       }
+223: 
+224:       // Stats
+225:       if (url.pathname === '/stats') {
+226:         const rag = new HermesRAG(env.CACHE, env);
+227:         const stats = await rag.getStats();
+228: 
+229:         return new Response(JSON.stringify(stats), {
+230:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+231:         });
+232:       }
+233: 
+234:       // Sessions list
+235:       if (url.pathname === '/sessions') {
+236:         const sessions = await listSessions(env);
+237:         return new Response(JSON.stringify(sessions), {
+238:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+239:         });
+240:       }
+241: 
+242:       // Load session
+243:       if (url.pathname.startsWith('/session/') && request.method === 'GET') {
+244:         const sessionId = url.pathname.split('/')[2];
+245:         const session = await loadSession(env, sessionId);
+246:         return new Response(JSON.stringify(session || { messages: [] }), {
+247:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+248:         });
+249:       }
+250: 
+251:       // Create session
+252:       if (url.pathname === '/session' && request.method === 'POST') {
+253:         const data = await request.json();
+254:         const sessionId = data?.session_id || crypto.randomUUID();
+255:         const session = {
+256:           id: sessionId,
+257:           messages: [],
+258:           created_at: new Date().toISOString(),
+259:           updated_at: new Date().toISOString()
+260:         };
+261:         await env.CACHE.put(
+262:           `${SESSION_PREFIX}${sessionId}`,
+263:           JSON.stringify(session),
+264:           { expirationTtl: SESSION_TTL }
+265:         );
+266:         return new Response(JSON.stringify({ session_id: sessionId }), {
+267:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+268:         });
+269:       }
 270: 
-271:   try {
-272:     const key = `${SESSION_PREFIX}${sessionId}`;
-273:     const existing = await env.CACHE.get(key);
-274:     const session = existing ? JSON.parse(existing) : {
-275:       id: sessionId,
-276:       messages: [],
-277:       created_at: new Date().toISOString()
-278:     };
+271:       // Delete session
+272:       if (url.pathname.startsWith('/session/') && request.method === 'DELETE') {
+273:         const sessionId = url.pathname.split('/')[2];
+274:         await env.CACHE.delete(`${SESSION_PREFIX}${sessionId}`);
+275:         return new Response(JSON.stringify({ ok: true }), {
+276:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+277:         });
+278:       }
 279: 
-280:     session.messages = history.slice(-50); // Keep last 50 messages
-281:     session.updated_at = new Date().toISOString();
-282: 
-283:     await env.CACHE.put(key, JSON.stringify(session), {
-284:       expirationTtl: SESSION_TTL
-285:     });
-286:   } catch (error) {
-287:     // KV errors are non-critical
-288:   }
-289: }
-290: 
-291: async function loadSession(env, sessionId) {
-292:   if (!env.CACHE) return null;
-293: 
-294:   try {
-295:     const key = `${SESSION_PREFIX}${sessionId}`;
-296:     const data = await env.CACHE.get(key);
-297:     return data ? JSON.parse(data) : null;
-298:   } catch (error) {
-299:     return null;
-300:   }
-301: }
+280:       // Telegram webhook endpoint
+281:       if (url.pathname === '/webhook/telegram' && request.method === 'POST') {
+282:         const update = await request.json();
+283:         const hermes = new HermesAgent(env.CACHE, env);
+284:         const result = await handleTelegramUpdate(update, env, hermes);
+285:         return new Response(JSON.stringify(result), {
+286:           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+287:         });
+288:       }
+289: 
+290:       return new Response(JSON.stringify({ error: 'Not found' }), {
+291:         status: 404,
+292:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+293:       });
+294: 
+295:     } catch (error) {
+296:       return new Response(JSON.stringify({ error: error.message }), {
+297:         status: 500,
+298:         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+299:       });
+300:     }
+301:   },
 302: 
-303: async function listSessions(env) {
-304:   if (!env.CACHE) return [];
-305: 
-306:   try {
-307:     const list = await env.CACHE.list({ prefix: SESSION_PREFIX });
-308:     return list.keys.map(key => ({
-309:       id: key.name.replace(SESSION_PREFIX, ''),
-310:       updated_at: key.metadata?.updated_at || null
-311:     }));
-312:   } catch (error) {
-313:     return [];
-314:   }
-315: }
-316: 
-317: async function cleanupExpiredSessions(env) {
-318:   if (!env.CACHE) return;
-319: 
-320:   try {
-321:     const list = await env.CACHE.list({ prefix: SESSION_PREFIX });
-322:     const now = Date.now();
-323:     let cleaned = 0;
-324: 
-325:     for (const key of list.keys) {
-326:       // KV with expirationTtl handles auto-cleanup,
-327:       // but we can force-delete stale sessions older than 48h
-328:       if (key.metadata?.updated_at) {
-329:         const updated = new Date(key.metadata.updated_at).getTime();
-330:         if (now - updated > 172800000) { // 48h
-331:           await env.CACHE.delete(key.name);
-332:           cleaned++;
-333:         }
-334:       }
-335:     }
+303:   // Scheduled handler for session cleanup (cron trigger)
+304:   async scheduled(event, env, ctx) {
+305:     ctx.waitUntil(cleanupExpiredSessions(env));
+306:   }
+307: };
+308: 
+309: // === KV Session Helpers ===
+310: 
+311: async function saveSession(env, sessionId, history) {
+312:   if (!env.CACHE || !sessionId || sessionId === 'default') return;
+313: 
+314:   try {
+315:     const key = `${SESSION_PREFIX}${sessionId}`;
+316:     const existing = await env.CACHE.get(key);
+317:     const session = existing ? JSON.parse(existing) : {
+318:       id: sessionId,
+319:       messages: [],
+320:       created_at: new Date().toISOString()
+321:     };
+322: 
+323:     session.messages = history.slice(-50); // Keep last 50 messages
+324:     session.updated_at = new Date().toISOString();
+325: 
+326:     await env.CACHE.put(key, JSON.stringify(session), {
+327:       expirationTtl: SESSION_TTL
+328:     });
+329:   } catch (error) {
+330:     // KV errors are non-critical
+331:   }
+332: }
+333: 
+334: async function loadSession(env, sessionId) {
+335:   if (!env.CACHE) return null;
 336: 
-337:     console.log(`Session cleanup: ${cleaned} expired sessions removed`);
-338:   } catch (error) {
-339:     console.error(`Session cleanup error: ${error.message}`);
-340:   }
-341: }
+337:   try {
+338:     const key = `${SESSION_PREFIX}${sessionId}`;
+339:     const data = await env.CACHE.get(key);
+340:     return data ? JSON.parse(data) : null;
+341:   } catch (error) {
+342:     return null;
+343:   }
+344: }
+345: 
+346: async function listSessions(env) {
+347:   if (!env.CACHE) return [];
+348: 
+349:   try {
+350:     const list = await env.CACHE.list({ prefix: SESSION_PREFIX });
+351:     return list.keys.map(key => ({
+352:       id: key.name.replace(SESSION_PREFIX, ''),
+353:       updated_at: key.metadata?.updated_at || null
+354:     }));
+355:   } catch (error) {
+356:     return [];
+357:   }
+358: }
+359: 
+360: async function cleanupExpiredSessions(env) {
+361:   if (!env.CACHE) return;
+362: 
+363:   try {
+364:     const list = await env.CACHE.list({ prefix: SESSION_PREFIX });
+365:     const now = Date.now();
+366:     let cleaned = 0;
+367: 
+368:     for (const key of list.keys) {
+369:       // KV with expirationTtl handles auto-cleanup,
+370:       // but we can force-delete stale sessions older than 48h
+371:       if (key.metadata?.updated_at) {
+372:         const updated = new Date(key.metadata.updated_at).getTime();
+373:         if (now - updated > 172800000) { // 48h
+374:           await env.CACHE.delete(key.name);
+375:           cleaned++;
+376:         }
+377:       }
+378:     }
+379: 
+380:     console.log(`Session cleanup: ${cleaned} expired sessions removed`);
+381:   } catch (error) {
+382:     console.error(`Session cleanup error: ${error.message}`);
+383:   }
+384: }
 </file>
 
 <file path="backend/src/index.py">

@@ -4,7 +4,7 @@ import { state } from '../core/init.js';
 import { AudioGestureBridge } from './AudioGestureBridge.js';
 import audioService from '../services/AudioService.js';
 
-// ═══ Proxy-архитектура BasilaQ-128 ═══
+// ═══ Proxy-архитектура BasilaQ-256 ═══
 // Единая точка входа для всех аудио-источников (файл, микрофон, голос Триа)
 let inputProxyNode = null;
 let _cqtConnectedSource = null;
@@ -21,7 +21,7 @@ export function isCwtActive() {
 
 /**
  * Возвращает или создаёт Proxy Gain Node — единую точку входа
- * для всех аудио-источников, которые должны пройти через BasilaQ-128.
+ * для всех аудио-источников, которые должны пройти через BasilaQ-256.
  */
 function getInputProxyNode(ctx) {
     if (!inputProxyNode) {
@@ -223,7 +223,7 @@ export async function initializeCwtWorklet(audioContext) {
 }
 
 /**
- * Подключает аудио-источник к BasilaQ-128 через Proxy-архитектуру.
+ * Подключает аудио-источник к BasilaQ-256 через Proxy-архитектуру.
  * Цепочка: sourceNode -> Proxy -> Worklet(WASM) -> Destination
  *
  * При первом вызове создаёт полный pipeline.

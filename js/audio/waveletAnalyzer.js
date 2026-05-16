@@ -95,7 +95,7 @@ class CwtProcessor extends AudioWorkletProcessor {
     }
 
     /**
-     * BasilaQ-128: Digital Basilar Membrane Analysis
+     * BasilaQ-256: Digital Basilar Membrane Analysis
      * Maps Magnitude -> 7-bit dB (0-127 scale)
      */
     runAnalysis() {

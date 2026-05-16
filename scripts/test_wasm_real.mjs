@@ -1,5 +1,5 @@
 // scripts/test_wasm_real.mjs
-// ТОЧНАЯ копия BasilaQ-128 — парсим WAV вручную (быстро), прогоняем через WASM
+// ТОЧНАЯ копия BasilaQ-256 — парсим WAV вручную (быстро), прогоняем через WASM
 
 import fs from 'fs';
 import path from 'path';
@@ -19,7 +19,7 @@ for (let i = 0; i < 128; i++) {
   semitones.push({ id: i, n: notes[i%12] + Math.floor(i/12), f: f.toFixed(2), deg: (180.00 - i * 1.40625).toFixed(2) });
 }
 
-console.log('\n🧪 BasilaQ-128 WASM — Linkin Park - In The End\n');
+console.log('\n🧪 BasilaQ-256 WASM — Linkin Park - In The End\n');
 
 // 1. Быстрый парсер WAV
 console.log('1️⃣ Чтение WAV...');
@@ -124,7 +124,7 @@ const fP = new Float32Array(wasmExports.memory.buffer, bufPans, 128);
 const fC = new Float32Array(wasmExports.memory.buffer, bufConf, 128);
 
 console.log('\n' + '='.repeat(80));
-console.log('📊 ВСЕ 128 ПОЛУТОНОВ — BasilaQ-128 (кадр 179):');
+console.log('📊 ВСЕ 128 ПОЛУТОНОВ — BasilaQ-256 (кадр 179):');
 console.log('='.repeat(80));
 console.log('ID  | Нота |    Гц    | dB L  | dB R  |  Pan   | Conf |  deg');
 console.log('----|------|----------|-------|-------|--------|------|------');
