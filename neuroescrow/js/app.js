@@ -142,14 +142,21 @@ class NeuroEscrowApp {
 
     renderHermesView(container) {
         const view = document.createElement('div');
-        view.className = 'view';
+        view.className = 'view has-top-panel';
         
         view.innerHTML = `
-            <div class="voice-interface">
-                <button class="voice-button" id="voice-btn" onclick="app.toggleVoice()">
-                    <span class="voice-icon">🎙️</span>
-                </button>
-                <div class="voice-status" id="voice-status"></div>
+            <div class="top-control-panel">
+                <div class="left-mic-panel">
+                    <button class="mic-button" id="voice-btn" onclick="app.toggleVoice()">
+                        <span class="voice-icon">🎙️</span>
+                    </button>
+                </div>
+                <div class="right-contract-panel">
+                    <div id="task-spec" class="task-spec-container">
+                        <div class="task-spec-title">Техническое задание</div>
+                        <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
+                    </div>
+                </div>
             </div>
             <div class="chat-messages" id="chat-messages"></div>
         `;
@@ -258,29 +265,26 @@ class NeuroEscrowApp {
         const btn = document.getElementById('voice-btn');
         const status = document.getElementById('voice-status');
         
-        if (!btn || !status) return;
+        if (!btn) return;
         
         // Remove all state classes
         btn.classList.remove('recording', 'processing');
         
         switch (this.voiceState) {
             case 'IDLE':
-                status.textContent = '';
-                status.style.display = 'none';
+                if (status) { status.textContent = ''; status.style.display = 'none'; }
                 this.isRecording = false;
                 break;
                 
             case 'LISTENING':
                 btn.classList.add('recording');
-                status.textContent = 'Слушаю...';
-                status.style.display = 'block';
+                if (status) { status.textContent = 'Слушаю...'; status.style.display = 'block'; }
                 this.isRecording = true;
                 break;
                 
             case 'PROCESSING':
                 btn.classList.add('processing');
-                status.textContent = 'Гермес обрабатывает...';
-                status.style.display = 'block';
+                if (status) { status.textContent = 'Гермес обрабатывает...'; status.style.display = 'block'; }
                 this.isRecording = false;
                 break;
         }
@@ -563,6 +567,46 @@ class NeuroEscrowApp {
         await telegram.cloudSet('neuroescrow_data', data);
     }
 
+    async loadSession(sessionId) {
+        const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+            ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+            : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+
+        try {
+            const resp = await fetch(baseUrl + 'session/' + sessionId, { mode: 'cors' });
+            if (!resp.ok) return;
+
+            const session = await resp.json();
+            const messages = session.messages || [];
+
+            this.chatMessages = messages.map(msg => ({
+                sender: msg.role === 'user' ? 'user' : 'hermes',
+                text: msg.content || msg.text || '',
+                timestamp: msg.timestamp ? new Date(msg.timestamp).getTime() : Date.now()
+            }));
+
+            this.renderChatMessages();
+            this.saveCache();
+        } catch (e) {
+            console.error('[App] Load session error:', e.message);
+        }
+    }
+
+    async loadSessionsList() {
+        const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+            ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+            : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+
+        try {
+            const resp = await fetch(baseUrl + 'sessions', { mode: 'cors' });
+            if (!resp.ok) return [];
+            return await resp.json();
+        } catch (e) {
+            console.error('[App] Load sessions error:', e.message);
+            return [];
+        }
+    }
+
     requestDataFromBot() {
         telegram.sendData({ action: 'get_dashboard_data' });
     }
@@ -644,7 +688,15 @@ class NeuroEscrowApp {
         `;
         }).join('');
 
-        container.scrollTop = container.scrollHeight;
+        this.scrollToBottom();
+    }
+
+    scrollToBottom() {
+        const container = document.getElementById('chat-messages');
+        if (!container) return;
+        requestAnimationFrame(() => {
+            container.scrollTop = container.scrollHeight;
+        });
     }
 
     addChatMessage(sender, text) {
@@ -1016,6 +1068,27 @@ class NeuroEscrowApp {
         } catch (error) {
             console.error('[Feedback] Error:', error.message);
         }
+    }
+
+    updateTaskSpec(title, content) {
+        const specContainer = document.getElementById('task-spec');
+        const specContent = document.getElementById('task-spec-content');
+        if (!specContainer || !specContent) return;
+
+        specContainer.classList.add('has-content');
+        specContent.innerHTML = `
+            <div class="task-spec-title">${this.escapeHtml(title)}</div>
+            <div>${this.escapeHtml(content)}</div>
+        `;
+    }
+
+    clearTaskSpec() {
+        const specContainer = document.getElementById('task-spec');
+        const specContent = document.getElementById('task-spec-content');
+        if (!specContainer || !specContent) return;
+
+        specContainer.classList.remove('has-content');
+        specContent.textContent = 'Ожидание ТЗ от Гермеса...';
     }
 }
 

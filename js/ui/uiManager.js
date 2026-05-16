@@ -1081,18 +1081,23 @@ function initHistorySidebar() {
 
 // NOTE: removed broken dangling pointer-block that referenced historySidebar outside of scope.
 
-// Placeholder function to load chat history
-function loadChatHistory(container) {
-  // Mock data for demonstration (no green "active" highlight)
-  const mockChats = [
-    { id: 1, title: 'Обсуждение BasilaQ-128' },
-    { id: 2, title: 'Жестовый синтез реальностей' },
-    { id: 3, title: 'Триа и эмбеддинги' }
-  ];
+// History Sidebar — real backend integration
+async function loadChatHistory(container) {
+  const hermesUrl = 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+
+  let sessions = [];
+  try {
+    const resp = await fetch(hermesUrl + 'sessions', { mode: 'cors' });
+    if (resp.ok) {
+      sessions = await resp.json();
+    }
+  } catch (e) {
+    console.warn('[HistorySidebar] Failed to load sessions:', e.message);
+  }
 
   container.innerHTML = '';
 
-  if (mockChats.length === 0) {
+  if (!sessions || sessions.length === 0) {
     container.innerHTML = `
       <div class="history-empty">
         <svg viewBox="0 0 24 24" fill="currentColor">
@@ -1104,29 +1109,87 @@ function loadChatHistory(container) {
     return;
   }
 
-  mockChats.forEach(chat => {
+  sessions.forEach(session => {
     const item = document.createElement('div');
     item.className = 'history-item';
-    item.dataset.chatSessionId = String(chat.id);
+    item.dataset.chatSessionId = session.id;
+
+    const title = session.title || `Чат ${session.id.substring(0, 8)}`;
+    const updated = session.updated_at ? new Date(session.updated_at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 
     item.innerHTML = `
-      <div class="history-item-title">${chat.title}</div>
+      <div class="history-item-title">${title}</div>
+      ${updated ? `<div class="history-item-time">${updated}</div>` : ''}
       <div class="history-item-menu">
-        <button class="history-item-menu-btn" title="Редактировать" type="button">✏️</button>
         <button class="history-item-menu-btn" title="Удалить" type="button">🗑️</button>
       </div>
     `;
 
-    // Placeholder click: in next step we'll wire real history loading + hermes context.
-    item.addEventListener('click', (e) => {
+    item.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const sessionId = item.dataset.chatSessionId || null;
-      console.log('[HistorySidebar] mock select sessionId:', sessionId);
-      // no green active styles
+      const sessionId = item.dataset.chatSessionId;
+      if (!sessionId) return;
+
+      // Highlight active
+      container.querySelectorAll('.history-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+
+      await loadSessionMessages(sessionId);
     });
+
+    // Delete button
+    const deleteBtn = item.querySelector('.history-item-menu-btn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm('Удалить этот чат?')) return;
+        try {
+          await fetch(hermesUrl + 'session/' + sessionId, { method: 'DELETE', mode: 'cors' });
+          item.remove();
+        } catch (err) {
+          console.error('[HistorySidebar] Delete failed:', err.message);
+        }
+      });
+    }
 
     container.appendChild(item);
   });
+}
+
+async function loadSessionMessages(sessionId) {
+  const hermesUrl = 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+  const chatContainer = document.getElementById('chatMessages');
+  if (!chatContainer) return;
+
+  try {
+    const resp = await fetch(hermesUrl + 'session/' + sessionId, { mode: 'cors' });
+    if (!resp.ok) {
+      console.warn('[HistorySidebar] Session load failed:', resp.status);
+      return;
+    }
+
+    const session = await resp.json();
+    const messages = session.messages || [];
+
+    // Clear existing
+    chatContainer.innerHTML = '';
+
+    if (messages.length === 0) {
+      chatContainer.innerHTML = '<p style="opacity:0.5;text-align:center;padding:20px;">Нет сообщений</p>';
+      return;
+    }
+
+    // Render messages using existing addMessageToChat if available
+    const { addMessageToChat } = await import('../panels/chatMessages.js');
+    for (const msg of messages) {
+      const sender = msg.role === 'user' ? 'user' : 'tria';
+      addMessageToChat(sender, msg.content || msg.text || '');
+    }
+
+    console.log(`[HistorySidebar] Loaded ${messages.length} messages from session ${sessionId}`);
+  } catch (err) {
+    console.error('[HistorySidebar] Load session error:', err.message);
+  }
 }
 
 // uiElements.togglePanelsButton = state.panelManager.togglePanelsButtonElement;
