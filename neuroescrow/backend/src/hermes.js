@@ -126,7 +126,75 @@ export class HermesAgent {
     return contextParts.join('');
   }
   
-  async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true) {
+  async extractContractFields(message, sessionId) {
+    const history = this.getSessionHistory(sessionId);
+    const contextMessages = history.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n');
+    
+    const messages = [
+      {
+        role: 'system',
+        content: `Ты — экстрактор данных смарт-контракта. Извлеки из диалога пользователя поля контракта в формате JSON.
+        
+Правила:
+- Возвращай ТОЛЬКО JSON без markdown, без пояснений
+- Поля которые не найдены — оставляй null
+- budget — число (TON), deadline — строка YYYY-MM-DD или относительная ("2 недели")
+- title — краткое название задачи (до 80 символов)
+- description — описание задачи (до 500 символов)
+- client — имя клиента если упомянуто
+- coder — имя исполнителя если упомянуто
+
+Формат ответа:
+{"title": null, "description": null, "budget": null, "deadline": null, "client": null, "coder": null}`
+      }
+    ];
+    
+    if (contextMessages) {
+      messages.push({ role: 'user', content: `Контекст диалога:\n${contextMessages}` });
+    }
+    messages.push({ role: 'user', content: `Текущее сообщение: ${message}` });
+    
+    try {
+      const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages,
+          temperature: 0.1,
+          max_tokens: 300,
+          response_format: { type: 'json_object' }
+        })
+      });
+      
+      if (!response.ok) return null;
+      
+      const data = await response.json();
+      const raw = data.choices[0].message.content;
+      
+      // Parse and validate
+      const parsed = JSON.parse(raw);
+      const validFields = ['title', 'description', 'budget', 'deadline', 'client', 'coder'];
+      const result = {};
+      
+      for (const field of validFields) {
+        result[field] = parsed[field] || null;
+      }
+      
+      // Check if we got any meaningful data
+      const hasData = Object.values(result).some(v => v !== null);
+      return hasData ? result : null;
+      
+    } catch (error) {
+      console.warn('[Contract Extract] Failed:', error.message);
+      return null;
+    }
+  }
+  
+  async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true, extractContract = false) {
     // Moderate content
     const moderation = moderateContent(message);
     if (!moderation.safe) {
@@ -210,6 +278,12 @@ export class HermesAgent {
       // Sanitize response: remove [Tria] and similar prefixes
       assistantMessage = assistantMessage.replace(/^\[(Tria|Hermes|AI|Bot)\]\s*/i, '').trim();
       
+      // Extract contract fields if requested (parallel to memory save)
+      let extractedFields = null;
+      if (extractContract) {
+        extractedFields = await this.extractContractFields(message, sessionId);
+      }
+      
       // Add to session
       this.addToSession(sessionId, 'user', message);
       this.addToSession(sessionId, 'assistant', assistantMessage);
@@ -228,7 +302,8 @@ export class HermesAgent {
         response: assistantMessage,
         blocked: false,
         context_used: !!context,
-        tokens_used: data.usage?.total_tokens || 0
+        tokens_used: data.usage?.total_tokens || 0,
+        contract_fields: extractedFields
       };
       
     } catch (error) {

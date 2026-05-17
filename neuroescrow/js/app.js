@@ -439,6 +439,41 @@ class NeuroEscrowApp {
             this.saveContractState();
         }
     }
+    
+    applyExtractedFields(fields) {
+        if (!fields || typeof fields !== 'object') return;
+        
+        let changed = false;
+        const fieldLabels = {
+            title: 'Название задачи',
+            description: 'Описание',
+            budget: 'Бюджет',
+            deadline: 'Дедлайн',
+            client: 'Клиент',
+            coder: 'Нейрокодер'
+        };
+        
+        for (const [field, value] of Object.entries(fields)) {
+            if (value && this.smartContract.fields.hasOwnProperty(field)) {
+                const oldVal = this.smartContract.fields[field];
+                if (!oldVal || oldVal !== value) {
+                    this.smartContract.fields[field] = value;
+                    changed = true;
+                    console.log(`[Contract] Auto-filled ${field}: ${value}`);
+                }
+            }
+        }
+        
+        if (changed) {
+            this.renderContractPanel();
+            this.saveContractState();
+            
+            // Auto-advance phase if title and description are filled
+            if (this.smartContract.fields.title && this.smartContract.fields.description && this.smartContract.phase === 'draft') {
+                this.setContractPhase('review');
+            }
+        }
+    }
 
     setContractPhase(phase) {
         const validPhases = ['draft', 'review', 'sorting', 'agreement', 'escrow', 'completed'];
@@ -1393,7 +1428,13 @@ class NeuroEscrowApp {
                     for (const line of lines) {
                         try {
                             const parsed = JSON.parse(line.replace('data: ', ''));
-                            if (parsed.done) break;
+                            if (parsed.done) {
+                                // Handle contract fields from final event
+                                if (parsed.contract_fields) {
+                                    this.applyExtractedFields(parsed.contract_fields);
+                                }
+                                break;
+                            }
                             if (parsed.char !== undefined) {
                                 fullText += parsed.char;
                                 this.chatMessages[msgIdx].text = fullText;
@@ -1412,6 +1453,11 @@ class NeuroEscrowApp {
                     this.addChatMessage('system', `⚠️ ${data.reason}`);
                 } else if (data.response) {
                     this.addChatMessage('hermes', data.response);
+                    
+                    // Auto-fill contract fields if extracted
+                    if (data.contract_fields) {
+                        this.applyExtractedFields(data.contract_fields);
+                    }
                 } else if (data.error) {
                     this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
                 }

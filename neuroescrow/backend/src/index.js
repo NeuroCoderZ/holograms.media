@@ -72,7 +72,7 @@ export default {
         const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes' } = data;
 
         const hermes = new HermesAgent(env.CACHE, env);
-        const result = await hermes.chat(message, user_id, session_id, persona);
+        const result = await hermes.chat(message, user_id, session_id, persona, null, true, true);
 
         // Persist session to KV (fire-and-forget)
         ctx.waitUntil(saveSession(env, session_id, hermes.getSessionHistory(session_id)));
@@ -108,7 +108,7 @@ export default {
         const stream = new ReadableStream({
           async start(controller) {
             try {
-              const result = await hermes.chat(message, user_id, session_id, persona);
+              const result = await hermes.chat(message, user_id, session_id, persona, null, true, true);
               const text = result.response || '';
               
               // Send character by character
@@ -116,7 +116,12 @@ export default {
                 controller.enqueue(`data: ${JSON.stringify({ char: text[i], index: i, done: false })}\n\n`);
               }
               
-              controller.enqueue(`data: ${JSON.stringify({ done: true, session_id })}\n\n`);
+              // Send contract fields in final event if extracted
+              const finalEvent = { done: true, session_id };
+              if (result.contract_fields) {
+                finalEvent.contract_fields = result.contract_fields;
+              }
+              controller.enqueue(`data: ${JSON.stringify(finalEvent)}\n\n`);
               controller.close();
               
               // Persist session
