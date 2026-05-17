@@ -220,28 +220,42 @@ class NeuroEscrowApp {
             <div class="split-layout">
                 <!-- LEFT PANE: Hermes Chat -->
                 <div class="split-pane left-pane">
-                    <div class="pane-header">
-                        <span class="pane-header-dot purple"></span>
-                        <span class="pane-header-icon">🎙️</span>
-                        <span class="pane-header-title">Гермес — Чат</span>
-                    </div>
-                    <div class="pane-content">
-                        <div class="top-control-panel">
-                            <div class="left-mic-panel">
-                                <button class="mic-button" id="micButton">
-                                    <span class="voice-icon">🎙️</span>
+                    <div class="pane-glass">
+                        <div class="pane-header">
+                            <span class="pane-header-dot purple"></span>
+                            <span class="pane-header-icon">🎙️</span>
+                            <span class="pane-header-title">Гермес — Чат</span>
+                        </div>
+                        <div class="pane-content">
+                            <div class="chat-messages" id="chat-messages"></div>
+                            <!-- Chat input -->
+                            <div class="chat-input-container split-chat-input" id="chat-input-container">
+                                <button class="attach-btn" id="attach-btn" onclick="app.showAttachMenu()">
+                                    <span>📎</span>
+                                </button>
+                                <input type="text" class="chat-input" id="chat-input" placeholder="Напишите сообщение..." />
+                                <button class="send-btn" id="send-btn" onclick="app.sendTextMessage()">
+                                    <span>➤</span>
                                 </button>
                             </div>
                         </div>
-                        <div class="chat-messages" id="chat-messages"></div>
-                        <!-- Chat input inside left pane (desktop) -->
-                        <div class="chat-input-container split-chat-input" id="chat-input-container">
-                            <button class="attach-btn" id="attach-btn" onclick="app.showAttachMenu()">
-                                <span>📎</span>
+                        <!-- Bottom nav: 4 buttons -->
+                        <div class="bottom-nav-left">
+                            <button class="nav-btn-left active" data-view="hermes" onclick="app.navigate('hermes')">
+                                <span class="nav-icon">🎙️</span>
+                                <span class="nav-label">Гермес</span>
                             </button>
-                            <input type="text" class="chat-input" id="chat-input" placeholder="Напишите сообщение..." />
-                            <button class="send-btn" id="send-btn" onclick="app.sendTextMessage()">
-                                <span>➤</span>
+                            <button class="nav-btn-left" data-view="deals" onclick="app.navigate('deals')">
+                                <span class="nav-icon">🤝</span>
+                                <span class="nav-label">Сделки</span>
+                            </button>
+                            <button class="nav-btn-left" data-view="profile" onclick="app.navigate('profile')">
+                                <span class="nav-icon">👤</span>
+                                <span class="nav-label">Профиль</span>
+                            </button>
+                            <button class="nav-btn-left" id="micButton" onclick="app.toggleVoiceRecording()">
+                                <span class="nav-icon">🎤</span>
+                                <span class="nav-label">Микрофон</span>
                             </button>
                         </div>
                     </div>
@@ -252,23 +266,25 @@ class NeuroEscrowApp {
 
                 <!-- RIGHT PANE: Smart Contract / ТЗ -->
                 <div class="split-pane right-pane">
-                    <div class="pane-header">
-                        <span class="pane-header-dot green"></span>
-                        <span class="pane-header-icon">📋</span>
-                        <span class="pane-header-title">Смарт-контракт</span>
-                    </div>
-                    <div class="pane-content">
-                        <div class="right-contract-panel">
-                            <div id="task-spec" class="task-spec-container">
-                                <div class="task-spec-title">Техническое задание</div>
-                                <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
-                                <div style="display:flex;gap:6px;margin-top:8px;">
-                                    <button id="exportTaskSpecBtn" class="export-btn-sm" type="button">📥 Экспорт</button>
-                                    <button id="toggleTaskHistoryBtn" class="export-btn-sm" type="button"> История</button>
+                    <div class="pane-glass">
+                        <div class="pane-header">
+                            <span class="pane-header-dot green"></span>
+                            <span class="pane-header-icon">📋</span>
+                            <span class="pane-header-title">Смарт-контракт</span>
+                        </div>
+                        <div class="pane-content">
+                            <div class="right-contract-panel">
+                                <div id="task-spec" class="task-spec-container">
+                                    <div class="task-spec-title">Техническое задание</div>
+                                    <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
+                                    <div style="display:flex;gap:6px;margin-top:8px;">
+                                        <button id="exportTaskSpecBtn" class="export-btn-sm" type="button">📥 Экспорт</button>
+                                        <button id="toggleTaskHistoryBtn" class="export-btn-sm" type="button">📜 История</button>
+                                    </div>
                                 </div>
                             </div>
+                            <div id="contract-qa-container" class="contract-qa-panel"></div>
                         </div>
-                        <div id="contract-qa-container" class="contract-qa-panel"></div>
                     </div>
                 </div>
             </div>
@@ -577,14 +593,64 @@ class NeuroEscrowApp {
         const deals = this.deals.length > 0 ? this.deals : this.getSampleDeals();
         
         view.innerHTML = `
-            <h2 style="font-size:18px;margin-bottom:16px;font-weight:600;">Мои сделки</h2>
-            ${deals.length === 0 ? this.emptyState('🤝', 'У вас пока нет сделок') : ''}
-            <div id="deals-list">
-                ${deals.map(deal => deal.type === 'draft' ? this.renderDraftCard(deal) : this.dealCard(deal)).join('')}
+            <div class="split-layout">
+                <div class="split-pane left-pane">
+                    <div class="pane-glass">
+                        <div class="pane-header">
+                            <span class="pane-header-dot purple"></span>
+                            <span class="pane-header-icon">🤝</span>
+                            <span class="pane-header-title">Сделки</span>
+                        </div>
+                        <div class="pane-content" style="padding:16px;">
+                            <h2 style="font-size:18px;margin-bottom:16px;font-weight:600;">Мои сделки</h2>
+                            ${deals.length === 0 ? this.emptyState('🤝', 'У вас пока нет сделок') : ''}
+                            <div id="deals-list">
+                                ${deals.map(deal => deal.type === 'draft' ? this.renderDraftCard(deal) : this.dealCard(deal)).join('')}
+                            </div>
+                        </div>
+                        <div class="bottom-nav-left">
+                            <button class="nav-btn-left" data-view="hermes" onclick="app.navigate('hermes')">
+                                <span class="nav-icon">🎙️</span>
+                                <span class="nav-label">Гермес</span>
+                            </button>
+                            <button class="nav-btn-left active" data-view="deals" onclick="app.navigate('deals')">
+                                <span class="nav-icon">🤝</span>
+                                <span class="nav-label">Сделки</span>
+                            </button>
+                            <button class="nav-btn-left" data-view="profile" onclick="app.navigate('profile')">
+                                <span class="nav-icon">👤</span>
+                                <span class="nav-label">Профиль</span>
+                            </button>
+                            <button class="nav-btn-left" id="micButton" onclick="app.toggleVoiceRecording()">
+                                <span class="nav-icon">🎤</span>
+                                <span class="nav-label">Микрофон</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="split-divider" id="split-divider"></div>
+                <div class="split-pane right-pane">
+                    <div class="pane-glass">
+                        <div class="pane-header">
+                            <span class="pane-header-dot green"></span>
+                            <span class="pane-header-icon">📋</span>
+                            <span class="pane-header-title">Смарт-контракт</span>
+                        </div>
+                        <div class="pane-content">
+                            <div class="right-contract-panel">
+                                <div id="task-spec" class="task-spec-container">
+                                    <div class="task-spec-title">Техническое задание</div>
+                                    <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
         
         container.appendChild(view);
+        this.initSplitDivider();
     }
 
     renderDraftCard(draft) {
@@ -699,42 +765,82 @@ class NeuroEscrowApp {
         view.className = 'view';
         
         view.innerHTML = `
-            <div class="card" style="text-align:center;padding:24px;">
-                <div style="font-size:32px;font-weight:700;margin-bottom:8px;">${this.balance.toFixed(2)} USDT</div>
-                <div style="font-size:13px;color:var(--ne-light-gray);margin-bottom:20px;">Ваш баланс</div>
-                
-                <div style="display:flex;gap:8px;margin-bottom:16px;">
-                    <button class="btn btn-primary" onclick="app.donate()" style="flex:1;">
-                        💝 Поддержать
-                    </button>
-                    <button class="btn btn-secondary" onclick="app.leaveTip()" style="flex:1;">
-                        ⭐ Чаевые
-                    </button>
+            <div class="split-layout">
+                <div class="split-pane left-pane">
+                    <div class="pane-glass">
+                        <div class="pane-header">
+                            <span class="pane-header-dot purple"></span>
+                            <span class="pane-header-icon">👤</span>
+                            <span class="pane-header-title">Профиль</span>
+                        </div>
+                        <div class="pane-content" style="padding:16px;">
+                            <div class="card" style="text-align:center;padding:24px;">
+                                <div style="font-size:32px;font-weight:700;margin-bottom:8px;">${this.balance.toFixed(2)} USDT</div>
+                                <div style="font-size:13px;color:var(--ne-light-gray);margin-bottom:20px;">Ваш баланс</div>
+                                <div style="display:flex;gap:8px;margin-bottom:16px;">
+                                    <button class="btn btn-primary" onclick="app.donate()" style="flex:1;">💝 Поддержать</button>
+                                    <button class="btn btn-secondary" onclick="app.leaveTip()" style="flex:1;">⭐ Чаевые</button>
+                                </div>
+                                <div style="font-size:11px;color:var(--ne-light-gray);margin-top:12px;">TON • USDT • Telegram Stars</div>
+                            </div>
+                            <div id="ton-connect" style="margin:16px 0;"></div>
+                            <div class="card">
+                                <div class="card-title">Настройки</div>
+                                <div class="form-group">
+                                    <label class="form-label">LLM Модель</label>
+                                    <select class="form-input" id="model-selector">
+                                        <option value="auto">Автоматически</option>
+                                        <option value="gpt-4">GPT-4</option>
+                                        <option value="claude">Claude</option>
+                                        <option value="grok">Grok</option>
+                                        <option value="custom">Своя модель</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bottom-nav-left">
+                            <button class="nav-btn-left" data-view="hermes" onclick="app.navigate('hermes')">
+                                <span class="nav-icon">🎙️</span>
+                                <span class="nav-label">Гермес</span>
+                            </button>
+                            <button class="nav-btn-left" data-view="deals" onclick="app.navigate('deals')">
+                                <span class="nav-icon">🤝</span>
+                                <span class="nav-label">Сделки</span>
+                            </button>
+                            <button class="nav-btn-left active" data-view="profile" onclick="app.navigate('profile')">
+                                <span class="nav-icon">👤</span>
+                                <span class="nav-label">Профиль</span>
+                            </button>
+                            <button class="nav-btn-left" id="micButton" onclick="app.toggleVoiceRecording()">
+                                <span class="nav-icon">🎤</span>
+                                <span class="nav-label">Микрофон</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                
-                <div style="font-size:11px;color:var(--ne-light-gray);margin-top:12px;">
-                    TON • USDT • Telegram Stars
-                </div>
-            </div>
-            
-            <div id="ton-connect" style="margin:16px 0;"></div>
-            
-            <div class="card">
-                <div class="card-title">Настройки</div>
-                <div class="form-group">
-                    <label class="form-label">LLM Модель</label>
-                    <select class="form-input" id="model-selector">
-                        <option value="auto">Автоматически</option>
-                        <option value="gpt-4">GPT-4</option>
-                        <option value="claude">Claude</option>
-                        <option value="grok">Grok</option>
-                        <option value="custom">Своя модель</option>
-                    </select>
+                <div class="split-divider" id="split-divider"></div>
+                <div class="split-pane right-pane">
+                    <div class="pane-glass">
+                        <div class="pane-header">
+                            <span class="pane-header-dot green"></span>
+                            <span class="pane-header-icon">📋</span>
+                            <span class="pane-header-title">Смарт-контракт</span>
+                        </div>
+                        <div class="pane-content">
+                            <div class="right-contract-panel">
+                                <div id="task-spec" class="task-spec-container">
+                                    <div class="task-spec-title">Техническое задание</div>
+                                    <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
         
         container.appendChild(view);
+        this.initSplitDivider();
         
         setTimeout(() => {
             tonConnect.init('ton-connect');

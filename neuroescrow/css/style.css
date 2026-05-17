@@ -101,7 +101,6 @@ html, body {
     flex: 1;
     overflow: hidden;
     padding: 0;
-    padding-bottom: 64px;
     -webkit-overflow-scrolling: touch;
     display: flex;
     flex-direction: column;
@@ -206,7 +205,7 @@ html, body {
     gap: var(--ne-spacing-md);
     padding: var(--ne-spacing-md) var(--ne-spacing-lg);
     overflow-y: auto;
-    padding-bottom: 140px;
+    padding-bottom: 16px;
     flex: 1;
 }
 
@@ -462,17 +461,75 @@ html, body {
 
 /* ===== BOTTOM NAVIGATION (3 Glass Tabs) ===== */
 .bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 64px;
+    display: none;
+}
+
+/* ─── New bottom nav inside left pane ─── */
+.bottom-nav-left {
     display: flex;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    border-top: var(--glass-border-light);
-    z-index: 101;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.6);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.nav-btn-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 4px;
+    border: none;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    color: var(--ne-light-gray);
+    font-size: 10px;
+    cursor: pointer;
+    transition: var(--glass-transition);
+    position: relative;
+}
+
+.nav-btn-left.active {
+    color: var(--ne-white);
+    background: rgba(139, 92, 246, 0.15);
+}
+
+.nav-btn-left:active {
+    transform: scale(0.95);
+}
+
+.nav-btn-left .nav-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.nav-btn-left .nav-label {
+    font-weight: 500;
+    font-size: 9px;
+}
+
+/* ─── Hide Telegram "Neuro" branding in top-right corner ─── */
+.telegram-branding,
+.tg-branding,
+[data-tg-branding] {
+    display: none !important;
+}
+
+/* Hide Telegram watermark via overlay */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 80px;
+    height: 30px;
+    background: var(--ne-black);
+    z-index: 10000;
+    pointer-events: none;
 }
 
 .nav-btn {
@@ -1154,15 +1211,44 @@ html, body {
 .split-pane.left-pane {
     flex: 1;
     min-width: 0;
-    background: var(--ne-black);
+    background: transparent;
+    padding: 8px;
+    padding-right: 4px;
 }
 
 /* Right pane: contract (A4 paper style) */
 .split-pane.right-pane {
     flex: 0 0 38%;
     min-width: 200px;
-    background: rgba(18, 18, 24, 0.95);
-    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    background: transparent;
+    padding: 8px;
+    padding-left: 4px;
+}
+
+/* Glass pane borders — Android Studio style */
+.split-pane .pane-glass {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: rgba(20, 20, 28, 0.85);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.03),
+        0 4px 24px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    min-height: 0;
+}
+
+.split-pane.left-pane .pane-glass {
+    background: rgba(10, 10, 14, 0.9);
+}
+
+.split-pane.right-pane .pane-glass {
+    background: rgba(22, 22, 30, 0.9);
 }
 
 /* Pane header (IDE-style tab bar) */
@@ -1220,29 +1306,29 @@ html, body {
 .split-divider {
     flex-shrink: 0;
     width: 4px;
-    background: rgba(255, 255, 255, 0.06);
+    background: transparent;
     position: relative;
     cursor: col-resize;
     transition: background 0.2s;
     z-index: 10;
     align-self: stretch;
-}
-
-.split-divider:hover,
-.split-divider.dragging {
-    background: rgba(139, 92, 246, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .split-divider::after {
     content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     width: 2px;
-    height: 40px;
+    height: 100%;
     border-radius: 1px;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    transition: background 0.2s;
+}
+
+.split-divider:hover::after,
+.split-divider.dragging::after {
+    background: rgba(139, 92, 246, 0.4);
 }
 
 /* ─── Right pane: A4 paper style ─── */
@@ -1298,12 +1384,6 @@ html, body {
     -webkit-backdrop-filter: blur(8px);
 }
 
-/* ─── Chat messages inside left pane ─── */
-.split-pane.left-pane .chat-messages {
-    flex: 1;
-    padding-bottom: 80px;
-}
-
 /* ─── Top control panel inside left pane ─── */
 .split-pane.left-pane .top-control-panel {
     background: rgba(0, 0, 0, 0.4);
@@ -1316,12 +1396,12 @@ html, body {
     bottom: 0;
     left: auto;
     right: auto;
-    border-top: var(--glass-border);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     z-index: 10;
-    padding: var(--ne-spacing-sm) var(--ne-spacing-md);
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     flex-shrink: 0;
 }
 
