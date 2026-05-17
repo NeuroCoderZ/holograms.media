@@ -230,25 +230,63 @@ class NeuroEscrowApp {
         view.className = 'view has-top-panel';
         
         view.innerHTML = `
-            <div class="top-control-panel">
-                <div class="left-mic-panel">
-                    <button class="mic-button" id="micButton">
-                        <span class="voice-icon">🎙️</span>
-                    </button>
-                </div>
-                <div class="right-contract-panel">
-                    <div id="task-spec" class="task-spec-container">
-                        <div class="task-spec-title">Техническое задание</div>
-                        <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
-                        <div style="display:flex;gap:6px;margin-top:8px;">
-                            <button id="exportTaskSpecBtn" class="export-btn-sm" type="button">📥 Экспорт</button>
-                            <button id="toggleTaskHistoryBtn" class="export-btn-sm" type="button">📜 История</button>
+            <div class="split-layout">
+                <!-- LEFT PANE: Hermes Chat -->
+                <div class="split-pane left-pane">
+                    <div class="pane-header">
+                        <span class="pane-header-dot purple"></span>
+                        <span class="pane-header-icon">🎙️</span>
+                        <span class="pane-header-title">Гермес — Чат</span>
+                    </div>
+                    <div class="pane-content">
+                        <div class="top-control-panel">
+                            <div class="left-mic-panel">
+                                <button class="mic-button" id="micButton">
+                                    <span class="voice-icon">🎙️</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chat-messages" id="chat-messages"></div>
+                        <!-- Chat input inside left pane (desktop) -->
+                        <div class="chat-input-container split-chat-input" id="chat-input-container">
+                            <button class="attach-btn" id="attach-btn" onclick="app.showAttachMenu()">
+                                <span>📎</span>
+                            </button>
+                            <input type="text" class="chat-input" id="chat-input" placeholder="Напишите сообщение..." />
+                            <button class="send-btn" id="send-btn" onclick="app.sendTextMessage()">
+                                <span>➤</span>
+                            </button>
                         </div>
                     </div>
                 </div>
+
+                <!-- DIVIDER -->
+                <div class="split-divider" id="split-divider"></div>
+
+                <!-- RIGHT PANE: Smart Contract / ТЗ -->
+                <div class="split-pane right-pane">
+                    <div class="pane-header">
+                        <span class="pane-header-dot green"></span>
+                        <span class="pane-header-icon">📋</span>
+                        <span class="pane-header-title">Смарт-контракт</span>
+                    </div>
+                    <div class="pane-content">
+                        <div class="right-contract-panel">
+                            <div id="task-spec" class="task-spec-container">
+                                <div class="task-spec-title">Техническое задание</div>
+                                <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
+                                <div style="display:flex;gap:6px;margin-top:8px;">
+                                    <button id="exportTaskSpecBtn" class="export-btn-sm" type="button">📥 Экспорт</button>
+                                    <button id="toggleTaskHistoryBtn" class="export-btn-sm" type="button"> История</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="contract-qa-container" class="contract-qa-panel"></div>
+                    </div>
+                </div>
             </div>
-            <div class="chat-messages" id="chat-messages"></div>
-            <div id="contract-qa-container" class="contract-qa-panel"></div>
+
+            <!-- Task history (overlay) -->
             <div id="task-history-panel" class="task-history-panel">
                 <div id="task-history-list"></div>
             </div>
@@ -256,6 +294,72 @@ class NeuroEscrowApp {
         
         container.appendChild(view);
         this.renderChatMessages();
+        this.initSplitDivider();
+    }
+
+    initSplitDivider() {
+        const divider = document.getElementById('split-divider');
+        if (!divider) return;
+
+        let isDragging = false;
+        let startX, startY, startWidth;
+
+        const onMouseDown = (e) => {
+            isDragging = true;
+            divider.classList.add('dragging');
+            startX = e.clientX || e.touches?.[0]?.clientX || 0;
+            startY = e.clientY || e.touches?.[0]?.clientY || 0;
+            const leftPane = divider.previousElementSibling;
+            startWidth = leftPane?.getBoundingClientRect().width || 0;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd);
+        };
+
+        const onMouseMove = (e) => {
+            if (!isDragging) return;
+            const dx = (e.clientX || 0) - startX;
+            const container = divider.parentElement;
+            const totalWidth = container?.getBoundingClientRect().width || 1;
+            const newWidth = Math.max(200, Math.min(totalWidth - 200, startWidth + dx));
+            const leftPane = divider.previousElementSibling;
+            const rightPane = divider.nextElementSibling;
+            if (leftPane) leftPane.style.flex = `0 0 ${newWidth}px`;
+            if (rightPane) rightPane.style.flex = '1';
+        };
+
+        const onMouseUp = () => {
+            isDragging = false;
+            divider.classList.remove('dragging');
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        const onTouchMove = (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const dx = (e.touches?.[0]?.clientX || 0) - startX;
+            const container = divider.parentElement;
+            const totalWidth = container?.getBoundingClientRect().width || 1;
+            const newWidth = Math.max(200, Math.min(totalWidth - 200, startWidth + dx));
+            const leftPane = divider.previousElementSibling;
+            if (leftPane) leftPane.style.flex = `0 0 ${newWidth}px`;
+        };
+
+        const onTouchEnd = () => {
+            isDragging = false;
+            divider.classList.remove('dragging');
+            document.removeEventListener('touchmove', onTouchMove);
+            document.removeEventListener('touchend', onTouchEnd);
+        };
+
+        divider.addEventListener('mousedown', onMouseDown);
+        divider.addEventListener('touchstart', (e) => {
+            startX = e.touches?.[0]?.clientX || 0;
+            startY = e.touches?.[0]?.clientY || 0;
+            onMouseDown(e);
+        }, { passive: true });
     }
 
     toggleVoice() {
