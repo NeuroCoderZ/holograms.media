@@ -1123,16 +1123,18 @@ html, body {
 
 /* ═══════════════════════════════════════════════════════════════════
    SPLIT-PANE LAYOUT (Android Studio style)
-   Left: Hermes chat  |  Right: Smart contract / ТЗ
-   Mobile: vertical stack  |  Desktop/Tablet: horizontal split
-   ═══════════════════════════════════════════════════════════════════ */
+   Left: Hermes chat  |  Right: Smart contract / ТЗ (лист А4)
+   Горизонтальный split ВСЕГДА — мобильные тоже
+   ══════════════════════════════════════════════════════════════════ */
 
-/* Split container wrapper */
+/* Split container wrapper — всегда горизонтальный */
 .split-layout {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     height: 100%;
+    flex: 1;
     gap: 0;
+    min-height: 0;
 }
 
 /* Individual pane */
@@ -1143,14 +1145,29 @@ html, body {
     overflow: hidden;
 }
 
+/* Left pane: chat (dark) */
+.split-pane.left-pane {
+    flex: 1;
+    min-width: 0;
+    background: var(--ne-black);
+}
+
+/* Right pane: contract (A4 paper style) */
+.split-pane.right-pane {
+    flex: 0 0 38%;
+    min-width: 200px;
+    background: rgba(18, 18, 24, 0.95);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 /* Pane header (IDE-style tab bar) */
 .pane-header {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.5);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     flex-shrink: 0;
     min-height: 36px;
 }
@@ -1185,20 +1202,30 @@ html, body {
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Left pane content: chat area */
+.split-pane.left-pane .pane-content {
+    position: relative;
 }
 
 /* Resizable divider between panes */
 .split-divider {
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.04);
+    width: 4px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.06);
     position: relative;
     cursor: col-resize;
     transition: background 0.2s;
+    z-index: 10;
 }
 
 .split-divider:hover,
 .split-divider.dragging {
-    background: rgba(139, 92, 246, 0.3);
+    background: rgba(139, 92, 246, 0.4);
 }
 
 .split-divider::after {
@@ -1207,98 +1234,139 @@ html, body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 4px;
-    height: 32px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.1);
+    width: 2px;
+    height: 40px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.15);
 }
 
-/* Horizontal divider (mobile) */
-.split-divider.horizontal {
-    height: 4px;
-    width: 100%;
-    cursor: row-resize;
+/* ─── Right pane: A4 paper style ─── */
+.right-contract-panel {
+    flex: 1;
+    padding: var(--ne-spacing-md);
+    min-height: 0;
 }
 
-.split-divider.horizontal::after {
-    width: 32px;
-    height: 4px;
+.task-spec-container {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--glass-radius-sm);
+    padding: var(--ne-spacing-md);
+    font-size: 13px;
+    color: var(--ne-light-gray);
+    height: 100%;
+    overflow-y: auto;
+    transition: var(--glass-transition);
+    /* A4 paper feel */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
-/* ─── Desktop / Tablet: horizontal split ─── */
-@media (min-width: 600px) {
-    .split-layout {
-        flex-direction: row;
-    }
+.task-spec-container.has-content {
+    border-color: rgba(139, 92, 246, 0.3);
+    background: rgba(139, 92, 246, 0.04);
+}
 
-    .split-pane {
-        flex: 1;
-        min-width: 0;
-    }
+.task-spec-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ne-purple);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
 
-    .split-pane.left-pane {
-        flex: 1.2;
-    }
+.task-spec-content {
+    line-height: 1.6;
+    font-size: 13px;
+}
 
+/* Contract Q&A panel inside right pane */
+.contract-qa-panel {
+    margin: var(--ne-spacing-md);
+    padding: var(--ne-spacing-md);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--glass-radius-sm);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* ─── Chat messages inside left pane ─── */
+.split-pane.left-pane .chat-messages {
+    flex: 1;
+    padding-bottom: 80px;
+}
+
+/* ─── Top control panel inside left pane ─── */
+.split-pane.left-pane .top-control-panel {
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Chat input inside left pane ─── */
+.split-pane.left-pane .chat-input-container {
+    position: sticky;
+    bottom: 0;
+    left: auto;
+    right: auto;
+    border-top: var(--glass-border);
+    z-index: 10;
+    padding: var(--ne-spacing-sm) var(--ne-spacing-md);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    flex-shrink: 0;
+}
+
+/* Hide fixed chat input when split layout is active */
+.chat-input-container:not(.split-chat-input) {
+    display: none !important;
+}
+
+/* Show split chat input only on hermes view (handled by JS) */
+.split-chat-input {
+    display: flex;
+}
+
+/* ─── Mobile adjustments ─── */
+@media (max-width: 599px) {
     .split-pane.right-pane {
-        flex: 0.8;
+        flex: 0 0 35%;
+        min-width: 140px;
     }
 
-    .split-divider {
-        width: 4px;
-        height: 100%;
-    }
-
-    .split-divider.horizontal {
-        width: 4px;
-        height: 100%;
-        cursor: col-resize;
-    }
-
-    .split-divider.horizontal::after {
-        width: 4px;
-        height: 32px;
-    }
-
-    /* Chat messages fill pane height */
-    .split-pane.left-pane .chat-messages {
-        padding-bottom: 80px;
-    }
-
-    /* Contract panel fills right pane */
-    .right-contract-panel {
-        max-width: none;
-        height: 100%;
+    .pane-header-title {
+        font-size: 10px;
     }
 
     .task-spec-container {
-        max-height: none;
-        height: 100%;
+        padding: var(--ne-spacing-sm);
+        font-size: 12px;
+    }
+
+    .contract-qa-panel {
+        margin: var(--ne-spacing-sm);
+        padding: var(--ne-spacing-sm);
+    }
+}
+
+/* ─── Desktop adjustments ─── */
+@media (min-width: 600px) {
+    .split-pane.right-pane {
+        flex: 0 0 38%;
+        min-width: 280px;
+    }
+
+    .task-spec-container {
+        padding: var(--ne-spacing-md);
+        font-size: 13px;
     }
 
     .contract-qa-panel {
         margin: var(--ne-spacing-md);
+        padding: var(--ne-spacing-md);
     }
 }
 
-/* ─── Mobile: vertical stack (default) ─── */
-@media (max-width: 599px) {
-    .split-layout {
-        flex-direction: column;
-    }
-
-    .split-pane {
-        flex: 1;
-        min-height: 0;
-    }
-
-    .split-divider {
-        height: 4px;
-        width: 100%;
-    }
-
-    /* On mobile, contract panel is collapsible */
-    .right-contract-panel {
-        max-width: none;
-    }
-}

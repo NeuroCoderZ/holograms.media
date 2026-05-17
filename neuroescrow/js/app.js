@@ -101,29 +101,6 @@ class NeuroEscrowApp {
             }
         }
 
-        // Enter key fix for chat input — prevent form submit / page reload
-        const chatInput = document.getElementById('chat-input');
-        if (chatInput) {
-            chatInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.sendTextMessage();
-                }
-            });
-        }
-
-        // Prevent any accidental form submit if input is wrapped in <form>
-        const chatContainer = document.getElementById('chat-input-container');
-        if (chatContainer) {
-            chatContainer.addEventListener('submit', (e) => e.preventDefault());
-        }
-
-        // Ensure send button is type="button" not "submit"
-        const sendBtn = document.getElementById('send-btn');
-        if (sendBtn && !sendBtn.getAttribute('type')) {
-            sendBtn.setAttribute('type', 'button');
-        }
-
         // Priority 2-3: Voice input, Contract Q&A, Task Spec history
         this.initVoiceInput();
         this.loadTaskSpecHistory();
@@ -200,10 +177,23 @@ class NeuroEscrowApp {
         const main = document.getElementById('main-content');
         main.innerHTML = '';
         
-        // Show/hide chat input based on view
+        // Show/hide chat input based on view (split-chat-input is inside left pane)
         const chatInput = document.getElementById('chat-input-container');
         if (chatInput) {
             chatInput.style.display = view === 'hermes' ? 'flex' : 'none';
+        }
+        
+        // Also handle the split-layout chat input
+        const splitChatInput = document.querySelector('.split-chat-input');
+        if (splitChatInput) {
+            splitChatInput.style.display = view === 'hermes' ? 'flex' : 'none';
+        }
+        
+        // Hide fixed chat input container when not on hermes
+        const fixedChatInput = document.querySelector('.chat-input-container:not(.split-chat-input)');
+        if (fixedChatInput) {
+            fixedChatInput.style.display = view === 'hermes' ? 'flex' : 'none';
+        }
         }
         
         switch(view) {
@@ -295,6 +285,32 @@ class NeuroEscrowApp {
         container.appendChild(view);
         this.renderChatMessages();
         this.initSplitDivider();
+        this.bindChatInputEvents();
+    }
+
+    bindChatInputEvents() {
+        // Enter key fix for chat input — prevent form submit / page reload
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendTextMessage();
+                }
+            });
+        }
+
+        // Prevent any accidental form submit if input is wrapped in <form>
+        const chatContainer = document.getElementById('chat-input-container');
+        if (chatContainer) {
+            chatContainer.addEventListener('submit', (e) => e.preventDefault());
+        }
+
+        // Ensure send button is type="button" not "submit"
+        const sendBtn = document.getElementById('send-btn');
+        if (sendBtn && !sendBtn.getAttribute('type')) {
+            sendBtn.setAttribute('type', 'button');
+        }
     }
 
     initSplitDivider() {
