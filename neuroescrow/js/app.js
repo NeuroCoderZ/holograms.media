@@ -29,22 +29,20 @@ class NeuroEscrowApp {
         if (window.Telegram?.WebApp) {
             const tg = window.Telegram.WebApp;
             tg.ready();
+            tg.expand();
 
-            // Bot API 8.0+: requestFullscreen for desktop/immersive, fallback to expand()
-            // Fullscreen requires user gesture on Desktop — handled by button below
+            // Bot API 8.0+: requestFullscreen for desktop/immersive
             if (typeof tg.requestFullscreen === 'function') {
-                const fsResult = tg.requestFullscreen();
-                if (fsResult && typeof fsResult.catch === 'function') {
-                    fsResult.catch(() => {
-                        // User gesture required on Desktop — fallback to expand()
-                        tg.expand();
-                    });
-                } else {
-                    // requestFullscreen returned undefined — fallback to expand()
-                    tg.expand();
+                try {
+                    const fsResult = tg.requestFullscreen();
+                    if (fsResult && typeof fsResult.catch === 'function') {
+                        fsResult.catch(() => {
+                            // Already expanded via tg.expand() above
+                        });
+                    }
+                } catch (e) {
+                    // requestFullscreen failed — already expanded
                 }
-            } else {
-                tg.expand();
             }
 
             // Listen for fullscreen state changes
@@ -193,7 +191,6 @@ class NeuroEscrowApp {
         const fixedChatInput = document.querySelector('.chat-input-container:not(.split-chat-input)');
         if (fixedChatInput) {
             fixedChatInput.style.display = view === 'hermes' ? 'flex' : 'none';
-        }
         }
         
         switch(view) {
@@ -1467,7 +1464,8 @@ class NeuroEscrowApp {
 
 let app;
 document.addEventListener('DOMContentLoaded', () => {
-    app = new NeuroEscrowApp();
+    window.app = new NeuroEscrowApp();
+    app = window.app;
 });
 
 window.addEventListener('message', (event) => {
