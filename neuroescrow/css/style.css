@@ -967,30 +967,203 @@ body::after {
     min-height: 40px;
 }
 
-.task-spec-container {
-    background: var(--glass-bg);
-    border: var(--glass-border);
-    border-radius: var(--glass-radius-sm);
-    padding: var(--ne-spacing-sm) var(--ne-spacing-md);
-    font-size: 13px;
+/* Phase indicator (step bar) */
+.contract-phases {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.phase-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    opacity: 0.3;
+    transition: opacity 0.3s, transform 0.3s;
+    position: relative;
+}
+
+.phase-step.active {
+    opacity: 1;
+}
+
+.phase-step.completed {
+    opacity: 0.6;
+}
+
+.phase-step.completed .phase-icon::after {
+    content: '✓';
+    position: absolute;
+    top: -2px;
+    right: -6px;
+    font-size: 10px;
+    color: #00ff88;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.phase-icon {
+    font-size: 18px;
+    position: relative;
+}
+
+.phase-label {
+    font-size: 9px;
     color: var(--ne-light-gray);
-    max-height: 120px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.phase-step.active .phase-label {
+    color: var(--ne-white);
+    font-weight: 600;
+}
+
+/* Connector lines between phases */
+.phase-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 14px;
+    right: -50%;
+    width: 100%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: -1;
+}
+
+.phase-step.completed:not(:last-child)::after {
+    background: rgba(0, 255, 136, 0.3);
+}
+
+/* Contract fields */
+.contract-fields {
+    padding: 12px;
     overflow-y: auto;
-    transition: var(--glass-transition);
+    flex: 1;
 }
 
-.task-spec-container.has-content {
-    border-color: rgba(139, 92, 246, 0.3);
-    background: rgba(139, 92, 246, 0.05);
+.contract-field {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.task-spec-title {
-    font-size: 11px;
+.contract-field:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.field-label {
+    font-size: 10px;
     font-weight: 600;
     color: var(--ne-purple);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 4px;
+    display: block;
+}
+
+.field-value {
+    font-size: 13px;
+    color: var(--ne-white);
+    line-height: 1.5;
+    min-height: 20px;
+}
+
+.field-value.empty {
+    color: rgba(255, 255, 255, 0.2);
+    font-style: italic;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.status-badge.draft {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--ne-light-gray);
+}
+
+.status-badge.review {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+}
+
+.status-badge.sorting {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+.status-badge.agreement {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.status-badge.escrow {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00ff88;
+}
+
+.status-badge.completed {
+    background: rgba(0, 255, 136, 0.3);
+    color: #00ff88;
+}
+
+.status-badge.disputed {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+/* Progress bar for escrow phase */
+.escrow-progress {
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.escrow-progress-label {
+    font-size: 11px;
+    color: var(--ne-light-gray);
+    margin-bottom: 8px;
+}
+
+.escrow-progress-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.escrow-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ne-purple), #00ff88);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.escrow-progress-percent {
+    font-size: 12px;
+    color: var(--ne-white);
+    margin-top: 6px;
+    text-align: right;
+    font-weight: 600;
 }
 
 /* Vertical connectors */

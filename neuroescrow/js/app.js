@@ -7,7 +7,7 @@ class NeuroEscrowApp {
     constructor() {
         this.currentView = 'hermes';
         this.userData = null;
-        this.voiceState = 'IDLE'; // IDLE, LISTENING, PROCESSING
+        this.voiceState = 'IDLE';
         this.isRecording = false;
         this.isProcessing = false;
         this.deals = [];
@@ -21,6 +21,21 @@ class NeuroEscrowApp {
         this.recognition = null;
         this.contractAnswers = {};
         this.taskSpecHistory = [];
+        
+        // Smart contract state
+        this.smartContract = {
+            phase: 'draft', // draft, review, sorting, agreement, escrow, completed
+            fields: {
+                title: null,
+                description: null,
+                budget: null,
+                deadline: null,
+                client: null,
+                coder: null,
+                status: 'draft'
+            },
+            progress: 0
+        };
         
         this.init();
     }
@@ -66,6 +81,7 @@ class NeuroEscrowApp {
         this.userData = telegram.getUser();
         this.updateHeader();
         await this.loadCache();
+        this.loadContractState();
         this.navigate('hermes');
 
         window.addEventListener('ton:statusChange', (e) => {
@@ -264,7 +280,7 @@ class NeuroEscrowApp {
                 <!-- DIVIDER -->
                 <div class="split-divider" id="split-divider"></div>
 
-                <!-- RIGHT PANE: Smart Contract / ТЗ -->
+                <!-- RIGHT PANE: Smart Contract -->
                 <div class="split-pane right-pane">
                     <div class="pane-glass">
                         <div class="pane-header">
@@ -272,18 +288,63 @@ class NeuroEscrowApp {
                             <span class="pane-header-icon">📋</span>
                             <span class="pane-header-title">Смарт-контракт</span>
                         </div>
-                        <div class="pane-content">
-                            <div class="right-contract-panel">
-                                <div id="task-spec" class="task-spec-container">
-                                    <div class="task-spec-title">Техническое задание</div>
-                                    <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
-                                    <div style="display:flex;gap:6px;margin-top:8px;">
-                                        <button id="exportTaskSpecBtn" class="export-btn-sm" type="button">📥 Экспорт</button>
-                                        <button id="toggleTaskHistoryBtn" class="export-btn-sm" type="button">📜 История</button>
+                        <div class="pane-content" id="smart-contract-panel">
+                            <!-- Phase indicator -->
+                            <div id="contract-phases" class="contract-phases">
+                                <div class="phase-step active" data-phase="draft">
+                                    <span class="phase-icon">📝</span>
+                                    <span class="phase-label">Составление</span>
+                                </div>
+                                <div class="phase-step" data-phase="review">
+                                    <span class="phase-icon">✅</span>
+                                    <span class="phase-label">Согласование</span>
+                                </div>
+                                <div class="phase-step" data-phase="sorting">
+                                    <span class="phase-icon">🔍</span>
+                                    <span class="phase-label">Подбор</span>
+                                </div>
+                                <div class="phase-step" data-phase="agreement">
+                                    <span class="phase-icon">🤝</span>
+                                    <span class="phase-label">Сделка</span>
+                                </div>
+                                <div class="phase-step" data-phase="escrow">
+                                    <span class="phase-icon">💰</span>
+                                    <span class="phase-label">Эскроу</span>
+                                </div>
+                            </div>
+                            <!-- Contract fields (populated by Hermes) -->
+                            <div id="contract-fields" class="contract-fields">
+                                <div class="contract-field" data-field="title">
+                                    <label class="field-label">Название задачи</label>
+                                    <div class="field-value" id="field-title">—</div>
+                                </div>
+                                <div class="contract-field" data-field="description">
+                                    <label class="field-label">Описание</label>
+                                    <div class="field-value" id="field-description">—</div>
+                                </div>
+                                <div class="contract-field" data-field="budget">
+                                    <label class="field-label">Бюджет (TON)</label>
+                                    <div class="field-value" id="field-budget">—</div>
+                                </div>
+                                <div class="contract-field" data-field="deadline">
+                                    <label class="field-label">Дедлайн</label>
+                                    <div class="field-value" id="field-deadline">—</div>
+                                </div>
+                                <div class="contract-field" data-field="client">
+                                    <label class="field-label">Клиент</label>
+                                    <div class="field-value" id="field-client">—</div>
+                                </div>
+                                <div class="contract-field" data-field="coder">
+                                    <label class="field-label">Нейрокодер</label>
+                                    <div class="field-value" id="field-coder">—</div>
+                                </div>
+                                <div class="contract-field" data-field="status">
+                                    <label class="field-label">Статус</label>
+                                    <div class="field-value" id="field-status">
+                                        <span class="status-badge draft">Черновик</span>
                                     </div>
                                 </div>
                             </div>
-                            <div id="contract-qa-container" class="contract-qa-panel"></div>
                         </div>
                     </div>
                 </div>
@@ -299,6 +360,135 @@ class NeuroEscrowApp {
         this.renderChatMessages();
         this.initSplitDivider();
         this.bindChatInputEvents();
+        this.renderContractPanel();
+    }
+
+    // ─── Smart Contract Management ─────────────────────────────────────
+    
+    renderContractPanel() {
+        const panel = document.getElementById('smart-contract-panel');
+        if (!panel) return;
+
+        // Update phase indicators
+        const phases = ['draft', 'review', 'sorting', 'agreement', 'escrow'];
+        const currentIdx = phases.indexOf(this.smartContract.phase);
+        
+        document.querySelectorAll('.phase-step').forEach(step => {
+            const phase = step.dataset.phase;
+            const idx = phases.indexOf(phase);
+            step.classList.remove('active', 'completed');
+            if (idx === currentIdx) step.classList.add('active');
+            else if (idx < currentIdx) step.classList.add('completed');
+        });
+
+        // Update fields
+        const fields = this.smartContract.fields;
+        for (const [key, value] of Object.entries(fields)) {
+            const el = document.getElementById(`field-${key}`);
+            if (el) {
+                if (key === 'status') {
+                    el.innerHTML = `<span class="status-badge ${value}">${this.getStatusLabel(value)}</span>`;
+                } else {
+                    el.textContent = value || '—';
+                    el.classList.toggle('empty', !value);
+                }
+            }
+        }
+
+        // Update progress bar for escrow phase
+        let progressEl = document.querySelector('.escrow-progress');
+        if (this.smartContract.phase === 'escrow') {
+            if (!progressEl) {
+                progressEl = document.createElement('div');
+                progressEl.className = 'escrow-progress';
+                progressEl.innerHTML = `
+                    <div class="escrow-progress-label">Прогресс исполнения</div>
+                    <div class="escrow-progress-bar">
+                        <div class="escrow-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="escrow-progress-percent">0%</div>
+                `;
+                panel.appendChild(progressEl);
+            }
+            const fill = progressEl.querySelector('.escrow-progress-fill');
+            const percent = progressEl.querySelector('.escrow-progress-percent');
+            if (fill) fill.style.width = `${this.smartContract.progress}%`;
+            if (percent) percent.textContent = `${this.smartContract.progress}%`;
+        } else if (progressEl) {
+            progressEl.remove();
+        }
+    }
+
+    getStatusLabel(status) {
+        const labels = {
+            draft: 'Черновик',
+            review: 'На согласовании',
+            sorting: 'Подбор исполнителя',
+            agreement: 'Согласование',
+            escrow: 'В эскроу',
+            completed: 'Завершён',
+            disputed: 'Спор'
+        };
+        return labels[status] || status;
+    }
+
+    updateContractField(field, value) {
+        if (this.smartContract.fields.hasOwnProperty(field)) {
+            this.smartContract.fields[field] = value;
+            this.renderContractPanel();
+            this.saveContractState();
+        }
+    }
+
+    setContractPhase(phase) {
+        const validPhases = ['draft', 'review', 'sorting', 'agreement', 'escrow', 'completed'];
+        if (validPhases.includes(phase)) {
+            this.smartContract.phase = phase;
+            this.smartContract.fields.status = phase === 'completed' ? 'completed' : phase;
+            this.renderContractPanel();
+            this.saveContractState();
+        }
+    }
+
+    updateContractProgress(percent) {
+        this.smartContract.progress = Math.max(0, Math.min(100, percent));
+        this.renderContractPanel();
+        this.saveContractState();
+    }
+
+    saveContractState() {
+        try {
+            const data = JSON.stringify(this.smartContract);
+            if (window.Telegram?.WebApp?.CloudStorage) {
+                Telegram.WebApp.CloudStorage.setItem('neuroescrow_contract', data, () => {});
+            } else {
+                localStorage.setItem('neuroescrow_contract', data);
+            }
+        } catch (e) {
+            console.warn('[Contract] Save failed:', e);
+        }
+    }
+
+    loadContractState() {
+        try {
+            let raw = null;
+            if (window.Telegram?.WebApp?.CloudStorage) {
+                raw = new Promise((res, rej) => 
+                    Telegram.WebApp.CloudStorage.getItem('neuroescrow_contract', (err, val) => err ? rej(err) : res(val))
+                );
+            } else {
+                raw = localStorage.getItem('neuroescrow_contract');
+            }
+            if (raw) {
+                const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                if (data && data.fields) {
+                    this.smartContract = { ...this.smartContract, ...data };
+                }
+            }
+        } catch (e) {
+            console.warn('[Contract] Load failed:', e);
+        }
+        this.renderContractPanel();
     }
 
     bindChatInputEvents() {
@@ -636,11 +826,59 @@ class NeuroEscrowApp {
                             <span class="pane-header-icon">📋</span>
                             <span class="pane-header-title">Смарт-контракт</span>
                         </div>
-                        <div class="pane-content">
-                            <div class="right-contract-panel">
-                                <div id="task-spec" class="task-spec-container">
-                                    <div class="task-spec-title">Техническое задание</div>
-                                    <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
+                        <div class="pane-content" id="smart-contract-panel-deals">
+                            <div id="contract-phases" class="contract-phases">
+                                <div class="phase-step" data-phase="draft">
+                                    <span class="phase-icon">📝</span>
+                                    <span class="phase-label">Составление</span>
+                                </div>
+                                <div class="phase-step" data-phase="review">
+                                    <span class="phase-icon">✅</span>
+                                    <span class="phase-label">Согласование</span>
+                                </div>
+                                <div class="phase-step" data-phase="sorting">
+                                    <span class="phase-icon">🔍</span>
+                                    <span class="phase-label">Подбор</span>
+                                </div>
+                                <div class="phase-step" data-phase="agreement">
+                                    <span class="phase-icon">🤝</span>
+                                    <span class="phase-label">Сделка</span>
+                                </div>
+                                <div class="phase-step" data-phase="escrow">
+                                    <span class="phase-icon">💰</span>
+                                    <span class="phase-label">Эскроу</span>
+                                </div>
+                            </div>
+                            <div id="contract-fields" class="contract-fields">
+                                <div class="contract-field" data-field="title">
+                                    <label class="field-label">Название задачи</label>
+                                    <div class="field-value" id="field-title">—</div>
+                                </div>
+                                <div class="contract-field" data-field="description">
+                                    <label class="field-label">Описание</label>
+                                    <div class="field-value" id="field-description">—</div>
+                                </div>
+                                <div class="contract-field" data-field="budget">
+                                    <label class="field-label">Бюджет (TON)</label>
+                                    <div class="field-value" id="field-budget">—</div>
+                                </div>
+                                <div class="contract-field" data-field="deadline">
+                                    <label class="field-label">Дедлайн</label>
+                                    <div class="field-value" id="field-deadline">—</div>
+                                </div>
+                                <div class="contract-field" data-field="client">
+                                    <label class="field-label">Клиент</label>
+                                    <div class="field-value" id="field-client">—</div>
+                                </div>
+                                <div class="contract-field" data-field="coder">
+                                    <label class="field-label">Нейрокодер</label>
+                                    <div class="field-value" id="field-coder">—</div>
+                                </div>
+                                <div class="contract-field" data-field="status">
+                                    <label class="field-label">Статус</label>
+                                    <div class="field-value" id="field-status">
+                                        <span class="status-badge draft">Черновик</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -651,6 +889,7 @@ class NeuroEscrowApp {
         
         container.appendChild(view);
         this.initSplitDivider();
+        this.renderContractPanel();
     }
 
     renderDraftCard(draft) {
@@ -826,11 +1065,59 @@ class NeuroEscrowApp {
                             <span class="pane-header-icon">📋</span>
                             <span class="pane-header-title">Смарт-контракт</span>
                         </div>
-                        <div class="pane-content">
-                            <div class="right-contract-panel">
-                                <div id="task-spec" class="task-spec-container">
-                                    <div class="task-spec-title">Техническое задание</div>
-                                    <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
+                        <div class="pane-content" id="smart-contract-panel-profile">
+                            <div id="contract-phases" class="contract-phases">
+                                <div class="phase-step" data-phase="draft">
+                                    <span class="phase-icon">📝</span>
+                                    <span class="phase-label">Составление</span>
+                                </div>
+                                <div class="phase-step" data-phase="review">
+                                    <span class="phase-icon">✅</span>
+                                    <span class="phase-label">Согласование</span>
+                                </div>
+                                <div class="phase-step" data-phase="sorting">
+                                    <span class="phase-icon">🔍</span>
+                                    <span class="phase-label">Подбор</span>
+                                </div>
+                                <div class="phase-step" data-phase="agreement">
+                                    <span class="phase-icon">🤝</span>
+                                    <span class="phase-label">Сделка</span>
+                                </div>
+                                <div class="phase-step" data-phase="escrow">
+                                    <span class="phase-icon">💰</span>
+                                    <span class="phase-label">Эскроу</span>
+                                </div>
+                            </div>
+                            <div id="contract-fields" class="contract-fields">
+                                <div class="contract-field" data-field="title">
+                                    <label class="field-label">Название задачи</label>
+                                    <div class="field-value" id="field-title">—</div>
+                                </div>
+                                <div class="contract-field" data-field="description">
+                                    <label class="field-label">Описание</label>
+                                    <div class="field-value" id="field-description">—</div>
+                                </div>
+                                <div class="contract-field" data-field="budget">
+                                    <label class="field-label">Бюджет (TON)</label>
+                                    <div class="field-value" id="field-budget">—</div>
+                                </div>
+                                <div class="contract-field" data-field="deadline">
+                                    <label class="field-label">Дедлайн</label>
+                                    <div class="field-value" id="field-deadline">—</div>
+                                </div>
+                                <div class="contract-field" data-field="client">
+                                    <label class="field-label">Клиент</label>
+                                    <div class="field-value" id="field-client">—</div>
+                                </div>
+                                <div class="contract-field" data-field="coder">
+                                    <label class="field-label">Нейрокодер</label>
+                                    <div class="field-value" id="field-coder">—</div>
+                                </div>
+                                <div class="contract-field" data-field="status">
+                                    <label class="field-label">Статус</label>
+                                    <div class="field-value" id="field-status">
+                                        <span class="status-badge draft">Черновик</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -841,6 +1128,7 @@ class NeuroEscrowApp {
         
         container.appendChild(view);
         this.initSplitDivider();
+        this.renderContractPanel();
         
         setTimeout(() => {
             tonConnect.init('ton-connect');

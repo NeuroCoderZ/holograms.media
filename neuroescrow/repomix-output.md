@@ -3686,493 +3686,666 @@ This section contains the contents of the repository's files.
  967:     min-height: 40px;
  968: }
  969: 
- 970: .task-spec-container {
- 971:     background: var(--glass-bg);
- 972:     border: var(--glass-border);
- 973:     border-radius: var(--glass-radius-sm);
- 974:     padding: var(--ne-spacing-sm) var(--ne-spacing-md);
- 975:     font-size: 13px;
- 976:     color: var(--ne-light-gray);
- 977:     max-height: 120px;
- 978:     overflow-y: auto;
- 979:     transition: var(--glass-transition);
- 980: }
- 981: 
- 982: .task-spec-container.has-content {
- 983:     border-color: rgba(139, 92, 246, 0.3);
- 984:     background: rgba(139, 92, 246, 0.05);
- 985: }
- 986: 
- 987: .task-spec-title {
- 988:     font-size: 11px;
- 989:     font-weight: 600;
- 990:     color: var(--ne-purple);
- 991:     text-transform: uppercase;
- 992:     letter-spacing: 0.5px;
- 993:     margin-bottom: 4px;
- 994: }
- 995: 
- 996: /* Vertical connectors */
- 997: .vertical-connector {
- 998:     position: absolute;
- 999:     top: 0;
-1000:     bottom: 0;
-1001:     width: 1px;
-1002:     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15), transparent);
-1003:     pointer-events: none;
-1004:     z-index: 0;
-1005: }
-1006: 
-1007: .vertical-connector.left {
-1008:     left: calc(var(--ne-spacing-lg) + 22px);
-1009: }
-1010: 
-1011: .vertical-connector.right {
-1012:     right: calc(var(--ne-spacing-lg) + 22px);
-1013: }
-1014: 
-1015: /* Chat area with top panel spacing */
-1016: .view.has-top-panel .chat-messages {
-1017:     padding-top: var(--ne-spacing-sm);
-1018: }
-1019: 
-1020: /* Task spec questions */
-1021: .task-question {
-1022:     margin-top: var(--ne-spacing-sm);
-1023:     padding-top: var(--ne-spacing-sm);
-1024:     border-top: 1px solid rgba(255, 255, 255, 0.06);
-1025: }
-1026: 
-1027: .task-question p {
-1028:     font-size: 12px;
-1029:     color: var(--ne-silver);
-1030:     margin-bottom: 4px;
-1031: }
-1032: 
-1033: .task-question input {
-1034:     width: 100%;
-1035:     background: rgba(0, 0, 0, 0.3);
-1036:     border: 1px solid rgba(255, 255, 255, 0.1);
-1037:     border-radius: 6px;
-1038:     padding: 6px 10px;
-1039:     color: var(--ne-white);
-1040:     font-size: 12px;
-1041:     outline: none;
-1042:     transition: var(--glass-transition);
-1043: }
-1044: 
-1045: .task-question input:focus {
-1046:     border-color: rgba(139, 92, 246, 0.5);
-1047: }
-1048: 
-1049: /* ─── Панель вопросов смарт-контракта ─────────────────────────────── */
-1050: .contract-qa-panel {
-1051:     margin: var(--ne-spacing-md) var(--ne-spacing-lg);
-1052:     padding: var(--ne-spacing-md);
-1053:     background: var(--glass-bg);
-1054:     border: var(--glass-border);
-1055:     border-radius: var(--glass-radius-sm);
-1056:     backdrop-filter: blur(8px);
-1057:     -webkit-backdrop-filter: blur(8px);
+ 970: /* Phase indicator (step bar) */
+ 971: .contract-phases {
+ 972:     display: flex;
+ 973:     align-items: center;
+ 974:     justify-content: space-between;
+ 975:     padding: 12px 8px;
+ 976:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+ 977:     flex-shrink: 0;
+ 978: }
+ 979: 
+ 980: .phase-step {
+ 981:     display: flex;
+ 982:     flex-direction: column;
+ 983:     align-items: center;
+ 984:     gap: 4px;
+ 985:     opacity: 0.3;
+ 986:     transition: opacity 0.3s, transform 0.3s;
+ 987:     position: relative;
+ 988: }
+ 989: 
+ 990: .phase-step.active {
+ 991:     opacity: 1;
+ 992: }
+ 993: 
+ 994: .phase-step.completed {
+ 995:     opacity: 0.6;
+ 996: }
+ 997: 
+ 998: .phase-step.completed .phase-icon::after {
+ 999:     content: '✓';
+1000:     position: absolute;
+1001:     top: -2px;
+1002:     right: -6px;
+1003:     font-size: 10px;
+1004:     color: #00ff88;
+1005:     background: rgba(0, 0, 0, 0.8);
+1006:     border-radius: 50%;
+1007:     width: 14px;
+1008:     height: 14px;
+1009:     display: flex;
+1010:     align-items: center;
+1011:     justify-content: center;
+1012: }
+1013: 
+1014: .phase-icon {
+1015:     font-size: 18px;
+1016:     position: relative;
+1017: }
+1018: 
+1019: .phase-label {
+1020:     font-size: 9px;
+1021:     color: var(--ne-light-gray);
+1022:     text-align: center;
+1023:     white-space: nowrap;
+1024: }
+1025: 
+1026: .phase-step.active .phase-label {
+1027:     color: var(--ne-white);
+1028:     font-weight: 600;
+1029: }
+1030: 
+1031: /* Connector lines between phases */
+1032: .phase-step:not(:last-child)::after {
+1033:     content: '';
+1034:     position: absolute;
+1035:     top: 14px;
+1036:     right: -50%;
+1037:     width: 100%;
+1038:     height: 1px;
+1039:     background: rgba(255, 255, 255, 0.1);
+1040:     z-index: -1;
+1041: }
+1042: 
+1043: .phase-step.completed:not(:last-child)::after {
+1044:     background: rgba(0, 255, 136, 0.3);
+1045: }
+1046: 
+1047: /* Contract fields */
+1048: .contract-fields {
+1049:     padding: 12px;
+1050:     overflow-y: auto;
+1051:     flex: 1;
+1052: }
+1053: 
+1054: .contract-field {
+1055:     margin-bottom: 12px;
+1056:     padding-bottom: 12px;
+1057:     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 1058: }
 1059: 
-1060: .qa-item {
-1061:     margin-bottom: 10px;
-1062:     padding-bottom: 10px;
-1063:     border-bottom: 1px solid rgba(255,255,255,0.06);
+1060: .contract-field:last-child {
+1061:     border-bottom: none;
+1062:     margin-bottom: 0;
+1063:     padding-bottom: 0;
 1064: }
 1065: 
-1066: .qa-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-1067: 
-1068: .qa-question {
-1069:     font-size: 0.85rem;
-1070:     color: #a0b4ff;
-1071:     margin-bottom: 6px;
-1072:     line-height: 1.4;
-1073: }
-1074: 
-1075: .qa-answer-input {
-1076:     width: 100%;
-1077:     padding: 8px 10px;
-1078:     background: rgba(0,0,0,0.3);
-1079:     border: 1px solid rgba(255,255,255,0.1);
-1080:     border-radius: 8px;
-1081:     color: #fff;
-1082:     font-size: 0.85rem;
-1083:     outline: none;
-1084:     transition: border-color 0.2s;
-1085: }
-1086: 
-1087: .qa-answer-input:focus { border-color: #00ff88; }
-1088: 
-1089: .qa-empty { color: #666; font-size: 0.8rem; text-align: center; padding: 8px 0; }
-1090: 
-1091: /* ─── Голосовой ввод (пульсация) ──────────────────────────────────── */
-1092: .mic-button.recording,
-1093: #micButton.recording {
-1094:     animation: pulse-recording 1.2s infinite ease-in-out;
-1095:     border-color: #ff4d4d !important;
-1096:     box-shadow: 0 0 12px rgba(255,77,77,0.4);
-1097: }
-1098: 
-1099: @keyframes pulse-recording {
-1100:     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0.5); }
-1101:     70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(255,77,77,0); }
-1102:     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0); }
-1103: }
-1104: 
-1105: /* ─── История ТЗ ──────────────────────────────────────────────────── */
-1106: .task-history-panel {
-1107:     position: fixed;
-1108:     bottom: 80px;
-1109:     left: 50%;
-1110:     transform: translateX(-50%) translateY(20px);
-1111:     width: 90%;
-1112:     max-width: 400px;
-1113:     max-height: 50vh;
-1114:     background: rgba(18,18,24,0.95);
-1115:     border: 1px solid rgba(255,255,255,0.1);
-1116:     border-radius: 16px;
-1117:     padding: 12px;
-1118:     overflow-y: auto;
-1119:     opacity: 0;
-1120:     pointer-events: none;
-1121:     transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
-1122:     z-index: 900;
-1123:     backdrop-filter: blur(12px);
-1124:     -webkit-backdrop-filter: blur(12px);
+1066: .field-label {
+1067:     font-size: 10px;
+1068:     font-weight: 600;
+1069:     color: var(--ne-purple);
+1070:     text-transform: uppercase;
+1071:     letter-spacing: 0.5px;
+1072:     margin-bottom: 4px;
+1073:     display: block;
+1074: }
+1075: 
+1076: .field-value {
+1077:     font-size: 13px;
+1078:     color: var(--ne-white);
+1079:     line-height: 1.5;
+1080:     min-height: 20px;
+1081: }
+1082: 
+1083: .field-value.empty {
+1084:     color: rgba(255, 255, 255, 0.2);
+1085:     font-style: italic;
+1086: }
+1087: 
+1088: /* Status badges */
+1089: .status-badge {
+1090:     display: inline-block;
+1091:     padding: 3px 10px;
+1092:     border-radius: 12px;
+1093:     font-size: 11px;
+1094:     font-weight: 600;
+1095: }
+1096: 
+1097: .status-badge.draft {
+1098:     background: rgba(255, 255, 255, 0.08);
+1099:     color: var(--ne-light-gray);
+1100: }
+1101: 
+1102: .status-badge.review {
+1103:     background: rgba(139, 92, 246, 0.2);
+1104:     color: #a78bfa;
+1105: }
+1106: 
+1107: .status-badge.sorting {
+1108:     background: rgba(59, 130, 246, 0.2);
+1109:     color: #60a5fa;
+1110: }
+1111: 
+1112: .status-badge.agreement {
+1113:     background: rgba(245, 158, 11, 0.2);
+1114:     color: #fbbf24;
+1115: }
+1116: 
+1117: .status-badge.escrow {
+1118:     background: rgba(0, 255, 136, 0.2);
+1119:     color: #00ff88;
+1120: }
+1121: 
+1122: .status-badge.completed {
+1123:     background: rgba(0, 255, 136, 0.3);
+1124:     color: #00ff88;
 1125: }
 1126: 
-1127: .task-history-panel.visible {
-1128:     opacity: 1;
-1129:     pointer-events: auto;
-1130:     transform: translateX(-50%) translateY(0);
-1131: }
-1132: 
-1133: .task-history-panel .history-item {
-1134:     display: flex;
-1135:     gap: 8px;
-1136:     padding: 8px;
+1127: .status-badge.disputed {
+1128:     background: rgba(239, 68, 68, 0.2);
+1129:     color: #ef4444;
+1130: }
+1131: 
+1132: /* Progress bar for escrow phase */
+1133: .escrow-progress {
+1134:     margin-top: 16px;
+1135:     padding: 12px;
+1136:     background: rgba(0, 0, 0, 0.3);
 1137:     border-radius: 8px;
-1138:     cursor: pointer;
-1139:     transition: background 0.15s;
-1140: }
-1141: 
-1142: .task-history-panel .history-item:hover { background: rgba(255,255,255,0.06); }
-1143: 
-1144: .task-history-panel .history-time { color: #666; font-size: 0.75rem; min-width: 42px; }
-1145: 
-1146: .task-history-panel .history-text { color: #ccc; font-size: 0.8rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-1147: 
-1148: .task-history-panel .history-empty { color: #555; text-align: center; padding: 16px 0; font-size: 0.8rem; }
-1149: 
-1150: /* ─── Кнопка экспорта ─────────────────────────────────────────────── */
-1151: .export-btn-sm {
-1152:     flex: 1;
-1153:     padding: 6px 8px;
-1154:     background: rgba(255,255,255,0.06);
-1155:     border: 1px solid rgba(255,255,255,0.1);
-1156:     border-radius: 8px;
-1157:     color: var(--ne-light-gray);
-1158:     font-size: 0.75rem;
-1159:     cursor: pointer;
-1160:     transition: var(--glass-transition);
-1161: }
-1162: 
-1163: .export-btn-sm:hover {
-1164:     background: rgba(255,255,255,0.12);
-1165:     border-color: rgba(255,255,255,0.2);
-1166: }
-1167: 
-1168: .export-btn-sm:active { transform: scale(0.97); }
-1169: 
-1170: .export-btn {
-1171:     margin-top: 10px;
-1172:     width: 100%;
-1173:     padding: 10px;
-1174:     background: linear-gradient(135deg, #00ff88 0%, #00b8ff 100%);
-1175:     border: none;
-1176:     border-radius: 10px;
-1177:     color: #000;
-1178:     font-weight: 600;
-1179:     font-size: 0.85rem;
-1180:     cursor: pointer;
-1181:     transition: opacity 0.2s, transform 0.1s;
+1138:     border: 1px solid rgba(255, 255, 255, 0.06);
+1139: }
+1140: 
+1141: .escrow-progress-label {
+1142:     font-size: 11px;
+1143:     color: var(--ne-light-gray);
+1144:     margin-bottom: 8px;
+1145: }
+1146: 
+1147: .escrow-progress-bar {
+1148:     height: 6px;
+1149:     background: rgba(255, 255, 255, 0.06);
+1150:     border-radius: 3px;
+1151:     overflow: hidden;
+1152: }
+1153: 
+1154: .escrow-progress-fill {
+1155:     height: 100%;
+1156:     background: linear-gradient(90deg, var(--ne-purple), #00ff88);
+1157:     border-radius: 3px;
+1158:     transition: width 0.5s ease;
+1159: }
+1160: 
+1161: .escrow-progress-percent {
+1162:     font-size: 12px;
+1163:     color: var(--ne-white);
+1164:     margin-top: 6px;
+1165:     text-align: right;
+1166:     font-weight: 600;
+1167: }
+1168: 
+1169: /* Vertical connectors */
+1170: .vertical-connector {
+1171:     position: absolute;
+1172:     top: 0;
+1173:     bottom: 0;
+1174:     width: 1px;
+1175:     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15), transparent);
+1176:     pointer-events: none;
+1177:     z-index: 0;
+1178: }
+1179: 
+1180: .vertical-connector.left {
+1181:     left: calc(var(--ne-spacing-lg) + 22px);
 1182: }
 1183: 
-1184: .export-btn:active { transform: scale(0.98); opacity: 0.9; }
-1185: 
-1186: /* ═══════════════════════════════════════════════════════════════════
-1187:    SPLIT-PANE LAYOUT (Android Studio style)
-1188:    Left: Hermes chat  |  Right: Smart contract / ТЗ (лист А4)
-1189:    Горизонтальный split ВСЕГДА — мобильные тоже
-1190:    ══════════════════════════════════════════════════════════════════ */
-1191: 
-1192: /* Split container wrapper — всегда горизонтальный */
-1193: .split-layout {
-1194:     display: flex;
-1195:     flex-direction: row;
-1196:     flex: 1;
-1197:     gap: 0;
-1198:     min-height: 0;
-1199:     overflow: hidden;
-1200: }
-1201: 
-1202: /* Individual pane */
-1203: .split-pane {
-1204:     display: flex;
-1205:     flex-direction: column;
-1206:     min-height: 0;
-1207:     overflow: hidden;
-1208: }
-1209: 
-1210: /* Left pane: chat (dark) */
-1211: .split-pane.left-pane {
-1212:     flex: 1;
-1213:     min-width: 0;
-1214:     background: transparent;
-1215:     padding: 8px;
-1216:     padding-right: 4px;
-1217: }
-1218: 
-1219: /* Right pane: contract (A4 paper style) */
-1220: .split-pane.right-pane {
-1221:     flex: 0 0 38%;
-1222:     min-width: 200px;
-1223:     background: transparent;
-1224:     padding: 8px;
-1225:     padding-left: 4px;
-1226: }
-1227: 
-1228: /* Glass pane borders — Android Studio style */
-1229: .split-pane .pane-glass {
-1230:     flex: 1;
-1231:     display: flex;
-1232:     flex-direction: column;
-1233:     background: rgba(20, 20, 28, 0.85);
-1234:     backdrop-filter: blur(20px) saturate(150%);
-1235:     -webkit-backdrop-filter: blur(20px) saturate(150%);
-1236:     border: 1px solid rgba(255, 255, 255, 0.08);
-1237:     border-radius: 12px;
-1238:     overflow: hidden;
-1239:     box-shadow:
-1240:         0 0 0 1px rgba(255, 255, 255, 0.03),
-1241:         0 4px 24px rgba(0, 0, 0, 0.4),
-1242:         inset 0 1px 0 rgba(255, 255, 255, 0.05);
-1243:     min-height: 0;
-1244: }
-1245: 
-1246: .split-pane.left-pane .pane-glass {
-1247:     background: rgba(10, 10, 14, 0.9);
-1248: }
-1249: 
-1250: .split-pane.right-pane .pane-glass {
-1251:     background: rgba(22, 22, 30, 0.9);
-1252: }
-1253: 
-1254: /* Pane header (IDE-style tab bar) */
-1255: .pane-header {
-1256:     display: flex;
-1257:     align-items: center;
-1258:     gap: 8px;
-1259:     padding: 8px 12px;
-1260:     background: rgba(0, 0, 0, 0.6);
-1261:     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-1262:     flex-shrink: 0;
-1263:     min-height: 36px;
-1264: }
-1265: 
-1266: .pane-header-icon {
-1267:     font-size: 14px;
-1268:     opacity: 0.7;
-1269: }
-1270: 
-1271: .pane-header-title {
-1272:     font-size: 12px;
-1273:     font-weight: 600;
-1274:     color: var(--ne-light-gray);
-1275:     text-transform: uppercase;
-1276:     letter-spacing: 0.5px;
-1277: }
-1278: 
-1279: .pane-header-dot {
-1280:     width: 8px;
-1281:     height: 8px;
-1282:     border-radius: 50%;
-1283:     flex-shrink: 0;
-1284: }
-1285: 
-1286: .pane-header-dot.purple { background: var(--ne-purple); }
-1287: .pane-header-dot.red { background: var(--ne-red); }
-1288: .pane-header-dot.green { background: #00ff88; }
-1289: 
-1290: /* Pane content area */
-1291: .pane-content {
-1292:     flex: 1;
-1293:     overflow-y: auto;
-1294:     overflow-x: hidden;
-1295:     min-height: 0;
-1296:     display: flex;
-1297:     flex-direction: column;
+1184: .vertical-connector.right {
+1185:     right: calc(var(--ne-spacing-lg) + 22px);
+1186: }
+1187: 
+1188: /* Chat area with top panel spacing */
+1189: .view.has-top-panel .chat-messages {
+1190:     padding-top: var(--ne-spacing-sm);
+1191: }
+1192: 
+1193: /* Task spec questions */
+1194: .task-question {
+1195:     margin-top: var(--ne-spacing-sm);
+1196:     padding-top: var(--ne-spacing-sm);
+1197:     border-top: 1px solid rgba(255, 255, 255, 0.06);
+1198: }
+1199: 
+1200: .task-question p {
+1201:     font-size: 12px;
+1202:     color: var(--ne-silver);
+1203:     margin-bottom: 4px;
+1204: }
+1205: 
+1206: .task-question input {
+1207:     width: 100%;
+1208:     background: rgba(0, 0, 0, 0.3);
+1209:     border: 1px solid rgba(255, 255, 255, 0.1);
+1210:     border-radius: 6px;
+1211:     padding: 6px 10px;
+1212:     color: var(--ne-white);
+1213:     font-size: 12px;
+1214:     outline: none;
+1215:     transition: var(--glass-transition);
+1216: }
+1217: 
+1218: .task-question input:focus {
+1219:     border-color: rgba(139, 92, 246, 0.5);
+1220: }
+1221: 
+1222: /* ─── Панель вопросов смарт-контракта ─────────────────────────────── */
+1223: .contract-qa-panel {
+1224:     margin: var(--ne-spacing-md) var(--ne-spacing-lg);
+1225:     padding: var(--ne-spacing-md);
+1226:     background: var(--glass-bg);
+1227:     border: var(--glass-border);
+1228:     border-radius: var(--glass-radius-sm);
+1229:     backdrop-filter: blur(8px);
+1230:     -webkit-backdrop-filter: blur(8px);
+1231: }
+1232: 
+1233: .qa-item {
+1234:     margin-bottom: 10px;
+1235:     padding-bottom: 10px;
+1236:     border-bottom: 1px solid rgba(255,255,255,0.06);
+1237: }
+1238: 
+1239: .qa-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+1240: 
+1241: .qa-question {
+1242:     font-size: 0.85rem;
+1243:     color: #a0b4ff;
+1244:     margin-bottom: 6px;
+1245:     line-height: 1.4;
+1246: }
+1247: 
+1248: .qa-answer-input {
+1249:     width: 100%;
+1250:     padding: 8px 10px;
+1251:     background: rgba(0,0,0,0.3);
+1252:     border: 1px solid rgba(255,255,255,0.1);
+1253:     border-radius: 8px;
+1254:     color: #fff;
+1255:     font-size: 0.85rem;
+1256:     outline: none;
+1257:     transition: border-color 0.2s;
+1258: }
+1259: 
+1260: .qa-answer-input:focus { border-color: #00ff88; }
+1261: 
+1262: .qa-empty { color: #666; font-size: 0.8rem; text-align: center; padding: 8px 0; }
+1263: 
+1264: /* ─── Голосовой ввод (пульсация) ──────────────────────────────────── */
+1265: .mic-button.recording,
+1266: #micButton.recording {
+1267:     animation: pulse-recording 1.2s infinite ease-in-out;
+1268:     border-color: #ff4d4d !important;
+1269:     box-shadow: 0 0 12px rgba(255,77,77,0.4);
+1270: }
+1271: 
+1272: @keyframes pulse-recording {
+1273:     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0.5); }
+1274:     70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(255,77,77,0); }
+1275:     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0); }
+1276: }
+1277: 
+1278: /* ─── История ТЗ ──────────────────────────────────────────────────── */
+1279: .task-history-panel {
+1280:     position: fixed;
+1281:     bottom: 80px;
+1282:     left: 50%;
+1283:     transform: translateX(-50%) translateY(20px);
+1284:     width: 90%;
+1285:     max-width: 400px;
+1286:     max-height: 50vh;
+1287:     background: rgba(18,18,24,0.95);
+1288:     border: 1px solid rgba(255,255,255,0.1);
+1289:     border-radius: 16px;
+1290:     padding: 12px;
+1291:     overflow-y: auto;
+1292:     opacity: 0;
+1293:     pointer-events: none;
+1294:     transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+1295:     z-index: 900;
+1296:     backdrop-filter: blur(12px);
+1297:     -webkit-backdrop-filter: blur(12px);
 1298: }
 1299: 
-1300: /* Left pane content: chat area */
-1301: .split-pane.left-pane .pane-content {
-1302:     position: relative;
-1303: }
-1304: 
-1305: /* Resizable divider between panes */
-1306: .split-divider {
-1307:     flex-shrink: 0;
-1308:     width: 4px;
-1309:     background: transparent;
-1310:     position: relative;
-1311:     cursor: col-resize;
-1312:     transition: background 0.2s;
-1313:     z-index: 10;
-1314:     align-self: stretch;
-1315:     display: flex;
-1316:     align-items: center;
-1317:     justify-content: center;
-1318: }
-1319: 
-1320: .split-divider::after {
-1321:     content: '';
-1322:     width: 2px;
-1323:     height: 100%;
-1324:     border-radius: 1px;
-1325:     background: rgba(255, 255, 255, 0.06);
-1326:     transition: background 0.2s;
-1327: }
-1328: 
-1329: .split-divider:hover::after,
-1330: .split-divider.dragging::after {
-1331:     background: rgba(139, 92, 246, 0.4);
-1332: }
-1333: 
-1334: /* ─── Right pane: A4 paper style ─── */
-1335: .right-contract-panel {
-1336:     flex: 1;
-1337:     padding: var(--ne-spacing-md);
-1338:     min-height: 0;
+1300: .task-history-panel.visible {
+1301:     opacity: 1;
+1302:     pointer-events: auto;
+1303:     transform: translateX(-50%) translateY(0);
+1304: }
+1305: 
+1306: .task-history-panel .history-item {
+1307:     display: flex;
+1308:     gap: 8px;
+1309:     padding: 8px;
+1310:     border-radius: 8px;
+1311:     cursor: pointer;
+1312:     transition: background 0.15s;
+1313: }
+1314: 
+1315: .task-history-panel .history-item:hover { background: rgba(255,255,255,0.06); }
+1316: 
+1317: .task-history-panel .history-time { color: #666; font-size: 0.75rem; min-width: 42px; }
+1318: 
+1319: .task-history-panel .history-text { color: #ccc; font-size: 0.8rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+1320: 
+1321: .task-history-panel .history-empty { color: #555; text-align: center; padding: 16px 0; font-size: 0.8rem; }
+1322: 
+1323: /* ─── Кнопка экспорта ─────────────────────────────────────────────── */
+1324: .export-btn-sm {
+1325:     flex: 1;
+1326:     padding: 6px 8px;
+1327:     background: rgba(255,255,255,0.06);
+1328:     border: 1px solid rgba(255,255,255,0.1);
+1329:     border-radius: 8px;
+1330:     color: var(--ne-light-gray);
+1331:     font-size: 0.75rem;
+1332:     cursor: pointer;
+1333:     transition: var(--glass-transition);
+1334: }
+1335: 
+1336: .export-btn-sm:hover {
+1337:     background: rgba(255,255,255,0.12);
+1338:     border-color: rgba(255,255,255,0.2);
 1339: }
 1340: 
-1341: .task-spec-container {
-1342:     background: rgba(255, 255, 255, 0.03);
-1343:     border: 1px solid rgba(255, 255, 255, 0.08);
-1344:     border-radius: var(--glass-radius-sm);
-1345:     padding: var(--ne-spacing-md);
-1346:     font-size: 13px;
-1347:     color: var(--ne-light-gray);
-1348:     height: 100%;
-1349:     overflow-y: auto;
-1350:     transition: var(--glass-transition);
-1351:     /* A4 paper feel */
-1352:     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-1353: }
-1354: 
-1355: .task-spec-container.has-content {
-1356:     border-color: rgba(139, 92, 246, 0.3);
-1357:     background: rgba(139, 92, 246, 0.04);
-1358: }
-1359: 
-1360: .task-spec-title {
-1361:     font-size: 11px;
-1362:     font-weight: 600;
-1363:     color: var(--ne-purple);
-1364:     text-transform: uppercase;
-1365:     letter-spacing: 0.5px;
-1366:     margin-bottom: 8px;
-1367:     padding-bottom: 6px;
-1368:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-1369: }
-1370: 
-1371: .task-spec-content {
-1372:     line-height: 1.6;
-1373:     font-size: 13px;
-1374: }
-1375: 
-1376: /* Contract Q&A panel inside right pane */
-1377: .contract-qa-panel {
-1378:     margin: var(--ne-spacing-md);
-1379:     padding: var(--ne-spacing-md);
-1380:     background: rgba(255, 255, 255, 0.02);
-1381:     border: 1px solid rgba(255, 255, 255, 0.06);
-1382:     border-radius: var(--glass-radius-sm);
-1383:     backdrop-filter: blur(8px);
-1384:     -webkit-backdrop-filter: blur(8px);
-1385: }
-1386: 
-1387: /* ─── Top control panel inside left pane ─── */
-1388: .split-pane.left-pane .top-control-panel {
-1389:     background: rgba(0, 0, 0, 0.4);
-1390:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-1391: }
-1392: 
-1393: /* ─── Chat input inside left pane ─── */
-1394: .split-pane.left-pane .chat-input-container {
-1395:     position: sticky;
-1396:     bottom: 0;
-1397:     left: auto;
-1398:     right: auto;
-1399:     border-top: 1px solid rgba(255, 255, 255, 0.06);
-1400:     z-index: 10;
-1401:     padding: 8px 12px;
-1402:     background: rgba(0, 0, 0, 0.6);
-1403:     backdrop-filter: blur(12px);
-1404:     -webkit-backdrop-filter: blur(12px);
-1405:     flex-shrink: 0;
-1406: }
-1407: 
-1408: /* Hide fixed chat input when split layout is active */
-1409: .chat-input-container:not(.split-chat-input) {
-1410:     display: none !important;
-1411: }
-1412: 
-1413: /* Show split chat input only on hermes view (handled by JS) */
-1414: .split-chat-input {
-1415:     display: flex;
-1416: }
-1417: 
-1418: /* ─── Mobile adjustments ─── */
-1419: @media (max-width: 599px) {
-1420:     .split-pane.right-pane {
-1421:         flex: 0 0 35%;
-1422:         min-width: 140px;
-1423:     }
-1424: 
-1425:     .pane-header-title {
-1426:         font-size: 10px;
-1427:     }
-1428: 
-1429:     .task-spec-container {
-1430:         padding: var(--ne-spacing-sm);
-1431:         font-size: 12px;
-1432:     }
-1433: 
-1434:     .contract-qa-panel {
-1435:         margin: var(--ne-spacing-sm);
-1436:         padding: var(--ne-spacing-sm);
-1437:     }
-1438: }
-1439: 
-1440: /* ─── Desktop adjustments ─── */
-1441: @media (min-width: 600px) {
-1442:     .split-pane.right-pane {
-1443:         flex: 0 0 38%;
-1444:         min-width: 280px;
-1445:     }
-1446: 
-1447:     .task-spec-container {
-1448:         padding: var(--ne-spacing-md);
-1449:         font-size: 13px;
-1450:     }
+1341: .export-btn-sm:active { transform: scale(0.97); }
+1342: 
+1343: .export-btn {
+1344:     margin-top: 10px;
+1345:     width: 100%;
+1346:     padding: 10px;
+1347:     background: linear-gradient(135deg, #00ff88 0%, #00b8ff 100%);
+1348:     border: none;
+1349:     border-radius: 10px;
+1350:     color: #000;
+1351:     font-weight: 600;
+1352:     font-size: 0.85rem;
+1353:     cursor: pointer;
+1354:     transition: opacity 0.2s, transform 0.1s;
+1355: }
+1356: 
+1357: .export-btn:active { transform: scale(0.98); opacity: 0.9; }
+1358: 
+1359: /* ═══════════════════════════════════════════════════════════════════
+1360:    SPLIT-PANE LAYOUT (Android Studio style)
+1361:    Left: Hermes chat  |  Right: Smart contract / ТЗ (лист А4)
+1362:    Горизонтальный split ВСЕГДА — мобильные тоже
+1363:    ══════════════════════════════════════════════════════════════════ */
+1364: 
+1365: /* Split container wrapper — всегда горизонтальный */
+1366: .split-layout {
+1367:     display: flex;
+1368:     flex-direction: row;
+1369:     flex: 1;
+1370:     gap: 0;
+1371:     min-height: 0;
+1372:     overflow: hidden;
+1373: }
+1374: 
+1375: /* Individual pane */
+1376: .split-pane {
+1377:     display: flex;
+1378:     flex-direction: column;
+1379:     min-height: 0;
+1380:     overflow: hidden;
+1381: }
+1382: 
+1383: /* Left pane: chat (dark) */
+1384: .split-pane.left-pane {
+1385:     flex: 1;
+1386:     min-width: 0;
+1387:     background: transparent;
+1388:     padding: 8px;
+1389:     padding-right: 4px;
+1390: }
+1391: 
+1392: /* Right pane: contract (A4 paper style) */
+1393: .split-pane.right-pane {
+1394:     flex: 0 0 38%;
+1395:     min-width: 200px;
+1396:     background: transparent;
+1397:     padding: 8px;
+1398:     padding-left: 4px;
+1399: }
+1400: 
+1401: /* Glass pane borders — Android Studio style */
+1402: .split-pane .pane-glass {
+1403:     flex: 1;
+1404:     display: flex;
+1405:     flex-direction: column;
+1406:     background: rgba(20, 20, 28, 0.85);
+1407:     backdrop-filter: blur(20px) saturate(150%);
+1408:     -webkit-backdrop-filter: blur(20px) saturate(150%);
+1409:     border: 1px solid rgba(255, 255, 255, 0.08);
+1410:     border-radius: 12px;
+1411:     overflow: hidden;
+1412:     box-shadow:
+1413:         0 0 0 1px rgba(255, 255, 255, 0.03),
+1414:         0 4px 24px rgba(0, 0, 0, 0.4),
+1415:         inset 0 1px 0 rgba(255, 255, 255, 0.05);
+1416:     min-height: 0;
+1417: }
+1418: 
+1419: .split-pane.left-pane .pane-glass {
+1420:     background: rgba(10, 10, 14, 0.9);
+1421: }
+1422: 
+1423: .split-pane.right-pane .pane-glass {
+1424:     background: rgba(22, 22, 30, 0.9);
+1425: }
+1426: 
+1427: /* Pane header (IDE-style tab bar) */
+1428: .pane-header {
+1429:     display: flex;
+1430:     align-items: center;
+1431:     gap: 8px;
+1432:     padding: 8px 12px;
+1433:     background: rgba(0, 0, 0, 0.6);
+1434:     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+1435:     flex-shrink: 0;
+1436:     min-height: 36px;
+1437: }
+1438: 
+1439: .pane-header-icon {
+1440:     font-size: 14px;
+1441:     opacity: 0.7;
+1442: }
+1443: 
+1444: .pane-header-title {
+1445:     font-size: 12px;
+1446:     font-weight: 600;
+1447:     color: var(--ne-light-gray);
+1448:     text-transform: uppercase;
+1449:     letter-spacing: 0.5px;
+1450: }
 1451: 
-1452:     .contract-qa-panel {
-1453:         margin: var(--ne-spacing-md);
-1454:         padding: var(--ne-spacing-md);
-1455:     }
-1456: }
+1452: .pane-header-dot {
+1453:     width: 8px;
+1454:     height: 8px;
+1455:     border-radius: 50%;
+1456:     flex-shrink: 0;
+1457: }
+1458: 
+1459: .pane-header-dot.purple { background: var(--ne-purple); }
+1460: .pane-header-dot.red { background: var(--ne-red); }
+1461: .pane-header-dot.green { background: #00ff88; }
+1462: 
+1463: /* Pane content area */
+1464: .pane-content {
+1465:     flex: 1;
+1466:     overflow-y: auto;
+1467:     overflow-x: hidden;
+1468:     min-height: 0;
+1469:     display: flex;
+1470:     flex-direction: column;
+1471: }
+1472: 
+1473: /* Left pane content: chat area */
+1474: .split-pane.left-pane .pane-content {
+1475:     position: relative;
+1476: }
+1477: 
+1478: /* Resizable divider between panes */
+1479: .split-divider {
+1480:     flex-shrink: 0;
+1481:     width: 4px;
+1482:     background: transparent;
+1483:     position: relative;
+1484:     cursor: col-resize;
+1485:     transition: background 0.2s;
+1486:     z-index: 10;
+1487:     align-self: stretch;
+1488:     display: flex;
+1489:     align-items: center;
+1490:     justify-content: center;
+1491: }
+1492: 
+1493: .split-divider::after {
+1494:     content: '';
+1495:     width: 2px;
+1496:     height: 100%;
+1497:     border-radius: 1px;
+1498:     background: rgba(255, 255, 255, 0.06);
+1499:     transition: background 0.2s;
+1500: }
+1501: 
+1502: .split-divider:hover::after,
+1503: .split-divider.dragging::after {
+1504:     background: rgba(139, 92, 246, 0.4);
+1505: }
+1506: 
+1507: /* ─── Right pane: A4 paper style ─── */
+1508: .right-contract-panel {
+1509:     flex: 1;
+1510:     padding: var(--ne-spacing-md);
+1511:     min-height: 0;
+1512: }
+1513: 
+1514: .task-spec-container {
+1515:     background: rgba(255, 255, 255, 0.03);
+1516:     border: 1px solid rgba(255, 255, 255, 0.08);
+1517:     border-radius: var(--glass-radius-sm);
+1518:     padding: var(--ne-spacing-md);
+1519:     font-size: 13px;
+1520:     color: var(--ne-light-gray);
+1521:     height: 100%;
+1522:     overflow-y: auto;
+1523:     transition: var(--glass-transition);
+1524:     /* A4 paper feel */
+1525:     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+1526: }
+1527: 
+1528: .task-spec-container.has-content {
+1529:     border-color: rgba(139, 92, 246, 0.3);
+1530:     background: rgba(139, 92, 246, 0.04);
+1531: }
+1532: 
+1533: .task-spec-title {
+1534:     font-size: 11px;
+1535:     font-weight: 600;
+1536:     color: var(--ne-purple);
+1537:     text-transform: uppercase;
+1538:     letter-spacing: 0.5px;
+1539:     margin-bottom: 8px;
+1540:     padding-bottom: 6px;
+1541:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+1542: }
+1543: 
+1544: .task-spec-content {
+1545:     line-height: 1.6;
+1546:     font-size: 13px;
+1547: }
+1548: 
+1549: /* Contract Q&A panel inside right pane */
+1550: .contract-qa-panel {
+1551:     margin: var(--ne-spacing-md);
+1552:     padding: var(--ne-spacing-md);
+1553:     background: rgba(255, 255, 255, 0.02);
+1554:     border: 1px solid rgba(255, 255, 255, 0.06);
+1555:     border-radius: var(--glass-radius-sm);
+1556:     backdrop-filter: blur(8px);
+1557:     -webkit-backdrop-filter: blur(8px);
+1558: }
+1559: 
+1560: /* ─── Top control panel inside left pane ─── */
+1561: .split-pane.left-pane .top-control-panel {
+1562:     background: rgba(0, 0, 0, 0.4);
+1563:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+1564: }
+1565: 
+1566: /* ─── Chat input inside left pane ─── */
+1567: .split-pane.left-pane .chat-input-container {
+1568:     position: sticky;
+1569:     bottom: 0;
+1570:     left: auto;
+1571:     right: auto;
+1572:     border-top: 1px solid rgba(255, 255, 255, 0.06);
+1573:     z-index: 10;
+1574:     padding: 8px 12px;
+1575:     background: rgba(0, 0, 0, 0.6);
+1576:     backdrop-filter: blur(12px);
+1577:     -webkit-backdrop-filter: blur(12px);
+1578:     flex-shrink: 0;
+1579: }
+1580: 
+1581: /* Hide fixed chat input when split layout is active */
+1582: .chat-input-container:not(.split-chat-input) {
+1583:     display: none !important;
+1584: }
+1585: 
+1586: /* Show split chat input only on hermes view (handled by JS) */
+1587: .split-chat-input {
+1588:     display: flex;
+1589: }
+1590: 
+1591: /* ─── Mobile adjustments ─── */
+1592: @media (max-width: 599px) {
+1593:     .split-pane.right-pane {
+1594:         flex: 0 0 35%;
+1595:         min-width: 140px;
+1596:     }
+1597: 
+1598:     .pane-header-title {
+1599:         font-size: 10px;
+1600:     }
+1601: 
+1602:     .task-spec-container {
+1603:         padding: var(--ne-spacing-sm);
+1604:         font-size: 12px;
+1605:     }
+1606: 
+1607:     .contract-qa-panel {
+1608:         margin: var(--ne-spacing-sm);
+1609:         padding: var(--ne-spacing-sm);
+1610:     }
+1611: }
+1612: 
+1613: /* ─── Desktop adjustments ─── */
+1614: @media (min-width: 600px) {
+1615:     .split-pane.right-pane {
+1616:         flex: 0 0 38%;
+1617:         min-width: 280px;
+1618:     }
+1619: 
+1620:     .task-spec-container {
+1621:         padding: var(--ne-spacing-md);
+1622:         font-size: 13px;
+1623:     }
+1624: 
+1625:     .contract-qa-panel {
+1626:         margin: var(--ne-spacing-md);
+1627:         padding: var(--ne-spacing-md);
+1628:     }
+1629: }
 </file>
 
 <file path="index.html">
@@ -4304,7 +4477,7 @@ This section contains the contents of the repository's files.
    7:     constructor() {
    8:         this.currentView = 'hermes';
    9:         this.userData = null;
-  10:         this.voiceState = 'IDLE'; // IDLE, LISTENING, PROCESSING
+  10:         this.voiceState = 'IDLE';
   11:         this.isRecording = false;
   12:         this.isProcessing = false;
   13:         this.deals = [];
@@ -4319,780 +4492,780 @@ This section contains the contents of the repository's files.
   22:         this.contractAnswers = {};
   23:         this.taskSpecHistory = [];
   24:         
-  25:         this.init();
-  26:     }
-  27: 
-  28:     async init() {
-  29:         if (window.Telegram?.WebApp) {
-  30:             const tg = window.Telegram.WebApp;
-  31:             tg.ready();
-  32:             tg.expand();
-  33: 
-  34:             // Bot API 8.0+: requestFullscreen for desktop/immersive
-  35:             if (typeof tg.requestFullscreen === 'function') {
-  36:                 try {
-  37:                     const fsResult = tg.requestFullscreen();
-  38:                     if (fsResult && typeof fsResult.catch === 'function') {
-  39:                         fsResult.catch(() => {
-  40:                             // Already expanded via tg.expand() above
-  41:                         });
-  42:                     }
-  43:                 } catch (e) {
-  44:                     // requestFullscreen failed — already expanded
-  45:                 }
-  46:             }
-  47: 
-  48:             // Listen for fullscreen state changes
-  49:             tg.onEvent('fullscreenChanged', () => {
-  50:                 console.log('[TG] fullscreenChanged:', tg.isFullscreen);
-  51:                 const fsBtn = document.getElementById('tg-fullscreen-btn');
-  52:                 if (fsBtn) fsBtn.style.display = tg.isFullscreen ? 'none' : 'inline-block';
-  53:             });
-  54: 
-  55:             // Handle fullscreen failure gracefully
-  56:             tg.onEvent('fullscreenFailed', (reason) => {
-  57:                 console.warn('[TG] fullscreenFailed:', reason);
-  58:                 tg.expand(); // Fallback
-  59:             });
-  60: 
-  61:             // Safe area insets — apply CSS padding to respect device notches
-  62:             this.applySafeAreaInsets();
-  63:             tg.onEvent('safeAreaChanged', () => this.applySafeAreaInsets());
-  64:             tg.onEvent('contentSafeAreaChanged', () => this.applySafeAreaInsets());
-  65:         }
-  66:         this.userData = telegram.getUser();
-  67:         this.updateHeader();
-  68:         await this.loadCache();
-  69:         this.navigate('hermes');
-  70: 
-  71:         window.addEventListener('ton:statusChange', (e) => {
-  72:             this.onTonStatusChange(e.detail);
-  73:         });
-  74: 
-  75:         this.requestDataFromBot();
-  76: 
-  77:         // Fullscreen button handler (user gesture required on TG Desktop)
-  78:         const fsBtn = document.getElementById('tg-fullscreen-btn');
-  79:         if (fsBtn && window.Telegram?.WebApp) {
-  80:             const tg = window.Telegram.WebApp;
-  81:             if (typeof tg.requestFullscreen === 'function') {
-  82:                 fsBtn.addEventListener('click', () => {
-  83:                     const fsResult = tg.requestFullscreen();
-  84:                     if (fsResult && typeof fsResult.catch === 'function') {
-  85:                         fsResult.catch(e => {
-  86:                             console.warn('[TG] Fullscreen blocked:', e);
-  87:                             tg.expand(); // Fallback
-  88:                         });
-  89:                     } else {
-  90:                         tg.expand(); // Fallback
-  91:                     }
-  92:                 });
-  93:                 // Hide button if already in fullscreen
-  94:                 if (tg.isFullscreen === true) {
-  95:                     fsBtn.style.display = 'none';
-  96:                 }
-  97:             } else {
-  98:                 fsBtn.style.display = 'none';
-  99:             }
- 100:         }
- 101: 
- 102:         // Priority 2-3: Voice input, Contract Q&A, Task Spec history
- 103:         this.initVoiceInput();
- 104:         this.loadTaskSpecHistory();
- 105: 
- 106:         const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
- 107:         if (micBtn) micBtn.onclick = () => this.toggleVoiceRecording();
- 108: 
- 109:         const exportBtn = document.getElementById('exportTaskSpecBtn');
- 110:         if (exportBtn) exportBtn.onclick = () => this.exportTaskSpec();
- 111: 
- 112:         const historyToggle = document.getElementById('toggleTaskHistoryBtn');
- 113:         const historyPanel = document.getElementById('task-history-panel');
- 114:         if (historyToggle && historyPanel) {
- 115:             historyToggle.onclick = () => {
- 116:                 historyPanel.classList.toggle('visible');
- 117:                 telegram.haptic('light');
- 118:             };
- 119:         }
- 120: 
- 121:         this.renderContractQuestions([
- 122:             { id: 'q1', text: 'Каков дедлайн исполнения смарт-контракта?' },
- 123:             { id: 'q2', text: 'Укажите условия возврата средств при срыве сроков.' },
- 124:             { id: 'q3', text: 'Требуется ли арбитраж третьей стороны?' }
- 125:         ]);
- 126:     }
+  25:         // Smart contract state
+  26:         this.smartContract = {
+  27:             phase: 'draft', // draft, review, sorting, agreement, escrow, completed
+  28:             fields: {
+  29:                 title: null,
+  30:                 description: null,
+  31:                 budget: null,
+  32:                 deadline: null,
+  33:                 client: null,
+  34:                 coder: null,
+  35:                 status: 'draft'
+  36:             },
+  37:             progress: 0
+  38:         };
+  39:         
+  40:         this.init();
+  41:     }
+  42: 
+  43:     async init() {
+  44:         if (window.Telegram?.WebApp) {
+  45:             const tg = window.Telegram.WebApp;
+  46:             tg.ready();
+  47:             tg.expand();
+  48: 
+  49:             // Bot API 8.0+: requestFullscreen for desktop/immersive
+  50:             if (typeof tg.requestFullscreen === 'function') {
+  51:                 try {
+  52:                     const fsResult = tg.requestFullscreen();
+  53:                     if (fsResult && typeof fsResult.catch === 'function') {
+  54:                         fsResult.catch(() => {
+  55:                             // Already expanded via tg.expand() above
+  56:                         });
+  57:                     }
+  58:                 } catch (e) {
+  59:                     // requestFullscreen failed — already expanded
+  60:                 }
+  61:             }
+  62: 
+  63:             // Listen for fullscreen state changes
+  64:             tg.onEvent('fullscreenChanged', () => {
+  65:                 console.log('[TG] fullscreenChanged:', tg.isFullscreen);
+  66:                 const fsBtn = document.getElementById('tg-fullscreen-btn');
+  67:                 if (fsBtn) fsBtn.style.display = tg.isFullscreen ? 'none' : 'inline-block';
+  68:             });
+  69: 
+  70:             // Handle fullscreen failure gracefully
+  71:             tg.onEvent('fullscreenFailed', (reason) => {
+  72:                 console.warn('[TG] fullscreenFailed:', reason);
+  73:                 tg.expand(); // Fallback
+  74:             });
+  75: 
+  76:             // Safe area insets — apply CSS padding to respect device notches
+  77:             this.applySafeAreaInsets();
+  78:             tg.onEvent('safeAreaChanged', () => this.applySafeAreaInsets());
+  79:             tg.onEvent('contentSafeAreaChanged', () => this.applySafeAreaInsets());
+  80:         }
+  81:         this.userData = telegram.getUser();
+  82:         this.updateHeader();
+  83:         await this.loadCache();
+  84:         this.loadContractState();
+  85:         this.navigate('hermes');
+  86: 
+  87:         window.addEventListener('ton:statusChange', (e) => {
+  88:             this.onTonStatusChange(e.detail);
+  89:         });
+  90: 
+  91:         this.requestDataFromBot();
+  92: 
+  93:         // Fullscreen button handler (user gesture required on TG Desktop)
+  94:         const fsBtn = document.getElementById('tg-fullscreen-btn');
+  95:         if (fsBtn && window.Telegram?.WebApp) {
+  96:             const tg = window.Telegram.WebApp;
+  97:             if (typeof tg.requestFullscreen === 'function') {
+  98:                 fsBtn.addEventListener('click', () => {
+  99:                     const fsResult = tg.requestFullscreen();
+ 100:                     if (fsResult && typeof fsResult.catch === 'function') {
+ 101:                         fsResult.catch(e => {
+ 102:                             console.warn('[TG] Fullscreen blocked:', e);
+ 103:                             tg.expand(); // Fallback
+ 104:                         });
+ 105:                     } else {
+ 106:                         tg.expand(); // Fallback
+ 107:                     }
+ 108:                 });
+ 109:                 // Hide button if already in fullscreen
+ 110:                 if (tg.isFullscreen === true) {
+ 111:                     fsBtn.style.display = 'none';
+ 112:                 }
+ 113:             } else {
+ 114:                 fsBtn.style.display = 'none';
+ 115:             }
+ 116:         }
+ 117: 
+ 118:         // Priority 2-3: Voice input, Contract Q&A, Task Spec history
+ 119:         this.initVoiceInput();
+ 120:         this.loadTaskSpecHistory();
+ 121: 
+ 122:         const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
+ 123:         if (micBtn) micBtn.onclick = () => this.toggleVoiceRecording();
+ 124: 
+ 125:         const exportBtn = document.getElementById('exportTaskSpecBtn');
+ 126:         if (exportBtn) exportBtn.onclick = () => this.exportTaskSpec();
  127: 
- 128:     updateHeader() {
- 129:         const nameEl = document.getElementById('user-name');
- 130:         
- 131:         if (this.userData) {
- 132:             const name = this.userData.first_name || this.userData.username || 'Пользователь';
- 133:             nameEl.textContent = name;
- 134:         } else {
- 135:             nameEl.textContent = 'Гость';
- 136:         }
- 137:     }
- 138: 
- 139:     applySafeAreaInsets() {
- 140:         const tg = window.Telegram?.WebApp;
- 141:         if (!tg) return;
- 142: 
- 143:         // Apply safe area insets as CSS custom properties
- 144:         // Docs: https://docs.telegram-mini-apps.com/packages/tma-js-sdk/features/viewport
- 145:         const root = document.documentElement;
- 146:         if (tg.safeAreaInset) {
- 147:             root.style.setProperty('--tg-safe-area-inset-top', `${tg.safeAreaInset.top}px`);
- 148:             root.style.setProperty('--tg-safe-area-inset-bottom', `${tg.safeAreaInset.bottom}px`);
- 149:             root.style.setProperty('--tg-safe-area-inset-left', `${tg.safeAreaInset.left}px`);
- 150:             root.style.setProperty('--tg-safe-area-inset-right', `${tg.safeAreaInset.right}px`);
- 151:         }
- 152:         if (tg.contentSafeAreaInset) {
- 153:             root.style.setProperty('--tg-content-safe-area-inset-top', `${tg.contentSafeAreaInset.top}px`);
- 154:             root.style.setProperty('--tg-content-safe-area-inset-bottom', `${tg.contentSafeAreaInset.bottom}px`);
- 155:         }
- 156: 
- 157:         // Use viewportStableHeight for layout (doesn't change during gestures)
- 158:         if (tg.viewportStableHeight) {
- 159:             root.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight}px`);
- 160:         }
- 161:     }
- 162: 
- 163:     navigate(view) {
- 164:         // Reset voice state when switching tabs
- 165:         if (view !== 'hermes' && this.voiceState !== 'IDLE') {
- 166:             this.resetVoiceState();
+ 128:         const historyToggle = document.getElementById('toggleTaskHistoryBtn');
+ 129:         const historyPanel = document.getElementById('task-history-panel');
+ 130:         if (historyToggle && historyPanel) {
+ 131:             historyToggle.onclick = () => {
+ 132:                 historyPanel.classList.toggle('visible');
+ 133:                 telegram.haptic('light');
+ 134:             };
+ 135:         }
+ 136: 
+ 137:         this.renderContractQuestions([
+ 138:             { id: 'q1', text: 'Каков дедлайн исполнения смарт-контракта?' },
+ 139:             { id: 'q2', text: 'Укажите условия возврата средств при срыве сроков.' },
+ 140:             { id: 'q3', text: 'Требуется ли арбитраж третьей стороны?' }
+ 141:         ]);
+ 142:     }
+ 143: 
+ 144:     updateHeader() {
+ 145:         const nameEl = document.getElementById('user-name');
+ 146:         
+ 147:         if (this.userData) {
+ 148:             const name = this.userData.first_name || this.userData.username || 'Пользователь';
+ 149:             nameEl.textContent = name;
+ 150:         } else {
+ 151:             nameEl.textContent = 'Гость';
+ 152:         }
+ 153:     }
+ 154: 
+ 155:     applySafeAreaInsets() {
+ 156:         const tg = window.Telegram?.WebApp;
+ 157:         if (!tg) return;
+ 158: 
+ 159:         // Apply safe area insets as CSS custom properties
+ 160:         // Docs: https://docs.telegram-mini-apps.com/packages/tma-js-sdk/features/viewport
+ 161:         const root = document.documentElement;
+ 162:         if (tg.safeAreaInset) {
+ 163:             root.style.setProperty('--tg-safe-area-inset-top', `${tg.safeAreaInset.top}px`);
+ 164:             root.style.setProperty('--tg-safe-area-inset-bottom', `${tg.safeAreaInset.bottom}px`);
+ 165:             root.style.setProperty('--tg-safe-area-inset-left', `${tg.safeAreaInset.left}px`);
+ 166:             root.style.setProperty('--tg-safe-area-inset-right', `${tg.safeAreaInset.right}px`);
  167:         }
- 168:         
- 169:         this.currentView = view;
- 170:         
- 171:         document.querySelectorAll('.nav-btn').forEach(btn => {
- 172:             btn.classList.toggle('active', btn.dataset.view === view);
- 173:         });
- 174:         
- 175:         const main = document.getElementById('main-content');
- 176:         main.innerHTML = '';
- 177:         
- 178:         // Show/hide chat input based on view (split-chat-input is inside left pane)
- 179:         const chatInput = document.getElementById('chat-input-container');
- 180:         if (chatInput) {
- 181:             chatInput.style.display = view === 'hermes' ? 'flex' : 'none';
- 182:         }
- 183:         
- 184:         // Also handle the split-layout chat input
- 185:         const splitChatInput = document.querySelector('.split-chat-input');
- 186:         if (splitChatInput) {
- 187:             splitChatInput.style.display = view === 'hermes' ? 'flex' : 'none';
- 188:         }
- 189:         
- 190:         // Hide fixed chat input container when not on hermes
- 191:         const fixedChatInput = document.querySelector('.chat-input-container:not(.split-chat-input)');
- 192:         if (fixedChatInput) {
- 193:             fixedChatInput.style.display = view === 'hermes' ? 'flex' : 'none';
- 194:         }
- 195:         
- 196:         switch(view) {
- 197:             case 'hermes':
- 198:                 this.renderHermesView(main);
- 199:                 break;
- 200:             case 'deals':
- 201:                 this.renderDealsView(main);
- 202:                 break;
- 203:             case 'profile':
- 204:                 this.renderProfileView(main);
- 205:                 break;
- 206:         }
- 207:         
- 208:         telegram.haptic('light');
- 209:     }
- 210: 
- 211:     // -------------------------------------------------------------------------
- 212:     // Hermes View (Voice Interface - Main Screen)
- 213:     // -------------------------------------------------------------------------
- 214: 
- 215:     renderHermesView(container) {
- 216:         const view = document.createElement('div');
- 217:         view.className = 'view has-top-panel';
- 218:         
- 219:         view.innerHTML = `
- 220:             <div class="split-layout">
- 221:                 <!-- LEFT PANE: Hermes Chat -->
- 222:                 <div class="split-pane left-pane">
- 223:                     <div class="pane-glass">
- 224:                         <div class="pane-header">
- 225:                             <span class="pane-header-dot purple"></span>
- 226:                             <span class="pane-header-icon">🎙️</span>
- 227:                             <span class="pane-header-title">Гермес — Чат</span>
- 228:                         </div>
- 229:                         <div class="pane-content">
- 230:                             <div class="chat-messages" id="chat-messages"></div>
- 231:                             <!-- Chat input -->
- 232:                             <div class="chat-input-container split-chat-input" id="chat-input-container">
- 233:                                 <button class="attach-btn" id="attach-btn" onclick="app.showAttachMenu()">
- 234:                                     <span>📎</span>
- 235:                                 </button>
- 236:                                 <input type="text" class="chat-input" id="chat-input" placeholder="Напишите сообщение..." />
- 237:                                 <button class="send-btn" id="send-btn" onclick="app.sendTextMessage()">
- 238:                                     <span>➤</span>
- 239:                                 </button>
- 240:                             </div>
- 241:                         </div>
- 242:                         <!-- Bottom nav: 4 buttons -->
- 243:                         <div class="bottom-nav-left">
- 244:                             <button class="nav-btn-left active" data-view="hermes" onclick="app.navigate('hermes')">
- 245:                                 <span class="nav-icon">🎙️</span>
- 246:                                 <span class="nav-label">Гермес</span>
- 247:                             </button>
- 248:                             <button class="nav-btn-left" data-view="deals" onclick="app.navigate('deals')">
- 249:                                 <span class="nav-icon">🤝</span>
- 250:                                 <span class="nav-label">Сделки</span>
- 251:                             </button>
- 252:                             <button class="nav-btn-left" data-view="profile" onclick="app.navigate('profile')">
- 253:                                 <span class="nav-icon">👤</span>
- 254:                                 <span class="nav-label">Профиль</span>
- 255:                             </button>
- 256:                             <button class="nav-btn-left" id="micButton" onclick="app.toggleVoiceRecording()">
- 257:                                 <span class="nav-icon">🎤</span>
- 258:                                 <span class="nav-label">Микрофон</span>
- 259:                             </button>
- 260:                         </div>
- 261:                     </div>
- 262:                 </div>
- 263: 
- 264:                 <!-- DIVIDER -->
- 265:                 <div class="split-divider" id="split-divider"></div>
- 266: 
- 267:                 <!-- RIGHT PANE: Smart Contract / ТЗ -->
- 268:                 <div class="split-pane right-pane">
- 269:                     <div class="pane-glass">
- 270:                         <div class="pane-header">
- 271:                             <span class="pane-header-dot green"></span>
- 272:                             <span class="pane-header-icon">📋</span>
- 273:                             <span class="pane-header-title">Смарт-контракт</span>
- 274:                         </div>
- 275:                         <div class="pane-content">
- 276:                             <div class="right-contract-panel">
- 277:                                 <div id="task-spec" class="task-spec-container">
- 278:                                     <div class="task-spec-title">Техническое задание</div>
- 279:                                     <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
- 280:                                     <div style="display:flex;gap:6px;margin-top:8px;">
- 281:                                         <button id="exportTaskSpecBtn" class="export-btn-sm" type="button">📥 Экспорт</button>
- 282:                                         <button id="toggleTaskHistoryBtn" class="export-btn-sm" type="button">📜 История</button>
- 283:                                     </div>
- 284:                                 </div>
- 285:                             </div>
- 286:                             <div id="contract-qa-container" class="contract-qa-panel"></div>
- 287:                         </div>
- 288:                     </div>
- 289:                 </div>
- 290:             </div>
- 291: 
- 292:             <!-- Task history (overlay) -->
- 293:             <div id="task-history-panel" class="task-history-panel">
- 294:                 <div id="task-history-list"></div>
- 295:             </div>
- 296:         `;
- 297:         
- 298:         container.appendChild(view);
- 299:         this.renderChatMessages();
- 300:         this.initSplitDivider();
- 301:         this.bindChatInputEvents();
- 302:     }
- 303: 
- 304:     bindChatInputEvents() {
- 305:         // Enter key fix for chat input — prevent form submit / page reload
- 306:         const chatInput = document.getElementById('chat-input');
- 307:         if (chatInput) {
- 308:             chatInput.addEventListener('keydown', (e) => {
- 309:                 if (e.key === 'Enter' && !e.shiftKey) {
- 310:                     e.preventDefault();
- 311:                     this.sendTextMessage();
- 312:                 }
- 313:             });
- 314:         }
- 315: 
- 316:         // Prevent any accidental form submit if input is wrapped in <form>
- 317:         const chatContainer = document.getElementById('chat-input-container');
- 318:         if (chatContainer) {
- 319:             chatContainer.addEventListener('submit', (e) => e.preventDefault());
- 320:         }
- 321: 
- 322:         // Ensure send button is type="button" not "submit"
- 323:         const sendBtn = document.getElementById('send-btn');
- 324:         if (sendBtn && !sendBtn.getAttribute('type')) {
- 325:             sendBtn.setAttribute('type', 'button');
- 326:         }
- 327:     }
- 328: 
- 329:     initSplitDivider() {
- 330:         const divider = document.getElementById('split-divider');
- 331:         if (!divider) return;
- 332: 
- 333:         let isDragging = false;
- 334:         let startX, startY, startWidth;
- 335: 
- 336:         const onMouseDown = (e) => {
- 337:             isDragging = true;
- 338:             divider.classList.add('dragging');
- 339:             startX = e.clientX || e.touches?.[0]?.clientX || 0;
- 340:             startY = e.clientY || e.touches?.[0]?.clientY || 0;
- 341:             const leftPane = divider.previousElementSibling;
- 342:             startWidth = leftPane?.getBoundingClientRect().width || 0;
- 343:             document.addEventListener('mousemove', onMouseMove);
- 344:             document.addEventListener('mouseup', onMouseUp);
- 345:             document.addEventListener('touchmove', onTouchMove, { passive: false });
- 346:             document.addEventListener('touchend', onTouchEnd);
- 347:         };
- 348: 
- 349:         const onMouseMove = (e) => {
- 350:             if (!isDragging) return;
- 351:             const dx = (e.clientX || 0) - startX;
- 352:             const container = divider.parentElement;
- 353:             const totalWidth = container?.getBoundingClientRect().width || 1;
- 354:             const newWidth = Math.max(200, Math.min(totalWidth - 200, startWidth + dx));
- 355:             const leftPane = divider.previousElementSibling;
- 356:             const rightPane = divider.nextElementSibling;
- 357:             if (leftPane) leftPane.style.flex = `0 0 ${newWidth}px`;
- 358:             if (rightPane) rightPane.style.flex = '1';
- 359:         };
- 360: 
- 361:         const onMouseUp = () => {
- 362:             isDragging = false;
- 363:             divider.classList.remove('dragging');
- 364:             document.removeEventListener('mousemove', onMouseMove);
- 365:             document.removeEventListener('mouseup', onMouseUp);
- 366:         };
- 367: 
- 368:         const onTouchMove = (e) => {
- 369:             if (!isDragging) return;
- 370:             e.preventDefault();
- 371:             const dx = (e.touches?.[0]?.clientX || 0) - startX;
- 372:             const container = divider.parentElement;
- 373:             const totalWidth = container?.getBoundingClientRect().width || 1;
- 374:             const newWidth = Math.max(200, Math.min(totalWidth - 200, startWidth + dx));
- 375:             const leftPane = divider.previousElementSibling;
- 376:             if (leftPane) leftPane.style.flex = `0 0 ${newWidth}px`;
- 377:         };
- 378: 
- 379:         const onTouchEnd = () => {
- 380:             isDragging = false;
- 381:             divider.classList.remove('dragging');
- 382:             document.removeEventListener('touchmove', onTouchMove);
- 383:             document.removeEventListener('touchend', onTouchEnd);
- 384:         };
- 385: 
- 386:         divider.addEventListener('mousedown', onMouseDown);
- 387:         divider.addEventListener('touchstart', (e) => {
- 388:             startX = e.touches?.[0]?.clientX || 0;
- 389:             startY = e.touches?.[0]?.clientY || 0;
- 390:             onMouseDown(e);
- 391:         }, { passive: true });
- 392:     }
- 393: 
- 394:     toggleVoice() {
- 395:         // Explicit protection against multiple taps during processing
- 396:         if (this.voiceState === 'PROCESSING' || this.isProcessing) {
- 397:             return;
- 398:         }
- 399:         
- 400:         if (this.voiceState === 'LISTENING') {
- 401:             this.stopVoiceRecording();
- 402:         } else {
- 403:             this.voiceState = 'LISTENING';
- 404:             this.updateVoiceButton();
- 405:             this.startVoiceRecording();
- 406:         }
- 407:         
- 408:         telegram.haptic('medium');
- 409:     }
- 410: 
- 411:     async startVoiceRecording() {
- 412:         try {
- 413:             const tg = window.Telegram?.WebApp;
- 414:             // Try native Telegram voice recording (Bot API 9.6+)
- 415:             if (tg && typeof tg.requestVoiceMessage === 'function') {
- 416:                 const result = await tg.requestVoiceMessage();
- 417:                 
- 418:                 if (result && result.file_id) {
- 419:                     this.sendVoiceToBot(result.file_id, result.duration);
- 420:                 } else {
- 421:                     throw new Error('No file_id received');
- 422:                 }
- 423:             } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
- 424:                 // Fallback to manual recording
- 425:                 this.fallbackToManualRecording();
- 426:             } else {
- 427:                 telegram.showAlert('Запись голоса не поддерживается в вашем браузере. Используйте текстовый ввод.');
- 428:             }
- 429:         } catch (error) {
- 430:             console.error('[Voice] Recording failed:', error.message);
- 431:             this.handleVoiceError(error);
- 432:         }
+ 168:         if (tg.contentSafeAreaInset) {
+ 169:             root.style.setProperty('--tg-content-safe-area-inset-top', `${tg.contentSafeAreaInset.top}px`);
+ 170:             root.style.setProperty('--tg-content-safe-area-inset-bottom', `${tg.contentSafeAreaInset.bottom}px`);
+ 171:         }
+ 172: 
+ 173:         // Use viewportStableHeight for layout (doesn't change during gestures)
+ 174:         if (tg.viewportStableHeight) {
+ 175:             root.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight}px`);
+ 176:         }
+ 177:     }
+ 178: 
+ 179:     navigate(view) {
+ 180:         // Reset voice state when switching tabs
+ 181:         if (view !== 'hermes' && this.voiceState !== 'IDLE') {
+ 182:             this.resetVoiceState();
+ 183:         }
+ 184:         
+ 185:         this.currentView = view;
+ 186:         
+ 187:         document.querySelectorAll('.nav-btn').forEach(btn => {
+ 188:             btn.classList.toggle('active', btn.dataset.view === view);
+ 189:         });
+ 190:         
+ 191:         const main = document.getElementById('main-content');
+ 192:         main.innerHTML = '';
+ 193:         
+ 194:         // Show/hide chat input based on view (split-chat-input is inside left pane)
+ 195:         const chatInput = document.getElementById('chat-input-container');
+ 196:         if (chatInput) {
+ 197:             chatInput.style.display = view === 'hermes' ? 'flex' : 'none';
+ 198:         }
+ 199:         
+ 200:         // Also handle the split-layout chat input
+ 201:         const splitChatInput = document.querySelector('.split-chat-input');
+ 202:         if (splitChatInput) {
+ 203:             splitChatInput.style.display = view === 'hermes' ? 'flex' : 'none';
+ 204:         }
+ 205:         
+ 206:         // Hide fixed chat input container when not on hermes
+ 207:         const fixedChatInput = document.querySelector('.chat-input-container:not(.split-chat-input)');
+ 208:         if (fixedChatInput) {
+ 209:             fixedChatInput.style.display = view === 'hermes' ? 'flex' : 'none';
+ 210:         }
+ 211:         
+ 212:         switch(view) {
+ 213:             case 'hermes':
+ 214:                 this.renderHermesView(main);
+ 215:                 break;
+ 216:             case 'deals':
+ 217:                 this.renderDealsView(main);
+ 218:                 break;
+ 219:             case 'profile':
+ 220:                 this.renderProfileView(main);
+ 221:                 break;
+ 222:         }
+ 223:         
+ 224:         telegram.haptic('light');
+ 225:     }
+ 226: 
+ 227:     // -------------------------------------------------------------------------
+ 228:     // Hermes View (Voice Interface - Main Screen)
+ 229:     // -------------------------------------------------------------------------
+ 230: 
+ 231:     renderHermesView(container) {
+ 232:         const view = document.createElement('div');
+ 233:         view.className = 'view has-top-panel';
+ 234:         
+ 235:         view.innerHTML = `
+ 236:             <div class="split-layout">
+ 237:                 <!-- LEFT PANE: Hermes Chat -->
+ 238:                 <div class="split-pane left-pane">
+ 239:                     <div class="pane-glass">
+ 240:                         <div class="pane-header">
+ 241:                             <span class="pane-header-dot purple"></span>
+ 242:                             <span class="pane-header-icon">🎙️</span>
+ 243:                             <span class="pane-header-title">Гермес — Чат</span>
+ 244:                         </div>
+ 245:                         <div class="pane-content">
+ 246:                             <div class="chat-messages" id="chat-messages"></div>
+ 247:                             <!-- Chat input -->
+ 248:                             <div class="chat-input-container split-chat-input" id="chat-input-container">
+ 249:                                 <button class="attach-btn" id="attach-btn" onclick="app.showAttachMenu()">
+ 250:                                     <span>📎</span>
+ 251:                                 </button>
+ 252:                                 <input type="text" class="chat-input" id="chat-input" placeholder="Напишите сообщение..." />
+ 253:                                 <button class="send-btn" id="send-btn" onclick="app.sendTextMessage()">
+ 254:                                     <span>➤</span>
+ 255:                                 </button>
+ 256:                             </div>
+ 257:                         </div>
+ 258:                         <!-- Bottom nav: 4 buttons -->
+ 259:                         <div class="bottom-nav-left">
+ 260:                             <button class="nav-btn-left active" data-view="hermes" onclick="app.navigate('hermes')">
+ 261:                                 <span class="nav-icon">🎙️</span>
+ 262:                                 <span class="nav-label">Гермес</span>
+ 263:                             </button>
+ 264:                             <button class="nav-btn-left" data-view="deals" onclick="app.navigate('deals')">
+ 265:                                 <span class="nav-icon">🤝</span>
+ 266:                                 <span class="nav-label">Сделки</span>
+ 267:                             </button>
+ 268:                             <button class="nav-btn-left" data-view="profile" onclick="app.navigate('profile')">
+ 269:                                 <span class="nav-icon">👤</span>
+ 270:                                 <span class="nav-label">Профиль</span>
+ 271:                             </button>
+ 272:                             <button class="nav-btn-left" id="micButton" onclick="app.toggleVoiceRecording()">
+ 273:                                 <span class="nav-icon">🎤</span>
+ 274:                                 <span class="nav-label">Микрофон</span>
+ 275:                             </button>
+ 276:                         </div>
+ 277:                     </div>
+ 278:                 </div>
+ 279: 
+ 280:                 <!-- DIVIDER -->
+ 281:                 <div class="split-divider" id="split-divider"></div>
+ 282: 
+ 283:                 <!-- RIGHT PANE: Smart Contract -->
+ 284:                 <div class="split-pane right-pane">
+ 285:                     <div class="pane-glass">
+ 286:                         <div class="pane-header">
+ 287:                             <span class="pane-header-dot green"></span>
+ 288:                             <span class="pane-header-icon">📋</span>
+ 289:                             <span class="pane-header-title">Смарт-контракт</span>
+ 290:                         </div>
+ 291:                         <div class="pane-content" id="smart-contract-panel">
+ 292:                             <!-- Phase indicator -->
+ 293:                             <div id="contract-phases" class="contract-phases">
+ 294:                                 <div class="phase-step active" data-phase="draft">
+ 295:                                     <span class="phase-icon">📝</span>
+ 296:                                     <span class="phase-label">Составление</span>
+ 297:                                 </div>
+ 298:                                 <div class="phase-step" data-phase="review">
+ 299:                                     <span class="phase-icon">✅</span>
+ 300:                                     <span class="phase-label">Согласование</span>
+ 301:                                 </div>
+ 302:                                 <div class="phase-step" data-phase="sorting">
+ 303:                                     <span class="phase-icon">🔍</span>
+ 304:                                     <span class="phase-label">Подбор</span>
+ 305:                                 </div>
+ 306:                                 <div class="phase-step" data-phase="agreement">
+ 307:                                     <span class="phase-icon">🤝</span>
+ 308:                                     <span class="phase-label">Сделка</span>
+ 309:                                 </div>
+ 310:                                 <div class="phase-step" data-phase="escrow">
+ 311:                                     <span class="phase-icon">💰</span>
+ 312:                                     <span class="phase-label">Эскроу</span>
+ 313:                                 </div>
+ 314:                             </div>
+ 315:                             <!-- Contract fields (populated by Hermes) -->
+ 316:                             <div id="contract-fields" class="contract-fields">
+ 317:                                 <div class="contract-field" data-field="title">
+ 318:                                     <label class="field-label">Название задачи</label>
+ 319:                                     <div class="field-value" id="field-title">—</div>
+ 320:                                 </div>
+ 321:                                 <div class="contract-field" data-field="description">
+ 322:                                     <label class="field-label">Описание</label>
+ 323:                                     <div class="field-value" id="field-description">—</div>
+ 324:                                 </div>
+ 325:                                 <div class="contract-field" data-field="budget">
+ 326:                                     <label class="field-label">Бюджет (TON)</label>
+ 327:                                     <div class="field-value" id="field-budget">—</div>
+ 328:                                 </div>
+ 329:                                 <div class="contract-field" data-field="deadline">
+ 330:                                     <label class="field-label">Дедлайн</label>
+ 331:                                     <div class="field-value" id="field-deadline">—</div>
+ 332:                                 </div>
+ 333:                                 <div class="contract-field" data-field="client">
+ 334:                                     <label class="field-label">Клиент</label>
+ 335:                                     <div class="field-value" id="field-client">—</div>
+ 336:                                 </div>
+ 337:                                 <div class="contract-field" data-field="coder">
+ 338:                                     <label class="field-label">Нейрокодер</label>
+ 339:                                     <div class="field-value" id="field-coder">—</div>
+ 340:                                 </div>
+ 341:                                 <div class="contract-field" data-field="status">
+ 342:                                     <label class="field-label">Статус</label>
+ 343:                                     <div class="field-value" id="field-status">
+ 344:                                         <span class="status-badge draft">Черновик</span>
+ 345:                                     </div>
+ 346:                                 </div>
+ 347:                             </div>
+ 348:                         </div>
+ 349:                     </div>
+ 350:                 </div>
+ 351:             </div>
+ 352: 
+ 353:             <!-- Task history (overlay) -->
+ 354:             <div id="task-history-panel" class="task-history-panel">
+ 355:                 <div id="task-history-list"></div>
+ 356:             </div>
+ 357:         `;
+ 358:         
+ 359:         container.appendChild(view);
+ 360:         this.renderChatMessages();
+ 361:         this.initSplitDivider();
+ 362:         this.bindChatInputEvents();
+ 363:         this.renderContractPanel();
+ 364:     }
+ 365: 
+ 366:     // ─── Smart Contract Management ─────────────────────────────────────
+ 367:     
+ 368:     renderContractPanel() {
+ 369:         const panel = document.getElementById('smart-contract-panel');
+ 370:         if (!panel) return;
+ 371: 
+ 372:         // Update phase indicators
+ 373:         const phases = ['draft', 'review', 'sorting', 'agreement', 'escrow'];
+ 374:         const currentIdx = phases.indexOf(this.smartContract.phase);
+ 375:         
+ 376:         document.querySelectorAll('.phase-step').forEach(step => {
+ 377:             const phase = step.dataset.phase;
+ 378:             const idx = phases.indexOf(phase);
+ 379:             step.classList.remove('active', 'completed');
+ 380:             if (idx === currentIdx) step.classList.add('active');
+ 381:             else if (idx < currentIdx) step.classList.add('completed');
+ 382:         });
+ 383: 
+ 384:         // Update fields
+ 385:         const fields = this.smartContract.fields;
+ 386:         for (const [key, value] of Object.entries(fields)) {
+ 387:             const el = document.getElementById(`field-${key}`);
+ 388:             if (el) {
+ 389:                 if (key === 'status') {
+ 390:                     el.innerHTML = `<span class="status-badge ${value}">${this.getStatusLabel(value)}</span>`;
+ 391:                 } else {
+ 392:                     el.textContent = value || '—';
+ 393:                     el.classList.toggle('empty', !value);
+ 394:                 }
+ 395:             }
+ 396:         }
+ 397: 
+ 398:         // Update progress bar for escrow phase
+ 399:         let progressEl = document.querySelector('.escrow-progress');
+ 400:         if (this.smartContract.phase === 'escrow') {
+ 401:             if (!progressEl) {
+ 402:                 progressEl = document.createElement('div');
+ 403:                 progressEl.className = 'escrow-progress';
+ 404:                 progressEl.innerHTML = `
+ 405:                     <div class="escrow-progress-label">Прогресс исполнения</div>
+ 406:                     <div class="escrow-progress-bar">
+ 407:                         <div class="escrow-progress-fill" style="width: 0%"></div>
+ 408:                     </div>
+ 409:                     <div class="escrow-progress-percent">0%</div>
+ 410:                 `;
+ 411:                 panel.appendChild(progressEl);
+ 412:             }
+ 413:             const fill = progressEl.querySelector('.escrow-progress-fill');
+ 414:             const percent = progressEl.querySelector('.escrow-progress-percent');
+ 415:             if (fill) fill.style.width = `${this.smartContract.progress}%`;
+ 416:             if (percent) percent.textContent = `${this.smartContract.progress}%`;
+ 417:         } else if (progressEl) {
+ 418:             progressEl.remove();
+ 419:         }
+ 420:     }
+ 421: 
+ 422:     getStatusLabel(status) {
+ 423:         const labels = {
+ 424:             draft: 'Черновик',
+ 425:             review: 'На согласовании',
+ 426:             sorting: 'Подбор исполнителя',
+ 427:             agreement: 'Согласование',
+ 428:             escrow: 'В эскроу',
+ 429:             completed: 'Завершён',
+ 430:             disputed: 'Спор'
+ 431:         };
+ 432:         return labels[status] || status;
  433:     }
  434: 
- 435:     stopVoiceRecording() {
- 436:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
- 437:             this.mediaRecorder.stop();
- 438:         }
- 439:         this.resetVoiceState();
- 440:     }
- 441: 
- 442:     fallbackToManualRecording() {
- 443:         navigator.mediaDevices.getUserMedia({ audio: true })
- 444:             .then(stream => {
- 445:                 this.mediaRecorder = new MediaRecorder(stream);
- 446:                 this.audioChunks = [];
- 447:                 
- 448:                 this.mediaRecorder.ondataavailable = (e) => {
- 449:                     this.audioChunks.push(e.data);
- 450:                 };
- 451:                 
- 452:                 this.mediaRecorder.onstop = () => {
- 453:                     const audioBlob = new Blob(this.audioChunks, { type: 'audio/ogg' });
- 454:                     this.uploadVoiceBlob(audioBlob);
- 455:                     stream.getTracks().forEach(track => track.stop());
- 456:                 };
- 457:                 
- 458:                 this.mediaRecorder.start();
- 459:                 console.log('[NeuroEscrow] Fallback recording started');
- 460:             })
- 461:             .catch(error => {
- 462:                 this.handleVoiceError(error);
- 463:             });
- 464:     }
- 465: 
- 466:     uploadVoiceBlob(blob) {
- 467:         // This would require bot-side endpoint for blob upload
- 468:         // For now, just show error
- 469:         this.handleVoiceError(new Error('Manual recording not yet implemented'));
+ 435:     updateContractField(field, value) {
+ 436:         if (this.smartContract.fields.hasOwnProperty(field)) {
+ 437:             this.smartContract.fields[field] = value;
+ 438:             this.renderContractPanel();
+ 439:             this.saveContractState();
+ 440:         }
+ 441:     }
+ 442: 
+ 443:     setContractPhase(phase) {
+ 444:         const validPhases = ['draft', 'review', 'sorting', 'agreement', 'escrow', 'completed'];
+ 445:         if (validPhases.includes(phase)) {
+ 446:             this.smartContract.phase = phase;
+ 447:             this.smartContract.fields.status = phase === 'completed' ? 'completed' : phase;
+ 448:             this.renderContractPanel();
+ 449:             this.saveContractState();
+ 450:         }
+ 451:     }
+ 452: 
+ 453:     updateContractProgress(percent) {
+ 454:         this.smartContract.progress = Math.max(0, Math.min(100, percent));
+ 455:         this.renderContractPanel();
+ 456:         this.saveContractState();
+ 457:     }
+ 458: 
+ 459:     saveContractState() {
+ 460:         try {
+ 461:             const data = JSON.stringify(this.smartContract);
+ 462:             if (window.Telegram?.WebApp?.CloudStorage) {
+ 463:                 Telegram.WebApp.CloudStorage.setItem('neuroescrow_contract', data, () => {});
+ 464:             } else {
+ 465:                 localStorage.setItem('neuroescrow_contract', data);
+ 466:             }
+ 467:         } catch (e) {
+ 468:             console.warn('[Contract] Save failed:', e);
+ 469:         }
  470:     }
  471: 
- 472:     sendVoiceToBot(fileId, duration) {
- 473:         this.voiceState = 'PROCESSING';
- 474:         this.isProcessing = true;
- 475:         this.updateVoiceButton();
- 476:         this.setupResponseTimeout();
- 477:         
- 478:         const payload = {
- 479:             action: 'voice_message',
- 480:             file_id: fileId,
- 481:             duration: duration,
- 482:             timestamp: Date.now(),
- 483:             user_id: telegram.getUserId()
- 484:         };
- 485:         
- 486:         telegram.sendData(payload);
- 487:         console.log('[NeuroEscrow] Voice sent to bot:', fileId);
- 488:     }
- 489: 
- 490:     updateVoiceButton() {
- 491:         const btn = document.getElementById('voice-btn');
- 492:         const status = document.getElementById('voice-status');
- 493:         
- 494:         if (!btn) return;
- 495:         
- 496:         // Remove all state classes
- 497:         btn.classList.remove('recording', 'processing');
- 498:         
- 499:         switch (this.voiceState) {
- 500:             case 'IDLE':
- 501:                 if (status) { status.textContent = ''; status.style.display = 'none'; }
- 502:                 this.isRecording = false;
- 503:                 break;
- 504:                 
- 505:             case 'LISTENING':
- 506:                 btn.classList.add('recording');
- 507:                 if (status) { status.textContent = 'Слушаю...'; status.style.display = 'block'; }
- 508:                 this.isRecording = true;
- 509:                 break;
- 510:                 
- 511:             case 'PROCESSING':
- 512:                 btn.classList.add('processing');
- 513:                 if (status) { status.textContent = 'Гермес обрабатывает...'; status.style.display = 'block'; }
- 514:                 this.isRecording = false;
- 515:                 break;
+ 472:     loadContractState() {
+ 473:         try {
+ 474:             let raw = null;
+ 475:             if (window.Telegram?.WebApp?.CloudStorage) {
+ 476:                 raw = new Promise((res, rej) => 
+ 477:                     Telegram.WebApp.CloudStorage.getItem('neuroescrow_contract', (err, val) => err ? rej(err) : res(val))
+ 478:                 );
+ 479:             } else {
+ 480:                 raw = localStorage.getItem('neuroescrow_contract');
+ 481:             }
+ 482:             if (raw) {
+ 483:                 const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+ 484:                 if (data && data.fields) {
+ 485:                     this.smartContract = { ...this.smartContract, ...data };
+ 486:                 }
+ 487:             }
+ 488:         } catch (e) {
+ 489:             console.warn('[Contract] Load failed:', e);
+ 490:         }
+ 491:         this.renderContractPanel();
+ 492:     }
+ 493: 
+ 494:     bindChatInputEvents() {
+ 495:         // Enter key fix for chat input — prevent form submit / page reload
+ 496:         const chatInput = document.getElementById('chat-input');
+ 497:         if (chatInput) {
+ 498:             chatInput.addEventListener('keydown', (e) => {
+ 499:                 if (e.key === 'Enter' && !e.shiftKey) {
+ 500:                     e.preventDefault();
+ 501:                     this.sendTextMessage();
+ 502:                 }
+ 503:             });
+ 504:         }
+ 505: 
+ 506:         // Prevent any accidental form submit if input is wrapped in <form>
+ 507:         const chatContainer = document.getElementById('chat-input-container');
+ 508:         if (chatContainer) {
+ 509:             chatContainer.addEventListener('submit', (e) => e.preventDefault());
+ 510:         }
+ 511: 
+ 512:         // Ensure send button is type="button" not "submit"
+ 513:         const sendBtn = document.getElementById('send-btn');
+ 514:         if (sendBtn && !sendBtn.getAttribute('type')) {
+ 515:             sendBtn.setAttribute('type', 'button');
  516:         }
  517:     }
  518: 
- 519:     setupResponseTimeout() {
- 520:         if (this.responseTimeout) {
- 521:             clearTimeout(this.responseTimeout);
- 522:         }
- 523:         
- 524:         this.responseTimeout = setTimeout(() => {
- 525:             if (this.voiceState === 'PROCESSING') {
- 526:                 this.handleVoiceError(new Error('timeout'));
- 527:             }
- 528:         }, 30000);
- 529:     }
- 530: 
- 531:     handleVoiceError(error) {
- 532:         console.error('[NeuroEscrow] Voice error:', error);
- 533:         
- 534:         this.resetVoiceState();
- 535:         
- 536:         let message = 'Ошибка записи голоса';
- 537:         
- 538:         if (error.message.includes('permission')) {
- 539:             message = 'Нет доступа к микрофону';
- 540:         } else if (error.message.includes('timeout')) {
- 541:             message = 'Превышено время ожидания';
- 542:         } else if (error.message.includes('cancelled')) {
- 543:             message = 'Запись отменена';
- 544:         }
- 545:         
- 546:         telegram.showAlert(message);
- 547:         telegram.hapticNotification('error');
- 548:     }
- 549: 
- 550:     resetVoiceState() {
- 551:         this.voiceState = 'IDLE';
- 552:         this.isRecording = false;
- 553:         this.isProcessing = false;
- 554:         this.updateVoiceButton();
- 555:         
- 556:         if (this.responseTimeout) {
- 557:             clearTimeout(this.responseTimeout);
- 558:             this.responseTimeout = null;
- 559:         }
- 560:     }
- 561: 
- 562:     handleDraftCreated(draft) {
- 563:         if (this.responseTimeout) {
- 564:             clearTimeout(this.responseTimeout);
- 565:         }
- 566:         
- 567:         // Check for duplicates
- 568:         const existingIndex = this.deals.findIndex(d => d.id === draft.id);
- 569:         if (existingIndex !== -1) {
- 570:             this.deals[existingIndex] = { ...draft, type: 'draft', isNew: true };
- 571:         } else {
- 572:             this.deals.unshift({ ...draft, type: 'draft', isNew: true });
- 573:         }
- 574:         
- 575:         this.resetVoiceState();
- 576:         this.saveCache(); // Save immediately after adding draft
- 577:         this.navigate('deals');
- 578:         
- 579:         telegram.hapticNotification('success');
- 580:         telegram.showAlert('Черновик создан');
- 581:         
- 582:         console.log('[NeuroEscrow] Draft created:', draft.id);
- 583:     }
- 584: 
- 585:     // -------------------------------------------------------------------------
- 586:     // Deals View
- 587:     // -------------------------------------------------------------------------
- 588: 
- 589:     renderDealsView(container) {
- 590:         const view = document.createElement('div');
- 591:         view.className = 'view';
- 592:         
- 593:         const deals = this.deals.length > 0 ? this.deals : this.getSampleDeals();
- 594:         
- 595:         view.innerHTML = `
- 596:             <div class="split-layout">
- 597:                 <div class="split-pane left-pane">
- 598:                     <div class="pane-glass">
- 599:                         <div class="pane-header">
- 600:                             <span class="pane-header-dot purple"></span>
- 601:                             <span class="pane-header-icon">🤝</span>
- 602:                             <span class="pane-header-title">Сделки</span>
- 603:                         </div>
- 604:                         <div class="pane-content" style="padding:16px;">
- 605:                             <h2 style="font-size:18px;margin-bottom:16px;font-weight:600;">Мои сделки</h2>
- 606:                             ${deals.length === 0 ? this.emptyState('🤝', 'У вас пока нет сделок') : ''}
- 607:                             <div id="deals-list">
- 608:                                 ${deals.map(deal => deal.type === 'draft' ? this.renderDraftCard(deal) : this.dealCard(deal)).join('')}
- 609:                             </div>
- 610:                         </div>
- 611:                         <div class="bottom-nav-left">
- 612:                             <button class="nav-btn-left" data-view="hermes" onclick="app.navigate('hermes')">
- 613:                                 <span class="nav-icon">🎙️</span>
- 614:                                 <span class="nav-label">Гермес</span>
- 615:                             </button>
- 616:                             <button class="nav-btn-left active" data-view="deals" onclick="app.navigate('deals')">
- 617:                                 <span class="nav-icon">🤝</span>
- 618:                                 <span class="nav-label">Сделки</span>
- 619:                             </button>
- 620:                             <button class="nav-btn-left" data-view="profile" onclick="app.navigate('profile')">
- 621:                                 <span class="nav-icon">👤</span>
- 622:                                 <span class="nav-label">Профиль</span>
- 623:                             </button>
- 624:                             <button class="nav-btn-left" id="micButton" onclick="app.toggleVoiceRecording()">
- 625:                                 <span class="nav-icon">🎤</span>
- 626:                                 <span class="nav-label">Микрофон</span>
- 627:                             </button>
- 628:                         </div>
- 629:                     </div>
- 630:                 </div>
- 631:                 <div class="split-divider" id="split-divider"></div>
- 632:                 <div class="split-pane right-pane">
- 633:                     <div class="pane-glass">
- 634:                         <div class="pane-header">
- 635:                             <span class="pane-header-dot green"></span>
- 636:                             <span class="pane-header-icon">📋</span>
- 637:                             <span class="pane-header-title">Смарт-контракт</span>
- 638:                         </div>
- 639:                         <div class="pane-content">
- 640:                             <div class="right-contract-panel">
- 641:                                 <div id="task-spec" class="task-spec-container">
- 642:                                     <div class="task-spec-title">Техническое задание</div>
- 643:                                     <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
- 644:                                 </div>
- 645:                             </div>
- 646:                         </div>
- 647:                     </div>
- 648:                 </div>
- 649:             </div>
- 650:         `;
- 651:         
- 652:         container.appendChild(view);
- 653:         this.initSplitDivider();
+ 519:     initSplitDivider() {
+ 520:         const divider = document.getElementById('split-divider');
+ 521:         if (!divider) return;
+ 522: 
+ 523:         let isDragging = false;
+ 524:         let startX, startY, startWidth;
+ 525: 
+ 526:         const onMouseDown = (e) => {
+ 527:             isDragging = true;
+ 528:             divider.classList.add('dragging');
+ 529:             startX = e.clientX || e.touches?.[0]?.clientX || 0;
+ 530:             startY = e.clientY || e.touches?.[0]?.clientY || 0;
+ 531:             const leftPane = divider.previousElementSibling;
+ 532:             startWidth = leftPane?.getBoundingClientRect().width || 0;
+ 533:             document.addEventListener('mousemove', onMouseMove);
+ 534:             document.addEventListener('mouseup', onMouseUp);
+ 535:             document.addEventListener('touchmove', onTouchMove, { passive: false });
+ 536:             document.addEventListener('touchend', onTouchEnd);
+ 537:         };
+ 538: 
+ 539:         const onMouseMove = (e) => {
+ 540:             if (!isDragging) return;
+ 541:             const dx = (e.clientX || 0) - startX;
+ 542:             const container = divider.parentElement;
+ 543:             const totalWidth = container?.getBoundingClientRect().width || 1;
+ 544:             const newWidth = Math.max(200, Math.min(totalWidth - 200, startWidth + dx));
+ 545:             const leftPane = divider.previousElementSibling;
+ 546:             const rightPane = divider.nextElementSibling;
+ 547:             if (leftPane) leftPane.style.flex = `0 0 ${newWidth}px`;
+ 548:             if (rightPane) rightPane.style.flex = '1';
+ 549:         };
+ 550: 
+ 551:         const onMouseUp = () => {
+ 552:             isDragging = false;
+ 553:             divider.classList.remove('dragging');
+ 554:             document.removeEventListener('mousemove', onMouseMove);
+ 555:             document.removeEventListener('mouseup', onMouseUp);
+ 556:         };
+ 557: 
+ 558:         const onTouchMove = (e) => {
+ 559:             if (!isDragging) return;
+ 560:             e.preventDefault();
+ 561:             const dx = (e.touches?.[0]?.clientX || 0) - startX;
+ 562:             const container = divider.parentElement;
+ 563:             const totalWidth = container?.getBoundingClientRect().width || 1;
+ 564:             const newWidth = Math.max(200, Math.min(totalWidth - 200, startWidth + dx));
+ 565:             const leftPane = divider.previousElementSibling;
+ 566:             if (leftPane) leftPane.style.flex = `0 0 ${newWidth}px`;
+ 567:         };
+ 568: 
+ 569:         const onTouchEnd = () => {
+ 570:             isDragging = false;
+ 571:             divider.classList.remove('dragging');
+ 572:             document.removeEventListener('touchmove', onTouchMove);
+ 573:             document.removeEventListener('touchend', onTouchEnd);
+ 574:         };
+ 575: 
+ 576:         divider.addEventListener('mousedown', onMouseDown);
+ 577:         divider.addEventListener('touchstart', (e) => {
+ 578:             startX = e.touches?.[0]?.clientX || 0;
+ 579:             startY = e.touches?.[0]?.clientY || 0;
+ 580:             onMouseDown(e);
+ 581:         }, { passive: true });
+ 582:     }
+ 583: 
+ 584:     toggleVoice() {
+ 585:         // Explicit protection against multiple taps during processing
+ 586:         if (this.voiceState === 'PROCESSING' || this.isProcessing) {
+ 587:             return;
+ 588:         }
+ 589:         
+ 590:         if (this.voiceState === 'LISTENING') {
+ 591:             this.stopVoiceRecording();
+ 592:         } else {
+ 593:             this.voiceState = 'LISTENING';
+ 594:             this.updateVoiceButton();
+ 595:             this.startVoiceRecording();
+ 596:         }
+ 597:         
+ 598:         telegram.haptic('medium');
+ 599:     }
+ 600: 
+ 601:     async startVoiceRecording() {
+ 602:         try {
+ 603:             const tg = window.Telegram?.WebApp;
+ 604:             // Try native Telegram voice recording (Bot API 9.6+)
+ 605:             if (tg && typeof tg.requestVoiceMessage === 'function') {
+ 606:                 const result = await tg.requestVoiceMessage();
+ 607:                 
+ 608:                 if (result && result.file_id) {
+ 609:                     this.sendVoiceToBot(result.file_id, result.duration);
+ 610:                 } else {
+ 611:                     throw new Error('No file_id received');
+ 612:                 }
+ 613:             } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+ 614:                 // Fallback to manual recording
+ 615:                 this.fallbackToManualRecording();
+ 616:             } else {
+ 617:                 telegram.showAlert('Запись голоса не поддерживается в вашем браузере. Используйте текстовый ввод.');
+ 618:             }
+ 619:         } catch (error) {
+ 620:             console.error('[Voice] Recording failed:', error.message);
+ 621:             this.handleVoiceError(error);
+ 622:         }
+ 623:     }
+ 624: 
+ 625:     stopVoiceRecording() {
+ 626:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+ 627:             this.mediaRecorder.stop();
+ 628:         }
+ 629:         this.resetVoiceState();
+ 630:     }
+ 631: 
+ 632:     fallbackToManualRecording() {
+ 633:         navigator.mediaDevices.getUserMedia({ audio: true })
+ 634:             .then(stream => {
+ 635:                 this.mediaRecorder = new MediaRecorder(stream);
+ 636:                 this.audioChunks = [];
+ 637:                 
+ 638:                 this.mediaRecorder.ondataavailable = (e) => {
+ 639:                     this.audioChunks.push(e.data);
+ 640:                 };
+ 641:                 
+ 642:                 this.mediaRecorder.onstop = () => {
+ 643:                     const audioBlob = new Blob(this.audioChunks, { type: 'audio/ogg' });
+ 644:                     this.uploadVoiceBlob(audioBlob);
+ 645:                     stream.getTracks().forEach(track => track.stop());
+ 646:                 };
+ 647:                 
+ 648:                 this.mediaRecorder.start();
+ 649:                 console.log('[NeuroEscrow] Fallback recording started');
+ 650:             })
+ 651:             .catch(error => {
+ 652:                 this.handleVoiceError(error);
+ 653:             });
  654:     }
  655: 
- 656:     renderDraftCard(draft) {
- 657:         const title = this.escapeHtml(draft.title || 'Без названия');
- 658:         const description = this.escapeHtml(draft.description || '');
- 659:         const budget = draft.budget || 'Не указан';
- 660:         const deadline = draft.deadline || 'Не указан';
- 661:         
- 662:         return `
- 663:             <div class="card draft-card" style="border-left:2px solid rgba(255, 255, 255, 0.34);">
- 664:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
- 665:                     <span style="font-size:12px;font-weight:600;color:rgba(255, 255, 255, 0.34);text-transform:uppercase;letter-spacing:0.5px;">Черновик</span>
- 666:                     <span style="font-size:11px;color:var(--ne-light-gray);">${this.formatDate(draft.created_at)}</span>
- 667:                 </div>
- 668:                 <div class="card-title">${title}</div>
- 669:                 <p style="font-size:13px;color:var(--ne-light-gray);margin:8px 0;">${description}</p>
- 670:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
- 671:                     <span>💰 ${budget}</span>
- 672:                     <span>⏱️ ${deadline}</span>
- 673:                 </div>
- 674:                 <div style="display:flex;gap:8px;margin-top:12px;">
- 675:                     <button class="btn btn-primary" onclick="app.editDraft('${draft.id}')" style="flex:1;">Редактировать</button>
- 676:                     <button class="btn btn-secondary" onclick="app.publishDraft('${draft.id}')" style="flex:1;">Опубликовать</button>
- 677:                 </div>
- 678:             </div>
- 679:         `;
- 680:     }
- 681: 
- 682:     dealCard(deal) {
- 683:         const statusColors = {
- 684:             'draft': 'rgba(255, 255, 255, 0.34)',
- 685:             'negotiating': '#dddddd',
- 686:             'in_progress': '#dddddd',
- 687:             'completed': 'rgba(255, 255, 255, 0.67)'
- 688:         };
- 689:         
- 690:         const statusNames = {
- 691:             'draft': 'Черновик',
- 692:             'negotiating': 'Переговоры',
- 693:             'in_progress': 'В работе',
- 694:             'completed': 'Завершена'
- 695:         };
- 696:         
- 697:         const color = statusColors[deal.status] || 'rgba(255, 255, 255, 0.34)';
- 698:         const statusName = statusNames[deal.status] || deal.status;
- 699:         
- 700:         return `
- 701:             <div class="card" style="border-left:2px solid ${color};">
- 702:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
- 703:                     <span style="font-size:12px;font-weight:600;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${statusName}</span>
- 704:                     <span style="font-size:11px;color:var(--ne-light-gray);">#${deal.id}</span>
- 705:                 </div>
- 706:                 <div class="card-title">${deal.title}</div>
- 707:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
- 708:                     <span>💰 ${deal.budget} USDT</span>
- 709:                     <span>👤 ${deal.counterparty}</span>
- 710:                 </div>
- 711:                 <div style="margin-top:12px;">
- 712:                     <button class="btn btn-secondary" onclick="app.viewDeal('${deal.id}')">Открыть в боте</button>
- 713:                 </div>
- 714:             </div>
- 715:         `;
- 716:     }
- 717: 
- 718:     getSampleDeals() {
- 719:         return [
- 720:             { id: 'a1b2', title: 'Telegram бот для интернет-магазина', status: 'in_progress', budget: '500', counterparty: 'client_42' },
- 721:             { id: 'c3d4', title: 'Парсер данных с сайта', status: 'completed', budget: '300', counterparty: 'client_17' },
- 722:         ];
- 723:     }
- 724: 
- 725:     viewDeal(dealId) {
- 726:         telegram.sendData({ action: 'view_deal', deal_id: dealId });
- 727:         telegram.showAlert('Открываю детали сделки в боте...');
- 728:     }
- 729: 
- 730:     editDraft(draftId) {
- 731:         telegram.sendData({ action: 'edit_draft', draft_id: draftId });
- 732:         telegram.showAlert('Открываю редактор в боте...');
- 733:     }
- 734: 
- 735:     publishDraft(draftId) {
- 736:         telegram.sendData({ action: 'publish_draft', draft_id: draftId });
- 737:         telegram.showAlert('Публикую черновик...');
+ 656:     uploadVoiceBlob(blob) {
+ 657:         // This would require bot-side endpoint for blob upload
+ 658:         // For now, just show error
+ 659:         this.handleVoiceError(new Error('Manual recording not yet implemented'));
+ 660:     }
+ 661: 
+ 662:     sendVoiceToBot(fileId, duration) {
+ 663:         this.voiceState = 'PROCESSING';
+ 664:         this.isProcessing = true;
+ 665:         this.updateVoiceButton();
+ 666:         this.setupResponseTimeout();
+ 667:         
+ 668:         const payload = {
+ 669:             action: 'voice_message',
+ 670:             file_id: fileId,
+ 671:             duration: duration,
+ 672:             timestamp: Date.now(),
+ 673:             user_id: telegram.getUserId()
+ 674:         };
+ 675:         
+ 676:         telegram.sendData(payload);
+ 677:         console.log('[NeuroEscrow] Voice sent to bot:', fileId);
+ 678:     }
+ 679: 
+ 680:     updateVoiceButton() {
+ 681:         const btn = document.getElementById('voice-btn');
+ 682:         const status = document.getElementById('voice-status');
+ 683:         
+ 684:         if (!btn) return;
+ 685:         
+ 686:         // Remove all state classes
+ 687:         btn.classList.remove('recording', 'processing');
+ 688:         
+ 689:         switch (this.voiceState) {
+ 690:             case 'IDLE':
+ 691:                 if (status) { status.textContent = ''; status.style.display = 'none'; }
+ 692:                 this.isRecording = false;
+ 693:                 break;
+ 694:                 
+ 695:             case 'LISTENING':
+ 696:                 btn.classList.add('recording');
+ 697:                 if (status) { status.textContent = 'Слушаю...'; status.style.display = 'block'; }
+ 698:                 this.isRecording = true;
+ 699:                 break;
+ 700:                 
+ 701:             case 'PROCESSING':
+ 702:                 btn.classList.add('processing');
+ 703:                 if (status) { status.textContent = 'Гермес обрабатывает...'; status.style.display = 'block'; }
+ 704:                 this.isRecording = false;
+ 705:                 break;
+ 706:         }
+ 707:     }
+ 708: 
+ 709:     setupResponseTimeout() {
+ 710:         if (this.responseTimeout) {
+ 711:             clearTimeout(this.responseTimeout);
+ 712:         }
+ 713:         
+ 714:         this.responseTimeout = setTimeout(() => {
+ 715:             if (this.voiceState === 'PROCESSING') {
+ 716:                 this.handleVoiceError(new Error('timeout'));
+ 717:             }
+ 718:         }, 30000);
+ 719:     }
+ 720: 
+ 721:     handleVoiceError(error) {
+ 722:         console.error('[NeuroEscrow] Voice error:', error);
+ 723:         
+ 724:         this.resetVoiceState();
+ 725:         
+ 726:         let message = 'Ошибка записи голоса';
+ 727:         
+ 728:         if (error.message.includes('permission')) {
+ 729:             message = 'Нет доступа к микрофону';
+ 730:         } else if (error.message.includes('timeout')) {
+ 731:             message = 'Превышено время ожидания';
+ 732:         } else if (error.message.includes('cancelled')) {
+ 733:             message = 'Запись отменена';
+ 734:         }
+ 735:         
+ 736:         telegram.showAlert(message);
+ 737:         telegram.hapticNotification('error');
  738:     }
  739: 
- 740:     escapeHtml(text) {
- 741:         const div = document.createElement('div');
- 742:         div.textContent = text;
- 743:         return div.innerHTML;
- 744:     }
- 745: 
- 746:     formatDate(timestamp) {
- 747:         if (!timestamp) return '';
- 748:         const date = new Date(timestamp * 1000);
- 749:         const now = new Date();
- 750:         const diff = now - date;
- 751:         
- 752:         if (diff < 60000) return 'только что';
- 753:         if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
- 754:         if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
- 755:         
- 756:         return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
- 757:     }
- 758: 
- 759:     // -------------------------------------------------------------------------
- 760:     // Profile View
- 761:     // -------------------------------------------------------------------------
- 762: 
- 763:     renderProfileView(container) {
- 764:         const view = document.createElement('div');
- 765:         view.className = 'view';
- 766:         
- 767:         view.innerHTML = `
- 768:             <div class="split-layout">
- 769:                 <div class="split-pane left-pane">
- 770:                     <div class="pane-glass">
- 771:                         <div class="pane-header">
- 772:                             <span class="pane-header-dot purple"></span>
- 773:                             <span class="pane-header-icon">👤</span>
- 774:                             <span class="pane-header-title">Профиль</span>
- 775:                         </div>
- 776:                         <div class="pane-content" style="padding:16px;">
- 777:                             <div class="card" style="text-align:center;padding:24px;">
- 778:                                 <div style="font-size:32px;font-weight:700;margin-bottom:8px;">${this.balance.toFixed(2)} USDT</div>
- 779:                                 <div style="font-size:13px;color:var(--ne-light-gray);margin-bottom:20px;">Ваш баланс</div>
- 780:                                 <div style="display:flex;gap:8px;margin-bottom:16px;">
- 781:                                     <button class="btn btn-primary" onclick="app.donate()" style="flex:1;">💝 Поддержать</button>
- 782:                                     <button class="btn btn-secondary" onclick="app.leaveTip()" style="flex:1;">⭐ Чаевые</button>
- 783:                                 </div>
- 784:                                 <div style="font-size:11px;color:var(--ne-light-gray);margin-top:12px;">TON • USDT • Telegram Stars</div>
- 785:                             </div>
- 786:                             <div id="ton-connect" style="margin:16px 0;"></div>
- 787:                             <div class="card">
- 788:                                 <div class="card-title">Настройки</div>
- 789:                                 <div class="form-group">
- 790:                                     <label class="form-label">LLM Модель</label>
- 791:                                     <select class="form-input" id="model-selector">
- 792:                                         <option value="auto">Автоматически</option>
- 793:                                         <option value="gpt-4">GPT-4</option>
- 794:                                         <option value="claude">Claude</option>
- 795:                                         <option value="grok">Grok</option>
- 796:                                         <option value="custom">Своя модель</option>
- 797:                                     </select>
- 798:                                 </div>
+ 740:     resetVoiceState() {
+ 741:         this.voiceState = 'IDLE';
+ 742:         this.isRecording = false;
+ 743:         this.isProcessing = false;
+ 744:         this.updateVoiceButton();
+ 745:         
+ 746:         if (this.responseTimeout) {
+ 747:             clearTimeout(this.responseTimeout);
+ 748:             this.responseTimeout = null;
+ 749:         }
+ 750:     }
+ 751: 
+ 752:     handleDraftCreated(draft) {
+ 753:         if (this.responseTimeout) {
+ 754:             clearTimeout(this.responseTimeout);
+ 755:         }
+ 756:         
+ 757:         // Check for duplicates
+ 758:         const existingIndex = this.deals.findIndex(d => d.id === draft.id);
+ 759:         if (existingIndex !== -1) {
+ 760:             this.deals[existingIndex] = { ...draft, type: 'draft', isNew: true };
+ 761:         } else {
+ 762:             this.deals.unshift({ ...draft, type: 'draft', isNew: true });
+ 763:         }
+ 764:         
+ 765:         this.resetVoiceState();
+ 766:         this.saveCache(); // Save immediately after adding draft
+ 767:         this.navigate('deals');
+ 768:         
+ 769:         telegram.hapticNotification('success');
+ 770:         telegram.showAlert('Черновик создан');
+ 771:         
+ 772:         console.log('[NeuroEscrow] Draft created:', draft.id);
+ 773:     }
+ 774: 
+ 775:     // -------------------------------------------------------------------------
+ 776:     // Deals View
+ 777:     // -------------------------------------------------------------------------
+ 778: 
+ 779:     renderDealsView(container) {
+ 780:         const view = document.createElement('div');
+ 781:         view.className = 'view';
+ 782:         
+ 783:         const deals = this.deals.length > 0 ? this.deals : this.getSampleDeals();
+ 784:         
+ 785:         view.innerHTML = `
+ 786:             <div class="split-layout">
+ 787:                 <div class="split-pane left-pane">
+ 788:                     <div class="pane-glass">
+ 789:                         <div class="pane-header">
+ 790:                             <span class="pane-header-dot purple"></span>
+ 791:                             <span class="pane-header-icon">🤝</span>
+ 792:                             <span class="pane-header-title">Сделки</span>
+ 793:                         </div>
+ 794:                         <div class="pane-content" style="padding:16px;">
+ 795:                             <h2 style="font-size:18px;margin-bottom:16px;font-weight:600;">Мои сделки</h2>
+ 796:                             ${deals.length === 0 ? this.emptyState('🤝', 'У вас пока нет сделок') : ''}
+ 797:                             <div id="deals-list">
+ 798:                                 ${deals.map(deal => deal.type === 'draft' ? this.renderDraftCard(deal) : this.dealCard(deal)).join('')}
  799:                             </div>
  800:                         </div>
  801:                         <div class="bottom-nav-left">
@@ -5100,11 +5273,11 @@ This section contains the contents of the repository's files.
  803:                                 <span class="nav-icon">🎙️</span>
  804:                                 <span class="nav-label">Гермес</span>
  805:                             </button>
- 806:                             <button class="nav-btn-left" data-view="deals" onclick="app.navigate('deals')">
+ 806:                             <button class="nav-btn-left active" data-view="deals" onclick="app.navigate('deals')">
  807:                                 <span class="nav-icon">🤝</span>
  808:                                 <span class="nav-label">Сделки</span>
  809:                             </button>
- 810:                             <button class="nav-btn-left active" data-view="profile" onclick="app.navigate('profile')">
+ 810:                             <button class="nav-btn-left" data-view="profile" onclick="app.navigate('profile')">
  811:                                 <span class="nav-icon">👤</span>
  812:                                 <span class="nav-label">Профиль</span>
  813:                             </button>
@@ -5123,759 +5296,1047 @@ This section contains the contents of the repository's files.
  826:                             <span class="pane-header-icon">📋</span>
  827:                             <span class="pane-header-title">Смарт-контракт</span>
  828:                         </div>
- 829:                         <div class="pane-content">
- 830:                             <div class="right-contract-panel">
- 831:                                 <div id="task-spec" class="task-spec-container">
- 832:                                     <div class="task-spec-title">Техническое задание</div>
- 833:                                     <div id="task-spec-content">Ожидание ТЗ от Гермеса...</div>
+ 829:                         <div class="pane-content" id="smart-contract-panel-deals">
+ 830:                             <div id="contract-phases" class="contract-phases">
+ 831:                                 <div class="phase-step" data-phase="draft">
+ 832:                                     <span class="phase-icon">📝</span>
+ 833:                                     <span class="phase-label">Составление</span>
  834:                                 </div>
- 835:                             </div>
- 836:                         </div>
- 837:                     </div>
- 838:                 </div>
- 839:             </div>
- 840:         `;
- 841:         
- 842:         container.appendChild(view);
- 843:         this.initSplitDivider();
- 844:         
- 845:         setTimeout(() => {
- 846:             tonConnect.init('ton-connect');
- 847:         }, 100);
- 848:     }
- 849: 
- 850:     donate() {
- 851:         telegram.showAlert('Выберите способ:\n\n⭐ Stars: 50, 100, 250, 500\n💎 TON: 1, 5, 10, 25\n💵 USDT: 5, 10, 25, 50');
- 852:     }
- 853: 
- 854:     leaveTip() {
- 855:         telegram.showAlert('Быстрые чаевые:\n\n10 ⭐ | 25 ⭐ | 50 ⭐ | 100 ⭐');
- 856:     }
- 857: 
- 858:     onTonStatusChange(detail) {
- 859:         console.log('[App] TON status changed:', detail);
- 860:     }
- 861: 
- 862:     async loadCache() {
- 863:         try {
- 864:             const cached = await telegram.cloudGet('neuroescrow_data');
- 865:             if (cached) {
- 866:                 this.deals = cached.deals || [];
- 867:                 this.balance = cached.balance || 0;
- 868:                 this.chatMessages = cached.chatMessages || [];
- 869:                 console.log('[App] Cache loaded');
- 870:             }
- 871:         } catch (e) {
- 872:             console.log('[App] No cache found');
- 873:         }
- 874:     }
- 875: 
- 876:     async saveCache() {
- 877:         const data = {
- 878:             deals: this.deals,
- 879:             balance: this.balance,
- 880:             chatMessages: this.chatMessages,
- 881:             timestamp: Date.now()
- 882:         };
- 883:         await telegram.cloudSet('neuroescrow_data', data);
- 884:     }
- 885: 
- 886:     async loadSession(sessionId) {
- 887:         const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
- 888:             ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
- 889:             : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
- 890: 
- 891:         try {
- 892:             const resp = await fetch(baseUrl + 'session/' + sessionId, { mode: 'cors' });
- 893:             if (!resp.ok) return;
+ 835:                                 <div class="phase-step" data-phase="review">
+ 836:                                     <span class="phase-icon">✅</span>
+ 837:                                     <span class="phase-label">Согласование</span>
+ 838:                                 </div>
+ 839:                                 <div class="phase-step" data-phase="sorting">
+ 840:                                     <span class="phase-icon">🔍</span>
+ 841:                                     <span class="phase-label">Подбор</span>
+ 842:                                 </div>
+ 843:                                 <div class="phase-step" data-phase="agreement">
+ 844:                                     <span class="phase-icon">🤝</span>
+ 845:                                     <span class="phase-label">Сделка</span>
+ 846:                                 </div>
+ 847:                                 <div class="phase-step" data-phase="escrow">
+ 848:                                     <span class="phase-icon">💰</span>
+ 849:                                     <span class="phase-label">Эскроу</span>
+ 850:                                 </div>
+ 851:                             </div>
+ 852:                             <div id="contract-fields" class="contract-fields">
+ 853:                                 <div class="contract-field" data-field="title">
+ 854:                                     <label class="field-label">Название задачи</label>
+ 855:                                     <div class="field-value" id="field-title">—</div>
+ 856:                                 </div>
+ 857:                                 <div class="contract-field" data-field="description">
+ 858:                                     <label class="field-label">Описание</label>
+ 859:                                     <div class="field-value" id="field-description">—</div>
+ 860:                                 </div>
+ 861:                                 <div class="contract-field" data-field="budget">
+ 862:                                     <label class="field-label">Бюджет (TON)</label>
+ 863:                                     <div class="field-value" id="field-budget">—</div>
+ 864:                                 </div>
+ 865:                                 <div class="contract-field" data-field="deadline">
+ 866:                                     <label class="field-label">Дедлайн</label>
+ 867:                                     <div class="field-value" id="field-deadline">—</div>
+ 868:                                 </div>
+ 869:                                 <div class="contract-field" data-field="client">
+ 870:                                     <label class="field-label">Клиент</label>
+ 871:                                     <div class="field-value" id="field-client">—</div>
+ 872:                                 </div>
+ 873:                                 <div class="contract-field" data-field="coder">
+ 874:                                     <label class="field-label">Нейрокодер</label>
+ 875:                                     <div class="field-value" id="field-coder">—</div>
+ 876:                                 </div>
+ 877:                                 <div class="contract-field" data-field="status">
+ 878:                                     <label class="field-label">Статус</label>
+ 879:                                     <div class="field-value" id="field-status">
+ 880:                                         <span class="status-badge draft">Черновик</span>
+ 881:                                     </div>
+ 882:                                 </div>
+ 883:                             </div>
+ 884:                         </div>
+ 885:                     </div>
+ 886:                 </div>
+ 887:             </div>
+ 888:         `;
+ 889:         
+ 890:         container.appendChild(view);
+ 891:         this.initSplitDivider();
+ 892:         this.renderContractPanel();
+ 893:     }
  894: 
- 895:             const session = await resp.json();
- 896:             const messages = session.messages || [];
- 897: 
- 898:             this.chatMessages = messages.map(msg => ({
- 899:                 sender: msg.role === 'user' ? 'user' : 'hermes',
- 900:                 text: msg.content || msg.text || '',
- 901:                 timestamp: msg.timestamp ? new Date(msg.timestamp).getTime() : Date.now()
- 902:             }));
- 903: 
- 904:             this.renderChatMessages();
- 905:             this.saveCache();
- 906:         } catch (e) {
- 907:             console.error('[App] Load session error:', e.message);
- 908:         }
- 909:     }
- 910: 
- 911:     async loadSessionsList() {
- 912:         const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
- 913:             ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
- 914:             : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
- 915: 
- 916:         try {
- 917:             const resp = await fetch(baseUrl + 'sessions', { mode: 'cors' });
- 918:             if (!resp.ok) return [];
- 919:             return await resp.json();
- 920:         } catch (e) {
- 921:             console.error('[App] Load sessions error:', e.message);
- 922:             return [];
- 923:         }
- 924:     }
- 925: 
- 926:     requestDataFromBot() {
- 927:         telegram.sendData({ action: 'get_dashboard_data' });
- 928:     }
- 929: 
- 930:     handleBotData(data) {
- 931:         console.log('[App] Data from bot:', data);
- 932:         
- 933:         // Handle different event types
- 934:         if (data.event === 'draft_created' && data.draft) {
- 935:             this.handleDraftCreated(data.draft);
- 936:             return;
- 937:         }
+ 895:     renderDraftCard(draft) {
+ 896:         const title = this.escapeHtml(draft.title || 'Без названия');
+ 897:         const description = this.escapeHtml(draft.description || '');
+ 898:         const budget = draft.budget || 'Не указан';
+ 899:         const deadline = draft.deadline || 'Не указан';
+ 900:         
+ 901:         return `
+ 902:             <div class="card draft-card" style="border-left:2px solid rgba(255, 255, 255, 0.34);">
+ 903:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+ 904:                     <span style="font-size:12px;font-weight:600;color:rgba(255, 255, 255, 0.34);text-transform:uppercase;letter-spacing:0.5px;">Черновик</span>
+ 905:                     <span style="font-size:11px;color:var(--ne-light-gray);">${this.formatDate(draft.created_at)}</span>
+ 906:                 </div>
+ 907:                 <div class="card-title">${title}</div>
+ 908:                 <p style="font-size:13px;color:var(--ne-light-gray);margin:8px 0;">${description}</p>
+ 909:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
+ 910:                     <span>💰 ${budget}</span>
+ 911:                     <span>⏱️ ${deadline}</span>
+ 912:                 </div>
+ 913:                 <div style="display:flex;gap:8px;margin-top:12px;">
+ 914:                     <button class="btn btn-primary" onclick="app.editDraft('${draft.id}')" style="flex:1;">Редактировать</button>
+ 915:                     <button class="btn btn-secondary" onclick="app.publishDraft('${draft.id}')" style="flex:1;">Опубликовать</button>
+ 916:                 </div>
+ 917:             </div>
+ 918:         `;
+ 919:     }
+ 920: 
+ 921:     dealCard(deal) {
+ 922:         const statusColors = {
+ 923:             'draft': 'rgba(255, 255, 255, 0.34)',
+ 924:             'negotiating': '#dddddd',
+ 925:             'in_progress': '#dddddd',
+ 926:             'completed': 'rgba(255, 255, 255, 0.67)'
+ 927:         };
+ 928:         
+ 929:         const statusNames = {
+ 930:             'draft': 'Черновик',
+ 931:             'negotiating': 'Переговоры',
+ 932:             'in_progress': 'В работе',
+ 933:             'completed': 'Завершена'
+ 934:         };
+ 935:         
+ 936:         const color = statusColors[deal.status] || 'rgba(255, 255, 255, 0.34)';
+ 937:         const statusName = statusNames[deal.status] || deal.status;
  938:         
- 939:         if (data.event === 'error') {
- 940:             this.handleVoiceError(new Error(data.error || 'Unknown error'));
- 941:             return;
- 942:         }
- 943: 
- 944:         if (data.event === 'hermes_reply' && data.text) {
- 945:             this.addChatMessage('hermes', data.text);
- 946:             return;
- 947:         }
- 948: 
- 949:         if (data.event === 'moderation_block') {
- 950:             telegram.showAlert('⚠️ Ваш контент нарушает правила платформы');
- 951:             return;
- 952:         }
- 953:         
- 954:         // Handle dashboard data
- 955:         if (data.deals) this.deals = data.deals;
- 956:         if (data.balance !== undefined) this.balance = data.balance;
- 957:         
- 958:         this.saveCache();
- 959:         
- 960:         const main = document.getElementById('main-content');
- 961:         main.innerHTML = '';
- 962:         switch(this.currentView) {
- 963:             case 'hermes': this.renderHermesView(main); break;
- 964:             case 'deals': this.renderDealsView(main); break;
- 965:             case 'profile': this.renderProfileView(main); break;
- 966:         }
+ 939:         return `
+ 940:             <div class="card" style="border-left:2px solid ${color};">
+ 941:                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+ 942:                     <span style="font-size:12px;font-weight:600;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${statusName}</span>
+ 943:                     <span style="font-size:11px;color:var(--ne-light-gray);">#${deal.id}</span>
+ 944:                 </div>
+ 945:                 <div class="card-title">${deal.title}</div>
+ 946:                 <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:var(--ne-light-gray);">
+ 947:                     <span>💰 ${deal.budget} USDT</span>
+ 948:                     <span>👤 ${deal.counterparty}</span>
+ 949:                 </div>
+ 950:                 <div style="margin-top:12px;">
+ 951:                     <button class="btn btn-secondary" onclick="app.viewDeal('${deal.id}')">Открыть в боте</button>
+ 952:                 </div>
+ 953:             </div>
+ 954:         `;
+ 955:     }
+ 956: 
+ 957:     getSampleDeals() {
+ 958:         return [
+ 959:             { id: 'a1b2', title: 'Telegram бот для интернет-магазина', status: 'in_progress', budget: '500', counterparty: 'client_42' },
+ 960:             { id: 'c3d4', title: 'Парсер данных с сайта', status: 'completed', budget: '300', counterparty: 'client_17' },
+ 961:         ];
+ 962:     }
+ 963: 
+ 964:     viewDeal(dealId) {
+ 965:         telegram.sendData({ action: 'view_deal', deal_id: dealId });
+ 966:         telegram.showAlert('Открываю детали сделки в боте...');
  967:     }
  968: 
- 969:     emptyState(icon, text) {
- 970:         return `
- 971:             <div class="empty-state">
- 972:                 <div class="empty-icon">${icon}</div>
- 973:                 <div class="empty-text">${text}</div>
- 974:             </div>
- 975:         `;
- 976:     }
- 977: 
- 978:     // -------------------------------------------------------------------------
- 979:     // Chat Interface Methods
- 980:     // -------------------------------------------------------------------------
- 981: 
- 982:     renderChatMessages() {
- 983:         const container = document.getElementById('chat-messages');
- 984:         if (!container) return;
- 985: 
- 986:         container.innerHTML = this.chatMessages.map((msg, idx) => {
- 987:             const isLastHermes = idx === this.chatMessages.length - 1 && msg.sender === 'hermes' && msg.text === '';
- 988:             const streamingClass = isLastHermes ? ' streaming' : '';
- 989:             const isHermesComplete = msg.sender === 'hermes' && msg.text !== '' && !isLastHermes;
- 990:             const feedbackHtml = isHermesComplete && !msg.feedback ? `
- 991:                 <div class="feedback-buttons">
- 992:                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'up')">👍</button>
- 993:                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
- 994:                 </div>
- 995:             ` : '';
- 996:             return `
- 997:             <div class="chat-message ${msg.sender}">
- 998:                 <div class="message-bubble${streamingClass}">
- 999:                     ${this.escapeHtml(msg.text)}
-1000:                     <span class="msg-time">${this.formatTime(msg.timestamp)}</span>
-1001:                     ${feedbackHtml}
-1002:                 </div>
-1003:             </div>
-1004:         `;
-1005:         }).join('');
-1006: 
-1007:         this.scrollToBottom();
-1008:     }
-1009: 
-1010:     scrollToBottom() {
-1011:         const container = document.getElementById('chat-messages');
-1012:         if (!container) return;
-1013:         requestAnimationFrame(() => {
-1014:             container.scrollTop = container.scrollHeight;
-1015:         });
-1016:     }
-1017: 
-1018:     addChatMessage(sender, text) {
-1019:         this.chatMessages.push({
-1020:             sender,
-1021:             text,
-1022:             timestamp: Date.now()
-1023:         });
-1024:         this.renderChatMessages();
-1025:         this.saveCache();
-1026:     }
-1027: 
-1028:     showTypingIndicator() {
-1029:         const container = document.getElementById('chat-messages');
-1030:         if (!container) return;
-1031:         const typing = document.createElement('div');
-1032:         typing.className = 'typing-indicator';
-1033:         typing.id = 'typing-indicator';
-1034:         typing.innerHTML = '<span>Гермес печатает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-1035:         container.appendChild(typing);
-1036:         container.scrollTop = container.scrollHeight;
-1037:     }
-1038: 
-1039:     hideTypingIndicator() {
-1040:         const typing = document.getElementById('typing-indicator');
-1041:         if (typing) typing.remove();
-1042:     }
-1043: 
-1044:     async sendTextMessage() {
-1045:         const input = document.getElementById('chat-input');
-1046:         if (!input || !input.value.trim()) return;
-1047: 
-1048:         const text = input.value.trim();
-1049:         this.addChatMessage('user', text);
-1050:         input.value = '';
-1051: 
-1052:         telegram.haptic('light');
-1053: 
-1054:         // Call Hermes backend
-1055:         try {
-1056:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
-1057:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
-1058:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
-1059: 
-1060:             console.log('[Chat] Fetching:', baseUrl + 'chat');
-1061: 
-1062:             // Show typing indicator
-1063:             this.showTypingIndicator();
-1064: 
-1065:             // Try streaming first
-1066:             const streamUrl = baseUrl + 'chat/stream';
-1067:             const response = await fetch(streamUrl, {
-1068:                 method: 'POST',
-1069:                 mode: 'cors',
-1070:                 credentials: 'omit',
-1071:                 headers: { 'Content-Type': 'application/json' },
-1072:                 body: JSON.stringify({
-1073:                     message: text,
-1074:                     user_id: telegram.getUserId(),
-1075:                     session_id: `tg_${telegram.getUserId()}`,
-1076:                     persona: 'hermes'
-1077:                 })
-1078:             });
-1079: 
-1080:             console.log('[Chat] Response status:', response.status, response.statusText);
-1081: 
-1082:             // Hide typing indicator
-1083:             this.hideTypingIndicator();
-1084: 
-1085:             const contentType = response.headers.get('content-type') || '';
-1086: 
-1087:             if (contentType.includes('text/event-stream')) {
-1088:                 // Streaming response — typewriter effect
-1089:                 const reader = response.body.getReader();
-1090:                 const decoder = new TextDecoder();
-1091:                 let fullText = '';
-1092: 
-1093:                 // Create empty hermes message bubble for streaming
-1094:                 const msgIdx = this.chatMessages.length;
-1095:                 this.chatMessages.push({ sender: 'hermes', text: '', timestamp: Date.now() });
-1096:                 this.renderChatMessages();
-1097: 
-1098:                 while (true) {
-1099:                     const { done, value } = await reader.read();
-1100:                     if (done) break;
-1101: 
-1102:                     const chunk = decoder.decode(value, { stream: true });
-1103:                     const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-1104: 
-1105:                     for (const line of lines) {
-1106:                         try {
-1107:                             const parsed = JSON.parse(line.replace('data: ', ''));
-1108:                             if (parsed.done) break;
-1109:                             if (parsed.char !== undefined) {
-1110:                                 fullText += parsed.char;
-1111:                                 this.chatMessages[msgIdx].text = fullText;
-1112:                                 this.renderChatMessages();
-1113:                             }
-1114:                         } catch { /* skip malformed SSE lines */ }
-1115:                     }
-1116:                 }
-1117: 
-1118:                 this.saveCache();
-1119:             } else {
-1120:                 // Fallback: regular JSON response
-1121:                 const data = await response.json();
-1122: 
-1123:                 if (data.blocked) {
-1124:                     this.addChatMessage('system', `⚠️ ${data.reason}`);
-1125:                 } else if (data.response) {
-1126:                     this.addChatMessage('hermes', data.response);
-1127:                 } else if (data.error) {
-1128:                     this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
-1129:                 }
-1130:             }
-1131:         } catch (error) {
-1132:             console.error('[Chat] Fetch failed:', error.message);
-1133:             this.hideTypingIndicator();
-1134:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
-1135:         }
+ 969:     editDraft(draftId) {
+ 970:         telegram.sendData({ action: 'edit_draft', draft_id: draftId });
+ 971:         telegram.showAlert('Открываю редактор в боте...');
+ 972:     }
+ 973: 
+ 974:     publishDraft(draftId) {
+ 975:         telegram.sendData({ action: 'publish_draft', draft_id: draftId });
+ 976:         telegram.showAlert('Публикую черновик...');
+ 977:     }
+ 978: 
+ 979:     escapeHtml(text) {
+ 980:         const div = document.createElement('div');
+ 981:         div.textContent = text;
+ 982:         return div.innerHTML;
+ 983:     }
+ 984: 
+ 985:     formatDate(timestamp) {
+ 986:         if (!timestamp) return '';
+ 987:         const date = new Date(timestamp * 1000);
+ 988:         const now = new Date();
+ 989:         const diff = now - date;
+ 990:         
+ 991:         if (diff < 60000) return 'только что';
+ 992:         if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
+ 993:         if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
+ 994:         
+ 995:         return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+ 996:     }
+ 997: 
+ 998:     // -------------------------------------------------------------------------
+ 999:     // Profile View
+1000:     // -------------------------------------------------------------------------
+1001: 
+1002:     renderProfileView(container) {
+1003:         const view = document.createElement('div');
+1004:         view.className = 'view';
+1005:         
+1006:         view.innerHTML = `
+1007:             <div class="split-layout">
+1008:                 <div class="split-pane left-pane">
+1009:                     <div class="pane-glass">
+1010:                         <div class="pane-header">
+1011:                             <span class="pane-header-dot purple"></span>
+1012:                             <span class="pane-header-icon">👤</span>
+1013:                             <span class="pane-header-title">Профиль</span>
+1014:                         </div>
+1015:                         <div class="pane-content" style="padding:16px;">
+1016:                             <div class="card" style="text-align:center;padding:24px;">
+1017:                                 <div style="font-size:32px;font-weight:700;margin-bottom:8px;">${this.balance.toFixed(2)} USDT</div>
+1018:                                 <div style="font-size:13px;color:var(--ne-light-gray);margin-bottom:20px;">Ваш баланс</div>
+1019:                                 <div style="display:flex;gap:8px;margin-bottom:16px;">
+1020:                                     <button class="btn btn-primary" onclick="app.donate()" style="flex:1;">💝 Поддержать</button>
+1021:                                     <button class="btn btn-secondary" onclick="app.leaveTip()" style="flex:1;">⭐ Чаевые</button>
+1022:                                 </div>
+1023:                                 <div style="font-size:11px;color:var(--ne-light-gray);margin-top:12px;">TON • USDT • Telegram Stars</div>
+1024:                             </div>
+1025:                             <div id="ton-connect" style="margin:16px 0;"></div>
+1026:                             <div class="card">
+1027:                                 <div class="card-title">Настройки</div>
+1028:                                 <div class="form-group">
+1029:                                     <label class="form-label">LLM Модель</label>
+1030:                                     <select class="form-input" id="model-selector">
+1031:                                         <option value="auto">Автоматически</option>
+1032:                                         <option value="gpt-4">GPT-4</option>
+1033:                                         <option value="claude">Claude</option>
+1034:                                         <option value="grok">Grok</option>
+1035:                                         <option value="custom">Своя модель</option>
+1036:                                     </select>
+1037:                                 </div>
+1038:                             </div>
+1039:                         </div>
+1040:                         <div class="bottom-nav-left">
+1041:                             <button class="nav-btn-left" data-view="hermes" onclick="app.navigate('hermes')">
+1042:                                 <span class="nav-icon">🎙️</span>
+1043:                                 <span class="nav-label">Гермес</span>
+1044:                             </button>
+1045:                             <button class="nav-btn-left" data-view="deals" onclick="app.navigate('deals')">
+1046:                                 <span class="nav-icon">🤝</span>
+1047:                                 <span class="nav-label">Сделки</span>
+1048:                             </button>
+1049:                             <button class="nav-btn-left active" data-view="profile" onclick="app.navigate('profile')">
+1050:                                 <span class="nav-icon">👤</span>
+1051:                                 <span class="nav-label">Профиль</span>
+1052:                             </button>
+1053:                             <button class="nav-btn-left" id="micButton" onclick="app.toggleVoiceRecording()">
+1054:                                 <span class="nav-icon">🎤</span>
+1055:                                 <span class="nav-label">Микрофон</span>
+1056:                             </button>
+1057:                         </div>
+1058:                     </div>
+1059:                 </div>
+1060:                 <div class="split-divider" id="split-divider"></div>
+1061:                 <div class="split-pane right-pane">
+1062:                     <div class="pane-glass">
+1063:                         <div class="pane-header">
+1064:                             <span class="pane-header-dot green"></span>
+1065:                             <span class="pane-header-icon">📋</span>
+1066:                             <span class="pane-header-title">Смарт-контракт</span>
+1067:                         </div>
+1068:                         <div class="pane-content" id="smart-contract-panel-profile">
+1069:                             <div id="contract-phases" class="contract-phases">
+1070:                                 <div class="phase-step" data-phase="draft">
+1071:                                     <span class="phase-icon">📝</span>
+1072:                                     <span class="phase-label">Составление</span>
+1073:                                 </div>
+1074:                                 <div class="phase-step" data-phase="review">
+1075:                                     <span class="phase-icon">✅</span>
+1076:                                     <span class="phase-label">Согласование</span>
+1077:                                 </div>
+1078:                                 <div class="phase-step" data-phase="sorting">
+1079:                                     <span class="phase-icon">🔍</span>
+1080:                                     <span class="phase-label">Подбор</span>
+1081:                                 </div>
+1082:                                 <div class="phase-step" data-phase="agreement">
+1083:                                     <span class="phase-icon">🤝</span>
+1084:                                     <span class="phase-label">Сделка</span>
+1085:                                 </div>
+1086:                                 <div class="phase-step" data-phase="escrow">
+1087:                                     <span class="phase-icon">💰</span>
+1088:                                     <span class="phase-label">Эскроу</span>
+1089:                                 </div>
+1090:                             </div>
+1091:                             <div id="contract-fields" class="contract-fields">
+1092:                                 <div class="contract-field" data-field="title">
+1093:                                     <label class="field-label">Название задачи</label>
+1094:                                     <div class="field-value" id="field-title">—</div>
+1095:                                 </div>
+1096:                                 <div class="contract-field" data-field="description">
+1097:                                     <label class="field-label">Описание</label>
+1098:                                     <div class="field-value" id="field-description">—</div>
+1099:                                 </div>
+1100:                                 <div class="contract-field" data-field="budget">
+1101:                                     <label class="field-label">Бюджет (TON)</label>
+1102:                                     <div class="field-value" id="field-budget">—</div>
+1103:                                 </div>
+1104:                                 <div class="contract-field" data-field="deadline">
+1105:                                     <label class="field-label">Дедлайн</label>
+1106:                                     <div class="field-value" id="field-deadline">—</div>
+1107:                                 </div>
+1108:                                 <div class="contract-field" data-field="client">
+1109:                                     <label class="field-label">Клиент</label>
+1110:                                     <div class="field-value" id="field-client">—</div>
+1111:                                 </div>
+1112:                                 <div class="contract-field" data-field="coder">
+1113:                                     <label class="field-label">Нейрокодер</label>
+1114:                                     <div class="field-value" id="field-coder">—</div>
+1115:                                 </div>
+1116:                                 <div class="contract-field" data-field="status">
+1117:                                     <label class="field-label">Статус</label>
+1118:                                     <div class="field-value" id="field-status">
+1119:                                         <span class="status-badge draft">Черновик</span>
+1120:                                     </div>
+1121:                                 </div>
+1122:                             </div>
+1123:                         </div>
+1124:                     </div>
+1125:                 </div>
+1126:             </div>
+1127:         `;
+1128:         
+1129:         container.appendChild(view);
+1130:         this.initSplitDivider();
+1131:         this.renderContractPanel();
+1132:         
+1133:         setTimeout(() => {
+1134:             tonConnect.init('ton-connect');
+1135:         }, 100);
 1136:     }
 1137: 
-1138:     showAttachMenu() {
-1139:         const menu = document.getElementById('attach-menu');
-1140:         if (!menu) return;
+1138:     donate() {
+1139:         telegram.showAlert('Выберите способ:\n\n⭐ Stars: 50, 100, 250, 500\n💎 TON: 1, 5, 10, 25\n💵 USDT: 5, 10, 25, 50');
+1140:     }
 1141: 
-1142:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
-1143:         telegram.haptic('light');
+1142:     leaveTip() {
+1143:         telegram.showAlert('Быстрые чаевые:\n\n10 ⭐ | 25 ⭐ | 50 ⭐ | 100 ⭐');
 1144:     }
 1145: 
-1146:     hideAttachMenu() {
-1147:         const menu = document.getElementById('attach-menu');
-1148:         if (menu) menu.style.display = 'none';
-1149:     }
-1150: 
-1151:     attachPhoto() {
-1152:         this.hideAttachMenu();
-1153:         const input = document.createElement('input');
-1154:         input.type = 'file';
-1155:         input.accept = 'image/*';
-1156:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
-1157:         input.click();
-1158:     }
-1159: 
-1160:     attachVideo() {
-1161:         this.hideAttachMenu();
-1162:         const input = document.createElement('input');
-1163:         input.type = 'file';
-1164:         input.accept = 'video/*';
-1165:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
-1166:         input.click();
-1167:     }
-1168: 
-1169:     async recordVideo() {
-1170:         this.hideAttachMenu();
-1171:         try {
-1172:             const stream = await navigator.mediaDevices.getUserMedia({
-1173:                 video: { facingMode: this.currentFacingMode },
-1174:                 audio: true
-1175:             });
-1176:             this.currentStream = stream;
-1177:             this.showVideoRecorder(stream);
-1178:         } catch (error) {
-1179:             telegram.showAlert('Нет доступа к камере');
-1180:         }
-1181:     }
+1146:     onTonStatusChange(detail) {
+1147:         console.log('[App] TON status changed:', detail);
+1148:     }
+1149: 
+1150:     async loadCache() {
+1151:         try {
+1152:             const cached = await telegram.cloudGet('neuroescrow_data');
+1153:             if (cached) {
+1154:                 this.deals = cached.deals || [];
+1155:                 this.balance = cached.balance || 0;
+1156:                 this.chatMessages = cached.chatMessages || [];
+1157:                 console.log('[App] Cache loaded');
+1158:             }
+1159:         } catch (e) {
+1160:             console.log('[App] No cache found');
+1161:         }
+1162:     }
+1163: 
+1164:     async saveCache() {
+1165:         const data = {
+1166:             deals: this.deals,
+1167:             balance: this.balance,
+1168:             chatMessages: this.chatMessages,
+1169:             timestamp: Date.now()
+1170:         };
+1171:         await telegram.cloudSet('neuroescrow_data', data);
+1172:     }
+1173: 
+1174:     async loadSession(sessionId) {
+1175:         const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+1176:             ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+1177:             : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+1178: 
+1179:         try {
+1180:             const resp = await fetch(baseUrl + 'session/' + sessionId, { mode: 'cors' });
+1181:             if (!resp.ok) return;
 1182: 
-1183:     showVideoRecorder(stream) {
-1184:         const recorder = document.createElement('div');
-1185:         recorder.className = 'video-recording';
-1186:         recorder.innerHTML = `
-1187:             <div class="video-preview">
-1188:                 <video id="video-preview" autoplay playsinline muted></video>
-1189:                 <div class="video-controls">
-1190:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
-1191:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
-1192:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
-1193:                 </div>
-1194:             </div>
-1195:         `;
-1196:         document.body.appendChild(recorder);
-1197: 
-1198:         const video = document.getElementById('video-preview');
-1199:         video.srcObject = stream;
-1200:     }
-1201: 
-1202:     async switchCamera() {
-1203:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
-1204:         if (this.currentStream) {
-1205:             this.currentStream.getTracks().forEach(track => track.stop());
-1206:         }
-1207:         await this.recordVideo();
-1208:     }
-1209: 
-1210:     toggleVideoRecording() {
-1211:         const btn = document.getElementById('record-btn');
-1212:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
-1213:             this.startVideoRecording();
-1214:             btn.classList.add('recording');
-1215:         } else {
-1216:             this.stopVideoRecording();
-1217:             btn.classList.remove('recording');
-1218:         }
-1219:     }
-1220: 
-1221:     startVideoRecording() {
-1222:         if (!this.currentStream) return;
-1223: 
-1224:         this.mediaRecorder = new MediaRecorder(this.currentStream);
-1225:         this.audioChunks = [];
-1226: 
-1227:         this.mediaRecorder.ondataavailable = (e) => {
-1228:             this.audioChunks.push(e.data);
-1229:         };
-1230: 
-1231:         this.mediaRecorder.onstop = () => {
-1232:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
-1233:             this.handleVideoUpload(videoBlob);
-1234:         };
-1235: 
-1236:         this.mediaRecorder.start();
-1237:     }
-1238: 
-1239:     stopVideoRecording() {
-1240:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-1241:             this.mediaRecorder.stop();
-1242:         }
-1243:     }
-1244: 
-1245:     closeVideoRecorder() {
-1246:         if (this.currentStream) {
-1247:             this.currentStream.getTracks().forEach(track => track.stop());
-1248:             this.currentStream = null;
-1249:         }
-1250:         const recorder = document.querySelector('.video-recording');
-1251:         if (recorder) recorder.remove();
-1252:     }
-1253: 
-1254:     async shareScreen() {
-1255:         this.hideAttachMenu();
-1256:         try {
-1257:             const stream = await navigator.mediaDevices.getDisplayMedia({
-1258:                 video: true
-1259:             });
-1260:             
-1261:             const mediaRecorder = new MediaRecorder(stream);
-1262:             const chunks = [];
-1263: 
-1264:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-1265:             mediaRecorder.onstop = () => {
-1266:                 const blob = new Blob(chunks, { type: 'video/webm' });
-1267:                 this.handleVideoUpload(blob);
-1268:                 stream.getTracks().forEach(track => track.stop());
-1269:             };
-1270: 
-1271:             mediaRecorder.start();
-1272:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
-1273:         } catch (error) {
-1274:             telegram.showAlert('Нет доступа к экрану');
-1275:         }
-1276:     }
-1277: 
-1278:     async handleFileUpload(file, type) {
-1279:         if (!file) return;
-1280: 
-1281:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
-1282: 
-1283:         const reader = new FileReader();
-1284:         reader.onload = async (e) => {
-1285:             try {
-1286:                 // Upload to backend and get URL
-1287:                 const imageUrl = e.target.result; // Base64 data URL
-1288: 
-1289:                 // Call Hermes image analysis
-1290:                 const response = await fetch('/analyze-image', {
-1291:                     method: 'POST',
-1292:                     headers: { 'Content-Type': 'application/json' },
-1293:                     body: JSON.stringify({
-1294:                         image_url: imageUrl,
-1295:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
-1296:                         user_id: telegram.getUserId(),
-1297:                         session_id: `tg_${telegram.getUserId()}`
-1298:                     })
-1299:                 });
-1300: 
-1301:                 const data = await response.json();
-1302: 
-1303:                 if (data.response) {
-1304:                     this.addChatMessage('hermes', data.response);
-1305:                 } else if (data.error) {
-1306:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-1307:                 }
-1308:             } catch (error) {
-1309:                 console.error('[App] Upload error:', error);
-1310:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
-1311:             }
-1312:         };
-1313:         reader.readAsDataURL(file);
+1183:             const session = await resp.json();
+1184:             const messages = session.messages || [];
+1185: 
+1186:             this.chatMessages = messages.map(msg => ({
+1187:                 sender: msg.role === 'user' ? 'user' : 'hermes',
+1188:                 text: msg.content || msg.text || '',
+1189:                 timestamp: msg.timestamp ? new Date(msg.timestamp).getTime() : Date.now()
+1190:             }));
+1191: 
+1192:             this.renderChatMessages();
+1193:             this.saveCache();
+1194:         } catch (e) {
+1195:             console.error('[App] Load session error:', e.message);
+1196:         }
+1197:     }
+1198: 
+1199:     async loadSessionsList() {
+1200:         const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+1201:             ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+1202:             : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+1203: 
+1204:         try {
+1205:             const resp = await fetch(baseUrl + 'sessions', { mode: 'cors' });
+1206:             if (!resp.ok) return [];
+1207:             return await resp.json();
+1208:         } catch (e) {
+1209:             console.error('[App] Load sessions error:', e.message);
+1210:             return [];
+1211:         }
+1212:     }
+1213: 
+1214:     requestDataFromBot() {
+1215:         telegram.sendData({ action: 'get_dashboard_data' });
+1216:     }
+1217: 
+1218:     handleBotData(data) {
+1219:         console.log('[App] Data from bot:', data);
+1220:         
+1221:         // Handle different event types
+1222:         if (data.event === 'draft_created' && data.draft) {
+1223:             this.handleDraftCreated(data.draft);
+1224:             return;
+1225:         }
+1226:         
+1227:         if (data.event === 'error') {
+1228:             this.handleVoiceError(new Error(data.error || 'Unknown error'));
+1229:             return;
+1230:         }
+1231: 
+1232:         if (data.event === 'hermes_reply' && data.text) {
+1233:             this.addChatMessage('hermes', data.text);
+1234:             return;
+1235:         }
+1236: 
+1237:         if (data.event === 'moderation_block') {
+1238:             telegram.showAlert('⚠️ Ваш контент нарушает правила платформы');
+1239:             return;
+1240:         }
+1241:         
+1242:         // Handle dashboard data
+1243:         if (data.deals) this.deals = data.deals;
+1244:         if (data.balance !== undefined) this.balance = data.balance;
+1245:         
+1246:         this.saveCache();
+1247:         
+1248:         const main = document.getElementById('main-content');
+1249:         main.innerHTML = '';
+1250:         switch(this.currentView) {
+1251:             case 'hermes': this.renderHermesView(main); break;
+1252:             case 'deals': this.renderDealsView(main); break;
+1253:             case 'profile': this.renderProfileView(main); break;
+1254:         }
+1255:     }
+1256: 
+1257:     emptyState(icon, text) {
+1258:         return `
+1259:             <div class="empty-state">
+1260:                 <div class="empty-icon">${icon}</div>
+1261:                 <div class="empty-text">${text}</div>
+1262:             </div>
+1263:         `;
+1264:     }
+1265: 
+1266:     // -------------------------------------------------------------------------
+1267:     // Chat Interface Methods
+1268:     // -------------------------------------------------------------------------
+1269: 
+1270:     renderChatMessages() {
+1271:         const container = document.getElementById('chat-messages');
+1272:         if (!container) return;
+1273: 
+1274:         container.innerHTML = this.chatMessages.map((msg, idx) => {
+1275:             const isLastHermes = idx === this.chatMessages.length - 1 && msg.sender === 'hermes' && msg.text === '';
+1276:             const streamingClass = isLastHermes ? ' streaming' : '';
+1277:             const isHermesComplete = msg.sender === 'hermes' && msg.text !== '' && !isLastHermes;
+1278:             const feedbackHtml = isHermesComplete && !msg.feedback ? `
+1279:                 <div class="feedback-buttons">
+1280:                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'up')">👍</button>
+1281:                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
+1282:                 </div>
+1283:             ` : '';
+1284:             return `
+1285:             <div class="chat-message ${msg.sender}">
+1286:                 <div class="message-bubble${streamingClass}">
+1287:                     ${this.escapeHtml(msg.text)}
+1288:                     <span class="msg-time">${this.formatTime(msg.timestamp)}</span>
+1289:                     ${feedbackHtml}
+1290:                 </div>
+1291:             </div>
+1292:         `;
+1293:         }).join('');
+1294: 
+1295:         this.scrollToBottom();
+1296:     }
+1297: 
+1298:     scrollToBottom() {
+1299:         const container = document.getElementById('chat-messages');
+1300:         if (!container) return;
+1301:         requestAnimationFrame(() => {
+1302:             container.scrollTop = container.scrollHeight;
+1303:         });
+1304:     }
+1305: 
+1306:     addChatMessage(sender, text) {
+1307:         this.chatMessages.push({
+1308:             sender,
+1309:             text,
+1310:             timestamp: Date.now()
+1311:         });
+1312:         this.renderChatMessages();
+1313:         this.saveCache();
 1314:     }
 1315: 
-1316:     async handleVideoUpload(blob) {
-1317:         this.addChatMessage('user', '[🎥 Видеозапись]');
-1318:         this.closeVideoRecorder();
-1319: 
-1320:         const reader = new FileReader();
-1321:         reader.onload = async (e) => {
-1322:             try {
-1323:                 const videoUrl = e.target.result;
-1324: 
-1325:                 // Call Hermes video analysis
-1326:                 const response = await fetch('/analyze-image', {
-1327:                     method: 'POST',
-1328:                     headers: { 'Content-Type': 'application/json' },
-1329:                     body: JSON.stringify({
-1330:                         image_url: videoUrl,
-1331:                         prompt: 'Проанализируй это видео',
-1332:                         user_id: telegram.getUserId(),
-1333:                         session_id: `tg_${telegram.getUserId()}`
-1334:                     })
-1335:                 });
-1336: 
-1337:                 const data = await response.json();
-1338: 
-1339:                 if (data.response) {
-1340:                     this.addChatMessage('hermes', data.response);
-1341:                 } else if (data.error) {
-1342:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-1343:                 }
-1344:             } catch (error) {
-1345:                 console.error('[App] Video upload error:', error);
-1346:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
-1347:             }
-1348:         };
-1349:         reader.readAsDataURL(blob);
-1350:     }
-1351: 
-1352:     formatTime(timestamp) {
-1353:         const date = new Date(timestamp);
-1354:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-1355:     }
-1356: 
-1357:     async submitFeedback(msgIdx, feedback) {
-1358:         const msg = this.chatMessages[msgIdx];
-1359:         if (!msg || msg.feedback) return;
-1360: 
-1361:         msg.feedback = feedback;
-1362:         this.renderChatMessages();
-1363: 
-1364:         try {
-1365:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
-1366:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
-1367:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
-1368: 
-1369:             await fetch(baseUrl + 'feedback', {
-1370:                 method: 'POST',
-1371:                 mode: 'cors',
-1372:                 credentials: 'omit',
-1373:                 headers: { 'Content-Type': 'application/json' },
-1374:                 body: JSON.stringify({
-1375:                     message_id: msgIdx,
-1376:                     feedback,
-1377:                     user_id: telegram.getUserId(),
-1378:                     session_id: `tg_${telegram.getUserId()}`,
-1379:                     text: msg.text.substring(0, 200)
-1380:                 })
-1381:             });
-1382: 
-1383:             telegram.haptic('light');
-1384:         } catch (error) {
-1385:             console.error('[Feedback] Error:', error.message);
-1386:         }
-1387:     }
-1388: 
-1389:     updateTaskSpec(title, content) {
-1390:         const specContainer = document.getElementById('task-spec');
-1391:         const specContent = document.getElementById('task-spec-content');
-1392:         if (!specContainer || !specContent) return;
-1393: 
-1394:         specContainer.classList.add('has-content');
-1395:         specContent.innerHTML = `
-1396:             <div class="task-spec-title">${this.escapeHtml(title)}</div>
-1397:             <div>${this.escapeHtml(content)}</div>
-1398:         `;
-1399:     }
-1400: 
-1401:     clearTaskSpec() {
-1402:         const specContainer = document.getElementById('task-spec');
-1403:         const specContent = document.getElementById('task-spec-content');
-1404:         if (!specContainer || !specContent) return;
+1316:     showTypingIndicator() {
+1317:         const container = document.getElementById('chat-messages');
+1318:         if (!container) return;
+1319:         const typing = document.createElement('div');
+1320:         typing.className = 'typing-indicator';
+1321:         typing.id = 'typing-indicator';
+1322:         typing.innerHTML = '<span>Гермес печатает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+1323:         container.appendChild(typing);
+1324:         container.scrollTop = container.scrollHeight;
+1325:     }
+1326: 
+1327:     hideTypingIndicator() {
+1328:         const typing = document.getElementById('typing-indicator');
+1329:         if (typing) typing.remove();
+1330:     }
+1331: 
+1332:     async sendTextMessage() {
+1333:         const input = document.getElementById('chat-input');
+1334:         if (!input || !input.value.trim()) return;
+1335: 
+1336:         const text = input.value.trim();
+1337:         this.addChatMessage('user', text);
+1338:         input.value = '';
+1339: 
+1340:         telegram.haptic('light');
+1341: 
+1342:         // Call Hermes backend
+1343:         try {
+1344:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+1345:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+1346:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+1347: 
+1348:             console.log('[Chat] Fetching:', baseUrl + 'chat');
+1349: 
+1350:             // Show typing indicator
+1351:             this.showTypingIndicator();
+1352: 
+1353:             // Try streaming first
+1354:             const streamUrl = baseUrl + 'chat/stream';
+1355:             const response = await fetch(streamUrl, {
+1356:                 method: 'POST',
+1357:                 mode: 'cors',
+1358:                 credentials: 'omit',
+1359:                 headers: { 'Content-Type': 'application/json' },
+1360:                 body: JSON.stringify({
+1361:                     message: text,
+1362:                     user_id: telegram.getUserId(),
+1363:                     session_id: `tg_${telegram.getUserId()}`,
+1364:                     persona: 'hermes'
+1365:                 })
+1366:             });
+1367: 
+1368:             console.log('[Chat] Response status:', response.status, response.statusText);
+1369: 
+1370:             // Hide typing indicator
+1371:             this.hideTypingIndicator();
+1372: 
+1373:             const contentType = response.headers.get('content-type') || '';
+1374: 
+1375:             if (contentType.includes('text/event-stream')) {
+1376:                 // Streaming response — typewriter effect
+1377:                 const reader = response.body.getReader();
+1378:                 const decoder = new TextDecoder();
+1379:                 let fullText = '';
+1380: 
+1381:                 // Create empty hermes message bubble for streaming
+1382:                 const msgIdx = this.chatMessages.length;
+1383:                 this.chatMessages.push({ sender: 'hermes', text: '', timestamp: Date.now() });
+1384:                 this.renderChatMessages();
+1385: 
+1386:                 while (true) {
+1387:                     const { done, value } = await reader.read();
+1388:                     if (done) break;
+1389: 
+1390:                     const chunk = decoder.decode(value, { stream: true });
+1391:                     const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+1392: 
+1393:                     for (const line of lines) {
+1394:                         try {
+1395:                             const parsed = JSON.parse(line.replace('data: ', ''));
+1396:                             if (parsed.done) break;
+1397:                             if (parsed.char !== undefined) {
+1398:                                 fullText += parsed.char;
+1399:                                 this.chatMessages[msgIdx].text = fullText;
+1400:                                 this.renderChatMessages();
+1401:                             }
+1402:                         } catch { /* skip malformed SSE lines */ }
+1403:                     }
+1404:                 }
 1405: 
-1406:         specContainer.classList.remove('has-content');
-1407:         specContent.textContent = 'Ожидание ТЗ от Гермеса...';
-1408:     }
-1409: 
-1410:     // ─── Голосовой ввод ТЗ ───────────────────────────────────────────────
-1411:     initVoiceInput() {
-1412:         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-1413:         if (!SpeechRecognition) {
-1414:             console.warn('[App] SpeechRecognition не поддерживается в этом браузере');
-1415:             return;
-1416:         }
-1417:         this.recognition = new SpeechRecognition();
-1418:         this.recognition.lang = 'ru-RU';
-1419:         this.recognition.interimResults = true;
-1420:         this.recognition.continuous = true;
-1421: 
-1422:         this.recognition.onresult = (event) => {
-1423:             let interim = '';
-1424:             let final = '';
-1425:             for (let i = event.resultIndex; i < event.results.length; i++) {
-1426:                 const transcript = event.results[i][0].transcript;
-1427:                 if (event.results[i].isFinal) final += transcript + ' ';
-1428:                 else interim += transcript;
-1429:             }
-1430:             const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
-1431:             if (input) {
-1432:                 input.value = (this._voiceBaseText || '') + final + interim;
-1433:             }
-1434:         };
-1435: 
-1436:         this.recognition.onerror = (e) => console.warn('[App] Voice error:', e.error);
-1437:         this.recognition.onend = () => {
-1438:             this.isRecording = false;
-1439:             const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
-1440:             if (micBtn) micBtn.classList.remove('recording');
-1441:         };
-1442:     }
-1443: 
-1444:     toggleVoiceRecording() {
-1445:         if (!this.recognition) return telegram.showAlert('Голосовой ввод не поддерживается');
-1446:         const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
-1447:         if (this.isRecording) {
-1448:             this.recognition.stop();
-1449:             this.isRecording = false;
-1450:             if (micBtn) micBtn.classList.remove('recording');
-1451:         } else {
-1452:             const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
-1453:             this._voiceBaseText = input ? input.value + ' ' : '';
-1454:             this.recognition.start();
-1455:             this.isRecording = true;
-1456:             if (micBtn) micBtn.classList.add('recording');
-1457:             telegram.haptic('light');
-1458:         }
-1459:     }
-1460: 
-1461:     // ─── Панель смарт-контракта (вопросы Гермеса) ────────────────────────
-1462:     renderContractQuestions(questions = []) {
-1463:         const container = document.getElementById('contract-qa-container');
-1464:         if (!container) return;
-1465:         container.innerHTML = '';
-1466:         if (!questions.length) {
-1467:             container.innerHTML = '<div class="qa-empty">Нет активных вопросов от Гермеса</div>';
-1468:             return;
-1469:         }
-1470:         questions.forEach((q, idx) => {
-1471:             const wrap = document.createElement('div');
-1472:             wrap.className = 'qa-item';
-1473:             wrap.innerHTML = `
-1474:                 <div class="qa-question">${idx + 1}. ${this.escapeHtml(q.text)}</div>
-1475:                 <input type="text" class="qa-answer-input" placeholder="Ваш ответ..." data-qid="${q.id || idx}" />
-1476:             `;
-1477:             container.appendChild(wrap);
-1478:         });
-1479:         container.querySelectorAll('.qa-answer-input').forEach(inp => {
-1480:             inp.addEventListener('change', () => this.saveContractAnswers());
-1481:         });
-1482:     }
-1483: 
-1484:     saveContractAnswers() {
-1485:         const inputs = document.querySelectorAll('.qa-answer-input');
-1486:         const answers = {};
-1487:         inputs.forEach(inp => answers[inp.dataset.qid] = inp.value.trim());
-1488:         this.contractAnswers = answers;
-1489:         this.saveCache();
-1490:     }
-1491: 
-1492:     // ─── История ТЗ ──────────────────────────────────────────────────────
-1493:     async saveTaskSpecHistory(specText) {
-1494:         if (!specText?.trim()) return;
-1495:         const history = this.taskSpecHistory || [];
-1496:         history.unshift({ text: specText, timestamp: Date.now() });
-1497:         if (history.length > 20) history.pop();
-1498:         this.taskSpecHistory = history;
-1499:         try {
-1500:             if (window.Telegram?.WebApp?.CloudStorage) {
-1501:                 await new Promise((res, rej) => Telegram.WebApp.CloudStorage.setItem('task_spec_history', JSON.stringify(history), (err, ok) => err ? rej(err) : res(ok)));
-1502:             } else {
-1503:                 localStorage.setItem('task_spec_history', JSON.stringify(history));
-1504:             }
-1505:         } catch (e) { console.warn('[App] History save failed:', e); }
-1506:     }
-1507: 
-1508:     async loadTaskSpecHistory() {
-1509:         try {
-1510:             let raw = null;
-1511:             if (window.Telegram?.WebApp?.CloudStorage) {
-1512:                 raw = await new Promise((res, rej) => Telegram.WebApp.CloudStorage.getItem('task_spec_history', (err, val) => err ? rej(err) : res(val)));
-1513:             } else {
-1514:                 raw = localStorage.getItem('task_spec_history');
-1515:             }
-1516:             this.taskSpecHistory = raw ? JSON.parse(raw) : [];
-1517:         } catch (e) {
-1518:             this.taskSpecHistory = [];
-1519:         }
-1520:         this.renderTaskSpecHistory();
-1521:     }
-1522: 
-1523:     renderTaskSpecHistory() {
-1524:         const list = document.getElementById('task-history-list');
-1525:         if (!list) return;
-1526:         list.innerHTML = '';
-1527:         if (!this.taskSpecHistory?.length) {
-1528:             list.innerHTML = '<div class="history-empty">История пуста</div>';
-1529:             return;
+1406:                 this.saveCache();
+1407:             } else {
+1408:                 // Fallback: regular JSON response
+1409:                 const data = await response.json();
+1410: 
+1411:                 if (data.blocked) {
+1412:                     this.addChatMessage('system', `⚠️ ${data.reason}`);
+1413:                 } else if (data.response) {
+1414:                     this.addChatMessage('hermes', data.response);
+1415:                 } else if (data.error) {
+1416:                     this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
+1417:                 }
+1418:             }
+1419:         } catch (error) {
+1420:             console.error('[Chat] Fetch failed:', error.message);
+1421:             this.hideTypingIndicator();
+1422:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
+1423:         }
+1424:     }
+1425: 
+1426:     showAttachMenu() {
+1427:         const menu = document.getElementById('attach-menu');
+1428:         if (!menu) return;
+1429: 
+1430:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
+1431:         telegram.haptic('light');
+1432:     }
+1433: 
+1434:     hideAttachMenu() {
+1435:         const menu = document.getElementById('attach-menu');
+1436:         if (menu) menu.style.display = 'none';
+1437:     }
+1438: 
+1439:     attachPhoto() {
+1440:         this.hideAttachMenu();
+1441:         const input = document.createElement('input');
+1442:         input.type = 'file';
+1443:         input.accept = 'image/*';
+1444:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
+1445:         input.click();
+1446:     }
+1447: 
+1448:     attachVideo() {
+1449:         this.hideAttachMenu();
+1450:         const input = document.createElement('input');
+1451:         input.type = 'file';
+1452:         input.accept = 'video/*';
+1453:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
+1454:         input.click();
+1455:     }
+1456: 
+1457:     async recordVideo() {
+1458:         this.hideAttachMenu();
+1459:         try {
+1460:             const stream = await navigator.mediaDevices.getUserMedia({
+1461:                 video: { facingMode: this.currentFacingMode },
+1462:                 audio: true
+1463:             });
+1464:             this.currentStream = stream;
+1465:             this.showVideoRecorder(stream);
+1466:         } catch (error) {
+1467:             telegram.showAlert('Нет доступа к камере');
+1468:         }
+1469:     }
+1470: 
+1471:     showVideoRecorder(stream) {
+1472:         const recorder = document.createElement('div');
+1473:         recorder.className = 'video-recording';
+1474:         recorder.innerHTML = `
+1475:             <div class="video-preview">
+1476:                 <video id="video-preview" autoplay playsinline muted></video>
+1477:                 <div class="video-controls">
+1478:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
+1479:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
+1480:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
+1481:                 </div>
+1482:             </div>
+1483:         `;
+1484:         document.body.appendChild(recorder);
+1485: 
+1486:         const video = document.getElementById('video-preview');
+1487:         video.srcObject = stream;
+1488:     }
+1489: 
+1490:     async switchCamera() {
+1491:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+1492:         if (this.currentStream) {
+1493:             this.currentStream.getTracks().forEach(track => track.stop());
+1494:         }
+1495:         await this.recordVideo();
+1496:     }
+1497: 
+1498:     toggleVideoRecording() {
+1499:         const btn = document.getElementById('record-btn');
+1500:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
+1501:             this.startVideoRecording();
+1502:             btn.classList.add('recording');
+1503:         } else {
+1504:             this.stopVideoRecording();
+1505:             btn.classList.remove('recording');
+1506:         }
+1507:     }
+1508: 
+1509:     startVideoRecording() {
+1510:         if (!this.currentStream) return;
+1511: 
+1512:         this.mediaRecorder = new MediaRecorder(this.currentStream);
+1513:         this.audioChunks = [];
+1514: 
+1515:         this.mediaRecorder.ondataavailable = (e) => {
+1516:             this.audioChunks.push(e.data);
+1517:         };
+1518: 
+1519:         this.mediaRecorder.onstop = () => {
+1520:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
+1521:             this.handleVideoUpload(videoBlob);
+1522:         };
+1523: 
+1524:         this.mediaRecorder.start();
+1525:     }
+1526: 
+1527:     stopVideoRecording() {
+1528:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+1529:             this.mediaRecorder.stop();
 1530:         }
-1531:         this.taskSpecHistory.forEach((item, idx) => {
-1532:             const el = document.createElement('div');
-1533:             el.className = 'history-item';
-1534:             const time = new Date(item.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-1535:             el.innerHTML = `<span class="history-time">${time}</span><span class="history-text">${this.escapeHtml(item.text.slice(0, 60))}...</span>`;
-1536:             el.onclick = () => {
-1537:                 const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
-1538:                 if (input) input.value = item.text;
-1539:                 telegram.haptic('light');
-1540:             };
-1541:             list.appendChild(el);
-1542:         });
-1543:     }
-1544: 
-1545:     // ─── Экспорт ТЗ ──────────────────────────────────────────────────────
-1546:     exportTaskSpec() {
-1547:         const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
-1548:         const spec = input?.value?.trim() || '';
-1549:         const answers = this.contractAnswers || {};
-1550:         if (!spec && !Object.keys(answers).length) return telegram.showAlert('Нет данных для экспорта');
+1531:     }
+1532: 
+1533:     closeVideoRecorder() {
+1534:         if (this.currentStream) {
+1535:             this.currentStream.getTracks().forEach(track => track.stop());
+1536:             this.currentStream = null;
+1537:         }
+1538:         const recorder = document.querySelector('.video-recording');
+1539:         if (recorder) recorder.remove();
+1540:     }
+1541: 
+1542:     async shareScreen() {
+1543:         this.hideAttachMenu();
+1544:         try {
+1545:             const stream = await navigator.mediaDevices.getDisplayMedia({
+1546:                 video: true
+1547:             });
+1548:             
+1549:             const mediaRecorder = new MediaRecorder(stream);
+1550:             const chunks = [];
 1551: 
-1552:         const payload = {
-1553:             task_spec: spec,
-1554:             contract_answers: answers,
-1555:             exported_at: new Date().toISOString(),
-1556:             user_id: telegram.getUserId?.() || 'unknown'
-1557:         };
-1558:         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-1559:         const url = URL.createObjectURL(blob);
-1560:         const a = document.createElement('a');
-1561:         a.href = url;
-1562:         a.download = `task_spec_${Date.now()}.json`;
-1563:         document.body.appendChild(a);
-1564:         a.click();
-1565:         a.remove();
-1566:         URL.revokeObjectURL(url);
-1567:         telegram.haptic('success');
-1568:     }
-1569: }
+1552:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+1553:             mediaRecorder.onstop = () => {
+1554:                 const blob = new Blob(chunks, { type: 'video/webm' });
+1555:                 this.handleVideoUpload(blob);
+1556:                 stream.getTracks().forEach(track => track.stop());
+1557:             };
+1558: 
+1559:             mediaRecorder.start();
+1560:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
+1561:         } catch (error) {
+1562:             telegram.showAlert('Нет доступа к экрану');
+1563:         }
+1564:     }
+1565: 
+1566:     async handleFileUpload(file, type) {
+1567:         if (!file) return;
+1568: 
+1569:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
 1570: 
-1571: let app;
-1572: document.addEventListener('DOMContentLoaded', () => {
-1573:     window.app = new NeuroEscrowApp();
-1574:     app = window.app;
-1575: });
+1571:         const reader = new FileReader();
+1572:         reader.onload = async (e) => {
+1573:             try {
+1574:                 // Upload to backend and get URL
+1575:                 const imageUrl = e.target.result; // Base64 data URL
 1576: 
-1577: window.addEventListener('message', (event) => {
-1578:     if (event.data && event.data.type === 'bot_data' && app) {
-1579:         app.handleBotData(event.data.payload);
-1580:     }
-1581: });
+1577:                 // Call Hermes image analysis
+1578:                 const response = await fetch('/analyze-image', {
+1579:                     method: 'POST',
+1580:                     headers: { 'Content-Type': 'application/json' },
+1581:                     body: JSON.stringify({
+1582:                         image_url: imageUrl,
+1583:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
+1584:                         user_id: telegram.getUserId(),
+1585:                         session_id: `tg_${telegram.getUserId()}`
+1586:                     })
+1587:                 });
+1588: 
+1589:                 const data = await response.json();
+1590: 
+1591:                 if (data.response) {
+1592:                     this.addChatMessage('hermes', data.response);
+1593:                 } else if (data.error) {
+1594:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+1595:                 }
+1596:             } catch (error) {
+1597:                 console.error('[App] Upload error:', error);
+1598:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
+1599:             }
+1600:         };
+1601:         reader.readAsDataURL(file);
+1602:     }
+1603: 
+1604:     async handleVideoUpload(blob) {
+1605:         this.addChatMessage('user', '[🎥 Видеозапись]');
+1606:         this.closeVideoRecorder();
+1607: 
+1608:         const reader = new FileReader();
+1609:         reader.onload = async (e) => {
+1610:             try {
+1611:                 const videoUrl = e.target.result;
+1612: 
+1613:                 // Call Hermes video analysis
+1614:                 const response = await fetch('/analyze-image', {
+1615:                     method: 'POST',
+1616:                     headers: { 'Content-Type': 'application/json' },
+1617:                     body: JSON.stringify({
+1618:                         image_url: videoUrl,
+1619:                         prompt: 'Проанализируй это видео',
+1620:                         user_id: telegram.getUserId(),
+1621:                         session_id: `tg_${telegram.getUserId()}`
+1622:                     })
+1623:                 });
+1624: 
+1625:                 const data = await response.json();
+1626: 
+1627:                 if (data.response) {
+1628:                     this.addChatMessage('hermes', data.response);
+1629:                 } else if (data.error) {
+1630:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+1631:                 }
+1632:             } catch (error) {
+1633:                 console.error('[App] Video upload error:', error);
+1634:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
+1635:             }
+1636:         };
+1637:         reader.readAsDataURL(blob);
+1638:     }
+1639: 
+1640:     formatTime(timestamp) {
+1641:         const date = new Date(timestamp);
+1642:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+1643:     }
+1644: 
+1645:     async submitFeedback(msgIdx, feedback) {
+1646:         const msg = this.chatMessages[msgIdx];
+1647:         if (!msg || msg.feedback) return;
+1648: 
+1649:         msg.feedback = feedback;
+1650:         this.renderChatMessages();
+1651: 
+1652:         try {
+1653:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+1654:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+1655:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+1656: 
+1657:             await fetch(baseUrl + 'feedback', {
+1658:                 method: 'POST',
+1659:                 mode: 'cors',
+1660:                 credentials: 'omit',
+1661:                 headers: { 'Content-Type': 'application/json' },
+1662:                 body: JSON.stringify({
+1663:                     message_id: msgIdx,
+1664:                     feedback,
+1665:                     user_id: telegram.getUserId(),
+1666:                     session_id: `tg_${telegram.getUserId()}`,
+1667:                     text: msg.text.substring(0, 200)
+1668:                 })
+1669:             });
+1670: 
+1671:             telegram.haptic('light');
+1672:         } catch (error) {
+1673:             console.error('[Feedback] Error:', error.message);
+1674:         }
+1675:     }
+1676: 
+1677:     updateTaskSpec(title, content) {
+1678:         const specContainer = document.getElementById('task-spec');
+1679:         const specContent = document.getElementById('task-spec-content');
+1680:         if (!specContainer || !specContent) return;
+1681: 
+1682:         specContainer.classList.add('has-content');
+1683:         specContent.innerHTML = `
+1684:             <div class="task-spec-title">${this.escapeHtml(title)}</div>
+1685:             <div>${this.escapeHtml(content)}</div>
+1686:         `;
+1687:     }
+1688: 
+1689:     clearTaskSpec() {
+1690:         const specContainer = document.getElementById('task-spec');
+1691:         const specContent = document.getElementById('task-spec-content');
+1692:         if (!specContainer || !specContent) return;
+1693: 
+1694:         specContainer.classList.remove('has-content');
+1695:         specContent.textContent = 'Ожидание ТЗ от Гермеса...';
+1696:     }
+1697: 
+1698:     // ─── Голосовой ввод ТЗ ───────────────────────────────────────────────
+1699:     initVoiceInput() {
+1700:         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+1701:         if (!SpeechRecognition) {
+1702:             console.warn('[App] SpeechRecognition не поддерживается в этом браузере');
+1703:             return;
+1704:         }
+1705:         this.recognition = new SpeechRecognition();
+1706:         this.recognition.lang = 'ru-RU';
+1707:         this.recognition.interimResults = true;
+1708:         this.recognition.continuous = true;
+1709: 
+1710:         this.recognition.onresult = (event) => {
+1711:             let interim = '';
+1712:             let final = '';
+1713:             for (let i = event.resultIndex; i < event.results.length; i++) {
+1714:                 const transcript = event.results[i][0].transcript;
+1715:                 if (event.results[i].isFinal) final += transcript + ' ';
+1716:                 else interim += transcript;
+1717:             }
+1718:             const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+1719:             if (input) {
+1720:                 input.value = (this._voiceBaseText || '') + final + interim;
+1721:             }
+1722:         };
+1723: 
+1724:         this.recognition.onerror = (e) => console.warn('[App] Voice error:', e.error);
+1725:         this.recognition.onend = () => {
+1726:             this.isRecording = false;
+1727:             const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
+1728:             if (micBtn) micBtn.classList.remove('recording');
+1729:         };
+1730:     }
+1731: 
+1732:     toggleVoiceRecording() {
+1733:         if (!this.recognition) return telegram.showAlert('Голосовой ввод не поддерживается');
+1734:         const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
+1735:         if (this.isRecording) {
+1736:             this.recognition.stop();
+1737:             this.isRecording = false;
+1738:             if (micBtn) micBtn.classList.remove('recording');
+1739:         } else {
+1740:             const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+1741:             this._voiceBaseText = input ? input.value + ' ' : '';
+1742:             this.recognition.start();
+1743:             this.isRecording = true;
+1744:             if (micBtn) micBtn.classList.add('recording');
+1745:             telegram.haptic('light');
+1746:         }
+1747:     }
+1748: 
+1749:     // ─── Панель смарт-контракта (вопросы Гермеса) ────────────────────────
+1750:     renderContractQuestions(questions = []) {
+1751:         const container = document.getElementById('contract-qa-container');
+1752:         if (!container) return;
+1753:         container.innerHTML = '';
+1754:         if (!questions.length) {
+1755:             container.innerHTML = '<div class="qa-empty">Нет активных вопросов от Гермеса</div>';
+1756:             return;
+1757:         }
+1758:         questions.forEach((q, idx) => {
+1759:             const wrap = document.createElement('div');
+1760:             wrap.className = 'qa-item';
+1761:             wrap.innerHTML = `
+1762:                 <div class="qa-question">${idx + 1}. ${this.escapeHtml(q.text)}</div>
+1763:                 <input type="text" class="qa-answer-input" placeholder="Ваш ответ..." data-qid="${q.id || idx}" />
+1764:             `;
+1765:             container.appendChild(wrap);
+1766:         });
+1767:         container.querySelectorAll('.qa-answer-input').forEach(inp => {
+1768:             inp.addEventListener('change', () => this.saveContractAnswers());
+1769:         });
+1770:     }
+1771: 
+1772:     saveContractAnswers() {
+1773:         const inputs = document.querySelectorAll('.qa-answer-input');
+1774:         const answers = {};
+1775:         inputs.forEach(inp => answers[inp.dataset.qid] = inp.value.trim());
+1776:         this.contractAnswers = answers;
+1777:         this.saveCache();
+1778:     }
+1779: 
+1780:     // ─── История ТЗ ──────────────────────────────────────────────────────
+1781:     async saveTaskSpecHistory(specText) {
+1782:         if (!specText?.trim()) return;
+1783:         const history = this.taskSpecHistory || [];
+1784:         history.unshift({ text: specText, timestamp: Date.now() });
+1785:         if (history.length > 20) history.pop();
+1786:         this.taskSpecHistory = history;
+1787:         try {
+1788:             if (window.Telegram?.WebApp?.CloudStorage) {
+1789:                 await new Promise((res, rej) => Telegram.WebApp.CloudStorage.setItem('task_spec_history', JSON.stringify(history), (err, ok) => err ? rej(err) : res(ok)));
+1790:             } else {
+1791:                 localStorage.setItem('task_spec_history', JSON.stringify(history));
+1792:             }
+1793:         } catch (e) { console.warn('[App] History save failed:', e); }
+1794:     }
+1795: 
+1796:     async loadTaskSpecHistory() {
+1797:         try {
+1798:             let raw = null;
+1799:             if (window.Telegram?.WebApp?.CloudStorage) {
+1800:                 raw = await new Promise((res, rej) => Telegram.WebApp.CloudStorage.getItem('task_spec_history', (err, val) => err ? rej(err) : res(val)));
+1801:             } else {
+1802:                 raw = localStorage.getItem('task_spec_history');
+1803:             }
+1804:             this.taskSpecHistory = raw ? JSON.parse(raw) : [];
+1805:         } catch (e) {
+1806:             this.taskSpecHistory = [];
+1807:         }
+1808:         this.renderTaskSpecHistory();
+1809:     }
+1810: 
+1811:     renderTaskSpecHistory() {
+1812:         const list = document.getElementById('task-history-list');
+1813:         if (!list) return;
+1814:         list.innerHTML = '';
+1815:         if (!this.taskSpecHistory?.length) {
+1816:             list.innerHTML = '<div class="history-empty">История пуста</div>';
+1817:             return;
+1818:         }
+1819:         this.taskSpecHistory.forEach((item, idx) => {
+1820:             const el = document.createElement('div');
+1821:             el.className = 'history-item';
+1822:             const time = new Date(item.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+1823:             el.innerHTML = `<span class="history-time">${time}</span><span class="history-text">${this.escapeHtml(item.text.slice(0, 60))}...</span>`;
+1824:             el.onclick = () => {
+1825:                 const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+1826:                 if (input) input.value = item.text;
+1827:                 telegram.haptic('light');
+1828:             };
+1829:             list.appendChild(el);
+1830:         });
+1831:     }
+1832: 
+1833:     // ─── Экспорт ТЗ ──────────────────────────────────────────────────────
+1834:     exportTaskSpec() {
+1835:         const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+1836:         const spec = input?.value?.trim() || '';
+1837:         const answers = this.contractAnswers || {};
+1838:         if (!spec && !Object.keys(answers).length) return telegram.showAlert('Нет данных для экспорта');
+1839: 
+1840:         const payload = {
+1841:             task_spec: spec,
+1842:             contract_answers: answers,
+1843:             exported_at: new Date().toISOString(),
+1844:             user_id: telegram.getUserId?.() || 'unknown'
+1845:         };
+1846:         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+1847:         const url = URL.createObjectURL(blob);
+1848:         const a = document.createElement('a');
+1849:         a.href = url;
+1850:         a.download = `task_spec_${Date.now()}.json`;
+1851:         document.body.appendChild(a);
+1852:         a.click();
+1853:         a.remove();
+1854:         URL.revokeObjectURL(url);
+1855:         telegram.haptic('success');
+1856:     }
+1857: }
+1858: 
+1859: let app;
+1860: document.addEventListener('DOMContentLoaded', () => {
+1861:     window.app = new NeuroEscrowApp();
+1862:     app = window.app;
+1863: });
+1864: 
+1865: window.addEventListener('message', (event) => {
+1866:     if (event.data && event.data.type === 'bot_data' && app) {
+1867:         app.handleBotData(event.data.payload);
+1868:     }
+1869: });
 </file>
 
 <file path="js/charts.js">
