@@ -24,6 +24,7 @@ class NeuroEscrowApp {
         
         // TTS (Text-to-Speech) — auto-read Hermes messages
         this.ttsEnabled = true;
+        this.ttsEngine = 'silero'; // silero, vits, google
         this.ttsAudio = null;
         this.currentSpeakIdx = null;
         this.audioUnlocked = false;
@@ -251,6 +252,24 @@ class NeuroEscrowApp {
                             <button class="tts-toggle-btn" id="tts-toggle-btn" onclick="app.toggleTTS()" title="Голос Гермеса">
                                 <span id="tts-icon">🔊</span>
                             </button>
+                            <button class="tts-engine-btn" id="tts-engine-btn" onclick="app.toggleTTSMenu()" title="Выбор TTS-движка">
+                                <span id="tts-engine-icon">⚙️</span>
+                            </button>
+                            <!-- TTS Engine Selector Dropdown -->
+                            <div class="tts-engine-menu" id="tts-engine-menu" style="display: none;">
+                                <div class="tts-engine-item" onclick="app.setTTSEngine('silero')">
+                                    <span class="tts-engine-name">Silero V5</span>
+                                    <span class="tts-engine-badge">SOTA</span>
+                                </div>
+                                <div class="tts-engine-item" onclick="app.setTTSEngine('vits')">
+                                    <span class="tts-engine-name">VITS Russian</span>
+                                    <span class="tts-engine-badge">HF</span>
+                                </div>
+                                <div class="tts-engine-item" onclick="app.setTTSEngine('google')">
+                                    <span class="tts-engine-name">Google Translate</span>
+                                    <span class="tts-engine-badge">FAST</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="pane-content">
                             <div class="chat-messages" id="chat-messages"></div>
@@ -1487,14 +1506,15 @@ class NeuroEscrowApp {
             this.ttsAudio = null;
         }
 
-        // Try hybrid neural TTS via Worker (HF Space VITS + Google fallback)
+        // Try hybrid neural TTS via Worker (Silero V5 + VITS + Google fallback)
         try {
-            console.log('[TTS] Trying hybrid neural TTS:', cleanText.substring(0, 50) + '...');
+            const engine = this.ttsEngine || 'silero';
+            console.log(`[TTS] Trying ${engine} neural TTS:`, cleanText.substring(0, 50) + '...');
             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
             
-            // Split long text into chunks (HF Space limit: 1000 chars)
+            // Split long text into chunks (limit: 1000 chars)
             const chunks = this.splitTextForTTS(cleanText, 1000);
             const audioBlobs = [];
 
@@ -1505,7 +1525,8 @@ class NeuroEscrowApp {
                     body: JSON.stringify({
                         text: chunk,
                         lang: 'ru',
-                        voice: 'female'
+                        voice: 'xenia',
+                        engine: engine
                     })
                 });
 
@@ -1629,6 +1650,44 @@ class NeuroEscrowApp {
     updateTTSButton() {
         const icon = document.getElementById('tts-icon');
         if (icon) icon.textContent = this.ttsEnabled ? '🔊' : '🔇';
+    }
+
+    toggleTTSMenu() {
+        const menu = document.getElementById('tts-engine-menu');
+        if (!menu) return;
+        
+        const isVisible = menu.style.display === 'flex';
+        menu.style.display = isVisible ? 'none' : 'flex';
+        telegram.haptic('light');
+        
+        // Close menu after 5 seconds
+        if (!isVisible) {
+            setTimeout(() => {
+                if (menu.style.display === 'flex') {
+                    menu.style.display = 'none';
+                }
+            }, 5000);
+        }
+    }
+
+    setTTSEngine(engine) {
+        this.ttsEngine = engine;
+        this.updateTTSEngineButton();
+        this.toggleTTSMenu(); // Close menu
+        telegram.haptic('medium');
+        
+        // Test with current message if available
+        if (this.currentSpeakIdx !== null) {
+            this.toggleSpeakMessage(this.currentSpeakIdx);
+        }
+    }
+
+    updateTTSEngineButton() {
+        const icon = document.getElementById('tts-engine-icon');
+        if (icon) {
+            const icons = { silero: '🧠', vits: '🎭', google: '🌐' };
+            icon.textContent = icons[this.ttsEngine] || '⚙️';
+        }
     }
 
     scrollToBottom() {

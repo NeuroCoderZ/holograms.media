@@ -409,11 +409,11 @@ export default {
       }
 
       // ═══════════════════════════════════════════════════════════
-      // TTS — Hybrid: HF Space (VITS Russian) + Google Translate fallback
+      // TTS — Silero V5 (Russian SOTA) + VITS + Google fallback
       // ═══════════════════════════════════════════════════════════
       if (url.pathname === '/tts' && request.method === 'POST') {
         const data = await request.json();
-        const { text, lang = 'ru', voice = 'female' } = data;
+        const { text, lang = 'ru', voice = 'xenia', engine = 'silero' } = data;
 
         if (!text || text.length > 1000) {
           return new Response(JSON.stringify({ error: 'text required, max 1000 chars' }), {
@@ -422,127 +422,17 @@ export default {
           });
         }
 
-        try {
-          // Primary: HuggingFace Space VITS TTS (Russian neural)
-          const speakerId = voice === 'male' ? 1 : 0;
-          const hfSpace = 'https://utrobinmv-tts-ru-free-hf-vits-low-multispeaker.hf.space';
-          
-          // Step 1: Queue the prediction
-          const initResp = await fetch(`${hfSpace}/call/predict`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: [text.substring(0, 1000), speakerId] })
-          });
-
-          if (!initResp.ok) throw new Error(`HF queue failed: ${initResp.status}`);
-          
-          const { event_id } = await initResp.json();
-          
-          // Step 2: Poll for result via SSE
-          const streamResp = await fetch(`${hfSpace}/call/predict/${event_id}`);
-          const reader = streamResp.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          let audioUrl = null;
-          
-          // Timeout after 15 seconds
-          const timeout = setTimeout(() => {
-            reader.cancel();
-          }, 15000);
-
-          try {
-            while (true) {
-              const { value, done } = await reader.read();
-              if (done) break;
-              
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split('\n');
-              buffer = lines.pop() || '';
-              
-              for (const line of lines) {
-                if (line.startsWith('event: complete') || line.startsWith('event: completed')) {
-                  const dataIdx = lines.indexOf(line) + 1;
-                  if (dataIdx < lines.length && lines[dataIdx].startsWith('data:')) {
-                    const rawData = JSON.parse(lines[dataIdx].slice(5));
-                    if (rawData && rawData.path) {
-                      audioUrl = `${hfSpace}/file=${rawData.path}`;
-                    }
-                  }
-                  break;
-                }
-              }
-              if (audioUrl) break;
-            }
-          } finally {
-            clearTimeout(timeout);
-          }
-
-          if (!audioUrl) throw new Error('HF TTS timeout or failed');
-
-          // Download the audio file
-          const audioResp = await fetch(audioUrl);
-          if (!audioResp.ok) throw new Error(`HF audio download failed: ${audioResp.status}`);
-          
-          const audioBuffer = await audioResp.arrayBuffer();
-          return new Response(audioBuffer, {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'audio/wav',
-              'Cache-Control': 'public, max-age=3600'
-            }
-          });
-
-        } catch (error) {
-          console.warn('[TTS] HF Space failed, using Google fallback:', error.message);
-          
-          // Fallback: Google Translate TTS
-          try {
-            const chunks = text.match(/[^.!?]+[.!?]*/g) || [text];
-            const audioSegments = [];
-            
-            for (const chunk of chunks) {
-              const trimmed = chunk.trim();
-              if (!trimmed) continue;
-              
-              const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ru&q=${encodeURIComponent(trimmed.substring(0, 180))}`;
-              
-              const resp = await fetch(googleUrl, {
-                headers: {
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-              });
-              
-              if (resp.ok) {
-                audioSegments.push(await resp.arrayBuffer());
-              }
-            }
-            
-            if (audioSegments.length === 0) throw new Error('Google TTS failed');
-            
-            // Merge audio segments
-            const totalLength = audioSegments.reduce((acc, val) => acc + val.byteLength, 0);
-            const mergedAudio = new Uint8Array(totalLength);
-            let offset = 0;
-            for (const segment of audioSegments) {
-              mergedAudio.set(new Uint8Array(segment), offset);
-              offset += segment.byteLength;
-            }
-            
-            return new Response(mergedAudio, {
-              headers: {
-                ...corsHeaders,
-                'Content-Type': 'audio/mpeg',
-                'Cache-Control': 'public, max-age=3600'
-              }
-            });
-          } catch (fallbackError) {
-            console.error('[TTS] All providers failed:', fallbackError.message);
-            return new Response(JSON.stringify({ error: 'All TTS providers failed' }), {
-              status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-          }
+        // Route to selected engine
+        if (engine === 'silero') {
+          return await handleSileroTTS(text, voice, corsHeaders);
+        } else if (engine === 'vits') {
+          return await handleVitsTTS(text, voice, corsHeaders);
+        } else if (engine === 'google') {
+          return await handleGoogleTTS(text, corsHeaders);
         }
+
+        // Default: try Silero, fallback chain
+        return await handleTTSPipeline(text, voice, corsHeaders);
       }
 
       return new Response(JSON.stringify({ error: 'Not found' }), {
@@ -638,5 +528,222 @@ async function cleanupExpiredSessions(env) {
     console.log(`Session cleanup: ${cleaned} expired sessions removed`);
   } catch (error) {
     console.error(`Session cleanup error: ${error.message}`);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// TTS Engine Handlers
+// ═══════════════════════════════════════════════════════════
+
+async function handleSileroTTS(text, voice, corsHeaders) {
+  try {
+    const sileroSpace = 'https://speaky-silero-tts.hf.space';
+    const speakerVoice = voice === 'male' ? 'aidar' : (voice === 'xenia' ? 'xenia' : 'xenia');
+    
+    // Step 1: Queue prediction
+    const initResp = await fetch(`${sileroSpace}/call/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data: [text.substring(0, 1000), speakerVoice, 1.0, 1.0]
+      })
+    });
+
+    if (!initResp.ok) throw new Error(`Silero queue failed: ${initResp.status}`);
+    
+    const { event_id } = await initResp.json();
+    
+    // Step 2: Poll for result via SSE
+    const streamResp = await fetch(`${sileroSpace}/call/predict/${event_id}`);
+    const reader = streamResp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let audioUrl = null;
+    
+    const timeout = setTimeout(() => reader.cancel(), 15000);
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          if (line.startsWith('event: complete') || line.startsWith('event: completed')) {
+            const dataIdx = lines.indexOf(line) + 1;
+            if (dataIdx < lines.length && lines[dataIdx].startsWith('data:')) {
+              const rawData = JSON.parse(lines[dataIdx].slice(5));
+              if (rawData && rawData.path) {
+                audioUrl = `${sileroSpace}/file=${rawData.path}`;
+              }
+            }
+            break;
+          }
+        }
+        if (audioUrl) break;
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!audioUrl) throw new Error('Silero TTS timeout');
+
+    const audioResp = await fetch(audioUrl);
+    if (!audioResp.ok) throw new Error(`Silero audio download failed: ${audioResp.status}`);
+    
+    const audioBuffer = await audioResp.arrayBuffer();
+    return new Response(audioBuffer, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'audio/wav',
+        'Cache-Control': 'public, max-age=3600'
+      }
+    });
+  } catch (error) {
+    console.error('[TTS] Silero error:', error.message);
+    throw error;
+  }
+}
+
+async function handleVitsTTS(text, voice, corsHeaders) {
+  try {
+    const speakerId = voice === 'male' ? 1 : 0;
+    const vitsSpace = 'https://utrobinmv-tts-ru-free-hf-vits-low-multispeaker.hf.space';
+    
+    const initResp = await fetch(`${vitsSpace}/call/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: [text.substring(0, 1000), speakerId] })
+    });
+
+    if (!initResp.ok) throw new Error(`VITS queue failed: ${initResp.status}`);
+    
+    const { event_id } = await initResp.json();
+    const streamResp = await fetch(`${vitsSpace}/call/predict/${event_id}`);
+    const reader = streamResp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let audioUrl = null;
+    
+    const timeout = setTimeout(() => reader.cancel(), 15000);
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          if (line.startsWith('event: complete') || line.startsWith('event: completed')) {
+            const dataIdx = lines.indexOf(line) + 1;
+            if (dataIdx < lines.length && lines[dataIdx].startsWith('data:')) {
+              const rawData = JSON.parse(lines[dataIdx].slice(5));
+              if (rawData && rawData.path) {
+                audioUrl = `${vitsSpace}/file=${rawData.path}`;
+              }
+            }
+            break;
+          }
+        }
+        if (audioUrl) break;
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!audioUrl) throw new Error('VITS TTS timeout');
+
+    const audioResp = await fetch(audioUrl);
+    if (!audioResp.ok) throw new Error(`VITS audio download failed: ${audioResp.status}`);
+    
+    const audioBuffer = await audioResp.arrayBuffer();
+    return new Response(audioBuffer, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'audio/wav',
+        'Cache-Control': 'public, max-age=3600'
+      }
+    });
+  } catch (error) {
+    console.error('[TTS] VITS error:', error.message);
+    throw error;
+  }
+}
+
+async function handleGoogleTTS(text, corsHeaders) {
+  try {
+    const chunks = text.match(/[^.!?]+[.!?]*/g) || [text];
+    const audioSegments = [];
+    
+    for (const chunk of chunks) {
+      const trimmed = chunk.trim();
+      if (!trimmed) continue;
+      
+      const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ru&q=${encodeURIComponent(trimmed.substring(0, 180))}`;
+      
+      const resp = await fetch(googleUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+      
+      if (resp.ok) {
+        audioSegments.push(await resp.arrayBuffer());
+      }
+    }
+    
+    if (audioSegments.length === 0) throw new Error('Google TTS failed');
+    
+    const totalLength = audioSegments.reduce((acc, val) => acc + val.byteLength, 0);
+    const mergedAudio = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const segment of audioSegments) {
+      mergedAudio.set(new Uint8Array(segment), offset);
+      offset += segment.byteLength;
+    }
+    
+    return new Response(mergedAudio, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'audio/mpeg',
+        'Cache-Control': 'public, max-age=3600'
+      }
+    });
+  } catch (error) {
+    console.error('[TTS] Google error:', error.message);
+    throw error;
+  }
+}
+
+async function handleTTSPipeline(text, voice, corsHeaders) {
+  // Try Silero first
+  try {
+    return await handleSileroTTS(text, voice, corsHeaders);
+  } catch (error) {
+    console.warn('[TTS] Silero failed, trying VITS:', error.message);
+    
+    // Fallback to VITS
+    try {
+      return await handleVitsTTS(text, voice, corsHeaders);
+    } catch (vitsError) {
+      console.warn('[TTS] VITS failed, trying Google:', vitsError.message);
+      
+      // Final fallback: Google
+      try {
+        return await handleGoogleTTS(text, corsHeaders);
+      } catch (googleError) {
+        console.error('[TTS] All providers failed:', googleError.message);
+        return new Response(JSON.stringify({ error: 'All TTS providers failed' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
   }
 }

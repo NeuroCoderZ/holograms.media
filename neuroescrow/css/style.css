@@ -1570,6 +1570,74 @@ body::after {
 .tts-toggle-btn:hover { opacity: 1; }
 .tts-toggle-btn:active { transform: scale(0.9); }
 
+/* TTS engine selector button */
+.tts-engine-btn {
+    background: none;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    padding: 2px 6px;
+    line-height: 1;
+    margin-left: 4px;
+}
+.tts-engine-btn:hover { opacity: 1; }
+.tts-engine-btn:active { transform: scale(0.9); }
+
+/* TTS engine dropdown menu */
+.tts-engine-menu {
+    position: absolute;
+    top: 40px;
+    right: 10px;
+    background: rgba(20, 20, 30, 0.95);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    padding: 8px 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    min-width: 180px;
+}
+
+.tts-engine-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-radius: 8px;
+    margin: 0 4px;
+}
+
+.tts-engine-item:hover {
+    background: rgba(139, 92, 246, 0.2);
+}
+
+.tts-engine-item:active {
+    transform: scale(0.98);
+}
+
+.tts-engine-name {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.tts-engine-badge {
+    background: rgba(139, 92, 246, 0.3);
+    color: #a78bfa;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
 /* Per-message speak button */
 .speak-btn {
     background: transparent;
