@@ -25,6 +25,7 @@ class NeuroEscrowApp {
         // TTS (Text-to-Speech) — auto-read Hermes messages
         this.ttsEnabled = true;
         this.ttsEngine = 'silero'; // silero, vits, google
+        this.ttsVoice = 'kseniya'; // silero: aidar/baya/kseniya/xenia/eugene, vits: woman/man
         this.ttsAudio = null;
         this.currentSpeakIdx = null;
         this.audioUnlocked = false;
@@ -257,17 +258,29 @@ class NeuroEscrowApp {
                             </button>
                             <!-- TTS Engine Selector Dropdown -->
                             <div class="tts-engine-menu" id="tts-engine-menu" style="display: none;">
-                                <div class="tts-engine-item" onclick="app.setTTSEngine('silero')">
-                                    <span class="tts-engine-name">Silero V5</span>
-                                    <span class="tts-engine-badge">SOTA</span>
+                                <div class="tts-menu-section">
+                                    <div class="tts-menu-label">Движок:</div>
+                                    <div class="tts-engine-item" onclick="app.setTTSEngine('silero')">
+                                        <span class="tts-engine-name">Silero V5</span>
+                                        <span class="tts-engine-badge">SOTA</span>
+                                    </div>
+                                    <div class="tts-engine-item" onclick="app.setTTSEngine('vits')">
+                                        <span class="tts-engine-name">VITS Russian</span>
+                                        <span class="tts-engine-badge">HF</span>
+                                    </div>
+                                    <div class="tts-engine-item" onclick="app.setTTSEngine('google')">
+                                        <span class="tts-engine-name">Google Translate</span>
+                                        <span class="tts-engine-badge">FAST</span>
+                                    </div>
                                 </div>
-                                <div class="tts-engine-item" onclick="app.setTTSEngine('vits')">
-                                    <span class="tts-engine-name">VITS Russian</span>
-                                    <span class="tts-engine-badge">HF</span>
-                                </div>
-                                <div class="tts-engine-item" onclick="app.setTTSEngine('google')">
-                                    <span class="tts-engine-name">Google Translate</span>
-                                    <span class="tts-engine-badge">FAST</span>
+                                <div class="tts-menu-divider"></div>
+                                <div class="tts-menu-section">
+                                    <div class="tts-menu-label">Голос:</div>
+                                    <div class="tts-voice-item" onclick="app.setTTSVoice('kseniya')">Ксения (ж)</div>
+                                    <div class="tts-voice-item" onclick="app.setTTSVoice('xenia')">Ксения 2 (ж)</div>
+                                    <div class="tts-voice-item" onclick="app.setTTSVoice('aidar')">Айдар (м)</div>
+                                    <div class="tts-voice-item" onclick="app.setTTSVoice('baya')">Бая (ж)</div>
+                                    <div class="tts-voice-item" onclick="app.setTTSVoice('eugene')">Евгений (м)</div>
                                 </div>
                             </div>
                         </div>
@@ -1517,6 +1530,13 @@ class NeuroEscrowApp {
             // Split long text into chunks (limit: 1000 chars)
             const chunks = this.splitTextForTTS(cleanText, 1000);
             const audioBlobs = [];
+            
+            // Voice selection based on engine
+            const voiceMap = {
+                silero: this.ttsVoice || 'kseniya', // aidar, baya, kseniya, xenia, eugene
+                vits: this.ttsVoice || 'woman',     // woman, man
+                google: 'ru'                        // not used
+            };
 
             for (const chunk of chunks) {
                 const resp = await fetch(baseUrl + 'tts', {
@@ -1525,7 +1545,7 @@ class NeuroEscrowApp {
                     body: JSON.stringify({
                         text: chunk,
                         lang: 'ru',
-                        voice: 'xenia',
+                        voice: voiceMap[engine] || 'kseniya',
                         engine: engine
                     })
                 });
@@ -1696,6 +1716,17 @@ class NeuroEscrowApp {
         if (icon) {
             const icons = { silero: '🧠', vits: '🎭', google: '🌐' };
             icon.textContent = icons[this.ttsEngine] || '⚙️';
+        }
+    }
+
+    setTTSVoice(voice) {
+        this.ttsVoice = voice;
+        this.toggleTTSMenu(); // Close menu
+        telegram.haptic('medium');
+        
+        // Test with current message if available
+        if (this.currentSpeakIdx !== null) {
+            this.toggleSpeakMessage(this.currentSpeakIdx);
         }
     }
 

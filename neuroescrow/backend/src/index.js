@@ -551,11 +551,12 @@ async function handleSileroTTS(text, voice, corsHeaders) {
   try {
     const sileroSpace = 'https://neurosenko-tts-silero.hf.space';
     // App.py inputs: [text_input, text_type_input, speaker_input]
-    const speakerName = voice === 'male' ? 'aidar' : 'kseniya'; // kseniya, aidar, xenia
+    // Available speakers: aidar, baya, kseniya, xenia, eugene, random
+    const speakerName = voice || 'kseniya';
     
-    // Step 1: Queue prediction via Gradio /call/predict
-    console.log('[TTS] Silero Step 1: POST /call/predict');
-    const initResp = await fetch(`${sileroSpace}/call/generate_audio_by_text`, {
+    // Step 1: Queue prediction via Gradio /call/2 (unnamed endpoint #2)
+    console.log('[TTS] Silero Step 1: POST /call/2');
+    const initResp = await fetch(`${sileroSpace}/call/2`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -581,8 +582,8 @@ async function handleSileroTTS(text, voice, corsHeaders) {
     }
     
     // Step 2: Poll for result via SSE
-    console.log('[TTS] Silero Step 2: GET /call/generate_audio_by_text/', event_id);
-    const streamResp = await fetch(`${sileroSpace}/call/generate_audio_by_text/${event_id}`);
+    console.log('[TTS] Silero Step 2: GET /call/2/', event_id);
+    const streamResp = await fetch(`${sileroSpace}/call/2/${event_id}`);
     console.log('[TTS] Silero Step 2 response:', streamResp.status, streamResp.statusText);
     
     const reader = streamResp.body.getReader();
@@ -660,14 +661,15 @@ async function handleSileroTTS(text, voice, corsHeaders) {
 async function handleVitsTTS(text, voice, corsHeaders) {
   console.log('[TTS] VITS START:', { textLen: text.length, voice });
   try {
-    const speakerId = voice === 'male' ? 1 : 0;
+    // VITS API: [speaker_id, text] where speaker_id is "woman" or "man"
+    const speakerType = voice === 'male' ? 'man' : 'woman';
     const vitsSpace = 'https://utrobinmv-tts-ru-free-hf-vits-low-multispeaker.hf.space';
     
     console.log('[TTS] VITS Step 1: POST /call/predict');
     const initResp = await fetch(`${vitsSpace}/call/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: [text.substring(0, 1000), speakerId] })
+      body: JSON.stringify({ data: [speakerType, text.substring(0, 1000)] })
     });
 
     console.log('[TTS] VITS Step 1 response:', initResp.status, initResp.statusText);

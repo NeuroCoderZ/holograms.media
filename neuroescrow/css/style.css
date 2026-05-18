@@ -1638,6 +1638,48 @@ body::after {
     letter-spacing: 0.5px;
 }
 
+/* TTS menu sections and divider */
+.tts-menu-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 4px;
+}
+
+.tts-menu-label {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 12px 2px;
+}
+
+.tts-menu-divider {
+    height: 1px;
+    background: rgba(139, 92, 246, 0.2);
+    margin: 6px 12px;
+}
+
+/* TTS voice items */
+.tts-voice-item {
+    color: #e2e8f0;
+    font-size: 13px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-radius: 6px;
+    margin: 0 4px;
+}
+
+.tts-voice-item:hover {
+    background: rgba(139, 92, 246, 0.2);
+}
+
+.tts-voice-item:active {
+    transform: scale(0.98);
+}
+
 /* Per-message speak button */
 .speak-btn {
     background: transparent;
