@@ -537,7 +537,7 @@ async function cleanupExpiredSessions(env) {
 
 async function handleSileroTTS(text, voice, corsHeaders) {
   try {
-    const sileroSpace = 'https://speaky-silero-tts.hf.space';
+    const sileroSpace = 'https://neurosenko-tts-silero.hf.space';
     const speakerVoice = voice === 'male' ? 'aidar' : (voice === 'xenia' ? 'xenia' : 'xenia');
     
     // Step 1: Queue prediction
@@ -549,7 +549,10 @@ async function handleSileroTTS(text, voice, corsHeaders) {
       })
     });
 
-    if (!initResp.ok) throw new Error(`Silero queue failed: ${initResp.status}`);
+    if (!initResp.ok) {
+      const errText = await initResp.text().catch(() => '');
+      throw new Error(`Silero queue failed: ${initResp.status} ${errText.substring(0, 200)}`);
+    }
     
     const { event_id } = await initResp.json();
     
@@ -619,7 +622,10 @@ async function handleVitsTTS(text, voice, corsHeaders) {
       body: JSON.stringify({ data: [text.substring(0, 1000), speakerId] })
     });
 
-    if (!initResp.ok) throw new Error(`VITS queue failed: ${initResp.status}`);
+    if (!initResp.ok) {
+      const errText = await initResp.text().catch(() => '');
+      throw new Error(`VITS queue failed: ${initResp.status} ${errText.substring(0, 200)}`);
+    }
     
     const { event_id } = await initResp.json();
     const streamResp = await fetch(`${vitsSpace}/call/predict/${event_id}`);
@@ -698,7 +704,7 @@ async function handleGoogleTTS(text, corsHeaders) {
       }
     }
     
-    if (audioSegments.length === 0) throw new Error('Google TTS failed');
+    if (audioSegments.length === 0) throw new Error('Google TTS failed - no segments');
     
     const totalLength = audioSegments.reduce((acc, val) => acc + val.byteLength, 0);
     const mergedAudio = new Uint8Array(totalLength);
