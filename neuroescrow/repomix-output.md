@@ -4539,1355 +4539,1358 @@ This section contains the contents of the repository's files.
  375: 
  376: /* Message timestamp — inside footer, right-aligned */
  377: .msg-time {
- 378:     font-size: 10px;
- 379:     color: var(--ne-light-gray);
- 380:     opacity: 0.5;
+ 378:     font-size: 12px;
+ 379:     color: rgba(255, 255, 255, 0.5);
+ 380:     opacity: 1;
  381:     white-space: nowrap;
  382:     flex-shrink: 0;
- 383: }
- 384: 
- 385: .chat-message.user .msg-time {
- 386:     color: rgba(0, 0, 0, 0.4);
- 387: }
- 388: 
- 389: /* Feedback buttons — inside footer */
- 390: .message-feedback {
- 391:     display: flex;
- 392:     gap: 4px;
- 393:     opacity: 0;
- 394:     transition: opacity 0.2s;
- 395: }
- 396: 
- 397: .chat-message.hermes:hover .message-feedback {
- 398:     opacity: 1;
- 399: }
- 400: 
- 401: .feedback-btn {
- 402:     background: rgba(255, 255, 255, 0.06);
- 403:     border: 1px solid rgba(255, 255, 255, 0.08);
- 404:     border-radius: 8px;
- 405:     padding: 2px 8px;
- 406:     font-size: 12px;
- 407:     cursor: pointer;
- 408:     transition: var(--glass-transition);
- 409:     color: var(--ne-light-gray);
- 410: }
- 411: 
- 412: .feedback-btn:active {
- 413:     transform: scale(0.95);
- 414:     background: rgba(255, 255, 255, 0.12);
- 415: }
- 416: 
- 417: .feedback-buttons {
- 418:     display: flex;
- 419:     gap: 6px;
- 420: }
- 421: 
- 422: /* Typing indicator */
- 423: .typing-indicator {
- 424:     display: flex;
- 425:     align-items: center;
- 426:     gap: 4px;
- 427:     padding: 8px 16px;
- 428:     font-size: 12px;
- 429:     color: var(--ne-light-gray);
- 430:     opacity: 0.7;
- 431: }
- 432: 
- 433: .typing-indicator .dot {
- 434:     width: 6px;
- 435:     height: 6px;
- 436:     border-radius: 50%;
- 437:     background: var(--ne-purple);
- 438:     animation: typing-bounce 1.4s infinite;
- 439: }
- 440: 
- 441: .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
- 442: .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+ 383:     line-height: 1;
+ 384: }
+ 385: 
+ 386: .chat-message.user .msg-time {
+ 387:     color: #555;
+ 388: }
+ 389: 
+ 390: /* Feedback buttons — inside footer */
+ 391: .message-feedback {
+ 392:     display: flex;
+ 393:     gap: 4px;
+ 394:     opacity: 0;
+ 395:     transition: opacity 0.2s;
+ 396: }
+ 397: 
+ 398: .chat-message.hermes:hover .message-feedback {
+ 399:     opacity: 1;
+ 400: }
+ 401: 
+ 402: .feedback-btn {
+ 403:     background: rgba(255, 255, 255, 0.06);
+ 404:     border: 1px solid rgba(255, 255, 255, 0.08);
+ 405:     border-radius: 8px;
+ 406:     padding: 2px 6px;
+ 407:     font-size: 14px;
+ 408:     line-height: 1;
+ 409:     cursor: pointer;
+ 410:     transition: var(--glass-transition);
+ 411:     color: var(--ne-light-gray);
+ 412: }
+ 413: 
+ 414: .feedback-btn:active {
+ 415:     transform: scale(0.95);
+ 416:     background: rgba(255, 255, 255, 0.12);
+ 417: }
+ 418: 
+ 419: .feedback-buttons {
+ 420:     display: flex;
+ 421:     gap: 6px;
+ 422:     flex-shrink: 0;
+ 423: }
+ 424: 
+ 425: /* Typing indicator */
+ 426: .typing-indicator {
+ 427:     display: flex;
+ 428:     align-items: center;
+ 429:     gap: 4px;
+ 430:     padding: 8px 16px;
+ 431:     font-size: 12px;
+ 432:     color: var(--ne-light-gray);
+ 433:     opacity: 0.7;
+ 434: }
+ 435: 
+ 436: .typing-indicator .dot {
+ 437:     width: 6px;
+ 438:     height: 6px;
+ 439:     border-radius: 50%;
+ 440:     background: var(--ne-purple);
+ 441:     animation: typing-bounce 1.4s infinite;
+ 442: }
  443: 
- 444: @keyframes typing-bounce {
- 445:     0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
- 446:     30% { transform: translateY(-4px); opacity: 1; }
- 447: }
- 448: 
- 449: /* Streaming cursor */
- 450: .message-bubble.streaming::after {
- 451:     content: '▋';
- 452:     animation: cursor-blink 0.8s infinite;
- 453:     color: var(--ne-purple);
- 454:     margin-left: 2px;
- 455: }
- 456: 
- 457: @keyframes cursor-blink {
- 458:     0%, 50% { opacity: 1; }
- 459:     51%, 100% { opacity: 0; }
- 460: }
- 461: 
- 462: /* ===== CHAT INPUT ===== */
- 463: .chat-input-container {
- 464:     position: fixed;
- 465:     bottom: 64px;
- 466:     left: 0;
- 467:     right: 0;
- 468:     background: rgba(0, 0, 0, 0.7);
- 469:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
- 470:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
- 471:     border-top: var(--glass-border);
- 472:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
- 473:     display: flex;
- 474:     align-items: center;
- 475:     gap: var(--ne-spacing-sm);
- 476:     z-index: 100;
- 477: }
- 478: 
- 479: /* Chat input inside split layout (desktop) */
- 480: .split-pane.left-pane .chat-input-container {
- 481:     position: sticky;
- 482:     bottom: 0;
- 483:     left: auto;
- 484:     right: auto;
- 485:     border-top: var(--glass-border);
- 486:     border-right: none;
- 487:     z-index: 10;
- 488:     padding: var(--ne-spacing-sm) var(--ne-spacing-md);
- 489: }
- 490: 
- 491: /* Hide fixed chat input when split layout is active (desktop) */
- 492: @media (min-width: 600px) {
- 493:     .chat-input-container:not(.split-chat-input) {
- 494:         display: none !important;
- 495:     }
- 496: }
- 497: 
- 498: /* Show fixed chat input on mobile, hide split version */
- 499: @media (max-width: 599px) {
- 500:     .split-chat-input {
- 501:         display: none !important;
- 502:     }
- 503: }
- 504: 
- 505: .attach-btn,
- 506: .send-btn {
- 507:     width: 40px;
- 508:     height: 40px;
- 509:     border-radius: 50%;
- 510:     border: var(--glass-border-light);
- 511:     background: var(--glass-bg-light);
- 512:     backdrop-filter: blur(12px);
- 513:     -webkit-backdrop-filter: blur(12px);
- 514:     color: var(--ne-white);
- 515:     display: flex;
- 516:     align-items: center;
- 517:     justify-content: center;
- 518:     cursor: pointer;
- 519:     transition: var(--glass-transition);
- 520:     font-size: 18px;
- 521:     flex-shrink: 0;
- 522: }
- 523: 
- 524: .attach-btn:active,
- 525: .send-btn:active {
- 526:     transform: scale(0.92);
- 527:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
- 528: }
- 529: 
- 530: .send-btn {
- 531:     background: linear-gradient(135deg, var(--ne-purple), var(--ne-red));
- 532:     border: none;
- 533:     color: #fff;
- 534: }
- 535: 
- 536: .chat-input {
- 537:     flex: 1;
- 538:     padding: 10px 16px;
- 539:     border-radius: 20px;
- 540:     border: var(--glass-border-light);
- 541:     background: rgba(255, 255, 255, 0.06);
- 542:     backdrop-filter: blur(8px);
- 543:     -webkit-backdrop-filter: blur(8px);
- 544:     color: var(--ne-white);
- 545:     font-size: 14px;
- 546:     outline: none;
- 547:     transition: var(--glass-transition);
- 548: }
- 549: 
- 550: .chat-input::placeholder {
- 551:     color: rgba(255, 255, 255, 0.3);
- 552: }
- 553: 
- 554: .chat-input:focus {
- 555:     border-color: var(--ne-purple);
- 556:     background: rgba(255, 255, 255, 0.08);
- 557: }
- 558: 
- 559: /* ===== BOTTOM NAVIGATION (3 Glass Tabs) ===== */
- 560: .bottom-nav {
- 561:     display: none;
- 562: }
- 563: 
- 564: /* ─── New bottom nav inside left pane ─── */
- 565: .bottom-nav-left {
- 566:     display: flex;
- 567:     align-items: center;
- 568:     gap: 4px;
- 569:     padding: 6px 8px;
- 570:     background: rgba(0, 0, 0, 0.6);
- 571:     border-top: 1px solid rgba(255, 255, 255, 0.06);
- 572:     flex-shrink: 0;
- 573: }
- 574: 
- 575: .nav-btn-left {
- 576:     flex: 1;
- 577:     display: flex;
- 578:     flex-direction: column;
- 579:     align-items: center;
- 580:     justify-content: center;
- 581:     gap: 2px;
- 582:     padding: 8px 4px;
- 583:     border: none;
- 584:     background: rgba(255, 255, 255, 0.03);
- 585:     border-radius: 10px;
- 586:     color: var(--ne-light-gray);
- 587:     font-size: 10px;
- 588:     cursor: pointer;
- 589:     transition: var(--glass-transition);
- 590:     position: relative;
- 591: }
- 592: 
- 593: .nav-btn-left.active {
- 594:     color: var(--ne-white);
- 595:     background: rgba(139, 92, 246, 0.15);
- 596: }
- 597: 
- 598: .nav-btn-left:active {
- 599:     transform: scale(0.95);
- 600: }
- 601: 
- 602: .nav-btn-left .nav-icon {
- 603:     font-size: 18px;
- 604:     line-height: 1;
- 605: }
- 606: 
- 607: .nav-btn-left .nav-label {
- 608:     font-weight: 500;
- 609:     font-size: 9px;
- 610: }
- 611: 
- 612: /* ─── Hide Telegram "Neuro" branding in top-right corner ─── */
- 613: .telegram-branding,
- 614: .tg-branding,
- 615: [data-tg-branding] {
- 616:     display: none !important;
- 617: }
- 618: 
- 619: /* Hide Telegram watermark via overlay */
- 620: body::after {
- 621:     content: '';
- 622:     position: fixed;
- 623:     top: 0;
- 624:     right: 0;
- 625:     width: 80px;
- 626:     height: 30px;
- 627:     background: var(--ne-black);
- 628:     z-index: 10000;
- 629:     pointer-events: none;
- 630: }
- 631: 
- 632: .nav-btn {
- 633:     flex: 1;
- 634:     display: flex;
- 635:     flex-direction: column;
- 636:     align-items: center;
- 637:     justify-content: center;
- 638:     gap: 2px;
- 639:     padding: var(--ne-spacing-xs) 0;
- 640:     border: none;
- 641:     background: none;
- 642:     color: var(--ne-light-gray);
- 643:     font-size: 10px;
- 644:     cursor: pointer;
- 645:     transition: var(--glass-transition);
- 646:     position: relative;
- 647: }
- 648: 
- 649: /* Divider between tabs (inset groove) */
- 650: .nav-btn:not(:last-child)::after {
- 651:     content: '';
- 652:     position: absolute;
- 653:     right: 0;
- 654:     top: 20%;
- 655:     bottom: 20%;
- 656:     width: 1px;
- 657:     background: linear-gradient(180deg, transparent, rgba(255,255,255,0.08), transparent);
- 658: }
- 659: 
- 660: .nav-btn.active {
- 661:     color: var(--ne-white);
- 662: }
- 663: 
- 664: .nav-btn.active::before {
- 665:     content: '';
- 666:     position: absolute;
- 667:     top: 0;
- 668:     left: 20%;
- 669:     right: 20%;
- 670:     height: 2px;
- 671:     background: linear-gradient(90deg, var(--ne-purple), var(--ne-red));
- 672:     border-radius: 1px;
- 673: }
- 674: 
- 675: .nav-btn:active {
- 676:     box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
- 677: }
- 678: 
- 679: .nav-icon {
- 680:     font-size: 22px;
- 681:     line-height: 1;
- 682: }
- 683: 
- 684: .nav-label {
- 685:     font-weight: 500;
- 686: }
- 687: 
- 688: /* ===== BUTTONS (Glass) ===== */
- 689: .btn {
- 690:     display: inline-flex;
- 691:     align-items: center;
- 692:     justify-content: center;
- 693:     gap: 6px;
- 694:     padding: 10px 20px;
- 695:     border-radius: var(--glass-radius);
- 696:     border: var(--glass-border-light);
- 697:     font-size: 14px;
- 698:     font-weight: 500;
- 699:     cursor: pointer;
- 700:     transition: var(--glass-transition);
- 701:     width: 100%;
- 702:     background: var(--glass-bg-light);
- 703:     backdrop-filter: blur(12px) saturate(150%);
- 704:     -webkit-backdrop-filter: blur(12px) saturate(150%);
- 705:     color: var(--ne-white);
- 706: }
- 707: 
- 708: .btn:active {
- 709:     transform: scale(0.98);
- 710:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
- 711: }
- 712: 
- 713: .btn-primary {
- 714:     background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(239, 68, 68, 0.2));
- 715:     border-color: rgba(139, 92, 246, 0.3);
- 716:     color: var(--ne-white);
- 717: }
- 718: 
- 719: .btn-secondary {
- 720:     background: var(--glass-bg);
- 721:     color: var(--ne-white);
- 722:     border-color: var(--glass-border);
- 723: }
- 724: 
- 725: /* ===== FORMS ===== */
- 726: .form-group {
- 727:     margin-bottom: var(--ne-spacing-lg);
- 728: }
- 729: 
- 730: .form-label {
- 731:     display: block;
- 732:     font-size: 13px;
- 733:     font-weight: 500;
- 734:     color: var(--ne-light-gray);
- 735:     margin-bottom: var(--ne-spacing-sm);
- 736:     text-transform: uppercase;
- 737:     letter-spacing: 0.5px;
- 738: }
- 739: 
- 740: .form-input {
- 741:     width: 100%;
- 742:     padding: 12px 14px;
- 743:     border-radius: var(--glass-radius);
- 744:     border: var(--glass-border-light);
- 745:     background: rgba(255, 255, 255, 0.04);
- 746:     backdrop-filter: blur(8px);
- 747:     -webkit-backdrop-filter: blur(8px);
- 748:     color: var(--ne-white);
- 749:     font-size: 14px;
- 750:     outline: none;
- 751:     transition: var(--glass-transition);
- 752: }
- 753: 
- 754: .form-input:focus {
- 755:     border-color: var(--ne-purple);
- 756:     background: rgba(255, 255, 255, 0.06);
- 757: }
- 758: 
- 759: /* ===== CARDS ===== */
- 760: .card {
- 761:     background: var(--glass-bg);
- 762:     backdrop-filter: blur(12px) saturate(150%);
- 763:     -webkit-backdrop-filter: blur(12px) saturate(150%);
- 764:     border: var(--glass-border);
- 765:     border-radius: var(--glass-radius);
- 766:     padding: var(--ne-spacing-lg);
- 767:     margin-bottom: var(--ne-spacing-md);
- 768: }
- 769: 
- 770: .draft-card {
- 771:     background: rgba(255, 255, 255, 0.02);
- 772:     border-left-width: 3px;
- 773: }
- 774: 
- 775: .card-title {
- 776:     font-size: 15px;
- 777:     font-weight: 600;
- 778:     margin-bottom: var(--ne-spacing-sm);
- 779:     color: var(--ne-white);
- 780: }
- 781: 
- 782: .card-subtitle {
- 783:     font-size: 13px;
- 784:     color: var(--ne-light-gray);
- 785:     margin-bottom: var(--ne-spacing-md);
- 786: }
- 787: 
- 788: /* ===== SCROLLBAR ===== */
- 789: ::-webkit-scrollbar {
- 790:     width: 4px;
- 791: }
- 792: 
- 793: ::-webkit-scrollbar-track {
- 794:     background: transparent;
- 795: }
- 796: 
- 797: ::-webkit-scrollbar-thumb {
- 798:     background: rgba(255, 255, 255, 0.12);
- 799:     border-radius: 2px;
- 800: }
- 801: 
- 802: ::-webkit-scrollbar-thumb:hover {
- 803:     background: rgba(255, 255, 255, 0.2);
- 804: }
- 805: 
- 806: /* ===== ANIMATIONS ===== */
- 807: @keyframes fadeIn {
- 808:     from { opacity: 0; transform: translateY(8px); }
- 809:     to { opacity: 1; transform: translateY(0); }
- 810: }
- 811: 
- 812: .view {
- 813:     animation: fadeIn 0.25s ease-out;
- 814:     flex: 1;
- 815:     display: flex;
- 816:     flex-direction: column;
- 817:     min-height: 0;
- 818:     overflow: hidden;
- 819: }
- 820: 
- 821: .view.has-top-panel {
- 822:     flex: 1;
- 823:     display: flex;
- 824:     flex-direction: column;
- 825:     min-height: 0;
- 826:     overflow: hidden;
- 827: }
- 828: 
- 829: /* ===== EMPTY STATE ===== */
- 830: .empty-state {
- 831:     text-align: center;
- 832:     padding: 48px 24px;
- 833:     color: var(--ne-light-gray);
- 834: }
- 835: 
- 836: .empty-icon {
- 837:     font-size: 48px;
- 838:     margin-bottom: var(--ne-spacing-md);
- 839:     opacity: 0.5;
- 840: }
- 841: 
- 842: .empty-text {
- 843:     font-size: 14px;
- 844: }
- 845: 
- 846: /* ===== ATTACH MENU ===== */
- 847: .attach-menu {
- 848:     position: fixed;
- 849:     bottom: 100px;
- 850:     left: var(--ne-spacing-lg);
- 851:     right: var(--ne-spacing-lg);
- 852:     background: rgba(0, 0, 0, 0.8);
- 853:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
- 854:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
- 855:     border: var(--glass-border-light);
- 856:     border-radius: var(--glass-radius);
- 857:     padding: var(--ne-spacing-sm);
- 858:     display: grid;
- 859:     grid-template-columns: repeat(2, 1fr);
- 860:     gap: var(--ne-spacing-sm);
- 861:     z-index: 102;
- 862:     animation: fadeIn 0.2s ease-out;
- 863: }
- 864: 
- 865: .attach-option {
- 866:     display: flex;
- 867:     flex-direction: column;
- 868:     align-items: center;
- 869:     gap: 6px;
- 870:     padding: var(--ne-spacing-lg);
- 871:     border-radius: var(--glass-radius-sm);
- 872:     border: var(--glass-border);
- 873:     background: var(--glass-bg);
- 874:     color: var(--ne-white);
- 875:     font-size: 12px;
- 876:     cursor: pointer;
- 877:     transition: var(--glass-transition);
- 878: }
- 879: 
- 880: .attach-option:active {
- 881:     transform: scale(0.95);
- 882:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
- 883: }
- 884: 
- 885: .attach-icon {
- 886:     font-size: 28px;
- 887: }
- 888: 
- 889: /* ===== VIDEO RECORDING ===== */
- 890: .video-recording {
- 891:     position: fixed;
- 892:     top: 0;
- 893:     left: 0;
- 894:     right: 0;
- 895:     bottom: 0;
- 896:     background: var(--ne-black);
- 897:     z-index: 200;
- 898:     display: flex;
- 899:     flex-direction: column;
- 900: }
- 901: 
- 902: .video-preview {
- 903:     flex: 1;
- 904:     position: relative;
- 905:     background: var(--ne-black);
- 906: }
- 907: 
- 908: .video-preview video {
- 909:     width: 100%;
- 910:     height: 100%;
- 911:     object-fit: cover;
- 912: }
- 913: 
- 914: .video-controls {
- 915:     position: absolute;
- 916:     bottom: 0;
- 917:     left: 0;
- 918:     right: 0;
- 919:     padding: var(--ne-spacing-xl);
- 920:     display: flex;
- 921:     justify-content: center;
- 922:     align-items: center;
- 923:     gap: var(--ne-spacing-lg);
- 924:     background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
- 925: }
- 926: 
- 927: .video-record-btn {
- 928:     width: 64px;
- 929:     height: 64px;
- 930:     border-radius: 50%;
- 931:     border: 4px solid var(--ne-white);
- 932:     background: transparent;
- 933:     cursor: pointer;
- 934:     transition: all 0.2s;
- 935: }
- 936: 
- 937: .video-record-btn.recording {
- 938:     background: var(--ne-red);
- 939:     border-radius: 12px;
- 940: }
- 941: 
- 942: .camera-switch-btn {
- 943:     width: 48px;
- 944:     height: 48px;
- 945:     border-radius: 50%;
- 946:     border: var(--glass-border);
- 947:     background: rgba(0,0,0,0.5);
- 948:     backdrop-filter: blur(8px);
- 949:     -webkit-backdrop-filter: blur(8px);
- 950:     color: var(--ne-white);
- 951:     font-size: 24px;
- 952:     cursor: pointer;
- 953:     display: flex;
- 954:     align-items: center;
- 955:     justify-content: center;
- 956: }
- 957: 
- 958: /* ===== RESPONSIVE ===== */
- 959: @media (min-width: 768px) {
- 960:     .app-main {
- 961:         max-width: none !important;
- 962:         margin: 0;
- 963:     }
- 964:     
- 965:     .chat-input-container {
- 966:         max-width: none;
- 967:         left: 0;
- 968:         transform: none;
- 969:     }
- 970:     
- 971:     .attach-menu {
- 972:         max-width: none;
- 973:         left: var(--ne-spacing-lg);
- 974:         transform: none;
- 975:     }
- 976: }
- 977: 
- 978: @media (min-width: 768px) {
- 979:     html, body, #app, .app-main, .container, .tg-web-app {
- 980:         max-width: none !important;
- 981:         width: 100vw !important;
- 982:         height: var(--tg-viewport-stable-height, 100dvh) !important;
- 983:         margin: 0 !important;
- 984:         padding: 0 !important;
- 985:         overflow-x: hidden !important;
- 986:     }
- 987: }
- 988: 
- 989: /* ===== REDUCED TRANSPARENCY (Accessibility) ===== */
- 990: @media (prefers-reduced-transparency: reduce) {
- 991:     .message-bubble,
- 992:     .chat-input-container,
- 993:     .bottom-nav,
- 994:     .btn,
- 995:     .form-input {
- 996:         backdrop-filter: none;
- 997:         -webkit-backdrop-filter: none;
- 998:     }
- 999:     
-1000:     .chat-message.user .message-bubble {
-1001:         background: rgba(255, 255, 255, 0.95);
-1002:     }
-1003:     
-1004:     .chat-message.hermes .message-bubble {
-1005:         background: rgba(0, 0, 0, 0.95);
-1006:     }
-1007: }
-1008: 
-1009: /* ===== NEW UI STRUCTURE v0.20.511 ===== */
-1010: /* Top control panel: mic (left) + task spec (right) */
+ 444: .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+ 445: .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+ 446: 
+ 447: @keyframes typing-bounce {
+ 448:     0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+ 449:     30% { transform: translateY(-4px); opacity: 1; }
+ 450: }
+ 451: 
+ 452: /* Streaming cursor */
+ 453: .message-bubble.streaming::after {
+ 454:     content: '▋';
+ 455:     animation: cursor-blink 0.8s infinite;
+ 456:     color: var(--ne-purple);
+ 457:     margin-left: 2px;
+ 458: }
+ 459: 
+ 460: @keyframes cursor-blink {
+ 461:     0%, 50% { opacity: 1; }
+ 462:     51%, 100% { opacity: 0; }
+ 463: }
+ 464: 
+ 465: /* ===== CHAT INPUT ===== */
+ 466: .chat-input-container {
+ 467:     position: fixed;
+ 468:     bottom: 64px;
+ 469:     left: 0;
+ 470:     right: 0;
+ 471:     background: rgba(0, 0, 0, 0.7);
+ 472:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 473:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 474:     border-top: var(--glass-border);
+ 475:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
+ 476:     display: flex;
+ 477:     align-items: center;
+ 478:     gap: var(--ne-spacing-sm);
+ 479:     z-index: 100;
+ 480: }
+ 481: 
+ 482: /* Chat input inside split layout (desktop) */
+ 483: .split-pane.left-pane .chat-input-container {
+ 484:     position: sticky;
+ 485:     bottom: 0;
+ 486:     left: auto;
+ 487:     right: auto;
+ 488:     border-top: var(--glass-border);
+ 489:     border-right: none;
+ 490:     z-index: 10;
+ 491:     padding: var(--ne-spacing-sm) var(--ne-spacing-md);
+ 492: }
+ 493: 
+ 494: /* Hide fixed chat input when split layout is active (desktop) */
+ 495: @media (min-width: 600px) {
+ 496:     .chat-input-container:not(.split-chat-input) {
+ 497:         display: none !important;
+ 498:     }
+ 499: }
+ 500: 
+ 501: /* Show fixed chat input on mobile, hide split version */
+ 502: @media (max-width: 599px) {
+ 503:     .split-chat-input {
+ 504:         display: none !important;
+ 505:     }
+ 506: }
+ 507: 
+ 508: .attach-btn,
+ 509: .send-btn {
+ 510:     width: 40px;
+ 511:     height: 40px;
+ 512:     border-radius: 50%;
+ 513:     border: var(--glass-border-light);
+ 514:     background: var(--glass-bg-light);
+ 515:     backdrop-filter: blur(12px);
+ 516:     -webkit-backdrop-filter: blur(12px);
+ 517:     color: var(--ne-white);
+ 518:     display: flex;
+ 519:     align-items: center;
+ 520:     justify-content: center;
+ 521:     cursor: pointer;
+ 522:     transition: var(--glass-transition);
+ 523:     font-size: 18px;
+ 524:     flex-shrink: 0;
+ 525: }
+ 526: 
+ 527: .attach-btn:active,
+ 528: .send-btn:active {
+ 529:     transform: scale(0.92);
+ 530:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+ 531: }
+ 532: 
+ 533: .send-btn {
+ 534:     background: linear-gradient(135deg, var(--ne-purple), var(--ne-red));
+ 535:     border: none;
+ 536:     color: #fff;
+ 537: }
+ 538: 
+ 539: .chat-input {
+ 540:     flex: 1;
+ 541:     padding: 10px 16px;
+ 542:     border-radius: 20px;
+ 543:     border: var(--glass-border-light);
+ 544:     background: rgba(255, 255, 255, 0.06);
+ 545:     backdrop-filter: blur(8px);
+ 546:     -webkit-backdrop-filter: blur(8px);
+ 547:     color: var(--ne-white);
+ 548:     font-size: 14px;
+ 549:     outline: none;
+ 550:     transition: var(--glass-transition);
+ 551: }
+ 552: 
+ 553: .chat-input::placeholder {
+ 554:     color: rgba(255, 255, 255, 0.3);
+ 555: }
+ 556: 
+ 557: .chat-input:focus {
+ 558:     border-color: var(--ne-purple);
+ 559:     background: rgba(255, 255, 255, 0.08);
+ 560: }
+ 561: 
+ 562: /* ===== BOTTOM NAVIGATION (3 Glass Tabs) ===== */
+ 563: .bottom-nav {
+ 564:     display: none;
+ 565: }
+ 566: 
+ 567: /* ─── New bottom nav inside left pane ─── */
+ 568: .bottom-nav-left {
+ 569:     display: flex;
+ 570:     align-items: center;
+ 571:     gap: 4px;
+ 572:     padding: 6px 8px;
+ 573:     background: rgba(0, 0, 0, 0.6);
+ 574:     border-top: 1px solid rgba(255, 255, 255, 0.06);
+ 575:     flex-shrink: 0;
+ 576: }
+ 577: 
+ 578: .nav-btn-left {
+ 579:     flex: 1;
+ 580:     display: flex;
+ 581:     flex-direction: column;
+ 582:     align-items: center;
+ 583:     justify-content: center;
+ 584:     gap: 2px;
+ 585:     padding: 8px 4px;
+ 586:     border: none;
+ 587:     background: rgba(255, 255, 255, 0.03);
+ 588:     border-radius: 10px;
+ 589:     color: var(--ne-light-gray);
+ 590:     font-size: 10px;
+ 591:     cursor: pointer;
+ 592:     transition: var(--glass-transition);
+ 593:     position: relative;
+ 594: }
+ 595: 
+ 596: .nav-btn-left.active {
+ 597:     color: var(--ne-white);
+ 598:     background: rgba(139, 92, 246, 0.15);
+ 599: }
+ 600: 
+ 601: .nav-btn-left:active {
+ 602:     transform: scale(0.95);
+ 603: }
+ 604: 
+ 605: .nav-btn-left .nav-icon {
+ 606:     font-size: 18px;
+ 607:     line-height: 1;
+ 608: }
+ 609: 
+ 610: .nav-btn-left .nav-label {
+ 611:     font-weight: 500;
+ 612:     font-size: 9px;
+ 613: }
+ 614: 
+ 615: /* ─── Hide Telegram "Neuro" branding in top-right corner ─── */
+ 616: .telegram-branding,
+ 617: .tg-branding,
+ 618: [data-tg-branding] {
+ 619:     display: none !important;
+ 620: }
+ 621: 
+ 622: /* Hide Telegram watermark via overlay */
+ 623: body::after {
+ 624:     content: '';
+ 625:     position: fixed;
+ 626:     top: 0;
+ 627:     right: 0;
+ 628:     width: 80px;
+ 629:     height: 30px;
+ 630:     background: var(--ne-black);
+ 631:     z-index: 10000;
+ 632:     pointer-events: none;
+ 633: }
+ 634: 
+ 635: .nav-btn {
+ 636:     flex: 1;
+ 637:     display: flex;
+ 638:     flex-direction: column;
+ 639:     align-items: center;
+ 640:     justify-content: center;
+ 641:     gap: 2px;
+ 642:     padding: var(--ne-spacing-xs) 0;
+ 643:     border: none;
+ 644:     background: none;
+ 645:     color: var(--ne-light-gray);
+ 646:     font-size: 10px;
+ 647:     cursor: pointer;
+ 648:     transition: var(--glass-transition);
+ 649:     position: relative;
+ 650: }
+ 651: 
+ 652: /* Divider between tabs (inset groove) */
+ 653: .nav-btn:not(:last-child)::after {
+ 654:     content: '';
+ 655:     position: absolute;
+ 656:     right: 0;
+ 657:     top: 20%;
+ 658:     bottom: 20%;
+ 659:     width: 1px;
+ 660:     background: linear-gradient(180deg, transparent, rgba(255,255,255,0.08), transparent);
+ 661: }
+ 662: 
+ 663: .nav-btn.active {
+ 664:     color: var(--ne-white);
+ 665: }
+ 666: 
+ 667: .nav-btn.active::before {
+ 668:     content: '';
+ 669:     position: absolute;
+ 670:     top: 0;
+ 671:     left: 20%;
+ 672:     right: 20%;
+ 673:     height: 2px;
+ 674:     background: linear-gradient(90deg, var(--ne-purple), var(--ne-red));
+ 675:     border-radius: 1px;
+ 676: }
+ 677: 
+ 678: .nav-btn:active {
+ 679:     box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+ 680: }
+ 681: 
+ 682: .nav-icon {
+ 683:     font-size: 22px;
+ 684:     line-height: 1;
+ 685: }
+ 686: 
+ 687: .nav-label {
+ 688:     font-weight: 500;
+ 689: }
+ 690: 
+ 691: /* ===== BUTTONS (Glass) ===== */
+ 692: .btn {
+ 693:     display: inline-flex;
+ 694:     align-items: center;
+ 695:     justify-content: center;
+ 696:     gap: 6px;
+ 697:     padding: 10px 20px;
+ 698:     border-radius: var(--glass-radius);
+ 699:     border: var(--glass-border-light);
+ 700:     font-size: 14px;
+ 701:     font-weight: 500;
+ 702:     cursor: pointer;
+ 703:     transition: var(--glass-transition);
+ 704:     width: 100%;
+ 705:     background: var(--glass-bg-light);
+ 706:     backdrop-filter: blur(12px) saturate(150%);
+ 707:     -webkit-backdrop-filter: blur(12px) saturate(150%);
+ 708:     color: var(--ne-white);
+ 709: }
+ 710: 
+ 711: .btn:active {
+ 712:     transform: scale(0.98);
+ 713:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+ 714: }
+ 715: 
+ 716: .btn-primary {
+ 717:     background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(239, 68, 68, 0.2));
+ 718:     border-color: rgba(139, 92, 246, 0.3);
+ 719:     color: var(--ne-white);
+ 720: }
+ 721: 
+ 722: .btn-secondary {
+ 723:     background: var(--glass-bg);
+ 724:     color: var(--ne-white);
+ 725:     border-color: var(--glass-border);
+ 726: }
+ 727: 
+ 728: /* ===== FORMS ===== */
+ 729: .form-group {
+ 730:     margin-bottom: var(--ne-spacing-lg);
+ 731: }
+ 732: 
+ 733: .form-label {
+ 734:     display: block;
+ 735:     font-size: 13px;
+ 736:     font-weight: 500;
+ 737:     color: var(--ne-light-gray);
+ 738:     margin-bottom: var(--ne-spacing-sm);
+ 739:     text-transform: uppercase;
+ 740:     letter-spacing: 0.5px;
+ 741: }
+ 742: 
+ 743: .form-input {
+ 744:     width: 100%;
+ 745:     padding: 12px 14px;
+ 746:     border-radius: var(--glass-radius);
+ 747:     border: var(--glass-border-light);
+ 748:     background: rgba(255, 255, 255, 0.04);
+ 749:     backdrop-filter: blur(8px);
+ 750:     -webkit-backdrop-filter: blur(8px);
+ 751:     color: var(--ne-white);
+ 752:     font-size: 14px;
+ 753:     outline: none;
+ 754:     transition: var(--glass-transition);
+ 755: }
+ 756: 
+ 757: .form-input:focus {
+ 758:     border-color: var(--ne-purple);
+ 759:     background: rgba(255, 255, 255, 0.06);
+ 760: }
+ 761: 
+ 762: /* ===== CARDS ===== */
+ 763: .card {
+ 764:     background: var(--glass-bg);
+ 765:     backdrop-filter: blur(12px) saturate(150%);
+ 766:     -webkit-backdrop-filter: blur(12px) saturate(150%);
+ 767:     border: var(--glass-border);
+ 768:     border-radius: var(--glass-radius);
+ 769:     padding: var(--ne-spacing-lg);
+ 770:     margin-bottom: var(--ne-spacing-md);
+ 771: }
+ 772: 
+ 773: .draft-card {
+ 774:     background: rgba(255, 255, 255, 0.02);
+ 775:     border-left-width: 3px;
+ 776: }
+ 777: 
+ 778: .card-title {
+ 779:     font-size: 15px;
+ 780:     font-weight: 600;
+ 781:     margin-bottom: var(--ne-spacing-sm);
+ 782:     color: var(--ne-white);
+ 783: }
+ 784: 
+ 785: .card-subtitle {
+ 786:     font-size: 13px;
+ 787:     color: var(--ne-light-gray);
+ 788:     margin-bottom: var(--ne-spacing-md);
+ 789: }
+ 790: 
+ 791: /* ===== SCROLLBAR ===== */
+ 792: ::-webkit-scrollbar {
+ 793:     width: 4px;
+ 794: }
+ 795: 
+ 796: ::-webkit-scrollbar-track {
+ 797:     background: transparent;
+ 798: }
+ 799: 
+ 800: ::-webkit-scrollbar-thumb {
+ 801:     background: rgba(255, 255, 255, 0.12);
+ 802:     border-radius: 2px;
+ 803: }
+ 804: 
+ 805: ::-webkit-scrollbar-thumb:hover {
+ 806:     background: rgba(255, 255, 255, 0.2);
+ 807: }
+ 808: 
+ 809: /* ===== ANIMATIONS ===== */
+ 810: @keyframes fadeIn {
+ 811:     from { opacity: 0; transform: translateY(8px); }
+ 812:     to { opacity: 1; transform: translateY(0); }
+ 813: }
+ 814: 
+ 815: .view {
+ 816:     animation: fadeIn 0.25s ease-out;
+ 817:     flex: 1;
+ 818:     display: flex;
+ 819:     flex-direction: column;
+ 820:     min-height: 0;
+ 821:     overflow: hidden;
+ 822: }
+ 823: 
+ 824: .view.has-top-panel {
+ 825:     flex: 1;
+ 826:     display: flex;
+ 827:     flex-direction: column;
+ 828:     min-height: 0;
+ 829:     overflow: hidden;
+ 830: }
+ 831: 
+ 832: /* ===== EMPTY STATE ===== */
+ 833: .empty-state {
+ 834:     text-align: center;
+ 835:     padding: 48px 24px;
+ 836:     color: var(--ne-light-gray);
+ 837: }
+ 838: 
+ 839: .empty-icon {
+ 840:     font-size: 48px;
+ 841:     margin-bottom: var(--ne-spacing-md);
+ 842:     opacity: 0.5;
+ 843: }
+ 844: 
+ 845: .empty-text {
+ 846:     font-size: 14px;
+ 847: }
+ 848: 
+ 849: /* ===== ATTACH MENU ===== */
+ 850: .attach-menu {
+ 851:     position: fixed;
+ 852:     bottom: 100px;
+ 853:     left: var(--ne-spacing-lg);
+ 854:     right: var(--ne-spacing-lg);
+ 855:     background: rgba(0, 0, 0, 0.8);
+ 856:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 857:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 858:     border: var(--glass-border-light);
+ 859:     border-radius: var(--glass-radius);
+ 860:     padding: var(--ne-spacing-sm);
+ 861:     display: grid;
+ 862:     grid-template-columns: repeat(2, 1fr);
+ 863:     gap: var(--ne-spacing-sm);
+ 864:     z-index: 102;
+ 865:     animation: fadeIn 0.2s ease-out;
+ 866: }
+ 867: 
+ 868: .attach-option {
+ 869:     display: flex;
+ 870:     flex-direction: column;
+ 871:     align-items: center;
+ 872:     gap: 6px;
+ 873:     padding: var(--ne-spacing-lg);
+ 874:     border-radius: var(--glass-radius-sm);
+ 875:     border: var(--glass-border);
+ 876:     background: var(--glass-bg);
+ 877:     color: var(--ne-white);
+ 878:     font-size: 12px;
+ 879:     cursor: pointer;
+ 880:     transition: var(--glass-transition);
+ 881: }
+ 882: 
+ 883: .attach-option:active {
+ 884:     transform: scale(0.95);
+ 885:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+ 886: }
+ 887: 
+ 888: .attach-icon {
+ 889:     font-size: 28px;
+ 890: }
+ 891: 
+ 892: /* ===== VIDEO RECORDING ===== */
+ 893: .video-recording {
+ 894:     position: fixed;
+ 895:     top: 0;
+ 896:     left: 0;
+ 897:     right: 0;
+ 898:     bottom: 0;
+ 899:     background: var(--ne-black);
+ 900:     z-index: 200;
+ 901:     display: flex;
+ 902:     flex-direction: column;
+ 903: }
+ 904: 
+ 905: .video-preview {
+ 906:     flex: 1;
+ 907:     position: relative;
+ 908:     background: var(--ne-black);
+ 909: }
+ 910: 
+ 911: .video-preview video {
+ 912:     width: 100%;
+ 913:     height: 100%;
+ 914:     object-fit: cover;
+ 915: }
+ 916: 
+ 917: .video-controls {
+ 918:     position: absolute;
+ 919:     bottom: 0;
+ 920:     left: 0;
+ 921:     right: 0;
+ 922:     padding: var(--ne-spacing-xl);
+ 923:     display: flex;
+ 924:     justify-content: center;
+ 925:     align-items: center;
+ 926:     gap: var(--ne-spacing-lg);
+ 927:     background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+ 928: }
+ 929: 
+ 930: .video-record-btn {
+ 931:     width: 64px;
+ 932:     height: 64px;
+ 933:     border-radius: 50%;
+ 934:     border: 4px solid var(--ne-white);
+ 935:     background: transparent;
+ 936:     cursor: pointer;
+ 937:     transition: all 0.2s;
+ 938: }
+ 939: 
+ 940: .video-record-btn.recording {
+ 941:     background: var(--ne-red);
+ 942:     border-radius: 12px;
+ 943: }
+ 944: 
+ 945: .camera-switch-btn {
+ 946:     width: 48px;
+ 947:     height: 48px;
+ 948:     border-radius: 50%;
+ 949:     border: var(--glass-border);
+ 950:     background: rgba(0,0,0,0.5);
+ 951:     backdrop-filter: blur(8px);
+ 952:     -webkit-backdrop-filter: blur(8px);
+ 953:     color: var(--ne-white);
+ 954:     font-size: 24px;
+ 955:     cursor: pointer;
+ 956:     display: flex;
+ 957:     align-items: center;
+ 958:     justify-content: center;
+ 959: }
+ 960: 
+ 961: /* ===== RESPONSIVE ===== */
+ 962: @media (min-width: 768px) {
+ 963:     .app-main {
+ 964:         max-width: none !important;
+ 965:         margin: 0;
+ 966:     }
+ 967:     
+ 968:     .chat-input-container {
+ 969:         max-width: none;
+ 970:         left: 0;
+ 971:         transform: none;
+ 972:     }
+ 973:     
+ 974:     .attach-menu {
+ 975:         max-width: none;
+ 976:         left: var(--ne-spacing-lg);
+ 977:         transform: none;
+ 978:     }
+ 979: }
+ 980: 
+ 981: @media (min-width: 768px) {
+ 982:     html, body, #app, .app-main, .container, .tg-web-app {
+ 983:         max-width: none !important;
+ 984:         width: 100vw !important;
+ 985:         height: var(--tg-viewport-stable-height, 100dvh) !important;
+ 986:         margin: 0 !important;
+ 987:         padding: 0 !important;
+ 988:         overflow-x: hidden !important;
+ 989:     }
+ 990: }
+ 991: 
+ 992: /* ===== REDUCED TRANSPARENCY (Accessibility) ===== */
+ 993: @media (prefers-reduced-transparency: reduce) {
+ 994:     .message-bubble,
+ 995:     .chat-input-container,
+ 996:     .bottom-nav,
+ 997:     .btn,
+ 998:     .form-input {
+ 999:         backdrop-filter: none;
+1000:         -webkit-backdrop-filter: none;
+1001:     }
+1002:     
+1003:     .chat-message.user .message-bubble {
+1004:         background: rgba(255, 255, 255, 0.95);
+1005:     }
+1006:     
+1007:     .chat-message.hermes .message-bubble {
+1008:         background: rgba(0, 0, 0, 0.95);
+1009:     }
+1010: }
 1011: 
-1012: .top-control-panel {
-1013:     display: flex;
-1014:     justify-content: space-between;
-1015:     align-items: center;
-1016:     gap: var(--ne-spacing-md);
-1017:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
-1018:     background: var(--glass-bg);
-1019:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-1020:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-1021:     border-bottom: var(--glass-border);
-1022:     min-height: 56px;
-1023: }
-1024: 
-1025: .left-mic-panel {
-1026:     display: flex;
-1027:     align-items: center;
-1028:     gap: var(--ne-spacing-sm);
-1029: }
-1030: 
-1031: .mic-button {
-1032:     width: 44px;
-1033:     height: 44px;
-1034:     border-radius: 50%;
-1035:     background: var(--glass-bg-light);
-1036:     border: var(--glass-border);
-1037:     display: flex;
-1038:     align-items: center;
-1039:     justify-content: center;
-1040:     cursor: pointer;
-1041:     transition: var(--glass-transition);
-1042:     font-size: 20px;
-1043: }
-1044: 
-1045: .mic-button:hover {
-1046:     background: rgba(255, 255, 255, 0.12);
-1047:     border-color: rgba(255, 255, 255, 0.2);
-1048: }
-1049: 
-1050: .mic-button.recording {
-1051:     background: rgba(239, 68, 68, 0.2);
-1052:     border-color: rgba(239, 68, 68, 0.4);
-1053:     animation: pulse-recording 1.5s ease-in-out infinite;
-1054: }
-1055: 
-1056: @keyframes pulse-recording {
-1057:     0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-1058:     50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-1059: }
-1060: 
-1061: .right-contract-panel {
-1062:     flex: 1;
-1063:     max-width: 60%;
-1064:     min-height: 40px;
-1065: }
-1066: 
-1067: /* Phase indicator (step bar) */
-1068: .contract-phases {
-1069:     display: flex;
-1070:     align-items: center;
-1071:     justify-content: space-between;
-1072:     padding: 12px 8px;
-1073:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-1074:     flex-shrink: 0;
-1075: }
-1076: 
-1077: .phase-step {
-1078:     display: flex;
-1079:     flex-direction: column;
-1080:     align-items: center;
-1081:     gap: 4px;
-1082:     opacity: 0.3;
-1083:     transition: opacity 0.3s, transform 0.3s;
-1084:     position: relative;
-1085: }
-1086: 
-1087: .phase-step.active {
-1088:     opacity: 1;
-1089: }
-1090: 
-1091: .phase-step.completed {
-1092:     opacity: 0.6;
-1093: }
-1094: 
-1095: .phase-step.completed .phase-icon::after {
-1096:     content: '✓';
-1097:     position: absolute;
-1098:     top: -2px;
-1099:     right: -6px;
-1100:     font-size: 10px;
-1101:     color: #00ff88;
-1102:     background: rgba(0, 0, 0, 0.8);
-1103:     border-radius: 50%;
-1104:     width: 14px;
-1105:     height: 14px;
-1106:     display: flex;
-1107:     align-items: center;
-1108:     justify-content: center;
-1109: }
-1110: 
-1111: .phase-icon {
-1112:     font-size: 18px;
-1113:     position: relative;
-1114: }
-1115: 
-1116: .phase-label {
-1117:     font-size: 9px;
-1118:     color: var(--ne-light-gray);
-1119:     text-align: center;
-1120:     white-space: nowrap;
-1121: }
-1122: 
-1123: .phase-step.active .phase-label {
-1124:     color: var(--ne-white);
-1125:     font-weight: 600;
-1126: }
-1127: 
-1128: /* Connector lines between phases */
-1129: .phase-step:not(:last-child)::after {
-1130:     content: '';
-1131:     position: absolute;
-1132:     top: 14px;
-1133:     right: -50%;
-1134:     width: 100%;
-1135:     height: 1px;
-1136:     background: rgba(255, 255, 255, 0.1);
-1137:     z-index: -1;
-1138: }
-1139: 
-1140: .phase-step.completed:not(:last-child)::after {
-1141:     background: rgba(0, 255, 136, 0.3);
-1142: }
-1143: 
-1144: /* Contract fields */
-1145: .contract-fields {
-1146:     padding: 12px;
-1147:     overflow-y: auto;
-1148:     flex: 1;
-1149: }
-1150: 
-1151: .contract-field {
-1152:     margin-bottom: 12px;
-1153:     padding-bottom: 12px;
-1154:     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-1155: }
-1156: 
-1157: .contract-field:last-child {
-1158:     border-bottom: none;
-1159:     margin-bottom: 0;
-1160:     padding-bottom: 0;
-1161: }
-1162: 
-1163: .field-label {
-1164:     font-size: 10px;
-1165:     font-weight: 600;
-1166:     color: var(--ne-purple);
-1167:     text-transform: uppercase;
-1168:     letter-spacing: 0.5px;
-1169:     margin-bottom: 4px;
-1170:     display: block;
-1171: }
-1172: 
-1173: .field-value {
-1174:     font-size: 13px;
-1175:     color: var(--ne-white);
-1176:     line-height: 1.5;
-1177:     min-height: 20px;
-1178: }
-1179: 
-1180: .field-value.empty {
-1181:     color: rgba(255, 255, 255, 0.2);
-1182:     font-style: italic;
-1183: }
-1184: 
-1185: /* Status badges */
-1186: .status-badge {
-1187:     display: inline-block;
-1188:     padding: 3px 10px;
-1189:     border-radius: 12px;
-1190:     font-size: 11px;
-1191:     font-weight: 600;
-1192: }
-1193: 
-1194: .status-badge.draft {
-1195:     background: rgba(255, 255, 255, 0.08);
-1196:     color: var(--ne-light-gray);
-1197: }
-1198: 
-1199: .status-badge.review {
-1200:     background: rgba(139, 92, 246, 0.2);
-1201:     color: #a78bfa;
-1202: }
-1203: 
-1204: .status-badge.sorting {
-1205:     background: rgba(59, 130, 246, 0.2);
-1206:     color: #60a5fa;
-1207: }
-1208: 
-1209: .status-badge.agreement {
-1210:     background: rgba(245, 158, 11, 0.2);
-1211:     color: #fbbf24;
-1212: }
-1213: 
-1214: .status-badge.escrow {
-1215:     background: rgba(0, 255, 136, 0.2);
-1216:     color: #00ff88;
-1217: }
-1218: 
-1219: .status-badge.completed {
-1220:     background: rgba(0, 255, 136, 0.3);
-1221:     color: #00ff88;
-1222: }
-1223: 
-1224: .status-badge.disputed {
-1225:     background: rgba(239, 68, 68, 0.2);
-1226:     color: #ef4444;
-1227: }
-1228: 
-1229: /* Progress bar for escrow phase */
-1230: .escrow-progress {
-1231:     margin-top: 16px;
-1232:     padding: 12px;
-1233:     background: rgba(0, 0, 0, 0.3);
-1234:     border-radius: 8px;
-1235:     border: 1px solid rgba(255, 255, 255, 0.06);
-1236: }
-1237: 
-1238: .escrow-progress-label {
-1239:     font-size: 11px;
-1240:     color: var(--ne-light-gray);
-1241:     margin-bottom: 8px;
-1242: }
-1243: 
-1244: .escrow-progress-bar {
-1245:     height: 6px;
-1246:     background: rgba(255, 255, 255, 0.06);
-1247:     border-radius: 3px;
-1248:     overflow: hidden;
-1249: }
-1250: 
-1251: .escrow-progress-fill {
-1252:     height: 100%;
-1253:     background: linear-gradient(90deg, var(--ne-purple), #00ff88);
-1254:     border-radius: 3px;
-1255:     transition: width 0.5s ease;
-1256: }
-1257: 
-1258: .escrow-progress-percent {
-1259:     font-size: 12px;
-1260:     color: var(--ne-white);
-1261:     margin-top: 6px;
-1262:     text-align: right;
-1263:     font-weight: 600;
-1264: }
-1265: 
-1266: /* Vertical connectors */
-1267: .vertical-connector {
-1268:     position: absolute;
-1269:     top: 0;
-1270:     bottom: 0;
-1271:     width: 1px;
-1272:     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15), transparent);
-1273:     pointer-events: none;
-1274:     z-index: 0;
-1275: }
-1276: 
-1277: .vertical-connector.left {
-1278:     left: calc(var(--ne-spacing-lg) + 22px);
-1279: }
-1280: 
-1281: .vertical-connector.right {
-1282:     right: calc(var(--ne-spacing-lg) + 22px);
-1283: }
-1284: 
-1285: /* Chat area with top panel spacing */
-1286: .view.has-top-panel .chat-messages {
-1287:     padding-top: var(--ne-spacing-sm);
-1288: }
-1289: 
-1290: /* Task spec questions */
-1291: .task-question {
-1292:     margin-top: var(--ne-spacing-sm);
-1293:     padding-top: var(--ne-spacing-sm);
-1294:     border-top: 1px solid rgba(255, 255, 255, 0.06);
-1295: }
-1296: 
-1297: .task-question p {
-1298:     font-size: 12px;
-1299:     color: var(--ne-silver);
-1300:     margin-bottom: 4px;
-1301: }
-1302: 
-1303: .task-question input {
-1304:     width: 100%;
-1305:     background: rgba(0, 0, 0, 0.3);
-1306:     border: 1px solid rgba(255, 255, 255, 0.1);
-1307:     border-radius: 6px;
-1308:     padding: 6px 10px;
-1309:     color: var(--ne-white);
-1310:     font-size: 12px;
-1311:     outline: none;
-1312:     transition: var(--glass-transition);
-1313: }
-1314: 
-1315: .task-question input:focus {
-1316:     border-color: rgba(139, 92, 246, 0.5);
-1317: }
-1318: 
-1319: /* ─── Панель вопросов смарт-контракта ─────────────────────────────── */
-1320: .contract-qa-panel {
-1321:     margin: var(--ne-spacing-md) var(--ne-spacing-lg);
-1322:     padding: var(--ne-spacing-md);
-1323:     background: var(--glass-bg);
-1324:     border: var(--glass-border);
-1325:     border-radius: var(--glass-radius-sm);
-1326:     backdrop-filter: blur(8px);
-1327:     -webkit-backdrop-filter: blur(8px);
-1328: }
-1329: 
-1330: .qa-item {
-1331:     margin-bottom: 10px;
-1332:     padding-bottom: 10px;
-1333:     border-bottom: 1px solid rgba(255,255,255,0.06);
-1334: }
-1335: 
-1336: .qa-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-1337: 
-1338: .qa-question {
-1339:     font-size: 0.85rem;
-1340:     color: #a0b4ff;
-1341:     margin-bottom: 6px;
-1342:     line-height: 1.4;
-1343: }
-1344: 
-1345: .qa-answer-input {
-1346:     width: 100%;
-1347:     padding: 8px 10px;
-1348:     background: rgba(0,0,0,0.3);
-1349:     border: 1px solid rgba(255,255,255,0.1);
-1350:     border-radius: 8px;
-1351:     color: #fff;
-1352:     font-size: 0.85rem;
-1353:     outline: none;
-1354:     transition: border-color 0.2s;
-1355: }
-1356: 
-1357: .qa-answer-input:focus { border-color: #00ff88; }
-1358: 
-1359: .qa-empty { color: #666; font-size: 0.8rem; text-align: center; padding: 8px 0; }
-1360: 
-1361: /* ─── Голосовой ввод (пульсация) ──────────────────────────────────── */
-1362: .mic-button.recording,
-1363: #micButton.recording {
-1364:     animation: pulse-recording 1.2s infinite ease-in-out;
-1365:     border-color: #ff4d4d !important;
-1366:     box-shadow: 0 0 12px rgba(255,77,77,0.4);
-1367: }
-1368: 
-1369: @keyframes pulse-recording {
-1370:     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0.5); }
-1371:     70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(255,77,77,0); }
-1372:     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0); }
-1373: }
-1374: 
-1375: /* ─── История ТЗ ──────────────────────────────────────────────────── */
-1376: .task-history-panel {
-1377:     position: fixed;
-1378:     bottom: 80px;
-1379:     left: 50%;
-1380:     transform: translateX(-50%) translateY(20px);
-1381:     width: 90%;
-1382:     max-width: 400px;
-1383:     max-height: 50vh;
-1384:     background: rgba(18,18,24,0.95);
-1385:     border: 1px solid rgba(255,255,255,0.1);
-1386:     border-radius: 16px;
-1387:     padding: 12px;
-1388:     overflow-y: auto;
-1389:     opacity: 0;
-1390:     pointer-events: none;
-1391:     transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
-1392:     z-index: 900;
-1393:     backdrop-filter: blur(12px);
-1394:     -webkit-backdrop-filter: blur(12px);
-1395: }
-1396: 
-1397: .task-history-panel.visible {
-1398:     opacity: 1;
-1399:     pointer-events: auto;
-1400:     transform: translateX(-50%) translateY(0);
-1401: }
-1402: 
-1403: .task-history-panel .history-item {
-1404:     display: flex;
-1405:     gap: 8px;
-1406:     padding: 8px;
-1407:     border-radius: 8px;
-1408:     cursor: pointer;
-1409:     transition: background 0.15s;
-1410: }
-1411: 
-1412: .task-history-panel .history-item:hover { background: rgba(255,255,255,0.06); }
-1413: 
-1414: .task-history-panel .history-time { color: #666; font-size: 0.75rem; min-width: 42px; }
-1415: 
-1416: .task-history-panel .history-text { color: #ccc; font-size: 0.8rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-1417: 
-1418: .task-history-panel .history-empty { color: #555; text-align: center; padding: 16px 0; font-size: 0.8rem; }
-1419: 
-1420: /* ─── Кнопка экспорта ─────────────────────────────────────────────── */
-1421: .export-btn-sm {
-1422:     flex: 1;
-1423:     padding: 6px 8px;
-1424:     background: rgba(255,255,255,0.06);
-1425:     border: 1px solid rgba(255,255,255,0.1);
-1426:     border-radius: 8px;
-1427:     color: var(--ne-light-gray);
-1428:     font-size: 0.75rem;
-1429:     cursor: pointer;
-1430:     transition: var(--glass-transition);
-1431: }
-1432: 
-1433: .export-btn-sm:hover {
-1434:     background: rgba(255,255,255,0.12);
-1435:     border-color: rgba(255,255,255,0.2);
-1436: }
-1437: 
-1438: .export-btn-sm:active { transform: scale(0.97); }
-1439: 
-1440: .export-btn {
-1441:     margin-top: 10px;
-1442:     width: 100%;
-1443:     padding: 10px;
-1444:     background: linear-gradient(135deg, #00ff88 0%, #00b8ff 100%);
-1445:     border: none;
-1446:     border-radius: 10px;
-1447:     color: #000;
-1448:     font-weight: 600;
-1449:     font-size: 0.85rem;
-1450:     cursor: pointer;
-1451:     transition: opacity 0.2s, transform 0.1s;
-1452: }
-1453: 
-1454: .export-btn:active { transform: scale(0.98); opacity: 0.9; }
-1455: 
-1456: /* ═══════════════════════════════════════════════════════════════════
-1457:    SPLIT-PANE LAYOUT (Android Studio style)
-1458:    Left: Hermes chat  |  Right: Smart contract / ТЗ (лист А4)
-1459:    Горизонтальный split ВСЕГДА — мобильные тоже
-1460:    ══════════════════════════════════════════════════════════════════ */
-1461: 
-1462: /* Split container wrapper — всегда горизонтальный */
-1463: .split-layout {
-1464:     display: flex;
-1465:     flex-direction: row;
-1466:     flex: 1;
-1467:     gap: 0;
-1468:     min-height: 0;
-1469:     overflow: hidden;
-1470: }
-1471: 
-1472: /* Individual pane */
-1473: .split-pane {
-1474:     display: flex;
-1475:     flex-direction: column;
-1476:     min-height: 0;
-1477:     overflow: hidden;
-1478: }
-1479: 
-1480: /* Left pane: chat (dark) */
-1481: .split-pane.left-pane {
-1482:     flex: 1;
-1483:     min-width: 0;
-1484:     background: transparent;
-1485:     padding: 8px;
-1486:     padding-right: 4px;
-1487: }
-1488: 
-1489: /* Right pane: contract (A4 paper style) */
-1490: .split-pane.right-pane {
-1491:     flex: 0 0 38%;
-1492:     min-width: 200px;
-1493:     background: transparent;
-1494:     padding: 8px;
-1495:     padding-left: 4px;
-1496: }
-1497: 
-1498: /* Glass pane borders — Android Studio style */
-1499: .split-pane .pane-glass {
-1500:     flex: 1;
-1501:     display: flex;
-1502:     flex-direction: column;
-1503:     background: rgba(20, 20, 28, 0.85);
-1504:     backdrop-filter: blur(20px) saturate(150%);
-1505:     -webkit-backdrop-filter: blur(20px) saturate(150%);
-1506:     border: 1px solid rgba(255, 255, 255, 0.08);
-1507:     border-radius: 12px;
-1508:     overflow: hidden;
-1509:     box-shadow:
-1510:         0 0 0 1px rgba(255, 255, 255, 0.03),
-1511:         0 4px 24px rgba(0, 0, 0, 0.4),
-1512:         inset 0 1px 0 rgba(255, 255, 255, 0.05);
-1513:     min-height: 0;
-1514: }
-1515: 
-1516: .split-pane.left-pane .pane-glass {
-1517:     background: rgba(10, 10, 14, 0.9);
-1518: }
-1519: 
-1520: .split-pane.right-pane .pane-glass {
-1521:     background: rgba(22, 22, 30, 0.9);
-1522: }
-1523: 
-1524: /* Pane header (IDE-style tab bar) */
-1525: .pane-header {
-1526:     display: flex;
-1527:     align-items: center;
-1528:     gap: 8px;
-1529:     padding: 8px 12px;
-1530:     background: rgba(0, 0, 0, 0.6);
-1531:     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-1532:     flex-shrink: 0;
-1533:     min-height: 36px;
-1534: }
-1535: 
-1536: .pane-header-icon {
-1537:     font-size: 14px;
-1538:     opacity: 0.7;
-1539: }
-1540: 
-1541: .pane-header-title {
-1542:     font-size: 12px;
-1543:     font-weight: 600;
-1544:     color: var(--ne-light-gray);
-1545:     text-transform: uppercase;
-1546:     letter-spacing: 0.5px;
-1547: }
-1548: 
-1549: .pane-header-dot {
-1550:     width: 8px;
-1551:     height: 8px;
-1552:     border-radius: 50%;
-1553:     flex-shrink: 0;
-1554: }
-1555: 
-1556: .pane-header-dot.purple { background: var(--ne-purple); }
-1557: .pane-header-dot.red { background: var(--ne-red); }
-1558: .pane-header-dot.green { background: #00ff88; }
-1559: 
-1560: /* Pane content area */
-1561: .pane-content {
-1562:     flex: 1;
-1563:     overflow-y: auto;
-1564:     overflow-x: hidden;
-1565:     min-height: 0;
-1566:     display: flex;
-1567:     flex-direction: column;
-1568: }
-1569: 
-1570: /* Left pane content: chat area */
-1571: .split-pane.left-pane .pane-content {
-1572:     position: relative;
-1573: }
-1574: 
-1575: /* Resizable divider between panes */
-1576: .split-divider {
-1577:     flex-shrink: 0;
-1578:     width: 4px;
-1579:     background: transparent;
-1580:     position: relative;
-1581:     cursor: col-resize;
-1582:     transition: background 0.2s;
-1583:     z-index: 10;
-1584:     align-self: stretch;
-1585:     display: flex;
-1586:     align-items: center;
-1587:     justify-content: center;
-1588: }
-1589: 
-1590: .split-divider::after {
-1591:     content: '';
-1592:     width: 2px;
-1593:     height: 100%;
-1594:     border-radius: 1px;
-1595:     background: rgba(255, 255, 255, 0.06);
-1596:     transition: background 0.2s;
-1597: }
-1598: 
-1599: .split-divider:hover::after,
-1600: .split-divider.dragging::after {
-1601:     background: rgba(139, 92, 246, 0.4);
-1602: }
-1603: 
-1604: /* ─── Right pane: A4 paper style ─── */
-1605: .right-contract-panel {
-1606:     flex: 1;
-1607:     padding: var(--ne-spacing-md);
-1608:     min-height: 0;
-1609: }
-1610: 
-1611: .task-spec-container {
-1612:     background: rgba(255, 255, 255, 0.03);
-1613:     border: 1px solid rgba(255, 255, 255, 0.08);
-1614:     border-radius: var(--glass-radius-sm);
-1615:     padding: var(--ne-spacing-md);
-1616:     font-size: 13px;
-1617:     color: var(--ne-light-gray);
-1618:     height: 100%;
-1619:     overflow-y: auto;
-1620:     transition: var(--glass-transition);
-1621:     /* A4 paper feel */
-1622:     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-1623: }
-1624: 
-1625: .task-spec-container.has-content {
-1626:     border-color: rgba(139, 92, 246, 0.3);
-1627:     background: rgba(139, 92, 246, 0.04);
-1628: }
-1629: 
-1630: .task-spec-title {
-1631:     font-size: 11px;
-1632:     font-weight: 600;
-1633:     color: var(--ne-purple);
-1634:     text-transform: uppercase;
-1635:     letter-spacing: 0.5px;
-1636:     margin-bottom: 8px;
-1637:     padding-bottom: 6px;
-1638:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-1639: }
-1640: 
-1641: .task-spec-content {
-1642:     line-height: 1.6;
-1643:     font-size: 13px;
-1644: }
-1645: 
-1646: /* Contract Q&A panel inside right pane */
-1647: .contract-qa-panel {
-1648:     margin: var(--ne-spacing-md);
-1649:     padding: var(--ne-spacing-md);
-1650:     background: rgba(255, 255, 255, 0.02);
-1651:     border: 1px solid rgba(255, 255, 255, 0.06);
-1652:     border-radius: var(--glass-radius-sm);
-1653:     backdrop-filter: blur(8px);
-1654:     -webkit-backdrop-filter: blur(8px);
-1655: }
-1656: 
-1657: /* ─── Top control panel inside left pane ─── */
-1658: .split-pane.left-pane .top-control-panel {
-1659:     background: rgba(0, 0, 0, 0.4);
-1660:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-1661: }
-1662: 
-1663: /* ─── Chat input inside left pane ─── */
-1664: .split-pane.left-pane .chat-input-container {
-1665:     position: sticky;
-1666:     bottom: 0;
-1667:     left: auto;
-1668:     right: auto;
-1669:     border-top: 1px solid rgba(255, 255, 255, 0.06);
-1670:     z-index: 10;
-1671:     padding: 8px 12px;
-1672:     background: rgba(0, 0, 0, 0.6);
-1673:     backdrop-filter: blur(12px);
-1674:     -webkit-backdrop-filter: blur(12px);
-1675:     flex-shrink: 0;
-1676: }
-1677: 
-1678: /* Hide fixed chat input when split layout is active */
-1679: .chat-input-container:not(.split-chat-input) {
-1680:     display: none !important;
-1681: }
-1682: 
-1683: /* Show split chat input only on hermes view (handled by JS) */
-1684: .split-chat-input {
-1685:     display: flex;
-1686: }
-1687: 
-1688: /* ─── Mobile adjustments ─── */
-1689: @media (max-width: 599px) {
-1690:     .split-pane.right-pane {
-1691:         flex: 0 0 35%;
-1692:         min-width: 140px;
-1693:     }
-1694: 
-1695:     .pane-header-title {
-1696:         font-size: 10px;
-1697:     }
-1698: 
-1699:     .task-spec-container {
-1700:         padding: var(--ne-spacing-sm);
-1701:         font-size: 12px;
-1702:     }
-1703: 
-1704:     .contract-qa-panel {
-1705:         margin: var(--ne-spacing-sm);
-1706:         padding: var(--ne-spacing-sm);
-1707:     }
-1708: }
-1709: 
-1710: /* ─── Desktop adjustments ─── */
-1711: @media (min-width: 600px) {
-1712:     .split-pane.right-pane {
-1713:         flex: 0 0 38%;
-1714:         min-width: 280px;
-1715:     }
-1716: 
-1717:     .task-spec-container {
-1718:         padding: var(--ne-spacing-md);
-1719:         font-size: 13px;
-1720:     }
-1721: 
-1722:     .contract-qa-panel {
-1723:         margin: var(--ne-spacing-md);
-1724:         padding: var(--ne-spacing-md);
-1725:     }
-1726: }
+1012: /* ===== NEW UI STRUCTURE v0.20.511 ===== */
+1013: /* Top control panel: mic (left) + task spec (right) */
+1014: 
+1015: .top-control-panel {
+1016:     display: flex;
+1017:     justify-content: space-between;
+1018:     align-items: center;
+1019:     gap: var(--ne-spacing-md);
+1020:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
+1021:     background: var(--glass-bg);
+1022:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+1023:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+1024:     border-bottom: var(--glass-border);
+1025:     min-height: 56px;
+1026: }
+1027: 
+1028: .left-mic-panel {
+1029:     display: flex;
+1030:     align-items: center;
+1031:     gap: var(--ne-spacing-sm);
+1032: }
+1033: 
+1034: .mic-button {
+1035:     width: 44px;
+1036:     height: 44px;
+1037:     border-radius: 50%;
+1038:     background: var(--glass-bg-light);
+1039:     border: var(--glass-border);
+1040:     display: flex;
+1041:     align-items: center;
+1042:     justify-content: center;
+1043:     cursor: pointer;
+1044:     transition: var(--glass-transition);
+1045:     font-size: 20px;
+1046: }
+1047: 
+1048: .mic-button:hover {
+1049:     background: rgba(255, 255, 255, 0.12);
+1050:     border-color: rgba(255, 255, 255, 0.2);
+1051: }
+1052: 
+1053: .mic-button.recording {
+1054:     background: rgba(239, 68, 68, 0.2);
+1055:     border-color: rgba(239, 68, 68, 0.4);
+1056:     animation: pulse-recording 1.5s ease-in-out infinite;
+1057: }
+1058: 
+1059: @keyframes pulse-recording {
+1060:     0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+1061:     50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+1062: }
+1063: 
+1064: .right-contract-panel {
+1065:     flex: 1;
+1066:     max-width: 60%;
+1067:     min-height: 40px;
+1068: }
+1069: 
+1070: /* Phase indicator (step bar) */
+1071: .contract-phases {
+1072:     display: flex;
+1073:     align-items: center;
+1074:     justify-content: space-between;
+1075:     padding: 12px 8px;
+1076:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+1077:     flex-shrink: 0;
+1078: }
+1079: 
+1080: .phase-step {
+1081:     display: flex;
+1082:     flex-direction: column;
+1083:     align-items: center;
+1084:     gap: 4px;
+1085:     opacity: 0.3;
+1086:     transition: opacity 0.3s, transform 0.3s;
+1087:     position: relative;
+1088: }
+1089: 
+1090: .phase-step.active {
+1091:     opacity: 1;
+1092: }
+1093: 
+1094: .phase-step.completed {
+1095:     opacity: 0.6;
+1096: }
+1097: 
+1098: .phase-step.completed .phase-icon::after {
+1099:     content: '✓';
+1100:     position: absolute;
+1101:     top: -2px;
+1102:     right: -6px;
+1103:     font-size: 10px;
+1104:     color: #00ff88;
+1105:     background: rgba(0, 0, 0, 0.8);
+1106:     border-radius: 50%;
+1107:     width: 14px;
+1108:     height: 14px;
+1109:     display: flex;
+1110:     align-items: center;
+1111:     justify-content: center;
+1112: }
+1113: 
+1114: .phase-icon {
+1115:     font-size: 18px;
+1116:     position: relative;
+1117: }
+1118: 
+1119: .phase-label {
+1120:     font-size: 9px;
+1121:     color: var(--ne-light-gray);
+1122:     text-align: center;
+1123:     white-space: nowrap;
+1124: }
+1125: 
+1126: .phase-step.active .phase-label {
+1127:     color: var(--ne-white);
+1128:     font-weight: 600;
+1129: }
+1130: 
+1131: /* Connector lines between phases */
+1132: .phase-step:not(:last-child)::after {
+1133:     content: '';
+1134:     position: absolute;
+1135:     top: 14px;
+1136:     right: -50%;
+1137:     width: 100%;
+1138:     height: 1px;
+1139:     background: rgba(255, 255, 255, 0.1);
+1140:     z-index: -1;
+1141: }
+1142: 
+1143: .phase-step.completed:not(:last-child)::after {
+1144:     background: rgba(0, 255, 136, 0.3);
+1145: }
+1146: 
+1147: /* Contract fields */
+1148: .contract-fields {
+1149:     padding: 12px;
+1150:     overflow-y: auto;
+1151:     flex: 1;
+1152: }
+1153: 
+1154: .contract-field {
+1155:     margin-bottom: 12px;
+1156:     padding-bottom: 12px;
+1157:     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+1158: }
+1159: 
+1160: .contract-field:last-child {
+1161:     border-bottom: none;
+1162:     margin-bottom: 0;
+1163:     padding-bottom: 0;
+1164: }
+1165: 
+1166: .field-label {
+1167:     font-size: 10px;
+1168:     font-weight: 600;
+1169:     color: var(--ne-purple);
+1170:     text-transform: uppercase;
+1171:     letter-spacing: 0.5px;
+1172:     margin-bottom: 4px;
+1173:     display: block;
+1174: }
+1175: 
+1176: .field-value {
+1177:     font-size: 13px;
+1178:     color: var(--ne-white);
+1179:     line-height: 1.5;
+1180:     min-height: 20px;
+1181: }
+1182: 
+1183: .field-value.empty {
+1184:     color: rgba(255, 255, 255, 0.2);
+1185:     font-style: italic;
+1186: }
+1187: 
+1188: /* Status badges */
+1189: .status-badge {
+1190:     display: inline-block;
+1191:     padding: 3px 10px;
+1192:     border-radius: 12px;
+1193:     font-size: 11px;
+1194:     font-weight: 600;
+1195: }
+1196: 
+1197: .status-badge.draft {
+1198:     background: rgba(255, 255, 255, 0.08);
+1199:     color: var(--ne-light-gray);
+1200: }
+1201: 
+1202: .status-badge.review {
+1203:     background: rgba(139, 92, 246, 0.2);
+1204:     color: #a78bfa;
+1205: }
+1206: 
+1207: .status-badge.sorting {
+1208:     background: rgba(59, 130, 246, 0.2);
+1209:     color: #60a5fa;
+1210: }
+1211: 
+1212: .status-badge.agreement {
+1213:     background: rgba(245, 158, 11, 0.2);
+1214:     color: #fbbf24;
+1215: }
+1216: 
+1217: .status-badge.escrow {
+1218:     background: rgba(0, 255, 136, 0.2);
+1219:     color: #00ff88;
+1220: }
+1221: 
+1222: .status-badge.completed {
+1223:     background: rgba(0, 255, 136, 0.3);
+1224:     color: #00ff88;
+1225: }
+1226: 
+1227: .status-badge.disputed {
+1228:     background: rgba(239, 68, 68, 0.2);
+1229:     color: #ef4444;
+1230: }
+1231: 
+1232: /* Progress bar for escrow phase */
+1233: .escrow-progress {
+1234:     margin-top: 16px;
+1235:     padding: 12px;
+1236:     background: rgba(0, 0, 0, 0.3);
+1237:     border-radius: 8px;
+1238:     border: 1px solid rgba(255, 255, 255, 0.06);
+1239: }
+1240: 
+1241: .escrow-progress-label {
+1242:     font-size: 11px;
+1243:     color: var(--ne-light-gray);
+1244:     margin-bottom: 8px;
+1245: }
+1246: 
+1247: .escrow-progress-bar {
+1248:     height: 6px;
+1249:     background: rgba(255, 255, 255, 0.06);
+1250:     border-radius: 3px;
+1251:     overflow: hidden;
+1252: }
+1253: 
+1254: .escrow-progress-fill {
+1255:     height: 100%;
+1256:     background: linear-gradient(90deg, var(--ne-purple), #00ff88);
+1257:     border-radius: 3px;
+1258:     transition: width 0.5s ease;
+1259: }
+1260: 
+1261: .escrow-progress-percent {
+1262:     font-size: 12px;
+1263:     color: var(--ne-white);
+1264:     margin-top: 6px;
+1265:     text-align: right;
+1266:     font-weight: 600;
+1267: }
+1268: 
+1269: /* Vertical connectors */
+1270: .vertical-connector {
+1271:     position: absolute;
+1272:     top: 0;
+1273:     bottom: 0;
+1274:     width: 1px;
+1275:     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15), transparent);
+1276:     pointer-events: none;
+1277:     z-index: 0;
+1278: }
+1279: 
+1280: .vertical-connector.left {
+1281:     left: calc(var(--ne-spacing-lg) + 22px);
+1282: }
+1283: 
+1284: .vertical-connector.right {
+1285:     right: calc(var(--ne-spacing-lg) + 22px);
+1286: }
+1287: 
+1288: /* Chat area with top panel spacing */
+1289: .view.has-top-panel .chat-messages {
+1290:     padding-top: var(--ne-spacing-sm);
+1291: }
+1292: 
+1293: /* Task spec questions */
+1294: .task-question {
+1295:     margin-top: var(--ne-spacing-sm);
+1296:     padding-top: var(--ne-spacing-sm);
+1297:     border-top: 1px solid rgba(255, 255, 255, 0.06);
+1298: }
+1299: 
+1300: .task-question p {
+1301:     font-size: 12px;
+1302:     color: var(--ne-silver);
+1303:     margin-bottom: 4px;
+1304: }
+1305: 
+1306: .task-question input {
+1307:     width: 100%;
+1308:     background: rgba(0, 0, 0, 0.3);
+1309:     border: 1px solid rgba(255, 255, 255, 0.1);
+1310:     border-radius: 6px;
+1311:     padding: 6px 10px;
+1312:     color: var(--ne-white);
+1313:     font-size: 12px;
+1314:     outline: none;
+1315:     transition: var(--glass-transition);
+1316: }
+1317: 
+1318: .task-question input:focus {
+1319:     border-color: rgba(139, 92, 246, 0.5);
+1320: }
+1321: 
+1322: /* ─── Панель вопросов смарт-контракта ─────────────────────────────── */
+1323: .contract-qa-panel {
+1324:     margin: var(--ne-spacing-md) var(--ne-spacing-lg);
+1325:     padding: var(--ne-spacing-md);
+1326:     background: var(--glass-bg);
+1327:     border: var(--glass-border);
+1328:     border-radius: var(--glass-radius-sm);
+1329:     backdrop-filter: blur(8px);
+1330:     -webkit-backdrop-filter: blur(8px);
+1331: }
+1332: 
+1333: .qa-item {
+1334:     margin-bottom: 10px;
+1335:     padding-bottom: 10px;
+1336:     border-bottom: 1px solid rgba(255,255,255,0.06);
+1337: }
+1338: 
+1339: .qa-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+1340: 
+1341: .qa-question {
+1342:     font-size: 0.85rem;
+1343:     color: #a0b4ff;
+1344:     margin-bottom: 6px;
+1345:     line-height: 1.4;
+1346: }
+1347: 
+1348: .qa-answer-input {
+1349:     width: 100%;
+1350:     padding: 8px 10px;
+1351:     background: rgba(0,0,0,0.3);
+1352:     border: 1px solid rgba(255,255,255,0.1);
+1353:     border-radius: 8px;
+1354:     color: #fff;
+1355:     font-size: 0.85rem;
+1356:     outline: none;
+1357:     transition: border-color 0.2s;
+1358: }
+1359: 
+1360: .qa-answer-input:focus { border-color: #00ff88; }
+1361: 
+1362: .qa-empty { color: #666; font-size: 0.8rem; text-align: center; padding: 8px 0; }
+1363: 
+1364: /* ─── Голосовой ввод (пульсация) ──────────────────────────────────── */
+1365: .mic-button.recording,
+1366: #micButton.recording {
+1367:     animation: pulse-recording 1.2s infinite ease-in-out;
+1368:     border-color: #ff4d4d !important;
+1369:     box-shadow: 0 0 12px rgba(255,77,77,0.4);
+1370: }
+1371: 
+1372: @keyframes pulse-recording {
+1373:     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0.5); }
+1374:     70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(255,77,77,0); }
+1375:     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0); }
+1376: }
+1377: 
+1378: /* ─── История ТЗ ──────────────────────────────────────────────────── */
+1379: .task-history-panel {
+1380:     position: fixed;
+1381:     bottom: 80px;
+1382:     left: 50%;
+1383:     transform: translateX(-50%) translateY(20px);
+1384:     width: 90%;
+1385:     max-width: 400px;
+1386:     max-height: 50vh;
+1387:     background: rgba(18,18,24,0.95);
+1388:     border: 1px solid rgba(255,255,255,0.1);
+1389:     border-radius: 16px;
+1390:     padding: 12px;
+1391:     overflow-y: auto;
+1392:     opacity: 0;
+1393:     pointer-events: none;
+1394:     transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+1395:     z-index: 900;
+1396:     backdrop-filter: blur(12px);
+1397:     -webkit-backdrop-filter: blur(12px);
+1398: }
+1399: 
+1400: .task-history-panel.visible {
+1401:     opacity: 1;
+1402:     pointer-events: auto;
+1403:     transform: translateX(-50%) translateY(0);
+1404: }
+1405: 
+1406: .task-history-panel .history-item {
+1407:     display: flex;
+1408:     gap: 8px;
+1409:     padding: 8px;
+1410:     border-radius: 8px;
+1411:     cursor: pointer;
+1412:     transition: background 0.15s;
+1413: }
+1414: 
+1415: .task-history-panel .history-item:hover { background: rgba(255,255,255,0.06); }
+1416: 
+1417: .task-history-panel .history-time { color: #666; font-size: 0.75rem; min-width: 42px; }
+1418: 
+1419: .task-history-panel .history-text { color: #ccc; font-size: 0.8rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+1420: 
+1421: .task-history-panel .history-empty { color: #555; text-align: center; padding: 16px 0; font-size: 0.8rem; }
+1422: 
+1423: /* ─── Кнопка экспорта ─────────────────────────────────────────────── */
+1424: .export-btn-sm {
+1425:     flex: 1;
+1426:     padding: 6px 8px;
+1427:     background: rgba(255,255,255,0.06);
+1428:     border: 1px solid rgba(255,255,255,0.1);
+1429:     border-radius: 8px;
+1430:     color: var(--ne-light-gray);
+1431:     font-size: 0.75rem;
+1432:     cursor: pointer;
+1433:     transition: var(--glass-transition);
+1434: }
+1435: 
+1436: .export-btn-sm:hover {
+1437:     background: rgba(255,255,255,0.12);
+1438:     border-color: rgba(255,255,255,0.2);
+1439: }
+1440: 
+1441: .export-btn-sm:active { transform: scale(0.97); }
+1442: 
+1443: .export-btn {
+1444:     margin-top: 10px;
+1445:     width: 100%;
+1446:     padding: 10px;
+1447:     background: linear-gradient(135deg, #00ff88 0%, #00b8ff 100%);
+1448:     border: none;
+1449:     border-radius: 10px;
+1450:     color: #000;
+1451:     font-weight: 600;
+1452:     font-size: 0.85rem;
+1453:     cursor: pointer;
+1454:     transition: opacity 0.2s, transform 0.1s;
+1455: }
+1456: 
+1457: .export-btn:active { transform: scale(0.98); opacity: 0.9; }
+1458: 
+1459: /* ═══════════════════════════════════════════════════════════════════
+1460:    SPLIT-PANE LAYOUT (Android Studio style)
+1461:    Left: Hermes chat  |  Right: Smart contract / ТЗ (лист А4)
+1462:    Горизонтальный split ВСЕГДА — мобильные тоже
+1463:    ══════════════════════════════════════════════════════════════════ */
+1464: 
+1465: /* Split container wrapper — всегда горизонтальный */
+1466: .split-layout {
+1467:     display: flex;
+1468:     flex-direction: row;
+1469:     flex: 1;
+1470:     gap: 0;
+1471:     min-height: 0;
+1472:     overflow: hidden;
+1473: }
+1474: 
+1475: /* Individual pane */
+1476: .split-pane {
+1477:     display: flex;
+1478:     flex-direction: column;
+1479:     min-height: 0;
+1480:     overflow: hidden;
+1481: }
+1482: 
+1483: /* Left pane: chat (dark) */
+1484: .split-pane.left-pane {
+1485:     flex: 1;
+1486:     min-width: 0;
+1487:     background: transparent;
+1488:     padding: 8px;
+1489:     padding-right: 4px;
+1490: }
+1491: 
+1492: /* Right pane: contract (A4 paper style) */
+1493: .split-pane.right-pane {
+1494:     flex: 0 0 38%;
+1495:     min-width: 200px;
+1496:     background: transparent;
+1497:     padding: 8px;
+1498:     padding-left: 4px;
+1499: }
+1500: 
+1501: /* Glass pane borders — Android Studio style */
+1502: .split-pane .pane-glass {
+1503:     flex: 1;
+1504:     display: flex;
+1505:     flex-direction: column;
+1506:     background: rgba(20, 20, 28, 0.85);
+1507:     backdrop-filter: blur(20px) saturate(150%);
+1508:     -webkit-backdrop-filter: blur(20px) saturate(150%);
+1509:     border: 1px solid rgba(255, 255, 255, 0.08);
+1510:     border-radius: 12px;
+1511:     overflow: hidden;
+1512:     box-shadow:
+1513:         0 0 0 1px rgba(255, 255, 255, 0.03),
+1514:         0 4px 24px rgba(0, 0, 0, 0.4),
+1515:         inset 0 1px 0 rgba(255, 255, 255, 0.05);
+1516:     min-height: 0;
+1517: }
+1518: 
+1519: .split-pane.left-pane .pane-glass {
+1520:     background: rgba(10, 10, 14, 0.9);
+1521: }
+1522: 
+1523: .split-pane.right-pane .pane-glass {
+1524:     background: rgba(22, 22, 30, 0.9);
+1525: }
+1526: 
+1527: /* Pane header (IDE-style tab bar) */
+1528: .pane-header {
+1529:     display: flex;
+1530:     align-items: center;
+1531:     gap: 8px;
+1532:     padding: 8px 12px;
+1533:     background: rgba(0, 0, 0, 0.6);
+1534:     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+1535:     flex-shrink: 0;
+1536:     min-height: 36px;
+1537: }
+1538: 
+1539: .pane-header-icon {
+1540:     font-size: 14px;
+1541:     opacity: 0.7;
+1542: }
+1543: 
+1544: .pane-header-title {
+1545:     font-size: 12px;
+1546:     font-weight: 600;
+1547:     color: var(--ne-light-gray);
+1548:     text-transform: uppercase;
+1549:     letter-spacing: 0.5px;
+1550: }
+1551: 
+1552: .pane-header-dot {
+1553:     width: 8px;
+1554:     height: 8px;
+1555:     border-radius: 50%;
+1556:     flex-shrink: 0;
+1557: }
+1558: 
+1559: .pane-header-dot.purple { background: var(--ne-purple); }
+1560: .pane-header-dot.red { background: var(--ne-red); }
+1561: .pane-header-dot.green { background: #00ff88; }
+1562: 
+1563: /* Pane content area */
+1564: .pane-content {
+1565:     flex: 1;
+1566:     overflow-y: auto;
+1567:     overflow-x: hidden;
+1568:     min-height: 0;
+1569:     display: flex;
+1570:     flex-direction: column;
+1571: }
+1572: 
+1573: /* Left pane content: chat area */
+1574: .split-pane.left-pane .pane-content {
+1575:     position: relative;
+1576: }
+1577: 
+1578: /* Resizable divider between panes */
+1579: .split-divider {
+1580:     flex-shrink: 0;
+1581:     width: 4px;
+1582:     background: transparent;
+1583:     position: relative;
+1584:     cursor: col-resize;
+1585:     transition: background 0.2s;
+1586:     z-index: 10;
+1587:     align-self: stretch;
+1588:     display: flex;
+1589:     align-items: center;
+1590:     justify-content: center;
+1591: }
+1592: 
+1593: .split-divider::after {
+1594:     content: '';
+1595:     width: 2px;
+1596:     height: 100%;
+1597:     border-radius: 1px;
+1598:     background: rgba(255, 255, 255, 0.06);
+1599:     transition: background 0.2s;
+1600: }
+1601: 
+1602: .split-divider:hover::after,
+1603: .split-divider.dragging::after {
+1604:     background: rgba(139, 92, 246, 0.4);
+1605: }
+1606: 
+1607: /* ─── Right pane: A4 paper style ─── */
+1608: .right-contract-panel {
+1609:     flex: 1;
+1610:     padding: var(--ne-spacing-md);
+1611:     min-height: 0;
+1612: }
+1613: 
+1614: .task-spec-container {
+1615:     background: rgba(255, 255, 255, 0.03);
+1616:     border: 1px solid rgba(255, 255, 255, 0.08);
+1617:     border-radius: var(--glass-radius-sm);
+1618:     padding: var(--ne-spacing-md);
+1619:     font-size: 13px;
+1620:     color: var(--ne-light-gray);
+1621:     height: 100%;
+1622:     overflow-y: auto;
+1623:     transition: var(--glass-transition);
+1624:     /* A4 paper feel */
+1625:     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+1626: }
+1627: 
+1628: .task-spec-container.has-content {
+1629:     border-color: rgba(139, 92, 246, 0.3);
+1630:     background: rgba(139, 92, 246, 0.04);
+1631: }
+1632: 
+1633: .task-spec-title {
+1634:     font-size: 11px;
+1635:     font-weight: 600;
+1636:     color: var(--ne-purple);
+1637:     text-transform: uppercase;
+1638:     letter-spacing: 0.5px;
+1639:     margin-bottom: 8px;
+1640:     padding-bottom: 6px;
+1641:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+1642: }
+1643: 
+1644: .task-spec-content {
+1645:     line-height: 1.6;
+1646:     font-size: 13px;
+1647: }
+1648: 
+1649: /* Contract Q&A panel inside right pane */
+1650: .contract-qa-panel {
+1651:     margin: var(--ne-spacing-md);
+1652:     padding: var(--ne-spacing-md);
+1653:     background: rgba(255, 255, 255, 0.02);
+1654:     border: 1px solid rgba(255, 255, 255, 0.06);
+1655:     border-radius: var(--glass-radius-sm);
+1656:     backdrop-filter: blur(8px);
+1657:     -webkit-backdrop-filter: blur(8px);
+1658: }
+1659: 
+1660: /* ─── Top control panel inside left pane ─── */
+1661: .split-pane.left-pane .top-control-panel {
+1662:     background: rgba(0, 0, 0, 0.4);
+1663:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+1664: }
+1665: 
+1666: /* ─── Chat input inside left pane ─── */
+1667: .split-pane.left-pane .chat-input-container {
+1668:     position: sticky;
+1669:     bottom: 0;
+1670:     left: auto;
+1671:     right: auto;
+1672:     border-top: 1px solid rgba(255, 255, 255, 0.06);
+1673:     z-index: 10;
+1674:     padding: 8px 12px;
+1675:     background: rgba(0, 0, 0, 0.6);
+1676:     backdrop-filter: blur(12px);
+1677:     -webkit-backdrop-filter: blur(12px);
+1678:     flex-shrink: 0;
+1679: }
+1680: 
+1681: /* Hide fixed chat input when split layout is active */
+1682: .chat-input-container:not(.split-chat-input) {
+1683:     display: none !important;
+1684: }
+1685: 
+1686: /* Show split chat input only on hermes view (handled by JS) */
+1687: .split-chat-input {
+1688:     display: flex;
+1689: }
+1690: 
+1691: /* ─── Mobile adjustments ─── */
+1692: @media (max-width: 599px) {
+1693:     .split-pane.right-pane {
+1694:         flex: 0 0 35%;
+1695:         min-width: 140px;
+1696:     }
+1697: 
+1698:     .pane-header-title {
+1699:         font-size: 10px;
+1700:     }
+1701: 
+1702:     .task-spec-container {
+1703:         padding: var(--ne-spacing-sm);
+1704:         font-size: 12px;
+1705:     }
+1706: 
+1707:     .contract-qa-panel {
+1708:         margin: var(--ne-spacing-sm);
+1709:         padding: var(--ne-spacing-sm);
+1710:     }
+1711: }
+1712: 
+1713: /* ─── Desktop adjustments ─── */
+1714: @media (min-width: 600px) {
+1715:     .split-pane.right-pane {
+1716:         flex: 0 0 38%;
+1717:         min-width: 280px;
+1718:     }
+1719: 
+1720:     .task-spec-container {
+1721:         padding: var(--ne-spacing-md);
+1722:         font-size: 13px;
+1723:     }
+1724: 
+1725:     .contract-qa-panel {
+1726:         margin: var(--ne-spacing-md);
+1727:         padding: var(--ne-spacing-md);
+1728:     }
+1729: }
 </file>
 
 <file path="index.html">
