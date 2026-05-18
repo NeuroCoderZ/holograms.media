@@ -1499,20 +1499,29 @@ class NeuroEscrowApp {
         }
 
         try {
-            // Try Edge Neural TTS first
-            console.log('[TTS] Requesting Edge-TTS:', cleanText.substring(0, 50) + '...');
-            const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
-                ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
-                : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+            // StreamElements TTS — бесплатные нейронные голоса (прямой вызов из браузера)
+            console.log('[TTS] Requesting StreamElements TTS:', cleanText.substring(0, 50) + '...');
             
-            const resp = await fetch(baseUrl + 'tts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    text: cleanText,
-                    lang: 'ru-RU',
-                    voice: 'ru-RU-SvetlanaNeural'
-                })
+            const voiceMap = {
+                'ru-RU-SvetlanaNeural': 'Tatyana',
+                'ru-RU-DmitryNeural': 'Maxim',
+                'en-US': 'Brian',
+                'en-GB': 'Amy',
+                'de-DE': 'Marlene',
+                'fr-FR': 'Celine',
+                'es-ES': 'Conchita',
+                'it-IT': 'Carla',
+                'ja-JP': 'Mizuki',
+                'ko-KR': 'Seoyeon',
+                'zh-CN': 'Zhiyu'
+            };
+
+            const ttsVoice = voiceMap['ru-RU-SvetlanaNeural'] || 'Tatyana';
+            const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${ttsVoice}&text=${encodeURIComponent(cleanText.substring(0, 2000))}`;
+
+            const resp = await fetch(ttsUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'audio/mpeg' }
             });
 
             if (!resp.ok) throw new Error(`TTS failed: ${resp.status}`);
@@ -1526,11 +1535,9 @@ class NeuroEscrowApp {
             this.ttsAudio.onended = () => {
                 URL.revokeObjectURL(url);
                 this.ttsAudio = null;
-                // Resume recognition after speaking
                 if (this.isRecording && this.recognition) {
                     try { this.recognition.start(); } catch {}
                 }
-                // Update button state
                 this.updateSpeakButton(idx, false);
             };
             
@@ -1539,7 +1546,6 @@ class NeuroEscrowApp {
                 URL.revokeObjectURL(url);
                 this.ttsAudio = null;
                 this.updateSpeakButton(idx, false);
-                // Resume recognition
                 if (this.isRecording && this.recognition) {
                     try { this.recognition.start(); } catch {}
                 }
@@ -1550,9 +1556,8 @@ class NeuroEscrowApp {
             if (!autoPlay) telegram.haptic('light');
 
         } catch (error) {
-            console.error('[TTS] Edge-TTS failed:', error.message);
+            console.error('[TTS] Failed:', error.message);
             this.updateSpeakButton(idx, false);
-            // Resume recognition
             if (this.isRecording && this.recognition) {
                 try { this.recognition.start(); } catch {}
             }
