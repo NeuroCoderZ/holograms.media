@@ -7618,7 +7618,7 @@ This section contains the contents of the repository's files.
 1485:             .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
 1486:             .replace(/```[\s\S]*?```/g, 'код')
 1487:             .replace(/<[^>]+>/g, '')
-1488:             .substring(0, 3000);
+1488:             .substring(0, 5000);
 1489: 
 1490:         // Pause recognition while speaking
 1491:         if (this.recognition && this.isRecording) {
@@ -7631,9 +7631,9 @@ This section contains the contents of the repository's files.
 1498:             this.ttsAudio = null;
 1499:         }
 1500: 
-1501:         try {
-1502:             // Edge-TTS через Cloudflare Worker (нет CORS проблем)
-1503:             console.log('[TTS] Requesting Edge-TTS via Worker:', cleanText.substring(0, 50) + '...');
+1501:         // Try Edge-TTS via Worker first (neural voice)
+1502:         try {
+1503:             console.log('[TTS] Trying Edge-TTS via Worker:', cleanText.substring(0, 50) + '...');
 1504:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
 1505:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
 1506:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
@@ -7680,749 +7680,806 @@ This section contains the contents of the repository's files.
 1547:             if (!autoPlay) telegram.haptic('light');
 1548: 
 1549:         } catch (error) {
-1550:             console.error('[TTS] Failed:', error.message);
-1551:             this.updateSpeakButton(idx, false);
-1552:             if (this.isRecording && this.recognition) {
-1553:                 try { this.recognition.start(); } catch {}
-1554:             }
-1555:         }
-1556:     }
-1557: 
-1558:     toggleSpeakMessage(idx) {
-1559:         // If currently speaking to this message, stop it
-1560:         if (this.ttsAudio && !this.ttsAudio.paused && this.currentSpeakIdx === idx) {
-1561:             this.ttsAudio.pause();
-1562:             this.ttsAudio = null;
-1563:             this.currentSpeakIdx = null;
-1564:             this.updateSpeakButton(idx, false);
-1565:             // Resume recognition
-1566:             if (this.isRecording && this.recognition) {
-1567:                 try { this.recognition.start(); } catch {}
+1550:             console.warn('[TTS] Edge-TTS failed, using cloud voice:', error.message);
+1551:             this.speakWithCloudVoice(idx, cleanText, autoPlay);
+1552:         }
+1553:     }
+1554: 
+1555:     speakWithCloudVoice(idx, cleanText, autoPlay) {
+1556:         if (!window.speechSynthesis) return;
+1557:         
+1558:         // Wait for voices to load (Chrome loads them asynchronously)
+1559:         const trySpeak = () => {
+1560:             const voices = window.speechSynthesis.getVoices();
+1561:             if (voices.length === 0) {
+1562:                 console.warn('[TTS] No voices loaded, waiting...');
+1563:                 window.speechSynthesis.onvoiceschanged = () => {
+1564:                     window.speechSynthesis.onvoiceschanged = null;
+1565:                     trySpeak();
+1566:                 };
+1567:                 return;
 1568:             }
-1569:             return;
-1570:         }
-1571: 
-1572:         // Stop any other playing audio
-1573:         if (this.ttsAudio) {
-1574:             this.ttsAudio.pause();
-1575:             this.ttsAudio = null;
-1576:             if (this.currentSpeakIdx !== null) {
-1577:                 this.updateSpeakButton(this.currentSpeakIdx, false);
-1578:             }
-1579:         }
-1580: 
-1581:         this.currentSpeakIdx = idx;
-1582:         this.speakMessage(idx, false);
-1583:     }
-1584: 
-1585:     updateSpeakButton(idx, isPlaying) {
-1586:         const container = document.getElementById('chat-messages');
-1587:         if (!container) return;
-1588:         const buttons = container.querySelectorAll('.speak-btn');
-1589:         if (buttons[idx]) {
-1590:             buttons[idx].classList.toggle('muted', !isPlaying);
-1591:             buttons[idx].textContent = isPlaying ? '⏸' : '🔊';
-1592:             buttons[idx].title = isPlaying ? 'Остановить' : 'Прослушать';
-1593:         }
-1594:     }
-1595: 
-1596:     toggleTTS() {
-1597:         this.ttsEnabled = !this.ttsEnabled;
-1598:         if (!this.ttsEnabled) {
-1599:             if (this.ttsAudio) {
-1600:                 this.ttsAudio.pause();
-1601:                 this.ttsAudio = null;
-1602:             }
-1603:             if (this.currentSpeakIdx !== null) {
-1604:                 this.updateSpeakButton(this.currentSpeakIdx, false);
-1605:                 this.currentSpeakIdx = null;
-1606:             }
-1607:         }
-1608:         this.updateTTSButton();
-1609:         telegram.haptic('light');
-1610:     }
-1611: 
-1612:     updateTTSButton() {
-1613:         const icon = document.getElementById('tts-icon');
-1614:         if (icon) icon.textContent = this.ttsEnabled ? '🔊' : '🔇';
-1615:     }
-1616: 
-1617:     scrollToBottom() {
-1618:         const container = document.getElementById('chat-messages');
-1619:         if (!container) return;
-1620:         requestAnimationFrame(() => {
-1621:             container.scrollTop = container.scrollHeight;
-1622:         });
-1623:     }
-1624: 
-1625:     addChatMessage(sender, text) {
-1626:         this.chatMessages.push({
-1627:             sender,
-1628:             text,
-1629:             timestamp: Date.now()
-1630:         });
-1631:         this.renderChatMessages();
-1632:         this.saveCache();
-1633:         
-1634:         // Try auto-speak Hermes messages with Edge-TTS
-1635:         if (sender === 'hermes' && this.ttsEnabled && text) {
-1636:             const idx = this.chatMessages.length - 1;
-1637:             setTimeout(() => {
-1638:                 this.speakMessage(idx, true);
-1639:             }, 500);
-1640:         }
-1641:     }
-1642: 
-1643:     showTypingIndicator() {
-1644:         const container = document.getElementById('chat-messages');
-1645:         if (!container) return;
-1646:         const typing = document.createElement('div');
-1647:         typing.className = 'typing-indicator';
-1648:         typing.id = 'typing-indicator';
-1649:         typing.innerHTML = '<span>Гермес печатает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-1650:         container.appendChild(typing);
-1651:         container.scrollTop = container.scrollHeight;
-1652:     }
-1653: 
-1654:     hideTypingIndicator() {
-1655:         const typing = document.getElementById('typing-indicator');
-1656:         if (typing) typing.remove();
-1657:     }
-1658: 
-1659:     async sendTextMessage() {
-1660:         const input = document.getElementById('chat-input');
-1661:         if (!input || !input.value.trim()) return;
-1662: 
-1663:         // Auto-tap unlock on first text send
-1664:         if (!this.audioUnlocked) {
-1665:             this.unlockAudio();
-1666:         }
-1667: 
-1668:         const text = input.value.trim();
-1669:         this.addChatMessage('user', text);
-1670:         input.value = '';
-1671: 
-1672:         telegram.haptic('light');
+1569: 
+1570:             // Find best cloud-based voice (Google or Microsoft neural voices)
+1571:             const cloudVoice = voices.find(v => 
+1572:                 v.lang.startsWith('ru') && (
+1573:                     v.name.includes('Google') || 
+1574:                     v.name.includes('Microsoft') || 
+1575:                     v.name.includes('Natural') ||
+1576:                     v.name.includes('Neural') ||
+1577:                     v.name.includes('Pavel') ||
+1578:                     v.name.includes('Irina') ||
+1579:                     v.name.includes('Yuri') ||
+1580:                     v.name.includes('Svetlana')
+1581:                 )
+1582:             ) || voices.find(v => v.lang.startsWith('ru'));
+1583: 
+1584:             console.log('[TTS] Using cloud voice:', cloudVoice?.name || 'default');
+1585: 
+1586:             window.speechSynthesis.cancel();
+1587:             const utterance = new SpeechSynthesisUtterance(cleanText);
+1588:             utterance.lang = 'ru-RU';
+1589:             utterance.rate = 0.95;
+1590:             utterance.pitch = 1.0;
+1591:             utterance.volume = 1.0;
+1592:             
+1593:             if (cloudVoice) utterance.voice = cloudVoice;
+1594: 
+1595:             utterance.onend = () => {
+1596:                 if (this.isRecording && this.recognition) {
+1597:                     try { this.recognition.start(); } catch {}
+1598:                 }
+1599:             };
+1600:             utterance.onerror = () => {
+1601:                 if (this.isRecording && this.recognition) {
+1602:                     try { this.recognition.start(); } catch {}
+1603:                 }
+1604:             };
+1605: 
+1606:             console.log('[TTS] Speaking with cloud voice:', cleanText.substring(0, 50) + '...');
+1607:             window.speechSynthesis.speak(utterance);
+1608:             if (!autoPlay) telegram.haptic('light');
+1609:         };
+1610: 
+1611:         trySpeak();
+1612:     }
+1613: 
+1614:     toggleSpeakMessage(idx) {
+1615:         // If currently speaking to this message, stop it
+1616:         if (this.ttsAudio && !this.ttsAudio.paused && this.currentSpeakIdx === idx) {
+1617:             this.ttsAudio.pause();
+1618:             this.ttsAudio = null;
+1619:             this.currentSpeakIdx = null;
+1620:             this.updateSpeakButton(idx, false);
+1621:             if (this.isRecording && this.recognition) {
+1622:                 try { this.recognition.start(); } catch {}
+1623:             }
+1624:             window.speechSynthesis?.cancel();
+1625:             return;
+1626:         }
+1627: 
+1628:         // Stop any other playing audio
+1629:         if (this.ttsAudio) {
+1630:             this.ttsAudio.pause();
+1631:             this.ttsAudio = null;
+1632:             if (this.currentSpeakIdx !== null) {
+1633:                 this.updateSpeakButton(this.currentSpeakIdx, false);
+1634:             }
+1635:         }
+1636:         window.speechSynthesis?.cancel();
+1637: 
+1638:         this.currentSpeakIdx = idx;
+1639:         this.speakMessage(idx, false);
+1640:     }
+1641: 
+1642:     updateSpeakButton(idx, isPlaying) {
+1643:         const container = document.getElementById('chat-messages');
+1644:         if (!container) return;
+1645:         const buttons = container.querySelectorAll('.speak-btn');
+1646:         if (buttons[idx]) {
+1647:             buttons[idx].classList.toggle('muted', !isPlaying);
+1648:             buttons[idx].textContent = isPlaying ? '⏸' : '🔊';
+1649:             buttons[idx].title = isPlaying ? 'Остановить' : 'Прослушать';
+1650:         }
+1651:     }
+1652: 
+1653:     toggleTTS() {
+1654:         this.ttsEnabled = !this.ttsEnabled;
+1655:         if (!this.ttsEnabled) {
+1656:             if (this.ttsAudio) {
+1657:                 this.ttsAudio.pause();
+1658:                 this.ttsAudio = null;
+1659:             }
+1660:             if (this.currentSpeakIdx !== null) {
+1661:                 this.updateSpeakButton(this.currentSpeakIdx, false);
+1662:                 this.currentSpeakIdx = null;
+1663:             }
+1664:         }
+1665:         this.updateTTSButton();
+1666:         telegram.haptic('light');
+1667:     }
+1668: 
+1669:     updateTTSButton() {
+1670:         const icon = document.getElementById('tts-icon');
+1671:         if (icon) icon.textContent = this.ttsEnabled ? '🔊' : '🔇';
+1672:     }
 1673: 
-1674:         // Call Hermes backend
-1675:         try {
-1676:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
-1677:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
-1678:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
-1679: 
-1680:             console.log('[Chat] Fetching:', baseUrl + 'chat');
+1674:     scrollToBottom() {
+1675:         const container = document.getElementById('chat-messages');
+1676:         if (!container) return;
+1677:         requestAnimationFrame(() => {
+1678:             container.scrollTop = container.scrollHeight;
+1679:         });
+1680:     }
 1681: 
-1682:             // Show typing indicator
-1683:             this.showTypingIndicator();
-1684: 
-1685:             // Try streaming first
-1686:             const streamUrl = baseUrl + 'chat/stream';
-1687:             const response = await fetch(streamUrl, {
-1688:                 method: 'POST',
-1689:                 mode: 'cors',
-1690:                 credentials: 'omit',
-1691:                 headers: { 'Content-Type': 'application/json' },
-1692:                 body: JSON.stringify({
-1693:                     message: text,
-1694:                     user_id: telegram.getUserId(),
-1695:                     session_id: `tg_${telegram.getUserId()}`,
-1696:                     persona: 'hermes',
-1697:                     use_router: true
-1698:                 })
-1699:             });
-1700: 
-1701:             console.log('[Chat] Response status:', response.status, response.statusText);
-1702: 
-1703:             // Hide typing indicator
-1704:             this.hideTypingIndicator();
-1705: 
-1706:             const contentType = response.headers.get('content-type') || '';
-1707: 
-1708:             if (contentType.includes('text/event-stream')) {
-1709:                 // Streaming response — typewriter effect
-1710:                 const reader = response.body.getReader();
-1711:                 const decoder = new TextDecoder();
-1712:                 let fullText = '';
-1713: 
-1714:                 // Create empty hermes message bubble for streaming
-1715:                 const msgIdx = this.chatMessages.length;
-1716:                 this.chatMessages.push({ sender: 'hermes', text: '', timestamp: Date.now() });
-1717:                 this.renderChatMessages();
-1718: 
-1719:                 while (true) {
-1720:                     const { done, value } = await reader.read();
-1721:                     if (done) break;
-1722: 
-1723:                     const chunk = decoder.decode(value, { stream: true });
-1724:                     const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-1725: 
-1726:                     for (const line of lines) {
-1727:                         try {
-1728:                             const parsed = JSON.parse(line.replace('data: ', ''));
-1729:                             if (parsed.done) {
-1730:                                 // Handle contract fields from final event
-1731:                                 if (parsed.contract_fields) {
-1732:                                     this.applyExtractedFields(parsed.contract_fields, parsed.contract_state);
-1733:                                 }
-1734:                                 // Handle cost estimate
-1735:                                 if (parsed.cost_estimate) {
-1736:                                     console.log('[Cost]', parsed.cost_estimate.cost.ton, 'TON |', parsed.cost_estimate.cost.usd, 'USD');
-1737:                                 }
-1738:                                 break;
-1739:                             }
-1740:                             if (parsed.char !== undefined) {
-1741:                                 fullText += parsed.char;
-1742:                                 this.chatMessages[msgIdx].text = fullText;
-1743:                                 this.renderChatMessages();
-1744:                             }
-1745:                         } catch { /* skip malformed SSE lines */ }
-1746:                     }
-1747:                 }
-1748: 
-1749:                 this.saveCache();
-1750:             } else {
-1751:                 // Fallback: regular JSON response
-1752:                 const data = await response.json();
-1753: 
-1754:                 if (data.blocked) {
-1755:                     this.addChatMessage('system', `⚠️ ${data.reason}`);
-1756:                 } else if (data.response) {
-1757:                     this.addChatMessage('hermes', data.response);
-1758:                     
-1759:                     // Auto-fill contract fields if extracted
-1760:                     if (data.contract_fields) {
-1761:                         this.applyExtractedFields(data.contract_fields, data.contract_state);
-1762:                     }
-1763:                     
-1764:                     // Log cost if router mode
-1765:                     if (data.cost_estimate) {
-1766:                         console.log('[Router]', data.cost_estimate.cost.ton, 'TON |', data.cost_estimate.cost.usd, 'USD');
-1767:                     }
-1768:                 } else if (data.error) {
-1769:                     this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
-1770:                 }
-1771:             }
-1772:         } catch (error) {
-1773:             console.error('[Chat] Fetch failed:', error.message);
-1774:             this.hideTypingIndicator();
-1775:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
-1776:         }
-1777:     }
-1778: 
-1779:     showAttachMenu() {
-1780:         const menu = document.getElementById('attach-menu');
-1781:         if (!menu) return;
+1682:     addChatMessage(sender, text) {
+1683:         this.chatMessages.push({
+1684:             sender,
+1685:             text,
+1686:             timestamp: Date.now()
+1687:         });
+1688:         this.renderChatMessages();
+1689:         this.saveCache();
+1690:         
+1691:         // Try auto-speak Hermes messages with Edge-TTS
+1692:         if (sender === 'hermes' && this.ttsEnabled && text) {
+1693:             const idx = this.chatMessages.length - 1;
+1694:             setTimeout(() => {
+1695:                 this.speakMessage(idx, true);
+1696:             }, 500);
+1697:         }
+1698:     }
+1699: 
+1700:     showTypingIndicator() {
+1701:         const container = document.getElementById('chat-messages');
+1702:         if (!container) return;
+1703:         const typing = document.createElement('div');
+1704:         typing.className = 'typing-indicator';
+1705:         typing.id = 'typing-indicator';
+1706:         typing.innerHTML = '<span>Гермес печатает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+1707:         container.appendChild(typing);
+1708:         container.scrollTop = container.scrollHeight;
+1709:     }
+1710: 
+1711:     hideTypingIndicator() {
+1712:         const typing = document.getElementById('typing-indicator');
+1713:         if (typing) typing.remove();
+1714:     }
+1715: 
+1716:     async sendTextMessage() {
+1717:         const input = document.getElementById('chat-input');
+1718:         if (!input || !input.value.trim()) return;
+1719: 
+1720:         // Auto-tap unlock on first text send
+1721:         if (!this.audioUnlocked) {
+1722:             this.unlockAudio();
+1723:         }
+1724: 
+1725:         const text = input.value.trim();
+1726:         this.addChatMessage('user', text);
+1727:         input.value = '';
+1728: 
+1729:         telegram.haptic('light');
+1730: 
+1731:         // Call Hermes backend
+1732:         try {
+1733:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+1734:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+1735:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+1736: 
+1737:             console.log('[Chat] Fetching:', baseUrl + 'chat');
+1738: 
+1739:             // Show typing indicator
+1740:             this.showTypingIndicator();
+1741: 
+1742:             // Try streaming first
+1743:             const streamUrl = baseUrl + 'chat/stream';
+1744:             const response = await fetch(streamUrl, {
+1745:                 method: 'POST',
+1746:                 mode: 'cors',
+1747:                 credentials: 'omit',
+1748:                 headers: { 'Content-Type': 'application/json' },
+1749:                 body: JSON.stringify({
+1750:                     message: text,
+1751:                     user_id: telegram.getUserId(),
+1752:                     session_id: `tg_${telegram.getUserId()}`,
+1753:                     persona: 'hermes',
+1754:                     use_router: true
+1755:                 })
+1756:             });
+1757: 
+1758:             console.log('[Chat] Response status:', response.status, response.statusText);
+1759: 
+1760:             // Hide typing indicator
+1761:             this.hideTypingIndicator();
+1762: 
+1763:             const contentType = response.headers.get('content-type') || '';
+1764: 
+1765:             if (contentType.includes('text/event-stream')) {
+1766:                 // Streaming response — typewriter effect
+1767:                 const reader = response.body.getReader();
+1768:                 const decoder = new TextDecoder();
+1769:                 let fullText = '';
+1770: 
+1771:                 // Create empty hermes message bubble for streaming
+1772:                 const msgIdx = this.chatMessages.length;
+1773:                 this.chatMessages.push({ sender: 'hermes', text: '', timestamp: Date.now() });
+1774:                 this.renderChatMessages();
+1775: 
+1776:                 while (true) {
+1777:                     const { done, value } = await reader.read();
+1778:                     if (done) break;
+1779: 
+1780:                     const chunk = decoder.decode(value, { stream: true });
+1781:                     const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
 1782: 
-1783:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
-1784:         telegram.haptic('light');
-1785:     }
-1786: 
-1787:     hideAttachMenu() {
-1788:         const menu = document.getElementById('attach-menu');
-1789:         if (menu) menu.style.display = 'none';
-1790:     }
-1791: 
-1792:     attachPhoto() {
-1793:         this.hideAttachMenu();
-1794:         const input = document.createElement('input');
-1795:         input.type = 'file';
-1796:         input.accept = 'image/*';
-1797:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
-1798:         input.click();
-1799:     }
-1800: 
-1801:     attachVideo() {
-1802:         this.hideAttachMenu();
-1803:         const input = document.createElement('input');
-1804:         input.type = 'file';
-1805:         input.accept = 'video/*';
-1806:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
-1807:         input.click();
-1808:     }
-1809: 
-1810:     async recordVideo() {
-1811:         this.hideAttachMenu();
-1812:         try {
-1813:             const stream = await navigator.mediaDevices.getUserMedia({
-1814:                 video: { facingMode: this.currentFacingMode },
-1815:                 audio: true
-1816:             });
-1817:             this.currentStream = stream;
-1818:             this.showVideoRecorder(stream);
-1819:         } catch (error) {
-1820:             telegram.showAlert('Нет доступа к камере');
-1821:         }
-1822:     }
-1823: 
-1824:     showVideoRecorder(stream) {
-1825:         const recorder = document.createElement('div');
-1826:         recorder.className = 'video-recording';
-1827:         recorder.innerHTML = `
-1828:             <div class="video-preview">
-1829:                 <video id="video-preview" autoplay playsinline muted></video>
-1830:                 <div class="video-controls">
-1831:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
-1832:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
-1833:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
-1834:                 </div>
-1835:             </div>
-1836:         `;
-1837:         document.body.appendChild(recorder);
-1838: 
-1839:         const video = document.getElementById('video-preview');
-1840:         video.srcObject = stream;
-1841:     }
-1842: 
-1843:     async switchCamera() {
-1844:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
-1845:         if (this.currentStream) {
-1846:             this.currentStream.getTracks().forEach(track => track.stop());
-1847:         }
-1848:         await this.recordVideo();
-1849:     }
-1850: 
-1851:     toggleVideoRecording() {
-1852:         const btn = document.getElementById('record-btn');
-1853:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
-1854:             this.startVideoRecording();
-1855:             btn.classList.add('recording');
-1856:         } else {
-1857:             this.stopVideoRecording();
-1858:             btn.classList.remove('recording');
-1859:         }
-1860:     }
-1861: 
-1862:     startVideoRecording() {
-1863:         if (!this.currentStream) return;
-1864: 
-1865:         this.mediaRecorder = new MediaRecorder(this.currentStream);
-1866:         this.audioChunks = [];
-1867: 
-1868:         this.mediaRecorder.ondataavailable = (e) => {
-1869:             this.audioChunks.push(e.data);
-1870:         };
-1871: 
-1872:         this.mediaRecorder.onstop = () => {
-1873:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
-1874:             this.handleVideoUpload(videoBlob);
-1875:         };
-1876: 
-1877:         this.mediaRecorder.start();
-1878:     }
-1879: 
-1880:     stopVideoRecording() {
-1881:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-1882:             this.mediaRecorder.stop();
-1883:         }
-1884:     }
-1885: 
-1886:     closeVideoRecorder() {
-1887:         if (this.currentStream) {
-1888:             this.currentStream.getTracks().forEach(track => track.stop());
-1889:             this.currentStream = null;
-1890:         }
-1891:         const recorder = document.querySelector('.video-recording');
-1892:         if (recorder) recorder.remove();
-1893:     }
-1894: 
-1895:     async shareScreen() {
-1896:         this.hideAttachMenu();
-1897:         try {
-1898:             const stream = await navigator.mediaDevices.getDisplayMedia({
-1899:                 video: true
-1900:             });
-1901:             
-1902:             const mediaRecorder = new MediaRecorder(stream);
-1903:             const chunks = [];
-1904: 
-1905:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-1906:             mediaRecorder.onstop = () => {
-1907:                 const blob = new Blob(chunks, { type: 'video/webm' });
-1908:                 this.handleVideoUpload(blob);
-1909:                 stream.getTracks().forEach(track => track.stop());
-1910:             };
-1911: 
-1912:             mediaRecorder.start();
-1913:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
-1914:         } catch (error) {
-1915:             telegram.showAlert('Нет доступа к экрану');
+1783:                     for (const line of lines) {
+1784:                         try {
+1785:                             const parsed = JSON.parse(line.replace('data: ', ''));
+1786:                             if (parsed.done) {
+1787:                                 // Handle contract fields from final event
+1788:                                 if (parsed.contract_fields) {
+1789:                                     this.applyExtractedFields(parsed.contract_fields, parsed.contract_state);
+1790:                                 }
+1791:                                 // Handle cost estimate
+1792:                                 if (parsed.cost_estimate) {
+1793:                                     console.log('[Cost]', parsed.cost_estimate.cost.ton, 'TON |', parsed.cost_estimate.cost.usd, 'USD');
+1794:                                 }
+1795:                                 break;
+1796:                             }
+1797:                             if (parsed.char !== undefined) {
+1798:                                 fullText += parsed.char;
+1799:                                 this.chatMessages[msgIdx].text = fullText;
+1800:                                 this.renderChatMessages();
+1801:                             }
+1802:                         } catch { /* skip malformed SSE lines */ }
+1803:                     }
+1804:                 }
+1805: 
+1806:                 this.saveCache();
+1807:             } else {
+1808:                 // Fallback: regular JSON response
+1809:                 const data = await response.json();
+1810: 
+1811:                 if (data.blocked) {
+1812:                     this.addChatMessage('system', `⚠️ ${data.reason}`);
+1813:                 } else if (data.response) {
+1814:                     this.addChatMessage('hermes', data.response);
+1815:                     
+1816:                     // Auto-fill contract fields if extracted
+1817:                     if (data.contract_fields) {
+1818:                         this.applyExtractedFields(data.contract_fields, data.contract_state);
+1819:                     }
+1820:                     
+1821:                     // Log cost if router mode
+1822:                     if (data.cost_estimate) {
+1823:                         console.log('[Router]', data.cost_estimate.cost.ton, 'TON |', data.cost_estimate.cost.usd, 'USD');
+1824:                     }
+1825:                 } else if (data.error) {
+1826:                     this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
+1827:                 }
+1828:             }
+1829:         } catch (error) {
+1830:             console.error('[Chat] Fetch failed:', error.message);
+1831:             this.hideTypingIndicator();
+1832:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
+1833:         }
+1834:     }
+1835: 
+1836:     showAttachMenu() {
+1837:         const menu = document.getElementById('attach-menu');
+1838:         if (!menu) return;
+1839: 
+1840:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
+1841:         telegram.haptic('light');
+1842:     }
+1843: 
+1844:     hideAttachMenu() {
+1845:         const menu = document.getElementById('attach-menu');
+1846:         if (menu) menu.style.display = 'none';
+1847:     }
+1848: 
+1849:     attachPhoto() {
+1850:         this.hideAttachMenu();
+1851:         const input = document.createElement('input');
+1852:         input.type = 'file';
+1853:         input.accept = 'image/*';
+1854:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
+1855:         input.click();
+1856:     }
+1857: 
+1858:     attachVideo() {
+1859:         this.hideAttachMenu();
+1860:         const input = document.createElement('input');
+1861:         input.type = 'file';
+1862:         input.accept = 'video/*';
+1863:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
+1864:         input.click();
+1865:     }
+1866: 
+1867:     async recordVideo() {
+1868:         this.hideAttachMenu();
+1869:         try {
+1870:             const stream = await navigator.mediaDevices.getUserMedia({
+1871:                 video: { facingMode: this.currentFacingMode },
+1872:                 audio: true
+1873:             });
+1874:             this.currentStream = stream;
+1875:             this.showVideoRecorder(stream);
+1876:         } catch (error) {
+1877:             telegram.showAlert('Нет доступа к камере');
+1878:         }
+1879:     }
+1880: 
+1881:     showVideoRecorder(stream) {
+1882:         const recorder = document.createElement('div');
+1883:         recorder.className = 'video-recording';
+1884:         recorder.innerHTML = `
+1885:             <div class="video-preview">
+1886:                 <video id="video-preview" autoplay playsinline muted></video>
+1887:                 <div class="video-controls">
+1888:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
+1889:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
+1890:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
+1891:                 </div>
+1892:             </div>
+1893:         `;
+1894:         document.body.appendChild(recorder);
+1895: 
+1896:         const video = document.getElementById('video-preview');
+1897:         video.srcObject = stream;
+1898:     }
+1899: 
+1900:     async switchCamera() {
+1901:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+1902:         if (this.currentStream) {
+1903:             this.currentStream.getTracks().forEach(track => track.stop());
+1904:         }
+1905:         await this.recordVideo();
+1906:     }
+1907: 
+1908:     toggleVideoRecording() {
+1909:         const btn = document.getElementById('record-btn');
+1910:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
+1911:             this.startVideoRecording();
+1912:             btn.classList.add('recording');
+1913:         } else {
+1914:             this.stopVideoRecording();
+1915:             btn.classList.remove('recording');
 1916:         }
 1917:     }
 1918: 
-1919:     async handleFileUpload(file, type) {
-1920:         if (!file) return;
+1919:     startVideoRecording() {
+1920:         if (!this.currentStream) return;
 1921: 
-1922:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
-1923: 
-1924:         const reader = new FileReader();
-1925:         reader.onload = async (e) => {
-1926:             try {
-1927:                 // Upload to backend and get URL
-1928:                 const imageUrl = e.target.result; // Base64 data URL
-1929: 
-1930:                 // Call Hermes image analysis
-1931:                 const response = await fetch('/analyze-image', {
-1932:                     method: 'POST',
-1933:                     headers: { 'Content-Type': 'application/json' },
-1934:                     body: JSON.stringify({
-1935:                         image_url: imageUrl,
-1936:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
-1937:                         user_id: telegram.getUserId(),
-1938:                         session_id: `tg_${telegram.getUserId()}`
-1939:                     })
-1940:                 });
-1941: 
-1942:                 const data = await response.json();
-1943: 
-1944:                 if (data.response) {
-1945:                     this.addChatMessage('hermes', data.response);
-1946:                 } else if (data.error) {
-1947:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-1948:                 }
-1949:             } catch (error) {
-1950:                 console.error('[App] Upload error:', error);
-1951:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
-1952:             }
-1953:         };
-1954:         reader.readAsDataURL(file);
-1955:     }
-1956: 
-1957:     async handleVideoUpload(blob) {
-1958:         this.addChatMessage('user', '[🎥 Видеозапись]');
-1959:         this.closeVideoRecorder();
-1960: 
-1961:         const reader = new FileReader();
-1962:         reader.onload = async (e) => {
-1963:             try {
-1964:                 const videoUrl = e.target.result;
-1965: 
-1966:                 // Call Hermes video analysis
-1967:                 const response = await fetch('/analyze-image', {
-1968:                     method: 'POST',
-1969:                     headers: { 'Content-Type': 'application/json' },
-1970:                     body: JSON.stringify({
-1971:                         image_url: videoUrl,
-1972:                         prompt: 'Проанализируй это видео',
-1973:                         user_id: telegram.getUserId(),
-1974:                         session_id: `tg_${telegram.getUserId()}`
-1975:                     })
-1976:                 });
-1977: 
-1978:                 const data = await response.json();
-1979: 
-1980:                 if (data.response) {
-1981:                     this.addChatMessage('hermes', data.response);
-1982:                 } else if (data.error) {
-1983:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-1984:                 }
-1985:             } catch (error) {
-1986:                 console.error('[App] Video upload error:', error);
-1987:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
-1988:             }
-1989:         };
-1990:         reader.readAsDataURL(blob);
-1991:     }
-1992: 
-1993:     formatTime(timestamp) {
-1994:         const date = new Date(timestamp);
-1995:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-1996:     }
-1997: 
-1998:     async submitFeedback(msgIdx, feedback) {
-1999:         const msg = this.chatMessages[msgIdx];
-2000:         if (!msg || msg.feedback) return;
-2001: 
-2002:         msg.feedback = feedback;
-2003:         this.renderChatMessages();
-2004: 
-2005:         try {
-2006:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
-2007:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
-2008:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
-2009: 
-2010:             await fetch(baseUrl + 'feedback', {
-2011:                 method: 'POST',
-2012:                 mode: 'cors',
-2013:                 credentials: 'omit',
-2014:                 headers: { 'Content-Type': 'application/json' },
-2015:                 body: JSON.stringify({
-2016:                     message_id: msgIdx,
-2017:                     feedback,
-2018:                     user_id: telegram.getUserId(),
-2019:                     session_id: `tg_${telegram.getUserId()}`,
-2020:                     text: msg.text.substring(0, 200)
-2021:                 })
-2022:             });
-2023: 
-2024:             telegram.haptic('light');
-2025:         } catch (error) {
-2026:             console.error('[Feedback] Error:', error.message);
-2027:         }
-2028:     }
-2029: 
-2030:     updateTaskSpec(title, content) {
-2031:         const specContainer = document.getElementById('task-spec');
-2032:         const specContent = document.getElementById('task-spec-content');
-2033:         if (!specContainer || !specContent) return;
+1922:         this.mediaRecorder = new MediaRecorder(this.currentStream);
+1923:         this.audioChunks = [];
+1924: 
+1925:         this.mediaRecorder.ondataavailable = (e) => {
+1926:             this.audioChunks.push(e.data);
+1927:         };
+1928: 
+1929:         this.mediaRecorder.onstop = () => {
+1930:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
+1931:             this.handleVideoUpload(videoBlob);
+1932:         };
+1933: 
+1934:         this.mediaRecorder.start();
+1935:     }
+1936: 
+1937:     stopVideoRecording() {
+1938:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+1939:             this.mediaRecorder.stop();
+1940:         }
+1941:     }
+1942: 
+1943:     closeVideoRecorder() {
+1944:         if (this.currentStream) {
+1945:             this.currentStream.getTracks().forEach(track => track.stop());
+1946:             this.currentStream = null;
+1947:         }
+1948:         const recorder = document.querySelector('.video-recording');
+1949:         if (recorder) recorder.remove();
+1950:     }
+1951: 
+1952:     async shareScreen() {
+1953:         this.hideAttachMenu();
+1954:         try {
+1955:             const stream = await navigator.mediaDevices.getDisplayMedia({
+1956:                 video: true
+1957:             });
+1958:             
+1959:             const mediaRecorder = new MediaRecorder(stream);
+1960:             const chunks = [];
+1961: 
+1962:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+1963:             mediaRecorder.onstop = () => {
+1964:                 const blob = new Blob(chunks, { type: 'video/webm' });
+1965:                 this.handleVideoUpload(blob);
+1966:                 stream.getTracks().forEach(track => track.stop());
+1967:             };
+1968: 
+1969:             mediaRecorder.start();
+1970:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
+1971:         } catch (error) {
+1972:             telegram.showAlert('Нет доступа к экрану');
+1973:         }
+1974:     }
+1975: 
+1976:     async handleFileUpload(file, type) {
+1977:         if (!file) return;
+1978: 
+1979:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
+1980: 
+1981:         const reader = new FileReader();
+1982:         reader.onload = async (e) => {
+1983:             try {
+1984:                 // Upload to backend and get URL
+1985:                 const imageUrl = e.target.result; // Base64 data URL
+1986: 
+1987:                 // Call Hermes image analysis
+1988:                 const response = await fetch('/analyze-image', {
+1989:                     method: 'POST',
+1990:                     headers: { 'Content-Type': 'application/json' },
+1991:                     body: JSON.stringify({
+1992:                         image_url: imageUrl,
+1993:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
+1994:                         user_id: telegram.getUserId(),
+1995:                         session_id: `tg_${telegram.getUserId()}`
+1996:                     })
+1997:                 });
+1998: 
+1999:                 const data = await response.json();
+2000: 
+2001:                 if (data.response) {
+2002:                     this.addChatMessage('hermes', data.response);
+2003:                 } else if (data.error) {
+2004:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+2005:                 }
+2006:             } catch (error) {
+2007:                 console.error('[App] Upload error:', error);
+2008:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
+2009:             }
+2010:         };
+2011:         reader.readAsDataURL(file);
+2012:     }
+2013: 
+2014:     async handleVideoUpload(blob) {
+2015:         this.addChatMessage('user', '[🎥 Видеозапись]');
+2016:         this.closeVideoRecorder();
+2017: 
+2018:         const reader = new FileReader();
+2019:         reader.onload = async (e) => {
+2020:             try {
+2021:                 const videoUrl = e.target.result;
+2022: 
+2023:                 // Call Hermes video analysis
+2024:                 const response = await fetch('/analyze-image', {
+2025:                     method: 'POST',
+2026:                     headers: { 'Content-Type': 'application/json' },
+2027:                     body: JSON.stringify({
+2028:                         image_url: videoUrl,
+2029:                         prompt: 'Проанализируй это видео',
+2030:                         user_id: telegram.getUserId(),
+2031:                         session_id: `tg_${telegram.getUserId()}`
+2032:                     })
+2033:                 });
 2034: 
-2035:         specContainer.classList.add('has-content');
-2036:         specContent.innerHTML = `
-2037:             <div class="task-spec-title">${this.escapeHtml(title)}</div>
-2038:             <div>${this.escapeHtml(content)}</div>
-2039:         `;
-2040:     }
-2041: 
-2042:     clearTaskSpec() {
-2043:         const specContainer = document.getElementById('task-spec');
-2044:         const specContent = document.getElementById('task-spec-content');
-2045:         if (!specContainer || !specContent) return;
-2046: 
-2047:         specContainer.classList.remove('has-content');
-2048:         specContent.textContent = 'Ожидание ТЗ от Гермеса...';
-2049:     }
-2050: 
-2051:     // ─── Голосовой ввод с автоотправкой (VAD — Voice Activity Detection) ──
-2052:     // Best practice: silence-based auto-send after final result + 1.5s pause
-2053:     // Source: Web Speech API patterns used by Otter.ai, AssemblyAI, Whisper
-2054:     initVoiceInput() {
-2055:         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-2056:         if (!SpeechRecognition) {
-2057:             console.warn('[App] SpeechRecognition не поддерживается в этом браузере');
-2058:             return;
-2059:         }
-2060:         this.recognition = new SpeechRecognition();
-2061:         this.recognition.lang = 'ru-RU';
-2062:         this.recognition.interimResults = true;
-2063:         this.recognition.continuous = true;
-2064:         this.recognition.maxAlternatives = 1;
-2065: 
-2066:         // Silence detection timer — auto-send after 1.5s of no new speech
-2067:         this._voiceSendTimer = null;
-2068:         this._voiceAutoSendDelay = 1500; // 1.5s silence = send
-2069:         this._voiceLastResultTime = 0;
-2070:         this._voiceAccumulatedText = '';
-2071: 
-2072:         this.recognition.onresult = (event) => {
-2073:             let interim = '';
-2074:             let final = '';
-2075:             for (let i = event.resultIndex; i < event.results.length; i++) {
-2076:                 const transcript = event.results[i][0].transcript;
-2077:                 if (event.results[i].isFinal) final += transcript + ' ';
-2078:                 else interim += transcript;
-2079:             }
+2035:                 const data = await response.json();
+2036: 
+2037:                 if (data.response) {
+2038:                     this.addChatMessage('hermes', data.response);
+2039:                 } else if (data.error) {
+2040:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+2041:                 }
+2042:             } catch (error) {
+2043:                 console.error('[App] Video upload error:', error);
+2044:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
+2045:             }
+2046:         };
+2047:         reader.readAsDataURL(blob);
+2048:     }
+2049: 
+2050:     formatTime(timestamp) {
+2051:         const date = new Date(timestamp);
+2052:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+2053:     }
+2054: 
+2055:     async submitFeedback(msgIdx, feedback) {
+2056:         const msg = this.chatMessages[msgIdx];
+2057:         if (!msg || msg.feedback) return;
+2058: 
+2059:         msg.feedback = feedback;
+2060:         this.renderChatMessages();
+2061: 
+2062:         try {
+2063:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+2064:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+2065:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+2066: 
+2067:             await fetch(baseUrl + 'feedback', {
+2068:                 method: 'POST',
+2069:                 mode: 'cors',
+2070:                 credentials: 'omit',
+2071:                 headers: { 'Content-Type': 'application/json' },
+2072:                 body: JSON.stringify({
+2073:                     message_id: msgIdx,
+2074:                     feedback,
+2075:                     user_id: telegram.getUserId(),
+2076:                     session_id: `tg_${telegram.getUserId()}`,
+2077:                     text: msg.text.substring(0, 200)
+2078:                 })
+2079:             });
 2080: 
-2081:             const input = document.getElementById('chat-input');
-2082:             if (input) {
-2083:                 const baseText = this._voiceAccumulatedText || '';
-2084:                 input.value = baseText + final + interim;
-2085:             }
+2081:             telegram.haptic('light');
+2082:         } catch (error) {
+2083:             console.error('[Feedback] Error:', error.message);
+2084:         }
+2085:     }
 2086: 
-2087:             // Reset silence timer on any new result
-2088:             this._voiceLastResultTime = Date.now();
-2089: 
-2090:             // If we got a final result, start/restart the auto-send timer
-2091:             if (final.trim()) {
-2092:                 this._voiceAccumulatedText += final;
-2093:                 this._clearVoiceSendTimer();
-2094:                 this._voiceSendTimer = setTimeout(() => {
-2095:                     this._autoSendVoice();
-2096:                 }, this._voiceAutoSendDelay);
-2097:             }
-2098:         };
-2099: 
-2100:         this.recognition.onerror = (e) => {
-2101:             console.warn('[App] Voice error:', e.error);
-2102:             // Auto-restart on non-fatal errors (no-speech, aborted)
-2103:             if (this.isRecording && e.error !== 'not-allowed') {
-2104:                 try { this.recognition.start(); } catch { /* already started */ }
-2105:             }
-2106:         };
+2087:     updateTaskSpec(title, content) {
+2088:         const specContainer = document.getElementById('task-spec');
+2089:         const specContent = document.getElementById('task-spec-content');
+2090:         if (!specContainer || !specContent) return;
+2091: 
+2092:         specContainer.classList.add('has-content');
+2093:         specContent.innerHTML = `
+2094:             <div class="task-spec-title">${this.escapeHtml(title)}</div>
+2095:             <div>${this.escapeHtml(content)}</div>
+2096:         `;
+2097:     }
+2098: 
+2099:     clearTaskSpec() {
+2100:         const specContainer = document.getElementById('task-spec');
+2101:         const specContent = document.getElementById('task-spec-content');
+2102:         if (!specContainer || !specContent) return;
+2103: 
+2104:         specContainer.classList.remove('has-content');
+2105:         specContent.textContent = 'Ожидание ТЗ от Гермеса...';
+2106:     }
 2107: 
-2108:         this.recognition.onend = () => {
-2109:             // Auto-restart if still in recording mode (continuous listening)
-2110:             if (this.isRecording) {
-2111:                 try {
-2112:                     this.recognition.start();
-2113:                 } catch {
-2114:                     this.isRecording = false;
-2115:                     this._clearVoiceSendTimer();
-2116:                     const micBtn = document.getElementById('micButton');
-2117:                     if (micBtn) micBtn.classList.remove('recording');
-2118:                 }
-2119:             } else {
-2120:                 // User stopped — send any accumulated text
-2121:                 if (this._voiceAccumulatedText.trim()) {
-2122:                     this._autoSendVoice();
-2123:                 }
-2124:                 this._clearVoiceSendTimer();
-2125:                 const micBtn = document.getElementById('micButton');
-2126:                 if (micBtn) micBtn.classList.remove('recording');
-2127:             }
-2128:         };
-2129:     }
-2130: 
-2131:     _clearVoiceSendTimer() {
-2132:         if (this._voiceSendTimer) {
-2133:             clearTimeout(this._voiceSendTimer);
-2134:             this._voiceSendTimer = null;
-2135:         }
-2136:     }
+2108:     // ─── Голосовой ввод с автоотправкой (VAD — Voice Activity Detection) ──
+2109:     // Best practice: silence-based auto-send after final result + 1.5s pause
+2110:     // Source: Web Speech API patterns used by Otter.ai, AssemblyAI, Whisper
+2111:     initVoiceInput() {
+2112:         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+2113:         if (!SpeechRecognition) {
+2114:             console.warn('[App] SpeechRecognition не поддерживается в этом браузере');
+2115:             return;
+2116:         }
+2117:         this.recognition = new SpeechRecognition();
+2118:         this.recognition.lang = 'ru-RU';
+2119:         this.recognition.interimResults = true;
+2120:         this.recognition.continuous = true;
+2121:         this.recognition.maxAlternatives = 1;
+2122: 
+2123:         // Silence detection timer — auto-send after 1.5s of no new speech
+2124:         this._voiceSendTimer = null;
+2125:         this._voiceAutoSendDelay = 1500; // 1.5s silence = send
+2126:         this._voiceLastResultTime = 0;
+2127:         this._voiceAccumulatedText = '';
+2128: 
+2129:         this.recognition.onresult = (event) => {
+2130:             let interim = '';
+2131:             let final = '';
+2132:             for (let i = event.resultIndex; i < event.results.length; i++) {
+2133:                 const transcript = event.results[i][0].transcript;
+2134:                 if (event.results[i].isFinal) final += transcript + ' ';
+2135:                 else interim += transcript;
+2136:             }
 2137: 
-2138:     _autoSendVoice() {
-2139:         const input = document.getElementById('chat-input');
-2140:         const text = (this._voiceAccumulatedText || '').trim();
-2141:         if (!text) return;
-2142: 
-2143:         // Clear accumulated text and timer
-2144:         this._voiceAccumulatedText = '';
-2145:         this._clearVoiceSendTimer();
+2138:             const input = document.getElementById('chat-input');
+2139:             if (input) {
+2140:                 const baseText = this._voiceAccumulatedText || '';
+2141:                 input.value = baseText + final + interim;
+2142:             }
+2143: 
+2144:             // Reset silence timer on any new result
+2145:             this._voiceLastResultTime = Date.now();
 2146: 
-2147:         // Update input and send
-2148:         if (input) input.value = text;
-2149:         this.sendTextMessage();
-2150: 
-2151:         telegram.haptic('medium');
-2152:     }
-2153: 
-2154:     toggleVoiceRecording() {
-2155:         if (!this.recognition) return telegram.showAlert('Голосовой ввод не поддерживается');
-2156:         const micBtn = document.getElementById('micButton');
-2157:         if (this.isRecording) {
-2158:             // User tapped to stop — will trigger onend → auto-send
-2159:             this.recognition.stop();
-2160:             this.isRecording = false;
-2161:         } else {
-2162:             const input = document.getElementById('chat-input');
-2163:             this._voiceAccumulatedText = input ? input.value + ' ' : '';
-2164:             this._voiceLastResultTime = Date.now();
-2165:             this.recognition.start();
-2166:             this.isRecording = true;
-2167:             if (micBtn) micBtn.classList.add('recording');
-2168:             telegram.haptic('light');
-2169:         }
-2170:     }
-2171: 
-2172:     // ─── Панель смарт-контракта (вопросы Гермеса) ────────────────────────
-2173:     renderContractQuestions(questions = []) {
-2174:         const container = document.getElementById('contract-qa-container');
-2175:         if (!container) return;
-2176:         container.innerHTML = '';
-2177:         if (!questions.length) {
-2178:             container.innerHTML = '<div class="qa-empty">Нет активных вопросов от Гермеса</div>';
-2179:             return;
-2180:         }
-2181:         questions.forEach((q, idx) => {
-2182:             const wrap = document.createElement('div');
-2183:             wrap.className = 'qa-item';
-2184:             wrap.innerHTML = `
-2185:                 <div class="qa-question">${idx + 1}. ${this.escapeHtml(q.text)}</div>
-2186:                 <input type="text" class="qa-answer-input" placeholder="Ваш ответ..." data-qid="${q.id || idx}" />
-2187:             `;
-2188:             container.appendChild(wrap);
-2189:         });
-2190:         container.querySelectorAll('.qa-answer-input').forEach(inp => {
-2191:             inp.addEventListener('change', () => this.saveContractAnswers());
-2192:         });
+2147:             // If we got a final result, start/restart the auto-send timer
+2148:             if (final.trim()) {
+2149:                 this._voiceAccumulatedText += final;
+2150:                 this._clearVoiceSendTimer();
+2151:                 this._voiceSendTimer = setTimeout(() => {
+2152:                     this._autoSendVoice();
+2153:                 }, this._voiceAutoSendDelay);
+2154:             }
+2155:         };
+2156: 
+2157:         this.recognition.onerror = (e) => {
+2158:             console.warn('[App] Voice error:', e.error);
+2159:             // Auto-restart on non-fatal errors (no-speech, aborted)
+2160:             if (this.isRecording && e.error !== 'not-allowed') {
+2161:                 try { this.recognition.start(); } catch { /* already started */ }
+2162:             }
+2163:         };
+2164: 
+2165:         this.recognition.onend = () => {
+2166:             // Auto-restart if still in recording mode (continuous listening)
+2167:             if (this.isRecording) {
+2168:                 try {
+2169:                     this.recognition.start();
+2170:                 } catch {
+2171:                     this.isRecording = false;
+2172:                     this._clearVoiceSendTimer();
+2173:                     const micBtn = document.getElementById('micButton');
+2174:                     if (micBtn) micBtn.classList.remove('recording');
+2175:                 }
+2176:             } else {
+2177:                 // User stopped — send any accumulated text
+2178:                 if (this._voiceAccumulatedText.trim()) {
+2179:                     this._autoSendVoice();
+2180:                 }
+2181:                 this._clearVoiceSendTimer();
+2182:                 const micBtn = document.getElementById('micButton');
+2183:                 if (micBtn) micBtn.classList.remove('recording');
+2184:             }
+2185:         };
+2186:     }
+2187: 
+2188:     _clearVoiceSendTimer() {
+2189:         if (this._voiceSendTimer) {
+2190:             clearTimeout(this._voiceSendTimer);
+2191:             this._voiceSendTimer = null;
+2192:         }
 2193:     }
 2194: 
-2195:     saveContractAnswers() {
-2196:         const inputs = document.querySelectorAll('.qa-answer-input');
-2197:         const answers = {};
-2198:         inputs.forEach(inp => answers[inp.dataset.qid] = inp.value.trim());
-2199:         this.contractAnswers = answers;
-2200:         this.saveCache();
-2201:     }
-2202: 
-2203:     // ─── История ТЗ ──────────────────────────────────────────────────────
-2204:     async saveTaskSpecHistory(specText) {
-2205:         if (!specText?.trim()) return;
-2206:         const history = this.taskSpecHistory || [];
-2207:         history.unshift({ text: specText, timestamp: Date.now() });
-2208:         if (history.length > 20) history.pop();
-2209:         this.taskSpecHistory = history;
-2210:         try {
-2211:             if (window.Telegram?.WebApp?.CloudStorage) {
-2212:                 await new Promise((res, rej) => Telegram.WebApp.CloudStorage.setItem('task_spec_history', JSON.stringify(history), (err, ok) => err ? rej(err) : res(ok)));
-2213:             } else {
-2214:                 localStorage.setItem('task_spec_history', JSON.stringify(history));
-2215:             }
-2216:         } catch (e) { console.warn('[App] History save failed:', e); }
-2217:     }
-2218: 
-2219:     async loadTaskSpecHistory() {
-2220:         try {
-2221:             let raw = null;
-2222:             if (window.Telegram?.WebApp?.CloudStorage) {
-2223:                 raw = await new Promise((res, rej) => Telegram.WebApp.CloudStorage.getItem('task_spec_history', (err, val) => err ? rej(err) : res(val)));
-2224:             } else {
-2225:                 raw = localStorage.getItem('task_spec_history');
-2226:             }
-2227:             this.taskSpecHistory = raw ? JSON.parse(raw) : [];
-2228:         } catch (e) {
-2229:             this.taskSpecHistory = [];
-2230:         }
-2231:         this.renderTaskSpecHistory();
-2232:     }
-2233: 
-2234:     renderTaskSpecHistory() {
-2235:         const list = document.getElementById('task-history-list');
-2236:         if (!list) return;
-2237:         list.innerHTML = '';
-2238:         if (!this.taskSpecHistory?.length) {
-2239:             list.innerHTML = '<div class="history-empty">История пуста</div>';
-2240:             return;
-2241:         }
-2242:         this.taskSpecHistory.forEach((item, idx) => {
-2243:             const el = document.createElement('div');
-2244:             el.className = 'history-item';
-2245:             const time = new Date(item.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-2246:             el.innerHTML = `<span class="history-time">${time}</span><span class="history-text">${this.escapeHtml(item.text.slice(0, 60))}...</span>`;
-2247:             el.onclick = () => {
-2248:                 const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
-2249:                 if (input) input.value = item.text;
-2250:                 telegram.haptic('light');
-2251:             };
-2252:             list.appendChild(el);
-2253:         });
-2254:     }
-2255: 
-2256:     // ─── Экспорт ТЗ ──────────────────────────────────────────────────────
-2257:     exportTaskSpec() {
-2258:         const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
-2259:         const spec = input?.value?.trim() || '';
-2260:         const answers = this.contractAnswers || {};
-2261:         if (!spec && !Object.keys(answers).length) return telegram.showAlert('Нет данных для экспорта');
-2262: 
-2263:         const payload = {
-2264:             task_spec: spec,
-2265:             contract_answers: answers,
-2266:             exported_at: new Date().toISOString(),
-2267:             user_id: telegram.getUserId?.() || 'unknown'
-2268:         };
-2269:         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-2270:         const url = URL.createObjectURL(blob);
-2271:         const a = document.createElement('a');
-2272:         a.href = url;
-2273:         a.download = `task_spec_${Date.now()}.json`;
-2274:         document.body.appendChild(a);
-2275:         a.click();
-2276:         a.remove();
-2277:         URL.revokeObjectURL(url);
-2278:         telegram.haptic('success');
-2279:     }
-2280: }
-2281: 
-2282: let app;
-2283: document.addEventListener('DOMContentLoaded', () => {
-2284:     window.app = new NeuroEscrowApp();
-2285:     app = window.app;
-2286: });
-2287: 
-2288: window.addEventListener('message', (event) => {
-2289:     if (event.data && event.data.type === 'bot_data' && app) {
-2290:         app.handleBotData(event.data.payload);
-2291:     }
-2292: });
+2195:     _autoSendVoice() {
+2196:         const input = document.getElementById('chat-input');
+2197:         const text = (this._voiceAccumulatedText || '').trim();
+2198:         if (!text) return;
+2199: 
+2200:         // Clear accumulated text and timer
+2201:         this._voiceAccumulatedText = '';
+2202:         this._clearVoiceSendTimer();
+2203: 
+2204:         // Update input and send
+2205:         if (input) input.value = text;
+2206:         this.sendTextMessage();
+2207: 
+2208:         telegram.haptic('medium');
+2209:     }
+2210: 
+2211:     toggleVoiceRecording() {
+2212:         if (!this.recognition) return telegram.showAlert('Голосовой ввод не поддерживается');
+2213:         const micBtn = document.getElementById('micButton');
+2214:         if (this.isRecording) {
+2215:             // User tapped to stop — will trigger onend → auto-send
+2216:             this.recognition.stop();
+2217:             this.isRecording = false;
+2218:         } else {
+2219:             const input = document.getElementById('chat-input');
+2220:             this._voiceAccumulatedText = input ? input.value + ' ' : '';
+2221:             this._voiceLastResultTime = Date.now();
+2222:             this.recognition.start();
+2223:             this.isRecording = true;
+2224:             if (micBtn) micBtn.classList.add('recording');
+2225:             telegram.haptic('light');
+2226:         }
+2227:     }
+2228: 
+2229:     // ─── Панель смарт-контракта (вопросы Гермеса) ────────────────────────
+2230:     renderContractQuestions(questions = []) {
+2231:         const container = document.getElementById('contract-qa-container');
+2232:         if (!container) return;
+2233:         container.innerHTML = '';
+2234:         if (!questions.length) {
+2235:             container.innerHTML = '<div class="qa-empty">Нет активных вопросов от Гермеса</div>';
+2236:             return;
+2237:         }
+2238:         questions.forEach((q, idx) => {
+2239:             const wrap = document.createElement('div');
+2240:             wrap.className = 'qa-item';
+2241:             wrap.innerHTML = `
+2242:                 <div class="qa-question">${idx + 1}. ${this.escapeHtml(q.text)}</div>
+2243:                 <input type="text" class="qa-answer-input" placeholder="Ваш ответ..." data-qid="${q.id || idx}" />
+2244:             `;
+2245:             container.appendChild(wrap);
+2246:         });
+2247:         container.querySelectorAll('.qa-answer-input').forEach(inp => {
+2248:             inp.addEventListener('change', () => this.saveContractAnswers());
+2249:         });
+2250:     }
+2251: 
+2252:     saveContractAnswers() {
+2253:         const inputs = document.querySelectorAll('.qa-answer-input');
+2254:         const answers = {};
+2255:         inputs.forEach(inp => answers[inp.dataset.qid] = inp.value.trim());
+2256:         this.contractAnswers = answers;
+2257:         this.saveCache();
+2258:     }
+2259: 
+2260:     // ─── История ТЗ ──────────────────────────────────────────────────────
+2261:     async saveTaskSpecHistory(specText) {
+2262:         if (!specText?.trim()) return;
+2263:         const history = this.taskSpecHistory || [];
+2264:         history.unshift({ text: specText, timestamp: Date.now() });
+2265:         if (history.length > 20) history.pop();
+2266:         this.taskSpecHistory = history;
+2267:         try {
+2268:             if (window.Telegram?.WebApp?.CloudStorage) {
+2269:                 await new Promise((res, rej) => Telegram.WebApp.CloudStorage.setItem('task_spec_history', JSON.stringify(history), (err, ok) => err ? rej(err) : res(ok)));
+2270:             } else {
+2271:                 localStorage.setItem('task_spec_history', JSON.stringify(history));
+2272:             }
+2273:         } catch (e) { console.warn('[App] History save failed:', e); }
+2274:     }
+2275: 
+2276:     async loadTaskSpecHistory() {
+2277:         try {
+2278:             let raw = null;
+2279:             if (window.Telegram?.WebApp?.CloudStorage) {
+2280:                 raw = await new Promise((res, rej) => Telegram.WebApp.CloudStorage.getItem('task_spec_history', (err, val) => err ? rej(err) : res(val)));
+2281:             } else {
+2282:                 raw = localStorage.getItem('task_spec_history');
+2283:             }
+2284:             this.taskSpecHistory = raw ? JSON.parse(raw) : [];
+2285:         } catch (e) {
+2286:             this.taskSpecHistory = [];
+2287:         }
+2288:         this.renderTaskSpecHistory();
+2289:     }
+2290: 
+2291:     renderTaskSpecHistory() {
+2292:         const list = document.getElementById('task-history-list');
+2293:         if (!list) return;
+2294:         list.innerHTML = '';
+2295:         if (!this.taskSpecHistory?.length) {
+2296:             list.innerHTML = '<div class="history-empty">История пуста</div>';
+2297:             return;
+2298:         }
+2299:         this.taskSpecHistory.forEach((item, idx) => {
+2300:             const el = document.createElement('div');
+2301:             el.className = 'history-item';
+2302:             const time = new Date(item.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+2303:             el.innerHTML = `<span class="history-time">${time}</span><span class="history-text">${this.escapeHtml(item.text.slice(0, 60))}...</span>`;
+2304:             el.onclick = () => {
+2305:                 const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+2306:                 if (input) input.value = item.text;
+2307:                 telegram.haptic('light');
+2308:             };
+2309:             list.appendChild(el);
+2310:         });
+2311:     }
+2312: 
+2313:     // ─── Экспорт ТЗ ──────────────────────────────────────────────────────
+2314:     exportTaskSpec() {
+2315:         const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+2316:         const spec = input?.value?.trim() || '';
+2317:         const answers = this.contractAnswers || {};
+2318:         if (!spec && !Object.keys(answers).length) return telegram.showAlert('Нет данных для экспорта');
+2319: 
+2320:         const payload = {
+2321:             task_spec: spec,
+2322:             contract_answers: answers,
+2323:             exported_at: new Date().toISOString(),
+2324:             user_id: telegram.getUserId?.() || 'unknown'
+2325:         };
+2326:         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+2327:         const url = URL.createObjectURL(blob);
+2328:         const a = document.createElement('a');
+2329:         a.href = url;
+2330:         a.download = `task_spec_${Date.now()}.json`;
+2331:         document.body.appendChild(a);
+2332:         a.click();
+2333:         a.remove();
+2334:         URL.revokeObjectURL(url);
+2335:         telegram.haptic('success');
+2336:     }
+2337: }
+2338: 
+2339: let app;
+2340: document.addEventListener('DOMContentLoaded', () => {
+2341:     window.app = new NeuroEscrowApp();
+2342:     app = window.app;
+2343: });
+2344: 
+2345: window.addEventListener('message', (event) => {
+2346:     if (event.data && event.data.type === 'bot_data' && app) {
+2347:         app.handleBotData(event.data.payload);
+2348:     }
+2349: });
 </file>
 
 <file path="js/charts.js">

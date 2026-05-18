@@ -1485,7 +1485,7 @@ class NeuroEscrowApp {
             .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
             .replace(/```[\s\S]*?```/g, 'код')
             .replace(/<[^>]+>/g, '')
-            .substring(0, 3000);
+            .substring(0, 5000);
 
         // Pause recognition while speaking
         if (this.recognition && this.isRecording) {
@@ -1498,9 +1498,9 @@ class NeuroEscrowApp {
             this.ttsAudio = null;
         }
 
+        // Try Edge-TTS via Worker first (neural voice)
         try {
-            // Edge-TTS через Cloudflare Worker (нет CORS проблем)
-            console.log('[TTS] Requesting Edge-TTS via Worker:', cleanText.substring(0, 50) + '...');
+            console.log('[TTS] Trying Edge-TTS via Worker:', cleanText.substring(0, 50) + '...');
             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
@@ -1547,12 +1547,68 @@ class NeuroEscrowApp {
             if (!autoPlay) telegram.haptic('light');
 
         } catch (error) {
-            console.error('[TTS] Failed:', error.message);
-            this.updateSpeakButton(idx, false);
-            if (this.isRecording && this.recognition) {
-                try { this.recognition.start(); } catch {}
-            }
+            console.warn('[TTS] Edge-TTS failed, using cloud voice:', error.message);
+            this.speakWithCloudVoice(idx, cleanText, autoPlay);
         }
+    }
+
+    speakWithCloudVoice(idx, cleanText, autoPlay) {
+        if (!window.speechSynthesis) return;
+        
+        // Wait for voices to load (Chrome loads them asynchronously)
+        const trySpeak = () => {
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) {
+                console.warn('[TTS] No voices loaded, waiting...');
+                window.speechSynthesis.onvoiceschanged = () => {
+                    window.speechSynthesis.onvoiceschanged = null;
+                    trySpeak();
+                };
+                return;
+            }
+
+            // Find best cloud-based voice (Google or Microsoft neural voices)
+            const cloudVoice = voices.find(v => 
+                v.lang.startsWith('ru') && (
+                    v.name.includes('Google') || 
+                    v.name.includes('Microsoft') || 
+                    v.name.includes('Natural') ||
+                    v.name.includes('Neural') ||
+                    v.name.includes('Pavel') ||
+                    v.name.includes('Irina') ||
+                    v.name.includes('Yuri') ||
+                    v.name.includes('Svetlana')
+                )
+            ) || voices.find(v => v.lang.startsWith('ru'));
+
+            console.log('[TTS] Using cloud voice:', cloudVoice?.name || 'default');
+
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'ru-RU';
+            utterance.rate = 0.95;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            if (cloudVoice) utterance.voice = cloudVoice;
+
+            utterance.onend = () => {
+                if (this.isRecording && this.recognition) {
+                    try { this.recognition.start(); } catch {}
+                }
+            };
+            utterance.onerror = () => {
+                if (this.isRecording && this.recognition) {
+                    try { this.recognition.start(); } catch {}
+                }
+            };
+
+            console.log('[TTS] Speaking with cloud voice:', cleanText.substring(0, 50) + '...');
+            window.speechSynthesis.speak(utterance);
+            if (!autoPlay) telegram.haptic('light');
+        };
+
+        trySpeak();
     }
 
     toggleSpeakMessage(idx) {
@@ -1562,10 +1618,10 @@ class NeuroEscrowApp {
             this.ttsAudio = null;
             this.currentSpeakIdx = null;
             this.updateSpeakButton(idx, false);
-            // Resume recognition
             if (this.isRecording && this.recognition) {
                 try { this.recognition.start(); } catch {}
             }
+            window.speechSynthesis?.cancel();
             return;
         }
 
@@ -1577,6 +1633,7 @@ class NeuroEscrowApp {
                 this.updateSpeakButton(this.currentSpeakIdx, false);
             }
         }
+        window.speechSynthesis?.cancel();
 
         this.currentSpeakIdx = idx;
         this.speakMessage(idx, false);
