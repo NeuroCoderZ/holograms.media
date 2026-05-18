@@ -414,6 +414,7 @@ export default {
       if (url.pathname === '/tts' && request.method === 'POST') {
         const data = await request.json();
         const { text, lang = 'ru', voice = 'xenia', engine = 'silero' } = data;
+        console.log('[TTS] Request received:', { engine, textLen: text?.length, voice });
 
         if (!text || text.length > 1000) {
           return new Response(JSON.stringify({ error: 'text required, max 1000 chars' }), {
@@ -424,7 +425,17 @@ export default {
 
         // Route to selected engine
         if (engine === 'silero') {
-          return await handleSileroTTS(text, voice, corsHeaders);
+          try {
+            return await handleSileroTTS(text, voice, corsHeaders);
+          } catch (error) {
+            console.error('[TTS] Silero failed, auto-fallback to VITS');
+            try {
+              return await handleVitsTTS(text, voice, corsHeaders);
+            } catch (vitsError) {
+              console.error('[TTS] VITS failed, auto-fallback to Google');
+              return await handleGoogleTTS(text, corsHeaders);
+            }
+          }
         } else if (engine === 'vits') {
           return await handleVitsTTS(text, voice, corsHeaders);
         } else if (engine === 'google') {
@@ -536,11 +547,13 @@ async function cleanupExpiredSessions(env) {
 // ═══════════════════════════════════════════════════════════
 
 async function handleSileroTTS(text, voice, corsHeaders) {
+  console.log('[TTS] Silero START:', { textLen: text.length, voice });
   try {
     const sileroSpace = 'https://neurosenko-tts-silero.hf.space';
     const speakerVoice = voice === 'male' ? 'aidar' : (voice === 'xenia' ? 'xenia' : 'xenia');
     
     // Step 1: Queue prediction
+    console.log('[TTS] Silero Step 1: POST /call/predict');
     const initResp = await fetch(`${sileroSpace}/call/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -549,21 +562,38 @@ async function handleSileroTTS(text, voice, corsHeaders) {
       })
     });
 
+    console.log('[TTS] Silero Step 1 response:', initResp.status, initResp.statusText);
+    
     if (!initResp.ok) {
       const errText = await initResp.text().catch(() => '');
+      console.error('[TTS] Silero Step 1 error:', errText.substring(0, 500));
       throw new Error(`Silero queue failed: ${initResp.status} ${errText.substring(0, 200)}`);
     }
     
-    const { event_id } = await initResp.json();
+    const initData = await initResp.json();
+    console.log('[TTS] Silero Step 1 data:', JSON.stringify(initData).substring(0, 200));
+    const { event_id } = initData;
+    
+    if (!event_id) {
+      console.error('[TTS] Silero no event_id:', initData);
+      throw new Error('Silero returned no event_id');
+    }
     
     // Step 2: Poll for result via SSE
+    console.log('[TTS] Silero Step 2: GET /call/predict/', event_id);
     const streamResp = await fetch(`${sileroSpace}/call/predict/${event_id}`);
+    console.log('[TTS] Silero Step 2 response:', streamResp.status, streamResp.statusText);
+    
     const reader = streamResp.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let audioUrl = null;
+    let eventCount = 0;
     
-    const timeout = setTimeout(() => reader.cancel(), 15000);
+    const timeout = setTimeout(() => {
+      console.warn('[TTS] Silero timeout after 15s');
+      reader.cancel();
+    }, 15000);
 
     try {
       while (true) {
@@ -575,10 +605,14 @@ async function handleSileroTTS(text, voice, corsHeaders) {
         buffer = lines.pop() || '';
         
         for (const line of lines) {
+          eventCount++;
+          console.log(`[TTS] Silero SSE event #${eventCount}:`, line.substring(0, 100));
+          
           if (line.startsWith('event: complete') || line.startsWith('event: completed')) {
             const dataIdx = lines.indexOf(line) + 1;
             if (dataIdx < lines.length && lines[dataIdx].startsWith('data:')) {
               const rawData = JSON.parse(lines[dataIdx].slice(5));
+              console.log('[TTS] Silero complete data:', JSON.stringify(rawData).substring(0, 300));
               if (rawData && rawData.path) {
                 audioUrl = `${sileroSpace}/file=${rawData.path}`;
               }
@@ -592,12 +626,17 @@ async function handleSileroTTS(text, voice, corsHeaders) {
       clearTimeout(timeout);
     }
 
-    if (!audioUrl) throw new Error('Silero TTS timeout');
+    console.log('[TTS] Silero audioUrl:', audioUrl);
+    if (!audioUrl) throw new Error('Silero TTS timeout - no audio URL');
 
     const audioResp = await fetch(audioUrl);
+    console.log('[TTS] Silero audio download:', audioResp.status, audioResp.headers.get('content-type'));
+    
     if (!audioResp.ok) throw new Error(`Silero audio download failed: ${audioResp.status}`);
     
     const audioBuffer = await audioResp.arrayBuffer();
+    console.log('[TTS] Silero SUCCESS:', audioBuffer.byteLength, 'bytes');
+    
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
@@ -612,27 +651,44 @@ async function handleSileroTTS(text, voice, corsHeaders) {
 }
 
 async function handleVitsTTS(text, voice, corsHeaders) {
+  console.log('[TTS] VITS START:', { textLen: text.length, voice });
   try {
     const speakerId = voice === 'male' ? 1 : 0;
     const vitsSpace = 'https://utrobinmv-tts-ru-free-hf-vits-low-multispeaker.hf.space';
     
+    console.log('[TTS] VITS Step 1: POST /call/predict');
     const initResp = await fetch(`${vitsSpace}/call/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: [text.substring(0, 1000), speakerId] })
     });
 
+    console.log('[TTS] VITS Step 1 response:', initResp.status, initResp.statusText);
+    
     if (!initResp.ok) {
       const errText = await initResp.text().catch(() => '');
+      console.error('[TTS] VITS Step 1 error:', errText.substring(0, 500));
       throw new Error(`VITS queue failed: ${initResp.status} ${errText.substring(0, 200)}`);
     }
     
-    const { event_id } = await initResp.json();
+    const initData = await initResp.json();
+    console.log('[TTS] VITS Step 1 data:', JSON.stringify(initData).substring(0, 200));
+    const { event_id } = initData;
+    
+    if (!event_id) {
+      console.error('[TTS] VITS no event_id:', initData);
+      throw new Error('VITS returned no event_id');
+    }
+    
+    console.log('[TTS] VITS Step 2: GET /call/predict/', event_id);
     const streamResp = await fetch(`${vitsSpace}/call/predict/${event_id}`);
+    console.log('[TTS] VITS Step 2 response:', streamResp.status, streamResp.statusText);
+    
     const reader = streamResp.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let audioUrl = null;
+    let eventCount = 0;
     
     const timeout = setTimeout(() => reader.cancel(), 15000);
 
@@ -646,10 +702,16 @@ async function handleVitsTTS(text, voice, corsHeaders) {
         buffer = lines.pop() || '';
         
         for (const line of lines) {
+          eventCount++;
+          if (eventCount <= 5) {
+            console.log(`[TTS] VITS SSE event #${eventCount}:`, line.substring(0, 100));
+          }
+          
           if (line.startsWith('event: complete') || line.startsWith('event: completed')) {
             const dataIdx = lines.indexOf(line) + 1;
             if (dataIdx < lines.length && lines[dataIdx].startsWith('data:')) {
               const rawData = JSON.parse(lines[dataIdx].slice(5));
+              console.log('[TTS] VITS complete data:', JSON.stringify(rawData).substring(0, 300));
               if (rawData && rawData.path) {
                 audioUrl = `${vitsSpace}/file=${rawData.path}`;
               }
@@ -663,12 +725,17 @@ async function handleVitsTTS(text, voice, corsHeaders) {
       clearTimeout(timeout);
     }
 
-    if (!audioUrl) throw new Error('VITS TTS timeout');
+    console.log('[TTS] VITS audioUrl:', audioUrl);
+    if (!audioUrl) throw new Error('VITS TTS timeout - no audio URL');
 
     const audioResp = await fetch(audioUrl);
+    console.log('[TTS] VITS audio download:', audioResp.status, audioResp.headers.get('content-type'));
+    
     if (!audioResp.ok) throw new Error(`VITS audio download failed: ${audioResp.status}`);
     
     const audioBuffer = await audioResp.arrayBuffer();
+    console.log('[TTS] VITS SUCCESS:', audioBuffer.byteLength, 'bytes');
+    
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
@@ -683,15 +750,17 @@ async function handleVitsTTS(text, voice, corsHeaders) {
 }
 
 async function handleGoogleTTS(text, corsHeaders) {
+  console.log('[TTS] Google START:', { textLen: text.length });
   try {
     const chunks = text.match(/[^.!?]+[.!?]*/g) || [text];
     const audioSegments = [];
     
-    for (const chunk of chunks) {
-      const trimmed = chunk.trim();
+    for (let i = 0; i < chunks.length; i++) {
+      const trimmed = chunks[i].trim();
       if (!trimmed) continue;
       
       const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ru&q=${encodeURIComponent(trimmed.substring(0, 180))}`;
+      console.log(`[TTS] Google chunk ${i + 1}:`, trimmed.substring(0, 50));
       
       const resp = await fetch(googleUrl, {
         headers: {
@@ -699,11 +768,14 @@ async function handleGoogleTTS(text, corsHeaders) {
         }
       });
       
+      console.log(`[TTS] Google chunk ${i + 1} response:`, resp.status, resp.headers.get('content-type'));
+      
       if (resp.ok) {
         audioSegments.push(await resp.arrayBuffer());
       }
     }
     
+    console.log('[TTS] Google segments:', audioSegments.length);
     if (audioSegments.length === 0) throw new Error('Google TTS failed - no segments');
     
     const totalLength = audioSegments.reduce((acc, val) => acc + val.byteLength, 0);
@@ -714,6 +786,7 @@ async function handleGoogleTTS(text, corsHeaders) {
       offset += segment.byteLength;
     }
     
+    console.log('[TTS] Google SUCCESS:', totalLength, 'bytes');
     return new Response(mergedAudio, {
       headers: {
         ...corsHeaders,
@@ -728,6 +801,7 @@ async function handleGoogleTTS(text, corsHeaders) {
 }
 
 async function handleTTSPipeline(text, voice, corsHeaders) {
+  console.log('[TTS] Pipeline START');
   // Try Silero first
   try {
     return await handleSileroTTS(text, voice, corsHeaders);

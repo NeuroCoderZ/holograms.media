@@ -1530,8 +1530,17 @@ class NeuroEscrowApp {
                     })
                 });
 
-                if (!resp.ok) throw new Error(`TTS failed: ${resp.status}`);
-                audioBlobs.push(await resp.blob());
+                console.log(`[TTS] Response status: ${resp.status}, content-type: ${resp.headers.get('content-type')}`);
+                
+                if (!resp.ok) {
+                    const errText = await resp.text().catch(() => '');
+                    console.error('[TTS] Error response:', errText.substring(0, 500));
+                    throw new Error(`TTS failed: ${resp.status}`);
+                }
+                
+                const blob = await resp.blob();
+                console.log(`[TTS] Chunk ${chunks.indexOf(chunk) + 1}: ${blob.size} bytes, type: ${blob.type}`);
+                audioBlobs.push(blob);
             }
 
             // Combine all audio chunks
