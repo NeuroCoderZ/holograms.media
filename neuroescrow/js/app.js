@@ -1390,6 +1390,7 @@ class NeuroEscrowApp {
                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
                 </div>
             ` : '';
+            const speakBtn = isHermesComplete ? `<button class="speak-btn" onclick="app.speakMessage(${idx})" title="Прослушать">🔊</button>` : '';
             const timeHtml = `<span class="msg-time">${this.formatTime(msg.timestamp)}</span>`;
             
             return `
@@ -1397,6 +1398,7 @@ class NeuroEscrowApp {
                 <div class="message-bubble${streamingClass}">
                     <div class="message-content">${this.renderMarkdown(msg.text)}</div>
                     <div class="message-footer">
+                        ${speakBtn}
                         ${feedbackHtml}
                         ${timeHtml}
                     </div>
@@ -1410,9 +1412,18 @@ class NeuroEscrowApp {
 
     speakMessage(idx, autoPlay = false) {
         if (!this.ttsEnabled) return;
-        
+        if (!window.speechSynthesis) {
+            console.warn('[TTS] SpeechSynthesis not supported');
+            return;
+        }
+
+        // Resume if paused (common in mobile browsers)
+        if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+        }
+
         const msg = this.chatMessages[idx];
-        if (!msg || !window.speechSynthesis) return;
+        if (!msg || !msg.text) return;
 
         // Stop any current speech
         window.speechSynthesis.cancel();
@@ -1423,7 +1434,7 @@ class NeuroEscrowApp {
             .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
             .replace(/```[\s\S]*?```/g, 'код')
             .replace(/<[^>]+>/g, '')
-            .substring(0, 5000); // TTS limit
+            .substring(0, 5000);
 
         this.ttsUtterance = new SpeechSynthesisUtterance(cleanText);
         this.ttsUtterance.lang = 'ru-RU';
@@ -1431,16 +1442,31 @@ class NeuroEscrowApp {
         this.ttsUtterance.pitch = 1.0;
         this.ttsUtterance.volume = 1.0;
 
-        // Try to find a Russian voice
+        // Try to find a Russian voice (async loading fix)
         const voices = window.speechSynthesis.getVoices();
         const ruVoice = voices.find(v => v.lang.startsWith('ru') && v.name.includes('Google'))
-            || voices.find(v => v.lang.startsWith('ru'));
-        if (ruVoice) this.ttsUtterance.voice = ruVoice;
+            || voices.find(v => v.lang.startsWith('ru'))
+            || voices.find(v => v.lang.startsWith('ru-RU'));
+        
+        if (ruVoice) {
+            this.ttsUtterance.voice = ruVoice;
+            console.log('[TTS] Using voice:', ruVoice.name);
+        } else if (voices.length === 0) {
+            console.warn('[TTS] No voices loaded yet, waiting...');
+            // Retry after voices load
+            window.speechSynthesis.onvoiceschanged = () => {
+                this.speakMessage(idx, autoPlay);
+            };
+            return;
+        }
 
-        // Auto-stop on user interaction
         this.ttsUtterance.onend = () => { this.ttsUtterance = null; };
-        this.ttsUtterance.onerror = () => { this.ttsUtterance = null; };
+        this.ttsUtterance.onerror = (e) => { 
+            console.error('[TTS] Error:', e); 
+            this.ttsUtterance = null; 
+        };
 
+        console.log('[TTS] Speaking:', cleanText.substring(0, 50) + '...');
         window.speechSynthesis.speak(this.ttsUtterance);
         if (!autoPlay) telegram.haptic('light');
     }
@@ -1477,11 +1503,15 @@ class NeuroEscrowApp {
         this.renderChatMessages();
         this.saveCache();
         
-        // Auto-speak Hermes messages
-        if (sender === 'hermes' && this.ttsEnabled && text) {
+        // Try auto-speak Hermes messages (may be blocked by browser without user gesture)
+        if (sender === 'hermes' && this.ttsEnabled && text && window.speechSynthesis) {
             const idx = this.chatMessages.length - 1;
-            // Small delay to ensure render is complete
-            setTimeout(() => this.speakMessage(idx, true), 300);
+            setTimeout(() => {
+                // Check if speechSynthesis is actually working
+                if (window.speechSynthesis.getVoices().length > 0) {
+                    this.speakMessage(idx, true);
+                }
+            }, 500);
         }
     }
 
