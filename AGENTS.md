@@ -13,10 +13,47 @@
 ## КРИТИЧЕСКИЕ КОНСТАНТЫ 
 
 ```
-# LLM Модели (Hermes Family Architecture - Model Lock 13.05.2026)
-HERMES_MAIN   = "mistral-medium-3.5"            # Hermes Main (128B, 256k ctx) - Personal Tria (Local)
-HERMES_SUB    = "mistral-small-latest"          # Hermes Sub (Architecture/Routing) - Personal Tria
-EMBED_MODEL   = "gemini-embedding-2-preview"    # Embeddings ONLY (3072d) - NEVER change
+# LLM Модели (Hermes Router Architecture - Model Lock 18.05.2026)
+# Гермес — Meta-Agent Router, НЕ одна модель. Он маршрутизирует запросы к лучшим LLM.
+
+HERMES_ROUTER = true                    # Гермес оркестрирует, не генерирует сам
+HERMES_MAIN   = "mistral-medium-3.5"    # Default fallback (128B, 256k ctx)
+EMBED_MODEL   = "gemini-embedding-2-preview"  # Embeddings ONLY (3072d) - NEVER change
+
+# LLM POOL — Code Arena WebDev Rankings (May 14, 2026)
+# Использовать ТОЛЬКО актуальные модели из топа. Рейтинг обновляется ежемесячно.
+# Источник: https://arena.lmsys.org (Code Arena | WebDev)
+
+LLM_POOL = {
+  # TIER 1 — Элита (использовать для критических задач)
+  "claude_opus_4_7_thinking": { rank: 1,  score: 1567, price: "$5/$25",  context: "1M",   use_for: ["complex_architecture", "critical_code_review"] },
+  "claude_opus_4_7":          { rank: 2,  score: 1559, price: "$5/$25",  context: "1M",   use_for: ["complex_architecture", "legal_terms", "contract_draft"] },
+  "claude_opus_4_6_thinking": { rank: 3,  score: 1546, price: "$5/$25",  context: "1M",   use_for: ["deep_reasoning", "multi_step_planning"] },
+  "claude_opus_4_6":          { rank: 4,  score: 1541, price: "$5/$25",  context: "1M",   use_for: ["architecture", "code_generation"] },
+  
+  # TIER 2 — Сильные (баланс цена/качество)
+  "glm_5_1":                  { rank: 5,  score: 1532, price: "$1.4/$4.4", context: "202K", use_for: ["tech_architecture", "code_gen", "budget_friendly"] },
+  "claude_sonnet_4_6":        { rank: 6,  score: 1524, price: "$3/$15",  context: "1M",   use_for: ["general_coding", "conversation", "fast_response"] },
+  "kimi_k2_6":                { rank: 7,  score: 1519, price: "$0.95/$4", context: "262K", use_for: ["code_gen", "cost_effective"] },
+  
+  # TIER 3 — Доступные (для массовых запросов)
+  "gpt_5_5_xhigh":            { rank: 9,  score: 1501, price: "N/A",     context: "N/A",  use_for: ["codex_harness", "automated_coding"] },
+  "qwen3_6_max_preview":      { rank: 10, score: 1491, price: "$1.04/$6.24", context: "262K", use_for: ["general_tasks", "multilingual", "cost_effective"] },
+  "qwen3_6_plus":             { rank: 15, score: 1460, price: "$0.33/$1.95", context: "1M",   use_for: ["agent_tasks", "default_router", "budget_friendly"] },
+  "deepseek_v4_pro_thinking": { rank: 16, score: 1458, price: "$0.43/$0.87", context: "1M",   use_for: ["reasoning", "code_gen", "ultra_budget"] },
+  
+  # MULTIMODAL (не в Code Arena, но нужны для генерации)
+  "gemini_2_0_flash":         { modality: "image_gen", use_for: ["wireframes", "architecture_diagrams", "visual_specs"] },
+  "gemini_embedding_2_preview": { modality: "embedding", dim: 3072, use_for: ["RAG", "similarity_search"] }
+}
+
+# ROUTING RULES:
+# - Бюджет < $0.01 → deepseek_v4_pro_thinking или kimi_k2_6
+# - Бюджет $0.01-$0.1 → glm_5_1 или qwen3_6_plus
+# - Бюджет > $0.1 → claude_sonnet_4_6 или claude_opus_4_7
+# - Критический код → claude_opus_4_7_thinking
+# - Визуал → gemini_2_0_flash
+# - Embeddings → gemini_embedding_2_preview (3072d, НИКОГДА не менять)
 
 # Triple Token Architecture (Holochain Philosophy)
 # Personal (Local) WINS over Global!
@@ -25,11 +62,11 @@ GLOBAL_TOKEN   = "global_{agent_id}"                   # Medium precision: 3 dig
 NETWORK_TOKEN  = "pattern_hash"                        # Low precision: 2 digits (0.85)
 
 # Hermes Family (Meta-Agents / DGM-H)
-HERMES_CORE    = "hermes_core"       # Meta-Agent / Coordinator
+HERMES_CORE    = "hermes_core"       # Meta-Agent / Coordinator / Router
 HERMES_BEHAVIOR = "hermes_behavior"   # Gestures, Clicks, Predictions (Markov Chain)
 HERMES_CONTEXT = "hermes_context"   # Codebase, Docs, Stack
 HERMES_MEMORY  = "hermes_memory"    # Enkephalon + AstraDB (3072d)
-HERMES_WALLET  = "hermes_wallet"    # Obolos, Energy, DAO
+HERMES_WALLET  = "hermes_wallet"    # Obolos, Energy, DAO, LLM Cost Tracking
 
 # Эмбеддинг модель
 EMBED_MODEL   = "gemini-embedding-2-preview"
@@ -69,10 +106,13 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 3. **ПЕРЕД КАЖДОЙ ПРАВКОЙ:** прочитать актуальный кусок файла через Read, убедиться что old_str точно совпадает.
 4. **ЗАПРЕЩЕНО:** добавлять NPU, ONNX, TurboQuant в браузере, LoRA в браузере, ARC-AGI как метрику, DGM-H самомодификацию кода.
 5. **EMBED_DIM = 3072 ВЕЗДЕ И ВСЕГДА.** Никаких 768.
-6. **Модели:** Hermes Main (`mistral-medium-3.5`, 128B) — основная (Personal Tria). Hermes Sub (`mistral-small-latest`) — архитектура/роутинг. Embeddings (`gemini-embedding-2-preview`, 3072d) — ТОЛЬКО для RAG. **Gemini генеративные модели выведены из стека (май 2026). OpenClaw УДАЛЕН**.
+6. **Модели:** Hermes — Meta-Agent Router (НЕ одна модель). Маршрутизирует запросы к лучшим LLM из Code Arena WebDev (May 14, 2026). Default fallback: `mistral-medium-3.5`. Embeddings: `gemini-embedding-2-preview` (3072d) — ТОЛЬКО для RAG. **Gemini генеративные модели выведены из стека (май 2026). OpenClaw УДАЛЕН**.
 7. **Triple Token Architecture:** Personal (Local, 6-8 digits) WINS over Global (3 digits) over Network (2 digits). **Personal (Local) WINS over Global.**
 8. **⛔ ЛОКАЛЬНЫЕ СБОРКИ И ТЕСТЫ ЗАПРЕЩЕНЫ.** Запуск `npm run build`, `npm run dev`, `vite build`, `npm test`, `python -m pytest` локально строго запрещён. Все проверки, билды и валидации выполняются ТОЛЬКО в CI/CD (GitHub Actions → Cloudflare Pages / Koyeb). Агенты работают исключительно через `git push` и мониторинг ранов.
-9. **Hermes Family:** Core (Meta-Agent), Behavior (Gestures/Clicks), Context (Docs/Code), Memory (AstraDB), Wallet (Obolos/Energy).
+9. **Hermes Family:** Core (Meta-Agent/Router), Behavior (Gestures/Clicks), Context (Docs/Code), Memory (AstraDB), Wallet (Obolos/Energy/LLM Cost).
+10. **Hermes Router Architecture:** Гермес — оркестратор, не генератор. Классифицирует интенцию → выбирает лучшую LLM → оценивает стоимость → диспатчит запрос → агрегирует ответ. Поддерживает multi-LLM параллельные консультации.
+11. **Currency Rates:** Гермес всегда знает актуальные курсы TON/USD/RUB через CoinGecko API + ExchangeRate API. Кэширует в KV + Memory.
+12. **Contract State Machine:** Гермес ведёт клиента по фазам (draft → review → sorting → agreement → escrow). Каждая фаза имеет опорные фразы, условия перехода, цели.
 
 ---
 
@@ -87,11 +127,27 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 - **setViewOffset ЗАМЕНЁН на hologramPivot.position.x lerp** — не ломает aspect ratio
 
 ### Backend (backend/)
-- **FastAPI** на Koyeb (Docker)
+- **Cloudflare Workers** — Hermes Router (hermes_router.js)
+- **HermesAgent** (hermes.js) — Meta-Agent / Coordinator / Contract State Machine
+- **HermesRouter** (hermes_router.js) — LLM Router + Cost Estimator + Currency Rates + Experience DB + Multi-LLM Dispatch
 - **TriaOrchestrator** — Darwin Critic (A/B candidates), SUB_MODEL selection
 - **MetaInstructionService** — системные инструкции как данные AstraDB
 - **Auto-create collections** при старте: user_chat_sessions, tria_meta_instructions
 - **Fallback на Mistral** при Gemini 429 (v0.20.265)
+
+#### Эндпоинты Hermes Router:
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/chat` | POST | Chat with Hermes (use_router=true для multi-LLM) |
+| `/chat/stream` | POST | SSE streaming chat |
+| `/llm-pool` | GET | Список доступных LLM с рейтингами |
+| `/rates` | GET | Актуальные курсы TON/USD/RUB |
+| `/cost-estimate` | POST | Оценка стоимости запроса |
+| `/contract-state` | GET | Состояние контракта сессии |
+| `/spec` | POST | Генерация структурированного ТЗ |
+| `/satisfaction` | POST | Оценка удовлетворённости клиента |
+| `/intent` | POST | Классификация намерения клиента |
+| `/router-stats` | GET | Статистика роутера |
 
 ### Хранилище
 - **AstraDB** — единственное. Коллекции: tria_knowledge_gemini (3072d COSINE), user_chat_sessions, tria_meta_instructions

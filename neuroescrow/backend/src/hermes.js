@@ -1,10 +1,12 @@
 /**
  * Hermes Agent - JavaScript Edition
- * Powered by Mistral Medium 3.5
+ * Powered by Mistral Medium 3.5 + Multi-LLM Router Architecture
+ * Date: 18.05.2026
  */
 
 import { HermesRAG } from './rag.js';
 import { moderateContent } from './moderation.js';
+import { HermesRouter } from './hermes_router.js';
 
 const RAG_CONFIG = {
   similarityThreshold: 0.7,
@@ -14,6 +16,65 @@ const RAG_CONFIG = {
   logHits: true,
   logMisses: true
 };
+
+// ═══════════════════════════════════════════════════════════
+// CONTRACT STATE MACHINE — ведение клиента по фазам
+// ═══════════════════════════════════════════════════════════
+
+const CONTRACT_PHASES = {
+  draft: {
+    goal: "Собрать ТЗ",
+    required_fields: ["title", "description"],
+    anchor_phrases: ["опишите задачу", "что нужно сделать", "какой результат ожидается", "расскажите подробнее о проекте"],
+    exit_condition: (fields) => fields.title && fields.description,
+    next: "review",
+    prompt_addition: "Сейчас фаза СОСТАВЛЕНИЯ. Собирай ТЗ. Задавай уточняющие вопросы о задаче, результате, требованиях."
+  },
+  review: {
+    goal: "Уточнить детали",
+    required_fields: ["budget", "deadline", "tech_stack"],
+    anchor_phrases: ["какой бюджет", "какие сроки", "какие технологии предпочитаете", "подходит ли описание", "что добавить или убрать"],
+    exit_condition: (fields) => fields.budget && fields.deadline,
+    next: "agreement",
+    prompt_addition: "Сейчас фаза СОГЛАСОВАНИЯ. Уточняй бюджет, сроки, технологии. Предлагай оптимальные решения."
+  },
+  sorting: {
+    goal: "Подбор исполнителя",
+    required_fields: ["tech_stack", "requirements"],
+    anchor_phrases: ["подберу нейрокодера", "какие требования к исполнителю", "предпочтения по стеку"],
+    exit_condition: (fields) => fields.tech_stack,
+    next: "agreement",
+    prompt_addition: "Сейчас фаза ПОДБОРА. Помоги выбрать исполнителя по квалификации и рейтингу."
+  },
+  agreement: {
+    goal: "Согласовать условия",
+    required_fields: ["payment_terms", "milestones"],
+    anchor_phrases: ["условия оплаты", "этапы работы", "готовы создать контракт", "штрафы за просрочку"],
+    exit_condition: (fields) => fields.payment_terms,
+    next: "escrow",
+    prompt_addition: "Сейчас фаза СДЕЛКИ. Согласовывай условия оплаты, этапы, штрафы."
+  },
+  escrow: {
+    goal: "Активация эскроу",
+    required_fields: ["depositor", "beneficiary", "amount"],
+    anchor_phrases: ["внесите токены в эскроу", "контракт активирован", "отслеживание исполнения"],
+    exit_condition: (fields) => fields.amount,
+    next: "completed",
+    prompt_addition: "Сейчас фаза ЭСКРОУ. Помоги клиенту внести токены и отслеживать исполнение."
+  }
+};
+
+// ═══════════════════════════════════════════════════════════
+// SATISFACTION SCORER — оценка удовлетворённости клиента
+// ═══════════════════════════════════════════════════════════
+
+const SATISFACTION_PROMPT = `Оцени удовлетворённость клиента по шкале 0.0-1.0 на основе диалога.
+Критерии:
+- 0.8-1.0: клиент доволен, все вопросы решены
+- 0.5-0.8: клиент заинтересован, но есть уточнения
+- 0.0-0.5: клиент недоволен или запутан
+
+Верни ТОЛЬКО число: {"score": 0.75, "reason": "краткое объяснение"}`;
 
 export class HermesAgent {
   constructor(kvCache, env) {
@@ -28,10 +89,71 @@ export class HermesAgent {
     this.ragHits = 0;
     this.ragMisses = 0;
     this.env = env;
+    
+    // Router Architecture
+    this.router = env?.MISTRAL_API_KEY ? new HermesRouter(env) : null;
+    
+    // Contract state per session
+    this.contractStates = new Map();
   }
   
-  getSystemPrompt(persona = 'hermes') {
-    const prompts = {
+  getContractState(sessionId) {
+    if (!this.contractStates.has(sessionId)) {
+      this.contractStates.set(sessionId, {
+        phase: 'draft',
+        fields: {
+          title: null,
+          description: null,
+          budget: null,
+          deadline: null,
+          client: null,
+          coder: null,
+          tech_stack: null,
+          payment_terms: null,
+          milestones: null
+        },
+        completeness: 0,
+        satisfaction_score: 0.5,
+        history: []
+      });
+    }
+    return this.contractStates.get(sessionId);
+  }
+  
+  updateContractPhase(sessionId, newFields = {}) {
+    const state = this.getContractState(sessionId);
+    
+    // Update fields
+    for (const [key, value] of Object.entries(newFields)) {
+      if (value && state.fields.hasOwnProperty(key)) {
+        state.fields[key] = value;
+      }
+    }
+    
+    // Calculate completeness
+    const allFields = Object.values(state.fields).filter(v => v !== null).length;
+    const totalFields = Object.keys(state.fields).length;
+    state.completeness = allFields / totalFields;
+    
+    // Check phase exit condition
+    const phaseConfig = CONTRACT_PHASES[state.phase];
+    if (phaseConfig && phaseConfig.exit_condition(state.fields)) {
+      const oldPhase = state.phase;
+      state.phase = phaseConfig.next;
+      console.log(`[Contract] Phase transition: ${oldPhase} → ${state.phase}`);
+    }
+    
+    return state;
+  }
+  
+  getAnchorPhrases(sessionId) {
+    const state = this.getContractState(sessionId);
+    const phaseConfig = CONTRACT_PHASES[state.phase];
+    return phaseConfig?.anchor_phrases || [];
+  }
+  
+  getSystemPrompt(persona = 'hermes', sessionId = null) {
+    const basePrompts = {
       hermes: `Ты — Гермес, AI-ассистент платформы NeuroEscrow. Ты помогаешь клиентам и нейрокодерам с безопасными сделками через эскроу-смарт-контракты на блокчейне TON.
 
 Твои основные функции:
@@ -47,16 +169,32 @@ export class HermesAgent {
 2. Согласование — утверждение и публикация на доске
 3. Подбор — сортировка нейрокодеров по рейтингу
 4. Сделка — согласование деталей с исполнителем  
-5. Эскроу — клиент заводит токены, отслеживание исполнения
-
-Отвечай дружелюбно и профессионально. Если у тебя есть контекст из RAG — используй его. Если нет — отвечай на основе своих знаний как AI-ассистент NeuroEscrow.`,
+5. Эскроу — клиент заводит токены, отслеживание исполнения`,
       
       client: `Ты — Гермес, помощник в NeuroEscrow. Фокус: помощь клиенту в создании безопасных сделок. Жизненный цикл: составление → согласование → подбор → сделка → эскроу.`,
       
       creator: `Ты — Гермес, помощник в NeuroEscrow. Фокус: помощь нейрокодеру-исполнителю. Помогай с поиском заданий, оценкой ТЗ и ведением сделок.`
     };
     
-    return prompts[persona] || prompts.hermes;
+    let prompt = basePrompts[persona] || basePrompts.hermes;
+    
+    // Add contract phase context
+    if (sessionId) {
+      const state = this.getContractState(sessionId);
+      const phaseConfig = CONTRACT_PHASES[state.phase];
+      if (phaseConfig) {
+        prompt += `\n\nТЕКУЩАЯ ФАЗА: ${state.phase.toUpperCase()} — ${phaseConfig.goal}`;
+        prompt += `\n${phaseConfig.prompt_addition}`;
+        prompt += `\nЗаполненные поля: ${JSON.stringify(state.fields)}`;
+        prompt += `\nПолнота контракта: ${(state.completeness * 100).toFixed(0)}%`;
+        prompt += `\nОпорные фразы для этой фазы: ${phaseConfig.anchor_phrases.join(', ')}`;
+        prompt += `\nТвоя задача — вести клиента к заполнению всех полей контракта. Используй опорные фразы чтобы удерживать фокус.`;
+      }
+    }
+    
+    prompt += `\n\nОтвечай дружелюбно и профессионально. Если у тебя есть контекст из RAG — используй его. Если нет — отвечай на основе своих знаний как AI-ассистент NeuroEscrow.`;
+    
+    return prompt;
   }
   
   getSessionHistory(sessionId, limit = 10) {
@@ -194,7 +332,7 @@ export class HermesAgent {
     }
   }
   
-  async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true, extractContract = false) {
+  async chat(message, userId, sessionId, persona = 'hermes', imageUrl = null, useRag = true, extractContract = false, useRouter = false) {
     // Moderate content
     const moderation = moderateContent(message);
     if (!moderation.safe) {
@@ -205,20 +343,68 @@ export class HermesAgent {
       };
     }
     
+    // Router mode — multi-LLM orchestration
+    if (useRouter && this.router) {
+      return await this.chatWithRouter(message, userId, sessionId, persona);
+    }
+    
+    // Standard mode — single LLM (Mistral)
+    return await this.chatStandard(message, userId, sessionId, persona, imageUrl, useRag, extractContract);
+  }
+  
+  async chatWithRouter(message, userId, sessionId, persona) {
+    const contractState = this.getContractState(sessionId);
+    
+    try {
+      const result = await this.router.processRequest(message, contractState);
+      
+      // Update contract state from router's intent
+      if (result.intent.missing_fields) {
+        this.updateContractPhase(sessionId);
+      }
+      
+      // Extract contract fields from aggregated response
+      const extractedFields = await this.extractContractFields(message, sessionId);
+      if (extractedFields) {
+        this.updateContractPhase(sessionId, extractedFields);
+      }
+      
+      // Add to session
+      this.addToSession(sessionId, 'user', message);
+      this.addToSession(sessionId, 'assistant', result.spec.aggregated_response);
+      
+      return {
+        response: result.spec.aggregated_response,
+        blocked: false,
+        context_used: false,
+        tokens_used: result.spec.cost_summary.total_tokens,
+        contract_fields: extractedFields,
+        contract_state: this.getContractState(sessionId),
+        cost_estimate: result.cost_estimate,
+        intent: result.intent,
+        llm_selection: result.llm_selection,
+        rates: result.rates,
+        router_mode: true
+      };
+    } catch (error) {
+      console.warn('[Router] Failed, falling back to standard:', error.message);
+      return await this.chatStandard(message, userId, sessionId, persona, null, true, true);
+    }
+  }
+  
+  async chatStandard(message, userId, sessionId, persona, imageUrl, useRag, extractContract) {
     // Build context
     let context = '';
     if (useRag) {
       context = await this.buildContext(message, userId, sessionId);
     }
     
-    // RAG is enhancement, not requirement — always proceed to LLM
-    
     // Get history
     const history = this.getSessionHistory(sessionId);
     
-    // Build messages
+    // Build messages with contract phase context
     const messages = [
-      { role: 'system', content: this.getSystemPrompt(persona) }
+      { role: 'system', content: this.getSystemPrompt(persona, sessionId) }
     ];
     
     if (context) {
@@ -284,6 +470,11 @@ export class HermesAgent {
         extractedFields = await this.extractContractFields(message, sessionId);
       }
       
+      // Update contract state
+      if (extractedFields) {
+        this.updateContractPhase(sessionId, extractedFields);
+      }
+      
       // Add to session
       this.addToSession(sessionId, 'user', message);
       this.addToSession(sessionId, 'assistant', assistantMessage);
@@ -303,7 +494,9 @@ export class HermesAgent {
         blocked: false,
         context_used: !!context,
         tokens_used: data.usage?.total_tokens || 0,
-        contract_fields: extractedFields
+        contract_fields: extractedFields,
+        contract_state: this.getContractState(sessionId),
+        router_mode: false
       };
       
     } catch (error) {
@@ -359,6 +552,95 @@ export class HermesAgent {
       
     } catch (error) {
       return `Ошибка создания резюме: ${error.message}`;
+    }
+  }
+  
+  async generateSpec(sessionId) {
+    const state = this.getContractState(sessionId);
+    const history = this.getSessionHistory(sessionId, 50);
+    
+    const specPrompt = `Ты — генератор структурированных спеков для NeuroEscrow.
+Создай подробный черновик ТЗ для нейрокодера на основе диалога с клиентом.
+
+Формат ответа — JSON:
+{
+  "title": "название проекта",
+  "description": "подробное описание",
+  "tech_stack": ["Flutter", "Firebase", "TON Connect"],
+  "modules": ["модуль 1", "модуль 2"],
+  "milestones": [{"name": "этап", "percent": 30, "days": 7}],
+  "budget_ton": 100,
+  "deadline_days": 30,
+  "risks": ["риск 1", "риск 2"],
+  "acceptance_criteria": ["критерий 1", "критерий 2"],
+  "for_neurocoder": "инструкция для нейрокодера"
+}`;
+
+    const conversation = history.map(m => `${m.role}: ${m.content}`).join('\n');
+    
+    try {
+      const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'system', content: specPrompt },
+            { role: 'user', content: `Поля контракта: ${JSON.stringify(state.fields)}\n\nДиалог:\n${conversation}` }
+          ],
+          temperature: 0.3,
+          max_tokens: 3000,
+          response_format: { type: 'json_object' }
+        })
+      });
+      
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      const data = await response.json();
+      return JSON.parse(data.choices[0].message.content);
+    } catch (error) {
+      console.warn('[Spec] Generation failed:', error.message);
+      return null;
+    }
+  }
+  
+  async assessSatisfaction(sessionId) {
+    const history = this.getSessionHistory(sessionId, 10);
+    if (history.length < 2) return { score: 0.5, reason: 'Недостаточно данных' };
+    
+    const conversation = history.map(m => `${m.role}: ${m.content}`).join('\n');
+    
+    try {
+      const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'system', content: SATISFACTION_PROMPT },
+            { role: 'user', content: conversation }
+          ],
+          temperature: 0.1,
+          max_tokens: 100,
+          response_format: { type: 'json_object' }
+        })
+      });
+      
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      const data = await response.json();
+      const parsed = JSON.parse(data.choices[0].message.content);
+      
+      const state = this.getContractState(sessionId);
+      state.satisfaction_score = parsed.score || 0.5;
+      
+      return parsed;
+    } catch (error) {
+      return { score: 0.5, reason: error.message };
     }
   }
   

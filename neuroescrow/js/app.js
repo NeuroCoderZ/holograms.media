@@ -440,7 +440,7 @@ class NeuroEscrowApp {
         }
     }
     
-    applyExtractedFields(fields) {
+    applyExtractedFields(fields, contractState = null) {
         if (!fields || typeof fields !== 'object') return;
         
         let changed = false;
@@ -462,6 +462,13 @@ class NeuroEscrowApp {
                     console.log(`[Contract] Auto-filled ${field}: ${value}`);
                 }
             }
+        }
+        
+        // If router sent contract_state, sync phase and completeness
+        if (contractState) {
+            this.smartContract.phase = contractState.phase || this.smartContract.phase;
+            this.smartContract.completeness = contractState.completeness || 0;
+            console.log(`[Contract] Phase: ${this.smartContract.phase}, Completeness: ${(this.smartContract.completeness * 100).toFixed(0)}%`);
         }
         
         if (changed) {
@@ -1396,7 +1403,8 @@ class NeuroEscrowApp {
                     message: text,
                     user_id: telegram.getUserId(),
                     session_id: `tg_${telegram.getUserId()}`,
-                    persona: 'hermes'
+                    persona: 'hermes',
+                    use_router: true
                 })
             });
 
@@ -1431,7 +1439,11 @@ class NeuroEscrowApp {
                             if (parsed.done) {
                                 // Handle contract fields from final event
                                 if (parsed.contract_fields) {
-                                    this.applyExtractedFields(parsed.contract_fields);
+                                    this.applyExtractedFields(parsed.contract_fields, parsed.contract_state);
+                                }
+                                // Handle cost estimate
+                                if (parsed.cost_estimate) {
+                                    console.log('[Cost]', parsed.cost_estimate.cost.ton, 'TON |', parsed.cost_estimate.cost.usd, 'USD');
                                 }
                                 break;
                             }
@@ -1456,7 +1468,12 @@ class NeuroEscrowApp {
                     
                     // Auto-fill contract fields if extracted
                     if (data.contract_fields) {
-                        this.applyExtractedFields(data.contract_fields);
+                        this.applyExtractedFields(data.contract_fields, data.contract_state);
+                    }
+                    
+                    // Log cost if router mode
+                    if (data.cost_estimate) {
+                        console.log('[Router]', data.cost_estimate.cost.ton, 'TON |', data.cost_estimate.cost.usd, 'USD');
                     }
                 } else if (data.error) {
                     this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);

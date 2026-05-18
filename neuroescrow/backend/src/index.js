@@ -69,10 +69,10 @@ export default {
           });
         }
 
-        const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes' } = data;
+        const { message, user_id = 'anonymous', session_id = 'default', persona = 'hermes', use_router = false } = data;
 
         const hermes = new HermesAgent(env.CACHE, env);
-        const result = await hermes.chat(message, user_id, session_id, persona, null, true, true);
+        const result = await hermes.chat(message, user_id, session_id, persona, null, true, true, use_router);
 
         // Persist session to KV (fire-and-forget)
         ctx.waitUntil(saveSession(env, session_id, hermes.getSessionHistory(session_id)));
@@ -288,6 +288,122 @@ export default {
         const hermes = new HermesAgent(env.CACHE, env);
         const result = await handleTelegramUpdate(update, env, hermes);
         return new Response(JSON.stringify(result), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // NEW ENDPOINTS — Hermes Router Architecture
+      // ═══════════════════════════════════════════════════════════
+
+      // LLM Pool — список доступных моделей
+      if (url.pathname === '/llm-pool' && request.method === 'GET') {
+        const { HermesRouter } = await import('./hermes_router.js');
+        const router = new HermesRouter(env);
+        return new Response(JSON.stringify({
+          llm_pool: router.getLLMPool(),
+          stats: router.getStats()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Currency Rates — актуальные курсы
+      if (url.pathname === '/rates' && request.method === 'GET') {
+        const { HermesRouter } = await import('./hermes_router.js');
+        const router = new HermesRouter(env);
+        const rates = await router.getRates();
+        return new Response(JSON.stringify(rates), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Cost Estimate — оценка стоимости запроса
+      if (url.pathname === '/cost-estimate' && request.method === 'POST') {
+        const data = await request.json();
+        const { task = 'simple_question', complexity = 1.0, llm = 'mistral_medium_3_5' } = data;
+
+        const { HermesRouter } = await import('./hermes_router.js');
+        const router = new HermesRouter(env);
+        const estimate = await router.costEstimator.estimate(task, complexity, llm);
+
+        return new Response(JSON.stringify(estimate), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Contract State — состояние контракта сессии
+      if (url.pathname === '/contract-state' && request.method === 'GET') {
+        const sessionId = url.searchParams.get('session_id') || 'default';
+        const hermes = new HermesAgent(env.CACHE, env);
+        const state = hermes.getContractState(sessionId);
+
+        return new Response(JSON.stringify(state), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Generate Spec — генерация структурированного ТЗ
+      if (url.pathname === '/spec' && request.method === 'POST') {
+        const data = await request.json();
+        const { session_id = 'default' } = data;
+
+        const hermes = new HermesAgent(env.CACHE, env);
+        const spec = await hermes.generateSpec(session_id);
+
+        if (!spec) {
+          return new Response(JSON.stringify({ error: 'Spec generation failed' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        return new Response(JSON.stringify(spec), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Satisfaction Assessment — оценка удовлетворённости
+      if (url.pathname === '/satisfaction' && request.method === 'POST') {
+        const data = await request.json();
+        const { session_id = 'default' } = data;
+
+        const hermes = new HermesAgent(env.CACHE, env);
+        const assessment = await hermes.assessSatisfaction(session_id);
+
+        return new Response(JSON.stringify(assessment), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Intent Classification — классификация намерения
+      if (url.pathname === '/intent' && request.method === 'POST') {
+        const data = await request.json();
+        const { message, session_id = 'default' } = data;
+
+        if (!message) {
+          return new Response(JSON.stringify({ error: 'message required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const { HermesRouter } = await import('./hermes_router.js');
+        const router = new HermesRouter(env);
+        const hermes = new HermesAgent(env.CACHE, env);
+        const contractState = hermes.getContractState(session_id);
+        const intent = await router.intentRouter.classify(message, contractState);
+
+        return new Response(JSON.stringify(intent), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Router Stats — статистика роутера
+      if (url.pathname === '/router-stats' && request.method === 'GET') {
+        const { HermesRouter } = await import('./hermes_router.js');
+        const router = new HermesRouter(env);
+        return new Response(JSON.stringify(router.getStats()), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
