@@ -1493,26 +1493,35 @@ class NeuroEscrowApp {
             this.ttsAudio = null;
         }
 
-        // Try MMS TTS via Worker first (neural voice)
+        // Try FreeTTS/MeloTTS via Worker first (neural voice)
         try {
-            console.log('[TTS] Trying MMS Neural TTS:', cleanText.substring(0, 50) + '...');
+            console.log('[TTS] Trying FreeTTS/MeloTTS:', cleanText.substring(0, 50) + '...');
             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
             
-            const resp = await fetch(baseUrl + 'tts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    text: cleanText,
-                    lang: 'ru'
-                })
-            });
+            // Split long text into chunks (FreeTTS limit: 1000 chars)
+            const chunks = this.splitTextForTTS(cleanText, 1000);
+            const audioBlobs = [];
 
-            if (!resp.ok) throw new Error(`TTS failed: ${resp.status}`);
+            for (const chunk of chunks) {
+                const resp = await fetch(baseUrl + 'tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: chunk,
+                        lang: 'ru-RU',
+                        voice: 'ru-RU-SvetlanaNeural'
+                    })
+                });
 
-            const audioBlob = await resp.blob();
-            const url = URL.createObjectURL(audioBlob);
+                if (!resp.ok) throw new Error(`TTS failed: ${resp.status}`);
+                audioBlobs.push(await resp.blob());
+            }
+
+            // Combine all audio chunks
+            const combinedBlob = new Blob(audioBlobs, { type: 'audio/mpeg' });
+            const url = URL.createObjectURL(combinedBlob);
             
             this.ttsAudio = new Audio(url);
             this.ttsAudio.volume = 1.0;
@@ -1541,9 +1550,32 @@ class NeuroEscrowApp {
             if (!autoPlay) telegram.haptic('light');
 
         } catch (error) {
-            console.warn('[TTS] MMS Neural TTS failed, using cloud voice:', error.message);
+            console.warn('[TTS] Neural TTS failed, using cloud voice:', error.message);
             this.speakWithCloudVoice(idx, cleanText, autoPlay);
         }
+    }
+
+    splitTextForTTS(text, maxLength) {
+        if (text.length <= maxLength) return [text];
+        
+        const chunks = [];
+        const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+        let currentChunk = '';
+        
+        for (const sentence of sentences) {
+            const trimmed = sentence.trim();
+            if (!trimmed) continue;
+            
+            if ((currentChunk + trimmed).length > maxLength && currentChunk) {
+                chunks.push(currentChunk.trim());
+                currentChunk = trimmed;
+            } else {
+                currentChunk += (currentChunk ? ' ' : '') + trimmed;
+            }
+        }
+        
+        if (currentChunk) chunks.push(currentChunk.trim());
+        return chunks;
     }
 
     speakWithCloudVoice(idx, cleanText, autoPlay) {
@@ -1682,7 +1714,7 @@ class NeuroEscrowApp {
         this.renderChatMessages();
         this.saveCache();
         
-        // Try auto-speak Hermes messages with Edge-TTS
+        // Try auto-speak Hermes messages with neural TTS
         if (sender === 'hermes' && this.ttsEnabled && text) {
             const idx = this.chatMessages.length - 1;
             setTimeout(() => {

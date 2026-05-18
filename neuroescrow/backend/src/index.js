@@ -409,43 +409,75 @@ export default {
       }
 
       // ═══════════════════════════════════════════════════════════
-      // TTS — Hugging Face MMS TTS (Russian, бесплатно, нейронный)
+      // TTS — FreeTTS API (Azure Neural Voices, бесплатно, без ключей)
+      // Fallback: Cloudflare Workers AI MeloTTS
       // ═══════════════════════════════════════════════════════════
       if (url.pathname === '/tts' && request.method === 'POST') {
         const data = await request.json();
-        const { text, lang = 'ru' } = data;
+        const { text, lang = 'ru-RU', voice = 'ru-RU-SvetlanaNeural' } = data;
 
-        if (!text || text.length > 2000) {
-          return new Response(JSON.stringify({ error: 'text required, max 2000 chars' }), {
+        if (!text || text.length > 1000) {
+          return new Response(JSON.stringify({ error: 'text required, max 1000 chars' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
 
         try {
-          // Facebook MMS TTS — нейронная модель, бесплатный Inference API
-          const resp = await fetch('https://api-inference.huggingface.co/models/facebook/mms-tts-rus', {
+          // Primary: FreeTTS API (Azure Neural Voices)
+          const freettsResp = await fetch('https://freetts.org/api/v1/tts', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'User-Agent': 'NeuroEscrow/1.0'
-            },
-            body: JSON.stringify({ inputs: text.substring(0, 2000) })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: text.substring(0, 1000),
+              voice: voice || 'ru-RU-SvetlanaNeural',
+              rate: '+0%',
+              pitch: '+0Hz'
+            })
           });
 
-          if (!resp.ok) {
-            const errText = await resp.text().catch(() => '');
-            throw new Error(`MMS-TTS failed: ${resp.status} ${errText}`);
+          if (freettsResp.ok) {
+            const freettsData = await freettsResp.json();
+            if (freettsData.file_id) {
+              // Download the generated MP3
+              const audioResp = await fetch(`https://freetts.org/api/v1/tts/${freettsData.file_id}/download`);
+              if (audioResp.ok) {
+                const audioBuffer = await audioResp.arrayBuffer();
+                return new Response(audioBuffer, {
+                  headers: {
+                    ...corsHeaders,
+                    'Content-Type': 'audio/mpeg',
+                    'Cache-Control': 'public, max-age=3600'
+                  }
+                });
+              }
+            }
           }
 
-          const audioBuffer = await resp.arrayBuffer();
-          return new Response(audioBuffer, {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'audio/wav',
-              'Cache-Control': 'public, max-age=3600'
-            }
+          // Fallback: Cloudflare Workers AI MeloTTS
+          console.log('[TTS] FreeTTS failed, using MeloTTS fallback');
+          const audio = await env.AI.run('@cf/myshell-ai/melotts', {
+            prompt: text.substring(0, 1000),
+            lang: 'ru'
           });
+
+          if (audio && audio.audio) {
+            // MeloTTS returns base64 encoded MP3
+            const binaryString = atob(audio.audio);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            return new Response(bytes, {
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'audio/mpeg',
+                'Cache-Control': 'public, max-age=3600'
+              }
+            });
+          }
+
+          throw new Error('All TTS providers failed');
         } catch (error) {
           console.error('[TTS] Error:', error.message);
           return new Response(JSON.stringify({ error: error.message }), {
