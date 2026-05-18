@@ -409,11 +409,11 @@ export default {
       }
 
       // ═══════════════════════════════════════════════════════════
-      // TTS — Edge Neural Voices (бесплатно, без ключей)
+      // TTS — Neural Voices (StreamElements API, бесплатно)
       // ═══════════════════════════════════════════════════════════
       if (url.pathname === '/tts' && request.method === 'POST') {
         const data = await request.json();
-        const { text, lang = 'ru-RU', voice = 'ru-RU-SvetlanaNeural', rate = '0', pitch = '0' } = data;
+        const { text, lang = 'ru-RU', voice = 'Tatyana', rate = '0', pitch = '0' } = data;
 
         if (!text || text.length > 3000) {
           return new Response(JSON.stringify({ error: 'text required, max 3000 chars' }), {
@@ -423,34 +423,34 @@ export default {
         }
 
         try {
-          // Edge-TTS через официальный endpoint
-          const SSML = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'>
-            <voice name='${voice}'>
-              <prosody rate='${rate}%' pitch='${pitch}%'>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</prosody>
-            </voice>
-          </speak>`;
+          // StreamElements TTS — бесплатные нейронные голоса
+          const voiceMap = {
+            'ru-RU-SvetlanaNeural': 'Tatyana',
+            'ru-RU-DmitryNeural': 'Maxim',
+            'en-US': 'Brian',
+            'en-GB': 'Amy',
+            'de-DE': 'Marlene',
+            'fr-FR': 'Celine',
+            'es-ES': 'Conchita',
+            'it-IT': 'Carla',
+            'ja-JP': 'Mizuki',
+            'ko-KR': 'Seoyeon',
+            'zh-CN': 'Zhiyu'
+          };
 
-          const edgeUrl = 'https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1';
-          const uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-            const r = Math.random() * 16 | 0;
-            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-          });
+          const ttsVoice = voiceMap[voice] || voiceMap[lang] || 'Brian';
+          const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${ttsVoice}&text=${encodeURIComponent(text.substring(0, 2000))}`;
 
-          const resp = await fetch(`${edgeUrl}?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4`, {
-            method: 'POST',
+          const resp = await fetch(ttsUrl, {
+            method: 'GET',
             headers: {
-              'Content-Type': 'application/ssml+xml',
-              'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
-              'Origin': 'https://edge.microsoft.com',
-              'Accept': '*/*',
-              'Sec-Fetch-Mode': 'cors'
-            },
-            body: SSML
+              'Accept': 'audio/mpeg',
+              'User-Agent': 'Mozilla/5.0'
+            }
           });
 
           if (!resp.ok) {
-            throw new Error(`Edge-TTS failed: ${resp.status}`);
+            throw new Error(`TTS failed: ${resp.status}`);
           }
 
           const audioBuffer = await resp.arrayBuffer();

@@ -24,8 +24,8 @@ class NeuroEscrowApp {
         
         // TTS (Text-to-Speech) — auto-read Hermes messages
         this.ttsEnabled = true;
-        this.ttsUtterance = null;
         this.ttsAudio = null;
+        this.currentSpeakIdx = null;
         this.audioUnlocked = false;
         
         // Smart contract state
@@ -1453,7 +1453,7 @@ class NeuroEscrowApp {
                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
                 </div>
             ` : '';
-            const speakBtn = isHermesComplete ? `<button class="speak-btn" onclick="app.speakMessage(${idx})" title="Прослушать">🔊</button>` : '';
+            const speakBtn = isHermesComplete ? `<button class="speak-btn" onclick="app.toggleSpeakMessage(${idx})" title="Прослушать">🔊</button>` : '';
             const timeHtml = `<span class="msg-time">${this.formatTime(msg.timestamp)}</span>`;
             
             return `
@@ -1511,9 +1511,7 @@ class NeuroEscrowApp {
                 body: JSON.stringify({
                     text: cleanText,
                     lang: 'ru-RU',
-                    voice: 'ru-RU-SvetlanaNeural',
-                    rate: '-5',
-                    pitch: '0'
+                    voice: 'ru-RU-SvetlanaNeural'
                 })
             });
 
@@ -1532,57 +1530,71 @@ class NeuroEscrowApp {
                 if (this.isRecording && this.recognition) {
                     try { this.recognition.start(); } catch {}
                 }
+                // Update button state
+                this.updateSpeakButton(idx, false);
             };
             
             this.ttsAudio.onerror = (e) => {
                 console.error('[TTS] Audio error:', e);
                 URL.revokeObjectURL(url);
                 this.ttsAudio = null;
-                this.fallbackSpeechSynthesis(idx, cleanText, autoPlay);
+                this.updateSpeakButton(idx, false);
+                // Resume recognition
+                if (this.isRecording && this.recognition) {
+                    try { this.recognition.start(); } catch {}
+                }
             };
 
+            this.updateSpeakButton(idx, true);
             await this.ttsAudio.play();
             if (!autoPlay) telegram.haptic('light');
 
         } catch (error) {
-            console.warn('[TTS] Edge-TTS failed, falling back:', error.message);
-            this.fallbackSpeechSynthesis(idx, cleanText, autoPlay);
+            console.error('[TTS] Edge-TTS failed:', error.message);
+            this.updateSpeakButton(idx, false);
+            // Resume recognition
+            if (this.isRecording && this.recognition) {
+                try { this.recognition.start(); } catch {}
+            }
         }
     }
 
-    fallbackSpeechSynthesis(idx, cleanText, autoPlay) {
-        if (!window.speechSynthesis) return;
-        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-        window.speechSynthesis.cancel();
-
-        this.ttsUtterance = new SpeechSynthesisUtterance(cleanText);
-        this.ttsUtterance.lang = 'ru-RU';
-        this.ttsUtterance.rate = 0.95;
-        this.ttsUtterance.pitch = 1.0;
-
-        const voices = window.speechSynthesis.getVoices();
-        const ruVoice = voices.find(v => v.lang.startsWith('ru') && v.name.includes('Google'))
-            || voices.find(v => v.lang.startsWith('ru'))
-            || voices.find(v => v.lang.startsWith('ru-RU'));
-        
-        if (ruVoice) this.ttsUtterance.voice = ruVoice;
-
-        this.ttsUtterance.onend = () => { 
-            this.ttsUtterance = null; 
+    toggleSpeakMessage(idx) {
+        // If currently speaking to this message, stop it
+        if (this.ttsAudio && !this.ttsAudio.paused && this.currentSpeakIdx === idx) {
+            this.ttsAudio.pause();
+            this.ttsAudio = null;
+            this.currentSpeakIdx = null;
+            this.updateSpeakButton(idx, false);
+            // Resume recognition
             if (this.isRecording && this.recognition) {
                 try { this.recognition.start(); } catch {}
             }
-        };
-        this.ttsUtterance.onerror = () => { 
-            this.ttsUtterance = null; 
-            if (this.isRecording && this.recognition) {
-                try { this.recognition.start(); } catch {}
-            }
-        };
+            return;
+        }
 
-        console.log('[TTS] Fallback SpeechSynthesis:', cleanText.substring(0, 50) + '...');
-        window.speechSynthesis.speak(this.ttsUtterance);
-        if (!autoPlay) telegram.haptic('light');
+        // Stop any other playing audio
+        if (this.ttsAudio) {
+            this.ttsAudio.pause();
+            this.ttsAudio = null;
+            if (this.currentSpeakIdx !== null) {
+                this.updateSpeakButton(this.currentSpeakIdx, false);
+            }
+        }
+
+        this.currentSpeakIdx = idx;
+        this.speakMessage(idx, false);
+    }
+
+    updateSpeakButton(idx, isPlaying) {
+        const container = document.getElementById('chat-messages');
+        if (!container) return;
+        const buttons = container.querySelectorAll('.speak-btn');
+        if (buttons[idx]) {
+            buttons[idx].classList.toggle('muted', !isPlaying);
+            buttons[idx].textContent = isPlaying ? '⏸' : '🔊';
+            buttons[idx].title = isPlaying ? 'Остановить' : 'Прослушать';
+        }
     }
 
     toggleTTS() {
@@ -1592,8 +1604,10 @@ class NeuroEscrowApp {
                 this.ttsAudio.pause();
                 this.ttsAudio = null;
             }
-            window.speechSynthesis?.cancel();
-            this.ttsUtterance = null;
+            if (this.currentSpeakIdx !== null) {
+                this.updateSpeakButton(this.currentSpeakIdx, false);
+                this.currentSpeakIdx = null;
+            }
         }
         this.updateTTSButton();
         telegram.haptic('light');
@@ -1621,14 +1635,11 @@ class NeuroEscrowApp {
         this.renderChatMessages();
         this.saveCache();
         
-        // Try auto-speak Hermes messages (may be blocked by browser without user gesture)
-        if (sender === 'hermes' && this.ttsEnabled && text && window.speechSynthesis) {
+        // Try auto-speak Hermes messages with Edge-TTS
+        if (sender === 'hermes' && this.ttsEnabled && text) {
             const idx = this.chatMessages.length - 1;
             setTimeout(() => {
-                // Check if speechSynthesis is actually working
-                if (window.speechSynthesis.getVoices().length > 0) {
-                    this.speakMessage(idx, true);
-                }
+                this.speakMessage(idx, true);
             }, 500);
         }
     }
