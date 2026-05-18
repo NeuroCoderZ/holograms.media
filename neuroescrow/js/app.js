@@ -25,6 +25,8 @@ class NeuroEscrowApp {
         // TTS (Text-to-Speech) — auto-read Hermes messages
         this.ttsEnabled = true;
         this.ttsUtterance = null;
+        this.ttsAudio = null;
+        this.audioUnlocked = false;
         
         // Smart contract state
         this.smartContract = {
@@ -655,6 +657,11 @@ class NeuroEscrowApp {
     }
 
     async startVoiceRecording() {
+        // Auto-tap unlock: first user gesture enables audio playback
+        if (!this.audioUnlocked) {
+            this.unlockAudio();
+        }
+
         try {
             const tg = window.Telegram?.WebApp;
             // Try native Telegram voice recording (Bot API 9.6+)
@@ -675,6 +682,25 @@ class NeuroEscrowApp {
         } catch (error) {
             console.error('[Voice] Recording failed:', error.message);
             this.handleVoiceError(error);
+        }
+    }
+
+    async unlockAudio() {
+        // Play silent audio to unlock autoplay policy
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+            gain.gain.value = 0.0001; // Nearly silent
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            oscillator.start();
+            oscillator.stop(ctx.currentTime + 0.01);
+            this.audioUnlocked = true;
+            console.log('[Audio] Autoplay unlocked');
+        } catch (e) {
+            console.warn('[Audio] Unlock failed:', e.message);
+            this.audioUnlocked = false;
         }
     }
 
@@ -1410,78 +1436,114 @@ class NeuroEscrowApp {
         this.scrollToBottom();
     }
 
-    speakMessage(idx, autoPlay = false) {
+    async speakMessage(idx, autoPlay = false) {
         if (!this.ttsEnabled) return;
-        if (!window.speechSynthesis) {
-            console.warn('[TTS] SpeechSynthesis not supported');
-            return;
-        }
-
-        // Resume if paused (common in mobile browsers)
-        if (window.speechSynthesis.paused) {
-            window.speechSynthesis.resume();
-        }
-
+        
         const msg = this.chatMessages[idx];
         if (!msg || !msg.text) return;
 
-        // Stop any current speech
-        window.speechSynthesis.cancel();
-
-        // Clean markdown for better TTS
+        // Clean markdown for TTS
         const cleanText = msg.text
             .replace(/[#*_~`]/g, '')
             .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
             .replace(/```[\s\S]*?```/g, 'код')
             .replace(/<[^>]+>/g, '')
-            .substring(0, 5000);
+            .substring(0, 3000);
+
+        // Pause recognition while speaking
+        if (this.recognition && this.isRecording) {
+            try { this.recognition.stop(); } catch {}
+        }
+
+        // Stop any current audio
+        if (this.ttsAudio) {
+            this.ttsAudio.pause();
+            this.ttsAudio = null;
+        }
+
+        try {
+            // Try Edge Neural TTS first
+            console.log('[TTS] Requesting Edge-TTS:', cleanText.substring(0, 50) + '...');
+            const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+                ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+                : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+            
+            const resp = await fetch(baseUrl + 'tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: cleanText,
+                    lang: 'ru-RU',
+                    voice: 'ru-RU-SvetlanaNeural',
+                    rate: '-5',
+                    pitch: '0'
+                })
+            });
+
+            if (!resp.ok) throw new Error(`TTS failed: ${resp.status}`);
+
+            const audioBlob = await resp.blob();
+            const url = URL.createObjectURL(audioBlob);
+            
+            this.ttsAudio = new Audio(url);
+            this.ttsAudio.volume = 1.0;
+            
+            this.ttsAudio.onended = () => {
+                URL.revokeObjectURL(url);
+                this.ttsAudio = null;
+                // Resume recognition after speaking
+                if (this.isRecording && this.recognition) {
+                    try { this.recognition.start(); } catch {}
+                }
+            };
+            
+            this.ttsAudio.onerror = (e) => {
+                console.error('[TTS] Audio error:', e);
+                URL.revokeObjectURL(url);
+                this.ttsAudio = null;
+                this.fallbackSpeechSynthesis(idx, cleanText, autoPlay);
+            };
+
+            await this.ttsAudio.play();
+            if (!autoPlay) telegram.haptic('light');
+
+        } catch (error) {
+            console.warn('[TTS] Edge-TTS failed, falling back:', error.message);
+            this.fallbackSpeechSynthesis(idx, cleanText, autoPlay);
+        }
+    }
+
+    fallbackSpeechSynthesis(idx, cleanText, autoPlay) {
+        if (!window.speechSynthesis) return;
+        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        window.speechSynthesis.cancel();
 
         this.ttsUtterance = new SpeechSynthesisUtterance(cleanText);
         this.ttsUtterance.lang = 'ru-RU';
         this.ttsUtterance.rate = 0.95;
         this.ttsUtterance.pitch = 1.0;
-        this.ttsUtterance.volume = 1.0;
 
-        // Try to find a Russian voice (async loading fix)
         const voices = window.speechSynthesis.getVoices();
         const ruVoice = voices.find(v => v.lang.startsWith('ru') && v.name.includes('Google'))
             || voices.find(v => v.lang.startsWith('ru'))
             || voices.find(v => v.lang.startsWith('ru-RU'));
         
-        if (ruVoice) {
-            this.ttsUtterance.voice = ruVoice;
-            console.log('[TTS] Using voice:', ruVoice.name);
-        } else if (voices.length === 0) {
-            console.warn('[TTS] No voices loaded yet, waiting...');
-            // Retry after voices load
-            window.speechSynthesis.onvoiceschanged = () => {
-                this.speakMessage(idx, autoPlay);
-            };
-            return;
-        }
+        if (ruVoice) this.ttsUtterance.voice = ruVoice;
 
         this.ttsUtterance.onend = () => { 
             this.ttsUtterance = null; 
-            // Resume recognition after speaking
             if (this.isRecording && this.recognition) {
                 try { this.recognition.start(); } catch {}
             }
         };
-        this.ttsUtterance.onerror = (e) => { 
-            console.error('[TTS] Error:', e); 
+        this.ttsUtterance.onerror = () => { 
             this.ttsUtterance = null; 
-            // Resume recognition on error too
             if (this.isRecording && this.recognition) {
                 try { this.recognition.start(); } catch {}
             }
         };
 
-        // Pause recognition while speaking to prevent feedback loop
-        if (this.recognition && this.isRecording) {
-            try { this.recognition.stop(); } catch {}
-        }
-
-        console.log('[TTS] Speaking:', cleanText.substring(0, 50) + '...');
+        console.log('[TTS] Fallback SpeechSynthesis:', cleanText.substring(0, 50) + '...');
         window.speechSynthesis.speak(this.ttsUtterance);
         if (!autoPlay) telegram.haptic('light');
     }
@@ -1489,7 +1551,11 @@ class NeuroEscrowApp {
     toggleTTS() {
         this.ttsEnabled = !this.ttsEnabled;
         if (!this.ttsEnabled) {
-            window.speechSynthesis.cancel();
+            if (this.ttsAudio) {
+                this.ttsAudio.pause();
+                this.ttsAudio = null;
+            }
+            window.speechSynthesis?.cancel();
             this.ttsUtterance = null;
         }
         this.updateTTSButton();
@@ -1549,6 +1615,11 @@ class NeuroEscrowApp {
     async sendTextMessage() {
         const input = document.getElementById('chat-input');
         if (!input || !input.value.trim()) return;
+
+        // Auto-tap unlock on first text send
+        if (!this.audioUnlocked) {
+            this.unlockAudio();
+        }
 
         const text = input.value.trim();
         this.addChatMessage('user', text);

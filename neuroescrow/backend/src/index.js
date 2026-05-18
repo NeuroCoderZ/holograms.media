@@ -408,6 +408,67 @@ export default {
         });
       }
 
+      // ═══════════════════════════════════════════════════════════
+      // TTS — Edge Neural Voices (бесплатно, без ключей)
+      // ═══════════════════════════════════════════════════════════
+      if (url.pathname === '/tts' && request.method === 'POST') {
+        const data = await request.json();
+        const { text, lang = 'ru-RU', voice = 'ru-RU-SvetlanaNeural', rate = '0', pitch = '0' } = data;
+
+        if (!text || text.length > 3000) {
+          return new Response(JSON.stringify({ error: 'text required, max 3000 chars' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        try {
+          // Edge-TTS через официальный endpoint
+          const SSML = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'>
+            <voice name='${voice}'>
+              <prosody rate='${rate}%' pitch='${pitch}%'>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</prosody>
+            </voice>
+          </speak>`;
+
+          const edgeUrl = 'https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1';
+          const uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+          });
+
+          const resp = await fetch(`${edgeUrl}?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/ssml+xml',
+              'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+              'Origin': 'https://edge.microsoft.com',
+              'Accept': '*/*',
+              'Sec-Fetch-Mode': 'cors'
+            },
+            body: SSML
+          });
+
+          if (!resp.ok) {
+            throw new Error(`Edge-TTS failed: ${resp.status}`);
+          }
+
+          const audioBuffer = await resp.arrayBuffer();
+          return new Response(audioBuffer, {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'audio/mpeg',
+              'Cache-Control': 'public, max-age=3600'
+            }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
