@@ -22,6 +22,10 @@ class NeuroEscrowApp {
         this.contractAnswers = {};
         this.taskSpecHistory = [];
         
+        // TTS (Text-to-Speech) — auto-read Hermes messages
+        this.ttsEnabled = true;
+        this.ttsUtterance = null;
+        
         // Smart contract state
         this.smartContract = {
             phase: 'draft', // draft, review, sorting, agreement, escrow, completed
@@ -80,9 +84,16 @@ class NeuroEscrowApp {
         }
         this.userData = telegram.getUser();
         this.updateHeader();
+        this.updateTTSButton();
         await this.loadCache();
         this.loadContractState();
         this.navigate('hermes');
+
+        // Preload voices for TTS (Chrome loads them asynchronously)
+        if (window.speechSynthesis) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
 
         window.addEventListener('ton:statusChange', (e) => {
             this.onTonStatusChange(e.detail);
@@ -241,6 +252,9 @@ class NeuroEscrowApp {
                             <span class="pane-header-dot purple"></span>
                             <span class="pane-header-icon">🎙️</span>
                             <span class="pane-header-title">Гермес — Чат</span>
+                            <button class="tts-toggle-btn" id="tts-toggle-btn" onclick="app.toggleTTS()" title="Голос Гермеса">
+                                <span id="tts-icon">🔊</span>
+                            </button>
                         </div>
                         <div class="pane-content">
                             <div class="chat-messages" id="chat-messages"></div>
@@ -1376,7 +1390,6 @@ class NeuroEscrowApp {
                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
                 </div>
             ` : '';
-            const speakBtn = isHermesComplete ? `<button class="speak-btn" onclick="app.speakMessage(${idx})" title="Прослушать">🔊</button>` : '';
             const timeHtml = `<span class="msg-time">${this.formatTime(msg.timestamp)}</span>`;
             
             return `
@@ -1384,7 +1397,6 @@ class NeuroEscrowApp {
                 <div class="message-bubble${streamingClass}">
                     <div class="message-content">${this.renderMarkdown(msg.text)}</div>
                     <div class="message-footer">
-                        ${speakBtn}
                         ${feedbackHtml}
                         ${timeHtml}
                     </div>
@@ -1396,7 +1408,9 @@ class NeuroEscrowApp {
         this.scrollToBottom();
     }
 
-    speakMessage(idx) {
+    speakMessage(idx, autoPlay = false) {
+        if (!this.ttsEnabled) return;
+        
         const msg = this.chatMessages[idx];
         if (!msg || !window.speechSynthesis) return;
 
@@ -1407,20 +1421,43 @@ class NeuroEscrowApp {
         const cleanText = msg.text
             .replace(/[#*_~`]/g, '')
             .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-            .replace(/```[\s\S]*?```/g, 'код');
+            .replace(/```[\s\S]*?```/g, 'код')
+            .replace(/<[^>]+>/g, '')
+            .substring(0, 5000); // TTS limit
 
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = 'ru-RU';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
+        this.ttsUtterance = new SpeechSynthesisUtterance(cleanText);
+        this.ttsUtterance.lang = 'ru-RU';
+        this.ttsUtterance.rate = 0.95;
+        this.ttsUtterance.pitch = 1.0;
+        this.ttsUtterance.volume = 1.0;
 
         // Try to find a Russian voice
         const voices = window.speechSynthesis.getVoices();
-        const ruVoice = voices.find(v => v.lang.startsWith('ru'));
-        if (ruVoice) utterance.voice = ruVoice;
+        const ruVoice = voices.find(v => v.lang.startsWith('ru') && v.name.includes('Google'))
+            || voices.find(v => v.lang.startsWith('ru'));
+        if (ruVoice) this.ttsUtterance.voice = ruVoice;
 
-        window.speechSynthesis.speak(utterance);
+        // Auto-stop on user interaction
+        this.ttsUtterance.onend = () => { this.ttsUtterance = null; };
+        this.ttsUtterance.onerror = () => { this.ttsUtterance = null; };
+
+        window.speechSynthesis.speak(this.ttsUtterance);
+        if (!autoPlay) telegram.haptic('light');
+    }
+
+    toggleTTS() {
+        this.ttsEnabled = !this.ttsEnabled;
+        if (!this.ttsEnabled) {
+            window.speechSynthesis.cancel();
+            this.ttsUtterance = null;
+        }
+        this.updateTTSButton();
         telegram.haptic('light');
+    }
+
+    updateTTSButton() {
+        const icon = document.getElementById('tts-icon');
+        if (icon) icon.textContent = this.ttsEnabled ? '🔊' : '🔇';
     }
 
     scrollToBottom() {
@@ -1439,6 +1476,13 @@ class NeuroEscrowApp {
         });
         this.renderChatMessages();
         this.saveCache();
+        
+        // Auto-speak Hermes messages
+        if (sender === 'hermes' && this.ttsEnabled && text) {
+            const idx = this.chatMessages.length - 1;
+            // Small delay to ensure render is complete
+            setTimeout(() => this.speakMessage(idx, true), 300);
+        }
     }
 
     showTypingIndicator() {
