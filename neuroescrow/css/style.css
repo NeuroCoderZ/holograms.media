@@ -230,14 +230,97 @@ html, body {
 }
 
 .message-bubble {
-    max-width: 80%;
-    padding: 12px 16px;
+    max-width: 85%;
+    padding: 0;
     border-radius: var(--glass-radius);
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
     word-wrap: break-word;
     position: relative;
     transition: var(--glass-transition);
+    overflow: hidden;
+}
+
+/* Message content area */
+.message-content {
+    padding: 12px 16px 4px 16px;
+}
+
+/* Message footer — time + feedback buttons, bottom-right */
+.message-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 4px 12px 8px 12px;
+}
+
+/* Markdown rendering inside messages */
+.message-content p {
+    margin: 0 0 8px 0;
+}
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+.message-content strong {
+    font-weight: 600;
+}
+.message-content em {
+    font-style: italic;
+    opacity: 0.9;
+}
+.message-content pre {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 8px 0;
+    overflow-x: auto;
+    font-size: 13px;
+}
+.message-content code {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+.message-content pre code {
+    background: none;
+    padding: 0;
+}
+.message-content ul, .message-content ol {
+    margin: 6px 0;
+    padding-left: 20px;
+}
+.message-content li {
+    margin: 3px 0;
+}
+.message-content h2, .message-content h3, .message-content h4 {
+    margin: 10px 0 6px 0;
+    font-weight: 600;
+}
+.message-content h2 { font-size: 16px; }
+.message-content h3 { font-size: 15px; }
+.message-content h4 { font-size: 14px; }
+.message-content hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 10px 0;
+}
+.message-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 13px;
+}
+.message-content th, .message-content td {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 6px 10px;
+    text-align: left;
+}
+.message-content th {
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
 }
 
 /* User message: white glass with black text */
@@ -249,6 +332,23 @@ html, body {
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-bottom-right-radius: 4px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.chat-message.user .message-content pre {
+    background: rgba(0, 0, 0, 0.06);
+}
+.chat-message.user .message-content code {
+    background: rgba(0, 0, 0, 0.06);
+}
+.chat-message.user .message-content hr {
+    border-top-color: rgba(0, 0, 0, 0.1);
+}
+.chat-message.user .message-content th,
+.chat-message.user .message-content td {
+    border-color: rgba(0, 0, 0, 0.12);
+}
+.chat-message.user .message-content th {
+    background: rgba(0, 0, 0, 0.04);
 }
 
 /* Hermes message: black glass with white text */
@@ -273,25 +373,23 @@ html, body {
     text-align: center;
 }
 
-/* Message timestamp */
-.message-time {
-    font-size: 9px;
+/* Message timestamp — inside footer, right-aligned */
+.msg-time {
+    font-size: 10px;
     color: var(--ne-light-gray);
-    padding: 0 6px;
-    opacity: 0.4;
-    text-align: right;
-    margin-top: 2px;
+    opacity: 0.5;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-.chat-message.user .message-time {
+.chat-message.user .msg-time {
     color: rgba(0, 0, 0, 0.4);
 }
 
-/* Feedback buttons */
+/* Feedback buttons — inside footer */
 .message-feedback {
     display: flex;
     gap: 4px;
-    margin-top: 4px;
     opacity: 0;
     transition: opacity 0.2s;
 }
@@ -319,7 +417,6 @@ html, body {
 .feedback-buttons {
     display: flex;
     gap: 6px;
-    margin-top: 6px;
 }
 
 /* Typing indicator */

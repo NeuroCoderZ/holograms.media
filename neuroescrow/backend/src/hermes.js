@@ -358,6 +358,12 @@ export class HermesAgent {
     try {
       const result = await this.router.processRequest(message, contractState);
       
+      // Fallback if router couldn't generate response (no API keys for selected LLMs)
+      if (!result.spec.aggregated_response || result.spec.aggregated_response.trim() === '') {
+        console.log('[Router] Empty response from router, falling back to Mistral');
+        return await this.chatStandard(message, userId, sessionId, persona, null, true, true);
+      }
+      
       // Update contract state from router's intent
       if (result.intent.missing_fields) {
         this.updateContractPhase(sessionId);

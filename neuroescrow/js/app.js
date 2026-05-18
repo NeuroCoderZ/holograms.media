@@ -1309,6 +1309,59 @@ class NeuroEscrowApp {
     // Chat Interface Methods
     // -------------------------------------------------------------------------
 
+    // Simple Markdown renderer — converts **bold**, *italic*, lists, line breaks
+    renderMarkdown(text) {
+        if (!text) return '';
+        let html = text;
+        
+        // Escape HTML first (security)
+        html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        
+        // Code blocks (``` ... ```)
+        html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+        
+        // Inline code (`...`)
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // Headers
+        html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+        html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+        html = html.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+        
+        // Bold (**text** or __text__)
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+        
+        // Italic (*text* or _text_)
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+        
+        // Strikethrough (~~text~~)
+        html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+        
+        // Horizontal rules
+        html = html.replace(/^---$/gm, '<hr>');
+        html = html.replace(/^\*\*\*$/gm, '<hr>');
+        
+        // Unordered lists (- item or * item)
+        html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+        
+        // Ordered lists (1. item)
+        html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+        
+        // Line breaks (double newline → paragraph, single → br)
+        html = html.replace(/\n\n/g, '</p><p>');
+        html = html.replace(/\n/g, '<br>');
+        html = '<p>' + html + '</p>';
+        
+        // Clean up empty paragraphs
+        html = html.replace(/<p><\/p>/g, '');
+        html = html.replace(/<p><br>/g, '<p>');
+        
+        return html;
+    }
+
     renderChatMessages() {
         const container = document.getElementById('chat-messages');
         if (!container) return;
@@ -1323,12 +1376,16 @@ class NeuroEscrowApp {
                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
                 </div>
             ` : '';
+            const timeHtml = `<span class="msg-time">${this.formatTime(msg.timestamp)}</span>`;
+            
             return `
             <div class="chat-message ${msg.sender}">
                 <div class="message-bubble${streamingClass}">
-                    ${this.escapeHtml(msg.text)}
-                    <span class="msg-time">${this.formatTime(msg.timestamp)}</span>
-                    ${feedbackHtml}
+                    <div class="message-content">${this.renderMarkdown(msg.text)}</div>
+                    <div class="message-footer">
+                        ${feedbackHtml}
+                        ${timeHtml}
+                    </div>
                 </div>
             </div>
         `;

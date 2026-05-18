@@ -851,8 +851,10 @@ export class HermesRouter {
     // Get experience-based scores
     const expScores = await this.experienceDB.getTaskScores(intent.task_type);
 
-    // Score each LLM
+    // Score each LLM — filter out those without API keys
     const candidates = Object.entries(LLM_POOL).map(([name, llm]) => {
+      // Skip if no API key for this provider
+      if (!this.apiKeys[llm.provider]) return null;
       if (llm.modality !== "text" && intent.suggested_modality === "text") return null;
       if (!llm.strengths.includes(intent.task_type) && llm.rank > 10) return null;
 
