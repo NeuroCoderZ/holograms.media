@@ -91,12 +91,6 @@ class NeuroEscrowApp {
         this.loadContractState();
         this.navigate('hermes');
 
-        // Preload voices for TTS (Chrome loads them asynchronously)
-        if (window.speechSynthesis) {
-            window.speechSynthesis.getVoices();
-            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-        }
-
         window.addEventListener('ton:statusChange', (e) => {
             this.onTonStatusChange(e.detail);
         });
@@ -1493,14 +1487,14 @@ class NeuroEscrowApp {
             this.ttsAudio = null;
         }
 
-        // Try FreeTTS/MeloTTS via Worker first (neural voice)
+        // Try hybrid neural TTS via Worker (HF Space VITS + Google fallback)
         try {
-            console.log('[TTS] Trying FreeTTS/MeloTTS:', cleanText.substring(0, 50) + '...');
+            console.log('[TTS] Trying hybrid neural TTS:', cleanText.substring(0, 50) + '...');
             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
             
-            // Split long text into chunks (FreeTTS limit: 1000 chars)
+            // Split long text into chunks (HF Space limit: 1000 chars)
             const chunks = this.splitTextForTTS(cleanText, 1000);
             const audioBlobs = [];
 
@@ -1510,8 +1504,8 @@ class NeuroEscrowApp {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         text: chunk,
-                        lang: 'ru-RU',
-                        voice: 'ru-RU-SvetlanaNeural'
+                        lang: 'ru',
+                        voice: 'female'
                     })
                 });
 
@@ -1520,7 +1514,7 @@ class NeuroEscrowApp {
             }
 
             // Combine all audio chunks
-            const combinedBlob = new Blob(audioBlobs, { type: 'audio/mpeg' });
+            const combinedBlob = new Blob(audioBlobs, { type: 'audio/wav' });
             const url = URL.createObjectURL(combinedBlob);
             
             this.ttsAudio = new Audio(url);
@@ -1550,8 +1544,11 @@ class NeuroEscrowApp {
             if (!autoPlay) telegram.haptic('light');
 
         } catch (error) {
-            console.warn('[TTS] Neural TTS failed, using cloud voice:', error.message);
-            this.speakWithCloudVoice(idx, cleanText, autoPlay);
+            console.error('[TTS] Neural TTS failed:', error.message);
+            this.updateSpeakButton(idx, false);
+            if (this.isRecording && this.recognition) {
+                try { this.recognition.start(); } catch {}
+            }
         }
     }
 
@@ -1578,67 +1575,7 @@ class NeuroEscrowApp {
         return chunks;
     }
 
-    speakWithCloudVoice(idx, cleanText, autoPlay) {
-        if (!window.speechSynthesis) return;
-        
-        // Wait for voices to load (Chrome loads them asynchronously)
-        const trySpeak = () => {
-            const voices = window.speechSynthesis.getVoices();
-            if (voices.length === 0) {
-                console.warn('[TTS] No voices loaded, waiting...');
-                window.speechSynthesis.onvoiceschanged = () => {
-                    window.speechSynthesis.onvoiceschanged = null;
-                    trySpeak();
-                };
-                return;
-            }
-
-            // Find best cloud-based voice (Google or Microsoft neural voices)
-            const cloudVoice = voices.find(v => 
-                v.lang.startsWith('ru') && (
-                    v.name.includes('Google') || 
-                    v.name.includes('Microsoft') || 
-                    v.name.includes('Natural') ||
-                    v.name.includes('Neural') ||
-                    v.name.includes('Pavel') ||
-                    v.name.includes('Irina') ||
-                    v.name.includes('Yuri') ||
-                    v.name.includes('Svetlana')
-                )
-            ) || voices.find(v => v.lang.startsWith('ru'));
-
-            console.log('[TTS] Using cloud voice:', cloudVoice?.name || 'default');
-
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(cleanText);
-            utterance.lang = 'ru-RU';
-            utterance.rate = 0.95;
-            utterance.pitch = 1.0;
-            utterance.volume = 1.0;
-            
-            if (cloudVoice) utterance.voice = cloudVoice;
-
-            utterance.onend = () => {
-                if (this.isRecording && this.recognition) {
-                    try { this.recognition.start(); } catch {}
-                }
-            };
-            utterance.onerror = () => {
-                if (this.isRecording && this.recognition) {
-                    try { this.recognition.start(); } catch {}
-                }
-            };
-
-            console.log('[TTS] Speaking with cloud voice:', cleanText.substring(0, 50) + '...');
-            window.speechSynthesis.speak(utterance);
-            if (!autoPlay) telegram.haptic('light');
-        };
-
-        trySpeak();
-    }
-
     toggleSpeakMessage(idx) {
-        // If currently speaking to this message, stop it
         if (this.ttsAudio && !this.ttsAudio.paused && this.currentSpeakIdx === idx) {
             this.ttsAudio.pause();
             this.ttsAudio = null;
@@ -1647,11 +1584,9 @@ class NeuroEscrowApp {
             if (this.isRecording && this.recognition) {
                 try { this.recognition.start(); } catch {}
             }
-            window.speechSynthesis?.cancel();
             return;
         }
 
-        // Stop any other playing audio
         if (this.ttsAudio) {
             this.ttsAudio.pause();
             this.ttsAudio = null;
@@ -1659,7 +1594,6 @@ class NeuroEscrowApp {
                 this.updateSpeakButton(this.currentSpeakIdx, false);
             }
         }
-        window.speechSynthesis?.cancel();
 
         this.currentSpeakIdx = idx;
         this.speakMessage(idx, false);

@@ -409,12 +409,11 @@ export default {
       }
 
       // ═══════════════════════════════════════════════════════════
-      // TTS — FreeTTS API (Azure Neural Voices, бесплатно, без ключей)
-      // Fallback: Cloudflare Workers AI MeloTTS
+      // TTS — Hybrid: HF Space (VITS Russian) + Google Translate fallback
       // ═══════════════════════════════════════════════════════════
       if (url.pathname === '/tts' && request.method === 'POST') {
         const data = await request.json();
-        const { text, lang = 'ru-RU', voice = 'ru-RU-SvetlanaNeural' } = data;
+        const { text, lang = 'ru', voice = 'female' } = data;
 
         if (!text || text.length > 1000) {
           return new Response(JSON.stringify({ error: 'text required, max 1000 chars' }), {
@@ -424,66 +423,125 @@ export default {
         }
 
         try {
-          // Primary: FreeTTS API (Azure Neural Voices)
-          const freettsResp = await fetch('https://freetts.org/api/v1/tts', {
+          // Primary: HuggingFace Space VITS TTS (Russian neural)
+          const speakerId = voice === 'male' ? 1 : 0;
+          const hfSpace = 'https://utrobinmv-tts-ru-free-hf-vits-low-multispeaker.hf.space';
+          
+          // Step 1: Queue the prediction
+          const initResp = await fetch(`${hfSpace}/call/predict`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: text.substring(0, 1000),
-              voice: voice || 'ru-RU-SvetlanaNeural',
-              rate: '+0%',
-              pitch: '+0Hz'
-            })
+            body: JSON.stringify({ data: [text.substring(0, 1000), speakerId] })
           });
 
-          if (freettsResp.ok) {
-            const freettsData = await freettsResp.json();
-            if (freettsData.file_id) {
-              // Download the generated MP3
-              const audioResp = await fetch(`https://freetts.org/api/v1/tts/${freettsData.file_id}/download`);
-              if (audioResp.ok) {
-                const audioBuffer = await audioResp.arrayBuffer();
-                return new Response(audioBuffer, {
-                  headers: {
-                    ...corsHeaders,
-                    'Content-Type': 'audio/mpeg',
-                    'Cache-Control': 'public, max-age=3600'
+          if (!initResp.ok) throw new Error(`HF queue failed: ${initResp.status}`);
+          
+          const { event_id } = await initResp.json();
+          
+          // Step 2: Poll for result via SSE
+          const streamResp = await fetch(`${hfSpace}/call/predict/${event_id}`);
+          const reader = streamResp.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let audioUrl = null;
+          
+          // Timeout after 15 seconds
+          const timeout = setTimeout(() => {
+            reader.cancel();
+          }, 15000);
+
+          try {
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+              
+              for (const line of lines) {
+                if (line.startsWith('event: complete') || line.startsWith('event: completed')) {
+                  const dataIdx = lines.indexOf(line) + 1;
+                  if (dataIdx < lines.length && lines[dataIdx].startsWith('data:')) {
+                    const rawData = JSON.parse(lines[dataIdx].slice(5));
+                    if (rawData && rawData.path) {
+                      audioUrl = `${hfSpace}/file=${rawData.path}`;
+                    }
                   }
-                });
+                  break;
+                }
               }
+              if (audioUrl) break;
             }
+          } finally {
+            clearTimeout(timeout);
           }
 
-          // Fallback: Cloudflare Workers AI MeloTTS
-          console.log('[TTS] FreeTTS failed, using MeloTTS fallback');
-          const audio = await env.AI.run('@cf/myshell-ai/melotts', {
-            prompt: text.substring(0, 1000),
-            lang: 'ru'
+          if (!audioUrl) throw new Error('HF TTS timeout or failed');
+
+          // Download the audio file
+          const audioResp = await fetch(audioUrl);
+          if (!audioResp.ok) throw new Error(`HF audio download failed: ${audioResp.status}`);
+          
+          const audioBuffer = await audioResp.arrayBuffer();
+          return new Response(audioBuffer, {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'audio/wav',
+              'Cache-Control': 'public, max-age=3600'
+            }
           });
 
-          if (audio && audio.audio) {
-            // MeloTTS returns base64 encoded MP3
-            const binaryString = atob(audio.audio);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
+        } catch (error) {
+          console.warn('[TTS] HF Space failed, using Google fallback:', error.message);
+          
+          // Fallback: Google Translate TTS
+          try {
+            const chunks = text.match(/[^.!?]+[.!?]*/g) || [text];
+            const audioSegments = [];
+            
+            for (const chunk of chunks) {
+              const trimmed = chunk.trim();
+              if (!trimmed) continue;
+              
+              const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ru&q=${encodeURIComponent(trimmed.substring(0, 180))}`;
+              
+              const resp = await fetch(googleUrl, {
+                headers: {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+              });
+              
+              if (resp.ok) {
+                audioSegments.push(await resp.arrayBuffer());
+              }
             }
-            return new Response(bytes, {
+            
+            if (audioSegments.length === 0) throw new Error('Google TTS failed');
+            
+            // Merge audio segments
+            const totalLength = audioSegments.reduce((acc, val) => acc + val.byteLength, 0);
+            const mergedAudio = new Uint8Array(totalLength);
+            let offset = 0;
+            for (const segment of audioSegments) {
+              mergedAudio.set(new Uint8Array(segment), offset);
+              offset += segment.byteLength;
+            }
+            
+            return new Response(mergedAudio, {
               headers: {
                 ...corsHeaders,
                 'Content-Type': 'audio/mpeg',
                 'Cache-Control': 'public, max-age=3600'
               }
             });
+          } catch (fallbackError) {
+            console.error('[TTS] All providers failed:', fallbackError.message);
+            return new Response(JSON.stringify({ error: 'All TTS providers failed' }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
           }
-
-          throw new Error('All TTS providers failed');
-        } catch (error) {
-          console.error('[TTS] Error:', error.message);
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
         }
       }
 
