@@ -1231,15 +1231,37 @@ class NeuroEscrowApp {
 
     async loadCache() {
         try {
+            // Try Telegram CloudStorage first
             const cached = await telegram.cloudGet('neuroescrow_data');
             if (cached) {
                 this.deals = cached.deals || [];
                 this.balance = cached.balance || 0;
                 this.chatMessages = cached.chatMessages || [];
-                console.log('[App] Cache loaded');
+                console.log('[App] Cache loaded from Telegram Cloud:', this.chatMessages.length, 'messages');
+            } else {
+                // Fallback to localStorage
+                const localData = localStorage.getItem('neuroescrow_data');
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    this.deals = parsed.deals || [];
+                    this.balance = parsed.balance || 0;
+                    this.chatMessages = parsed.chatMessages || [];
+                    console.log('[App] Cache loaded from localStorage:', this.chatMessages.length, 'messages');
+                }
             }
         } catch (e) {
-            console.log('[App] No cache found');
+            console.warn('[App] Cache load error:', e.message);
+            // Last resort: try localStorage
+            try {
+                const localData = localStorage.getItem('neuroescrow_data');
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    this.chatMessages = parsed.chatMessages || [];
+                    console.log('[App] Fallback cache loaded from localStorage');
+                }
+            } catch (localErr) {
+                console.error('[App] localStorage also failed:', localErr.message);
+            }
         }
     }
 
@@ -1250,7 +1272,22 @@ class NeuroEscrowApp {
             chatMessages: this.chatMessages,
             timestamp: Date.now()
         };
-        await telegram.cloudSet('neuroescrow_data', data);
+        
+        // Save to both Telegram CloudStorage and localStorage
+        try {
+            await telegram.cloudSet('neuroescrow_data', data);
+            console.log('[App] Cache saved to Telegram Cloud');
+        } catch (e) {
+            console.warn('[App] CloudStorage save failed, using localStorage:', e.message);
+        }
+        
+        // Always save to localStorage as backup
+        try {
+            localStorage.setItem('neuroescrow_data', JSON.stringify(data));
+            console.log('[App] Cache saved to localStorage');
+        } catch (e) {
+            console.error('[App] localStorage save failed:', e.message);
+        }
     }
 
     async loadSession(sessionId) {
