@@ -273,7 +273,6 @@ class NeuroEscrowApp {
                                 <div class="tts-menu-section">
                                     <div class="tts-menu-label">Голос Silero:</div>
                                     <div class="tts-voice-item" onclick="app.setTTSVoice('kseniya')">Ксения (ж)</div>
-                                    <div class="tts-voice-item" onclick="app.setTTSVoice('xenia')">Ксения 2 (ж)</div>
                                     <div class="tts-voice-item" onclick="app.setTTSVoice('aidar')">Айдар (м)</div>
                                     <div class="tts-voice-item" onclick="app.setTTSVoice('baya')">Бая (ж)</div>
                                     <div class="tts-voice-item" onclick="app.setTTSVoice('eugene')">Евгений (м)</div>
