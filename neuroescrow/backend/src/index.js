@@ -409,11 +409,11 @@ export default {
       }
 
       // ═══════════════════════════════════════════════════════════
-      // TTS — Neural Voices (StreamElements API, бесплатно)
+      // TTS — Edge Neural Voices (Microsoft, бесплатно)
       // ═══════════════════════════════════════════════════════════
       if (url.pathname === '/tts' && request.method === 'POST') {
         const data = await request.json();
-        const { text, lang = 'ru-RU', voice = 'Tatyana', rate = '0', pitch = '0' } = data;
+        const { text, lang = 'ru-RU', voice = 'ru-RU-SvetlanaNeural' } = data;
 
         if (!text || text.length > 3000) {
           return new Response(JSON.stringify({ error: 'text required, max 3000 chars' }), {
@@ -423,34 +423,49 @@ export default {
         }
 
         try {
-          // StreamElements TTS — бесплатные нейронные голоса
-          const voiceMap = {
-            'ru-RU-SvetlanaNeural': 'Tatyana',
-            'ru-RU-DmitryNeural': 'Maxim',
-            'en-US': 'Brian',
-            'en-GB': 'Amy',
-            'de-DE': 'Marlene',
-            'fr-FR': 'Celine',
-            'es-ES': 'Conchita',
-            'it-IT': 'Carla',
-            'ja-JP': 'Mizuki',
-            'ko-KR': 'Seoyeon',
-            'zh-CN': 'Zhiyu'
-          };
-
-          const ttsVoice = voiceMap[voice] || voiceMap[lang] || 'Brian';
-          const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${ttsVoice}&text=${encodeURIComponent(text.substring(0, 2000))}`;
-
-          const resp = await fetch(ttsUrl, {
+          // Получаем токен авторизации Edge TTS
+          const tokenUrl = 'https://edge.microsoft.com/translate/auth';
+          const tokenResp = await fetch(tokenUrl, {
             method: 'GET',
             headers: {
-              'Accept': 'audio/mpeg',
-              'User-Agent': 'Mozilla/5.0'
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0'
             }
           });
 
+          if (!tokenResp.ok) {
+            throw new Error(`Failed to get Edge token: ${tokenResp.status}`);
+          }
+
+          const token = await tokenResp.text();
+
+          // Формируем SSML
+          const SSML = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'>
+            <voice name='${voice}'>
+              <prosody rate='0%' pitch='0%'>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</prosody>
+            </voice>
+          </speak>`;
+
+          // Отправляем запрос на синтез
+          const ttsUrl = 'https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1';
+          const requestId = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+          });
+
+          const resp = await fetch(`${ttsUrl}?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/ssml+xml',
+              'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+              'Authorization': `Bearer ${token}`,
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+              'Origin': 'https://edge.microsoft.com'
+            },
+            body: SSML
+          });
+
           if (!resp.ok) {
-            throw new Error(`TTS failed: ${resp.status}`);
+            throw new Error(`Edge-TTS failed: ${resp.status} ${resp.statusText}`);
           }
 
           const audioBuffer = await resp.arrayBuffer();
@@ -462,6 +477,7 @@ export default {
             }
           });
         } catch (error) {
+          console.error('[TTS] Error:', error.message);
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }

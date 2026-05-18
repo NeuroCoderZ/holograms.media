@@ -1499,29 +1499,20 @@ class NeuroEscrowApp {
         }
 
         try {
-            // StreamElements TTS — бесплатные нейронные голоса (прямой вызов из браузера)
-            console.log('[TTS] Requesting StreamElements TTS:', cleanText.substring(0, 50) + '...');
+            // Edge-TTS через Cloudflare Worker (нет CORS проблем)
+            console.log('[TTS] Requesting Edge-TTS via Worker:', cleanText.substring(0, 50) + '...');
+            const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+                ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+                : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
             
-            const voiceMap = {
-                'ru-RU-SvetlanaNeural': 'Tatyana',
-                'ru-RU-DmitryNeural': 'Maxim',
-                'en-US': 'Brian',
-                'en-GB': 'Amy',
-                'de-DE': 'Marlene',
-                'fr-FR': 'Celine',
-                'es-ES': 'Conchita',
-                'it-IT': 'Carla',
-                'ja-JP': 'Mizuki',
-                'ko-KR': 'Seoyeon',
-                'zh-CN': 'Zhiyu'
-            };
-
-            const ttsVoice = voiceMap['ru-RU-SvetlanaNeural'] || 'Tatyana';
-            const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${ttsVoice}&text=${encodeURIComponent(cleanText.substring(0, 2000))}`;
-
-            const resp = await fetch(ttsUrl, {
-                method: 'GET',
-                headers: { 'Accept': 'audio/mpeg' }
+            const resp = await fetch(baseUrl + 'tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: cleanText,
+                    lang: 'ru-RU',
+                    voice: 'ru-RU-SvetlanaNeural'
+                })
             });
 
             if (!resp.ok) throw new Error(`TTS failed: ${resp.status}`);
