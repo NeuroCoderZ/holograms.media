@@ -4586,1311 +4586,1325 @@ This section contains the contents of the repository's files.
  422:     flex-shrink: 0;
  423: }
  424: 
- 425: /* Typing indicator */
- 426: .typing-indicator {
- 427:     display: flex;
- 428:     align-items: center;
- 429:     gap: 4px;
- 430:     padding: 8px 16px;
- 431:     font-size: 12px;
- 432:     color: var(--ne-light-gray);
- 433:     opacity: 0.7;
- 434: }
- 435: 
- 436: .typing-indicator .dot {
- 437:     width: 6px;
- 438:     height: 6px;
- 439:     border-radius: 50%;
- 440:     background: var(--ne-purple);
- 441:     animation: typing-bounce 1.4s infinite;
- 442: }
- 443: 
- 444: .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
- 445: .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
- 446: 
- 447: @keyframes typing-bounce {
- 448:     0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
- 449:     30% { transform: translateY(-4px); opacity: 1; }
- 450: }
- 451: 
- 452: /* Streaming cursor */
- 453: .message-bubble.streaming::after {
- 454:     content: '▋';
- 455:     animation: cursor-blink 0.8s infinite;
- 456:     color: var(--ne-purple);
- 457:     margin-left: 2px;
- 458: }
- 459: 
- 460: @keyframes cursor-blink {
- 461:     0%, 50% { opacity: 1; }
- 462:     51%, 100% { opacity: 0; }
- 463: }
- 464: 
- 465: /* ===== CHAT INPUT ===== */
- 466: .chat-input-container {
- 467:     position: fixed;
- 468:     bottom: 64px;
- 469:     left: 0;
- 470:     right: 0;
- 471:     background: rgba(0, 0, 0, 0.7);
- 472:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
- 473:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
- 474:     border-top: var(--glass-border);
- 475:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
- 476:     display: flex;
- 477:     align-items: center;
- 478:     gap: var(--ne-spacing-sm);
- 479:     z-index: 100;
- 480: }
- 481: 
- 482: /* Chat input inside split layout (desktop) */
- 483: .split-pane.left-pane .chat-input-container {
- 484:     position: sticky;
- 485:     bottom: 0;
- 486:     left: auto;
- 487:     right: auto;
+ 425: /* Speak button */
+ 426: .speak-btn {
+ 427:     background: none;
+ 428:     border: none;
+ 429:     font-size: 14px;
+ 430:     cursor: pointer;
+ 431:     opacity: 0.6;
+ 432:     transition: opacity 0.2s;
+ 433:     padding: 0 4px;
+ 434:     line-height: 1;
+ 435: }
+ 436: .speak-btn:hover { opacity: 1; }
+ 437: .speak-btn:active { transform: scale(0.9); }
+ 438: 
+ 439: /* Typing indicator */
+ 440: .typing-indicator {
+ 441:     display: flex;
+ 442:     align-items: center;
+ 443:     gap: 4px;
+ 444:     padding: 8px 16px;
+ 445:     font-size: 12px;
+ 446:     color: var(--ne-light-gray);
+ 447:     opacity: 0.7;
+ 448: }
+ 449: 
+ 450: .typing-indicator .dot {
+ 451:     width: 6px;
+ 452:     height: 6px;
+ 453:     border-radius: 50%;
+ 454:     background: var(--ne-purple);
+ 455:     animation: typing-bounce 1.4s infinite;
+ 456: }
+ 457: 
+ 458: .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+ 459: .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+ 460: 
+ 461: @keyframes typing-bounce {
+ 462:     0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+ 463:     30% { transform: translateY(-4px); opacity: 1; }
+ 464: }
+ 465: 
+ 466: /* Streaming cursor */
+ 467: .message-bubble.streaming::after {
+ 468:     content: '▋';
+ 469:     animation: cursor-blink 0.8s infinite;
+ 470:     color: var(--ne-purple);
+ 471:     margin-left: 2px;
+ 472: }
+ 473: 
+ 474: @keyframes cursor-blink {
+ 475:     0%, 50% { opacity: 1; }
+ 476:     51%, 100% { opacity: 0; }
+ 477: }
+ 478: 
+ 479: /* ===== CHAT INPUT ===== */
+ 480: .chat-input-container {
+ 481:     position: fixed;
+ 482:     bottom: 64px;
+ 483:     left: 0;
+ 484:     right: 0;
+ 485:     background: rgba(0, 0, 0, 0.7);
+ 486:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 487:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
  488:     border-top: var(--glass-border);
- 489:     border-right: none;
- 490:     z-index: 10;
- 491:     padding: var(--ne-spacing-sm) var(--ne-spacing-md);
- 492: }
- 493: 
- 494: /* Hide fixed chat input when split layout is active (desktop) */
- 495: @media (min-width: 600px) {
- 496:     .chat-input-container:not(.split-chat-input) {
- 497:         display: none !important;
- 498:     }
- 499: }
- 500: 
- 501: /* Show fixed chat input on mobile, hide split version */
- 502: @media (max-width: 599px) {
- 503:     .split-chat-input {
- 504:         display: none !important;
- 505:     }
+ 489:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
+ 490:     display: flex;
+ 491:     align-items: center;
+ 492:     gap: var(--ne-spacing-sm);
+ 493:     z-index: 100;
+ 494: }
+ 495: 
+ 496: /* Chat input inside split layout (desktop) */
+ 497: .split-pane.left-pane .chat-input-container {
+ 498:     position: sticky;
+ 499:     bottom: 0;
+ 500:     left: auto;
+ 501:     right: auto;
+ 502:     border-top: var(--glass-border);
+ 503:     border-right: none;
+ 504:     z-index: 10;
+ 505:     padding: var(--ne-spacing-sm) var(--ne-spacing-md);
  506: }
  507: 
- 508: .attach-btn,
- 509: .send-btn {
- 510:     width: 40px;
- 511:     height: 40px;
- 512:     border-radius: 50%;
- 513:     border: var(--glass-border-light);
- 514:     background: var(--glass-bg-light);
- 515:     backdrop-filter: blur(12px);
- 516:     -webkit-backdrop-filter: blur(12px);
- 517:     color: var(--ne-white);
- 518:     display: flex;
- 519:     align-items: center;
- 520:     justify-content: center;
- 521:     cursor: pointer;
- 522:     transition: var(--glass-transition);
- 523:     font-size: 18px;
- 524:     flex-shrink: 0;
- 525: }
- 526: 
- 527: .attach-btn:active,
- 528: .send-btn:active {
- 529:     transform: scale(0.92);
- 530:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
- 531: }
- 532: 
- 533: .send-btn {
- 534:     background: linear-gradient(135deg, var(--ne-purple), var(--ne-red));
- 535:     border: none;
- 536:     color: #fff;
- 537: }
- 538: 
- 539: .chat-input {
- 540:     flex: 1;
- 541:     padding: 10px 16px;
- 542:     border-radius: 20px;
- 543:     border: var(--glass-border-light);
- 544:     background: rgba(255, 255, 255, 0.06);
- 545:     backdrop-filter: blur(8px);
- 546:     -webkit-backdrop-filter: blur(8px);
- 547:     color: var(--ne-white);
- 548:     font-size: 14px;
- 549:     outline: none;
- 550:     transition: var(--glass-transition);
+ 508: /* Hide fixed chat input when split layout is active (desktop) */
+ 509: @media (min-width: 600px) {
+ 510:     .chat-input-container:not(.split-chat-input) {
+ 511:         display: none !important;
+ 512:     }
+ 513: }
+ 514: 
+ 515: /* Show fixed chat input on mobile, hide split version */
+ 516: @media (max-width: 599px) {
+ 517:     .split-chat-input {
+ 518:         display: none !important;
+ 519:     }
+ 520: }
+ 521: 
+ 522: .attach-btn,
+ 523: .send-btn {
+ 524:     width: 40px;
+ 525:     height: 40px;
+ 526:     border-radius: 50%;
+ 527:     border: var(--glass-border-light);
+ 528:     background: var(--glass-bg-light);
+ 529:     backdrop-filter: blur(12px);
+ 530:     -webkit-backdrop-filter: blur(12px);
+ 531:     color: var(--ne-white);
+ 532:     display: flex;
+ 533:     align-items: center;
+ 534:     justify-content: center;
+ 535:     cursor: pointer;
+ 536:     transition: var(--glass-transition);
+ 537:     font-size: 18px;
+ 538:     flex-shrink: 0;
+ 539: }
+ 540: 
+ 541: .attach-btn:active,
+ 542: .send-btn:active {
+ 543:     transform: scale(0.92);
+ 544:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+ 545: }
+ 546: 
+ 547: .send-btn {
+ 548:     background: linear-gradient(135deg, var(--ne-purple), var(--ne-red));
+ 549:     border: none;
+ 550:     color: #fff;
  551: }
  552: 
- 553: .chat-input::placeholder {
- 554:     color: rgba(255, 255, 255, 0.3);
- 555: }
- 556: 
- 557: .chat-input:focus {
- 558:     border-color: var(--ne-purple);
- 559:     background: rgba(255, 255, 255, 0.08);
- 560: }
- 561: 
- 562: /* ===== BOTTOM NAVIGATION (3 Glass Tabs) ===== */
- 563: .bottom-nav {
- 564:     display: none;
+ 553: .chat-input {
+ 554:     flex: 1;
+ 555:     padding: 10px 16px;
+ 556:     border-radius: 20px;
+ 557:     border: var(--glass-border-light);
+ 558:     background: rgba(255, 255, 255, 0.06);
+ 559:     backdrop-filter: blur(8px);
+ 560:     -webkit-backdrop-filter: blur(8px);
+ 561:     color: var(--ne-white);
+ 562:     font-size: 14px;
+ 563:     outline: none;
+ 564:     transition: var(--glass-transition);
  565: }
  566: 
- 567: /* ─── New bottom nav inside left pane ─── */
- 568: .bottom-nav-left {
- 569:     display: flex;
- 570:     align-items: center;
- 571:     gap: 4px;
- 572:     padding: 6px 8px;
- 573:     background: rgba(0, 0, 0, 0.6);
- 574:     border-top: 1px solid rgba(255, 255, 255, 0.06);
- 575:     flex-shrink: 0;
- 576: }
- 577: 
- 578: .nav-btn-left {
- 579:     flex: 1;
- 580:     display: flex;
- 581:     flex-direction: column;
- 582:     align-items: center;
- 583:     justify-content: center;
- 584:     gap: 2px;
- 585:     padding: 8px 4px;
- 586:     border: none;
- 587:     background: rgba(255, 255, 255, 0.03);
- 588:     border-radius: 10px;
- 589:     color: var(--ne-light-gray);
- 590:     font-size: 10px;
- 591:     cursor: pointer;
- 592:     transition: var(--glass-transition);
- 593:     position: relative;
- 594: }
- 595: 
- 596: .nav-btn-left.active {
- 597:     color: var(--ne-white);
- 598:     background: rgba(139, 92, 246, 0.15);
- 599: }
- 600: 
- 601: .nav-btn-left:active {
- 602:     transform: scale(0.95);
- 603: }
- 604: 
- 605: .nav-btn-left .nav-icon {
- 606:     font-size: 18px;
- 607:     line-height: 1;
+ 567: .chat-input::placeholder {
+ 568:     color: rgba(255, 255, 255, 0.3);
+ 569: }
+ 570: 
+ 571: .chat-input:focus {
+ 572:     border-color: var(--ne-purple);
+ 573:     background: rgba(255, 255, 255, 0.08);
+ 574: }
+ 575: 
+ 576: /* ===== BOTTOM NAVIGATION (3 Glass Tabs) ===== */
+ 577: .bottom-nav {
+ 578:     display: none;
+ 579: }
+ 580: 
+ 581: /* ─── New bottom nav inside left pane ─── */
+ 582: .bottom-nav-left {
+ 583:     display: flex;
+ 584:     align-items: center;
+ 585:     gap: 4px;
+ 586:     padding: 6px 8px;
+ 587:     background: rgba(0, 0, 0, 0.6);
+ 588:     border-top: 1px solid rgba(255, 255, 255, 0.06);
+ 589:     flex-shrink: 0;
+ 590: }
+ 591: 
+ 592: .nav-btn-left {
+ 593:     flex: 1;
+ 594:     display: flex;
+ 595:     flex-direction: column;
+ 596:     align-items: center;
+ 597:     justify-content: center;
+ 598:     gap: 2px;
+ 599:     padding: 8px 4px;
+ 600:     border: none;
+ 601:     background: rgba(255, 255, 255, 0.03);
+ 602:     border-radius: 10px;
+ 603:     color: var(--ne-light-gray);
+ 604:     font-size: 10px;
+ 605:     cursor: pointer;
+ 606:     transition: var(--glass-transition);
+ 607:     position: relative;
  608: }
  609: 
- 610: .nav-btn-left .nav-label {
- 611:     font-weight: 500;
- 612:     font-size: 9px;
+ 610: .nav-btn-left.active {
+ 611:     color: var(--ne-white);
+ 612:     background: rgba(139, 92, 246, 0.15);
  613: }
  614: 
- 615: /* ─── Hide Telegram "Neuro" branding in top-right corner ─── */
- 616: .telegram-branding,
- 617: .tg-branding,
- 618: [data-tg-branding] {
- 619:     display: none !important;
- 620: }
- 621: 
- 622: /* Hide Telegram watermark via overlay */
- 623: body::after {
- 624:     content: '';
- 625:     position: fixed;
- 626:     top: 0;
- 627:     right: 0;
- 628:     width: 80px;
- 629:     height: 30px;
- 630:     background: var(--ne-black);
- 631:     z-index: 10000;
- 632:     pointer-events: none;
- 633: }
- 634: 
- 635: .nav-btn {
- 636:     flex: 1;
- 637:     display: flex;
- 638:     flex-direction: column;
- 639:     align-items: center;
- 640:     justify-content: center;
- 641:     gap: 2px;
- 642:     padding: var(--ne-spacing-xs) 0;
- 643:     border: none;
- 644:     background: none;
- 645:     color: var(--ne-light-gray);
- 646:     font-size: 10px;
- 647:     cursor: pointer;
- 648:     transition: var(--glass-transition);
- 649:     position: relative;
- 650: }
- 651: 
- 652: /* Divider between tabs (inset groove) */
- 653: .nav-btn:not(:last-child)::after {
- 654:     content: '';
- 655:     position: absolute;
- 656:     right: 0;
- 657:     top: 20%;
- 658:     bottom: 20%;
- 659:     width: 1px;
- 660:     background: linear-gradient(180deg, transparent, rgba(255,255,255,0.08), transparent);
- 661: }
- 662: 
- 663: .nav-btn.active {
- 664:     color: var(--ne-white);
- 665: }
- 666: 
- 667: .nav-btn.active::before {
+ 615: .nav-btn-left:active {
+ 616:     transform: scale(0.95);
+ 617: }
+ 618: 
+ 619: .nav-btn-left .nav-icon {
+ 620:     font-size: 18px;
+ 621:     line-height: 1;
+ 622: }
+ 623: 
+ 624: .nav-btn-left .nav-label {
+ 625:     font-weight: 500;
+ 626:     font-size: 9px;
+ 627: }
+ 628: 
+ 629: /* ─── Hide Telegram "Neuro" branding in top-right corner ─── */
+ 630: .telegram-branding,
+ 631: .tg-branding,
+ 632: [data-tg-branding] {
+ 633:     display: none !important;
+ 634: }
+ 635: 
+ 636: /* Hide Telegram watermark via overlay */
+ 637: body::after {
+ 638:     content: '';
+ 639:     position: fixed;
+ 640:     top: 0;
+ 641:     right: 0;
+ 642:     width: 80px;
+ 643:     height: 30px;
+ 644:     background: var(--ne-black);
+ 645:     z-index: 10000;
+ 646:     pointer-events: none;
+ 647: }
+ 648: 
+ 649: .nav-btn {
+ 650:     flex: 1;
+ 651:     display: flex;
+ 652:     flex-direction: column;
+ 653:     align-items: center;
+ 654:     justify-content: center;
+ 655:     gap: 2px;
+ 656:     padding: var(--ne-spacing-xs) 0;
+ 657:     border: none;
+ 658:     background: none;
+ 659:     color: var(--ne-light-gray);
+ 660:     font-size: 10px;
+ 661:     cursor: pointer;
+ 662:     transition: var(--glass-transition);
+ 663:     position: relative;
+ 664: }
+ 665: 
+ 666: /* Divider between tabs (inset groove) */
+ 667: .nav-btn:not(:last-child)::after {
  668:     content: '';
  669:     position: absolute;
- 670:     top: 0;
- 671:     left: 20%;
- 672:     right: 20%;
- 673:     height: 2px;
- 674:     background: linear-gradient(90deg, var(--ne-purple), var(--ne-red));
- 675:     border-radius: 1px;
- 676: }
- 677: 
- 678: .nav-btn:active {
- 679:     box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
- 680: }
- 681: 
- 682: .nav-icon {
- 683:     font-size: 22px;
- 684:     line-height: 1;
- 685: }
- 686: 
- 687: .nav-label {
- 688:     font-weight: 500;
- 689: }
- 690: 
- 691: /* ===== BUTTONS (Glass) ===== */
- 692: .btn {
- 693:     display: inline-flex;
- 694:     align-items: center;
- 695:     justify-content: center;
- 696:     gap: 6px;
- 697:     padding: 10px 20px;
- 698:     border-radius: var(--glass-radius);
- 699:     border: var(--glass-border-light);
- 700:     font-size: 14px;
- 701:     font-weight: 500;
- 702:     cursor: pointer;
- 703:     transition: var(--glass-transition);
- 704:     width: 100%;
- 705:     background: var(--glass-bg-light);
- 706:     backdrop-filter: blur(12px) saturate(150%);
- 707:     -webkit-backdrop-filter: blur(12px) saturate(150%);
- 708:     color: var(--ne-white);
- 709: }
- 710: 
- 711: .btn:active {
- 712:     transform: scale(0.98);
- 713:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
- 714: }
- 715: 
- 716: .btn-primary {
- 717:     background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(239, 68, 68, 0.2));
- 718:     border-color: rgba(139, 92, 246, 0.3);
- 719:     color: var(--ne-white);
- 720: }
- 721: 
- 722: .btn-secondary {
- 723:     background: var(--glass-bg);
- 724:     color: var(--ne-white);
- 725:     border-color: var(--glass-border);
- 726: }
- 727: 
- 728: /* ===== FORMS ===== */
- 729: .form-group {
- 730:     margin-bottom: var(--ne-spacing-lg);
- 731: }
- 732: 
- 733: .form-label {
- 734:     display: block;
- 735:     font-size: 13px;
- 736:     font-weight: 500;
- 737:     color: var(--ne-light-gray);
- 738:     margin-bottom: var(--ne-spacing-sm);
- 739:     text-transform: uppercase;
- 740:     letter-spacing: 0.5px;
- 741: }
- 742: 
- 743: .form-input {
- 744:     width: 100%;
- 745:     padding: 12px 14px;
- 746:     border-radius: var(--glass-radius);
- 747:     border: var(--glass-border-light);
- 748:     background: rgba(255, 255, 255, 0.04);
- 749:     backdrop-filter: blur(8px);
- 750:     -webkit-backdrop-filter: blur(8px);
- 751:     color: var(--ne-white);
- 752:     font-size: 14px;
- 753:     outline: none;
- 754:     transition: var(--glass-transition);
+ 670:     right: 0;
+ 671:     top: 20%;
+ 672:     bottom: 20%;
+ 673:     width: 1px;
+ 674:     background: linear-gradient(180deg, transparent, rgba(255,255,255,0.08), transparent);
+ 675: }
+ 676: 
+ 677: .nav-btn.active {
+ 678:     color: var(--ne-white);
+ 679: }
+ 680: 
+ 681: .nav-btn.active::before {
+ 682:     content: '';
+ 683:     position: absolute;
+ 684:     top: 0;
+ 685:     left: 20%;
+ 686:     right: 20%;
+ 687:     height: 2px;
+ 688:     background: linear-gradient(90deg, var(--ne-purple), var(--ne-red));
+ 689:     border-radius: 1px;
+ 690: }
+ 691: 
+ 692: .nav-btn:active {
+ 693:     box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+ 694: }
+ 695: 
+ 696: .nav-icon {
+ 697:     font-size: 22px;
+ 698:     line-height: 1;
+ 699: }
+ 700: 
+ 701: .nav-label {
+ 702:     font-weight: 500;
+ 703: }
+ 704: 
+ 705: /* ===== BUTTONS (Glass) ===== */
+ 706: .btn {
+ 707:     display: inline-flex;
+ 708:     align-items: center;
+ 709:     justify-content: center;
+ 710:     gap: 6px;
+ 711:     padding: 10px 20px;
+ 712:     border-radius: var(--glass-radius);
+ 713:     border: var(--glass-border-light);
+ 714:     font-size: 14px;
+ 715:     font-weight: 500;
+ 716:     cursor: pointer;
+ 717:     transition: var(--glass-transition);
+ 718:     width: 100%;
+ 719:     background: var(--glass-bg-light);
+ 720:     backdrop-filter: blur(12px) saturate(150%);
+ 721:     -webkit-backdrop-filter: blur(12px) saturate(150%);
+ 722:     color: var(--ne-white);
+ 723: }
+ 724: 
+ 725: .btn:active {
+ 726:     transform: scale(0.98);
+ 727:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+ 728: }
+ 729: 
+ 730: .btn-primary {
+ 731:     background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(239, 68, 68, 0.2));
+ 732:     border-color: rgba(139, 92, 246, 0.3);
+ 733:     color: var(--ne-white);
+ 734: }
+ 735: 
+ 736: .btn-secondary {
+ 737:     background: var(--glass-bg);
+ 738:     color: var(--ne-white);
+ 739:     border-color: var(--glass-border);
+ 740: }
+ 741: 
+ 742: /* ===== FORMS ===== */
+ 743: .form-group {
+ 744:     margin-bottom: var(--ne-spacing-lg);
+ 745: }
+ 746: 
+ 747: .form-label {
+ 748:     display: block;
+ 749:     font-size: 13px;
+ 750:     font-weight: 500;
+ 751:     color: var(--ne-light-gray);
+ 752:     margin-bottom: var(--ne-spacing-sm);
+ 753:     text-transform: uppercase;
+ 754:     letter-spacing: 0.5px;
  755: }
  756: 
- 757: .form-input:focus {
- 758:     border-color: var(--ne-purple);
- 759:     background: rgba(255, 255, 255, 0.06);
- 760: }
- 761: 
- 762: /* ===== CARDS ===== */
- 763: .card {
- 764:     background: var(--glass-bg);
- 765:     backdrop-filter: blur(12px) saturate(150%);
- 766:     -webkit-backdrop-filter: blur(12px) saturate(150%);
- 767:     border: var(--glass-border);
- 768:     border-radius: var(--glass-radius);
- 769:     padding: var(--ne-spacing-lg);
- 770:     margin-bottom: var(--ne-spacing-md);
- 771: }
- 772: 
- 773: .draft-card {
- 774:     background: rgba(255, 255, 255, 0.02);
- 775:     border-left-width: 3px;
- 776: }
- 777: 
- 778: .card-title {
- 779:     font-size: 15px;
- 780:     font-weight: 600;
- 781:     margin-bottom: var(--ne-spacing-sm);
- 782:     color: var(--ne-white);
- 783: }
- 784: 
- 785: .card-subtitle {
- 786:     font-size: 13px;
- 787:     color: var(--ne-light-gray);
- 788:     margin-bottom: var(--ne-spacing-md);
- 789: }
- 790: 
- 791: /* ===== SCROLLBAR ===== */
- 792: ::-webkit-scrollbar {
- 793:     width: 4px;
- 794: }
- 795: 
- 796: ::-webkit-scrollbar-track {
- 797:     background: transparent;
- 798: }
- 799: 
- 800: ::-webkit-scrollbar-thumb {
- 801:     background: rgba(255, 255, 255, 0.12);
- 802:     border-radius: 2px;
+ 757: .form-input {
+ 758:     width: 100%;
+ 759:     padding: 12px 14px;
+ 760:     border-radius: var(--glass-radius);
+ 761:     border: var(--glass-border-light);
+ 762:     background: rgba(255, 255, 255, 0.04);
+ 763:     backdrop-filter: blur(8px);
+ 764:     -webkit-backdrop-filter: blur(8px);
+ 765:     color: var(--ne-white);
+ 766:     font-size: 14px;
+ 767:     outline: none;
+ 768:     transition: var(--glass-transition);
+ 769: }
+ 770: 
+ 771: .form-input:focus {
+ 772:     border-color: var(--ne-purple);
+ 773:     background: rgba(255, 255, 255, 0.06);
+ 774: }
+ 775: 
+ 776: /* ===== CARDS ===== */
+ 777: .card {
+ 778:     background: var(--glass-bg);
+ 779:     backdrop-filter: blur(12px) saturate(150%);
+ 780:     -webkit-backdrop-filter: blur(12px) saturate(150%);
+ 781:     border: var(--glass-border);
+ 782:     border-radius: var(--glass-radius);
+ 783:     padding: var(--ne-spacing-lg);
+ 784:     margin-bottom: var(--ne-spacing-md);
+ 785: }
+ 786: 
+ 787: .draft-card {
+ 788:     background: rgba(255, 255, 255, 0.02);
+ 789:     border-left-width: 3px;
+ 790: }
+ 791: 
+ 792: .card-title {
+ 793:     font-size: 15px;
+ 794:     font-weight: 600;
+ 795:     margin-bottom: var(--ne-spacing-sm);
+ 796:     color: var(--ne-white);
+ 797: }
+ 798: 
+ 799: .card-subtitle {
+ 800:     font-size: 13px;
+ 801:     color: var(--ne-light-gray);
+ 802:     margin-bottom: var(--ne-spacing-md);
  803: }
  804: 
- 805: ::-webkit-scrollbar-thumb:hover {
- 806:     background: rgba(255, 255, 255, 0.2);
- 807: }
- 808: 
- 809: /* ===== ANIMATIONS ===== */
- 810: @keyframes fadeIn {
- 811:     from { opacity: 0; transform: translateY(8px); }
- 812:     to { opacity: 1; transform: translateY(0); }
- 813: }
- 814: 
- 815: .view {
- 816:     animation: fadeIn 0.25s ease-out;
- 817:     flex: 1;
- 818:     display: flex;
- 819:     flex-direction: column;
- 820:     min-height: 0;
- 821:     overflow: hidden;
- 822: }
- 823: 
- 824: .view.has-top-panel {
- 825:     flex: 1;
- 826:     display: flex;
- 827:     flex-direction: column;
- 828:     min-height: 0;
- 829:     overflow: hidden;
- 830: }
- 831: 
- 832: /* ===== EMPTY STATE ===== */
- 833: .empty-state {
- 834:     text-align: center;
- 835:     padding: 48px 24px;
- 836:     color: var(--ne-light-gray);
- 837: }
- 838: 
- 839: .empty-icon {
- 840:     font-size: 48px;
- 841:     margin-bottom: var(--ne-spacing-md);
- 842:     opacity: 0.5;
- 843: }
- 844: 
- 845: .empty-text {
- 846:     font-size: 14px;
- 847: }
- 848: 
- 849: /* ===== ATTACH MENU ===== */
- 850: .attach-menu {
- 851:     position: fixed;
- 852:     bottom: 100px;
- 853:     left: var(--ne-spacing-lg);
- 854:     right: var(--ne-spacing-lg);
- 855:     background: rgba(0, 0, 0, 0.8);
- 856:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
- 857:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
- 858:     border: var(--glass-border-light);
- 859:     border-radius: var(--glass-radius);
- 860:     padding: var(--ne-spacing-sm);
- 861:     display: grid;
- 862:     grid-template-columns: repeat(2, 1fr);
- 863:     gap: var(--ne-spacing-sm);
- 864:     z-index: 102;
- 865:     animation: fadeIn 0.2s ease-out;
- 866: }
- 867: 
- 868: .attach-option {
- 869:     display: flex;
- 870:     flex-direction: column;
- 871:     align-items: center;
- 872:     gap: 6px;
- 873:     padding: var(--ne-spacing-lg);
- 874:     border-radius: var(--glass-radius-sm);
- 875:     border: var(--glass-border);
- 876:     background: var(--glass-bg);
- 877:     color: var(--ne-white);
- 878:     font-size: 12px;
- 879:     cursor: pointer;
- 880:     transition: var(--glass-transition);
- 881: }
- 882: 
- 883: .attach-option:active {
- 884:     transform: scale(0.95);
- 885:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
- 886: }
- 887: 
- 888: .attach-icon {
- 889:     font-size: 28px;
- 890: }
- 891: 
- 892: /* ===== VIDEO RECORDING ===== */
- 893: .video-recording {
- 894:     position: fixed;
- 895:     top: 0;
- 896:     left: 0;
- 897:     right: 0;
- 898:     bottom: 0;
- 899:     background: var(--ne-black);
- 900:     z-index: 200;
- 901:     display: flex;
- 902:     flex-direction: column;
- 903: }
- 904: 
- 905: .video-preview {
- 906:     flex: 1;
- 907:     position: relative;
- 908:     background: var(--ne-black);
- 909: }
- 910: 
- 911: .video-preview video {
- 912:     width: 100%;
- 913:     height: 100%;
- 914:     object-fit: cover;
- 915: }
- 916: 
- 917: .video-controls {
- 918:     position: absolute;
- 919:     bottom: 0;
- 920:     left: 0;
- 921:     right: 0;
- 922:     padding: var(--ne-spacing-xl);
- 923:     display: flex;
- 924:     justify-content: center;
- 925:     align-items: center;
- 926:     gap: var(--ne-spacing-lg);
- 927:     background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
- 928: }
- 929: 
- 930: .video-record-btn {
- 931:     width: 64px;
- 932:     height: 64px;
- 933:     border-radius: 50%;
- 934:     border: 4px solid var(--ne-white);
- 935:     background: transparent;
- 936:     cursor: pointer;
- 937:     transition: all 0.2s;
- 938: }
- 939: 
- 940: .video-record-btn.recording {
- 941:     background: var(--ne-red);
- 942:     border-radius: 12px;
- 943: }
- 944: 
- 945: .camera-switch-btn {
- 946:     width: 48px;
- 947:     height: 48px;
- 948:     border-radius: 50%;
- 949:     border: var(--glass-border);
- 950:     background: rgba(0,0,0,0.5);
- 951:     backdrop-filter: blur(8px);
- 952:     -webkit-backdrop-filter: blur(8px);
- 953:     color: var(--ne-white);
- 954:     font-size: 24px;
- 955:     cursor: pointer;
- 956:     display: flex;
- 957:     align-items: center;
- 958:     justify-content: center;
- 959: }
- 960: 
- 961: /* ===== RESPONSIVE ===== */
- 962: @media (min-width: 768px) {
- 963:     .app-main {
- 964:         max-width: none !important;
- 965:         margin: 0;
- 966:     }
- 967:     
- 968:     .chat-input-container {
- 969:         max-width: none;
- 970:         left: 0;
- 971:         transform: none;
- 972:     }
- 973:     
- 974:     .attach-menu {
- 975:         max-width: none;
- 976:         left: var(--ne-spacing-lg);
- 977:         transform: none;
- 978:     }
- 979: }
- 980: 
- 981: @media (min-width: 768px) {
- 982:     html, body, #app, .app-main, .container, .tg-web-app {
- 983:         max-width: none !important;
- 984:         width: 100vw !important;
- 985:         height: var(--tg-viewport-stable-height, 100dvh) !important;
- 986:         margin: 0 !important;
- 987:         padding: 0 !important;
- 988:         overflow-x: hidden !important;
- 989:     }
- 990: }
- 991: 
- 992: /* ===== REDUCED TRANSPARENCY (Accessibility) ===== */
- 993: @media (prefers-reduced-transparency: reduce) {
- 994:     .message-bubble,
- 995:     .chat-input-container,
- 996:     .bottom-nav,
- 997:     .btn,
- 998:     .form-input {
- 999:         backdrop-filter: none;
-1000:         -webkit-backdrop-filter: none;
-1001:     }
-1002:     
-1003:     .chat-message.user .message-bubble {
-1004:         background: rgba(255, 255, 255, 0.95);
-1005:     }
-1006:     
-1007:     .chat-message.hermes .message-bubble {
-1008:         background: rgba(0, 0, 0, 0.95);
-1009:     }
-1010: }
-1011: 
-1012: /* ===== NEW UI STRUCTURE v0.20.511 ===== */
-1013: /* Top control panel: mic (left) + task spec (right) */
-1014: 
-1015: .top-control-panel {
-1016:     display: flex;
-1017:     justify-content: space-between;
-1018:     align-items: center;
-1019:     gap: var(--ne-spacing-md);
-1020:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
-1021:     background: var(--glass-bg);
-1022:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-1023:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-1024:     border-bottom: var(--glass-border);
-1025:     min-height: 56px;
-1026: }
-1027: 
-1028: .left-mic-panel {
-1029:     display: flex;
-1030:     align-items: center;
-1031:     gap: var(--ne-spacing-sm);
-1032: }
-1033: 
-1034: .mic-button {
-1035:     width: 44px;
-1036:     height: 44px;
-1037:     border-radius: 50%;
-1038:     background: var(--glass-bg-light);
-1039:     border: var(--glass-border);
-1040:     display: flex;
-1041:     align-items: center;
-1042:     justify-content: center;
-1043:     cursor: pointer;
-1044:     transition: var(--glass-transition);
-1045:     font-size: 20px;
+ 805: /* ===== SCROLLBAR ===== */
+ 806: ::-webkit-scrollbar {
+ 807:     width: 4px;
+ 808: }
+ 809: 
+ 810: ::-webkit-scrollbar-track {
+ 811:     background: transparent;
+ 812: }
+ 813: 
+ 814: ::-webkit-scrollbar-thumb {
+ 815:     background: rgba(255, 255, 255, 0.12);
+ 816:     border-radius: 2px;
+ 817: }
+ 818: 
+ 819: ::-webkit-scrollbar-thumb:hover {
+ 820:     background: rgba(255, 255, 255, 0.2);
+ 821: }
+ 822: 
+ 823: /* ===== ANIMATIONS ===== */
+ 824: @keyframes fadeIn {
+ 825:     from { opacity: 0; transform: translateY(8px); }
+ 826:     to { opacity: 1; transform: translateY(0); }
+ 827: }
+ 828: 
+ 829: .view {
+ 830:     animation: fadeIn 0.25s ease-out;
+ 831:     flex: 1;
+ 832:     display: flex;
+ 833:     flex-direction: column;
+ 834:     min-height: 0;
+ 835:     overflow: hidden;
+ 836: }
+ 837: 
+ 838: .view.has-top-panel {
+ 839:     flex: 1;
+ 840:     display: flex;
+ 841:     flex-direction: column;
+ 842:     min-height: 0;
+ 843:     overflow: hidden;
+ 844: }
+ 845: 
+ 846: /* ===== EMPTY STATE ===== */
+ 847: .empty-state {
+ 848:     text-align: center;
+ 849:     padding: 48px 24px;
+ 850:     color: var(--ne-light-gray);
+ 851: }
+ 852: 
+ 853: .empty-icon {
+ 854:     font-size: 48px;
+ 855:     margin-bottom: var(--ne-spacing-md);
+ 856:     opacity: 0.5;
+ 857: }
+ 858: 
+ 859: .empty-text {
+ 860:     font-size: 14px;
+ 861: }
+ 862: 
+ 863: /* ===== ATTACH MENU ===== */
+ 864: .attach-menu {
+ 865:     position: fixed;
+ 866:     bottom: 100px;
+ 867:     left: var(--ne-spacing-lg);
+ 868:     right: var(--ne-spacing-lg);
+ 869:     background: rgba(0, 0, 0, 0.8);
+ 870:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 871:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+ 872:     border: var(--glass-border-light);
+ 873:     border-radius: var(--glass-radius);
+ 874:     padding: var(--ne-spacing-sm);
+ 875:     display: grid;
+ 876:     grid-template-columns: repeat(2, 1fr);
+ 877:     gap: var(--ne-spacing-sm);
+ 878:     z-index: 102;
+ 879:     animation: fadeIn 0.2s ease-out;
+ 880: }
+ 881: 
+ 882: .attach-option {
+ 883:     display: flex;
+ 884:     flex-direction: column;
+ 885:     align-items: center;
+ 886:     gap: 6px;
+ 887:     padding: var(--ne-spacing-lg);
+ 888:     border-radius: var(--glass-radius-sm);
+ 889:     border: var(--glass-border);
+ 890:     background: var(--glass-bg);
+ 891:     color: var(--ne-white);
+ 892:     font-size: 12px;
+ 893:     cursor: pointer;
+ 894:     transition: var(--glass-transition);
+ 895: }
+ 896: 
+ 897: .attach-option:active {
+ 898:     transform: scale(0.95);
+ 899:     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+ 900: }
+ 901: 
+ 902: .attach-icon {
+ 903:     font-size: 28px;
+ 904: }
+ 905: 
+ 906: /* ===== VIDEO RECORDING ===== */
+ 907: .video-recording {
+ 908:     position: fixed;
+ 909:     top: 0;
+ 910:     left: 0;
+ 911:     right: 0;
+ 912:     bottom: 0;
+ 913:     background: var(--ne-black);
+ 914:     z-index: 200;
+ 915:     display: flex;
+ 916:     flex-direction: column;
+ 917: }
+ 918: 
+ 919: .video-preview {
+ 920:     flex: 1;
+ 921:     position: relative;
+ 922:     background: var(--ne-black);
+ 923: }
+ 924: 
+ 925: .video-preview video {
+ 926:     width: 100%;
+ 927:     height: 100%;
+ 928:     object-fit: cover;
+ 929: }
+ 930: 
+ 931: .video-controls {
+ 932:     position: absolute;
+ 933:     bottom: 0;
+ 934:     left: 0;
+ 935:     right: 0;
+ 936:     padding: var(--ne-spacing-xl);
+ 937:     display: flex;
+ 938:     justify-content: center;
+ 939:     align-items: center;
+ 940:     gap: var(--ne-spacing-lg);
+ 941:     background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+ 942: }
+ 943: 
+ 944: .video-record-btn {
+ 945:     width: 64px;
+ 946:     height: 64px;
+ 947:     border-radius: 50%;
+ 948:     border: 4px solid var(--ne-white);
+ 949:     background: transparent;
+ 950:     cursor: pointer;
+ 951:     transition: all 0.2s;
+ 952: }
+ 953: 
+ 954: .video-record-btn.recording {
+ 955:     background: var(--ne-red);
+ 956:     border-radius: 12px;
+ 957: }
+ 958: 
+ 959: .camera-switch-btn {
+ 960:     width: 48px;
+ 961:     height: 48px;
+ 962:     border-radius: 50%;
+ 963:     border: var(--glass-border);
+ 964:     background: rgba(0,0,0,0.5);
+ 965:     backdrop-filter: blur(8px);
+ 966:     -webkit-backdrop-filter: blur(8px);
+ 967:     color: var(--ne-white);
+ 968:     font-size: 24px;
+ 969:     cursor: pointer;
+ 970:     display: flex;
+ 971:     align-items: center;
+ 972:     justify-content: center;
+ 973: }
+ 974: 
+ 975: /* ===== RESPONSIVE ===== */
+ 976: @media (min-width: 768px) {
+ 977:     .app-main {
+ 978:         max-width: none !important;
+ 979:         margin: 0;
+ 980:     }
+ 981:     
+ 982:     .chat-input-container {
+ 983:         max-width: none;
+ 984:         left: 0;
+ 985:         transform: none;
+ 986:     }
+ 987:     
+ 988:     .attach-menu {
+ 989:         max-width: none;
+ 990:         left: var(--ne-spacing-lg);
+ 991:         transform: none;
+ 992:     }
+ 993: }
+ 994: 
+ 995: @media (min-width: 768px) {
+ 996:     html, body, #app, .app-main, .container, .tg-web-app {
+ 997:         max-width: none !important;
+ 998:         width: 100vw !important;
+ 999:         height: var(--tg-viewport-stable-height, 100dvh) !important;
+1000:         margin: 0 !important;
+1001:         padding: 0 !important;
+1002:         overflow-x: hidden !important;
+1003:     }
+1004: }
+1005: 
+1006: /* ===== REDUCED TRANSPARENCY (Accessibility) ===== */
+1007: @media (prefers-reduced-transparency: reduce) {
+1008:     .message-bubble,
+1009:     .chat-input-container,
+1010:     .bottom-nav,
+1011:     .btn,
+1012:     .form-input {
+1013:         backdrop-filter: none;
+1014:         -webkit-backdrop-filter: none;
+1015:     }
+1016:     
+1017:     .chat-message.user .message-bubble {
+1018:         background: rgba(255, 255, 255, 0.95);
+1019:     }
+1020:     
+1021:     .chat-message.hermes .message-bubble {
+1022:         background: rgba(0, 0, 0, 0.95);
+1023:     }
+1024: }
+1025: 
+1026: /* ===== NEW UI STRUCTURE v0.20.511 ===== */
+1027: /* Top control panel: mic (left) + task spec (right) */
+1028: 
+1029: .top-control-panel {
+1030:     display: flex;
+1031:     justify-content: space-between;
+1032:     align-items: center;
+1033:     gap: var(--ne-spacing-md);
+1034:     padding: var(--ne-spacing-sm) var(--ne-spacing-lg);
+1035:     background: var(--glass-bg);
+1036:     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+1037:     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+1038:     border-bottom: var(--glass-border);
+1039:     min-height: 56px;
+1040: }
+1041: 
+1042: .left-mic-panel {
+1043:     display: flex;
+1044:     align-items: center;
+1045:     gap: var(--ne-spacing-sm);
 1046: }
 1047: 
-1048: .mic-button:hover {
-1049:     background: rgba(255, 255, 255, 0.12);
-1050:     border-color: rgba(255, 255, 255, 0.2);
-1051: }
-1052: 
-1053: .mic-button.recording {
-1054:     background: rgba(239, 68, 68, 0.2);
-1055:     border-color: rgba(239, 68, 68, 0.4);
-1056:     animation: pulse-recording 1.5s ease-in-out infinite;
-1057: }
-1058: 
-1059: @keyframes pulse-recording {
-1060:     0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-1061:     50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-1062: }
-1063: 
-1064: .right-contract-panel {
-1065:     flex: 1;
-1066:     max-width: 60%;
-1067:     min-height: 40px;
-1068: }
-1069: 
-1070: /* Phase indicator (step bar) */
-1071: .contract-phases {
-1072:     display: flex;
-1073:     align-items: center;
-1074:     justify-content: space-between;
-1075:     padding: 12px 8px;
-1076:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-1077:     flex-shrink: 0;
-1078: }
-1079: 
-1080: .phase-step {
-1081:     display: flex;
-1082:     flex-direction: column;
-1083:     align-items: center;
-1084:     gap: 4px;
-1085:     opacity: 0.3;
-1086:     transition: opacity 0.3s, transform 0.3s;
-1087:     position: relative;
-1088: }
-1089: 
-1090: .phase-step.active {
-1091:     opacity: 1;
+1048: .mic-button {
+1049:     width: 44px;
+1050:     height: 44px;
+1051:     border-radius: 50%;
+1052:     background: var(--glass-bg-light);
+1053:     border: var(--glass-border);
+1054:     display: flex;
+1055:     align-items: center;
+1056:     justify-content: center;
+1057:     cursor: pointer;
+1058:     transition: var(--glass-transition);
+1059:     font-size: 20px;
+1060: }
+1061: 
+1062: .mic-button:hover {
+1063:     background: rgba(255, 255, 255, 0.12);
+1064:     border-color: rgba(255, 255, 255, 0.2);
+1065: }
+1066: 
+1067: .mic-button.recording {
+1068:     background: rgba(239, 68, 68, 0.2);
+1069:     border-color: rgba(239, 68, 68, 0.4);
+1070:     animation: pulse-recording 1.5s ease-in-out infinite;
+1071: }
+1072: 
+1073: @keyframes pulse-recording {
+1074:     0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+1075:     50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+1076: }
+1077: 
+1078: .right-contract-panel {
+1079:     flex: 1;
+1080:     max-width: 60%;
+1081:     min-height: 40px;
+1082: }
+1083: 
+1084: /* Phase indicator (step bar) */
+1085: .contract-phases {
+1086:     display: flex;
+1087:     align-items: center;
+1088:     justify-content: space-between;
+1089:     padding: 12px 8px;
+1090:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+1091:     flex-shrink: 0;
 1092: }
 1093: 
-1094: .phase-step.completed {
-1095:     opacity: 0.6;
-1096: }
-1097: 
-1098: .phase-step.completed .phase-icon::after {
-1099:     content: '✓';
-1100:     position: absolute;
-1101:     top: -2px;
-1102:     right: -6px;
-1103:     font-size: 10px;
-1104:     color: #00ff88;
-1105:     background: rgba(0, 0, 0, 0.8);
-1106:     border-radius: 50%;
-1107:     width: 14px;
-1108:     height: 14px;
-1109:     display: flex;
-1110:     align-items: center;
-1111:     justify-content: center;
-1112: }
-1113: 
-1114: .phase-icon {
-1115:     font-size: 18px;
-1116:     position: relative;
-1117: }
-1118: 
-1119: .phase-label {
-1120:     font-size: 9px;
-1121:     color: var(--ne-light-gray);
-1122:     text-align: center;
-1123:     white-space: nowrap;
-1124: }
-1125: 
-1126: .phase-step.active .phase-label {
-1127:     color: var(--ne-white);
-1128:     font-weight: 600;
-1129: }
-1130: 
-1131: /* Connector lines between phases */
-1132: .phase-step:not(:last-child)::after {
-1133:     content: '';
-1134:     position: absolute;
-1135:     top: 14px;
-1136:     right: -50%;
-1137:     width: 100%;
-1138:     height: 1px;
-1139:     background: rgba(255, 255, 255, 0.1);
-1140:     z-index: -1;
-1141: }
-1142: 
-1143: .phase-step.completed:not(:last-child)::after {
-1144:     background: rgba(0, 255, 136, 0.3);
-1145: }
-1146: 
-1147: /* Contract fields */
-1148: .contract-fields {
-1149:     padding: 12px;
-1150:     overflow-y: auto;
-1151:     flex: 1;
-1152: }
-1153: 
-1154: .contract-field {
-1155:     margin-bottom: 12px;
-1156:     padding-bottom: 12px;
-1157:     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-1158: }
-1159: 
-1160: .contract-field:last-child {
-1161:     border-bottom: none;
-1162:     margin-bottom: 0;
-1163:     padding-bottom: 0;
-1164: }
-1165: 
-1166: .field-label {
-1167:     font-size: 10px;
-1168:     font-weight: 600;
-1169:     color: var(--ne-purple);
-1170:     text-transform: uppercase;
-1171:     letter-spacing: 0.5px;
-1172:     margin-bottom: 4px;
-1173:     display: block;
-1174: }
-1175: 
-1176: .field-value {
-1177:     font-size: 13px;
-1178:     color: var(--ne-white);
-1179:     line-height: 1.5;
-1180:     min-height: 20px;
-1181: }
-1182: 
-1183: .field-value.empty {
-1184:     color: rgba(255, 255, 255, 0.2);
-1185:     font-style: italic;
-1186: }
-1187: 
-1188: /* Status badges */
-1189: .status-badge {
-1190:     display: inline-block;
-1191:     padding: 3px 10px;
-1192:     border-radius: 12px;
-1193:     font-size: 11px;
-1194:     font-weight: 600;
+1094: .phase-step {
+1095:     display: flex;
+1096:     flex-direction: column;
+1097:     align-items: center;
+1098:     gap: 4px;
+1099:     opacity: 0.3;
+1100:     transition: opacity 0.3s, transform 0.3s;
+1101:     position: relative;
+1102: }
+1103: 
+1104: .phase-step.active {
+1105:     opacity: 1;
+1106: }
+1107: 
+1108: .phase-step.completed {
+1109:     opacity: 0.6;
+1110: }
+1111: 
+1112: .phase-step.completed .phase-icon::after {
+1113:     content: '✓';
+1114:     position: absolute;
+1115:     top: -2px;
+1116:     right: -6px;
+1117:     font-size: 10px;
+1118:     color: #00ff88;
+1119:     background: rgba(0, 0, 0, 0.8);
+1120:     border-radius: 50%;
+1121:     width: 14px;
+1122:     height: 14px;
+1123:     display: flex;
+1124:     align-items: center;
+1125:     justify-content: center;
+1126: }
+1127: 
+1128: .phase-icon {
+1129:     font-size: 18px;
+1130:     position: relative;
+1131: }
+1132: 
+1133: .phase-label {
+1134:     font-size: 9px;
+1135:     color: var(--ne-light-gray);
+1136:     text-align: center;
+1137:     white-space: nowrap;
+1138: }
+1139: 
+1140: .phase-step.active .phase-label {
+1141:     color: var(--ne-white);
+1142:     font-weight: 600;
+1143: }
+1144: 
+1145: /* Connector lines between phases */
+1146: .phase-step:not(:last-child)::after {
+1147:     content: '';
+1148:     position: absolute;
+1149:     top: 14px;
+1150:     right: -50%;
+1151:     width: 100%;
+1152:     height: 1px;
+1153:     background: rgba(255, 255, 255, 0.1);
+1154:     z-index: -1;
+1155: }
+1156: 
+1157: .phase-step.completed:not(:last-child)::after {
+1158:     background: rgba(0, 255, 136, 0.3);
+1159: }
+1160: 
+1161: /* Contract fields */
+1162: .contract-fields {
+1163:     padding: 12px;
+1164:     overflow-y: auto;
+1165:     flex: 1;
+1166: }
+1167: 
+1168: .contract-field {
+1169:     margin-bottom: 12px;
+1170:     padding-bottom: 12px;
+1171:     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+1172: }
+1173: 
+1174: .contract-field:last-child {
+1175:     border-bottom: none;
+1176:     margin-bottom: 0;
+1177:     padding-bottom: 0;
+1178: }
+1179: 
+1180: .field-label {
+1181:     font-size: 10px;
+1182:     font-weight: 600;
+1183:     color: var(--ne-purple);
+1184:     text-transform: uppercase;
+1185:     letter-spacing: 0.5px;
+1186:     margin-bottom: 4px;
+1187:     display: block;
+1188: }
+1189: 
+1190: .field-value {
+1191:     font-size: 13px;
+1192:     color: var(--ne-white);
+1193:     line-height: 1.5;
+1194:     min-height: 20px;
 1195: }
 1196: 
-1197: .status-badge.draft {
-1198:     background: rgba(255, 255, 255, 0.08);
-1199:     color: var(--ne-light-gray);
+1197: .field-value.empty {
+1198:     color: rgba(255, 255, 255, 0.2);
+1199:     font-style: italic;
 1200: }
 1201: 
-1202: .status-badge.review {
-1203:     background: rgba(139, 92, 246, 0.2);
-1204:     color: #a78bfa;
-1205: }
-1206: 
-1207: .status-badge.sorting {
-1208:     background: rgba(59, 130, 246, 0.2);
-1209:     color: #60a5fa;
-1210: }
-1211: 
-1212: .status-badge.agreement {
-1213:     background: rgba(245, 158, 11, 0.2);
-1214:     color: #fbbf24;
-1215: }
-1216: 
-1217: .status-badge.escrow {
-1218:     background: rgba(0, 255, 136, 0.2);
-1219:     color: #00ff88;
-1220: }
-1221: 
-1222: .status-badge.completed {
-1223:     background: rgba(0, 255, 136, 0.3);
-1224:     color: #00ff88;
-1225: }
-1226: 
-1227: .status-badge.disputed {
-1228:     background: rgba(239, 68, 68, 0.2);
-1229:     color: #ef4444;
-1230: }
-1231: 
-1232: /* Progress bar for escrow phase */
-1233: .escrow-progress {
-1234:     margin-top: 16px;
-1235:     padding: 12px;
-1236:     background: rgba(0, 0, 0, 0.3);
-1237:     border-radius: 8px;
-1238:     border: 1px solid rgba(255, 255, 255, 0.06);
+1202: /* Status badges */
+1203: .status-badge {
+1204:     display: inline-block;
+1205:     padding: 3px 10px;
+1206:     border-radius: 12px;
+1207:     font-size: 11px;
+1208:     font-weight: 600;
+1209: }
+1210: 
+1211: .status-badge.draft {
+1212:     background: rgba(255, 255, 255, 0.08);
+1213:     color: var(--ne-light-gray);
+1214: }
+1215: 
+1216: .status-badge.review {
+1217:     background: rgba(139, 92, 246, 0.2);
+1218:     color: #a78bfa;
+1219: }
+1220: 
+1221: .status-badge.sorting {
+1222:     background: rgba(59, 130, 246, 0.2);
+1223:     color: #60a5fa;
+1224: }
+1225: 
+1226: .status-badge.agreement {
+1227:     background: rgba(245, 158, 11, 0.2);
+1228:     color: #fbbf24;
+1229: }
+1230: 
+1231: .status-badge.escrow {
+1232:     background: rgba(0, 255, 136, 0.2);
+1233:     color: #00ff88;
+1234: }
+1235: 
+1236: .status-badge.completed {
+1237:     background: rgba(0, 255, 136, 0.3);
+1238:     color: #00ff88;
 1239: }
 1240: 
-1241: .escrow-progress-label {
-1242:     font-size: 11px;
-1243:     color: var(--ne-light-gray);
-1244:     margin-bottom: 8px;
-1245: }
-1246: 
-1247: .escrow-progress-bar {
-1248:     height: 6px;
-1249:     background: rgba(255, 255, 255, 0.06);
-1250:     border-radius: 3px;
-1251:     overflow: hidden;
-1252: }
-1253: 
-1254: .escrow-progress-fill {
-1255:     height: 100%;
-1256:     background: linear-gradient(90deg, var(--ne-purple), #00ff88);
-1257:     border-radius: 3px;
-1258:     transition: width 0.5s ease;
+1241: .status-badge.disputed {
+1242:     background: rgba(239, 68, 68, 0.2);
+1243:     color: #ef4444;
+1244: }
+1245: 
+1246: /* Progress bar for escrow phase */
+1247: .escrow-progress {
+1248:     margin-top: 16px;
+1249:     padding: 12px;
+1250:     background: rgba(0, 0, 0, 0.3);
+1251:     border-radius: 8px;
+1252:     border: 1px solid rgba(255, 255, 255, 0.06);
+1253: }
+1254: 
+1255: .escrow-progress-label {
+1256:     font-size: 11px;
+1257:     color: var(--ne-light-gray);
+1258:     margin-bottom: 8px;
 1259: }
 1260: 
-1261: .escrow-progress-percent {
-1262:     font-size: 12px;
-1263:     color: var(--ne-white);
-1264:     margin-top: 6px;
-1265:     text-align: right;
-1266:     font-weight: 600;
-1267: }
-1268: 
-1269: /* Vertical connectors */
-1270: .vertical-connector {
-1271:     position: absolute;
-1272:     top: 0;
-1273:     bottom: 0;
-1274:     width: 1px;
-1275:     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15), transparent);
-1276:     pointer-events: none;
-1277:     z-index: 0;
-1278: }
-1279: 
-1280: .vertical-connector.left {
-1281:     left: calc(var(--ne-spacing-lg) + 22px);
-1282: }
-1283: 
-1284: .vertical-connector.right {
-1285:     right: calc(var(--ne-spacing-lg) + 22px);
-1286: }
-1287: 
-1288: /* Chat area with top panel spacing */
-1289: .view.has-top-panel .chat-messages {
-1290:     padding-top: var(--ne-spacing-sm);
-1291: }
-1292: 
-1293: /* Task spec questions */
-1294: .task-question {
-1295:     margin-top: var(--ne-spacing-sm);
-1296:     padding-top: var(--ne-spacing-sm);
-1297:     border-top: 1px solid rgba(255, 255, 255, 0.06);
-1298: }
-1299: 
-1300: .task-question p {
-1301:     font-size: 12px;
-1302:     color: var(--ne-silver);
-1303:     margin-bottom: 4px;
-1304: }
-1305: 
-1306: .task-question input {
-1307:     width: 100%;
-1308:     background: rgba(0, 0, 0, 0.3);
-1309:     border: 1px solid rgba(255, 255, 255, 0.1);
-1310:     border-radius: 6px;
-1311:     padding: 6px 10px;
-1312:     color: var(--ne-white);
-1313:     font-size: 12px;
-1314:     outline: none;
-1315:     transition: var(--glass-transition);
-1316: }
-1317: 
-1318: .task-question input:focus {
-1319:     border-color: rgba(139, 92, 246, 0.5);
-1320: }
-1321: 
-1322: /* ─── Панель вопросов смарт-контракта ─────────────────────────────── */
-1323: .contract-qa-panel {
-1324:     margin: var(--ne-spacing-md) var(--ne-spacing-lg);
-1325:     padding: var(--ne-spacing-md);
-1326:     background: var(--glass-bg);
-1327:     border: var(--glass-border);
-1328:     border-radius: var(--glass-radius-sm);
-1329:     backdrop-filter: blur(8px);
-1330:     -webkit-backdrop-filter: blur(8px);
-1331: }
-1332: 
-1333: .qa-item {
-1334:     margin-bottom: 10px;
-1335:     padding-bottom: 10px;
-1336:     border-bottom: 1px solid rgba(255,255,255,0.06);
-1337: }
-1338: 
-1339: .qa-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-1340: 
-1341: .qa-question {
-1342:     font-size: 0.85rem;
-1343:     color: #a0b4ff;
-1344:     margin-bottom: 6px;
-1345:     line-height: 1.4;
-1346: }
-1347: 
-1348: .qa-answer-input {
-1349:     width: 100%;
-1350:     padding: 8px 10px;
-1351:     background: rgba(0,0,0,0.3);
-1352:     border: 1px solid rgba(255,255,255,0.1);
-1353:     border-radius: 8px;
-1354:     color: #fff;
-1355:     font-size: 0.85rem;
-1356:     outline: none;
-1357:     transition: border-color 0.2s;
-1358: }
-1359: 
-1360: .qa-answer-input:focus { border-color: #00ff88; }
+1261: .escrow-progress-bar {
+1262:     height: 6px;
+1263:     background: rgba(255, 255, 255, 0.06);
+1264:     border-radius: 3px;
+1265:     overflow: hidden;
+1266: }
+1267: 
+1268: .escrow-progress-fill {
+1269:     height: 100%;
+1270:     background: linear-gradient(90deg, var(--ne-purple), #00ff88);
+1271:     border-radius: 3px;
+1272:     transition: width 0.5s ease;
+1273: }
+1274: 
+1275: .escrow-progress-percent {
+1276:     font-size: 12px;
+1277:     color: var(--ne-white);
+1278:     margin-top: 6px;
+1279:     text-align: right;
+1280:     font-weight: 600;
+1281: }
+1282: 
+1283: /* Vertical connectors */
+1284: .vertical-connector {
+1285:     position: absolute;
+1286:     top: 0;
+1287:     bottom: 0;
+1288:     width: 1px;
+1289:     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15), transparent);
+1290:     pointer-events: none;
+1291:     z-index: 0;
+1292: }
+1293: 
+1294: .vertical-connector.left {
+1295:     left: calc(var(--ne-spacing-lg) + 22px);
+1296: }
+1297: 
+1298: .vertical-connector.right {
+1299:     right: calc(var(--ne-spacing-lg) + 22px);
+1300: }
+1301: 
+1302: /* Chat area with top panel spacing */
+1303: .view.has-top-panel .chat-messages {
+1304:     padding-top: var(--ne-spacing-sm);
+1305: }
+1306: 
+1307: /* Task spec questions */
+1308: .task-question {
+1309:     margin-top: var(--ne-spacing-sm);
+1310:     padding-top: var(--ne-spacing-sm);
+1311:     border-top: 1px solid rgba(255, 255, 255, 0.06);
+1312: }
+1313: 
+1314: .task-question p {
+1315:     font-size: 12px;
+1316:     color: var(--ne-silver);
+1317:     margin-bottom: 4px;
+1318: }
+1319: 
+1320: .task-question input {
+1321:     width: 100%;
+1322:     background: rgba(0, 0, 0, 0.3);
+1323:     border: 1px solid rgba(255, 255, 255, 0.1);
+1324:     border-radius: 6px;
+1325:     padding: 6px 10px;
+1326:     color: var(--ne-white);
+1327:     font-size: 12px;
+1328:     outline: none;
+1329:     transition: var(--glass-transition);
+1330: }
+1331: 
+1332: .task-question input:focus {
+1333:     border-color: rgba(139, 92, 246, 0.5);
+1334: }
+1335: 
+1336: /* ─── Панель вопросов смарт-контракта ─────────────────────────────── */
+1337: .contract-qa-panel {
+1338:     margin: var(--ne-spacing-md) var(--ne-spacing-lg);
+1339:     padding: var(--ne-spacing-md);
+1340:     background: var(--glass-bg);
+1341:     border: var(--glass-border);
+1342:     border-radius: var(--glass-radius-sm);
+1343:     backdrop-filter: blur(8px);
+1344:     -webkit-backdrop-filter: blur(8px);
+1345: }
+1346: 
+1347: .qa-item {
+1348:     margin-bottom: 10px;
+1349:     padding-bottom: 10px;
+1350:     border-bottom: 1px solid rgba(255,255,255,0.06);
+1351: }
+1352: 
+1353: .qa-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+1354: 
+1355: .qa-question {
+1356:     font-size: 0.85rem;
+1357:     color: #a0b4ff;
+1358:     margin-bottom: 6px;
+1359:     line-height: 1.4;
+1360: }
 1361: 
-1362: .qa-empty { color: #666; font-size: 0.8rem; text-align: center; padding: 8px 0; }
-1363: 
-1364: /* ─── Голосовой ввод (пульсация) ──────────────────────────────────── */
-1365: .mic-button.recording,
-1366: #micButton.recording {
-1367:     animation: pulse-recording 1.2s infinite ease-in-out;
-1368:     border-color: #ff4d4d !important;
-1369:     box-shadow: 0 0 12px rgba(255,77,77,0.4);
-1370: }
-1371: 
-1372: @keyframes pulse-recording {
-1373:     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0.5); }
-1374:     70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(255,77,77,0); }
-1375:     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0); }
-1376: }
+1362: .qa-answer-input {
+1363:     width: 100%;
+1364:     padding: 8px 10px;
+1365:     background: rgba(0,0,0,0.3);
+1366:     border: 1px solid rgba(255,255,255,0.1);
+1367:     border-radius: 8px;
+1368:     color: #fff;
+1369:     font-size: 0.85rem;
+1370:     outline: none;
+1371:     transition: border-color 0.2s;
+1372: }
+1373: 
+1374: .qa-answer-input:focus { border-color: #00ff88; }
+1375: 
+1376: .qa-empty { color: #666; font-size: 0.8rem; text-align: center; padding: 8px 0; }
 1377: 
-1378: /* ─── История ТЗ ──────────────────────────────────────────────────── */
-1379: .task-history-panel {
-1380:     position: fixed;
-1381:     bottom: 80px;
-1382:     left: 50%;
-1383:     transform: translateX(-50%) translateY(20px);
-1384:     width: 90%;
-1385:     max-width: 400px;
-1386:     max-height: 50vh;
-1387:     background: rgba(18,18,24,0.95);
-1388:     border: 1px solid rgba(255,255,255,0.1);
-1389:     border-radius: 16px;
-1390:     padding: 12px;
-1391:     overflow-y: auto;
-1392:     opacity: 0;
-1393:     pointer-events: none;
-1394:     transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
-1395:     z-index: 900;
-1396:     backdrop-filter: blur(12px);
-1397:     -webkit-backdrop-filter: blur(12px);
-1398: }
-1399: 
-1400: .task-history-panel.visible {
-1401:     opacity: 1;
-1402:     pointer-events: auto;
-1403:     transform: translateX(-50%) translateY(0);
-1404: }
-1405: 
-1406: .task-history-panel .history-item {
-1407:     display: flex;
-1408:     gap: 8px;
-1409:     padding: 8px;
-1410:     border-radius: 8px;
-1411:     cursor: pointer;
-1412:     transition: background 0.15s;
-1413: }
-1414: 
-1415: .task-history-panel .history-item:hover { background: rgba(255,255,255,0.06); }
-1416: 
-1417: .task-history-panel .history-time { color: #666; font-size: 0.75rem; min-width: 42px; }
-1418: 
-1419: .task-history-panel .history-text { color: #ccc; font-size: 0.8rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-1420: 
-1421: .task-history-panel .history-empty { color: #555; text-align: center; padding: 16px 0; font-size: 0.8rem; }
-1422: 
-1423: /* ─── Кнопка экспорта ─────────────────────────────────────────────── */
-1424: .export-btn-sm {
-1425:     flex: 1;
-1426:     padding: 6px 8px;
-1427:     background: rgba(255,255,255,0.06);
-1428:     border: 1px solid rgba(255,255,255,0.1);
-1429:     border-radius: 8px;
-1430:     color: var(--ne-light-gray);
-1431:     font-size: 0.75rem;
-1432:     cursor: pointer;
-1433:     transition: var(--glass-transition);
-1434: }
-1435: 
-1436: .export-btn-sm:hover {
-1437:     background: rgba(255,255,255,0.12);
-1438:     border-color: rgba(255,255,255,0.2);
-1439: }
-1440: 
-1441: .export-btn-sm:active { transform: scale(0.97); }
-1442: 
-1443: .export-btn {
-1444:     margin-top: 10px;
-1445:     width: 100%;
-1446:     padding: 10px;
-1447:     background: linear-gradient(135deg, #00ff88 0%, #00b8ff 100%);
-1448:     border: none;
-1449:     border-radius: 10px;
-1450:     color: #000;
-1451:     font-weight: 600;
-1452:     font-size: 0.85rem;
-1453:     cursor: pointer;
-1454:     transition: opacity 0.2s, transform 0.1s;
-1455: }
+1378: /* ─── Голосовой ввод (пульсация) ──────────────────────────────────── */
+1379: .mic-button.recording,
+1380: #micButton.recording {
+1381:     animation: pulse-recording 1.2s infinite ease-in-out;
+1382:     border-color: #ff4d4d !important;
+1383:     box-shadow: 0 0 12px rgba(255,77,77,0.4);
+1384: }
+1385: 
+1386: @keyframes pulse-recording {
+1387:     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0.5); }
+1388:     70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(255,77,77,0); }
+1389:     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,77,77,0); }
+1390: }
+1391: 
+1392: /* ─── История ТЗ ──────────────────────────────────────────────────── */
+1393: .task-history-panel {
+1394:     position: fixed;
+1395:     bottom: 80px;
+1396:     left: 50%;
+1397:     transform: translateX(-50%) translateY(20px);
+1398:     width: 90%;
+1399:     max-width: 400px;
+1400:     max-height: 50vh;
+1401:     background: rgba(18,18,24,0.95);
+1402:     border: 1px solid rgba(255,255,255,0.1);
+1403:     border-radius: 16px;
+1404:     padding: 12px;
+1405:     overflow-y: auto;
+1406:     opacity: 0;
+1407:     pointer-events: none;
+1408:     transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+1409:     z-index: 900;
+1410:     backdrop-filter: blur(12px);
+1411:     -webkit-backdrop-filter: blur(12px);
+1412: }
+1413: 
+1414: .task-history-panel.visible {
+1415:     opacity: 1;
+1416:     pointer-events: auto;
+1417:     transform: translateX(-50%) translateY(0);
+1418: }
+1419: 
+1420: .task-history-panel .history-item {
+1421:     display: flex;
+1422:     gap: 8px;
+1423:     padding: 8px;
+1424:     border-radius: 8px;
+1425:     cursor: pointer;
+1426:     transition: background 0.15s;
+1427: }
+1428: 
+1429: .task-history-panel .history-item:hover { background: rgba(255,255,255,0.06); }
+1430: 
+1431: .task-history-panel .history-time { color: #666; font-size: 0.75rem; min-width: 42px; }
+1432: 
+1433: .task-history-panel .history-text { color: #ccc; font-size: 0.8rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+1434: 
+1435: .task-history-panel .history-empty { color: #555; text-align: center; padding: 16px 0; font-size: 0.8rem; }
+1436: 
+1437: /* ─── Кнопка экспорта ─────────────────────────────────────────────── */
+1438: .export-btn-sm {
+1439:     flex: 1;
+1440:     padding: 6px 8px;
+1441:     background: rgba(255,255,255,0.06);
+1442:     border: 1px solid rgba(255,255,255,0.1);
+1443:     border-radius: 8px;
+1444:     color: var(--ne-light-gray);
+1445:     font-size: 0.75rem;
+1446:     cursor: pointer;
+1447:     transition: var(--glass-transition);
+1448: }
+1449: 
+1450: .export-btn-sm:hover {
+1451:     background: rgba(255,255,255,0.12);
+1452:     border-color: rgba(255,255,255,0.2);
+1453: }
+1454: 
+1455: .export-btn-sm:active { transform: scale(0.97); }
 1456: 
-1457: .export-btn:active { transform: scale(0.98); opacity: 0.9; }
-1458: 
-1459: /* ═══════════════════════════════════════════════════════════════════
-1460:    SPLIT-PANE LAYOUT (Android Studio style)
-1461:    Left: Hermes chat  |  Right: Smart contract / ТЗ (лист А4)
-1462:    Горизонтальный split ВСЕГДА — мобильные тоже
-1463:    ══════════════════════════════════════════════════════════════════ */
-1464: 
-1465: /* Split container wrapper — всегда горизонтальный */
-1466: .split-layout {
-1467:     display: flex;
-1468:     flex-direction: row;
-1469:     flex: 1;
-1470:     gap: 0;
-1471:     min-height: 0;
-1472:     overflow: hidden;
-1473: }
-1474: 
-1475: /* Individual pane */
-1476: .split-pane {
-1477:     display: flex;
-1478:     flex-direction: column;
-1479:     min-height: 0;
-1480:     overflow: hidden;
-1481: }
-1482: 
-1483: /* Left pane: chat (dark) */
-1484: .split-pane.left-pane {
-1485:     flex: 1;
-1486:     min-width: 0;
-1487:     background: transparent;
-1488:     padding: 8px;
-1489:     padding-right: 4px;
-1490: }
-1491: 
-1492: /* Right pane: contract (A4 paper style) */
-1493: .split-pane.right-pane {
-1494:     flex: 0 0 38%;
-1495:     min-width: 200px;
-1496:     background: transparent;
-1497:     padding: 8px;
-1498:     padding-left: 4px;
-1499: }
-1500: 
-1501: /* Glass pane borders — Android Studio style */
-1502: .split-pane .pane-glass {
-1503:     flex: 1;
-1504:     display: flex;
-1505:     flex-direction: column;
-1506:     background: rgba(20, 20, 28, 0.85);
-1507:     backdrop-filter: blur(20px) saturate(150%);
-1508:     -webkit-backdrop-filter: blur(20px) saturate(150%);
-1509:     border: 1px solid rgba(255, 255, 255, 0.08);
-1510:     border-radius: 12px;
-1511:     overflow: hidden;
-1512:     box-shadow:
-1513:         0 0 0 1px rgba(255, 255, 255, 0.03),
-1514:         0 4px 24px rgba(0, 0, 0, 0.4),
-1515:         inset 0 1px 0 rgba(255, 255, 255, 0.05);
-1516:     min-height: 0;
-1517: }
-1518: 
-1519: .split-pane.left-pane .pane-glass {
-1520:     background: rgba(10, 10, 14, 0.9);
-1521: }
-1522: 
-1523: .split-pane.right-pane .pane-glass {
-1524:     background: rgba(22, 22, 30, 0.9);
-1525: }
-1526: 
-1527: /* Pane header (IDE-style tab bar) */
-1528: .pane-header {
-1529:     display: flex;
-1530:     align-items: center;
-1531:     gap: 8px;
-1532:     padding: 8px 12px;
-1533:     background: rgba(0, 0, 0, 0.6);
-1534:     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-1535:     flex-shrink: 0;
-1536:     min-height: 36px;
-1537: }
-1538: 
-1539: .pane-header-icon {
-1540:     font-size: 14px;
-1541:     opacity: 0.7;
-1542: }
-1543: 
-1544: .pane-header-title {
-1545:     font-size: 12px;
-1546:     font-weight: 600;
-1547:     color: var(--ne-light-gray);
-1548:     text-transform: uppercase;
-1549:     letter-spacing: 0.5px;
-1550: }
-1551: 
-1552: .pane-header-dot {
-1553:     width: 8px;
-1554:     height: 8px;
-1555:     border-radius: 50%;
-1556:     flex-shrink: 0;
-1557: }
-1558: 
-1559: .pane-header-dot.purple { background: var(--ne-purple); }
-1560: .pane-header-dot.red { background: var(--ne-red); }
-1561: .pane-header-dot.green { background: #00ff88; }
-1562: 
-1563: /* Pane content area */
-1564: .pane-content {
-1565:     flex: 1;
-1566:     overflow-y: auto;
-1567:     overflow-x: hidden;
-1568:     min-height: 0;
-1569:     display: flex;
-1570:     flex-direction: column;
+1457: .export-btn {
+1458:     margin-top: 10px;
+1459:     width: 100%;
+1460:     padding: 10px;
+1461:     background: linear-gradient(135deg, #00ff88 0%, #00b8ff 100%);
+1462:     border: none;
+1463:     border-radius: 10px;
+1464:     color: #000;
+1465:     font-weight: 600;
+1466:     font-size: 0.85rem;
+1467:     cursor: pointer;
+1468:     transition: opacity 0.2s, transform 0.1s;
+1469: }
+1470: 
+1471: .export-btn:active { transform: scale(0.98); opacity: 0.9; }
+1472: 
+1473: /* ═══════════════════════════════════════════════════════════════════
+1474:    SPLIT-PANE LAYOUT (Android Studio style)
+1475:    Left: Hermes chat  |  Right: Smart contract / ТЗ (лист А4)
+1476:    Горизонтальный split ВСЕГДА — мобильные тоже
+1477:    ══════════════════════════════════════════════════════════════════ */
+1478: 
+1479: /* Split container wrapper — всегда горизонтальный */
+1480: .split-layout {
+1481:     display: flex;
+1482:     flex-direction: row;
+1483:     flex: 1;
+1484:     gap: 0;
+1485:     min-height: 0;
+1486:     overflow: hidden;
+1487: }
+1488: 
+1489: /* Individual pane */
+1490: .split-pane {
+1491:     display: flex;
+1492:     flex-direction: column;
+1493:     min-height: 0;
+1494:     overflow: hidden;
+1495: }
+1496: 
+1497: /* Left pane: chat (dark) */
+1498: .split-pane.left-pane {
+1499:     flex: 1;
+1500:     min-width: 0;
+1501:     background: transparent;
+1502:     padding: 8px;
+1503:     padding-right: 4px;
+1504: }
+1505: 
+1506: /* Right pane: contract (A4 paper style) */
+1507: .split-pane.right-pane {
+1508:     flex: 0 0 38%;
+1509:     min-width: 200px;
+1510:     background: transparent;
+1511:     padding: 8px;
+1512:     padding-left: 4px;
+1513: }
+1514: 
+1515: /* Glass pane borders — Android Studio style */
+1516: .split-pane .pane-glass {
+1517:     flex: 1;
+1518:     display: flex;
+1519:     flex-direction: column;
+1520:     background: rgba(20, 20, 28, 0.85);
+1521:     backdrop-filter: blur(20px) saturate(150%);
+1522:     -webkit-backdrop-filter: blur(20px) saturate(150%);
+1523:     border: 1px solid rgba(255, 255, 255, 0.08);
+1524:     border-radius: 12px;
+1525:     overflow: hidden;
+1526:     box-shadow:
+1527:         0 0 0 1px rgba(255, 255, 255, 0.03),
+1528:         0 4px 24px rgba(0, 0, 0, 0.4),
+1529:         inset 0 1px 0 rgba(255, 255, 255, 0.05);
+1530:     min-height: 0;
+1531: }
+1532: 
+1533: .split-pane.left-pane .pane-glass {
+1534:     background: rgba(10, 10, 14, 0.9);
+1535: }
+1536: 
+1537: .split-pane.right-pane .pane-glass {
+1538:     background: rgba(22, 22, 30, 0.9);
+1539: }
+1540: 
+1541: /* Pane header (IDE-style tab bar) */
+1542: .pane-header {
+1543:     display: flex;
+1544:     align-items: center;
+1545:     gap: 8px;
+1546:     padding: 8px 12px;
+1547:     background: rgba(0, 0, 0, 0.6);
+1548:     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+1549:     flex-shrink: 0;
+1550:     min-height: 36px;
+1551: }
+1552: 
+1553: .pane-header-icon {
+1554:     font-size: 14px;
+1555:     opacity: 0.7;
+1556: }
+1557: 
+1558: .pane-header-title {
+1559:     font-size: 12px;
+1560:     font-weight: 600;
+1561:     color: var(--ne-light-gray);
+1562:     text-transform: uppercase;
+1563:     letter-spacing: 0.5px;
+1564: }
+1565: 
+1566: .pane-header-dot {
+1567:     width: 8px;
+1568:     height: 8px;
+1569:     border-radius: 50%;
+1570:     flex-shrink: 0;
 1571: }
 1572: 
-1573: /* Left pane content: chat area */
-1574: .split-pane.left-pane .pane-content {
-1575:     position: relative;
-1576: }
-1577: 
-1578: /* Resizable divider between panes */
-1579: .split-divider {
-1580:     flex-shrink: 0;
-1581:     width: 4px;
-1582:     background: transparent;
-1583:     position: relative;
-1584:     cursor: col-resize;
-1585:     transition: background 0.2s;
-1586:     z-index: 10;
-1587:     align-self: stretch;
-1588:     display: flex;
-1589:     align-items: center;
-1590:     justify-content: center;
-1591: }
-1592: 
-1593: .split-divider::after {
-1594:     content: '';
-1595:     width: 2px;
-1596:     height: 100%;
-1597:     border-radius: 1px;
-1598:     background: rgba(255, 255, 255, 0.06);
+1573: .pane-header-dot.purple { background: var(--ne-purple); }
+1574: .pane-header-dot.red { background: var(--ne-red); }
+1575: .pane-header-dot.green { background: #00ff88; }
+1576: 
+1577: /* Pane content area */
+1578: .pane-content {
+1579:     flex: 1;
+1580:     overflow-y: auto;
+1581:     overflow-x: hidden;
+1582:     min-height: 0;
+1583:     display: flex;
+1584:     flex-direction: column;
+1585: }
+1586: 
+1587: /* Left pane content: chat area */
+1588: .split-pane.left-pane .pane-content {
+1589:     position: relative;
+1590: }
+1591: 
+1592: /* Resizable divider between panes */
+1593: .split-divider {
+1594:     flex-shrink: 0;
+1595:     width: 4px;
+1596:     background: transparent;
+1597:     position: relative;
+1598:     cursor: col-resize;
 1599:     transition: background 0.2s;
-1600: }
-1601: 
-1602: .split-divider:hover::after,
-1603: .split-divider.dragging::after {
-1604:     background: rgba(139, 92, 246, 0.4);
+1600:     z-index: 10;
+1601:     align-self: stretch;
+1602:     display: flex;
+1603:     align-items: center;
+1604:     justify-content: center;
 1605: }
 1606: 
-1607: /* ─── Right pane: A4 paper style ─── */
-1608: .right-contract-panel {
-1609:     flex: 1;
-1610:     padding: var(--ne-spacing-md);
-1611:     min-height: 0;
-1612: }
-1613: 
-1614: .task-spec-container {
-1615:     background: rgba(255, 255, 255, 0.03);
-1616:     border: 1px solid rgba(255, 255, 255, 0.08);
-1617:     border-radius: var(--glass-radius-sm);
-1618:     padding: var(--ne-spacing-md);
-1619:     font-size: 13px;
-1620:     color: var(--ne-light-gray);
-1621:     height: 100%;
-1622:     overflow-y: auto;
-1623:     transition: var(--glass-transition);
-1624:     /* A4 paper feel */
-1625:     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+1607: .split-divider::after {
+1608:     content: '';
+1609:     width: 2px;
+1610:     height: 100%;
+1611:     border-radius: 1px;
+1612:     background: rgba(255, 255, 255, 0.06);
+1613:     transition: background 0.2s;
+1614: }
+1615: 
+1616: .split-divider:hover::after,
+1617: .split-divider.dragging::after {
+1618:     background: rgba(139, 92, 246, 0.4);
+1619: }
+1620: 
+1621: /* ─── Right pane: A4 paper style ─── */
+1622: .right-contract-panel {
+1623:     flex: 1;
+1624:     padding: var(--ne-spacing-md);
+1625:     min-height: 0;
 1626: }
 1627: 
-1628: .task-spec-container.has-content {
-1629:     border-color: rgba(139, 92, 246, 0.3);
-1630:     background: rgba(139, 92, 246, 0.04);
-1631: }
-1632: 
-1633: .task-spec-title {
-1634:     font-size: 11px;
-1635:     font-weight: 600;
-1636:     color: var(--ne-purple);
-1637:     text-transform: uppercase;
-1638:     letter-spacing: 0.5px;
-1639:     margin-bottom: 8px;
-1640:     padding-bottom: 6px;
-1641:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-1642: }
-1643: 
-1644: .task-spec-content {
-1645:     line-height: 1.6;
-1646:     font-size: 13px;
-1647: }
-1648: 
-1649: /* Contract Q&A panel inside right pane */
-1650: .contract-qa-panel {
-1651:     margin: var(--ne-spacing-md);
-1652:     padding: var(--ne-spacing-md);
-1653:     background: rgba(255, 255, 255, 0.02);
-1654:     border: 1px solid rgba(255, 255, 255, 0.06);
-1655:     border-radius: var(--glass-radius-sm);
-1656:     backdrop-filter: blur(8px);
-1657:     -webkit-backdrop-filter: blur(8px);
-1658: }
-1659: 
-1660: /* ─── Top control panel inside left pane ─── */
-1661: .split-pane.left-pane .top-control-panel {
-1662:     background: rgba(0, 0, 0, 0.4);
-1663:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-1664: }
-1665: 
-1666: /* ─── Chat input inside left pane ─── */
-1667: .split-pane.left-pane .chat-input-container {
-1668:     position: sticky;
-1669:     bottom: 0;
-1670:     left: auto;
-1671:     right: auto;
-1672:     border-top: 1px solid rgba(255, 255, 255, 0.06);
-1673:     z-index: 10;
-1674:     padding: 8px 12px;
-1675:     background: rgba(0, 0, 0, 0.6);
-1676:     backdrop-filter: blur(12px);
-1677:     -webkit-backdrop-filter: blur(12px);
-1678:     flex-shrink: 0;
-1679: }
-1680: 
-1681: /* Hide fixed chat input when split layout is active */
-1682: .chat-input-container:not(.split-chat-input) {
-1683:     display: none !important;
-1684: }
-1685: 
-1686: /* Show split chat input only on hermes view (handled by JS) */
-1687: .split-chat-input {
-1688:     display: flex;
-1689: }
-1690: 
-1691: /* ─── Mobile adjustments ─── */
-1692: @media (max-width: 599px) {
-1693:     .split-pane.right-pane {
-1694:         flex: 0 0 35%;
-1695:         min-width: 140px;
-1696:     }
-1697: 
-1698:     .pane-header-title {
-1699:         font-size: 10px;
-1700:     }
-1701: 
-1702:     .task-spec-container {
-1703:         padding: var(--ne-spacing-sm);
-1704:         font-size: 12px;
-1705:     }
-1706: 
-1707:     .contract-qa-panel {
-1708:         margin: var(--ne-spacing-sm);
-1709:         padding: var(--ne-spacing-sm);
+1628: .task-spec-container {
+1629:     background: rgba(255, 255, 255, 0.03);
+1630:     border: 1px solid rgba(255, 255, 255, 0.08);
+1631:     border-radius: var(--glass-radius-sm);
+1632:     padding: var(--ne-spacing-md);
+1633:     font-size: 13px;
+1634:     color: var(--ne-light-gray);
+1635:     height: 100%;
+1636:     overflow-y: auto;
+1637:     transition: var(--glass-transition);
+1638:     /* A4 paper feel */
+1639:     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+1640: }
+1641: 
+1642: .task-spec-container.has-content {
+1643:     border-color: rgba(139, 92, 246, 0.3);
+1644:     background: rgba(139, 92, 246, 0.04);
+1645: }
+1646: 
+1647: .task-spec-title {
+1648:     font-size: 11px;
+1649:     font-weight: 600;
+1650:     color: var(--ne-purple);
+1651:     text-transform: uppercase;
+1652:     letter-spacing: 0.5px;
+1653:     margin-bottom: 8px;
+1654:     padding-bottom: 6px;
+1655:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+1656: }
+1657: 
+1658: .task-spec-content {
+1659:     line-height: 1.6;
+1660:     font-size: 13px;
+1661: }
+1662: 
+1663: /* Contract Q&A panel inside right pane */
+1664: .contract-qa-panel {
+1665:     margin: var(--ne-spacing-md);
+1666:     padding: var(--ne-spacing-md);
+1667:     background: rgba(255, 255, 255, 0.02);
+1668:     border: 1px solid rgba(255, 255, 255, 0.06);
+1669:     border-radius: var(--glass-radius-sm);
+1670:     backdrop-filter: blur(8px);
+1671:     -webkit-backdrop-filter: blur(8px);
+1672: }
+1673: 
+1674: /* ─── Top control panel inside left pane ─── */
+1675: .split-pane.left-pane .top-control-panel {
+1676:     background: rgba(0, 0, 0, 0.4);
+1677:     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+1678: }
+1679: 
+1680: /* ─── Chat input inside left pane ─── */
+1681: .split-pane.left-pane .chat-input-container {
+1682:     position: sticky;
+1683:     bottom: 0;
+1684:     left: auto;
+1685:     right: auto;
+1686:     border-top: 1px solid rgba(255, 255, 255, 0.06);
+1687:     z-index: 10;
+1688:     padding: 8px 12px;
+1689:     background: rgba(0, 0, 0, 0.6);
+1690:     backdrop-filter: blur(12px);
+1691:     -webkit-backdrop-filter: blur(12px);
+1692:     flex-shrink: 0;
+1693: }
+1694: 
+1695: /* Hide fixed chat input when split layout is active */
+1696: .chat-input-container:not(.split-chat-input) {
+1697:     display: none !important;
+1698: }
+1699: 
+1700: /* Show split chat input only on hermes view (handled by JS) */
+1701: .split-chat-input {
+1702:     display: flex;
+1703: }
+1704: 
+1705: /* ─── Mobile adjustments ─── */
+1706: @media (max-width: 599px) {
+1707:     .split-pane.right-pane {
+1708:         flex: 0 0 35%;
+1709:         min-width: 140px;
 1710:     }
-1711: }
-1712: 
-1713: /* ─── Desktop adjustments ─── */
-1714: @media (min-width: 600px) {
-1715:     .split-pane.right-pane {
-1716:         flex: 0 0 38%;
-1717:         min-width: 280px;
-1718:     }
-1719: 
-1720:     .task-spec-container {
-1721:         padding: var(--ne-spacing-md);
-1722:         font-size: 13px;
-1723:     }
-1724: 
-1725:     .contract-qa-panel {
-1726:         margin: var(--ne-spacing-md);
-1727:         padding: var(--ne-spacing-md);
-1728:     }
-1729: }
+1711: 
+1712:     .pane-header-title {
+1713:         font-size: 10px;
+1714:     }
+1715: 
+1716:     .task-spec-container {
+1717:         padding: var(--ne-spacing-sm);
+1718:         font-size: 12px;
+1719:     }
+1720: 
+1721:     .contract-qa-panel {
+1722:         margin: var(--ne-spacing-sm);
+1723:         padding: var(--ne-spacing-sm);
+1724:     }
+1725: }
+1726: 
+1727: /* ─── Desktop adjustments ─── */
+1728: @media (min-width: 600px) {
+1729:     .split-pane.right-pane {
+1730:         flex: 0 0 38%;
+1731:         min-width: 280px;
+1732:     }
+1733: 
+1734:     .task-spec-container {
+1735:         padding: var(--ne-spacing-md);
+1736:         font-size: 13px;
+1737:     }
+1738: 
+1739:     .contract-qa-panel {
+1740:         margin: var(--ne-spacing-md);
+1741:         padding: var(--ne-spacing-md);
+1742:     }
+1743: }
 </file>
 
 <file path="index.html">
@@ -7391,687 +7405,716 @@ This section contains the contents of the repository's files.
 1376:                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
 1377:                 </div>
 1378:             ` : '';
-1379:             const timeHtml = `<span class="msg-time">${this.formatTime(msg.timestamp)}</span>`;
-1380:             
-1381:             return `
-1382:             <div class="chat-message ${msg.sender}">
-1383:                 <div class="message-bubble${streamingClass}">
-1384:                     <div class="message-content">${this.renderMarkdown(msg.text)}</div>
-1385:                     <div class="message-footer">
-1386:                         ${feedbackHtml}
-1387:                         ${timeHtml}
-1388:                     </div>
-1389:                 </div>
-1390:             </div>
-1391:         `;
-1392:         }).join('');
-1393: 
-1394:         this.scrollToBottom();
-1395:     }
-1396: 
-1397:     scrollToBottom() {
-1398:         const container = document.getElementById('chat-messages');
-1399:         if (!container) return;
-1400:         requestAnimationFrame(() => {
-1401:             container.scrollTop = container.scrollHeight;
-1402:         });
-1403:     }
-1404: 
-1405:     addChatMessage(sender, text) {
-1406:         this.chatMessages.push({
-1407:             sender,
-1408:             text,
-1409:             timestamp: Date.now()
-1410:         });
-1411:         this.renderChatMessages();
-1412:         this.saveCache();
-1413:     }
-1414: 
-1415:     showTypingIndicator() {
-1416:         const container = document.getElementById('chat-messages');
-1417:         if (!container) return;
-1418:         const typing = document.createElement('div');
-1419:         typing.className = 'typing-indicator';
-1420:         typing.id = 'typing-indicator';
-1421:         typing.innerHTML = '<span>Гермес печатает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-1422:         container.appendChild(typing);
-1423:         container.scrollTop = container.scrollHeight;
+1379:             const speakBtn = isHermesComplete ? `<button class="speak-btn" onclick="app.speakMessage(${idx})" title="Прослушать">🔊</button>` : '';
+1380:             const timeHtml = `<span class="msg-time">${this.formatTime(msg.timestamp)}</span>`;
+1381:             
+1382:             return `
+1383:             <div class="chat-message ${msg.sender}">
+1384:                 <div class="message-bubble${streamingClass}">
+1385:                     <div class="message-content">${this.renderMarkdown(msg.text)}</div>
+1386:                     <div class="message-footer">
+1387:                         ${speakBtn}
+1388:                         ${feedbackHtml}
+1389:                         ${timeHtml}
+1390:                     </div>
+1391:                 </div>
+1392:             </div>
+1393:         `;
+1394:         }).join('');
+1395: 
+1396:         this.scrollToBottom();
+1397:     }
+1398: 
+1399:     speakMessage(idx) {
+1400:         const msg = this.chatMessages[idx];
+1401:         if (!msg || !window.speechSynthesis) return;
+1402: 
+1403:         // Stop any current speech
+1404:         window.speechSynthesis.cancel();
+1405: 
+1406:         // Clean markdown for better TTS
+1407:         const cleanText = msg.text
+1408:             .replace(/[#*_~`]/g, '')
+1409:             .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+1410:             .replace(/```[\s\S]*?```/g, 'код');
+1411: 
+1412:         const utterance = new SpeechSynthesisUtterance(cleanText);
+1413:         utterance.lang = 'ru-RU';
+1414:         utterance.rate = 1.0;
+1415:         utterance.pitch = 1.0;
+1416: 
+1417:         // Try to find a Russian voice
+1418:         const voices = window.speechSynthesis.getVoices();
+1419:         const ruVoice = voices.find(v => v.lang.startsWith('ru'));
+1420:         if (ruVoice) utterance.voice = ruVoice;
+1421: 
+1422:         window.speechSynthesis.speak(utterance);
+1423:         telegram.haptic('light');
 1424:     }
 1425: 
-1426:     hideTypingIndicator() {
-1427:         const typing = document.getElementById('typing-indicator');
-1428:         if (typing) typing.remove();
-1429:     }
-1430: 
-1431:     async sendTextMessage() {
-1432:         const input = document.getElementById('chat-input');
-1433:         if (!input || !input.value.trim()) return;
-1434: 
-1435:         const text = input.value.trim();
-1436:         this.addChatMessage('user', text);
-1437:         input.value = '';
-1438: 
-1439:         telegram.haptic('light');
-1440: 
-1441:         // Call Hermes backend
-1442:         try {
-1443:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
-1444:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
-1445:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
-1446: 
-1447:             console.log('[Chat] Fetching:', baseUrl + 'chat');
-1448: 
-1449:             // Show typing indicator
-1450:             this.showTypingIndicator();
-1451: 
-1452:             // Try streaming first
-1453:             const streamUrl = baseUrl + 'chat/stream';
-1454:             const response = await fetch(streamUrl, {
-1455:                 method: 'POST',
-1456:                 mode: 'cors',
-1457:                 credentials: 'omit',
-1458:                 headers: { 'Content-Type': 'application/json' },
-1459:                 body: JSON.stringify({
-1460:                     message: text,
-1461:                     user_id: telegram.getUserId(),
-1462:                     session_id: `tg_${telegram.getUserId()}`,
-1463:                     persona: 'hermes',
-1464:                     use_router: true
-1465:                 })
-1466:             });
+1426:     scrollToBottom() {
+1427:         const container = document.getElementById('chat-messages');
+1428:         if (!container) return;
+1429:         requestAnimationFrame(() => {
+1430:             container.scrollTop = container.scrollHeight;
+1431:         });
+1432:     }
+1433: 
+1434:     addChatMessage(sender, text) {
+1435:         this.chatMessages.push({
+1436:             sender,
+1437:             text,
+1438:             timestamp: Date.now()
+1439:         });
+1440:         this.renderChatMessages();
+1441:         this.saveCache();
+1442:     }
+1443: 
+1444:     showTypingIndicator() {
+1445:         const container = document.getElementById('chat-messages');
+1446:         if (!container) return;
+1447:         const typing = document.createElement('div');
+1448:         typing.className = 'typing-indicator';
+1449:         typing.id = 'typing-indicator';
+1450:         typing.innerHTML = '<span>Гермес печатает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+1451:         container.appendChild(typing);
+1452:         container.scrollTop = container.scrollHeight;
+1453:     }
+1454: 
+1455:     hideTypingIndicator() {
+1456:         const typing = document.getElementById('typing-indicator');
+1457:         if (typing) typing.remove();
+1458:     }
+1459: 
+1460:     async sendTextMessage() {
+1461:         const input = document.getElementById('chat-input');
+1462:         if (!input || !input.value.trim()) return;
+1463: 
+1464:         const text = input.value.trim();
+1465:         this.addChatMessage('user', text);
+1466:         input.value = '';
 1467: 
-1468:             console.log('[Chat] Response status:', response.status, response.statusText);
+1468:         telegram.haptic('light');
 1469: 
-1470:             // Hide typing indicator
-1471:             this.hideTypingIndicator();
-1472: 
-1473:             const contentType = response.headers.get('content-type') || '';
-1474: 
-1475:             if (contentType.includes('text/event-stream')) {
-1476:                 // Streaming response — typewriter effect
-1477:                 const reader = response.body.getReader();
-1478:                 const decoder = new TextDecoder();
-1479:                 let fullText = '';
+1470:         // Call Hermes backend
+1471:         try {
+1472:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+1473:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+1474:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+1475: 
+1476:             console.log('[Chat] Fetching:', baseUrl + 'chat');
+1477: 
+1478:             // Show typing indicator
+1479:             this.showTypingIndicator();
 1480: 
-1481:                 // Create empty hermes message bubble for streaming
-1482:                 const msgIdx = this.chatMessages.length;
-1483:                 this.chatMessages.push({ sender: 'hermes', text: '', timestamp: Date.now() });
-1484:                 this.renderChatMessages();
-1485: 
-1486:                 while (true) {
-1487:                     const { done, value } = await reader.read();
-1488:                     if (done) break;
-1489: 
-1490:                     const chunk = decoder.decode(value, { stream: true });
-1491:                     const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-1492: 
-1493:                     for (const line of lines) {
-1494:                         try {
-1495:                             const parsed = JSON.parse(line.replace('data: ', ''));
-1496:                             if (parsed.done) {
-1497:                                 // Handle contract fields from final event
-1498:                                 if (parsed.contract_fields) {
-1499:                                     this.applyExtractedFields(parsed.contract_fields, parsed.contract_state);
-1500:                                 }
-1501:                                 // Handle cost estimate
-1502:                                 if (parsed.cost_estimate) {
-1503:                                     console.log('[Cost]', parsed.cost_estimate.cost.ton, 'TON |', parsed.cost_estimate.cost.usd, 'USD');
-1504:                                 }
-1505:                                 break;
-1506:                             }
-1507:                             if (parsed.char !== undefined) {
-1508:                                 fullText += parsed.char;
-1509:                                 this.chatMessages[msgIdx].text = fullText;
-1510:                                 this.renderChatMessages();
-1511:                             }
-1512:                         } catch { /* skip malformed SSE lines */ }
-1513:                     }
-1514:                 }
-1515: 
-1516:                 this.saveCache();
-1517:             } else {
-1518:                 // Fallback: regular JSON response
-1519:                 const data = await response.json();
-1520: 
-1521:                 if (data.blocked) {
-1522:                     this.addChatMessage('system', `⚠️ ${data.reason}`);
-1523:                 } else if (data.response) {
-1524:                     this.addChatMessage('hermes', data.response);
-1525:                     
-1526:                     // Auto-fill contract fields if extracted
-1527:                     if (data.contract_fields) {
-1528:                         this.applyExtractedFields(data.contract_fields, data.contract_state);
-1529:                     }
-1530:                     
-1531:                     // Log cost if router mode
-1532:                     if (data.cost_estimate) {
-1533:                         console.log('[Router]', data.cost_estimate.cost.ton, 'TON |', data.cost_estimate.cost.usd, 'USD');
-1534:                     }
-1535:                 } else if (data.error) {
-1536:                     this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
-1537:                 }
-1538:             }
-1539:         } catch (error) {
-1540:             console.error('[Chat] Fetch failed:', error.message);
-1541:             this.hideTypingIndicator();
-1542:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
-1543:         }
-1544:     }
-1545: 
-1546:     showAttachMenu() {
-1547:         const menu = document.getElementById('attach-menu');
-1548:         if (!menu) return;
+1481:             // Try streaming first
+1482:             const streamUrl = baseUrl + 'chat/stream';
+1483:             const response = await fetch(streamUrl, {
+1484:                 method: 'POST',
+1485:                 mode: 'cors',
+1486:                 credentials: 'omit',
+1487:                 headers: { 'Content-Type': 'application/json' },
+1488:                 body: JSON.stringify({
+1489:                     message: text,
+1490:                     user_id: telegram.getUserId(),
+1491:                     session_id: `tg_${telegram.getUserId()}`,
+1492:                     persona: 'hermes',
+1493:                     use_router: true
+1494:                 })
+1495:             });
+1496: 
+1497:             console.log('[Chat] Response status:', response.status, response.statusText);
+1498: 
+1499:             // Hide typing indicator
+1500:             this.hideTypingIndicator();
+1501: 
+1502:             const contentType = response.headers.get('content-type') || '';
+1503: 
+1504:             if (contentType.includes('text/event-stream')) {
+1505:                 // Streaming response — typewriter effect
+1506:                 const reader = response.body.getReader();
+1507:                 const decoder = new TextDecoder();
+1508:                 let fullText = '';
+1509: 
+1510:                 // Create empty hermes message bubble for streaming
+1511:                 const msgIdx = this.chatMessages.length;
+1512:                 this.chatMessages.push({ sender: 'hermes', text: '', timestamp: Date.now() });
+1513:                 this.renderChatMessages();
+1514: 
+1515:                 while (true) {
+1516:                     const { done, value } = await reader.read();
+1517:                     if (done) break;
+1518: 
+1519:                     const chunk = decoder.decode(value, { stream: true });
+1520:                     const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+1521: 
+1522:                     for (const line of lines) {
+1523:                         try {
+1524:                             const parsed = JSON.parse(line.replace('data: ', ''));
+1525:                             if (parsed.done) {
+1526:                                 // Handle contract fields from final event
+1527:                                 if (parsed.contract_fields) {
+1528:                                     this.applyExtractedFields(parsed.contract_fields, parsed.contract_state);
+1529:                                 }
+1530:                                 // Handle cost estimate
+1531:                                 if (parsed.cost_estimate) {
+1532:                                     console.log('[Cost]', parsed.cost_estimate.cost.ton, 'TON |', parsed.cost_estimate.cost.usd, 'USD');
+1533:                                 }
+1534:                                 break;
+1535:                             }
+1536:                             if (parsed.char !== undefined) {
+1537:                                 fullText += parsed.char;
+1538:                                 this.chatMessages[msgIdx].text = fullText;
+1539:                                 this.renderChatMessages();
+1540:                             }
+1541:                         } catch { /* skip malformed SSE lines */ }
+1542:                     }
+1543:                 }
+1544: 
+1545:                 this.saveCache();
+1546:             } else {
+1547:                 // Fallback: regular JSON response
+1548:                 const data = await response.json();
 1549: 
-1550:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
-1551:         telegram.haptic('light');
-1552:     }
-1553: 
-1554:     hideAttachMenu() {
-1555:         const menu = document.getElementById('attach-menu');
-1556:         if (menu) menu.style.display = 'none';
-1557:     }
-1558: 
-1559:     attachPhoto() {
-1560:         this.hideAttachMenu();
-1561:         const input = document.createElement('input');
-1562:         input.type = 'file';
-1563:         input.accept = 'image/*';
-1564:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
-1565:         input.click();
-1566:     }
-1567: 
-1568:     attachVideo() {
-1569:         this.hideAttachMenu();
-1570:         const input = document.createElement('input');
-1571:         input.type = 'file';
-1572:         input.accept = 'video/*';
-1573:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
-1574:         input.click();
-1575:     }
-1576: 
-1577:     async recordVideo() {
-1578:         this.hideAttachMenu();
-1579:         try {
-1580:             const stream = await navigator.mediaDevices.getUserMedia({
-1581:                 video: { facingMode: this.currentFacingMode },
-1582:                 audio: true
-1583:             });
-1584:             this.currentStream = stream;
-1585:             this.showVideoRecorder(stream);
-1586:         } catch (error) {
-1587:             telegram.showAlert('Нет доступа к камере');
-1588:         }
-1589:     }
-1590: 
-1591:     showVideoRecorder(stream) {
-1592:         const recorder = document.createElement('div');
-1593:         recorder.className = 'video-recording';
-1594:         recorder.innerHTML = `
-1595:             <div class="video-preview">
-1596:                 <video id="video-preview" autoplay playsinline muted></video>
-1597:                 <div class="video-controls">
-1598:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
-1599:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
-1600:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
-1601:                 </div>
-1602:             </div>
-1603:         `;
-1604:         document.body.appendChild(recorder);
+1550:                 if (data.blocked) {
+1551:                     this.addChatMessage('system', `⚠️ ${data.reason}`);
+1552:                 } else if (data.response) {
+1553:                     this.addChatMessage('hermes', data.response);
+1554:                     
+1555:                     // Auto-fill contract fields if extracted
+1556:                     if (data.contract_fields) {
+1557:                         this.applyExtractedFields(data.contract_fields, data.contract_state);
+1558:                     }
+1559:                     
+1560:                     // Log cost if router mode
+1561:                     if (data.cost_estimate) {
+1562:                         console.log('[Router]', data.cost_estimate.cost.ton, 'TON |', data.cost_estimate.cost.usd, 'USD');
+1563:                     }
+1564:                 } else if (data.error) {
+1565:                     this.addChatMessage('system', `❌ Ошибка: ${data.error_message || data.error}`);
+1566:                 }
+1567:             }
+1568:         } catch (error) {
+1569:             console.error('[Chat] Fetch failed:', error.message);
+1570:             this.hideTypingIndicator();
+1571:             this.addChatMessage('system', '❌ Ошибка соединения с сервером');
+1572:         }
+1573:     }
+1574: 
+1575:     showAttachMenu() {
+1576:         const menu = document.getElementById('attach-menu');
+1577:         if (!menu) return;
+1578: 
+1579:         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
+1580:         telegram.haptic('light');
+1581:     }
+1582: 
+1583:     hideAttachMenu() {
+1584:         const menu = document.getElementById('attach-menu');
+1585:         if (menu) menu.style.display = 'none';
+1586:     }
+1587: 
+1588:     attachPhoto() {
+1589:         this.hideAttachMenu();
+1590:         const input = document.createElement('input');
+1591:         input.type = 'file';
+1592:         input.accept = 'image/*';
+1593:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'photo');
+1594:         input.click();
+1595:     }
+1596: 
+1597:     attachVideo() {
+1598:         this.hideAttachMenu();
+1599:         const input = document.createElement('input');
+1600:         input.type = 'file';
+1601:         input.accept = 'video/*';
+1602:         input.onchange = (e) => this.handleFileUpload(e.target.files[0], 'video');
+1603:         input.click();
+1604:     }
 1605: 
-1606:         const video = document.getElementById('video-preview');
-1607:         video.srcObject = stream;
-1608:     }
-1609: 
-1610:     async switchCamera() {
-1611:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
-1612:         if (this.currentStream) {
-1613:             this.currentStream.getTracks().forEach(track => track.stop());
-1614:         }
-1615:         await this.recordVideo();
-1616:     }
-1617: 
-1618:     toggleVideoRecording() {
-1619:         const btn = document.getElementById('record-btn');
-1620:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
-1621:             this.startVideoRecording();
-1622:             btn.classList.add('recording');
-1623:         } else {
-1624:             this.stopVideoRecording();
-1625:             btn.classList.remove('recording');
-1626:         }
-1627:     }
-1628: 
-1629:     startVideoRecording() {
-1630:         if (!this.currentStream) return;
-1631: 
-1632:         this.mediaRecorder = new MediaRecorder(this.currentStream);
-1633:         this.audioChunks = [];
+1606:     async recordVideo() {
+1607:         this.hideAttachMenu();
+1608:         try {
+1609:             const stream = await navigator.mediaDevices.getUserMedia({
+1610:                 video: { facingMode: this.currentFacingMode },
+1611:                 audio: true
+1612:             });
+1613:             this.currentStream = stream;
+1614:             this.showVideoRecorder(stream);
+1615:         } catch (error) {
+1616:             telegram.showAlert('Нет доступа к камере');
+1617:         }
+1618:     }
+1619: 
+1620:     showVideoRecorder(stream) {
+1621:         const recorder = document.createElement('div');
+1622:         recorder.className = 'video-recording';
+1623:         recorder.innerHTML = `
+1624:             <div class="video-preview">
+1625:                 <video id="video-preview" autoplay playsinline muted></video>
+1626:                 <div class="video-controls">
+1627:                     <button class="camera-switch-btn" onclick="app.switchCamera()">🔄</button>
+1628:                     <button class="video-record-btn" id="record-btn" onclick="app.toggleVideoRecording()"></button>
+1629:                     <button class="camera-switch-btn" onclick="app.closeVideoRecorder()">✖️</button>
+1630:                 </div>
+1631:             </div>
+1632:         `;
+1633:         document.body.appendChild(recorder);
 1634: 
-1635:         this.mediaRecorder.ondataavailable = (e) => {
-1636:             this.audioChunks.push(e.data);
-1637:         };
+1635:         const video = document.getElementById('video-preview');
+1636:         video.srcObject = stream;
+1637:     }
 1638: 
-1639:         this.mediaRecorder.onstop = () => {
-1640:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
-1641:             this.handleVideoUpload(videoBlob);
-1642:         };
-1643: 
-1644:         this.mediaRecorder.start();
+1639:     async switchCamera() {
+1640:         this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+1641:         if (this.currentStream) {
+1642:             this.currentStream.getTracks().forEach(track => track.stop());
+1643:         }
+1644:         await this.recordVideo();
 1645:     }
 1646: 
-1647:     stopVideoRecording() {
-1648:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-1649:             this.mediaRecorder.stop();
-1650:         }
-1651:     }
-1652: 
-1653:     closeVideoRecorder() {
-1654:         if (this.currentStream) {
-1655:             this.currentStream.getTracks().forEach(track => track.stop());
-1656:             this.currentStream = null;
-1657:         }
-1658:         const recorder = document.querySelector('.video-recording');
-1659:         if (recorder) recorder.remove();
-1660:     }
-1661: 
-1662:     async shareScreen() {
-1663:         this.hideAttachMenu();
-1664:         try {
-1665:             const stream = await navigator.mediaDevices.getDisplayMedia({
-1666:                 video: true
-1667:             });
-1668:             
-1669:             const mediaRecorder = new MediaRecorder(stream);
-1670:             const chunks = [];
-1671: 
-1672:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-1673:             mediaRecorder.onstop = () => {
-1674:                 const blob = new Blob(chunks, { type: 'video/webm' });
-1675:                 this.handleVideoUpload(blob);
-1676:                 stream.getTracks().forEach(track => track.stop());
-1677:             };
-1678: 
-1679:             mediaRecorder.start();
-1680:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
-1681:         } catch (error) {
-1682:             telegram.showAlert('Нет доступа к экрану');
-1683:         }
-1684:     }
-1685: 
-1686:     async handleFileUpload(file, type) {
-1687:         if (!file) return;
-1688: 
-1689:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
+1647:     toggleVideoRecording() {
+1648:         const btn = document.getElementById('record-btn');
+1649:         if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
+1650:             this.startVideoRecording();
+1651:             btn.classList.add('recording');
+1652:         } else {
+1653:             this.stopVideoRecording();
+1654:             btn.classList.remove('recording');
+1655:         }
+1656:     }
+1657: 
+1658:     startVideoRecording() {
+1659:         if (!this.currentStream) return;
+1660: 
+1661:         this.mediaRecorder = new MediaRecorder(this.currentStream);
+1662:         this.audioChunks = [];
+1663: 
+1664:         this.mediaRecorder.ondataavailable = (e) => {
+1665:             this.audioChunks.push(e.data);
+1666:         };
+1667: 
+1668:         this.mediaRecorder.onstop = () => {
+1669:             const videoBlob = new Blob(this.audioChunks, { type: 'video/webm' });
+1670:             this.handleVideoUpload(videoBlob);
+1671:         };
+1672: 
+1673:         this.mediaRecorder.start();
+1674:     }
+1675: 
+1676:     stopVideoRecording() {
+1677:         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+1678:             this.mediaRecorder.stop();
+1679:         }
+1680:     }
+1681: 
+1682:     closeVideoRecorder() {
+1683:         if (this.currentStream) {
+1684:             this.currentStream.getTracks().forEach(track => track.stop());
+1685:             this.currentStream = null;
+1686:         }
+1687:         const recorder = document.querySelector('.video-recording');
+1688:         if (recorder) recorder.remove();
+1689:     }
 1690: 
-1691:         const reader = new FileReader();
-1692:         reader.onload = async (e) => {
-1693:             try {
-1694:                 // Upload to backend and get URL
-1695:                 const imageUrl = e.target.result; // Base64 data URL
-1696: 
-1697:                 // Call Hermes image analysis
-1698:                 const response = await fetch('/analyze-image', {
-1699:                     method: 'POST',
-1700:                     headers: { 'Content-Type': 'application/json' },
-1701:                     body: JSON.stringify({
-1702:                         image_url: imageUrl,
-1703:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
-1704:                         user_id: telegram.getUserId(),
-1705:                         session_id: `tg_${telegram.getUserId()}`
-1706:                     })
-1707:                 });
-1708: 
-1709:                 const data = await response.json();
-1710: 
-1711:                 if (data.response) {
-1712:                     this.addChatMessage('hermes', data.response);
-1713:                 } else if (data.error) {
-1714:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-1715:                 }
-1716:             } catch (error) {
-1717:                 console.error('[App] Upload error:', error);
-1718:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
-1719:             }
-1720:         };
-1721:         reader.readAsDataURL(file);
-1722:     }
-1723: 
-1724:     async handleVideoUpload(blob) {
-1725:         this.addChatMessage('user', '[🎥 Видеозапись]');
-1726:         this.closeVideoRecorder();
-1727: 
-1728:         const reader = new FileReader();
-1729:         reader.onload = async (e) => {
-1730:             try {
-1731:                 const videoUrl = e.target.result;
-1732: 
-1733:                 // Call Hermes video analysis
-1734:                 const response = await fetch('/analyze-image', {
-1735:                     method: 'POST',
-1736:                     headers: { 'Content-Type': 'application/json' },
-1737:                     body: JSON.stringify({
-1738:                         image_url: videoUrl,
-1739:                         prompt: 'Проанализируй это видео',
-1740:                         user_id: telegram.getUserId(),
-1741:                         session_id: `tg_${telegram.getUserId()}`
-1742:                     })
-1743:                 });
-1744: 
-1745:                 const data = await response.json();
-1746: 
-1747:                 if (data.response) {
-1748:                     this.addChatMessage('hermes', data.response);
-1749:                 } else if (data.error) {
-1750:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
-1751:                 }
-1752:             } catch (error) {
-1753:                 console.error('[App] Video upload error:', error);
-1754:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
-1755:             }
-1756:         };
-1757:         reader.readAsDataURL(blob);
-1758:     }
-1759: 
-1760:     formatTime(timestamp) {
-1761:         const date = new Date(timestamp);
-1762:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-1763:     }
-1764: 
-1765:     async submitFeedback(msgIdx, feedback) {
-1766:         const msg = this.chatMessages[msgIdx];
-1767:         if (!msg || msg.feedback) return;
-1768: 
-1769:         msg.feedback = feedback;
-1770:         this.renderChatMessages();
-1771: 
-1772:         try {
-1773:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
-1774:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
-1775:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
-1776: 
-1777:             await fetch(baseUrl + 'feedback', {
-1778:                 method: 'POST',
-1779:                 mode: 'cors',
-1780:                 credentials: 'omit',
-1781:                 headers: { 'Content-Type': 'application/json' },
-1782:                 body: JSON.stringify({
-1783:                     message_id: msgIdx,
-1784:                     feedback,
-1785:                     user_id: telegram.getUserId(),
-1786:                     session_id: `tg_${telegram.getUserId()}`,
-1787:                     text: msg.text.substring(0, 200)
-1788:                 })
-1789:             });
-1790: 
-1791:             telegram.haptic('light');
-1792:         } catch (error) {
-1793:             console.error('[Feedback] Error:', error.message);
-1794:         }
-1795:     }
-1796: 
-1797:     updateTaskSpec(title, content) {
-1798:         const specContainer = document.getElementById('task-spec');
-1799:         const specContent = document.getElementById('task-spec-content');
-1800:         if (!specContainer || !specContent) return;
-1801: 
-1802:         specContainer.classList.add('has-content');
-1803:         specContent.innerHTML = `
-1804:             <div class="task-spec-title">${this.escapeHtml(title)}</div>
-1805:             <div>${this.escapeHtml(content)}</div>
-1806:         `;
-1807:     }
-1808: 
-1809:     clearTaskSpec() {
-1810:         const specContainer = document.getElementById('task-spec');
-1811:         const specContent = document.getElementById('task-spec-content');
-1812:         if (!specContainer || !specContent) return;
-1813: 
-1814:         specContainer.classList.remove('has-content');
-1815:         specContent.textContent = 'Ожидание ТЗ от Гермеса...';
-1816:     }
-1817: 
-1818:     // ─── Голосовой ввод с автоотправкой (VAD — Voice Activity Detection) ──
-1819:     // Best practice: silence-based auto-send after final result + 1.5s pause
-1820:     // Source: Web Speech API patterns used by Otter.ai, AssemblyAI, Whisper
-1821:     initVoiceInput() {
-1822:         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-1823:         if (!SpeechRecognition) {
-1824:             console.warn('[App] SpeechRecognition не поддерживается в этом браузере');
-1825:             return;
-1826:         }
-1827:         this.recognition = new SpeechRecognition();
-1828:         this.recognition.lang = 'ru-RU';
-1829:         this.recognition.interimResults = true;
-1830:         this.recognition.continuous = true;
-1831:         this.recognition.maxAlternatives = 1;
-1832: 
-1833:         // Silence detection timer — auto-send after 1.5s of no new speech
-1834:         this._voiceSendTimer = null;
-1835:         this._voiceAutoSendDelay = 1500; // 1.5s silence = send
-1836:         this._voiceLastResultTime = 0;
-1837:         this._voiceAccumulatedText = '';
-1838: 
-1839:         this.recognition.onresult = (event) => {
-1840:             let interim = '';
-1841:             let final = '';
-1842:             for (let i = event.resultIndex; i < event.results.length; i++) {
-1843:                 const transcript = event.results[i][0].transcript;
-1844:                 if (event.results[i].isFinal) final += transcript + ' ';
-1845:                 else interim += transcript;
-1846:             }
-1847: 
-1848:             const input = document.getElementById('chat-input');
-1849:             if (input) {
-1850:                 const baseText = this._voiceAccumulatedText || '';
-1851:                 input.value = baseText + final + interim;
-1852:             }
-1853: 
-1854:             // Reset silence timer on any new result
-1855:             this._voiceLastResultTime = Date.now();
-1856: 
-1857:             // If we got a final result, start/restart the auto-send timer
-1858:             if (final.trim()) {
-1859:                 this._voiceAccumulatedText += final;
-1860:                 this._clearVoiceSendTimer();
-1861:                 this._voiceSendTimer = setTimeout(() => {
-1862:                     this._autoSendVoice();
-1863:                 }, this._voiceAutoSendDelay);
-1864:             }
-1865:         };
-1866: 
-1867:         this.recognition.onerror = (e) => {
-1868:             console.warn('[App] Voice error:', e.error);
-1869:             // Auto-restart on non-fatal errors (no-speech, aborted)
-1870:             if (this.isRecording && e.error !== 'not-allowed') {
-1871:                 try { this.recognition.start(); } catch { /* already started */ }
-1872:             }
-1873:         };
-1874: 
-1875:         this.recognition.onend = () => {
-1876:             // Auto-restart if still in recording mode (continuous listening)
-1877:             if (this.isRecording) {
-1878:                 try {
-1879:                     this.recognition.start();
-1880:                 } catch {
-1881:                     this.isRecording = false;
-1882:                     this._clearVoiceSendTimer();
-1883:                     const micBtn = document.getElementById('micButton');
-1884:                     if (micBtn) micBtn.classList.remove('recording');
-1885:                 }
-1886:             } else {
-1887:                 // User stopped — send any accumulated text
-1888:                 if (this._voiceAccumulatedText.trim()) {
-1889:                     this._autoSendVoice();
-1890:                 }
-1891:                 this._clearVoiceSendTimer();
-1892:                 const micBtn = document.getElementById('micButton');
-1893:                 if (micBtn) micBtn.classList.remove('recording');
-1894:             }
-1895:         };
-1896:     }
-1897: 
-1898:     _clearVoiceSendTimer() {
-1899:         if (this._voiceSendTimer) {
-1900:             clearTimeout(this._voiceSendTimer);
-1901:             this._voiceSendTimer = null;
-1902:         }
-1903:     }
-1904: 
-1905:     _autoSendVoice() {
-1906:         const input = document.getElementById('chat-input');
-1907:         const text = (this._voiceAccumulatedText || '').trim();
-1908:         if (!text) return;
-1909: 
-1910:         // Clear accumulated text and timer
-1911:         this._voiceAccumulatedText = '';
-1912:         this._clearVoiceSendTimer();
-1913: 
-1914:         // Update input and send
-1915:         if (input) input.value = text;
-1916:         this.sendTextMessage();
-1917: 
-1918:         telegram.haptic('medium');
-1919:     }
-1920: 
-1921:     toggleVoiceRecording() {
-1922:         if (!this.recognition) return telegram.showAlert('Голосовой ввод не поддерживается');
-1923:         const micBtn = document.getElementById('micButton');
-1924:         if (this.isRecording) {
-1925:             // User tapped to stop — will trigger onend → auto-send
-1926:             this.recognition.stop();
-1927:             this.isRecording = false;
-1928:         } else {
-1929:             const input = document.getElementById('chat-input');
-1930:             this._voiceAccumulatedText = input ? input.value + ' ' : '';
-1931:             this._voiceLastResultTime = Date.now();
-1932:             this.recognition.start();
-1933:             this.isRecording = true;
-1934:             if (micBtn) micBtn.classList.add('recording');
-1935:             telegram.haptic('light');
-1936:         }
-1937:     }
+1691:     async shareScreen() {
+1692:         this.hideAttachMenu();
+1693:         try {
+1694:             const stream = await navigator.mediaDevices.getDisplayMedia({
+1695:                 video: true
+1696:             });
+1697:             
+1698:             const mediaRecorder = new MediaRecorder(stream);
+1699:             const chunks = [];
+1700: 
+1701:             mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+1702:             mediaRecorder.onstop = () => {
+1703:                 const blob = new Blob(chunks, { type: 'video/webm' });
+1704:                 this.handleVideoUpload(blob);
+1705:                 stream.getTracks().forEach(track => track.stop());
+1706:             };
+1707: 
+1708:             mediaRecorder.start();
+1709:             setTimeout(() => mediaRecorder.stop(), 30000); // 30 sec max
+1710:         } catch (error) {
+1711:             telegram.showAlert('Нет доступа к экрану');
+1712:         }
+1713:     }
+1714: 
+1715:     async handleFileUpload(file, type) {
+1716:         if (!file) return;
+1717: 
+1718:         this.addChatMessage('user', `[📎 ${type === 'photo' ? 'Фото' : 'Видео'}]`);
+1719: 
+1720:         const reader = new FileReader();
+1721:         reader.onload = async (e) => {
+1722:             try {
+1723:                 // Upload to backend and get URL
+1724:                 const imageUrl = e.target.result; // Base64 data URL
+1725: 
+1726:                 // Call Hermes image analysis
+1727:                 const response = await fetch('/analyze-image', {
+1728:                     method: 'POST',
+1729:                     headers: { 'Content-Type': 'application/json' },
+1730:                     body: JSON.stringify({
+1731:                         image_url: imageUrl,
+1732:                         prompt: type === 'photo' ? 'Проанализируй это изображение' : 'Опиши это видео',
+1733:                         user_id: telegram.getUserId(),
+1734:                         session_id: `tg_${telegram.getUserId()}`
+1735:                     })
+1736:                 });
+1737: 
+1738:                 const data = await response.json();
+1739: 
+1740:                 if (data.response) {
+1741:                     this.addChatMessage('hermes', data.response);
+1742:                 } else if (data.error) {
+1743:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+1744:                 }
+1745:             } catch (error) {
+1746:                 console.error('[App] Upload error:', error);
+1747:                 this.addChatMessage('system', '❌ Ошибка загрузки файла');
+1748:             }
+1749:         };
+1750:         reader.readAsDataURL(file);
+1751:     }
+1752: 
+1753:     async handleVideoUpload(blob) {
+1754:         this.addChatMessage('user', '[🎥 Видеозапись]');
+1755:         this.closeVideoRecorder();
+1756: 
+1757:         const reader = new FileReader();
+1758:         reader.onload = async (e) => {
+1759:             try {
+1760:                 const videoUrl = e.target.result;
+1761: 
+1762:                 // Call Hermes video analysis
+1763:                 const response = await fetch('/analyze-image', {
+1764:                     method: 'POST',
+1765:                     headers: { 'Content-Type': 'application/json' },
+1766:                     body: JSON.stringify({
+1767:                         image_url: videoUrl,
+1768:                         prompt: 'Проанализируй это видео',
+1769:                         user_id: telegram.getUserId(),
+1770:                         session_id: `tg_${telegram.getUserId()}`
+1771:                     })
+1772:                 });
+1773: 
+1774:                 const data = await response.json();
+1775: 
+1776:                 if (data.response) {
+1777:                     this.addChatMessage('hermes', data.response);
+1778:                 } else if (data.error) {
+1779:                     this.addChatMessage('system', `❌ Ошибка анализа: ${data.error_message}`);
+1780:                 }
+1781:             } catch (error) {
+1782:                 console.error('[App] Video upload error:', error);
+1783:                 this.addChatMessage('system', '❌ Ошибка загрузки видео');
+1784:             }
+1785:         };
+1786:         reader.readAsDataURL(blob);
+1787:     }
+1788: 
+1789:     formatTime(timestamp) {
+1790:         const date = new Date(timestamp);
+1791:         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+1792:     }
+1793: 
+1794:     async submitFeedback(msgIdx, feedback) {
+1795:         const msg = this.chatMessages[msgIdx];
+1796:         if (!msg || msg.feedback) return;
+1797: 
+1798:         msg.feedback = feedback;
+1799:         this.renderChatMessages();
+1800: 
+1801:         try {
+1802:             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
+1803:                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
+1804:                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
+1805: 
+1806:             await fetch(baseUrl + 'feedback', {
+1807:                 method: 'POST',
+1808:                 mode: 'cors',
+1809:                 credentials: 'omit',
+1810:                 headers: { 'Content-Type': 'application/json' },
+1811:                 body: JSON.stringify({
+1812:                     message_id: msgIdx,
+1813:                     feedback,
+1814:                     user_id: telegram.getUserId(),
+1815:                     session_id: `tg_${telegram.getUserId()}`,
+1816:                     text: msg.text.substring(0, 200)
+1817:                 })
+1818:             });
+1819: 
+1820:             telegram.haptic('light');
+1821:         } catch (error) {
+1822:             console.error('[Feedback] Error:', error.message);
+1823:         }
+1824:     }
+1825: 
+1826:     updateTaskSpec(title, content) {
+1827:         const specContainer = document.getElementById('task-spec');
+1828:         const specContent = document.getElementById('task-spec-content');
+1829:         if (!specContainer || !specContent) return;
+1830: 
+1831:         specContainer.classList.add('has-content');
+1832:         specContent.innerHTML = `
+1833:             <div class="task-spec-title">${this.escapeHtml(title)}</div>
+1834:             <div>${this.escapeHtml(content)}</div>
+1835:         `;
+1836:     }
+1837: 
+1838:     clearTaskSpec() {
+1839:         const specContainer = document.getElementById('task-spec');
+1840:         const specContent = document.getElementById('task-spec-content');
+1841:         if (!specContainer || !specContent) return;
+1842: 
+1843:         specContainer.classList.remove('has-content');
+1844:         specContent.textContent = 'Ожидание ТЗ от Гермеса...';
+1845:     }
+1846: 
+1847:     // ─── Голосовой ввод с автоотправкой (VAD — Voice Activity Detection) ──
+1848:     // Best practice: silence-based auto-send after final result + 1.5s pause
+1849:     // Source: Web Speech API patterns used by Otter.ai, AssemblyAI, Whisper
+1850:     initVoiceInput() {
+1851:         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+1852:         if (!SpeechRecognition) {
+1853:             console.warn('[App] SpeechRecognition не поддерживается в этом браузере');
+1854:             return;
+1855:         }
+1856:         this.recognition = new SpeechRecognition();
+1857:         this.recognition.lang = 'ru-RU';
+1858:         this.recognition.interimResults = true;
+1859:         this.recognition.continuous = true;
+1860:         this.recognition.maxAlternatives = 1;
+1861: 
+1862:         // Silence detection timer — auto-send after 1.5s of no new speech
+1863:         this._voiceSendTimer = null;
+1864:         this._voiceAutoSendDelay = 1500; // 1.5s silence = send
+1865:         this._voiceLastResultTime = 0;
+1866:         this._voiceAccumulatedText = '';
+1867: 
+1868:         this.recognition.onresult = (event) => {
+1869:             let interim = '';
+1870:             let final = '';
+1871:             for (let i = event.resultIndex; i < event.results.length; i++) {
+1872:                 const transcript = event.results[i][0].transcript;
+1873:                 if (event.results[i].isFinal) final += transcript + ' ';
+1874:                 else interim += transcript;
+1875:             }
+1876: 
+1877:             const input = document.getElementById('chat-input');
+1878:             if (input) {
+1879:                 const baseText = this._voiceAccumulatedText || '';
+1880:                 input.value = baseText + final + interim;
+1881:             }
+1882: 
+1883:             // Reset silence timer on any new result
+1884:             this._voiceLastResultTime = Date.now();
+1885: 
+1886:             // If we got a final result, start/restart the auto-send timer
+1887:             if (final.trim()) {
+1888:                 this._voiceAccumulatedText += final;
+1889:                 this._clearVoiceSendTimer();
+1890:                 this._voiceSendTimer = setTimeout(() => {
+1891:                     this._autoSendVoice();
+1892:                 }, this._voiceAutoSendDelay);
+1893:             }
+1894:         };
+1895: 
+1896:         this.recognition.onerror = (e) => {
+1897:             console.warn('[App] Voice error:', e.error);
+1898:             // Auto-restart on non-fatal errors (no-speech, aborted)
+1899:             if (this.isRecording && e.error !== 'not-allowed') {
+1900:                 try { this.recognition.start(); } catch { /* already started */ }
+1901:             }
+1902:         };
+1903: 
+1904:         this.recognition.onend = () => {
+1905:             // Auto-restart if still in recording mode (continuous listening)
+1906:             if (this.isRecording) {
+1907:                 try {
+1908:                     this.recognition.start();
+1909:                 } catch {
+1910:                     this.isRecording = false;
+1911:                     this._clearVoiceSendTimer();
+1912:                     const micBtn = document.getElementById('micButton');
+1913:                     if (micBtn) micBtn.classList.remove('recording');
+1914:                 }
+1915:             } else {
+1916:                 // User stopped — send any accumulated text
+1917:                 if (this._voiceAccumulatedText.trim()) {
+1918:                     this._autoSendVoice();
+1919:                 }
+1920:                 this._clearVoiceSendTimer();
+1921:                 const micBtn = document.getElementById('micButton');
+1922:                 if (micBtn) micBtn.classList.remove('recording');
+1923:             }
+1924:         };
+1925:     }
+1926: 
+1927:     _clearVoiceSendTimer() {
+1928:         if (this._voiceSendTimer) {
+1929:             clearTimeout(this._voiceSendTimer);
+1930:             this._voiceSendTimer = null;
+1931:         }
+1932:     }
+1933: 
+1934:     _autoSendVoice() {
+1935:         const input = document.getElementById('chat-input');
+1936:         const text = (this._voiceAccumulatedText || '').trim();
+1937:         if (!text) return;
 1938: 
-1939:     // ─── Панель смарт-контракта (вопросы Гермеса) ────────────────────────
-1940:     renderContractQuestions(questions = []) {
-1941:         const container = document.getElementById('contract-qa-container');
-1942:         if (!container) return;
-1943:         container.innerHTML = '';
-1944:         if (!questions.length) {
-1945:             container.innerHTML = '<div class="qa-empty">Нет активных вопросов от Гермеса</div>';
-1946:             return;
-1947:         }
-1948:         questions.forEach((q, idx) => {
-1949:             const wrap = document.createElement('div');
-1950:             wrap.className = 'qa-item';
-1951:             wrap.innerHTML = `
-1952:                 <div class="qa-question">${idx + 1}. ${this.escapeHtml(q.text)}</div>
-1953:                 <input type="text" class="qa-answer-input" placeholder="Ваш ответ..." data-qid="${q.id || idx}" />
-1954:             `;
-1955:             container.appendChild(wrap);
-1956:         });
-1957:         container.querySelectorAll('.qa-answer-input').forEach(inp => {
-1958:             inp.addEventListener('change', () => this.saveContractAnswers());
-1959:         });
-1960:     }
-1961: 
-1962:     saveContractAnswers() {
-1963:         const inputs = document.querySelectorAll('.qa-answer-input');
-1964:         const answers = {};
-1965:         inputs.forEach(inp => answers[inp.dataset.qid] = inp.value.trim());
-1966:         this.contractAnswers = answers;
-1967:         this.saveCache();
-1968:     }
-1969: 
-1970:     // ─── История ТЗ ──────────────────────────────────────────────────────
-1971:     async saveTaskSpecHistory(specText) {
-1972:         if (!specText?.trim()) return;
-1973:         const history = this.taskSpecHistory || [];
-1974:         history.unshift({ text: specText, timestamp: Date.now() });
-1975:         if (history.length > 20) history.pop();
-1976:         this.taskSpecHistory = history;
-1977:         try {
-1978:             if (window.Telegram?.WebApp?.CloudStorage) {
-1979:                 await new Promise((res, rej) => Telegram.WebApp.CloudStorage.setItem('task_spec_history', JSON.stringify(history), (err, ok) => err ? rej(err) : res(ok)));
-1980:             } else {
-1981:                 localStorage.setItem('task_spec_history', JSON.stringify(history));
-1982:             }
-1983:         } catch (e) { console.warn('[App] History save failed:', e); }
-1984:     }
-1985: 
-1986:     async loadTaskSpecHistory() {
-1987:         try {
-1988:             let raw = null;
-1989:             if (window.Telegram?.WebApp?.CloudStorage) {
-1990:                 raw = await new Promise((res, rej) => Telegram.WebApp.CloudStorage.getItem('task_spec_history', (err, val) => err ? rej(err) : res(val)));
-1991:             } else {
-1992:                 raw = localStorage.getItem('task_spec_history');
-1993:             }
-1994:             this.taskSpecHistory = raw ? JSON.parse(raw) : [];
-1995:         } catch (e) {
-1996:             this.taskSpecHistory = [];
-1997:         }
-1998:         this.renderTaskSpecHistory();
-1999:     }
-2000: 
-2001:     renderTaskSpecHistory() {
-2002:         const list = document.getElementById('task-history-list');
-2003:         if (!list) return;
-2004:         list.innerHTML = '';
-2005:         if (!this.taskSpecHistory?.length) {
-2006:             list.innerHTML = '<div class="history-empty">История пуста</div>';
-2007:             return;
-2008:         }
-2009:         this.taskSpecHistory.forEach((item, idx) => {
-2010:             const el = document.createElement('div');
-2011:             el.className = 'history-item';
-2012:             const time = new Date(item.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-2013:             el.innerHTML = `<span class="history-time">${time}</span><span class="history-text">${this.escapeHtml(item.text.slice(0, 60))}...</span>`;
-2014:             el.onclick = () => {
-2015:                 const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
-2016:                 if (input) input.value = item.text;
-2017:                 telegram.haptic('light');
-2018:             };
-2019:             list.appendChild(el);
-2020:         });
-2021:     }
-2022: 
-2023:     // ─── Экспорт ТЗ ──────────────────────────────────────────────────────
-2024:     exportTaskSpec() {
-2025:         const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
-2026:         const spec = input?.value?.trim() || '';
-2027:         const answers = this.contractAnswers || {};
-2028:         if (!spec && !Object.keys(answers).length) return telegram.showAlert('Нет данных для экспорта');
+1939:         // Clear accumulated text and timer
+1940:         this._voiceAccumulatedText = '';
+1941:         this._clearVoiceSendTimer();
+1942: 
+1943:         // Update input and send
+1944:         if (input) input.value = text;
+1945:         this.sendTextMessage();
+1946: 
+1947:         telegram.haptic('medium');
+1948:     }
+1949: 
+1950:     toggleVoiceRecording() {
+1951:         if (!this.recognition) return telegram.showAlert('Голосовой ввод не поддерживается');
+1952:         const micBtn = document.getElementById('micButton');
+1953:         if (this.isRecording) {
+1954:             // User tapped to stop — will trigger onend → auto-send
+1955:             this.recognition.stop();
+1956:             this.isRecording = false;
+1957:         } else {
+1958:             const input = document.getElementById('chat-input');
+1959:             this._voiceAccumulatedText = input ? input.value + ' ' : '';
+1960:             this._voiceLastResultTime = Date.now();
+1961:             this.recognition.start();
+1962:             this.isRecording = true;
+1963:             if (micBtn) micBtn.classList.add('recording');
+1964:             telegram.haptic('light');
+1965:         }
+1966:     }
+1967: 
+1968:     // ─── Панель смарт-контракта (вопросы Гермеса) ────────────────────────
+1969:     renderContractQuestions(questions = []) {
+1970:         const container = document.getElementById('contract-qa-container');
+1971:         if (!container) return;
+1972:         container.innerHTML = '';
+1973:         if (!questions.length) {
+1974:             container.innerHTML = '<div class="qa-empty">Нет активных вопросов от Гермеса</div>';
+1975:             return;
+1976:         }
+1977:         questions.forEach((q, idx) => {
+1978:             const wrap = document.createElement('div');
+1979:             wrap.className = 'qa-item';
+1980:             wrap.innerHTML = `
+1981:                 <div class="qa-question">${idx + 1}. ${this.escapeHtml(q.text)}</div>
+1982:                 <input type="text" class="qa-answer-input" placeholder="Ваш ответ..." data-qid="${q.id || idx}" />
+1983:             `;
+1984:             container.appendChild(wrap);
+1985:         });
+1986:         container.querySelectorAll('.qa-answer-input').forEach(inp => {
+1987:             inp.addEventListener('change', () => this.saveContractAnswers());
+1988:         });
+1989:     }
+1990: 
+1991:     saveContractAnswers() {
+1992:         const inputs = document.querySelectorAll('.qa-answer-input');
+1993:         const answers = {};
+1994:         inputs.forEach(inp => answers[inp.dataset.qid] = inp.value.trim());
+1995:         this.contractAnswers = answers;
+1996:         this.saveCache();
+1997:     }
+1998: 
+1999:     // ─── История ТЗ ──────────────────────────────────────────────────────
+2000:     async saveTaskSpecHistory(specText) {
+2001:         if (!specText?.trim()) return;
+2002:         const history = this.taskSpecHistory || [];
+2003:         history.unshift({ text: specText, timestamp: Date.now() });
+2004:         if (history.length > 20) history.pop();
+2005:         this.taskSpecHistory = history;
+2006:         try {
+2007:             if (window.Telegram?.WebApp?.CloudStorage) {
+2008:                 await new Promise((res, rej) => Telegram.WebApp.CloudStorage.setItem('task_spec_history', JSON.stringify(history), (err, ok) => err ? rej(err) : res(ok)));
+2009:             } else {
+2010:                 localStorage.setItem('task_spec_history', JSON.stringify(history));
+2011:             }
+2012:         } catch (e) { console.warn('[App] History save failed:', e); }
+2013:     }
+2014: 
+2015:     async loadTaskSpecHistory() {
+2016:         try {
+2017:             let raw = null;
+2018:             if (window.Telegram?.WebApp?.CloudStorage) {
+2019:                 raw = await new Promise((res, rej) => Telegram.WebApp.CloudStorage.getItem('task_spec_history', (err, val) => err ? rej(err) : res(val)));
+2020:             } else {
+2021:                 raw = localStorage.getItem('task_spec_history');
+2022:             }
+2023:             this.taskSpecHistory = raw ? JSON.parse(raw) : [];
+2024:         } catch (e) {
+2025:             this.taskSpecHistory = [];
+2026:         }
+2027:         this.renderTaskSpecHistory();
+2028:     }
 2029: 
-2030:         const payload = {
-2031:             task_spec: spec,
-2032:             contract_answers: answers,
-2033:             exported_at: new Date().toISOString(),
-2034:             user_id: telegram.getUserId?.() || 'unknown'
-2035:         };
-2036:         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-2037:         const url = URL.createObjectURL(blob);
-2038:         const a = document.createElement('a');
-2039:         a.href = url;
-2040:         a.download = `task_spec_${Date.now()}.json`;
-2041:         document.body.appendChild(a);
-2042:         a.click();
-2043:         a.remove();
-2044:         URL.revokeObjectURL(url);
-2045:         telegram.haptic('success');
-2046:     }
-2047: }
-2048: 
-2049: let app;
-2050: document.addEventListener('DOMContentLoaded', () => {
-2051:     window.app = new NeuroEscrowApp();
-2052:     app = window.app;
-2053: });
-2054: 
-2055: window.addEventListener('message', (event) => {
-2056:     if (event.data && event.data.type === 'bot_data' && app) {
-2057:         app.handleBotData(event.data.payload);
-2058:     }
-2059: });
+2030:     renderTaskSpecHistory() {
+2031:         const list = document.getElementById('task-history-list');
+2032:         if (!list) return;
+2033:         list.innerHTML = '';
+2034:         if (!this.taskSpecHistory?.length) {
+2035:             list.innerHTML = '<div class="history-empty">История пуста</div>';
+2036:             return;
+2037:         }
+2038:         this.taskSpecHistory.forEach((item, idx) => {
+2039:             const el = document.createElement('div');
+2040:             el.className = 'history-item';
+2041:             const time = new Date(item.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+2042:             el.innerHTML = `<span class="history-time">${time}</span><span class="history-text">${this.escapeHtml(item.text.slice(0, 60))}...</span>`;
+2043:             el.onclick = () => {
+2044:                 const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+2045:                 if (input) input.value = item.text;
+2046:                 telegram.haptic('light');
+2047:             };
+2048:             list.appendChild(el);
+2049:         });
+2050:     }
+2051: 
+2052:     // ─── Экспорт ТЗ ──────────────────────────────────────────────────────
+2053:     exportTaskSpec() {
+2054:         const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+2055:         const spec = input?.value?.trim() || '';
+2056:         const answers = this.contractAnswers || {};
+2057:         if (!spec && !Object.keys(answers).length) return telegram.showAlert('Нет данных для экспорта');
+2058: 
+2059:         const payload = {
+2060:             task_spec: spec,
+2061:             contract_answers: answers,
+2062:             exported_at: new Date().toISOString(),
+2063:             user_id: telegram.getUserId?.() || 'unknown'
+2064:         };
+2065:         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+2066:         const url = URL.createObjectURL(blob);
+2067:         const a = document.createElement('a');
+2068:         a.href = url;
+2069:         a.download = `task_spec_${Date.now()}.json`;
+2070:         document.body.appendChild(a);
+2071:         a.click();
+2072:         a.remove();
+2073:         URL.revokeObjectURL(url);
+2074:         telegram.haptic('success');
+2075:     }
+2076: }
+2077: 
+2078: let app;
+2079: document.addEventListener('DOMContentLoaded', () => {
+2080:     window.app = new NeuroEscrowApp();
+2081:     app = window.app;
+2082: });
+2083: 
+2084: window.addEventListener('message', (event) => {
+2085:     if (event.data && event.data.type === 'bot_data' && app) {
+2086:         app.handleBotData(event.data.payload);
+2087:     }
+2088: });
 </file>
 
 <file path="js/charts.js">

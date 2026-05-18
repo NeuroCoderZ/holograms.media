@@ -422,6 +422,20 @@ html, body {
     flex-shrink: 0;
 }
 
+/* Speak button */
+.speak-btn {
+    background: none;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    padding: 0 4px;
+    line-height: 1;
+}
+.speak-btn:hover { opacity: 1; }
+.speak-btn:active { transform: scale(0.9); }
+
 /* Typing indicator */
 .typing-indicator {
     display: flex;

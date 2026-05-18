@@ -1376,6 +1376,7 @@ class NeuroEscrowApp {
                     <button class="feedback-btn" onclick="app.submitFeedback(${idx}, 'down')">👎</button>
                 </div>
             ` : '';
+            const speakBtn = isHermesComplete ? `<button class="speak-btn" onclick="app.speakMessage(${idx})" title="Прослушать">🔊</button>` : '';
             const timeHtml = `<span class="msg-time">${this.formatTime(msg.timestamp)}</span>`;
             
             return `
@@ -1383,6 +1384,7 @@ class NeuroEscrowApp {
                 <div class="message-bubble${streamingClass}">
                     <div class="message-content">${this.renderMarkdown(msg.text)}</div>
                     <div class="message-footer">
+                        ${speakBtn}
                         ${feedbackHtml}
                         ${timeHtml}
                     </div>
@@ -1392,6 +1394,33 @@ class NeuroEscrowApp {
         }).join('');
 
         this.scrollToBottom();
+    }
+
+    speakMessage(idx) {
+        const msg = this.chatMessages[idx];
+        if (!msg || !window.speechSynthesis) return;
+
+        // Stop any current speech
+        window.speechSynthesis.cancel();
+
+        // Clean markdown for better TTS
+        const cleanText = msg.text
+            .replace(/[#*_~`]/g, '')
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+            .replace(/```[\s\S]*?```/g, 'код');
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'ru-RU';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+
+        // Try to find a Russian voice
+        const voices = window.speechSynthesis.getVoices();
+        const ruVoice = voices.find(v => v.lang.startsWith('ru'));
+        if (ruVoice) utterance.voice = ruVoice;
+
+        window.speechSynthesis.speak(utterance);
+        telegram.haptic('light');
     }
 
     scrollToBottom() {
