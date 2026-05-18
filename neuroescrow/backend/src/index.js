@@ -409,70 +409,40 @@ export default {
       }
 
       // ═══════════════════════════════════════════════════════════
-      // TTS — Edge Neural Voices (Microsoft, бесплатно)
+      // TTS — Hugging Face MMS TTS (Russian, бесплатно, нейронный)
       // ═══════════════════════════════════════════════════════════
       if (url.pathname === '/tts' && request.method === 'POST') {
         const data = await request.json();
-        const { text, lang = 'ru-RU', voice = 'ru-RU-SvetlanaNeural' } = data;
+        const { text, lang = 'ru' } = data;
 
-        if (!text || text.length > 3000) {
-          return new Response(JSON.stringify({ error: 'text required, max 3000 chars' }), {
+        if (!text || text.length > 2000) {
+          return new Response(JSON.stringify({ error: 'text required, max 2000 chars' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
 
         try {
-          // Получаем токен авторизации Edge TTS
-          const tokenUrl = 'https://edge.microsoft.com/translate/auth';
-          const tokenResp = await fetch(tokenUrl, {
-            method: 'GET',
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0'
-            }
-          });
-
-          if (!tokenResp.ok) {
-            throw new Error(`Failed to get Edge token: ${tokenResp.status}`);
-          }
-
-          const token = await tokenResp.text();
-
-          // Формируем SSML
-          const SSML = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'>
-            <voice name='${voice}'>
-              <prosody rate='0%' pitch='0%'>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</prosody>
-            </voice>
-          </speak>`;
-
-          // Отправляем запрос на синтез
-          const ttsUrl = 'https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1';
-          const requestId = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-            const r = Math.random() * 16 | 0;
-            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-          });
-
-          const resp = await fetch(`${ttsUrl}?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4`, {
+          // Facebook MMS TTS — нейронная модель, бесплатный Inference API
+          const resp = await fetch('https://api-inference.huggingface.co/models/facebook/mms-tts-rus', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/ssml+xml',
-              'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
-              'Authorization': `Bearer ${token}`,
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
-              'Origin': 'https://edge.microsoft.com'
+              'Content-Type': 'application/json',
+              'User-Agent': 'NeuroEscrow/1.0'
             },
-            body: SSML
+            body: JSON.stringify({ inputs: text.substring(0, 2000) })
           });
 
           if (!resp.ok) {
-            throw new Error(`Edge-TTS failed: ${resp.status} ${resp.statusText}`);
+            const errText = await resp.text().catch(() => '');
+            throw new Error(`MMS-TTS failed: ${resp.status} ${errText}`);
           }
 
           const audioBuffer = await resp.arrayBuffer();
           return new Response(audioBuffer, {
             headers: {
               ...corsHeaders,
-              'Content-Type': 'audio/mpeg',
+              'Content-Type': 'audio/wav',
               'Cache-Control': 'public, max-age=3600'
             }
           });

@@ -1231,62 +1231,57 @@ class NeuroEscrowApp {
 
     async loadCache() {
         try {
-            // Try Telegram CloudStorage first
+            // Try localStorage first (5-10MB limit, more reliable)
+            const localData = localStorage.getItem('neuroescrow_data');
+            if (localData) {
+                const parsed = JSON.parse(localData);
+                this.deals = parsed.deals || [];
+                this.balance = parsed.balance || 0;
+                this.chatMessages = parsed.chatMessages || [];
+                console.log('[App] Cache loaded from localStorage:', this.chatMessages.length, 'messages');
+            }
+
+            // Also try Telegram CloudStorage as backup
             const cached = await telegram.cloudGet('neuroescrow_data');
-            if (cached) {
+            if (cached && (!localData || cached.chatMessages?.length > this.chatMessages.length)) {
                 this.deals = cached.deals || [];
                 this.balance = cached.balance || 0;
                 this.chatMessages = cached.chatMessages || [];
                 console.log('[App] Cache loaded from Telegram Cloud:', this.chatMessages.length, 'messages');
-            } else {
-                // Fallback to localStorage
-                const localData = localStorage.getItem('neuroescrow_data');
-                if (localData) {
-                    const parsed = JSON.parse(localData);
-                    this.deals = parsed.deals || [];
-                    this.balance = parsed.balance || 0;
-                    this.chatMessages = parsed.chatMessages || [];
-                    console.log('[App] Cache loaded from localStorage:', this.chatMessages.length, 'messages');
-                }
             }
         } catch (e) {
             console.warn('[App] Cache load error:', e.message);
-            // Last resort: try localStorage
-            try {
-                const localData = localStorage.getItem('neuroescrow_data');
-                if (localData) {
-                    const parsed = JSON.parse(localData);
-                    this.chatMessages = parsed.chatMessages || [];
-                    console.log('[App] Fallback cache loaded from localStorage');
-                }
-            } catch (localErr) {
-                console.error('[App] localStorage also failed:', localErr.message);
-            }
         }
     }
 
     async saveCache() {
+        // Keep only last 50 messages to avoid storage limits
+        const maxMessages = 50;
+        const messagesToSave = this.chatMessages.length > maxMessages
+            ? this.chatMessages.slice(-maxMessages)
+            : this.chatMessages;
+
         const data = {
             deals: this.deals,
             balance: this.balance,
-            chatMessages: this.chatMessages,
+            chatMessages: messagesToSave,
             timestamp: Date.now()
         };
         
-        // Save to both Telegram CloudStorage and localStorage
+        // Primary: localStorage (5-10MB limit)
+        try {
+            localStorage.setItem('neuroescrow_data', JSON.stringify(data));
+            console.log('[App] Cache saved to localStorage:', messagesToSave.length, 'messages');
+        } catch (e) {
+            console.error('[App] localStorage save failed:', e.message);
+        }
+        
+        // Secondary: Telegram CloudStorage (4KB limit — may fail for large data)
         try {
             await telegram.cloudSet('neuroescrow_data', data);
             console.log('[App] Cache saved to Telegram Cloud');
         } catch (e) {
-            console.warn('[App] CloudStorage save failed, using localStorage:', e.message);
-        }
-        
-        // Always save to localStorage as backup
-        try {
-            localStorage.setItem('neuroescrow_data', JSON.stringify(data));
-            console.log('[App] Cache saved to localStorage');
-        } catch (e) {
-            console.error('[App] localStorage save failed:', e.message);
+            console.warn('[App] CloudStorage save skipped (limit):', e.message);
         }
     }
 
@@ -1498,9 +1493,9 @@ class NeuroEscrowApp {
             this.ttsAudio = null;
         }
 
-        // Try Edge-TTS via Worker first (neural voice)
+        // Try MMS TTS via Worker first (neural voice)
         try {
-            console.log('[TTS] Trying Edge-TTS via Worker:', cleanText.substring(0, 50) + '...');
+            console.log('[TTS] Trying MMS Neural TTS:', cleanText.substring(0, 50) + '...');
             const baseUrl = (window.Telegram?.WebApp?.initDataUnsafe?.web_app?.url)
                 ? new URL('/', window.Telegram.WebApp.initDataUnsafe.web_app.url).href
                 : 'https://neuroescrow-hermes.neurocoderz.workers.dev/';
@@ -1510,8 +1505,7 @@ class NeuroEscrowApp {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     text: cleanText,
-                    lang: 'ru-RU',
-                    voice: 'ru-RU-SvetlanaNeural'
+                    lang: 'ru'
                 })
             });
 
@@ -1547,7 +1541,7 @@ class NeuroEscrowApp {
             if (!autoPlay) telegram.haptic('light');
 
         } catch (error) {
-            console.warn('[TTS] Edge-TTS failed, using cloud voice:', error.message);
+            console.warn('[TTS] MMS Neural TTS failed, using cloud voice:', error.message);
             this.speakWithCloudVoice(idx, cleanText, autoPlay);
         }
     }
