@@ -1815,7 +1815,9 @@ class NeuroEscrowApp {
         specContent.textContent = 'Ожидание ТЗ от Гермеса...';
     }
 
-    // ─── Голосовой ввод ТЗ ───────────────────────────────────────────────
+    // ─── Голосовой ввод с автоотправкой (VAD — Voice Activity Detection) ──
+    // Best practice: silence-based auto-send after final result + 1.5s pause
+    // Source: Web Speech API patterns used by Otter.ai, AssemblyAI, Whisper
     initVoiceInput() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -1826,6 +1828,13 @@ class NeuroEscrowApp {
         this.recognition.lang = 'ru-RU';
         this.recognition.interimResults = true;
         this.recognition.continuous = true;
+        this.recognition.maxAlternatives = 1;
+
+        // Silence detection timer — auto-send after 1.5s of no new speech
+        this._voiceSendTimer = null;
+        this._voiceAutoSendDelay = 1500; // 1.5s silence = send
+        this._voiceLastResultTime = 0;
+        this._voiceAccumulatedText = '';
 
         this.recognition.onresult = (event) => {
             let interim = '';
@@ -1835,30 +1844,91 @@ class NeuroEscrowApp {
                 if (event.results[i].isFinal) final += transcript + ' ';
                 else interim += transcript;
             }
-            const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
+
+            const input = document.getElementById('chat-input');
             if (input) {
-                input.value = (this._voiceBaseText || '') + final + interim;
+                const baseText = this._voiceAccumulatedText || '';
+                input.value = baseText + final + interim;
+            }
+
+            // Reset silence timer on any new result
+            this._voiceLastResultTime = Date.now();
+
+            // If we got a final result, start/restart the auto-send timer
+            if (final.trim()) {
+                this._voiceAccumulatedText += final;
+                this._clearVoiceSendTimer();
+                this._voiceSendTimer = setTimeout(() => {
+                    this._autoSendVoice();
+                }, this._voiceAutoSendDelay);
             }
         };
 
-        this.recognition.onerror = (e) => console.warn('[App] Voice error:', e.error);
-        this.recognition.onend = () => {
-            this.isRecording = false;
-            const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
-            if (micBtn) micBtn.classList.remove('recording');
+        this.recognition.onerror = (e) => {
+            console.warn('[App] Voice error:', e.error);
+            // Auto-restart on non-fatal errors (no-speech, aborted)
+            if (this.isRecording && e.error !== 'not-allowed') {
+                try { this.recognition.start(); } catch { /* already started */ }
+            }
         };
+
+        this.recognition.onend = () => {
+            // Auto-restart if still in recording mode (continuous listening)
+            if (this.isRecording) {
+                try {
+                    this.recognition.start();
+                } catch {
+                    this.isRecording = false;
+                    this._clearVoiceSendTimer();
+                    const micBtn = document.getElementById('micButton');
+                    if (micBtn) micBtn.classList.remove('recording');
+                }
+            } else {
+                // User stopped — send any accumulated text
+                if (this._voiceAccumulatedText.trim()) {
+                    this._autoSendVoice();
+                }
+                this._clearVoiceSendTimer();
+                const micBtn = document.getElementById('micButton');
+                if (micBtn) micBtn.classList.remove('recording');
+            }
+        };
+    }
+
+    _clearVoiceSendTimer() {
+        if (this._voiceSendTimer) {
+            clearTimeout(this._voiceSendTimer);
+            this._voiceSendTimer = null;
+        }
+    }
+
+    _autoSendVoice() {
+        const input = document.getElementById('chat-input');
+        const text = (this._voiceAccumulatedText || '').trim();
+        if (!text) return;
+
+        // Clear accumulated text and timer
+        this._voiceAccumulatedText = '';
+        this._clearVoiceSendTimer();
+
+        // Update input and send
+        if (input) input.value = text;
+        this.sendTextMessage();
+
+        telegram.haptic('medium');
     }
 
     toggleVoiceRecording() {
         if (!this.recognition) return telegram.showAlert('Голосовой ввод не поддерживается');
-        const micBtn = document.getElementById('micButton') || document.querySelector('.left-mic-panel button');
+        const micBtn = document.getElementById('micButton');
         if (this.isRecording) {
+            // User tapped to stop — will trigger onend → auto-send
             this.recognition.stop();
             this.isRecording = false;
-            if (micBtn) micBtn.classList.remove('recording');
         } else {
-            const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
-            this._voiceBaseText = input ? input.value + ' ' : '';
+            const input = document.getElementById('chat-input');
+            this._voiceAccumulatedText = input ? input.value + ' ' : '';
+            this._voiceLastResultTime = Date.now();
             this.recognition.start();
             this.isRecording = true;
             if (micBtn) micBtn.classList.add('recording');
