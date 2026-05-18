@@ -24,8 +24,8 @@ class NeuroEscrowApp {
         
         // TTS (Text-to-Speech) — auto-read Hermes messages
         this.ttsEnabled = true;
-        this.ttsEngine = 'silero'; // silero, vits, google
-        this.ttsVoice = 'kseniya'; // silero: aidar/baya/kseniya/xenia/eugene, vits: woman/man
+        this.ttsEngine = 'silero'; // silero, google
+        this.ttsVoice = 'kseniya'; // silero: aidar/baya/kseniya/xenia/eugene
         this.ttsAudio = null;
         this.currentSpeakIdx = null;
         this.audioUnlocked = false;
@@ -264,10 +264,6 @@ class NeuroEscrowApp {
                                         <span class="tts-engine-name">Silero V5</span>
                                         <span class="tts-engine-badge">SOTA</span>
                                     </div>
-                                    <div class="tts-engine-item" onclick="app.setTTSEngine('vits')">
-                                        <span class="tts-engine-name">VITS Russian</span>
-                                        <span class="tts-engine-badge">HF</span>
-                                    </div>
                                     <div class="tts-engine-item" onclick="app.setTTSEngine('google')">
                                         <span class="tts-engine-name">Google Translate</span>
                                         <span class="tts-engine-badge">FAST</span>
@@ -275,7 +271,7 @@ class NeuroEscrowApp {
                                 </div>
                                 <div class="tts-menu-divider"></div>
                                 <div class="tts-menu-section">
-                                    <div class="tts-menu-label">Голос:</div>
+                                    <div class="tts-menu-label">Голос Silero:</div>
                                     <div class="tts-voice-item" onclick="app.setTTSVoice('kseniya')">Ксения (ж)</div>
                                     <div class="tts-voice-item" onclick="app.setTTSVoice('xenia')">Ксения 2 (ж)</div>
                                     <div class="tts-voice-item" onclick="app.setTTSVoice('aidar')">Айдар (м)</div>
@@ -1534,7 +1530,6 @@ class NeuroEscrowApp {
             // Voice selection based on engine
             const voiceMap = {
                 silero: this.ttsVoice || 'kseniya', // aidar, baya, kseniya, xenia, eugene
-                vits: this.ttsVoice || 'woman',     // woman, man
                 google: 'ru'                        // not used
             };
 
