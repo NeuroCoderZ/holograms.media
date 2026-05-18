@@ -550,15 +550,16 @@ async function handleSileroTTS(text, voice, corsHeaders) {
   console.log('[TTS] Silero START:', { textLen: text.length, voice });
   try {
     const sileroSpace = 'https://neurosenko-tts-silero.hf.space';
-    const speakerVoice = voice === 'male' ? 'aidar' : (voice === 'xenia' ? 'xenia' : 'xenia');
+    // App.py inputs: [text_input, text_type_input, speaker_input]
+    const speakerName = voice === 'male' ? 'aidar' : 'kseniya'; // kseniya, aidar, xenia
     
-    // Step 1: Queue prediction
+    // Step 1: Queue prediction via Gradio /call/predict
     console.log('[TTS] Silero Step 1: POST /call/predict');
-    const initResp = await fetch(`${sileroSpace}/call/predict`, {
+    const initResp = await fetch(`${sileroSpace}/call/generate_audio_by_text`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        data: [text.substring(0, 1000), speakerVoice, 1.0, 1.0]
+        data: [text.substring(0, 1000), 'Common', speakerName]
       })
     });
 
@@ -580,8 +581,8 @@ async function handleSileroTTS(text, voice, corsHeaders) {
     }
     
     // Step 2: Poll for result via SSE
-    console.log('[TTS] Silero Step 2: GET /call/predict/', event_id);
-    const streamResp = await fetch(`${sileroSpace}/call/predict/${event_id}`);
+    console.log('[TTS] Silero Step 2: GET /call/generate_audio_by_text/', event_id);
+    const streamResp = await fetch(`${sileroSpace}/call/generate_audio_by_text/${event_id}`);
     console.log('[TTS] Silero Step 2 response:', streamResp.status, streamResp.statusText);
     
     const reader = streamResp.body.getReader();
@@ -606,15 +607,21 @@ async function handleSileroTTS(text, voice, corsHeaders) {
         
         for (const line of lines) {
           eventCount++;
-          console.log(`[TTS] Silero SSE event #${eventCount}:`, line.substring(0, 100));
+          console.log(`[TTS] Silero SSE event #${eventCount}:`, line.substring(0, 150));
           
           if (line.startsWith('event: complete') || line.startsWith('event: completed')) {
             const dataIdx = lines.indexOf(line) + 1;
             if (dataIdx < lines.length && lines[dataIdx].startsWith('data:')) {
               const rawData = JSON.parse(lines[dataIdx].slice(5));
-              console.log('[TTS] Silero complete data:', JSON.stringify(rawData).substring(0, 300));
+              console.log('[TTS] Silero complete data:', JSON.stringify(rawData).substring(0, 500));
+              // Gradio Audio component returns: {path: "...", url: null, name: "..."}
               if (rawData && rawData.path) {
                 audioUrl = `${sileroSpace}/file=${rawData.path}`;
+              } else if (rawData && rawData.url) {
+                audioUrl = rawData.url;
+              } else if (Array.isArray(rawData) && rawData[0]) {
+                // Sometimes returns array [path, sample_rate]
+                audioUrl = `${sileroSpace}/file=${rawData[0]}`;
               }
             }
             break;
