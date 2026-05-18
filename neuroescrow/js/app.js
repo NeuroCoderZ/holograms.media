@@ -1460,11 +1460,26 @@ class NeuroEscrowApp {
             return;
         }
 
-        this.ttsUtterance.onend = () => { this.ttsUtterance = null; };
+        this.ttsUtterance.onend = () => { 
+            this.ttsUtterance = null; 
+            // Resume recognition after speaking
+            if (this.isRecording && this.recognition) {
+                try { this.recognition.start(); } catch {}
+            }
+        };
         this.ttsUtterance.onerror = (e) => { 
             console.error('[TTS] Error:', e); 
             this.ttsUtterance = null; 
+            // Resume recognition on error too
+            if (this.isRecording && this.recognition) {
+                try { this.recognition.start(); } catch {}
+            }
         };
+
+        // Pause recognition while speaking to prevent feedback loop
+        if (this.recognition && this.isRecording) {
+            try { this.recognition.stop(); } catch {}
+        }
 
         console.log('[TTS] Speaking:', cleanText.substring(0, 50) + '...');
         window.speechSynthesis.speak(this.ttsUtterance);
