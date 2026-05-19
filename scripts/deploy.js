@@ -98,6 +98,46 @@ try {
     process.exit(1);
 }
 
+// === TELEGRAM CACHE BUSTING AUTO-SYNC ===
+console.log('\n📡 Synchronizing Telegram Bot URLs (Cache Busting)...');
+const tgTokens = {
+    'MAIN': process.env.TELEGRAM_BOT_TOKEN,
+    'ESCROW': process.env.TELEGRAM_BOT_TOKEN_ESCROW
+};
+
+const tgUrls = {
+    'MAIN': 'https://dev.holograms.media/',
+    'ESCROW': 'https://dev.holograms.media/' // Поменяйте на URL нейроэскроу если он другой
+};
+
+for (const [key, token] of Object.entries(tgTokens)) {
+    if (token) {
+        try {
+            const botUrl = `${tgUrls[key]}?v=${newVersion}`;
+            console.log(`   📦 Updating ${key} Bot Menu URL to: ${botUrl}`);
+            
+            // Используем fetch через Node.js для вызова API Telegram
+            const cmd = `node -e "fetch('https://api.telegram.org/bot${token}/setChatMenuButton', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    menu_button: {
+                        type: 'web_app',
+                        text: 'Launch App',
+                        web_app: { url: '${botUrl}' }
+                    }
+                })
+            }).then(r => r.json()).then(console.log)"`;
+            
+            execSync(cmd, { stdio: 'inherit' });
+            console.log(`   ✅ ${key} Bot URL updated successfully.`);
+        } catch (tgError) {
+            console.warn(`   ⚠️  Failed to update Telegram ${key} Bot: ${tgError.message}`);
+        }
+    }
+}
+// ========================================
+
 // NeuroEscrow Hermes Deployment (всегда деплоим)
 console.log('\n🤖 Deploying NeuroEscrow Hermes...');
 try {
