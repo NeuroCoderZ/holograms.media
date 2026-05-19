@@ -37,21 +37,24 @@ async function main() {
     resourceObserver.observe({ type: 'resource', buffered: true });
 
     try {
-        // 1. Инициализация Auth — SKIP в TG (используем initData)
-        if (!isTelegram) {
+        // 1. Инициализация Auth — с поддержкой Telegram и Web fallback
+        console.log(`[Main] Initializing Auth for ${isTelegram ? 'Telegram' : 'Web'}...`);
+        try {
             await initAuth();
-        } else {
-            console.log('[Main] Skipping Google Auth in Telegram mode');
+            console.log("[Main] Auth initialized successfully.");
+        } catch (authError) {
+            console.warn("[Main] Auth initialization failed, continuing in guest mode:", authError);
         }
         loader.setProgress(15);
 
-        // 1.5. Инициализация MicrophoneManager — SKIP в TG (нет getUserMedia)
-        if (!isTelegram) {
+        // 1.5. Инициализация MicrophoneManager
+        // В TG WebView getUserMedia может быть недоступен или требовать разрешений
+        try {
             const audioContext = getAudioContext();
             microphoneManager = new MicrophoneManager(audioContext, state);
             console.log("[Main] MicrophoneManager initialized.");
-        } else {
-            console.log('[Main] Skipping MicrophoneManager in Telegram mode');
+        } catch (micError) {
+            console.warn("[Main] MicrophoneManager failed (possible in some WebViews):", micError);
         }
 
         // 2. Менеджер согласия

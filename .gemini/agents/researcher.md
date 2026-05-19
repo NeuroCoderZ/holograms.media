@@ -3,7 +3,8 @@ name: researcher
 description: Универсальный гибридный аналитик (Web + Codebase). Специалист по SOTA-решениям 2026 года.
 kind: local
 tools:
-  - google_search
+  - google_web_search
+  - web_fetch
   - read_file
   - grep_search
   - list_directory

@@ -204,46 +204,46 @@ export async function initAuth() {
       };
       console.log(`[Auth] TG user authenticated: ${initData.user.first_name} (ID: ${initData.user.id})`);
     } else {
-      console.warn('[Auth] TG initData not available');
+      console.warn('[Auth] TG initData not available, operating in guest mode');
       state.isAuthenticated = false;
     }
 
-    // Hide consent modal in TG (auto-accept)
+    // Авто-скрытие модалки в TG
     const modal = document.getElementById('start-session-modal');
     if (modal) modal.style.display = 'none';
 
     updateAuthUI();
-    return; // Skip Google GSI entirely
+    return; // Полный выход для TG, чтобы не трогать Google
   }
 
-  // WEB MODE: Google GSI
+  // WEB MODE: Google GSI с таймаутом
   try {
-    await loadGoogleGsiScript();
-    await initializeGoogleSignIn();
-    checkInitialAuthState();
+    const authPromise = (async () => {
+        await loadGoogleGsiScript();
+        await initializeGoogleSignIn();
+        await checkInitialAuthState();
+    })();
 
-    // Слушаем событие истечения сессии от NetHoloGlyphClient
+    // Если за 5 секунд Google не ответил — идем дальше в гостевом режиме
+    const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Auth Timeout')), 5000)
+    );
+
+    await Promise.race([authPromise, timeoutPromise]);
+
+    // Слушаем событие истечения сессии
     import('../core/eventBus.js').then(({ default: eventBus }) => {
       eventBus.on('netHoloGlyph:sessionExpired', (data) => {
         const btn = document.getElementById('login-google-btn');
         if (btn) {
           btn.classList.add('session-expired');
-          btn.title = data.message || 'Сессия истекла. Переавторизуйтесь через Google.';
-          // Убираем пульсацию после повторного входа
-          const observer = new MutationObserver(() => {
-            if (btn.classList.contains('authenticated')) {
-              btn.classList.remove('session-expired');
-              observer.disconnect();
-            }
-          });
-          observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
         }
-        showNotification(data.message || 'Сессия истекла. Переавторизуйтесь через Google.', 'warning');
+        showNotification(data.message || 'Сессия истекла.', 'warning');
       });
     });
   } catch (error) {
-    console.error('Не удалось загрузить или инициализировать Google GSI:', error);
-    showNotification('Не удалось загрузить сервис аутентификации.', 'error');
+    console.warn('[Auth] Google GSI initialization skipped or timed out:', error);
+    // Не выбрасываем ошибку дальше, чтобы не блокировать main.js
   }
 }
 
