@@ -79,6 +79,13 @@ koyeb-cli_*.zip
 
 reports/
 
-# OpenCode (contains API keys)
+# OpenCode & Session Exports
 opencode.json
 .aider*
+*session*.json
+*history*.txt
+extract_chat.py
+repomix-output.*
+neuroescrow/repomix-output.md
+chat_history.txt
+chat_clean.txt

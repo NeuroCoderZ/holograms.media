@@ -7,5 +7,9 @@ conductor/
 tmp/
 reports/
 *.log
+*session*.json
+*history*.txt
+repomix-output.*
+extract_chat.py
 .DS_Store
 Thumbs.db
