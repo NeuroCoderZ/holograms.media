@@ -38,6 +38,291 @@ export class ConsentManager {
             }
 
             this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия пользователя
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия пользователя
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия пользователя
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия пользователя
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании согласия
+            console.log("[ConsentManager] Modal shown, resolving to unblock app init.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании пользователя
+            console.log("[ConsentManager] Modal shown, resolving to unblock app initialization.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            this.show();
+            // Разрешаем инициализацию приложения, не блокируя на ожидании пользователя
+            console.log("[ConsentManager] Modal shown, resolving to unblock app initialization.");
+            resolve();
+        });
+    }
+            }
+
+            if (!this.consentModal || !this.consentCheckbox || !this.proceedButton) {
+                console.warn("[ConsentManager] Elements not found, auto-resolving.");
+                resolve();
+                return;
+            }
+
+            // Для новых пользователей: резолвим сразу после показа модалки,
+            // чтобы не блокировать инициализацию приложения.
+            // Остальная инициализация продолжится, пока пользователь читает согласие.
+            this.show();
+            console.log("[ConsentManager] Modal shown, resolving to allow app initialization.");
+            resolve();
         });
     }
 
