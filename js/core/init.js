@@ -224,14 +224,51 @@ import { TriaOrchestrator } from './TriaOrchestrator.js';
 import { HermaionBridge } from '../tria/HermaionBridge.js';
 import VersionTimelinePanel from '../ui/VersionTimelinePanel.js';
 
-export async function initCore() {
-  console.log('🚀 Инициализация ядра приложения...');
+export async function initCore(options = {}) {
+  const { telegramMode = false } = options;
+  console.log('🚀 Инициализация ядра приложения...', telegramMode ? '(Telegram mode)' : '');
 
   try {
+    // TELEGRAM MODE: skip WebGL/WebGPU/MediaPipe heavy init
+    if (telegramMode) {
+      console.log('[Core] TG mode — skipping 3D scene, WebGPU, MediaPipe');
+      // Минимальная инициализация для TG
+      state.renderer = null;
+      state.scene = null;
+      state.camera = null;
+      return state;
+    }
+
+    // WEB MODE: full init
     // Проверяем поддержку WebGL
     const webglCheck = window.checkWebGLSupport();
     if (!webglCheck.supported) {
       throw new Error(`WebGL не поддерживается: ${webglCheck.error}`);
+    }
+
+    const sceneInitialized = await initializeScene(state);
+
+    if (!sceneInitialized) {
+      throw new Error('Scene setup failed (WebGL context error likely)');
+    }
+
+    // This should be AFTER initializeScene(state) and its related check
+    if (!state.renderer) {
+      throw new Error('CRITICAL CHECK FAILED: state.renderer is null after initializeScene');
+    }
+
+    console.log('✅ Three.js сцена и рендерер успешно инициализированы');
+
+    // Инициализируем HoloEngine (WebGPU) — полный рендеринг голограммы
+    // Столбцы + сетки + оси + сферы — всё на нашем движке, без Three.js
+    try {
+      const { hologramWebGPU } = await import('../engine/HologramWebGPU.js?v=444');
+      state.holoEngine = hologramWebGPU;
+      await hologramWebGPU.init();
+      console.log('✅ HoloEngine (WebGPU) инициализирован');
+    } catch (error) {
+      console.error('❌ HoloEngine (WebGPU) ошибка:', error.message);
+      console.warn('⚠️ Голограмма может не отображаться');
     }
 
     const sceneInitialized = await initializeScene(state);
@@ -526,19 +563,24 @@ export async function initCore() {
 
       console.log('✅ AI+Web3 Data Pipeline (Stage 2) active');
 
-      // --- Stage 3: P2P Collective Sync (Takt 1) ---
-      const TriaCollectiveService = (await import('../tria/TriaCollectiveService.js')).default;
-      state.collective = new TriaCollectiveService();
-      
-      // WebSocket signaling - room_id это НЕ чат-рум, а WebRTC signaling room
-      // room_id нужен для P2P соединения между пользователями
-      // Примечание: Koyeb не поддерживает долгие WebSocket соединения - ошибка 1006
-      const signalingUrl = state.config?.signalingUrl || 'wss://dev.holograms.media/ws/signaling/default_room';
-      
-      // Тест: пробуем без room_id
-      const testUrl = 'wss://dev.holograms.media/ws/signaling';
-      console.log('[TriaCollective] Testing WebSocket connection to:', testUrl);
-      await state.collective.connect(testUrl);
+      // --- Stage 3: P2P Collective Sync (Takt 1) — SKIP в TG ---
+      if (!telegramMode) {
+        const TriaCollectiveService = (await import('../tria/TriaCollectiveService.js')).default;
+        state.collective = new TriaCollectiveService();
+        
+        // WebSocket signaling - room_id это НЕ чат-рум, а WebRTC signaling room
+        // room_id нужен для P2P соединения между пользователями
+        // Примечание: Koyeb не поддерживает долгие WebSocket соединения - ошибка 1006
+        const signalingUrl = state.config?.signalingUrl || 'wss://dev.holograms.media/ws/signaling/default_room';
+        
+        // Тест: пробуем без room_id
+        const testUrl = 'wss://dev.holograms.media/ws/signaling';
+        console.log('[TriaCollective] Testing WebSocket connection to:', testUrl);
+        await state.collective.connect(testUrl);
+      } else {
+        console.log('[Core] TG mode — skipping P2P Collective');
+        state.collective = null;
+      }
 
       state.lastSoma = null; // Буфер между тактами
 
@@ -847,20 +889,24 @@ export async function initCore() {
     state.audioFilePlayerInstance.initializeAudioPlayerControls();
     console.log('✅ Обработчики аудио плеера инициализированы');
 
-    // --- MediaPipe Hands Initialization ---
-    try {
-      const { initializeMediaPipeHands, startVideoStream } = await import('../multimodal/handsTracking.js');
-      initializeMediaPipeHands();
+    // --- MediaPipe Hands Initialization — SKIP в TG (нет getUserMedia) ---
+    if (!telegramMode) {
+      try {
+        const { initializeMediaPipeHands, startVideoStream } = await import('../multimodal/handsTracking.js');
+        initializeMediaPipeHands();
 
-      if (state.multimodal.videoElementForHands && state.multimodal.handsInstance) {
-        await startVideoStream(state.multimodal.videoElementForHands, state.multimodal.handsInstance);
-        console.log('✅ MediaPipe HandTracking started successfully.');
-      } else {
-        console.warn('⚠️ MediaPipe initialized but videoElement or handsInstance is missing.');
+        if (state.multimodal.videoElementForHands && state.multimodal.handsInstance) {
+          await startVideoStream(state.multimodal.videoElementForHands, state.multimodal.handsInstance);
+          console.log('✅ MediaPipe HandTracking started successfully.');
+        } else {
+          console.warn('⚠️ MediaPipe initialized but videoElement or handsInstance is missing.');
+        }
+
+      } catch (mpError) {
+        console.error('❌ Failed to initialize MediaPipe Hands:', mpError);
       }
-
-    } catch (mpError) {
-      console.error('❌ Failed to initialize MediaPipe Hands:', mpError);
+    } else {
+      console.log('[Core] TG mode — skipping MediaPipe Hands');
     }
     // --------------------------------------
 

@@ -7,8 +7,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.554");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.555");</script>
   <!-- DEPLOY_VERSION_END -->
+  <!-- Telegram Mini Apps SDK — MUST load before any app scripts -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    // Early Telegram WebApp initialization
+    (function() {
+      if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        // Apply TG theme
+        if (tg.themeParams) {
+          document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#121212');
+          document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#ffffff');
+          document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#aaaaaa');
+          document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#2678b6');
+          document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2678b6');
+          document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+        }
+        window.__IS_TELEGRAM__ = true;
+        console.log('[TG] WebApp initialized, platform:', tg.platform);
+      } else {
+        window.__IS_TELEGRAM__ = false;
+      }
+    })();
+  </script>
   <script>
     // Глобальная функция-спасатель для кнопки "Принимаю"
     window.syncConsent = function () {
@@ -18,7 +43,7 @@
       const cb = document.getElementById('consent-checkbox');
       const btn = document.getElementById('start-session-button');
       const google = document.getElementById('google-signin-container');
-      const isGiven = localStorage.getItem('userConsentGiven') === 'true';
+      const isGiven = (window.storageManager || localStorage).getItem?.('userConsentGiven') === 'true' || localStorage.getItem('userConsentGiven') === 'true';
 
       // Если согласие уже есть, чистим UI
       if (isGiven) {
@@ -110,7 +135,7 @@
   </script>
 
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://accounts.google.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: https://*.googleusercontent.com https://accounts.google.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; connect-src 'self' https://holograms.media https://dev.holograms.media https://*.koyeb.app wss://*.koyeb.app wss://holograms.media wss://www.holograms.media https://*.workers.dev wss://*.workers.dev ws://localhost:* http://localhost:* https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://accounts.google.com https://api.github.com blob: data:; frame-src 'self' https://accounts.google.com;">
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://accounts.google.com https://static.cloudflareinsights.com https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: https://*.googleusercontent.com https://accounts.google.com https://telegram.org; worker-src 'self' blob: https://cdnjs.cloudflare.com; connect-src 'self' https://holograms.media https://dev.holograms.media https://*.koyeb.app wss://*.koyeb.app wss://holograms.media wss://www.holograms.media https://*.workers.dev wss://*.workers.dev ws://localhost:* http://localhost:* https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://accounts.google.com https://api.github.com blob: data: https://telegram.org; frame-src 'self' https://accounts.google.com;">
 
 
   <!-- MediaPipe Libraries -->

@@ -19,7 +19,10 @@ export let microphoneManager = null;
  */
 async function main() {
     console.log("Holograms.media: Main execution started.");
-    
+
+    const isTelegram = !!(window.Telegram && window.Telegram.WebApp);
+    console.log(`[Main] Platform: ${isTelegram ? 'Telegram Mini App' : 'Web'}`);
+
     // 0. Динамический лоадер
     const loader = new EyeLoader();
     loader.start();
@@ -34,14 +37,22 @@ async function main() {
     resourceObserver.observe({ type: 'resource', buffered: true });
 
     try {
-        // 1. Инициализация Auth
-        await initAuth();
+        // 1. Инициализация Auth — SKIP в TG (используем initData)
+        if (!isTelegram) {
+            await initAuth();
+        } else {
+            console.log('[Main] Skipping Google Auth in Telegram mode');
+        }
         loader.setProgress(15);
 
-        // 1.5. Инициализация MicrophoneManager
-        const audioContext = getAudioContext();
-        microphoneManager = new MicrophoneManager(audioContext, state);
-        console.log("[Main] MicrophoneManager initialized.");
+        // 1.5. Инициализация MicrophoneManager — SKIP в TG (нет getUserMedia)
+        if (!isTelegram) {
+            const audioContext = getAudioContext();
+            microphoneManager = new MicrophoneManager(audioContext, state);
+            console.log("[Main] MicrophoneManager initialized.");
+        } else {
+            console.log('[Main] Skipping MicrophoneManager in Telegram mode');
+        }
 
         // 2. Менеджер согласия
         const consentManager = new ConsentManager(state);
@@ -49,8 +60,8 @@ async function main() {
         await consentManager.initialize();
         loader.setProgress(35);
 
-        // 3. Core (3D, Рендерер)
-        await initCore();
+        // 3. Core (3D, Рендерер) — с TG-aware флагами
+        await initCore({ telegramMode: isTelegram });
         loader.setProgress(65);
 
         // 4. UI
@@ -58,11 +69,15 @@ async function main() {
         loader.setProgress(85);
 
         // 5. Полный запуск
-        await startFullApplication(state, loader);
+        await startFullApplication(state, loader, isTelegram);
         loader.setProgress(100);
 
     } catch (error) {
         console.error("A critical error occurred during the application startup:", error);
+        // Показываем ошибку в лоадере вместо зависания
+        if (loader && typeof loader.showError === 'function') {
+            loader.showError(error.message);
+        }
     } finally {
         // Observer остается жить до конца загрузки
         setTimeout(() => resourceObserver.disconnect(), 5000);
@@ -88,20 +103,25 @@ function setupReloadPrank() {
 /**
  * Запускает полную инициализацию.
  */
-async function startFullApplication(appState, loader) {
-    console.log("Starting full application initialization...");
+async function startFullApplication(appState, loader, isTelegram = false) {
+    console.log("Starting full application initialization...", isTelegram ? '(Telegram mode)' : '');
     try {
         const platform = detectPlatform();
         appState.platform = platform;
 
-        const { default: Layout } = await import(`./platforms/${platform}/${platform}Layout.js`);
-        const { default: Input } = await import(`./platforms/${platform}/${platform}Input.js`);
+        // В TG mode — скипаем 3D layout/input, используем упрощённый UI
+        if (!isTelegram) {
+            const { default: Layout } = await import(`./platforms/${platform}/${platform}Layout.js`);
+            const { default: Input } = await import(`./platforms/${platform}/${platform}Input.js`);
 
-        const layoutManager = new Layout(appState);
-        layoutManager.initialize();
+            const layoutManager = new Layout(appState);
+            layoutManager.initialize();
 
-        const inputManager = new Input(appState);
-        inputManager.initialize();
+            const inputManager = new Input(appState);
+            inputManager.initialize();
+        } else {
+            console.log('[Main] TG mode — skipping 3D layout/input');
+        }
 
         try { gestureIntentClient.connect(); } catch (e) {}
 

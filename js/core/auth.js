@@ -6,6 +6,7 @@
  */
 
 import { state } from './init.js';
+import { storage } from './storageManager.js';
 import { updateAuthUI } from '../ui/uiManager.js';
 import { showNotification } from '../utils/notifications.js';
 
@@ -69,7 +70,7 @@ async function handleGoogleCredentialResponse(response) {
     const responseData = await backendResponse.json();
     console.log('Получен JWT от бэкенда.');
 
-    localStorage.setItem('jwtToken', responseData.access_token);
+    storage.setItem('jwtToken', responseData.access_token);
     state.isAuthenticated = true;
 
     // Сохраняем информацию о пользователе из ответа бэкенда
@@ -128,7 +129,7 @@ async function initializeGoogleSignIn() {
  * Проверяет наличие JWT в localStorage при загрузке страницы.
  */
 async function checkInitialAuthState() {
-  const token = localStorage.getItem('jwtToken');
+  const token = storage.getItem('jwtToken');
   if (token) {
     try {
       // Проверяем валидность токена через запрос "кто я?"
@@ -149,7 +150,7 @@ async function checkInitialAuthState() {
         if (modal) modal.style.display = 'none';
       } else {
         console.warn('[Auth] Токен невалиден или протух.');
-        localStorage.removeItem('jwtToken');
+        storage.removeItem('jwtToken');
         state.isAuthenticated = false;
       }
     } catch (error) {
@@ -168,7 +169,7 @@ async function checkInitialAuthState() {
  * Выполняет выход пользователя из системы.
  */
 export function signOut() {
-  localStorage.removeItem('jwtToken');
+  storage.removeItem('jwtToken');
   state.isAuthenticated = false;
   state.user = null;
 
@@ -185,6 +186,37 @@ export function signOut() {
  * Главная функция инициализации модуля аутентификации.
  */
 export async function initAuth() {
+  const isTelegram = !!(window.Telegram && window.Telegram.WebApp);
+
+  // TELEGRAM MODE: use initData instead of Google GSI
+  if (isTelegram) {
+    console.log('[Auth] Telegram mode — using initData for auth');
+    const tg = window.Telegram.WebApp;
+    const initData = tg.initDataUnsafe;
+
+    if (initData && initData.user) {
+      state.isAuthenticated = true;
+      state.user = {
+        id: initData.user.id,
+        first_name: initData.user.first_name,
+        username: initData.user.username,
+        platform: 'telegram'
+      };
+      console.log(`[Auth] TG user authenticated: ${initData.user.first_name} (ID: ${initData.user.id})`);
+    } else {
+      console.warn('[Auth] TG initData not available');
+      state.isAuthenticated = false;
+    }
+
+    // Hide consent modal in TG (auto-accept)
+    const modal = document.getElementById('start-session-modal');
+    if (modal) modal.style.display = 'none';
+
+    updateAuthUI();
+    return; // Skip Google GSI entirely
+  }
+
+  // WEB MODE: Google GSI
   try {
     await loadGoogleGsiScript();
     await initializeGoogleSignIn();

@@ -1,5 +1,7 @@
 // frontend/js/core/consentManager.js
 
+import { storage } from './storageManager.js';
+
 export class ConsentManager {
     constructor(state) {
         this.state = state;
@@ -10,6 +12,14 @@ export class ConsentManager {
         this.googleContainer = document.getElementById('google-signin-container');
         this._resolveInit = null;
 
+        // TELEGRAM MODE: auto-accept consent, hide modal
+        if (window.Telegram && window.Telegram.WebApp) {
+            console.log('[ConsentManager] TG mode — auto-accepting consent');
+            localStorage.setItem('userConsentGiven', 'true');
+            if (this.consentModal) this.consentModal.style.display = 'none';
+            return;
+        }
+
         // Инициализируем обработчики сразу
         this._setupHandlers();
     }
@@ -19,7 +29,7 @@ export class ConsentManager {
         return new Promise((resolve) => {
             this._resolveInit = resolve;
 
-            const isGiven = localStorage.getItem('userConsentGiven') === 'true';
+            const isGiven = storage.getItem('userConsentGiven') === 'true';
 
             if (isGiven) {
                 this._hideControlUI();
@@ -354,7 +364,7 @@ export class ConsentManager {
             this.proceedButton.addEventListener('click', (e) => {
                 if (e) e.preventDefault();
                 if (this.consentCheckbox && this.consentCheckbox.checked) {
-                    localStorage.setItem('userConsentGiven', 'true');
+                    storage.setItem('userConsentGiven', 'true');
                     console.log("[ConsentManager] Terms accepted.");
                     this._hideControlUI();
 
@@ -371,7 +381,7 @@ export class ConsentManager {
         if (!this.consentCheckbox || !this.proceedButton) return;
 
         const isChecked = !!this.consentCheckbox.checked;
-        const isGiven = localStorage.getItem('userConsentGiven') === 'true';
+        const isGiven = storage.getItem('userConsentGiven') === 'true';
         const active = isChecked || isGiven;
 
         this.proceedButton.disabled = !isChecked;
