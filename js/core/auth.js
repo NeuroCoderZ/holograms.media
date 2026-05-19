@@ -188,62 +188,60 @@ export function signOut() {
 export async function initAuth() {
   const isTelegram = !!(window.Telegram && window.Telegram.WebApp);
 
-  // TELEGRAM MODE: use initData instead of Google GSI
+  // 1. СТРОГАЯ ИЗОЛЯЦИЯ TELEGRAM
   if (isTelegram) {
-    console.log('[Auth] Telegram mode — using initData for auth');
+    console.log('[Auth] Telegram mode detected. Initializing via WebApp...');
     const tg = window.Telegram.WebApp;
-    const initData = tg.initDataUnsafe;
+    
+    // Telegram предоставляет данные сразу, не нужно ждать загрузки внешних скриптов
+    try {
+      const initData = tg.initDataUnsafe;
+      if (initData && initData.user) {
+        state.isAuthenticated = true;
+        state.user = {
+          id: initData.user.id,
+          first_name: initData.user.first_name,
+          last_name: initData.user.last_name,
+          username: initData.user.username,
+          platform: 'telegram'
+        };
+        console.log(`[Auth] TG User identified: ${state.user.first_name}`);
+      } else {
+        console.warn('[Auth] Running in Telegram but no user data found (is it a direct link?)');
+      }
 
-    if (initData && initData.user) {
-      state.isAuthenticated = true;
-      state.user = {
-        id: initData.user.id,
-        first_name: initData.user.first_name,
-        username: initData.user.username,
-        platform: 'telegram'
-      };
-      console.log(`[Auth] TG user authenticated: ${initData.user.first_name} (ID: ${initData.user.id})`);
-    } else {
-      console.warn('[Auth] TG initData not available, operating in guest mode');
-      state.isAuthenticated = false;
+      // В TG скрываем модалку согласия/входа сразу
+      const modal = document.getElementById('start-session-modal');
+      if (modal) modal.style.display = 'none';
+
+      updateAuthUI();
+    } catch (e) {
+      console.error('[Auth] Error parsing Telegram initData:', e);
     }
-
-    // Авто-скрытие модалки в TG
-    const modal = document.getElementById('start-session-modal');
-    if (modal) modal.style.display = 'none';
-
-    updateAuthUI();
-    return; // Полный выход для TG, чтобы не трогать Google
+    
+    // ВАЖНО: Возвращаем resolve немедленно, не переходя к коду Google ниже
+    return;
   }
 
-  // WEB MODE: Google GSI с таймаутом
+  // 2. WEB MODE: Загрузка Google Identity Services
+  console.log('[Auth] Web mode detected. Loading Google GSI...');
   try {
-    const authPromise = (async () => {
-        await loadGoogleGsiScript();
-        await initializeGoogleSignIn();
-        await checkInitialAuthState();
-    })();
-
-    // Если за 5 секунд Google не ответил — идем дальше в гостевом режиме
-    const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Auth Timeout')), 5000)
+    // Добавляем защитный таймаут, чтобы даже в вебе Google не вешал приложение
+    const timeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Google GSI Timeout')), 5000)
     );
 
-    await Promise.race([authPromise, timeoutPromise]);
+    const loadTask = (async () => {
+      await loadGoogleGsiScript();
+      if (window.google) {
+        await initializeGoogleSignIn();
+        await checkInitialAuthState();
+      }
+    })();
 
-    // Слушаем событие истечения сессии
-    import('../core/eventBus.js').then(({ default: eventBus }) => {
-      eventBus.on('netHoloGlyph:sessionExpired', (data) => {
-        const btn = document.getElementById('login-google-btn');
-        if (btn) {
-          btn.classList.add('session-expired');
-        }
-        showNotification(data.message || 'Сессия истекла.', 'warning');
-      });
-    });
+    await Promise.race([loadTask, timeout]);
   } catch (error) {
-    console.warn('[Auth] Google GSI initialization skipped or timed out:', error);
-    // Не выбрасываем ошибку дальше, чтобы не блокировать main.js
+    console.warn('[Auth] Web Auth (Google) failed or timed out. Continuing in Guest mode.', error.message);
   }
 }
 
