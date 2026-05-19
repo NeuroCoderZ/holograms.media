@@ -52,19 +52,26 @@ class NeuroEscrowApp {
         if (window.Telegram?.WebApp) {
             const tg = window.Telegram.WebApp;
             tg.ready();
+            
+            // Force expand immediately
             tg.expand();
 
             // Bot API 8.0+: requestFullscreen for desktop/immersive
+            // Must be called after user interaction or ready state
             if (typeof tg.requestFullscreen === 'function') {
                 try {
-                    const fsResult = tg.requestFullscreen();
-                    if (fsResult && typeof fsResult.catch === 'function') {
-                        fsResult.catch(() => {
-                            // Already expanded via tg.expand() above
-                        });
-                    }
+                    // Delay slightly to ensure UI is ready
+                    setTimeout(async () => {
+                        try {
+                            await tg.requestFullscreen();
+                            console.log('[TG] Fullscreen requested successfully');
+                        } catch (e) {
+                            console.warn('[TG] requestFullscreen failed, fallback to expand:', e);
+                            tg.expand();
+                        }
+                    }, 500);
                 } catch (e) {
-                    // requestFullscreen failed — already expanded
+                    console.warn('[TG] requestFullscreen setup failed:', e);
                 }
             }
 
@@ -86,6 +93,10 @@ class NeuroEscrowApp {
             tg.onEvent('safeAreaChanged', () => this.applySafeAreaInsets());
             tg.onEvent('contentSafeAreaChanged', () => this.applySafeAreaInsets());
         }
+        
+        // Handle storage access errors gracefully (Tracking Prevention)
+        this.initStorageWithFallback();
+        
         this.userData = telegram.getUser();
         this.updateHeader();
         this.updateTTSButton();
@@ -541,8 +552,46 @@ class NeuroEscrowApp {
             if (window.Telegram?.WebApp?.CloudStorage) {
                 Telegram.WebApp.CloudStorage.setItem('neuroescrow_contract', data, () => {});
             } else {
-                localStorage.setItem('neuroescrow_contract', data);
+                try {
+                    localStorage.setItem('neuroescrow_contract', data);
+                } catch (e) {
+                    if (window._localStorageFallback) {
+                        window._localStorageFallback.setItem('neuroescrow_contract', data);
+                    }
+                }
             }
+        } catch (e) {
+            console.warn('[Contract] Save failed:', e);
+        }
+    }
+
+    loadContractState() {
+        try {
+            let raw = null;
+            if (window.Telegram?.WebApp?.CloudStorage) {
+                raw = new Promise((res, rej) => 
+                    Telegram.WebApp.CloudStorage.getItem('neuroescrow_contract', (err, val) => err ? rej(err) : res(val))
+                );
+            } else {
+                try {
+                    raw = localStorage.getItem('neuroescrow_contract');
+                } catch (e) {
+                    if (window._localStorageFallback) {
+                        raw = window._localStorageFallback.getItem('neuroescrow_contract');
+                    }
+                }
+            }
+            if (raw) {
+                const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                if (data && data.fields) {
+                    this.smartContract = { ...this.smartContract, ...data };
+                }
+            }
+        } catch (e) {
+            console.warn('[Contract] Load failed:', e);
+        }
+        this.renderContractPanel();
+    }
         } catch (e) {
             console.warn('[Contract] Save failed:', e);
         }
@@ -1253,7 +1302,16 @@ class NeuroEscrowApp {
     async loadCache() {
         try {
             // Try localStorage first (5-10MB limit, more reliable)
-            const localData = localStorage.getItem('neuroescrow_data');
+            let localData = null;
+            try {
+                localData = localStorage.getItem('neuroescrow_data');
+            } catch (e) {
+                // Fallback to memory store
+                if (window._localStorageFallback) {
+                    localData = window._localStorageFallback.getItem('neuroescrow_data');
+                }
+            }
+            
             if (localData) {
                 const parsed = JSON.parse(localData);
                 this.deals = parsed.deals || [];
@@ -1294,7 +1352,11 @@ class NeuroEscrowApp {
             localStorage.setItem('neuroescrow_data', JSON.stringify(data));
             console.log('[App] Cache saved to localStorage:', messagesToSave.length, 'messages');
         } catch (e) {
-            console.error('[App] localStorage save failed:', e.message);
+            console.warn('[App] localStorage save failed, using fallback:', e.message);
+            // Fallback to memory store
+            if (window._localStorageFallback) {
+                window._localStorageFallback.setItem('neuroescrow_data', JSON.stringify(data));
+            }
         }
         
         // Secondary: Telegram CloudStorage (4KB limit — may fail for large data)
@@ -2321,7 +2383,13 @@ class NeuroEscrowApp {
             if (window.Telegram?.WebApp?.CloudStorage) {
                 await new Promise((res, rej) => Telegram.WebApp.CloudStorage.setItem('task_spec_history', JSON.stringify(history), (err, ok) => err ? rej(err) : res(ok)));
             } else {
-                localStorage.setItem('task_spec_history', JSON.stringify(history));
+                try {
+                    localStorage.setItem('task_spec_history', JSON.stringify(history));
+                } catch (e) {
+                    if (window._localStorageFallback) {
+                        window._localStorageFallback.setItem('task_spec_history', JSON.stringify(history));
+                    }
+                }
             }
         } catch (e) { console.warn('[App] History save failed:', e); }
     }
@@ -2332,7 +2400,13 @@ class NeuroEscrowApp {
             if (window.Telegram?.WebApp?.CloudStorage) {
                 raw = await new Promise((res, rej) => Telegram.WebApp.CloudStorage.getItem('task_spec_history', (err, val) => err ? rej(err) : res(val)));
             } else {
-                raw = localStorage.getItem('task_spec_history');
+                try {
+                    raw = localStorage.getItem('task_spec_history');
+                } catch (e) {
+                    if (window._localStorageFallback) {
+                        raw = window._localStorageFallback.getItem('task_spec_history');
+                    }
+                }
             }
             this.taskSpecHistory = raw ? JSON.parse(raw) : [];
         } catch (e) {
@@ -2364,6 +2438,43 @@ class NeuroEscrowApp {
     }
 
     // ─── Экспорт ТЗ ──────────────────────────────────────────────────────
+    // ─── Graceful storage fallback (Tracking Prevention) ─────────────────
+    initStorageWithFallback() {
+        // Test if localStorage is accessible
+        try {
+            const testKey = '__storage_test__';
+            localStorage.setItem(testKey, '1');
+            localStorage.removeItem(testKey);
+            console.log('[Storage] localStorage accessible');
+        } catch (e) {
+            console.warn('[Storage] localStorage blocked by Tracking Prevention, using memory fallback');
+            // Override localStorage with in-memory fallback
+            const memoryStore = {};
+            window._localStorageFallback = {
+                getItem: (key) => memoryStore[key] || null,
+                setItem: (key, val) => { memoryStore[key] = String(val); },
+                removeItem: (key) => { delete memoryStore[key]; },
+                clear: () => { Object.keys(memoryStore).forEach(k => delete memoryStore[k]); }
+            };
+        }
+
+        // Test if Telegram CloudStorage is accessible
+        if (window.Telegram?.WebApp?.CloudStorage) {
+            try {
+                Telegram.WebApp.CloudStorage.setItem('__test__', '1', (err) => {
+                    if (err) {
+                        console.warn('[Storage] CloudStorage blocked:', err);
+                    } else {
+                        Telegram.WebApp.CloudStorage.removeItem('__test__');
+                        console.log('[Storage] CloudStorage accessible');
+                    }
+                });
+            } catch (e) {
+                console.warn('[Storage] CloudStorage access failed:', e);
+            }
+        }
+    }
+
     exportTaskSpec() {
         const input = document.getElementById('task-spec-input') || document.getElementById('chat-input');
         const spec = input?.value?.trim() || '';

@@ -11,6 +11,8 @@
  * Source: Code Arena WebDev Rankings (May 14, 2026)
  */
 
+import { IntelDensityEvaluator } from './intel_density_evaluator.js';
+
 // ═══════════════════════════════════════════════════════════
 // LLM POOL — актуальный рейтинг Code Arena WebDev
 // ═══════════════════════════════════════════════════════════
@@ -796,11 +798,13 @@ export class HermesRouter {
     this.intentRouter = new IntentRouter(env?.MISTRAL_API_KEY);
     this.dispatch = new MultiLLMDispatch(this.apiKeys);
     this.aggregator = new ResponseAggregator();
+    this.intelDensityEvaluator = new IntelDensityEvaluator(); // Модуль оценки интеллектуальной плотности
 
     // Stats
     this.totalRequests = 0;
     this.totalCostUSD = 0;
     this.totalTokens = 0;
+    this.totalNeuroMinted = 0; // Всего начислено $NEURO
   }
 
   async processRequest(message, contractState = {}) {
@@ -926,8 +930,73 @@ export class HermesRouter {
       total_requests: this.totalRequests,
       total_tokens: this.totalTokens,
       total_cost_usd: Math.round(this.totalCostUSD * 10000) / 10000,
+      total_neuro_minted: this.totalNeuroMinted,
       llm_pool_size: Object.keys(LLM_POOL).length,
       providers: [...new Set(Object.values(LLM_POOL).map(l => l.provider))]
+    };
+  }
+
+  /**
+   * Оценка интеллектуальной плотности выполненной задачи
+   * Вызывается после верификации работы нейрокодера
+   * @param {Object} taskData - Данные о выполненной задаче
+   * @returns {Object} Результат оценки с коэффициентом ρ_intel
+   */
+  async evaluateIntelDensity(taskData) {
+    const result = await this.intelDensityEvaluator.evaluate(taskData);
+    
+    // Логируем оценку для прозрачности
+    console.log('[IntelDensity] Evaluation:', {
+      taskId: taskData.taskId,
+      rhoIntel: result.rhoIntel,
+      efficiency: result.efficiencyBonus,
+      complexity: result.complexityMultiplier
+    });
+
+    return result;
+  }
+
+  /**
+   * Расчёт награды в $NEURO за выполненную работу
+   * @param {Object} workData - Данные о работе
+   * @returns {Object} Расчёт награды
+   */
+  async calculateNeuroReward(workData) {
+    const {
+      llmTokensUsed,
+      taskComplexity,
+      codeQuality,
+      optimizationScore,
+      innovationScore,
+      stakeMultiplier = 100
+    } = workData;
+
+    // 1. Оцениваем интеллектуальную плотность
+    const densityResult = await this.evaluateIntelDensity({
+      llmTokensUsed,
+      taskComplexity,
+      codeQuality,
+      optimizationScore,
+      innovationScore,
+      efficiencyRatio: workData.efficiencyRatio || 1.0
+    });
+
+    // 2. Формула: Reward = BaseRate * WorkTokens * IntelDensity * StakeMultiplier
+    const baseRate = 100; // Базовая награда
+    const workTokens = llmTokensUsed || 1000;
+    const intelDensity = densityResult.rhoIntel * 100; // В basis points
+    const stakeMult = stakeMultiplier;
+
+    const reward = Math.floor((baseRate * workTokens * intelDensity * stakeMult) / 100000000);
+
+    // 3. Обновляем статистику
+    this.totalNeuroMinted += reward;
+
+    return {
+      reward,
+      rhoIntel: densityResult.rhoIntel,
+      breakdown: densityResult.breakdown,
+      formula: `${baseRate} * ${workTokens} * ${densityResult.rhoIntel} * ${stakeMult/100}`
     };
   }
 
