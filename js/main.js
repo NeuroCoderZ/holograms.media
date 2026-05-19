@@ -20,6 +20,23 @@ export let microphoneManager = null;
 async function main() {
     console.log("Holograms.media: Main execution started.");
 
+    // --- CACHE BUSTING LAYER ---
+    const CURRENT_VERSION = "0.20.560";
+    try {
+        const vResp = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (vResp.ok) {
+            const { version } = await vResp.json();
+            if (version && version !== CURRENT_VERSION && !window.location.search.includes('bypass_cache')) {
+                console.warn(`[Cache] Stale version detected: ${CURRENT_VERSION} -> ${version}. Forcing reload...`);
+                window.location.replace(window.location.origin + window.location.pathname + `?v=${version}&bypass_cache=true`);
+                return; // Останавливаем выполнение старого кода
+            }
+        }
+    } catch (e) {
+        console.warn("[Cache] Version check failed, continuing...", e);
+    }
+    // ---------------------------
+
     const isTelegram = !!(window.Telegram && window.Telegram.WebApp);
     console.log(`[Main] Platform: ${isTelegram ? 'Telegram Mini App' : 'Web'}`);
 

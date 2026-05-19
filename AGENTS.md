@@ -25,25 +25,29 @@ EMBED_MODEL   = "gemini-embedding-2-preview"  # Embeddings ONLY (3072d) - NEVER 
 # Источник: https://arena.lmsys.org (Code Arena | WebDev)
 
 LLM_POOL = {
-  # TIER 1 — Элита (использовать для критических задач)
-  "claude_opus_4_7_thinking": { rank: 1,  score: 1567, price: "$5/$25",  context: "1M",   use_for: ["complex_architecture", "critical_code_review"] },
-  "claude_opus_4_7":          { rank: 2,  score: 1559, price: "$5/$25",  context: "1M",   use_for: ["complex_architecture", "legal_terms", "contract_draft"] },
-  "claude_opus_4_6_thinking": { rank: 3,  score: 1546, price: "$5/$25",  context: "1M",   use_for: ["deep_reasoning", "multi_step_planning"] },
-  "claude_opus_4_6":          { rank: 4,  score: 1541, price: "$5/$25",  context: "1M",   use_for: ["architecture", "code_generation"] },
+  # TIER 1 — Элита (Code Arena WebDev Rankings, May 14, 2026)
+  "claude_opus_4_7_thinking": { rank: 1,  score: 1567, price: "$5/$25",  context: "1M",   use_for: ["complex_architecture", "thinking_mode"] },
+  "claude_opus_4_7":          { rank: 2,  score: 1559, price: "$5/$25",  context: "1M",   use_for: ["general_architecture", "large_scale_refactoring"] },
+  "claude_opus_4_6_thinking": { rank: 3,  score: 1546, price: "$5/$25",  context: "1M",   use_for: ["deep_reasoning", "logic_bugs"] },
+  "claude_opus_4_6":          { rank: 4,  score: 1541, price: "$5/$25",  context: "1M",   use_for: ["stable_code_gen", "architecture"] },
+  "glm_5_1":                  { rank: 5,  score: 1532, price: "$1.4/$4.4", context: "202K", use_for: ["tech_architecture", "balanced_tasks"] },
   
-  # TIER 2 — Сильные (баланс цена/качество)
-  "glm_5_1":                  { rank: 5,  score: 1532, price: "$1.4/$4.4", context: "202K", use_for: ["tech_architecture", "code_gen", "budget_friendly"] },
-  "claude_sonnet_4_6":        { rank: 6,  score: 1524, price: "$3/$15",  context: "1M",   use_for: ["general_coding", "conversation", "fast_response"] },
-  "kimi_k2_6":                { rank: 7,  score: 1519, price: "$0.95/$4", context: "262K", use_for: ["code_gen", "cost_effective"] },
+  # TIER 2 — Сильные
+  "claude_sonnet_4_6":        { rank: 6,  score: 1524, price: "$3/$15",  context: "1M",   use_for: ["web_dev", "ui_ux", "fast_coding"] },
+  "kimi_k2_6":                { rank: 7,  score: 1519, price: "$0.95/$4", context: "262K", use_for: ["context_intensive", "long_conversations"] },
+  "muse_spark":               { rank: 8,  score: 1509, price: "N/A",     context: "N/A",  use_for: ["experimental", "creativity"] },
+  "gpt_5_5_xhigh":            { rank: 9,  score: 1501, price: "N/A",     context: "N/A",  use_for: ["codex_harness", "standard_ops"] },
+  "qwen3_6_max_preview":      { rank: 10, score: 1491, price: "$1.04/$6.24", context: "262K", use_for: ["general_purpose", "multilingual"] },
+
+  # TIER 3 — Доступные / Проверенные
+  "claude_opus_4_5_thinking": { rank: 11, score: 1490, price: "$5/$25",  context: "200K", use_for: ["legacy_debug"] },
+  "gpt_5_5_high":             { rank: 12, score: 1481, price: "N/A",     context: "N/A",  use_for: ["stable_ops"] },
+  "mimo_v2_5_pro":            { rank: 13, score: 1472, price: "$1/$3",   context: "1M",   use_for: ["mobile_optimization"] },
+  "qwen3_6_plus":             { rank: 15, score: 1460, price: "$0.33/$1.95", context: "1M",   use_for: ["agent_tasks", "default_fallback"] },
+  "deepseek_v4_pro_thinking": { rank: 16, score: 1458, price: "$0.43/$0.87", context: "1M",   use_for: ["reasoning", "logic_chain"] },
   
-  # TIER 3 — Доступные (для массовых запросов)
-  "gpt_5_5_xhigh":            { rank: 9,  score: 1501, price: "N/A",     context: "N/A",  use_for: ["codex_harness", "automated_coding"] },
-  "qwen3_6_max_preview":      { rank: 10, score: 1491, price: "$1.04/$6.24", context: "262K", use_for: ["general_tasks", "multilingual", "cost_effective"] },
-  "qwen3_6_plus":             { rank: 15, score: 1460, price: "$0.33/$1.95", context: "1M",   use_for: ["agent_tasks", "default_router", "budget_friendly"] },
-  "deepseek_v4_pro_thinking": { rank: 16, score: 1458, price: "$0.43/$0.87", context: "1M",   use_for: ["reasoning", "code_gen", "ultra_budget"] },
-  
-  # MULTIMODAL (не в Code Arena, но нужны для генерации)
-  "gemini_2_0_flash":         { modality: "image_gen", use_for: ["wireframes", "architecture_diagrams", "visual_specs"] },
+  # MULTIMODAL
+  "gemini_3_1_pro_preview":   { rank: 18, score: 1450, modality: "multimodal", context: "1M" },
   "gemini_embedding_2_preview": { modality: "embedding", dim: 3072, use_for: ["RAG", "similarity_search"] }
 }
 
