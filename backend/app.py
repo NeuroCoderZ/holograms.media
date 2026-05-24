@@ -202,6 +202,7 @@ from backend.api.v1.endpoints.wallet import router as wallet_router
 from backend.api.v1.endpoints.github_proxy import router as github_proxy_router
 from backend.api.v1.endpoints.mcp import router as mcp_router
 from backend.routers.gesture_embedding import router as gesture_embedding_router
+from backend.routers.tria_sleep import router as tria_sleep_router
 from backend.routers import live
 from backend.hermes_family.router import router as hermes_family_router
 
@@ -242,6 +243,7 @@ app.include_router(
     tags=["Current User Prompts"],
 )
 app.include_router(gesture_embedding_router, prefix=API_V1_PREFIX)
+app.include_router(tria_sleep_router, prefix=API_V1_PREFIX)
 app.include_router(gestures_ws.router)
 app.include_router(signaling_router)  # Include the new signaling router
 app.include_router(live.router)

@@ -112,7 +112,8 @@ export class PredictiveRAG {
             confidence: Math.min(1.0, confidence),
             isEarly: chunkIndex < 3,
             chunkIndex,
-            consensusIntent: this._getConsensus()
+            consensusIntent: this._getConsensus(),
+            intent: predictions[0]?.intent
         };
 
         return result;
