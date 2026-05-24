@@ -21,6 +21,8 @@
 const BASE_REWARD        = 0.01;   // за каждый распознанный жест
 const PREDICTIVE_BONUS   = 3;      // множитель за раннее предсказание (<3 чанков)
 const CROSSMODAL_BONUS   = 5;      // множитель за seamless жест→символ→действие
+const EMERGENCE_BONUS    = 2.0;    // множитель за эмерджентность жеста (информационную новизну)
+const COMPLEXITY_BONUS   = 1.5;    // множитель за сложность траектории (Бомба Сложности)
 const CONFIDENCE_FLOOR   = 0.5;    // минимальный confidence для награды
 const MAX_REWARD_PER_GESTURE = 1.0; // потолок награды за один жест
 
@@ -52,14 +54,34 @@ export class ObolosRewardEngine {
      * Оценивает качество перехода жест → символ.
      * @param {Object} prediction - результат PredictiveRAG
      * @param {Object} actualResult - что реально выполнилось
-     * @returns {{qualityScore: number, isPredictive: boolean, isCrossmodal: boolean}}
+     * @returns {{qualityScore: number, isPredictive: boolean, isCrossmodal: boolean, emergenceScore: number, complexityScore: number}}
      */
     scoreTransition(prediction, actualResult) {
         const qualityScore = this._calcQuality(prediction, actualResult);
         const isPredictive = prediction?.isEarly && prediction?.confidence > 0.6;
         const isCrossmodal = !!(actualResult?.orchestratorHandled && actualResult?.wsDelivered);
+        
+        const emergenceScore = this.calculateEmergenceScore(prediction, actualResult);
+        const complexityScore = prediction?.complexity || actualResult?.complexity || 0;
 
-        return { qualityScore, isPredictive, isCrossmodal };
+        return { qualityScore, isPredictive, isCrossmodal, emergenceScore, complexityScore };
+    }
+
+    /**
+     * Вычисляет эмерджентность жеста (информационную новизну).
+     * @param {Object} prediction - локальный прогноз
+     * @param {Object} actualResult - реальный результат распознавания
+     * @returns {number} emergence score [0, 1]
+     */
+    calculateEmergenceScore(prediction, actualResult) {
+        if (!prediction || !actualResult) return 0;
+        
+        // Если глобальный бэкенд подтвердил жест, но локальный KNN сомневался (был низкий confidence)
+        if (prediction.intent && actualResult.intentType === prediction.intent) {
+            const localConfidence = prediction.localConfidence || prediction.confidence || 0;
+            return Math.max(0, 1.0 - localConfidence);
+        }
+        return 0;
     }
 
     /**
@@ -87,6 +109,20 @@ export class ObolosRewardEngine {
             amount *= CROSSMODAL_BONUS;
             breakdown.crossmodalBonus = CROSSMODAL_BONUS;
             this._stats.crossmodalHits++;
+        }
+
+        // Бонус эмерджентности (инновационность)
+        if (scoring.emergenceScore > 0) {
+            const bonus = scoring.emergenceScore * EMERGENCE_BONUS * BASE_REWARD;
+            amount += bonus;
+            breakdown.emergenceBonus = parseFloat(bonus.toFixed(6));
+        }
+
+        // Бонус сложности (Бомба Сложности)
+        if (scoring.complexityScore > 0) {
+            const bonus = scoring.complexityScore * COMPLEXITY_BONUS * BASE_REWARD;
+            amount += bonus;
+            breakdown.complexityBonus = parseFloat(bonus.toFixed(6));
         }
 
         // Множитель confidence
@@ -164,6 +200,8 @@ export class ObolosRewardEngine {
         const parts = ['gesture'];
         if (scoring.isPredictive) parts.push('predictive');
         if (scoring.isCrossmodal) parts.push('crossmodal');
+        if (scoring.emergenceScore > 0.3) parts.push('emergence');
+        if (scoring.complexityScore > 0.2) parts.push('complexity');
         return parts.join('+');
     }
 

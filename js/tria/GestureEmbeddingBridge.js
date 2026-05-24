@@ -31,6 +31,10 @@ class GestureEmbeddingBridge {
         this._lastCloudCall = 0;
         this._pendingCloud = null;
         
+        // Параметры Sleep Cycle
+        this._inactiveTimer = null;
+        this.INACTIVITY_TIMEOUT = 30000; // 30 секунд неактивности запускают сон
+        
         // Stats
         this.stats = {
             localHits: 0,
@@ -45,20 +49,28 @@ class GestureEmbeddingBridge {
         await this.localStore.init({ includeZ: true });
         this._ready = true;
         console.log('[GestureEmbeddingBridge] Initialized. Local KNN ready.');
+        this._resetInactivityTimer();
     }
     
     /**
      * Основной метод: распознаёт жест через двухслойную систему.
      * @param {Array} hand21 - 21 MediaPipe landmark [{x,y,z}, ...]
      * @param {Object} context - Дополнительный контекст {audioSnippet, screenshot, sessionId}
-     * @returns {Promise<{intent, confidence, source, metadata}|null>}
+     * @returns {Promise<{intent, confidence, source, metadata, complexity}|null>}
      */
     async recognize(hand21, context = {}) {
         if (!this._ready || !hand21 || hand21.length < 21) return null;
         this.stats.totalQueries++;
         
+        // Сброс таймера сна при обнаружении активности
+        this._resetInactivityTimer();
+        
         // One Euro Filter: сглаживаем джиттер перед распознаванием
         const filtered = this.euroFilter.filter(hand21);
+        
+        // Вычисляем геометрическую сложность жеста (Бомба Сложности)
+        const complexity = this.calculateGestureComplexity(filtered);
+        context.complexity = complexity;
         
         // Слой 1: Локальный KNN (< 5мс)
         const localResults = await this.localStore.query(filtered, 3, this.LOCAL_SOFT);
@@ -74,14 +86,18 @@ class GestureEmbeddingBridge {
                     confidence: best.score,
                     source: 'local_knn',
                     metadata: best.metadata,
-                    latency: 'fast'
+                    latency: 'fast',
+                    complexity: complexity
                 };
             }
             
             // Средний confidence → облачная проверка (при наличии кулдауна)
             if (best.score >= this.LOCAL_SOFT) {
                 const cloudResult = await this._cloudVerify(filtered, best, context);
-                if (cloudResult) return cloudResult;
+                if (cloudResult) {
+                    cloudResult.complexity = complexity;
+                    return cloudResult;
+                }
                 
                 // Если облако недоступно, используем локальный fallback
                 this.stats.localHits++;
@@ -90,7 +106,8 @@ class GestureEmbeddingBridge {
                     confidence: best.score,
                     source: 'local_fallback',
                     metadata: best.metadata,
-                    latency: 'fast'
+                    latency: 'fast',
+                    complexity: complexity
                 };
             }
         }
@@ -249,6 +266,91 @@ class GestureEmbeddingBridge {
     
     getStats() {
         return { ...this.stats };
+    }
+
+    // ============================================
+    // SLEEP CYCLE & COMPLEXITY BOMB
+    // ============================================
+
+    /**
+     * Сброс таймера неактивности для запуска Sleep Cycle
+     */
+    _resetInactivityTimer() {
+        if (this._inactiveTimer) clearTimeout(this._inactiveTimer);
+        this._inactiveTimer = setTimeout(() => {
+            this.triggerSleepCycleSync();
+        }, this.INACTIVITY_TIMEOUT);
+    }
+
+    /**
+     * Вычисляет геометрическую сложность жеста (Бомба Сложности).
+     * Использует пространственную энтропию расстояний от запястья до кончиков пальцев.
+     * @param {Array} hand21 - 21 точка MediaPipe руки
+     * @returns {number} - нормализованная сложность [0, 1]
+     */
+    calculateGestureComplexity(hand21) {
+        if (!hand21 || hand21.length < 21) return 0;
+
+        const wrist = hand21[0];
+        const tips = [4, 8, 12, 16, 20];
+
+        const distances = tips.map(i => {
+            const p = hand21[i];
+            const dx = p.x - wrist.x;
+            const dy = p.y - wrist.y;
+            const dz = p.z - (wrist.z || 0);
+            return Math.sqrt(dx * dx + dy * dy + dz * dz);
+        });
+
+        const mean = distances.reduce((a, b) => a + b, 0) / distances.length;
+        const variance = distances.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / distances.length;
+        const stdDev = Math.sqrt(variance);
+
+        return Math.min(1.0, stdDev * 3.5);
+    }
+
+    /**
+     * Асинхронная консолидация памяти во время сна (Sleep Cycle).
+     * Выгружает Soma-блоки в AstraDB и получает предиктивные эмбеддинги.
+     * @returns {Promise<boolean>}
+     */
+    async triggerSleepCycleSync() {
+        if (!this._ready) return false;
+
+        console.log('💤 [Sleep Cycle] Initiating asynchronous memory consolidation...');
+
+        try {
+            const exportedSoma = await this.exportForSync();
+            if (!exportedSoma || exportedSoma.length === 0) return false;
+
+            const apiUrl = state.apiUrl || '';
+            const response = await fetch(`${apiUrl}/api/v1/tria/sleep-sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    soma_blocks: exportedSoma,
+                    tria_id: state.auth?.userId || 'anonymous_tria'
+                })
+            });
+
+            if (response.ok) {
+                const predictions = await response.json();
+
+                if (predictions?.length > 0) {
+                    for (const pred of predictions) {
+                        await this._learnLocally(pred.landmarks, pred.intent, pred.metadata);
+                    }
+                }
+
+                console.log('💤 [Sleep Cycle] Memory consolidated. Predictions loaded.');
+                return true;
+            }
+
+            return false;
+        } catch (e) {
+            console.warn('💤 [Sleep Cycle] Sync failed:', e.message);
+            return false;
+        }
     }
 }
 

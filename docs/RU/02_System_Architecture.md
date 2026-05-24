@@ -20,23 +20,24 @@
 ### 2.2. Потоки данных
 1.  **Audio Stream:** `MicrophoneManager` -> `AudioWorklet` -> `WASM CWT` -> `eventBus ('audio:spectralData')` -> `HologramRenderer`.
 2.  **Gesture Stream:** `MediaPipe` -> `GestureManager` -> `GestureDNA` (биометрия) -> `eventBus ('gesture:intent')`.
+3.  **Sleep Cycle (Асинхронная консолидация):** Период неактивности -> Отправка Soma-блоков (IndexedDB L1) -> Бэкенд (AstraDB L2 RAG) -> Вычисление эмерджентности -> Загрузка ассоциативных предсказаний обратно в L1.
 
 ## 3. Backend: Оркестратор Триа
 Бэкенд развернут в **Koyeb** (Docker-контейнеры) и написан на **FastAPI**.
 
 ### 3.1. База знаний (RAG)
 *   **Хранилище:** AstraDB (Vector Search).
-*   **Эмбеддинги:** `gemini-embedding-2-preview` (Dimension: 3072).
+*   **Эмбеддинги:** `gemini-embedding-2-preview` (Dimension: 3072) — константа, не подлежит изменению.
 *   **Синхронизация:** Скрипт `sync_knowledge_base.py` выполняет инкрементальное обновление базы при каждом деплое.
 
 ### 3.2. LLM Оркестрация
-*   **Supervisor:** `gemini-3-flash-preview` (управляет сессиями и мыслительным процессом).
-*   **Sub-agents:** `gemini-3.1-flash-lite-preview` (фоновое исследование, критика, генерация кода).
+*   **Supervisor (Hermes Router):** Оркестратор интенций. Использует `mistral-medium-3-5` в качестве базовой модели (ввиду API ограничений Gemini). Маршрутизирует запросы на основе когнитивного баланса Obolos.
+*   **Sub-agents (Darwin Critic):** Генерация A/B кандидатов, авто-критика и фоновое исследование контекста.
 
 ## 4. Инфраструктура и P2P
 *   **Сигналинг:** WebSocket-сервер `dev.holograms.media` для WebRTC-рукопожатий.
-*   **P2P Протокол:** NetHoloGlyph. WebRTC сигналинг через WebSocket (SDP/ICE обмен реализован).
-*   **[PLANNED]:** QJL 1-битные кванты — в разработке для будущих версий.
+*   **P2P Протокол:** NetHoloGlyph. WebRTC сигналинг через WebSocket.
+*   **Сжатие Интенций:** 1-битное квантование Джонсона-Линденштраусса (QJL) с коррекцией TurboQuant для мгновенного поиска аналогов в Рою без задержек.
 *   **Хранилище Медиа:** Cloudflare R2 (Soma-блоки и ассеты голограмм).
 
 ---
