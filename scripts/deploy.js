@@ -48,27 +48,6 @@ try {
     process.exit(1);
 }
 
-// Generate knowledge base files
-console.log('\n📚 Generating knowledge base files...');
-try {
-    console.log('   📦 Holograms.Media context...');
-    execSync('npx repomix --style xml --output repomix-output.xml --no-security-check', { 
-        stdio: 'inherit', 
-        cwd: ROOT 
-    });
-    console.log('   ✅ repomix-output.xml generated');
-    
-    console.log('   📦 NeuroEscrow context...');
-    execSync('npx repomix', { 
-        stdio: 'inherit', 
-        cwd: NEUROESCROW_DIR 
-    });
-    console.log('   ✅ neuroescrow/repomix-output.md generated');
-} catch (e) {
-    console.error('❌ Knowledge base generation failed:', e.message);
-    process.exit(1);
-}
-
 // Обновляем файлы
 fs.writeFileSync(VERSION_FILE, newVersion);
 
@@ -95,6 +74,27 @@ try {
     execSync('node scripts/update-agent-card.js', { stdio: 'inherit', cwd: ROOT });
 } catch (e) {
     console.error('❌ Version generation failed:', e.message);
+    process.exit(1);
+}
+
+// Generate knowledge base files
+console.log('\n📚 Generating knowledge base files...');
+try {
+    console.log('   📦 Holograms.Media context...');
+    execSync('npx repomix --style xml --output repomix-output.xml --no-security-check', { 
+        stdio: 'inherit', 
+        cwd: ROOT 
+    });
+    console.log('   ✅ repomix-output.xml generated');
+    
+    console.log('   📦 NeuroEscrow context...');
+    execSync('npx repomix', { 
+        stdio: 'inherit', 
+        cwd: NEUROESCROW_DIR 
+    });
+    console.log('   ✅ neuroescrow/repomix-output.md generated');
+} catch (e) {
+    console.error('❌ Knowledge base generation failed:', e.message);
     process.exit(1);
 }
 

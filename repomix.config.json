@@ -9,7 +9,16 @@
     "copyToClipboard": false
   },
   "include": [
-    "**/*"
+    "js/**/*.js",
+    "backend/**/*.py",
+    "holocore/**/*.rs",
+    "docs/ARCH/**/*.md",
+    "docs/RU/*.md",
+    "docs/EN/*.md",
+    "QWEN.md",
+    "AGENTS.md",
+    "package.json",
+    "version.txt"
   ],
   "ignore": {
     "useGitignore": true,
@@ -35,7 +44,11 @@
       "**/conductor/**",
       "**/brain/**",
       "**/scripts/debug_connection.py",
-      "**/scripts/test_*.py"
+      "**/scripts/test_*.py",
+      "**/reports/**",
+      "**/screenshots/**",
+      "**/docs/ARCH/RU/Legal/**",
+      "**/docs/ARCH/RU/Guides/ManualTestingGuide.md"
     ]
   },
   "security": {

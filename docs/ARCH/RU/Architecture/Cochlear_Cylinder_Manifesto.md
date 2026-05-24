@@ -1,7 +1,7 @@
 # 🌀 Манифест Кохлеарного Цилиндра
 
 **Версия:** 2.0 (Stabilized)
-**Дата:** 2026-03-28 (v0.20.246 Stabilization)
+**Дата:** Актуальный статус отслеживается в version.txt
 **Статус:** Архитектурная Библия (Core Architecture)
 
 ---
@@ -40,8 +40,8 @@
 │              [ПОЛЬЗОВАТЕЛЬ]                             │
 │                                                         │
 │  Радиус цилиндра: 344 метра (1 акустическая секунда)   │
-│  **R&D Note (v0.20.246):** В визуальном пространстве        │
-│  используется BasilaQ-128: 1дБ = 1 ячейка сетки.        │
+│  **R&D Note:** В визуальном пространстве                │
+│  используется BasilaQ-256 (128 на ухо): 1дБ = 1 ячейка. │
 │  Смещение Pan дискретно с шагом 1.41°.                 │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -154,7 +154,7 @@ sequenceDiagram
     participant MP as MediaPipe
     participant GM as GestureManager
     participant SB as AudioGestureBridge
-    participant CQT as BasilaQ-128
+    participant CQT as BasilaQ-256
     participant Net as NetHoloGlyph
     participant Peer as Другой Пользователь
     

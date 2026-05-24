@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  lemonade:
+    image: lemonade/lemonade-server:latest
+    ports:
+      - "13305:13305"
+    volumes:
+      - C:\SNT_GUARD\models:/app/models
+    environment:
+      # Если нужно, можешь добавить переменные окружения здесь
+      - LLM_MODEL=gemma-4-E4B-it-Q4_K_M
+    container_name: lemonade_server

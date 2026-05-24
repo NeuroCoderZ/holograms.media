@@ -1,4 +1,4 @@
-# Volume 3: BasilaQ-128 Physics Standard
+# Volume 3: BasilaQ-256 (128 per ear) Physics Standard
 **Version:** 2.8 (Stabilized Physics)
 **Date:** March 29, 2026
 **Status:** Canonical Rendering Specification
@@ -6,7 +6,7 @@
 ---
 
 ## 1. Concept: Digital Basilar Membrane
-The **BasilaQ-128** standard models the human ear's function, transforming an audio signal into a spatial Scalogram. Unlike linear FFT, we utilize **CWT (Continuous Wavelet Transform)** to achieve logarithmic precision.
+The **BasilaQ-256 (128 per ear)** standard models the human ear's function, transforming an audio signal into a spatial Scalogram. The name BasilaQ-256 reflects the total visual column count (128 Left + 128 Right = 256). Unlike linear FFT, we utilize **CWT (Continuous Wavelet Transform)** to achieve logarithmic precision.
 
 ## 2. Environment Quantization (Grid Physics)
 The visual space is divided into a discrete Voxel Grid with the following parameters:

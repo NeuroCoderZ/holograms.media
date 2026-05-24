@@ -27,7 +27,7 @@ Graphic pipeline configuration.
 *   **Parameters:** Configures an `OrthographicCamera` for the frontal view of the hologram.
 
 ### 2.2. `js/3d/hologramRenderer.js`
-The BasilaQ-128 rendering core.
+The BasilaQ-256 (128 per ear) rendering core.
 *   **`updateVisuals(levels, pans)`:** Receives data from CWT.
     *   `levels`: Float32Array(256)—volume levels.
     *   `pans`: Float32Array(128)—phase panorama.

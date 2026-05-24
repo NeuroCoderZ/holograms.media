@@ -12,7 +12,7 @@
 ### 2.1. Стек технологий
 *   **Рендеринг:** Three.js (v0.165+). Приоритетный рендерер: **WebGPU** (с фоллбэком на WebGL).
 *   **Захват Интенций:** MediaPipe Hands (21 точка кисти @ 60-120 Гц).
-*   **Аудио-анализ:** Pure WASM (C-core) + AudioWorklet. Анализ спектра BasilaQ-128.
+*   **Аудио-анализ:** Pure WASM (C-core) + AudioWorklet. Анализ спектра BasilaQ-256 (128 бинов × 2 уха, итого 256 колонн).
 *   **Локальный ИИ:** GestureVectorStore (IndexedDB KNN, < 5мс латентность).
 *   **Облачный ИИ:** Gemini Embedding 2 (gemini-embedding-2-preview, 3072d) через backend API.
 *   **Примечание:** NPU и ONNX не используются — сервис работает в браузере без установки.

@@ -27,7 +27,7 @@
 *   **Параметры:** Настраивает `OrthographicCamera` для фронтального вида голограммы.
 
 ### 2.2. `js/3d/hologramRenderer.js`
-Ядро отрисовки BasilaQ-128.
+Ядро отрисовки BasilaQ-256 (128 на ухо).
 *   **`updateVisuals(levels, pans)`:** Принимает данные из CWT. 
     *   `levels`: Float32Array(256) — громкость.
     *   `pans`: Float32Array(128) — фазовая панорама.
@@ -99,7 +99,7 @@ AudioWorklet-процессор.
 
 ### 6.5. `js/services/LiveAudioService.js`
 Клиент Gemini Live API для голосовых ответов Триа.
-*   Декодирует PCM 24kHz → Float32Array → BasilaQ-128 (через `getInputProxyNode()`).
+*   Декодирует PCM 24kHz → Float32Array → BasilaQ-256 (через `getInputProxyNode()`).
 *   Одновременно: текст в чат-панель + голос через голограмму.
 
 ---
