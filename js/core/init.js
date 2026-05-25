@@ -271,31 +271,6 @@ export async function initCore(options = {}) {
       console.warn('⚠️ Голограмма может не отображаться');
     }
 
-    const sceneInitialized = await initializeScene(state);
-
-    if (!sceneInitialized) {
-      throw new Error('Scene setup failed (WebGL context error likely)');
-    }
-
-    // This should be AFTER initializeScene(state) and its related check
-    if (!state.renderer) {
-      throw new Error('CRITICAL CHECK FAILED: state.renderer is null after initializeScene');
-    }
-
-    console.log('✅ Three.js сцена и рендерер успешно инициализированы');
-
-    // Инициализируем HoloEngine (WebGPU) — полный рендеринг голограммы
-    // Столбцы + сетки + оси + сферы — всё на нашем движке, без Three.js
-    try {
-      const { hologramWebGPU } = await import('../engine/HologramWebGPU.js?v=444');
-      state.holoEngine = hologramWebGPU;
-      await hologramWebGPU.init();
-      console.log('✅ HoloEngine (WebGPU) инициализирован');
-    } catch (error) {
-      console.error('❌ HoloEngine (WebGPU) ошибка:', error.message);
-      console.warn('⚠️ Голограмма может не отображаться');
-    }
-
     // Инициализируем GestureManager
     try {
       state.gestureManager = new GestureManager();
@@ -424,7 +399,7 @@ export async function initCore(options = {}) {
       await state.gestureVectorStore.init({ includeZ: true });
 
       // 10. Запуск Lethe-демона (теперь с реальным Enkephalon и ReintegrationManager)
-      state.maturityDaemon = new MaturityDaemon(state.enkephalon, state.triaMemory, state.reintegration);
+      state.maturityDaemon = new MaturityDaemon(state.enkephalon, state.triaMemory, state.reintegrationManager);
       state.maturityDaemon.start();
 
       // 11. Подключение Кошелька (Hermaion)

@@ -9,7 +9,7 @@ import { initializePwaInstall } from '../core/pwaInstall.js';
 // panelManager is used to switch visible content panels in the right sidebar.
 // import PanelManager from './panelManager.js'; // PanelManager is now globally managed via state.panelManager
 import { toggleFullscreen, initFullscreenListeners } from '../utils/fullscreen.js'; // Import for fullscreen
-import { toggleTriaLearningMode } from '../ai/tria.js'; // Import for Tria button
+// Tria button now opens profile modal instead of toggling learning mode
 import { initializeRightPanel } from '../panels/rightPanelManager.js'; // Import for right panel logic
 import { hologramScanner } from '../multimodal/hologramScanner.js'; // Import for Scanner button
 import { gestureSynthesizer } from '../audio/GestureSynthesizer.js'; // Import for Gesture Synth
@@ -742,26 +742,23 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // The handleInstallButtonClick was likely called directly by this listener,
   // but initializePwaInstall should handle its own UI interactions.
 
-  // --- Tria Button ---
-  if (uiElements.buttons.triaButton && uiElements.inputs.modelSelect) {
-    // Set initial state for Tria button and modelSelect
-    if (appState.tria && typeof appState.tria.isLearningActive === 'boolean') {
-      uiElements.buttons.triaButton.classList.toggle('active', appState.tria.isLearningActive);
-      uiElements.inputs.modelSelect.disabled = appState.tria.isLearningActive;
-    } else {
-      // Initialize if appState.tria or isLearningActive is not properly set
-      if (!appState.tria) appState.tria = {};
-      appState.tria.isLearningActive = false; // Default to false
-      uiElements.buttons.triaButton.classList.remove('active');
-      uiElements.inputs.modelSelect.disabled = false;
-    }
-
+  // --- Tria Profile Button ---
+  if (uiElements.buttons.triaButton) {
+    // Обучение (Enkephalon pulse) идёт всегда в фоне — кнопка только открывает профиль
+    uiElements.buttons.triaButton.title = 'Профиль Триа';
     uiElements.buttons.triaButton.addEventListener('click', () => {
-      toggleTriaLearningMode(uiElements.buttons.triaButton, uiElements.inputs.modelSelect, appState);
+      openTriaProfile(appState);
     });
-  } else {
-    if (!uiElements.buttons.triaButton) console.warn("Tria button element not found.");
-    if (!uiElements.inputs.modelSelect) console.warn("Model select element not found for Tria button logic.");
+  }
+
+  // --- Tria Profile Modal Close ---
+  const triaModal = document.getElementById('tria-profile-modal');
+  const closeBtn = document.getElementById('closeTriaProfileModal');
+  if (triaModal && closeBtn) {
+    closeBtn.addEventListener('click', () => { triaModal.style.display = 'none'; });
+    triaModal.addEventListener('click', (e) => {
+      if (e.target === triaModal) triaModal.style.display = 'none';
+    });
   }
 
   // --- Scanner Button ---
@@ -1038,6 +1035,81 @@ export { logLayoutState };
 // uiElements.leftPanel = state.panelManager.leftPanelElement;
 // uiElements.rightPanel = state.panelManager.rightPanelElement;
 // Initialize History Sidebar
+/**
+ * Открывает модальное окно профиля Триа с RPG-характеристиками.
+ * Собирает реальные метрики из state и рендерит их в DOM.
+ * @param {Object} appState - центральное состояние приложения
+ */
+function openTriaProfile(appState) {
+  const modal = document.getElementById('tria-profile-modal');
+  if (!modal) return;
+
+  // Собираем метрики из state с graceful fallback
+  const enkephalon = appState.enkephalon || {};
+  const wallet = appState.wallet || {};
+  const obolosEngine = appState.obolosRewardEngine || {};
+  const maturityDaemon = appState.maturityDaemon || {};
+  const memory = appState.triaMemory || {};
+
+  // 1. Нейропластичность: learningRate (stub) + maturity_level
+  const lr = enkephalon.learningRate || 0.05;
+  const avgMaturity = (typeof memory.getStats === 'function') ? (memory.getStats().avg_maturity || 0) : 0;
+  const neuro = Math.min(100, Math.round((lr * 1000) + (avgMaturity / 10)));
+  document.getElementById('stat-neuroplasticity').style.width = neuro + '%';
+  document.getElementById('stat-neuroplasticity-val').textContent = neuro + '%';
+
+  // 2. Резонанс: emergence score (avg) * 100
+  const rewards = obolosEngine._rewards || [];
+  const emergenceScores = rewards.filter(r => r.breakdown?.emergenceBonus > 0).map(r => r.breakdown.emergenceBonus);
+  const avgEmergence = emergenceScores.length > 0 ? emergenceScores.reduce((a, b) => a + b, 0) / emergenceScores.length : 0;
+  const resonance = Math.min(100, Math.round(avgEmergence * 100));
+  document.getElementById('stat-resonance').style.width = resonance + '%';
+  document.getElementById('stat-resonance-val').textContent = resonance + '%';
+
+  // 3. Эмерджентность: накопленный бонус (нормализованный)
+  const stats = obolosEngine._stats || {};
+  const totalEmergence = stats.emergenceHits || rewards.filter(r => r.breakdown?.emergenceBonus).length;
+  const emergence = Math.min(100, Math.round(totalEmergence * 5));
+  document.getElementById('stat-emergence').style.width = emergence + '%';
+  document.getElementById('stat-emergence-val').textContent = emergence + '%';
+
+  // 4. Оболос-Ёмкость: прямой баланс (нормализован к 1 Obolos = 100%)
+  const obolosBalance = wallet.obolosBalance || 0;
+  const obolosPct = Math.min(100, Math.round(obolosBalance * 100));
+  document.getElementById('stat-obolos').style.width = obolosPct + '%';
+  document.getElementById('stat-obolos-val').textContent = obolosBalance.toFixed(6) + ' Obolos';
+
+  // 5. Целостность: 100 - decay + soma_count бонус
+  const decayRate = maturityDaemon.decayRate || 0.01;
+  const somaCount = (typeof memory.size === 'number') ? memory.size : 0;
+  const integrity = Math.min(100, Math.max(0, Math.round(100 - (decayRate * 1000) + Math.min(somaCount / 10, 20))));
+  document.getElementById('stat-integrity').style.width = integrity + '%';
+  document.getElementById('stat-integrity-val').textContent = integrity + '%';
+
+  // 6. Восприятие: baseline quality + fps
+  const gestureDNA = appState.gestureDNA || {};
+  const baselineSim = gestureDNA.baselineQuality || gestureDNA.baselineSimilarity || 0.5;
+  const fps = appState.monitor?.fps || appState.fps || 30;
+  const perception = Math.min(100, Math.round((baselineSim * 50) + (fps / 2.4)));
+  document.getElementById('stat-perception').style.width = perception + '%';
+  document.getElementById('stat-perception-val').textContent = perception + '%';
+
+  // Футер: версия и количество Soma-блоков
+  const verEl = document.getElementById('tria-profile-version');
+  if (verEl) {
+    const vEl = document.getElementById('triaVersion');
+    verEl.textContent = vEl ? vEl.textContent : 'Триа v0.004';
+  }
+  const blocksEl = document.getElementById('tria-profile-blocks');
+  if (blocksEl) {
+    const chain = appState.localChain || {};
+    const count = chain._blocks?.length || somaCount || 0;
+    blocksEl.textContent = 'Soma-блоков: ' + count;
+  }
+
+  modal.style.display = 'flex';
+}
+
 function initHistorySidebar() {
   const historySidebar = document.getElementById('historySidebar');
   if (!historySidebar) return;
