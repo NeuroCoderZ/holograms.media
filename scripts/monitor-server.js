@@ -329,6 +329,34 @@ async function fetchStatus() {
 fetchStatus();
 setInterval(fetchStatus, 10000);
 
+// ─── Deploy History (Git) ─────────────────────────────────────
+let deploysCache = { data: [], lastFetch: 0 };
+const DEPLOY_CACHE_TTL = 60000;
+
+function getDeployHistory() {
+  const now = Date.now();
+  if (now - deploysCache.lastFetch < DEPLOY_CACHE_TTL && deploysCache.data.length > 0) {
+    return deploysCache.data;
+  }
+
+  const raw = run('git log origin/dev --grep="DEPLOY:" --format="%H|%s|%an|%ai" -20', 10000);
+  if (typeof raw === 'string' && raw.includes('|')) {
+    deploysCache.data = raw.split('\n').filter(l => l.includes('|')).map(line => {
+      const [sha, msg, author, date] = line.split('|');
+      const verMatch = msg?.match(/v?(\d+\.\d+\.\d+)/);
+      return {
+        sha: sha ? sha.substring(0, 7) : '',
+        message: msg || '',
+        author: author || '',
+        date: date || '',
+        version: verMatch ? verMatch[1] : ''
+      };
+    });
+    deploysCache.lastFetch = now;
+  }
+  return deploysCache.data;
+}
+
 // ─── HTML ───────────────────────────────────────────────────────
 const html = `<!DOCTYPE html>
 <html lang="ru">
@@ -379,6 +407,7 @@ const html = `<!DOCTYPE html>
 <div class="sec"><div class="sec-h">GitHub Actions <span class="lbl">Сборка</span></div><div id="gh"></div></div>
 <div class="sec"><div class="sec-h">Cloudflare Pages <span class="lbl">Фронтенд</span></div><div id="cf"></div></div>
 <div class="sec"><div class="sec-h">Koyeb <span class="lbl">Бэкенд</span></div><div id="ky"></div></div>
+<div class="sec"><div class="sec-h">История деплоев <span class="lbl">Git (dev)</span></div><div id="deploys"></div></div>
 
 <script>
 function dc(s){if(s==='success'||s==='SUCCESSFUL'||s==='HEALTHY')return'g';if(s==='failure'||s==='FAILED')return'r';if(s==='in_progress'||s==='RUNNING')return'y';return'x'}
@@ -402,6 +431,18 @@ function render(items, id) {
   }).join('');
 }
 
+function renderDeploys(items) {
+  const el = document.getElementById('deploys');
+  if (!items || items.length === 0) { el.innerHTML = '<div class="err">Нет деплоев</div>'; return; }
+  el.innerHTML = items.map(x => {
+    const v = x.version || '—';
+    const ghUrl = 'https://github.com/NeuroCoderZ/holograms.media/commit/' + x.sha;
+    const msg = (x.message || '').replace(/DEPLOY:\s*v?\d+\.\d+\.\d+\s*-\s*/, '');
+    const t = ta(x.date);
+    return '<div class="row"><div class="dot g"></div><div class="ver"><a href="' + ghUrl + '" target="_blank" style="color:var(--blue);text-decoration:none;">' + v + '</a></div><div class="br dev">dev</div><div class="msg">' + msg + '</div><div class="tm">' + t + '</div></div>';
+  }).join('');
+}
+
 let cachedCopy = '';
 
 let logsReady = false;
@@ -422,6 +463,7 @@ function update() {
       btn.title = 'Логи загружены — нажмите для копирования';
     }
   });
+  fetch('/api/deploys').then(r => r.json()).then(d => renderDeploys(d)).catch(() => {});
 }
 
 function copyLogs() {
@@ -462,6 +504,12 @@ const server = http.createServer((req, res) => {
       res.writeHead(202, { 'Content-Type': 'text/plain' });
       res.end('Логи ещё загружаются...');
     }
+    return;
+  }
+  if (req.url === '/api/deploys') {
+    const data = getDeployHistory();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(data));
     return;
   }
   res.writeHead(200, { 'Content-Type': 'text/html' });
