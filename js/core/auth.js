@@ -282,7 +282,24 @@ export async function handle401Response(response, url) {
 
   console.warn('[Auth] 401 Unauthorized from:', url);
 
-  // Проверяем, не является ли это запросом к auth endpoint (чтобы избежать бесконечного цикла)
+  // ⚡ TELEGRAM MODE: re-auth через TG initData, НЕ Google OAuth
+  if (window.Telegram?.WebApp) {
+    console.warn('[Auth] JWT expired in TG mode — re-auth via initData');
+    localStorage.removeItem('jwtToken');
+    state.isAuthenticated = false;
+    updateAuthUI();
+    try {
+      await initAuth();
+      const newToken = getJwtToken();
+      return !!newToken;
+    } catch (e) {
+      console.error('[Auth] TG re-auth failed:', e);
+      showNotification('Сессия истекла. Пожалуйста, перезапустите приложение.', 'warning');
+      return false;
+    }
+  }
+
+  // WEB MODE: существующая логика
   if (url?.includes('/auth/')) {
     localStorage.removeItem('jwtToken');
     state.isAuthenticated = false;
@@ -290,7 +307,6 @@ export async function handle401Response(response, url) {
     return false;
   }
 
-  // Проверяем, не истёк ли токен
   const token = getJwtToken();
   if (isJwtExpired(token)) {
     console.warn('[Auth] JWT expired — triggering re-auth');
@@ -298,14 +314,11 @@ export async function handle401Response(response, url) {
     state.isAuthenticated = false;
     updateAuthUI();
 
-    // Показываем уведомление с предложением переавторизоваться
     showNotification('Сессия истекла. Войдите снова через Google.', 'warning');
 
-    // Показываем модалку входа
     const modal = document.getElementById('start-session-modal');
     if (modal) modal.style.display = 'flex';
 
-    // Dispatch event для других модулей
     import('../core/eventBus.js').then(({ default: eventBus }) => {
       eventBus.emit('auth:sessionExpired', { url });
     });
@@ -321,15 +334,26 @@ export async function handle401Response(response, url) {
  * @returns {Promise<Response>}
  */
 export async function fetchWithAuth(url, options = {}) {
-  const token = getJwtToken();
-  if (token && !options.headers?.['Authorization']) {
-    options.headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    };
+  const addToken = (opts) => {
+    const t = getJwtToken();
+    if (t && !opts.headers?.['Authorization']) {
+      opts.headers = { ...opts.headers, 'Authorization': `Bearer ${t}` };
+    }
+    return opts;
+  };
+
+  let response = await fetch(url, addToken(options));
+
+  if (response.status === 401) {
+    const reAuthed = await handle401Response(response, url);
+    if (reAuthed) {
+      const newToken = getJwtToken();
+      if (newToken) {
+        options.headers = { ...options.headers, 'Authorization': `Bearer ${newToken}` };
+        response = await fetch(url, options);
+      }
+    }
   }
 
-  const response = await fetch(url, options);
-  await handle401Response(response, url);
   return response;
 }

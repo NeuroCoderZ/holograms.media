@@ -30,19 +30,6 @@ jobs:
         with:
           node-version: '20'
       
-      - name: 🔐 Set Cloudflare Secrets
-        if: steps.check-changes.outputs.skip != 'true'
-        working-directory: neuroescrow/backend
-        run: |
-          echo "${{ secrets.MISTRAL_API_KEY }}" | npx wrangler secret put MISTRAL_API_KEY
-          echo "${{ secrets.GOOGLE_API_KEY }}" | npx wrangler secret put GOOGLE_API_KEY
-          echo "${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}" | npx wrangler secret put ASTRA_DB_TOKEN
-          echo "${{ secrets.ASTRA_DATABASE_URL }}" | npx wrangler secret put ASTRA_DB_ENDPOINT
-          echo "${{ secrets.TELEGRAM_BOT_TOKEN }}" | npx wrangler secret put TELEGRAM_BOT_TOKEN
-          echo "${{ secrets.TOKEN_LEDGER_CHAT_ID }}" | npx wrangler secret put TOKEN_LEDGER_CHAT_ID
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-
       - name: 🚀 Deploy to Cloudflare Workers
         if: steps.check-changes.outputs.skip != 'true'
         uses: cloudflare/wrangler-action@v3

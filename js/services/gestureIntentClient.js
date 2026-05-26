@@ -31,8 +31,24 @@ class GestureIntentClient {
      * Подключается к WebSocket только если пользователь авторизован.
      * При отсутствии токена — graceful skip (без ошибок в консоли).
      */
-    connect() {
-        const token = this._getToken();
+    async connect() {
+        const isTelegram = !!(window.Telegram?.WebApp);
+        let token = this._getToken();
+
+        // ⚡ TG MODE: ждём инициализацию auth (JWT может появиться после re-auth)
+        if (!token && isTelegram) {
+            console.info('[GestureIntentClient] TG mode: waiting for auth token...');
+            for (let i = 0; i < 5; i++) {
+                await new Promise(r => setTimeout(r, 1000));
+                token = this._getToken();
+                if (token) break;
+            }
+            if (!token) {
+                console.info('[GestureIntentClient] TG mode: no token after wait, skipping WS.');
+                return;
+            }
+        }
+
         if (!token) {
             console.info('[GestureIntentClient] Нет JWT-токена — пропуск WS-соединения. Войдите через Google.');
             return;
