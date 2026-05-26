@@ -208,6 +208,12 @@ export async function initAuth() {
         console.log(`[Auth] TG User identified: ${state.user.first_name}`);
       } else {
         console.warn('[Auth] Running in Telegram but no user data found (is it a direct link?)');
+        // Fallback: try to restore from localStorage JWT
+        const savedToken = localStorage.getItem('jwtToken');
+        if (savedToken) {
+          console.log('[Auth] Found existing JWT in localStorage, restoring session');
+          state.isAuthenticated = true;
+        }
       }
 
       // В TG скрываем модалку согласия/входа сразу

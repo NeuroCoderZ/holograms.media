@@ -19,6 +19,8 @@ console.log('\n🧱 Skipping local frontend build (Cloudflare builds in CI). \n'
 
 const args = process.argv.slice(2);
 let commitMessage = args[0] || 'Update: General improvements and fixes';
+// Strip version prefix if already present (avoid double version in commit)
+commitMessage = commitMessage.replace(/^v?\d+\.\d+\.\d+\s*[:\-]?\s*/i, '').trim();
 // Escape quotes for git commit message
 commitMessage = commitMessage.replace(/"/g, '\\"');
 

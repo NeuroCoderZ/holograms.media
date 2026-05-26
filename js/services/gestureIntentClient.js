@@ -38,13 +38,13 @@ class GestureIntentClient {
         // ⚡ TG MODE: ждём инициализацию auth (JWT может появиться после re-auth)
         if (!token && isTelegram) {
             console.info('[GestureIntentClient] TG mode: waiting for auth token...');
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 3; i++) {
                 await new Promise(r => setTimeout(r, 1000));
                 token = this._getToken();
                 if (token) break;
             }
             if (!token) {
-                console.info('[GestureIntentClient] TG mode: no token after wait, skipping WS.');
+                console.info('[GestureIntentClient] TG mode: no token after 3s wait, skipping WS.');
                 return;
             }
         }
