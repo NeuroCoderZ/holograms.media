@@ -21,15 +21,29 @@ async function main() {
     console.log("Holograms.media: Main execution started.");
 
     // --- CACHE BUSTING LAYER ---
-    const CURRENT_VERSION = "0.20.560";
+    const CURRENT_VERSION = document.querySelector('meta[name="app-version"]')?.getAttribute('content') || '0.20.0';
     try {
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            if (keys.length > 0) {
+                const cachedVersion = localStorage.getItem('appVersion');
+                if (cachedVersion && cachedVersion !== CURRENT_VERSION) {
+                    console.warn(`[Cache] Version changed ${cachedVersion} → ${CURRENT_VERSION}, clearing caches...`);
+                    await Promise.all(keys.map(key => caches.delete(key)));
+                    const tokens = { jwtToken: localStorage.getItem('jwtToken'), refreshToken: localStorage.getItem('refreshToken') };
+                    localStorage.clear();
+                    Object.entries(tokens).forEach(([k, v]) => { if (v) localStorage.setItem(k, v); });
+                }
+            }
+            localStorage.setItem('appVersion', CURRENT_VERSION);
+        }
         const vResp = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
         if (vResp.ok) {
             const { version } = await vResp.json();
             if (version && version !== CURRENT_VERSION && !window.location.search.includes('bypass_cache')) {
                 console.warn(`[Cache] Stale version detected: ${CURRENT_VERSION} -> ${version}. Forcing reload...`);
                 window.location.replace(window.location.origin + window.location.pathname + `?v=${version}&bypass_cache=true`);
-                return; // Останавливаем выполнение старого кода
+                return;
             }
         }
     } catch (e) {

@@ -250,6 +250,13 @@ export async function initAuth() {
  * @returns {string|null}
  */
 export function getJwtToken() {
+  const token = localStorage.getItem('jwtToken');
+  if (!token && window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp;
+    if (tg.initDataUnsafe?.user) {
+      initAuth();
+    }
+  }
   return localStorage.getItem('jwtToken');
 }
 

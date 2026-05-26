@@ -343,12 +343,19 @@ function getDeployHistory() {
     deploysCache.data = raw.split('\n').filter(l => l.includes('|')).map(line => {
       const [sha, msg, author, date] = line.split('|');
       const verMatch = msg?.match(/v?(\d+\.\d+\.\d+)/);
+      let version = verMatch ? verMatch[1] : '';
+      if (!version && sha) {
+        try {
+          const vt = run(`git show ${sha}:version.txt`, 5000);
+          if (vt && /\d+\.\d+\.\d+/.test(vt)) version = vt.trim();
+        } catch (_) {}
+      }
       return {
         sha: sha ? sha.substring(0, 7) : '',
         message: msg || '',
         author: author || '',
         date: date || '',
-        version: verMatch ? verMatch[1] : ''
+        version
       };
     });
     deploysCache.lastFetch = now;
@@ -459,7 +466,7 @@ function renderDeploys(items) {
   el.innerHTML = items.map(x => {
     const v = x.version || '—';
     const ghUrl = 'https://github.com/NeuroCoderZ/holograms.media/commit/' + x.sha;
-    const msg = (x.message || '').replace(/DEPLOY:\s*v?\d+\.\d+\.\d+\s*-\s*/, '');
+    const msg = (x.message || '').replace(/DEPLOY:\s*v?\d+\.\d+\.\d+\s*[-:]\s*/, '');
     const t = ta(x.date);
     return '<div class="row"><div class="dot g"></div><div class="ver"><a href="' + ghUrl + '" target="_blank" style="color:var(--blue);text-decoration:none;">' + v + '</a></div><div class="br dev">dev</div><div class="msg">' + msg + '</div><div class="tm">' + t + '</div></div>';
   }).join('');
