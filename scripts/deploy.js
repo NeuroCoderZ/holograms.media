@@ -166,13 +166,17 @@ try {
         const headSha = execSync('git rev-parse HEAD', { encoding: 'utf8', cwd: ROOT }).trim().substring(0, 40);
         console.log('   🔍 Verifying CI trigger...');
 
+        // Give GitHub 10s to create a run from the push event
+        console.log('   ⏳ Waiting 10s for push-triggered run...');
+        sleepSync(10000);
+
         let ciRunId = null;
         const deadline = Date.now() + POLL_TIMEOUT_MS;
 
         while (Date.now() < deadline) {
             try {
                 const result = execSync(
-                    `gh api "repos/${GITHUB_REPO}/actions/runs?head_sha=${headSha}&per_page=1" --jq '.workflow_runs[0].id // empty'`,
+                    `gh api "repos/${GITHUB_REPO}/actions/runs?head_sha=${headSha}&per_page=1&event=push" --jq '.workflow_runs[0].id // empty'`,
                     { encoding: 'utf8', cwd: ROOT, stdio: 'pipe' }
                 ).trim();
                 if (result && result !== 'empty') {
@@ -184,9 +188,9 @@ try {
         }
 
         if (ciRunId) {
-            console.log(`   ✅ CI run detected: #${ciRunId}`);
+            console.log(`   ✅ CI run detected (push): #${ciRunId}`);
         } else {
-            console.log('   ⚠️  Webhook missed, triggering workflow_dispatch...');
+            console.log('   ⚠️  Push webhook missed, triggering workflow_dispatch...');
             let anySuccess = false;
             const workflows = ['sync-knowledge.yml', 'cloudflare-deploy.yml', 'deploy-hermes.yml', 'hermes-ci.yml', 'koyeb-dev-deploy.yml'];
             for (const wf of workflows) {

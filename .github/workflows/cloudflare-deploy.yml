@@ -19,8 +19,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(echo "${{ github.event.head_commit.message }}" | grep -oP 'v\d+\.\d+\.\d+' || echo "unknown")
-          VERSION=${VERSION#v}
+          VERSION=$(cat version.txt | grep -oP '\d+\.\d+\.\d+' || echo "unknown")
           echo "version<<EOF" >> $GITHUB_OUTPUT
           echo "$VERSION" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -61,4 +60,4 @@ jobs:
         run: |
           echo "## ✅ Frontend Deployed" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.event.head_commit.message }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
