@@ -160,9 +160,7 @@ try {
     const GITHUB_BRANCH = 'dev';
     const POLL_INTERVAL_MS = 5000;
     const POLL_TIMEOUT_MS = 45000;
-    const sleepCmd = process.platform === 'win32'
-        ? 'timeout /t 5 /nobreak >nul'
-        : 'sleep 5';
+    const sleepSync = (ms) => { const deadline = Date.now() + ms; while (Date.now() < deadline) {} };
 
     try {
         const headSha = execSync('git rev-parse HEAD', { encoding: 'utf8', cwd: ROOT }).trim().substring(0, 40);
@@ -182,7 +180,7 @@ try {
                     break;
                 }
             } catch (_) { /* gh not available or API error */ }
-            execSync(sleepCmd, { stdio: 'ignore', cwd: ROOT });
+            sleepSync(POLL_INTERVAL_MS);
         }
 
         if (ciRunId) {
