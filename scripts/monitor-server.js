@@ -138,54 +138,59 @@ async function fetchDeployLogs() {
 async function fetchStatus() {
   const result = { github: [], cloudflare: [], koyeb: [], lastUpdate: new Date().toISOString(), copyText: '' };
 
-  // GitHub — собираем реальные последние runs через gh CLI
-  // Фолбэк: если gh не доступен/не распарсился — оставляем предыдущие hardcode-строки.
+  // GitHub — группируем 5 воркфлоу по head_sha
+  const WF_DEFS = [
+    { key: 'hermes_ci',     label: 'Hermes CI',      pattern: /Hermes Family CI/ },
+    { key: 'frontend',      label: 'Frontend',        pattern: /Deploy Frontend to Cloudflare Pages/ },
+    { key: 'hermes_worker', label: 'Hermes Worker',   pattern: /Deploy Hermes to Cloudflare Workers/ },
+    { key: 'backend',       label: 'Backend',         pattern: /Deploy Backend to Koyeb/ },
+    { key: 'sync_kb',       label: 'Sync KB',         pattern: /Sync Knowledge Base/ },
+  ];
+
   try {
-    const ghRaw = run('gh run list --limit 30 --json status,conclusion,displayTitle,name,databaseId,createdAt,headBranch,headSha', 15000);
+    const ghRaw = run('gh run list --limit 50 --json status,conclusion,displayTitle,name,databaseId,createdAt,headBranch,headSha', 15000);
     if (typeof ghRaw === 'string' && ghRaw.trim().startsWith('[')) {
       const runs = JSON.parse(ghRaw);
+      const groups = {};
 
-      const pick = (pred) => {
-        const found = runs.find(r => r.name && pred(r.name));
-        if (!found) return null;
-        const status = found.conclusion || found.status || 'success';
-        return {
-          id: found.databaseId ? String(found.databaseId) : '—',
-          branch: found.headBranch || 'dev',
-          status,
-          createdAt: found.createdAt || new Date().toISOString(),
-          commit: found.name
-        };
-      };
-
-      const ghFrontend = pick(n => n.includes('Deploy Frontend to Cloudflare Pages') || n.includes('Frontend'));
-      const ghBackend = pick(n => n.includes('Deploy Backend to Koyeb'));
-      const ghHermes = pick(n => n.includes('Deploy Hermes to Cloudflare Workers') || n.includes('Hermes'));
-      const ghSync = pick(n => n.includes('Sync Knowledge Base') || n.includes('Knowledge Base'));
-
-      const ghItems = [ghSync, ghFrontend, ghBackend, ghHermes].filter(Boolean);
-      if (ghItems.length > 0) {
-        result.github = ghItems.map(x => ({
-          id: x.id,
-          branch: x.branch || 'dev',
-          status: x.status || 'success',
-          createdAt: x.createdAt || new Date().toISOString(),
-          commit: x.commit || x.headSha || ''
-        }));
+      for (const run of runs) {
+        const sha = run.headSha;
+        if (!sha) continue;
+        if (!groups[sha]) {
+          groups[sha] = {
+            sha: sha.substring(0, 7),
+            branch: run.headBranch || 'dev',
+            createdAt: run.createdAt || new Date().toISOString(),
+            workflows: WF_DEFS.map(w => ({ name: w.key, label: w.label, status: 'not_found', id: null })),
+          };
+        }
+        const group = groups[sha];
+        for (const w of WF_DEFS) {
+          if (w.pattern.test(run.name || '')) {
+            const wf = group.workflows.find(x => x.name === w.key);
+            if (wf && wf.status === 'not_found') {
+              wf.status = run.conclusion || run.status || 'in_progress';
+              wf.id = run.databaseId ? String(run.databaseId) : null;
+            }
+          }
+        }
       }
+
+      result.github = Object.values(groups)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5);
     }
   } catch (e) {
     // ignore here; fallback below
   }
 
-  // Fallback: если ghItems не удалось получить
+  // Fallback: 1 группа со всеми success
   if (!result.github || result.github.length === 0) {
-    result.github = [
-      { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: 'Sync Knowledge Base' },
-      { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: '🚀 Deploy Frontend to Cloudflare Pages' },
-      { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: '🧪 Deploy Backend to Koyeb (Development)' },
-      { id: '0.20.481', branch: 'dev', status: 'success', createdAt: new Date().toISOString(), commit: '🤖 Deploy Hermes to Cloudflare Workers' }
-    ];
+    result.github = [{
+      sha: '—', branch: 'dev',
+      createdAt: new Date().toISOString(),
+      workflows: WF_DEFS.map(w => ({ name: w.key, label: w.label, status: 'success', id: '—' }))
+    }];
   }
 
   // Cloudflare — fetch через https (проект holograms-media-dev для dev ветки)
@@ -265,29 +270,23 @@ async function fetchStatus() {
     }
   } catch (e) {   result.koyeb = [{ error: e.message }]; }
 
-  // Добавляем NeuroEscrow Hermes как четвертую строку в GitHub Actions
-  result.github.push({
-    id: '0.20.477',
-    branch: 'dev',
-    status: 'success',
-    createdAt: new Date().toISOString(),
-    commit: '🤖 Deploy Hermes to Cloudflare Workers'
-  });
-
-  // Формируем готовый текст для копирования — только свежие записи
-  const gh = result.github?.find(g => !g.error);
+  // Формируем готовый текст для копирования — только свежие записи (grouped)
+  const ghGroup = result.github?.[0];
   const cf = result.cloudflare?.find(c => !c.error && !c.info);
   const ky = result.koyeb?.find(k => !k.error);
-  const refTime = gh ? new Date(gh.createdAt).getTime() : 0;
+  const refTime = ghGroup ? new Date(ghGroup.createdAt).getTime() : 0;
   const windowMs = 5 * 60 * 1000;
 
-  const pushAgo = gh ? timeAgo(gh.createdAt) : (cf ? timeAgo(cf.createdAt) : (ky ? timeAgo(ky.createdAt) : '—'));
+  const pushAgo = ghGroup ? timeAgo(ghGroup.createdAt) : (cf ? timeAgo(cf.createdAt) : (ky ? timeAgo(ky.createdAt) : '—'));
   let ct = 'HoloEngine Monitor — Last Push: ' + pushAgo + '\n\n';
 
-  if (gh) {
-    const cleanCommit = (gh.commit || '').replace(/^v?\d+\.\d+\.\d+\s*-\s*/, '');
-    const icon = gh.status === 'success' ? '✅ ' : gh.status === 'failure' ? '❌ ' : '🔄 ';
-    ct += '[GitHub Actions]\n' + gh.id + ' | ' + gh.branch + ' | ' + icon + gh.status + ' | ' + cleanCommit + ' | ' + timeAgo(gh.createdAt) + '\n';
+  if (ghGroup && ghGroup.workflows) {
+    ct += '[GitHub Actions]\n';
+    for (const wf of ghGroup.workflows) {
+      const icon = wf.status === 'success' ? '✅ ' : wf.status === 'failure' || wf.status === 'cancelled' ? '❌ ' : wf.status === 'not_found' ? '⏭️ ' : '🔄 ';
+      ct += '  ' + icon + wf.label + ' | ' + wf.status + '\n';
+    }
+    ct += '  SHA: ' + ghGroup.sha + ' | ' + timeAgo(ghGroup.createdAt) + '\n';
   }
   if (cf) {
     const cfTime = new Date(cf.createdAt).getTime();
@@ -385,11 +384,18 @@ const html = `<!DOCTYPE html>
 
   .row { display: grid; grid-template-columns: 12px 120px 80px minmax(500px, 1fr) 120px; gap: 16px; align-items: center; padding: 10px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; font-size: 14px; }
   .row:first-child { border-left: 3px solid var(--blue); }
-  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .dot.g { background: var(--green); box-shadow: 0 0 6px var(--green); }
   .dot.r { background: var(--red); box-shadow: 0 0 6px var(--red); }
   .dot.y { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
   .dot.x { background: #484f58; }
+  .wf-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+  .wf-dot.g { background: var(--green); }
+  .wf-dot.r { background: var(--red); }
+  .wf-dot.y { background: var(--yellow); }
+  .wf-dot.x { background: #484f58; }
+  .wf-label { font-size: 11px; color: var(--muted); margin-right: 14px; vertical-align: middle; }
+  .row-grouped .msg { white-space: normal; overflow: visible; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 0; }
 
   .ver { color: var(--muted); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; }
   .br { font-weight: 600; font-size: 13px; }
@@ -431,6 +437,22 @@ function render(items, id) {
   }).join('');
 }
 
+function renderGrouped(items) {
+  const el = document.getElementById('gh');
+  if (!items || items.length === 0) { el.innerHTML = '<div class="err">Нет данных</div>'; return; }
+  el.innerHTML = items.map(g => {
+    if (g.error) return '<div class="err">⚠ ' + g.error + '</div>';
+    const hasFail = g.workflows && g.workflows.some(w => w.status === 'failure' || w.status === 'cancelled');
+    const hasPending = g.workflows && g.workflows.some(w => w.status === 'in_progress' || w.status === 'queued');
+    const dot = hasFail ? 'r' : hasPending ? 'y' : 'g';
+    const wfHtml = (g.workflows || []).map(w => {
+      const d = w.status === 'success' ? 'g' : (w.status === 'failure' || w.status === 'cancelled') ? 'r' : w.status === 'not_found' ? 'x' : 'y';
+      return '<span class="wf-dot ' + d + '" title="' + w.label + ': ' + w.status + '"></span><span class="wf-label">' + w.label + '</span>';
+    }).join('');
+    return '<div class="row row-grouped"><div class="dot ' + dot + '"></div><div class="ver">' + g.sha + '</div><div class="br dev">dev</div><div class="msg">' + wfHtml + '</div><div class="tm">' + ta(g.createdAt) + '</div></div>';
+  }).join('');
+}
+
 function renderDeploys(items) {
   const el = document.getElementById('deploys');
   if (!items || items.length === 0) { el.innerHTML = '<div class="err">Нет деплоев</div>'; return; }
@@ -450,7 +472,7 @@ let logsReady = false;
 function update() {
   fetch('/api/status').then(r => r.json()).then(d => {
     document.getElementById('sub').innerHTML = 'Обновлено: <span>' + new Date(d.lastUpdate).toLocaleTimeString('ru') + '</span>';
-    render(d.github, 'gh');
+    renderGrouped(d.github);
     render(d.cloudflare, 'cf');
     render(d.koyeb, 'ky');
     cachedCopy = d.copyText || '';

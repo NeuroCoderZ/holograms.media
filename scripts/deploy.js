@@ -151,7 +151,7 @@ try {
 
 try {
     execSync('git add .', { stdio: 'inherit', cwd: ROOT });
-    execSync(`git commit -m "DEPLOY: v${newVersion} - ${commitMessage}"`,
+    execSync(`git commit -m "DEPLOY: ${commitMessage}"`,
         { stdio: 'inherit', cwd: ROOT });
     execSync('git push origin dev', { stdio: 'inherit', cwd: ROOT });
     console.log(`\n🎉 Deployment Complete! v${newVersion}`);
