@@ -154,6 +154,61 @@ try {
     execSync(`git commit -m "DEPLOY: ${commitMessage}"`,
         { stdio: 'inherit', cwd: ROOT });
     execSync('git push origin dev', { stdio: 'inherit', cwd: ROOT });
+
+    // === CI TRIGGER VERIFICATION ===
+    const GITHUB_REPO = 'NeuroCoderZ/holograms.media';
+    const GITHUB_BRANCH = 'dev';
+    const POLL_INTERVAL_MS = 5000;
+    const POLL_TIMEOUT_MS = 45000;
+    const sleepCmd = process.platform === 'win32'
+        ? 'timeout /t 5 /nobreak >nul'
+        : 'sleep 5';
+
+    try {
+        const headSha = execSync('git rev-parse HEAD', { encoding: 'utf8', cwd: ROOT }).trim().substring(0, 40);
+        console.log('   🔍 Verifying CI trigger...');
+
+        let ciRunId = null;
+        const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+        while (Date.now() < deadline) {
+            try {
+                const result = execSync(
+                    `gh api "repos/${GITHUB_REPO}/actions/runs?head_sha=${headSha}&per_page=1" --jq '.workflow_runs[0].id // empty'`,
+                    { encoding: 'utf8', cwd: ROOT, stdio: 'pipe' }
+                ).trim();
+                if (result && result !== 'empty') {
+                    ciRunId = result;
+                    break;
+                }
+            } catch (_) { /* gh not available or API error */ }
+            execSync(sleepCmd, { stdio: 'ignore', cwd: ROOT });
+        }
+
+        if (ciRunId) {
+            console.log(`   ✅ CI run detected: #${ciRunId}`);
+        } else {
+            console.log('   ⚠️  Webhook missed, triggering workflow_dispatch...');
+            let anySuccess = false;
+            const workflows = ['sync-knowledge.yml', 'cloudflare-deploy.yml', 'deploy-hermes.yml', 'hermes-ci.yml', 'koyeb-dev-deploy.yml'];
+            for (const wf of workflows) {
+                try {
+                    execSync(`gh workflow run "${wf}" --ref ${GITHUB_BRANCH}`, { stdio: 'pipe', cwd: ROOT });
+                    console.log(`      ✅ Dispatched: ${wf}`);
+                    anySuccess = true;
+                } catch (e) {
+                    console.warn(`      ⚠️  Failed: ${wf} — ${e.message.split('\n')[0]}`);
+                }
+            }
+            if (!anySuccess) {
+                console.error('   ❌ CI trigger failed completely');
+                process.exit(1);
+            }
+        }
+    } catch (e) {
+        console.warn(`   ⚠️  CI verification unavailable: ${e.message.split('\n')[0]}`);
+    }
+
     console.log(`\n🎉 Deployment Complete! v${newVersion}`);
     console.log(`📡 Knowledge sync will run in GitHub Actions.\n`);
 } catch (e) {
