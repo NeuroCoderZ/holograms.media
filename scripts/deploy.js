@@ -155,64 +155,12 @@ try {
         { stdio: 'inherit', cwd: ROOT });
     execSync('git push origin dev', { stdio: 'inherit', cwd: ROOT });
 
-    // === CI TRIGGER VERIFICATION ===
-    const GITHUB_REPO = 'NeuroCoderZ/holograms.media';
-    const GITHUB_BRANCH = 'dev';
-    const POLL_INTERVAL_MS = 5000;
-    const POLL_TIMEOUT_MS = 45000;
-    const sleepSync = (ms) => { const deadline = Date.now() + ms; while (Date.now() < deadline) {} };
-
-    try {
-        const headSha = execSync('git rev-parse HEAD', { encoding: 'utf8', cwd: ROOT }).trim().substring(0, 40);
-        console.log('   🔍 Verifying CI trigger...');
-
-        // Give GitHub 10s to create a run from the push event
-        console.log('   ⏳ Waiting 10s for push-triggered run...');
-        sleepSync(10000);
-
-        let ciRunId = null;
-        const deadline = Date.now() + POLL_TIMEOUT_MS;
-
-        while (Date.now() < deadline) {
-            try {
-                const result = execSync(
-                    `gh api "repos/${GITHUB_REPO}/actions/runs?head_sha=${headSha}&per_page=1&event=push" --jq '.workflow_runs[0].id // empty'`,
-                    { encoding: 'utf8', cwd: ROOT, stdio: 'pipe' }
-                ).trim();
-                if (result && result !== 'empty') {
-                    ciRunId = result;
-                    break;
-                }
-            } catch (_) { /* gh not available or API error */ }
-            sleepSync(POLL_INTERVAL_MS);
-        }
-
-        if (ciRunId) {
-            console.log(`   ✅ CI run detected (push): #${ciRunId}`);
-        } else {
-            console.log('   ⚠️  Push webhook missed, triggering workflow_dispatch...');
-            let anySuccess = false;
-            const workflows = ['sync-knowledge.yml', 'cloudflare-deploy.yml', 'deploy-hermes.yml', 'hermes-ci.yml', 'koyeb-dev-deploy.yml'];
-            for (const wf of workflows) {
-                try {
-                    execSync(`gh workflow run "${wf}" --ref ${GITHUB_BRANCH}`, { stdio: 'pipe', cwd: ROOT });
-                    console.log(`      ✅ Dispatched: ${wf}`);
-                    anySuccess = true;
-                } catch (e) {
-                    console.warn(`      ⚠️  Failed: ${wf} — ${e.message.split('\n')[0]}`);
-                }
-            }
-            if (!anySuccess) {
-                console.error('   ❌ CI trigger failed completely');
-                process.exit(1);
-            }
-        }
-    } catch (e) {
-        console.warn(`   ⚠️  CI verification unavailable: ${e.message.split('\n')[0]}`);
-    }
-
-    console.log(`\n🎉 Deployment Complete! v${newVersion}`);
-    console.log(`📡 Knowledge sync will run in GitHub Actions.\n`);
+    console.log('\n🎉 Deployment Complete! v' + newVersion);
+    console.log('📡 CI workflows triggered by push. Check GitHub Actions for progress.\n');
+    // Note: Push-triggered workflow_dispatch fallback was removed in v0.20.574
+    // because GitHub API head_sha indexing delay made the polling unreliable,
+    // causing duplicate runs (push + dispatch) on every deploy.
+    // Push always triggers all 5 workflows correctly.
 } catch (e) {
     console.error('❌ Git failed:', e.message);
     process.exit(1);
