@@ -61,26 +61,41 @@ class StorageManager {
         }
     }
 
-    // Telegram CloudStorage wrapper
+    // Telegram CloudStorage wrapper (безопасный — ловит исключения TG v6.0)
     async tgCloudGet(key) {
-        if (!window.Telegram?.WebApp?.CloudStorage) return null;
-        return new Promise((resolve) => {
-            Telegram.WebApp.CloudStorage.getItem(key, (err, val) => {
-                if (err) { console.warn('[Storage] CloudStorage get error:', err); resolve(null); }
-                else resolve(val);
+        try {
+            if (!window.Telegram?.WebApp?.CloudStorage) return null;
+            return await new Promise((res, rej) => {
+                const timeout = setTimeout(() => rej(new Error('CloudStorage timeout')), 2000);
+                Telegram.WebApp.CloudStorage.getItem(key, (err, val) => {
+                    clearTimeout(timeout);
+                    if (err) rej(err);
+                    else res(val);
+                });
             });
-        });
+        } catch (e) {
+            console.warn('[Storage] CloudStorage unavailable, falling back to localStorage:', e.message);
+            return localStorage.getItem(key);
+        }
     }
 
     async tgCloudSet(key, value) {
-        if (!window.Telegram?.WebApp?.CloudStorage) return false;
-        const str = typeof value === 'string' ? value : JSON.stringify(value);
-        return new Promise((resolve) => {
-            Telegram.WebApp.CloudStorage.setItem(key, str, (err) => {
-                if (err) { console.warn('[Storage] CloudStorage set error:', err); resolve(false); }
-                else resolve(true);
+        try {
+            if (!window.Telegram?.WebApp?.CloudStorage) return false;
+            const str = typeof value === 'string' ? value : JSON.stringify(value);
+            return await new Promise((res, rej) => {
+                const timeout = setTimeout(() => rej(new Error('CloudStorage timeout')), 2000);
+                Telegram.WebApp.CloudStorage.setItem(key, str, (err, ok) => {
+                    clearTimeout(timeout);
+                    if (err) rej(err);
+                    else res(ok);
+                });
             });
-        });
+        } catch (e) {
+            console.warn('[Storage] CloudStorage set failed, using localStorage:', e.message);
+            localStorage.setItem(key, value);
+            return true;
+        }
     }
 }
 

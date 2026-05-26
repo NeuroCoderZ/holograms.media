@@ -10,6 +10,13 @@ class GestureIntentClient {
         this._reconnectAttempts = 0;
         this._maxReconnectAttempts = 3;
         this._reconnectDelay = 5000;
+        this._pingInterval = null;
+        this._boundVisibilityChange = () => {
+            if (!document.hidden && this.websocket?.readyState !== WebSocket.OPEN) {
+                this.connect();
+            }
+        };
+        document.addEventListener('visibilitychange', this._boundVisibilityChange);
     }
 
     /**
@@ -43,6 +50,11 @@ class GestureIntentClient {
         this.websocket.onopen = () => {
             console.log('[GestureIntentClient] WebSocket подключён.');
             this._reconnectAttempts = 0;
+            this._pingInterval = setInterval(() => {
+                if (this.websocket?.readyState === WebSocket.OPEN) {
+                    this.websocket.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, 15000);
         };
 
         this.websocket.onmessage = (event) => {
@@ -62,6 +74,11 @@ class GestureIntentClient {
         };
 
         this.websocket.onclose = (event) => {
+            clearInterval(this._pingInterval);
+            if (document.hidden) {
+                console.log('[GestureIntentClient] Page hidden, skip reconnect');
+                return;
+            }
             // Код 1006 = abnormal closure (сервер отверг до handshake = нет авторизации)
             // Код 1008 = policy violation (явный отказ в авторизации)
             const isAuthError = event.code === 1006 || event.code === 1008 || event.code === 4001;
@@ -95,7 +112,9 @@ class GestureIntentClient {
     }
 
     disconnect() {
-        this._reconnectAttempts = this._maxReconnectAttempts; // Блокируем переподключение
+        this._reconnectAttempts = this._maxReconnectAttempts;
+        clearInterval(this._pingInterval);
+        document.removeEventListener('visibilitychange', this._boundVisibilityChange);
         if (this.websocket) {
             this.websocket.close();
             this.websocket = null;

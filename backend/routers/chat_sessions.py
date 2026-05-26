@@ -112,7 +112,12 @@ async def direct_chat_with_tria(
         raise HTTPException(status_code=500, detail="Tria chat is temporarily unavailable.")
 
 
-@router.post("/", response_model=chat_models.UserChatSessionDB, status_code=status.HTTP_201_CREATED)
+@router.get("/health")
+async def chat_health():
+    return {"status": "ok", "endpoint": "/api/v1/chat/users/me/chat_sessions"}
+
+
+@router.post("", response_model=chat_models.UserChatSessionDB, status_code=status.HTTP_201_CREATED)
 async def create_new_chat_session_for_user(
     session_in: chat_models.UserChatSessionCreate,
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
@@ -131,7 +136,7 @@ async def create_new_chat_session_for_user(
     print(f"[CHAT SESSION ROUTER INFO] Chat session ID {created_session.id} created for user {current_user.user_id}.")
     return created_session
 
-@router.get("/", response_model=List[chat_models.UserChatSessionDB])
+@router.get("", response_model=List[chat_models.UserChatSessionDB])
 async def list_user_chat_sessions(
     current_user: user_models.UserInDB = Depends(security.get_current_active_user),
     db: Any = Depends(get_db),
