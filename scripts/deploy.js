@@ -197,8 +197,8 @@ function deployNeuroEscrow() {
         try {
             // Use echo to pipe secret value to wrangler
             const cmd = process.platform === 'win32'
-                ? `echo ${value} | npx wrangler@4.90.0 secret put ${name} --cwd neuroescrow/backend`
-                : `echo "${value}" | npx wrangler@4.90.0 secret put ${name} --cwd neuroescrow/backend`;
+                ? `echo ${value} | npx wrangler@4.95.0 secret put ${name} --cwd neuroescrow/backend`
+                : `echo "${value}" | npx wrangler@4.95.0 secret put ${name} --cwd neuroescrow/backend`;
             
             execSync(cmd, { cwd: ROOT, stdio: 'pipe' });
             console.log(`   ✅ ${name} set`);
@@ -216,7 +216,7 @@ function deployNeuroEscrow() {
     
     console.log('\n📦 Step 3: Deploying to Cloudflare Workers...');
     try {
-        execSync('npx wrangler@4.90.0 deploy', { 
+        execSync('npx wrangler@4.95.0 deploy', { 
             cwd: NEUROESCROW_BACKEND, 
             stdio: 'inherit' 
         });

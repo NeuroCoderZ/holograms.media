@@ -1,6 +1,6 @@
 {
   "name": "holograms-media-backend",
-  "version": "0.20.575",
+  "version": "0.20.576",
   "description": "Backend services for Holograms Media",
   "main": "index.js",
   "dependencies": {
@@ -26,13 +26,13 @@
     "@types/webidl-conversions": "^7.0.3",
     "@types/webxr": "^0.5.24",
     "duckduckgo-mcp-server": "^0.1.2",
-    "exa-mcp-server": "^3.2.0",
+    "exa-mcp-server": "^3.1.8",
     "lamejs": "^1.2.1",
     "repomix": "^1.12.0",
     "typescript": "^6.0.2",
     "typescript-language-server": "^5.1.3",
-    "vite": "^5.0.0",
-    "vite-plugin-pwa": "^1.2.0",
+    "vite": "^8.0.14",
+    "vite-plugin-pwa": "^1.3.0",
     "ws": "^8.20.0"
   }
 }

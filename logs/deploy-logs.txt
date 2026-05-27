@@ -2,363 +2,359 @@ HoloEngine Deploy Logs
 ==================================================
 
 [GitHub Actions — Build Log]
-Build & Deploy	Set up job	﻿2026-05-26T18:52:03.7808696Z Current runner version: '2.334.0'
-Build & Deploy	Set up job	2026-05-26T18:52:03.7837034Z ##[group]Runner Image Provisioner
-Build & Deploy	Set up job	2026-05-26T18:52:03.7838162Z Hosted Compute Agent
-Build & Deploy	Set up job	2026-05-26T18:52:03.7838822Z Version: 20260213.493
-Build & Deploy	Set up job	2026-05-26T18:52:03.7839621Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
-Build & Deploy	Set up job	2026-05-26T18:52:03.7840488Z Build Date: 2026-02-13T00:28:41Z
-Build & Deploy	Set up job	2026-05-26T18:52:03.7841216Z Worker ID: {57a93413-6931-4548-a461-6d885ad502fc}
-Build & Deploy	Set up job	2026-05-26T18:52:03.7842122Z Azure Region: westcentralus
-Build & Deploy	Set up job	2026-05-26T18:52:03.7842833Z ##[endgroup]
-Build & Deploy	Set up job	2026-05-26T18:52:03.7844326Z ##[group]Operating System
-Build & Deploy	Set up job	2026-05-26T18:52:03.7845394Z Ubuntu
-Build & Deploy	Set up job	2026-05-26T18:52:03.7846417Z 24.04.4
-Build & Deploy	Set up job	2026-05-26T18:52:03.7847028Z LTS
-Build & Deploy	Set up job	2026-05-26T18:52:03.7847639Z ##[endgroup]
-Build & Deploy	Set up job	2026-05-26T18:52:03.7848362Z ##[group]Runner Image
-Build & Deploy	Set up job	2026-05-26T18:52:03.7849041Z Image: ubuntu-24.04
-Build & Deploy	Set up job	2026-05-26T18:52:03.7849770Z Version: 20260518.149.1
-Build & Deploy	Set up job	2026-05-26T18:52:03.7850958Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260518.149/images/ubuntu/Ubuntu2404-Readme.md
-Build & Deploy	Set up job	2026-05-26T18:52:03.7852890Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260518.149
-Build & Deploy	Set up job	2026-05-26T18:52:03.7853959Z ##[endgroup]
-Build & Deploy	Set up job	2026-05-26T18:52:03.7855498Z ##[group]GITHUB_TOKEN Permissions
-Build & Deploy	Set up job	2026-05-26T18:52:03.7857785Z Contents: read
-Build & Deploy	Set up job	2026-05-26T18:52:03.7858605Z Deployments: write
-Build & Deploy	Set up job	2026-05-26T18:52:03.7859238Z Metadata: read
-Build & Deploy	Set up job	2026-05-26T18:52:03.7859942Z ##[endgroup]
-Build & Deploy	Set up job	2026-05-26T18:52:03.7862293Z Secret source: Actions
-Build & Deploy	Set up job	2026-05-26T18:52:03.7863135Z Prepare workflow directory
-Build & Deploy	Set up job	2026-05-26T18:52:03.8259206Z Prepare all required actions
-Build & Deploy	Set up job	2026-05-26T18:52:03.8298328Z Getting action download info
-Build & Deploy	Set up job	2026-05-26T18:52:04.3228114Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
-Build & Deploy	Set up job	2026-05-26T18:52:04.4510241Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
-Build & Deploy	Set up job	2026-05-26T18:52:04.5430908Z Download action repository 'cloudflare/pages-action@v1' (SHA:f0a1cd58cd66095dee69bfa18fa5efd1dde93bca)
-Build & Deploy	Set up job	2026-05-26T18:52:05.1266660Z Complete job name: Build & Deploy
-Build & Deploy	📥 Checkout Repository	﻿2026-05-26T18:52:05.2053721Z ##[group]Run actions/checkout@v4
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2054997Z with:
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2055597Z   repository: NeuroCoderZ/holograms.media
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2060992Z   token: ***
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2061539Z   ssh-strict: true
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2062092Z   ssh-user: git
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2062643Z   persist-credentials: true
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2063234Z   clean: true
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2063786Z   sparse-checkout-cone-mode: true
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2064420Z   fetch-depth: 1
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2065103Z   fetch-tags: false
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2065664Z   show-progress: true
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2066217Z   lfs: false
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2066741Z   submodules: false
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2067327Z   set-safe-directory: true
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.2068168Z ##[endgroup]
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3199253Z Syncing repository: NeuroCoderZ/holograms.media
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3202006Z ##[group]Getting Git version info
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3203132Z Working directory is '/home/runner/work/holograms.media/holograms.media'
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3204991Z [command]/usr/bin/git version
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3234967Z git version 2.54.0
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3261082Z ##[endgroup]
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3285977Z Temporarily overriding HOME='/home/runner/work/_temp/44e95275-eed9-453a-b21c-0ab6412f10b0' before making global git config changes
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3288742Z Adding repository directory to the temporary git global config as a safe directory
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3292867Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/holograms.media/holograms.media
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3339828Z Deleting the contents of '/home/runner/work/holograms.media/holograms.media'
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3344338Z ##[group]Initializing the repository
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3349695Z [command]/usr/bin/git init /home/runner/work/holograms.media/holograms.media
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3421712Z hint: Using 'master' as the name for the initial branch. This default branch name
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3424094Z hint: will change to "main" in Git 3.0. To configure the initial branch name
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3425852Z hint: to use in all of your new repositories, which will suppress this warning,
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3427411Z hint: call:
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3428249Z hint:
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3429292Z hint: 	git config --global init.defaultBranch <name>
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3430531Z hint:
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3431713Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3433569Z hint: 'development'. The just-created branch can be renamed via this command:
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3435400Z hint:
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3436316Z hint: 	git branch -m <name>
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3437314Z hint:
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3438588Z hint: Disable this message with "git config set advice.defaultBranchName false"
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3440754Z Initialized empty Git repository in /home/runner/work/holograms.media/holograms.media/.git/
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3444197Z [command]/usr/bin/git remote add origin https://github.com/NeuroCoderZ/holograms.media
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3482219Z ##[endgroup]
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3483742Z ##[group]Disabling automatic garbage collection
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3487359Z [command]/usr/bin/git config --local gc.auto 0
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3520458Z ##[endgroup]
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3521975Z ##[group]Setting up auth
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3528545Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3564977Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3881441Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.3915869Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.4154504Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.4202286Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.4450971Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.4489323Z ##[endgroup]
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.4490832Z ##[group]Fetching the repository
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:05.4499749Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +e7cce866678b5533df0fecca6ff9b717540a546d:refs/remotes/origin/dev
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.4684307Z From https://github.com/NeuroCoderZ/holograms.media
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.4686814Z  * [new ref]         e7cce866678b5533df0fecca6ff9b717540a546d -> origin/dev
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.4718495Z ##[endgroup]
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.4720286Z ##[group]Determining the checkout info
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.4721898Z ##[endgroup]
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.4725424Z [command]/usr/bin/git sparse-checkout disable
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.4768264Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.4799623Z ##[group]Checking out the ref
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.4801209Z [command]/usr/bin/git checkout --progress --force -B dev refs/remotes/origin/dev
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.5392873Z Switched to a new branch 'dev'
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.5395116Z branch 'dev' set up to track 'origin/dev'.
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.5403940Z ##[endgroup]
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.5446354Z [command]/usr/bin/git log -1 --format=%H
-Build & Deploy	📥 Checkout Repository	2026-05-26T18:52:06.5470506Z e7cce866678b5533df0fecca6ff9b717540a546d
-Build & Deploy	Extract version	﻿2026-05-26T18:52:06.5715131Z ##[group]Run VERSION=$(cat version.txt | grep -oP '\d+\.\d+\.\d+' || echo "unknown")
-Build & Deploy	Extract version	2026-05-26T18:52:06.5717810Z [36;1mVERSION=$(cat version.txt | grep -oP '\d+\.\d+\.\d+' || echo "unknown")[0m
-Build & Deploy	Extract version	2026-05-26T18:52:06.5719894Z [36;1mecho "version<<EOF" >> $GITHUB_OUTPUT[0m
-Build & Deploy	Extract version	2026-05-26T18:52:06.5721712Z [36;1mecho "$VERSION" >> $GITHUB_OUTPUT[0m
-Build & Deploy	Extract version	2026-05-26T18:52:06.5723174Z [36;1mecho "EOF" >> $GITHUB_OUTPUT[0m
-Build & Deploy	Extract version	2026-05-26T18:52:06.5768218Z shell: /usr/bin/bash -e {0}
-Build & Deploy	Extract version	2026-05-26T18:52:06.5769478Z ##[endgroup]
-Build & Deploy	🟢 Setup Node.js	﻿2026-05-26T18:52:06.6155724Z ##[group]Run actions/setup-node@v4
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:06.6156961Z with:
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:06.6157861Z   node-version: 20
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:06.6158829Z   cache: npm
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:06.6159754Z   always-auth: false
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:06.6160774Z   check-latest: false
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:06.6173191Z   token: ***
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:06.6174144Z ##[endgroup]
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:06.8077643Z Attempting to download 20...
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:07.7969272Z Acquiring 20.20.2 - x64 from https://github.com/actions/node-versions/releases/download/20.20.2-23521894959/node-20.20.2-linux-x64.tar.gz
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:08.4870185Z Extracting ...
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:08.4978030Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/10e5410e-6356-486f-900a-4c7fd2aa8451 -f /home/runner/work/_temp/c53dcc80-8ee1-45a6-81b6-c2e0b1405e18
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:09.5631051Z Adding to the cache ...
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:11.1241194Z ##[group]Environment details
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:11.3486443Z node: v20.20.2
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:11.3487205Z npm: 10.8.2
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:11.3487433Z yarn: 1.22.22
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:11.3487929Z ##[endgroup]
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:11.3511388Z [command]/opt/hostedtoolcache/node/20.20.2/x64/bin/npm config get cache
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:11.4582115Z /home/runner/.npm
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:11.6645455Z Cache hit for: node-cache-Linux-x64-npm-2865df567e0dd94b9b55a43c959a657149d04d17c962bff28a3d4addb79ca526
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:12.8733348Z Received 33554432 of 94083979 (35.7%), 32.0 MBs/sec
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:13.3952003Z Received 94083979 of 94083979 (100.0%), 59.0 MBs/sec
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:13.3952731Z Cache Size: ~90 MB (94083979 B)
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:13.4003929Z [command]/usr/bin/tar -xf /home/runner/work/_temp/94493039-57ce-4822-83bd-00d20ce0aa25/cache.tzst -P -C /home/runner/work/holograms.media/holograms.media --use-compress-program unzstd
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:13.8206966Z Cache restored successfully
-Build & Deploy	🟢 Setup Node.js	2026-05-26T18:52:13.8260369Z Cache restored from key: node-cache-Linux-x64-npm-2865df567e0dd94b9b55a43c959a657149d04d17c962bff28a3d4addb79ca526
-Build & Deploy	📦 Install Dependencies	﻿2026-05-26T18:52:13.8426220Z ##[group]Run npm ci
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:13.8426556Z [36;1mnpm ci[0m
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:13.8465693Z shell: /usr/bin/bash -e {0}
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:13.8466005Z ##[endgroup]
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:16.6738068Z npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:16.9789321Z npm warn deprecated source-map@0.8.0-beta.0: The work that was done in this beta branch won't be included in future versions
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:17.0446673Z npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:17.4492173Z npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9370792Z 
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9379260Z added 613 packages, and audited 614 packages in 6s
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9379933Z 
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9385232Z 158 packages are looking for funding
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9385910Z   run `npm fund` for details
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9763851Z 
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9765239Z 28 vulnerabilities (19 moderate, 9 high)
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9766384Z 
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9767082Z To address issues that do not require attention, run:
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9767885Z   npm audit fix
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9768325Z 
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9768988Z To address all issues possible (including breaking changes), run:
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9769918Z   npm audit fix --force
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9770398Z 
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9770951Z Some issues need review, and may require choosing
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9771748Z a different dependency.
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9772811Z 
-Build & Deploy	📦 Install Dependencies	2026-05-26T18:52:19.9773223Z Run `npm audit` for details.
-Build & Deploy	🏗️ Build Frontend	﻿2026-05-26T18:52:20.0260535Z ##[group]Run npx vite build
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.0260885Z [36;1mnpx vite build[0m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.0297351Z shell: /usr/bin/bash -e {0}
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.0297651Z env:
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.0298287Z   VITE_GOOGLE_CLIENT_ID: ***
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.0298729Z   VITE_API_URL: https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.0299190Z   VITE_ENVIRONMENT: development
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.0299461Z ##[endgroup]
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.5981002Z [36mvite v5.4.21 [32mbuilding for production...[36m[39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7001806Z transforming...
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7898778Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7900473Z ../webfonts/fa-brands-400.eot referenced in ../webfonts/fa-brands-400.eot didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7901469Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7902659Z ../webfonts/fa-brands-400.eot?#iefix referenced in ../webfonts/fa-brands-400.eot? didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7903832Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7905137Z ../webfonts/fa-regular-400.eot referenced in ../webfonts/fa-regular-400.eot didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7906587Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7908304Z ../webfonts/fa-regular-400.eot?#iefix referenced in ../webfonts/fa-regular-400.eot? didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7909289Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7910325Z ../webfonts/fa-solid-900.eot referenced in ../webfonts/fa-solid-900.eot didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7911247Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7912334Z ../webfonts/fa-solid-900.eot?#iefix referenced in ../webfonts/fa-solid-900.eot? didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7919247Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7920629Z ../webfonts/fa-brands-400.woff2 referenced in ../webfonts/fa-brands-400.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7921906Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7923222Z ../webfonts/fa-regular-400.woff2 referenced in ../webfonts/fa-regular-400.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7924440Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7925974Z ../webfonts/fa-solid-900.woff2 referenced in ../webfonts/fa-solid-900.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7927190Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7928504Z ../webfonts/fa-brands-400.woff referenced in ../webfonts/fa-brands-400.woff didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7929673Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7931076Z ../webfonts/fa-regular-400.woff referenced in ../webfonts/fa-regular-400.woff didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7932267Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7933510Z ../webfonts/fa-solid-900.woff referenced in ../webfonts/fa-solid-900.woff didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7934685Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7936295Z ../webfonts/fa-brands-400.ttf referenced in ../webfonts/fa-brands-400.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7937442Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7938760Z ../webfonts/fa-regular-400.ttf referenced in ../webfonts/fa-regular-400.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7939876Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7941089Z ../webfonts/fa-solid-900.ttf referenced in ../webfonts/fa-solid-900.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7942179Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7943522Z ../webfonts/fa-brands-400.svg#fontawesome referenced in ../webfonts/fa-brands-400.svg didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7945358Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7946978Z ../webfonts/fa-regular-400.svg#fontawesome referenced in ../webfonts/fa-regular-400.svg didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7948141Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:20.7949449Z ../webfonts/fa-solid-900.svg#fontawesome referenced in ../webfonts/fa-solid-900.svg didn't resolve at build time, it will remain unchanged to be resolved at runtime
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:21.7827522Z [32m✓[39m 176 modules transformed.
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:21.9330436Z rendering chunks...
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0393412Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0395771Z (!) /home/runner/work/holograms.media/holograms.media/js/ui/LightingManager.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/main.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/core/init.js, dynamic import will not move module into another chunk.
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0397545Z [39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0398061Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0400094Z (!) /home/runner/work/holograms.media/holograms.media/js/services/AudioService.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/core/init.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/audio/audioProcessing.js, /home/runner/work/holograms.media/holograms.media/js/core/TriaPulse.js, dynamic import will not move module into another chunk.
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0401623Z [39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0402083Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0404942Z (!) /home/runner/work/holograms.media/holograms.media/js/audio/audioProcessing.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/core/init.js, /home/runner/work/holograms.media/holograms.media/js/services/LiveAudioService.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/audio/audioFilePlayer.js, /home/runner/work/holograms.media/holograms.media/js/audio/microphoneManager.js, /home/runner/work/holograms.media/holograms.media/js/main.js, dynamic import will not move module into another chunk.
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0407066Z [39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0407481Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0409244Z (!) /home/runner/work/holograms.media/holograms.media/js/services/NeuralDecoderService.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/core/init.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/multimodal/hologramScanner.js, dynamic import will not move module into another chunk.
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0410573Z [39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0410984Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0413111Z (!) /home/runner/work/holograms.media/holograms.media/js/core/auth.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/services/apiService.js, /home/runner/work/holograms.media/holograms.media/js/ui/uiManager.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/ai/chat.js, /home/runner/work/holograms.media/holograms.media/js/main.js, dynamic import will not move module into another chunk.
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0414953Z [39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0415372Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0416980Z (!) /home/runner/work/holograms.media/holograms.media/js/services/gestureIntentClient.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/core/init.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/main.js, dynamic import will not move module into another chunk.
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0418216Z [39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0418622Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0421588Z (!) /home/runner/work/holograms.media/holograms.media/js/services/apiService.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/ai/chat.js, /home/runner/work/holograms.media/holograms.media/js/ui/GestureUIManager.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/ai/TriaEvolutionConnector.js, /home/runner/work/holograms.media/holograms.media/js/ai/chat.js, /home/runner/work/holograms.media/holograms.media/js/ai/tria.js, dynamic import will not move module into another chunk.
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0423770Z [39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0424199Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0426000Z (!) /home/runner/work/holograms.media/holograms.media/js/main.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/ai/chat.js but also statically imported by /home/runner/work/holograms.media/holograms.media/index.html, dynamic import will not move module into another chunk.
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0427166Z [39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0575099Z computing gzip size...
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0688483Z [2mdist/[22m[32mregisterSW.js                              [39m[1m[2m  0.13 kB[22m[1m[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0689998Z [2mdist/[22m[32mmanifest.webmanifest                       [39m[1m[2m  0.60 kB[22m[1m[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0691579Z [2mdist/[22m[2massets/[22m[32mcwtAudioWorklet-C5Crdn2s.js         [39m[1m[2m 14.33 kB[22m[1m[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0693052Z [2mdist/[22m[2massets/[22m[32mfavicon-Dw0tKZBH.ico                [39m[1m[2m 21.83 kB[22m[1m[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0694434Z [2mdist/[22m[32mindex.html                                 [39m[1m[2m 44.86 kB[22m[1m[22m[2m │ gzip: 14.03 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0696337Z [2mdist/[22m[2massets/[22m[35mindex-0HUEZiQk.css                  [39m[1m[2m 65.89 kB[22m[1m[22m[2m │ gzip: 12.82 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0698146Z [2mdist/[22m[2massets/[22m[36mglassSpecularManager-uzOmteXj.js    [39m[1m[2m  0.26 kB[22m[1m[22m[2m │ gzip:  0.20 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0699830Z [2mdist/[22m[2massets/[22m[36mxrInput-aVslti9a.js                 [39m[1m[2m  0.38 kB[22m[1m[22m[2m │ gzip:  0.20 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0701391Z [2mdist/[22m[2massets/[22m[36mconfig-BV1tYge3.js                  [39m[1m[2m  0.45 kB[22m[1m[22m[2m │ gzip:  0.32 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0703047Z [2mdist/[22m[2massets/[22m[36mbrowserPipelineTest-DL2mXjHZ.js     [39m[1m[2m  0.60 kB[22m[1m[22m[2m │ gzip:  0.39 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0704912Z [2mdist/[22m[2massets/[22m[36mwasm_loader-B3GmFJcN.js             [39m[1m[2m  0.77 kB[22m[1m[22m[2m │ gzip:  0.56 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0706562Z [2mdist/[22m[2massets/[22m[36mOneEuroFilter-D_1H7JRs.js           [39m[1m[2m  0.90 kB[22m[1m[22m[2m │ gzip:  0.48 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0708062Z [2mdist/[22m[2massets/[22m[36mEarthZero-DvsulkIy.js               [39m[1m[2m  0.92 kB[22m[1m[22m[2m │ gzip:  0.49 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0709677Z [2mdist/[22m[2massets/[22m[36mEmbeddingStream-nZ1BfZ4Z.js         [39m[1m[2m  1.02 kB[22m[1m[22m[2m │ gzip:  0.54 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0711238Z [2mdist/[22m[2massets/[22m[36mProofOfGesture-DF6bxfvc.js          [39m[1m[2m  1.05 kB[22m[1m[22m[2m │ gzip:  0.59 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0712785Z [2mdist/[22m[2massets/[22m[36mAgentWomb-BzculicG.js               [39m[1m[2m  1.27 kB[22m[1m[22m[2m │ gzip:  0.73 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0714341Z [2mdist/[22m[2massets/[22m[36mTorusVom-CKntBIGV.js                [39m[1m[2m  1.40 kB[22m[1m[22m[2m │ gzip:  0.73 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0716236Z [2mdist/[22m[2massets/[22m[36mTriaPulse-CdwVWkaX.js               [39m[1m[2m  1.54 kB[22m[1m[22m[2m │ gzip:  0.69 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0717895Z [2mdist/[22m[2massets/[22m[36mMaturityDaemon-BgBDZQee.js          [39m[1m[2m  1.65 kB[22m[1m[22m[2m │ gzip:  0.98 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0720004Z [2mdist/[22m[2massets/[22m[36mPredictiveRAG-BQrcp8mq.js           [39m[1m[2m  1.80 kB[22m[1m[22m[2m │ gzip:  0.89 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0721902Z [2mdist/[22m[2massets/[22m[36mLocalChain-6wbFQDCx.js              [39m[1m[2m  1.94 kB[22m[1m[22m[2m │ gzip:  1.08 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0723632Z [2mdist/[22m[2massets/[22m[36mAgenticDAO-CmA9SWCx.js              [39m[1m[2m  2.10 kB[22m[1m[22m[2m │ gzip:  0.90 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0725453Z [2mdist/[22m[2massets/[22m[36mChunkProcessor-CN4d3rcd.js          [39m[1m[2m  2.18 kB[22m[1m[22m[2m │ gzip:  0.88 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0727230Z [2mdist/[22m[2massets/[22m[36mHyperbrainSynthesizer-kBVa_CvQ.js   [39m[1m[2m  2.21 kB[22m[1m[22m[2m │ gzip:  1.11 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0728894Z [2mdist/[22m[2massets/[22m[36mTriaDBClient-D_CfManu.js            [39m[1m[2m  2.25 kB[22m[1m[22m[2m │ gzip:  0.96 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0730613Z [2mdist/[22m[2massets/[22m[36mReintegrationManager-BKdw3AGs.js    [39m[1m[2m  2.26 kB[22m[1m[22m[2m │ gzip:  1.00 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0732385Z [2mdist/[22m[2massets/[22m[36mObolosRewardEngine-BhjKBoOk.js      [39m[1m[2m  2.36 kB[22m[1m[22m[2m │ gzip:  1.02 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0734042Z [2mdist/[22m[2massets/[22m[36mchatMessages-CXSLSDoC.js            [39m[1m[2m  2.44 kB[22m[1m[22m[2m │ gzip:  1.41 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0735952Z [2mdist/[22m[2massets/[22m[36mrightPanelManager-WT4qBybh.js       [39m[1m[2m  2.50 kB[22m[1m[22m[2m │ gzip:  0.99 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0737532Z [2mdist/[22m[2massets/[22m[36mLiveAudioService-BNn1GidG.js        [39m[1m[2m  2.64 kB[22m[1m[22m[2m │ gzip:  1.22 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0739158Z [2mdist/[22m[2massets/[22m[36mHermaionBridge-DER2vPVA.js          [39m[1m[2m  2.77 kB[22m[1m[22m[2m │ gzip:  1.19 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0740842Z [2mdist/[22m[2massets/[22m[36mHermaionWallet-BjgNBC7Z.js          [39m[1m[2m  2.95 kB[22m[1m[22m[2m │ gzip:  1.25 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0742578Z [2mdist/[22m[2massets/[22m[36mTriaMemory-vTc5wbwa.js              [39m[1m[2m  2.98 kB[22m[1m[22m[2m │ gzip:  1.18 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0744186Z [2mdist/[22m[2massets/[22m[36mmobileLayout-DNcO_GkJ.js            [39m[1m[2m  3.08 kB[22m[1m[22m[2m │ gzip:  0.90 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0746030Z [2mdist/[22m[2massets/[22m[36mEnkephalonBridge-CVqodJeo.js        [39m[1m[2m  3.21 kB[22m[1m[22m[2m │ gzip:  1.21 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0747746Z [2mdist/[22m[2massets/[22m[36mHolographicChatRoom-B-7q6eBv.js     [39m[1m[2m  3.26 kB[22m[1m[22m[2m │ gzip:  1.49 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0749403Z [2mdist/[22m[2massets/[22m[36mdesktopLayout-CKxTrA7P.js           [39m[1m[2m  4.85 kB[22m[1m[22m[2m │ gzip:  1.35 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0751129Z [2mdist/[22m[2massets/[22m[36mGestureEmbeddingBridge-DJjd9ey3.js  [39m[1m[2m  4.97 kB[22m[1m[22m[2m │ gzip:  1.87 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0752939Z [2mdist/[22m[2massets/[22m[36mTriaFileSystem-Bal4zLXu.js          [39m[1m[2m  5.00 kB[22m[1m[22m[2m │ gzip:  2.13 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0755080Z [2mdist/[22m[2massets/[22m[36mTriaCollectiveService-CYg7gPKC.js   [39m[1m[2m  5.73 kB[22m[1m[22m[2m │ gzip:  1.86 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0756905Z [2mdist/[22m[2massets/[22m[36mxrLayout-0uJ_Mvkq.js                [39m[1m[2m  6.19 kB[22m[1m[22m[2m │ gzip:  1.57 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0758520Z [2mdist/[22m[2massets/[22m[36mmobileInput-xEXNK0oS.js             [39m[1m[2m  6.21 kB[22m[1m[22m[2m │ gzip:  1.84 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0760109Z [2mdist/[22m[2massets/[22m[36mGestureVectorStore-CL6E1duG.js      [39m[1m[2m 10.86 kB[22m[1m[22m[2m │ gzip:  3.82 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0761766Z [2mdist/[22m[2massets/[22m[36mfileEditor-B3x-v9C3.js              [39m[1m[2m 13.17 kB[22m[1m[22m[2m │ gzip:  5.09 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0763811Z [2mdist/[22m[2massets/[22m[36mhandsTracking-Db2jQJq5.js           [39m[1m[2m 13.41 kB[22m[1m[22m[2m │ gzip:  5.06 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0766167Z [2mdist/[22m[2massets/[22m[36mHologramWebGPU-D9VhuBwD.js          [39m[1m[2m 16.26 kB[22m[1m[22m[2m │ gzip:  4.80 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0767805Z [2mdist/[22m[2massets/[22m[36mdesktopInput-gss1mALK.js            [39m[1m[2m 49.10 kB[22m[1m[22m[2m │ gzip: 18.19 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0769415Z [2mdist/[22m[2massets/[22m[36mindex-DxeW69Rp.js                   [39m[1m[2m238.37 kB[22m[1m[22m[2m │ gzip: 74.39 kB[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:22.0770384Z [32m✓ built in 1.45s[39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:23.7440727Z 
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:23.7441727Z [36mPWA v1.2.0[39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:23.7442353Z mode      [35mgenerateSW[39m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:23.7443073Z precache  [32m59 entries[39m [2m(1917.60 KiB)[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:23.7443524Z files generated
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:23.7443979Z   [2mdist/sw.js[22m
-Build & Deploy	🏗️ Build Frontend	2026-05-26T18:52:23.7444480Z   [2mdist/workbox-8c29f6e4.js[22m
-Build & Deploy	🔧 Copy _headers and _redirects to dist	﻿2026-05-26T18:52:23.7919473Z ##[group]Run mkdir -p dist
-Build & Deploy	🔧 Copy _headers and _redirects to dist	2026-05-26T18:52:23.7919819Z [36;1mmkdir -p dist[0m
-Build & Deploy	🔧 Copy _headers and _redirects to dist	2026-05-26T18:52:23.7920174Z [36;1mcp public/_headers dist/_headers || echo "No _headers found"[0m
-Build & Deploy	🔧 Copy _headers and _redirects to dist	2026-05-26T18:52:23.7920672Z [36;1mcp public/_redirects dist/_redirects || echo "No _redirects found"[0m
-Build & Deploy	🔧 Copy _headers and _redirects to dist	2026-05-26T18:52:23.7957163Z shell: /usr/bin/bash -e {0}
-Build & Deploy	🔧 Copy _headers and _redirects to dist	2026-05-26T18:52:23.7957479Z ##[endgroup]
-Build & Deploy	☁️ Deploy to Cloudflare Pages	﻿2026-05-26T18:52:23.8138694Z ##[group]Run cloudflare/pages-action@v1
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:23.8139025Z with:
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:23.8139518Z   apiToken: ***
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:23.8139803Z   accountId: ***
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:23.8140059Z   projectName: holograms-media-dev
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:23.8140348Z   directory: dist
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:23.8143454Z   gitHubToken: ***
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:23.8143716Z   branch: main
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:23.8143960Z   wranglerVersion: 2
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:23.8144218Z ##[endgroup]
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:27.2629768Z Uploading... (57/62)
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:27.8572455Z Uploading... (58/62)
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:28.2266942Z Uploading... (60/62)
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:28.9233096Z Uploading... (62/62)
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:28.9237887Z ✨ Success! Uploaded 5 files (57 already uploaded) (2.00 sec)
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:28.9238681Z 
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:29.3059811Z ✨ Uploading _headers
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:29.3060816Z ✨ Uploading _redirects
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:30.1118020Z ✨ Deployment complete! Take a peek over at https://7c026e01.holograms-media-dev.pages.dev
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:30.2759565Z npm notice
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:30.2760321Z npm notice New major version of npm available! 10.8.2 -> 11.15.0
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:30.2761310Z npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.15.0
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:30.2762117Z npm notice To update run: npm install -g npm@11.15.0
-Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T18:52:30.2762620Z npm notice
-Build & Deploy	Summary	﻿2026-05-26T18:52:30.9867515Z ##[group]Run echo "## ✅ Frontend Deployed" >> $GITHUB_STEP_SUMMARY
-Build & Deploy	Summary	2026-05-26T18:52:30.9868053Z [36;1mecho "## ✅ Frontend Deployed" >> $GITHUB_STEP_SUMMARY[0m
-Build & Deploy	Summary	2026-05-26T18:52:30.9868488Z [36;1mecho "**Version:** 0.20.574" >> $GITHUB_STEP_SUMMARY[0m
-Build & Deploy	Summary	2026-05-26T18:52:30.9868989Z [36;1mecho "**Commit:** e7cce866678b5533df0fecca6ff9b717540a546d" >> $GITHUB_STEP_SUMMARY[0m
-Build & Deploy	Summary	2026-05-26T18:52:30.9904953Z shell: /usr/bin/bash -e {0}
-Build & Deploy	Summary	2026-05-26T18:52:30.9905246Z ##[endgroup]
-Build & Deploy	Post 🟢 Setup Node.js	﻿2026-05-26T18:52:31.0021687Z Post job cleanup.
-Build & Deploy	Post 🟢 Setup Node.js	2026-05-26T18:52:31.1628361Z Cache hit occurred on the primary key node-cache-Linux-x64-npm-2865df567e0dd94b9b55a43c959a657149d04d17c962bff28a3d4addb79ca526, not saving cache.
-Build & Deploy	Post 📥 Checkout Repository	﻿2026-05-26T18:52:31.1745659Z Post job cleanup.
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.2752871Z [command]/usr/bin/git version
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.2790732Z git version 2.54.0
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.2836307Z Temporarily overriding HOME='/home/runner/work/_temp/ab7b97ed-66bc-4279-bac8-4b3550af3f7c' before making global git config changes
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.2837720Z Adding repository directory to the temporary git global config as a safe directory
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.2851970Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/holograms.media/holograms.media
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.2893288Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.2932305Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.3201872Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.3230785Z http.https://github.com/.extraheader
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.3248627Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.3287457Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.3555033Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
-Build & Deploy	Post 📥 Checkout Repository	2026-05-26T18:52:31.3595721Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
-Build & Deploy	Complete job	﻿2026-05-26T18:52:31.4003826Z Cleaning up orphan processes
-Build & Deploy	Complete job	2026-05-26T18:52:31.4312743Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-node@v4, cloudflare/pages-action@v1. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Build & Deploy	Set up job	﻿2026-05-26T19:12:35.1724309Z Current runner version: '2.334.0'
+Build & Deploy	Set up job	2026-05-26T19:12:35.1749900Z ##[group]Runner Image Provisioner
+Build & Deploy	Set up job	2026-05-26T19:12:35.1750772Z Hosted Compute Agent
+Build & Deploy	Set up job	2026-05-26T19:12:35.1751400Z Version: 20260213.493
+Build & Deploy	Set up job	2026-05-26T19:12:35.1752146Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+Build & Deploy	Set up job	2026-05-26T19:12:35.1753302Z Build Date: 2026-02-13T00:28:41Z
+Build & Deploy	Set up job	2026-05-26T19:12:35.1754094Z Worker ID: {611493b2-d97b-461e-9c44-c46a879c773c}
+Build & Deploy	Set up job	2026-05-26T19:12:35.1754850Z Azure Region: northcentralus
+Build & Deploy	Set up job	2026-05-26T19:12:35.1755447Z ##[endgroup]
+Build & Deploy	Set up job	2026-05-26T19:12:35.1757025Z ##[group]Operating System
+Build & Deploy	Set up job	2026-05-26T19:12:35.1757675Z Ubuntu
+Build & Deploy	Set up job	2026-05-26T19:12:35.1758145Z 24.04.4
+Build & Deploy	Set up job	2026-05-26T19:12:35.1758694Z LTS
+Build & Deploy	Set up job	2026-05-26T19:12:35.1759193Z ##[endgroup]
+Build & Deploy	Set up job	2026-05-26T19:12:35.1759746Z ##[group]Runner Image
+Build & Deploy	Set up job	2026-05-26T19:12:35.1760400Z Image: ubuntu-24.04
+Build & Deploy	Set up job	2026-05-26T19:12:35.1760944Z Version: 20260518.149.1
+Build & Deploy	Set up job	2026-05-26T19:12:35.1762065Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260518.149/images/ubuntu/Ubuntu2404-Readme.md
+Build & Deploy	Set up job	2026-05-26T19:12:35.1764330Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260518.149
+Build & Deploy	Set up job	2026-05-26T19:12:35.1765417Z ##[endgroup]
+Build & Deploy	Set up job	2026-05-26T19:12:35.1766660Z ##[group]GITHUB_TOKEN Permissions
+Build & Deploy	Set up job	2026-05-26T19:12:35.1768848Z Contents: read
+Build & Deploy	Set up job	2026-05-26T19:12:35.1769481Z Deployments: write
+Build & Deploy	Set up job	2026-05-26T19:12:35.1770051Z Metadata: read
+Build & Deploy	Set up job	2026-05-26T19:12:35.1770981Z ##[endgroup]
+Build & Deploy	Set up job	2026-05-26T19:12:35.1773796Z Secret source: Actions
+Build & Deploy	Set up job	2026-05-26T19:12:35.1774926Z Prepare workflow directory
+Build & Deploy	Set up job	2026-05-26T19:12:35.2113824Z Prepare all required actions
+Build & Deploy	Set up job	2026-05-26T19:12:35.2151980Z Getting action download info
+Build & Deploy	Set up job	2026-05-26T19:12:35.7353178Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+Build & Deploy	Set up job	2026-05-26T19:12:35.8631100Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+Build & Deploy	Set up job	2026-05-26T19:12:35.9546841Z Download action repository 'cloudflare/pages-action@v1' (SHA:f0a1cd58cd66095dee69bfa18fa5efd1dde93bca)
+Build & Deploy	Set up job	2026-05-26T19:12:36.3163517Z Complete job name: Build & Deploy
+Build & Deploy	📥 Checkout Repository	﻿2026-05-26T19:12:36.3958798Z ##[group]Run actions/checkout@v4
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3959759Z with:
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3960272Z   repository: NeuroCoderZ/holograms.media
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3961058Z   token: ***
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3961489Z   ssh-strict: true
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3961936Z   ssh-user: git
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3962604Z   persist-credentials: true
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3963120Z   clean: true
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3963588Z   sparse-checkout-cone-mode: true
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3964126Z   fetch-depth: 1
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3964571Z   fetch-tags: false
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3965054Z   show-progress: true
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3965515Z   lfs: false
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3965938Z   submodules: false
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3966388Z   set-safe-directory: true
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.3967174Z ##[endgroup]
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5137786Z Syncing repository: NeuroCoderZ/holograms.media
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5141502Z ##[group]Getting Git version info
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5142970Z Working directory is '/home/runner/work/holograms.media/holograms.media'
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5145196Z [command]/usr/bin/git version
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5260907Z git version 2.54.0
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5288121Z ##[endgroup]
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5303559Z Temporarily overriding HOME='/home/runner/work/_temp/76f61f8f-09b6-457a-9d94-e008edf802ef' before making global git config changes
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5305298Z Adding repository directory to the temporary git global config as a safe directory
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5309731Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/holograms.media/holograms.media
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5368046Z Deleting the contents of '/home/runner/work/holograms.media/holograms.media'
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5370971Z ##[group]Initializing the repository
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5376060Z [command]/usr/bin/git init /home/runner/work/holograms.media/holograms.media
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5507586Z hint: Using 'master' as the name for the initial branch. This default branch name
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5509026Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5510211Z hint: to use in all of your new repositories, which will suppress this warning,
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5511021Z hint: call:
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5511434Z hint:
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5511997Z hint: 	git config --global init.defaultBranch <name>
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5512989Z hint:
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5513620Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5514659Z hint: 'development'. The just-created branch can be renamed via this command:
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5515446Z hint:
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5515878Z hint: 	git branch -m <name>
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5516357Z hint:
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5517145Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5520366Z Initialized empty Git repository in /home/runner/work/holograms.media/holograms.media/.git/
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5533538Z [command]/usr/bin/git remote add origin https://github.com/NeuroCoderZ/holograms.media
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5579085Z ##[endgroup]
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5580506Z ##[group]Disabling automatic garbage collection
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5584432Z [command]/usr/bin/git config --local gc.auto 0
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5614058Z ##[endgroup]
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5615531Z ##[group]Setting up auth
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5622219Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.5657732Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.6033755Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.6064929Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.6278512Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.6317826Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.6542054Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.6576373Z ##[endgroup]
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.6577934Z ##[group]Fetching the repository
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:36.6587128Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +33a5ffa553ce5a8fa0df1a03e2d1cd607f1cdd70:refs/remotes/origin/dev
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.3566573Z From https://github.com/NeuroCoderZ/holograms.media
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.3568126Z  * [new ref]         33a5ffa553ce5a8fa0df1a03e2d1cd607f1cdd70 -> origin/dev
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.3612845Z ##[endgroup]
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.3615045Z ##[group]Determining the checkout info
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.3617446Z ##[endgroup]
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.3620984Z [command]/usr/bin/git sparse-checkout disable
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.3670307Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.3700683Z ##[group]Checking out the ref
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.3706175Z [command]/usr/bin/git checkout --progress --force -B dev refs/remotes/origin/dev
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.4307345Z Switched to a new branch 'dev'
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.4309196Z branch 'dev' set up to track 'origin/dev'.
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.4318452Z ##[endgroup]
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.4361625Z [command]/usr/bin/git log -1 --format=%H
+Build & Deploy	📥 Checkout Repository	2026-05-26T19:12:37.4386727Z 33a5ffa553ce5a8fa0df1a03e2d1cd607f1cdd70
+Build & Deploy	Extract version	﻿2026-05-26T19:12:37.4628533Z ##[group]Run VERSION=$(cat version.txt | grep -oP '\d+\.\d+\.\d+' || echo "unknown")
+Build & Deploy	Extract version	2026-05-26T19:12:37.4631305Z [36;1mVERSION=$(cat version.txt | grep -oP '\d+\.\d+\.\d+' || echo "unknown")[0m
+Build & Deploy	Extract version	2026-05-26T19:12:37.4633559Z [36;1mecho "version<<EOF" >> $GITHUB_OUTPUT[0m
+Build & Deploy	Extract version	2026-05-26T19:12:37.4635284Z [36;1mecho "$VERSION" >> $GITHUB_OUTPUT[0m
+Build & Deploy	Extract version	2026-05-26T19:12:37.4636635Z [36;1mecho "EOF" >> $GITHUB_OUTPUT[0m
+Build & Deploy	Extract version	2026-05-26T19:12:37.4677430Z shell: /usr/bin/bash -e {0}
+Build & Deploy	Extract version	2026-05-26T19:12:37.4678619Z ##[endgroup]
+Build & Deploy	🟢 Setup Node.js	﻿2026-05-26T19:12:37.4993990Z ##[group]Run actions/setup-node@v4
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:37.4995183Z with:
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:37.4995973Z   node-version: 20
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:37.4996828Z   cache: npm
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:37.4997645Z   always-auth: false
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:37.4998541Z   check-latest: false
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:37.4999736Z   token: ***
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:37.5000635Z ##[endgroup]
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:37.6923873Z Attempting to download 20...
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:38.3481168Z Acquiring 20.20.2 - x64 from https://github.com/actions/node-versions/releases/download/20.20.2-23521894959/node-20.20.2-linux-x64.tar.gz
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:38.7986032Z Extracting ...
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:38.8100442Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/e7ed2f34-3b97-400e-b3b8-c69202bba0ae -f /home/runner/work/_temp/4ff976c8-a200-483e-8ac5-4e5f7775c7a6
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:39.8081427Z Adding to the cache ...
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:41.6973934Z ##[group]Environment details
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:41.9231060Z node: v20.20.2
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:41.9231636Z npm: 10.8.2
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:41.9231998Z yarn: 1.22.22
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:41.9233067Z ##[endgroup]
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:41.9256761Z [command]/opt/hostedtoolcache/node/20.20.2/x64/bin/npm config get cache
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:42.0285617Z /home/runner/.npm
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:42.1862616Z Cache hit for: node-cache-Linux-x64-npm-2865df567e0dd94b9b55a43c959a657149d04d17c962bff28a3d4addb79ca526
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:43.2829811Z Received 89889675 of 94083979 (95.5%), 85.7 MBs/sec
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:43.3265481Z Received 94083979 of 94083979 (100.0%), 85.9 MBs/sec
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:43.3266640Z Cache Size: ~90 MB (94083979 B)
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:43.3313809Z [command]/usr/bin/tar -xf /home/runner/work/_temp/c736e844-1686-4438-8494-7bbbeeca460e/cache.tzst -P -C /home/runner/work/holograms.media/holograms.media --use-compress-program unzstd
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:43.7908690Z Cache restored successfully
+Build & Deploy	🟢 Setup Node.js	2026-05-26T19:12:43.7968176Z Cache restored from key: node-cache-Linux-x64-npm-2865df567e0dd94b9b55a43c959a657149d04d17c962bff28a3d4addb79ca526
+Build & Deploy	📦 Install Dependencies	﻿2026-05-26T19:12:43.8145887Z ##[group]Run npm ci
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:43.8146173Z [36;1mnpm ci[0m
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:43.8183558Z shell: /usr/bin/bash -e {0}
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:43.8183850Z ##[endgroup]
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:46.7557979Z npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:47.1296266Z npm warn deprecated source-map@0.8.0-beta.0: The work that was done in this beta branch won't be included in future versions
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:47.1856785Z npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:47.6370546Z npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1270492Z 
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1272169Z added 613 packages, and audited 614 packages in 6s
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1273048Z 
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1273505Z 158 packages are looking for funding
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1274072Z   run `npm fund` for details
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1568120Z 
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1568957Z 28 vulnerabilities (19 moderate, 9 high)
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1569506Z 
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1569894Z To address issues that do not require attention, run:
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1570460Z   npm audit fix
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1570675Z 
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1571130Z To address all issues possible (including breaking changes), run:
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1571817Z   npm audit fix --force
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1572079Z 
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1572639Z Some issues need review, and may require choosing
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1573234Z a different dependency.
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1574061Z 
+Build & Deploy	📦 Install Dependencies	2026-05-26T19:12:50.1574277Z Run `npm audit` for details.
+Build & Deploy	🏗️ Build Frontend	﻿2026-05-26T19:12:50.2011149Z ##[group]Run npx vite build
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.2011470Z [36;1mnpx vite build[0m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.2045035Z shell: /usr/bin/bash -e {0}
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.2045299Z env:
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.2045961Z   VITE_GOOGLE_CLIENT_ID: ***
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.2046398Z   VITE_API_URL: https://holograms-media-dev-holograms-media-cb8383e3.koyeb.app
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.2046845Z   VITE_ENVIRONMENT: development
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.2047098Z ##[endgroup]
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.7230653Z [36mvite v5.4.21 [32mbuilding for production...[36m[39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.8258368Z transforming...
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9874584Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9876509Z ../webfonts/fa-brands-400.eot referenced in ../webfonts/fa-brands-400.eot didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9877547Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9878683Z ../webfonts/fa-brands-400.eot?#iefix referenced in ../webfonts/fa-brands-400.eot? didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9879725Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9880749Z ../webfonts/fa-regular-400.eot referenced in ../webfonts/fa-regular-400.eot didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9881659Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9883150Z ../webfonts/fa-regular-400.eot?#iefix referenced in ../webfonts/fa-regular-400.eot? didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9884529Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9885992Z ../webfonts/fa-solid-900.eot referenced in ../webfonts/fa-solid-900.eot didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9886799Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9887694Z ../webfonts/fa-solid-900.eot?#iefix referenced in ../webfonts/fa-solid-900.eot? didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9888494Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9889375Z ../webfonts/fa-brands-400.woff2 referenced in ../webfonts/fa-brands-400.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9890200Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9891113Z ../webfonts/fa-regular-400.woff2 referenced in ../webfonts/fa-regular-400.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9891988Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9893563Z ../webfonts/fa-solid-900.woff2 referenced in ../webfonts/fa-solid-900.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9894697Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9895604Z ../webfonts/fa-brands-400.woff referenced in ../webfonts/fa-brands-400.woff didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9896194Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9896833Z ../webfonts/fa-regular-400.woff referenced in ../webfonts/fa-regular-400.woff didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9897415Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9898526Z ../webfonts/fa-solid-900.woff referenced in ../webfonts/fa-solid-900.woff didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9899547Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9900697Z ../webfonts/fa-brands-400.ttf referenced in ../webfonts/fa-brands-400.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9901703Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9902981Z ../webfonts/fa-regular-400.ttf referenced in ../webfonts/fa-regular-400.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9904027Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9904684Z ../webfonts/fa-solid-900.ttf referenced in ../webfonts/fa-solid-900.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9905260Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9905986Z ../webfonts/fa-brands-400.svg#fontawesome referenced in ../webfonts/fa-brands-400.svg didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9906957Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9907874Z ../webfonts/fa-regular-400.svg#fontawesome referenced in ../webfonts/fa-regular-400.svg didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9908518Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:50.9909205Z ../webfonts/fa-solid-900.svg#fontawesome referenced in ../webfonts/fa-solid-900.svg didn't resolve at build time, it will remain unchanged to be resolved at runtime
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:51.9489800Z [32m✓[39m 176 modules transformed.
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.1230155Z rendering chunks...
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2277459Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2280709Z (!) /home/runner/work/holograms.media/holograms.media/js/ui/LightingManager.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/main.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/core/init.js, dynamic import will not move module into another chunk.
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2283454Z [39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2284275Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2288170Z (!) /home/runner/work/holograms.media/holograms.media/js/services/AudioService.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/core/init.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/audio/audioProcessing.js, /home/runner/work/holograms.media/holograms.media/js/core/TriaPulse.js, dynamic import will not move module into another chunk.
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2291024Z [39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2291727Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2297224Z (!) /home/runner/work/holograms.media/holograms.media/js/audio/audioProcessing.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/core/init.js, /home/runner/work/holograms.media/holograms.media/js/services/LiveAudioService.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/audio/audioFilePlayer.js, /home/runner/work/holograms.media/holograms.media/js/audio/microphoneManager.js, /home/runner/work/holograms.media/holograms.media/js/main.js, dynamic import will not move module into another chunk.
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2301380Z [39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2302231Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2306059Z (!) /home/runner/work/holograms.media/holograms.media/js/services/NeuralDecoderService.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/core/init.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/multimodal/hologramScanner.js, dynamic import will not move module into another chunk.
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2308833Z [39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2309631Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2314280Z (!) /home/runner/work/holograms.media/holograms.media/js/core/auth.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/services/apiService.js, /home/runner/work/holograms.media/holograms.media/js/ui/uiManager.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/ai/chat.js, /home/runner/work/holograms.media/holograms.media/js/main.js, dynamic import will not move module into another chunk.
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2317624Z [39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2318431Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2321711Z (!) /home/runner/work/holograms.media/holograms.media/js/services/gestureIntentClient.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/core/init.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/main.js, dynamic import will not move module into another chunk.
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2324441Z [39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2325206Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2330736Z (!) /home/runner/work/holograms.media/holograms.media/js/services/apiService.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/ai/chat.js, /home/runner/work/holograms.media/holograms.media/js/ui/GestureUIManager.js but also statically imported by /home/runner/work/holograms.media/holograms.media/js/ai/TriaEvolutionConnector.js, /home/runner/work/holograms.media/holograms.media/js/ai/chat.js, /home/runner/work/holograms.media/holograms.media/js/ai/tria.js, dynamic import will not move module into another chunk.
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2335295Z [39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2336157Z [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2339172Z (!) /home/runner/work/holograms.media/holograms.media/js/main.js is dynamically imported by /home/runner/work/holograms.media/holograms.media/js/ai/chat.js but also statically imported by /home/runner/work/holograms.media/holograms.media/index.html, dynamic import will not move module into another chunk.
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2341504Z [39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2477913Z computing gzip size...
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2613623Z [2mdist/[22m[32mregisterSW.js                              [39m[1m[2m  0.13 kB[22m[1m[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2615134Z [2mdist/[22m[32mmanifest.webmanifest                       [39m[1m[2m  0.60 kB[22m[1m[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2616861Z [2mdist/[22m[2massets/[22m[32mcwtAudioWorklet-C5Crdn2s.js         [39m[1m[2m 14.33 kB[22m[1m[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2618574Z [2mdist/[22m[2massets/[22m[32mfavicon-Dw0tKZBH.ico                [39m[1m[2m 21.83 kB[22m[1m[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2620356Z [2mdist/[22m[32mindex.html                                 [39m[1m[2m 44.86 kB[22m[1m[22m[2m │ gzip: 14.03 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2622168Z [2mdist/[22m[2massets/[22m[35mindex-0HUEZiQk.css                  [39m[1m[2m 65.89 kB[22m[1m[22m[2m │ gzip: 12.82 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2624527Z [2mdist/[22m[2massets/[22m[36mglassSpecularManager-uzOmteXj.js    [39m[1m[2m  0.26 kB[22m[1m[22m[2m │ gzip:  0.20 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2626630Z [2mdist/[22m[2massets/[22m[36mxrInput-aVslti9a.js                 [39m[1m[2m  0.38 kB[22m[1m[22m[2m │ gzip:  0.20 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2628510Z [2mdist/[22m[2massets/[22m[36mconfig-BV1tYge3.js                  [39m[1m[2m  0.45 kB[22m[1m[22m[2m │ gzip:  0.32 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2630457Z [2mdist/[22m[2massets/[22m[36mbrowserPipelineTest-DL2mXjHZ.js     [39m[1m[2m  0.60 kB[22m[1m[22m[2m │ gzip:  0.39 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2632631Z [2mdist/[22m[2massets/[22m[36mwasm_loader-B3GmFJcN.js             [39m[1m[2m  0.77 kB[22m[1m[22m[2m │ gzip:  0.56 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2634602Z [2mdist/[22m[2massets/[22m[36mOneEuroFilter-D_1H7JRs.js           [39m[1m[2m  0.90 kB[22m[1m[22m[2m │ gzip:  0.48 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2636518Z [2mdist/[22m[2massets/[22m[36mEarthZero-DvsulkIy.js               [39m[1m[2m  0.92 kB[22m[1m[22m[2m │ gzip:  0.49 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2638462Z [2mdist/[22m[2massets/[22m[36mEmbeddingStream-nZ1BfZ4Z.js         [39m[1m[2m  1.02 kB[22m[1m[22m[2m │ gzip:  0.54 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2640595Z [2mdist/[22m[2massets/[22m[36mProofOfGesture-DF6bxfvc.js          [39m[1m[2m  1.05 kB[22m[1m[22m[2m │ gzip:  0.59 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2642964Z [2mdist/[22m[2massets/[22m[36mAgentWomb-BzculicG.js               [39m[1m[2m  1.27 kB[22m[1m[22m[2m │ gzip:  0.73 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2644940Z [2mdist/[22m[2massets/[22m[36mTorusVom-CKntBIGV.js                [39m[1m[2m  1.40 kB[22m[1m[22m[2m │ gzip:  0.73 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2646860Z [2mdist/[22m[2massets/[22m[36mTriaPulse-Utebpwl-.js               [39m[1m[2m  1.54 kB[22m[1m[22m[2m │ gzip:  0.69 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2648841Z [2mdist/[22m[2massets/[22m[36mMaturityDaemon-BgBDZQee.js          [39m[1m[2m  1.65 kB[22m[1m[22m[2m │ gzip:  0.98 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2651216Z [2mdist/[22m[2massets/[22m[36mPredictiveRAG-BQrcp8mq.js           [39m[1m[2m  1.80 kB[22m[1m[22m[2m │ gzip:  0.89 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2653914Z [2mdist/[22m[2massets/[22m[36mLocalChain-6wbFQDCx.js              [39m[1m[2m  1.94 kB[22m[1m[22m[2m │ gzip:  1.08 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2655930Z [2mdist/[22m[2massets/[22m[36mAgenticDAO-CmA9SWCx.js              [39m[1m[2m  2.10 kB[22m[1m[22m[2m │ gzip:  0.90 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2657939Z [2mdist/[22m[2massets/[22m[36mChunkProcessor-CN4d3rcd.js          [39m[1m[2m  2.18 kB[22m[1m[22m[2m │ gzip:  0.88 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2659913Z [2mdist/[22m[2massets/[22m[36mHyperbrainSynthesizer-kBVa_CvQ.js   [39m[1m[2m  2.21 kB[22m[1m[22m[2m │ gzip:  1.11 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2661029Z [2mdist/[22m[2massets/[22m[36mTriaDBClient-D_CfManu.js            [39m[1m[2m  2.25 kB[22m[1m[22m[2m │ gzip:  0.96 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2662109Z [2mdist/[22m[2massets/[22m[36mReintegrationManager-BKdw3AGs.js    [39m[1m[2m  2.26 kB[22m[1m[22m[2m │ gzip:  1.00 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2663646Z [2mdist/[22m[2massets/[22m[36mObolosRewardEngine-BhjKBoOk.js      [39m[1m[2m  2.36 kB[22m[1m[22m[2m │ gzip:  1.02 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2665452Z [2mdist/[22m[2massets/[22m[36mchatMessages-CXSLSDoC.js            [39m[1m[2m  2.44 kB[22m[1m[22m[2m │ gzip:  1.41 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2667348Z [2mdist/[22m[2massets/[22m[36mrightPanelManager-WT4qBybh.js       [39m[1m[2m  2.50 kB[22m[1m[22m[2m │ gzip:  0.99 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2669288Z [2mdist/[22m[2massets/[22m[36mLiveAudioService-DNm5lbYO.js        [39m[1m[2m  2.64 kB[22m[1m[22m[2m │ gzip:  1.22 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2671212Z [2mdist/[22m[2massets/[22m[36mHermaionBridge-DER2vPVA.js          [39m[1m[2m  2.77 kB[22m[1m[22m[2m │ gzip:  1.19 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2673382Z [2mdist/[22m[2massets/[22m[36mHermaionWallet-8cf-oCrx.js          [39m[1m[2m  2.95 kB[22m[1m[22m[2m │ gzip:  1.25 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2675234Z [2mdist/[22m[2massets/[22m[36mTriaMemory-vTc5wbwa.js              [39m[1m[2m  2.98 kB[22m[1m[22m[2m │ gzip:  1.18 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2677167Z [2mdist/[22m[2massets/[22m[36mmobileLayout-BQXP6nT5.js            [39m[1m[2m  3.08 kB[22m[1m[22m[2m │ gzip:  0.90 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2679104Z [2mdist/[22m[2massets/[22m[36mEnkephalonBridge-CVqodJeo.js        [39m[1m[2m  3.21 kB[22m[1m[22m[2m │ gzip:  1.21 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2681064Z [2mdist/[22m[2massets/[22m[36mHolographicChatRoom-CpRF79k1.js     [39m[1m[2m  3.26 kB[22m[1m[22m[2m │ gzip:  1.48 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2683234Z [2mdist/[22m[2massets/[22m[36mdesktopLayout-QdC_NKql.js           [39m[1m[2m  4.85 kB[22m[1m[22m[2m │ gzip:  1.35 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2685203Z [2mdist/[22m[2massets/[22m[36mGestureEmbeddingBridge-DS4PG70B.js  [39m[1m[2m  4.97 kB[22m[1m[22m[2m │ gzip:  1.87 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2687158Z [2mdist/[22m[2massets/[22m[36mTriaFileSystem-Bal4zLXu.js          [39m[1m[2m  5.00 kB[22m[1m[22m[2m │ gzip:  2.13 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2689094Z [2mdist/[22m[2massets/[22m[36mTriaCollectiveService-CYg7gPKC.js   [39m[1m[2m  5.73 kB[22m[1m[22m[2m │ gzip:  1.86 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2691149Z [2mdist/[22m[2massets/[22m[36mxrLayout-cbNUcRYD.js                [39m[1m[2m  6.19 kB[22m[1m[22m[2m │ gzip:  1.57 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2693329Z [2mdist/[22m[2massets/[22m[36mmobileInput-DobEwJgL.js             [39m[1m[2m  6.21 kB[22m[1m[22m[2m │ gzip:  1.83 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2695242Z [2mdist/[22m[2massets/[22m[36mGestureVectorStore-CL6E1duG.js      [39m[1m[2m 10.86 kB[22m[1m[22m[2m │ gzip:  3.82 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2697014Z [2mdist/[22m[2massets/[22m[36mfileEditor-Vu3_ynW0.js              [39m[1m[2m 13.17 kB[22m[1m[22m[2m │ gzip:  5.09 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2698339Z [2mdist/[22m[2massets/[22m[36mhandsTracking-qST-rKLK.js           [39m[1m[2m 13.41 kB[22m[1m[22m[2m │ gzip:  5.06 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2699501Z [2mdist/[22m[2massets/[22m[36mHologramWebGPU-I35lB3FI.js          [39m[1m[2m 16.26 kB[22m[1m[22m[2m │ gzip:  4.80 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2700505Z [2mdist/[22m[2massets/[22m[36mdesktopInput-DOJgUr21.js            [39m[1m[2m 49.10 kB[22m[1m[22m[2m │ gzip: 18.19 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2701471Z [2mdist/[22m[2massets/[22m[36mindex-COpovt73.js                   [39m[1m[2m238.51 kB[22m[1m[22m[2m │ gzip: 74.41 kB[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:52.2702536Z [32m✓ built in 1.52s[39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:53.9441175Z 
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:53.9442086Z [36mPWA v1.2.0[39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:53.9443100Z mode      [35mgenerateSW[39m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:53.9443627Z precache  [32m59 entries[39m [2m(1917.74 KiB)[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:53.9443996Z files generated
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:53.9444303Z   [2mdist/sw.js[22m
+Build & Deploy	🏗️ Build Frontend	2026-05-26T19:12:53.9444636Z   [2mdist/workbox-8c29f6e4.js[22m
+Build & Deploy	🔧 Copy _headers and _redirects to dist	﻿2026-05-26T19:12:53.9849517Z ##[group]Run mkdir -p dist
+Build & Deploy	🔧 Copy _headers and _redirects to dist	2026-05-26T19:12:53.9849847Z [36;1mmkdir -p dist[0m
+Build & Deploy	🔧 Copy _headers and _redirects to dist	2026-05-26T19:12:53.9850184Z [36;1mcp public/_headers dist/_headers || echo "No _headers found"[0m
+Build & Deploy	🔧 Copy _headers and _redirects to dist	2026-05-26T19:12:53.9850681Z [36;1mcp public/_redirects dist/_redirects || echo "No _redirects found"[0m
+Build & Deploy	🔧 Copy _headers and _redirects to dist	2026-05-26T19:12:53.9884666Z shell: /usr/bin/bash -e {0}
+Build & Deploy	🔧 Copy _headers and _redirects to dist	2026-05-26T19:12:53.9884935Z ##[endgroup]
+Build & Deploy	☁️ Deploy to Cloudflare Pages	﻿2026-05-26T19:12:54.0035360Z ##[group]Run cloudflare/pages-action@v1
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:54.0035679Z with:
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:54.0036068Z   apiToken: ***
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:54.0036318Z   accountId: ***
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:54.0036541Z   projectName: holograms-media-dev
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:54.0036806Z   directory: dist
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:54.0037151Z   gitHubToken: ***
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:54.0037370Z   branch: main
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:54.0037575Z   wranglerVersion: 2
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:54.0037787Z ##[endgroup]
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:57.5723806Z Uploading... (43/62)
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:58.2593530Z Uploading... (49/62)
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:58.2728686Z Uploading... (55/62)
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:59.3907374Z Uploading... (62/62)
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:59.3920773Z ✨ Success! Uploaded 19 files (43 already uploaded) (2.17 sec)
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:59.3921304Z 
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:59.7947420Z ✨ Uploading _headers
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:12:59.7948099Z ✨ Uploading _redirects
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:13:00.5963169Z ✨ Deployment complete! Take a peek over at https://a56c65a1.holograms-media-dev.pages.dev
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:13:00.7571504Z npm notice
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:13:00.7572908Z npm notice New major version of npm available! 10.8.2 -> 11.15.0
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:13:00.7574162Z npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.15.0
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:13:00.7575078Z npm notice To update run: npm install -g npm@11.15.0
+Build & Deploy	☁️ Deploy to Cloudflare Pages	2026-05-26T19:13:00.7575600Z npm notice
+Build & Deploy	Summary	﻿2026-05-26T19:13:01.4118650Z ##[group]Run echo "## ✅ Frontend Deployed" >> $GITHUB_STEP_SUMMARY
+Build & Deploy	Summary	2026-05-26T19:13:01.4119149Z [36;1mecho "## ✅ Frontend Deployed" >> $GITHUB_STEP_SUMMARY[0m
+Build & Deploy	Summary	2026-05-26T19:13:01.4119588Z [36;1mecho "**Version:** 0.20.575" >> $GITHUB_STEP_SUMMARY[0m
+Build & Deploy	Summary	2026-05-26T19:13:01.4120090Z [36;1mecho "**Commit:** 33a5ffa553ce5a8fa0df1a03e2d1cd607f1cdd70" >> $GITHUB_STEP_SUMMARY[0m
+Build & Deploy	Summary	2026-05-26T19:13:01.4153050Z shell: /usr/bin/bash -e {0}
+Build & Deploy	Summary	2026-05-26T19:13:01.4153307Z ##[endgroup]
+Build & Deploy	Post 🟢 Setup Node.js	﻿2026-05-26T19:13:01.4260989Z Post job cleanup.
+Build & Deploy	Post 🟢 Setup Node.js	2026-05-26T19:13:01.5874488Z Cache hit occurred on the primary key node-cache-Linux-x64-npm-2865df567e0dd94b9b55a43c959a657149d04d17c962bff28a3d4addb79ca526, not saving cache.
+Build & Deploy	Post 📥 Checkout Repository	﻿2026-05-26T19:13:01.5988008Z Post job cleanup.
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.6969953Z [command]/usr/bin/git version
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7007388Z git version 2.54.0
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7051477Z Temporarily overriding HOME='/home/runner/work/_temp/f7b4a45b-d261-4373-adad-83254ca7fb0c' before making global git config changes
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7052820Z Adding repository directory to the temporary git global config as a safe directory
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7066756Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/holograms.media/holograms.media
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7104259Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7140073Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7389811Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7418281Z http.https://github.com/.extraheader
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7431922Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7468305Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7712795Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build & Deploy	Post 📥 Checkout Repository	2026-05-26T19:13:01.7748623Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Build & Deploy	Complete job	﻿2026-05-26T19:13:01.8134624Z Cleaning up orphan processes
+Build & Deploy	Complete job	2026-05-26T19:13:01.8420031Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-node@v4, cloudflare/pages-action@v1. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
 
-[Cloudflare Pages]
-ID: 7c026e01
-Status: success
-Started: 2026-05-26T18:52:29.60832Z
-URL: https://7c026e01.holograms-media-dev.pages.dev
+[Cloudflare Pages] Ошибка: read ECONNRESET
 
 [Koyeb]
-Deploy: dda5d0a3
+Deploy: e288a9cf
 Status: HEALTHY
-Updated: 2026-05-26T18:54:22.379144Z
+Updated: 2026-05-26T19:14:04.567485Z
 
