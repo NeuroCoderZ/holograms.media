@@ -189,7 +189,7 @@ class AudioService {
             return this.workletNode;
         }
 
-        // BASILAQ-128: Dynamic adaptation based on refresh rate
+        // BASILAQ-256: Dynamic adaptation based on refresh rate
         this.workletNode = new AudioWorkletNode(this.context, 'cwt-processor', {
             numberOfInputs: 1,
             numberOfOutputs: 1,

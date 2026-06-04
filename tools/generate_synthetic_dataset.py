@@ -97,7 +97,7 @@ def main():
     print(f"Generating {args.num} spectral pairs...")
 
     for i in range(args.num):
-        # Random harmonic frequencies (Simulating BasilaQ-128 structure)
+        # Random harmonic frequencies (Simulating BasilaQ-256 structure)
         f0 = rng.uniform(100, 1000)
         f1 = f0 * rng.uniform(1.1, 2.0)
         

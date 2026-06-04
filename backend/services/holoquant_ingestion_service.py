@@ -61,7 +61,7 @@ class HoloQuantIngestionService:
         """
         Processes a session snapshot from Personal Триа.
         """
-        # Logic for processing 120Hz sensor data from BasilaQ-128
+        # Logic for processing 120Hz sensor data from BasilaQ-256
         # into structured HoloQuants.
         pass
 

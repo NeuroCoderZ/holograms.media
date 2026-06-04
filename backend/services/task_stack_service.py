@@ -49,14 +49,14 @@ class TaskStackService:
                     pinch_streak = 0
 
             # Logic: If many micro-intents occur, it signals a need for higher precision
-            # in BasilaQ-128 (Hyperbrain Sync requirement)
+            # in BasilaQ-256 (Hyperbrain Sync requirement)
             if micro_intent_score > 5:
                 task_id = str(uuid.uuid4())
                 task = {
                     "id": task_id,
                     "title": "Hyperbrain Sync: High-Frequency Micro-Intent Optimization",
                     "description": f"Detected {micro_intent_score} micro-events (<0.5s) in a {session_duration:.1f}s session. "
-                                   "Optimize BasilaQ-128 high-frequency response (G10/25kHz) for rapid intent switching.",
+                                   "Optimize BasilaQ-256 high-frequency response (G10/25kHz) for rapid intent switching.",
                     "price": 350.0,
                     "status": "available",
                     "created_at": datetime.utcnow().isoformat(),

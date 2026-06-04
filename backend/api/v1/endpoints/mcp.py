@@ -148,7 +148,7 @@ async def get_tools(
         },
         {
             "name": "audio_cwt",
-            "description": "Continuous Wavelet Transform for audio spectrum (BasilaQ-128)",
+            "description": "Continuous Wavelet Transform for audio spectrum (BasilaQ-256)",
             "input_schema": {
                 "type": "object",
                 "properties": {

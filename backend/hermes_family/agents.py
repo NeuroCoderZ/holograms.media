@@ -116,7 +116,7 @@ hermes_gesture = Agent(
     ),
     backstory=(
         "Gesture engine specialist. Deep understanding of MediaPipe pipeline "
-        "(21 points, 63 float32), BasilaQ-128 audio architecture (1dB = 1 cell), "
+        "(21 points, 63 float32), BasilaQ-256 audio architecture (1dB = 1 cell), "
         "and Three.js WebGPU rendering with InstancedMesh optimization. "
         "CLOUD_COOLDOWN_MS=300, MEDIAPIPE_PTS=21."
     ),

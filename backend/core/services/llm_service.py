@@ -24,7 +24,7 @@ class LLMService:
         Используй UI_MAP.json как единственный источник истины:
         - Кнопки #micButton, #gestureRecordButton, #playAudioButton, #loadAudioButton и #hologramButton находятся в ПРАВОЙ ПАНЕЛИ.
         - Левый верхний угол: #signInButton.
-        - Центр: #grid-container (BasilaQ-128).
+        - Центр: #grid-container (BasilaQ-256).
         - Имена: "правая панель", "библиотека", "пуск", "пауза", "запись".
         - Не грузи пользователя техническими деталями, если он не спрашивает.
 
