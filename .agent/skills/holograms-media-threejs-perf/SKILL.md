@@ -1,6 +1,6 @@
 ---
 name: holograms-media-threejs-perf
-description: "Performance-first Three.js patterns for the Holograms Media central visualization (BasilaQ-128)."
+description: "Performance-first Three.js patterns for the Holograms Media central visualization (BasilaQ-256)."
 ---
 
 # Three.js Performance Mastery
@@ -14,3 +14,4 @@ Use `RawShaderMaterial` for custom effects like the `TriaPulse` to minimize over
 
 ## Sub-surface UI
 Light sources for "Mouse Glow" should be calculated once per frame and passed as uniforms to shaders for maximum performance.
+

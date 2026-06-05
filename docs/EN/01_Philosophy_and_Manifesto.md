@@ -23,7 +23,7 @@ In the world of Global Tria, energy and attention are the only currencies.
 
 ## 4. Post-Symbolic Interaction
 Tria (v3.1) is an **Intention Interpreter**.
-*   **Auditory Core:** Based on **BasilaQ-128** physics. We don't "draw" sound; we create its physical imprint.
+*   **Auditory Core:** Based on **BasilaQ-256** physics. We don't "draw" sound; we create its physical imprint.
 *   **Gesture Grounding:** A gesture is not a command but a semantic vector. The intersection of a gesture vector and an audio wavelet (CWT) generates Resonance.
 
 ## 5. 2026 Ethics and Security
@@ -33,3 +33,4 @@ Tria (v3.1) is an **Intention Interpreter**.
 ---
 **"We don't visualize sound. We materialize intention."**
 _Approved by TRIA Orchestrator. Vox Silentium._
+

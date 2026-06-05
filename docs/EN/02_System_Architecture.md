@@ -12,7 +12,7 @@ The **EventBus** serves as the central message exchange hub.
 ### 2.1. Technology Stack
 *   **Rendering:** Three.js (v0.165+). Priority renderer: **WebGPU** (with WebGL fallback).
 *   **Intention Capture:** MediaPipe Hands (21 hand landmarks @ 60-120 Hz).
-*   **Audio Analysis:** Pure WASM (C-core) + AudioWorklet. BasilaQ-128 spectrum analysis.
+*   **Audio Analysis:** Pure WASM (C-core) + AudioWorklet. BasilaQ-256 spectrum analysis.
 *   **Local AI:** ONNX Runtime Web with WebGPU support for instantaneous gesture resonance.
 
 ### 2.2. Data Flows
@@ -39,3 +39,4 @@ The backend is deployed on **Koyeb** (Docker containers) and written in **FastAP
 ---
 **"Architecture follows intention. Code is the geometry of resonance."**
 _Approved by Architecture Review Board._
+

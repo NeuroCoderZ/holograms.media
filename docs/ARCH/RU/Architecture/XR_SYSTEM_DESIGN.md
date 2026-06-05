@@ -33,7 +33,7 @@ While the world is 3D, human auditory attention is primarily horizontal.
 - Sounds from above/below are cognitively rotated to "Front" via head movement.
 - Our dual-grid system (Purple-Left / Red-Right) maps this biological reality into a 360° wraparound visualization.
 
-## 5. Technical Standard: BasilaQ-128
+## 5. Technical Standard: BasilaQ-256
 - **Solidity:** All columns must be opaque. (Confirmed by v0.19.049).
 - **Precision Edges:** Each 1dB layer is outlined with a "One Step Ahead" brightness boost (+1dB).
 - **Synchronicity:** Geometry must maintain real-time Z-scaling (amplitude jumps).
@@ -41,4 +41,5 @@ While the world is 3D, human auditory attention is primarily horizontal.
     - **Perspective Attempt:** Current position `Z = -800` (Perspective 75°). *Issue:* Loss of scale for distant frequency bands.
     - **Orthographic Legacy:** Provides uniform scale but lacks "inside-the-torus" feeling.
     - **Next Step:** Exploring "Inverse Perspective" or hybrid setup where Z-depth does not purely dictate screen-size to prevent information loss.
+
 

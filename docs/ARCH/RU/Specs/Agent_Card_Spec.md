@@ -26,7 +26,7 @@ https://holograms.media/.well-known/agent-card.json
 {
   "name": "Hermes (Tria Cortex v2.6)",
   "version": "0.20.492",
-  "description": "Post-symbolic multimodal agent for gesture/audio/intent resonance. Combines MediaPipe hand tracking, BasilaQ-128 audio spectrum analysis, and Enkephalon neural memory for non-symbolic AI interaction.",
+  "description": "Post-symbolic multimodal agent for gesture/audio/intent resonance. Combines MediaPipe hand tracking, BasilaQ-256 audio spectrum analysis, and Enkephalon neural memory for non-symbolic AI interaction.",
   "agent_id": "hermes_tria_v2.6",
   "organization": {
     "name": "NeuroCoderZ",
@@ -134,7 +134,7 @@ https://holograms.media/.well-known/agent-card.json
       "latency_ms": 50
     },
     "audio_spectrum": {
-      "description": "BasilaQ-128 continuous wavelet transform (C0 to G9)",
+      "description": "BasilaQ-256 continuous wavelet transform (C0 to G9)",
       "input": "PCM audio (48kHz, mono)",
       "output": "128 semitone bins + dominant frequency + energy",
       "latency_ms": 16
@@ -589,3 +589,4 @@ async def test_mcp_endpoints_reachable():
 **Последнее обновление:** 13.05.2026  
 **Автор:** Claude 4.5 Sonnet (Foundation & Safety Sprint v0.20.493)  
 **Статус:** Draft (требует review)
+

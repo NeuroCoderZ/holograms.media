@@ -229,7 +229,7 @@ Cloudflare Pages предоставляет хостинг статически�
 ### Фаза A (v0.20.x, текущий этап)
 - ✅ Переход на Gemini 3 Flash / Gemini 3.1 Flash Lite
 - ✅ Миграция на Astra DB Vector Search (3072d)
-- ✅ Стабилизация BasilaQ-128 (1dB=1cell, 1.41° pan)
+- ✅ Стабилизация BasilaQ-256 (1dB=1cell, 1.41° pan)
 - ✅ Консолидация управления в Правой панели
 
 ### Фаза B ($5/мес, Workers Paid)
@@ -244,3 +244,4 @@ Cloudflare Pages предоставляет хостинг статически�
 - Workers AI для Tria (вместо внешних LLM)
 
 > **ВАЖНО:** Durable Objects НЕ доступны на Free Tier Cloudflare. Минимальный тариф Workers Paid = $5/мес.
+

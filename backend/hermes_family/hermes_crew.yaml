@@ -59,7 +59,7 @@ agents:
     backstory: >
       Gesture engine specialist. Understands MediaPipe pipeline,
       ACCEPT_LOCAL=0.85, ACCEPT_CLOUD=0.65, EARLY_TRIGGER logic,
-      and audio visualization architecture (BasilaQ-128).
+      and audio visualization architecture (BasilaQ-256).
     llm: "mistral/mistral-small-latest"
     max_iter: 3
     max_rpm: 8
@@ -111,3 +111,4 @@ tasks:
     description: "Координировать выполнение: {request}"
     agent: "Hermes-Prime"
     human_input: false
+

@@ -68,6 +68,7 @@ async function* getChatStream(response) {
 }
 ```
 
-## Key Constraints (BasilaQ-128)
+## Key Constraints (BasilaQ-256)
 - **Fluidity**: Characters should appear with a slight "typing" delay if needed, but the raw stream should be as fast as possible.
 - **Persistence**: Save the full message to AstraDB only *after* the stream is finished to avoid partial writes.
+

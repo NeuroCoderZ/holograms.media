@@ -149,7 +149,7 @@ class HologramRenderer {
         const mesh = columnGroup.children[0];
         if (!(mesh instanceof THREE.Mesh)) return;
 
-        // Нормализация уровня громкости (Физика BasilaQ-128: 1dB = 1 cell)
+        // Нормализация уровня громкости (Физика BasilaQ-256: 1dB = 1 cell)
         const amplitude = THREE.MathUtils.clamp((dbLevel + 128) / 128.0, 0, 1);
         
         // Масштабирование по высоте (Z-scale)
@@ -402,3 +402,4 @@ function logMemoryUsage() {
 ```
 
 Эта архитектура обеспечивает эффективную работу 3D-рендеринга в браузере с использованием современных технологий WebGL и Three.js, с поддержкой оптимизаций производительности и graceful degradation для различных устройств и браузеров.
+

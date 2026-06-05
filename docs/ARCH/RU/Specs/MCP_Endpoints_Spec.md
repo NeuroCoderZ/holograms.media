@@ -167,7 +167,7 @@ X-MCP-Version: 1.2
     },
     {
       "name": "audio_cwt",
-      "description": "Continuous Wavelet Transform for audio spectrum (BasilaQ-128)",
+      "description": "Continuous Wavelet Transform for audio spectrum (BasilaQ-256)",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -622,3 +622,4 @@ def test_unauthorized_access(client: TestClient):
 **Последнее обновление:** 13.05.2026  
 **Автор:** Claude 4.5 Sonnet (Foundation & Safety Sprint v0.20.493)  
 **Статус:** Draft (требует review)
+
