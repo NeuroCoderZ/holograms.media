@@ -3,7 +3,7 @@ scripts/sync_knowledge_base.py
 
 Профессиональный синхронизатор базы знаний.
 - Инкрементальное обновление: работает только с измененными файлами.
-- Gemini Embedding 2 (gemini-embedding-2-preview) - ОФИЦИАЛЬНЫЙ SOTA 2026.
+- Gemini Embedding 2 (gemini-embedding-2) - ОФИЦИАЛЬНЫЙ SOTA 2026.
 - Поддержка мультимодального пространства и Matryoshka Embeddings (3072 dims).
 """
 
@@ -50,7 +50,7 @@ class GeminiEmbeddingService:
             api_key=api_key,
             http_options=types.HttpOptions(timeout=API_TIMEOUT_SECONDS),
         )
-        self.model = "gemini-embedding-2-preview"
+        self.model = "gemini-embedding-2"
         self.request_count: int = 0
         self.last_request_time: float = 0.0
         self.quota_exhausted = False
@@ -179,7 +179,7 @@ def chunk_text(
 
 async def sync_knowledge_base():
     print(
-        f"🚀 Starting Smart Sync with Gemini Embedding 2 (ID: gemini-embedding-2-preview)..."
+        f"🚀 Starting Smart Sync with Gemini Embedding 2 (ID: gemini-embedding-2)..."
     )
 
     # 1. Подключение

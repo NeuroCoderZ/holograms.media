@@ -4,6 +4,30 @@
 
 ---
 
+## ⛔ КРИТИЧЕСКИЙ ЗАПРЕТ: ПЛАТНЫЕ СЕРВИСЫ
+
+**КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО** использовать любые платные облачные сервисы без явного предварительного одобрения владельца проекта (Александр / NeuroCoderZ).
+
+Это включает:
+- **Облачные LLM API** (Claude, GPT, Gemini — даже если цены прописаны в LLM_POOL ниже)
+- **AstraDB** — только бесплатный tier (80GB). Любые платные операции запрещены.
+- **CoinGecko / ExchangeRate API** — бесплатные tiers только. Платные подписки запрещены.
+- **Любой сервис**, который списывает деньги с карты, гранта или аккаунта
+
+**ПРАВИЛО:** Всегда сначала искать бесплатный локальный аналог. Если бесплатного нет — спросить владельца ПЕРЕД использованием.
+
+**Прецедент:** Агент самовольно использовал Yandex SpeechKit (платный STT) вместо бесплатного Whisper. Результат: 2537₽ списано с гранта без одобрения. Это недопустимо и привело к данному запрету.
+
+**ЖЁСТКОЕ ПРАВИЛО:** Все этапы нейрокодинга — только бесплатные локальные решения. Любые платные операции, сервисы, API, подписки выполняются **ЛИЧНО нейрокодером (Александром)**. Агентам ЗАПРЕЩЕНО инициировать, активировать, настраивать или использовать что-либо платное. Если плата необходима — задача передаётся человеку с полным описанием что, где и сколько стоит.
+
+## 🔄 ПРАВИЛО КОНВЕЙЕРА МОДЕЛЕЙ (NeuroCoderZ ecosystem)
+
+Модели запускаются только **ПОСЛЕДОВАТЕЛЬНО**. Никакого параллельного запуска или совместного удержания моделей в памяти (кроме Qwen3 Embed + Reranker, работающих спаренно на этапе RAG через llama.cpp).
+
+**Порядок:** одна задача → одна модель → выгрузить → следующая. Загружать более двух моделей одновременно ЗАПРЕЩЕНО.
+
+---
+
 ## ⚠️ ЯЗЫК — РУССКИЙ
 **ВСЕГДА отвечать только на РУССКОМ языке.** Код, команды, логи, пути — английский.
 Но все мысли, рассуждения, объяснения, планы, ответы — **исключительно на русском**.
@@ -18,7 +42,7 @@
 
 HERMES_ROUTER = true                    # Гермес оркестрирует, не генерирует сам
 HERMES_MAIN   = "mistral-medium-3.5"    # Default fallback (128B, 256k ctx)
-EMBED_MODEL   = "gemini-embedding-2-preview"  # Embeddings ONLY (3072d) - NEVER change
+EMBED_MODEL   = "gemini-embedding-2"  # Embeddings ONLY (3072d) - NEVER change
 
 # LLM POOL — Code Arena WebDev Rankings (May 14, 2026)
 # Использовать ТОЛЬКО актуальные модели из топа. Рейтинг обновляется ежемесячно.
@@ -73,7 +97,7 @@ HERMES_MEMORY  = "hermes_memory"    # Enkephalon + AstraDB (3072d)
 HERMES_WALLET  = "hermes_wallet"    # Obolos, Energy, DAO, LLM Cost Tracking
 
 # Эмбеддинг модель
-EMBED_MODEL   = "gemini-embedding-2-preview"
+EMBED_MODEL   = "gemini-embedding-2"
 EMBED_DIM     = 3072  ← НИКОГДА не менять. Коллекция tria_knowledge_gemini создана с 3072d.
 
 BASE_FREQ     = 16.352 Гц (C0)
@@ -110,7 +134,7 @@ DEPLOY CMD: node scripts/deploy.js "описание"
 3. **ПЕРЕД КАЖДОЙ ПРАВКОЙ:** прочитать актуальный кусок файла через Read, убедиться что old_str точно совпадает.
 4. **ЗАПРЕЩЕНО:** добавлять NPU, ONNX, TurboQuant в браузере, LoRA в браузере, ARC-AGI как метрику, DGM-H самомодификацию кода.
 5. **EMBED_DIM = 3072 ВЕЗДЕ И ВСЕГДА.** Никаких 768.
-6. **Модели:** Hermes — Meta-Agent Router (НЕ одна модель). Маршрутизирует запросы к лучшим LLM из Code Arena WebDev (May 14, 2026). Default fallback: `mistral-medium-3.5`. Embeddings: `gemini-embedding-2-preview` (3072d) — ТОЛЬКО для RAG. **Gemini генеративные модели выведены из стека (май 2026). OpenClaw УДАЛЕН**.
+6. **Модели:** Hermes — Meta-Agent Router (НЕ одна модель). Маршрутизирует запросы к лучшим LLM из Code Arena WebDev (May 14, 2026). Default fallback: `mistral-medium-3.5`. Embeddings: `gemini-embedding-2` (3072d) — ТОЛЬКО для RAG. **Gemini генеративные модели выведены из стека (май 2026). OpenClaw УДАЛЕН**.
 7. **Triple Token Architecture:** Personal (Local, 6-8 digits) WINS over Global (3 digits) over Network (2 digits). **Personal (Local) WINS over Global.**
 8. **⛔ ЛОКАЛЬНЫЕ СБОРКИ И ТЕСТЫ ЗАПРЕЩЕНЫ.** Запуск `npm run build`, `npm run dev`, `vite build`, `npm test`, `python -m pytest` локально строго запрещён. Все проверки, билды и валидации выполняются ТОЛЬКО в CI/CD (GitHub Actions → Cloudflare Pages / Koyeb). Агенты работают исключительно через `git push` и мониторинг ранов.
 9. **Hermes Family:** Core (Meta-Agent/Router), Behavior (Gestures/Clicks), Context (Docs/Code), Memory (AstraDB), Wallet (Obolos/Energy/LLM Cost).

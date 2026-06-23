@@ -108,6 +108,14 @@ async def lifespan(app: FastAPI):
                 logger.info("[Startup] Created collection: crewai_checkpoints")
             except Exception:
                 pass
+            try:
+                await db.create_collection(
+                    "earth_nodes",
+                    definition={"vector": {"dimension": 3072, "metric": "cosine"}},
+                )
+                logger.info("[Startup] Created collection: earth_nodes")
+            except Exception:
+                pass
     except Exception as e:
         logger.warning(f"[Startup] Collection init failed: {e}")
 
@@ -205,6 +213,7 @@ from backend.routers.gesture_embedding import router as gesture_embedding_router
 from backend.routers.tria_sleep import router as tria_sleep_router
 from backend.routers import live
 from backend.hermes_family.router import router as hermes_family_router
+from backend.routers.earth import router as earth_router
 
 API_V1_PREFIX = "/api/v1"
 
@@ -245,8 +254,9 @@ app.include_router(
 app.include_router(gesture_embedding_router, prefix=API_V1_PREFIX)
 app.include_router(tria_sleep_router, prefix=API_V1_PREFIX)
 app.include_router(gestures_ws.router)
-app.include_router(signaling_router)  # Include the new signaling router
+app.include_router(signaling_router)
 app.include_router(live.router)
+app.include_router(earth_router, prefix=f"{API_V1_PREFIX}", tags=["Earth Storage"])
 
 
 @app.get("/healthz", tags=["System"])

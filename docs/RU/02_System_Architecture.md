@@ -14,7 +14,7 @@
 *   **Захват Интенций:** MediaPipe Hands (21 точка кисти @ 60-120 Гц).
 *   **Аудио-анализ:** Pure WASM (C-core) + AudioWorklet. Анализ спектра BasilaQ-256 (128 бинов × 2 уха, итого 256 колонн).
 *   **Локальный ИИ:** GestureVectorStore (IndexedDB KNN, < 5мс латентность).
-*   **Облачный ИИ:** Gemini Embedding 2 (gemini-embedding-2-preview, 3072d) через backend API.
+*   **Облачный ИИ:** Gemini Embedding 2 (gemini-embedding-2, 3072d) через backend API.
 *   **Примечание:** NPU и ONNX не используются — сервис работает в браузере без установки.
 
 ### 2.2. Потоки данных
@@ -27,7 +27,7 @@
 
 ### 3.1. База знаний (RAG)
 *   **Хранилище:** AstraDB (Vector Search).
-*   **Эмбеддинги:** `gemini-embedding-2-preview` (Dimension: 3072) — константа, не подлежит изменению.
+*   **Эмбеддинги:** `gemini-embedding-2` (Dimension: 3072) — константа, не подлежит изменению.
 *   **Синхронизация:** Скрипт `sync_knowledge_base.py` выполняет инкрементальное обновление базы при каждом деплое.
 
 ### 3.2. LLM Оркестрация

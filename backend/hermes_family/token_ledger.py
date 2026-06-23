@@ -37,7 +37,7 @@ class TokenLedger:
     DAILY_LIMITS = {
         "mistral-medium-3.5": 33_000_000,      # ~1B tokens/month / 30 days
         "mistral-small-latest": 33_000_000,     # Same pool
-        "gemini-embedding-2-preview": 1_500_000, # 1500 req/min * ~2K tokens
+        "gemini-embedding-2": 1_500_000, # 1500 req/min * ~2K tokens
         "cloudflare/llama-3.3-70b": 10_000_000, # 10K Neurons/day
     }
 

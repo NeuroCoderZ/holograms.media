@@ -125,7 +125,7 @@ class Settings(BaseModel):
     # Hermes Family: Personal Tria (Local) WINS over Global
     DEFAULT_MODEL: str = "mistral-medium-3.5"  # Main: 128B, 256k ctx, released 29.04.2026
     SUBAGENT_MODEL: str = "mistral-small-latest"  # Architecture/Routing agent
-    EMBEDDING_MODEL: str = "gemini-embedding-2-preview"  # 3072d - NEVER change
+    EMBEDDING_MODEL: str = "gemini-embedding-2"  # 3072d - NEVER change
     ENABLE_GROUNDING: bool = os.getenv("ENABLE_GROUNDING", "true").lower() == "true"
 
     # CORS

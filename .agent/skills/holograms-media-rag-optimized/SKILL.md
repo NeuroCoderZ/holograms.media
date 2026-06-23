@@ -1,12 +1,12 @@
 ---
 name: holograms-media-rag-optimized
-description: "Advanced RAG strategies for AstraDB with Gemini Embedding 2 (gemini-embedding-2-preview). Dimension 3072."
+description: "Advanced RAG strategies for AstraDB with Gemini Embedding 2 (gemini-embedding-2). Dimension 3072."
 ---
 
 # Optimized RAG for AstraDB (Gemini Embedding 2)
 
 > [!IMPORTANT]
-> **Модель эмбеддингов: `gemini-embedding-2-preview`** (ID зафиксирован). Размерность: **3072**.
+> **Модель эмбеддингов: `gemini-embedding-2`** (ID зафиксирован). Размерность: **3072**.
 > НЕ использовать `text-embedding-004`, `text-embedding-005` или любые другие устаревшие модели.
 
 AstraDB has a strict `SHRED_DOC_LIMIT` (approx 8000-16000 bytes depending on metadata). To solve the 403/500 errors during ingestion:
@@ -18,7 +18,7 @@ Use balanced settings for Cyrillic (which consumes more bytes than ASCII).
 ```python
 CHUNK_SIZE = 8000  # Gemini Embedding 2 handles larger context
 CHUNK_OVERLAP = 500 # Context preservation
-OUTPUT_DIMENSIONALITY = 3072  # Нативная размерность gemini-embedding-2-preview
+OUTPUT_DIMENSIONALITY = 3072  # Нативная размерность gemini-embedding-2
 ```
 
 ## Vector Search (AstraDB)
@@ -39,10 +39,10 @@ db.create_collection(
 
 ```python
 # ЕДИНСТВЕННО ВЕРНЫЙ ID модели
-self.model = "gemini-embedding-2-preview"
+self.model = "gemini-embedding-2"
 
 response = client.models.embed_content(
-    model="gemini-embedding-2-preview",
+    model="gemini-embedding-2",
     contents=text,
     config=types.EmbedContentConfig(
         task_type="RETRIEVAL_DOCUMENT",
@@ -52,6 +52,6 @@ response = client.models.embed_content(
 ```
 
 ## Anti-Patterns
-- **Устаревшие модели**: НИКОГДА не использовать `text-embedding-004` или `text-embedding-005`. Только `gemini-embedding-2-preview`.
+- **Устаревшие модели**: НИКОГДА не использовать `text-embedding-004` или `text-embedding-005`. Только `gemini-embedding-2`.
 - **Large Metadata**: Avoid storing massive JSON objects in the `metadata` field. It counts towards the document size limit.
 - **Missing Sync**: Always add a 5s delay after `drop_collection` before `create_collection` to let the distributed index clear.

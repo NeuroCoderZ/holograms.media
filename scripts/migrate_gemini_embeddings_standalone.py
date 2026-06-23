@@ -50,7 +50,7 @@ class GeminiEmbeddingService:
     
     def __init__(self, api_key: str):
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-embedding-2-preview"
+        self.model = "gemini-embedding-2"
         self.request_count: int = 0
         self.last_request_time: float = 0.0
     
@@ -224,7 +224,7 @@ def migrate_to_gemini():
                 "metadata": {
                     "source": chunk["source"],
                     "start_offset": chunk["start_offset"],
-                    "model": "gemini-embedding-2-preview"
+                    "model": "gemini-embedding-2"
                 }
             })
             success_count += 1

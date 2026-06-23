@@ -42,7 +42,7 @@ class GeminiEmbeddingService:
             return
         
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-embedding-2-preview"
+        self.model = "gemini-embedding-2"
         
         # Размерность по умолчанию (Matryoshka)
         # Установлено 3072 для соответствия коллекции tria_knowledge_gemini

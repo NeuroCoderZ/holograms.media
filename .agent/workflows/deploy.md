@@ -55,7 +55,7 @@ RepoMix контекст генерируется автоматически п�
 |---|---|---|
 | Hermes Main | `mistral-medium-3.5` | Основная модель (128B, 256k ctx) |
 | Hermes Sub | `mistral-small-latest` | Архитектурный агент, роутинг |
-| Embeddings | `gemini-embedding-2-preview` | Эмбеддинги (3072d) — НИКОГДА не менять |
+| Embeddings | `gemini-embedding-2` | Эмбеддинги (3072d) — НИКОГДА не менять |
 
 **ЗАПРЕЩЕНО:** `gemini-3-flash-preview`, `gemini-3.1-flash-lite-preview` (выведены из стека, май 2026)
 

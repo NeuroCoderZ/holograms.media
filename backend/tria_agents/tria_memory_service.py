@@ -1,7 +1,7 @@
 # backend/tria_agents/tria_memory_service.py
 # xMemory-inspired Hierarchical Memory Service для Tria
 # Уровни: Original Message → Episode → Semantic → Theme
-# Эмбеддинги: ТОЛЬКО gemini-embedding-2-preview (dim=3072)
+# Эмбеддинги: ТОЛЬКО gemini-embedding-2 (dim=3072)
 
 import logging
 import hashlib
@@ -25,7 +25,7 @@ except ImportError as e:
 async def get_embedding(
     text: str, task_type: str = "RETRIEVAL_DOCUMENT"
 ) -> Optional[List[float]]:
-    """Получить эмбеддинг через gemini-embedding-2-preview."""
+    """Получить эмбеддинг через gemini-embedding-2."""
     if not gemini_embeddings:
         return None
     vector = await gemini_embeddings.get_embedding(text, task_type=task_type)

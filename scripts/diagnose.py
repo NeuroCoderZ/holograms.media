@@ -48,7 +48,7 @@ async def test_gemini_api():
         start = time.time()
         response = await asyncio.to_thread(
             client.models.embed_content,
-            model="gemini-embedding-2-preview",
+            model="gemini-embedding-2",
             contents="Hello Holograms",
             config=types.EmbedContentConfig(
                 task_type="RETRIEVAL_DOCUMENT",

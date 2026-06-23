@@ -8,7 +8,7 @@ description: "Advanced architectural patterns for Tria (Holograms Media). Covers
 This skill synthesizes global best practices for high-performance AI integration in the Holograms Media project.
 
 > [!IMPORTANT]
-> **Embedding Model Lock**: Всегда использовать `gemini-embedding-2-preview` (dimension 3072).
+> **Embedding Model Lock**: Всегда использовать `gemini-embedding-2` (dimension 3072).
 > НЕ использовать `text-embedding-004/005` или любые другие устаревшие ID.
 
 ## 1. LLM Streaming Implementation (SSE)
@@ -45,7 +45,7 @@ while (true) {
 ## 2. AstraDB RAG Mastery (Avoiding Shred Limits)
 
 ### Embedding Model
-- **ID**: `gemini-embedding-2-preview` (ЗАФИКСИРОВАН)
+- **ID**: `gemini-embedding-2` (ЗАФИКСИРОВАН)
 - **Dimension**: 3072 (нативная, Matryoshka)
 - **Мультимодальность**: текст, код, медиа — единое пространство
 

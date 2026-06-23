@@ -223,6 +223,7 @@ import { GestureLiveStudio } from '../ui/GestureLiveStudio.js';
 import { TriaOrchestrator } from './TriaOrchestrator.js';
 import { HermaionBridge } from '../tria/HermaionBridge.js';
 import VersionTimelinePanel from '../ui/VersionTimelinePanel.js';
+import { earthStorage } from './EarthStorage.js';
 
 export async function initCore(options = {}) {
   const { telegramMode = false } = options;
@@ -905,6 +906,20 @@ export async function initCore(options = {}) {
       }
     })();
     // ───────────────────────────────────────────────────────────
+
+    // --- EarthStorage: per-user holographic world ---
+    try {
+        const userId = state.auth?.currentUser?.uid;
+        if (userId) {
+            await earthStorage.init(`earth:${userId}`);
+            state.earthStorage = earthStorage;
+            console.log('✅ EarthStorage initialized');
+        } else {
+            console.log('[EarthStorage] No auth user, skipping init (guest mode)');
+        }
+    } catch (e) {
+        console.warn('[EarthStorage] Init failed:', e.message);
+    }
 
     // --- Auto-Reload DISABLED (не работает корректно) ---
     // autoReloadService.start();

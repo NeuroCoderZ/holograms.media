@@ -11,7 +11,7 @@
   - **Хостинг:** Cloudflare Pages (сборка происходит на Cloudflare Pages).
 - **Backend:** Приложение на **FastAPI** (Python).
   - **Хостинг:** Koyeb (развертывание через Docker).
-  - **База знаний (RAG):** **Astra Database (Cassandra)**. Используются эмбеддинги **gemini-embedding-2-preview** (3072d) для семантического поиска.
+  - **База знаний (RAG):** **Astra Database (Cassandra)**. Используются эмбеддинги **gemini-embedding-2** (3072d) для семантического поиска.
   - **LLM Оркестрация:** **Tria Orchestrator v3.1** на базе **gemini-3-flash-preview**.
 - **Хранилище файлов:** **Cloudflare R2**.
 - **Связь:** WebSocket / Signaling через **dev.holograms.media**.

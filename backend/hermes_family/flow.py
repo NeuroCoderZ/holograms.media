@@ -244,7 +244,7 @@ class HermesFamilyFlow(Flow[HermesState]):
                 description=(
                     "Интегрировать с AstraDB/RAG: {request}\n\n"
                     "Контекст:\n"
-                    "EMBED_DIM=3072, gemini-embedding-2-preview\n"
+                    "EMBED_DIM=3072, gemini-embedding-2\n"
                     "Collections: tria_knowledge_gemini, neuroescrow_codebase_3072\n"
                     "Personal Tria WINS over Global Tria"
                 ),

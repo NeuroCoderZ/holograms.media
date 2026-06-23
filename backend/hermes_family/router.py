@@ -69,7 +69,7 @@ async def health_check():
         status="healthy" if crewai_available else "degraded",
         service="hermes-family-crewai",
         version="2.0.0",
-        embedding_model="gemini-embedding-2-preview",
+        embedding_model="gemini-embedding-2",
         embedding_dim=3072,
         token_ledger=ledger.get_status(),
         crewai_available=crewai_available,

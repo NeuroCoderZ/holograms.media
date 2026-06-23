@@ -5,7 +5,7 @@ Hermes Family — CrewAI Agent Definitions
 Model Lock 13.05.2026:
   HERMES_MAIN = mistral-medium-3.5 (128B, 256k ctx)
   HERMES_SUB  = mistral-small-latest (routing/gesture/memory)
-  EMBED_MODEL = gemini-embedding-2-preview (3072d) — NEVER change
+  EMBED_MODEL = gemini-embedding-2 (3072d) — NEVER change
 
 Paradigm: Ручное переключение LLM → человеческий контроль.
 CrewAI → оркестратор, а не автопилот.

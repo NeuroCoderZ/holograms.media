@@ -24,7 +24,7 @@ The backend is deployed on **Koyeb** (Docker containers) and written in **FastAP
 
 ### 3.1. Knowledge Base (RAG)
 *   **Storage:** AstraDB (Vector Search).
-*   **Embeddings:** `gemini-embedding-2-preview` (Dimension: 3072).
+*   **Embeddings:** `gemini-embedding-2` (Dimension: 3072).
 *   **Synchronization:** The `sync_knowledge_base.py` script performs incremental base updates with each deployment.
 
 ### 3.2. LLM Orchestration

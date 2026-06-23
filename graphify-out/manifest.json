@@ -1,0 +1,2352 @@
+{
+  ".agent/hologramRenderer_10days_ago.js": {
+    "mtime": 1779794740.3846188,
+    "ast_hash": "41a3f8504de319db00f445e10e6cdb63",
+    "semantic_hash": "41a3f8504de319db00f445e10e6cdb63"
+  },
+  ".agent/hologramRenderer_old.js": {
+    "mtime": 1779794740.3861241,
+    "ast_hash": "629cc60cf6ac094a05604ca7a5a674d4",
+    "semantic_hash": "629cc60cf6ac094a05604ca7a5a674d4"
+  },
+  ".agent/hologramShaders_10days_ago.js": {
+    "mtime": 1779794740.3871307,
+    "ast_hash": "d02e79e0e8f24dc5590f86237f74d42b",
+    "semantic_hash": "d02e79e0e8f24dc5590f86237f74d42b"
+  },
+  ".agent_mind/__init__.py": {
+    "mtime": 1780609681.2870567,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  ".agent_mind/_skill_distiller.py": {
+    "mtime": 1780694493.241887,
+    "ast_hash": "f88efdcab3a20b0b8d03ec92ac86724b",
+    "semantic_hash": "f88efdcab3a20b0b8d03ec92ac86724b"
+  },
+  ".agent_mind/embeddings.py": {
+    "mtime": 1781104167.070161,
+    "ast_hash": "0158a4b76fcc393a8c9a134e7ce05be2",
+    "semantic_hash": "0158a4b76fcc393a8c9a134e7ce05be2"
+  },
+  ".agent_mind/gossecret_db.json": {
+    "mtime": 1780515020.996024,
+    "ast_hash": "4d7ee257d200768d87397bb4da15abc4",
+    "semantic_hash": "4d7ee257d200768d87397bb4da15abc4"
+  },
+  ".agent_mind/hermes_worker.py": {
+    "mtime": 1781510224.2747686,
+    "ast_hash": "ec70ddf14f5349ac5d4eb1bee7ef4d61",
+    "semantic_hash": "ec70ddf14f5349ac5d4eb1bee7ef4d61"
+  },
+  ".agent_mind/index_repomix.py": {
+    "mtime": 1781531268.118126,
+    "ast_hash": "adb4134304b0987110678c0a7210783e",
+    "semantic_hash": "adb4134304b0987110678c0a7210783e"
+  },
+  ".agent_mind/index_v2.py": {
+    "mtime": 1781289843.724435,
+    "ast_hash": "a13e49e5e70115e521aaa9a596c11ae8",
+    "semantic_hash": "a13e49e5e70115e521aaa9a596c11ae8"
+  },
+  ".agent_mind/intel_evaluator.py": {
+    "mtime": 1780693227.9055917,
+    "ast_hash": "f1280acad84b9456c6fde49d495c65d8",
+    "semantic_hash": "f1280acad84b9456c6fde49d495c65d8"
+  },
+  ".agent_mind/neurocoderz_gateway.py": {
+    "mtime": 1780727814.1121185,
+    "ast_hash": "a8aaea0d817471474b17b88c1ebe7857",
+    "semantic_hash": "a8aaea0d817471474b17b88c1ebe7857"
+  },
+  ".agent_mind/query_rag.py": {
+    "mtime": 1781384279.1653826,
+    "ast_hash": "03030606d63a149a7ddf3849de67b6f4",
+    "semantic_hash": "03030606d63a149a7ddf3849de67b6f4"
+  },
+  ".agent_mind/reindex_chroma.py": {
+    "mtime": 1781455400.939867,
+    "ast_hash": "d1ef8dcd431e275eaf2044b14da06d29",
+    "semantic_hash": "d1ef8dcd431e275eaf2044b14da06d29"
+  },
+  ".agent_mind/self_induction.py": {
+    "mtime": 1780727780.5467224,
+    "ast_hash": "7e7f853a9437bc29fcb164ce6f928e7d",
+    "semantic_hash": "7e7f853a9437bc29fcb164ce6f928e7d"
+  },
+  ".antigravitycli/2f28d4ce-8843-4230-8624-ae6ca01fb3d4.json": {
+    "mtime": 1779697707.199863,
+    "ast_hash": "51eb93e73da142c264e2a27c85d457a7",
+    "semantic_hash": "51eb93e73da142c264e2a27c85d457a7"
+  },
+  ".gemini/hooks/notify.ps1": {
+    "mtime": 1779794740.4063458,
+    "ast_hash": "693b866b3e2f50298ff83c42623b854c",
+    "semantic_hash": "693b866b3e2f50298ff83c42623b854c"
+  },
+  ".gemini/settings.json": {
+    "mtime": 1779794740.407347,
+    "ast_hash": "6e0af4d538b04683c29806c58238e045",
+    "semantic_hash": "6e0af4d538b04683c29806c58238e045"
+  },
+  ".kilo/agent-manager.json": {
+    "mtime": 1774361653.9066072,
+    "ast_hash": "043099e3d893910d2c25b5eeee2f8942",
+    "semantic_hash": "043099e3d893910d2c25b5eeee2f8942"
+  },
+  ".kilo/package.json": {
+    "mtime": 1777217302.3896372,
+    "ast_hash": "190534f3a2ffe391a3ab320ef8010084",
+    "semantic_hash": "190534f3a2ffe391a3ab320ef8010084"
+  },
+  ".opencode/package.json": {
+    "mtime": 1779185561.6311316,
+    "ast_hash": "81b727b89074a550a1d6e9f1aa8d94f3",
+    "semantic_hash": "81b727b89074a550a1d6e9f1aa8d94f3"
+  },
+  ".qwen/settings.json": {
+    "mtime": 1775825084.3028324,
+    "ast_hash": "5ec37347fcafddc7c0aafbe28ec69613",
+    "semantic_hash": "5ec37347fcafddc7c0aafbe28ec69613"
+  },
+  ".scripts/report_14_29.sh": {
+    "mtime": 1779794740.4233844,
+    "ast_hash": "3fb63da40d1ff25ad1cf2d04445b245e",
+    "semantic_hash": "3fb63da40d1ff25ad1cf2d04445b245e"
+  },
+  ".vscode/settings.json": {
+    "mtime": 1778674046.1399174,
+    "ast_hash": "dbe7ec4683f957576dba3950b415e419",
+    "semantic_hash": "dbe7ec4683f957576dba3950b415e419"
+  },
+  "backend/__init__.py": {
+    "mtime": 1779794740.43699,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/api/__init__.py": {
+    "mtime": 1779794740.437991,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/api/v1/__init__.py": {
+    "mtime": 1779794740.438988,
+    "ast_hash": "8cf5f5d69de39758d375ccc3bb62023a",
+    "semantic_hash": "8cf5f5d69de39758d375ccc3bb62023a"
+  },
+  "backend/api/v1/endpoints/__init__.py": {
+    "mtime": 1779794740.438988,
+    "ast_hash": "ca187ed86077c48ea4eb157f7aef5ce6",
+    "semantic_hash": "ca187ed86077c48ea4eb157f7aef5ce6"
+  },
+  "backend/api/v1/endpoints/chunks.py": {
+    "mtime": 1779794740.4399872,
+    "ast_hash": "44ffa58ca235749c1b67495bc42b369f",
+    "semantic_hash": "44ffa58ca235749c1b67495bc42b369f"
+  },
+  "backend/api/v1/endpoints/gesture_routes.py": {
+    "mtime": 1779794740.4399872,
+    "ast_hash": "93c672223987edceaf8f72d451d5b4f9",
+    "semantic_hash": "93c672223987edceaf8f72d451d5b4f9"
+  },
+  "backend/api/v1/endpoints/github_proxy.py": {
+    "mtime": 1779794740.4409866,
+    "ast_hash": "1de4d0199ba179ef0fd1484caf3899d9",
+    "semantic_hash": "1de4d0199ba179ef0fd1484caf3899d9"
+  },
+  "backend/api/v1/endpoints/interaction_chunks.py": {
+    "mtime": 1779794740.4409866,
+    "ast_hash": "6b29b7087d51346fe36d5d5604b8bd4a",
+    "semantic_hash": "6b29b7087d51346fe36d5d5604b8bd4a"
+  },
+  "backend/api/v1/endpoints/mcp.py": {
+    "mtime": 1780604537.2037401,
+    "ast_hash": "ace94e1594cc36079accc63f98d88304",
+    "semantic_hash": "ace94e1594cc36079accc63f98d88304"
+  },
+  "backend/api/v1/endpoints/tria_commands.py": {
+    "mtime": 1779794740.4429865,
+    "ast_hash": "82eca53fe529bb424e12747ef2c7ec06",
+    "semantic_hash": "82eca53fe529bb424e12747ef2c7ec06"
+  },
+  "backend/api/v1/endpoints/wallet.py": {
+    "mtime": 1779794740.4429865,
+    "ast_hash": "cc7c91fa0be1bc2cf012bc8fc3068804",
+    "semantic_hash": "cc7c91fa0be1bc2cf012bc8fc3068804"
+  },
+  "backend/app.py": {
+    "mtime": 1779794740.4439864,
+    "ast_hash": "a6aa2707f45cf16667ae0ded9685c57d",
+    "semantic_hash": "a6aa2707f45cf16667ae0ded9685c57d"
+  },
+  "backend/auth/__init__.py": {
+    "mtime": 1779794740.4439864,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/auth/security.py": {
+    "mtime": 1779794740.4449863,
+    "ast_hash": "a2b476104d84facbf82009d7ee78deca",
+    "semantic_hash": "a2b476104d84facbf82009d7ee78deca"
+  },
+  "backend/config.py": {
+    "mtime": 1779794740.4449863,
+    "ast_hash": "120e019af460e36392b3dc91c0a8c4bb",
+    "semantic_hash": "120e019af460e36392b3dc91c0a8c4bb"
+  },
+  "backend/core/__init__.py": {
+    "mtime": 1779794740.4459891,
+    "ast_hash": "40c4ec9951b6e5dbd0850f375fe0e388",
+    "semantic_hash": "40c4ec9951b6e5dbd0850f375fe0e388"
+  },
+  "backend/core/auth_service.py": {
+    "mtime": 1779794740.446493,
+    "ast_hash": "de0f133f5ce54c5ee23899fc91d683b3",
+    "semantic_hash": "de0f133f5ce54c5ee23899fc91d683b3"
+  },
+  "backend/core/config.py": {
+    "mtime": 1780907938.8165174,
+    "ast_hash": "a3929d59e9b8fd6f737b6c853495dad6",
+    "semantic_hash": "a3929d59e9b8fd6f737b6c853495dad6"
+  },
+  "backend/core/crud_operations.py": {
+    "mtime": 1779794740.4474964,
+    "ast_hash": "5ae58b8487105694aae3856d6ebfd29e",
+    "semantic_hash": "5ae58b8487105694aae3856d6ebfd29e"
+  },
+  "backend/core/db/__init__.py": {
+    "mtime": 1779794740.4489996,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/core/db/astra_connector.py": {
+    "mtime": 1779794740.4489996,
+    "ast_hash": "a1847c36f12aa2ab6cd823a3aa60850a",
+    "semantic_hash": "a1847c36f12aa2ab6cd823a3aa60850a"
+  },
+  "backend/core/dependencies.py": {
+    "mtime": 1779794740.4500072,
+    "ast_hash": "cb965306611ba26a3f561c69e2193778",
+    "semantic_hash": "cb965306611ba26a3f561c69e2193778"
+  },
+  "backend/core/llm/__init__.py": {
+    "mtime": 1779794740.4510057,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/core/models/__init__.py": {
+    "mtime": 1779794740.4520056,
+    "ast_hash": "5cf92c18890a1675b2e9a39a287f9813",
+    "semantic_hash": "5cf92c18890a1675b2e9a39a287f9813"
+  },
+  "backend/core/models/auth_models.py": {
+    "mtime": 1779794740.453005,
+    "ast_hash": "e4330ea07f526692c2d99849b14fc325",
+    "semantic_hash": "e4330ea07f526692c2d99849b14fc325"
+  },
+  "backend/core/models/base_models.py": {
+    "mtime": 1779794740.453005,
+    "ast_hash": "4abb206f6dafe433912d85aaf5da7810",
+    "semantic_hash": "4abb206f6dafe433912d85aaf5da7810"
+  },
+  "backend/core/models/chat_models.py": {
+    "mtime": 1779794740.454005,
+    "ast_hash": "06fb68d605c5ee0c05095c8f9d346d1e",
+    "semantic_hash": "06fb68d605c5ee0c05095c8f9d346d1e"
+  },
+  "backend/core/models/code_embedding_models.py": {
+    "mtime": 1779794740.4550054,
+    "ast_hash": "51d20ef3074e54e22fb565330797ee26",
+    "semantic_hash": "51d20ef3074e54e22fb565330797ee26"
+  },
+  "backend/core/models/gesture_models.py": {
+    "mtime": 1779794740.4560063,
+    "ast_hash": "7d6ae6d8b8c1050bf94f6e8896aaac60",
+    "semantic_hash": "7d6ae6d8b8c1050bf94f6e8896aaac60"
+  },
+  "backend/core/models/hologlyph_models.py": {
+    "mtime": 1779794740.4560063,
+    "ast_hash": "06f73001f1b450d0830540f92ddec66e",
+    "semantic_hash": "06f73001f1b450d0830540f92ddec66e"
+  },
+  "backend/core/models/hologram_embedding_models.py": {
+    "mtime": 1779794740.4570816,
+    "ast_hash": "0e00885da595535d8a2c8d4100c71b72",
+    "semantic_hash": "0e00885da595535d8a2c8d4100c71b72"
+  },
+  "backend/core/models/hologram_models.py": {
+    "mtime": 1779794740.4570816,
+    "ast_hash": "7c888b2e716bb5615c9db6b21970a973",
+    "semantic_hash": "7c888b2e716bb5615c9db6b21970a973"
+  },
+  "backend/core/models/interaction_chunk_model.py": {
+    "mtime": 1779794740.4580822,
+    "ast_hash": "c0b867f1107e1c8f50653fb8d2f2d343",
+    "semantic_hash": "c0b867f1107e1c8f50653fb8d2f2d343"
+  },
+  "backend/core/models/internal_bus_models.py": {
+    "mtime": 1779794740.4590814,
+    "ast_hash": "514549d2ee75db3fa410a97f41ad294a",
+    "semantic_hash": "514549d2ee75db3fa410a97f41ad294a"
+  },
+  "backend/core/models/learning_log_models.py": {
+    "mtime": 1779794740.4590814,
+    "ast_hash": "fed2d4e0e51a5732d568fdcfef511235",
+    "semantic_hash": "fed2d4e0e51a5732d568fdcfef511235"
+  },
+  "backend/core/models/multimodal_models.py": {
+    "mtime": 1779794740.4590814,
+    "ast_hash": "96d867aecfbb1c662b984af666feb2e5",
+    "semantic_hash": "96d867aecfbb1c662b984af666feb2e5"
+  },
+  "backend/core/models/nethologlyph_models.py": {
+    "mtime": 1779794740.460081,
+    "ast_hash": "72ba1abbdf86f01d2da5336ad279f99a",
+    "semantic_hash": "72ba1abbdf86f01d2da5336ad279f99a"
+  },
+  "backend/core/models/prompt_models.py": {
+    "mtime": 1779794740.460081,
+    "ast_hash": "d031e70735130ae315e45b7234a879d7",
+    "semantic_hash": "d031e70735130ae315e45b7234a879d7"
+  },
+  "backend/core/models/tria_azr_models.py": {
+    "mtime": 1779794740.4610815,
+    "ast_hash": "fff04bc7a55fb784896224d2557888d0",
+    "semantic_hash": "fff04bc7a55fb784896224d2557888d0"
+  },
+  "backend/core/models/tria_evolution_models.py": {
+    "mtime": 1779794740.462082,
+    "ast_hash": "b28de3a570b64aa8ce055ac392524bbb",
+    "semantic_hash": "b28de3a570b64aa8ce055ac392524bbb"
+  },
+  "backend/core/models/tria_learning_models.py": {
+    "mtime": 1779794740.462082,
+    "ast_hash": "c4f48d114e5c51d323cbcbf521502d5a",
+    "semantic_hash": "c4f48d114e5c51d323cbcbf521502d5a"
+  },
+  "backend/core/models/tria_state_model.py": {
+    "mtime": 1779794740.4630818,
+    "ast_hash": "ec1bf8f89d8d957aba118a639cddb440",
+    "semantic_hash": "ec1bf8f89d8d957aba118a639cddb440"
+  },
+  "backend/core/models/user_models.py": {
+    "mtime": 1779794740.4630818,
+    "ast_hash": "921c36982eb025eba521af738e5f66cd",
+    "semantic_hash": "921c36982eb025eba521af738e5f66cd"
+  },
+  "backend/core/services/__init__.py": {
+    "mtime": 1779794740.4640813,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/core/services/llm_service.py": {
+    "mtime": 1780604537.8705199,
+    "ast_hash": "ddba9174f3ed0fe6d65a44f48f5c1ead",
+    "semantic_hash": "ddba9174f3ed0fe6d65a44f48f5c1ead"
+  },
+  "backend/core/tria_agents/ChatAgent.py": {
+    "mtime": 1779794740.4660814,
+    "ast_hash": "bf743bfa7365efced3fab6780f464b47",
+    "semantic_hash": "bf743bfa7365efced3fab6780f464b47"
+  },
+  "backend/core/tria_agents/ChunkProcessorAgent.py": {
+    "mtime": 1779794740.4660814,
+    "ast_hash": "6f48f64944b7a8a27a1d8a98ab9e6b62",
+    "semantic_hash": "6f48f64944b7a8a27a1d8a98ab9e6b62"
+  },
+  "backend/core/tria_agents/__init__.py": {
+    "mtime": 1779794740.4672623,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/core/tria_agents/azr/__init__.py": {
+    "mtime": 1779794740.4682608,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/db/__init__.py": {
+    "mtime": 1779794740.4692597,
+    "ast_hash": "8a94cf1f01f5e8b606fad875d7278736",
+    "semantic_hash": "8a94cf1f01f5e8b606fad875d7278736"
+  },
+  "backend/db/rls_policies.sql": {
+    "mtime": 1779794740.4692597,
+    "ast_hash": "a81af0e63a1f80ba484074161a7c8f0d",
+    "semantic_hash": "a81af0e63a1f80ba484074161a7c8f0d"
+  },
+  "backend/db/schemas.sql": {
+    "mtime": 1779794740.4702594,
+    "ast_hash": "0417c7c9b7b4374e649fc661a40fd3db",
+    "semantic_hash": "0417c7c9b7b4374e649fc661a40fd3db"
+  },
+  "backend/hermes_family/__init__.py": {
+    "mtime": 1779794740.4712594,
+    "ast_hash": "575bd5204d54ebd4bbb16730a21819d1",
+    "semantic_hash": "575bd5204d54ebd4bbb16730a21819d1"
+  },
+  "backend/hermes_family/agents.py": {
+    "mtime": 1780907934.4044008,
+    "ast_hash": "ac8eb6d90b1646f4276f03eaf5b04116",
+    "semantic_hash": "ac8eb6d90b1646f4276f03eaf5b04116"
+  },
+  "backend/hermes_family/flow.py": {
+    "mtime": 1780907938.242772,
+    "ast_hash": "741ae415d31ad73250f13e4b86ccfe83",
+    "semantic_hash": "741ae415d31ad73250f13e4b86ccfe83"
+  },
+  "backend/hermes_family/guardrails.py": {
+    "mtime": 1779794740.4722595,
+    "ast_hash": "cd5d90a8080a17b8905e117a927292a9",
+    "semantic_hash": "cd5d90a8080a17b8905e117a927292a9"
+  },
+  "backend/hermes_family/mcp.py": {
+    "mtime": 1779794740.4742594,
+    "ast_hash": "7a2d68e302234b4c67716045387c8842",
+    "semantic_hash": "7a2d68e302234b4c67716045387c8842"
+  },
+  "backend/hermes_family/memory.py": {
+    "mtime": 1779794740.4742594,
+    "ast_hash": "79116d692dfa27d3edc8b94a3e8f4887",
+    "semantic_hash": "79116d692dfa27d3edc8b94a3e8f4887"
+  },
+  "backend/hermes_family/models.py": {
+    "mtime": 1779794740.4742594,
+    "ast_hash": "acb5c5d68ebcf2836737c59eae9e2c28",
+    "semantic_hash": "acb5c5d68ebcf2836737c59eae9e2c28"
+  },
+  "backend/hermes_family/router.py": {
+    "mtime": 1780907911.7845218,
+    "ast_hash": "0a43dda4f7cc00988a787d39ffb0f7cb",
+    "semantic_hash": "0a43dda4f7cc00988a787d39ffb0f7cb"
+  },
+  "backend/hermes_family/security.py": {
+    "mtime": 1779794740.475762,
+    "ast_hash": "5eaa06b0c3f7b12f9241961dbbd8fd68",
+    "semantic_hash": "5eaa06b0c3f7b12f9241961dbbd8fd68"
+  },
+  "backend/hermes_family/stress_test.py": {
+    "mtime": 1779794740.475762,
+    "ast_hash": "be7068063748e7ed04d27fbddb713975",
+    "semantic_hash": "be7068063748e7ed04d27fbddb713975"
+  },
+  "backend/llm/__init__.py": {
+    "mtime": 1779794740.4778533,
+    "ast_hash": "717c49df8a8f06583d54b89e5a52238c",
+    "semantic_hash": "717c49df8a8f06583d54b89e5a52238c"
+  },
+  "backend/llm/gemini_llm.py": {
+    "mtime": 1779794740.4778533,
+    "ast_hash": "d9e5d40d9a8c3f739e011c9cc1b87896",
+    "semantic_hash": "d9e5d40d9a8c3f739e011c9cc1b87896"
+  },
+  "backend/llm/hermes_llm.py": {
+    "mtime": 1779794740.4778533,
+    "ast_hash": "53ac2da372d05ff646c57dbcb87d9695",
+    "semantic_hash": "53ac2da372d05ff646c57dbcb87d9695"
+  },
+  "backend/llm/langchain_utils.py": {
+    "mtime": 1779794740.4778533,
+    "ast_hash": "caca4c4c105897ae7336425a740077fe",
+    "semantic_hash": "caca4c4c105897ae7336425a740077fe"
+  },
+  "backend/llm/mistral_llm.py": {
+    "mtime": 1779794740.4801035,
+    "ast_hash": "d330dfda2f3491e919dcab02b8d3fd91",
+    "semantic_hash": "d330dfda2f3491e919dcab02b8d3fd91"
+  },
+  "backend/models/__init__.py": {
+    "mtime": 1779794740.4801035,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/models/tria_models.py": {
+    "mtime": 1779794740.4801035,
+    "ast_hash": "68ac2a955eda455b4d20f7d2552002a2",
+    "semantic_hash": "68ac2a955eda455b4d20f7d2552002a2"
+  },
+  "backend/repositories/__init__.py": {
+    "mtime": 1779794740.4811082,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/repositories/chat_repository.py": {
+    "mtime": 1779794740.4820063,
+    "ast_hash": "4c0394876f48d5c249679fb93bfde885",
+    "semantic_hash": "4c0394876f48d5c249679fb93bfde885"
+  },
+  "backend/repositories/embedding_repository.py": {
+    "mtime": 1779794740.4825091,
+    "ast_hash": "b6b97b0d5635bf853a0139dbef405b81",
+    "semantic_hash": "b6b97b0d5635bf853a0139dbef405b81"
+  },
+  "backend/repositories/gesture_repository.py": {
+    "mtime": 1779794740.4825091,
+    "ast_hash": "80f206cc113f6f379db56e570810e8f3",
+    "semantic_hash": "80f206cc113f6f379db56e570810e8f3"
+  },
+  "backend/repositories/hologram_repository.py": {
+    "mtime": 1779794740.4835124,
+    "ast_hash": "2f8b020e07538ed43186d930033d4797",
+    "semantic_hash": "2f8b020e07538ed43186d930033d4797"
+  },
+  "backend/repositories/interaction_chunk_repository.py": {
+    "mtime": 1779794740.4835124,
+    "ast_hash": "c56fc65b0d42e6623368594bbaf0c4fa",
+    "semantic_hash": "c56fc65b0d42e6623368594bbaf0c4fa"
+  },
+  "backend/repositories/learning_log_repository.py": {
+    "mtime": 1779794740.4845123,
+    "ast_hash": "896b106eb782103c5d3132b8e9f70c92",
+    "semantic_hash": "896b106eb782103c5d3132b8e9f70c92"
+  },
+  "backend/repositories/prompt_repository.py": {
+    "mtime": 1779794740.4845123,
+    "ast_hash": "17106bd016247b4e7f35d7f1b388b8fd",
+    "semantic_hash": "17106bd016247b4e7f35d7f1b388b8fd"
+  },
+  "backend/routers/__init__.py": {
+    "mtime": 1779794740.486015,
+    "ast_hash": "884c0dd2b51196610752abeb32046e66",
+    "semantic_hash": "884c0dd2b51196610752abeb32046e66"
+  },
+  "backend/routers/auth.py": {
+    "mtime": 1779794740.486015,
+    "ast_hash": "d9ae700eace13fcd9a4b17e14400b71e",
+    "semantic_hash": "d9ae700eace13fcd9a4b17e14400b71e"
+  },
+  "backend/routers/chat_sessions.py": {
+    "mtime": 1779794740.4870205,
+    "ast_hash": "87adb8678691da260cfb62406b8dc751",
+    "semantic_hash": "87adb8678691da260cfb62406b8dc751"
+  },
+  "backend/routers/gesture_embedding.py": {
+    "mtime": 1779794740.4880185,
+    "ast_hash": "aa4fbfcf1805fdf808d9190be339887a",
+    "semantic_hash": "aa4fbfcf1805fdf808d9190be339887a"
+  },
+  "backend/routers/gestures.py": {
+    "mtime": 1779794740.4880185,
+    "ast_hash": "4c51f178c96bf36dc4b1fc6c2b72c7f3",
+    "semantic_hash": "4c51f178c96bf36dc4b1fc6c2b72c7f3"
+  },
+  "backend/routers/gestures_ws.py": {
+    "mtime": 1779794740.4890208,
+    "ast_hash": "1202d1cb948ccb1e4c4f553d06d978ae",
+    "semantic_hash": "1202d1cb948ccb1e4c4f553d06d978ae"
+  },
+  "backend/routers/hologram.py": {
+    "mtime": 1779794740.4890208,
+    "ast_hash": "7fd5aad7668081fda16bdded3727e9dc",
+    "semantic_hash": "7fd5aad7668081fda16bdded3727e9dc"
+  },
+  "backend/routers/holograms.py": {
+    "mtime": 1779794740.4900248,
+    "ast_hash": "05ba5c6a5cd7e07649949a53a7331c3c",
+    "semantic_hash": "05ba5c6a5cd7e07649949a53a7331c3c"
+  },
+  "backend/routers/interaction_chunks.py": {
+    "mtime": 1779794740.4900248,
+    "ast_hash": "2ec6eda862230ba9b58a490e3549c02c",
+    "semantic_hash": "2ec6eda862230ba9b58a490e3549c02c"
+  },
+  "backend/routers/live.py": {
+    "mtime": 1779794740.4910247,
+    "ast_hash": "50390325a5979fc3bf15ef8e1204d879",
+    "semantic_hash": "50390325a5979fc3bf15ef8e1204d879"
+  },
+  "backend/routers/prompts.py": {
+    "mtime": 1779794740.4920242,
+    "ast_hash": "4522e1768b354a600a12273236988c5b",
+    "semantic_hash": "4522e1768b354a600a12273236988c5b"
+  },
+  "backend/routers/public_holograms.py": {
+    "mtime": 1779794740.4920242,
+    "ast_hash": "39855223cbf970bca2dc3e75c7fb1f03",
+    "semantic_hash": "39855223cbf970bca2dc3e75c7fb1f03"
+  },
+  "backend/routers/signaling.py": {
+    "mtime": 1779794740.4932134,
+    "ast_hash": "3c09e3b559f333f20221b2daf55d9762",
+    "semantic_hash": "3c09e3b559f333f20221b2daf55d9762"
+  },
+  "backend/routers/tria.py": {
+    "mtime": 1779794740.4937186,
+    "ast_hash": "a66234642a39bab8603b9909acb0011e",
+    "semantic_hash": "a66234642a39bab8603b9909acb0011e"
+  },
+  "backend/routers/tria_sleep.py": {
+    "mtime": 1779794740.4947753,
+    "ast_hash": "34eaf484a05a98a93b3dfb9252881329",
+    "semantic_hash": "34eaf484a05a98a93b3dfb9252881329"
+  },
+  "backend/scripts/migrate_to_gemini_embedding2.py": {
+    "mtime": 1780907912.4127574,
+    "ast_hash": "ecda348ce3ac1e8bd6bfa7a7208953da",
+    "semantic_hash": "ecda348ce3ac1e8bd6bfa7a7208953da"
+  },
+  "backend/services/AuthService.py": {
+    "mtime": 1779794740.495802,
+    "ast_hash": "13224af2a164c2914e4ad8a52bbe4da2",
+    "semantic_hash": "13224af2a164c2914e4ad8a52bbe4da2"
+  },
+  "backend/services/CoordinationService.py": {
+    "mtime": 1779794740.4963229,
+    "ast_hash": "5dab8d5184ef871345e20980fc489a35",
+    "semantic_hash": "5dab8d5184ef871345e20980fc489a35"
+  },
+  "backend/services/NetHoloGlyphService.py": {
+    "mtime": 1779794740.4968388,
+    "ast_hash": "261e512fd49cf2b3af67713d4d0f4796",
+    "semantic_hash": "261e512fd49cf2b3af67713d4d0f4796"
+  },
+  "backend/services/StorageService.py": {
+    "mtime": 1779794740.4978838,
+    "ast_hash": "c27bc0b79a21fd191cdc0bd7ccf4f820",
+    "semantic_hash": "c27bc0b79a21fd191cdc0bd7ccf4f820"
+  },
+  "backend/services/__init__.py": {
+    "mtime": 1779794740.4984028,
+    "ast_hash": "3b2eaa2b8585ff47d980a0f54ee8977f",
+    "semantic_hash": "3b2eaa2b8585ff47d980a0f54ee8977f"
+  },
+  "backend/services/attention_economy_service.py": {
+    "mtime": 1779794740.4989212,
+    "ast_hash": "92d19e9f4034e396a44874b26de36125",
+    "semantic_hash": "92d19e9f4034e396a44874b26de36125"
+  },
+  "backend/services/chat_service.py": {
+    "mtime": 1779794740.4994416,
+    "ast_hash": "570ded6ed58b946bbb8ed51a31f98ceb",
+    "semantic_hash": "570ded6ed58b946bbb8ed51a31f98ceb"
+  },
+  "backend/services/chunk_processor_service.py": {
+    "mtime": 1779794740.4999652,
+    "ast_hash": "a9b39c4a8dec50c609b4bf90907a9ed8",
+    "semantic_hash": "a9b39c4a8dec50c609b4bf90907a9ed8"
+  },
+  "backend/services/context_builder.py": {
+    "mtime": 1779794740.5015228,
+    "ast_hash": "47ae50f9c8225b6472d36b60f75e50bc",
+    "semantic_hash": "47ae50f9c8225b6472d36b60f75e50bc"
+  },
+  "backend/services/gemini_embedding_service.py": {
+    "mtime": 1780907911.3464942,
+    "ast_hash": "9c8eebf7529c1bd667f7488975303b4a",
+    "semantic_hash": "9c8eebf7529c1bd667f7488975303b4a"
+  },
+  "backend/services/gesture_intent_service.py": {
+    "mtime": 1780907937.1022031,
+    "ast_hash": "e808a3bd4cccd4613872a2aac860102a",
+    "semantic_hash": "e808a3bd4cccd4613872a2aac860102a"
+  },
+  "backend/services/gesture_service.py": {
+    "mtime": 1779794740.5030758,
+    "ast_hash": "902120874b6cd6dec96cdc1235e83db1",
+    "semantic_hash": "902120874b6cd6dec96cdc1235e83db1"
+  },
+  "backend/services/holochain_service.py": {
+    "mtime": 1779794740.5041149,
+    "ast_hash": "47f218b1184e2e26fcd43326a4600992",
+    "semantic_hash": "47f218b1184e2e26fcd43326a4600992"
+  },
+  "backend/services/hologram_service.py": {
+    "mtime": 1779794740.5046227,
+    "ast_hash": "83f3c25847e42cd7e3090a33defce655",
+    "semantic_hash": "83f3c25847e42cd7e3090a33defce655"
+  },
+  "backend/services/holoquant_ingestion_service.py": {
+    "mtime": 1780604539.7239783,
+    "ast_hash": "859c69061bf92ba29af5fb507f6244d6",
+    "semantic_hash": "859c69061bf92ba29af5fb507f6244d6"
+  },
+  "backend/services/mistral_embedding_service.py": {
+    "mtime": 1779794740.5051484,
+    "ast_hash": "edd800e37bcf713e63d8eec6b68eec61",
+    "semantic_hash": "edd800e37bcf713e63d8eec6b68eec61"
+  },
+  "backend/services/nlp_service.py": {
+    "mtime": 1779794740.5061543,
+    "ast_hash": "acc87f864902327b9e6792dde248ea81",
+    "semantic_hash": "acc87f864902327b9e6792dde248ea81"
+  },
+  "backend/services/prompt_service.py": {
+    "mtime": 1779794740.5073018,
+    "ast_hash": "e5faa2b9a4673c923e420c2e49295363",
+    "semantic_hash": "e5faa2b9a4673c923e420c2e49295363"
+  },
+  "backend/services/research_service.py": {
+    "mtime": 1779794740.5073018,
+    "ast_hash": "3b6fb6d7ff8192fca19b6a8c70f9708b",
+    "semantic_hash": "3b6fb6d7ff8192fca19b6a8c70f9708b"
+  },
+  "backend/services/task_stack_service.py": {
+    "mtime": 1780604631.689793,
+    "ast_hash": "f0d489c09adf523d76cb2b3b9518f391",
+    "semantic_hash": "f0d489c09adf523d76cb2b3b9518f391"
+  },
+  "backend/services/tria_response_service.py": {
+    "mtime": 1779794740.5093026,
+    "ast_hash": "63d7ac1599965e295b785cf0716b342e",
+    "semantic_hash": "63d7ac1599965e295b785cf0716b342e"
+  },
+  "backend/skills/hermes_behavior.py": {
+    "mtime": 1779794740.5103014,
+    "ast_hash": "567b47e7f8729f660b0bb230f7235d7e",
+    "semantic_hash": "567b47e7f8729f660b0bb230f7235d7e"
+  },
+  "backend/skills/hermes_context.py": {
+    "mtime": 1779794740.5113027,
+    "ast_hash": "bd63978546c982c1c84dbcbe68f7a454",
+    "semantic_hash": "bd63978546c982c1c84dbcbe68f7a454"
+  },
+  "backend/skills/hermes_memory.py": {
+    "mtime": 1779794740.5123005,
+    "ast_hash": "6df89345ebed2044a10ef5c489224fdf",
+    "semantic_hash": "6df89345ebed2044a10ef5c489224fdf"
+  },
+  "backend/skills/hermes_wallet.py": {
+    "mtime": 1779794740.5123005,
+    "ast_hash": "ccf4ae6ad1d3fb1dc8221c146d35afc8",
+    "semantic_hash": "ccf4ae6ad1d3fb1dc8221c146d35afc8"
+  },
+  "backend/tests/__init__.py": {
+    "mtime": 1779794740.5133,
+    "ast_hash": "4bedf3aa7fee58f173bfc390602a6854",
+    "semantic_hash": "4bedf3aa7fee58f173bfc390602a6854"
+  },
+  "backend/tests/minimal_fastapi_test.py": {
+    "mtime": 1779794740.5133,
+    "ast_hash": "68b329da9893e34099c7d8ad5cb9c940",
+    "semantic_hash": "68b329da9893e34099c7d8ad5cb9c940"
+  },
+  "backend/tria_agents/__init__.py": {
+    "mtime": 1779794740.5143,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/tria_agents/audio_agent.py": {
+    "mtime": 1779794740.5143,
+    "ast_hash": "1d9ac98a7489349cca31d60da36f1b6b",
+    "semantic_hash": "1d9ac98a7489349cca31d60da36f1b6b"
+  },
+  "backend/tria_agents/av_agent.py": {
+    "mtime": 1779794740.5158033,
+    "ast_hash": "9df4d8dd28ec54291ad2fd0596615752",
+    "semantic_hash": "9df4d8dd28ec54291ad2fd0596615752"
+  },
+  "backend/tria_agents/azr/TaskGenerator.py": {
+    "mtime": 1779794740.5158033,
+    "ast_hash": "ff650f41ce34fe66a2b440d7b96c071b",
+    "semantic_hash": "ff650f41ce34fe66a2b440d7b96c071b"
+  },
+  "backend/tria_agents/azr/TaskSolver.py": {
+    "mtime": 1779794740.516807,
+    "ast_hash": "8f38a06603a935b35621dcaa159f1c9e",
+    "semantic_hash": "8f38a06603a935b35621dcaa159f1c9e"
+  },
+  "backend/tria_agents/azr/__init__.py": {
+    "mtime": 1779794740.517807,
+    "ast_hash": "eb96f07e166d19bb3f391495b10e96b6",
+    "semantic_hash": "eb96f07e166d19bb3f391495b10e96b6"
+  },
+  "backend/tria_agents/azr/azr_evaluator.py": {
+    "mtime": 1779794740.51931,
+    "ast_hash": "2cb8ba6ee2621c625711c0caad33b234",
+    "semantic_hash": "2cb8ba6ee2621c625711c0caad33b234"
+  },
+  "backend/tria_agents/coordination_service.py": {
+    "mtime": 1779794740.5203154,
+    "ast_hash": "b1da81071e00ebacc0a87f38f5b28e9f",
+    "semantic_hash": "b1da81071e00ebacc0a87f38f5b28e9f"
+  },
+  "backend/tria_agents/gesture_agent.py": {
+    "mtime": 1779794740.5203154,
+    "ast_hash": "ed201b3ed4c7282db3f0aa72b8abbc16",
+    "semantic_hash": "ed201b3ed4c7282db3f0aa72b8abbc16"
+  },
+  "backend/tria_agents/hermes_core.py": {
+    "mtime": 1779794740.5213156,
+    "ast_hash": "7ef0d364ad21b1eaaa7df15a5c14e676",
+    "semantic_hash": "7ef0d364ad21b1eaaa7df15a5c14e676"
+  },
+  "backend/tria_agents/hermes_router.py": {
+    "mtime": 1779794740.5213156,
+    "ast_hash": "cb2aa1229f9f702758bb014817d2881e",
+    "semantic_hash": "cb2aa1229f9f702758bb014817d2881e"
+  },
+  "backend/tria_agents/learning_agent.py": {
+    "mtime": 1779794740.522315,
+    "ast_hash": "aed903fe7b6bfe26bb1a02f552a9ec8b",
+    "semantic_hash": "aed903fe7b6bfe26bb1a02f552a9ec8b"
+  },
+  "backend/tria_agents/live_code_analyzer.py": {
+    "mtime": 1779794740.522315,
+    "ast_hash": "5fdc08497c3562042cfb672ea591f443",
+    "semantic_hash": "5fdc08497c3562042cfb672ea591f443"
+  },
+  "backend/tria_agents/memory_agent.py": {
+    "mtime": 1779794740.5233152,
+    "ast_hash": "caf1ee2579f419dda73f32d941f81efb",
+    "semantic_hash": "caf1ee2579f419dda73f32d941f81efb"
+  },
+  "backend/tria_agents/memory_learning_agent.py": {
+    "mtime": 1779794740.5233152,
+    "ast_hash": "210dd742225ec3163d3730b902a88d52",
+    "semantic_hash": "210dd742225ec3163d3730b902a88d52"
+  },
+  "backend/tria_agents/meta_agent.py": {
+    "mtime": 1779794740.5243165,
+    "ast_hash": "4d2139c50005ff8a5e6747b15ef09d57",
+    "semantic_hash": "4d2139c50005ff8a5e6747b15ef09d57"
+  },
+  "backend/tria_agents/skill_router.py": {
+    "mtime": 1779794740.5258217,
+    "ast_hash": "fa79ebf1a5c8ff5ea2be8996bc622024",
+    "semantic_hash": "fa79ebf1a5c8ff5ea2be8996bc622024"
+  },
+  "backend/tria_agents/task_generator.py": {
+    "mtime": 1779794740.5268283,
+    "ast_hash": "482eda3377fbe8cbb39c4e49e8c2abae",
+    "semantic_hash": "482eda3377fbe8cbb39c4e49e8c2abae"
+  },
+  "backend/tria_agents/task_solver.py": {
+    "mtime": 1779794740.5268283,
+    "ast_hash": "b1258a79f067480a74b4f9dfe0b98c4b",
+    "semantic_hash": "b1258a79f067480a74b4f9dfe0b98c4b"
+  },
+  "backend/tria_agents/tria_agents.py": {
+    "mtime": 1779794740.5278285,
+    "ast_hash": "69c9486296653f7e3f84d2b0916c1b0b",
+    "semantic_hash": "69c9486296653f7e3f84d2b0916c1b0b"
+  },
+  "backend/tria_agents/tria_context.py": {
+    "mtime": 1779794740.5278285,
+    "ast_hash": "fdbef33b13baa49daccfa5e11851148e",
+    "semantic_hash": "fdbef33b13baa49daccfa5e11851148e"
+  },
+  "backend/tria_agents/tria_knowledge_extractor.py": {
+    "mtime": 1779794740.5278285,
+    "ast_hash": "405d3cacf00cdb9b545737f29d0016dd",
+    "semantic_hash": "405d3cacf00cdb9b545737f29d0016dd"
+  },
+  "backend/tria_agents/tria_memory_service.py": {
+    "mtime": 1780907936.7759602,
+    "ast_hash": "562a2fd0e83c83dd1d31df2133ce56f9",
+    "semantic_hash": "562a2fd0e83c83dd1d31df2133ce56f9"
+  },
+  "backend/tria_agents/tria_orchestrator.py": {
+    "mtime": 1779794740.53034,
+    "ast_hash": "a24b2e4bc3c339c30900cc5e712c5bc6",
+    "semantic_hash": "a24b2e4bc3c339c30900cc5e712c5bc6"
+  },
+  "backend/tria_agents/tria_rag_service.py": {
+    "mtime": 1779794740.53034,
+    "ast_hash": "13e2e6e7a04e830eb46250ae28ef291c",
+    "semantic_hash": "13e2e6e7a04e830eb46250ae28ef291c"
+  },
+  "backend/tria_agents/video_agent.py": {
+    "mtime": 1779794740.5313406,
+    "ast_hash": "e01032cf9b691b4c2ac00e23daa68631",
+    "semantic_hash": "e01032cf9b691b4c2ac00e23daa68631"
+  },
+  "backend/utils/__init__.py": {
+    "mtime": 1779794740.5313406,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "backend/utils/protobuf_mapper.py": {
+    "mtime": 1779794740.5323403,
+    "ast_hash": "e5ac6a0d8e110c018dbc51da8d60b3e6",
+    "semantic_hash": "e5ac6a0d8e110c018dbc51da8d60b3e6"
+  },
+  "cloudflare-neuroescrow.json": {
+    "mtime": 1779794740.5333402,
+    "ast_hash": "b13a5f7d73bb31318d798104f73c16b5",
+    "semantic_hash": "b13a5f7d73bb31318d798104f73c16b5"
+  },
+  "commitlint.config.js": {
+    "mtime": 1779794740.5333402,
+    "ast_hash": "dc6ed345e1c59556ae6aa5a1d3002eb2",
+    "semantic_hash": "dc6ed345e1c59556ae6aa5a1d3002eb2"
+  },
+  "conductor/tracks/debug-backend-500-error/metadata.json": {
+    "mtime": 1773964382.5163646,
+    "ast_hash": "63407d64a2f3b675eca69845084ae6a4",
+    "semantic_hash": "63407d64a2f3b675eca69845084ae6a4"
+  },
+  "conductor/tracks/finalize-integration/metadata.json": {
+    "mtime": 1774000795.5986946,
+    "ast_hash": "3c8580dea9293dbb8dbc398d30e39d78",
+    "semantic_hash": "3c8580dea9293dbb8dbc398d30e39d78"
+  },
+  "conductor/tracks/fix-astra-db-protocol/metadata.json": {
+    "mtime": 1773964037.3926136,
+    "ast_hash": "a8d27f700d2c3c1fe45be8a649295c36",
+    "semantic_hash": "a8d27f700d2c3c1fe45be8a649295c36"
+  },
+  "conductor/tracks/fix-chat-500-error/metadata.json": {
+    "mtime": 1773961832.7248666,
+    "ast_hash": "0039fd3957dd6bb1dc471a7ec5e46f8c",
+    "semantic_hash": "0039fd3957dd6bb1dc471a7ec5e46f8c"
+  },
+  "conductor/tracks/fix-chat-service-user-id/metadata.json": {
+    "mtime": 1774005419.281895,
+    "ast_hash": "2846b027b17053b05aa3e6eaa8432397",
+    "semantic_hash": "2846b027b17053b05aa3e6eaa8432397"
+  },
+  "conductor/tracks/fix-context-and-version/metadata.json": {
+    "mtime": 1773962556.9662008,
+    "ast_hash": "92d1cd2e3b1ff084dcd44f58299d8257",
+    "semantic_hash": "92d1cd2e3b1ff084dcd44f58299d8257"
+  },
+  "conductor/tracks/fix-mistral-import/metadata.json": {
+    "mtime": 1773960816.9547496,
+    "ast_hash": "251e8719890e5358b19174c41075f0ce",
+    "semantic_hash": "251e8719890e5358b19174c41075f0ce"
+  },
+  "conductor/tracks/fix-version-and-ui/metadata.json": {
+    "mtime": 1773963364.639038,
+    "ast_hash": "b476c22110f42ceac9a68e014116f7ab",
+    "semantic_hash": "b476c22110f42ceac9a68e014116f7ab"
+  },
+  "dist-neuroescrow/js/app.js": {
+    "mtime": 1779794740.5493858,
+    "ast_hash": "e738dc3c3a070b2da297e4e78f3404e2",
+    "semantic_hash": "e738dc3c3a070b2da297e4e78f3404e2"
+  },
+  "dist-neuroescrow/js/charts.js": {
+    "mtime": 1779794740.5503874,
+    "ast_hash": "35058f2a029800e2ddc2aec2ce86c427",
+    "semantic_hash": "35058f2a029800e2ddc2aec2ce86c427"
+  },
+  "dist-neuroescrow/js/telegram.js": {
+    "mtime": 1779794740.5503874,
+    "ast_hash": "7ad11cb79dcc427f57f1af2fdc8e7c29",
+    "semantic_hash": "7ad11cb79dcc427f57f1af2fdc8e7c29"
+  },
+  "dist-neuroescrow/js/tonconnect.js": {
+    "mtime": 1779794740.5513866,
+    "ast_hash": "3ceba684effe2c18ac75123f3613358d",
+    "semantic_hash": "3ceba684effe2c18ac75123f3613358d"
+  },
+  "dist-neuroescrow/tonconnect-manifest.json": {
+    "mtime": 1779794740.5523849,
+    "ast_hash": "15d157d892c369d0c17fa229e27255a2",
+    "semantic_hash": "15d157d892c369d0c17fa229e27255a2"
+  },
+  "docs/ARCH/RU/Architecture/ApiSpecifications.json": {
+    "mtime": 1779794740.5543861,
+    "ast_hash": "cafac81162ed8037d145ef9c777b1639",
+    "semantic_hash": "cafac81162ed8037d145ef9c777b1639"
+  },
+  "eslint.config.mjs": {
+    "mtime": 1779794740.6015651,
+    "ast_hash": "b67f13555a1bf0b25c12b9b934fd5bfb",
+    "semantic_hash": "b67f13555a1bf0b25c12b9b934fd5bfb"
+  },
+  "fix-path.ps1": {
+    "mtime": 1779794740.6031942,
+    "ast_hash": "59bd5d5db94c9a51969c68da02046aaa",
+    "semantic_hash": "59bd5d5db94c9a51969c68da02046aaa"
+  },
+  "holocore/build.sh": {
+    "mtime": 1779794740.6051629,
+    "ast_hash": "cc301429777d5188ed4aa66dab868f79",
+    "semantic_hash": "cc301429777d5188ed4aa66dab868f79"
+  },
+  "holocore/build_enkephalon.sh": {
+    "mtime": 1779794740.6061664,
+    "ast_hash": "785afc6d334ef47e78984be89df7c665",
+    "semantic_hash": "785afc6d334ef47e78984be89df7c665"
+  },
+  "holocore/pkg/holographic_core.d.ts": {
+    "mtime": 1778445528.6918042,
+    "ast_hash": "94a5041d37059032c1ac2d49cba74e24",
+    "semantic_hash": "94a5041d37059032c1ac2d49cba74e24"
+  },
+  "holocore/pkg/holographic_core.js": {
+    "mtime": 1778445528.691275,
+    "ast_hash": "1b84fd0d94712b1da9d405706c429084",
+    "semantic_hash": "1b84fd0d94712b1da9d405706c429084"
+  },
+  "holocore/pkg/holographic_core_bg.wasm.d.ts": {
+    "mtime": 1778445528.6928554,
+    "ast_hash": "bbbf7e0abfe853f60890c29fd5efddc1",
+    "semantic_hash": "bbbf7e0abfe853f60890c29fd5efddc1"
+  },
+  "holocore/pkg/package.json": {
+    "mtime": 1778445528.696087,
+    "ast_hash": "a9571046de382bd9d2d6ede1e789fd8d",
+    "semantic_hash": "a9571046de382bd9d2d6ede1e789fd8d"
+  },
+  "holocore/src/bio_auth.rs": {
+    "mtime": 1779794740.6072612,
+    "ast_hash": "ccd8e3632f1ea8aee1d69f64da8e665a",
+    "semantic_hash": "ccd8e3632f1ea8aee1d69f64da8e665a"
+  },
+  "holocore/src/brain.rs": {
+    "mtime": 1779794740.6077633,
+    "ast_hash": "c80028358e8ef241cb4ff655e60608ad",
+    "semantic_hash": "c80028358e8ef241cb4ff655e60608ad"
+  },
+  "holocore/src/lib.rs": {
+    "mtime": 1779794740.6082845,
+    "ast_hash": "7527d48037aa795dc7fa495c0fae995f",
+    "semantic_hash": "7527d48037aa795dc7fa495c0fae995f"
+  },
+  "holograph/dao/proposal_module_stub.py": {
+    "mtime": 1779794740.6140115,
+    "ast_hash": "a721c1576f655edd41bb560746d65c0e",
+    "semantic_hash": "a721c1576f655edd41bb560746d65c0e"
+  },
+  "js/3d/CochlearCylinder.js": {
+    "mtime": 1779794740.6208344,
+    "ast_hash": "29b03b95f02434c68da0d90023715726",
+    "semantic_hash": "29b03b95f02434c68da0d90023715726"
+  },
+  "js/3d/EarthZero.js": {
+    "mtime": 1779794740.6208344,
+    "ast_hash": "0dccb185ea0b8e2ae61a52f6a12b5031",
+    "semantic_hash": "0dccb185ea0b8e2ae61a52f6a12b5031"
+  },
+  "js/3d/TorusVom.js": {
+    "mtime": 1779794740.6218362,
+    "ast_hash": "1a4c532bb8c087daecdea8d94070432d",
+    "semantic_hash": "1a4c532bb8c087daecdea8d94070432d"
+  },
+  "js/3d/hologramGridFactory.js": {
+    "mtime": 1779794740.6218362,
+    "ast_hash": "1eab52c3e62d08d411e923b71c2b705f",
+    "semantic_hash": "1eab52c3e62d08d411e923b71c2b705f"
+  },
+  "js/3d/hologramRenderer.js": {
+    "mtime": 1779794740.6228366,
+    "ast_hash": "ff9ea695fc7941218920f1d6ca8e351f",
+    "semantic_hash": "ff9ea695fc7941218920f1d6ca8e351f"
+  },
+  "js/3d/rendering.js": {
+    "mtime": 1779794740.6238337,
+    "ast_hash": "be8ee827cf5434ce91bd3982ce7333c7",
+    "semantic_hash": "be8ee827cf5434ce91bd3982ce7333c7"
+  },
+  "js/3d/sceneSetup.js": {
+    "mtime": 1779794740.6248338,
+    "ast_hash": "8cfc08f8ef38e914580e8b6a2bded489",
+    "semantic_hash": "8cfc08f8ef38e914580e8b6a2bded489"
+  },
+  "js/3d/shaders/hologramShaders.js": {
+    "mtime": 1779794740.6248338,
+    "ast_hash": "f810f59540f57b0b945568e04c6ceaca",
+    "semantic_hash": "f810f59540f57b0b945568e04c6ceaca"
+  },
+  "js/3d/webgpu/hologram_shader_webgpu.js": {
+    "mtime": 1779794740.6258354,
+    "ast_hash": "9bcfe1d7167ca8e33b5f6bc743874650",
+    "semantic_hash": "9bcfe1d7167ca8e33b5f6bc743874650"
+  },
+  "js/3d/webgpu/webgpu_renderer.js": {
+    "mtime": 1779794740.6269555,
+    "ast_hash": "27effbe4d847e4fe5e171b35b7679cf3",
+    "semantic_hash": "27effbe4d847e4fe5e171b35b7679cf3"
+  },
+  "js/SmartHologram.js": {
+    "mtime": 1779794740.6279552,
+    "ast_hash": "3f86c40b7ca9377e1957850c0edeec15",
+    "semantic_hash": "3f86c40b7ca9377e1957850c0edeec15"
+  },
+  "js/agents/AudioAgent.js": {
+    "mtime": 1779794740.6279552,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "js/agents/BaseAgent.js": {
+    "mtime": 1779794740.6279552,
+    "ast_hash": "6cb6167efbf0f8de19b67e5f5648aa3a",
+    "semantic_hash": "6cb6167efbf0f8de19b67e5f5648aa3a"
+  },
+  "js/agents/MemoryAgent.js": {
+    "mtime": 1779794740.628955,
+    "ast_hash": "d95b2ca796f6b2afd60f151ee8441b86",
+    "semantic_hash": "d95b2ca796f6b2afd60f151ee8441b86"
+  },
+  "js/agents/OrchestrationAgent.js": {
+    "mtime": 1779794740.628955,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "js/agents/SynthesisAgent.js": {
+    "mtime": 1779794740.6299586,
+    "ast_hash": "f768ec1dfa59edd804dfac567007ecd0",
+    "semantic_hash": "f768ec1dfa59edd804dfac567007ecd0"
+  },
+  "js/agents/VisualAgent.js": {
+    "mtime": 1779794740.6299586,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "js/ai/ModernChatInterface.js": {
+    "mtime": 1779794740.6299586,
+    "ast_hash": "bad99deae1705d3f15992d5e7dede3af",
+    "semantic_hash": "bad99deae1705d3f15992d5e7dede3af"
+  },
+  "js/ai/StreamingQuant.js": {
+    "mtime": 1779794740.6309586,
+    "ast_hash": "fb0ed2e592adbc46942d109cd552a3c2",
+    "semantic_hash": "fb0ed2e592adbc46942d109cd552a3c2"
+  },
+  "js/ai/TriaEvolutionConnector.js": {
+    "mtime": 1779794740.6319585,
+    "ast_hash": "274911e90378934402299f6ecde13898",
+    "semantic_hash": "274911e90378934402299f6ecde13898"
+  },
+  "js/ai/chat.js": {
+    "mtime": 1779794740.6319585,
+    "ast_hash": "aecbad343748f2157661d0e74d4bbbd7",
+    "semantic_hash": "aecbad343748f2157661d0e74d4bbbd7"
+  },
+  "js/ai/gestureIntentClassifier.js": {
+    "mtime": 1779794740.633959,
+    "ast_hash": "5cd2d65ae676b49e09568a07fedf47df",
+    "semantic_hash": "5cd2d65ae676b49e09568a07fedf47df"
+  },
+  "js/ai/magentaService.js": {
+    "mtime": 1779794740.633959,
+    "ast_hash": "72dff97738a919a35b0e272924acfef6",
+    "semantic_hash": "72dff97738a919a35b0e272924acfef6"
+  },
+  "js/ai/models.js": {
+    "mtime": 1779794740.634959,
+    "ast_hash": "4989f45470012ffff90ce6830a68294d",
+    "semantic_hash": "4989f45470012ffff90ce6830a68294d"
+  },
+  "js/ai/prompts.js": {
+    "mtime": 1779794740.634959,
+    "ast_hash": "56c862292b552c8cc756fe491b37c4c2",
+    "semantic_hash": "56c862292b552c8cc756fe491b37c4c2"
+  },
+  "js/ai/tools.js": {
+    "mtime": 1779794740.6364617,
+    "ast_hash": "9eaf5c8a1a58b508986e0c288a60325a",
+    "semantic_hash": "9eaf5c8a1a58b508986e0c288a60325a"
+  },
+  "js/ai/tria.js": {
+    "mtime": 1779794740.6364617,
+    "ast_hash": "1c6eaeabb8f876898b4a641113ac8423",
+    "semantic_hash": "1c6eaeabb8f876898b4a641113ac8423"
+  },
+  "js/ai/tria_mode.js": {
+    "mtime": 1779794740.6374676,
+    "ast_hash": "ed99e0ddcb3025fbd3554c05f6818f75",
+    "semantic_hash": "ed99e0ddcb3025fbd3554c05f6818f75"
+  },
+  "js/audio/3d_spatializer.js": {
+    "mtime": 1779794740.6374676,
+    "ast_hash": "7748437d497d0860e9f1463077743f09",
+    "semantic_hash": "7748437d497d0860e9f1463077743f09"
+  },
+  "js/audio/AudioGestureBridge.js": {
+    "mtime": 1779794740.6374676,
+    "ast_hash": "4f1c484083fb76e7ffc66d13b75ff5c0",
+    "semantic_hash": "4f1c484083fb76e7ffc66d13b75ff5c0"
+  },
+  "js/audio/GestureSynthesizer.js": {
+    "mtime": 1780604550.7209573,
+    "ast_hash": "3685992905872d9c25768ea03a9914e8",
+    "semantic_hash": "3685992905872d9c25768ea03a9914e8"
+  },
+  "js/audio/SpectralInpainter.js": {
+    "mtime": 1779794740.6389737,
+    "ast_hash": "afbfec7764807e6ffe65589ce9efb1a7",
+    "semantic_hash": "afbfec7764807e6ffe65589ce9efb1a7"
+  },
+  "js/audio/audioFilePlayer.js": {
+    "mtime": 1779794740.6399798,
+    "ast_hash": "32fd2ae65ddaf38d7fd0539173249f0d",
+    "semantic_hash": "32fd2ae65ddaf38d7fd0539173249f0d"
+  },
+  "js/audio/audioProcessing.js": {
+    "mtime": 1779794740.6399798,
+    "ast_hash": "869a27e6f7cf4a3ef9b126ee3f79a4a9",
+    "semantic_hash": "869a27e6f7cf4a3ef9b126ee3f79a4a9"
+  },
+  "js/audio/browserPipelineTest.js": {
+    "mtime": 1779794740.6409793,
+    "ast_hash": "6425f52492073486766f7c10941bf3de",
+    "semantic_hash": "6425f52492073486766f7c10941bf3de"
+  },
+  "js/audio/cwt.cpp": {
+    "mtime": 1779794740.6409793,
+    "ast_hash": "c07f2a7c18194fd301b7ab410e05fdbe",
+    "semantic_hash": "c07f2a7c18194fd301b7ab410e05fdbe"
+  },
+  "js/audio/cwtAudioWorklet.js": {
+    "mtime": 1779794740.641979,
+    "ast_hash": "d3b645b880bd2f859edd9e96ca9866a3",
+    "semantic_hash": "d3b645b880bd2f859edd9e96ca9866a3"
+  },
+  "js/audio/microphoneManager.js": {
+    "mtime": 1779794740.642979,
+    "ast_hash": "f2ca1c6031ef47eb37b7063092c8e928",
+    "semantic_hash": "f2ca1c6031ef47eb37b7063092c8e928"
+  },
+  "js/audio/pipelineSelfTest.js": {
+    "mtime": 1779794740.642979,
+    "ast_hash": "b3c1042fdf4c46b764e16bcdd2e903ae",
+    "semantic_hash": "b3c1042fdf4c46b764e16bcdd2e903ae"
+  },
+  "js/audio/processing.js": {
+    "mtime": 1779794740.64398,
+    "ast_hash": "75c6ac6ca537959bb23fb3840cab0040",
+    "semantic_hash": "75c6ac6ca537959bb23fb3840cab0040"
+  },
+  "js/audio/speechInput.js": {
+    "mtime": 1779794740.64398,
+    "ast_hash": "0f0fcb8228b00617cd5b7a5ecab84424",
+    "semantic_hash": "0f0fcb8228b00617cd5b7a5ecab84424"
+  },
+  "js/audio/waveletAnalyzer.js": {
+    "mtime": 1779794740.64398,
+    "ast_hash": "e73bb95d51751f24db2a8f42cf46c059",
+    "semantic_hash": "e73bb95d51751f24db2a8f42cf46c059"
+  },
+  "js/audio/webAudioEngine.js": {
+    "mtime": 1779794740.6449811,
+    "ast_hash": "b0394a139f3b288afb60b645b810c515",
+    "semantic_hash": "b0394a139f3b288afb60b645b810c515"
+  },
+  "js/config/UI_MAP.json": {
+    "mtime": 1779794740.6459816,
+    "ast_hash": "df7d8f44f9131207e112ddbc90c714ab",
+    "semantic_hash": "df7d8f44f9131207e112ddbc90c714ab"
+  },
+  "js/config/cloudConfig.example.js": {
+    "mtime": 1779794740.6459816,
+    "ast_hash": "1806c2a7711177a2a4b5dbda184ea233",
+    "semantic_hash": "1806c2a7711177a2a4b5dbda184ea233"
+  },
+  "js/config/gestureSequences.js": {
+    "mtime": 1779794740.6459816,
+    "ast_hash": "390dc01b7b4b68f9bde5c7111e014583",
+    "semantic_hash": "390dc01b7b4b68f9bde5c7111e014583"
+  },
+  "js/config/hologramConfig.js": {
+    "mtime": 1779794740.647423,
+    "ast_hash": "eb590ee11f3df44f690855910f81364a",
+    "semantic_hash": "eb590ee11f3df44f690855910f81364a"
+  },
+  "js/config/hologramConstants.js": {
+    "mtime": 1779794740.647423,
+    "ast_hash": "74398454229d59e3631c879970685f50",
+    "semantic_hash": "74398454229d59e3631c879970685f50"
+  },
+  "js/core/3d/audioVisualizer.js": {
+    "mtime": 1779794740.6489294,
+    "ast_hash": "4ac55220ffc76903b315e8ac142ffe6a",
+    "semantic_hash": "4ac55220ffc76903b315e8ac142ffe6a"
+  },
+  "js/core/AgentWomb.js": {
+    "mtime": 1779794740.6499355,
+    "ast_hash": "6895ace3be2ffb05e5d1f8f620ea4492",
+    "semantic_hash": "6895ace3be2ffb05e5d1f8f620ea4492"
+  },
+  "js/core/EmotionalMonitor.js": {
+    "mtime": 1779794740.6499355,
+    "ast_hash": "1984b771bdafdc11e9318fdcc633389f",
+    "semantic_hash": "1984b771bdafdc11e9318fdcc633389f"
+  },
+  "js/core/EnkephalonBridge.js": {
+    "mtime": 1779794740.6509347,
+    "ast_hash": "016cd83d77b5b2bd0f359e6c948898b2",
+    "semantic_hash": "016cd83d77b5b2bd0f359e6c948898b2"
+  },
+  "js/core/GestureCommandEngine.js": {
+    "mtime": 1779794740.6509347,
+    "ast_hash": "6bfbe75632799d22277ad7e46981c5f7",
+    "semantic_hash": "6bfbe75632799d22277ad7e46981c5f7"
+  },
+  "js/core/GestureToCodeExecutor.js": {
+    "mtime": 1779794740.651935,
+    "ast_hash": "edeaaacedaa92280fff9ebf22a68b462",
+    "semantic_hash": "edeaaacedaa92280fff9ebf22a68b462"
+  },
+  "js/core/HyperbrainSynthesizer.js": {
+    "mtime": 1779794740.6529355,
+    "ast_hash": "ec297417a606deeea48708e6b5de4307",
+    "semantic_hash": "ec297417a606deeea48708e6b5de4307"
+  },
+  "js/core/ProofOfGesture.js": {
+    "mtime": 1779794740.6529355,
+    "ast_hash": "d9aa7e2e27fe49613d13c010e5df7ed7",
+    "semantic_hash": "d9aa7e2e27fe49613d13c010e5df7ed7"
+  },
+  "js/core/ReintegrationManager.js": {
+    "mtime": 1779794740.6539352,
+    "ast_hash": "ffd0898cb965dd4b253cf17c317bdc09",
+    "semantic_hash": "ffd0898cb965dd4b253cf17c317bdc09"
+  },
+  "js/core/SQLiteEmbeddingService.js": {
+    "mtime": 1779794740.6539352,
+    "ast_hash": "8aecd104da2a0a072d82e0dc066001c3",
+    "semantic_hash": "8aecd104da2a0a072d82e0dc066001c3"
+  },
+  "js/core/StreamingQuant.js": {
+    "mtime": 1779794740.6549358,
+    "ast_hash": "d8cbf57fcb4f34a6ca1845f70ca33241",
+    "semantic_hash": "d8cbf57fcb4f34a6ca1845f70ca33241"
+  },
+  "js/core/TriaBiosService.js": {
+    "mtime": 1779794740.6559346,
+    "ast_hash": "470cde272391d4c46976765caa39705f",
+    "semantic_hash": "470cde272391d4c46976765caa39705f"
+  },
+  "js/core/TriaDBClient.js": {
+    "mtime": 1779794740.6564379,
+    "ast_hash": "b0ed9857479966aaeda9cf4b2aecbb56",
+    "semantic_hash": "b0ed9857479966aaeda9cf4b2aecbb56"
+  },
+  "js/core/TriaFileSystem.js": {
+    "mtime": 1779794740.6574433,
+    "ast_hash": "851c8ca90d3dde853cde02a2578ac6a2",
+    "semantic_hash": "851c8ca90d3dde853cde02a2578ac6a2"
+  },
+  "js/core/TriaOrchestrator.js": {
+    "mtime": 1779794740.6589482,
+    "ast_hash": "2a90acf58cb30ce38bbdb71fe425da97",
+    "semantic_hash": "2a90acf58cb30ce38bbdb71fe425da97"
+  },
+  "js/core/TriaPulse.js": {
+    "mtime": 1779794740.6589482,
+    "ast_hash": "39900e0b1eb8a10795ecf8a3828af167",
+    "semantic_hash": "39900e0b1eb8a10795ecf8a3828af167"
+  },
+  "js/core/UIContextManager.js": {
+    "mtime": 1779794740.6599562,
+    "ast_hash": "fb27b90c57f7325b0546a08d3f83ecf7",
+    "semantic_hash": "fb27b90c57f7325b0546a08d3f83ecf7"
+  },
+  "js/core/appStatePersistence.js": {
+    "mtime": 1779794740.6599562,
+    "ast_hash": "fcb766a65c701ce3cd1501a5812c1482",
+    "semantic_hash": "fcb766a65c701ce3cd1501a5812c1482"
+  },
+  "js/core/audio/audioPlayer.js": {
+    "mtime": 1779794740.6609564,
+    "ast_hash": "7fa6c510bbaa42827dfb5b0164e11d18",
+    "semantic_hash": "7fa6c510bbaa42827dfb5b0164e11d18"
+  },
+  "js/core/auth.js": {
+    "mtime": 1779822646.5423515,
+    "ast_hash": "a709ca0f98eb277363e80d4c238f5683",
+    "semantic_hash": "a709ca0f98eb277363e80d4c238f5683"
+  },
+  "js/core/consentManager.js": {
+    "mtime": 1779794740.6619568,
+    "ast_hash": "8c035fc375f212acfe64212f170b0524",
+    "semantic_hash": "8c035fc375f212acfe64212f170b0524"
+  },
+  "js/core/diagnostics.js": {
+    "mtime": 1779794740.6629565,
+    "ast_hash": "d8dbaa1bda607a9891ab05d6b7468518",
+    "semantic_hash": "d8dbaa1bda607a9891ab05d6b7468518"
+  },
+  "js/core/domEventHandlers.js": {
+    "mtime": 1779794740.6629565,
+    "ast_hash": "6ff29d303e7450afad2599526c9dfa4e",
+    "semantic_hash": "6ff29d303e7450afad2599526c9dfa4e"
+  },
+  "js/core/eventBus.js": {
+    "mtime": 1779794740.6639569,
+    "ast_hash": "e071eddbd0d40374b40bdc8eb1222663",
+    "semantic_hash": "e071eddbd0d40374b40bdc8eb1222663"
+  },
+  "js/core/events.js": {
+    "mtime": 1779794740.6639569,
+    "ast_hash": "9f18e16c92175b97730ef7da92fb89f6",
+    "semantic_hash": "9f18e16c92175b97730ef7da92fb89f6"
+  },
+  "js/core/gestures.js": {
+    "mtime": 1779794740.6649568,
+    "ast_hash": "54892eb1781341a60620afa01080fd8d",
+    "semantic_hash": "54892eb1781341a60620afa01080fd8d"
+  },
+  "js/core/init.js": {
+    "mtime": 1779794740.665958,
+    "ast_hash": "d9a5e126434f9478c1dd8352d1403841",
+    "semantic_hash": "d9a5e126434f9478c1dd8352d1403841"
+  },
+  "js/core/mediaInitializer.js": {
+    "mtime": 1779794740.665958,
+    "ast_hash": "edde7996887a462138d22a842223f8b2",
+    "semantic_hash": "edde7996887a462138d22a842223f8b2"
+  },
+  "js/core/multimodal/handsTracking.js": {
+    "mtime": 1779794740.6670082,
+    "ast_hash": "76af84bb30d547d754e7ab8a9d29c958",
+    "semantic_hash": "76af84bb30d547d754e7ab8a9d29c958"
+  },
+  "js/core/multimodal/speechInput.js": {
+    "mtime": 1779794740.6670082,
+    "ast_hash": "5d91edfc6ced83dde32edd27d76fbfb7",
+    "semantic_hash": "5d91edfc6ced83dde32edd27d76fbfb7"
+  },
+  "js/core/multimodal/webRTC.js": {
+    "mtime": 1779794740.6680067,
+    "ast_hash": "79b94609065106f53f81af2ec5f147f9",
+    "semantic_hash": "79b94609065106f53f81af2ec5f147f9"
+  },
+  "js/core/platformDetector.js": {
+    "mtime": 1779794740.6680067,
+    "ast_hash": "cd000dfa4c3b6efdac41286bad5df78b",
+    "semantic_hash": "cd000dfa4c3b6efdac41286bad5df78b"
+  },
+  "js/core/pwaInstall.js": {
+    "mtime": 1779794740.6690066,
+    "ast_hash": "eff882c455f37953f1f911d48c2a3133",
+    "semantic_hash": "eff882c455f37953f1f911d48c2a3133"
+  },
+  "js/core/resizeHandler.js": {
+    "mtime": 1779794740.6690066,
+    "ast_hash": "b7112ac6be32a53cdd5719072b26fe80",
+    "semantic_hash": "b7112ac6be32a53cdd5719072b26fe80"
+  },
+  "js/core/resizeHandler.test.js": {
+    "mtime": 1779794740.6700118,
+    "ast_hash": "d875e5d997c82e5e3dfdf25ab6e60f4a",
+    "semantic_hash": "d875e5d997c82e5e3dfdf25ab6e60f4a"
+  },
+  "js/core/services/apiService.js": {
+    "mtime": 1779794740.6700118,
+    "ast_hash": "d80c31276585af37c7cbc7b6148c436f",
+    "semantic_hash": "d80c31276585af37c7cbc7b6148c436f"
+  },
+  "js/core/storageManager.js": {
+    "mtime": 1779794740.6710122,
+    "ast_hash": "32cff517a162161d662c8d7a24d20059",
+    "semantic_hash": "32cff517a162161d662c8d7a24d20059"
+  },
+  "js/core/threeImports.js": {
+    "mtime": 1779794740.672012,
+    "ast_hash": "dbad9b4caeba852c34afcc0f3211adc2",
+    "semantic_hash": "dbad9b4caeba852c34afcc0f3211adc2"
+  },
+  "js/core/ui.js": {
+    "mtime": 1779794740.672012,
+    "ast_hash": "67d5464aadb115e61024f2ab86144d45",
+    "semantic_hash": "67d5464aadb115e61024f2ab86144d45"
+  },
+  "js/core/ui/chatUI.js": {
+    "mtime": 1779794740.6730115,
+    "ast_hash": "c86ee5cd8c8d9c6199544c69a459fab5",
+    "semantic_hash": "c86ee5cd8c8d9c6199544c69a459fab5"
+  },
+  "js/core/ui/panelManager.js": {
+    "mtime": 1779794740.6730115,
+    "ast_hash": "cba53f3f3bc68493a68b2786612311a1",
+    "semantic_hash": "cba53f3f3bc68493a68b2786612311a1"
+  },
+  "js/core/ui/uiManager.js": {
+    "mtime": 1779794740.6740115,
+    "ast_hash": "06ec428ab2dd21bdcd565095d61be9e4",
+    "semantic_hash": "06ec428ab2dd21bdcd565095d61be9e4"
+  },
+  "js/engine/Engine.js": {
+    "mtime": 1779794740.6740115,
+    "ast_hash": "bc8f617dda6e632133cf4eb10bc63ed2",
+    "semantic_hash": "bc8f617dda6e632133cf4eb10bc63ed2"
+  },
+  "js/engine/GridWireframe.js": {
+    "mtime": 1779794740.6750119,
+    "ast_hash": "112b3cb102faf732fc61e82aad4287b6",
+    "semantic_hash": "112b3cb102faf732fc61e82aad4287b6"
+  },
+  "js/engine/HologramWebGPU.js": {
+    "mtime": 1779794740.6750119,
+    "ast_hash": "cf913032e2322c867e6cd8c820e31982",
+    "semantic_hash": "cf913032e2322c867e6cd8c820e31982"
+  },
+  "js/engine/InstancedColumns.js": {
+    "mtime": 1779794740.6760113,
+    "ast_hash": "6a73e4d49119aec173472e31129efdc2",
+    "semantic_hash": "6a73e4d49119aec173472e31129efdc2"
+  },
+  "js/engine/columns.wgsl.js": {
+    "mtime": 1779794740.6765208,
+    "ast_hash": "7a40b24b8b9851ca7b3da4ffdacb1828",
+    "semantic_hash": "7a40b24b8b9851ca7b3da4ffdacb1828"
+  },
+  "js/filters/OneEuroFilter.js": {
+    "mtime": 1779794740.6765208,
+    "ast_hash": "64f4f2238b69f6c325137e44cc3bac25",
+    "semantic_hash": "64f4f2238b69f6c325137e44cc3bac25"
+  },
+  "js/gestures/AtomicGestureClassifier.js": {
+    "mtime": 1779794740.6775258,
+    "ast_hash": "356d769c375b02993fa071874e0d374c",
+    "semantic_hash": "356d769c375b02993fa071874e0d374c"
+  },
+  "js/gestures/GestureSemanticLayer.js": {
+    "mtime": 1779794740.6775258,
+    "ast_hash": "4b7f8db7529bccd39e9d3ce172d997fd",
+    "semantic_hash": "4b7f8db7529bccd39e9d3ce172d997fd"
+  },
+  "js/gestures/GestureSequencer.js": {
+    "mtime": 1779794740.6775258,
+    "ast_hash": "6349ca07f33a53bccb54fbc152d78a5b",
+    "semantic_hash": "6349ca07f33a53bccb54fbc152d78a5b"
+  },
+  "js/gestures/IntentAccumulator.js": {
+    "mtime": 1779794740.6790514,
+    "ast_hash": "bcff01a4cd85e425d4f9bdd2d0db87e9",
+    "semantic_hash": "bcff01a4cd85e425d4f9bdd2d0db87e9"
+  },
+  "js/legacy-bridge.js": {
+    "mtime": 1779794740.6790514,
+    "ast_hash": "87d9b0e1ef5df5071529c69ea0e36f11",
+    "semantic_hash": "87d9b0e1ef5df5071529c69ea0e36f11"
+  },
+  "js/main.js": {
+    "mtime": 1779806221.313224,
+    "ast_hash": "42627227469c903298b3f26274a174ce",
+    "semantic_hash": "42627227469c903298b3f26274a174ce"
+  },
+  "js/managers/GestureRecordingManager.js": {
+    "mtime": 1779794740.6810572,
+    "ast_hash": "851039a3d7221d5c98a65cd8e7b677bb",
+    "semantic_hash": "851039a3d7221d5c98a65cd8e7b677bb"
+  },
+  "js/managers/HologramManager.js": {
+    "mtime": 1779794740.6820576,
+    "ast_hash": "de7671f3387be6c514122eabc431da8f",
+    "semantic_hash": "de7671f3387be6c514122eabc431da8f"
+  },
+  "js/managers/InteractionManager.js": {
+    "mtime": 1779794740.6820576,
+    "ast_hash": "c0a146fdde1f2d136f6d1a3a4c721f90",
+    "semantic_hash": "c0a146fdde1f2d136f6d1a3a4c721f90"
+  },
+  "js/managers/RightPanelManager.js": {
+    "mtime": 1779794740.6830578,
+    "ast_hash": "5a08097078fb510897a74b6559d37d90",
+    "semantic_hash": "5a08097078fb510897a74b6559d37d90"
+  },
+  "js/managers/gestureManager.js": {
+    "mtime": 1779794740.6840572,
+    "ast_hash": "3afa96af8ae34b943e515e29ad28eb6d",
+    "semantic_hash": "3afa96af8ae34b943e515e29ad28eb6d"
+  },
+  "js/multimodal/handsTracking.js": {
+    "mtime": 1779794740.6850572,
+    "ast_hash": "48b0fe0f59879fdd7e10eef404896fd1",
+    "semantic_hash": "48b0fe0f59879fdd7e10eef404896fd1"
+  },
+  "js/multimodal/hologramScanner.js": {
+    "mtime": 1779794740.6860573,
+    "ast_hash": "f406d4ec193152c7c7df2016f4ecdf8b",
+    "semantic_hash": "f406d4ec193152c7c7df2016f4ecdf8b"
+  },
+  "js/multimodal/hologramSynthesizer.js": {
+    "mtime": 1779794740.6865623,
+    "ast_hash": "9c2a0b50bf121fe6477c9ac22fdbcf6c",
+    "semantic_hash": "9c2a0b50bf121fe6477c9ac22fdbcf6c"
+  },
+  "js/multimodal/voice_input.js": {
+    "mtime": 1779794740.6875682,
+    "ast_hash": "a982e88e5addd33792e3db22a03b8cbb",
+    "semantic_hash": "a982e88e5addd33792e3db22a03b8cbb"
+  },
+  "js/package.json": {
+    "mtime": 1779794740.6875682,
+    "ast_hash": "b89c5f2a8f8cfdd98f96655509d63440",
+    "semantic_hash": "b89c5f2a8f8cfdd98f96655509d63440"
+  },
+  "js/panels/chatMessages.js": {
+    "mtime": 1779794740.6875682,
+    "ast_hash": "615645c5ad6fad96a7f2426f8bfe6f0e",
+    "semantic_hash": "615645c5ad6fad96a7f2426f8bfe6f0e"
+  },
+  "js/panels/hologramPanelManager.js": {
+    "mtime": 1779794740.6875682,
+    "ast_hash": "942bc2b00a4eb6f88118057a68707a2c",
+    "semantic_hash": "942bc2b00a4eb6f88118057a68707a2c"
+  },
+  "js/panels/rightPanelManager.js": {
+    "mtime": 1779794740.6890736,
+    "ast_hash": "60a66e6c06e67e00840698e718684b9c",
+    "semantic_hash": "60a66e6c06e67e00840698e718684b9c"
+  },
+  "js/platforms/desktop/desktopInput.js": {
+    "mtime": 1779794740.6907845,
+    "ast_hash": "f802fd212de47f44b836124477f0f825",
+    "semantic_hash": "f802fd212de47f44b836124477f0f825"
+  },
+  "js/platforms/desktop/desktopLayout.js": {
+    "mtime": 1779794740.6918142,
+    "ast_hash": "31f7401da389914a59fddde7a034dafb",
+    "semantic_hash": "31f7401da389914a59fddde7a034dafb"
+  },
+  "js/platforms/mobile/mobileInput.js": {
+    "mtime": 1779794740.692338,
+    "ast_hash": "c64d54f02d03164b7189dbd32134ffb2",
+    "semantic_hash": "c64d54f02d03164b7189dbd32134ffb2"
+  },
+  "js/platforms/mobile/mobileLayout.js": {
+    "mtime": 1779794740.693375,
+    "ast_hash": "46421961184dc9837a62e838dea44e31",
+    "semantic_hash": "46421961184dc9837a62e838dea44e31"
+  },
+  "js/platforms/xr/xrInput.js": {
+    "mtime": 1779794740.6939015,
+    "ast_hash": "e74c6ca124cdef052e793fe4bb0fe638",
+    "semantic_hash": "e74c6ca124cdef052e793fe4bb0fe638"
+  },
+  "js/platforms/xr/xrLayout.js": {
+    "mtime": 1779794740.6944256,
+    "ast_hash": "3644c4de40edb5116cae3f5f01107673",
+    "semantic_hash": "3644c4de40edb5116cae3f5f01107673"
+  },
+  "js/services/AgenticDAO.js": {
+    "mtime": 1779794740.6959834,
+    "ast_hash": "90f12e95964a8afe41fe7c8562d14df8",
+    "semantic_hash": "90f12e95964a8afe41fe7c8562d14df8"
+  },
+  "js/services/AttentionEconomyManager.js": {
+    "mtime": 1779794740.6965096,
+    "ast_hash": "e6deb4f7a9154f5d87db3b88ba94c8f9",
+    "semantic_hash": "e6deb4f7a9154f5d87db3b88ba94c8f9"
+  },
+  "js/services/AudioService.js": {
+    "mtime": 1780604552.1159842,
+    "ast_hash": "b05a2256951b7bf68e04df86a204864c",
+    "semantic_hash": "b05a2256951b7bf68e04df86a204864c"
+  },
+  "js/services/AutoReloadService.js": {
+    "mtime": 1779794740.6981182,
+    "ast_hash": "971159fc49c38a5309122fc19ae14e63",
+    "semantic_hash": "971159fc49c38a5309122fc19ae14e63"
+  },
+  "js/services/HolographicChatRoom.js": {
+    "mtime": 1779794740.6986413,
+    "ast_hash": "9242d9b092a7e1223a41270e3bcb4d3b",
+    "semantic_hash": "9242d9b092a7e1223a41270e3bcb4d3b"
+  },
+  "js/services/LiveAudioService.js": {
+    "mtime": 1779794740.6996877,
+    "ast_hash": "d02525ff4abd35b291321d011586693a",
+    "semantic_hash": "d02525ff4abd35b291321d011586693a"
+  },
+  "js/services/NeuralDecoderService.js": {
+    "mtime": 1779794740.7002118,
+    "ast_hash": "a0e8657db78cf423c94b018ce8dc4f4f",
+    "semantic_hash": "a0e8657db78cf423c94b018ce8dc4f4f"
+  },
+  "js/services/VersionService.js": {
+    "mtime": 1779794740.700748,
+    "ast_hash": "d2c5c9632287ec9d4a2fe4185b06f8c4",
+    "semantic_hash": "d2c5c9632287ec9d4a2fe4185b06f8c4"
+  },
+  "js/services/apiService.js": {
+    "mtime": 1779794740.7012713,
+    "ast_hash": "f87beda78745ce391730333f824ca0c2",
+    "semantic_hash": "f87beda78745ce391730333f824ca0c2"
+  },
+  "js/services/gestureIntentClient.js": {
+    "mtime": 1779822653.9533052,
+    "ast_hash": "5163f165e7d236bb07bad83c21aeb127",
+    "semantic_hash": "5163f165e7d236bb07bad83c21aeb127"
+  },
+  "js/services/hermesService.js": {
+    "mtime": 1779794740.70233,
+    "ast_hash": "27fc959d5142cfef36e1819fa09c6ccb",
+    "semantic_hash": "27fc959d5142cfef36e1819fa09c6ccb"
+  },
+  "js/services/hologlyphService.js": {
+    "mtime": 1779794740.702856,
+    "ast_hash": "2f5dbbcc624ef440aa31228c7d9377aa",
+    "semantic_hash": "2f5dbbcc624ef440aa31228c7d9377aa"
+  },
+  "js/services/netHoloGlyphClient.js": {
+    "mtime": 1779794740.703384,
+    "ast_hash": "7bb6a2041ffed1453f568560c0be45f0",
+    "semantic_hash": "7bb6a2041ffed1453f568560c0be45f0"
+  },
+  "js/services/scannerService.js": {
+    "mtime": 1779794740.7044342,
+    "ast_hash": "83a324944b78c83d6868a78bf9d52db2",
+    "semantic_hash": "83a324944b78c83d6868a78bf9d52db2"
+  },
+  "js/services/websocketService.js": {
+    "mtime": 1779794740.704957,
+    "ast_hash": "3240d163f81b7230f85446f54de8dfbc",
+    "semantic_hash": "3240d163f81b7230f85446f54de8dfbc"
+  },
+  "js/tria/GestureDNA.js": {
+    "mtime": 1779794740.7059913,
+    "ast_hash": "98c1d0986fe6a707a00dfdbab22bbf8e",
+    "semantic_hash": "98c1d0986fe6a707a00dfdbab22bbf8e"
+  },
+  "js/tria/GestureEmbeddingBridge.js": {
+    "mtime": 1779794740.706519,
+    "ast_hash": "b43b8bbc884118f6cc6a9e778a2a7999",
+    "semantic_hash": "b43b8bbc884118f6cc6a9e778a2a7999"
+  },
+  "js/tria/GestureVectorStore.js": {
+    "mtime": 1779794740.7070544,
+    "ast_hash": "bfae4aee83a286f099789f6e7877a597",
+    "semantic_hash": "bfae4aee83a286f099789f6e7877a597"
+  },
+  "js/tria/HermaionBridge.js": {
+    "mtime": 1779794740.7075796,
+    "ast_hash": "1b29a5705f0c7ca09acffa25e4bb2033",
+    "semantic_hash": "1b29a5705f0c7ca09acffa25e4bb2033"
+  },
+  "js/tria/HermaionWallet.js": {
+    "mtime": 1779794740.7081172,
+    "ast_hash": "87b95b53d767631f00b16f383be128e1",
+    "semantic_hash": "87b95b53d767631f00b16f383be128e1"
+  },
+  "js/tria/IntentActionMap.js": {
+    "mtime": 1779794740.7081172,
+    "ast_hash": "59d428b95a3240dde76cb0d36477718f",
+    "semantic_hash": "59d428b95a3240dde76cb0d36477718f"
+  },
+  "js/tria/IntentEmbedding.js": {
+    "mtime": 1779794740.7091231,
+    "ast_hash": "2b303b9b3df021e8b7731301488e4e2f",
+    "semantic_hash": "2b303b9b3df021e8b7731301488e4e2f"
+  },
+  "js/tria/LocalChain.js": {
+    "mtime": 1779794740.7091231,
+    "ast_hash": "bca0846426e89177334e14dba0fe7986",
+    "semantic_hash": "bca0846426e89177334e14dba0fe7986"
+  },
+  "js/tria/MaturityDaemon.js": {
+    "mtime": 1779794740.7101235,
+    "ast_hash": "78750fe6c67da9c4b416ada36f6565bd",
+    "semantic_hash": "78750fe6c67da9c4b416ada36f6565bd"
+  },
+  "js/tria/ObolosRewardEngine.js": {
+    "mtime": 1779794740.7101235,
+    "ast_hash": "51ddce953fea5e03826c863690016340",
+    "semantic_hash": "51ddce953fea5e03826c863690016340"
+  },
+  "js/tria/ProtoCodec.js": {
+    "mtime": 1779794740.7111251,
+    "ast_hash": "df9d87dd1d4b21def4374d18301d2868",
+    "semantic_hash": "df9d87dd1d4b21def4374d18301d2868"
+  },
+  "js/tria/SpectralInpainter.js": {
+    "mtime": 1779794740.7111251,
+    "ast_hash": "f80c4b540b4239f7240a842d112ed3f5",
+    "semantic_hash": "f80c4b540b4239f7240a842d112ed3f5"
+  },
+  "js/tria/TriaCollectiveService.js": {
+    "mtime": 1779794740.7121236,
+    "ast_hash": "8b26457b6f62d99ac6c6bf5ec170ffe5",
+    "semantic_hash": "8b26457b6f62d99ac6c6bf5ec170ffe5"
+  },
+  "js/tria/TriaDeltaExporter.js": {
+    "mtime": 1779794740.713124,
+    "ast_hash": "09f29837da4ce17941091fe2d47475c2",
+    "semantic_hash": "09f29837da4ce17941091fe2d47475c2"
+  },
+  "js/tria/TriaMemory.js": {
+    "mtime": 1779794740.713124,
+    "ast_hash": "acba821b0034d9d1cb08cca008dd894e",
+    "semantic_hash": "acba821b0034d9d1cb08cca008dd894e"
+  },
+  "js/tria/config.js": {
+    "mtime": 1779794740.7141237,
+    "ast_hash": "44612689f8d8c35831c4027663b4ba6f",
+    "semantic_hash": "44612689f8d8c35831c4027663b4ba6f"
+  },
+  "js/tria/eidos/ChunkProcessor.js": {
+    "mtime": 1779794740.7141237,
+    "ast_hash": "8019234ddfcc4839bc8931c8e290357a",
+    "semantic_hash": "8019234ddfcc4839bc8931c8e290357a"
+  },
+  "js/tria/eidos/EmbeddingStream.js": {
+    "mtime": 1779794740.7151225,
+    "ast_hash": "bd33ab2144fee00fe5c07574f47179ad",
+    "semantic_hash": "bd33ab2144fee00fe5c07574f47179ad"
+  },
+  "js/tria/eidos/PredictiveRAG.js": {
+    "mtime": 1779794740.7151225,
+    "ast_hash": "8fd0afc000f591198841bed091c36c93",
+    "semantic_hash": "8fd0afc000f591198841bed091c36c93"
+  },
+  "js/tria/proto_bindings/triapb.js": {
+    "mtime": 1779794740.7161233,
+    "ast_hash": "835ef44f2ed64e834c10190a6fe74955",
+    "semantic_hash": "835ef44f2ed64e834c10190a6fe74955"
+  },
+  "js/tria/tria_worker.js": {
+    "mtime": 1779794740.716629,
+    "ast_hash": "7fa0c839884b5a979f735489c29ae079",
+    "semantic_hash": "7fa0c839884b5a979f735489c29ae079"
+  },
+  "js/ui/EyeLoader.js": {
+    "mtime": 1779794740.717635,
+    "ast_hash": "21de8ce73e328d4ec1d3794ae8049a1c",
+    "semantic_hash": "21de8ce73e328d4ec1d3794ae8049a1c"
+  },
+  "js/ui/GestureLiveStudio.js": {
+    "mtime": 1779794740.717635,
+    "ast_hash": "6fb467c1faae11d412e0dd8d9ea18aa3",
+    "semantic_hash": "6fb467c1faae11d412e0dd8d9ea18aa3"
+  },
+  "js/ui/GestureUIManager.js": {
+    "mtime": 1779794740.7191405,
+    "ast_hash": "6dfd5852ecf4c434bfa2470283f49404",
+    "semantic_hash": "6dfd5852ecf4c434bfa2470283f49404"
+  },
+  "js/ui/GesturesListDisplay.js": {
+    "mtime": 1779794740.7201495,
+    "ast_hash": "07107cab35072691c66b7d2e59ca1074",
+    "semantic_hash": "07107cab35072691c66b7d2e59ca1074"
+  },
+  "js/ui/LightingManager.js": {
+    "mtime": 1779794740.7201495,
+    "ast_hash": "39f6d60b88757230487ed88da517976c",
+    "semantic_hash": "39f6d60b88757230487ed88da517976c"
+  },
+  "js/ui/MiniEyeLoader.js": {
+    "mtime": 1779794740.7211475,
+    "ast_hash": "628c3cad8070fee687d7474062c3e052",
+    "semantic_hash": "628c3cad8070fee687d7474062c3e052"
+  },
+  "js/ui/MonacoModal.js": {
+    "mtime": 1779794740.7221465,
+    "ast_hash": "b25b553b156af06e1a1240a753b87dd2",
+    "semantic_hash": "b25b553b156af06e1a1240a753b87dd2"
+  },
+  "js/ui/MyGesturesPanel.js": {
+    "mtime": 1779794740.7221465,
+    "ast_hash": "91c1f3f25a2b19695d21c659704f1083",
+    "semantic_hash": "91c1f3f25a2b19695d21c659704f1083"
+  },
+  "js/ui/VersionTimelinePanel.js": {
+    "mtime": 1779794740.7231462,
+    "ast_hash": "fc91e34d20a994ad4576c0571e95db82",
+    "semantic_hash": "fc91e34d20a994ad4576c0571e95db82"
+  },
+  "js/ui/fileEditor.js": {
+    "mtime": 1779794740.7231462,
+    "ast_hash": "479c03a6ba83f294534459dcc4882eb0",
+    "semantic_hash": "479c03a6ba83f294534459dcc4882eb0"
+  },
+  "js/ui/gestureAreaManager.js": {
+    "mtime": 1779794740.7231462,
+    "ast_hash": "d64d468cbc8d88afc536520014a69eed",
+    "semantic_hash": "d64d468cbc8d88afc536520014a69eed"
+  },
+  "js/ui/gestureAreaVisualization.js": {
+    "mtime": 1779794740.725147,
+    "ast_hash": "a54e57c48db9f9847901d1d692016171",
+    "semantic_hash": "a54e57c48db9f9847901d1d692016171"
+  },
+  "js/ui/glassSpecularManager.js": {
+    "mtime": 1779794740.725147,
+    "ast_hash": "afb70c6562ace6ea705861f25e6d6607",
+    "semantic_hash": "afb70c6562ace6ea705861f25e6d6607"
+  },
+  "js/ui/layoutManager.js": {
+    "mtime": 1779794740.7261486,
+    "ast_hash": "4bfba2f3c38273ac15cb1f79f94896ff",
+    "semantic_hash": "4bfba2f3c38273ac15cb1f79f94896ff"
+  },
+  "js/ui/mainUI.js": {
+    "mtime": 1779794740.7266538,
+    "ast_hash": "5b7ed301147684ced27ade8ffed8a62d",
+    "semantic_hash": "5b7ed301147684ced27ade8ffed8a62d"
+  },
+  "js/ui/panelManager.js": {
+    "mtime": 1779794740.7266538,
+    "ast_hash": "20d6b864069fa839cf70edb9f692f999",
+    "semantic_hash": "20d6b864069fa839cf70edb9f692f999"
+  },
+  "js/ui/promptManager.js": {
+    "mtime": 1779794740.7276602,
+    "ast_hash": "885b3476241a53e5f24ea27d7c9e3df9",
+    "semantic_hash": "885b3476241a53e5f24ea27d7c9e3df9"
+  },
+  "js/ui/treasuryUI.js": {
+    "mtime": 1779794740.7276602,
+    "ast_hash": "cb18836d056f268243d6a60bf82779bd",
+    "semantic_hash": "cb18836d056f268243d6a60bf82779bd"
+  },
+  "js/ui/uiManager.js": {
+    "mtime": 1779794740.729166,
+    "ast_hash": "de1ba482cfbb020d1b02839914758749",
+    "semantic_hash": "de1ba482cfbb020d1b02839914758749"
+  },
+  "js/ui/versionManager.js": {
+    "mtime": 1779794740.7301712,
+    "ast_hash": "0b917065c63787db47132dee46d0094f",
+    "semantic_hash": "0b917065c63787db47132dee46d0094f"
+  },
+  "js/utils/HRRMath.js": {
+    "mtime": 1779794740.731172,
+    "ast_hash": "595d40b57b6ab8ea332c554b8819dbfa",
+    "semantic_hash": "595d40b57b6ab8ea332c554b8819dbfa"
+  },
+  "js/utils/deviceCapabilities.js": {
+    "mtime": 1779794740.731172,
+    "ast_hash": "ca3da1bd0bb6b51df2d5a83992123115",
+    "semantic_hash": "ca3da1bd0bb6b51df2d5a83992123115"
+  },
+  "js/utils/fullscreen.js": {
+    "mtime": 1779794740.7321723,
+    "ast_hash": "f66174a1529647c74efa092a602cb083",
+    "semantic_hash": "f66174a1529647c74efa092a602cb083"
+  },
+  "js/utils/helpers.js": {
+    "mtime": 1779794740.733171,
+    "ast_hash": "7419980603e5cacc855882732cf66f01",
+    "semantic_hash": "7419980603e5cacc855882732cf66f01"
+  },
+  "js/utils/notifications.js": {
+    "mtime": 1779794740.733171,
+    "ast_hash": "3a21fc14e6ca7a65656eed6798564723",
+    "semantic_hash": "3a21fc14e6ca7a65656eed6798564723"
+  },
+  "js/utils/perfMonitor.js": {
+    "mtime": 1779794740.734172,
+    "ast_hash": "ad3fe0ede344a5aa816125c7225de7f4",
+    "semantic_hash": "ad3fe0ede344a5aa816125c7225de7f4"
+  },
+  "js/utils/renderingCapabilities.js": {
+    "mtime": 1779794740.734172,
+    "ast_hash": "419898340efc5c5ac9f557a6d1994cfd",
+    "semantic_hash": "419898340efc5c5ac9f557a6d1994cfd"
+  },
+  "js/utils/storage.js": {
+    "mtime": 1779794740.734172,
+    "ast_hash": "cd9e20a1c2cd2bdd9a67706f9f031011",
+    "semantic_hash": "cd9e20a1c2cd2bdd9a67706f9f031011"
+  },
+  "js/wasm/holographic_core.js": {
+    "mtime": 1779794740.736684,
+    "ast_hash": "096c00a5d968fc7d21db42f69c26f224",
+    "semantic_hash": "096c00a5d968fc7d21db42f69c26f224"
+  },
+  "js/wasm/src/physics_engine_cpp/src/main.cpp": {
+    "mtime": 1779794740.7391913,
+    "ast_hash": "900c9045d0e98a7470c3117663e293d9",
+    "semantic_hash": "900c9045d0e98a7470c3117663e293d9"
+  },
+  "js/wasm/wasm_loader.js": {
+    "mtime": 1779794740.7401974,
+    "ast_hash": "87604dec7b2d45c253aab05bfe9ea5d7",
+    "semantic_hash": "87604dec7b2d45c253aab05bfe9ea5d7"
+  },
+  "js/webgpu/adapters/ThreeRendererAdapter.js": {
+    "mtime": 1779794740.7401974,
+    "ast_hash": "c3a766990c7762f9d7d1930dcaa0e628",
+    "semantic_hash": "c3a766990c7762f9d7d1930dcaa0e628"
+  },
+  "js/webgpu/adapters/WebGPURendererAdapter.js": {
+    "mtime": 1779794740.7401974,
+    "ast_hash": "7e76914df2a59a0cd645b927faa01c16",
+    "semantic_hash": "7e76914df2a59a0cd645b927faa01c16"
+  },
+  "js/webgpu/interfaces/IRenderer.js": {
+    "mtime": 1779794740.7411966,
+    "ast_hash": "0d2326824dac54788cd0f67349bc34ad",
+    "semantic_hash": "0d2326824dac54788cd0f67349bc34ad"
+  },
+  "js/webgpu/webgpu_rendererAdapterFactory.js": {
+    "mtime": 1779794740.7411966,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "js/xr/cameraManager.js": {
+    "mtime": 1779794740.7431972,
+    "ast_hash": "8346c734aae24ec5da8cdd2bcbd91e0c",
+    "semantic_hash": "8346c734aae24ec5da8cdd2bcbd91e0c"
+  },
+  "js/xr/webxr_session_manager.js": {
+    "mtime": 1779794740.7431972,
+    "ast_hash": "f82c3204278260cfbde8829345d16f4f",
+    "semantic_hash": "f82c3204278260cfbde8829345d16f4f"
+  },
+  "js/xr/xr_input_handler.js": {
+    "mtime": 1779794740.7441976,
+    "ast_hash": "3eed83ab5c2e8f1c0982c27915425b61",
+    "semantic_hash": "3eed83ab5c2e8f1c0982c27915425b61"
+  },
+  "jsconfig.json": {
+    "mtime": 1779794740.7441976,
+    "ast_hash": "75c47190402b68d4ddcf6b74df85e379",
+    "semantic_hash": "75c47190402b68d4ddcf6b74df85e379"
+  },
+  "logs/client-errors.json": {
+    "mtime": 1779794740.7441976,
+    "ast_hash": "9dbcfc5602e37a538b1bfafe0d325ced",
+    "semantic_hash": "9dbcfc5602e37a538b1bfafe0d325ced"
+  },
+  "manifest.json": {
+    "mtime": 1779794740.7467086,
+    "ast_hash": "a99415ad65c9bc7d69ba5697b7be1369",
+    "semantic_hash": "a99415ad65c9bc7d69ba5697b7be1369"
+  },
+  "optimize-system.ps1": {
+    "mtime": 1779794740.7815056,
+    "ast_hash": "faa4365db83789e4173f31033e10c7fc",
+    "semantic_hash": "faa4365db83789e4173f31033e10c7fc"
+  },
+  "package.json": {
+    "mtime": 1779891753.7257185,
+    "ast_hash": "0b72c996638a9c3e9eccaf43e054fbb0",
+    "semantic_hash": "0b72c996638a9c3e9eccaf43e054fbb0"
+  },
+  "public/.well-known/agent-card.json": {
+    "mtime": 1780907913.0602822,
+    "ast_hash": "f253aa526e41839fee1c6882bc528828",
+    "semantic_hash": "f253aa526e41839fee1c6882bc528828"
+  },
+  "public/js/workers/tria_db_worker.js": {
+    "mtime": 1779794740.7870145,
+    "ast_hash": "582f76d29b1bdee49ff05181f21a88a1",
+    "semantic_hash": "582f76d29b1bdee49ff05181f21a88a1"
+  },
+  "public/manifest.json": {
+    "mtime": 1779891753.9347432,
+    "ast_hash": "33ec5f4f4d4654a815bbba0f9fb6c060",
+    "semantic_hash": "33ec5f4f4d4654a815bbba0f9fb6c060"
+  },
+  "public/sql-wasm.js": {
+    "mtime": 1779794740.788015,
+    "ast_hash": "3a6160a010a6b11c2e5717bef6e6b836",
+    "semantic_hash": "3a6160a010a6b11c2e5717bef6e6b836"
+  },
+  "public/version.json": {
+    "mtime": 1779891753.9258714,
+    "ast_hash": "7141b368a1f666b436bec769fa3b3292",
+    "semantic_hash": "7141b368a1f666b436bec769fa3b3292"
+  },
+  "public/wasm/holographic_core.js": {
+    "mtime": 1779794740.792015,
+    "ast_hash": "1b84fd0d94712b1da9d405706c429084",
+    "semantic_hash": "1b84fd0d94712b1da9d405706c429084"
+  },
+  "repomix.config.json": {
+    "mtime": 1779794740.8000038,
+    "ast_hash": "1d024c8f852cb9d4b44a39291290b6d3",
+    "semantic_hash": "1d024c8f852cb9d4b44a39291290b6d3"
+  },
+  "sample_data/mock_gesture_chunks.json": {
+    "mtime": 1779794740.8030016,
+    "ast_hash": "58e0494c51d30eb3494f7c9198986bb9",
+    "semantic_hash": "58e0494c51d30eb3494f7c9198986bb9"
+  },
+  "scripts/__init__.py": {
+    "mtime": 1779794740.8040018,
+    "ast_hash": "2d247ba9b9b4dac73f7dca32e5184d8a",
+    "semantic_hash": "2d247ba9b9b4dac73f7dca32e5184d8a"
+  },
+  "scripts/build-neuroescrow.js": {
+    "mtime": 1779794740.8050017,
+    "ast_hash": "7d77d0062f4c786bbb9917dec9e5f493",
+    "semantic_hash": "7d77d0062f4c786bbb9917dec9e5f493"
+  },
+  "scripts/check_gemini_api.py": {
+    "mtime": 1780907910.5702465,
+    "ast_hash": "756b66c240cea538f707f717866eedf4",
+    "semantic_hash": "756b66c240cea538f707f717866eedf4"
+  },
+  "scripts/debug_connection.py": {
+    "mtime": 1779794740.8060014,
+    "ast_hash": "c4016a330a9a2a0d30d367ded66181c6",
+    "semantic_hash": "c4016a330a9a2a0d30d367ded66181c6"
+  },
+  "scripts/deploy.js": {
+    "mtime": 1779891689.6929176,
+    "ast_hash": "9c37f39c63bee908fd953d1504908b96",
+    "semantic_hash": "9c37f39c63bee908fd953d1504908b96"
+  },
+  "scripts/diagnose.py": {
+    "mtime": 1780907910.081319,
+    "ast_hash": "1bec1e0dd0eb11f79171de4fb85c7253",
+    "semantic_hash": "1bec1e0dd0eb11f79171de4fb85c7253"
+  },
+  "scripts/fullstack-monitor.mjs": {
+    "mtime": 1779794740.8089418,
+    "ast_hash": "f982e6508ad175f9117147c572152fe5",
+    "semantic_hash": "f982e6508ad175f9117147c572152fe5"
+  },
+  "scripts/generate_sample_data.py": {
+    "mtime": 1779794740.8099484,
+    "ast_hash": "b2afc17a8307e3d10ee16a3bf8dd64ce",
+    "semantic_hash": "b2afc17a8307e3d10ee16a3bf8dd64ce"
+  },
+  "scripts/generate_semitones.mjs": {
+    "mtime": 1779794740.8099484,
+    "ast_hash": "90985c5f3e80daa3a91853ca58e10237",
+    "semantic_hash": "90985c5f3e80daa3a91853ca58e10237"
+  },
+  "scripts/generate_version.js": {
+    "mtime": 1779806217.946854,
+    "ast_hash": "323d861ef7a4ad7333a70ef8fab68b61",
+    "semantic_hash": "323d861ef7a4ad7333a70ef8fab68b61"
+  },
+  "scripts/index-hermes.js": {
+    "mtime": 1779794740.8119476,
+    "ast_hash": "e8f12678e0a47ed3d4ad20f6f17ce7f8",
+    "semantic_hash": "e8f12678e0a47ed3d4ad20f6f17ce7f8"
+  },
+  "scripts/migrate_gemini_embeddings.py": {
+    "mtime": 1779794740.8129478,
+    "ast_hash": "d8597777548072c89f1520976ba811f7",
+    "semantic_hash": "d8597777548072c89f1520976ba811f7"
+  },
+  "scripts/migrate_gemini_embeddings_standalone.py": {
+    "mtime": 1780907909.4542425,
+    "ast_hash": "5c78c0b109fb926fedf4d3543f54d757",
+    "semantic_hash": "5c78c0b109fb926fedf4d3543f54d757"
+  },
+  "scripts/monitor-log.json": {
+    "mtime": 1779794740.8139477,
+    "ast_hash": "bddd1f8e450ba12d97a7916024c8faf5",
+    "semantic_hash": "bddd1f8e450ba12d97a7916024c8faf5"
+  },
+  "scripts/monitor-server.js": {
+    "mtime": 1779806247.4750683,
+    "ast_hash": "7b9869f2b434f9a0ac0532ae4e943c4f",
+    "semantic_hash": "7b9869f2b434f9a0ac0532ae4e943c4f"
+  },
+  "scripts/pre-deploy-check.js": {
+    "mtime": 1779794740.8159478,
+    "ast_hash": "125cce566c63779295fc0ed9956b57cc",
+    "semantic_hash": "125cce566c63779295fc0ed9956b57cc"
+  },
+  "scripts/run_tests.sh": {
+    "mtime": 1779794740.8159478,
+    "ast_hash": "cf18a18a2eade6dbe010e29c7ca2d44d",
+    "semantic_hash": "cf18a18a2eade6dbe010e29c7ca2d44d"
+  },
+  "scripts/sanitize_repo.py": {
+    "mtime": 1779794740.8159478,
+    "ast_hash": "227093ae8331dffb71d29dacdad14394",
+    "semantic_hash": "227093ae8331dffb71d29dacdad14394"
+  },
+  "scripts/save_context_as_txt.py": {
+    "mtime": 1779794740.8173354,
+    "ast_hash": "ac0ac1914d4b1a66df4ce610d05605e2",
+    "semantic_hash": "ac0ac1914d4b1a66df4ce610d05605e2"
+  },
+  "scripts/set_user_role.py": {
+    "mtime": 1779794740.819335,
+    "ast_hash": "b2607f9f0888101578664760bc6818e1",
+    "semantic_hash": "b2607f9f0888101578664760bc6818e1"
+  },
+  "scripts/sync_knowledge_base.py": {
+    "mtime": 1780907908.8518617,
+    "ast_hash": "0c09d2f1541230fd971ed3e34a7e8bd7",
+    "semantic_hash": "0c09d2f1541230fd971ed3e34a7e8bd7"
+  },
+  "scripts/tavily-search.js": {
+    "mtime": 1779794740.8203342,
+    "ast_hash": "9cb7efb1f5f7653729f508cf772dcce7",
+    "semantic_hash": "9cb7efb1f5f7653729f508cf772dcce7"
+  },
+  "scripts/test-audio-pipeline.mjs": {
+    "mtime": 1779794740.8213344,
+    "ast_hash": "681c1109d6448381ddfe6c20f5af79d9",
+    "semantic_hash": "681c1109d6448381ddfe6c20f5af79d9"
+  },
+  "scripts/test-hermes.js": {
+    "mtime": 1779794740.8223338,
+    "ast_hash": "95fed13a7ae925ac6655411ae55280fc",
+    "semantic_hash": "95fed13a7ae925ac6655411ae55280fc"
+  },
+  "scripts/test_gesture_pipeline.py": {
+    "mtime": 1779794740.8223338,
+    "ast_hash": "875eecbb2779482f717393ab85a4196f",
+    "semantic_hash": "875eecbb2779482f717393ab85a4196f"
+  },
+  "scripts/test_rag_status.py": {
+    "mtime": 1779794740.8233335,
+    "ast_hash": "cf8ff5e4d7703536c1f41380db3665e5",
+    "semantic_hash": "cf8ff5e4d7703536c1f41380db3665e5"
+  },
+  "scripts/test_tria_chat.py": {
+    "mtime": 1779794740.8243334,
+    "ast_hash": "22495755e4c6af7b5e59796b0029cc83",
+    "semantic_hash": "22495755e4c6af7b5e59796b0029cc83"
+  },
+  "scripts/test_wasm.mjs": {
+    "mtime": 1779794740.8243334,
+    "ast_hash": "85c4dc433c1d84656142b73ea0b37323",
+    "semantic_hash": "85c4dc433c1d84656142b73ea0b37323"
+  },
+  "scripts/test_wasm_real.mjs": {
+    "mtime": 1779794740.8243334,
+    "ast_hash": "1bec37cd48eaa415922a2090d859a947",
+    "semantic_hash": "1bec37cd48eaa415922a2090d859a947"
+  },
+  "scripts/update-agent-card.js": {
+    "mtime": 1779794740.8258386,
+    "ast_hash": "3f01ea3a59604e1059fe77fff4f56081",
+    "semantic_hash": "3f01ea3a59604e1059fe77fff4f56081"
+  },
+  "start.sh": {
+    "mtime": 1779794740.827845,
+    "ast_hash": "a04b9f7cbf2412ea39395c4ab92c84b2",
+    "semantic_hash": "a04b9f7cbf2412ea39395c4ab92c84b2"
+  },
+  "tests/__init__.py": {
+    "mtime": 1779794740.8303554,
+    "ast_hash": "3109fa71b5d38d3be6801b44bfc1fb0f",
+    "semantic_hash": "3109fa71b5d38d3be6801b44bfc1fb0f"
+  },
+  "tests/e2e/frontend_e2e.js": {
+    "mtime": 1779794740.8313546,
+    "ast_hash": "99489267a74573b8b558c1fdfa3bc903",
+    "semantic_hash": "99489267a74573b8b558c1fdfa3bc903"
+  },
+  "tests/e2e/initial-load.spec.js": {
+    "mtime": 1779794740.8313546,
+    "ast_hash": "7ae567c83d5320dd9f5a9b85bea61c6d",
+    "semantic_hash": "7ae567c83d5320dd9f5a9b85bea61c6d"
+  },
+  "tests/integration/__init__.py": {
+    "mtime": 1779794740.8323548,
+    "ast_hash": "80441b12227c0b4ea5cd8872f9756eca",
+    "semantic_hash": "80441b12227c0b4ea5cd8872f9756eca"
+  },
+  "tests/integration/backend_api_tests.py": {
+    "mtime": 1779794740.8323548,
+    "ast_hash": "f9a97c115e9390f8f4df269a5676a504",
+    "semantic_hash": "f9a97c115e9390f8f4df269a5676a504"
+  },
+  "tests/integration/db_integration_tests.py": {
+    "mtime": 1779794740.833356,
+    "ast_hash": "5736c784c61e2ffddfb6394cd223fc5c",
+    "semantic_hash": "5736c784c61e2ffddfb6394cd223fc5c"
+  },
+  "tests/integration/tria_agent_integration_tests.py": {
+    "mtime": 1779794740.833356,
+    "ast_hash": "6b5af81c400d2eb29eb083194fdea642",
+    "semantic_hash": "6b5af81c400d2eb29eb083194fdea642"
+  },
+  "tests/performance/__init__.py": {
+    "mtime": 1779794740.8343542,
+    "ast_hash": "c53d7c6451792acf110c28a7d63b06b7",
+    "semantic_hash": "c53d7c6451792acf110c28a7d63b06b7"
+  },
+  "tests/unit/__init__.py": {
+    "mtime": 1779794740.8343542,
+    "ast_hash": "70592bb4f3de4e4011838f5ae439f6eb",
+    "semantic_hash": "70592bb4f3de4e4011838f5ae439f6eb"
+  },
+  "tests/unit/backend/__init__.py": {
+    "mtime": 1779794740.835858,
+    "ast_hash": "fdf6191c0fa9c26781d091118a801af7",
+    "semantic_hash": "fdf6191c0fa9c26781d091118a801af7"
+  },
+  "tests/unit/nethologlyph/__init__.py": {
+    "mtime": 1779794740.837865,
+    "ast_hash": "49c8bd1a3f27392e2af6b75e8d91e894",
+    "semantic_hash": "49c8bd1a3f27392e2af6b75e8d91e894"
+  },
+  "tests/unit/run_tests.js": {
+    "mtime": 1779794740.837865,
+    "ast_hash": "a4be7aa30d45189acd7c0b6342288004",
+    "semantic_hash": "a4be7aa30d45189acd7c0b6342288004"
+  },
+  "tests/unit/test_gesture_intent_accumulator.test.js": {
+    "mtime": 1779794740.839371,
+    "ast_hash": "478442898a2c9d8c9ed5b23bd68b362c",
+    "semantic_hash": "478442898a2c9d8c9ed5b23bd68b362c"
+  },
+  "tests/unit/test_gesture_intent_classifier.test.js": {
+    "mtime": 1779794740.840378,
+    "ast_hash": "f5efd1736d2154516ced81c320b669e4",
+    "semantic_hash": "f5efd1736d2154516ced81c320b669e4"
+  },
+  "tests/unit/test_net_hologlyph_reconnect.test.js": {
+    "mtime": 1779794740.840378,
+    "ast_hash": "974b680148333992b89503998db703dc",
+    "semantic_hash": "974b680148333992b89503998db703dc"
+  },
+  "tests/unit/test_spectral_inpainter.test.js": {
+    "mtime": 1779794740.8413782,
+    "ast_hash": "d979e8b65b83258e3e4be408b8b5862e",
+    "semantic_hash": "d979e8b65b83258e3e4be408b8b5862e"
+  },
+  "tests/unit/test_tria_train.py": {
+    "mtime": 1779794740.8413782,
+    "ast_hash": "10c396d63e11a0676a2afc03ce9c5a5c",
+    "semantic_hash": "10c396d63e11a0676a2afc03ce9c5a5c"
+  },
+  "tools/check_xml.py": {
+    "mtime": 1779794740.843378,
+    "ast_hash": "15e76c0bb95f75e96b1883ae8a771192",
+    "semantic_hash": "15e76c0bb95f75e96b1883ae8a771192"
+  },
+  "tools/db_init.sh": {
+    "mtime": 1779794740.8443775,
+    "ast_hash": "47d0af9301aa2f11a962e53caca755fe",
+    "semantic_hash": "47d0af9301aa2f11a962e53caca755fe"
+  },
+  "tools/fix_connection.py": {
+    "mtime": 1779794740.8443775,
+    "ast_hash": "57ad64d420b5abc2d2cfe55515d0d05d",
+    "semantic_hash": "57ad64d420b5abc2d2cfe55515d0d05d"
+  },
+  "tools/generate_synthetic_dataset.py": {
+    "mtime": 1780604552.420671,
+    "ast_hash": "597f726c9bcfe3f29c687229589ed786",
+    "semantic_hash": "597f726c9bcfe3f29c687229589ed786"
+  },
+  "tools/proto_compile.sh": {
+    "mtime": 1779794740.8458817,
+    "ast_hash": "790678879575b26105d30e0d357a2e44",
+    "semantic_hash": "790678879575b26105d30e0d357a2e44"
+  },
+  "tools/refresh_knowledge.py": {
+    "mtime": 1779794740.8458817,
+    "ast_hash": "053ac61ab67afbdb782de31d83fd81ec",
+    "semantic_hash": "053ac61ab67afbdb782de31d83fd81ec"
+  },
+  "tools/test_astra.py": {
+    "mtime": 1779794740.8468874,
+    "ast_hash": "ea6f77181caec5833f809859e1b397e6",
+    "semantic_hash": "ea6f77181caec5833f809859e1b397e6"
+  },
+  "tools/test_astra_sync.py": {
+    "mtime": 1779794740.8468874,
+    "ast_hash": "4a303b7245f23b62220c56d43783c7af",
+    "semantic_hash": "4a303b7245f23b62220c56d43783c7af"
+  },
+  "tools/train_tria.py": {
+    "mtime": 1779794740.847888,
+    "ast_hash": "63f25aedcc6a6629a14d6ef921459fac",
+    "semantic_hash": "63f25aedcc6a6629a14d6ef921459fac"
+  },
+  "tools/tria_status.py": {
+    "mtime": 1779794740.847888,
+    "ast_hash": "b168b331719a36bcde2e4682d2c919f1",
+    "semantic_hash": "b168b331719a36bcde2e4682d2c919f1"
+  },
+  "tools/watch-changes.sh": {
+    "mtime": 1779794740.8493955,
+    "ast_hash": "5a204e52a06fcd2995912c039d3d4923",
+    "semantic_hash": "5a204e52a06fcd2995912c039d3d4923"
+  },
+  "tsconfig.json": {
+    "mtime": 1779794740.8493955,
+    "ast_hash": "d09e04cf7f655a6a5aa8aa509f49181d",
+    "semantic_hash": "d09e04cf7f655a6a5aa8aa509f49181d"
+  },
+  "update_shading_v2.py": {
+    "mtime": 1779794740.8504007,
+    "ast_hash": "4380f80dc49e2c546353cccc33951584",
+    "semantic_hash": "4380f80dc49e2c546353cccc33951584"
+  },
+  "vite.config.mjs": {
+    "mtime": 1779794740.8514006,
+    "ast_hash": "07713533440d9d0314acedd43aff0db0",
+    "semantic_hash": "07713533440d9d0314acedd43aff0db0"
+  }
+}

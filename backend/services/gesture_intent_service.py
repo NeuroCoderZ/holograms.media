@@ -47,7 +47,7 @@ except Exception as e:
 
 
 # Определяем условные векторы для наших намерений
-# Размерность ДОЛЖНА быть 3072 для gemini-embedding-2-preview (коллекция tria_knowledge_gemini создана с 3072d)
+# Размерность ДОЛЖНА быть 3072 для gemini-embedding-2 (коллекция tria_knowledge_gemini создана с 3072d)
 EMBED_DIM = 3072
 SEMANTIC_DIRECTIONS = {
     "select": normalize_vector([0.05] * 10 + [-0.05] * 10 + [0.01] * (EMBED_DIM - 20)),

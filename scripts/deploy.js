@@ -44,7 +44,7 @@ console.log(`📝 Message: ${commitMessage}\n`);
 
 // Block 7: Pre-deploy checklist
 try {
-    execSync('node scripts/pre-deploy-check.js', { stdio: 'inherit', cwd: ROOT });
+    execSync('node scripts/pre-deploy-check.js', { stdio: 'inherit', cwd: ROOT, shell: true });
 } catch (e) {
     console.error('❌ Deploy blocked by pre-deploy check.');
     process.exit(1);
@@ -71,9 +71,9 @@ if (deployLogRegex.test(html)) {
 
 try {
     console.log('🔄 Generating version manifest...');
-    execSync('node scripts/generate_version.js', { stdio: 'inherit', cwd: ROOT });
+    execSync('node scripts/generate_version.js', { stdio: 'inherit', cwd: ROOT, shell: true });
     console.log('🔄 Updating agent card...');
-    execSync('node scripts/update-agent-card.js', { stdio: 'inherit', cwd: ROOT });
+    execSync('node scripts/update-agent-card.js', { stdio: 'inherit', cwd: ROOT, shell: true });
 } catch (e) {
     console.error('❌ Version generation failed:', e.message);
     process.exit(1);
@@ -85,16 +85,22 @@ try {
     console.log('   📦 Holograms.Media context...');
     execSync('npx repomix --style xml --output repomix-output.xml --no-security-check', { 
         stdio: 'inherit', 
-        cwd: ROOT 
+        cwd: ROOT,
+        shell: true
     });
     console.log('   ✅ repomix-output.xml generated');
     
-    console.log('   📦 NeuroEscrow context...');
-    execSync('npx repomix', { 
-        stdio: 'inherit', 
-        cwd: NEUROESCROW_DIR 
-    });
-    console.log('   ✅ neuroescrow/repomix-output.md generated');
+    if (fs.existsSync(NEUROESCROW_DIR)) {
+        console.log('   📦 NeuroEscrow context...');
+        execSync('npx repomix', { 
+            stdio: 'inherit', 
+            cwd: NEUROESCROW_DIR,
+            shell: true
+        });
+        console.log('   ✅ neuroescrow/repomix-output.md generated');
+    } else {
+        console.log('   ⏭️  NeuroEscrow directory not found, skipping...');
+    }
 } catch (e) {
     console.error('❌ Knowledge base generation failed:', e.message);
     process.exit(1);
@@ -131,7 +137,7 @@ for (const [key, token] of Object.entries(tgTokens)) {
                 })
             }).then(r => r.json()).then(console.log)"`;
             
-            execSync(cmd, { stdio: 'inherit' });
+            execSync(cmd, { stdio: 'inherit', shell: true });
             console.log(`   ✅ ${key} Bot URL updated successfully.`);
         } catch (tgError) {
             console.warn(`   ⚠️  Failed to update Telegram ${key} Bot: ${tgError.message}`);
@@ -152,10 +158,10 @@ try {
 }
 
 try {
-    execSync('git add .', { stdio: 'inherit', cwd: ROOT });
+    execSync('git add .', { stdio: 'inherit', cwd: ROOT, shell: true });
     execSync(`git commit -m "DEPLOY: v${newVersion}: ${commitMessage}"`,
-        { stdio: 'inherit', cwd: ROOT });
-    execSync('git push origin dev', { stdio: 'inherit', cwd: ROOT });
+        { stdio: 'inherit', cwd: ROOT, shell: true });
+    execSync('git push origin dev', { stdio: 'inherit', cwd: ROOT, shell: true });
 
     console.log('\n🎉 Deployment Complete! v' + newVersion);
     console.log('📡 CI workflows triggered by push. Check GitHub Actions for progress.\n');
@@ -218,7 +224,8 @@ function deployNeuroEscrow() {
     try {
         execSync('npx wrangler@4.95.0 deploy', { 
             cwd: NEUROESCROW_BACKEND, 
-            stdio: 'inherit' 
+            stdio: 'inherit',
+            shell: true
         });
         console.log('   ✅ Hermes deployed to Cloudflare Workers');
     } catch (e) {

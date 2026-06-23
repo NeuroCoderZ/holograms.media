@@ -100,7 +100,7 @@ https://holograms.media/.well-known/agent-card.json
     },
     "embedding": {
       "name": "Gemini Embedding 2",
-      "id": "gemini-embedding-2-preview",
+      "id": "gemini-embedding-2",
       "dimensions": 3072,
       "provider": "Google DeepMind"
     },

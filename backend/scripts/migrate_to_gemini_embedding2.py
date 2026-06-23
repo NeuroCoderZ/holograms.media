@@ -50,7 +50,7 @@ class GeminiEmbeddingService:
     
     def __init__(self, api_key: str):
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-embedding-2-preview"
+        self.model = "gemini-embedding-2"
         self.request_count = 0
         self.last_request_time = 0
     
@@ -251,7 +251,7 @@ async def migrate_to_gemini():
                     "start_offset": chunk["start_offset"],
                     "owner_id": "system",
                     "visibility": "public",
-                    "model": "gemini-embedding-2-preview",
+                    "model": "gemini-embedding-2",
                     "dimensionality": OUTPUT_DIMENSIONALITY
                 }
             })

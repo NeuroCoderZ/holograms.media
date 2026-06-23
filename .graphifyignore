@@ -1,0 +1,57 @@
+# Heavy — deps, build, media
+node_modules/
+.cache/
+.env/
+dist/
+build/
+__pycache__/
+
+*.gguf
+*.bin
+*.zip
+*.7z
+*.tar
+*.gz
+*.exe
+*.dll
+*.so
+*.jar
+
+# Images/media
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+*.ico
+*.mp3
+*.mp4
+*.wav
+*.avi
+*.mov
+*.mkv
+*.ogg
+*.webm
+*.flac
+
+# 3D assets
+*.glb
+*.gltf
+*.obj
+*.fbx
+*.blend
+*.psd
+*.ai
+*.unity
+*.unitypackage
+*.prefab
+*.mat
+
+# Docs & configs (no tree-sitter grammar)
+*.pdf
+*.md
+*.txt
+*.yaml
+*.yml
+*.html

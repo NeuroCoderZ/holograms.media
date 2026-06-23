@@ -8,7 +8,7 @@ description: Архитектура Триа, LLM модели, стриминг
 ## 🔒 MODEL LOCK
 - Основная: `gemini-3-flash-preview` (через Hermes Behavior & Context Agents)
 - Архитектура: `mistral-small-latest` (только ArchitectureAgent)
-- **Эмбеддинги: `gemini-embedding-2-preview` (dimension 3072, Matryoshka)**
+- **Эмбеддинги: `gemini-embedding-2` (dimension 3072, Matryoshka)**
 - НЕ менять без указания НейроКодера.
 - **⛔ НЕ использовать `text-embedding-004/005` для эмбеддингов!**
 

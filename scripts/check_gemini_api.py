@@ -37,7 +37,7 @@ def main():
 
         start = time.time()
         response = client.models.embed_content(
-            model="gemini-embedding-2-preview",
+            model="gemini-embedding-2",
             contents="Hello Holograms",
             config=types.EmbedContentConfig(
                 task_type="RETRIEVAL_DOCUMENT",
@@ -57,7 +57,7 @@ def main():
         if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
             print(f"  ✗ QUOTA EXCEEDED: {e}")
         elif "404" in error_str or "NOT_FOUND" in error_str:
-            print(f"  ✗ MODEL NOT FOUND: gemini-embedding-2-preview — {e}")
+            print(f"  ✗ MODEL NOT FOUND: gemini-embedding-2 — {e}")
         else:
             print(f"  ✗ ERROR: {type(e).__name__}: {e}")
         sys.exit(1)
@@ -67,7 +67,7 @@ def main():
     try:
         start = time.time()
         response = client.models.embed_content(
-            model="gemini-embedding-2-preview",
+            model="gemini-embedding-2",
             contents=["Alpha", "Beta", "Gamma"],
             config=types.EmbedContentConfig(
                 task_type="RETRIEVAL_DOCUMENT",
