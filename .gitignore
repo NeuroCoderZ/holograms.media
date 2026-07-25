@@ -1,3 +1,10 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
 # Dependencies
 node_modules/
 .pnp
@@ -20,6 +27,11 @@ build/
 .env.test.local
 .env.production.local
 .dev.vars
+
+# Archives
+*.zip
+*.7z
+*.rar
 
 # Logs
 npm-debug.log*
@@ -89,3 +101,7 @@ repomix-output.*
 neuroescrow/repomix-output.md
 chat_history.txt
 chat_clean.txt
+
+# Graphify / CodeGraph
+graphify-out/
+.codegraph/

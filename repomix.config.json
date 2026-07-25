@@ -1,13 +1,14 @@
 {
   "output": {
-    "style": "xml",
-    "filePath": "repomix-context.xml",
+    "filePath": "repomix-output.txt",
+    "style": "plain",
     "removeComments": false,
     "removeEmptyLines": true,
     "topFilesLength": 10,
-    "showLineNumbers": false,
+    "showLineNumbers": true,
     "copyToClipboard": false
   },
+  "repomixVersion": "1.15.0",
   "include": [
     "js/**/*.js",
     "backend/**/*.py",
