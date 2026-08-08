@@ -35,18 +35,22 @@ Hybrid mode is encouraged during migration:
 ### 1.1 Required deliverable
 Create the inventory table below **fully populated** by the agent:
 
+2026-08-08 12:21 MSK — Инвентаризация выполнена на коммите `ab30945` (ветка `dev`) по
+графу символов CodeGraph (`.codegraph/codegraph.db`, 8dfa9161 → HEAD: изменён только
+`package.json`, граф актуален) + перекрёстная проверка `rg`/чтением файлов.
+
 | Feature | Files | Three.js usage examples | Complexity (1-5) | Priority (P0-P3) | Status |
 |---|---|---|---:|---|---|
-| Scene setup / camera | (fill) | (fill) |  |  |  |
-| Hologram renderer | (fill) | (fill) |  |  |  |
-| Grid / instanced columns | (fill) | (fill) |  |  |  |
-| Glass / glassmorphism | (fill) | (fill) |  |  |  |
-| Gesture trails / particles | (fill) | (fill) |  |  |  |
-| Instancing | (fill) | (fill) |  |  |  |
-| Picking / raycasting | (fill) | (fill) |  |  |  |
-| Post-processing | (fill) | (fill) |  |  |  |
-| OrbitControls / camera controls | (fill) | (fill) |  |  |  |
-| XR / WebXR integration | (fill) | (fill) |  |  |  |
+| Scene setup / camera | `js/3d/sceneSetup.js` (571 стр.), `js/core/init.js:265` | `new THREE.Scene()`, `new THREE.OrthographicCamera(±w/2, ±h/2, 0.1, 2000)`, `new THREE.WebGLRenderer`, `three/examples/.../WebGPURenderer.js` | 4 | **P0** | 🟡 Three-only; native `HoloEngine` держит свою камеру (ortho `[-150,150,-20,280]`, eye `[0,128,0]`→`[0,128,75]`) — **две несинхронизированные камеры** |
+| Hologram renderer | **актив:** `js/engine/HologramWebGPU.js` (318), `Engine.js` (135); **legacy:** `js/3d/hologramRenderer.js` (367) | legacy: `InstancedMesh`, `ShaderMaterial`, `BufferGeometry` | 3 | **P0** | ✅ **уже native WebGPU**. `HologramRenderer` импортируется (`init.js:209`), но **НИ РАЗУ не инстанцируется** → `state.hologramRendererInstance === null` (мёртвый код) |
+| Grid / instanced columns | `js/engine/InstancedColumns.js` (198), `GridWireframe.js` (106), `columns.wgsl.js` (79); legacy `js/3d/hologramGridFactory.js` (165) | legacy: `LineSegments`, `SphereGeometry`, `InstancedBufferAttribute` | 2 | **P0** | ✅ **портировано**: 256 столбцов = 2 draw call (stride 80 Б / 20 float: mat4 + color + scaleZ), сетка+оси+сферы в WGSL |
+| Glass / glassmorphism | `css/_variables.css`, `_panels.css`, `_modals.css` и др.; `js/ui/glassSpecularManager.js` | **нет** — чистый CSS `backdrop-filter` | 1 | **P3** | ✅ вне зоны миграции; `glassSpecularManager` = stub (`v0.20.226`, блики отключены для FPS) |
+| Gesture trails / particles | — | **нет** (`THREE.Points` не встречается ни разу) | 1 | **P3** | ⬜ не реализовано; в Phase 3 п.1 значится как задача, а не как порт |
+| Instancing | native: `InstancedColumns.js`; legacy: `hologramRenderer.js:109-122` | `new THREE.InstancedMesh(geo, mat, 128)` ×2, `aColumnScaleZ` | 2 | **P0** | ✅ **портировано** (см. «Grid / instanced columns») |
+| Picking / raycasting | `js/SmartHologram.js:169-174`, `js/core/threeImports.js:29` | `new THREE.Raycaster()`, `setFromCamera`, `ray.intersectPlane` | 3 | **P2** | 🟡 только проекция на плоскость; `intersectObject(s)` НЕ используется, `state.raycaster === null` → полноценного пикинга по мешам нет |
+| Post-processing | — | **нет** (`EffectComposer`/`UnrealBloom` отсутствуют) | 1 | **P3** | ⬜ не реализовано; `beginRenderPass` в `engine/`+`3d/webgpu/` — это WebGPU-проходы, не postFX |
+| OrbitControls / camera controls | `js/3d/sceneSetup.js:2,149`, `js/SmartHologram.js:3,39` | `new OrbitControls(camera, renderer.domElement)` | 3 | **P1** | 🔴 Three-only, замены нет — **главный блокер Phase 4** |
+| XR / WebXR integration | `js/xr/webxr_session_manager.js`, `xr_input_handler.js`, `js/platforms/xr/xrInput.js`, `sceneSetup.js`, `init.js` | `import * as THREE from 'three'`, `renderer.xr.enabled = true`, `PerspectiveCamera` для XR | 5 | **P1** | 🔴 Three-only. В native есть `Engine._perspective`, но `getCurrentProjection()` всегда возвращает ortho → XR в native не подключён |
 
 ### 1.2 Three.js usage audit method (agent checklist)
 - Search patterns:
@@ -67,6 +71,30 @@ The repo already contains partial WebGPU code paths/files (do not assume they ar
 - `js/3d/sceneSetup.js` references Three’s `WebGPURenderer` from `three/examples`
 
 **Action for agents:** determine which WebGPU implementation is active today and which is experimental.
+
+2026-08-08 12:21 MSK — **Проверено. В репозитории живут ТРИ параллельные WebGPU-реализации,
+из них боевая одна:**
+
+| Путь | Что это | Кто импортирует | Вердикт |
+|---|---|---|---|
+| `js/engine/*` (`Engine.js`, `HologramWebGPU.js`, `InstancedColumns.js`, `GridWireframe.js`, `columns.wgsl.js`) | **Native WebGPU**: свой `device`/`context`, свои матрицы, свой WGSL, свой `requestAnimationFrame`-цикл | `js/core/init.js:267` — динамический `import('../engine/HologramWebGPU.js?v=444')` | ✅ **БОЕВАЯ.** Рисует всю голограмму: 256 столбцов + сетка + оси + сферы |
+| `js/3d/webgpu/*` (`webgpu_renderer.js` 53 стр., `hologram_shader_webgpu.js` 27 стр.) | Заготовка нативного рендерера; тело `renderFrame` закомментировано | **никто** | ❌ **МЁРТВАЯ** заготовка (дубль `js/engine/`) |
+| `js/webgpu/*` (`interfaces/IRenderer.js`, `adapters/ThreeRendererAdapter.js`, `adapters/WebGPURendererAdapter.js`, `webgpu_rendererAdapterFactory.js`) | Контракт Phase 1 | **никто**; оба адаптера **целиком закомментированы**, фабрика — **файл 0 байт** | ❌ **МЁРТВАЯ** (Phase 1 фактически не сделана) |
+| `three/examples/jsm/renderers/webgpu/WebGPURenderer.js` в `sceneSetup.js:488-516` | WebGPU **через Three.js** (не native) | `js/3d/sceneSetup.js` | 🟡 **ЖИВАЯ** при `?renderBackend=webgpu`, с авто-fallback на WebGL |
+
+2026-08-08 12:21 MSK — **Ключевой вывод, меняющий план миграции:** фактическое состояние
+репозитория **опережает** документ. Phase 2 («отрисовать один примитив») и большая часть
+Phase 3 п.1-2 (инстансированные столбцы + сетка) **уже выполнены** в `js/engine/`, минуя
+Phase 1 (адаптеры). Приложение сейчас работает в **де-факто hybrid-режиме**:
+Three.js держит `<canvas>` сцены/камеру/OrbitControls/XR, а поверх него вторым canvas
+(`#holo-webgpu-canvas`, `z-index:100`, `pointer-events:none`, `alphaMode:'premultiplied'`)
+native WebGPU рисует саму голограмму. Флага `renderBackend` этот native-слой **не слушает**
+— он грузится всегда.
+
+2026-08-08 12:21 MSK — **Расхождение флага с реальностью:** `resolveRenderBackendFlag`
+(`sceneSetup.js:15-28`) принимает `three|webgpu|hybrid`, но ветка `hybrid` намеренно
+сведена к WebGL (`sceneSetup.js:84`), тогда как реальный гибрид работает **всегда**,
+независимо от флага. То есть значение `hybrid` сегодня семантически ложно.
 
 ---
 
@@ -216,3 +244,59 @@ If native WebGPU causes regressions:
 
 ## 8) Current Next Action (Phase 0)
 **Kими K2.6:** populate inventory table and produce ROI plan for Phase 1.
+
+---
+
+## 9) Журнал: разблокировка dev-стенда (08.08.2026)
+
+2026-08-08 12:53 MSK — **Симптом:** `https://dev.holograms.media/` «зависал на глазе»
+(EyeLoader), голограмма не появлялась. В консоли: `[Main] Platform: Telegram Mini App` →
+`[Core] TG mode — skipping 3D scene, WebGPU, MediaPipe` →
+`Animation loop cannot start: renderer is missing`.
+
+2026-08-08 12:53 MSK — **Корневая причина (баг продакшна, не локальный):** скрипт
+`https://telegram.org/js/telegram-web-app.js` (подключён в `index.html:18`) создаёт объект
+`window.Telegram.WebApp` **в ЛЮБОМ браузере**, а не только внутри Telegram. Проверка
+`!!(window.Telegram && window.Telegram.WebApp)` поэтому **всегда возвращала `true`**, и
+приложение уходило в TG-режим для **всех обычных веб-посетителей** — 3D-сцена, WebGPU и
+MediaPipe не инициализировались. Замер на живом dev-стенде через CDP:
+`platform: "unknown"`, `initData: ""` (длина 0), старый детектор → `true`, новый → `false`.
+
+2026-08-08 12:53 MSK — **Проверка по первоисточнику:** документация
+`core.telegram.org/bots/webapps` — «`platform` — The name of the platform of the user's
+Telegram app», `initData` — «A string with raw data transferred to the Mini App».
+Вне Telegram: `platform = "unknown"`, `initData = ""`.
+
+2026-08-08 12:53 MSK — **Исправление:** добавлен модуль `js/core/telegramEnv.js`
+(`isTelegramMiniApp()` + `describeTelegramEnv()`), проверяющий 4 признака по убыванию
+надёжности: непустой `initData` → непустой `initDataUnsafe` → `platform !== 'unknown'` →
+маркер `tgWebApp*` в URL-хэше. На него переведены все 5 мест ложной проверки:
+`js/main.js`, `js/core/platformDetector.js`, `js/core/auth.js`,
+`js/core/consentManager.js`, `js/services/gestureIntentClient.js`.
+Диагностика причины решения теперь печатается в лог `[Main] Platform: ...`.
+
+2026-08-08 12:53 MSK — **Тесты:** `tests/unit/telegramEnv.test.mjs` (запуск:
+`node tests/unit/telegramEnv.test.mjs`) — 9/9 passed. Покрыты: обычный браузер со
+скриптом Telegram (тот самый баг), браузер без скрипта, `Telegram` без `WebApp`,
+настоящие Android/tdesktop/weba, `initDataUnsafe`-кейс и запуск с `#tgWebAppData=...`.
+
+2026-08-08 12:53 MSK — **Побочная находка (инфраструктура, не код):** из России
+Cloudflare рвёт HTML-ответ dev-стенда на ~19-20 КБ из 50.7 КБ (три прямых запроса подряд:
+`http=200 size=19139 time=12.0s` — обрыв по таймауту), через mihomo-прокси
+(`http://127.0.0.1:7890`) — `size=50748 time=0.4s`. То есть «зависание» усугублялось
+обрывом загрузки на сетевом уровне. Для отладки dev-стенда браузер обязан ходить через
+прокси.
+
+2026-08-08 12:53 MSK — **Состояние бэкенда:** FastAPI на Koyeb
+(`holograms-media-dev-holograms-media-cb8383e3.koyeb.app`) засыпает; первый запрос — 45 с
+холодного старта, далее ~0.3 с. Корректный health-путь — **`/healthz`**
+(`{"status":"ok","message":"FastAPI is healthy"}`); `/health` и `/api/v1/health` отдают
+404. Перед тестами стенд нужно «будить» запросом на `/healthz`. Neon в проекте
+не используется (подтверждено Нейрокодером 08.08.2026).
+
+2026-08-08 12:53 MSK — **Осторожно, ловушка репозитория:** рабочая копия лежит на
+windows-монтировании (`/mnt/windows/...`). Файлы в git хранятся с **LF**, а запись
+редактором может переписать их целиком в **CRLF** — тогда diff распухает до сотен
+фиктивных строк (наблюдалось: 762 изменения вместо 24). После правки проверять
+`git diff --stat` и при необходимости возвращать LF.
+

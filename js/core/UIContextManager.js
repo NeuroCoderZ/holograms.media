@@ -78,7 +78,10 @@ class UIContextManager {
 
   // ─── BasilaQ / Голограмма ──────────────────────────────────────
   _getHologramContext() {
-    const renderer = state.hologramRendererInstance;
+    // 2026-08-08: голограмму рисует нативный WebGPU-движок (js/engine/),
+    // legacy hologramRendererInstance не создаётся с коммита 55d77e72.
+    // Читаем состояние движка, иначе диагностика вечно врала hasRenderer:false.
+    const renderer = state.holoEngine || state.hologramRendererInstance;
     const gc = document.getElementById('grid-container');
     const gcRect = gc ? gc.getBoundingClientRect() : null;
 

@@ -17,7 +17,62 @@ export class HoloEngine {
         this.orthoProjection = new Float32Array(16);
         this.perspectiveProjection = new Float32Array(16);
 
+        // ─── Единый источник истины камеры (Three.js больше не участвует) ───
+        // Половина вертикального объёма ортокамеры в единицах голограммы.
+        // Ширина считается из aspect канваса, поэтому круг остаётся кругом.
+        this.ORTHO_HALF_H = 150;   // по вертикали ±150 ед. (128 ячеек + отступ)
+        this.ORTHO_CENTER_Y = 130; // центр кадра по Y (голограмма стоит на Y=0..256)
+
+        // Орбита вокруг точки интереса: сферические координаты.
+        this.camera = {
+            target: [0, 128, 75],  // центр голограммы (внутренняя грань, Протокол 1 метр)
+            distance: 300,         // радиус орбиты
+            yaw: 0,                // рыскание (рад), 0 = вид строго в +Z
+            pitch: 0,              // тангаж (рад), 0 = горизонтальный взгляд
+            zoom: 1,               // масштаб ортокамеры (>1 — крупнее)
+        };
+        this.ORBIT_LIMIT = Math.PI / 2; // ±90° — как в старом Three.js-контуре
+
+        this._aspect = 1;
         this._setupCameras();
+    }
+
+    /**
+     * Орбита камеры (замена OrbitControls + hologramPivot.rotation).
+     * @param {number} dYaw   — приращение рыскания в радианах
+     * @param {number} dPitch — приращение тангажа в радианах
+     */
+    orbit(dYaw, dPitch) {
+        const c = this.camera;
+        c.yaw = this._clamp(c.yaw + dYaw, -this.ORBIT_LIMIT, this.ORBIT_LIMIT);
+        c.pitch = this._clamp(c.pitch + dPitch, -this.ORBIT_LIMIT, this.ORBIT_LIMIT);
+        this._updateView();
+    }
+
+    /** Абсолютная установка орбиты (для XR-позы и сброса анимацией). */
+    setOrbit(yaw, pitch) {
+        this.camera.yaw = this._clamp(yaw, -this.ORBIT_LIMIT, this.ORBIT_LIMIT);
+        this.camera.pitch = this._clamp(pitch, -this.ORBIT_LIMIT, this.ORBIT_LIMIT);
+        this._updateView();
+    }
+
+    /** Масштаб ортокамеры (замена pinch-зума hologramPivot.scale). */
+    setZoom(zoom) {
+        this.camera.zoom = this._clamp(zoom, 0.2, 5.0);
+        this._updateProjection();
+    }
+
+    /** Плавный возврат в исходное положение (аналог TWEEN в gestures.js). */
+    resetOrbit() {
+        this.camera.yaw = 0;
+        this.camera.pitch = 0;
+        this.camera.zoom = 1;
+        this._updateView();
+        this._updateProjection();
+    }
+
+    _clamp(v, min, max) {
+        return Math.min(max, Math.max(min, v));
     }
 
     async init() {
@@ -47,26 +102,56 @@ export class HoloEngine {
     }
 
     _setupCameras() {
-        // WebGPU Ortho: Z maps to [0, 1]
-        this.orthoProjection = this._ortho(-150, 150, -20, 280, 0.1, 1000);
+        this._updateProjection();
+        this.perspectiveProjection = this._perspective(Math.PI / 4, this._aspect, 0.1, 1000);
+        this._updateView();
+    }
 
-        // Perspective for XR
-        this.perspectiveProjection = this._perspective(Math.PI / 4, 1.6, 0.1, 1000);
+    /**
+     * Ортопроекция с учётом aspect канваса.
+     * Раньше объём был жёстко квадратным (300×300) при неквадратном канвасе —
+     * голограмма растягивалась по X (замер: aspect 1.803 → круг превращался в овал).
+     */
+    _updateProjection() {
+        const halfH = this.ORTHO_HALF_H / this.camera.zoom;
+        const halfW = halfH * this._aspect;
+        const cy = this.ORTHO_CENTER_Y;
 
-        // Взгляд пользователя: высота 1.72м (128 ед), смотрим на стенку в 1 метре (Z=75)
-        this.viewMatrix = this._lookAt([0, 128, 0], [0, 128, 75], [0, 1, 0]);
+        this.orthoProjection = this._ortho(
+            -halfW, halfW,
+            cy - halfH, cy + halfH,
+            0.1, 2000
+        );
+    }
+
+    /** Пересчёт viewMatrix из сферических координат орбиты. */
+    _updateView() {
+        const c = this.camera;
+        const cosP = Math.cos(c.pitch);
+
+        // yaw=0, pitch=0 → камера строго перед голограммой (смотрит в +Z),
+        // что повторяет исходный кадр eye=[0,128,0] → target=[0,128,75].
+        const eye = [
+            c.target[0] + c.distance * cosP * Math.sin(c.yaw),
+            c.target[1] + c.distance * Math.sin(c.pitch),
+            c.target[2] - c.distance * cosP * Math.cos(c.yaw),
+        ];
+
+        this.viewMatrix = this._lookAt(eye, c.target, [0, 1, 0]);
     }
 
     resize() {
         const dpr = window.devicePixelRatio || 1;
         const rect = this.canvas.parentElement.getBoundingClientRect();
-        const width = rect.width * dpr;
-        const height = rect.height * dpr;
+        const width = Math.max(1, rect.width * dpr);
+        const height = Math.max(1, rect.height * dpr);
 
         if (this.canvas.width !== width || this.canvas.height !== height) {
             this.canvas.width = width;
             this.canvas.height = height;
-            this.perspectiveProjection = this._perspective(Math.PI / 4, width / height, 0.1, 1000);
+            this._aspect = width / height;
+            this._updateProjection();
+            this.perspectiveProjection = this._perspective(Math.PI / 4, this._aspect, 0.1, 1000);
         }
     }
 

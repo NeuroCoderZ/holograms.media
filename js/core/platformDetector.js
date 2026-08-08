@@ -1,8 +1,13 @@
 // frontend/js/core/platformDetector.js
 
+import { isTelegramMiniApp } from './telegramEnv.js';
+
 export function detectPlatform() {
-    // TELEGRAM CHECK — MUST be first, before XR/Mobile/Desktop
-    if (window.Telegram && window.Telegram.WebApp) {
+    // TELEGRAM CHECK — MUST be first, before XR/Mobile/Desktop.
+    // ВАЖНО: проверяем РЕАЛЬНЫЙ запуск внутри Telegram (см. telegramEnv.js),
+    // а не просто наличие window.Telegram.WebApp — этот объект создаётся
+    // скриптом telegram-web-app.js в ЛЮБОМ браузере.
+    if (isTelegramMiniApp()) {
         return 'telegram';
     }
 

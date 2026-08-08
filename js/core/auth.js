@@ -7,6 +7,7 @@
 
 import { state } from './init.js';
 import { storage } from './storageManager.js';
+import { isTelegramMiniApp } from './telegramEnv.js';
 import { updateAuthUI } from '../ui/uiManager.js';
 import { showNotification } from '../utils/notifications.js';
 
@@ -186,7 +187,7 @@ export function signOut() {
  * Главная функция инициализации модуля аутентификации.
  */
 export async function initAuth() {
-  const isTelegram = !!(window.Telegram && window.Telegram.WebApp);
+  const isTelegram = isTelegramMiniApp();
 
   // 1. СТРОГАЯ ИЗОЛЯЦИЯ TELEGRAM
   if (isTelegram) {

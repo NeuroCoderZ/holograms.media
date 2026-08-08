@@ -1,13 +1,15 @@
-import * as THREE from 'three';
 /**
  * Модуль для управления жестами с использованием Hammer.js
- * Отвечает за обработку жестов панорамирования и масштабирования для голограммы
+ * Отвечает за обработку жестов панорамирования и масштабирования для голограммы.
+ *
+ * 2026-08-08: переведён с мёртвого `state.hologramRendererInstance` (Three.js)
+ * на камеру нативного WebGPU-движка (`state.holoEngine.engine`).
+ * Причина: в коммите 55d77e72 (v0.20.405, 10.04.2026) инстанцирование
+ * HologramRenderer было удалено — рендеринг переехал в js/engine/.
+ * Потребители жестов остались висеть на `null` и молча писали
+ * `console.error('...getHologramPivot method is missing')` при каждом касании,
+ * то есть вращение и пинч-зум голограммы не работали.
  */
-
-// import { state } from './init.js'; // Removed import
-
-// Assuming THREE is global - No longer, THREE is imported
-// const { Euler, MathUtils } = THREE; // Removed
 
 let localStateRef; // Added module-level variable
 
@@ -17,9 +19,18 @@ const ROTATION_RETURN_DURATION = 300; // мс
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 1.5;
 
-// Переменные для хранения состояния вращения
-let prePanRotation = new THREE.Euler(); // Вращение перед началом текущего панорамирования
-const initialHologramRotation = new THREE.Euler(0, 0, 0); // Исходное вращение голограммы
+// Состояние орбиты на момент начала текущего жеста (для кумулятивности)
+let prePanYaw = 0;
+let prePanPitch = 0;
+
+/**
+ * Возвращает камеру нативного движка или null, если движок ещё не поднялся.
+ * Единый источник истины — HoloEngine, Three.js-камера здесь больше не участвует.
+ */
+function getEngineCamera() {
+  const engine = localStateRef?.holoEngine?.engine;
+  return engine && typeof engine.orbit === 'function' ? engine : null;
+}
 
 /**
  * Инициализирует обработчики жестов Hammer.js для управления голограммой
@@ -28,130 +39,103 @@ export function initializeHammerGestures(passedState) { // Changed signature
   localStateRef = passedState; // Assign passedState
   console.log('Инициализация обработчиков жестов Hammer.js...');
 
-  // Инициализация Hammer.js только если localStateRef.renderer.domElement существует
-  let hammer;
-  if (localStateRef.renderer && localStateRef.renderer.domElement) { // Use localStateRef
-    hammer = new Hammer(localStateRef.renderer.domElement); // Use localStateRef
-  } else {
-    console.error('Не удалось инициализировать Hammer: localStateRef.renderer.domElement отсутствует');
-    return; // Прерываем выполнение, если нет DOM-элемента рендерера
+  // Жесты вешаем на контейнер голограммы: WebGPU-канвас имеет
+  // pointer-events:none, а Three.js-канвас может отсутствовать вовсе.
+  const target = document.getElementById('grid-container')
+    || localStateRef.renderer?.domElement;
+
+  if (!target) {
+    console.error('Не удалось инициализировать Hammer: нет #grid-container и renderer.domElement');
+    return;
   }
+
+  const hammer = new Hammer(target);
 
   // Настраиваем распознавание жестов
   hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+  hammer.get('pinch').set({ enable: true });
 
   // Обработчик начала жеста панорамирования
   hammer.on('panstart', () => {
-    if (!localStateRef.isXRMode && localStateRef.hologramRendererInstance && typeof localStateRef.hologramRendererInstance.getHologramPivot === 'function') { // Use localStateRef
-      const hologramPivot = localStateRef.hologramRendererInstance.getHologramPivot(); // Use localStateRef
-      if (hologramPivot) {
-        prePanRotation.copy(hologramPivot.rotation);
-      } else {
-        console.error('Событие panstart: hologramPivot is null or undefined');
-        prePanRotation.set(0,0,0); // Сброс на всякий случай
-      }
+    if (localStateRef.isXRMode) return;
+
+    const cam = getEngineCamera();
+    if (!cam) {
+      console.warn('[Gestures] panstart: HoloEngine ещё не инициализирован');
+      return;
     }
+    prePanYaw = cam.camera.yaw;
+    prePanPitch = cam.camera.pitch;
   });
 
   // Обработчик жеста панорамирования (вращение голограммы)
-  hammer.on('panmove', ev => { // Изменено с 'pan' на 'panmove' для ясности, хотя 'pan' покрывает и panmove
-    if (!localStateRef.isXRMode) { // Use localStateRef
-      if (localStateRef.hologramRendererInstance && typeof localStateRef.hologramRendererInstance.getHologramPivot === 'function') { // Use localStateRef
-        const hologramPivot = localStateRef.hologramRendererInstance.getHologramPivot(); // Use localStateRef
-        if (hologramPivot) {
-          // ev.deltaX и ev.deltaY представляют собой общее изменение с начала жеста pan
-          // Масштабируем delta для более естественного вращения
-          const deltaX = ev.deltaX / (window.innerWidth / 2); // Нормализуем и масштабируем
-          const deltaY = ev.deltaY / (window.innerHeight / 2);
-
-          // Применяем вращение относительно сохраненного перед началом панорамирования состояния
-          let newRotationX = prePanRotation.x + (deltaY * Math.PI / 2); // Масштаб: движение на пол-экрана = 90 градусов
-          let newRotationY = prePanRotation.y + (deltaX * Math.PI / 2);
-
-          // Ограничиваем вращение до ±90 градусов (±ROTATION_LIMIT радиан)
-          hologramPivot.rotation.x = THREE.MathUtils.clamp(
-            newRotationX,
-            -ROTATION_LIMIT,
-            ROTATION_LIMIT
-          );
-          hologramPivot.rotation.y = THREE.MathUtils.clamp(
-            newRotationY,
-            -ROTATION_LIMIT,
-            ROTATION_LIMIT
-          );
-          // hologramPivot.rotation.z остается неизменным (или prePanRotation.z, если нужно)
-          // Для данного случая, сброс к initialHologramRotation.z в panend достаточен
-        } else {
-          console.error('Событие panmove: hologramPivot is null or undefined');
-        }
-      } else {
-        console.error('Событие panmove: localStateRef.hologramRendererInstance or getHologramPivot method is missing');
-      }
+  hammer.on('panmove', ev => {
+    if (localStateRef.isXRMode) {
+      // В XR ориентацию задаёт поза гарнитуры — жесты камеру не двигают.
+      return;
     }
-    // Для режима XR (вращение камеры) - предполагаем, что здесь не нужна кумулятивность таким же образом
-    // или что она управляется иначе. Для задачи с голограммой, фокусируемся на non-XR.
-    else {
-      if (localStateRef.camera) { // Use localStateRef
-        // Эта часть может потребовать аналогичной логики с prePanRotation для камеры, если нужно
-        const deltaX = ev.deltaX / window.innerWidth;
-        const deltaY = ev.deltaY / window.innerHeight;
-        const rotationX = deltaY * Math.PI;
-        const rotationY = deltaX * Math.PI;
 
-        localStateRef.camera.rotation.x = THREE.MathUtils.clamp(rotationX, -ROTATION_LIMIT, ROTATION_LIMIT); // Use localStateRef
-        localStateRef.camera.rotation.y = THREE.MathUtils.clamp(rotationY, -ROTATION_LIMIT, ROTATION_LIMIT); // Use localStateRef
-      } else {
-        console.error('Событие panmove (режим XR): localStateRef.camera отсутствует');
-      }
-    }
+    const cam = getEngineCamera();
+    if (!cam) return;
+
+    // ev.deltaX/deltaY — общее смещение с начала жеста.
+    // Движение на пол-экрана = поворот на 90°, как было в Three.js-контуре.
+    const deltaX = ev.deltaX / (window.innerWidth / 2);
+    const deltaY = ev.deltaY / (window.innerHeight / 2);
+
+    const targetYaw = prePanYaw + deltaX * (Math.PI / 2);
+    const targetPitch = prePanPitch + deltaY * (Math.PI / 2);
+
+    // setOrbit сам ограничивает углы диапазоном ±ROTATION_LIMIT
+    cam.setOrbit(targetYaw, targetPitch);
   });
 
   // Обработчик жеста масштабирования (pinch)
   hammer.on('pinch', ev => {
-    if (!localStateRef.isXRMode) { // Use localStateRef
-      if (localStateRef.hologramRendererInstance && typeof localStateRef.hologramRendererInstance.getHologramPivot === 'function') { // Use localStateRef
-        const hologramPivot = localStateRef.hologramRendererInstance.getHologramPivot(); // Use localStateRef
-        if (hologramPivot) {
-          const scale = THREE.MathUtils.clamp(ev.scale, MIN_SCALE, MAX_SCALE);
-          hologramPivot.scale.set(scale, scale, scale);
-        } else {
-          console.error('Событие pinch: hologramPivot is null or undefined after calling getHologramPivot()');
-        }
-      } else {
-        console.error('Событие pinch: localStateRef.hologramRendererInstance or getHologramPivot method is missing');
-      }
-    }
+    if (localStateRef.isXRMode) return;
+
+    const cam = getEngineCamera();
+    if (!cam) return;
+
+    const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, ev.scale));
+    cam.setZoom(scale);
   });
 
-  // Обработчик окончания жестов (возврат к нейтральному положению)
+  // Обработчик окончания жестов (плавный возврат к нейтральному положению)
   hammer.on('panend pinchend', () => {
-    if (!localStateRef.isXRMode) { // Use localStateRef
-      if (localStateRef.hologramRendererInstance && typeof localStateRef.hologramRendererInstance.getHologramPivot === 'function') { // Use localStateRef
-        const hologramPivot = localStateRef.hologramRendererInstance.getHologramPivot(); // Use localStateRef
-        if (hologramPivot) {
-          // Плавно возвращаем к исходному вращению (initialHologramRotation)
-          if (!TWEEN) {
-            console.error('TWEEN library is not available. Animation will not work.');
-            // Без TWEEN просто устанавливаем вращение напрямую
-            hologramPivot.rotation.copy(initialHologramRotation);
-            return;
-          }
-          new TWEEN.Tween(hologramPivot.rotation)
-            .to({ x: initialHologramRotation.x, y: initialHologramRotation.y, z: initialHologramRotation.z }, 300)
-            .easing(TWEEN.Easing.Cubic.Out)
-            .start();
-        } else {
-          console.error('Событие panend/pinchend: hologramPivot is null or undefined after calling getHologramPivot()');
-        }
-      } else {
-        console.error('Событие panend/pinchend: localStateRef.hologramRendererInstance or getHologramPivot method is missing');
-      }
-    }
-    // Для режима XR, если камера вращалась, ее также можно плавно вернуть в исходное положение
-    // или оставить как есть, в зависимости от требований к XR-режиму.
-    // Текущая задача фокусируется на голограмме.
+    if (localStateRef.isXRMode) return;
+
+    const cam = getEngineCamera();
+    if (!cam) return;
+
+    animateOrbitReset(cam, ROTATION_RETURN_DURATION);
   });
 
-  console.log('Инициализация обработчиков жестов Hammer.js завершена');
-  return hammer; // Возвращаем экземпляр Hammer для возможного использования в других модулях
+  console.log('Инициализация обработчиков жестов Hammer.js завершена (камера: HoloEngine WebGPU)');
+}
+
+/**
+ * Плавный возврат орбиты в исходное положение.
+ * Своя анимация вместо TWEEN: движок не зависит от Three.js-экосистемы.
+ */
+function animateOrbitReset(cam, duration) {
+  const startYaw = cam.camera.yaw;
+  const startPitch = cam.camera.pitch;
+  const startZoom = cam.camera.zoom;
+  const startTime = performance.now();
+
+  // Cubic ease-out — та же кривая, что была у TWEEN.Easing.Cubic.Out
+  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+  function step(now) {
+    const t = Math.min(1, (now - startTime) / duration);
+    const k = easeOutCubic(t);
+
+    cam.setOrbit(startYaw * (1 - k), startPitch * (1 - k));
+    cam.setZoom(startZoom + (1 - startZoom) * k);
+
+    if (t < 1) requestAnimationFrame(step);
+  }
+
+  requestAnimationFrame(step);
 }

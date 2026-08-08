@@ -3,6 +3,7 @@
 import { initCore, state } from './core/init.js';
 import { initializeMainUI } from './ui/uiManager.js';
 import { detectPlatform } from './core/platformDetector.js';
+import { isTelegramMiniApp, describeTelegramEnv } from './core/telegramEnv.js';
 import { startAnimationLoop } from './3d/rendering.js';
 import { ConsentManager } from './core/consentManager.js';
 import { initAuth } from './core/auth.js';
@@ -51,8 +52,8 @@ async function main() {
     }
     // ---------------------------
 
-    const isTelegram = !!(window.Telegram && window.Telegram.WebApp);
-    console.log(`[Main] Platform: ${isTelegram ? 'Telegram Mini App' : 'Web'}`);
+    const isTelegram = isTelegramMiniApp();
+    console.log(`[Main] Platform: ${isTelegram ? 'Telegram Mini App' : 'Web'}`, describeTelegramEnv());
 
     // 0. Динамический лоадер
     const loader = new EyeLoader();

@@ -1,6 +1,7 @@
 // frontend/js/core/consentManager.js
 
 import { storage } from './storageManager.js';
+import { isTelegramMiniApp } from './telegramEnv.js';
 
 export class ConsentManager {
     constructor(state) {
@@ -13,7 +14,7 @@ export class ConsentManager {
         this._resolveInit = null;
 
         // TELEGRAM MODE: auto-accept consent, hide modal
-        if (window.Telegram && window.Telegram.WebApp) {
+        if (isTelegramMiniApp()) {
             console.log('[ConsentManager] TG mode — auto-accepting consent');
             localStorage.setItem('userConsentGiven', 'true');
             if (this.consentModal) this.consentModal.style.display = 'none';

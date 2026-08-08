@@ -22,8 +22,11 @@ export function startAnimationLoop(appState) {
             appState.updateCameraRotation(deltaTime);
         }
 
-        // Update hologram visuals before rendering
-        if (appState.hologramRendererInstance) {
+        // Update hologram visuals before rendering.
+        // 2026-08-08: legacy-путь Three.js (hologramRendererInstance) больше не
+        // создаётся — голограмму рисует HoloEngine своим циклом (js/engine/).
+        // Проверка оставлена для обратной совместимости, если инстанс вернут.
+        if (appState.hologramRendererInstance?.updateVisuals) {
             appState.hologramRendererInstance.updateVisuals();
         }
 

@@ -2,6 +2,8 @@
 // WebSocket-клиент для отправки типизированных жестовых намерений на бэкенд.
 // Подключение происходит ТОЛЬКО при наличии JWT-токена в localStorage.
 
+import { isTelegramMiniApp } from '../core/telegramEnv.js';
+
 class GestureIntentClient {
     constructor(url) {
         this.url = url;
@@ -32,7 +34,7 @@ class GestureIntentClient {
      * При отсутствии токена — graceful skip (без ошибок в консоли).
      */
     async connect() {
-        const isTelegram = !!(window.Telegram?.WebApp);
+        const isTelegram = isTelegramMiniApp();
         let token = this._getToken();
 
         // ⚡ TG MODE: ждём инициализацию auth (JWT может появиться после re-auth)

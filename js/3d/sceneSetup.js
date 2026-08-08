@@ -133,7 +133,9 @@ export async function initializeScene(state) {
   // Синхронизация: рука Z=0.5м → слой голограммы ~128 юнитов по Z
   // Масштаб: 1 unit Three.js = 1 метр (WebXR standard)
   state._worldLandmarksToScene = (worldLandmarks) => {
-    if (!worldLandmarks || !state.hologramRendererInstance) return;
+    // 2026-08-08: раньше здесь стоял guard на hologramRendererInstance (Three.js),
+    // из-за чего преобразование worldLandmarks молча не работало.
+    if (!worldLandmarks || !worldLandmarks.length) return;
     // worldLandmarks[0] = запястье (anchor point)
     // Масштабируем к сетке: 1 метр → GRID_DEPTH юнитов
     const wrist = worldLandmarks[0];
@@ -176,9 +178,16 @@ export async function initializeScene(state) {
 
     vw.currentX += (vw.targetX - vw.currentX) * vw.lerpSpeed;
 
-    // Сдвигаем голограмму в противоположную сторону от смещения панелей
-    if (state.hologramRendererInstance) {
-      state.hologramRendererInstance.getHologramPivot().position.x = -vw.currentX;
+    // Сдвигаем голограмму в противоположную сторону от смещения панелей.
+    // 2026-08-08: legacy-путь Three.js (getHologramPivot) больше не существует —
+    // сдвиг задаём цели камеры нативного движка (js/engine/).
+    const holoCam = state.holoEngine?.engine;
+    if (holoCam?.camera) {
+      holoCam.camera.target[0] = vw.currentX;
+      holoCam._updateView();
+    } else if (typeof state.hologramRendererInstance?.getHologramPivot === 'function') {
+      const pivot = state.hologramRendererInstance.getHologramPivot();
+      if (pivot) pivot.position.x = -vw.currentX;
     }
   }
   state.updateViewOffset = updateViewOffset;
@@ -237,7 +246,9 @@ export async function initializeScene(state) {
     document.body.classList.remove('focus-mode'); // Focus Mode OFF
 
     // Не запускаем возврат, если активен XR или WASD (можно добавить проверку флага wasdActive)
-    if (state.isXRMode || (state.hologramRendererInstance && state.hologramRendererInstance._isTorusMode)) {
+    // 2026-08-08: _isTorusMode жил в legacy-рендерере, которого больше нет —
+    // опциональная цепочка на случай его возврата.
+    if (state.isXRMode || state.hologramRendererInstance?._isTorusMode) {
       return;
     }
 

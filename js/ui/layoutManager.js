@@ -14,16 +14,23 @@ let layoutRetryCount = 0;
 const MAX_LAYOUT_RETRIES = 10;
 const LAYOUT_RETRY_DELAY = 200; // ms
 
+// 2026-08-08: константы перевода legacy-масштаба (Three.js pivot) в зум
+// ортокамеры нативного движка (js/engine/Engine.js).
+// BASE_LAYOUT_SCALE — targetScaleValue, при котором зум камеры равен 1.0:
+// голограмма 256 юнитов по высоте вписана в ортобокс 300 юнитов → 256/300.
+const BASE_LAYOUT_SCALE = HOLOGRAM_REFERENCE_HEIGHT / 300;
+// WORLD_UNITS_PER_PX — перевод пиксельного сдвига в мировые юниты:
+// ортобокс 300 юнитов по вертикали при базовом масштабе.
+const WORLD_UNITS_PER_PX = 300 / HOLOGRAM_REFERENCE_HEIGHT;
+
 /**
  * Проверяет, готовы ли все необходимые элементы для рендеринга.
  */
 function areLayoutElementsReady(appState) {
-    return !!(
-        gridContainer &&
-        appState?.renderer &&
-        appState?.hologramRendererInstance &&
-        typeof appState.hologramRendererInstance.getHologramPivot === 'function'
-    );
+    // 2026-08-08: hologramRendererInstance больше не создаётся (миграция на
+    // js/engine/, коммит 55d77e72) — раскладке достаточно контейнера.
+    // Раньше это условие было вечно false и блокировало updateHologramLayout.
+    return !!gridContainer;
 }
 
 /**
@@ -294,8 +301,10 @@ export function animateHologramContainer(appState, handsPresent) { // Added appS
 export function updateHologramLayout(appState, overrideWidth = null, overrideHeight = null) {
     if (!gridContainer) gridContainer = document.getElementById('grid-container');
 
-    // Graceful check — если элементы не готовы, не спамим варнингами
-    if (!gridContainer || !appState?.renderer || !appState?.hologramRendererInstance || typeof appState.hologramRendererInstance?.getHologramPivot !== 'function') {
+    // Graceful check — если элементы не готовы, не спамим варнингами.
+    // 2026-08-08: hologramRendererInstance убран (миграция на js/engine/) —
+    // раскладке контейнера достаточно самого gridContainer.
+    if (!gridContainer) {
         // Только первый лог, последующие — silent
         if (!layoutReady && layoutRetryCount <= 1) {
             console.warn('[LayoutManager] Skipping updateHologramLayout: Essential elements not ready. Scheduling retry...');
@@ -353,8 +362,13 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         gridContainer.style.backgroundColor = '#000000';
     }
 
-    const hologramPivot = appState.hologramRendererInstance.getHologramPivot();
-    if (!hologramPivot) return;
+    // 2026-08-08: legacy hologramPivot (Three.js) больше не создаётся.
+    // Масштаб/центрирование голограммы теперь задаёт камера нативного движка.
+    const holoCam = appState.holoEngine?.engine;
+    const hologramPivot = typeof appState.hologramRendererInstance?.getHologramPivot === 'function'
+        ? appState.hologramRendererInstance.getHologramPivot()
+        : null;
+    if (!holoCam && !hologramPivot) return;
 
     // НЕ ресайзим рендерер во время анимации — только если размер реально изменился
     const rendererW = appState.renderer?.domElement?.width || 0;
@@ -394,11 +408,23 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     const verticalCenterOffset = (containerHeight - hologramVisualH) / 2;
 
     if (appState.isXRMode) {
-        hologramPivot.scale.set(1, 1, 1);
-        hologramPivot.position.set(0, 0, 0);
+        if (holoCam) holoCam.resetOrbit();
+        if (hologramPivot) {
+            hologramPivot.scale.set(1, 1, 1);
+            hologramPivot.position.set(0, 0, 0);
+        }
     } else {
-        hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
-        hologramPivot.position.set(xOffset, verticalCenterOffset / targetScaleValue, 0);
+        // Нативный движок: зум ортокамеры + сдвиг цели к визуальному центру
+        // между панелями (canvas на всю ширину, голограмма — между панелями).
+        if (holoCam) {
+            holoCam.setZoom(targetScaleValue / BASE_LAYOUT_SCALE);
+            holoCam.camera.target[0] = -xOffset * targetScaleValue * WORLD_UNITS_PER_PX;
+            holoCam._updateView();
+        }
+        if (hologramPivot) {
+            hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
+            hologramPivot.position.set(xOffset, verticalCenterOffset / targetScaleValue, 0);
+        }
     }
 
     // Синхронизируем панель жестов: та же ширина что и голограмма, строго под ней

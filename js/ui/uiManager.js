@@ -402,9 +402,13 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
           await appState.xrSessionManagerInstance.toggleXRSession(uiElements.buttons.xrButton, 'immersive-ar');
         }
 
-        // Step 2: Toggle Cochlear Cylinder morph (inside XR session or as fallback)
-        if (appState.hologramRendererInstance) {
-          const isXR = await appState.hologramRendererInstance.toggleXRMode();
+        // Step 2: Cochlear Cylinder morph (inside XR session or as fallback).
+        // 2026-08-08: hologramRendererInstance больше не создаётся (миграция на
+        // js/engine/, коммит 55d77e72) — XR-сессию ведёт XRSessionManager.
+        // toggleXRMode у legacy-рендерера недоступен, поэтому морф пропускаем.
+        const legacyRenderer = appState.hologramRendererInstance;
+        if (legacyRenderer && typeof legacyRenderer.toggleXRMode === 'function') {
+          const isXR = await legacyRenderer.toggleXRMode();
 
           // Activate look-around and WASD logic
           if (appState.setXRMode) {
@@ -417,10 +421,12 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
         }
       } catch (err) {
         console.warn('[UIManager] WebXR session failed, using Cochlear Cylinder fallback:', err.message);
-        // Fallback: morph without WebXR session
-        if (appState.hologramRendererInstance) {
+        // Fallback: morph without WebXR session.
+        // 2026-08-08: legacy-рендерер не создаётся (миграция на js/engine/).
+        const legacyRenderer = appState.hologramRendererInstance;
+        if (legacyRenderer && typeof legacyRenderer.toggleXRMode === 'function') {
           try {
-            const isXR = await appState.hologramRendererInstance.toggleXRMode();
+            const isXR = await legacyRenderer.toggleXRMode();
             // CRITICAL: Must call setXRMode to enable WASD/mouse rotation
             if (appState.setXRMode) {
               appState.setXRMode(isXR);
@@ -650,8 +656,10 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
         window.showNotification("Bluetooth Mesh: Поиск устройств и синхронизация поля...", "info");
       }
 
-      // Интеграция с 3D-визуализацией (BitChat concept)
-      if (state.hologramRendererInstance) {
+      // Интеграция с 3D-визуализацией (BitChat concept).
+      // 2026-08-08: legacy-рендерер не создаётся (миграция на js/engine/),
+      // триггер Bluetooth-скана остаётся на будущее.
+      if (state.hologramRendererInstance && typeof state.hologramRendererInstance.triggerBluetoothScan === 'function') {
         state.hologramRendererInstance.triggerBluetoothScan();
       }
     });
