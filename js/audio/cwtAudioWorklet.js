@@ -11,7 +11,14 @@ let ptrs = { left: 0, right: 0, levels: 0, pans: 0, confidence: 0 };
 
 // Кэшированные fallback-массивы (НЕ создаём новые каждый вызов!)
 const FALLBACK_LEVELS = new Float32Array(256).fill(-128);
-const FALLBACK_ANGLES = new Float32Array(128).fill(0);
+// ЯЧЕИСТЫЙ СТАНДАРТ ПАНОРАМЫ (см. js/config/panStandard.js).
+// Пан ЗНАКОВЫЙ: [-127, +127], 0 = ЦЕНТР (стык сеток на зелёной оси Y).
+// 2026-08-08 15:24 MSK: `.fill(0)` — ВЕРНО. Ноль это центр, поэтому аварийный
+// fallback ставит тишину строго перед слушателем.
+// (Промежуточная правка 15:12 ставила 63.5 из-за ошибочного беззнакового
+//  контракта — откачено: центр это ячейка 0, а не граница 63/64.)
+const PAN_CENTER_CELL = 0;
+const FALLBACK_ANGLES = new Float32Array(128).fill(PAN_CENTER_CELL);
 const FALLBACK_CONFIDENCE = new Float32Array(128).fill(0);
 
 function getFloat32Memory() {

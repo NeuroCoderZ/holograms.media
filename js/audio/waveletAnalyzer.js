@@ -3,6 +3,28 @@
 // This implements a high-precision CQT using a bank of Complex Discrete Fourier Filters.
 // One-to-one mapping: 128 semitones -> 128 visual columns.
 
+// ─── ЯЧЕИСТЫЙ СТАНДАРТ ПАНОРАМЫ (2026-08-08 15:24 MSK) ──────────────────────
+// Полное описание контракта: js/config/panStandard.js
+// Здесь константы и функция продублированы намеренно: файл исполняется в
+// AudioWorklet (отдельный поток), где ES-импорты недоступны — модуль
+// загружается через addModule() как самостоятельный скрипт.
+//
+//   пан = ЗНАКОВЫЕ ЯЧЕЙКИ, диапазон [-127.0, +127.0], значение ДРОБНОЕ,
+//   0 = ЦЕНТР (стык двух сеток на зелёной оси Y, звук перед слушателем).
+//
+// Знак кодирует сетку (ухо), модуль — удаление от центра:
+//   pan < 0 → фиолетовая (левая), pan = 0 → центр, pan > 0 → красная (правая).
+// Дробность несёт ITD — округление стирает локализацию ниже 1500 Гц.
+const PAN_CELLS = 128;
+const PAN_MAX_CELL = PAN_CELLS - 1;  // 127 — самая внешняя ячейка сетки
+const PAN_CENTER_CELL = 0;           // центр — ячейка 0 на оси Y
+
+/** Нормализованный пан [-1, +1] → знаковые ячейки [-127.0, +127.0]. */
+function panToCells(pan) {
+    const cells = (pan ?? 0) * PAN_MAX_CELL;
+    return Math.max(-PAN_MAX_CELL, Math.min(PAN_MAX_CELL, cells));
+}
+
 class CwtProcessor extends AudioWorkletProcessor {
     constructor(options) {
         super();
@@ -114,7 +136,7 @@ class CwtProcessor extends AudioWorkletProcessor {
             const magnitudeL = this.getMagnitudeAtFreq(this.left_accumulator, freq);
             const magnitudeR = this.getMagnitudeAtFreq(this.right_accumulator, freq);
 
-            // PHYSICS: Stereo Pan = (R-L) / (R+L+eps)
+            // PHYSICS: Stereo Pan = (R-L) / (R+L+eps) → [-1, +1]
             const sum = magnitudeL + magnitudeR + epsilon;
             const pan = (magnitudeR - magnitudeL) / sum;
 
@@ -128,7 +150,15 @@ class CwtProcessor extends AudioWorkletProcessor {
             // Clamp to physical limits [0, 127]
             dbLevels[i] = Math.max(0, Math.min(127, splL));
             dbLevels[i + numBins] = Math.max(0, Math.min(127, splR));
-            panAngles[i] = Math.max(-1, Math.min(1, pan));
+
+            // 2026-08-08 15:24 MSK: приведено к ЯЧЕИСТОМУ СТАНДАРТУ.
+            // Этот JS-путь — fallback, когда WASM недоступен, и он отдавал пан
+            // в НОРМАЛИЗОВАННЫХ единицах, тогда как боевой WASM
+            // (holocore/src/lib.rs) отдаёт ЯЧЕЙКИ — потребитель один, и из-за
+            // рассогласования масштаб пана на fallback был занижен в 127 раз.
+            // Единый контракт: ЗНАКОВЫЕ ячейки [-127.0, +127.0], дробно,
+            // 0 = центр (стык сеток на зелёной оси Y).
+            panAngles[i] = panToCells(pan);
 
             // Sample Log for Debug
             if (i === 60 && this.tick % 375 === 0) {
