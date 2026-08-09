@@ -1,4 +1,4 @@
-import { eventBus } from './eventBus.js';
+import eventBus from './eventBus.js';
 import { state } from './init.js';
 
 const API_PREFIX = '/api/v1';
