@@ -256,27 +256,17 @@ export class HologramScanner {
         this.stabilization.offY += (centroid.weight > 0.01 ? (centroid.y - 0.5) * cropH * 0.1 : -this.stabilization.offY * 0.05);
 
         if (this.synthesizer && audioParams) {
-            let finalLevels = audioParams.levels;
-            let finalPans = audioParams.pans;
-            
-            // NeuralDecoder integration
-            let enriched = null;
-            if (confidence > 0.7 && neuralDecoder.isActive) {
-                const visualData = {
-                    columns: [], // Extracted from row scanning (heights)
-                    colors: [],  // HSL hues from columns
-                    confidence: confidence,
-                    imageData: result  // Pass full result for grid analysis
-                };
-                enriched = await neuralDecoder.processFrame(visualData);
-                if (enriched) {
-                    finalLevels = enriched.enrichedLevels || audioParams.levels;
-                    finalPans = enriched.enrichedPans || audioParams.pans;
-                    console.log('🧠 Neural decode:', enriched.confidence.toFixed(2));
-                }
-            }
+            // Контур A (горячий путь): звук немедленно, без сети. ~7.5 мс/кадр.
+            // Обогащение Триа приходит асинхронно и подмешивается на СЛЕДУЮЩИХ кадрах.
+            const { levels, pans } = audioParams;
+            this.synthesizer.update(this._enrichment?.levels || levels, this._enrichment?.pans || pans);
 
-            this.synthesizer.update(finalLevels, finalPans);
+            // Контур B (тёплый путь): fire-and-forget, НЕ блокирует кадр.
+            if (confidence > 0.7 && neuralDecoder.isActive) {
+                neuralDecoder.processFrame({ levels, pans, confidence, imageData: result })
+                    .then(e => { if (e) this._enrichment = { levels: e.enrichedLevels, pans: e.enrichedPans }; })
+                    .catch(() => { this._enrichment = null; });
+            }
         }
 
         eventBus.emit('scannerData', audioParams);

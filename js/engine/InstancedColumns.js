@@ -2,10 +2,36 @@
  * InstancedColumns.js — 256 инстанс-столбцов
  * =============================================
  * 2 draw calls: левая сетка (128) + правая сетка (128)
- * Каждый инстанс: mat4 (position+scale) + vec3 (color) + float (aColumnScaleZ)
+ *
+ * 2026-08-08 16:22 MSK — ГОЛОКАДР: 20 480 Б -> 2 048 Б на шине (10x).
+ *
+ * Было: на каждый кадр в JS (главный поток!) пересобиралась матрица 4x4 на
+ * каждый столбец — arrayStride 80 Б x 128 x 2 сетки = 20 КБ. Это работа не
+ * для JS и не для CPU: WebGPU существует ровно для того, чтобы такие
+ * преобразования делались на GPU, а главный поток занимался только данными.
+ * При этом реально меняются лишь ДВЕ величины: глубина (dB SPL) и пан.
+ * Ширина, цвет, позиция по Y — константы азбуки из 128 полутонов, они не
+ * меняются никогда.
+ *
+ * Стало (по канону Semitones_Angles.md):
+ *   - СТАТИЧЕСКИЙ буфер, пишется ОДИН раз при старте: ширина, цвет, Y;
+ *   - ДИНАМИЧЕСКИЙ буфер, пишется каждый кадр: (dB, пан) x 256 голоквантов
+ *     в float32 = 2048 байт. Это и есть голокадр на шине;
+ *   - матрица модели собирается в ШЕЙДЕРЕ, на GPU.
+ *
+ * Почему float32, а не упакованные байты: точность здесь бесплатна, а дробный
+ * пан несёт ITD (межушную задержку) — огрублять его нельзя. 2048 Б на кадр
+ * это 288 КБ/с даже при 144 Гц, то есть ничто.
+ * NB: компактные форматы голокадра (512 Б при пане 1 байт, 768 Б при пане
+ * 2 байта) относятся к ХРАНЕНИЮ и передаче гологлифа, а не к шине GPU —
+ * это разные слои, их нельзя путать.
+ *
+ * Частота обновления дисплея переменная (24-240 Гц), поэтому экономия на шине
+ * масштабируется линейно: чем выше режим, тем больше выигрыш.
  */
 
 import { semitones } from '../config/hologramConfig.js';
+import { PAN_CENTER_CELL } from '../config/panStandard.js';
 
 const CUBE_VERTICES = new Float32Array([
     // Front face
@@ -60,19 +86,27 @@ export class InstancedColumns {
                 entryPoint: 'main',
                 buffers: [
                     {
+                        // Геометрия куба (общая для всех столбцов)
                         arrayStride: 12,
                         attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }],
                     },
                     {
-                        arrayStride: 80,
+                        // СТАТИКА (азбука полутонов): width, posY, colorRGB
+                        arrayStride: 20,
                         stepMode: 'instance',
                         attributes: [
-                            { shaderLocation: 1, offset: 0, format: 'float32x4' },
-                            { shaderLocation: 2, offset: 16, format: 'float32x4' },
-                            { shaderLocation: 3, offset: 32, format: 'float32x4' },
-                            { shaderLocation: 4, offset: 48, format: 'float32x4' },
-                            { shaderLocation: 5, offset: 64, format: 'float32x3' },
-                            { shaderLocation: 6, offset: 76, format: 'float32' },
+                            { shaderLocation: 1, offset: 0, format: 'float32' },   // width
+                            { shaderLocation: 2, offset: 4, format: 'float32' },   // posY
+                            { shaderLocation: 3, offset: 8, format: 'float32x3' }, // color
+                        ],
+                    },
+                    {
+                        // ГОЛОКАДР (меняется каждый кадр): depth (dB SPL), pan
+                        arrayStride: 8,
+                        stepMode: 'instance',
+                        attributes: [
+                            { shaderLocation: 4, offset: 0, format: 'float32' },  // depth
+                            { shaderLocation: 5, offset: 4, format: 'float32' },  // pan
                         ],
                     },
                 ],
@@ -99,90 +133,115 @@ export class InstancedColumns {
             },
         });
 
-        this._initInstanceBuffers();
+        this._initStaticBuffer();
+        this._initDynamicBuffers();
     }
 
     setDemoMode(height) {
+        // Демо: одинаковая глубина, пан по центру (0 = стык сеток на оси Y).
         for (let i = 0; i < this.count; i++) {
-            const s = semitones[i];
-            const posY = i * 2; // Высота ячейки = 2.0
-            this._setInstance(this.leftInstanceData, i, 0, posY, height, s.color, s.width);
-            this._setInstance(this.rightInstanceData, i, 0, posY, height, s.color, s.width);
+            this.leftDynamicData[i * 2] = height;
+            this.leftDynamicData[i * 2 + 1] = PAN_CENTER_CELL;
+            this.rightDynamicData[i * 2] = height;
+            this.rightDynamicData[i * 2 + 1] = PAN_CENTER_CELL;
         }
-        this._uploadInstances();
+        this._uploadDynamic();
     }
 
-    _initInstanceBuffers() {
-        const instanceSize = 80;
-        const bufferSize = instanceSize * this.count;
+    /**
+     * СТАТИЧЕСКИЙ буфер — азбука 128 полутонов. Пишется ОДИН раз.
+     * На голоквант: ширина (ячейки), позиция Y, цвет RGB = 5 float = 20 байт.
+     * Обе сетки читают один и тот же буфер: азбука для них общая, различие
+     * несёт только знак пана (см. panStandard.js).
+     */
+    _initStaticBuffer() {
+        const FLOATS_PER_COLUMN = 5;
+        const data = new Float32Array(this.count * FLOATS_PER_COLUMN);
 
-        this.leftInstanceBuffer = this.device.createBuffer({
-            size: bufferSize,
+        for (let i = 0; i < this.count; i++) {
+            const s = semitones[i];
+            const base = i * FLOATS_PER_COLUMN;
+            data[base + 0] = s.width || 1;  // ширина пучка в ячейках (= ID полутона)
+            data[base + 1] = i * 2;         // Y: высота ячейки = 2.0
+            data[base + 2] = s.color.r;
+            data[base + 3] = s.color.g;
+            data[base + 4] = s.color.b;
+        }
+
+        this.staticBuffer = this.device.createBuffer({
+            size: data.byteLength,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
-        this.leftInstanceData = new Float32Array(this.count * 20);
+        this.device.queue.writeBuffer(this.staticBuffer, 0, data);
+    }
 
-        this.rightInstanceBuffer = this.device.createBuffer({
-            size: bufferSize,
+    /**
+     * ДИНАМИЧЕСКИЙ буфер — голокадр. Пишется каждый кадр.
+     * На голоквант: (dB SPL, пан) = 2 float = 8 байт.
+     * Итого 128 x 8 x 2 сетки = 2048 байт на кадр.
+     */
+    _initDynamicBuffers() {
+        const bytes = this.count * 2 * 4; // 2 float32 на столбец
+
+        this.leftDynamicBuffer = this.device.createBuffer({
+            size: bytes,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
-        this.rightInstanceData = new Float32Array(this.count * 20);
+        this.leftDynamicData = new Float32Array(this.count * 2);
+
+        this.rightDynamicBuffer = this.device.createBuffer({
+            size: bytes,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        this.rightDynamicData = new Float32Array(this.count * 2);
 
         this.setDemoMode(64);
     }
 
-    _setInstance(data, idx, panX, posY, height, color, width) {
-        const base = idx * 20;
-        const x = panX;
-        const y = posY;
-        const z = 75; // Протокол 1 Метр (внутренняя грань)
-        const w = width || 1;
-        const h = Math.max(1, Math.min(128, height));
-
-        // WGSL Column-Major Matrix
-        // Column 0: [w, 0, 0, 0]
-        data[base + 0] = w; data[base + 1] = 0;  data[base + 2] = 0;  data[base + 3] = 0;
-        // Column 1: [0, 2, 0, 0] — Удвоенная высота ячейки
-        data[base + 4] = 0;  data[base + 5] = 2;  data[base + 6] = 0;  data[base + 7] = 0;
-        // Column 2: [0, 0, h, 0] — Глубина (амплитуда)
-        data[base + 8] = 0;  data[base + 9] = 0;  data[base + 10] = h; data[base + 11] = 0;
-        // Column 3: [x, y, z + h/2, 1] — Позиция центра столбца
-        data[base + 12] = x; data[base + 13] = y; data[base + 14] = z + h/2; data[base + 15] = 1;
-        
-        // Color & aColumnScaleZ (для шейдера)
-        data[base + 16] = color.r; data[base + 17] = color.g; data[base + 18] = color.b;
-        data[base + 19] = h;
-    }
-
-    _uploadInstances() {
-        this.device.queue.writeBuffer(this.leftInstanceBuffer, 0, this.leftInstanceData);
-        this.device.queue.writeBuffer(this.rightInstanceBuffer, 0, this.rightInstanceData);
+    _uploadDynamic() {
+        this.device.queue.writeBuffer(this.leftDynamicBuffer, 0, this.leftDynamicData);
+        this.device.queue.writeBuffer(this.rightDynamicBuffer, 0, this.rightDynamicData);
     }
 
     update(audioData) {
         if (!audioData || !audioData.levels) return;
 
         for (let i = 0; i < this.count; i++) {
-            const s = semitones[i];
             const dbL = audioData.levels[i] || 0;
             const dbR = audioData.levels[i + 128] || 0;
-            const hL = Math.max(1, Math.min(128, Math.round(dbL)));
-            const hR = Math.max(1, Math.min(128, Math.round(dbR)));
 
-            const panL = (audioData.pans?.[i] ?? 64) - 64;
-            const panR = (audioData.pans?.[i + 128] ?? 64) - 64;
+            // Глубина столбца (dB SPL) — ДРОБНАЯ, без округления.
+            // Термометрический код хранит «докуда залито» — величина непрерывна,
+            // как ртуть в термометре. Главное в визуализации — плавная
+            // затемнённость поверхности ячеек (яркость линейна по глубине),
+            // поэтому дробная высота даёт градацию без ступенек и сохраняет
+            // точность, нужную Триа для восстановления звука по голомации.
+            // GPU растеризует дробный масштаб штатно — ограничение только clamp.
+            const hL = Math.max(1, Math.min(128, dbL));
+            const hR = Math.max(1, Math.min(128, dbR));
 
-            const posY = i * 2;
-            this._setInstance(this.leftInstanceData, i, panL, posY, hL, s.color, s.width);
-            this._setInstance(this.rightInstanceData, i, panR, posY, hR, s.color, s.width);
+            // ЯЧЕИСТЫЙ СТАНДАРТ ПАНОРАМЫ (см. js/config/panStandard.js):
+            // источник отдаёт ЗНАКОВЫЕ ячейки [-127.0, +127.0], где 0 = ЦЕНТР
+            // (стык двух сеток на зелёной оси Y, звук перед слушателем).
+            // Значение уже отсчитано ОТ ЦЕНТРА — вычитать ничего не нужно.
+            // Ноль означает центр, поэтому `?? 0` — безопасный дефолт.
+            const panL = audioData.pans?.[i] ?? PAN_CENTER_CELL;
+            const panR = audioData.pans?.[i + 128] ?? PAN_CENTER_CELL;
+
+            const o = i * 2;
+            this.leftDynamicData[o] = hL;
+            this.leftDynamicData[o + 1] = panL;
+            this.rightDynamicData[o] = hR;
+            this.rightDynamicData[o + 1] = panR;
         }
-        this._uploadInstances();
+        this._uploadDynamic();
     }
 
     drawLeft(pass) {
         pass.setPipeline(this.pipeline);
         pass.setVertexBuffer(0, this.vertexBuffer);
-        pass.setVertexBuffer(1, this.leftInstanceBuffer);
+        pass.setVertexBuffer(1, this.staticBuffer);
+        pass.setVertexBuffer(2, this.leftDynamicBuffer);
         pass.setIndexBuffer(this.indexBuffer, 'uint16');
         pass.drawIndexed(36, this.count);
     }
@@ -190,7 +249,8 @@ export class InstancedColumns {
     drawRight(pass) {
         pass.setPipeline(this.pipeline);
         pass.setVertexBuffer(0, this.vertexBuffer);
-        pass.setVertexBuffer(1, this.rightInstanceBuffer);
+        pass.setVertexBuffer(1, this.staticBuffer);
+        pass.setVertexBuffer(2, this.rightDynamicBuffer);
         pass.setIndexBuffer(this.indexBuffer, 'uint16');
         pass.drawIndexed(36, this.count);
     }

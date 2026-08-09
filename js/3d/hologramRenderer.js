@@ -10,6 +10,7 @@ import { CELL_SIZE, GRID_DEPTH, GRID_HEIGHT, GRID_WIDTH, semitones } from '../co
 import eventBus from '../core/eventBus.js';
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js';
 
+import { PAN_CENTER_CELL, PAN_MAX_CELL, cellsToNormalized } from '../config/panStandard.js';
 import { vertexShader, fragmentShader, makeColumnUniforms } from './shaders/hologramShaders.js';
 import { CELL_HEIGHT, createCentralMarkerSphere, createSphereForAxis, createGridVisualization, createAxis } from './hologramGridFactory.js';
 
@@ -265,8 +266,11 @@ export class HologramRenderer {
       let hR = CELL_HEIGHT;
 
       if (useFrozen) {
-        // Заморозка: используем сохранённые значения
-        const p = panAngles[i] || 0;
+        // Заморозка: используем сохранённые значения.
+        // 2026-08-08 15:24 MSK: пан приходит в ЗНАКОВЫХ ячейках [-127..+127],
+        // конвертируем через единый стандарт. Было `panAngles[i] || 0` —
+        // читало ячейки как нормализованные [-1,1], занижая масштаб в 127 раз.
+        const p = cellsToNormalized(panAngles[i]);
         const shadowDb = Math.abs(p) * (config.shadow_coef || 0) * 128.0;
         let effectiveDbL = dbL;
         let effectiveDbR = dbR;
@@ -276,7 +280,7 @@ export class HologramRenderer {
 
         // ═══ ДИСКРЕТНОЕ смещение по X (ровно в целых ячейках) ═══
         const maxShiftCells = Math.floor((GRID_WIDTH - width) / 2); // целые ячейки
-        const panCellsFromCenter = Math.round(p * 64); // -64..+64
+        const panCellsFromCenter = Math.round(p * PAN_MAX_CELL); // -127..+127 -> целые ячейки от центра
         const clampedShift = Math.max(-maxShiftCells, Math.min(maxShiftCells, panCellsFromCenter));
         const discreteShift = clampedShift; // уже в целых ячейках (CELL_SIZE = 1.0)
 
@@ -290,9 +294,13 @@ export class HologramRenderer {
         scalesL.setX(i, hL);
         scalesR.setX(i, hR);
       } else if (isActive && (!isPaused || hasSignal)) {
-        // Pan: WASM выдаёт ячейки 0..128. Конвертируем в [-1, 1].
-        const panCells = panAngles[i] || 64; // 64 = центр
-        const p = (panCells - 64) / 64.0;    // [-1, 1]
+        // Pan: ЯЧЕИСТЫЙ СТАНДАРТ — ЗНАКОВЫЕ ячейки [-127, +127], дробно.
+        // Центр = 0: стык двух сеток на зелёной оси Y (звук перед слушателем).
+        // 2026-08-08 15:24 MSK (было: `panAngles[i] || 64` и деление на 64):
+        // старый контракт считал пан беззнаковым с центром 64, из-за чего вся
+        // панорама была смещена. Отсчёт идёт ОТ ЦЕНТРА НАРУЖУ, знак = сетка.
+        const panCells = panAngles[i] ?? PAN_CENTER_CELL;
+        const p = cellsToNormalized(panCells); // [-1, +1]
         this._panStates[i] = p;
 
         const shadowDb = Math.abs(p) * (config.shadow_coef || 0) * 128.0;
@@ -304,7 +312,7 @@ export class HologramRenderer {
 
         // ═══ ДИСКРЕТНОЕ смещение по X (ровно в целых ячейках) ═══
         const maxShiftCells = Math.floor((GRID_WIDTH - width) / 2); // целые ячейки
-        const panCellsFromCenter = Math.round(p * 64); // -64..+64
+        const panCellsFromCenter = Math.round(p * PAN_MAX_CELL); // -127..+127 -> целые ячейки от центра
         const clampedShift = Math.max(-maxShiftCells, Math.min(maxShiftCells, panCellsFromCenter));
         const discreteShift = clampedShift; // уже в целых ячейках (CELL_SIZE = 1.0)
 
@@ -322,7 +330,7 @@ export class HologramRenderer {
         const p = this._panStates[i];
         // ═══ ДИСКРЕТНОЕ смещение по X (ровно в целых ячейках) ═══
         const maxShiftCells = Math.floor((GRID_WIDTH - width) / 2); // целые ячейки
-        const panCellsFromCenter = Math.round(p * 64); // -64..+64
+        const panCellsFromCenter = Math.round(p * PAN_MAX_CELL); // -127..+127 -> целые ячейки от центра
         const clampedShift = Math.max(-maxShiftCells, Math.min(maxShiftCells, panCellsFromCenter));
         const discreteShift = clampedShift; // уже в целых ячейках (CELL_SIZE = 1.0)
 

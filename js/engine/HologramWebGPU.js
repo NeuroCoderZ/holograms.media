@@ -133,25 +133,61 @@ export class HologramWebGPU {
                 @location(0) vColor: vec3<f32>,
             };
 
-            // ─── Columns ─────────────────────────────────────
-            struct ColVSInput {
-                @location(0) position: vec3<f32>,
-                @location(1) m0: vec4<f32>, @location(2) m1: vec4<f32>,
-                @location(3) m2: vec4<f32>, @location(4) m3: vec4<f32>,
-                @location(5) color: vec3<f32>,
-                @location(6) scaleZ: f32,
+            // Отдельный выход для столбцов: им нужна глубина в ячейках для
+            // градации яркости. Сетка и сферы пользуются простым VSOutput,
+            // чтобы не заполнять поле, которое им не нужно.
+            struct ColVSOutput {
+                @builtin(position) position: vec4<f32>,
+                @location(0) vColor: vec3<f32>,
+                @location(1) vDepthCells: f32,
             };
 
-            @vertex fn main(input: ColVSInput) -> VSOutput {
-                var out: VSOutput;
+            // ─── Columns ─────────────────────────────────────
+            // Матрица модели собирается ЗДЕСЬ, на GPU (было: в JS каждый кадр).
+            // Вход: статика (азбука полутонов) + голокадр (dB SPL, пан).
+            struct ColVSInput {
+                @location(0) position: vec3<f32>,
+                @location(1) width: f32,       // ширина пучка в ячейках
+                @location(2) posY: f32,        // позиция по Y
+                @location(3) color: vec3<f32>, // цвет полутона
+                @location(4) depth: f32,       // глубина = dB SPL (термокод)
+                @location(5) pan: f32,         // знаковые ячейки, 0 = центр
+            };
+
+            @vertex fn main(input: ColVSInput) -> ColVSOutput {
+                var out: ColVSOutput;
                 out.vColor = input.color;
-                let model = mat4x4<f32>(input.m0, input.m1, input.m2, input.m3);
-                let worldPos = model * vec4<f32>(input.position, 1.0);
+
+                let h = clamp(input.depth, 1.0, 128.0);
+                let w = max(input.width, 1.0);
+                let z = 75.0; // Протокол 1 Метр (внутренняя грань)
+
+                // Масштаб + позиция без матричного умножения:
+                // куб единичный, поэтому достаточно поэлементно.
+                let scaled = vec3<f32>(
+                    input.position.x * w,
+                    input.position.y * 2.0,
+                    input.position.z * h
+                );
+                let worldPos = vec4<f32>(
+                    scaled.x + input.pan,
+                    scaled.y + input.posY,
+                    scaled.z + z + h * 0.5,
+                    1.0
+                );
+
+                // Глубина в ячейках для градации яркости во фрагменте.
+                out.vDepthCells = (input.position.z + 0.5) * h;
+
                 out.position = uniforms.uProjectionMatrix * (uniforms.uViewMatrix * worldPos);
                 return out;
             }
-            @fragment fn fsMain(input: VSOutput) -> @location(0) vec4<f32> {
-                return vec4<f32>(input.vColor, 1.0);
+            @fragment fn fsMain(input: ColVSOutput) -> @location(0) vec4<f32> {
+                // Яркость линейна по глубине: короткий столбец темнее.
+                // Визуальная «дырка» = чернота = отсутствие громкости.
+                let bIndex = clamp(floor(input.vDepthCells), 0.0, 127.0);
+                let brightness = (bIndex + 1.0) / 128.0;
+                return vec4<f32>(input.vColor * brightness, 1.0);
             }
 
             // ─── Grid ───────────────────────────────────────
