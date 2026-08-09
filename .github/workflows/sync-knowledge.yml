@@ -28,7 +28,9 @@ jobs:
         echo "version<<EOF" >> $GITHUB_OUTPUT
         echo "$VERSION" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-        echo "message=${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
+        echo "message<<EOF" >> $GITHUB_OUTPUT
+        echo "${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
     - name: 'Set up Python'
       uses: actions/setup-python@v5
@@ -56,18 +58,6 @@ jobs:
         ASTRA_DB_API_ENDPOINT: ${{ secrets.ASTRA_DATABASE_URL }}
         ASTRA_DB_KEYSPACE: ${{ secrets.ASTRA_DB_KEYSPACE || 'default_keyspace' }}
       run: python scripts/sync_knowledge_base.py
-    
-    - name: '4. Sync NeuroEscrow Knowledge Base'
-      env:
-        MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-        ASTRA_DB_APPLICATION_TOKEN: ${{ secrets.ASTRA_DB_APPLICATION_TOKEN }}
-        ASTRA_DB_API_ENDPOINT: ${{ secrets.ASTRA_DATABASE_URL }}
-      run: |
-        cd neuroescrow
-        npx repomix
-        cd ..
-        node scripts/index-hermes.js
-    
     - name: 'Summary'
       run: |
         echo "## ✅ Knowledge Sync Complete" >> $GITHUB_STEP_SUMMARY
