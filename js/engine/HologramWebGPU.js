@@ -112,9 +112,18 @@ export class HologramWebGPU {
     }
 
     _createDepthTexture() {
+        const { width, height } = this.canvas;
+        // Пересоздаём ТОЛЬКО при реальном изменении размера.
+        // В противном случае каждый кадр уничтожался бы и пересоздавался буфер
+        // глубины (~60 аллокаций/сек) — расточительно для GPU.
+        if (this.depthTexture
+            && this.depthTexture.width === width
+            && this.depthTexture.height === height) {
+            return;
+        }
         if (this.depthTexture) this.depthTexture.destroy();
         this.depthTexture = this.engine.device.createTexture({
-            size: [this.canvas.width, this.canvas.height],
+            size: [width, height],
             format: 'depth24plus',
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
         });
