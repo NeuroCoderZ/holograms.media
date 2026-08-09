@@ -1,7 +1,7 @@
 # WEBGPU Migration: Three.js → Native WebGPU (Safe, Non-breaking)
 
-**Owner:** Kими K2.6 (and subsequent agent wave)  
-**Status:** Draft – Phase 0 required  
+**Owner:** Кими K2.6 (and subsequent agent wave)  
+**Status:** Phase 0 completed 09.08.2026; Phase 1-3 частично выполнены де-факто в `js/engine/*`  
 **Non-goal:** “Rewrite everything at once”.  
 **Primary goal:** remove Three.js *only after* equivalent working WebGPU visuals + feature-flag fallback.
 
@@ -39,18 +39,24 @@ Create the inventory table below **fully populated** by the agent:
 графу символов CodeGraph (`.codegraph/codegraph.db`, 8dfa9161 → HEAD: изменён только
 `package.json`, граф актуален) + перекрёстная проверка `rg`/чтением файлов.
 
+2026-08-09 18:00 MSK — **Ревизия на коммите `f80ebb71`.** После инвентаризации
+прошли: удаление мёртвых папок `js/3d/webgpu/` и `js/webgpu/adapters/` (`3d103a42`),
+3-буферный рефакторинг `InstancedColumns` (`30c1a492`, vertex/static/dynamic —
+шина GPU 10× меньше), wasm-пересборка (`26efa8a8`), фикс тест-раннера (`cd4ac844`),
+документация гологлифа (`f80ebb71`). Ниже — актуальные на сегодня цифры.
+
 | Feature | Files | Three.js usage examples | Complexity (1-5) | Priority (P0-P3) | Status |
 |---|---|---|---:|---|---|
 | Scene setup / camera | `js/3d/sceneSetup.js` (571 стр.), `js/core/init.js:265` | `new THREE.Scene()`, `new THREE.OrthographicCamera(±w/2, ±h/2, 0.1, 2000)`, `new THREE.WebGLRenderer`, `three/examples/.../WebGPURenderer.js` | 4 | **P0** | 🟡 Three-only; native `HoloEngine` держит свою камеру (ortho `[-150,150,-20,280]`, eye `[0,128,0]`→`[0,128,75]`) — **две несинхронизированные камеры** |
-| Hologram renderer | **актив:** `js/engine/HologramWebGPU.js` (318), `Engine.js` (135); **legacy:** `js/3d/hologramRenderer.js` (367) | legacy: `InstancedMesh`, `ShaderMaterial`, `BufferGeometry` | 3 | **P0** | ✅ **уже native WebGPU**. `HologramRenderer` импортируется (`init.js:209`), но **НИ РАЗУ не инстанцируется** → `state.hologramRendererInstance === null` (мёртвый код) |
-| Grid / instanced columns | `js/engine/InstancedColumns.js` (198), `GridWireframe.js` (106), `columns.wgsl.js` (79); legacy `js/3d/hologramGridFactory.js` (165) | legacy: `LineSegments`, `SphereGeometry`, `InstancedBufferAttribute` | 2 | **P0** | ✅ **портировано**: 256 столбцов = 2 draw call (stride 80 Б / 20 float: mat4 + color + scaleZ), сетка+оси+сферы в WGSL |
+| Hologram renderer | **актив:** `js/engine/HologramWebGPU.js` (353), `Engine.js` (219); **legacy:** `js/3d/hologramRenderer.js` (367) | legacy: `InstancedMesh`, `ShaderMaterial`, `BufferGeometry` | 3 | **P0** | ✅ **уже native WebGPU**. `HologramRenderer` импортируется (`init.js:209`), но **НИ РАЗУ не инстанцируется** → `state.hologramRendererInstance === null` (мёртвый код) |
+| Grid / instanced columns | `js/engine/InstancedColumns.js` (257), `GridWireframe.js` (105), `columns.wgsl.js` (79); legacy `js/3d/hologramGridFactory.js` (165) | legacy: `LineSegments`, `SphereGeometry`, `InstancedBufferAttribute` | 2 | **P0** | ✅ **портировано** (см. «Instancing»); с `30c1a492` — 3-буферный лейаут |
 | Glass / glassmorphism | `css/_variables.css`, `_panels.css`, `_modals.css` и др.; `js/ui/glassSpecularManager.js` | **нет** — чистый CSS `backdrop-filter` | 1 | **P3** | ✅ вне зоны миграции; `glassSpecularManager` = stub (`v0.20.226`, блики отключены для FPS) |
 | Gesture trails / particles | — | **нет** (`THREE.Points` не встречается ни разу) | 1 | **P3** | ⬜ не реализовано; в Phase 3 п.1 значится как задача, а не как порт |
-| Instancing | native: `InstancedColumns.js`; legacy: `hologramRenderer.js:109-122` | `new THREE.InstancedMesh(geo, mat, 128)` ×2, `aColumnScaleZ` | 2 | **P0** | ✅ **портировано** (см. «Grid / instanced columns») |
+| Instancing | native: `InstancedColumns.js`; legacy: `hologramRenderer.js:109-122` | `new THREE.InstancedMesh(geo, mat, 128)` ×2, `aColumnScaleZ` | 2 | **P0** | ✅ **портировано**: 256 столбцов = 2 draw call; 3 буфера — vertex (куб) + static (5 float: basePos, scale, color) + dynamic (2 float: depth, pan) = **2048 Б/кадр вместо 20480 Б** (10×, `30c1a492`); матрица в WGSL, яркость `(bIndex+1)/128` |
 | Picking / raycasting | `js/SmartHologram.js:169-174`, `js/core/threeImports.js:29` | `new THREE.Raycaster()`, `setFromCamera`, `ray.intersectPlane` | 3 | **P2** | 🟡 только проекция на плоскость; `intersectObject(s)` НЕ используется, `state.raycaster === null` → полноценного пикинга по мешам нет |
-| Post-processing | — | **нет** (`EffectComposer`/`UnrealBloom` отсутствуют) | 1 | **P3** | ⬜ не реализовано; `beginRenderPass` в `engine/`+`3d/webgpu/` — это WebGPU-проходы, не postFX |
+| Post-processing | — | **нет** (`EffectComposer`/`UnrealBloom` отсутствуют) | 1 | **P3** | ⬜ не реализовано; `beginRenderPass` в `engine/` — это WebGPU-проходы, не postFX |
 | OrbitControls / camera controls | `js/3d/sceneSetup.js:2,149`, `js/SmartHologram.js:3,39` | `new OrbitControls(camera, renderer.domElement)` | 3 | **P1** | 🔴 Three-only, замены нет — **главный блокер Phase 4** |
-| XR / WebXR integration | `js/xr/webxr_session_manager.js`, `xr_input_handler.js`, `js/platforms/xr/xrInput.js`, `sceneSetup.js`, `init.js` | `import * as THREE from 'three'`, `renderer.xr.enabled = true`, `PerspectiveCamera` для XR | 5 | **P1** | 🔴 Three-only. В native есть `Engine._perspective`, но `getCurrentProjection()` всегда возвращает ortho → XR в native не подключён |
+| XR / WebXR integration | `js/xr/webxr_session_manager.js`, `xr_input_handler.js`, `js/platforms/xr/xrInput.js`, `sceneSetup.js`, `init.js` | `import * as THREE from 'three'`, `renderer.xr.enabled = true`, `PerspectiveCamera` для XR | 5 | **P1** | 🔴 Three-only. В native есть `Engine._perspective`, но `getCurrentProjection()` всегда возвращает ortho → XR в native не подключён; `webxr_session_manager` ссылается на `renderer.xr`, который не инстанцируется → XR-модуль фактически неактивен |
 
 ### 1.2 Three.js usage audit method (agent checklist)
 - Search patterns:
@@ -67,7 +73,7 @@ Create the inventory table below **fully populated** by the agent:
 
 The repo already contains partial WebGPU code paths/files (do not assume they are integrated fully). Agents must verify the current state:
 - `js/engine/Engine.js` uses `navigator.gpu` and `getContext('webgpu')`
-- `js/3d/webgpu/*` folder contains a native WebGPU renderer/shader placeholders
+- `js/3d/webgpu/*` folder contains a native WebGPU renderer/shader placeholders — **УДАЛЕНА 08.08** (`3d103a42`), см. таблицу ниже
 - `js/3d/sceneSetup.js` references Three’s `WebGPURenderer` from `three/examples`
 
 **Action for agents:** determine which WebGPU implementation is active today and which is experimental.
@@ -78,9 +84,13 @@ The repo already contains partial WebGPU code paths/files (do not assume they ar
 | Путь | Что это | Кто импортирует | Вердикт |
 |---|---|---|---|
 | `js/engine/*` (`Engine.js`, `HologramWebGPU.js`, `InstancedColumns.js`, `GridWireframe.js`, `columns.wgsl.js`) | **Native WebGPU**: свой `device`/`context`, свои матрицы, свой WGSL, свой `requestAnimationFrame`-цикл | `js/core/init.js:267` — динамический `import('../engine/HologramWebGPU.js?v=444')` | ✅ **БОЕВАЯ.** Рисует всю голограмму: 256 столбцов + сетка + оси + сферы |
-| `js/3d/webgpu/*` (`webgpu_renderer.js` 53 стр., `hologram_shader_webgpu.js` 27 стр.) | Заготовка нативного рендерера; тело `renderFrame` закомментировано | **никто** | ❌ **МЁРТВАЯ** заготовка (дубль `js/engine/`) |
-| `js/webgpu/*` (`interfaces/IRenderer.js`, `adapters/ThreeRendererAdapter.js`, `adapters/WebGPURendererAdapter.js`, `webgpu_rendererAdapterFactory.js`) | Контракт Phase 1 | **никто**; оба адаптера **целиком закомментированы**, фабрика — **файл 0 байт** | ❌ **МЁРТВАЯ** (Phase 1 фактически не сделана) |
+| `js/3d/webgpu/*` (`webgpu_renderer.js` 53 стр., `hologram_shader_webgpu.js` 27 стр.) | Заготовка нативного рендерера; тело `renderFrame` закомментировано | **никто** | ❌ **МЁРТВАЯ** — **УДАЛЕНА 08.08** (`3d103a42`) |
+| `js/webgpu/*` (`interfaces/IRenderer.js`, `adapters/ThreeRendererAdapter.js`, `adapters/WebGPURendererAdapter.js`, `webgpu_rendererAdapterFactory.js`) | Контракт Phase 1 | **никто**; оба адаптера **целиком закомментированы**, фабрика — **файл 0 байт** | ❌ **МЁРТВАЯ** (Phase 1 фактически не сделана) — **УДАЛЕНА 08.08** (`3d103a42`) |
 | `three/examples/jsm/renderers/webgpu/WebGPURenderer.js` в `sceneSetup.js:488-516` | WebGPU **через Three.js** (не native) | `js/3d/sceneSetup.js` | 🟡 **ЖИВАЯ** при `?renderBackend=webgpu`, с авто-fallback на WebGL |
+
+2026-08-09 18:00 MSK — **После чистки `3d103a42` остались две реализации:** боевая
+`js/engine/*` (native) и `three/examples` WebGPURenderer (через Three.js, только при
+флаге `?renderBackend=webgpu`). Обе мёртвые папки удалены, дублирования нет.
 
 2026-08-08 12:21 MSK — **Ключевой вывод, меняющий план миграции:** фактическое состояние
 репозитория **опережает** документ. Phase 2 («отрисовать один примитив») и большая часть
@@ -95,6 +105,28 @@ native WebGPU рисует саму голограмму. Флага `renderBack
 (`sceneSetup.js:15-28`) принимает `three|webgpu|hybrid`, но ветка `hybrid` намеренно
 сведена к WebGL (`sceneSetup.js:84`), тогда как реальный гибрид работает **всегда**,
 независимо от флага. То есть значение `hybrid` сегодня семантически ложно.
+
+---
+
+## 2.1 Roadmap переезда: Three.js → WebGPU+WebXR (09.08.2026)
+
+2026-08-09 18:00 MSK — **Стратегия одобрена Нейрокодером:** Three.js изымается
+полностью, замена — нативный WebGPU + WebXR. AndroidXR — **не скоро** в работу:
+это профессиональный рынок сбыта для реальных потребителей на этапе, когда XR
+уже тестируется в деле, а не в теории и не на плоских мониторах. Ниже —
+порядок шагов по блокерам (Phase 4 документа выше = финальный шаг).
+
+| Шаг | Что делаем | Где | Статус |
+|---|---|---|---|
+| 1 | **Контроль камеры без Three** — порт OrbitControls на `Engine.orbit` (входы drag/wheel/pinch → свой орбит-контроллер) | `js/3d/sceneSetup.js`, `js/SmartHologram.js`, `js/engine/Engine.js` | 🔴 блокер Phase 4 |
+| 2 | **Перенос сцены** — одна камера вместо двух (ortho native + ortho Three); убрать `THREE.Scene`/`THREE.OrthographicCamera` из `sceneSetup` | `js/3d/sceneSetup.js`, `js/core/init.js` | 🟡 две несинхронизированные камеры |
+| 3 | **Picking нативный** — заменить `THREE.Raycaster` на вычисление луча в HoloEngine (ортографический луч → ячейка сетки по pan/depth из dynamic-буфера) | `js/SmartHologram.js`, `js/core/threeImports.js` | 🟡 P2 |
+| 4 | **XR-сессия на WebXR** — `navigator.xr.requestSession('immersive-ar'/'immersive-vr')` + `XRGPUBinding` (когда Chrome статус позволит); убрать `renderer.xr` | `js/xr/webxr_session_manager.js`, `js/platforms/xr/xrInput.js` | 🔴 P1, зависит от Chrome WebGPU-XR |
+| 5 | **Вычитка Three-импортов** — по одному модулю: `hologramRenderer.js`, `hologramGridFactory.js`, `EarthZero.js`, `TorusVom.js`, `CochlearCylinder.js`, `SmartHologram.js` | все `js/3d/*`, `js/SmartHologram.js` | ⬜ |
+| 6 | **Финал** — удалить `three` из `package.json`, `threeImports.js`, сцену Three; `renderBackend='webgpu'` по умолчанию | весь репо | ⬜ = Phase 4 |
+
+**Порядок задан блокерами:** сначала камера (без неё нельзя убрать сцену), потом
+сцена, потом пикинг, потом XR. Шаги 5-6 — механическая вычитка после зелёных 1-4.
 
 ---
 
@@ -242,8 +274,13 @@ If native WebGPU causes regressions:
 
 ---
 
-## 8) Current Next Action (Phase 0)
-**Kими K2.6:** populate inventory table and produce ROI plan for Phase 1.
+## 8) Current Next Action
+
+2026-08-09 18:00 MSK — **Phase 0 ЗАВЕРШЕНА** (таблица 1.1 заполнена и отревизована
+на `f80ebb71`, roadmap — раздел 2.1). Следующий шаг — **Шаг 1 roadmap: контроль
+камеры без Three** (порт OrbitControls на `Engine.orbit`) — это главный блокер
+Phase 4. Перед стартом: подтверждение Нейрокодера, тест `renderBackend=three`
+(визуально неизменна).
 
 ---
 
