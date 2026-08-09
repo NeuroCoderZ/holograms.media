@@ -30,6 +30,16 @@ const url = require('url');
       failures++;
     }
   }
+  // 2026-08-08 16:35 MSK — раннер печатал «ALL UNIT TESTS PASSED», но выходил
+  // с кодом 1. Причина: тест может упасть АСИНХРОННО (после того, как его
+  // импорт уже разрешился) и выставить process.exitCode = 1 самостоятельно —
+  // сюда исключение не долетает, счётчик failures остаётся нулевым.
+  // Учитываем и это: сводка обязана совпадать с кодом возврата, иначе CI
+  // валится на «зелёном» прогоне, а человек читает вывод и думает, что всё ок.
+  if (process.exitCode && process.exitCode !== 0) {
+    console.error(`\nFAILED: тест выставил process.exitCode=${process.exitCode} асинхронно`);
+    return;
+  }
   if (failures) process.exit(1);
   console.log('\nALL UNIT TESTS PASSED');
 })();
