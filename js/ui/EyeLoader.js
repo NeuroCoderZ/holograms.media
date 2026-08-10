@@ -143,18 +143,27 @@ export class EyeLoader {
 
     setProgress(p) {
         this.progress = Math.max(0, Math.min(100, p));
-        
-        if (this.progress >= 100 && this.phase === 'saccade') {
-            this._targetX = this.cx;
-            this._targetY = this.cy;
-            this.phase = 'centering';
-            
-            setTimeout(() => {
-                if (this.phase === 'centering') {
-                    this._beginFlyOut();
-                }
-            }, 250);
-        }
+        this._maybeFinish();
+    }
+
+    /**
+     * Завершение возможно только из фазы 'saccade'. Раньше проверка жила прямо
+     * в setProgress: если 100% приходили, пока глаз ещё летел ('fly-in'), условие
+     * было ложным и больше не перепроверялось — веки не открывались никогда.
+     * Теперь та же проверка вызывается и из _loop() при входе в 'saccade'.
+     */
+    _maybeFinish() {
+        if (this.progress < 100 || this.phase !== 'saccade') return;
+
+        this._targetX = this.cx;
+        this._targetY = this.cy;
+        this.phase = 'centering';
+
+        setTimeout(() => {
+            if (this.phase === 'centering') {
+                this._beginFlyOut();
+            }
+        }, 250);
     }
 
     /** Улёт за симметричный край */
@@ -192,6 +201,7 @@ export class EyeLoader {
                 this._targetX = this.cx;
                 this._targetY = this.cy;
                 this.phase = 'saccade';
+                this._maybeFinish(); // 100% могли прийти ещё во время полёта
             }
         }
         else if (this.phase === 'saccade' || this.phase === 'centering') {
