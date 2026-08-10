@@ -58,11 +58,10 @@ export function startAnimationLoop(appState) {
             appState.activeCamera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
         }
 
-        if (isWebGPU) {
-            await appState.renderer.renderAsync(appState.scene, appState.activeCamera);
-        } else {
-            appState.renderer.render(appState.scene, appState.activeCamera);
-        }
+        // Шаг 3c: Three.js renderer удалён из рендера слоёв.
+        // HoloEngine рендерит голограмму (столбцы/сетка/сферы/маркеры присутствия)
+        // своим WebGPU-циклом. Three.js scene больше не рендерится.
+        // TorusVOM (legacy) будет портирован на HoloEngine отдельно (Шаг 8).
     }
 
     document.addEventListener('visibilitychange', () => {
