@@ -7,7 +7,11 @@
 import { HoloEngine } from './Engine.js';
 import { InstancedColumns } from './InstancedColumns.js';
 import { GridWireframe } from './GridWireframe.js';
+import { PresenceLayer } from './PresenceLayer.js';
 import eventBus from '../core/eventBus.js';
+
+// Максимум одновременно видимых маркеров присутствия
+const MAX_PRESENCE_MARKERS = 64;
 
 // Геометрия икосаэдра для сфер
 const SPHERE_VERTICES = (() => {
@@ -40,6 +44,12 @@ export class HologramWebGPU {
         this.latestAudioData = null;
         this.isDemoMode = true;
         this._frameCount = 0;
+
+        // Нативный слой «маркеров присутствия» (замена Three.js EarthZero)
+        this.presence = new PresenceLayer();
+        this.presenceDataBuffer = null;
+        this.presenceColorBuffer = null;
+        this._lastFrameTime = performance.now();
 
         console.log('[HoloEngine] 🏗️ Конструктор создан');
 
@@ -269,6 +279,16 @@ export class HologramWebGPU {
         });
         device.queue.writeBuffer(this.sphereColorBuffer, 0, colorBufferData);
 
+        // Динамические буферы маркеров присутствия (максимум MAX_PRESENCE_MARKERS)
+        this.presenceDataBuffer = device.createBuffer({
+            size: MAX_PRESENCE_MARKERS * 16,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        this.presenceColorBuffer = device.createBuffer({
+            size: MAX_PRESENCE_MARKERS * 16,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+
         this.spherePipeline = device.createRenderPipeline({
             layout: device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
             vertex: {
@@ -297,13 +317,54 @@ export class HologramWebGPU {
         this.sphereIndexCount = SPHERE_INDICES.length;
     }
 
+    /**
+     * Добавить/обновить маркер присутствия другого клиента (нативный EarthZero).
+     * @param {string} peerId — уникальный ID пира
+     * @param {{x:number,y:number,z:number}} position — позиция в юнитах голограммы
+     * @param {number} intensity — сила активности 0..1
+     */
+    addPresenceMarker(peerId, position, intensity = 1.0) {
+        this.presence.addMarker(peerId, position, intensity);
+    }
+
+    /** Удалить маркер присутствия пира. */
+    removePresenceMarker(peerId) {
+        this.presence.removeMarker(peerId);
+    }
+
+    /** Обновить буферы маркеров из PresenceLayer. Возвращает число маркеров. */
+    _syncPresenceBuffers() {
+        const now = performance.now();
+        const dt = Math.min((now - this._lastFrameTime) / 1000, 0.1);
+        this._lastFrameTime = now;
+
+        const batch = this.presence.update(dt);
+        if (!batch || batch.count === 0) return 0;
+
+        const count = Math.min(batch.count, MAX_PRESENCE_MARKERS);
+        this.engine.device.queue.writeBuffer(
+            this.presenceDataBuffer, 0, batch.data.subarray(0, count * 4));
+        this.engine.device.queue.writeBuffer(
+            this.presenceColorBuffer, 0, batch.colors.subarray(0, count * 4));
+        return count;
+    }
+
     _drawSpheres(pass) {
+        // Статические сферы-«якоря» (центр/право/лево/верх)
         pass.setPipeline(this.spherePipeline);
         pass.setVertexBuffer(0, this.vertexBuffer);      
         pass.setVertexBuffer(1, this.sphereDataBuffer);  
         pass.setVertexBuffer(2, this.sphereColorBuffer); 
         pass.setIndexBuffer(this.indexBuffer, 'uint16');
         pass.drawIndexed(this.sphereIndexCount, 4);
+
+        // Динамические маркеры присутствия (нативный EarthZero)
+        const presenceCount = this._syncPresenceBuffers();
+        if (presenceCount > 0) {
+            pass.setVertexBuffer(1, this.presenceDataBuffer);
+            pass.setVertexBuffer(2, this.presenceColorBuffer);
+            pass.drawIndexed(this.sphereIndexCount, presenceCount);
+        }
     }
 
     _renderLoop = () => {

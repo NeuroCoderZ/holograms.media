@@ -406,15 +406,10 @@ export async function initCore(options = {}) {
       // 11. Подключение Кошелька (Hermaion)
       state.wallet = hermaionWallet;
       
-      // 12. EarthZero: Shared WebXR Layer
-      try {
-          const { EarthZero } = await import('../3d/EarthZero.js');
-          state.earthZero = new EarthZero(state.scene);
-      } catch (e) {
-          console.warn('[EarthZero] Layer skip:', e);
-      }
-
-      console.log('✅ Web3 & Tria Memory modules (Stage 1 + EarthZero) initialized');
+      // 12. Нативный слой маркеров присутствия (замена Three.js EarthZero)
+      // Маркеры рисует HoloEngine (PresenceLayer) — отдельная сцена Three не нужна.
+      state.earthZero = null; // legacy-поле удалено: маркеры живут в holoEngine.engine.presence
+      console.log('✅ Web3 & Tria Memory modules (Stage 1 + PresenceLayer) initialized');
 
       // --- Stage 2: Data Pipeline (Takt 0 -> Soma -> Obolos) ---
       state.lastGestureFrameRaw = null;
@@ -591,23 +586,21 @@ export async function initCore(options = {}) {
           if (msg.type === 'intent-delta' && msg.payload.type === 'soma_delta') {
               eventBus.emit('tria:resonance', { peerId, delta: msg.payload });
               
-              // Визуализация в EarthZero (H-3: Детерминированные позиции на основе peerId)
-              if (state.earthZero) {
-                  // Генерируем псевдо-случайную позицию на основе хеша peerId
-                  const hash = (str) => {
-                      let h = 0;
-                      for(let i=0; i<str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
-                      return h;
-                  };
-                  const h = hash(peerId);
-                  const pos = {
-                      x: ((h % 100) / 100 - 0.5) * 10,
-                      y: 1.2 + ((Math.abs(h >> 8) % 100) / 100) * 1.5,
-                      z: ((Math.abs(h >> 16) % 100) / 100 - 0.5) * 10
-                  };
-                  const intensity = msg.payload.confidence || 0.5;
-                  state.earthZero.addEcho(peerId, pos, intensity);
-              }
+              // Визуализация маркера присутствия (нативный HoloEngine, замена EarthZero)
+              // H-3: Детерминированные позиции на основе peerId
+              const hash = (str) => {
+                  let h = 0;
+                  for(let i=0; i<str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+                  return h;
+              };
+              const h = hash(peerId);
+              const pos = {
+                  x: ((h % 100) / 100 - 0.5) * 10,
+                  y: 1.2 + ((Math.abs(h >> 8) % 100) / 100) * 1.5,
+                  z: ((Math.abs(h >> 16) % 100) / 100 - 0.5) * 10
+              };
+              const intensity = msg.payload.confidence || 0.5;
+              state.holoEngine?.engine?.addPresenceMarker(peerId, pos, intensity);
           }
       });
 

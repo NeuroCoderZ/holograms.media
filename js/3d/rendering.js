@@ -38,9 +38,8 @@ export function startAnimationLoop(appState) {
             appState.animateReturn();
         }
 
-        if (appState.earthZero) {
-            appState.earthZero.update(deltaTime);
-        }
+        // Маркеры присутствия обновляются внутри HoloEngine (PresenceLayer).
+        // legacy `state.earthZero` удалён в Шаге 3a — Three-слой не нужен.
 
         // Динамическое центрирование камеры (lerp setViewOffset)
         if (appState.updateViewOffset) {
