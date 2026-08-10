@@ -83,21 +83,23 @@ try {
 console.log('\n📚 Generating knowledge base files...');
 try {
     console.log('   📦 Holograms.Media context...');
-    execSync('npx repomix --style xml --output repomix-output.xml --no-security-check', { 
+    // ТОЛЬКО txt: облачные LLM не читают xml (правило NeuroCoderZ, 10.08.2026).
+    // Стиль и путь берутся из repomix.config.json — флаги не передаём.
+    execSync('npx repomix --no-security-check', { 
         stdio: 'inherit', 
         cwd: ROOT,
         shell: true
     });
-    console.log('   ✅ repomix-output.xml generated');
+    console.log('   ✅ repomix-output.txt generated');
     
     if (fs.existsSync(NEUROESCROW_DIR)) {
         console.log('   📦 NeuroEscrow context...');
-        execSync('npx repomix', { 
+        execSync('npx repomix --style plain --output repomix-output.txt', { 
             stdio: 'inherit', 
             cwd: NEUROESCROW_DIR,
             shell: true
         });
-        console.log('   ✅ neuroescrow/repomix-output.md generated');
+        console.log('   ✅ neuroescrow/repomix-output.txt generated');
     } else {
         console.log('   ⏭️  NeuroEscrow directory not found, skipping...');
     }
@@ -214,11 +216,11 @@ function deployNeuroEscrow() {
     }
     
     console.log('\n📦 Step 2: Using pre-generated RepoMix context...');
-    const repomixPath = path.join(NEUROESCROW_DIR, 'repomix-output.md');
+    const repomixPath = path.join(NEUROESCROW_DIR, 'repomix-output.txt');
     if (!fs.existsSync(repomixPath)) {
-        throw new Error('repomix-output.md not found! Run npm run deploy first.');
+        throw new Error('repomix-output.txt not found! Run npm run deploy first.');
     }
-    console.log('   ✅ repomix-output.md ready');
+    console.log('   ✅ repomix-output.txt ready');
     
     console.log('\n📦 Step 3: Deploying to Cloudflare Workers...');
     try {

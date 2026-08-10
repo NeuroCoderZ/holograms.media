@@ -4,22 +4,30 @@
     "style": "plain",
     "removeComments": false,
     "removeEmptyLines": true,
-    "topFilesLength": 10,
+    "topFilesLength": 20,
     "showLineNumbers": true,
     "copyToClipboard": false
   },
-  "repomixVersion": "1.15.0",
+  "repomixVersion": "1.18.0",
   "include": [
     "js/**/*.js",
     "backend/**/*.py",
     "holocore/**/*.rs",
+    "tests/unit/**/*.js",
+    "tests/unit/**/*.mjs",
+    "docs/*.md",
     "docs/ARCH/**/*.md",
     "docs/RU/*.md",
     "docs/EN/*.md",
+    "WEBGPU_MIGRATION.md",
+    "WEB_STACK.md",
+    "TOKENOMICS.md",
     "QWEN.md",
     "AGENTS.md",
     "package.json",
-    "version.txt"
+    "version.txt",
+    "scripts/deploy.js",
+    "scripts/run_tests.sh"
   ],
   "ignore": {
     "useGitignore": true,
@@ -49,7 +57,12 @@
       "**/reports/**",
       "**/screenshots/**",
       "**/docs/ARCH/RU/Legal/**",
-      "**/docs/ARCH/RU/Guides/ManualTestingGuide.md"
+      "**/docs/ARCH/RU/Guides/ManualTestingGuide.md",
+      "**/.wasm-backup-*/**",
+      "**/*.wasm",
+      "**/public/wasm/**",
+      "**/js/vendor/**",
+      "**/docs/archive/**"
     ]
   },
   "security": {

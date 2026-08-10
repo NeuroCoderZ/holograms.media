@@ -66,7 +66,7 @@ venv/**
 __pycache__/**
 docs/archive/**
 docs/temp_scripts/**
-*.txt
+# ВАЖНО: не глушим *.txt целиком — version.txt входит в include конфига.
 *.report.json
 progress_*.json
 public/sql-wasm.js
@@ -75,3 +75,8 @@ reports/**
 conductor/**
 brain/**
 coverage/**
+# бинарники и бэкапы wasm (deploy.js делает git add -A)
+.wasm-backup-*/**
+*.wasm
+repomix-output.md
+
