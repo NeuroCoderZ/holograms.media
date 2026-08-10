@@ -124,7 +124,7 @@ native WebGPU рисует саму голограмму. Флага `renderBack
 | Шаг | Что делаем | Где | Статус |
 |-----|-----------|-----|--------|
 | 1 | **Контроль камеры без Three** — drag/wheel/pinch → `Engine.orbit/setZoom` | `js/engine/Engine.js`, `js/core/gestures.js` | ✅ **DONE 10.08** (`a4551681`): wheel-зум добавлен (`zoomBy`), мёртвый `InteractionManager.js` удалён |
-| 2 | **Одна камера-источник** — `state.camera` ↔ HoloEngine синхронны (убрать 2 несинхронизированные) | `js/3d/sceneSetup.js`, `js/core/init.js` | 🟡 две несинхронизированные камеры |
+| 2 | **Одна камера-источник** — `state.camera` ↔ HoloEngine синхронны (убрать 2 несинхронизированные) | `js/3d/sceneSetup.js`, `js/3d/rendering.js`, `js/engine/Engine.js` | ✅ **DONE 10.08** (`5c454206`): `Engine.getCameraPose()`, rendering.js отражает позу HoloEngine в activeCamera (не-XR); + `docs/GLOSSARY.md` (единый словарь) |
 | 3 | **Портировать слои (EarthZero/жесты) на граф HoloEngine** — разблокирует удаление `THREE.Scene` | `js/3d/sceneSetup.js`, `js/core/init.js`, `js/3d/EarthZero.js`, `js/core/gestures.js` | ⬜ БЛОКЕР для Шага 4 |
 | 4 | **Удалить `THREE.Scene`/`OrthographicCamera`** из sceneSetup — перенос сцены завершён | `js/3d/sceneSetup.js` | ⬜ зависит от Шага 3 |
 | 5 | **Picking нативный** — заменить `THREE.Raycaster` на луч в HoloEngine (по pan/depth из dynamic-буфера) | `js/SmartHologram.js`, `js/core/threeImports.js` | 🟡 P2 |
