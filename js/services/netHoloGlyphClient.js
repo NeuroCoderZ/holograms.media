@@ -348,7 +348,12 @@ class NetHoloGlyphClient {
 
     sendQuantum(quantumData) {
         if (this.dataChannel && this.dataChannel.readyState === 'open') {
-            this.dataChannel.send(JSON.stringify(quantumData));
+            // Шаг 7: штампуем отправителя централизованно. Без этого приёмник
+            // не мог различить пиров и схлопывал все маркеры присутствия в один.
+            const payload = (quantumData && typeof quantumData === 'object' && !Array.isArray(quantumData))
+                ? { peerId: this.userId, ...quantumData }
+                : quantumData;
+            this.dataChannel.send(JSON.stringify(payload));
         }
     }
 

@@ -411,6 +411,33 @@ export async function initCore(options = {}) {
       state.earthZero = null; // legacy-поле удалено: маркеры живут в holoEngine.engine.presence
       console.log('✅ Web3 & Tria Memory modules (Stage 1 + PresenceLayer) initialized');
 
+      // Шаг 7 (контракт состояния): приём квантов из WebRTC-канала 'hologlyph-data'.
+      // До 10.08.2026 netHoloGlyphClient эмитил 'netQuantum' в пустоту (0 подписчиков),
+      // а gesture_frame от пиров молча терялся: приёмник ниже ждёт только
+      // intent-delta/soma_delta из TriaCollectiveService (другой транспорт).
+      eventBus.on('netQuantum', (quantum) => {
+          if (!quantum || quantum.type !== 'gesture_frame') return;
+
+          const peerId = quantum.peerId || quantum.userId || 'peer-unknown';
+          const hands = quantum.hands || {};
+          const hand = hands.right || hands.left;
+          if (!hand || hand.active === false) return;
+
+          // Контракт кисти (gestureManager.js:120-126): {frequency 0..127, pan -1..1,
+          // gain 0..1, bandwidth, active}. Переводим в метрический кадр PresenceLayer.
+          const pan = Math.max(-1, Math.min(1, hand.pan ?? 0));
+          const freqNorm = Math.max(0, Math.min(1, (hand.frequency ?? 64) / 127));
+          const gain = Math.max(0, Math.min(1, hand.gain ?? 0.5));
+
+          const pos = {
+              x: pan * 5,                 // pan -1..1 → ±5 ед. по ширине
+              y: 1.2 + freqNorm * 1.5,    // высота тона → высота маркера
+              z: (gain - 0.5) * 10,       // глубина ладони → ±5 ед. по Z
+          };
+          const intensity = Math.min(1, Math.max(0.15, gain));
+          state.holoEngine?.engine?.addPresenceMarker(peerId, pos, intensity);
+      });
+
       // --- Stage 2: Data Pipeline (Takt 0 -> Soma -> Obolos) ---
       state.lastGestureFrameRaw = null;
       state.lastAudioSpectrum = null;
