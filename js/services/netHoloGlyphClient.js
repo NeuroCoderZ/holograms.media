@@ -224,9 +224,8 @@ class NetHoloGlyphClient {
         this.fallbackActive = true;
         this.fallbackPollCount = 0;
         this.maxPollAttempts = 10; // Stop after 10 failed attempts
+        this.fallbackCursor = null; // id последнего обработанного сообщения
         console.warn('[NetHoloGlyphClient] Starting long-poll fallback (poll interval ' + this.fallbackPollInterval + 'ms, max ' + this.maxPollAttempts + ' attempts)');
-
-        const pollUrl = (this.signalingServerUrl || '').replace(/^wss?:/, (m) => m === 'wss:' ? 'https:' : 'http:') + (this.roomId ? `/${this.roomId}/poll` : '/poll');
 
         const pollOnce = async () => {
             this.fallbackPollCount++;
@@ -235,16 +234,29 @@ class NetHoloGlyphClient {
                 this.stopFallbackPolling();
                 return;
             }
+            if (!this.roomId) return;
+
+            // Контракт бэкенда: GET /ws/signaling/{room_id}/poll
+            //   → { room_id, peer_id, messages: [{id, sender_id, payload}], cursor }
+            // payload — строка с исходным JSON сигналинг-сообщения.
+            const params = new URLSearchParams();
+            if (this.userId) params.set('peer_id', this.userId);
+            if (this.fallbackCursor) params.set('after', this.fallbackCursor);
+            const pollUrl = `${this._httpSignalingBase()}/${this.roomId}/poll?${params.toString()}`;
+
             try {
-                const res = await fetch(pollUrl);
+                const res = await fetch(pollUrl, { headers: this._authHeaders() });
                 if (!res.ok) return;
-                const messages = await res.json();
-                if (Array.isArray(messages)) {
-                    for (const msg of messages) {
-                        // emulate onmessage
-                        if (this.websocket && typeof this.websocket.onmessage === 'function') {
-                            this.websocket.onmessage({ data: JSON.stringify(msg) });
-                        }
+
+                const data = await res.json();
+                const messages = Array.isArray(data?.messages) ? data.messages : [];
+                if (data?.cursor) this.fallbackCursor = data.cursor;
+
+                for (const msg of messages) {
+                    // Успешный ответ = сигналинг жив, счётчик неудач сбрасываем.
+                    this.fallbackPollCount = 0;
+                    if (this.websocket && typeof this.websocket.onmessage === 'function') {
+                        this.websocket.onmessage({ data: msg.payload });
                     }
                 }
             } catch (e) {
@@ -346,16 +358,47 @@ class NetHoloGlyphClient {
             return;
         }
 
-        // Шаг 7 (10.08.2026): fallback односторонний — long-poll только ПРИНИМАЕТ,
-        // отправить answer/candidate при мёртвом сокете нечем, поэтому WebRTC
-        // через fallback не поднимется.
-        //
-        // Почини НЕ здесь: в backend/routers/signaling.py есть только WebSocket-роуты
-        // (/ws/signaling, /ws/signaling/{room_id}). HTTP-эндпоинтов /poll и /send
-        // не существует вовсе — существующий pollOnce() тоже стучится в 404 и молча
-        // гасит ошибку в catch. Сначала нужен HTTP-сигналинг на бэкенде, затем
-        // парная отправка здесь.
-        console.warn('[NetHoloGlyphClient] Signaling unavailable (socket closed) — message dropped:', message?.type);
+        // Шаг 7 (10.08.2026): HTTP-фолбэк. Раньше long-poll только ПРИНИМАЛ, а отправить
+        // answer/candidate при мёртвом сокете было нечем — WebRTC через фолбэк не поднимался.
+        // Бэкенд теперь отдаёт POST /ws/signaling/{room_id}/send (backend/routers/signaling.py).
+        if (this.fallbackActive && this.roomId) {
+            this._sendViaFallback(message);
+            return;
+        }
+
+        console.warn('[NetHoloGlyphClient] Signaling unavailable (socket closed, no fallback) — message dropped:', message?.type);
+    }
+
+    /** Базовый HTTP-URL сигналинга: wss://host/ws/signaling → https://host/ws/signaling */
+    _httpSignalingBase() {
+        return (this.signalingServerUrl || '').replace(/^wss?:/, (m) => (m === 'wss:' ? 'https:' : 'http:'));
+    }
+
+    /** Заголовки с JWT — эндпоинты фолбэка требуют аутентификации, как и WebSocket. */
+    _authHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        try {
+            const token = typeof localStorage !== 'undefined' ? localStorage.getItem('jwtToken') : null;
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+        } catch (e) { /* localStorage недоступен — уйдём без токена */ }
+        return headers;
+    }
+
+    /** Отправка сигналинг-сообщения по HTTP, когда WebSocket недоступен. */
+    async _sendViaFallback(message) {
+        const url = `${this._httpSignalingBase()}/${this.roomId}/send?peer_id=${encodeURIComponent(this.userId || '')}`;
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: this._authHeaders(),
+                body: JSON.stringify(message),
+            });
+            if (!res.ok) {
+                console.warn(`[NetHoloGlyphClient] Fallback send failed (${res.status}):`, message?.type);
+            }
+        } catch (e) {
+            console.warn('[NetHoloGlyphClient] Fallback send error:', e?.message);
+        }
     }
 
     sendQuantum(quantumData) {

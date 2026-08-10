@@ -1,6 +1,6 @@
 {
   "name": "Hermes (Tria Cortex v2.6)",
-  "version": "0.20.583",
+  "version": "0.20.584",
   "description": "Post-symbolic multimodal agent for gesture/audio/intent resonance. Combines MediaPipe hand tracking, BasilaQ-256 audio spectrum analysis, and Enkephalon neural memory for non-symbolic AI interaction.",
   "agent_id": "hermes_tria_v2.6",
   "organization": {
@@ -150,7 +150,7 @@
     "documentation": "https://holograms.media/docs",
     "status": "production",
     "uptime_percent": 99.5,
-    "last_updated": "2026-08-10T14:59:20.171Z"
+    "last_updated": "2026-08-10T16:48:04.055Z"
   },
   "discovery": {
     "tags": [
