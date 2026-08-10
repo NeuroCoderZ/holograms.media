@@ -134,6 +134,14 @@ native WebGPU рисует саму голограмму. Флага `renderBack
 | 9 | **Финал** — удалить `three` из `package.json`, `threeImports.js`, сцену Three; `renderBackend='webgpu'` по умолчанию | весь репо | ⬜ = Phase 4 |
 
 **Отдельная недоделка (вне шагов миграции):**
+- 🔴 **Fallback-сигналинг не существует на бэкенде (найдено 10.08.2026).**
+  `netHoloGlyphClient.startFallbackPolling()` стучится в `<host>/{roomId}/poll`, а
+  `backend/routers/signaling.py` содержит ТОЛЬКО WebSocket-роуты (`/ws/signaling`,
+  `/ws/signaling/{room_id}`). HTTP-эндпоинтов `/poll` и `/send` нет вовсе → long-poll
+  всегда получает 404 и молча гасит ошибку в `catch`. Плюс fallback односторонний:
+  `sendMessage` при мёртвом сокете не может отправить answer/candidate.
+  Итог: **при падении WebSocket мультиплеер не восстанавливается**.
+  Чинить на бэкенде (HTTP-сигналинг), затем парная отправка на клиенте.
 - ✅ **ИСПРАВЛЕНО 10.08.2026** — `tests/unit/test_net_hologlyph_reconnect.test.js`.
   Реальная причина оказалась НЕ асинхронной гонкой (прежняя запись была неверной):
   `connect()` делает ранний `return` при отсутствии JWT (`netHoloGlyphClient.js:87-90`),

@@ -343,7 +343,19 @@ class NetHoloGlyphClient {
     sendMessage(message) {
         if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
             this.websocket.send(JSON.stringify(message));
+            return;
         }
+
+        // Шаг 7 (10.08.2026): fallback односторонний — long-poll только ПРИНИМАЕТ,
+        // отправить answer/candidate при мёртвом сокете нечем, поэтому WebRTC
+        // через fallback не поднимется.
+        //
+        // Почини НЕ здесь: в backend/routers/signaling.py есть только WebSocket-роуты
+        // (/ws/signaling, /ws/signaling/{room_id}). HTTP-эндпоинтов /poll и /send
+        // не существует вовсе — существующий pollOnce() тоже стучится в 404 и молча
+        // гасит ошибку в catch. Сначала нужен HTTP-сигналинг на бэкенде, затем
+        // парная отправка здесь.
+        console.warn('[NetHoloGlyphClient] Signaling unavailable (socket closed) — message dropped:', message?.type);
     }
 
     sendQuantum(quantumData) {
