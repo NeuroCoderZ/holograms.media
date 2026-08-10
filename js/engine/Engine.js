@@ -62,6 +62,14 @@ export class HoloEngine {
         this._updateProjection();
     }
 
+    /**
+     * Приращение масштаба (замена wheel-зума OrbitControls).
+     * @param {number} factor — множитель (>1 — приблизить, <1 — отдалить).
+     */
+    zoomBy(factor) {
+        this.setZoom(this.camera.zoom * factor);
+    }
+
     /** Плавный возврат в исходное положение (аналог TWEEN в gestures.js). */
     resetOrbit() {
         this.camera.yaw = 0;

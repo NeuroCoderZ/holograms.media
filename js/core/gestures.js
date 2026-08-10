@@ -101,6 +101,20 @@ export function initializeHammerGestures(passedState) { // Changed signature
     cam.setZoom(scale);
   });
 
+  // Обработчик колеса мыши (wheel-зум, замена OrbitControls)
+  target.addEventListener('wheel', ev => {
+    if (localStateRef.isXRMode) return;
+
+    const cam = getEngineCamera();
+    if (!cam) return;
+
+    ev.preventDefault();
+    // deltaY > 0 (крутим вниз) — отдаляем, deltaY < 0 — приближаем.
+    // Стандартный фактор 0.9/1.1 даёт плавный дискретный зум.
+    const factor = ev.deltaY > 0 ? 0.9 : 1.1;
+    cam.zoomBy(factor);
+  }, { passive: false });
+
   // Обработчик окончания жестов (плавный возврат к нейтральному положению)
   hammer.on('panend pinchend', () => {
     if (localStateRef.isXRMode) return;
