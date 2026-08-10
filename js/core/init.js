@@ -918,7 +918,10 @@ export async function initCore(options = {}) {
     console.log('✅ Обработчики аудио плеера инициализированы');
 
     // --- MediaPipe Hands Initialization — SKIP в TG (нет getUserMedia) ---
-    if (!telegramMode) {
+    // Камера включается ТОЛЬКО при явно данном согласии (2026-08-11).
+    // В гостевом режиме сенсоры не запускаются: это делает отказ настоящим,
+    // а не декоративным. См. docs/RU/LEGAL_STRATEGY.md §6.
+    if (!telegramMode && state.sensorsAllowed !== false) {
       try {
         const { initializeMediaPipeHands, startVideoStream } = await import('../multimodal/handsTracking.js');
         initializeMediaPipeHands();
@@ -933,6 +936,8 @@ export async function initCore(options = {}) {
       } catch (mpError) {
         console.error('❌ Failed to initialize MediaPipe Hands:', mpError);
       }
+    } else if (state.sensorsAllowed === false) {
+      console.log('[Core] Гостевой режим — камера и трекинг рук не запускаются');
     } else {
       console.log('[Core] TG mode — skipping MediaPipe Hands');
     }

@@ -89,10 +89,13 @@ async function main() {
             console.warn("[Main] MicrophoneManager failed (possible in some WebViews):", micError);
         }
 
-        // 2. Менеджер согласия
+        // 2. Менеджер согласия — БЛОКИРУЮЩИЙ шаг.
+        // Ждём явного выбора пользователя: до него сенсоры не включаются.
         const consentManager = new ConsentManager(state);
         state.consentManager = consentManager;
-        await consentManager.initialize();
+        const consent = await consentManager.initialize();
+        state.sensorsAllowed = consent.mode === 'accepted';
+        console.log(`[Main] Режим согласия: ${consent.mode}, сенсоры: ${state.sensorsAllowed}`);
         loader.setProgress(35);
 
         // 3. Core (3D, Рендерер) — с TG-aware флагами
