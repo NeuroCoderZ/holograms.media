@@ -116,28 +116,34 @@ native WebGPU рисует саму голограмму. Флага `renderBack
 уже тестируется в деле, а не в теории и не на плоских мониторах. Ниже —
 порядок шагов по блокерам (Phase 4 документа выше = финальный шаг).
 
-2026-08-10 09:22 MSK — **Стратегия ужесточена (см. раздел 8): ПОЛНЫЙ отказ от Three.**
-Медиа-пути миграции ниже остаются блокерами, но цель теперь — **полностью** нативный
-WebGPU + WebXR + Socket/RTC. Шаг 1 (камера) — активен.
+2026-08-10 09:39 MSK — **Стратегия ужесточена (см. раздел 8 и `WEB_STACK.md`): ПОЛНЫЙ отказ
+от Three.** Цель — согласованный стек WebGPU + WebXR + WebSocket + WebRTC
+(`WEB_STACK.md` — целевая архитектура, оси, потоки данных, связный порядок).
+Ниже — выполнение по связности, а не «выпиливание по файлу».
 
 | Шаг | Что делаем | Где | Статус |
-|---|---|---|---|
-| 1 | **Контроль камеры без Three** — порт OrbitControls на `Engine.orbit` (входы drag/wheel/pinch → свой орбит-контроллер) | `js/3d/sceneSetup.js`, `js/SmartHologram.js`, `js/engine/Engine.js` | ✅ **DONE 10.08** (`a4551681`): drag/pinch уже шли в `Engine.orbit/setZoom`, добавлен wheel-зум (`zoomBy` + handler в `gestures.js`), удалён мёртвый `InteractionManager.js` |
-| 2 | **Перенос сцены** — одна камера вместо двух (ortho native + ortho Three); убрать `THREE.Scene`/`THREE.OrthographicCamera` из `sceneSetup` | `js/3d/sceneSetup.js`, `js/core/init.js` | 🟡 две несинхронизированные камеры |
-| 3 | **Picking нативный** — заменить `THREE.Raycaster` на вычисление луча в HoloEngine (ортографический луч → ячейка сетки по pan/depth из dynamic-буфера) | `js/SmartHologram.js`, `js/core/threeImports.js` | 🟡 P2 |
-| 4 | **XR-сессия на WebXR** — `navigator.xr.requestSession('immersive-ar'/'immersive-vr')` + `XRGPUBinding` (когда Chrome статус позволит); убрать `renderer.xr` | `js/xr/webxr_session_manager.js`, `js/platforms/xr/xrInput.js` | 🔴 P1, зависит от Chrome WebGPU-XR |
-| 5 | **Вычитка Three-импортов** — по одному модулю: `hologramRenderer.js`, `hologramGridFactory.js`, `EarthZero.js`, `TorusVom.js`, `CochlearCylinder.js`, `SmartHologram.js` | все `js/3d/*`, `js/SmartHologram.js` | ⬜ |
-| 6 | **Финал** — удалить `three` из `package.json`, `threeImports.js`, сцену Three; `renderBackend='webgpu'` по умолчанию | весь репо | ⬜ = Phase 4 |
+|-----|-----------|-----|--------|
+| 1 | **Контроль камеры без Three** — drag/wheel/pinch → `Engine.orbit/setZoom` | `js/engine/Engine.js`, `js/core/gestures.js` | ✅ **DONE 10.08** (`a4551681`): wheel-зум добавлен (`zoomBy`), мёртвый `InteractionManager.js` удалён |
+| 2 | **Одна камера-источник** — `state.camera` ↔ HoloEngine синхронны (убрать 2 несинхронизированные) | `js/3d/sceneSetup.js`, `js/core/init.js` | 🟡 две несинхронизированные камеры |
+| 3 | **Портировать слои (EarthZero/жесты) на граф HoloEngine** — разблокирует удаление `THREE.Scene` | `js/3d/sceneSetup.js`, `js/core/init.js`, `js/3d/EarthZero.js`, `js/core/gestures.js` | ⬜ БЛОКЕР для Шага 4 |
+| 4 | **Удалить `THREE.Scene`/`OrthographicCamera`** из sceneSetup — перенос сцены завершён | `js/3d/sceneSetup.js` | ⬜ зависит от Шага 3 |
+| 5 | **Picking нативный** — заменить `THREE.Raycaster` на луч в HoloEngine (по pan/depth из dynamic-буфера) | `js/SmartHologram.js`, `js/core/threeImports.js` | 🟡 P2 |
+| 6 | **XR нативно** — `navigator.xr.requestSession` + `XRGPUBinding`; убрать `renderer.xr` | `js/xr/webxr_session_manager.js`, `js/platforms/xr/xrInput.js` | 🔴 P1, зависит от Chrome WebGPU-XR |
+| 7 | **Мультиплеер** — контракт состояния WebRTC/WS (`hologlyph-data`) над портом слоёв | `js/services/netHoloGlyphClient.js` | 🟡 сырой P2P |
+| 8 | **Вычитка Three-импортов** по модулю: `hologramRenderer.js`, `hologramGridFactory.js`, `EarthZero.js`, `TorusVom.js`, `CochlearCylinder.js`, `SmartHologram.js` | все `js/3d/*`, `js/SmartHologram.js` | ⬜ механическая после зелёных 1-7 |
+| 9 | **Финал** — удалить `three` из `package.json`, `threeImports.js`, сцену Three; `renderBackend='webgpu'` по умолчанию | весь репо | ⬜ = Phase 4 |
 
 **Отдельная недоделка (вне шагов миграции):**
 - `tests/unit/test_net_hologlyph_reconnect.test.js:68` — flaky-тест, асинхронная гонка:
   `client.connect()` создаёт сокет асинхронно, но тест читает `MockWS.created[0]`
   синхронно → `socket` = `undefined` → `TypeError: cannot read 'onopen'`.
   К камере/жестам отношения не имеет (NetHoloGlyphClient / WebSocket P2P).
-  Зафиксирован 10.08.2026; чинить отдельной задачей.
+  Зафиксирован 10.08.2026; чинить при работе над Шагом 7.
 
-**Порядок задан блокерами:** сначала камера (без неё нельзя убрать сцену), потом
-сцена, потом пикинг, потом XR. Шаги 5-6 — механическая вычитка после зелёных 1-4.
+**Порядок задан связностью (см. `WEB_STACK.md`):** камера уже без Three (Шаг 1);
+Шаг 2 убирает рассинхрон камер; Шаг 3 портирует слои на граф HoloEngine — это
+разблокирует Шаг 4 (удаление `THREE.Scene`). Дальше picking (5), XR (6),
+мультиплеер (7), механическая вычитка (8), финал (9).
 
 ---
 
