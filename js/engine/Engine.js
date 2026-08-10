@@ -56,6 +56,23 @@ export class HoloEngine {
         this._updateView();
     }
 
+    /**
+     * Поза камеры (единый источник истины для всех слоёв).
+     * Возвращает позицию «eye» из сферических координат орбиты — то, что
+     * должны разделять и нативный рендер, и Three-слои (Holoworld).
+     * @returns {{ eye: number[], target: number[] }}
+     */
+    getCameraPose() {
+        const c = this.camera;
+        const cosP = Math.cos(c.pitch);
+        const eye = [
+            c.target[0] + c.distance * cosP * Math.sin(c.yaw),
+            c.target[1] + c.distance * Math.sin(c.pitch),
+            c.target[2] - c.distance * cosP * Math.cos(c.yaw),
+        ];
+        return { eye, target: c.target.slice() };
+    }
+
     /** Масштаб ортокамеры (замена pinch-зума hologramPivot.scale). */
     setZoom(zoom) {
         this.camera.zoom = this._clamp(zoom, 0.2, 5.0);
@@ -139,11 +156,7 @@ export class HoloEngine {
 
         // yaw=0, pitch=0 → камера строго перед голограммой (смотрит в +Z),
         // что повторяет исходный кадр eye=[0,128,0] → target=[0,128,75].
-        const eye = [
-            c.target[0] + c.distance * cosP * Math.sin(c.yaw),
-            c.target[1] + c.distance * Math.sin(c.pitch),
-            c.target[2] - c.distance * cosP * Math.cos(c.yaw),
-        ];
+        const eye = this.getCameraPose().eye;
 
         this.viewMatrix = this._lookAt(eye, c.target, [0, 1, 0]);
     }

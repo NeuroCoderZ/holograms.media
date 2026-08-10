@@ -42,9 +42,21 @@ export function startAnimationLoop(appState) {
             appState.earthZero.update(deltaTime);
         }
 
-        // Dynamic camera centering (lerp setViewOffset)
+        // Динамическое центрирование камеры (lerp setViewOffset)
         if (appState.updateViewOffset) {
             appState.updateViewOffset();
+        }
+
+        // ЕДИНАЯ КАМЕРА-ИСТОЧНИК (Шаг 2): Three-слои (Holoworld, жесты, пировый мир)
+        // рендерятся активной камерой state.activeCamera. Чтобы они не рассинхронизировались
+        // с голограммой, которую HoloEngine рисует своей камерой, отражаем позу
+        // нативного движка в Three-камеру (eye/target из сферической орбиты).
+        // В XR ориентацию задаёт поза гарнитуры — синхронизацию не трогаем.
+        const holoCam = appState.holoEngine?.engine;
+        if (!appState.isXRMode && holoCam?.getCameraPose && appState.activeCamera) {
+            const pose = holoCam.getCameraPose();
+            appState.activeCamera.position.set(pose.eye[0], pose.eye[1], pose.eye[2]);
+            appState.activeCamera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
         }
 
         if (isWebGPU) {
