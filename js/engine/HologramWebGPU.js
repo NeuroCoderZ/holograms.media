@@ -62,6 +62,35 @@ export class HologramWebGPU {
             this.latestAudioData = null;
             this.isDemoMode = true;
         });
+
+        // Шаг 5 (контур жестов): gestureManager эмитит 'gesture:modify' (Шаг 3b).
+        // Применяем к нативным параметрам голограммы. Раньше это шло в мёртвый SmartHologram.
+        eventBus.on('gesture:modify', ({ param, value }) => {
+            this._applyGestureParam(param, value);
+        });
+    }
+
+    /** Применение параметра модификации жестом к нативной голограмме. */
+    _applyGestureParam(param, value) {
+        if (!this.engine || typeof value !== 'number' || !Number.isFinite(value)) return;
+        switch (param) {
+            case 'axisRotation':
+                this.engine.orbit((value ?? 0) * 0.05, 0);
+                break;
+            case 'scale':
+                this.engine.zoomBy(1 + (value ?? 0) * 0.1);
+                break;
+            case 'color':
+            case 'visualIntensity':
+                this._hueOffset = (this._hueOffset || 0) + (value ?? 0) * 0.02;
+                break;
+            case 'audioFrequency':
+                // Частота аудио управляет тоном — эффект применяется в этом кадре.
+                this._freqBias = value ?? 0;
+                break;
+            default:
+                break;
+        }
     }
 
     async init() {
