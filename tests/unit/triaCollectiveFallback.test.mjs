@@ -41,6 +41,8 @@ class CollectiveModel {
 
     stopHttpFallback() {
         this._httpFallbackTimer = null;
+        if (this._signaling === 'http-fallback') this._signaling = null;
+        this._httpCursor = null;
     }
 
     _handleSignalingMessage(msg) {
@@ -140,5 +142,18 @@ const t = c._httpFallbackTimer;
 c._startHttpFallback('wss://other/ws/signaling/roomY');
 assert.strictEqual(c._httpFallbackTimer, t, 'повторный вызов не должен создавать второй таймер');
 assert.ok(c._httpBaseUrl.includes('roomX'), 'адрес не перезаписывается на лету');
+
+// ─── 9. Возврат WebSocket останавливает фолбэк и переключает транспорт ────
+// Фолбэк поднимается на ПЕРВОМ обрыве (не после 5 реконнектов — это 31 секунда
+// простоя), поэтому обратный переход обязан быть корректным: иначе _sendSignaling
+// продолжит слать по HTTP при уже живом сокете.
+c.stopHttpFallback();
+assert.strictEqual(c._httpFallbackTimer, null, 'таймер поллинга снят');
+assert.notStrictEqual(c._signaling, 'http-fallback', 'режим фолбэка сброшен');
+assert.strictEqual(c._httpCursor, null, 'курсор сброшен — при новом обрыве читаем заново');
+
+c._ws = { readyState: 1 };
+c._sendSignaling({ type: 'offer' });
+assert.strictEqual(c.sent.at(-1).via, 'ws', 'после возврата сокета сигналинг снова идёт по WebSocket');
 
 console.log('PASS');

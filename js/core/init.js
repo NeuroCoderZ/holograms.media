@@ -721,10 +721,33 @@ export async function initCore(options = {}) {
           // ─── Wiring: ChunkProcessor → EmbeddingStream → PredictiveRAG → Bridge ───
           if (chunkProcessor && embeddingStream && predictiveRAG) {
               eventBus.on('eidos:chunkReady', (chunk) => {
-                  const embedding = embeddingStream.encode(chunk);
-                  if (embedding) {
+                  try {
+                      const embedding = embeddingStream.encode(chunk);
+                      if (!embedding) return;
+
                       const ragResult = predictiveRAG.search(embedding, chunk.index);
-                      state.hermaionBridge.onPredictiveResult(ragResult);
+
+                      // Раньше здесь вызывался несуществующий hermaionBridge.onPredictiveResult():
+                      // TypeError вылетал из async-цепочки onFrame в camera_utils, следующий
+                      // requestAnimationFrame не планировался — и цикл MediaPipe умирал.
+                      // Внешне это выглядело как «скелет руки нарисовался один раз и застыл».
+                      //
+                      // PredictiveRAG.search отдаёт {predictions:[{intent,score}], confidence,
+                      // isEarly}, а мост ждёт семантику вида {action, confidence} —
+                      // переводим одно в другое явно.
+                      const top = ragResult?.predictions?.[0];
+                      if (!top?.intent) return;
+
+                      state.hermaionBridge?.processSemanticIntent?.(
+                          {
+                              action: top.intent,
+                              confidence: ragResult.confidence ?? top.score ?? 0,
+                              raw_score: top.score ?? 0,
+                          },
+                          { predictedIntent: top.intent, isEarly: ragResult.isEarly },
+                      );
+                  } catch (e) {
+                      console.warn('[Eidos] predictive wiring error:', e.message);
                   }
               });
               console.log('✅ Pipeline: ChunkProcessor → EmbeddingStream → PredictiveRAG → HermaionBridge');

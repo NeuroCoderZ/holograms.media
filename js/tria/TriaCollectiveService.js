@@ -48,7 +48,10 @@ export default class TriaCollectiveService {
         this._signaling = signalingUrl;
         this._ws.send(JSON.stringify({ type: 'register', peerId: this._selfId }));
         retryCount = 0;
-        
+
+        // Сокет вернулся — HTTP-поллинг больше не нужен (он поднимается на onclose
+        // и работает параллельно с попытками реконнекта).
+        this.stopHttpFallback();
         if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
         this._heartbeatInterval = setInterval(() => {
             if (this._ws && this._ws.readyState === WebSocket.OPEN) {
@@ -76,17 +79,21 @@ export default class TriaCollectiveService {
       this._ws.onclose = (e) => {
         console.log('[TriaCollective] WebSocket closed, code:', e.code);
         if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
-        
+
+        // Фолбэк поднимаем СРАЗУ на первом обрыве, не дожидаясь исчерпания реконнектов.
+        // Раньше он включался только после 5 попыток (1+2+4+8+16 с) — 31 секунда
+        // без сигналинга, для мультиплеера это вечность. Теперь HTTP-поллинг работает
+        // параллельно с попытками восстановить WebSocket; когда сокет вернётся,
+        // onopen вызовет stopHttpFallback().
+        this._startHttpFallback(signalingUrl);
+
         if (retryCount < MAX_RETRIES) {
           console.log(`[TriaCollective] Reconnecting in ${RETRY_DELAY}ms (attempt ${retryCount+1}/${MAX_RETRIES})`);
           resolve({ ok: false, retry: true });
           setTimeout(() => this.connect(signalingUrl, retryCount + 1), RETRY_DELAY);
         } else {
-          // Раньше здесь P2P просто выключался: _signaling='local' и всё.
-          // HTTP-фолбэк (POST /send + GET /poll, backend/routers/signaling.py) отсюда
-          // был недостижим, поэтому обрыв WebSocket = конец мультиплеера.
-          console.warn('[TriaCollective] Max reconnect attempts reached — переходим на HTTP-фолбэк.');
-          this._startHttpFallback(signalingUrl);
+          // Реконнекты исчерпаны, но P2P жив: сигналинг идёт поверх HTTP.
+          console.warn('[TriaCollective] Max reconnect attempts reached — работаем на HTTP-фолбэке.');
           resolve({ ok: true, url: signalingUrl, transport: 'http-fallback' });
         }
       };
@@ -147,7 +154,12 @@ export default class TriaCollectiveService {
     if (this._httpFallbackTimer) {
       clearInterval(this._httpFallbackTimer);
       this._httpFallbackTimer = null;
+      console.log('[TriaCollective] HTTP-фолбэк сигналинга остановлен (WebSocket восстановлен)');
     }
+    // Сбрасываем режим, иначе _sendSignaling продолжит слать по HTTP
+    // при уже живом сокете.
+    if (this._signaling === 'http-fallback') this._signaling = null;
+    this._httpCursor = null;
   }
 
   /** Единая точка отправки сигналинга: WebSocket, если открыт, иначе HTTP. */

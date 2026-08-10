@@ -113,8 +113,77 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                 let isProcessing = false;
                 let lastErrorTime = 0;
 
+                // Watchdog инференса (11.08.2026, по разбору лога Qwen).
+                // Симптом: скелет рисуется один раз и застывает, ошибок в консоли нет.
+                // Замеры со стенда исключили мёртвую камеру (currentTime растёт, readyState=4)
+                // и голодание rAF (60 кадров/с). Остался единственный сценарий, который
+                // блок try/catch/finally НЕ ловит: handsInstance.send() возвращает промис,
+                // который никогда не резолвится и не реджектится (зависший WASM-инференс).
+                // Тогда `finally` не выполняется, isProcessing остаётся true навсегда,
+                // и все следующие кадры молча отсекаются локом на строке «if (isProcessing) return».
+                const INFERENCE_TIMEOUT_MS = 2000;
+                const MAX_HANGS_BEFORE_RESET = 3;
+                let hangCount = 0;
+
+                /** send() с таймаутом: промис-зависание больше не вешает конвейер. */
+                const sendWithTimeout = (instance) => {
+                    let timer;
+                    const timeout = new Promise((_, reject) => {
+                        timer = setTimeout(
+                            () => reject(new Error(`inference timeout ${INFERENCE_TIMEOUT_MS}ms`)),
+                            INFERENCE_TIMEOUT_MS,
+                        );
+                    });
+                    return Promise.race([
+                        instance.send({ image: videoElement }),
+                        timeout,
+                    ]).finally(() => clearTimeout(timer));
+                };
+
+                /**
+                 * Пересоздание MediaPipe Hands после серии зависаний.
+                 * Конфигурация повторяет initializeMediaPipeHands() — при её изменении
+                 * правь оба места (или вынеси в общий хелпер).
+                 */
+                const recreateHandsInstance = async () => {
+                    if (!Hands) {
+                        throw new Error('глобал Hands недоступен (CDN не загрузился)');
+                    }
+
+                    const previous = state.multimodal.handsInstance;
+                    try {
+                        previous?.close?.();
+                    } catch (e) {
+                        console.warn('[HandsTracking] close() старого Hands:', e.message);
+                    }
+
+                    const fresh = new Hands({
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`,
+                    });
+                    fresh.setOptions({
+                        selfieMode: true,
+                        maxNumHands: 2,
+                        modelComplexity: 1,
+                        minDetectionConfidence: 0.7,
+                        minTrackingConfidence: 0.7,
+                        delegate: 'GPU',
+                    });
+                    fresh.onResults(onResults);
+
+                    state.multimodal.handsInstance = fresh;
+                    handsInstance = fresh; // локальная ссылка в onFrame-замыкании
+                    console.log('[HandsTracking] MediaPipe Hands пересоздан');
+                };
+
                 state.multimodal.cameraInstance = new Camera(videoElement, {
                     onFrame: async () => {
+                      // Defense in depth: ЛЮБОЕ исключение отсюда убивает внутренний
+                      // RAF-цикл camera_utils — следующий кадр просто не планируется,
+                      // и трекинг замирает навсегда без единой ошибки в консоли.
+                      // Ровно так проявлялся баг с зависшим скелетом: TypeError из
+                      // чужого колбэка (hermaionBridge.onPredictiveResult) обрывал цепочку.
+                      // Внешний try обязан ловить всё, включая проверки до основного блока.
+                      try {
                         // 0. Stream health check — graceful degradation if camera lost
                         const stream = videoElement.srcObject;
                         if (!stream || !stream.active) {
@@ -148,12 +217,37 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                                 return;
                             }
 
-                            await handsInstance.send({ image: videoElement });
+                            await sendWithTimeout(handsInstance);
 
-                            // Reset error timer on success
+                            // Успешный кадр — сбрасываем счётчики деградации
                             if (lastErrorTime !== 0) lastErrorTime = 0;
+                            if (hangCount !== 0) hangCount = 0;
 
                         } catch (handsError) {
+                            const isHang = handsError?.message?.includes('inference timeout');
+
+                            if (isHang) {
+                                hangCount++;
+                                console.warn(
+                                    `[HandsTracking] inference watchdog: ${hangCount} hang(s) — ` +
+                                    `кадр отброшен по таймауту ${INFERENCE_TIMEOUT_MS}ms`,
+                                );
+
+                                if (hangCount >= MAX_HANGS_BEFORE_RESET) {
+                                    console.error(
+                                        `[HandsTracking] inference watchdog: ${hangCount} подряд — ` +
+                                        'пересоздаю MediaPipe Hands',
+                                    );
+                                    hangCount = 0;
+                                    try {
+                                        await recreateHandsInstance();
+                                    } catch (e) {
+                                        console.error('[HandsTracking] пересоздание Hands не удалось:', e.message);
+                                    }
+                                }
+                                return; // finally ниже снимет лок
+                            }
+
                             // 3. Error Throttling (once per 5 seconds for less noise)
                             if (Date.now() - lastErrorTime > 5000) {
                                 console.error('[HandsTracking] Camera onFrame error:', handsError.name, handsError.message);
@@ -171,6 +265,19 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                         } finally {
                             isProcessing = false;
                         }
+                      } catch (fatalError) {
+                        // Сюда попадает всё, что вылетело мимо внутренних обработчиков.
+                        // Молча гасить нельзя — но и дать исключению выйти наружу тоже:
+                        // camera_utils перестанет планировать кадры и трекинг умрёт.
+                        if (Date.now() - lastErrorTime > 5000) {
+                            console.error(
+                                '[HandsTracking] onFrame fatal (RAF-цикл спасён):',
+                                fatalError?.name, fatalError?.message,
+                            );
+                            lastErrorTime = Date.now();
+                        }
+                        isProcessing = false;
+                      }
                     },
                     width: 320,
                     height: 240
