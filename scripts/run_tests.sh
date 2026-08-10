@@ -1,4 +1,5 @@
 #!/bin/bash
-# Script to run all tests
-# Intentionally empty, will be populated later.
-echo "Test runner script - TBD"
+# Канонический раннер тестов проекта. Совпадает с `npm test` / `npm run test:unit`.
+set -e
+cd "$(dirname "$0")/.."
+exec node ./tests/unit/run_tests.js
