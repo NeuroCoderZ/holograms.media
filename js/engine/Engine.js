@@ -192,11 +192,24 @@ export class HoloEngine {
     }
 
     async init() {
-        if (!navigator.gpu) throw new Error('WebGPU not supported');
+        if (!navigator.gpu) throw new Error('WebGPU не поддерживается этим браузером');
 
+        // requestAdapter() возвращает null, когда GPU не подходит (нет драйвера,
+        // софт-рендер, блокировка в about:gpu). Раньше следующая строка сразу дёргала
+        // .requestDevice() и падала с «Cannot read properties of null».
         this.adapter = await navigator.gpu.requestAdapter();
+        if (!this.adapter) {
+            this.adapter = await navigator.gpu.requestAdapter({ powerPreference: 'low-power' })
+                        || await navigator.gpu.requestAdapter({ forceFallbackAdapter: true });
+        }
+        if (!this.adapter) {
+            throw new Error('WebGPU-адаптер недоступен: GPU заблокирован или нет драйвера (проверь chrome://gpu)');
+        }
+
         this.device = await this.adapter.requestDevice();
+
         this.context = this.canvas.getContext('webgpu');
+        if (!this.context) throw new Error('Канвас не отдал webgpu-контекст');
 
         this.format = navigator.gpu.getPreferredCanvasFormat();
         this.context.configure({
