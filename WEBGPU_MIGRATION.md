@@ -122,7 +122,7 @@ WebGPU + WebXR + Socket/RTC. Шаг 1 (камера) — активен.
 
 | Шаг | Что делаем | Где | Статус |
 |---|---|---|---|
-| 1 | **Контроль камеры без Three** — порт OrbitControls на `Engine.orbit` (входы drag/wheel/pinch → свой орбит-контроллер) | `js/3d/sceneSetup.js`, `js/SmartHologram.js`, `js/engine/Engine.js` | 🔴 блокер Phase 4 |
+| 1 | **Контроль камеры без Three** — порт OrbitControls на `Engine.orbit` (входы drag/wheel/pinch → свой орбит-контроллер) | `js/3d/sceneSetup.js`, `js/SmartHologram.js`, `js/engine/Engine.js` | ✅ **DONE 10.08** (`a4551681`): drag/pinch уже шли в `Engine.orbit/setZoom`, добавлен wheel-зум (`zoomBy` + handler в `gestures.js`), удалён мёртвый `InteractionManager.js` |
 | 2 | **Перенос сцены** — одна камера вместо двух (ortho native + ortho Three); убрать `THREE.Scene`/`THREE.OrthographicCamera` из `sceneSetup` | `js/3d/sceneSetup.js`, `js/core/init.js` | 🟡 две несинхронизированные камеры |
 | 3 | **Picking нативный** — заменить `THREE.Raycaster` на вычисление луча в HoloEngine (ортографический луч → ячейка сетки по pan/depth из dynamic-буфера) | `js/SmartHologram.js`, `js/core/threeImports.js` | 🟡 P2 |
 | 4 | **XR-сессия на WebXR** — `navigator.xr.requestSession('immersive-ar'/'immersive-vr')` + `XRGPUBinding` (когда Chrome статус позволит); убрать `renderer.xr` | `js/xr/webxr_session_manager.js`, `js/platforms/xr/xrInput.js` | 🔴 P1, зависит от Chrome WebGPU-XR |
