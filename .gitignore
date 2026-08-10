@@ -106,3 +106,4 @@ chat_clean.txt
 graphify-out/
 .codegraph/
 .wasm-backup/
+.wasm-backup-*/
