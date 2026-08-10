@@ -134,11 +134,15 @@ native WebGPU рисует саму голограмму. Флага `renderBack
 | 9 | **Финал** — удалить `three` из `package.json`, `threeImports.js`, сцену Three; `renderBackend='webgpu'` по умолчанию | весь репо | ⬜ = Phase 4 |
 
 **Отдельная недоделка (вне шагов миграции):**
-- `tests/unit/test_net_hologlyph_reconnect.test.js:68` — flaky-тест, асинхронная гонка:
-  `client.connect()` создаёт сокет асинхронно, но тест читает `MockWS.created[0]`
-  синхронно → `socket` = `undefined` → `TypeError: cannot read 'onopen'`.
-  К камере/жестам отношения не имеет (NetHoloGlyphClient / WebSocket P2P).
-  Зафиксирован 10.08.2026; чинить при работе над Шагом 7.
+- ✅ **ИСПРАВЛЕНО 10.08.2026** — `tests/unit/test_net_hologlyph_reconnect.test.js`.
+  Реальная причина оказалась НЕ асинхронной гонкой (прежняя запись была неверной):
+  `connect()` делает ранний `return` при отсутствии JWT (`netHoloGlyphClient.js:87-90`),
+  а в Node нет `localStorage` → `new WebSocket` не вызывался вовсе → `MockWS.created[0]`
+  = `undefined` → `TypeError: cannot read 'onopen'`. В логе прямо:
+  «WebSocket connection deferred: JWT token missing».
+  Фикс: в тест добавлен stub `global.localStorage` с `jwtToken` + assert на создание
+  сокета + восстановление в cleanup. Продакшн-код не менялся (ранний return корректен).
+  Результат: `reconnectAttempts: 3, fallbackActive: true`, весь набор 8/8 PASS.
 
 **Порядок задан связностью (см. `WEB_STACK.md`):** камера уже без Three (Шаг 1);
 Шаг 2 убирает рассинхрон камер; Шаг 3 портирует слои на граф HoloEngine — это

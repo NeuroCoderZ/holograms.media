@@ -45,12 +45,23 @@ class MockWS {
 function testReconnectAndFallback() {
   const RealWS = global.WebSocket;
   const RealFetch = global.fetch;
+  const RealLocalStorage = global.localStorage;
 
   global.WebSocket = MockWS;
   global.fetch = async () => ({
     ok: true,
     json: async () => []
   });
+
+  // connect() делает ранний return, если нет JWT (netHoloGlyphClient.js:87-90).
+  // В Node localStorage отсутствует → сокет не создавался и MockWS.created[0]
+  // был undefined. Подставляем минимальный stub с токеном.
+  global.localStorage = {
+    _data: { jwtToken: 'test-jwt-token' },
+    getItem(key) { return this._data[key] ?? null; },
+    setItem(key, value) { this._data[key] = String(value); },
+    removeItem(key) { delete this._data[key]; },
+  };
 
   MockWS.created = [];
 
@@ -65,6 +76,7 @@ function testReconnectAndFallback() {
 
     // Manually trigger events on the created socket
     const socket = MockWS.created[0];
+    assert(socket, 'expected MockWS instance to be created by connect()');
     if (socket.onopen) socket.onopen();
 
     // Trigger multiple closes to exercise reconnect
@@ -82,6 +94,8 @@ function testReconnectAndFallback() {
   // cleanup
   global.WebSocket = RealWS;
   global.fetch = RealFetch;
+  if (RealLocalStorage === undefined) delete global.localStorage;
+  else global.localStorage = RealLocalStorage;
 }
 
 (async () => {
