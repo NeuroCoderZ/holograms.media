@@ -147,6 +147,11 @@ export class HologramWebGPU {
         } catch (error) {
             console.error('[HoloEngine] ❌ Ошибка:', error);
             this._showError(error.message);
+            this.isInitialized = false;
+            // Ошибку ОБЯЗАТЕЛЬНО пробрасываем: раньше она гасилась здесь, и вызывающий
+            // init.js печатал «✅ HoloEngine (WebGPU) инициализирован» поверх провала —
+            // в логе стояла зелёная галочка, а голограмма не рендерилась.
+            throw error;
         }
     }
 

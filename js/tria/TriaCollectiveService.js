@@ -82,12 +82,94 @@ export default class TriaCollectiveService {
           resolve({ ok: false, retry: true });
           setTimeout(() => this.connect(signalingUrl, retryCount + 1), RETRY_DELAY);
         } else {
-          console.warn('[TriaCollective] Max reconnect attempts reached. P2P disabled.');
-          this._signaling = 'local';
-          resolve({ ok: false, disabled: true });
+          // Раньше здесь P2P просто выключался: _signaling='local' и всё.
+          // HTTP-фолбэк (POST /send + GET /poll, backend/routers/signaling.py) отсюда
+          // был недостижим, поэтому обрыв WebSocket = конец мультиплеера.
+          console.warn('[TriaCollective] Max reconnect attempts reached — переходим на HTTP-фолбэк.');
+          this._startHttpFallback(signalingUrl);
+          resolve({ ok: true, url: signalingUrl, transport: 'http-fallback' });
         }
       };
     });
+  }
+
+  // ─── HTTP-фолбэк сигналинга ────────────────────────────────────────────
+  // Стек проекта строго WebGPU + WebXR + WebSocket/WebRTC. Когда WebSocket рвётся
+  // (Cloudflare закрывает простаивающее соединение, код 1006), сигналинг продолжает
+  // работать поверх HTTP, а сам WebRTC-транспорт остаётся прежним.
+
+  /** wss://host/ws/signaling/room → https://host/ws/signaling/room */
+  _httpBase(signalingUrl) {
+    return (signalingUrl || '').replace(/^wss?:/, (m) => (m === 'wss:' ? 'https:' : 'http:'));
+  }
+
+  _authHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('jwtToken') : null;
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    } catch (e) { /* localStorage недоступен */ }
+    return headers;
+  }
+
+  _startHttpFallback(signalingUrl, intervalMs = 3000) {
+    if (this._httpFallbackTimer) return;
+
+    this._signaling = 'http-fallback';
+    this._httpBaseUrl = this._httpBase(signalingUrl);
+    this._httpCursor = null;
+
+    console.log('[TriaCollective] HTTP-фолбэк сигналинга запущен:', this._httpBaseUrl);
+
+    const poll = async () => {
+      const params = new URLSearchParams({ peer_id: this._selfId });
+      if (this._httpCursor) params.set('after', this._httpCursor);
+      try {
+        const res = await fetch(`${this._httpBaseUrl}/poll?${params}`, { headers: this._authHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.cursor) this._httpCursor = data.cursor;
+        for (const m of (data?.messages || [])) {
+          try {
+            this._handleSignalingMessage(JSON.parse(m.payload));
+          } catch (e) {
+            console.warn('[TriaCollective] Bad fallback message:', e.message);
+          }
+        }
+      } catch (e) { /* best-effort, следующий тик попробует снова */ }
+    };
+
+    poll();
+    this._httpFallbackTimer = setInterval(poll, intervalMs);
+  }
+
+  stopHttpFallback() {
+    if (this._httpFallbackTimer) {
+      clearInterval(this._httpFallbackTimer);
+      this._httpFallbackTimer = null;
+    }
+  }
+
+  /** Единая точка отправки сигналинга: WebSocket, если открыт, иначе HTTP. */
+  async _sendSignaling(message) {
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+      this._ws.send(JSON.stringify(message));
+      return true;
+    }
+    if (this._signaling === 'http-fallback' && this._httpBaseUrl) {
+      try {
+        const res = await fetch(
+          `${this._httpBaseUrl}/send?peer_id=${encodeURIComponent(this._selfId)}`,
+          { method: 'POST', headers: this._authHeaders(), body: JSON.stringify(message) },
+        );
+        if (!res.ok) console.warn('[TriaCollective] Fallback send failed:', res.status);
+        return res.ok;
+      } catch (e) {
+        console.warn('[TriaCollective] Fallback send error:', e.message);
+        return false;
+      }
+    }
+    return false;
   }
 
   /**
@@ -127,13 +209,13 @@ export default class TriaCollectiveService {
     const peerEntry = { pc, dc: null, metadata: {} };
 
     pc.onicecandidate = (event) => {
-      if (event.candidate && this._ws && this._ws.readyState === WebSocket.OPEN) {
-        this._ws.send(JSON.stringify({
+      if (event.candidate) {
+        this._sendSignaling({
           type: 'ice-candidate',
           to: remotePeerId,
           from: this._selfId,
           candidate: event.candidate
-        }));
+        });
       }
     };
 
@@ -149,14 +231,12 @@ export default class TriaCollectiveService {
 
       pc.createOffer().then(offer => {
         pc.setLocalDescription(offer);
-        if (this._ws && this._ws.readyState === WebSocket.OPEN) {
-          this._ws.send(JSON.stringify({
-            type: 'offer',
-            to: remotePeerId,
-            from: this._selfId,
-            sdp: offer
-          }));
-        }
+        this._sendSignaling({
+          type: 'offer',
+          to: remotePeerId,
+          from: this._selfId,
+          sdp: offer
+        });
       }).catch(err => console.warn('[TriaCollective] createOffer failed:', err));
     }
 
@@ -182,14 +262,12 @@ export default class TriaCollectiveService {
     await peerEntry.pc.setRemoteDescription(new RTCSessionDescription(sdp));
     const answer = await peerEntry.pc.createAnswer();
     await peerEntry.pc.setLocalDescription(answer);
-    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
-      this._ws.send(JSON.stringify({
-        type: 'answer',
-        to: fromPeerId,
-        from: this._selfId,
-        sdp: answer
-      }));
-    }
+    this._sendSignaling({
+      type: 'answer',
+      to: fromPeerId,
+      from: this._selfId,
+      sdp: answer
+    });
   }
 
   async _handleAnswer(fromPeerId, sdp) {
@@ -219,17 +297,13 @@ export default class TriaCollectiveService {
   async advertiseSession(sessionMeta = {}) {
     const sessionId = 's_' + Date.now().toString(36);
     this._session = { id: sessionId, meta: sessionMeta };
-    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
-      this._ws.send(JSON.stringify({ type: 'advertise-session', session: this._session, from: this._selfId }));
-    }
+    this._sendSignaling({ type: 'advertise-session', session: this._session, from: this._selfId });
     return this._session;
   }
 
   async joinSession(sessionId, opts = {}) {
     this._session = { id: sessionId, meta: opts.meta || {} };
-    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
-      this._ws.send(JSON.stringify({ type: 'join-session', sessionId, from: this._selfId }));
-    }
+    this._sendSignaling({ type: 'join-session', sessionId, from: this._selfId });
     return { ok: true, session: this._session };
   }
 
@@ -239,9 +313,7 @@ export default class TriaCollectiveService {
       this._removePeer(peerId);
     }
     this._session = null;
-    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
-      this._ws.send(JSON.stringify({ type: 'leave-session', from: this._selfId }));
-    }
+    this._sendSignaling({ type: 'leave-session', from: this._selfId });
     return { ok: true };
   }
 

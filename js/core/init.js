@@ -266,10 +266,19 @@ export async function initCore(options = {}) {
       const { hologramWebGPU } = await import('../engine/HologramWebGPU.js?v=444');
       state.holoEngine = hologramWebGPU;
       await hologramWebGPU.init();
+      state.holoEngineReady = true;
       console.log('✅ HoloEngine (WebGPU) инициализирован');
     } catch (error) {
-      console.error('❌ HoloEngine (WebGPU) ошибка:', error.message);
-      console.warn('⚠️ Голограмма может не отображаться');
+      // Стек проекта — строго WebGPU + WebXR + WebSocket/WebRTC. WebGL-фолбэка здесь
+      // НЕТ намеренно: иначе он подхватывал бы каждый провал и обкатка WebGPU не шла бы.
+      // Публичный WebGL-фолбэк для чужого железа появится отдельно, перед релизом.
+      state.holoEngineReady = false;
+      console.error('❌ HoloEngine (WebGPU) НЕ запущен:', error.message);
+      console.error('   Голограмма НЕ рендерится. Нужен рабочий WebGPU-адаптер.');
+      console.error('   Chrome на Linux/AMD: запусти с флагами');
+      console.error('   --enable-features=Vulkan --ignore-gpu-blocklist --enable-unsafe-webgpu');
+      console.error('   Диагностика: chrome://gpu (строка «Vulkan» должна быть Enabled).');
+      eventBus.emit('holoEngine:unavailable', { reason: error.message });
     }
 
     // Инициализируем GestureManager
