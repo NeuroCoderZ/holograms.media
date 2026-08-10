@@ -128,7 +128,7 @@ native WebGPU рисует саму голограмму. Флага `renderBack
 | 3 | **Портировать слои (EarthZero/жесты) на граф HoloEngine** — разблокирует удаление `THREE.Scene` | `js/3d/sceneSetup.js`, `js/core/init.js`, `js/3d/EarthZero.js`, `js/core/gestures.js` | ⬜ БЛОКЕР для Шага 4 |
 | 4 | **Удалить `THREE.Scene`/`OrthographicCamera`** из sceneSetup — перенос сцены завершён | `js/3d/sceneSetup.js` | ⬜ зависит от Шага 3 |
 | 5 | **Picking нативный** — заменить `THREE.Raycaster` на луч в HoloEngine (по pan/depth из dynamic-буфера) | `js/SmartHologram.js`, `js/core/threeImports.js` | 🟡 P2 |
-| 6 | **XR нативно** — `navigator.xr.requestSession` + `XRGPUBinding`; убрать `renderer.xr` | `js/xr/webxr_session_manager.js`, `js/platforms/xr/xrInput.js` | 🔴 P1, зависит от Chrome WebGPU-XR |
+| 6 | **XR нативно** — `navigator.xr.requestSession` + `XRGPUBinding`; убрать `renderer.xr`. **Камера в XR:** орто — базово; **обратная (реверсивная) перспектива** — тестируется для XR (решение Нейрокодера 10.08) | `js/xr/webxr_session_manager.js`, `js/platforms/xr/xrInput.js` | 🔴 P1, зависит от Chrome WebGPU-XR |
 | 7 | **Мультиплеер** — контракт состояния WebRTC/WS (`hologlyph-data`) над портом слоёв | `js/services/netHoloGlyphClient.js` | 🟡 сырой P2P |
 | 8 | **Вычитка Three-импортов** по модулю: `hologramRenderer.js`, `hologramGridFactory.js`, `EarthZero.js`, `TorusVom.js`, `CochlearCylinder.js`, `SmartHologram.js` | все `js/3d/*`, `js/SmartHologram.js` | ⬜ механическая после зелёных 1-7 |
 | 9 | **Финал** — удалить `three` из `package.json`, `threeImports.js`, сцену Three; `renderBackend='webgpu'` по умолчанию | весь репо | ⬜ = Phase 4 |
