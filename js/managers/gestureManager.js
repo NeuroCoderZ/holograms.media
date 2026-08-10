@@ -1,13 +1,12 @@
 // js/managers/GestureManager.js
-import { SmartHologram } from '../SmartHologram.js';
 import { state } from '../core/init.js';
 // CloudGestureStorage removed (B2 purged) — gestures now stored in AstraDB only
 import { gestureSynthesizer } from '../audio/GestureSynthesizer.js';
 import netHoloGlyphClient from '../services/netHoloGlyphClient.js';
 import { gestureDNA } from '../tria/GestureDNA.js';
+import eventBus from '../core/eventBus.js'; // нативный путь к HoloEngine (вместо legacy SmartHologram)
 export class GestureManager {
     constructor() {
-        this.smartHologram = null;
         this.eventListeners = new Map();
         this.isInitialized = false;
 
@@ -36,10 +35,8 @@ export class GestureManager {
         console.log('Инициализация GestureManager...');
 
         try {
-            // Создаем SmartHologram для работы с существующими голограммами
-            // Check if SmartHologram is imported. It is imported at the top of the file (line 2).
-            this.smartHologram = new SmartHologram(container, this, state.aiEngine, state.renderer);
-            await this.smartHologram.init();
+            // SmartHologram удалён (Шаг 3b). GestureEmbedding будет реализован позже.
+            // GestureManager работает без SmartHologram — все вызовы защищены guard'ами.
 
             // Настраиваем слушателей событий
             this.setupEventListeners();
@@ -297,12 +294,13 @@ export class GestureManager {
 
     /**
      * Применение жеста к активной голограмме
+     * Вместо legacy SmartHologram — диспетчеризация в нативный HoloEngine через eventBus.
      */
     applyGestureToHologram(programEvents, handLandmarks) {
-        if (!this.smartHologram) return;
+        if (!programEvents || !Array.isArray(programEvents)) return;
 
-        // Вшиваем траектории в голограмму
-        this.smartHologram.embedTrajectories(handLandmarks, programEvents);
+        // GestureEmbedding (жест→эмбеддинг→LLM) ещё не реализован — см. docs/GLOSSARY §GestureEmbedding.
+        // Пока жесты применяются к параметрам голограммы напрямую через eventBus.
 
         // Применяем программные события к параметрам голограммы
         for (const event of programEvents) {
@@ -312,26 +310,29 @@ export class GestureManager {
 
     /**
      * Применение программного события к параметрам голограммы
+     * Emit в HoloEngine (WebGPU) через eventBus.
      */
     applyProgramEvent(event) {
-        if (!this.smartHologram) return;
+        if (!event || !event.type) return;
 
         switch (event.type) {
             case 'AXIS_ROTATION':
-                this.smartHologram.modifyAxisRotation(event.value);
+                eventBus.emit('gesture:modify', { param: 'axisRotation', value: event.value });
                 break;
             case 'SCALE_MODIFICATION':
-                this.smartHologram.modifyScale(event.value);
+                eventBus.emit('gesture:modify', { param: 'scale', value: event.value });
                 break;
             case 'COLOR_SHIFT':
-                this.smartHologram.modifyColor(event.value);
+                eventBus.emit('gesture:modify', { param: 'color', value: event.value });
                 break;
             case 'AUDIO_FREQUENCY':
-                this.smartHologram.modifyAudioFrequency(event.value);
+                eventBus.emit('gesture:modify', { param: 'audioFrequency', value: event.value });
                 break;
             case 'VISUAL_INTENSITY':
-                this.smartHologram.modifyVisualIntensity(event.value);
+                eventBus.emit('gesture:modify', { param: 'visualIntensity', value: event.value });
                 break;
+            default:
+                eventBus.emit('gesture:modify', { param: event.type.toLowerCase(), value: event.value });
         }
     }
 
@@ -422,13 +423,6 @@ export class GestureManager {
     }
 
     /**
-     * Получение экземпляра SmartHologram
-     */
-    getSmartHologram() {
-        return this.smartHologram;
-    }
-
-    /**
      * Получение списка доступных жестов
      */
     getAvailableGestures() {
@@ -474,11 +468,7 @@ export class GestureManager {
      * Освобождение ресурсов
      */
     dispose() {
-        if (this.smartHologram) {
-            this.smartHologram.dispose();
-            this.smartHologram = null;
-        }
-
+        // SmartHologram удалён (Шаг 3b) — освобождаем остальное.
         this.eventListeners.clear();
         this.customGestures.clear();
         this.gestureCodes.clear();
