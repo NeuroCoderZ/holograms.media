@@ -129,6 +129,13 @@ WebGPU + WebXR + Socket/RTC. Шаг 1 (камера) — активен.
 | 5 | **Вычитка Three-импортов** — по одному модулю: `hologramRenderer.js`, `hologramGridFactory.js`, `EarthZero.js`, `TorusVom.js`, `CochlearCylinder.js`, `SmartHologram.js` | все `js/3d/*`, `js/SmartHologram.js` | ⬜ |
 | 6 | **Финал** — удалить `three` из `package.json`, `threeImports.js`, сцену Three; `renderBackend='webgpu'` по умолчанию | весь репо | ⬜ = Phase 4 |
 
+**Отдельная недоделка (вне шагов миграции):**
+- `tests/unit/test_net_hologlyph_reconnect.test.js:68` — flaky-тест, асинхронная гонка:
+  `client.connect()` создаёт сокет асинхронно, но тест читает `MockWS.created[0]`
+  синхронно → `socket` = `undefined` → `TypeError: cannot read 'onopen'`.
+  К камере/жестам отношения не имеет (NetHoloGlyphClient / WebSocket P2P).
+  Зафиксирован 10.08.2026; чинить отдельной задачей.
+
 **Порядок задан блокерами:** сначала камера (без неё нельзя убрать сцену), потом
 сцена, потом пикинг, потом XR. Шаги 5-6 — механическая вычитка после зелёных 1-4.
 
