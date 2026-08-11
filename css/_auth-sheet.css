@@ -1,0 +1,487 @@
+/* css/_auth-sheet.css — Единая шторка входа (UnifiedAuthSheet)
+ * ============================================================
+ * 2026-08-11. Дизайн-система по концептам Gemini + Qwen v2/v3:
+ *   • Glassmorphism: backdrop-filter blur(20px) + скрим под текстом
+ *     (скрим обязателен — иначе контраст 4.5:1 по WCAG 2.2 не держится)
+ *   • Magnetic CTA: кнопка притягивается к курсору (JS задаёт --mx/--my)
+ *   • Neon Glow: TG-синий / Google-градиент при наведении
+ *   • Mobile: bottom-sheet с safe-area, цели ≥44px (HIG/Material)
+ *   • Движение: ease-out-quint (плавное торможение), не линейно и без отскока
+ *   • prefers-reduced-motion: гасит magnetic/glow/particles одним флагом
+ *
+ * Наследует токены из _variables.css (--glass-*, --color-*), чтобы
+ * шторка выглядела частью проекта, а не вставным блоком.
+ */
+
+:root {
+  /* Бренд-акценты провайдеров */
+  --auth-tg-blue: #2aabee;
+  --auth-tg-blue-deep: #229ed9;
+  --auth-google-blue: #4285f4;
+  --auth-google-red: #ea4335;
+  --auth-google-yellow: #fbbc05;
+  --auth-google-green: #34a853;
+
+  /* Геометрия шторки */
+  --auth-sheet-radius: 20px;
+  --auth-sheet-max-width: 380px;
+  --auth-btn-height: 52px;              /* ≥44px — палец, WCAG 2.5.8 */
+  --auth-gap: 12px;
+
+  /* Типографская шкала шторки (2026-08-11, по замеру через CDP).
+     Проектный --font-size-small резолвился в 11px на этом вьюпорте, из-за чего
+     подзаголовок, разделитель, «гость» и согласие слипались в один кегль —
+     иерархии не было вовсе. Задаём собственные ступени с шагом ≈1.2:
+       заголовок 22 → кнопка 15 → подзаголовок 13.5 → мелкий текст 12.5 */
+  --auth-fs-title: clamp(20px, 2.7vmin, 24px);
+  --auth-fs-button: 15px;
+  --auth-fs-sub: 13.5px;
+  --auth-fs-fine: 12.5px;
+
+  /* Физика движения: плавное торможение, без отскока.
+     2026-08-11: раньше здесь была пружина с перелётом за 100% — детектор
+     impeccable ловит такое как bounce-easing (дёрганый отскок выглядит
+     дёшево). Реальные объекты тормозят плавно, поэтому ease-out-quint. */
+  --auth-decel: cubic-bezier(0.22, 1, 0.36, 1);
+  --auth-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Подложка ──────────────────────────────────────────────── */
+
+.auth-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg, 16px);
+
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    rgba(10, 14, 30, 0.72) 0%,
+    rgba(0, 0, 0, 0.88) 100%
+  );
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+
+  opacity: 0;
+  animation: authBackdropIn 0.28s var(--auth-smooth) forwards;
+}
+
+@keyframes authBackdropIn {
+  to { opacity: 1; }
+}
+
+/* ─── Шторка ────────────────────────────────────────────────── */
+
+.auth-sheet {
+  position: relative;
+  width: 100%;
+  max-width: var(--auth-sheet-max-width);
+  padding: 28px 24px 24px;
+  border-radius: var(--auth-sheet-radius);
+
+  /* Стекло: полупрозрачный слой + глубокое размытие фона */
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  backdrop-filter: blur(20px) saturate(var(--glass-saturate, 140%));
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+
+  /* Скошенное светящееся стекло: внутренний блик сверху, тень снизу */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 24px 64px -12px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+
+  transform: translateY(16px) scale(0.97);
+  opacity: 0;
+  animation: authSheetIn 0.42s var(--auth-decel) 0.06s forwards;
+}
+
+@keyframes authSheetIn {
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Тонкая градиентная кромка — «голографический» кант */
+.auth-sheet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    transparent 60%,
+    rgba(42, 171, 238, 0.16) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ─── Заголовок ─────────────────────────────────────────────── */
+
+.auth-sheet__header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.auth-sheet__title {
+  margin: 0 0 6px;
+  font-size: var(--auth-fs-title);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #f2f4f8;                       /* контраст ≥4.5:1 на стекле */
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
+}
+
+.auth-sheet__subtitle {
+  margin: 0;
+  font-size: var(--auth-fs-sub);
+  line-height: 1.5;
+  color: rgba(226, 232, 240, 0.72);
+}
+
+/* ─── Кнопки провайдеров ────────────────────────────────────── */
+
+.auth-sheet__providers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--auth-gap);
+}
+
+.auth-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  width: 100%;
+  min-height: var(--auth-btn-height);
+  padding: 0 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+
+  background: rgba(255, 255, 255, 0.06);
+  color: #eef2f7;
+  font-size: var(--auth-fs-button);
+  font-weight: 500;
+  cursor: pointer;
+
+  /* Magnetic CTA: сдвиг задаёт JS через --mx/--my */
+  transform: translate(var(--mx, 0px), var(--my, 0px));
+  transition:
+    transform 0.18s var(--auth-decel),
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.3s ease;
+}
+
+.auth-btn:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.auth-btn:active {
+  transform: translate(var(--mx, 0px), var(--my, 0px)) scale(0.98);
+}
+
+/* Клавиатурная навигация: неоновый контур вместо стандартного аутлайна */
+.auth-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.9),
+    0 0 0 4px var(--auth-tg-blue),
+    0 0 18px rgba(42, 171, 238, 0.45);
+}
+
+.auth-btn__icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+/* Telegram — равный по весу партнёр Google, а не ghost-кнопка.
+   2026-08-11: замер скриншота показал перекос — белая заливка Google
+   перебивала прозрачную TG. Из РФ Telegram работает надёжнее (GSI отваливается
+   по таймауту), поэтому вес выравнен брендовой заливкой. */
+.auth-btn--telegram {
+  background: linear-gradient(
+    160deg,
+    var(--auth-tg-blue) 0%,
+    var(--auth-tg-blue-deep) 100%
+  );
+  border-color: rgba(42, 171, 238, 0.45);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Telegram: синее неоновое свечение */
+.auth-btn--telegram:hover {
+  border-color: rgba(42, 171, 238, 0.75);
+  box-shadow:
+    0 0 24px -4px rgba(42, 171, 238, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.auth-btn--telegram .auth-btn__icon {
+  color: #ffffff;
+}
+
+/* Google: четырёхцветный градиентный кант */
+.auth-btn--google:hover {
+  border-color: transparent;
+  box-shadow:
+    0 0 24px -6px rgba(66, 133, 244, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.auth-btn--google::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    120deg,
+    var(--auth-google-blue),
+    var(--auth-google-red),
+    var(--auth-google-yellow),
+    var(--auth-google-green)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.auth-btn--google:hover::after { opacity: 0.9; }
+
+/* Слот нативной кнопки Google (GIS рисует свою разметку внутрь).
+   2026-08-11, замер через CDP: GIS отдаёт 320×44 c radius 10px, тогда как наши
+   кнопки 380×52 c radius 14px — чужеродная вставка ломала ритм колонки.
+   Растягиваем её вложенные элементы до нашей геометрии. */
+.auth-sheet__gis {
+  display: flex;
+  justify-content: center;
+  min-height: var(--auth-btn-height);
+}
+
+/* GIS вкладывает div/iframe — дотягиваем до ширины и высоты колонки */
+.auth-sheet__gis > *,
+.auth-sheet__gis iframe {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: var(--auth-btn-height) !important;
+  height: var(--auth-btn-height) !important;
+  border-radius: 14px !important;
+}
+
+/* Возвратнику — «Продолжить как …», без FedCM */
+.auth-btn--continue {
+  background: linear-gradient(
+    135deg,
+    rgba(42, 171, 238, 0.18),
+    rgba(42, 171, 238, 0.08)
+  );
+  border-color: rgba(42, 171, 238, 0.35);
+}
+
+.auth-btn__avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Гостевой режим — намеренно тише остальных */
+.auth-btn--guest {
+  min-height: 44px;
+  background: transparent;
+  border-color: transparent;
+  color: rgba(226, 232, 240, 0.72);
+  font-size: var(--auth-fs-sub);
+}
+
+.auth-btn--guest:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(226, 232, 240, 0.85);
+}
+
+/* ─── Разделитель ───────────────────────────────────────────── */
+
+.auth-sheet__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 14px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.38);
+}
+
+.auth-sheet__divider::before,
+.auth-sheet__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.14),
+    transparent
+  );
+}
+
+/* ─── Согласие ──────────────────────────────────────────────── */
+
+.auth-sheet__consent {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: var(--auth-fs-fine);
+  line-height: 1.55;
+  color: rgba(226, 232, 240, 0.62);
+}
+
+.auth-sheet__consent a {
+  color: var(--auth-tg-blue);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(42, 171, 238, 0.3);
+}
+
+.auth-sheet__consent a:hover { border-bottom-color: var(--auth-tg-blue); }
+
+/* ─── Статус (ошибки, подсказки) ────────────────────────────── */
+
+.auth-sheet__status {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: var(--auth-fs-fine);
+  line-height: 1.45;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.25s ease, transform 0.25s var(--auth-decel);
+}
+
+.auth-sheet__status.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Google не ответил → мягко ведём в Telegram, а не пугаем ошибкой */
+.auth-sheet__status--fallback {
+  background: rgba(42, 171, 238, 0.12);
+  border: 1px solid rgba(42, 171, 238, 0.28);
+  color: #bfe3f7;
+}
+
+.auth-sheet__status--error {
+  background: rgba(255, 80, 80, 0.1);
+  border: 1px solid rgba(255, 80, 80, 0.28);
+  color: #ffbdbd;
+}
+
+/* ─── Мобильный bottom-sheet ────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .auth-sheet-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .auth-sheet {
+    max-width: 100%;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+
+    transform: translateY(100%);
+    animation: authSheetUp 0.44s var(--auth-decel) forwards;
+  }
+
+  @keyframes authSheetUp {
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Ручка-хват, как в нативных шторках iOS/Android */
+  .auth-sheet::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 38px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  .auth-sheet__header { margin-top: 10px; }
+
+  /* На тач-устройствах magnetic не нужен — нет курсора */
+  .auth-btn { transform: none; }
+  .auth-btn:active { transform: scale(0.98); }
+}
+
+/* ─── Доступность: уважение к настройкам движения ───────────── */
+
+html[data-reduced-motion='true'] .auth-sheet-backdrop,
+html[data-reduced-motion='true'] .auth-sheet {
+  animation-duration: 0.01ms;
+  animation-delay: 0s;
+  opacity: 1;
+  transform: none;
+}
+
+html[data-reduced-motion='true'] .auth-btn {
+  transform: none !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+html[data-reduced-motion='true'] .auth-btn--telegram:hover,
+html[data-reduced-motion='true'] .auth-btn--google:hover {
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-sheet-backdrop,
+  .auth-sheet {
+    animation-duration: 0.01ms;
+    opacity: 1;
+    transform: none;
+  }
+
+  .auth-btn {
+    transform: none !important;
+    transition: none;
+  }
+}

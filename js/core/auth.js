@@ -193,39 +193,61 @@ export async function initAuth() {
   if (isTelegram) {
     console.log('[Auth] Telegram mode detected. Initializing via WebApp...');
     const tg = window.Telegram.WebApp;
-    
-    // Telegram предоставляет данные сразу, не нужно ждать загрузки внешних скриптов
+
+    // 2026-08-11 (аудит L1-C): initDataUnsafe больше НЕ является основанием
+    // для аутентификации. Раньше здесь выставлялся state.isAuthenticated = true
+    // прямо из непроверенных данных — любой мог подделать window.Telegram.WebApp
+    // вне Telegram и войти под чужим user.id.
+    //
+    // Теперь сырая строка tg.initData уходит на бэкенд, где проверяется
+    // подпись HMAC-SHA256 (core.telegram.org/bots/webapps). Доверяем только
+    // ответу сервера с JWT.
     try {
-      const initData = tg.initDataUnsafe;
-      if (initData && initData.user) {
-        state.isAuthenticated = true;
-        state.user = {
-          id: initData.user.id,
-          first_name: initData.user.first_name,
-          last_name: initData.user.last_name,
-          username: initData.user.username,
-          platform: 'telegram'
-        };
-        console.log(`[Auth] TG User identified: ${state.user.first_name}`);
+      const initDataRaw = typeof tg.initData === 'string' ? tg.initData : '';
+
+      if (initDataRaw) {
+        const { apiUrl } = getAuthConfig();
+        const resp = await fetch(`${apiUrl}/api/v1/auth/telegram`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ init_data: initDataRaw }),
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          localStorage.setItem('jwtToken', data.access_token);
+          state.isAuthenticated = true;
+          // Отображаемое имя берём из initDataUnsafe только для UI —
+          // на права доступа оно не влияет, их определяет подписанный JWT.
+          const unsafeUser = tg.initDataUnsafe?.user || {};
+          state.user = {
+            id: data.telegram_id,
+            first_name: unsafeUser.first_name,
+            username: unsafeUser.username,
+            role: data.role,
+            platform: 'telegram',
+          };
+          console.log('[Auth] TG session verified by backend');
+        } else {
+          console.warn(`[Auth] Backend rejected Telegram initData (${resp.status})`);
+          state.isAuthenticated = false;
+        }
       } else {
-        console.warn('[Auth] Running in Telegram but no user data found (is it a direct link?)');
-        // Fallback: try to restore from localStorage JWT
+        console.warn('[Auth] Empty initData — likely opened outside Telegram');
+        // Fallback: только ранее выданный нашим бэкендом JWT
         const savedToken = localStorage.getItem('jwtToken');
         if (savedToken) {
-          console.log('[Auth] Found existing JWT in localStorage, restoring session');
+          console.log('[Auth] Restoring session from stored JWT');
           state.isAuthenticated = true;
         }
       }
 
-      // В TG скрываем модалку согласия/входа сразу
-      const modal = document.getElementById('start-session-modal');
-      if (modal) modal.style.display = 'none';
-
       updateAuthUI();
     } catch (e) {
-      console.error('[Auth] Error parsing Telegram initData:', e);
+      console.error('[Auth] Telegram authentication failed:', e);
+      state.isAuthenticated = false;
     }
-    
+
     // ВАЖНО: Возвращаем resolve немедленно, не переходя к коду Google ниже
     return;
   }
