@@ -237,6 +237,16 @@ export function initializeTriaChat() {
       const { microphoneManager } = await import('../main.js'); 
 
       if (!isLiveActive) {
+        // Микрофон — такой же сенсор, как камера: в гостевом режиме не включаем.
+        // Согласие даётся один раз на все сенсоры (docs/RU/LEGAL_STRATEGY.md §6),
+        // поэтому проверка здесь такая же, как для камеры в init.js.
+        const { state } = await import('../core/init.js');
+        if (state.sensorsAllowed === false) {
+          console.warn('[Chat] Гостевой режим — микрофон недоступен');
+          if (state.consentManager?.show) state.consentManager.show();
+          return;
+        }
+
         try {
           await liveAudioService.connect();
           await microphoneManager.startLiveStreaming((pcmBuffer) => {
