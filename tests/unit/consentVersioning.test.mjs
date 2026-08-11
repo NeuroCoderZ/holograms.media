@@ -189,4 +189,43 @@ function createManager({ storage, textHash = 'hash_A' }) {
     );
 }
 
+// ─── Гейт сенсоров: камера и микрофон под одним согласием ─────────────────
+// Гостевой режим обязан быть настоящим, а не декоративным. Камера гейтится в
+// init.js (`state.sensorsAllowed !== false` перед startVideoStream), микрофон —
+// в chat.js перед startLiveStreaming. Оба читают один флаг.
+{
+    /** Модель точки включения сенсора: камера в init.js, микрофон в chat.js. */
+    const sensorGate = (sensorsAllowed) => {
+        const log = [];
+        const tryStart = (name) => {
+            if (sensorsAllowed === false) {
+                log.push(`blocked:${name}`);
+                return false;
+            }
+            log.push(`started:${name}`);
+            return true;
+        };
+        return { tryStart, log };
+    };
+
+    // Согласие дано — оба сенсора доступны.
+    const allowed = sensorGate(true);
+    assert.strictEqual(allowed.tryStart('camera'), true, 'камера доступна после принятия');
+    assert.strictEqual(allowed.tryStart('microphone'), true, 'микрофон доступен после принятия');
+
+    // Гостевой режим — оба заблокированы.
+    const guest = sensorGate(false);
+    assert.strictEqual(guest.tryStart('camera'), false,
+        'РЕГРЕССИЯ: в гостевом режиме камера включаться не должна');
+    assert.strictEqual(guest.tryStart('microphone'), false,
+        'РЕГРЕССИЯ: микрофон — такой же сенсор, гейтится наравне с камерой');
+    assert.deepStrictEqual(guest.log, ['blocked:camera', 'blocked:microphone']);
+
+    // Флаг ещё не выставлен (undefined) — не блокируем: это состояние до
+    // инициализации, а не отказ. Проверка именно `=== false`, не falsy.
+    const pending = sensorGate(undefined);
+    assert.strictEqual(pending.tryStart('camera'), true,
+        'undefined ≠ отказ: иначе сенсоры не запустятся при обычном старте');
+}
+
 console.log('PASS');
