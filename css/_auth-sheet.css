@@ -417,6 +417,11 @@
 
   .auth-sheet {
     max-width: 100%;
+    /* 2026-08-11 (фикс по ревью Qwen): не даём шторке вылезти за нижний край —
+       на коротких экранах CTA и юр-строка уходили за фолд. */
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     border-radius: 24px 24px 0 0;
     border-bottom: none;

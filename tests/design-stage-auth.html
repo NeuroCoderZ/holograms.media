@@ -136,7 +136,19 @@ document.querySelector('.toolbar').addEventListener('click', (e) => {
   open(btn.dataset.case);
 });
 
-open('fresh');
+// Скриншоты через ?case=fresh|returning|gsi-down|telegram (headless --screenshot)
+const urlCase = new URLSearchParams(location.search).get('case');
+open(urlCase || 'fresh');
+
+// Для headless-скриншотов: ?shot=1 ждём завершения анимации входа (0.42s + запас),
+// однократно. Иначе cdp_shot.py ловит шторку ещё с opacity:0.
+if (new URLSearchParams(location.search).has('shot')) {
+  setTimeout(() => {
+    document.documentElement.setAttribute('data-reduced-motion', 'true');
+    const sheet = document.querySelector('.auth-sheet');
+    if (sheet) { sheet.style.animation = 'none'; sheet.style.opacity = '1'; sheet.style.transform = 'none'; }
+  }, 700);
+}
 </script>
 </body>
 </html>

@@ -1,0 +1,84 @@
+/* css/_boot.css — boot-хореография (задача B1)
+ *
+ * 2026-08-12 15:05 MSK — Фокус-пулл загрузки. Пока на <html> висит
+ * .is-booting, фронтенд-элементы смонтированы, но живут за матовым стеклом:
+ * размыты и почти прозрачны. Глаз шныряет поверх них, а по мере готовности
+ * подсистем каждый элемент получает .boot-revealed и проступает — всё ещё
+ * размытым, потому что резкость приходит только вместе с открытием век.
+ *
+ * 2026-08-12 15:05 MSK — Почему blur живёт на элементах, а не на общем
+ * контейнере: единый filter на родителе создаёт новый containing block и
+ * ломает position:fixed у панелей (панели уезжают из вьюпорта). Поэтому
+ * размытие точечное, по элементам сцены.
+ */
+
+/* Элементы сцены под веками: смонтированы, но не читаемы. */
+html.is-booting #left-panel,
+html.is-booting #right-panel,
+html.is-booting #bottom-panel,
+html.is-booting .main-area,
+html.is-booting #grid-container {
+  opacity: 0;
+  filter: blur(14px);
+  transition:
+    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter  420ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, filter;
+  pointer-events: none;
+}
+
+/* Подсистема проснулась: элемент проступает, но остаётся размытым. */
+html.is-booting .boot-revealed {
+  opacity: 0.55;
+  filter: blur(10px);
+}
+
+/* 2026-08-12 15:05 MSK — Focus-pull: класс .is-booting снят вместе с началом
+ * открытия век, и вся сцена одновременно набирает резкость. Длительность
+ * совпадает с анимацией створок (650мс), чтобы «наводка на фокус» читалась
+ * как один жест, а не как два независимых перехода.
+ */
+#left-panel,
+#right-panel,
+#bottom-panel,
+.main-area,
+#grid-container {
+  transition:
+    opacity 650ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter  650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.boot-revealed {
+  opacity: 1;
+  filter: blur(0);
+}
+
+/* 2026-08-12 15:05 MSK — prefers-reduced-motion: никакого размытия и
+ * пошагового проявления — простой crossfade. Пользователи с вестибулярными
+ * расстройствами не должны получать движущийся глаз и плывущую резкость.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html.is-booting #left-panel,
+  html.is-booting #right-panel,
+  html.is-booting #bottom-panel,
+  html.is-booting .main-area,
+  html.is-booting #grid-container {
+    filter: none;
+    opacity: 0;
+    transition: opacity 200ms linear;
+  }
+
+  html.is-booting .boot-revealed {
+    filter: none;
+    opacity: 0.6;
+  }
+
+  #left-panel,
+  #right-panel,
+  #bottom-panel,
+  .main-area,
+  #grid-container {
+    transition: opacity 200ms linear;
+    filter: none;
+  }
+}
