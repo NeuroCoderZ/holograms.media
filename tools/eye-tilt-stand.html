@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!-- Стенд визуальной проверки наклона (_tilt) EyeLoader. Не входит в прод-сборку. -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>EyeLoader tilt stand</title>
+<style>
+  html, body { margin:0; padding:0; background:#000; overflow:hidden; width:100vw; height:100vh; }
+  /* Цели саккад: глаз должен смотреть НА них и наклоняться */
+  .target { position:fixed; padding:8px 14px; font:14px/1.2 sans-serif; color:#8fd; 
+            background:rgba(20,40,60,.8); border:1px solid #2a6; border-radius:6px; z-index:5; }
+  #t-right  { right:40px;  top:50%; transform:translateY(-50%); }
+  #t-left   { left:40px;   top:50%; transform:translateY(-50%); }
+  #t-top    { top:30px;    left:50%; transform:translateX(-50%); }
+  #t-bottom { bottom:30px; left:50%; transform:translateX(-50%); }
+  #hud { position:fixed; left:8px; top:8px; z-index:99999; color:#0f0;
+         font:12px monospace; background:rgba(0,0,0,.6); padding:4px 8px; }
+</style>
+</head>
+<body>
+  <div class="target" id="t-right">ПРАВАЯ ПАНЕЛЬ</div>
+  <div class="target" id="t-left">ЛЕВАЯ ПАНЕЛЬ</div>
+  <div class="target" id="t-top">ВЕРХ</div>
+  <div class="target" id="t-bottom">НИЗ</div>
+  <div id="hud">init…</div>
+<script type="module">
+import { EyeLoader } from '/js/ui/EyeLoader.js';
+
+const hud = document.getElementById('hud');
+const eye = new EyeLoader();
+window.__eye = eye;
+eye.start();
+
+// Ждём конца влёта, затем — boot-режим
+setTimeout(() => {
+  eye.bootControl();
+  window.__ready = true;
+  hud.textContent = 'boot ready';
+}, 1100);
+
+// Контроль раскрытия век для CDP: 1 = закрыты (полное матовое стекло), 0 = открыты.
+// Промежуточное значение — щель, где виден глаз СКВОЗЬ матовое стекло по краям.
+window.__setLids = (openFrac) => {
+  const s = Math.max(0, Math.min(1, 1 - openFrac)); // scaleY
+  eye.upperLid.style.transition = 'none';
+  eye.lowerLid.style.transition = 'none';
+  eye.upperLid.style.transform = `scaleY(${s})`;
+  eye.lowerLid.style.transform = `scaleY(${s})`;
+  eye.upperLid.style.display = '';
+  eye.lowerLid.style.display = '';
+  return { scaleY: s };
+};
+
+// API для CDP: посмотреть на селектор и дождаться установления наклона
+window.__lookAt = (sel) => {
+  eye.saccadeTo(sel);
+  return { targetTilt: eye._tiltTarget };
+};
+window.__state = () => ({
+  phase: eye.phase,
+  tilt: eye._tilt,
+  tiltTarget: eye._tiltTarget,
+  eyeX: Math.round(eye.eyeX),
+  eyeY: Math.round(eye.eyeY),
+  deg: +(eye._tilt * 180 / Math.PI).toFixed(2),
+});
+setInterval(() => {
+  if (!window.__ready) return;
+  const s = window.__state();
+  hud.textContent = `phase=${s.phase} tilt=${s.deg}° pos=${s.eyeX},${s.eyeY}`;
+}, 100);
+</script>
+</body>
+</html>

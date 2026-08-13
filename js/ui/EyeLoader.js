@@ -3,6 +3,8 @@
  * Поведение: влёт из края → центр → саккады → центр → улёт за край.
  * Стиль: frosted glass eyelids, concave pupil, sharp iris.
  */
+// Максимальный наклон глаза в boot-саккадах (рад, ~±8°) — огибает радужку под углом взгляда.
+const EYE_TILT_MAX = 0.14;
 export class EyeLoader {
     constructor() {
         this.container = document.createElement('div');
@@ -50,6 +52,12 @@ export class EyeLoader {
         this._exitEdge = null;
         this._rafId = null;
         this._lidOpen = 0; // 0 = закрыты, 1 = открыты
+        this._tilt = 0;          // текущий наклон глаза (рад)
+        this._tiltTarget = 0;    // целевой наклон (boot-саккады)
+        this.bootControlled = false; // true → bootSequence управляет фазами
+        this._centerResolve = null;
+        this._exitResolve = null;
+        this._saccadeReturnT = null;
 
         window.addEventListener('resize', () => this._resize());
         this._resize();
@@ -131,14 +139,109 @@ export class EyeLoader {
         this._flyStartTime = performance.now();
     }
 
-    /** Саккада — вызывается на каждую строку лога */
+    /** Саккада — вызывается на каждую строку лога (legacy idle-режим). */
     triggerSaccade() {
         if (this.phase !== 'saccade') return;
+        this._saccadeIdle();
+    }
+
+    /** Idle-саккада: глаз шныряет в пределах радужки, без взгляда на элемент. */
+    _saccadeIdle() {
+        if (this.phase !== 'saccade') return;
         const rIris = Math.min(this.width, this.height) * 0.15;
-        const maxOffsetH = rIris * 3.0;  // горизонтально — 1.5 диаметра (3 радиуса)
-        const maxOffsetV = rIris * 2.0;  // вертикально — 1 диаметр
+        const maxOffsetH = rIris * 3.0;
+        const maxOffsetV = rIris * 2.0;
         this._targetX = this.cx + (Math.random() - 0.5) * maxOffsetH;
         this._targetY = this.cy + (Math.random() - 0.5) * maxOffsetV;
+        this._tiltTarget = (Math.random() - 0.5) * EYE_TILT_MAX;
+    }
+
+    /** Константа idle-режима: глаз шныряет в пределах радужки. */
+    saccadeIdle() {
+        this._saccadeIdle();
+    }
+
+    /**
+     * Boot-саккада: глаз смотрит НА проснувшийся элемент (по getBoundingClientRect).
+     * Наклон пропорционален вектору взгляда — «огибает радужку» под углом.
+     * @param {string} selector — CSS-селектор элемента
+     */
+    saccadeTo(selector) {
+        if (this.phase !== 'saccade') return;
+        const el = document.querySelector(selector);
+        if (!el) { this._saccadeIdle(); return; }
+        const r = el.getBoundingClientRect();
+        const tx = r.left + r.width / 2;
+        const ty = r.top + r.height / 2;
+        // Глаз не уходит за пределы радужки — взгляд «в сторону» элемента.
+        const dx = Math.max(-1, Math.min(1, (tx - this.cx) / (this.width / 2)));
+        const dy = Math.max(-1, Math.min(1, (ty - this.cy) / (this.height / 2)));
+        const rIris = Math.min(this.width, this.height) * 0.15;
+        this._targetX = this.cx + dx * rIris * 2.2;
+        this._targetY = this.cy + dy * rIris * 1.6;
+        // Наклон: ±EYE_TILT_MAX, пропорционально горизонтальному вектору.
+        this._tiltTarget = dx * EYE_TILT_MAX;
+    }
+
+    /** Boot-режим: центрирование глаза перед выходом. */
+    center() {
+        return new Promise((resolve) => {
+            if (this.phase !== 'saccade') { resolve(); return; }
+            this._centerResolve = resolve;
+            this._targetX = this.cx;
+            this._targetY = this.cy;
+            this._tiltTarget = 0;
+            this.phase = 'centering';
+            // hold 250–350мс перед выстрелом (см. _loop centering)
+        });
+    }
+
+    /**
+     * Boot-режим: выстрел за случайный край.
+     * @returns {Promise<string>} edge — 'top'|'bottom'|'left'|'right'
+     */
+    exit() {
+        return new Promise((resolve) => {
+            if (this.phase !== 'centering' && this.phase !== 'saccade') {
+                resolve(this._exitEdge || 'top');
+                return;
+            }
+            this._exitResolve = resolve;
+            // Anticipation: глаз дёргается в противоположную сторону перед броском.
+            const edges = ['top', 'bottom', 'left', 'right'];
+            const edge = edges[Math.floor(Math.random() * edges.length)];
+            this._exitEdge = edge;
+            this._beginBootExit(edge);
+        });
+    }
+
+    _beginBootExit(edge) {
+        this.phase = 'fly-out';
+        const m = 80;
+        let x = this.cx, y = this.cy;
+        if (edge === 'top') { y = -m; }
+        else if (edge === 'bottom') { y = this.height + m; }
+        else if (edge === 'left') { x = -m; }
+        else if (edge === 'right') { x = this.width + m; }
+        this._startX = this.eyeX;
+        this._startY = this.eyeY;
+        this._targetX = x;
+        this._targetY = y;
+        this._flyStartTime = performance.now();
+        this._flyDuration = 520; // чуть быстрее обычного (650)
+    }
+
+    /**
+     * Boot-режим: полностью отключаем авто-завершение по progress.
+     * Глаз живёт, пока bootSequence не скажет center()/exit().
+     */
+    bootControl() {
+        this.bootControlled = true;
+        this.phase = 'saccade'; // глаз готов к взглядам
+        this._tilt = 0;
+        this._tiltTarget = 0;
+        this._targetX = this.cx;
+        this._targetY = this.cy;
     }
 
     setProgress(p) {
@@ -153,6 +256,9 @@ export class EyeLoader {
      * Теперь та же проверка вызывается и из _loop() при входе в 'saccade'.
      */
     _maybeFinish() {
+        // В boot-режиме хореографией управляет bootSequence (center()/exit()),
+        // поэтому авто-завершение по progress здесь запрещено.
+        if (this.bootControlled) return;
         if (this.progress < 100 || this.phase !== 'saccade') return;
 
         this._targetX = this.cx;
@@ -207,7 +313,23 @@ export class EyeLoader {
         else if (this.phase === 'saccade' || this.phase === 'centering') {
             this.eyeX += (this._targetX - this.eyeX) * 0.25;
             this.eyeY += (this._targetY - this.eyeY) * 0.25;
+            // Лерп наклона к цели (boot-саккады); сглаживает «огибание» радужки.
+            this._tilt += (this._tiltTarget - this._tilt) * 0.25;
             this._drawEye(this.eyeX, this.eyeY);
+
+            // Boot-режим: center() ждёт ФАКТИЧЕСКОГО прихода в центр без наклона.
+            // Без этого промис center() не резолвился никогда → boot вис на await.
+            if (this.phase === 'centering' && this._centerResolve) {
+                const dist = Math.hypot(this._targetX - this.eyeX, this._targetY - this.eyeY);
+                if (dist < 0.5 && Math.abs(this._tilt) < 0.005) {
+                    this.eyeX = this._targetX;
+                    this.eyeY = this._targetY;
+                    this._tilt = 0;
+                    const done = this._centerResolve;
+                    this._centerResolve = null;
+                    done();
+                }
+            }
         }
         else if (this.phase === 'fly-out') {
             const elapsed = now - this._flyStartTime;
@@ -221,6 +343,12 @@ export class EyeLoader {
                 this.canvas.style.display = 'none'; 
                 this._openLids();
                 setTimeout(() => this._remove(), 1000);
+                // Boot-режим: exit() ждёт края, за который глаз реально ушёл.
+                if (this._exitResolve) {
+                    const done = this._exitResolve;
+                    this._exitResolve = null;
+                    done(this._exitEdge || 'top');
+                }
                 return;
             }
         }
@@ -238,6 +366,12 @@ export class EyeLoader {
         const rPupil = R * 0.38;
 
         ctx.save();
+        // Наклон глаза: вращаем весь глаз вокруг его центра (boot-саккады «огибают» радужку).
+        if (this._tilt !== 0) {
+            ctx.translate(x, y);
+            ctx.rotate(this._tilt);
+            ctx.translate(-x, -y);
+        }
 
         // --- Внешний ореол (чёрный вместо фиолетового) ---
         const glow = ctx.createRadialGradient(x, y, R * 0.9, x, y, R * 1.6);
