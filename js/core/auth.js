@@ -282,7 +282,8 @@ export function getJwtToken() {
   const token = localStorage.getItem('jwtToken');
   if (!token && window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
-    if (tg.initDataUnsafe?.user) {
+    // 2026-08-14: Проверяем наличие сырой подписанной строки initData, а не unsafe объекта
+    if (typeof tg.initData === 'string' && tg.initData.length > 0) {
       initAuth();
     }
   }
