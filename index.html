@@ -4,15 +4,15 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="app-version" content="0.20.595">
-  <!-- BUILD: 1786784278134 -->
+  <meta name="app-version" content="0.20.596">
+  <!-- BUILD: 1786790851684 -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.595");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.596");</script>
   <!-- DEPLOY_VERSION_END -->
   <!-- Telegram Mini Apps SDK — MUST load before any app scripts -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -149,6 +149,24 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
   <style>
+    /* Critical Inline CSS (Anti-FOUC & Dark Theme Fallback) */
+    html, body {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Модальные окна скрыты по умолчанию до явного вызова */
+    .modal,
+    #start-session-modal {
+      display: none;
+    }
+
     /* Стили для кнопок аутентификации и аватара */
     #auth-group {
       display: flex;
@@ -169,6 +187,7 @@
       border-color: #444;
     }
   </style>
+
 
 </head>
 
