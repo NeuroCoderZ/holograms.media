@@ -76,14 +76,18 @@ export class ConsentManager {
 
         const stored = this._readStored();
 
-        if (stored.valid) {
-            this.mode = stored.mode;
+        // 2026-08-15: Если пользователь уже успешно авторизован (JWT в хранилище), 
+        // согласие считается действующим и не блокирует пролет Глаза (EyeLoader).
+        const hasAuthToken = !!storage.getItem('jwtToken');
+
+        if (stored.valid || hasAuthToken) {
+            this.mode = stored.mode || CONSENT_MODE.ACCEPTED;
             this._hideConsentUI();
             console.log(
-                `[ConsentManager] Согласие уже дано: ${stored.version}, режим ${stored.mode}`,
+                `[ConsentManager] Согласие подтверждено (авторизован / ${stored.version || CONSENT_VERSION}), режим ${this.mode}`,
             );
             this._emitDecision();
-            return { mode: this.mode, version: stored.version };
+            return { mode: this.mode, version: stored.version || CONSENT_VERSION };
         }
 
         if (stored.outdated) {

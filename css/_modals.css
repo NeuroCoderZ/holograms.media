@@ -3,7 +3,7 @@
 .modal {
   display: none;
   position: fixed;
-  z-index: 9999; /* Максимальный приоритет */
+  z-index: 100001; /* Выше EyeLoader (99999) */
   left: 0;
   top: 0;
   width: 100vw;
