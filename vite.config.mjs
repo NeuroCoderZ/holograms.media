@@ -83,12 +83,14 @@ export default defineConfig({
   build: {
     target: 'esnext',
     rollupOptions: {
-      external: ['three', /^three\//]
-    }
-  },
-  optimizeDeps: {
-    rolldownOptions: {
-      target: 'esnext'
+      external: [
+        'three',
+        'three/examples/jsm/controls/OrbitControls.js',
+        'three/examples/jsm/lines/Line2.js',
+        'three/examples/jsm/lines/LineGeometry.js',
+        'three/examples/jsm/lines/LineMaterial.js',
+        'three/examples/jsm/renderers/webgpu/WebGPURenderer.js'
+      ]
     }
   },
   assetsInclude: ['**/*.wasm']
