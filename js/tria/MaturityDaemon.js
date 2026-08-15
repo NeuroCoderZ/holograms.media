@@ -74,21 +74,24 @@ export class MaturityDaemon {
             console.log(`[Lethe] Память очищена: удалено ${prunedCount} блоков старше ${maxAge} дней.`);
 
             // 3. Obolos Devaluation (Local Soma Blocks)
-            // Проходим по всем блокам L1 и снижаем их utility score, если они не использовались
+            // Ограничиваем батч девальвации до 500 блоков за цикл
             const allBlocks = await this.memory.getAllSoma();
+            const candidateBlocks = (allBlocks || []).slice(0, 500);
             let updatedCount = 0;
 
-            for (const block of allBlocks) {
+            for (const block of candidateBlocks) {
                 // Логика девальвации
                 // Если блок не подтвержден ('confirmed'), он теряет 10% полезности за цикл
                 if (block.sarx && block.sarx.feedback !== 'confirmed') {
-                    block.sarx.utility_score *= 0.9;
+                    block.sarx.utility_score = (block.sarx.utility_score || 1.0) * 0.9;
                     block.sarx.last_updated_at = Date.now();
                     await this.memory.saveSoma(block);
                     updatedCount++;
                 }
             }
-            console.log(`[Lethe] Девальвация Obolos: обновлено ${updatedCount} блоков.`);
+            if (updatedCount > 0) {
+                console.log(`[Lethe] Девальвация Obolos: обновлено ${updatedCount} блоков.`);
+            }
 
             // 4. Fragment Decay (ReintegrationManager)
             if (this.reintegration && this.reintegration.decay) {

@@ -247,18 +247,16 @@ export async function initCore(options = {}) {
       throw new Error(`WebGL не поддерживается: ${webglCheck.error}`);
     }
 
+    // Инициализируем Three.js / WebXR окружение
     const sceneInitialized = await initializeScene(state);
 
     if (!sceneInitialized) {
-      throw new Error('Scene setup failed (WebGL context error likely)');
+      throw new Error('Scene setup failed');
     }
 
-    // This should be AFTER initializeScene(state) and its related check
     if (!state.renderer) {
       throw new Error('CRITICAL CHECK FAILED: state.renderer is null after initializeScene');
     }
-
-    console.log('✅ Three.js сцена и рендерер успешно инициализированы');
 
     // Инициализируем HoloEngine (WebGPU) — полный рендеринг голограммы
     // Столбцы + сетки + оси + сферы — всё на нашем движке, без Three.js

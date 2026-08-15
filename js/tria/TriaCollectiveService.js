@@ -77,23 +77,18 @@ export default class TriaCollectiveService {
       };
 
       this._ws.onclose = (e) => {
-        console.log('[TriaCollective] WebSocket closed, code:', e.code);
         if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
-
-        // Фолбэк поднимаем СРАЗУ на первом обрыве, не дожидаясь исчерпания реконнектов.
-        // Раньше он включался только после 5 попыток (1+2+4+8+16 с) — 31 секунда
-        // без сигналинга, для мультиплеера это вечность. Теперь HTTP-поллинг работает
-        // параллельно с попытками восстановить WebSocket; когда сокет вернётся,
-        // onopen вызовет stopHttpFallback().
         this._startHttpFallback(signalingUrl);
 
+        if (retryCount === 0) {
+          console.warn(`[TriaCollective] WebSocket closed (code: ${e.code}), fallback signaling active.`);
+        }
+
         if (retryCount < MAX_RETRIES) {
-          console.log(`[TriaCollective] Reconnecting in ${RETRY_DELAY}ms (attempt ${retryCount+1}/${MAX_RETRIES})`);
           resolve({ ok: false, retry: true });
           setTimeout(() => this.connect(signalingUrl, retryCount + 1), RETRY_DELAY);
         } else {
-          // Реконнекты исчерпаны, но P2P жив: сигналинг идёт поверх HTTP.
-          console.warn('[TriaCollective] Max reconnect attempts reached — работаем на HTTP-фолбэке.');
+          console.log('[TriaCollective] Signaling actively running on HTTP fallback.');
           resolve({ ok: true, url: signalingUrl, transport: 'http-fallback' });
         }
       };

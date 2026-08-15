@@ -17,13 +17,17 @@ import { showNotification } from '../utils/notifications.js';
  * Получает конфигурацию аутентификации на основе переменных окружения.
  * @returns {Object} Объект с clientId, environment, apiUrl, redirectUri
  */
+let _authConfigLogged = false;
 export const getAuthConfig = () => {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
   const redirectUri = import.meta.env.VITE_AUTH_REDIRECT_URI;
 
-  console.log(`[Auth] Environment: ${environment}`, `Client: ${clientId?.substring(0, 15)}...`);
+  if (!_authConfigLogged) {
+    _authConfigLogged = true;
+    console.log(`[Auth] Environment: ${environment}`, `Client: ${clientId?.substring(0, 15)}...`);
+  }
 
   return { clientId, environment, apiUrl, redirectUri };
 };
@@ -82,7 +86,7 @@ async function handleGoogleCredentialResponse(response) {
     };
 
     updateAuthUI();
-    showNotification(`С возвращением, ${state.user.role}!`, 'success');
+    showWelcomeOnce(state.user.role || 'developer');
 
     const modal = document.getElementById('start-session-modal');
     if (modal) modal.style.display = 'none';
@@ -94,15 +98,27 @@ async function handleGoogleCredentialResponse(response) {
   }
 }
 
+let _gsiInitialized = false;
+let _welcomeNotificationShown = false;
+
+function showWelcomeOnce(role) {
+  if (!_welcomeNotificationShown) {
+    _welcomeNotificationShown = true;
+    showNotification(`С возвращением, ${role}!`, 'success');
+  }
+}
+
 /**
  * Инициализирует Google Identity Services и отрисовывает кнопку входа.
  */
 async function initializeGoogleSignIn() {
+  if (_gsiInitialized) return;
   if (window.google) {
     const { clientId } = getAuthConfig();
     if (!clientId) {
       throw new Error('VITE_GOOGLE_CLIENT_ID is not set');
     }
+    _gsiInitialized = true;
     window.google.accounts.id.initialize({
       client_id: clientId,
       callback: handleGoogleCredentialResponse,
@@ -110,17 +126,19 @@ async function initializeGoogleSignIn() {
       auto_select: false, // Запрещаем авто-вход, чтобы всегда был выбор аккаунта
       use_fedcm_for_prompt: true // [FIX] FedCM обязателен для обхода блокировок 3rd-party cookies и COOP
     });
-    window.google.accounts.id.renderButton(
-      document.getElementById('google-signin-container'),
-      {
-        theme: 'outline',
-        size: 'large',
-        text: 'signin_with',
-        shape: 'rectangular',
-        width: 300 // Фиксированная ширина для стабильности
-      }
-    );
-    window.google.accounts.id.prompt(); // Показывает One Tap UI (нативный FedCM)
+    const container = document.getElementById('google-signin-container');
+    if (container) {
+      window.google.accounts.id.renderButton(
+        container,
+        {
+          theme: 'outline',
+          size: 'large',
+          text: 'signin_with',
+          shape: 'rectangular',
+          width: 300 // Фиксированная ширина для стабильности
+        }
+      );
+    }
   } else {
     console.error('Объект Google GSI не найден.');
   }

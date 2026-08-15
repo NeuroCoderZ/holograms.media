@@ -2,15 +2,24 @@
 // handsTracking.js
 // MediaPipe now loaded via index.html globals
 // MediaPipe now loaded via index.html globals - Robust resolver
+// Подавление внутренних Emscripten/MediaPipe WASM спам-логов (gl_context, waiting on dependencies)
+if (typeof window !== 'undefined') {
+    window.Module = window.Module || {};
+    const origPrint = window.Module.print;
+    const origPrintErr = window.Module.printErr;
+    window.Module.print = (text) => {
+        if (text && (text.includes('waiting on run dependencies') || text.includes('gl_context') || text.includes('dependency:'))) return;
+        if (typeof origPrint === 'function') origPrint(text);
+    };
+    window.Module.printErr = (text) => {
+        if (text && (text.includes('waiting on run dependencies') || text.includes('gl_context') || text.includes('OpenGL error checking') || text.includes('dependency:'))) return;
+        if (typeof origPrintErr === 'function') origPrintErr(text);
+    };
+}
+
 const Camera = window.Camera || (window.mediapipe?.camera?.Camera);
 const Hands = window.Hands || (window.mediapipe?.hands?.Hands);
 const { drawConnectors, drawLandmarks } = window.drawing_utils || window;
-
-console.log('[HandsTracking] Resolving MediaPipe globals:', {
-    Camera: !!Camera,
-    Hands: !!Hands,
-    DrawingUtils: !!(window.drawing_utils || drawConnectors)
-});
 import eventBus from '../core/eventBus.js';
 
 import { state, TORUS_PARAMS } from '../core/init.js';

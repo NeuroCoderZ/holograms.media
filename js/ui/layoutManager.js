@@ -377,35 +377,59 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         updateRendererAndCamera(appState, containerWidth, containerHeight);
     }
 
-    // Вычисляем доступное пространство МЕЖДУ панелями для масштаба голограммы
-    const leftPanel = appState.uiElements?.leftPanel;
-    const rightPanel = appState.uiElements?.rightPanel;
-    const leftW = leftPanel && leftPanel.classList.contains('visible') ? leftPanel.offsetWidth : 20;
-    const rightW = rightPanel && rightPanel.classList.contains('visible') ? rightPanel.offsetWidth : 20;
-    const panelGap = containerWidth - leftW - rightW;
+    // ─── Расчёт доступной рабочей зоны между выдвижными панелями ───
+    const leftPanel = document.getElementById('left-panel') || appState.uiElements?.leftPanel;
+    const rightPanel = document.getElementById('right-panel') || appState.uiElements?.rightPanel;
+    const gestureAreaEl = document.getElementById('gesture-area') || appState.uiElements?.gestureArea;
 
-    // МИНИМАЛЬНЫЕ 5% ОТСТУПЫ: голограмма масштабируется так чтобы всегда иметь
-    // минимум 5% от viewport сверху/снизу и 5% от краёв панелей по горизонтали
-    const maxHologramH = containerHeight * 0.90; // 5% сверху + 5% снизу = 90% max
-    const maxHologramW = panelGap * 0.90;        // 5% отступ от каждой панели
-    const hologramSize = Math.min(maxHologramW, maxHologramH);
+    let leftEdge = 0;
+    if (leftPanel) {
+        const lr = leftPanel.getBoundingClientRect();
+        leftEdge = lr.right > 0 ? lr.right : 0;
+    }
 
-    const scaleH = maxHologramH / HOLOGRAM_REFERENCE_HEIGHT;
-    const scaleW = maxHologramW / 256;
-    let targetScaleValue = Math.max(Math.min(scaleH, scaleW), 0.01);
+    let rightEdge = containerWidth;
+    if (rightPanel) {
+        const rr = rightPanel.getBoundingClientRect();
+        if (rr.left > 0 && rr.left < containerWidth) {
+            rightEdge = rr.left;
+        }
+    }
 
-    // Визуальный центр голограммы в координатах viewport
-    const visualCenterX = leftW + panelGap / 2;
+    let bottomEdge = containerHeight;
+    if (gestureAreaEl) {
+        const gr = gestureAreaEl.getBoundingClientRect();
+        if (gr.top > 0 && gr.top < containerHeight) {
+            bottomEdge = gr.top;
+        }
+    }
 
-    // Голограмма центрирована в canvas (координата 0 = центр canvas)
-    // Но canvas = full viewport, центр canvas = containerWidth / 2
-    // Смещение = визуальный центр - центр canvas
+    const freeWidth = Math.max(100, rightEdge - leftEdge);
+    const freeHeight = Math.max(100, bottomEdge); // от верхнего края экрана (Y=0) до нижней границы
+
+    // 5% безопасные отступы от краёв доступной зоны
+    const marginX = freeWidth * 0.05;
+    const marginY = freeHeight * 0.05;
+
+    const usableWidth = Math.max(50, freeWidth - 2 * marginX);
+    const usableHeight = Math.max(50, freeHeight - 2 * marginY);
+
+    // Масштаб голограммы под прямоугольник
+    const scaleH = usableHeight / HOLOGRAM_REFERENCE_HEIGHT;
+    const scaleW = usableWidth / 256;
+    const targetScaleValue = Math.max(Math.min(scaleH, scaleW), 0.01);
+
+    // Геометрический центр свободной зоны в экранных пикселях (origin: top-left)
+    const centerScreenX = leftEdge + freeWidth / 2;
+    const centerScreenY = freeHeight / 2;
+
+    // Центр canvas
     const canvasCenterX = containerWidth / 2;
-    const xOffset = (visualCenterX - canvasCenterX) / targetScaleValue;
+    const canvasCenterY = containerHeight / 2;
 
-    // Вертикальное центрирование с учётом 5% отступов
-    const hologramVisualH = HOLOGRAM_REFERENCE_HEIGHT * targetScaleValue;
-    const verticalCenterOffset = (containerHeight - hologramVisualH) / 2;
+    // Пиксельное смещение от центра канваса
+    const pixelOffsetX = centerScreenX - canvasCenterX;
+    const pixelOffsetY = centerScreenY - canvasCenterY;
 
     if (appState.isXRMode) {
         if (holoCam) holoCam.resetOrbit();
@@ -414,16 +438,19 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
             hologramPivot.position.set(0, 0, 0);
         }
     } else {
-        // Нативный движок: зум ортокамеры + сдвиг цели к визуальному центру
-        // между панелями (canvas на всю ширину, голограмма — между панелями).
         if (holoCam) {
             holoCam.setZoom(targetScaleValue / BASE_LAYOUT_SCALE);
-            holoCam.camera.target[0] = -xOffset * targetScaleValue * WORLD_UNITS_PER_PX;
+            // Перевод пиксельного смещения в мировые координаты ортокамеры:
+            // В HoloEngine: голограмма Y=0..256 (центр Y=128), Z=75
+            // X направлен вправо, Y вверх.
+            const worldUnitsPerPixel = (holoCam.ORTHO_HALF_H * 2) / (containerHeight * (holoCam.camera.zoom || 1));
+            holoCam.camera.target[0] = pixelOffsetX * worldUnitsPerPixel;
+            holoCam.camera.target[1] = 128 - pixelOffsetY * worldUnitsPerPixel;
             holoCam._updateView();
         }
         if (hologramPivot) {
             hologramPivot.scale.set(targetScaleValue, targetScaleValue, targetScaleValue);
-            hologramPivot.position.set(xOffset, verticalCenterOffset / targetScaleValue, 0);
+            hologramPivot.position.set(pixelOffsetX / targetScaleValue, -pixelOffsetY / targetScaleValue, 0);
         }
     }
 
