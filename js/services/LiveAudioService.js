@@ -8,15 +8,21 @@ export class LiveAudioService {
         this.ws = null;
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
         this.nextStartTime = 0;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectTimeout = null;
+        this.isExplicitDisconnect = false;
     }
 
     async connect() {
+        this.isExplicitDisconnect = false;
         return new Promise((resolve, reject) => {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             this.ws = new WebSocket(`${protocol}//${window.location.host}/ws/v1/tria/live`);
             
             this.ws.onopen = () => {
                 console.log("[LiveAudioService] Connected to Tria Live.");
+                this.reconnectAttempts = 0;
                 resolve();
             };
 
@@ -47,13 +53,33 @@ export class LiveAudioService {
 
             this.ws.onerror = (err) => {
                 console.error("[LiveAudioService] WebSocket Error:", err);
-                reject(err);
+                if (this.reconnectAttempts === 0) {
+                    reject(err);
+                }
             };
 
-            this.ws.onclose = () => {
-                console.log("[LiveAudioService] Disconnected.");
+            this.ws.onclose = (event) => {
+                console.log(`[LiveAudioService] Disconnected. Code: ${event.code}, Reason: ${event.reason || 'None'}`);
+                if (!this.isExplicitDisconnect && (event.code === 1006 || event.code === 1001 || !event.wasClean)) {
+                    this.handleReconnect();
+                }
             };
         });
+    }
+
+    handleReconnect() {
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
+            console.warn(`[LiveAudioService] Signaling 1006 detected. Reconnecting in ${delay}ms (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = setTimeout(() => {
+                this.connect().catch((e) => console.error("[LiveAudioService] Reconnect failed:", e));
+            }, delay);
+        } else {
+            console.error("[LiveAudioService] Max reconnect attempts reached. Live stream stopped.");
+            document.dispatchEvent(new CustomEvent('tria-live-error', { detail: { error: 'Signaling disconnected (1006)' } }));
+        }
     }
 
     sendAudio(buffer) {
@@ -119,10 +145,16 @@ export class LiveAudioService {
     }
 
     disconnect() {
+        this.isExplicitDisconnect = true;
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+        }
         if (this.ws) {
             this.ws.close();
             this.ws = null;
         }
+        this.reconnectAttempts = 0;
     }
 }
 

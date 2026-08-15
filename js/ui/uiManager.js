@@ -3,13 +3,9 @@
 // Импортируем необходимые зависимости
 // import { state } from '../core/init.js'; // Removed direct import, appState will be used
 
-// import { uploadChunk } from '../services/apiService.js'; // Old direct backend upload, now replaced by R2 presigned
 import { state } from '../core/init.js'; // Ensure state is available for updateAuthUI
 import { initializePwaInstall } from '../core/pwaInstall.js';
-// panelManager is used to switch visible content panels in the right sidebar.
-// import PanelManager from './panelManager.js'; // PanelManager is now globally managed via state.panelManager
-import { toggleFullscreen, initFullscreenListeners } from '../utils/fullscreen.js'; // Import for fullscreen
-// Tria button now opens profile modal instead of toggling learning mode
+import { initFullscreenListeners } from '../utils/fullscreen.js'; // Import for fullscreen listeners
 import { initializeRightPanel } from '../panels/rightPanelManager.js'; // Import for right panel logic
 import { hologramScanner } from '../multimodal/hologramScanner.js'; // Import for Scanner button
 import { gestureSynthesizer } from '../audio/GestureSynthesizer.js'; // Import for Gesture Synth
