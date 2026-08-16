@@ -316,31 +316,6 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
     const windowHeight = window.innerHeight;
     const isMobile = windowWidth <= 768 || windowHeight > windowWidth;
 
-    // [FIX] Вычисляем доступную ширину от реальных позиций панелей
-    // Минимальный отступ от каждой панели: 5% от windowWidth
-    const MIN_SIDE_MARGIN = windowWidth * 0.05;
-    const MIN_VERT_MARGIN  = windowHeight * 0.05;
-
-    let leftEdge = 0;
-    let rightEdge = windowWidth;
-
-    if (!isMobile) {
-        const leftPanel = appState.uiElements?.leftPanel;
-        const rightPanel = appState.uiElements?.rightPanel;
-
-        if (leftPanel) {
-            const r = leftPanel.getBoundingClientRect();
-            leftEdge = r.right; // правый край левой панели
-        }
-        if (rightPanel) {
-            const r = rightPanel.getBoundingClientRect();
-            rightEdge = r.left; // левый край правой панели
-        }
-    }
-
-    const availableWidth = Math.max(1, rightEdge - leftEdge);
-    const availableHeight = Math.max(1, windowHeight);
-
     // Позиционируем gridContainer на ВСЮ страницу — не ресайзим при анимации панелей
     const containerWidth = window.innerWidth;
     const containerHeight = window.innerHeight;
