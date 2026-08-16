@@ -414,7 +414,15 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         }
     } else {
         if (holoCam) {
-            holoCam.setZoom(targetScaleValue / BASE_LAYOUT_SCALE);
+            // В HoloEngine базовый вертикальный полуобъём ORTHO_HALF_H = 150 (полная высота объема = 300).
+            // Чтобы голограмма (высота 256) целиком помещалась в видимую область высотой usableHeight
+            // на канвасе containerHeight, зум камеры должен быть:
+            const zoomY = usableHeight / containerHeight;
+            const zoomX = usableWidth / (containerHeight * holoCam._aspect);
+            const targetZoom = Math.max(Math.min(zoomY, zoomX), 0.05);
+
+            holoCam.setZoom(targetZoom);
+            
             // Перевод пиксельного смещения в мировые координаты ортокамеры:
             // В HoloEngine: голограмма Y=0..256 (центр Y=128), Z=75.
             // При target=[0,128,75] и ORTHO_CENTER_Y=0 центр мира (0,128,75) проецируется в центр экрана.

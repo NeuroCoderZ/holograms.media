@@ -440,9 +440,10 @@ export async function initCore(options = {}) {
               x: pan * 5,                 // pan -1..1 → ±5 ед. по ширине
               y: 1.2 + freqNorm * 1.5,    // высота тона → высота маркера
               z: (gain - 0.5) * 10,       // глубина ладони → ±5 ед. по Z
-          };
           const intensity = Math.min(1, Math.max(0.15, gain));
-          state.holoEngine?.engine?.addPresenceMarker(peerId, pos, intensity);
+          if (typeof state.holoEngine?.addPresenceMarker === 'function') {
+              state.holoEngine.addPresenceMarker(peerId, pos, intensity);
+          }
       });
 
       // --- Stage 2: Data Pipeline (Takt 0 -> Soma -> Obolos) ---
@@ -634,7 +635,9 @@ export async function initCore(options = {}) {
                   z: ((Math.abs(h >> 16) % 100) / 100 - 0.5) * 10
               };
               const intensity = msg.payload.confidence || 0.5;
-              state.holoEngine?.engine?.addPresenceMarker(peerId, pos, intensity);
+              if (typeof state.holoEngine?.addPresenceMarker === 'function') {
+                  state.holoEngine.addPresenceMarker(peerId, pos, intensity);
+              }
           }
       });
 

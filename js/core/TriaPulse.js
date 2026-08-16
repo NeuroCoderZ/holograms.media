@@ -77,13 +77,21 @@ export class TriaPulse {
         // При динамическом FPS мы просто чередуем их.
         this.takt = this.tickValue % 2;
 
-        eventBus.emit('tria:pulse', {
-            tick: this.tickValue,
-            takt: this.takt,
-            phase: this.currentPhase(),
-            isAudioSync,
-            fps: this.displayRate
-        });
+        try {
+            eventBus.emit('tria:pulse', {
+                tick: this.tickValue,
+                takt: this.takt,
+                phase: this.currentPhase(),
+                isAudioSync,
+                fps: this.displayRate
+            });
+        } catch (err) {
+            const now = performance.now();
+            if (!this._lastBeatError || now - this._lastBeatError > 30000) {
+                console.error('[TriaPulse] _beat error (throttled 30s):', err.message);
+                this._lastBeatError = now;
+            }
+        }
     }
 
     currentTick() {

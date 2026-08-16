@@ -72,22 +72,49 @@ export class GridWireframe {
         };
 
         const Z_BASE = 75; // Протокол 1 Метр
-        const STEP_Y = 2.0; // Высота ячейки
+        const GRID_WIDTH = 128;
+        const GRID_HEIGHT = 256; // 128 * STEP_Y (2.0)
+        const GRID_DEPTH = 128;
+
+        const purple = [0.749, 0.0, 1.0]; // Левая сетка (0xBF00FF)
+        const red = [1.0, 0.0, 0.0];      // Правая сетка (0xFF0000)
 
         // 1. Оси из точки (0, 0, Z_BASE)
-        addLine([0, 0, Z_BASE], [128, 0, Z_BASE], [1, 0, 0]);   // X+ (Красная)
-        addLine([0, 0, Z_BASE], [-128, 0, Z_BASE], [0.5, 0, 1]); // X- (Фиолетовая)
-        addLine([0, 0, Z_BASE], [0, 256, Z_BASE], [0, 1, 0]);   // Y+ (Зеленая)
-        addLine([0, 0, Z_BASE], [0, 0, Z_BASE + 128], [0, 0, 1]); // Z+ (Синяя вглубь)
+        addLine([0, 0, Z_BASE], [GRID_WIDTH, 0, Z_BASE], red);         // X+ (Красная)
+        addLine([0, 0, Z_BASE], [-GRID_WIDTH, 0, Z_BASE], purple);     // X- (Фиолетовая)
+        addLine([0, 0, Z_BASE], [0, GRID_HEIGHT, Z_BASE], [0, 1, 0]);  // Y+ (Зеленая)
+        addLine([0, 0, Z_BASE], [0, 0, Z_BASE + GRID_DEPTH], [1, 1, 1]); // Z+ (Белая вглубь)
 
-        // 2. Сетки (Правая - Красная, Левая - Фиолетовая)
-        // Горизонтальные линии
-        for (let y = 0; y <= 256; y += 32) {
-            addLine([-128, y, Z_BASE], [128, y, Z_BASE], [0.3, 0.3, 0.3]);
+        // 2. Левая сетка (Фиолетовая, X: 0 -> -128)
+        // Горизонтальные линии (каждые 16 единиц)
+        for (let y = 0; y <= GRID_HEIGHT; y += 16) {
+            addLine([0, y, Z_BASE], [-GRID_WIDTH, y, Z_BASE], purple);
         }
-        // Вертикальные линии
-        for (let x = -128; x <= 128; x += 32) {
-            addLine([x, 0, Z_BASE], [x, 256, Z_BASE], [0.3, 0.3, 0.3]);
+        // Вертикальные линии (каждые 16 единиц)
+        for (let x = 0; x >= -GRID_WIDTH; x -= 16) {
+            addLine([x, 0, Z_BASE], [x, GRID_HEIGHT, Z_BASE], purple);
+        }
+
+        // 3. Правая сетка (Красная, X: 0 -> +128)
+        // Горизонтальные линии (каждые 16 единиц)
+        for (let y = 0; y <= GRID_HEIGHT; y += 16) {
+            addLine([0, y, Z_BASE], [GRID_WIDTH, y, Z_BASE], red);
+        }
+        // Вертикальные линии (каждые 16 единиц)
+        for (let x = 0; x <= GRID_WIDTH; x += 16) {
+            addLine([x, 0, Z_BASE], [x, GRID_HEIGHT, Z_BASE], red);
+        }
+
+        // 4. Синяя точка (сфера на пересечении осей)
+        const sphereR = 3;
+        for (let i = 0; i < 16; i++) {
+            const a1 = (i / 16) * Math.PI * 2;
+            const a2 = ((i + 1) / 16) * Math.PI * 2;
+            addLine(
+                [Math.cos(a1) * sphereR, Math.sin(a1) * sphereR + 0, Z_BASE],
+                [Math.cos(a2) * sphereR, Math.sin(a2) * sphereR + 0, Z_BASE],
+                [0.0, 0.4, 1.0]
+            );
         }
 
         return {
