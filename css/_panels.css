@@ -64,7 +64,7 @@
 
 .panel.left-panel {
   left: 0;
-  width: calc(var(--button-size) * 2 + 25px) !important;
+  width: var(--panel-width-left) !important;
   
   /* Peek effect: 4px visible */
   transform: translateX(calc(-100% + 4px)) !important;
@@ -163,20 +163,18 @@
 
 
 
-/* --- Universal Layout Variables --- */
 :root {
-  /* Desktop Layout (Landscape) */
-  --panel-width-left: clamp(280px, 20vw, 320px);
-  --panel-width-right: clamp(320px, 25vw, 400px);
+  /* Desktop Layout (Landscape): Левая панель под 2 кнопки в ряд + отступы, Правая панель ровно в 2 раза шире */
+  --panel-width-left: calc(var(--button-size) * 2 + 24px);
+  --panel-width-right: calc((var(--button-size) * 2 + 24px) * 2);
 }
 
 @media (orientation: portrait) or (max-width: 768px) {
   :root {
-    /* Mobile Layout (Portrait) */
-    --panel-width-left: 80px;
-    /* Narrow strip for icons */
+    /* Mobile Layout (Portrait): автомасштабирование кнопок, полное перекрытие экрана при открытии */
+    --button-size: clamp(38px, 9vw, 54px) !important;
+    --panel-width-left: 100vw;
     --panel-width-right: 100vw;
-    /* Full screen for chat/content */
   }
 }
 

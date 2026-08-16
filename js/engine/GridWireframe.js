@@ -83,10 +83,10 @@ export class GridWireframe {
         const GRID_HEIGHT = 256; // 128 полутонов * шаг Y (2.0)
         const GRID_DEPTH = 128;
 
-        // Линии сеток: прозрачность 99.95% (alpha = 0.0005)
-        const GRID_ALPHA = 0.0005;
-        const purpleGrid = [0.749, 0.0, 1.0, GRID_ALPHA]; // Левая сетка (Фиолетовая)
-        const redGrid = [1.0, 0.0, 0.0, GRID_ALPHA];      // Правая сетка (Красная)
+        // Линии сеток: тонкие полупрозрачные линии (alpha = 0.15)
+        const GRID_ALPHA = 0.15;
+        const purpleGrid = [0.749, 0.0, 1.0, GRID_ALPHA]; // Левая сетка (Фиолетовая, X < 0)
+        const redGrid = [1.0, 0.0, 0.0, GRID_ALPHA];      // Правая сетка (Красная, X > 0)
 
         // Оси и ключевые маркеры: 100% непрозрачные (alpha = 1.0)
         const redAxis = [1.0, 0.0, 0.0, 1.0];
@@ -96,12 +96,12 @@ export class GridWireframe {
         const blueSphere = [0.0, 0.4, 1.0, 1.0];
 
         // 1. Оси из точки (0, 0, Z_BASE)
-        addLine([0, 0, Z_BASE], [GRID_WIDTH, 0, Z_BASE], redAxis);         // X+ (Красная)
-        addLine([0, 0, Z_BASE], [-GRID_WIDTH, 0, Z_BASE], purpleAxis);     // X- (Фиолетовая)
-        addLine([0, 0, Z_BASE], [0, GRID_HEIGHT, Z_BASE], greenAxis);      // Y+ (Зеленая)
-        addLine([0, 0, Z_BASE], [0, 0, Z_BASE + GRID_DEPTH], whiteAxis);   // Z+ (Белая вглубь)
+        addLine([0, 0, Z_BASE], [-GRID_WIDTH, 0, Z_BASE], purpleAxis);     // Слева X- (Фиолетовая)
+        addLine([0, 0, Z_BASE], [GRID_WIDTH, 0, Z_BASE], redAxis);         // Справа X+ (Красная)
+        addLine([0, 0, Z_BASE], [0, GRID_HEIGHT, Z_BASE], greenAxis);      // Сверху Y+ (Зеленая)
+        addLine([0, 0, Z_BASE], [0, 0, Z_BASE + GRID_DEPTH], whiteAxis);   // Вглубь Z+ (Белая)
 
-        // 2. Левая сетка (Фиолетовая, X: 0 -> -128, Y: 0 -> 256)
+        // 2. Левая сетка (Фиолетовая слева, X: 0 -> -128, Y: 0 -> 256)
         // 128 ячеек по вертикали (шаг 2.0 = 128 линий)
         for (let y = 0; y <= GRID_HEIGHT; y += 2) {
             addLine([0, y, Z_BASE], [-GRID_WIDTH, y, Z_BASE], purpleGrid);
@@ -111,7 +111,7 @@ export class GridWireframe {
             addLine([x, 0, Z_BASE], [x, GRID_HEIGHT, Z_BASE], purpleGrid);
         }
 
-        // 3. Правая сетка (Красная, X: 0 -> +128, Y: 0 -> 256)
+        // 3. Правая сетка (Красная справа, X: 0 -> +128, Y: 0 -> 256)
         // 128 ячеек по вертикали (шаг 2.0 = 128 линий)
         for (let y = 0; y <= GRID_HEIGHT; y += 2) {
             addLine([0, y, Z_BASE], [GRID_WIDTH, y, Z_BASE], redGrid);

@@ -24,16 +24,14 @@
   .panel.left-panel {
     left: 0 !important;
     transform: translateX(-100%) !important;
-    width: 33.33vw !important;
-    /* One third */
+    width: 100vw !important;
     max-width: none !important;
   }
 
   .panel.right-panel {
     right: 0 !important;
     transform: translateX(100%) !important;
-    width: 66.67vw !important;
-    /* Two thirds */
+    width: 100vw !important;
   }
 
   /* Ensure they don't overlap strangely when both open */
