@@ -440,6 +440,7 @@ export async function initCore(options = {}) {
               x: pan * 5,                 // pan -1..1 → ±5 ед. по ширине
               y: 1.2 + freqNorm * 1.5,    // высота тона → высота маркера
               z: (gain - 0.5) * 10,       // глубина ладони → ±5 ед. по Z
+          };
           const intensity = Math.min(1, Math.max(0.15, gain));
           if (typeof state.holoEngine?.addPresenceMarker === 'function') {
               state.holoEngine.addPresenceMarker(peerId, pos, intensity);
