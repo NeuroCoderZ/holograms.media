@@ -1,9 +1,10 @@
 /**
  * GridWireframe.js — сетки, оси, синяя точка
  * =============================================
- * Фиолетовая сетка (L), красная сетка (R)
- * Оси X/Y/Z с цветными линиями
- * Синяя точка на пересечении осей
+ * Фиолетовая сетка (L: 128x128 ячеек), красная сетка (R: 128x128 ячеек)
+ * Прозрачность линий сеток: 99.95% (альфа 0.0005)
+ * Оси X/Y/Z с яркими цветными линиями (альфа 1.0)
+ * Синяя точка на пересечении осей (альфа 1.0)
  */
 
 import { GRID_WIDTH, GRID_HEIGHT } from '../config/hologramConstants.js';
@@ -41,23 +42,29 @@ export class GridWireframe {
                         attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }],
                     },
                     {
-                        arrayStride: 12,
-                        attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x3' }],
+                        arrayStride: 16,
+                        attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x4' }],
                     }
                 ],
             },
             fragment: {
                 module: shaderModule,
                 entryPoint: 'gridFragment',
-                targets: [{ format: navigator.gpu.getPreferredCanvasFormat() }],
+                targets: [{
+                    format: navigator.gpu.getPreferredCanvasFormat(),
+                    blend: {
+                        color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+                        alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+                    },
+                }],
             },
             primitive: {
                 topology: 'line-list',
             },
             depthStencil: {
                 format: 'depth24plus',
-                depthWriteEnabled: true,
-                depthCompare: 'less',
+                depthWriteEnabled: false, // Полупрозрачные линии не блокируют буфер глубины
+                depthCompare: 'less-equal',
             }
         });
     }
@@ -66,43 +73,52 @@ export class GridWireframe {
         const vertices = [];
         const colors = [];
 
-        const addLine = (p1, p2, color) => {
+        const addLine = (p1, p2, colorRGBA) => {
             vertices.push(...p1, ...p2);
-            colors.push(...color, ...color);
+            colors.push(...colorRGBA, ...colorRGBA);
         };
 
         const Z_BASE = 75; // Протокол 1 Метр
         const GRID_WIDTH = 128;
-        const GRID_HEIGHT = 256; // 128 * STEP_Y (2.0)
+        const GRID_HEIGHT = 256; // 128 полутонов * шаг Y (2.0)
         const GRID_DEPTH = 128;
 
-        const purple = [0.749, 0.0, 1.0]; // Левая сетка (0xBF00FF)
-        const red = [1.0, 0.0, 0.0];      // Правая сетка (0xFF0000)
+        // Линии сеток: прозрачность 99.95% (alpha = 0.0005)
+        const GRID_ALPHA = 0.0005;
+        const purpleGrid = [0.749, 0.0, 1.0, GRID_ALPHA]; // Левая сетка (Фиолетовая)
+        const redGrid = [1.0, 0.0, 0.0, GRID_ALPHA];      // Правая сетка (Красная)
+
+        // Оси и ключевые маркеры: 100% непрозрачные (alpha = 1.0)
+        const redAxis = [1.0, 0.0, 0.0, 1.0];
+        const purpleAxis = [0.749, 0.0, 1.0, 1.0];
+        const greenAxis = [0.0, 1.0, 0.0, 1.0];
+        const whiteAxis = [1.0, 1.0, 1.0, 1.0];
+        const blueSphere = [0.0, 0.4, 1.0, 1.0];
 
         // 1. Оси из точки (0, 0, Z_BASE)
-        addLine([0, 0, Z_BASE], [GRID_WIDTH, 0, Z_BASE], red);         // X+ (Красная)
-        addLine([0, 0, Z_BASE], [-GRID_WIDTH, 0, Z_BASE], purple);     // X- (Фиолетовая)
-        addLine([0, 0, Z_BASE], [0, GRID_HEIGHT, Z_BASE], [0, 1, 0]);  // Y+ (Зеленая)
-        addLine([0, 0, Z_BASE], [0, 0, Z_BASE + GRID_DEPTH], [1, 1, 1]); // Z+ (Белая вглубь)
+        addLine([0, 0, Z_BASE], [GRID_WIDTH, 0, Z_BASE], redAxis);         // X+ (Красная)
+        addLine([0, 0, Z_BASE], [-GRID_WIDTH, 0, Z_BASE], purpleAxis);     // X- (Фиолетовая)
+        addLine([0, 0, Z_BASE], [0, GRID_HEIGHT, Z_BASE], greenAxis);      // Y+ (Зеленая)
+        addLine([0, 0, Z_BASE], [0, 0, Z_BASE + GRID_DEPTH], whiteAxis);   // Z+ (Белая вглубь)
 
-        // 2. Левая сетка (Фиолетовая, X: 0 -> -128)
-        // Горизонтальные линии (каждые 16 единиц)
-        for (let y = 0; y <= GRID_HEIGHT; y += 16) {
-            addLine([0, y, Z_BASE], [-GRID_WIDTH, y, Z_BASE], purple);
+        // 2. Левая сетка (Фиолетовая, X: 0 -> -128, Y: 0 -> 256)
+        // 128 ячеек по вертикали (шаг 2.0 = 128 линий)
+        for (let y = 0; y <= GRID_HEIGHT; y += 2) {
+            addLine([0, y, Z_BASE], [-GRID_WIDTH, y, Z_BASE], purpleGrid);
         }
-        // Вертикальные линии (каждые 16 единиц)
-        for (let x = 0; x >= -GRID_WIDTH; x -= 16) {
-            addLine([x, 0, Z_BASE], [x, GRID_HEIGHT, Z_BASE], purple);
+        // 128 ячеек по горизонтали (шаг 1.0 = 128 линий)
+        for (let x = 0; x >= -GRID_WIDTH; x -= 1) {
+            addLine([x, 0, Z_BASE], [x, GRID_HEIGHT, Z_BASE], purpleGrid);
         }
 
-        // 3. Правая сетка (Красная, X: 0 -> +128)
-        // Горизонтальные линии (каждые 16 единиц)
-        for (let y = 0; y <= GRID_HEIGHT; y += 16) {
-            addLine([0, y, Z_BASE], [GRID_WIDTH, y, Z_BASE], red);
+        // 3. Правая сетка (Красная, X: 0 -> +128, Y: 0 -> 256)
+        // 128 ячеек по вертикали (шаг 2.0 = 128 линий)
+        for (let y = 0; y <= GRID_HEIGHT; y += 2) {
+            addLine([0, y, Z_BASE], [GRID_WIDTH, y, Z_BASE], redGrid);
         }
-        // Вертикальные линии (каждые 16 единиц)
-        for (let x = 0; x <= GRID_WIDTH; x += 16) {
-            addLine([x, 0, Z_BASE], [x, GRID_HEIGHT, Z_BASE], red);
+        // 128 ячеек по горизонтали (шаг 1.0 = 128 линий)
+        for (let x = 0; x <= GRID_WIDTH; x += 1) {
+            addLine([x, 0, Z_BASE], [x, GRID_HEIGHT, Z_BASE], redGrid);
         }
 
         // 4. Синяя точка (сфера на пересечении осей)
@@ -113,7 +129,7 @@ export class GridWireframe {
             addLine(
                 [Math.cos(a1) * sphereR, Math.sin(a1) * sphereR + 0, Z_BASE],
                 [Math.cos(a2) * sphereR, Math.sin(a2) * sphereR + 0, Z_BASE],
-                [0.0, 0.4, 1.0]
+                blueSphere
             );
         }
 

@@ -246,17 +246,21 @@ export class HologramWebGPU {
             // ─── Grid ───────────────────────────────────────
             struct GridVSInput {
                 @location(0) position: vec3<f32>,
-                @location(1) color: vec3<f32>,
+                @location(1) color: vec4<f32>,
             };
-            @vertex fn gridVertex(input: GridVSInput) -> VSOutput {
-                var out: VSOutput;
+            struct GridVSOutput {
+                @builtin(position) position: vec4<f32>,
+                @location(0) vColor: vec4<f32>,
+            };
+            @vertex fn gridVertex(input: GridVSInput) -> GridVSOutput {
+                var out: GridVSOutput;
                 out.vColor = input.color;
                 let worldPos = vec4<f32>(input.position, 1.0);
                 out.position = uniforms.uProjectionMatrix * (uniforms.uViewMatrix * worldPos);
                 return out;
             }
-            @fragment fn gridFragment(input: VSOutput) -> @location(0) vec4<f32> {
-                return vec4<f32>(input.vColor, 1.0);
+            @fragment fn gridFragment(input: GridVSOutput) -> @location(0) vec4<f32> {
+                return input.vColor;
             }
 
             // ─── Spheres ────────────────────────────────────

@@ -67,12 +67,11 @@ export class DeviceCapabilities {
      */
     async getAudioInputDevices() {
         try {
-            // Request permission first to get full device info
-            await navigator.mediaDevices.getUserMedia({ audio: true });
+            if (!navigator?.mediaDevices?.enumerateDevices) return [];
             const devices = await navigator.mediaDevices.enumerateDevices();
             return devices.filter(d => d.kind === 'audioinput');
         } catch (e) {
-            console.warn('[DeviceCapabilities] Cannot enumerate audio devices:', e);
+            console.warn('[DeviceCapabilities] Audio devices unavailable (guest/no-mic mode):', e.message);
             return [];
         }
     }
@@ -82,10 +81,11 @@ export class DeviceCapabilities {
      */
     async getVideoInputDevices() {
         try {
+            if (!navigator?.mediaDevices?.enumerateDevices) return [];
             const devices = await navigator.mediaDevices.enumerateDevices();
             return devices.filter(d => d.kind === 'videoinput');
         } catch (e) {
-            console.warn('[DeviceCapabilities] Cannot enumerate video devices:', e);
+            console.warn('[DeviceCapabilities] Video devices unavailable (guest/no-cam mode):', e.message);
             return [];
         }
     }
@@ -95,6 +95,7 @@ export class DeviceCapabilities {
      */
     async getMaxChannelCount() {
         try {
+            if (!navigator?.mediaDevices?.getUserMedia) return 2;
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     channelCount: { ideal: 8 }, // Request max possible
@@ -104,11 +105,11 @@ export class DeviceCapabilities {
                 }
             });
             const track = stream.getAudioTracks()[0];
-            const settings = track.getSettings();
+            const settings = track?.getSettings() || {};
             stream.getTracks().forEach(t => t.stop());
             return settings.channelCount || 2;
         } catch (e) {
-            console.warn('[DeviceCapabilities] Cannot detect channel count:', e);
+            console.warn('[DeviceCapabilities] Cannot detect channel count (defaulting to stereo):', e.message);
             return 2; // Default to stereo
         }
     }

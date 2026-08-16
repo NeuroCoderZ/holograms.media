@@ -107,16 +107,17 @@ function addDebugClasses() {
 }
 
 /**
- * Logs the current bounding client rectangles (dimensions and positions) of key UI layout elements.
- * Useful for debugging layout issues.
+ * Logs the current layout state (available in debug mode only).
  */
 function logLayoutState() {
-  console.log('Текущее состояние макета UI:');
-  console.log('Левая панель:', uiElements.leftPanel ? uiElements.leftPanel.getBoundingClientRect() : 'не найдена');
-  console.log('Правая панель:', uiElements.rightPanel ? uiElements.rightPanel.getBoundingClientRect() : 'не найдена');
-  console.log('Контейнер сетки:', uiElements.gridContainer ? uiElements.gridContainer.getBoundingClientRect() : 'не найдена');
-  console.log('Область жестов:', uiElements.gestureArea ? uiElements.gestureArea.getBoundingClientRect() : 'не найдена');
-  console.log('Контейнер чата:', uiElements.containers.chatMessages ? uiElements.containers.chatMessages.getBoundingClientRect() : 'не найдена');
+  if (import.meta.env?.DEV) {
+    console.log('Текущее состояние макета UI:', {
+      leftPanel: uiElements.leftPanel ? uiElements.leftPanel.getBoundingClientRect() : null,
+      rightPanel: uiElements.rightPanel ? uiElements.rightPanel.getBoundingClientRect() : null,
+      gridContainer: uiElements.gridContainer ? uiElements.gridContainer.getBoundingClientRect() : null,
+      gestureArea: uiElements.gestureArea ? uiElements.gestureArea.getBoundingClientRect() : null,
+    });
+  }
 }
 
 /**
@@ -257,27 +258,7 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   }
   uiElements.indicators.loadingIndicator = document.getElementById('loadingIndicator');
 
-  // Debugging: Verify if gestureArea and gridContainer are found and assigned.
-  console.log('[UIManager] Проверка: gestureArea в appState.uiElements:', appState.uiElements.gestureArea ? 'найдена' : 'НЕ найдена', appState.uiElements.gestureArea);
-  console.log('[UIManager] Проверка: gridContainer в appState.uiElements:', appState.uiElements.gridContainer ? 'найден' : 'НЕ найден', appState.uiElements.gridContainer);
-  console.log('[UIManager] Проверка: leftPanel в appState.uiElements:', appState.uiElements.leftPanel ? 'найден' : 'НЕ найден');
-  console.log('[UIManager] Проверка: rightPanel в appState.uiElements:', appState.uiElements.rightPanel ? 'найден' : 'НЕ найден');
-  console.log('[UIManager] Проверка: togglePanelsButton в appState.uiElements:', appState.uiElements.togglePanelsButton ? 'найден' : 'НЕ найден');
-  if (appState.uiElements.togglePanelsButton) {
-    console.log('[UIManager] togglePanelsButton style.display:', appState.uiElements.togglePanelsButton.style.display);
-    console.log('[UIManager] togglePanelsButton computed style display:', window.getComputedStyle(appState.uiElements.togglePanelsButton).display);
-    console.log('[UIManager] togglePanelsButton visibility:', window.getComputedStyle(appState.uiElements.togglePanelsButton).visibility);
-    console.log('[UIManager] togglePanelsButton opacity:', window.getComputedStyle(appState.uiElements.togglePanelsButton).opacity);
-    console.log('[UIManager] togglePanelsButton computed left:', window.getComputedStyle(appState.uiElements.togglePanelsButton).left);
-    console.log('[UIManager] togglePanelsButton computed position:', window.getComputedStyle(appState.uiElements.togglePanelsButton).position);
-    console.log('[UIManager] togglePanelsButton computed transform:', window.getComputedStyle(appState.uiElements.togglePanelsButton).transform);
-  }
-  // Ensure these new elements are also logged or checked if you have debugging patterns for that.
-  // For example, adding to logLayoutState or the verification console.logs:
-  console.log('[UIManager] Проверка: triaVersion в appState.uiElements.labels:', appState.uiElements.labels.triaVersion ? 'найден' : 'НЕ найден', appState.uiElements.labels.triaVersion);
-  if (appState.uiElements.containers.promptBar) console.log('[UIManager] Проверка: promptBar в appState.uiElements.containers: найден');
-  if (appState.uiElements.containers.chatInputBar) console.log('[UIManager] Проверка: chatInputBar в appState.uiElements.containers: найден');
-  console.log('[UIManager] Проверка: loadingIndicator в appState.uiElements.indicators:', appState.uiElements.indicators.loadingIndicator ? 'найден' : 'НЕ найден');
+
 
   // Инициализация контейнера для списка голограмм
   if (!appState.uiElements.containers) { appState.uiElements.containers = {}; }

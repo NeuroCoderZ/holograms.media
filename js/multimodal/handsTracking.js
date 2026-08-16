@@ -1,18 +1,40 @@
 // handsTracking.js
-// handsTracking.js
-// MediaPipe now loaded via index.html globals
 // MediaPipe now loaded via index.html globals - Robust resolver
+
+const _origLog = console.log;
+const _origWarn = console.warn;
+const _origErr = console.error;
+
+function suppressMediaPipeLogs() {
+    console.log = (...args) => {
+        const msg = String(args[0] || '');
+        if (msg.includes('I0000') || msg.includes('W0000') || msg.includes('gl_context') || msg.includes('still waiting on run dependencies') || msg.includes('OpenGL error checking')) return;
+        _origLog.apply(console, args);
+    };
+    console.warn = (...args) => {
+        const msg = String(args[0] || '');
+        if (msg.includes('I0000') || msg.includes('W0000') || msg.includes('gl_context') || msg.includes('OpenGL error checking')) return;
+        _origWarn.apply(console, args);
+    };
+}
+
+function restoreMediaPipeLogs() {
+    console.log = _origLog;
+    console.warn = _origWarn;
+    console.error = _origErr;
+}
+
 // Подавление внутренних Emscripten/MediaPipe WASM спам-логов (gl_context, waiting on dependencies)
 if (typeof window !== 'undefined') {
     window.Module = window.Module || {};
     const origPrint = window.Module.print;
     const origPrintErr = window.Module.printErr;
     window.Module.print = (text) => {
-        if (text && (text.includes('waiting on run dependencies') || text.includes('gl_context') || text.includes('dependency:'))) return;
+        if (text && (text.includes('waiting on run dependencies') || text.includes('gl_context') || text.includes('dependency:') || text.includes('I0000') || text.includes('W0000'))) return;
         if (typeof origPrint === 'function') origPrint(text);
     };
     window.Module.printErr = (text) => {
-        if (text && (text.includes('waiting on run dependencies') || text.includes('gl_context') || text.includes('OpenGL error checking') || text.includes('dependency:'))) return;
+        if (text && (text.includes('waiting on run dependencies') || text.includes('gl_context') || text.includes('OpenGL error checking') || text.includes('dependency:') || text.includes('I0000') || text.includes('W0000'))) return;
         if (typeof origPrintErr === 'function') origPrintErr(text);
     };
 }
@@ -167,22 +189,27 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                         console.warn('[HandsTracking] close() старого Hands:', e.message);
                     }
 
-                    const fresh = new Hands({
-                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`,
-                    });
-                    fresh.setOptions({
-                        selfieMode: true,
-                        maxNumHands: 2,
-                        modelComplexity: 1,
-                        minDetectionConfidence: 0.7,
-                        minTrackingConfidence: 0.7,
-                        delegate: 'GPU',
-                    });
-                    fresh.onResults(onResults);
+                    suppressMediaPipeLogs();
+                    try {
+                        const fresh = new Hands({
+                            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`,
+                        });
+                        fresh.setOptions({
+                            selfieMode: true,
+                            maxNumHands: 2,
+                            modelComplexity: 1,
+                            minDetectionConfidence: 0.7,
+                            minTrackingConfidence: 0.7,
+                            delegate: 'GPU',
+                        });
+                        fresh.onResults(onResults);
 
-                    state.multimodal.handsInstance = fresh;
-                    handsInstance = fresh; // локальная ссылка в onFrame-замыкании
-                    console.log('[HandsTracking] MediaPipe Hands пересоздан');
+                        state.multimodal.handsInstance = fresh;
+                        handsInstance = fresh; // локальная ссылка в onFrame-замыкании
+                        console.log('[HandsTracking] MediaPipe Hands пересоздан');
+                    } finally {
+                        restoreMediaPipeLogs();
+                    }
                 };
 
                 state.multimodal.cameraInstance = new Camera(videoElement, {
@@ -348,23 +375,28 @@ export function initializeMediaPipeHands() {
         });
     }
 
-    state.multimodal.handsInstance = new Hands({
-        locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
-        }
-    });
+    suppressMediaPipeLogs();
+    try {
+        state.multimodal.handsInstance = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
+            }
+        });
 
-    state.multimodal.handsInstance.setOptions({
-        selfieMode: true,
-        maxNumHands: 2, // User asked for two hands if present
-        modelComplexity: 1,
-        minDetectionConfidence: 0.7,
-        minTrackingConfidence: 0.7,
-        // NPU/WebGPU delegate для Windows 11 25H2 — ускоряет инференс
-        delegate: 'GPU',
-    });
+        state.multimodal.handsInstance.setOptions({
+            selfieMode: true,
+            maxNumHands: 2, // User asked for two hands if present
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7,
+            // NPU/WebGPU delegate для Windows 11 25H2 — ускоряет инференс
+            delegate: 'GPU',
+        });
 
-    state.multimodal.handsInstance.onResults(onResults);
+        state.multimodal.handsInstance.onResults(onResults);
+    } finally {
+        restoreMediaPipeLogs();
+    }
 
     // Инициализация нового классификатора намерения
     state.gestureIntentClassifier = new GestureIntentClassifier();

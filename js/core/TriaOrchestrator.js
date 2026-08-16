@@ -47,6 +47,13 @@ export class TriaOrchestrator {
      */
     async handleIntent(intent, gestureData) {
         const normalized = this._normalizeIntent(intent, gestureData);
+        
+        // Порог отсечения шума (confidence < 0.6 игнорируется)
+        const conf = normalized.gestureData?.confidence;
+        if (typeof conf === 'number' && conf < 0.6) {
+            return;
+        }
+
         this.log(`Processing intent: "${normalized.text}"`);
         try {
             // Маппинг паттернов на команды через конфиг (ТЗ v0.20 GA B-2)

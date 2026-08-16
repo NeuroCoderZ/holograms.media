@@ -123,10 +123,11 @@ class AudioService {
 
             if (this.workletNode) {
                 console.log('[AudioService] Sending WASM buffer to workletNode...');
+                const bufferToSend = this.wasmBuffer.slice(0);
                 this.workletNode.port.postMessage({
                     type: 'WASM_BUFFER',
-                    buffer: this.wasmBuffer
-                }, [this.wasmBuffer]); // TRANSFER ownership
+                    buffer: bufferToSend
+                }, [bufferToSend]); // TRANSFER clone, preserve this.wasmBuffer
             }
 
         } catch (error) {

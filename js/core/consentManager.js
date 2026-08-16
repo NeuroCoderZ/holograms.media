@@ -296,50 +296,16 @@ export class ConsentManager {
         this.proceedButton.disabled = !isChecked;
 
         if (window.syncConsent) window.syncConsent();
-
-        // Google Identity доступен только после отметки согласия. Это же
-        // снимает конфликт FedCM: нативный popup Google больше не перехватывает
-        // фокус у модалки, потому что вызывается позже.
-        if (this.googleContainer) {
-            this.googleContainer.style.opacity = isChecked ? '1' : '0.3';
-            this.googleContainer.style.pointerEvents = isChecked ? 'auto' : 'none';
-        }
     }
 
     _renderGoogleButton() {
-        // В Telegram-мини-приложении Google Identity недоступен (WebView без
-        // третьесторонних кук), там работает вход через саму платформу.
-        if (this.isTelegram) {
-            if (this.googleContainer) this.googleContainer.style.display = 'none';
-            return;
-        }
-
-        if (!window.google?.accounts?.id) {
-            console.warn('[ConsentManager] Google GSI ещё не загружен');
-            return;
-        }
-        if (!this.googleContainer) return;
-
-        this.googleContainer.innerHTML = '';
-        window.google.accounts.id.renderButton(this.googleContainer, {
-            theme: 'outline',
-            size: 'large',
-            text: 'signin_with',
-            width: 300,
-        });
+        // Кнопка Google теперь не встраивается в окно соглашения,
+        // а рендерится в меню профиля / One Tap после прохождения согласия
     }
 
-    /** После принятия оставляем в модалке только вход в аккаунт. */
+    /** После принятия полностью закрываем модалку соглашения */
     _hideConsentUI() {
         if (!this.consentModal) return;
-
-        const text = this.consentModal.querySelector('.consent-text');
-        const container = this.consentModal.querySelector('.consent-checkbox-container');
-        if (text) text.style.display = 'none';
-        if (container) container.style.display = 'none';
-        if (this.proceedButton) this.proceedButton.style.display = 'none';
-
-        const title = this.consentModal.querySelector('h2');
-        if (title) title.innerText = 'Вход в аккаунт';
+        this.consentModal.style.display = 'none';
     }
 }
