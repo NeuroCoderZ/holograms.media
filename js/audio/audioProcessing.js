@@ -55,11 +55,11 @@ export function resetInputProxy() {
 
 // ВАЖНО: Мы не перезаписываем onmessage, а подписываемся на событие из шины данных
 let _lastSpectralLog = 0;
-const _LOG_INTERVAL = 10000; // Логируем каждые 10 секунд (было 3с)
+const _LOG_INTERVAL = 30000; // Логируем каждые 30 секунд (было 10с)
 
 eventBus.on('audio:spectralData', (data) => {
     const now = Date.now();
-    const shouldLog = !window._spectralDataHandlerLog || (now - _lastSpectralLog > _LOG_INTERVAL);
+    const shouldLog = (window.__debugSpectral || !window._spectralDataHandlerLog) && (now - _lastSpectralLog > _LOG_INTERVAL);
     
     if (shouldLog) {
         console.log('[AudioProcessing] ⚡ spectralData:', {

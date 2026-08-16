@@ -11,6 +11,7 @@ export class BrowserPipelineTest {
     }
 
     start() {
+        if (!import.meta.env.DEV) return;
         this._listener = (data) => {
             if (this._frameCount >= this._maxFrames) {
                 eventBus.off('audioData', this._listener);

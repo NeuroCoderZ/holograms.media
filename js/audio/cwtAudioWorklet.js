@@ -49,6 +49,10 @@ class CwtProcessor extends AudioWorkletProcessor {
         this.port.onmessage = async (event) => {
             const data = event.data;
             if (data.type === 'WASM_BUFFER') {
+                if (!data.buffer || data.buffer.byteLength === 0) {
+                    this.port.postMessage({ type: 'LOG', msg: '⚠️ Received empty WASM buffer, ignoring' });
+                    return;
+                }
                 this.port.postMessage({ type: 'LOG', msg: 'WASM_BUFFER_RECEIVED' });
                 try {
                     await this.initWasm(data.buffer);

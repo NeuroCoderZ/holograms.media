@@ -275,8 +275,8 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   // Ensure these new elements are also logged or checked if you have debugging patterns for that.
   // For example, adding to logLayoutState or the verification console.logs:
   console.log('[UIManager] Проверка: triaVersion в appState.uiElements.labels:', appState.uiElements.labels.triaVersion ? 'найден' : 'НЕ найден', appState.uiElements.labels.triaVersion);
-  console.log('[UIManager] Проверка: promptBar в appState.uiElements.containers:', appState.uiElements.containers.promptBar ? 'найден' : 'НЕ найден');
-  console.log('[UIManager] Проверка: chatInputBar в appState.uiElements.containers:', appState.uiElements.containers.chatInputBar ? 'найден' : 'НЕ найден');
+  if (appState.uiElements.containers.promptBar) console.log('[UIManager] Проверка: promptBar в appState.uiElements.containers: найден');
+  if (appState.uiElements.containers.chatInputBar) console.log('[UIManager] Проверка: chatInputBar в appState.uiElements.containers: найден');
   console.log('[UIManager] Проверка: loadingIndicator в appState.uiElements.indicators:', appState.uiElements.indicators.loadingIndicator ? 'найден' : 'НЕ найден');
 
   // Инициализация контейнера для списка голограмм

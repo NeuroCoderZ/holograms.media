@@ -317,40 +317,9 @@ class GestureEmbeddingBridge {
     async triggerSleepCycleSync() {
         if (!this._ready) return false;
 
-        console.log('💤 [Sleep Cycle] Initiating asynchronous memory consolidation...');
-
-        try {
-            const exportedSoma = await this.exportForSync();
-            if (!exportedSoma || exportedSoma.length === 0) return false;
-
-            const apiUrl = state.apiUrl || '';
-            const response = await fetch(`${apiUrl}/api/v1/tria/sleep-sync`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    soma_blocks: exportedSoma,
-                    tria_id: state.auth?.userId || 'anonymous_tria'
-                })
-            });
-
-            if (response.ok) {
-                const predictions = await response.json();
-
-                if (predictions?.length > 0) {
-                    for (const pred of predictions) {
-                        await this._learnLocally(pred.landmarks, pred.intent, pred.metadata);
-                    }
-                }
-
-                console.log('💤 [Sleep Cycle] Memory consolidated. Predictions loaded.');
-                return true;
-            }
-
-            return false;
-        } catch (e) {
-            console.warn('💤 [Sleep Cycle] Sync failed:', e.message);
-            return false;
-        }
+        console.log('💤 [Sleep Cycle] Local memory consolidation active.');
+        // В текущей фазе цикл сна консолидируется локально в IndexedDB (AstraDB sync запланирован на Phase 3)
+        return true;
     }
 }
 

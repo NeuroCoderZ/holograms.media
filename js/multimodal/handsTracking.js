@@ -130,9 +130,10 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                 // который никогда не резолвится и не реджектится (зависший WASM-инференс).
                 // Тогда `finally` не выполняется, isProcessing остаётся true навсегда,
                 // и все следующие кадры молча отсекаются локом на строке «if (isProcessing) return».
-                const INFERENCE_TIMEOUT_MS = 2000;
+                const INFERENCE_TIMEOUT_MS = 3000;
                 const MAX_HANGS_BEFORE_RESET = 3;
                 let hangCount = 0;
+                let lastHangLogTime = 0;
 
                 /** send() с таймаутом: промис-зависание больше не вешает конвейер. */
                 const sendWithTimeout = (instance) => {
@@ -237,10 +238,13 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
 
                             if (isHang) {
                                 hangCount++;
-                                console.warn(
-                                    `[HandsTracking] inference watchdog: ${hangCount} hang(s) — ` +
-                                    `кадр отброшен по таймауту ${INFERENCE_TIMEOUT_MS}ms`,
-                                );
+                                if (Date.now() - lastHangLogTime > 10000 || hangCount >= MAX_HANGS_BEFORE_RESET) {
+                                    console.warn(
+                                        `[HandsTracking] inference watchdog: ${hangCount} hang(s) — ` +
+                                        `кадр отброшен по таймауту ${INFERENCE_TIMEOUT_MS}ms`,
+                                    );
+                                    lastHangLogTime = Date.now();
+                                }
 
                                 if (hangCount >= MAX_HANGS_BEFORE_RESET) {
                                     console.error(

@@ -416,11 +416,12 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         if (holoCam) {
             holoCam.setZoom(targetScaleValue / BASE_LAYOUT_SCALE);
             // Перевод пиксельного смещения в мировые координаты ортокамеры:
-            // В HoloEngine: голограмма Y=0..256 (центр Y=128), Z=75
-            // X направлен вправо, Y вверх.
+            // В HoloEngine: голограмма Y=0..256 (центр Y=128), Z=75.
+            // При target=[0,128,75] и ORTHO_CENTER_Y=0 центр мира (0,128,75) проецируется в центр экрана.
+            // X направлен вправо, Y вверх (экранный Y направлен вниз).
             const worldUnitsPerPixel = (holoCam.ORTHO_HALF_H * 2) / (containerHeight * (holoCam.camera.zoom || 1));
-            holoCam.camera.target[0] = pixelOffsetX * worldUnitsPerPixel;
-            holoCam.camera.target[1] = 128 - pixelOffsetY * worldUnitsPerPixel;
+            holoCam.camera.target[0] = -pixelOffsetX * worldUnitsPerPixel;
+            holoCam.camera.target[1] = 128 + pixelOffsetY * worldUnitsPerPixel;
             holoCam._updateView();
         }
         if (hologramPivot) {
@@ -429,15 +430,16 @@ export function updateHologramLayout(appState, overrideWidth = null, overrideHei
         }
     }
 
-    // Синхронизируем панель жестов: та же ширина что и голограмма, строго под ней
-    const visualWidth = 256 * targetScaleValue;
+    // Синхронизируем панель жестов: ширина равна доступной ширине между панелями с 5% отступами,
+    // расположена соосно с центром голограммы.
     const gestureArea = document.getElementById('gesture-area') || appState.uiElements?.gestureArea;
     if (gestureArea) {
-        // Убираем CSS-центрирование, управляем позицией напрямую
+        const gestureWidth = usableWidth;
+        const gestureLeft = centerScreenX - (gestureWidth / 2);
         gestureArea.style.transform = 'none';
-        gestureArea.style.left = `${(containerWidth - visualWidth) / 2}px`;
-        gestureArea.style.width = `${visualWidth}px`;
-        gestureArea.style.setProperty('--gesture-width', `${visualWidth}px`);
+        gestureArea.style.left = `${gestureLeft}px`;
+        gestureArea.style.width = `${gestureWidth}px`;
+        gestureArea.style.setProperty('--gesture-width', `${gestureWidth}px`);
     }
 }
 
