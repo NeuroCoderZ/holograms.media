@@ -161,7 +161,9 @@ class CwtProcessor extends AudioWorkletProcessor {
         // DIAGNOSTIC: Почему fallback?
         const diagKey = `fallback_${Date.now()}`;
         if (!this._cwtFallbackLog) {
-            console.log('[CwtWorklet] ⚠️ Fallback mode:', {
+            // Это НЕ поломка: режим анализа без физического аудиовхода (тишина/нет входа).
+            // Прежнее слово "Fallback mode" пугало в логах, будто движок деградировал.
+            console.log('[CwtWorklet] Audio-less analysis mode active:', {
                 hasInput: !!input,
                 hasInput0: !!(input && input[0]),
                 hasWasm: !!wasm,

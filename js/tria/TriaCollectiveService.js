@@ -72,7 +72,9 @@ export default class TriaCollectiveService {
       };
 
       this._ws.onerror = (err) => {
-        console.warn('[TriaCollective] WebSocket error:', err);
+        // Логируем только суть, без дампа всего объекта Event (он тянет за собой
+        // WebSocket/target/currentTarget и раздувает консоль на 5+ строк).
+        console.warn('[TriaCollective] WebSocket error:', err?.type || 'connection failed');
         resolve({ ok: false, error: err });
       };
 

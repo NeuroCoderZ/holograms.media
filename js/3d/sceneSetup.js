@@ -59,13 +59,18 @@ export async function initializeScene(state) {
 
   // --- Детект возможностей рендеринга и выбор рендерера ---
   try {
-    console.log('[Renderer Detection] Определение поддерживаемых технологий рендеринга...');
     const capabilities = await renderingCapabilities.detect();
-    console.log('[Renderer Detection] Обнаружены возможности:', capabilities);
 
     // Выбор предпочтительного рендерера
     const preferredRenderer = capabilities.preferred;
-    console.log(`[Renderer Detection] Выбран рендерер: ${preferredRenderer}`);
+    // 2026-08-22 20:02 MSK — раньше здесь печаталось «Выбран рендерер: webgpu»,
+    // после чего инициализировался WebGL (потому что решает флаг renderBackend,
+    // а не capabilities.preferred). Лог прямо противоречил следующей строке.
+    // Теперь честно разделяем «что поддерживает железо» и «что реально включено».
+    console.log(
+      `[Renderer Detection] Возможности железа: предпочтителен ${preferredRenderer}; `
+      + `фактический бэкенд по флагу renderBackend: ${state.renderBackend}`
+    );
 
     state.renderingCapabilities = capabilities;
     state.currentRenderer = preferredRenderer;

@@ -47,7 +47,10 @@ export class RenderingCapabilities {
             preferred: webgpu ? 'webgpu' : webgl ? 'webgl' : 'canvas2d'
         };
 
-        console.log('[RenderingCapabilities] Detected:', this.capabilities);
+        console.log(
+            `[RenderingCapabilities] webgl=${webgl}, webgpu=${webgpu}, `
+            + `предпочтительный=${this.capabilities.preferred}`
+        );
         return this.capabilities;
     }
 

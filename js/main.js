@@ -53,7 +53,14 @@ async function main() {
     // ---------------------------
 
     const isTelegram = isTelegramMiniApp();
-    console.log(`[Main] Platform: ${isTelegram ? 'Telegram Mini App' : 'Web'}`, describeTelegramEnv());
+    // 2026-08-22 19:58 MSK — печатаем плоскую строку, а не объект: в консоли
+    // Chrome второй аргумент-объект сворачивается в нечитаемое «Object»,
+    // и лог старта не давал понять, ПОЧЕМУ выбран тот или иной режим.
+    const tgEnv = describeTelegramEnv();
+    console.log(
+        `[Main] Platform: ${isTelegram ? 'Telegram Mini App' : 'Web'} `
+        + `(tg.platform=${tgEnv.platform ?? 'нет'}, initData=${tgEnv.initDataLen}Б, hash=${tgEnv.hashMarker})`
+    );
 
     // 0. Динамический лоадер
     const loader = new EyeLoader();

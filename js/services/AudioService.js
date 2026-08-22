@@ -215,11 +215,14 @@ class AudioService {
                 if (this.wasmBuffer && this.wasmBuffer.byteLength > 0) {
                     // CRITICAL FIX: Clone buffer before transferring to keep a local copy for restarts
                     const bufferToSend = this.wasmBuffer.slice(0);
+                    // ВАЖНО: byteLength замеряем ДО postMessage — transfer обнуляет ArrayBuffer,
+                    // иначе лог печатает "0 bytes" при полностью успешной передаче (ложная тревога).
+                    const sentBytes = bufferToSend.byteLength;
                     this.workletNode.port.postMessage({
                         type: 'WASM_BUFFER',
                         buffer: bufferToSend
                     }, [bufferToSend]); // TRANSFER the clone, NOT the original
-                    console.log(`[AudioService] WASM buffer sent: ${bufferToSend.byteLength} bytes`);
+                    console.log(`[AudioService] WASM buffer sent: ${sentBytes} bytes`);
                 } else {
                     console.error('[AudioService] WASM buffer is empty or not loaded. Reloading...');
                     this.loadWasmModule();
