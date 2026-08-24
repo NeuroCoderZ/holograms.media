@@ -85,6 +85,13 @@ async function handleGoogleCredentialResponse(response) {
       environment: responseData.environment
     };
 
+    // 2026-08-24 (G3/A1): запоминаем вошедшего для «Продолжить как …»
+    // в unified auth sheet (localStorage, не секрет — только имя/email/провайдер)
+    try {
+      const { rememberUser } = await import('../ui/unifiedAuthSheet.js');
+      rememberUser(state.user);
+    } catch { /* модуль недоступен — не критично */ }
+
     updateAuthUI();
     showWelcomeOnce(state.user.role || 'developer');
 
@@ -192,6 +199,12 @@ export function signOut() {
   state.isAuthenticated = false;
   state.user = null;
 
+  // 2026-08-24 (G3/A1): забываем возвратника, чтобы «Продолжить как …»
+  // не предлагало вышедшего юзера
+  try {
+    import('../ui/unifiedAuthSheet.js').then(m => m.forgetUser()).catch(() => {});
+  } catch { /* ignore */ }
+
   if (window.google && window.google.accounts && window.google.accounts.id) {
     window.google.accounts.id.disableAutoSelect();
   }
@@ -245,6 +258,11 @@ export async function initAuth() {
             role: data.role,
             platform: 'telegram',
           };
+          // 2026-08-24 (G3/A1): TG-юзер тоже становится возвратником в шторке
+          try {
+            const { rememberUser } = await import('../ui/unifiedAuthSheet.js');
+            rememberUser(state.user);
+          } catch { /* не критично */ }
           console.log('[Auth] TG session verified by backend');
         } else {
           console.warn(`[Auth] Backend rejected Telegram initData (${resp.status})`);

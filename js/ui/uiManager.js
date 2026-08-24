@@ -11,6 +11,14 @@ import { hologramScanner } from '../multimodal/hologramScanner.js'; // Import fo
 import { gestureSynthesizer } from '../audio/GestureSynthesizer.js'; // Import for Gesture Synth
 import { gestureManager } from '../managers/gestureManager.js'; // Import for Gesture Manager
 import { initializeTreasuryUI } from './treasuryUI.js'; // Import for Treasury UI (H-1)
+// 2026-08-24 (G3/A1): единая шторка входа вместо разрозненных модалок.
+// Модуль готов с 11.08, подключается сейчас: одна точка входа для
+// Google / Telegram / гость / «Продолжить как …».
+import {
+  showAuthSheet,
+  closeAuthSheet,
+  forgetUser,
+} from './unifiedAuthSheet.js';
 
 /**
  * uiElements is a central object holding references to all significant DOM elements
@@ -176,29 +184,43 @@ export function initializeMainUI(appState) { // Accept state passed from main.js
   const leftGoogleBtn = document.getElementById('login-google-btn');
   if (leftGoogleBtn) {
     leftGoogleBtn.addEventListener('click', () => {
-      console.log('[UIManager] #login-google-btn clicked — showing consent/login modal');
+      console.log('[UIManager] #login-google-btn clicked — opening unified auth sheet');
 
-      // Используем ConsentManager из глобального стейта, если он инициализирован
-      if (appState.consentManager) {
-        appState.consentManager.show();
-      } else {
-        // Фолбэк на прямой показ, если менеджер еще не готов
-        const startSessionModal = document.getElementById('start-session-modal');
-        if (startSessionModal) startSessionModal.style.display = 'flex';
-
-        // Попытка отрендерить кнопку Google вручную, если библиотека загружена
-        if (window.google?.accounts?.id) {
-          const container = document.getElementById('google-signin-container');
-          if (container) {
-            container.innerHTML = '';
-            window.google.accounts.id.renderButton(container, { theme: 'outline', size: 'large', text: 'signin_with', width: 300 });
+      // 2026-08-24 (G3/A1): единая шторка входа. Старый поток
+      // (ConsentManager.show + google.accounts.id.prompt) оставлен для
+      // согласия сенсоров, но ВХОД теперь идёт через шторку:
+      // Google GIS / Telegram / гость / «Продолжить как …» в одном месте.
+      showAuthSheet({
+        // Google: рендерим настоящую GIS-кнопку в слот шторки, если GSI готов;
+        // иначе модуль сам покажет фолбэк-кнопку -> onGoogle
+        renderGis: (slot) => {
+          if (window.google?.accounts?.id) {
+            window.google.accounts.id.renderButton(slot, {
+              theme: 'outline', size: 'large', text: 'signin_with',
+              shape: 'rectangular', width: 300,
+            });
           }
-        }
-      }
+        },
+        onGoogle: () => {
+          if (window.google?.accounts?.id && typeof window.google.accounts.id.prompt === 'function') {
+            try { window.google.accounts.id.prompt(); } catch (err) { console.warn('[UIManager] google prompt failed:', err); }
+          } else {
+            console.warn('[AuthSheet] Google GSI недоступен — предложи Telegram');
+          }
+        },
+        onTelegram: () => {
+          // Внутри TG вход происходит автоматически через initData (auth.js);
+          // вне TG кнопка ведёт на бота
+          window.open('https://t.me/holograms_media_bot', '_blank', 'noopener');
+        },
+        onGuest: () => {
+          closeAuthSheet();
+        },
+      });
 
-      // Вызываем prompt для автоматического показа Account Picker
-      if (window.google?.accounts?.id && typeof window.google.accounts.id.prompt === 'function') {
-        try { window.google.accounts.id.prompt(); } catch (err) { console.warn('[UIManager] google.accounts.id.prompt() failed:', err); }
+      // Существующий показ согласия остаётся: он про сенсоры, не про вход.
+      if (appState.consentManager && !appState.sensorsAllowed) {
+        appState.consentManager.show();
       }
     });
   }
