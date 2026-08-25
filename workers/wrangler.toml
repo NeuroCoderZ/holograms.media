@@ -1,0 +1,19 @@
+name = "holograms-proxy"
+main = "workers/holograms-proxy.js"
+compatibility_date = "2026-02-23"
+account_id = "66d386272db6de7ae50ee827505f5d93"
+
+# WebSocket-проксирование требует флага
+[observability]
+enabled = true
+
+# Роуты: перехватываем /api/* и /ws/* на dev-домене, остальное идёт в CF Pages
+[[routes]]
+pattern = "dev.holograms.media/api/*"
+zone_name = "holograms.media"
+
+[[routes]]
+pattern = "dev.holograms.media/ws/*"
+zone_name = "holograms.media"
+
+# Для будущего прода добавим аналогичные роуты на holograms.media
