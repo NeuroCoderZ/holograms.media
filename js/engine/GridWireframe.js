@@ -83,8 +83,9 @@ export class GridWireframe {
         const GRID_HEIGHT = 256; // 128 полутонов * шаг Y (2.0)
         const GRID_DEPTH = 128;
 
-        // Линии сеток: тонкие полупрозрачные линии (alpha = 0.15)
-        const GRID_ALPHA = 0.15;
+        // Линии сеток: 2026-08-25 (юзер) — сетки должны быть ЯВНО видны.
+        // Было alpha = 0.15 (едва заметные), стало 0.6.
+        const GRID_ALPHA = 0.6;
         const purpleGrid = [0.749, 0.0, 1.0, GRID_ALPHA]; // Левая сетка (Фиолетовая, X < 0)
         const redGrid = [1.0, 0.0, 0.0, GRID_ALPHA];      // Правая сетка (Красная, X > 0)
 

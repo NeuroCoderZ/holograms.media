@@ -164,9 +164,10 @@
 
 
 :root {
-  /* Desktop Layout (Landscape): Левая панель под 2 кнопки в ряд + отступы, Правая панель ровно в 2 раза шире */
+  /* Desktop Layout (Landscape): Левая панель под 2 кнопки в ряд + отступы.
+     2026-08-25 (юзер): Правая панель должна быть в ТРИ раза шире левой. */
   --panel-width-left: calc(var(--button-size) * 2 + 24px);
-  --panel-width-right: calc((var(--button-size) * 2 + 24px) * 2);
+  --panel-width-right: calc((var(--button-size) * 2 + 24px) * 3);
 }
 
 @media (orientation: portrait) or (max-width: 768px) {

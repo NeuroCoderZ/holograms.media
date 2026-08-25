@@ -140,6 +140,10 @@ export class HologramWebGPU {
 
             this._initSpheres(shaderModule, bindGroupLayout);
 
+            // 2026-08-25 (юзер): вращение голограммы мышью. Только две оси —
+            // горизонталь (yaw) и вертикаль (pitch), без крена вокруг Z.
+            this._setupMouseOrbit();
+
             this.isInitialized = true;
             console.log('[HoloEngine] 🎉 ВСЁ ИНИЦИАЛИЗИРОВАНО');
             this._renderLoop();
@@ -153,6 +157,43 @@ export class HologramWebGPU {
             // в логе стояла зелёная галочка, а голограмма не рендерилась.
             throw error;
         }
+    }
+
+    /**
+     * 2026-08-25 (юзер): вращение голограммы мышью.
+     * Зажать левую кнопку и тянуть — поворот по двум осям:
+     *   горизонтальный drag -> yaw (влево/вправо),
+     *   вертикальный drag  -> pitch (вверх/вниз).
+     * Крен вокруг Z отсутствует by design. Шаг ограничен лимитами орбиты.
+     */
+    _setupMouseOrbit() {
+        const host = document.getElementById('grid-container') || this.canvas.parentElement;
+        if (!host) return;
+
+        let dragging = false;
+        let lastX = 0, lastY = 0;
+
+        host.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;      // только левая кнопка
+            dragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            e.preventDefault();
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            // 0.005 рад на пиксель — комфортный темп поворота
+            this.engine.orbit(dx * 0.005, dy * 0.005);
+        });
+        window.addEventListener('mouseup', () => { dragging = false; });
+        // Курсор-подсказка
+        host.style.cursor = 'grab';
+        host.addEventListener('mousedown', () => { host.style.cursor = 'grabbing'; });
+        window.addEventListener('mouseup', () => { host.style.cursor = 'grab'; });
     }
 
     _createDepthTexture() {
@@ -213,7 +254,11 @@ export class HologramWebGPU {
 
                 let h = clamp(input.depth, 1.0, 128.0);
                 let w = max(input.width, 1.0);
-                let z = 75.0; // Протокол 1 Метр (внутренняя грань)
+                // Протокол 1 Метр (внутренняя грань) + глубина объёма 128 ячеек.
+                // Дальняя стенка = z = 75 + 128 = 203.
+                const Z_FRONT = 75.0;
+                const GRID_DEPTH = 128.0;
+                const Z_FAR = Z_FRONT + GRID_DEPTH;
 
                 // Масштаб + позиция без матричного умножения:
                 // куб единичный, поэтому достаточно поэлементно.
@@ -222,10 +267,13 @@ export class HologramWebGPU {
                     input.position.y * 2.0,
                     input.position.z * h
                 );
+                // 2026-08-25 (юзер): столбец растёт ОТ ДАЛЬНЕЙ СТЕНКИ к зрителю
+                // (раньше — от передней грани вглубь). Базовая точка столбца:
+                // z_far - h, передняя грань столбца на z_far - h, задняя на z_far.
                 let worldPos = vec4<f32>(
                     scaled.x + input.pan,
                     scaled.y + input.posY,
-                    scaled.z + z + h * 0.5,
+                    scaled.z + (Z_FAR - h),
                     1.0
                 );
 
@@ -236,10 +284,14 @@ export class HologramWebGPU {
                 return out;
             }
             @fragment fn fsMain(input: ColVSOutput) -> @location(0) vec4<f32> {
-                // Яркость линейна по глубине: короткий столбец темнее.
-                // Визуальная «дырка» = чернота = отсутствие громкости.
+                // Яркость ячейки: индекс от ДАЛЬНЕЙ стенки (2026-08-25, юзер).
+                // Раньше: (bIndex+1)/128 — столбец у дальней стенки с h=1 был чёрным
+                // (1/128), что убивало демо-пирамиду и тихий звук.
+                // Теперь: базовая яркость 0.85 (дальние ячейки почти полные),
+                // спад к передней грани столбца — «термометр» остаётся читаемым,
+                // но ничего не проваливается в чистый чёрный.
                 let bIndex = clamp(floor(input.vDepthCells), 0.0, 127.0);
-                let brightness = (bIndex + 1.0) / 128.0;
+                let brightness = mix(0.35, 1.0, bIndex / 127.0);
                 return vec4<f32>(input.vColor * brightness, 1.0);
             }
 
