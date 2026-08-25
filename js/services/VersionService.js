@@ -5,16 +5,18 @@
  * Позволяет получать список коммитов и использовать их как "состояния" проекта.
  */
 
+import { apiBase as apiBaseUrl } from '../utils/apiBase.js';
+
 export class VersionService {
     constructor() {
         this.repoOwner = 'NeuroCoderZ';
         this.repoName = 'holograms.media';
 
-        // VITE_API_URL содержит только хост (например, https://holograms.media или https://dev.holograms.media)
-        // Нам всегда нужно добавлять /api/v1
-        const apiBase = typeof import.meta.env !== 'undefined' && import.meta.env.VITE_API_URL
-            ? `${import.meta.env.VITE_API_URL}/api/v1`
-            : '/api/v1';
+        // 2026-08-25: ходим на СВОЙ домен относительным путём — CF Worker
+        // holograms-proxy перенаправит /api/* на бэкенд Koyeb по IPv4.
+        // Раньше здесь подставлялся koyeb-домен напрямую, и у клиентов без IPv6
+        // таймлайн версий падал с таймаутом.
+        const apiBase = `${apiBaseUrl()}/api/v1`;
 
         this.apiUrl = `${apiBase}/github/commits`;
     }

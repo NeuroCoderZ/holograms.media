@@ -3,6 +3,7 @@
 // Подключение происходит ТОЛЬКО при наличии JWT-токена в localStorage.
 
 import { isTelegramMiniApp } from '../core/telegramEnv.js';
+import { wsBase } from '../utils/apiBase.js';
 
 class GestureIntentClient {
     constructor(url) {
@@ -149,10 +150,10 @@ class GestureIntentClient {
     }
 }
 
-// [FIX] WebSocket должен идти на Koyeb backend, НЕ на Cloudflare Pages!
-// VITE_API_URL = https://holograms-media-dev-...koyeb.app → wss://holograms-media-dev-...koyeb.app
-const apiUrl = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.host}`;
-const wsUrl = apiUrl.replace(/^https?:\/\//, (p) => p === 'https://' ? 'wss://' : 'ws://') + '/ws/v1/gesture-intent';
+// 2026-08-25: WebSocket идёт на СВОЙ домен — CF Worker holograms-proxy туннелирует
+// /ws/* на бэкенд Koyeb. Раньше здесь был прямой koyeb-адрес: у клиентов без IPv6
+// соединение не устанавливалось вовсе.
+const wsUrl = wsBase('/ws/v1/gesture-intent');
 
 const gestureIntentClient = new GestureIntentClient(wsUrl);
 export default gestureIntentClient;

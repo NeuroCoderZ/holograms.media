@@ -1,7 +1,12 @@
 // frontend/js/services/apiService.js
 
 // Указываем базовый URL API из переменных окружения Vite с фоллбеком для локальной разработки
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+import { apiBase } from '../utils/apiBase.js';
+
+// 2026-08-25 (карточки 1.6/1.3a): относительный путь вместо прямого koyeb-домена.
+// CF Worker holograms-proxy маршрутизирует /api/* на бэкенд по IPv4 — снимает
+// таймауты у клиентов без IPv6 и убирает CORS (запрос остаётся на своём домене).
+export const API_BASE_URL = apiBase();
 
 // ─── Fallback: CloudStorage / DeviceStorage ─────────────────────────────
 // Используется когда бэкенд Koyeb недоступен (404, 503, network error)

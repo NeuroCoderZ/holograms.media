@@ -10,6 +10,7 @@ import { storage } from './storageManager.js';
 import { isTelegramMiniApp } from './telegramEnv.js';
 import { updateAuthUI } from '../ui/uiManager.js';
 import { showNotification } from '../utils/notifications.js';
+import { apiBase } from '../utils/apiBase.js';
 
 // URL-ы теперь берутся динамически через getAuthConfig()
 
@@ -21,7 +22,9 @@ let _authConfigLogged = false;
 export const getAuthConfig = () => {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+  // 2026-08-25: бэкенд достигается через свой домен (CF Worker holograms-proxy),
+  // а не по прямому koyeb-адресу — иначе вход отваливался у клиентов без IPv6.
+  const apiUrl = apiBase();
   const redirectUri = import.meta.env.VITE_AUTH_REDIRECT_URI;
 
   if (!_authConfigLogged) {
