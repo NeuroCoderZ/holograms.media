@@ -688,8 +688,14 @@ export async function initCore(options = {}) {
               predictiveRAG = new PredictiveRAG();
 
               // Подключаем Enkephalon если доступен
-              if (state.enkephalonBridge?.isReady) {
-                  embeddingStream.init(state.enkephalonBridge);
+              // ИСПРАВЛЕНО 2026-09-30 (AGENTS.md п.25): здесь читалось
+              // state.enkephalonBridge — поля, которое НИКОГДА не
+              // присваивается. Энкефалон выше кладётся в state.enkephalon
+              // (init.js:377), и тот же самый объект уже используется
+              // корректно на строках 492/505/508/530. Ветка EmbeddingStream
+              // молча не включалась с самого дня и писала «skip».
+              if (state.enkephalon?.isReady) {
+                  embeddingStream.init(state.enkephalon);
               }
 
               state.chunkProcessor = chunkProcessor;
@@ -968,7 +974,20 @@ export async function initCore(options = {}) {
 
     // --- EarthStorage: per-user holographic world ---
     try {
-        const userId = state.auth?.currentUser?.uid;
+        // ИСПРАВЛЕНО 2026-09-30 (AGENTS.md п.25): читалось
+        // state.auth?.currentUser?.uid. Объекта state.auth в проекте не
+        // существует — модуль авторизации пишет state.user
+        // (js/core/auth.js:85/174/203/257), поэтому userId был всегда
+        // undefined и EarthStorage.init() не вызывался НИ РАЗУ, без единой
+        // ошибки в консоли.
+        //
+        // ВНИМАНИЕ, ТЕХДОЛГ: у state.user нет устойчивого идентификатора —
+        // только { email, role, environment }. Здесь используется email как
+        // ЛОКАЛЬНЫЙ ключ пространства имён на устройстве. Он НЕ передаётся
+        // в сеть и не должен. Сетевая идентичность обязана перейти на `sub`
+        // из JWT — это отдельная задача (карточка L1-F2), потому что email
+        // нельзя использовать как ключ кошелька.
+        const userId = state.user?.email;
         if (userId) {
             await earthStorage.init(`earth:${userId}`);
             state.earthStorage = earthStorage;

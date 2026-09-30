@@ -52,6 +52,47 @@ import OneEuroFilter from '../filters/OneEuroFilter.js';
 import { GestureIntentClassifier } from '../ai/gestureIntentClassifier.js';
 import { gestureManager } from '../managers/gestureManager.js';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ШЕСТЬ БАЗОВЫХ ЖЕСТОВ: опорное состояние и помощники
+// Добавлено 2026-09-30 вместе с исправлением мёртвой ветки распознавания.
+// Канон: Semitones_Angles.md, XR_SYSTEM_DESIGN_RU.md §3, AGENTS.md п.15.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Предыдущее положение ладони. Живёт между кадрами, поэтому объявлен
+// на уровне модуля, а не внутри обработчика.
+let prevPalm = null;
+
+/**
+ * Центр ладони как усреднение опорных точек кисти.
+ * Берём 0 (запястье), 5 и 17 (основания большого и указательного пальцев),
+ * 9 (середина ладони) — они стабильнее кончиков пальцев при повороте кисти.
+ * @param {Array<{x:number,y:number,z:number}>} landmarks 21 точка MediaPipe
+ * @returns {{x:number,y:number,z:number}|null}
+ */
+function computePalmCenter(landmarks) {
+    if (!Array.isArray(landmarks) || landmarks.length < 21) return null;
+    let x = 0, y = 0, z = 0;
+    for (const i of [0, 5, 9, 17]) {
+        const p = landmarks[i];
+        if (!p) return null;
+        x += p.x; y += p.y; z += (p.z ?? 0);
+    }
+    return { x: x / 4, y: y / 4, z: z / 4 };
+}
+
+/**
+ * Приведение оси к [-1, +1]. Нечисловое и не-конечное значение даёт ноль:
+ * жест без осмысленного смещения не должен двигать шкалу.
+ * @param {number} v
+ * @returns {number}
+ */
+function clampAxis(v) {
+    if (typeof v !== 'number' || !Number.isFinite(v)) return 0;
+    if (v > 1) return 1;
+    if (v < -1) return -1;
+    return v;
+}
+
 // --- Constants ---
 const HAND_CONNECTIONS = [
     [0, 1], [1, 2], [2, 3], [3, 4],
@@ -516,26 +557,56 @@ function onResults(results) {
             state.chunkProcessor.onNewFrame(handLandmarks, performance.now());
         }
 
-        // --- ✅ НОВАЯ ЛОГИКА: Классификация, формирование deltaVector и применение к WebAudioEngine ---
-        if (state.gestureIntentClassifier && state.webAudioEngine && (state.webAudioEngine.isInitialized || state.webAudioEngine.audioContext)) {
-            state.gestureIntentClassifier.predict(handLandmarks).then(intent => {
-                if (intent) {
-                    // console.log(`[Gesture Intent Pipeline] Распознано намерение:`, intent.action);
-                    let deltaVector = { gain: 0, pan: 0 };
-
-                    switch (intent.action) {
-                        case 'increase_volume': deltaVector.gain = 0.05; break;
-                        case 'decrease_volume': deltaVector.gain = -0.05; break;
-                        case 'pan_left': deltaVector.pan = -0.1; break;
-                        case 'pan_right': deltaVector.pan = 0.1; break;
-                    }
-
-                    if (deltaVector.gain !== 0 || deltaVector.pan !== 0) {
-                        state.webAudioEngine.applyDelta(deltaVector);
-                    }
+        // --- ШЕСТЬ БАЗОВЫХ ЖЕСТОВ (канон) → вектор осей ---
+        // Канон: Semitones_Angles.md (шаг 1.40625° = 180°/128),
+        //        XR_SYSTEM_DESIGN_RU.md §3 «Язык программирования XYZ»,
+        //        AGENTS.md п.15. Движение по трём осям в обе стороны:
+        //          ближе-дальше → динамика (громкость, dB)
+        //          выше-ниже   → спектр (нотный ряд, полутон)
+        //          левее-правее → панорамирование
+        // Это ФИЗИКА шкалы, а не словарь смыслов. Назначать жестам значения
+        // запрещено — «Суверенитет жеста», TRIA_Post_Symbolic_Manifesto.md §2:
+        // пользователь сам наделяет свои движения смыслом.
+        //
+        // ИСПРАВЛЕНО 2026-09-30. Здесь были ТРИ наложенные неисправности:
+        //   1) вызов state.webAudioEngine — поле НИКОГДА не присваивалось
+        //      (импорт js/core/init.js:214 помечен REMOVED LEGACY) → ветка не
+        //      выполнялась ни разу и молча уходила в fallback;
+        //   2) читалось `intent.action`, а классификатор отдаёт `intent.intent`
+        //      (js/ai/gestureIntentClassifier.js:173/179/189/258) → даже с
+        //      живым движком переключатель не нашёл бы ни одного случая;
+        //   3) даже найдясь, ветка отдавала нули в мёртвый движок.
+        // Ни одна из трёх не поднимала исключение — поэтому всё выглядело
+        // исправным. Вектор считается напрямую из смещения ладони: для шести
+        // базовых осей классификатор не нужен и вреден, потому что подменяет
+        // кинематику словарём.
+        {
+            const palm = computePalmCenter(handLandmarks);
+            if (palm && prevPalm) {
+                const axes = {
+                    nearFar:   clampAxis(palm.z - prevPalm.z),  // ближе-дальше
+                    upDown:    clampAxis(prevPalm.y - palm.y),  // выше-ниже; инверсия: Y растёт вниз
+                    leftRight: clampAxis(palm.x - prevPalm.x)   // левее-правее
+                };
+                if (axes.nearFar || axes.upDown || axes.leftRight) {
+                    // Наблюдаемость: вектор виден подписчикам и попадает в тесты.
+                    eventBus.emit('gesture:axes', axes);
                 }
-            }).catch(e => { });
+            }
+            prevPalm = palm;
         }
+
+        // ШОВ ДЛЯ ПОДКЛЮЧЕНИЯ. Вектор осей публикуется событием
+        // 'gesture:axes'; следующий шаг — два подписчика:
+        //   1) Аудио-контур — применить nearFar к усилению, leftRight к пан-
+        //      положению, upDown к выбору полутонного диапазона. Требуется
+        //      метод на живом AudioService (state.audioService), WebAudioEngine
+        //      больше не существует и не подлежит восстановлению.
+        //   2) Голоконтракт — записать вектор в HOLOQUANT поступившего
+        //      кванта, а НЕ в орбиту камеры. Орбита — это зрительное
+        //      изменение голограммы, которое каноном запрещено как цель.
+        // Пока шов не подключён, 'gesture:axes' несёт единственное
+        // назначение: доказать, что шесть осей вычисляются и доходят до шины.
         // --- ❌ СТАРАЯ ЛОГИКА С WebSocketService (если заменяется полностью) ЗАКОММЕНТИРОВАНА ---
         /*
         if (state.atomicGestureClassifier && state.gestureSequencer) {
