@@ -46,15 +46,19 @@ jobs:
           cp public/_headers dist/_headers || echo "No _headers found"
           cp public/_redirects dist/_redirects || echo "No _redirects found"
 
+      # 2026-10-02 18:30 MSK — ЭКШЕН ЗАМЕНЁН: cloudflare/pages-action НЕ СУЩЕСТВУЕТ.
+      # Проверено через сеть: github.com/cloudflare/pages-action → HTTP 404.
+      # Из-за этого ран падал за ~9 секунд на этапе "Prepare all required actions",
+      # и фронт не деплоился (та же ошибка была 30.09.2026 на v0.20.612).
+      # Замена на официальный cloudflare/wrangler-action (HTTP 200) с
+      # pages deploy --project-name. Проект берётся по ветке: main → holograms-media,
+      # dev → holograms-media-dev (Cloudflare Pages смотрит только dev).
       - name: ☁️ Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ github.ref_name == 'main' && 'holograms-media' || 'holograms-media-dev' }}
-          directory: dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          command: pages deploy dist --project-name=${{ github.ref_name == 'main' && 'holograms-media' || 'holograms-media-dev' }} --branch=${{ github.ref_name }}
       
       - name: Summary
         run: |
