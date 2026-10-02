@@ -4,15 +4,15 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="app-version" content="0.20.612">
-  <!-- BUILD: 1790737755109 -->
+  <meta name="app-version" content="0.20.613">
+  <!-- BUILD: 1790954379931 -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ГОЛОГРАФИЧЕСКИЕ МЕДИА | Holograms Media</title>
   <!-- DEPLOY_VERSION_START -->
-  <script>console.log("DEPLOY VERSION: 0.20.612");</script>
+  <script>console.log("DEPLOY VERSION: 0.20.613");</script>
   <!-- DEPLOY_VERSION_END -->
   <!-- Telegram Mini Apps SDK — грузим ТОЛЬКО внутри Telegram.
        2026-08-22 20:24 MSK — раньше скрипт подключался безусловно, и в обычном
@@ -186,15 +186,21 @@
 
 
   <!-- MediaPipe Libraries (with AMD define guard to prevent loader/require conflicts) -->
+  <!-- 2026-10-02 17:36 MSK — вендорены локально в public/mediapipe/.
+       Причина: locateFile указывал на jsdelivr, из-за чего .wasm приходил
+       ПОСЛЕ того, как Emscripten уже запросил инстанцирование
+       ("still waiting on run dependencies: wasm-instantiate"), а watchdog
+       затем пересоздавал Hands и добивал консоль ошибками Emscripten/RequireJS.
+       Теперь .wasm/.tflite/.binarypb отдаются same-origin без CDN. -->
   <script>
     window.__origDefine = window.define;
     window.__origRequire = window.require;
     window.define = undefined;
     window.require = undefined;
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="/mediapipe/camera_utils.js"></script>
+  <script src="/mediapipe/drawing_utils.js"></script>
+  <script src="/mediapipe/hands.js"></script>
   <script>
     if (window.__origDefine) window.define = window.__origDefine;
     if (window.__origRequire) window.require = window.__origRequire;
@@ -480,12 +486,16 @@
           </svg>
         </button>
 
-        <!-- Селектор модели ЛЛМ (Model Lock 13.05.2026: Hermes Family only) -->
-        <div id="modelSelectContainer" style="flex: 1 1 auto; min-width: 0; height: 100%; display: flex; align-items: stretch;" data-tooltip="Выбор модели">
+        <!-- Селектор модели ЛЛМ (Hermes Family only) -->
+        <!-- 2026-10-02 18:05 MSK — Mistral убран из GUI по решению владельца:
+             модели Mistral для голографических медиа не актуальны.
+             Селектор оставлен как точка расширения под актуальный LLM_POOL
+             (Code Arena WebDev). Пустой список не ставим: chat.js:207 читает
+             .value и передаёт его в бэкенд, поэтому нужен валидный default. -->
+        <div id="modelSelectContainer" style="flex: 1 1 auto; min-width: 0; height: 100%; display: flex; align-items: stretch;" data-tooltip="Модель LLM устанавливается на бэкенде (Hermes Router)">
           <select id="modelSelect"
             style="width: 100%; height: 100%; background: rgba(0,0,0,0.4); color: #bbb; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; outline: none; font-size: clamp(0.65rem, 1.2dvw, 0.75rem); cursor: pointer; padding: 0 clamp(0.5rem, 1dvw, 0.75rem); backdrop-filter: blur(10px);">
-            <option value="mistral-medium-3.5" selected style="background: #1a1a1a; color: #ddd;">Mistral Medium 3.5</option>
-            <option value="mistral-small-latest" style="background: #1a1a1a; color: #ddd;">Mistral Small 4</option>
+            <option value="auto" selected style="background: #1a1a1a; color: #ddd;">Auto — Hermes Router</option>
           </select>
         </div>
 

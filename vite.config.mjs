@@ -45,8 +45,11 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm}'],
-        maximumFileSizeToCacheInBytes: 5000000, // Увеличиваем лимит для wasm (5MB)
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,tflite,binarypb}'],
+        // 2026-10-02 17:36 MSK: 5 МБ не хватало на MediaPipe.
+        // hands_solution_simd_wasm_bin.wasm = 6.03 МБ, hand_landmark_full.tflite = 5.48 МБ.
+        // Без этого вендоренные ассеты выпадали из precache и грузились по сети.
+        maximumFileSizeToCacheInBytes: 12000000, // 12 МБ
       }
     })
   ],

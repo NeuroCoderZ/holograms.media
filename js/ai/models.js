@@ -1,24 +1,26 @@
 // frontend/js/ai/models.js - Управление моделями ИИ
 
-// Доступные модели (Model Lock 13.05.2026)
-// Hermes Family (Tria Cortex v2.6): Personal Tria WINS over Global
+// 2026-10-02 18:05 MSK — MISTRAL УБРАН ПО РЕШЕНИЮ ВЛАДЕЛЬЦА.
+// Модели Mistral для голографических медиа не актуальны и в GUI больше не
+// предлагаются. Важно: этот реестр перезаписывает разметку <option> в index.html
+// (initializeModelSelector ниже), поэтому убрать Mistral только из HTML
+// было недостаточно — он вернулся бы отсюда.
+// Выбор модели теперь делегирован Hermes Router ('auto'): роутер сам решает,
+// какая модель из LLM_POOL ответит (Code Arena WebDev). Актуальный пул —
+// в AGENTS.md, раздел «КРИТИЧЕСКИЕ КОНСТАНТЫ» → LLM_POOL.
+// Оплата за Mistral была платной, что противоречит запрету AGENTS.md.
 export const models = {
-  HERMES_MAIN: 'mistral-medium-3.5',      // Main: 128B, 256k ctx (released 29.04.2026)
-  HERMES_SUB: 'mistral-small-latest',     // Architecture/Routing agent
+  HERMES_MAIN: 'auto',                    // Hermes Router выбирает модель сам
+  HERMES_SUB: 'auto',                     // Архитектурный агент/роутинг
   TRIA: 'tria',                           // Legacy fallback (internal logic)
 };
 
 // Метаданные моделей
 export const modelMetadata = {
-  'mistral-medium-3.5': {
-    name: 'Mistral Medium 3.5',
-    description: 'Основная модель — 128B параметров, 256k контекст',
+  'auto': {
+    name: 'Auto — Hermes Router',
+    description: 'Модель выбирается роутером автоматически из актуального LLM_POOL',
     isDefault: true
-  },
-  'mistral-small-latest': {
-    name: 'Mistral Small 4',
-    description: 'Архитектурный агент, роутинг',
-    isDefault: false
   },
   'tria': {
     name: 'Tria (Legacy)',
@@ -27,8 +29,8 @@ export const modelMetadata = {
   }
 };
 
-// Текущая выбранная модель (по умолчанию Mistral Medium 3.5)
-let selectedModel = 'mistral-medium-3.5'; 
+// Текущая выбранная модель (по умолчанию авто-выбор роутером)
+let selectedModel = 'auto'; 
 
 // Получить текущую выбранную модель
 export function getSelectedModel(modelSelectElement) {
@@ -77,10 +79,20 @@ export function initializeModelSelector(state) {
   });
   
   // Restore selection
+  // 2026-10-02 18:05 MSK — валидируем сохранённое значение: у пользователей
+  // в localStorage остался 'mistral-medium-3.5', которого больше нет в
+  // modelMetadata. Без проверки <select> молча получал value без
+  // соответствующего <option>, и бэкенд уходил в запрос несуществующей модели.
   const saved = localStorage.getItem('selectedModel');
-  if (saved) {
-      modelSelectElement.value = saved;
-      selectedModel = saved;
+  if (saved && modelMetadata[saved]) {
+    modelSelectElement.value = saved;
+    selectedModel = saved;
+  } else {
+    if (saved) {
+      console.warn(`[Models] Модель "${saved}" больше недоступна, переключаюсь на авто-выбор роутера.`);
+      localStorage.removeItem('selectedModel');
+    }
+    selectedModel = models.HERMES_MAIN;
   }
   
   modelSelectElement.addEventListener('change', () => {

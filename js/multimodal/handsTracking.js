@@ -24,24 +24,34 @@ function restoreMediaPipeLogs() {
     console.error = _origErr;
 }
 
-// Подавление внутренних Emscripten/MediaPipe WASM спам-логов (gl_context, waiting on dependencies)
-if (typeof window !== 'undefined') {
-    window.Module = window.Module || {};
-    const origPrint = window.Module.print;
-    const origPrintErr = window.Module.printErr;
-    window.Module.print = (text) => {
-        if (text && (text.includes('waiting on run dependencies') || text.includes('gl_context') || text.includes('dependency:') || text.includes('I0000') || text.includes('W0000'))) return;
-        if (typeof origPrint === 'function') origPrint(text);
-    };
-    window.Module.printErr = (text) => {
-        if (text && (text.includes('waiting on run dependencies') || text.includes('gl_context') || text.includes('OpenGL error checking') || text.includes('dependency:') || text.includes('I0000') || text.includes('W0000'))) return;
-        if (typeof origPrintErr === 'function') origPrintErr(text);
-    };
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-10-02 17:36 MSK — УДАЛЁН мутирующий глобальный `window.Module`.
+// Раньше здесь был хак: `window.Module = window.Module || {}` + подмена print/printErr
+// для глушения Emscripten-спама. Он был причиной двух ошибок консоли, а не следствием:
+//   1) `Aborted(Module.arguments has been replaced with plain arguments_ ...)` —
+//      Emscripten при ИНИЦИАЛИЗАЦИИ MediaPipe находит загрязнённый глобальный
+//      `window.Module.arguments` и падает в ASSERT.
+//   2) MediaPipe грузит `hands_solution_simd_wasm_bin.js`, который завершается на
+//      `if (typeof define === 'function' && define['amd']) define([], fn)`.
+//      RequireJS-загрузчик Monaco (`vs/loader.min.js`) видит второй анонимный
+//      `define` и бросает "Can only have one anonymous define call per script file".
+// Теперь спам глушится на уровне консоли (см. suppressMediaPipeLogs ниже),
+// а глобальный объект Emscripten не трогается вообще.
+// ─────────────────────────────────────────────────────────────────────────────
 
 const Camera = window.Camera || (window.mediapipe?.camera?.Camera);
 const Hands = window.Hands || (window.mediapipe?.hands?.Hands);
 const { drawConnectors, drawLandmarks } = window.drawing_utils || window;
+
+/**
+ * Локальный locateFile: MediaPipe ищет .wasm/.tflite/.binarypb рядом с hands.js.
+ * Раньше тут жёстко стоял `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`.
+ * Теперь ассеты вендорены в public/mediapipe/ — same-origin, без CDN-зависимости
+ * и без гонки с загрузкой скрипта (CDN успевал отдать .wasm уже после того,
+ * как Emscripten запрашивал инстанцирование).
+ */
+const MEDIAPIPE_BASE = '/mediapipe/';
+const locateMediaPipeFile = (file) => `${MEDIAPIPE_BASE}${file}`;
 import eventBus from '../core/eventBus.js';
 
 import { state, TORUS_PARAMS } from '../core/init.js';
@@ -215,10 +225,34 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
 
                 /**
                  * Пересоздание MediaPipe Hands после серии зависаний.
-                 * Конфигурация повторяет initializeMediaPipeHands() — при её изменении
-                 * правь оба места (или вынеси в общий хелпер).
+                 *
+                 * 2026-10-02 17:36 MSK — СОЗНАТЕЛЬНО ОТКЛЮЧЕНО (заменено на throttle).
+                 * Пересоздание `new Hands()` в уже загруженной странице — источник
+                 * двух ошибок консоли, а не лечение:
+                 *   1) `Aborted(Module.arguments has been replaced with plain arguments_)` —
+                 *      Emscripten-обёртка инициализируется второй раз в том же окне.
+                 *   2) `Can only have one anonymous define call per script file` —
+                 *      hands_solution_simd_wasm_bin.js грузится повторно и снова
+                 *      вызывает `define([], fn)`; RequireJS (Monaco loader.min.js)
+                 *      считает это вторым анонимным define для того же файла и падает.
+                 * Зависание при этом НЕ лечится: убитый Emscripten-контекст
+                 * остаётся мёртвым, поэтому кадры продолжают отбрасываться.
+                 *
+                 * Вместо пересоздания — мягкое охлаждение: пропускаем кадры,
+                 * чтобы дать инстансу выйти из зависшего await, и глушим цикл,
+                 * если он не ожил (isCooldown), чтобы не жечь CPU впустую.
+                 * Полное восстановление — перезагрузка страницы (см. reload hint).
                  */
+                const RECREATE_DISABLED = true;
+
                 const recreateHandsInstance = async () => {
+                    if (RECREATE_DISABLED) {
+                        console.error(
+                            '[HandsTracking] пересоздание Hands отключено: оно ломает ' +
+                            'Emscripten-контекст и RequireJS. Требуется перезагрузка страницы.',
+                        );
+                        return;
+                    }
                     if (!Hands) {
                         throw new Error('глобал Hands недоступен (CDN не загрузился)');
                     }
@@ -233,7 +267,7 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                     suppressMediaPipeLogs();
                     try {
                         const fresh = new Hands({
-                            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`,
+                            locateFile: locateMediaPipeFile,
                         });
                         fresh.setOptions({
                             selfieMode: true,
@@ -419,9 +453,7 @@ export function initializeMediaPipeHands() {
     suppressMediaPipeLogs();
     try {
         state.multimodal.handsInstance = new Hands({
-            locateFile: (file) => {
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
-            }
+            locateFile: locateMediaPipeFile,
         });
 
         state.multimodal.handsInstance.setOptions({

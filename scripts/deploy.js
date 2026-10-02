@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env.local') });
 
 const ROOT           = path.join(__dirname, '..');
@@ -203,12 +203,23 @@ function deployNeuroEscrow() {
     
     for (const [name, value] of Object.entries(secrets)) {
         try {
-            // Use echo to pipe secret value to wrangler
-            const cmd = process.platform === 'win32'
-                ? `echo ${value} | npx wrangler@4.95.0 secret put ${name} --cwd neuroescrow/backend`
-                : `echo "${value}" | npx wrangler@4.95.0 secret put ${name} --cwd neuroescrow/backend`;
-            
-            execSync(cmd, { cwd: ROOT, stdio: 'pipe' });
+            // 2026-10-02 18:20 MSK — ПОЧИНОВЕНО ЗАВИСАНИЕ.
+            // Было: `echo "$value" | npx wrangler@4.95.0 secret put ...`
+            // npx скачивал пакет и запрашивал подтверждение установки, на чём
+            // execSync висел молча (stdio:'pipe' скрывал вопрос). Плюс значение
+            // секрета вставлялось в строку shell, где кавычки/$( ) ломали экранирование.
+            // Стало: stdin передаётся через опцию input (без shell вообще) и
+            // вызывается ЛОКАЛЬНЫЙ wrangler из node_modules/.bin — без npx и без сети.
+            execFileSync(process.execPath, [
+                path.join(ROOT, 'node_modules', 'wrangler', 'bin', 'wrangler.js'),
+                'secret', 'put', name,
+                '--cwd', NEUROESCROW_BACKEND
+            ], {
+                cwd: ROOT,
+                input: `${value}\n`,
+                stdio: ['pipe', 'pipe', 'pipe'],
+                timeout: 120000,
+            });
             console.log(`   ✅ ${name} set`);
         } catch (e) {
             console.warn(`   ⚠️  ${name} already set or failed: ${e.message}`);
@@ -224,10 +235,14 @@ function deployNeuroEscrow() {
     
     console.log('\n📦 Step 3: Deploying to Cloudflare Workers...');
     try {
-        execSync('npx wrangler@4.95.0 deploy', { 
-            cwd: NEUROESCROW_BACKEND, 
+        // 2026-10-02 18:20 MSK — локальный wrangler вместо npx (тот же кеш-баг).
+        execFileSync(process.execPath, [
+            path.join(ROOT, 'node_modules', 'wrangler', 'bin', 'wrangler.js'),
+            'deploy'
+        ], {
+            cwd: NEUROESCROW_BACKEND,
             stdio: 'inherit',
-            shell: true
+            timeout: 600000,
         });
         console.log('   ✅ Hermes deployed to Cloudflare Workers');
     } catch (e) {

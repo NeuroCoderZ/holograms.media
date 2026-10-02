@@ -2,10 +2,27 @@ from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# 2026-10-02 18:20 MSK — ИСПРАВЛЕНИЕ МОЕЙ ПРЕДЫДУЩЕЙ ПОМЕТКИ. Я ошибочно назвал
+# Mistral AI API платным и запрещённым. Это НЕВЕРНО: у Mistral есть бесплатный
+# tier, поэтому правило AGENTS.md о платных сервисах здесь не нарушается.
+# Настоящая причина: модели семейства Mistral устарели и для голографических
+# медиа не актуальны — поэтому они убраны из GUI-селектора (js/ai/models.js,
+# index.html). Сам эндпоинт бесплатный и может оставаться в работе.
+#
+# Требуется осознанное решение владельца по модели: заменить 'mistral-small-latest'
+# на актуальную из LLM_POOL (Code Arena WebDev, см. AGENTS.md) либо оставить
+# бесплатный Mistral как есть. Код НЕ отключаю — публичный чат-бот Триа работает.
+MISTRAL_API_IS_FREE_TIER = True
+MISTRAL_MODELS_ARE_OUTDATED = True
+
 class LLMService:
     """
     Service class for interacting with Large Language Models, specifically the Mistral AI API
     for the public-facing informational chatbot.
+
+    2026-10-02 18:20 MSK — API бесплатный (free tier), не платный. Замечание
+    только к моделям: они устарели. Оставлено рабочим по решению владельца;
+    выбранную модель стоит заменить на актуальную из LLM_POOL.
     """
     def __init__(self):
         # API key for the public agent (mistral-small-latest)
