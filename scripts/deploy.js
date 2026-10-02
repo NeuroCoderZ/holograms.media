@@ -91,18 +91,13 @@ try {
         shell: true
     });
     console.log('   ✅ repomix-output.txt generated');
-    
-    if (fs.existsSync(NEUROESCROW_DIR)) {
-        console.log('   📦 NeuroEscrow context...');
-        execSync('npx repomix --style plain --output repomix-output.txt', { 
-            stdio: 'inherit', 
-            cwd: NEUROESCROW_DIR,
-            shell: true
-        });
-        console.log('   ✅ neuroescrow/repomix-output.txt generated');
-    } else {
-        console.log('   ⏭️  NeuroEscrow directory not found, skipping...');
-    }
+
+    // 2026-10-02 18:40 MSK — УДАЛЕНА генерация repomix в подкаталоге neuroescrow/.
+    // Каталога neuroescrow/ здесь нет: NeuroEscrow — отдельный дружеский сервис
+    // для голографических медиа и отдельный репозиторий. Вызов `npx repomix` с
+    // cwd=ROOT/neuroescrow завершался ошибкой, а она глоталась внешним try/catch,
+    // из-за чего шаг Step 2 потом падал с вводящим в заблуждение сообщением.
+    // Контекст проекта формируется корневым repomix — он и проверяется в Step 2.
 } catch (e) {
     console.error('❌ Knowledge base generation failed:', e.message);
     process.exit(1);
@@ -226,12 +221,43 @@ function deployNeuroEscrow() {
         }
     }
     
-    console.log('\n📦 Step 2: Using pre-generated RepoMix context...');
-    const repomixPath = path.join(NEUROESCROW_DIR, 'repomix-output.txt');
+    console.log('\n📦 Step 2: Verifying RepoMix context...');
+    // 2026-10-02 18:40 MSK — БЫЛО: проверялся neuroescrow/repomix-output.txt и бросался
+    // «repomix-output.txt not found! Run npm run deploy first.»
+    // ПРИЧИНА: каталога neuroescrow/ в этом репозитории нет — NeuroEscrow является
+    // ОТДЕЛЬНЫМ сервисом/репозиторием (/mnt/windows/NeuroCoderZ/neuroescrow) и дружеским
+    // сервисом для голографических медиа, а не подкаталогом этого проекта. Проверка была
+    // рудиментом от удалённого пути и падала ГАРАНТИРОВАННО на каждом деплое.
+    //
+    // НУЖНЫЙ файл — корневой repomix-output.txt: он и есть полный листинг кода и
+    // документации проекта. Его реально потребляет .github/workflows/sync-knowledge.yml
+    // (`npx repomix` в корне), поэтому генерируется и проверяется именно он.
+    // Генерация уже выполнена выше, шагами ранее в этом же скрипте.
+    //
+    // ВАЖНО ПРО СТАТУС NEUROESCROW (не считать его выброшенным): по замыслу автора
+    // NeuroEscrow — дружеский сервис для голографических медиа и запланированный
+    // экономический кормилец проекта: маркетплейс услуг (речевой нейрокодинг через
+    // CoderzVoice), выручка с которого идёт на оборудование и развитие голографических
+    // медиа — инфраструктура финансируется выручкой от самой себя (AGENTS.md п.30, п.43).
+    // Он РАЗДЕЛЬНЫЙ сервис/репозиторий (/mnt/windows/NeuroCoderZ/neuroescrow) и лежит
+    // рядом с этим проектом, а не внутри него, поэтому локально проверять его артефакты
+    // здесь нечего. Собственный деплой Hermes/Wrapper остаётся в этом же скрипте ниже
+    // и выполняется, когда каталог присутствует; сейчас он отдаётся GitHub Actions.
+    const repomixPath = path.join(ROOT, 'repomix-output.txt');
     if (!fs.existsSync(repomixPath)) {
-        throw new Error('repomix-output.txt not found! Run npm run deploy first.');
+        throw new Error(
+            `repomix-output.txt не найден в корне (${repomixPath}). ` +
+            `Сгенерируй: npx repomix  — без него база знаний устареет.`
+        );
     }
-    console.log('   ✅ repomix-output.txt ready');
+    const repomixSize = fs.statSync(repomixPath).size;
+    if (repomixSize < 10000) {
+        throw new Error(
+            `repomix-output.txt подозрительно мал (${repomixSize} байт) — ` +
+            `контекст проекта, вероятно, собран не полностью.`
+        );
+    }
+    console.log(`   ✅ repomix-output.txt готов (${(repomixSize / 1048576).toFixed(2)} МБ)`);
     
     console.log('\n📦 Step 3: Deploying to Cloudflare Workers...');
     try {
