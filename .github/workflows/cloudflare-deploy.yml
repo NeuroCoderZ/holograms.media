@@ -53,12 +53,21 @@ jobs:
       # Замена на официальный cloudflare/wrangler-action (HTTP 200) с
       # pages deploy --project-name. Проект берётся по ветке: main → holograms-media,
       # dev → holograms-media-dev (Cloudflare Pages смотрит только dev).
+      #
+      # 2026-10-02 19:05 MSK — ИСПРАВЛЕНИЕ МОЕЙ ОШИБКИ. Раньше здесь стояло
+      # `--branch=${{ github.ref_name }}`, и это ЛОМАЛО деплой: деплои из dev уходили
+      # в окружение preview, алиас https://dev.holograms.media удерживал
+      # production-деплой от 25.08.2026, то есть все правки не доезжали до сайта.
+      # ВОССТАНОВЛЕНО ИСХОДНОЕ ПОВЕДЕНИЕ из коммита 72c7dd1 (11.03.2026,
+      # "fix(ci): route dev deployments as production on cloudflare"):
+      # принудительно объявляем ветку main, чтобы dev-деплои становились production.
+      # Вся разработка ведётся в dev и проверяется на dev.holograms.media.
       - name: ☁️ Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ github.ref_name == 'main' && 'holograms-media' || 'holograms-media-dev' }} --branch=${{ github.ref_name }}
+          command: pages deploy dist --project-name=${{ github.ref_name == 'main' && 'holograms-media' || 'holograms-media-dev' }} --branch=main
       
       - name: Summary
         run: |
