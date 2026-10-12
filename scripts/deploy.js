@@ -18,7 +18,27 @@ const NEUROESCROW_BACKEND = path.join(NEUROESCROW_DIR, 'backend');
 console.log('\n🧱 Skipping local frontend build (Cloudflare builds in CI). \n');
 
 const args = process.argv.slice(2);
-let commitMessage = args[0] || 'Update: General improvements and fixes';
+
+// 2026-10-02 20:05 MSK — РАЗДЕЛЕНИЕ ДЕПЛОЯ ПО ПРОЕКТАМ (по требованию владельца).
+// Раньше один скрипт делал две разные вещи: деплоил фронт ГОЛОГРАФИЧЕСКИХ МЕДИА
+// (Cloudflare Pages через CI) И пытался задеплоить НЕЙРОЭСКРОУ (Cloudflare Workers).
+// Второе всегда падало, потому что каталога neuroescrow/ в этом репозитории нет —
+// NeuroEscrow является отдельным сервисом и отдельным репозиторием
+// (/mnt/windows/NeuroCoderZ/neuroescrow, дружеский сервис для голографических медиа
+// и запланированный экономический кормилец проекта, AGENTS.md п.30 и п.43).
+// Из-за этого каждый деплой голографических медиа заканчивался страшной ошибкой
+// «❌ NeuroEscrow deployment failed», хотя к фронту она отношения не имела.
+//
+// ТЕПЕРЬ:
+//   node scripts/deploy.js "описание"            → только ГОЛОГРАФИЧЕСКИЕ МЕДИА
+//   node scripts/deploy.js --with-neuroescrow …  → фронт + шаг NeuroEscrow (явно)
+//   node scripts/deploy.js --neuroescrow-only …  → только шаг NeuroEscrow
+const flags = new Set(args.filter(a => a.startsWith('--')));
+const positional = args.filter(a => !a.startsWith('--'));
+const deployHolograms = !flags.has('--neuroescrow-only');
+const deployNeuroEscrowStep = flags.has('--neuroescrow-only') || flags.has('--with-neuroescrow');
+
+let commitMessage = positional[0] || 'Update: General improvements and fixes';
 // Strip version prefix if already present (avoid double version in commit)
 commitMessage = commitMessage.replace(/^v?\d+\.\d+\.\d+\s*[:\-]?\s*/i, '').trim();
 // Escape quotes for git commit message
@@ -143,15 +163,24 @@ for (const [key, token] of Object.entries(tgTokens)) {
 }
 // ========================================
 
-// NeuroEscrow Hermes Deployment (всегда деплоим)
-console.log('\n🤖 Deploying NeuroEscrow Hermes...');
-try {
-    deployNeuroEscrow();
-    console.log('✅ NeuroEscrow deployed successfully!');
-} catch (e) {
-    console.error('❌ NeuroEscrow deployment failed:', e.message);
-    console.log('⚠️  Python Workers can only be deployed via GitHub Actions.');
-    console.log('📡 Hermes will be deployed automatically on push.\n');
+// NeuroEscrow Hermes Deployment.
+// 2026-10-02 20:05 MSK — ВЫДЕЛЕНО В ОТДЕЛЬНЫЙ ШАГ. Выполняется только при явном
+// флаге --with-neuroescrow или --neuroescrow-only (см. разбор флагов выше).
+// По умолчанию НЕ выполняется: каталога neuroescrow/ здесь нет, сервис отдельный.
+// Отсутствие каталога больше не считается ошибкой деплоя голографических медиа.
+if (deployNeuroEscrowStep) {
+    console.log('\n🤖 Deploying NeuroEscrow Hermes (явно запрошено флагом)...');
+    try {
+        deployNeuroEscrow();
+        console.log('✅ NeuroEscrow deployed successfully!');
+    } catch (e) {
+        console.error('❌ NeuroEscrow deployment failed:', e.message);
+        console.log('⚠️  Python Workers can only be deployed via GitHub Actions.');
+        console.log('📡 Hermes will be deployed automatically on push.\n');
+    }
+} else {
+    console.log('\n🤖 NeuroEscrow: пропущен (отдельный сервис и репозиторий).');
+    console.log('   Для его деплоя: node scripts/deploy.js --with-neuroescrow "описание"\n');
 }
 
 try {
@@ -173,13 +202,30 @@ try {
 
 /**
  * Deploy NeuroEscrow Hermes backend to Cloudflare Workers
+ *
+ * 2026-10-02 20:05 MSK — Добавлена явная диагностика. Раньше функция падала с
+ * «Missing environment variables» или «repomix-output.txt not found», что выглядело
+ * как поломка деплоя голографических медиа. Теперь причина называется прямо:
+ * каталога нет либо требуется набор переменных окружения.
  */
 function deployNeuroEscrow() {
+    // NeuroEscrow — отдельный сервис и отдельный репозиторий. Если каталога нет,
+    // честно говорим об этом и выходим, а не имитируем работу.
+    if (!fs.existsSync(NEUROESCROW_DIR)) {
+        throw new Error(
+            `Каталог ${NEUROESCROW_DIR} отсутствует. NeuroEscrow — отдельный сервис ` +
+            `и отдельный репозиторий (${path.dirname(NEUROESCROW_DIR)}/neuroescrow), он не входит ` +
+            `в состав голографических медиа. Его деплой выполняется в собственном репозитории.`
+        );
+    }
+
     console.log('\n📦 Step 1: Setting up Cloudflare secrets...');
     
     // Check required environment variables
+    // 2026-10-02 20:05 MSK — MISTRAL_API_KEY УДАЛЁН из требований по решению владельца:
+    // ключ не нужен и не будет использоваться (он удалён из .env.local), а модели
+    // Mistral признаны неактуальными для голографических медиа.
     const requiredVars = [
-        'MISTRAL_API_KEY',
         'ASTRA_DB_APPLICATION_TOKEN',
         'ASTRA_DB_API_ENDPOINT'
     ];
@@ -190,13 +236,19 @@ function deployNeuroEscrow() {
     }
     
     // Set Cloudflare secrets (non-interactive)
+    // 2026-10-02 20:05 MSK — MISTRAL_API_KEY убран: ключ удалён из .env.local по
+    // решению владельца. Раньше здесь передавался undefined, и wrangler получал
+    // пустое значение, молча затирая секрет в Worker.
     const secrets = {
-        'MISTRAL_API_KEY': process.env.MISTRAL_API_KEY,
         'ASTRA_DB_TOKEN': process.env.ASTRA_DB_APPLICATION_TOKEN,
         'ASTRA_DB_ENDPOINT': process.env.ASTRA_DB_API_ENDPOINT
     };
     
     for (const [name, value] of Object.entries(secrets)) {
+        if (!value) {
+            console.warn(`   ⚠️  ${name} пуст — секрет не обновляем`);
+            continue;
+        }
         try {
             // 2026-10-02 18:20 MSK — ПОЧИНОВЕНО ЗАВИСАНИЕ.
             // Было: `echo "$value" | npx wrangler@4.95.0 secret put ...`

@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import WebGPURenderer from 'three/examples/jsm/renderers/webgpu/WebGPURenderer.js';
 import { renderingCapabilities } from '../utils/renderingCapabilities.js';
 import { updateHologramLayout } from '../ui/layoutManager.js';
 import { TORUS_PARAMS } from '../core/init.js';
@@ -8,23 +7,35 @@ import { GRID_DEPTH } from '../config/hologramConfig.js';
 
 /**
  * renderBackend flag:
- * - ?renderBackend=three|webgpu|hybrid
- * - localStorage fallback
- * - default: 'three' (current stable path uses WebGLRenderer)
+ * - ?renderBackend=webgpu (единственное значение)
+ * - 2026-10-13 — Three.js/WebGL-путь ВЫВЕДЕН ИЗ РАНТАЙМА окончательно.
+ *   WebGLRenderer (и его GPU-контекст) больше не создаётся ни при каком флаге:
+ *   второй контекст в одном контейнере давал каскад invalid-texture в Firefox
+ *   и удвоенную нагрузку на GPU. Единственный рендерер — HoloEngine (WebGPU,
+ *   js/engine/HologramWebGPU.js), свои столбцы/сетку/сферы он рисует сам.
+ *   Значения 'three'/'hybrid' из URL/localStorage больше не принимаются:
+ *   устаревшее значение вычищается, чтобы флаг не липнул в localStorage.
  */
 function resolveRenderBackendFlag() {
+  // Вычищаем устаревшие значения из localStorage (миграция 2026-10-13)
+  try {
+    const ls = window.localStorage.getItem('renderBackend');
+    if (ls === 'three' || ls === 'hybrid') {
+      window.localStorage.removeItem('renderBackend');
+      console.log(`[renderBackend] устаревшее значение '${ls}' вычищено из localStorage`);
+    }
+  } catch (e) {}
+
   try {
     const url = new URL(window.location.href);
     const qp = url.searchParams.get('renderBackend');
-    if (qp === 'three' || qp === 'webgpu' || qp === 'hybrid') return qp;
+    if (qp === 'webgpu') return 'webgpu';
+    if (qp === 'three' || qp === 'hybrid') {
+      console.log(`[renderBackend] '${qp}' из URL проигнорирован: Three.js-путь выведен из рантайма`);
+    }
   } catch (e) {}
 
-  try {
-    const ls = window.localStorage.getItem('renderBackend');
-    if (ls === 'three' || ls === 'webgpu' || ls === 'hybrid') return ls;
-  } catch (e) {}
-
-  return 'three';
+  return 'webgpu';
 }
 
 function applyRenderBackendFlag(state) {
@@ -57,44 +68,26 @@ export async function initializeScene(state) {
   state.scene.background = new THREE.Color(0x000000); // Black background
   state.scene.position.set(0, 0, 0); // Shift scene left by 128 units
 
-  // --- Детект возможностей рендеринга и выбор рендерера ---
+  // --- Детект возможностей железа (только диагностика, НЕ выбор рендерера) ---
+  // 2026-10-13 — рендерер ровно один: HoloEngine (WebGPU). Three.js WebGLRenderer
+  // больше не создаётся: второй GPU-контекст в одном контейнере давал каскад
+  // invalid-texture в Firefox и удвоенную нагрузку на GPU.
   try {
     const capabilities = await renderingCapabilities.detect();
-
-    // Выбор предпочтительного рендерера
-    const preferredRenderer = capabilities.preferred;
-    // 2026-08-22 20:02 MSK — раньше здесь печаталось «Выбран рендерер: webgpu»,
-    // после чего инициализировался WebGL (потому что решает флаг renderBackend,
-    // а не capabilities.preferred). Лог прямо противоречил следующей строке.
-    // Теперь честно разделяем «что поддерживает железо» и «что реально включено».
     console.log(
-      `[Renderer Detection] Возможности железа: предпочтителен ${preferredRenderer}; `
-      + `фактический бэкенд по флагу renderBackend: ${state.renderBackend}`
+      `[Renderer Detection] Возможности железа: предпочтителен ${capabilities.preferred}; `
+      + `бой рендерит HoloEngine (WebGPU), Three.js-путь выведен из рантайма`
     );
-
     state.renderingCapabilities = capabilities;
-    state.currentRenderer = preferredRenderer;
-
-    // --- Инициализация рендерера в зависимости от renderBackend (feature flag) ---
-    // default/three => current stable WebGL path
-    if (state.renderBackend === 'webgpu') {
-      try {
-        await initializeWebGPURenderer(state);
-      } catch (e) {
-        console.error('[WebGPU] Init failed, falling back to WebGL:', e);
-        state.renderBackend = 'three';
-        await initializeWebGLRenderer(state);
-      }
-    } else {
-      // hybrid пока оставляем как стабильный WebGL (как требование)
-      await initializeWebGLRenderer(state);
-    }
-
   } catch (error) {
-    console.error('[Renderer Detection] Ошибка при определении возможностей рендеринга:', error);
-    console.log('[Renderer Detection] Использование WebGL как fallback...');
-    await initializeWebGLRenderer(state);
+    console.warn('[Renderer Detection] Детект возможностей не удался (не критично):', error.message);
   }
+
+  // 2026-10-13 — заглушка вместо рендерера: она держит совместимый API
+  // (domElement/setSize/render), но НЕ создаёт GPU-контекста. Настоящий рендер —
+  // HoloEngine (js/engine/HologramWebGPU.js), свой цикл и свой canvas.
+  state.renderer = createHeadlessRendererStub();
+  state.currentRenderer = 'webgpu';
 
   const gridContainer = document.getElementById('grid-container');
   if (!gridContainer) {
@@ -318,13 +311,17 @@ export async function initializeScene(state) {
   // Mouse rotation for XR mode
   state.mouseRotation = { isDragging: false, previousMousePosition: { x: 0, y: 0 } };
 
-  state.renderer.domElement.addEventListener('pointerdown', (e) => {
+  // 2026-10-13 — WebGL-canvas удалён из рантайма, поэтому XR-drag слушает
+  // grid-container (события всплывают и от HoloEngine-канваса к нему же).
+  const inputSurface = gridContainer || state.renderer.domElement;
+
+  inputSurface.addEventListener('pointerdown', (e) => {
     if (!state.isXRMode) return;
     state.mouseRotation.isDragging = true;
     state.mouseRotation.previousMousePosition = { x: e.offsetX, y: e.offsetY };
   });
 
-  state.renderer.domElement.addEventListener('pointermove', (e) => {
+  inputSurface.addEventListener('pointermove', (e) => {
     if (!state.isXRMode || !state.mouseRotation.isDragging) return;
 
     const deltaMove = {
@@ -456,131 +453,61 @@ export async function initializeScene(state) {
 }
 
 /**
- * Инициализация WebGL рендерера
- * @param {object} state - Глобальное состояние приложения
+ * 2026-10-13 — Головless-заглушка рендерера.
+ *
+ * Three.js WebGLRenderer ВЫВЕДЕН из рантайма: он создавал второй GPU-контекст
+ * поверх HoloEngine (WebGPU). Именно этим объяснялся каскад
+ * [Invalid Texture]/[Invalid TextureView]/[Invalid CommandBuffer] в Firefox
+ * и удвоенная нагрузка на GPU (два цикла, два канваса, два контекста).
+ *
+ * Заглушка держит только совместимый API для оставшегося кода:
+ *   - domElement — обычный <canvas> БЕЗ 2d/webgl/webgpu-контекста (ноль GPU-стоимости),
+ *     в DOM он виден прозрачным и пропускает события к HoloEngine-канвасу;
+ *   - setSize/setPixelRatio/render — no-op;
+ *   - xr.enabled — false (XR-сессия управляется XRSessionManager/HoloEngine).
+ * Настоящий рендер голограммы — js/engine/HologramWebGPU.js.
  */
-async function initializeWebGLRenderer(state) {
-  console.log('[WebGL Init] Инициализация WebGL рендерера...');
+function createHeadlessRendererStub() {
+  const canvas = document.createElement('canvas');
+  canvas.id = 'scene-stub-canvas';
+  // Прозрачный, вне потока событий орбиты, нулевого размера — канвас инертен.
+  Object.assign(canvas.style, {
+    position: 'absolute',
+    top: '0',
+    left: '0',
+    width: '0',
+    height: '0',
+    opacity: '0',
+    pointerEvents: 'none',
+  });
 
-  try {
-    state.renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      powerPreference: 'high-performance'
-    });
-
-    state.renderer.setPixelRatio(window.devicePixelRatio);
-    state.renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-    // WebXR: 1 unit = 1 метр. Тор будет правильного физического размера.
-    state.renderer.xr.enabled = true;
-    // IPD берётся автоматически из WebXR API очков — не задавать вручную
-
-    const canvas = state.renderer.domElement;
-
-    // Обработчики потери контекста WebGL
-    canvas.addEventListener('webglcontextlost', function (event) {
-      event.preventDefault();
-      console.warn('!!! WebGL CONTEXT LOST! Остановка цикла анимации.');
-    }, false);
-
-    canvas.addEventListener('webglcontextrestored', function () {
-      console.log('✅ WebGL CONTEXT RESTORED! Переинициализация сцены...');
-      alert('WebGL контекст восстановлен. Перезагружаем страницу.');
-      window.location.reload();
-    }, false);
-
-    console.log('[WebGL Init] WebGLRenderer успешно инициализирован.');
-
-  } catch (error) {
-    console.error('[WebGL Init] Ошибка инициализации WebGL:', error);
-    throw error;
-  }
-}
-
-/**
- * Инициализация WebGPU рендерера (экспериментальная поддержка)
- * @param {object} state - Глобальное состояние приложения
- */
-async function initializeWebGPURenderer(state) {
-  console.log('[WebGPU Init] Инициализация WebGPU рендерера...');
-
-  try {
-    // Проверка поддержки WebGPU
-    if (!navigator.gpu) {
-      throw new Error('WebGPU не поддерживается в этом браузере');
-    }
-
-    state.renderer = new WebGPURenderer({
-      antialias: true,
-      powerPreference: 'high-performance'
-    });
-
-    state.renderer.setPixelRatio(window.devicePixelRatio);
-    // WebGPURenderer might need explicit init or await in some Three.js versions
-    // but in r165 it's usually automatic on first render or via .init()
-    if (state.renderer.init) await state.renderer.init();
-
-    console.log('[WebGPU Init] WebGPURenderer успешно инициализирован.');
-    state.currentRenderer = 'webgpu';
-
-  } catch (error) {
-    console.error('[WebGPU Init] Ошибка инициализации WebGPU:', error);
-    console.log('[WebGPU Init] Переключение на WebGL...');
-    await initializeWebGLRenderer(state);
-    state.currentRenderer = 'webgl';
-  }
-}
-
-/**
- * Инициализация Canvas2D рендерера (fallback)
- * @param {object} state - Глобальное состояние приложения
- */
-async function initializeCanvas2DRenderer(state) {
-  console.log('[Canvas2D Init] Инициализация Canvas2D fallback рендерера...');
-
-  try {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    // Создание mock-рендерера с минимальным API для совместимости
-    state.renderer = {
-      domElement: canvas,
-      setSize: function (width, height) {
-        canvas.width = width;
-        canvas.height = height;
-        this.renderFallback(width, height);
-      },
-      setPixelRatio: function () { },
-      renderFallback: function (width, height) {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '24px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('3D-графика недоступна в этой среде', width / 2, height / 2 - 50);
-        ctx.fillText('Попробуйте другой браузер или устройство', width / 2, height / 2);
-        ctx.fillText('Остальные функции приложения доступны', width / 2, height / 2 + 50);
-
-        // Показ информации о рендерере
-        ctx.fillStyle = '#00ff00';
-        ctx.font = '16px Arial';
-        ctx.fillText('Canvas2D Fallback Active', width / 2, height / 2 + 100);
-      },
-      render: function () { } // Пустая функция для совместимости
-    };
-
-    state.renderer.setSize(window.innerWidth, window.innerHeight);
-    console.log('[Canvas2D Init] Canvas2D fallback рендерер успешно создан.');
-
-  } catch (error) {
-    console.error('[Canvas2D Init] Ошибка создания Canvas2D рендерера:', error);
-
-    // Показ критической ошибки
-    const errorDiv = document.createElement('div');
-    errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px; font-size: 1.2em; z-index: 9999;';
-    errorDiv.textContent = 'Критическая ошибка: 3D-графика недоступна. Приложение продолжит работу без визуализации.';
-    document.body.appendChild(errorDiv);
-
-    throw error;
-  }
+  return {
+    domElement: canvas,
+    isWebGPURenderer: true,
+    // XR-менеджер Three больше не участвует (сцена им не рендерится с Шага 3c),
+    // но XRSessionManager зовёт renderer.xr.setSession — глушим no-op'ом,
+    // чтобы кнопка XR не роняла инициализацию.
+    xr: { enabled: false, setSession: async () => {} },
+    setSize() {},
+    setPixelRatio() {},
+    render() {},
+    // Аналог three.WebGLRenderer.setAnimationLoop: гоняет callback через RAF
+    // каждый кадр, даже когда animate() сам вернулся на паузе (paused) —
+    // иначе «Tab hidden → Tab visible» навсегда убивал бы лёгкий цикл.
+    setAnimationLoop(cb) {
+      if (this._animLoopCb && this._animLoopRaf) {
+        cancelAnimationFrame(this._animLoopRaf);
+      }
+      this._animLoopCb = cb || null;
+      this._animLoopRaf = 0;
+      if (!cb) return;
+      const self = this;
+      const tick = (t) => {
+        if (self._animLoopCb !== cb) return; // отменена другой setAnimationLoop
+        self._animLoopRaf = requestAnimationFrame(tick);
+        cb(t);
+      };
+      this._animLoopRaf = requestAnimationFrame(tick);
+    },
+  };
 }

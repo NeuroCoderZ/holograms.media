@@ -205,8 +205,8 @@ export const state = {
   debugMode: false,
 };
 
-// Импортируем функцию инициализации Three.js сцены
-import { HologramRenderer } from '../3d/hologramRenderer.js';
+// Сцена и камеры (2026-10-13: GPU-рендерер один — HoloEngine/WebGPU в init ниже;
+// Three.js-слой остался только как математика сцены/камер, без WebGL-канваса)
 import { initializeScene } from '../3d/sceneSetup.js';
 import { AudioFilePlayer } from '../audio/audioFilePlayer.js'; // Added AudioFilePlayer import
 import { MicrophoneManager } from '../audio/microphoneManager.js';

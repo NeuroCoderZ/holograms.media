@@ -211,12 +211,48 @@ export class HoloEngine {
         this.context = this.canvas.getContext('webgpu');
         if (!this.context) throw new Error('Канвас не отдал webgpu-контекст');
 
-        this.format = navigator.gpu.getPreferredCanvasFormat();
-        this.context.configure({
-            device: this.device,
-            format: this.format,
-            alphaMode: 'premultiplied',
-        });
+    this.format = navigator.gpu.getPreferredCanvasFormat();
+    this.context.configure({
+      device: this.device,
+      format: this.format,
+      alphaMode: 'premultiplied',
+    });
+
+    // 2026-10-13 — ПОВТЕРЯЮЩАЯСЯ ПОТЕРЯ УСТРОЙСТВА И СПРЯТАННЫЕ ОШИБКИ.
+    // Без этих обработчиков первый validation-error съедался троттлингом
+    // («WebGPU: too many warnings»), а затем каждый кадр каскадом плодил
+    // [Invalid Texture] → [Invalid TextureView] → [Invalid CommandBuffer],
+    // потому что тексттуры, созданные потерянным device, невалидны навсегда.
+    // Теперь первая ошибка печатается с причиной, а потеря устройства
+    // останавливает цикл вместо флуда.
+    this.deviceLost = false;
+    this.deviceLostReason = '';
+
+    this.device.onuncapturederror = (event) => {
+      const err = event.error || {};
+      console.error(
+        `[HoloEngine] WebGPU uncaptured error: ${err.message || err}`,
+      );
+      // Полный стек первого сообщения — именно он раньше тонул в троттлинге.
+      if (err.constructor && err.constructor.name) {
+        console.error(`[HoloEngine] Тип ошибки: ${err.constructor.name}`);
+      }
+    };
+
+    this.device.lost.then((info) => {
+      this.deviceLost = true;
+      this.deviceLostReason = info && info.reason ? info.reason : 'unknown';
+      console.error(
+        `[HoloEngine] ⛔ GPU-устройство потеряно (reason: ${this.deviceLostReason}). `
+        + `Отрисовка остановлена. Требуется перезагрузка страницы.`,
+      );
+      // Событие для внешних потребителей (UI-оверлей, телеметрия).
+      if (typeof CustomEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('holoengine:devicelost', {
+          detail: { reason: this.deviceLostReason },
+        }));
+      }
+    }).catch(() => { /* lost может не вызваться при норме — глушим шум */ });
 
         console.log('[HoloEngine] ✅ WebGPU инициализирован');
         console.log(`[HoloEngine] 📷 Camera: eye=[0, 128, 0], target=[0, 128, 75], ortho=[-150, 150, -20, 280]`);

@@ -197,7 +197,17 @@ export class HologramWebGPU {
     }
 
     _createDepthTexture() {
+        // 2026-10-13 — guards. Раньше при width/height = 0 (или уже мёртвом
+        // device) device.createTexture создавал невалидную текстуру, и цикл
+        // каждый кадр сыпал [Invalid Texture] → [Invalid TextureView] →
+        // [Invalid CommandBuffer], пока троттлинг не глушил первую причину.
+        if (!this.engine?.device || this.engine.deviceLost) return;
+
         const { width, height } = this.canvas;
+        if (!Number.isFinite(width) || !Number.isFinite(height)
+            || width < 1 || height < 1) {
+            return; // нулевой/битый размер — кадр пропускаем, текстуру не создаём
+        }
         // Пересоздаём ТОЛЬКО при реальном изменении размера.
         // В противном случае каждый кадр уничтожался бы и пересоздавался буфер
         // глубины (~60 аллокаций/сек) — расточительно для GPU.
@@ -460,8 +470,22 @@ export class HologramWebGPU {
     _renderLoop = () => {
         if (!this.isInitialized) return;
 
+        // 2026-10-13 — потеря устройства: останавливаемся сразу, без попыток
+        // рендерить потерянным device (и без каскада невалидных текстур).
+        if (this.engine.deviceLost) {
+            this._stopOnDeviceLost();
+            return;
+        }
+
         this.engine.resize();
         this._createDepthTexture();
+
+        // Глубина могла не создаться (нулевой размер канваса) — тогда кадр
+        // пропускаем, иначе .createView() уронит RAF-цикл навсегда.
+        if (!this.depthTexture) {
+            requestAnimationFrame(this._renderLoop);
+            return;
+        }
 
         const proj = this.engine.getCurrentProjection();
         const view = this.engine.getViewMatrix();
@@ -474,11 +498,23 @@ export class HologramWebGPU {
             this.columns.update(this.latestAudioData);
         }
 
+        // getCurrentTexture() бросает/возвращает битую текстуру, если канвас
+        // нулевого размера или контекст не сконфигурирован. Раньше отсюда
+        // каждый кадр уходил невалидный colorAttachment в render pass.
+        let swapView;
+        try {
+            swapView = this.engine.context.getCurrentTexture().createView();
+        } catch (swapError) {
+            console.warn('[HoloEngine] Кадр пропущен: swapchain недоступен —', swapError.message);
+            requestAnimationFrame(this._renderLoop);
+            return;
+        }
+
         const commandEncoder = this.engine.device.createCommandEncoder();
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
-                view: this.engine.context.getCurrentTexture().createView(),
-                clearValue: { r: 0, g: 0, b: 0, a: 0 }, 
+                view: swapView,
+                clearValue: { r: 0, g: 0, b: 0, a: 0 },
                 loadOp: 'clear', storeOp: 'store',
             }],
             depthStencilAttachment: {
@@ -506,6 +542,27 @@ export class HologramWebGPU {
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);color:#f44;display:flex;align-items:center;justify-content:center;z-index:999999;font-family:monospace;font-size:16px;text-align:center;';
         overlay.innerHTML = `<div><h1>⚠️ HoloEngine ошибка</h1><p>${message}</p></div>`;
         document.body.appendChild(overlay);
+    }
+
+    /**
+     * 2026-10-13 — мягкая остановка при потере GPU-устройства.
+     * Один раз печатает причину и dangling-оверлей с инструкцией;
+     * RAF-цикл не перепланируется, консоль не заваливается ошибками.
+     */
+    _stopOnDeviceLost() {
+        if (this._deviceLostStopped) return;
+        this._deviceLostStopped = true;
+        this.isInitialized = false;
+
+        const reason = this.engine.deviceLostReason || 'unknown';
+        console.error(
+            `[HoloEngine] Остановка рендера: GPU-устройство потеряно (${reason}). `
+            + 'Перезагрузите страницу. Если повторяется — проверьте '
+            + 'chrome://gpu (WebGPU/Vulkan) и не держите вторые GPU-контексты.',
+        );
+        this._showError(
+            `GPU-устройство потеряно (${reason}). Перезагрузите страницу, чтобы восстановить рендер.`
+        );
     }
 }
 

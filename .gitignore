@@ -107,3 +107,16 @@ graphify-out/
 .codegraph/
 .wasm-backup/
 .wasm-backup-*/
+
+# Веса моделей в гит не кладём (2026-10-06)
+*.gguf
+*.safetensors
+*.onnx
+*.pt
+*.pth
+*.ckpt
+*.ggml
+models/
+voices/
+# Кэш сборки Rust — тоже не для гита
+target/

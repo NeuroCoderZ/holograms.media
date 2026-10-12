@@ -5,6 +5,10 @@ export function startAnimationLoop(appState) {
     }
     console.log("✅ Animation loop started.");
 
+    // 2026-10-13 — Three.js-рендер выведен из рантайма: WebGL-канваса больше
+    // нет, рендерит HoloEngine (WebGPU) своим циклом. Этот цикл остаётся
+    // «лёгким»: TWEEN, WASD, синхронизация позы камеры в state.activeCamera,
+    // центрирование viewOffset. GPU через него не трогается.
     const isWebGPU = appState.renderer.isWebGPURenderer === true;
     console.log(`[Rendering] Using ${isWebGPU ? 'WebGPU' : 'WebGL'} render loop.`);
 
