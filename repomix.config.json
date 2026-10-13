@@ -25,6 +25,8 @@
     "docs/RU/*.md",
     "docs/EN/*.md",
     "PROGRESS.md",
+    "GLOBAL_STATUS.md",
+    "ARGON_REFERENCE.md",
     "HologramsMedia.md",
     "WEBGPU_MIGRATION.md",
     "WEB_STACK.md",
