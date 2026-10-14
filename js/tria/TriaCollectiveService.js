@@ -119,6 +119,17 @@ export default class TriaCollectiveService {
   _startHttpFallback(signalingUrl, intervalMs = 3000) {
     if (this._httpFallbackTimer) return;
 
+    // 2026-10-15 — Шапка на фолбэк-сессии (v0.20.623, задание Qwen 3.8 Max).
+    // Второй цикл законен (реконнект WS), третий и далее — уже шум в консоли.
+    if ((this._httpFallbackSessions || 0) >= 2) {
+      if (!this._httpFallbackCapWarned) {
+        this._httpFallbackCapWarned = true;
+        console.warn('[TriaCollective] HTTP-фолбэк уже запускался дважды за сессию — новые циклы подавлены');
+      }
+      return;
+    }
+    this._httpFallbackSessions = (this._httpFallbackSessions || 0) + 1;
+
     this._signaling = 'http-fallback';
     this._httpBaseUrl = this._httpBase(signalingUrl);
     this._httpCursor = null;

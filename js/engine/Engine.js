@@ -290,6 +290,11 @@ export class HoloEngine {
       const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
       const canvasSize = `${this.canvas?.width || 0}x${this.canvas?.height || 0} (dpr=${dpr})`;
       const lostMessage = (info && info.message) || 'n/a';
+      // 2026-10-15 — Сообщение драйвера независимо от порядка (v0.20.623):
+      // _stopOnDeviceLost мог показать оверлей раньше разрешения lost —
+      // сохраняем текст, чтобы оверлей подхватил его сразу, а не только
+      // через позднее доживление по holo-error-text.
+      this._lastLostMessage = lostMessage;
       const ageMs = this._initTs ? (Date.now() - this._initTs) : null;
       const lostLine = `[HoloEngine] ⛔ GPU-устройство потеряно (reason=${this.deviceLostReason}; `
         + `message=${lostMessage}; vendor=${adapterInfo.vendor || 'n/a'}; `

@@ -547,32 +547,51 @@ export class HologramWebGPU {
         this.engine.device.queue.submit([commandEncoder.finish()]);
 
         this._frameCount++;
-        // 2026-10-14 — Честный firstcleanframe (v0.20.622, задание Qwen 3.8 Max).
-        // Раньше событие слалось на кадре №1 даже если кадр битый (каскад с кадра 1),
-        // и руки стартовали поверх мёртвого GPU. Теперь эмитим только если кадр
-        // реально чистый (ни одной WebGPU-ошибки к этому моменту); иначе руки ждут
-        // фолбэк 3 с из init.js.
-        if (this._frameCount === 1) {
-            const eng = this.engine;
-            const frameClean = !eng || (!eng._firstWebGPUErrorLogged
-                && (!eng._webgpuErrorCounts || eng._webgpuErrorCounts.size === 0));
-            if (frameClean) {
-                try { eventBus.emit('holoengine:firstcleanframe', {}); } catch (e) { /* ignore */ }
-                if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
-                    window.dispatchEvent(new CustomEvent('holoengine:firstcleanframe'));
-                }
-            } else {
-                console.warn('[HoloEngine] первый кадр нечистый — holoengine:firstcleanframe не эмитится, руки ждут фолбэк');
-            }
+        // 2026-10-15 — firstcleanframe с отложенной проверкой (v0.20.623).
+        // onuncapturederror доставляется асинхронно: синхронная проверка на кадре 1
+        // видела чистые флаги даже поверх умирающего GPU, и руки стартовали в каскад.
+        // Теперь взводим таймер 1200 мс — к его срабатыванию доставка ошибок уже
+        // выставит флаги, и проверка станет честной.
+        if (this._frameCount === 1 && !this._firstFrameCheckArmed) {
+            this._firstFrameCheckArmed = true;
+            setTimeout(() => this._emitFirstCleanFrameIfClean(), 1200);
         }
         requestAnimationFrame(this._renderLoop);
     };
 
-    _showError(message) {
+    /**
+     * 2026-10-15 — Отложенная проверка чистоты первого кадра (v0.20.623).
+     * Эмитит holoengine:firstcleanframe только если конвейер жив и ни одной
+     * WebGPU-ошибки не зафиксировано; иначе руки ждут фолбэк 3 с из init.js.
+     */
+    _emitFirstCleanFrameIfClean() {
+        if (this._firstCleanFrameEmitted) return;
+        const eng = this.engine;
+        const alive = this.isInitialized && !!eng && !eng.deviceLost;
+        const clean = !!eng && !eng._firstWebGPUErrorLogged
+            && (!eng._webgpuErrorCounts || eng._webgpuErrorCounts.size === 0);
+        if (alive && clean) {
+            this._firstCleanFrameEmitted = true;
+            try { eventBus.emit('holoengine:firstcleanframe', {}); } catch (e) { /* ignore */ }
+            if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+                window.dispatchEvent(new CustomEvent('holoengine:firstcleanframe'));
+            }
+        } else {
+            console.warn('[HoloEngine] первый кадр нечистый (отложенная проверка) — holoengine:firstcleanframe не эмитится, руки ждут фолбэк');
+        }
+    }
+
+    _showError(message, opts = {}) {
+        // 2026-10-15 — hideReinit для отравленного GPU-процесса (v0.20.623):
+        // кнопка восстановления при бут-паттерне бессмысленна — показываем инструкцию.
+        const hideReinit = !!(opts && opts.hideReinit);
         const overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);color:#f44;display:flex;align-items:center;justify-content:center;z-index:999999;font-family:monospace;font-size:16px;text-align:center;';
-        overlay.innerHTML = `<div><h1>⚠️ HoloEngine ошибка</h1><p id="holo-error-text">${message}</p><button id="holo-reinit-btn" style="margin-top:12px;padding:8px 16px;font-size:14px;cursor:pointer;">Восстановить без перезагрузки</button><p id="holo-reinit-status" style="color:#fa0;font-size:13px;"></p></div>`;
+        overlay.innerHTML = hideReinit
+            ? `<div><h1>⚠️ HoloEngine ошибка</h1><p id="holo-error-text">${message}</p><p style="color:#fa0;font-size:13px;">Кнопка восстановления скрыта: при отравленном GPU-процессе она бессмысленна.</p></div>`
+            : `<div><h1>⚠️ HoloEngine ошибка</h1><p id="holo-error-text">${message}</p><button id="holo-reinit-btn" style="margin-top:12px;padding:8px 16px;font-size:14px;cursor:pointer;">Восстановить без перезагрузки</button><p id="holo-reinit-status" style="color:#fa0;font-size:13px;"></p></div>`;
         document.body.appendChild(overlay);
+        if (hideReinit) return;
         // 2026-10-14 — Кнопка восстановления без перезагрузки (v0.20.621, задание Qwen 3.8 Max).
         // Chrome перезапускает GPU-процесс сам, поэтому одна попыточная re-init
         // оправдана; второй провал — жёстко требуем reload.
@@ -611,6 +630,10 @@ export class HologramWebGPU {
         this.depthTexture = null;
         this._deviceLostStopped = false;
         this.isInitialized = false;
+        // Новая жизнь конвейера — новая отложенная проверка первого кадра.
+        this._frameCount = 0;
+        this._firstFrameCheckArmed = false;
+        this._firstCleanFrameEmitted = false;
         await this.init();
     }
 
@@ -625,14 +648,56 @@ export class HologramWebGPU {
         this.isInitialized = false;
 
         const reason = this.engine.deviceLostReason || 'unknown';
+        // 2026-10-15 — Честный оверлей бут-паттерна (v0.20.623, задание Qwen 3.8 Max).
+        // Повторная смерть на ~1-й секунде при свежей такой же записи в чёрном ящике =
+        // отравленный GPU-процесс: re-init и F5 воспроизводят смерть, требовать надо
+        // полный рестарт браузера. Кнопку в этом паттерне прячем.
+        const nowAgeMs = this.engine._initTs ? (Date.now() - this.engine._initTs) : null;
+        const last = this._readLastGpuLost();
+        const poisoned = !!last
+            && (Date.now() - last.ts) < 10 * 60 * 1000
+            && last.ageMs !== null && last.ageMs !== undefined && last.ageMs < 2000
+            && nowAgeMs !== null && nowAgeMs < 2000;
+        if (poisoned) {
+            console.error(
+                `[HoloEngine] ☠️ GPU-процесс отравлен: повторная смерть device на буте `
+                + `(ageMs=${nowAgeMs}, прошлая ageMs=${last.ageMs}). Re-init и F5 не помогут.`,
+            );
+            this._showError(
+                `GPU-процесс отравлен: WebGPU-device гибнет на ~1-й секунде бута (ageMs=${nowAgeMs}), WebGL при этом жив. `
+                + `Восстановление без перезагрузки и F5 не помогут — перезапустите браузер полностью (все окна).`,
+                { hideReinit: true },
+            );
+            return;
+        }
+        // 2026-10-15 — Сообщение драйвера независимо от порядка (v0.20.623):
+        // если lost уже разрешился — сразу в оверлей; если нет — позже допишет
+        // доживление по holo-error-text.
+        const driverMsg = this.engine._lastLostMessage || null;
         console.error(
             `[HoloEngine] Остановка рендера: GPU-устройство потеряно (${reason}). `
             + 'Перезагрузите страницу. Если повторяется — проверьте '
             + 'chrome://gpu (WebGPU/Vulkan) и не держите вторые GPU-контексты.',
         );
         this._showError(
-            `GPU-устройство потеряно (${reason}). Перезагрузите страницу, чтобы восстановить рендер.`
+            driverMsg
+                ? `GPU-устройство потеряно (${reason}). Драйвер: ${driverMsg}. Перезагрузите страницу, чтобы восстановить рендер.`
+                : `GPU-устройство потеряно (${reason}). Перезагрузите страницу, чтобы восстановить рендер.`
         );
+    }
+
+    /**
+     * 2026-10-15 — Чтение чёрного ящика (v0.20.623). Возвращает запись
+     * holo:lastGpuLost или null (нет записи / битая / нет sessionStorage).
+     */
+    _readLastGpuLost() {
+        try {
+            if (typeof sessionStorage === 'undefined') return null;
+            const raw = sessionStorage.getItem('holo:lastGpuLost');
+            if (!raw) return null;
+            const last = JSON.parse(raw);
+            return (last && typeof last.ts === 'number') ? last : null;
+        } catch (e) { return null; }
     }
 }
 
