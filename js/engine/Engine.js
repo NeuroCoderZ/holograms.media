@@ -210,6 +210,14 @@ export class HoloEngine {
         // 2026-10-14 — Возраст смерти в чёрный ящик (v0.20.622): отделяет смерть
         // на буте (ageMs < 2000) от смерти в работе без ручных таймлайнов.
         this._initTs = Date.now();
+        // 2026-10-15 — sid сессии для poisoned-детектора v2 (v0.20.624): запись
+        // чёрного ящика текущей сессии не должна считаться «прошлой».
+        if (typeof window !== 'undefined') {
+          if (!window.__holoBootSid) window.__holoBootSid = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+          this._bootSid = window.__holoBootSid;
+        } else {
+          this._bootSid = null;
+        }
 
         this.context = this.canvas.getContext('webgpu');
         if (!this.context) throw new Error('Канвас не отдал webgpu-контекст');
@@ -232,6 +240,9 @@ export class HoloEngine {
     this.deviceLostReason = '';
     this._firstWebGPUErrorLogged = false;
     this._webgpuErrorCounts = new Map();
+    // 2026-10-15 — Метка остановки для poisoned-детектора v2 (v0.20.624):
+    // stopAgeMs стабилен, ageMs подтверждения дрожит (never / 1091 / 35123).
+    this._stopTs = 0;
 
     this.device.onuncapturederror = (event) => {
       if (this.deviceLost) return;
@@ -242,6 +253,10 @@ export class HoloEngine {
 
       if (!this._firstWebGPUErrorLogged) {
         this._firstWebGPUErrorLogged = true;
+        // 2026-10-15 — Подпись смерти до первого кадра (v0.20.624, усилитель
+        // poisoned-детектора v2): первая же ошибка уже вторична
+        // («invalid due to a previous error») — VkInstance умер до first submit.
+        this._firstErrorSecondary = /previous error|destroyed|invalidated/i.test(errMessage);
         console.error(`[HoloEngine] WebGPU uncaptured error: ${errMessage}`);
         console.error(`[HoloEngine] Тип ошибки: ${errName}`);
         const isOom = errName === 'GPUOutOfMemoryError' || /out of memory/i.test(errMessage);
@@ -261,16 +276,27 @@ export class HoloEngine {
       if (nextCount === 1 || nextCount % 10 === 0) {
         console.warn(`[HoloEngine] повтор WebGPU-ошибки (${nextCount}): ${signature}`);
       }
-      // 2026-10-14 — Circuit breaker зомби-каскада (v0.20.621, задание Qwen 3.8 Max).
-      // 30 повторов одной сигнатуры = битое устройство уже не лечится, дальше
-      // только молотилка GPU (~2740 кадров до lost в диагностике v0.20.620).
-      // Ставим deviceLost и шлём событие — цикл встанет, руки остановятся.
+      // 2026-10-15 — Circuit breaker зомби-каскада (v0.20.624: порог 30 → 5).
+      // Здоровый конвейер даёт 0 validation-ошибок, поэтому 5 повторов одной
+      // сигнатуры = гарантированно битое устройство. Ставим deviceLost и шлём
+      // событие — цикл встанет, руки остановятся. (История: v0.20.621 — порог 30,
+      // приёмка v0.20.623 показала ~90 построчных validation-печать Chrome на
+      // каждый каскад — режем флуд и молотилку в 6 раз.)
       // Ветка nextCount === 1 выше НЕ мёртвая (первый повтор после early-return
       // первой ошибки), поэтому оставлена как есть.
-      if (nextCount === 30) {
+      if (nextCount === 5) {
         this.deviceLost = true;
         this.deviceLostReason = 'zombie-cascade';
-        console.error(`[HoloEngine] ⛔ Circuit breaker: 30 повторов (${signature}) — остановка рендера.`);
+        // Момент ОСТАНОВКИ для стабильного stopAgeMs (v0.20.624): пишем ящик
+        // сразу — promise lost может не разрешиться никогда (чистый зомби).
+        this._stopTs = Date.now();
+        console.error(`[HoloEngine] ⛔ Circuit breaker: 5 повторов (${signature}) — остановка рендера.`);
+        this._writeGpuBlackbox({
+          preliminaryReason: null,
+          reason: this.deviceLostReason,
+          message: signature,
+          ageMs: null,
+        });
         if (typeof CustomEvent === 'function') {
           window.dispatchEvent(new CustomEvent('holoengine:devicelost', {
             detail: { reason: this.deviceLostReason, signature },
@@ -311,23 +337,15 @@ export class HoloEngine {
           errNode.textContent = `GPU-устройство потеряно (${this.deviceLostReason}). Драйвер: ${lostMessage}. Перезагрузите страницу, чтобы восстановить рендер.`;
         }
       } catch (e) { /* DOM недоступен — молча пропускаем */ }
-      // 2026-10-14 — Чёрный ящик между сессиями (v0.20.621, задание Qwen 3.8 Max).
-      // Следующий лог станет самодостаточным: HologramWebGPU.init() напечатает
-      // эту запись одним console.warn, если она свежее 24 ч.
-      try {
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('holo:lastGpuLost', JSON.stringify({
-            ts: Date.now(),
-            preliminaryReason,
-            reason: this.deviceLostReason,
-            message: lostMessage,
-            adapter: adapterInfo,
-            canvas: canvasSize,
-            ageMs,
-            repeats: [...this._webgpuErrorCounts.entries()],
-          }));
-        }
-      } catch (e) { /* sessionStorage недоступен — молча пропускаем */ }
+      // Чёрный ящик пишет ХЕЛПЕР (v0.20.624): та же схема + стабильный stopAgeMs
+      // из _stopTs; ageMs здесь — чистая телеметрия подтверждения (ackMs,
+      // не время смерти: наблюдали never / 1091 / 35123 при смерти на кадре 1).
+      this._writeGpuBlackbox({
+        preliminaryReason,
+        reason: this.deviceLostReason,
+        message: lostMessage,
+        ageMs,
+      });
       if (typeof CustomEvent === 'function') {
         window.dispatchEvent(new CustomEvent('holoengine:devicelost', {
           detail: {
@@ -344,6 +362,37 @@ export class HoloEngine {
 
         console.log('[HoloEngine] ✅ WebGPU инициализирован');
         console.log(`[HoloEngine] 📷 Camera: eye=[0, 128, 0], target=[0, 128, 75], ortho=[-150, 150, -20, 280]`);
+    }
+
+    /**
+     * 2026-10-15 — Единая запись чёрного ящика (v0.20.624). Вызывается в момент
+     * ОСТАНОВКИ (breaker) и в момент ПОДТВЕРЖДЕНИЯ (lost): stopAgeMs стабилен
+     * (смерть всегда на кадре 1), ageMs — телеметрия подтверждения (ackMs).
+     * preliminaryReason не затирается null-перезаписью (путь breaker → lost).
+     */
+    _writeGpuBlackbox({ preliminaryReason = null, reason = null, message = '', ageMs = null } = {}) {
+      try {
+        if (typeof sessionStorage === 'undefined') return;
+        let prev = null;
+        try { prev = JSON.parse(sessionStorage.getItem('holo:lastGpuLost')); } catch (e) { prev = null; }
+        const stopAgeMs = (this._initTs && this._stopTs) ? (this._stopTs - this._initTs) : null;
+        const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+        sessionStorage.setItem('holo:lastGpuLost', JSON.stringify({
+          ts: Date.now(),
+          sid: this._bootSid || null,
+          preliminaryReason: (preliminaryReason !== null && preliminaryReason !== undefined)
+            ? preliminaryReason
+            : (prev && prev.preliminaryReason !== undefined ? prev.preliminaryReason : null),
+          reason: reason || 'unknown',
+          message,
+          adapter: (this.adapter && this.adapter.info) ? this.adapter.info : {},
+          canvas: `${this.canvas?.width || 0}x${this.canvas?.height || 0} (dpr=${dpr})`,
+          ageMs,
+          stopAgeMs,
+          firstSecondary: !!this._firstErrorSecondary,
+          repeats: [...this._webgpuErrorCounts.entries()],
+        }));
+      } catch (e) { /* sessionStorage недоступен — молча пропускаем */ }
     }
 
     getCurrentProjection() {

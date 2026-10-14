@@ -648,23 +648,41 @@ export class HologramWebGPU {
         this.isInitialized = false;
 
         const reason = this.engine.deviceLostReason || 'unknown';
-        // 2026-10-15 — Честный оверлей бут-паттерна (v0.20.623, задание Qwen 3.8 Max).
-        // Повторная смерть на ~1-й секунде при свежей такой же записи в чёрном ящике =
-        // отравленный GPU-процесс: re-init и F5 воспроизводят смерть, требовать надо
-        // полный рестарт браузера. Кнопку в этом паттерне прячем.
-        const nowAgeMs = this.engine._initTs ? (Date.now() - this.engine._initTs) : null;
+        // 2026-10-15 — Poisoned-детектор v2 (v0.20.624): критерий — время ОСТАНОВКИ
+        // (stopAgeMs), а не подтверждения. ageMs lost дрожит (never / 1091 / 35123),
+        // смерть при этом всегда на кадре 1 — порог на ageMs давал ложно-отрицательный
+        // результат (35123 ≥ 2000). sid исключает запись текущей сессии из «прошлых».
+        const stopBase = this.engine._stopTs || Date.now();
+        if (!this.engine._stopTs) this.engine._stopTs = stopBase;
+        const nowStopAgeMs = this.engine._initTs ? (stopBase - this.engine._initTs) : null;
         const last = this._readLastGpuLost();
-        const poisoned = !!last
-            && (Date.now() - last.ts) < 10 * 60 * 1000
-            && last.ageMs !== null && last.ageMs !== undefined && last.ageMs < 2000
-            && nowAgeMs !== null && nowAgeMs < 2000;
+        const firstSec = !!this.engine._firstErrorSecondary;
+        const lastSec = !!(last && last.firstSecondary);
+        const fresh = !!last && !!last.sid && last.sid !== this.engine._bootSid
+            && (Date.now() - last.ts) < 10 * 60 * 1000;
+        const stopOld = !!(last && last.stopAgeMs !== null && last.stopAgeMs !== undefined && last.stopAgeMs < 5000);
+        const stopNow = nowStopAgeMs !== null && nowStopAgeMs < 5000;
+        // Усилитель: первая ошибка уже вторична («invalid due to a previous error»)
+        // = смерть до первого submit. Требуется вместе со свежей похожей записью,
+        // одиночный инцидент poisoned не даёт никогда.
+        const poisoned = fresh && stopNow && (stopOld || (lastSec && firstSec));
+        // Фиксируем stop-метку в ящике (путь lost-без-breaker: хендлер lost записал
+        // ящик без stopAgeMs — дописываем сейчас; preliminaryReason хелпер сохранит).
+        try {
+          this.engine._writeGpuBlackbox({
+            preliminaryReason: null,
+            reason: this.engine.deviceLostReason || 'unknown',
+            message: this.engine._lastLostMessage || '',
+            ageMs: this.engine._initTs ? (Date.now() - this.engine._initTs) : null,
+          });
+        } catch (e) { /* ignore */ }
         if (poisoned) {
             console.error(
                 `[HoloEngine] ☠️ GPU-процесс отравлен: повторная смерть device на буте `
-                + `(ageMs=${nowAgeMs}, прошлая ageMs=${last.ageMs}). Re-init и F5 не помогут.`,
+                + `(stopAgeMs=${nowStopAgeMs}, прошлая stopAgeMs=${last.stopAgeMs}). Re-init и F5 не помогут.`,
             );
             this._showError(
-                `GPU-процесс отравлен: WebGPU-device гибнет на ~1-й секунде бута (ageMs=${nowAgeMs}), WebGL при этом жив. `
+                `GPU-процесс отравлен: WebGPU-device гибнет на ~1-й секунде бута (stopAgeMs=${nowStopAgeMs}), WebGL при этом жив. `
                 + `Восстановление без перезагрузки и F5 не помогут — перезапустите браузер полностью (все окна).`,
                 { hideReinit: true },
             );
