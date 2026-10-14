@@ -207,6 +207,9 @@ export class HoloEngine {
         }
 
         this.device = await this.adapter.requestDevice();
+        // 2026-10-14 — Возраст смерти в чёрный ящик (v0.20.622): отделяет смерть
+        // на буте (ageMs < 2000) от смерти в работе без ручных таймлайнов.
+        this._initTs = Date.now();
 
         this.context = this.canvas.getContext('webgpu');
         if (!this.context) throw new Error('Канвас не отдал webgpu-контекст');
@@ -277,17 +280,32 @@ export class HoloEngine {
     };
 
     this.device.lost.then((info) => {
+      // 2026-10-14 — Доживление оверлея поздним lost (v0.20.622, задание Qwen 3.8 Max).
+      // Breaker мог сработать раньше (reason=zombie-cascade), а драйверное message
+      // приходит только сейчас — сохраняем предварительную причину до перезаписи.
+      const preliminaryReason = this.deviceLost ? (this.deviceLostReason || null) : null;
       this.deviceLost = true;
       this.deviceLostReason = (info && info.reason) ? info.reason : 'unknown';
       const adapterInfo = (this.adapter && this.adapter.info) ? this.adapter.info : {};
       const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
       const canvasSize = `${this.canvas?.width || 0}x${this.canvas?.height || 0} (dpr=${dpr})`;
-      console.error(
-        `[HoloEngine] ⛔ GPU-устройство потеряно (reason=${this.deviceLostReason}; `
-        + `message=${(info && info.message) || 'n/a'}; vendor=${adapterInfo.vendor || 'n/a'}; `
-        + `architecture=${adapterInfo.architecture || 'n/a'}; canvas=${canvasSize}; depth=depth24plus). `
-        + `Отрисовка остановлена. Требуется перезагрузка страницы.`,
-      );
+      const lostMessage = (info && info.message) || 'n/a';
+      const ageMs = this._initTs ? (Date.now() - this._initTs) : null;
+      const lostLine = `[HoloEngine] ⛔ GPU-устройство потеряно (reason=${this.deviceLostReason}; `
+        + `message=${lostMessage}; vendor=${adapterInfo.vendor || 'n/a'}; `
+        + `architecture=${adapterInfo.architecture || 'n/a'}; canvas=${canvasSize}; depth=depth24plus`
+        + `${ageMs !== null ? `; ageMs=${ageMs}` : ''}`
+        + `${preliminaryReason ? `; preliminary=${preliminaryReason}` : ''}). `
+        + `Отрисовка остановлена. Требуется перезагрузка страницы.`;
+      console.error(lostLine);
+      // Поздняя причина дописывается в уже показанный оверлей, если он в DOM
+      // (иначе пользователь видит только ранний zombie-cascade без message драйвера).
+      try {
+        const errNode = typeof document !== 'undefined' ? document.getElementById('holo-error-text') : null;
+        if (errNode) {
+          errNode.textContent = `GPU-устройство потеряно (${this.deviceLostReason}). Драйвер: ${lostMessage}. Перезагрузите страницу, чтобы восстановить рендер.`;
+        }
+      } catch (e) { /* DOM недоступен — молча пропускаем */ }
       // 2026-10-14 — Чёрный ящик между сессиями (v0.20.621, задание Qwen 3.8 Max).
       // Следующий лог станет самодостаточным: HologramWebGPU.init() напечатает
       // эту запись одним console.warn, если она свежее 24 ч.
@@ -295,10 +313,12 @@ export class HoloEngine {
         if (typeof sessionStorage !== 'undefined') {
           sessionStorage.setItem('holo:lastGpuLost', JSON.stringify({
             ts: Date.now(),
+            preliminaryReason,
             reason: this.deviceLostReason,
-            message: (info && info.message) || '',
+            message: lostMessage,
             adapter: adapterInfo,
             canvas: canvasSize,
+            ageMs,
             repeats: [...this._webgpuErrorCounts.entries()],
           }));
         }
@@ -307,9 +327,11 @@ export class HoloEngine {
         window.dispatchEvent(new CustomEvent('holoengine:devicelost', {
           detail: {
             reason: this.deviceLostReason,
-            message: (info && info.message) || '',
+            preliminaryReason,
+            message: lostMessage,
             adapter: adapterInfo,
             canvas: canvasSize,
+            ageMs,
           },
         }));
       }

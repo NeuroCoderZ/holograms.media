@@ -122,6 +122,10 @@ export default class TriaCollectiveService {
     this._signaling = 'http-fallback';
     this._httpBaseUrl = this._httpBase(signalingUrl);
     this._httpCursor = null;
+    // 2026-10-14 — Ограничитель 404-поллинга (v0.20.622, задание Qwen 3.8 Max).
+    // Роута /poll на бэкенде нет, поэтому без счётчика setInterval молотит 404
+    // в бесконечность после каждой смерти WS (1006). Три подряд 404 — стоп.
+    this._http404Streak = 0;
 
     console.log('[TriaCollective] HTTP-фолбэк сигналинга запущен:', this._httpBaseUrl);
 
@@ -130,7 +134,17 @@ export default class TriaCollectiveService {
       if (this._httpCursor) params.set('after', this._httpCursor);
       try {
         const res = await fetch(`${this._httpBaseUrl}/poll?${params}`, { headers: this._authHeaders() });
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (res.status === 404 && ++this._http404Streak >= 3) {
+            clearInterval(this._httpFallbackTimer);
+            this._httpFallbackTimer = null;
+            if (this._signaling === 'http-fallback') this._signaling = null;
+            this._httpCursor = null;
+            console.warn('[TriaCollective] HTTP-фолбэк сигналинга недоступен (404×3) — отключён до перезагрузки');
+          }
+          return;
+        }
+        this._http404Streak = 0;
         const data = await res.json();
         if (data?.cursor) this._httpCursor = data.cursor;
         for (const m of (data?.messages || [])) {

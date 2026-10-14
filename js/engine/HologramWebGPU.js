@@ -547,13 +547,22 @@ export class HologramWebGPU {
         this.engine.device.queue.submit([commandEncoder.finish()]);
 
         this._frameCount++;
-        // 2026-10-14 — Разнос бута по времени (v0.20.621, задание Qwen 3.8 Max).
-        // Первый чистый кадр HoloEngine — сигнал для отложенного старта MediaPipe
-        // Hands (WebGPU-device, GL-делегат и камера больше не вскрываются разом).
+        // 2026-10-14 — Честный firstcleanframe (v0.20.622, задание Qwen 3.8 Max).
+        // Раньше событие слалось на кадре №1 даже если кадр битый (каскад с кадра 1),
+        // и руки стартовали поверх мёртвого GPU. Теперь эмитим только если кадр
+        // реально чистый (ни одной WebGPU-ошибки к этому моменту); иначе руки ждут
+        // фолбэк 3 с из init.js.
         if (this._frameCount === 1) {
-            try { eventBus.emit('holoengine:firstcleanframe', {}); } catch (e) { /* ignore */ }
-            if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
-                window.dispatchEvent(new CustomEvent('holoengine:firstcleanframe'));
+            const eng = this.engine;
+            const frameClean = !eng || (!eng._firstWebGPUErrorLogged
+                && (!eng._webgpuErrorCounts || eng._webgpuErrorCounts.size === 0));
+            if (frameClean) {
+                try { eventBus.emit('holoengine:firstcleanframe', {}); } catch (e) { /* ignore */ }
+                if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+                    window.dispatchEvent(new CustomEvent('holoengine:firstcleanframe'));
+                }
+            } else {
+                console.warn('[HoloEngine] первый кадр нечистый — holoengine:firstcleanframe не эмитится, руки ждут фолбэк');
             }
         }
         requestAnimationFrame(this._renderLoop);
@@ -562,7 +571,7 @@ export class HologramWebGPU {
     _showError(message) {
         const overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);color:#f44;display:flex;align-items:center;justify-content:center;z-index:999999;font-family:monospace;font-size:16px;text-align:center;';
-        overlay.innerHTML = `<div><h1>⚠️ HoloEngine ошибка</h1><p>${message}</p><button id="holo-reinit-btn" style="margin-top:12px;padding:8px 16px;font-size:14px;cursor:pointer;">Восстановить без перезагрузки</button><p id="holo-reinit-status" style="color:#fa0;font-size:13px;"></p></div>`;
+        overlay.innerHTML = `<div><h1>⚠️ HoloEngine ошибка</h1><p id="holo-error-text">${message}</p><button id="holo-reinit-btn" style="margin-top:12px;padding:8px 16px;font-size:14px;cursor:pointer;">Восстановить без перезагрузки</button><p id="holo-reinit-status" style="color:#fa0;font-size:13px;"></p></div>`;
         document.body.appendChild(overlay);
         // 2026-10-14 — Кнопка восстановления без перезагрузки (v0.20.621, задание Qwen 3.8 Max).
         // Chrome перезапускает GPU-процесс сам, поэтому одна попыточная re-init
