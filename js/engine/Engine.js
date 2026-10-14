@@ -258,6 +258,22 @@ export class HoloEngine {
       if (nextCount === 1 || nextCount % 10 === 0) {
         console.warn(`[HoloEngine] повтор WebGPU-ошибки (${nextCount}): ${signature}`);
       }
+      // 2026-10-14 — Circuit breaker зомби-каскада (v0.20.621, задание Qwen 3.8 Max).
+      // 30 повторов одной сигнатуры = битое устройство уже не лечится, дальше
+      // только молотилка GPU (~2740 кадров до lost в диагностике v0.20.620).
+      // Ставим deviceLost и шлём событие — цикл встанет, руки остановятся.
+      // Ветка nextCount === 1 выше НЕ мёртвая (первый повтор после early-return
+      // первой ошибки), поэтому оставлена как есть.
+      if (nextCount === 30) {
+        this.deviceLost = true;
+        this.deviceLostReason = 'zombie-cascade';
+        console.error(`[HoloEngine] ⛔ Circuit breaker: 30 повторов (${signature}) — остановка рендера.`);
+        if (typeof CustomEvent === 'function') {
+          window.dispatchEvent(new CustomEvent('holoengine:devicelost', {
+            detail: { reason: this.deviceLostReason, signature },
+          }));
+        }
+      }
     };
 
     this.device.lost.then((info) => {
@@ -272,6 +288,21 @@ export class HoloEngine {
         + `architecture=${adapterInfo.architecture || 'n/a'}; canvas=${canvasSize}; depth=depth24plus). `
         + `Отрисовка остановлена. Требуется перезагрузка страницы.`,
       );
+      // 2026-10-14 — Чёрный ящик между сессиями (v0.20.621, задание Qwen 3.8 Max).
+      // Следующий лог станет самодостаточным: HologramWebGPU.init() напечатает
+      // эту запись одним console.warn, если она свежее 24 ч.
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('holo:lastGpuLost', JSON.stringify({
+            ts: Date.now(),
+            reason: this.deviceLostReason,
+            message: (info && info.message) || '',
+            adapter: adapterInfo,
+            canvas: canvasSize,
+            repeats: [...this._webgpuErrorCounts.entries()],
+          }));
+        }
+      } catch (e) { /* sessionStorage недоступен — молча пропускаем */ }
       if (typeof CustomEvent === 'function') {
         window.dispatchEvent(new CustomEvent('holoengine:devicelost', {
           detail: {

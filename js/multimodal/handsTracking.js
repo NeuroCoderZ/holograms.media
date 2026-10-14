@@ -65,14 +65,19 @@ import { gestureManager } from '../managers/gestureManager.js';
 // Пауза трекинга рук после гибели GPU-процесса: MediaPipe внутри WASM не
 // пересоздаётся (RECREATE_DISABLED), поэтому останавливаем камеру и даём один hint.
 let handsPausedByGpuLoss = false;
+function pauseHandsOnGpuLoss(source) {
+    if (handsPausedByGpuLoss) return;
+    handsPausedByGpuLoss = true;
+    try { state.multimodal.cameraInstance?.stop(); } catch (e) { /* ignore */ }
+    try { state.multimodal.cameraStarted = false; } catch (e) { /* ignore */ }
+    console.error(`[HandsTracking] ⛔ GPU-процесс браузера потерян (${source}) — трекинг рук приостановлен. Перезагрузите страницу.`);
+}
 if (typeof window !== 'undefined') {
-    window.addEventListener('holoengine:devicelost', () => {
-        if (handsPausedByGpuLoss) return;
-        handsPausedByGpuLoss = true;
-        try { state.multimodal.cameraInstance?.stop(); } catch (e) { /* ignore */ }
-        try { state.multimodal.cameraStarted = false; } catch (e) { /* ignore */ }
-        console.error('[HandsTracking] ⛔ GPU-процесс браузера потерян — трекинг рук приостановлен. Перезагрузите страницу.');
-    }, { once: true });
+    window.addEventListener('holoengine:devicelost', () => pauseHandsOnGpuLoss('holoengine:devicelost'), { once: true });
+    // 2026-10-14 — Обезвреженный alert вендора (v0.20.621, задание Qwen 3.8 Max):
+    // public/mediapipe/hands.js больше не показывает блокирующий alert(),
+    // а шлёт событие — здесь та же пауза камеры без RECREATE.
+    window.addEventListener('mediapipe:glcontextfailed', () => pauseHandsOnGpuLoss('mediapipe:glcontextfailed'));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

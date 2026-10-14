@@ -96,6 +96,19 @@ export class HologramWebGPU {
     async init() {
         console.log('[HoloEngine] 🚀 Запуск инициализации...');
 
+        // 2026-10-14 — Чёрный ящик между сессиями (v0.20.621, задание Qwen 3.8 Max).
+        // Если прошлое падение GPU свежее 24 ч — печатаем его одним warn,
+        // чтобы следующий лог был самодостаточным без копипасты владельца.
+        try {
+            const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('holo:lastGpuLost') : null;
+            if (raw) {
+                const last = JSON.parse(raw);
+                if (last && last.ts && (Date.now() - last.ts) < 24 * 3600 * 1000) {
+                    console.warn('[HoloEngine] ⚫ Прошлое падение GPU (<24ч):', last);
+                }
+            }
+        } catch (e) { /* битый JSON чёрного ящика — молча пропускаем */ }
+
         const container = document.getElementById('grid-container');
         if (!container) {
             console.error('[HoloEngine] ❌ grid-container не найден!');
@@ -534,14 +547,62 @@ export class HologramWebGPU {
         this.engine.device.queue.submit([commandEncoder.finish()]);
 
         this._frameCount++;
+        // 2026-10-14 — Разнос бута по времени (v0.20.621, задание Qwen 3.8 Max).
+        // Первый чистый кадр HoloEngine — сигнал для отложенного старта MediaPipe
+        // Hands (WebGPU-device, GL-делегат и камера больше не вскрываются разом).
+        if (this._frameCount === 1) {
+            try { eventBus.emit('holoengine:firstcleanframe', {}); } catch (e) { /* ignore */ }
+            if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+                window.dispatchEvent(new CustomEvent('holoengine:firstcleanframe'));
+            }
+        }
         requestAnimationFrame(this._renderLoop);
     };
 
     _showError(message) {
         const overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);color:#f44;display:flex;align-items:center;justify-content:center;z-index:999999;font-family:monospace;font-size:16px;text-align:center;';
-        overlay.innerHTML = `<div><h1>⚠️ HoloEngine ошибка</h1><p>${message}</p></div>`;
+        overlay.innerHTML = `<div><h1>⚠️ HoloEngine ошибка</h1><p>${message}</p><button id="holo-reinit-btn" style="margin-top:12px;padding:8px 16px;font-size:14px;cursor:pointer;">Восстановить без перезагрузки</button><p id="holo-reinit-status" style="color:#fa0;font-size:13px;"></p></div>`;
         document.body.appendChild(overlay);
+        // 2026-10-14 — Кнопка восстановления без перезагрузки (v0.20.621, задание Qwen 3.8 Max).
+        // Chrome перезапускает GPU-процесс сам, поэтому одна попыточная re-init
+        // оправдана; второй провал — жёстко требуем reload.
+        const btn = overlay.querySelector('#holo-reinit-btn');
+        const status = overlay.querySelector('#holo-reinit-status');
+        if (btn) {
+            btn.addEventListener('click', async () => {
+                if (this._reinitAttempted) {
+                    if (status) status.textContent = 'Повторная попытка не удалась — перезагрузите страницу (F5).';
+                    return;
+                }
+                this._reinitAttempted = true;
+                btn.disabled = true;
+                if (status) status.textContent = 'Попытка восстановления…';
+                try {
+                    await this._tryReinit();
+                    overlay.remove();
+                } catch (e) {
+                    if (status) status.textContent = `Не восстановлено (${e?.message || e}) — перезагрузите страницу (F5).`;
+                }
+            });
+        }
+    }
+
+    /**
+     * 2026-10-14 — Одна попыточная re-init после авторестарта GPU-процесса Chrome
+     * (v0.20.621, задание Qwen 3.8 Max). Сносит старый канвас и строит весь
+     * конвейер заново через init() (swapchain + depth + пайплайны на новом device).
+     * Второй провал обрабатывает вызыватель (кнопка): жёсткое требование reload.
+     */
+    async _tryReinit() {
+        try { this.canvas?.remove?.(); } catch (e) { /* ignore */ }
+        this.engine = null;
+        this.columns = null;
+        this.grid = null;
+        this.depthTexture = null;
+        this._deviceLostStopped = false;
+        this.isInitialized = false;
+        await this.init();
     }
 
     /**

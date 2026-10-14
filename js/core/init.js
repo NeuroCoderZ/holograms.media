@@ -938,20 +938,38 @@ export async function initCore(options = {}) {
     // В гостевом режиме сенсоры не запускаются: это делает отказ настоящим,
     // а не декоративным. См. docs/RU/LEGAL_STRATEGY.md §6.
     if (!telegramMode && state.sensorsAllowed !== false) {
-      try {
-        const { initializeMediaPipeHands, startVideoStream } = await import('../multimodal/handsTracking.js');
-        initializeMediaPipeHands();
+      // 2026-10-14 — Разнос бута по времени (v0.20.621, задание Qwen 3.8 Max).
+      // WebGPU-device, GL-делегат MediaPipe и камера больше не вскрываются разом
+      // в первые секунды (пиковый момент краха драйвера): руки стартуют после
+      // первого чистого кадра HoloEngine, фолбэк — +3 с, при мёртвом GPU — сразу.
+      const startHandsDeferred = async () => {
+        try {
+          const { initializeMediaPipeHands, startVideoStream } = await import('../multimodal/handsTracking.js');
+          initializeMediaPipeHands();
 
-        if (state.multimodal.videoElementForHands && state.multimodal.handsInstance) {
-          await startVideoStream(state.multimodal.videoElementForHands, state.multimodal.handsInstance);
-          console.log('✅ MediaPipe HandTracking started successfully.');
-        } else {
-          console.warn('⚠️ MediaPipe initialized but videoElement or handsInstance is missing.');
+          if (state.multimodal.videoElementForHands && state.multimodal.handsInstance) {
+            await startVideoStream(state.multimodal.videoElementForHands, state.multimodal.handsInstance);
+            console.log('✅ MediaPipe HandTracking started successfully.');
+          } else {
+            console.warn('⚠️ MediaPipe initialized but videoElement or handsInstance is missing.');
+          }
+
+        } catch (mpError) {
+          console.error('❌ Failed to initialize MediaPipe Hands:', mpError);
         }
-
-      } catch (mpError) {
-        console.error('❌ Failed to initialize MediaPipe Hands:', mpError);
+      };
+      let handsBootStarted = false;
+      const startHandsOnce = () => {
+        if (handsBootStarted) return;
+        handsBootStarted = true;
+        startHandsDeferred();
+      };
+      try { eventBus.on('holoengine:firstcleanframe', startHandsOnce); } catch (e) { /* ignore */ }
+      if (typeof window !== 'undefined') {
+        window.addEventListener('holoengine:firstcleanframe', startHandsOnce, { once: true });
       }
+      setTimeout(startHandsOnce, 3000);
+      if (!state.holoEngineReady) startHandsOnce();
     } else if (state.sensorsAllowed === false) {
       console.log('[Core] Гостевой режим — камера и трекинг рук не запускаются');
     } else {
