@@ -62,6 +62,19 @@ import OneEuroFilter from '../filters/OneEuroFilter.js';
 import { GestureIntentClassifier } from '../ai/gestureIntentClassifier.js';
 import { gestureManager } from '../managers/gestureManager.js';
 
+// Пауза трекинга рук после гибели GPU-процесса: MediaPipe внутри WASM не
+// пересоздаётся (RECREATE_DISABLED), поэтому останавливаем камеру и даём один hint.
+let handsPausedByGpuLoss = false;
+if (typeof window !== 'undefined') {
+    window.addEventListener('holoengine:devicelost', () => {
+        if (handsPausedByGpuLoss) return;
+        handsPausedByGpuLoss = true;
+        try { state.multimodal.cameraInstance?.stop(); } catch (e) { /* ignore */ }
+        try { state.multimodal.cameraStarted = false; } catch (e) { /* ignore */ }
+        console.error('[HandsTracking] ⛔ GPU-процесс браузера потерян — трекинг рук приостановлен. Перезагрузите страницу.');
+    }, { once: true });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ШЕСТЬ БАЗОВЫХ ЖЕСТОВ: опорное состояние и помощники
 // Добавлено 2026-09-30 вместе с исправлением мёртвой ветки распознавания.
@@ -295,6 +308,7 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                       // Ровно так проявлялся баг с зависшим скелетом: TypeError из
                       // чужого колбэка (hermaionBridge.onPredictiveResult) обрывал цепочку.
                       // Внешний try обязан ловить всё, включая проверки до основного блока.
+                      if (handsPausedByGpuLoss) return;
                       try {
                         // 0. Stream health check — graceful degradation if camera lost
                         const stream = videoElement.srcObject;

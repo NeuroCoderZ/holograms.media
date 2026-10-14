@@ -493,7 +493,7 @@ export class HologramWebGPU {
         this.engine.device.queue.writeBuffer(this.uniformBuffer, 64, view);
 
         if (this.isDemoMode || !this.latestAudioData) {
-            this.columns.setDemoMode(64);
+            this.columns.setDemoMode(1);
         } else {
             this.columns.update(this.latestAudioData);
         }

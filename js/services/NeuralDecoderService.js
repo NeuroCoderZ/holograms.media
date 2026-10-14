@@ -63,27 +63,19 @@ export class NeuralDecoderService {
     }
 
     _reverseBasilaQ(visualData) {
-        const { columns, colors, confidence } = visualData;
-        if (confidence < 0.7 || !columns || columns.length !== 128) {
+        const { levels: incomingLevels, pans: incomingPans, confidence } = visualData;
+        // Контракт сканера (v0.20.620+): { levels: Float32Array(256) dB SPL,
+        // pans: Float32Array(128) }. Громкость уже в dB (тишина = -128),
+        // панорама — X-центроид, полутоны приходят из сканера.
+        if (confidence < 0.7 || !incomingLevels || incomingLevels.length !== 256
+            || !incomingPans || incomingPans.length !== 128) {
             return null;
         }
 
-        const levels = new Float32Array(256).fill(-128);
-        const pans = new Float32Array(128).fill(0);
-
-        // Map 128 columns → 256 channels (L/R stereo)
-        for (let i = 0; i < 128; i++) {
-            const height = columns[i];  // Normalized 0-1
-            const colorHue = colors[i]; // Hue for timbre
-
-            // Height → amplitude (dB)
-            const ampDb = -60 + (height * 48);  // -60 to -12 dB range
-            levels[i] = ampDb;      // Left channel
-            levels[i + 128] = ampDb; // Right channel
-
-            // Color hue → pan (-1 to +1)
-            pans[i] = (colorHue - 0.5) * 2;  // Hue 0-1 → pan -1 to +1
-        }
+        const levels = new Float32Array(256);
+        const pans = new Float32Array(128);
+        for (let i = 0; i < 256; i++) levels[i] = incomingLevels[i];
+        for (let i = 0; i < 128; i++) pans[i] = incomingPans[i];
 
         return { levels, pans, confidence };
     }

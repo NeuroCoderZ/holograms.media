@@ -288,6 +288,14 @@ export async function initCore(options = {}) {
       if (gridContainer) {
         await state.gestureManager.init(gridContainer);
         console.log('✅ GestureManager инициализирован');
+        try {
+          const { default: netHoloGlyphClient } = await import('../services/netHoloGlyphClient.js');
+          const localUserId = state.user?.email || state.user?.id || (typeof localStorage !== 'undefined' ? localStorage.getItem('userId') : null) || 'guest';
+          await netHoloGlyphClient.connect('earth_0', localUserId);
+          console.log('✅ NetHoloGlyph: connect(earth_0) вызван');
+        } catch (negErr) {
+          console.warn('⚠️ NetHoloGlyph не подключился (ожидаемо для гостя без JWT):', negErr?.message || negErr);
+        }
       } else {
         console.warn('⚠️ Grid container не найден для GestureManager');
       }

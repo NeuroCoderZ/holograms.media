@@ -201,7 +201,7 @@ export class InstancedColumns {
         });
         this.rightDynamicData = new Float32Array(this.count * 2);
 
-        this.setDemoMode(64);
+        this.setDemoMode(1);
     }
 
     _uploadDynamic() {

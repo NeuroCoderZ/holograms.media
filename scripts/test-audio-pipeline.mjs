@@ -187,7 +187,7 @@ if (worklet && rustLib) {
 console.log('\n[4/6] Цепочка событий EventBus');
 
 const audioService = readFile('js/services/AudioService.js');
-const holoRenderer = readFile('js/3d/hologramRenderer.js');
+const holoRenderer = readFile('js/engine/HologramWebGPU.js');
 
 const events = {
     'AUDIO_DATA': {
@@ -201,11 +201,11 @@ const events = {
     },
     'audioData': {
         sender: ['audioProcessing.js'],
-        receiver: ['hologramRenderer.js'],
+        receiver: ['HologramWebGPU.js'],
     },
     'audioReset': {
         sender: ['audioProcessing.js'],
-        receiver: ['hologramRenderer.js'],
+        receiver: ['HologramWebGPU.js'],
     },
 };
 
@@ -223,7 +223,7 @@ for (const [event, info] of Object.entries(events)) {
     }
 
     for (const receiver of info.receiver) {
-        const content = receiver === 'hologramRenderer.js' ? holoRenderer :
+        const content = receiver === 'HologramWebGPU.js' ? holoRenderer :
             receiver === 'audioProcessing.js' ? audioProc :
             receiver === 'AudioService.js' ? audioService : null;
 

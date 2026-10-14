@@ -227,29 +227,59 @@ export class HoloEngine {
     // останавливает цикл вместо флуда.
     this.deviceLost = false;
     this.deviceLostReason = '';
+    this._firstWebGPUErrorLogged = false;
+    this._webgpuErrorCounts = new Map();
 
     this.device.onuncapturederror = (event) => {
+      if (this.deviceLost) return;
       const err = event.error || {};
-      console.error(
-        `[HoloEngine] WebGPU uncaptured error: ${err.message || err}`,
-      );
-      // Полный стек первого сообщения — именно он раньше тонул в троттлинге.
-      if (err.constructor && err.constructor.name) {
-        console.error(`[HoloEngine] Тип ошибки: ${err.constructor.name}`);
+      const errName = (err.constructor && err.constructor.name) ? err.constructor.name : 'Error';
+      const errMessage = err.message || String(err || 'unknown');
+      const signature = `${errName}: ${errMessage}`;
+
+      if (!this._firstWebGPUErrorLogged) {
+        this._firstWebGPUErrorLogged = true;
+        console.error(`[HoloEngine] WebGPU uncaptured error: ${errMessage}`);
+        console.error(`[HoloEngine] Тип ошибки: ${errName}`);
+        const isOom = errName === 'GPUOutOfMemoryError' || /out of memory/i.test(errMessage);
+        if (isOom) {
+          this.deviceLost = true;
+          this.deviceLostReason = 'out-of-memory';
+          console.error('[HoloEngine] ⛔ GPU-память исчерпана (UMA/GTT OOM) — остановка рендера.');
+          if (typeof CustomEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('holoengine:devicelost', { detail: { reason: this.deviceLostReason } }));
+          }
+        }
+        return;
+      }
+
+      const nextCount = (this._webgpuErrorCounts.get(signature) || 0) + 1;
+      this._webgpuErrorCounts.set(signature, nextCount);
+      if (nextCount === 1 || nextCount % 10 === 0) {
+        console.warn(`[HoloEngine] повтор WebGPU-ошибки (${nextCount}): ${signature}`);
       }
     };
 
     this.device.lost.then((info) => {
       this.deviceLost = true;
-      this.deviceLostReason = info && info.reason ? info.reason : 'unknown';
+      this.deviceLostReason = (info && info.reason) ? info.reason : 'unknown';
+      const adapterInfo = (this.adapter && this.adapter.info) ? this.adapter.info : {};
+      const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+      const canvasSize = `${this.canvas?.width || 0}x${this.canvas?.height || 0} (dpr=${dpr})`;
       console.error(
-        `[HoloEngine] ⛔ GPU-устройство потеряно (reason: ${this.deviceLostReason}). `
+        `[HoloEngine] ⛔ GPU-устройство потеряно (reason=${this.deviceLostReason}; `
+        + `message=${(info && info.message) || 'n/a'}; vendor=${adapterInfo.vendor || 'n/a'}; `
+        + `architecture=${adapterInfo.architecture || 'n/a'}; canvas=${canvasSize}; depth=depth24plus). `
         + `Отрисовка остановлена. Требуется перезагрузка страницы.`,
       );
-      // Событие для внешних потребителей (UI-оверлей, телеметрия).
       if (typeof CustomEvent === 'function') {
         window.dispatchEvent(new CustomEvent('holoengine:devicelost', {
-          detail: { reason: this.deviceLostReason },
+          detail: {
+            reason: this.deviceLostReason,
+            message: (info && info.message) || '',
+            adapter: adapterInfo,
+            canvas: canvasSize,
+          },
         }));
       }
     }).catch(() => { /* lost может не вызваться при норме — глушим шум */ });

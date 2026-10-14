@@ -128,8 +128,11 @@ class NetHoloGlyphClient {
         this.websocket.onmessage = async (event) => {
             const message = JSON.parse(event.data);
 
+            if (!this.remotePeerId && message && message.peerId) {
+                this.remotePeerId = message.peerId;
+            }
             if (!this.peerConnection) {
-                this.createPeerConnection();
+                this.createPeerConnection(message && (message.peerId || message.from || null));
             }
 
             try {
@@ -298,7 +301,8 @@ class NetHoloGlyphClient {
         this.onPeerDisconnectedCallback = callback;
     }
 
-    createPeerConnection() {
+    createPeerConnection(remotePeerId = null) {
+        if (remotePeerId && !this.remotePeerId) this.remotePeerId = remotePeerId;
         this.peerConnection = new RTCPeerConnection(this.rtcConfig);
 
         this.peerConnection.onicecandidate = (event) => {
@@ -329,8 +333,14 @@ class NetHoloGlyphClient {
             this.configureDataChannel();
         };
 
-        // If we are likely the initiator, create the channel
-        if (!this.dataChannel) {
+        // Детерминированный инициатор: только одна сторона создаёт
+        // DataChannel "hologlyph-data" и отправляет offer. Лексикографическое
+        // сравнение localPeerId <= remotePeerId исключает встречный glare при
+        // одновременном входе двух аккаунтов.
+        const localId = this.userId ? String(this.userId) : '';
+        const remoteId = this.remotePeerId ? String(this.remotePeerId) : '';
+        const isInitiator = !remoteId || !localId || localId <= remoteId;
+        if (isInitiator && !this.dataChannel) {
             this.dataChannel = this.peerConnection.createDataChannel("hologlyph-data");
             this.configureDataChannel();
         }
