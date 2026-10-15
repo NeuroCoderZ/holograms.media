@@ -206,42 +206,59 @@ export class HoloEngine {
             throw new Error('WebGPU-адаптер недоступен: GPU заблокирован или нет драйвера (проверь chrome://gpu)');
         }
 
-        // 2026-10-15 — Проба swapchain (v0.20.626): device (RADV/rdna-3) и createTexture
+        // 2026-10-15 — Проба swapchain (v0.20.626/627): device (RADV/rdna-3) и createTexture
         // здоровы, валится только мост getCurrentTexture() ↔ X11 GL-композитор
         // (llvmpipe). Тихо проверяем swapchain на пробном device; при отказе —
         // Offscreen-Blit (рендер в текстуру + putImageData), без ошибок в консоль.
+        // 2026-10-15 — Кэш forceOffscreenBlit (v0.20.627): упавшая один раз проба
+        // больше не повторяется — прямой старт в Blit без getContext('webgpu').
         this.useOffscreenBlit = false;
         this.ctx2d = null;
+        this._probeJustFailed = false;
 
-        const probeDevice = await this.adapter.requestDevice();
-        probeDevice.onuncapturederror = () => {}; // глушим на время пробы
-        const probeCtx = this.canvas.getContext('webgpu');
-        if (!probeCtx) throw new Error('Канвас не отдал webgpu-контекст');
+        const forceBlit = typeof sessionStorage !== 'undefined'
+            && sessionStorage.getItem('holo:forceOffscreenBlit') === '1';
+
+        let probeDevice = null;
+        let probeCtx = null;
         const preferredFormat = navigator.gpu.getPreferredCanvasFormat();
         let swapchainOk = false;
-        try {
-            probeCtx.configure({ device: probeDevice, format: preferredFormat, alphaMode: 'premultiplied' });
-            probeDevice.pushErrorScope('validation');
-            const testTex = probeCtx.getCurrentTexture();
-            const testView = testTex.createView();
-            const enc = probeDevice.createCommandEncoder();
-            const pass = enc.beginRenderPass({
-                colorAttachments: [{
-                    view: testView,
-                    clearValue: { r: 0, g: 0, b: 0, a: 1 },
-                    loadOp: 'clear', storeOp: 'store',
-                }],
-            });
-            pass.end();
-            probeDevice.queue.submit([enc.finish()]);
-            const validationErr = await probeDevice.popErrorScope();
-            swapchainOk = !validationErr;
-            if (validationErr) {
-                console.warn(`[HoloEngine] ⚠️ Проба WebGPU-swapchain выявила сбой X11/Vulkan SharedImage (${validationErr.message}). Переключаюсь на WebGPU Offscreen-Blit.`);
+
+        if (!forceBlit) {
+            probeDevice = await this.adapter.requestDevice();
+            probeDevice.onuncapturederror = () => {}; // глушим на время пробы
+            probeCtx = this.canvas.getContext('webgpu');
+            if (!probeCtx) throw new Error('Канвас не отдал webgpu-контекст');
+            try {
+                probeCtx.configure({ device: probeDevice, format: preferredFormat, alphaMode: 'premultiplied' });
+                probeDevice.pushErrorScope('validation');
+                const testTex = probeCtx.getCurrentTexture();
+                const testView = testTex.createView();
+                const enc = probeDevice.createCommandEncoder();
+                const pass = enc.beginRenderPass({
+                    colorAttachments: [{
+                        view: testView,
+                        clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                        loadOp: 'clear', storeOp: 'store',
+                    }],
+                });
+                pass.end();
+                probeDevice.queue.submit([enc.finish()]);
+                const validationErr = await probeDevice.popErrorScope();
+                swapchainOk = !validationErr;
+                if (validationErr) {
+                    this._probeJustFailed = true;
+                    try { sessionStorage.setItem('holo:forceOffscreenBlit', '1'); } catch (_) { /* ignore */ }
+                    console.warn(`[HoloEngine] ⚠️ Проба WebGPU-swapchain выявила сбой X11/Vulkan SharedImage (${validationErr.message}). Переключаюсь на WebGPU Offscreen-Blit.`);
+                }
+            } catch (e) {
+                try { await probeDevice.popErrorScope(); } catch (_) { /* ignore */ }
+                this._probeJustFailed = true;
+                try { sessionStorage.setItem('holo:forceOffscreenBlit', '1'); } catch (_) { /* ignore */ }
+                swapchainOk = false;
             }
-        } catch (e) {
-            try { await probeDevice.popErrorScope(); } catch (_) { /* ignore */ }
-            swapchainOk = false;
+        } else {
+            console.info('[HoloEngine] ℹ️ Активен флаг holo:forceOffscreenBlit — пропуск пробы swapchain, прямой старт WebGPU Offscreen-Blit.');
         }
 
         if (swapchainOk) {
@@ -250,10 +267,23 @@ export class HoloEngine {
             this.format = preferredFormat;
             this.useOffscreenBlit = false;
         } else {
-            try { probeCtx?.unconfigure?.(); } catch (_) { /* ignore */ }
-            try { probeDevice.destroy(); } catch (_) { /* ignore */ }
+            if (probeCtx) {
+                try { probeCtx.unconfigure(); } catch (_) { /* ignore */ }
+            }
+            if (probeDevice) {
+                try { probeDevice.destroy(); } catch (_) { /* ignore */ }
+                // 2026-10-15 — Адаптер одноразовый (v0.20.627): первый requestDevice
+                // перевёл this.adapter в "consumed" — для боевого устройства нужен
+                // свежий адаптер, иначе OperationError: adapter is "consumed".
+                this.adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' })
+                    || await navigator.gpu.requestAdapter();
+                if (!this.adapter) {
+                    throw new Error('Не удалось получить свежий WebGPU-адаптер для Offscreen-Blit');
+                }
+            }
             // Канвас после getContext('webgpu') по спецификации не отдаст
             // getContext('2d') — заменяем на свежий 2D-экземпляр с теми же параметрами.
+            // (При forceBlit getContext('webgpu') не вызывался — замена безвредна.)
             const parent = this.canvas.parentElement;
             const fresh = document.createElement('canvas');
             fresh.id = this.canvas.id;

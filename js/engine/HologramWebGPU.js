@@ -192,6 +192,10 @@ export class HologramWebGPU {
 
         } catch (error) {
             console.error('[HoloEngine] ❌ Ошибка:', error);
+            // 2026-10-15 — Флаг потери при синхронном провале старта (v0.20.627):
+            // this.device не создан, штатные обработчики не висят — без флага
+            // через 3 с стартуют руки MediaPipe поверх мёртвого движка.
+            if (typeof window !== 'undefined') window.__holoGpuLost = true;
             this._showError(error.message);
             this.isInitialized = false;
             // Ошибку ОБЯЗАТЕЛЬНО пробрасываем: раньше она гасилась здесь, и вызывающий
@@ -784,6 +788,21 @@ export class HologramWebGPU {
         if (this._deviceLostStopped) return;
         this._deviceLostStopped = true;
         this.isInitialized = false;
+
+        // 2026-10-15 — Авто-перезапуск в чистый Offscreen-Blit (v0.20.627): если проба
+        // swapchain асинхронно задела Dawn-инстанс (~400 мс), молча перезапускаемся один
+        // раз без оверлея — флаг holo:forceOffscreenBlit уже записан, getContext('webgpu')
+        // не вызовется, движок поднимется в чистом Blit.
+        if (this.engine?._probeJustFailed && (this._reinitAttempts || 0) === 0) {
+            console.warn('[HoloEngine] 🔄 Проба swapchain асинхронно задела Dawn-инстанс — авто-перезапуск в чистом Offscreen-Blit без пробы...');
+            setTimeout(() => {
+                this._tryReinit().catch((err) => {
+                    console.error('[HoloEngine] ❌ Авто-перезапуск в Offscreen-Blit не удался:', err);
+                    this._showError(`Не удалось запустить Offscreen-Blit: ${err.message}`);
+                });
+            }, 50);
+            return;
+        }
 
         const reason = this.engine.deviceLostReason || 'unknown';
         // 2026-10-15 — Poisoned-детектор v2 (v0.20.624): критерий — время ОСТАНОВКИ
