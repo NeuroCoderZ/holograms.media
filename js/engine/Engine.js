@@ -206,7 +206,69 @@ export class HoloEngine {
             throw new Error('WebGPU-адаптер недоступен: GPU заблокирован или нет драйвера (проверь chrome://gpu)');
         }
 
-        this.device = await this.adapter.requestDevice();
+        // 2026-10-15 — Проба swapchain (v0.20.626): device (RADV/rdna-3) и createTexture
+        // здоровы, валится только мост getCurrentTexture() ↔ X11 GL-композитор
+        // (llvmpipe). Тихо проверяем swapchain на пробном device; при отказе —
+        // Offscreen-Blit (рендер в текстуру + putImageData), без ошибок в консоль.
+        this.useOffscreenBlit = false;
+        this.ctx2d = null;
+
+        const probeDevice = await this.adapter.requestDevice();
+        probeDevice.onuncapturederror = () => {}; // глушим на время пробы
+        const probeCtx = this.canvas.getContext('webgpu');
+        if (!probeCtx) throw new Error('Канвас не отдал webgpu-контекст');
+        const preferredFormat = navigator.gpu.getPreferredCanvasFormat();
+        let swapchainOk = false;
+        try {
+            probeCtx.configure({ device: probeDevice, format: preferredFormat, alphaMode: 'premultiplied' });
+            probeDevice.pushErrorScope('validation');
+            const testTex = probeCtx.getCurrentTexture();
+            const testView = testTex.createView();
+            const enc = probeDevice.createCommandEncoder();
+            const pass = enc.beginRenderPass({
+                colorAttachments: [{
+                    view: testView,
+                    clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                    loadOp: 'clear', storeOp: 'store',
+                }],
+            });
+            pass.end();
+            probeDevice.queue.submit([enc.finish()]);
+            const validationErr = await probeDevice.popErrorScope();
+            swapchainOk = !validationErr;
+            if (validationErr) {
+                console.warn(`[HoloEngine] ⚠️ Проба WebGPU-swapchain выявила сбой X11/Vulkan SharedImage (${validationErr.message}). Переключаюсь на WebGPU Offscreen-Blit.`);
+            }
+        } catch (e) {
+            try { await probeDevice.popErrorScope(); } catch (_) { /* ignore */ }
+            swapchainOk = false;
+        }
+
+        if (swapchainOk) {
+            this.device = probeDevice;
+            this.context = probeCtx;
+            this.format = preferredFormat;
+            this.useOffscreenBlit = false;
+        } else {
+            try { probeCtx?.unconfigure?.(); } catch (_) { /* ignore */ }
+            try { probeDevice.destroy(); } catch (_) { /* ignore */ }
+            // Канвас после getContext('webgpu') по спецификации не отдаст
+            // getContext('2d') — заменяем на свежий 2D-экземпляр с теми же параметрами.
+            const parent = this.canvas.parentElement;
+            const fresh = document.createElement('canvas');
+            fresh.id = this.canvas.id;
+            fresh.style.cssText = this.canvas.style.cssText;
+            fresh.width = this.canvas.width;
+            fresh.height = this.canvas.height;
+            if (parent) parent.replaceChild(fresh, this.canvas);
+            this.canvas = fresh;
+            this.ctx2d = this.canvas.getContext('2d');
+            this.device = await this.adapter.requestDevice();
+            this.format = 'rgba8unorm';
+            this.context = null;
+            this.useOffscreenBlit = true;
+            console.warn('[HoloEngine] ⚠️ Swapchain недоступен (X11/Vulkan interop) — включён WebGPU Offscreen-Blit: рендер в текстуру, вывод через putImageData.');
+        }
         // 2026-10-15 — Сброс флага потери для новой жизни (v0.20.625): _tryReinit
         // создаёт новый Engine — глобальный флаг обязан упасть, иначе руки
         // не стартуют после успешного восстановления.
@@ -223,15 +285,7 @@ export class HoloEngine {
           this._bootSid = null;
         }
 
-        this.context = this.canvas.getContext('webgpu');
-        if (!this.context) throw new Error('Канвас не отдал webgpu-контекст');
-
-    this.format = navigator.gpu.getPreferredCanvasFormat();
-    this.context.configure({
-      device: this.device,
-      format: this.format,
-      alphaMode: 'premultiplied',
-    });
+        // Штатные обработчики вешаются ниже на this.device из любой ветки.
 
     // 2026-10-13 — ПОВТЕРЯЮЩАЯСЯ ПОТЕРЯ УСТРОЙСТВА И СПРЯТАННЫЕ ОШИБКИ.
     // Без этих обработчиков первый validation-error съедался троттлингом
@@ -326,6 +380,9 @@ export class HoloEngine {
       const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
       const canvasSize = `${this.canvas?.width || 0}x${this.canvas?.height || 0} (dpr=${dpr})`;
       const lostMessage = (info && info.message) || 'n/a';
+      // 2026-10-15 — Чистим хвост точки (v0.20.626, дефект Б): драйверное message
+      // уже заканчивается точкой — без чистки оверлей печатал «exists..».
+      const cleanLostMsg = lostMessage.replace(/\.+$/, '');
       // 2026-10-15 — Сообщение драйвера независимо от порядка (v0.20.623):
       // _stopOnDeviceLost мог показать оверлей раньше разрешения lost —
       // сохраняем текст, чтобы оверлей подхватил его сразу, а не только
@@ -339,12 +396,17 @@ export class HoloEngine {
         + `${preliminaryReason ? `; preliminary=${preliminaryReason}` : ''}). `
         + `Отрисовка остановлена. Требуется перезагрузка страницы.`;
       console.error(lostLine);
-      // Поздняя причина дописывается в уже показанный оверлей, если он в DOM
-      // (иначе пользователь видит только ранний zombie-cascade без message драйвера).
+      // Поздняя причина дописывается в уже показанный оверлей, если он в DOM.
+      // 2026-10-15 — Не затирать poisoned-текст (v0.20.626, дефект Б): поздний lost
+      // дописывает только строку драйвера, текст про отравление свят.
       try {
         const errNode = typeof document !== 'undefined' ? document.getElementById('holo-error-text') : null;
-        if (errNode) {
-          errNode.textContent = `GPU-устройство потеряно (${this.deviceLostReason}). Драйвер: ${lostMessage}. Перезагрузите страницу, чтобы восстановить рендер.`;
+        if (errNode && errNode.dataset && errNode.dataset.poisoned === '1') {
+          if (!errNode.textContent.includes('Драйвер:')) {
+            errNode.textContent += ` (Драйвер: ${cleanLostMsg}.)`;
+          }
+        } else if (errNode) {
+          errNode.textContent = `GPU-устройство потеряно (${this.deviceLostReason}). Драйвер: ${cleanLostMsg}. Перезагрузите страницу, чтобы восстановить рендер.`;
         }
       } catch (e) { /* DOM недоступен — молча пропускаем */ }
       // Чёрный ящик пишет ХЕЛПЕР (v0.20.624): та же схема + стабильный stopAgeMs

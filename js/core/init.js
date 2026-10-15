@@ -948,8 +948,14 @@ export async function initCore(options = {}) {
           initializeMediaPipeHands();
 
           if (state.multimodal.videoElementForHands && state.multimodal.handsInstance) {
-            await startVideoStream(state.multimodal.videoElementForHands, state.multimodal.handsInstance);
-            console.log('✅ MediaPipe HandTracking started successfully.');
+            // 2026-10-15 — Гвард ложного успеха (v0.20.626): startVideoStream может
+            // молча выйти по флагу __holoGpuLost — успех печатаем только за фактом.
+            if (typeof window !== 'undefined' && window.__holoGpuLost) {
+              console.warn('[Init] Пропуск старта MediaPipe HandTracking: GPU-устройство HoloEngine потеряно.');
+            } else {
+              await startVideoStream(state.multimodal.videoElementForHands, state.multimodal.handsInstance);
+              console.log('✅ MediaPipe HandTracking started successfully.');
+            }
           } else {
             console.warn('⚠️ MediaPipe initialized but videoElement or handsInstance is missing.');
           }

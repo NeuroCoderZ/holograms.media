@@ -10,7 +10,7 @@
 import { GRID_WIDTH, GRID_HEIGHT } from '../config/hologramConstants.js';
 
 export class GridWireframe {
-    constructor(device, shaderModule, bindGroupLayout) {
+    constructor(device, shaderModule, bindGroupLayout, colorFormat) {
         this.device = device;
         this.pointCount = 0;
 
@@ -51,7 +51,8 @@ export class GridWireframe {
                 module: shaderModule,
                 entryPoint: 'gridFragment',
                 targets: [{
-                    format: navigator.gpu.getPreferredCanvasFormat(),
+                    // 2026-10-15 — Формат цели из движка (v0.20.626): см. InstancedColumns.
+                    format: colorFormat || navigator.gpu.getPreferredCanvasFormat(),
                     blend: {
                         color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
                         alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },

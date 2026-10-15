@@ -58,7 +58,7 @@ const CUBE_INDICES = new Uint16Array([
 ]);
 
 export class InstancedColumns {
-    constructor(device, shaderModule, bindGroupLayout) {
+    constructor(device, shaderModule, bindGroupLayout, colorFormat) {
         this.device = device;
         this.count = semitones.length; // 128
 
@@ -115,7 +115,9 @@ export class InstancedColumns {
                 module: shaderModule,
                 entryPoint: 'fsMain',
                 targets: [{
-                    format: navigator.gpu.getPreferredCanvasFormat(),
+                    // 2026-10-15 — Формат цели из движка (v0.20.626): в режиме
+                    // Offscreen-Blit это 'rgba8unorm', а не preferred-формат канваса.
+                    format: colorFormat || navigator.gpu.getPreferredCanvasFormat(),
                     blend: {
                         color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
                         alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },

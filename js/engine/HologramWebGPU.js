@@ -47,6 +47,15 @@ export class HologramWebGPU {
         // 2026-10-15 — Счётчик попыток re-init (v0.20.625): провал «Второй жизни»
         // в том же окне = процесс 100% отравлен → сразу poisoned-оверлей.
         this._reinitAttempts = 0;
+        // 2026-10-15 — Offscreen-Blit (v0.20.626): цели рендера мимо swapchain.
+        this._offscreenColorTexture = null;
+        this._offscreenColorView = null;
+        this._readbackBuffer = null;
+        this._offscreenImageData = null;
+        this._offscreenW = 0;
+        this._offscreenH = 0;
+        this._alignedBytesPerRow = 0;
+        this._blitInFlight = false;
 
         // Нативный слой «маркеров присутствия» (замена Three.js EarthZero)
         this.presence = new PresenceLayer();
@@ -114,6 +123,11 @@ export class HologramWebGPU {
                 const sameSession = !!(last && last.sid && bootSid && last.sid === bootSid);
                 if (last && last.ts && (Date.now() - last.ts) < 24 * 3600 * 1000 && !sameSession) {
                     console.warn('[HoloEngine] ⚫ Прошлое падение GPU (<24ч):', last);
+                    // 2026-10-15 — Кэш прошлой сессии (v0.20.626, дефект А): breaker
+                    // 1-й жизни перезапишет sessionStorage текущим sid до чтения
+                    // в _stopOnDeviceLost — читаем из кэша, а не из живого storage.
+                    // Только при первом запуске (re-init кэш не трогает).
+                    if (this._prevSessionGpuLost === undefined) this._prevSessionGpuLost = last;
                 }
             }
         } catch (e) { /* битый JSON чёрного ящика — молча пропускаем */ }
@@ -139,6 +153,10 @@ export class HologramWebGPU {
         try {
             this.engine = new HoloEngine(this.canvas);
             await this.engine.init();
+            // 2026-10-15 — Синхронизация канваса (v0.20.626): при отказе swapchain
+            // Engine заменяет canvas на 2D-экземпляр (Offscreen-Blit) — старый
+            // указатель вёл бы depth-текстуру и размеры в никуда.
+            this.canvas = this.engine.canvas;
 
             this._createDepthTexture();
 
@@ -157,8 +175,10 @@ export class HologramWebGPU {
                 entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }],
             });
 
-            this.columns = new InstancedColumns(this.engine.device, shaderModule, bindGroupLayout);
-            this.grid = new GridWireframe(this.engine.device, shaderModule, bindGroupLayout);
+            // 2026-10-15 — Формат цели = формат движка (v0.20.626): в Offscreen-Blit
+            // это 'rgba8unorm' под ImageData, иначе mismatch с offscreen-текстурой.
+            this.columns = new InstancedColumns(this.engine.device, shaderModule, bindGroupLayout, this.engine.format);
+            this.grid = new GridWireframe(this.engine.device, shaderModule, bindGroupLayout, this.engine.format);
 
             this._initSpheres(shaderModule, bindGroupLayout);
 
@@ -425,7 +445,8 @@ export class HologramWebGPU {
                 module: shaderModule, 
                 entryPoint: 'sphereFragment', 
                 targets: [{ 
-                    format: navigator.gpu.getPreferredCanvasFormat(),
+                    // 2026-10-15 — Формат цели из движка (v0.20.626): см. init().
+                    format: this.engine.format || navigator.gpu.getPreferredCanvasFormat(),
                     blend: {
                         color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' },
                         alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' }
@@ -520,22 +541,42 @@ export class HologramWebGPU {
             this.columns.update(this.latestAudioData);
         }
 
-        // getCurrentTexture() бросает/возвращает битую текстуру, если канвас
-        // нулевого размера или контекст не сконфигурирован. Раньше отсюда
-        // каждый кадр уходил невалидный colorAttachment в render pass.
-        let swapView;
-        try {
-            swapView = this.engine.context.getCurrentTexture().createView();
-        } catch (swapError) {
-            console.warn('[HoloEngine] Кадр пропущен: swapchain недоступен —', swapError.message);
+        // 2026-10-15 — Offscreen-Blit (v0.20.626): при отказе swapchain (X11/Vulkan
+        // interop) рендерим в текстуру и выводим через putImageData — сам swapchain
+        // вообще не трогаем. Пока идёт mapAsync-чтение — буфер не трогаем.
+        const blit = !!this.engine.useOffscreenBlit;
+        const cw = this.canvas.width;
+        const ch = this.canvas.height;
+        if (blit && this._blitInFlight) {
             requestAnimationFrame(this._renderLoop);
             return;
+        }
+
+        let colorView;
+        if (blit) {
+            this._ensureOffscreenTargets(cw, ch);
+            if (!this._offscreenColorView) {
+                requestAnimationFrame(this._renderLoop);
+                return;
+            }
+            colorView = this._offscreenColorView;
+        } else {
+            // getCurrentTexture() бросает/возвращает битую текстуру, если канвас
+            // нулевого размера или контекст не сконфигурирован. Раньше отсюда
+            // каждый кадр уходил невалидный colorAttachment в render pass.
+            try {
+                colorView = this.engine.context.getCurrentTexture().createView();
+            } catch (swapError) {
+                console.warn('[HoloEngine] Кадр пропущен: swapchain недоступен —', swapError.message);
+                requestAnimationFrame(this._renderLoop);
+                return;
+            }
         }
 
         const commandEncoder = this.engine.device.createCommandEncoder();
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
-                view: swapView,
+                view: colorView,
                 clearValue: { r: 0, g: 0, b: 0, a: 0 },
                 loadOp: 'clear', storeOp: 'store',
             }],
@@ -553,7 +594,15 @@ export class HologramWebGPU {
         this._drawSpheres(pass);
 
         pass.end();
+        if (blit) {
+            commandEncoder.copyTextureToBuffer(
+                { texture: this._offscreenColorTexture },
+                { buffer: this._readbackBuffer, bytesPerRow: this._alignedBytesPerRow, rowsPerImage: ch },
+                { width: cw, height: ch, depthOrArrayLayers: 1 }
+            );
+        }
         this.engine.device.queue.submit([commandEncoder.finish()]);
+        if (blit) this._blitToCanvas(cw, ch);
 
         this._frameCount++;
         // 2026-10-15 — firstcleanframe с отложенной проверкой (v0.20.623).
@@ -567,6 +616,69 @@ export class HologramWebGPU {
         }
         requestAnimationFrame(this._renderLoop);
     };
+
+    /**
+     * 2026-10-15 — Цели Offscreen-Blit (v0.20.626). Рендер-текстура (RENDER_ATTACHMENT
+     * + COPY_SRC) и MAP_READ-буфер пересоздаются при смене размера; пока идёт
+     * mapAsync-чтение прошлого кадра — не трогаем. Шаг строки кратен 256 (WebGPU).
+     */
+    _ensureOffscreenTargets(w, h) {
+        if (this._offscreenW === w && this._offscreenH === h && this._offscreenColorView) return;
+        if (this._blitInFlight) return;
+        try { this._offscreenColorTexture?.destroy?.(); } catch (_) { /* ignore */ }
+        try { this._readbackBuffer?.destroy?.(); } catch (_) { /* ignore */ }
+        this._offscreenColorView = null;
+        if (!Number.isFinite(w) || !Number.isFinite(h) || w < 1 || h < 1) return;
+        this._alignedBytesPerRow = Math.ceil((w * 4) / 256) * 256;
+        this._offscreenColorTexture = this.engine.device.createTexture({
+            size: [w, h, 1],
+            format: this.engine.format,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        });
+        this._offscreenColorView = this._offscreenColorTexture.createView();
+        this._readbackBuffer = this.engine.device.createBuffer({
+            size: this._alignedBytesPerRow * h,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+        this._offscreenImageData = new ImageData(w, h);
+        this._offscreenW = w;
+        this._offscreenH = h;
+    }
+
+    /**
+     * 2026-10-15 — Вывод offscreen-кадра в 2D-канвас (v0.20.626). Асинхронно:
+     * цикл не ждёт mapAsync, следующий кадр пропускается флагом _blitInFlight.
+     */
+    _blitToCanvas(width, height) {
+        this._blitInFlight = true;
+        const rb = this._readbackBuffer;
+        const bpr = this._alignedBytesPerRow;
+        const imgData = this._offscreenImageData;
+        const ctx2d = this.engine.ctx2d;
+        const rowBytes = width * 4;
+        rb.mapAsync(GPUMapMode.READ).then(() => {
+            if (this.engine?.deviceLost) {
+                try { rb.unmap(); } catch (_) { /* ignore */ }
+                this._blitInFlight = false;
+                return;
+            }
+            const mapped = new Uint8Array(rb.getMappedRange());
+            const dst = imgData.data;
+            if (bpr === rowBytes) {
+                dst.set(mapped.subarray(0, rowBytes * height));
+            } else {
+                for (let y = 0; y < height; y++) {
+                    const srcOff = y * bpr;
+                    dst.set(mapped.subarray(srcOff, srcOff + rowBytes), y * rowBytes);
+                }
+            }
+            rb.unmap();
+            try { ctx2d?.putImageData(imgData, 0, 0); } catch (_) { /* ignore */ }
+            this._blitInFlight = false;
+        }).catch(() => {
+            this._blitInFlight = false;
+        });
+    }
 
     /**
      * 2026-10-15 — Отложенная проверка чистоты первого кадра (v0.20.623).
@@ -595,10 +707,15 @@ export class HologramWebGPU {
         // кнопка восстановления при бут-паттерне бессмысленна — показываем инструкцию.
         const hideReinit = !!(opts && opts.hideReinit);
         const overlay = document.createElement('div');
+        // 2026-10-15 — Один оверлей (v0.20.626, дефект Б): при re-init старый
+        // удаляется, чтобы тексты Первой и Второй жизни не наслаивались.
+        overlay.id = 'holo-error-overlay';
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);color:#f44;display:flex;align-items:center;justify-content:center;z-index:999999;font-family:monospace;font-size:16px;text-align:center;';
         overlay.innerHTML = hideReinit
-            ? `<div><h1>⚠️ HoloEngine ошибка</h1><p id="holo-error-text">${message}</p><p style="color:#fa0;font-size:13px;">Кнопка восстановления скрыта: при отравленном GPU-процессе она бессмысленна.</p></div>`
+            ? `<div><h1>⚠️ HoloEngine ошибка</h1><p id="holo-error-text" data-poisoned="1">${message}</p><p style="color:#fa0;font-size:13px;">Кнопка восстановления скрыта: при отравленном GPU-процессе она бессмысленна.</p></div>`
             : `<div><h1>⚠️ HoloEngine ошибка</h1><p id="holo-error-text">${message}</p><button id="holo-reinit-btn" style="margin-top:12px;padding:8px 16px;font-size:14px;cursor:pointer;">Восстановить без перезагрузки</button><p id="holo-reinit-status" style="color:#fa0;font-size:13px;"></p></div>`;
+        // 2026-10-15 — Один оверлей (v0.20.626, дефект Б): см. комментарий выше.
+        try { document.getElementById('holo-error-overlay')?.remove?.(); } catch (e) { /* ignore */ }
         document.body.appendChild(overlay);
         if (hideReinit) return;
         // 2026-10-14 — Кнопка восстановления без перезагрузки (v0.20.621, задание Qwen 3.8 Max).
@@ -646,6 +763,15 @@ export class HologramWebGPU {
         this._frameCount = 0;
         this._firstFrameCheckArmed = false;
         this._firstCleanFrameEmitted = false;
+        // 2026-10-15 — Цели Blit привязаны к мёртвому device (v0.20.626): сбросить,
+        // _ensureOffscreenTargets пересоздаст на новом.
+        this._offscreenColorTexture = null;
+        this._offscreenColorView = null;
+        this._readbackBuffer = null;
+        this._offscreenImageData = null;
+        this._offscreenW = 0;
+        this._offscreenH = 0;
+        this._blitInFlight = false;
         await this.init();
     }
 
@@ -667,7 +793,9 @@ export class HologramWebGPU {
         const stopBase = this.engine._stopTs || Date.now();
         if (!this.engine._stopTs) this.engine._stopTs = stopBase;
         const nowStopAgeMs = this.engine._initTs ? (stopBase - this.engine._initTs) : null;
-        const last = this._readLastGpuLost();
+        // 2026-10-15 — Чтение из кэша (v0.20.626, дефект А): breaker 1-й жизни уже
+        // перезаписал sessionStorage текущим sid — живой storage врёт, кэш нет.
+        const last = this._prevSessionGpuLost || this._readLastGpuLost();
         const firstSec = !!this.engine._firstErrorSecondary;
         const lastSec = !!(last && last.firstSecondary);
         const fresh = !!last && !!last.sid && last.sid !== this.engine._bootSid
