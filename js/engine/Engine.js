@@ -216,8 +216,12 @@ export class HoloEngine {
         this.ctx2d = null;
         this._probeJustFailed = false;
 
-        const forceBlit = typeof sessionStorage !== 'undefined'
-            && sessionStorage.getItem('holo:forceOffscreenBlit') === '1';
+        const forceBlit = (typeof navigator !== 'undefined' && /Linux/i.test(navigator.userAgent || ''))
+            || (typeof sessionStorage !== 'undefined'
+            && sessionStorage.getItem('holo:forceOffscreenBlit') === '1');
+        // 2026-10-15 — Прямой Blit на Linux X11 (v0.20.628): замерами S9.2 доказано,
+        // что Xorg крутит llvmpipe — проба swapchain заведомо уронит Dawn-инстанс,
+        // поэтому не касаемся getContext('webgpu') вообще: 1 adapter → 1 device.
 
         let probeDevice = null;
         let probeCtx = null;
@@ -288,8 +292,17 @@ export class HoloEngine {
             const fresh = document.createElement('canvas');
             fresh.id = this.canvas.id;
             fresh.style.cssText = this.canvas.style.cssText;
+            // 2026-10-15 — Наследование класса и страховка размеров (v0.20.628):
+            // пустой класс/нулевой размер = невидимый 2D-канвас после замены.
+            fresh.className = this.canvas.className;
             fresh.width = this.canvas.width;
             fresh.height = this.canvas.height;
+            if (fresh.width < 2 || fresh.height < 2) {
+                const rect = parent?.getBoundingClientRect?.();
+                const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+                fresh.width = Math.max(1, Math.round(((rect && rect.width) || 718) * dpr));
+                fresh.height = Math.max(1, Math.round(((rect && rect.height) || 475) * dpr));
+            }
             if (parent) parent.replaceChild(fresh, this.canvas);
             this.canvas = fresh;
             this.ctx2d = this.canvas.getContext('2d');

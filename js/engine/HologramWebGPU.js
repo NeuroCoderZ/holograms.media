@@ -56,6 +56,9 @@ export class HologramWebGPU {
         this._offscreenH = 0;
         this._alignedBytesPerRow = 0;
         this._blitInFlight = false;
+        // 2026-10-15 — Флаги телеметрии Blit (v0.20.628): один лог на жизнь конвейера.
+        this._firstBlitLogged = false;
+        this._blitErrLogged = false;
 
         // Нативный слой «маркеров присутствия» (замена Three.js EarthZero)
         this.presence = new PresenceLayer();
@@ -65,7 +68,23 @@ export class HologramWebGPU {
 
         console.log('[HoloEngine] 🏗️ Конструктор создан');
 
+        // 2026-10-15 — Защита DemoMode от тишины (v0.20.628): cwtAudioWorklet в холостом
+        // режиме (Audio-less) шлёт пакеты тишины — они не выключают демо-пирамиду
+        // и не перезаписывают последний реальный кадр. Пакет молча отбрасывается.
+        const isSilencePacket = (data) => {
+            if (!data) return true;
+            if (data.isFallback === true) return true;
+            if (typeof data.maxLevel === 'number' && data.maxLevel <= -120) return true;
+            const lv = data.levels;
+            if (lv && lv.length) {
+                let mx = -Infinity;
+                for (let i = 0; i < lv.length; i++) if (lv[i] > mx) mx = lv[i];
+                if (mx <= -120) return true;
+            }
+            return false;
+        };
         eventBus.on('audioData', (data) => {
+            if (isSilencePacket(data)) return;
             this.latestAudioData = data;
             this.isDemoMode = false;
         });
@@ -141,7 +160,11 @@ export class HologramWebGPU {
 
         this.canvas = document.createElement('canvas');
         this.canvas.id = 'holo-webgpu-canvas';
-        this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100;';
+        this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:auto;z-index:2;display:block;';
+        // 2026-10-15 — Видимость канваса (v0.20.628, правка 4): pointer-events:auto
+        // не ломает орбиту мышью (события всплывают к хосту grid-container),
+        // z-index:2 держит канвас под UI-панелями (1000+), display:block закрывает
+        // схлопывание. Заглушка sceneSetup (0×0, opacity:0) перекрыть не может.
         container.style.position = 'relative';
         container.style.backgroundColor = 'transparent';
         container.appendChild(this.canvas);
@@ -540,7 +563,7 @@ export class HologramWebGPU {
         this.engine.device.queue.writeBuffer(this.uniformBuffer, 64, view);
 
         if (this.isDemoMode || !this.latestAudioData) {
-            this.columns.setDemoMode(1);
+            this.columns.setDemoMode(64);
         } else {
             this.columns.update(this.latestAudioData);
         }
@@ -581,7 +604,11 @@ export class HologramWebGPU {
         const pass = commandEncoder.beginRenderPass({
             colorAttachments: [{
                 view: colorView,
-                clearValue: { r: 0, g: 0, b: 0, a: 0 },
+                // 2026-10-15 — Непрозрачный фон (v0.20.628): при a:0 полупрозрачные
+                // пиксели после blend получали a<1 с уже умноженным RGB, а putImageData
+                // трактует ImageData как unpremultiplied — браузер умножал второй раз
+                // и гасил яркость в ноль. При a:1 итоговая альфа 255 везде.
+                clearValue: { r: 0, g: 0, b: 0, a: 1 },
                 loadOp: 'clear', storeOp: 'store',
             }],
             depthStencilAttachment: {
@@ -676,10 +703,37 @@ export class HologramWebGPU {
                     dst.set(mapped.subarray(srcOff, srcOff + rowBytes), y * rowBytes);
                 }
             }
+            // 2026-10-15 — Телеметрия первого кадра Blit (v0.20.628): ДО unmap —
+            // после unmap буфер detached и чтение mapped невалидно. Доказывает, что
+            // пиксели реально доехали до 2D-канваса (maxRgb/nonBlack), а не только
+            // до GPU-текстуры. Сэмплируем каждый 4-й пиксель — дёшево и достаточно.
+            if (!this._firstBlitLogged) {
+                this._firstBlitLogged = true;
+                let maxRgb = 0;
+                let nonBlackPixels = 0;
+                for (let y = 0; y < height; y += 4) {
+                    const rowOff = y * bpr;
+                    for (let x = 0; x < width * 4; x += 16) {
+                        const r = mapped[rowOff + x];
+                        const g = mapped[rowOff + x + 1];
+                        const b = mapped[rowOff + x + 2];
+                        const m = Math.max(r, g, b);
+                        if (m > maxRgb) maxRgb = m;
+                        if (m > 5) nonBlackPixels++;
+                    }
+                }
+                console.log(`[HoloEngine] 🖼️ Первый кадр Offscreen-Blit выведен в 2D-канвас (${width}x${height}): maxRgb=${maxRgb}, nonBlackSample=${nonBlackPixels}`);
+            }
             rb.unmap();
             try { ctx2d?.putImageData(imgData, 0, 0); } catch (_) { /* ignore */ }
             this._blitInFlight = false;
-        }).catch(() => {
+        }).catch((err) => {
+            // 2026-10-15 — Видимый catch (v0.20.628): молчаливый .catch скрывал ошибки
+            // mapAsync после пробы — логируем один раз, флаг снимаем всегда.
+            if (!this._blitErrLogged) {
+                this._blitErrLogged = true;
+                console.error('[HoloEngine] ❌ Ошибка mapAsync в Offscreen-Blit:', err);
+            }
             this._blitInFlight = false;
         });
     }
@@ -776,6 +830,8 @@ export class HologramWebGPU {
         this._offscreenW = 0;
         this._offscreenH = 0;
         this._blitInFlight = false;
+        this._firstBlitLogged = false;
+        this._blitErrLogged = false;
         await this.init();
     }
 

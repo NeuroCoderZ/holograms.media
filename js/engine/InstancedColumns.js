@@ -141,16 +141,16 @@ export class InstancedColumns {
 
     setDemoMode(height) {
         // Демо: одинаковая глубина, пан по центру (0 = стык сеток на оси Y).
-        // 2026-08-25 (юзер): демо-режим должен показывать «пирамиду» глубиной
-        // в ОДНУ ячейку, прижатую к ДАЛЬНЕЙ стенке, в ПОЛНОЙ яркости.
-        // Раньше height=64 давал тёмно-серые столбцы посередине объёма.
-        // Глубину 1 ячейка задаёт шейдер через DEMO-флаг? Нет — глубина это и есть
-        // height: ставим 1. Прижатие к дальней стенке делает вершинный шейдер
+        // 2026-10-15 (v0.20.628): высота снова задаётся параметром — 64 даёт хорошо
+        // видимую пирамиду как в v0.20.619 (откат решения v0.20.620 про 1 ячейку:
+        // полоску у дальней стенки почти невозможно разглядеть). Clamp 1..128.
+        // Прижатие к дальней стенке делает вершинный шейдер
         // (см. HologramWebGPU._buildShaderCode: worldPos.z = FAR_WALL - h*0.5).
+        const h = Math.max(1, Math.min(128, Math.round(height) || 1));
         for (let i = 0; i < this.count; i++) {
-            this.leftDynamicData[i * 2] = 1;
+            this.leftDynamicData[i * 2] = h;
             this.leftDynamicData[i * 2 + 1] = PAN_CENTER_CELL;
-            this.rightDynamicData[i * 2] = 1;
+            this.rightDynamicData[i * 2] = h;
             this.rightDynamicData[i * 2 + 1] = PAN_CENTER_CELL;
         }
         this._uploadDynamic();
@@ -203,7 +203,7 @@ export class InstancedColumns {
         });
         this.rightDynamicData = new Float32Array(this.count * 2);
 
-        this.setDemoMode(1);
+        this.setDemoMode(64);
     }
 
     _uploadDynamic() {
