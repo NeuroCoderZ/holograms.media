@@ -73,7 +73,10 @@ function pauseHandsOnGpuLoss(source) {
     console.error(`[HandsTracking] ⛔ GPU-процесс браузера потерян (${source}) — трекинг рук приостановлен. Перезагрузите страницу.`);
 }
 if (typeof window !== 'undefined') {
-    window.addEventListener('holoengine:devicelost', () => pauseHandsOnGpuLoss('holoengine:devicelost'), { once: true });
+    // 2026-10-15 — слушатель постоянный, без { once: true } (v0.20.625): после
+    // _tryReinit смерть нового device обязана снова ставить камеру на паузу.
+    // Функция идемпотентна через флаг handsPausedByGpuLoss.
+    window.addEventListener('holoengine:devicelost', () => pauseHandsOnGpuLoss('holoengine:devicelost'));
     // 2026-10-14 — Обезвреженный alert вендора (v0.20.621, задание Qwen 3.8 Max):
     // public/mediapipe/hands.js больше не показывает блокирующий alert(),
     // а шлёт событие — здесь та же пауза камеры без RECREATE.
@@ -143,6 +146,12 @@ const GRID_DEPTH = state.config?.GRID?.DEPTH || 128;
 
 export async function startVideoStream(videoElement, handsInstance, stream = null) {
     console.log(">>> Attempting to start video stream...");
+    // 2026-10-15 — Гонка динамического импорта (v0.20.625): чанк рук грузится позже
+    // события devicelost (~0.5 с) и пропускает его — синхронный флаг надёжнее.
+    if (typeof window !== 'undefined' && window.__holoGpuLost) {
+        console.warn('[HandsTracking] Старт камеры отменён: GPU-устройство HoloEngine уже потеряно.');
+        return;
+    }
     try {
         // ... (проверки WebGL и текстуры) ...
 
@@ -313,7 +322,9 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                       // Ровно так проявлялся баг с зависшим скелетом: TypeError из
                       // чужого колбэка (hermaionBridge.onPredictiveResult) обрывал цепочку.
                       // Внешний try обязан ловить всё, включая проверки до основного блока.
-                      if (handsPausedByGpuLoss) return;
+                      // 2026-10-15 — Тот же флаг внутри кадра (v0.20.625): пропущенное
+                      // событие не должно поднимать камеру поверх мёртвого движка.
+                      if (handsPausedByGpuLoss || (typeof window !== 'undefined' && window.__holoGpuLost)) return;
                       try {
                         // 0. Stream health check — graceful degradation if camera lost
                         const stream = videoElement.srcObject;

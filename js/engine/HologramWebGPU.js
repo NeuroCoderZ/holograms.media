@@ -44,6 +44,9 @@ export class HologramWebGPU {
         this.latestAudioData = null;
         this.isDemoMode = true;
         this._frameCount = 0;
+        // 2026-10-15 — Счётчик попыток re-init (v0.20.625): провал «Второй жизни»
+        // в том же окне = процесс 100% отравлен → сразу poisoned-оверлей.
+        this._reinitAttempts = 0;
 
         // Нативный слой «маркеров присутствия» (замена Three.js EarthZero)
         this.presence = new PresenceLayer();
@@ -103,7 +106,13 @@ export class HologramWebGPU {
             const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('holo:lastGpuLost') : null;
             if (raw) {
                 const last = JSON.parse(raw);
-                if (last && last.ts && (Date.now() - last.ts) < 24 * 3600 * 1000) {
+                // 2026-10-15 — Фильтр sid (v0.20.625): клик «Восстановить без перезагрузки»
+                // пишет ящик из той же сессии (sid живёт на window.__holoBootSid и не
+                // меняется при re-init, а this.engine в этой точке ещё null) —
+                // не выдаём падение 1-й жизни за падение прошлой сессии браузера.
+                const bootSid = (typeof window !== 'undefined') ? window.__holoBootSid : null;
+                const sameSession = !!(last && last.sid && bootSid && last.sid === bootSid);
+                if (last && last.ts && (Date.now() - last.ts) < 24 * 3600 * 1000 && !sameSession) {
                     console.warn('[HoloEngine] ⚫ Прошлое падение GPU (<24ч):', last);
                 }
             }
@@ -623,6 +632,9 @@ export class HologramWebGPU {
      * Второй провал обрабатывает вызыватель (кнопка): жёсткое требование reload.
      */
     async _tryReinit() {
+        // 2026-10-15 — Учёт попытки (v0.20.625): смерть нового device после клика
+        // ведёт в poisoned-ветку _stopOnDeviceLost вместо бесконечной кнопки.
+        this._reinitAttempts = (this._reinitAttempts || 0) + 1;
         try { this.canvas?.remove?.(); } catch (e) { /* ignore */ }
         this.engine = null;
         this.columns = null;
@@ -665,7 +677,11 @@ export class HologramWebGPU {
         // Усилитель: первая ошибка уже вторична («invalid due to a previous error»)
         // = смерть до первого submit. Требуется вместе со свежей похожей записью,
         // одиночный инцидент poisoned не даёт никогда.
-        const poisoned = fresh && stopNow && (stopOld || (lastSec && firstSec));
+        // 2026-10-15 — Провал in-place re-init (v0.20.625): клик по кнопке был, новый
+        // device снова умер за <5000 мс в том же окне — процесс 100% отравлен,
+        // сразу честный poisoned-экран вместо бесконечной кнопки.
+        const failedReinit = (this._reinitAttempts || 0) >= 1 && stopNow;
+        const poisoned = failedReinit || (fresh && stopNow && (stopOld || (lastSec && firstSec)));
         // Фиксируем stop-метку в ящике (путь lost-без-breaker: хендлер lost записал
         // ящик без stopAgeMs — дописываем сейчас; preliminaryReason хелпер сохранит).
         try {

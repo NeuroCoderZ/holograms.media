@@ -50,6 +50,12 @@ export default defineConfig({
         // hands_solution_simd_wasm_bin.wasm = 6.03 МБ, hand_landmark_full.tflite = 5.48 МБ.
         // Без этого вендоренные ассеты выпадали из precache и грузились по сети.
         maximumFileSizeToCacheInBytes: 12000000, // 12 МБ
+        // 2026-10-15 — Отказ от перехвата навигации (v0.20.625, карточка P0 4.8):
+        // дефолт плагина navigateFallback:'index.html' вешал NavigationRoute на все
+        // навигации, что на стыке с Cloudflare давало FetchEvent network error.
+        // HTML идёт напрямую через сеть, ассеты остаются в precache.
+        navigateFallback: null,
+        cleanupOutdatedCaches: true,
       }
     })
   ],

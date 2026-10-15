@@ -207,6 +207,10 @@ export class HoloEngine {
         }
 
         this.device = await this.adapter.requestDevice();
+        // 2026-10-15 — Сброс флага потери для новой жизни (v0.20.625): _tryReinit
+        // создаёт новый Engine — глобальный флаг обязан упасть, иначе руки
+        // не стартуют после успешного восстановления.
+        if (typeof window !== 'undefined') window.__holoGpuLost = false;
         // 2026-10-14 — Возраст смерти в чёрный ящик (v0.20.622): отделяет смерть
         // на буте (ageMs < 2000) от смерти в работе без ручных таймлайнов.
         this._initTs = Date.now();
@@ -263,6 +267,7 @@ export class HoloEngine {
         if (isOom) {
           this.deviceLost = true;
           this.deviceLostReason = 'out-of-memory';
+          if (typeof window !== 'undefined') window.__holoGpuLost = true;
           console.error('[HoloEngine] ⛔ GPU-память исчерпана (UMA/GTT OOM) — остановка рендера.');
           if (typeof CustomEvent === 'function') {
             window.dispatchEvent(new CustomEvent('holoengine:devicelost', { detail: { reason: this.deviceLostReason } }));
@@ -287,6 +292,10 @@ export class HoloEngine {
       if (nextCount === 5) {
         this.deviceLost = true;
         this.deviceLostReason = 'zombie-cascade';
+        // 2026-10-15 — Глобальный флаг потери (v0.20.625): handsTracking.js грузится
+        // динамическим чанком позже и пропускает событие devicelost — флаг читается
+        // синхронно при старте камеры и в onFrame.
+        if (typeof window !== 'undefined') window.__holoGpuLost = true;
         // Момент ОСТАНОВКИ для стабильного stopAgeMs (v0.20.624): пишем ящик
         // сразу — promise lost может не разрешиться никогда (чистый зомби).
         this._stopTs = Date.now();
@@ -311,6 +320,7 @@ export class HoloEngine {
       // приходит только сейчас — сохраняем предварительную причину до перезаписи.
       const preliminaryReason = this.deviceLost ? (this.deviceLostReason || null) : null;
       this.deviceLost = true;
+      if (typeof window !== 'undefined') window.__holoGpuLost = true;
       this.deviceLostReason = (info && info.reason) ? info.reason : 'unknown';
       const adapterInfo = (this.adapter && this.adapter.info) ? this.adapter.info : {};
       const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
@@ -377,6 +387,12 @@ export class HoloEngine {
         try { prev = JSON.parse(sessionStorage.getItem('holo:lastGpuLost')); } catch (e) { prev = null; }
         const stopAgeMs = (this._initTs && this._stopTs) ? (this._stopTs - this._initTs) : null;
         const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+        // 2026-10-15 — Защита message от затирания (v0.20.625): _stopOnDeviceLost
+        // дописывает ящик до разрешения lost с message='' — сохраняем непустое
+        // предыдущее сообщение (сигнатуру breaker'а), по аналогии с preliminaryReason.
+        const resolvedMessage = (message && message.trim())
+          ? message
+          : (prev && prev.message ? prev.message : '');
         sessionStorage.setItem('holo:lastGpuLost', JSON.stringify({
           ts: Date.now(),
           sid: this._bootSid || null,
@@ -384,7 +400,7 @@ export class HoloEngine {
             ? preliminaryReason
             : (prev && prev.preliminaryReason !== undefined ? prev.preliminaryReason : null),
           reason: reason || 'unknown',
-          message,
+          message: resolvedMessage,
           adapter: (this.adapter && this.adapter.info) ? this.adapter.info : {},
           canvas: `${this.canvas?.width || 0}x${this.canvas?.height || 0} (dpr=${dpr})`,
           ageMs,
