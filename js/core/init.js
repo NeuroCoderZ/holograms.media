@@ -945,7 +945,7 @@ export async function initCore(options = {}) {
       const startHandsDeferred = async () => {
         try {
           const { initializeMediaPipeHands, startVideoStream } = await import('../multimodal/handsTracking.js');
-          initializeMediaPipeHands();
+          await initializeMediaPipeHands();
 
           if (state.multimodal.videoElementForHands && state.multimodal.handsInstance) {
             // 2026-10-15 — Гвард ложного успеха (v0.20.626): startVideoStream может

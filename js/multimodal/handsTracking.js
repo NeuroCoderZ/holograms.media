@@ -234,6 +234,9 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                 const MAX_HANGS_BEFORE_RESET = 3;
                 let hangCount = 0;
                 let lastHangLogTime = 0;
+                // v0.20.629 — флаги предотвращения спама camera_utils цикла.
+                let wasmCrashed = false;
+                let inactiveFrames = 0;
 
                 /** send() с таймаутом: промис-зависание больше не вешает конвейер. */
                 const sendWithTimeout = (instance) => {
@@ -324,18 +327,29 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                       // Внешний try обязан ловить всё, включая проверки до основного блока.
                       // 2026-10-15 — Тот же флаг внутри кадра (v0.20.625): пропущенное
                       // событие не должно поднимать камеру поверх мёртвого движка.
-                      if (handsPausedByGpuLoss || (typeof window !== 'undefined' && window.__holoGpuLost)) return;
+                      if (handsPausedByGpuLoss || (typeof window !== 'undefined' && window.__holoGpuLost) || wasmCrashed) return;
                       try {
                         // 0. Stream health check — graceful degradation if camera lost
                         const stream = videoElement.srcObject;
                         if (!stream || !stream.active) {
-                            if (Date.now() - lastErrorTime > 5000) {
+                            inactiveFrames++;
+                            if (inactiveFrames === 1) {
                                 console.warn('[HandsTracking] Camera stream inactive, skipping frame');
                                 lastErrorTime = Date.now();
                             }
                             isProcessing = false;
+                            if (inactiveFrames >= 3) {
+                                wasmCrashed = true;
+                                try {
+                                    state.multimodal.cameraInstance?.stop?.();
+                                    state.multimodal.cameraStarted = false;
+                                    if (videoElement) { videoElement.srcObject = null; videoElement.pause?.(); }
+                                } catch (e) { /* ignore */ }
+                                console.warn('[HandsTracking] Камера остановлена: поток неактивен 3 кадра.');
+                            }
                             return;
                         }
+                        inactiveFrames = 0;
 
                         // 1. Safety Check: Dimensions
                         if (videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
@@ -401,9 +415,11 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
                                 // Graceful degradation: if error is fatal (WASM crash), stop camera
                                 if (handsError.message && (handsError.message.includes('memory') || handsError.message.includes('aborted'))) {
                                     console.error('[HandsTracking] Critical WASM error — stopping camera to prevent crash loop');
+                                    wasmCrashed = true;
                                     try {
                                         state.multimodal.cameraInstance?.stop();
                                         state.multimodal.cameraStarted = false;
+                                        if (videoElement) { videoElement.srcObject = null; videoElement.pause?.(); }
                                     } catch (e) { /* ignore stop errors */ }
                                 }
                             }
@@ -443,7 +459,7 @@ export async function startVideoStream(videoElement, handsInstance, stream = nul
 }
 
 // function initializeMediaPipeHands() {
-export function initializeMediaPipeHands() {
+export async function initializeMediaPipeHands() {
     console.log("Инициализация MediaPipe Hands...");
 
     state.multimodal.videoElementForHands = document.getElementById('camera-view');
@@ -497,6 +513,17 @@ export function initializeMediaPipeHands() {
         });
 
         state.multimodal.handsInstance.onResults(onResults);
+
+        // v0.20.629 — прогрев WASM/Emscripten MEMFS (palm_detection_full.tflite и пр.)
+        // до первого кадра камеры, чтобы LocalFileContentsCalculator не падал
+        // на неготовом графе.
+        try {
+            if (typeof state.multimodal.handsInstance.initialize === 'function') {
+                await state.multimodal.handsInstance.initialize();
+            }
+        } catch (e) {
+            console.warn('[HandsTracking] initialize() warning:', e?.message || e);
+        }
     } finally {
         restoreMediaPipeLogs();
     }

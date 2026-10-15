@@ -33,6 +33,18 @@ export default class TriaCollectiveService {
       return { ok: true, url: 'local' };
     }
 
+    // v0.20.629 — гостевой режим без JWT: не открываем WS и не долбим сервер.
+    let hasJwt = false;
+    try { hasJwt = !!localStorage.getItem('jwtToken'); } catch (_) { hasJwt = false; }
+    if (!hasJwt) {
+      if (!this._guestLogged) {
+        this._guestLogged = true;
+        console.log('[TriaCollective] Гостевой режим (нет JWT) — P2P-сигналинг отложен до входа.');
+      }
+      this._signaling = 'guest';
+      return { ok: false, guest: true, url: 'local' };
+    }
+
     return new Promise((resolve, reject) => {
       try {
         this._ws = new WebSocket(signalingUrl);
@@ -80,18 +92,27 @@ export default class TriaCollectiveService {
 
       this._ws.onclose = (e) => {
         if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
-        this._startHttpFallback(signalingUrl);
+        const fallbackStarted = this._startHttpFallback(signalingUrl);
 
         if (retryCount === 0) {
-          console.warn(`[TriaCollective] WebSocket closed (code: ${e.code}), fallback signaling active.`);
+          if (fallbackStarted) {
+            console.warn(`[TriaCollective] WebSocket closed (code: ${e.code}), fallback signaling active.`);
+          } else {
+            console.warn(`[TriaCollective] WebSocket closed (code: ${e.code}) — HTTP-фолбэк недоступен (подавлен/404).`);
+          }
         }
 
         if (retryCount < MAX_RETRIES) {
           resolve({ ok: false, retry: true });
           setTimeout(() => this.connect(signalingUrl, retryCount + 1), RETRY_DELAY);
         } else {
-          console.log('[TriaCollective] Signaling actively running on HTTP fallback.');
-          resolve({ ok: true, url: signalingUrl, transport: 'http-fallback' });
+          if (fallbackStarted) {
+            console.log('[TriaCollective] Signaling actively running on HTTP fallback.');
+            resolve({ ok: true, url: signalingUrl, transport: 'http-fallback' });
+          } else {
+            console.warn('[TriaCollective] Signaling приостановлен: WebSocket закрыт, HTTP-фолбэк недоступен.');
+            resolve({ ok: false, url: signalingUrl });
+          }
         }
       };
     });
@@ -117,7 +138,7 @@ export default class TriaCollectiveService {
   }
 
   _startHttpFallback(signalingUrl, intervalMs = 3000) {
-    if (this._httpFallbackTimer) return;
+    if (this._httpFallbackTimer) return true;
 
     // 2026-10-15 — Шапка на фолбэк-сессии (v0.20.623, задание Qwen 3.8 Max).
     // Второй цикл законен (реконнект WS), третий и далее — уже шум в консоли.
@@ -126,7 +147,7 @@ export default class TriaCollectiveService {
         this._httpFallbackCapWarned = true;
         console.warn('[TriaCollective] HTTP-фолбэк уже запускался дважды за сессию — новые циклы подавлены');
       }
-      return;
+      return false;
     }
     this._httpFallbackSessions = (this._httpFallbackSessions || 0) + 1;
 
@@ -152,6 +173,7 @@ export default class TriaCollectiveService {
             if (this._signaling === 'http-fallback') this._signaling = null;
             this._httpCursor = null;
             console.warn('[TriaCollective] HTTP-фолбэк сигналинга недоступен (404×3) — отключён до перезагрузки');
+            return;
           }
           return;
         }
@@ -170,6 +192,7 @@ export default class TriaCollectiveService {
 
     poll();
     this._httpFallbackTimer = setInterval(poll, intervalMs);
+    return true;
   }
 
   stopHttpFallback() {

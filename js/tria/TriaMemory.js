@@ -20,6 +20,7 @@ export class TriaMemory {
 
     constructor() {
         this._db = null;
+        this._firstSnapshotLogged = false;
     }
 
     async init() {
@@ -104,7 +105,10 @@ export class TriaMemory {
             param_count: weightsF32Array.length,
         };
         await this._put(STORE_SNAPSHOTS, snapshot);
-        console.log(`[TriaMemory] Enkephalon snapshot сохранён: ${snapshot.param_count} параметров`);
+        if (!this._firstSnapshotLogged) {
+            this._firstSnapshotLogged = true;
+            console.log(`[TriaMemory] Enkephalon snapshot сохранён: ${snapshot.param_count} параметров`);
+        }
         return snapshot.snapshot_id;
     }
 

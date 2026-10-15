@@ -19,6 +19,8 @@ export class EnkephalonBridge {
         this._slots = null;
         this._slotIdx = 0;
         this._snapshotInterval = null;
+        this._weightsDirty = false;
+        this._snapshotLoggedOnce = false;
     }
 
     /**
@@ -115,6 +117,7 @@ export class EnkephalonBridge {
      */
     learn(embedding, intent) {
         if (!this.isReady) return;
+        this._weightsDirty = true;
 
         const embPtr = this._alloc(BRAIN_EMBED_DIM * 4);
         const intPtr = this._alloc(BRAIN_INTENT_DIM * 4);
@@ -140,6 +143,7 @@ export class EnkephalonBridge {
     decay() {
         if (!this.isReady) return;
         this._wasm.brain_decay(this._brainPtr);
+        this._weightsDirty = true;
         console.log('[EnkephalonBridge] Lethe: глобальное затухание весов выполнено');
     }
 
@@ -174,6 +178,7 @@ export class EnkephalonBridge {
         this._wasm.brain_import_weights(this._brainPtr, dataPtr, totalParams);
         this._free(dataPtr, totalParams * 4);
         console.log('[EnkephalonBridge] Веса восстановлены из снапшота');
+        this._weightsDirty = false;
     }
 
     /** Освободить память Brain при уничтожении */
@@ -194,11 +199,17 @@ export class EnkephalonBridge {
         
         this._snapshotInterval = setInterval(async () => {
             if (!this.isReady) return;
+            if (typeof document !== 'undefined' && document.hidden) return;
+            if (!this._weightsDirty) return;
             try {
                 const weights = this.exportWeights();
                 if (weights) {
                     await memoryService.saveSnapshot(weights);
-                    console.log('[EnkephalonBridge] Периодический снапшот весов сохранен.');
+                    this._weightsDirty = false;
+                    if (!this._snapshotLoggedOnce) {
+                        this._snapshotLoggedOnce = true;
+                        console.log('[EnkephalonBridge] Периодический снапшот весов сохранен.');
+                    }
                 }
             } catch (err) {
                 console.warn('[EnkephalonBridge] Ошибка авто-снапшота:', err);
